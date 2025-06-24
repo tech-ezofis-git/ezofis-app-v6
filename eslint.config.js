@@ -1,0 +1,87 @@
+import js from '@eslint/js'
+import perfectionist from 'eslint-plugin-perfectionist'
+import prettier from 'eslint-plugin-prettier/recommended'
+import reactHooks from 'eslint-plugin-react-hooks'
+import reactRefresh from 'eslint-plugin-react-refresh'
+import globals from 'globals'
+import tseslint from 'typescript-eslint'
+
+export default tseslint.config(
+  { ignores: ['dist'] },
+  {
+    extends: [
+      js.configs.recommended,
+      ...tseslint.configs.recommended,
+      prettier,
+    ],
+    files: ['**/*.{ts,tsx}'],
+    languageOptions: {
+      ecmaVersion: 2020,
+      globals: globals.browser,
+    },
+    plugins: {
+      'react-hooks': reactHooks,
+      'react-refresh': reactRefresh,
+    },
+    rules: {
+      ...reactHooks.configs.recommended.rules,
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          args: 'all',
+          argsIgnorePattern: '^_',
+          destructuredArrayIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+        },
+      ],
+      'react-refresh/only-export-components': [
+        'warn',
+        { allowConstantExport: true },
+      ],
+    },
+  },
+  {
+    plugins: {
+      perfectionist,
+    },
+    rules: {
+      'perfectionist/sort-enums': ['error'],
+      'perfectionist/sort-exports': ['error', { newlinesBetween: 'never' }],
+      'perfectionist/sort-imports': [
+        'error',
+        { internalPattern: ['^@/.+'], newlinesBetween: 'never' },
+      ],
+      'perfectionist/sort-interfaces': [
+        'error',
+        {
+          groups: ['member', 'optional-member', 'method', 'optional-method'],
+        },
+      ],
+      'perfectionist/sort-jsx-props': [
+        'error',
+        {
+          customGroups: [
+            {
+              elementNamePattern: '^on.+',
+              groupName: 'callback',
+            },
+          ],
+          groups: ['unknown', 'shorthand-prop', 'multiline-prop', 'callback'],
+          type: 'natural',
+        },
+      ],
+      'perfectionist/sort-modules': ['error'],
+      'perfectionist/sort-named-exports': ['error'],
+      'perfectionist/sort-named-imports': ['error'],
+      'perfectionist/sort-object-types': [
+        'error',
+        { groups: ['member', 'method'], type: 'natural' },
+      ],
+      'perfectionist/sort-objects': [
+        'error',
+        { groups: ['member', 'method'], type: 'natural' },
+      ],
+      'perfectionist/sort-variable-declarations': ['error'],
+    },
+  },
+)
