@@ -11,8 +11,8 @@
 
 @import 'tailwindcss/utilities.css' layer(utilities);
 
-@import './colorLight.css';
-@import './colorDark.css';
+@import './light.css';
+@import './dark.css';
 @import './theme.css';
 
 @custom-variant dark (&:where([data-mantine-color-scheme=dark], [data-mantine-color-scheme=dark] *));

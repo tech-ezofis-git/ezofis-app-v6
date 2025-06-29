@@ -18,6 +18,7 @@ if (rootElement && !rootElement.innerHTML) {
     <StrictMode>
       <MantineProvider
         cssVariablesResolver={cssVariablesResolver}
+        defaultColorScheme='auto'
         theme={theme}
       >
         <TanstackQueryProvider>

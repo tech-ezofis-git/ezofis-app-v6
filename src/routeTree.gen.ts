@@ -9,38 +9,144 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as StoriesRouteRouteImport } from './routes/stories/route'
 import { Route as RouteRouteImport } from './routes/route'
+import { Route as StoriesIndexRouteImport } from './routes/stories/index'
+import { Route as StoriesTooltipRouteImport } from './routes/stories/tooltip'
+import { Route as StoriesScrollAreaRouteImport } from './routes/stories/scroll-area'
+import { Route as StoriesModalRouteImport } from './routes/stories/modal'
+import { Route as StoriesIconButtonRouteImport } from './routes/stories/icon-button'
+import { Route as StoriesDrawerRouteImport } from './routes/stories/drawer'
+import { Route as StoriesButtonRouteImport } from './routes/stories/button'
 
+const StoriesRouteRoute = StoriesRouteRouteImport.update({
+  id: '/stories',
+  path: '/stories',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RouteRoute = RouteRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StoriesIndexRoute = StoriesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => StoriesRouteRoute,
+} as any)
+const StoriesTooltipRoute = StoriesTooltipRouteImport.update({
+  id: '/tooltip',
+  path: '/tooltip',
+  getParentRoute: () => StoriesRouteRoute,
+} as any)
+const StoriesScrollAreaRoute = StoriesScrollAreaRouteImport.update({
+  id: '/scroll-area',
+  path: '/scroll-area',
+  getParentRoute: () => StoriesRouteRoute,
+} as any)
+const StoriesModalRoute = StoriesModalRouteImport.update({
+  id: '/modal',
+  path: '/modal',
+  getParentRoute: () => StoriesRouteRoute,
+} as any)
+const StoriesIconButtonRoute = StoriesIconButtonRouteImport.update({
+  id: '/icon-button',
+  path: '/icon-button',
+  getParentRoute: () => StoriesRouteRoute,
+} as any)
+const StoriesDrawerRoute = StoriesDrawerRouteImport.update({
+  id: '/drawer',
+  path: '/drawer',
+  getParentRoute: () => StoriesRouteRoute,
+} as any)
+const StoriesButtonRoute = StoriesButtonRouteImport.update({
+  id: '/button',
+  path: '/button',
+  getParentRoute: () => StoriesRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof RouteRoute
+  '/stories': typeof StoriesRouteRouteWithChildren
+  '/stories/button': typeof StoriesButtonRoute
+  '/stories/drawer': typeof StoriesDrawerRoute
+  '/stories/icon-button': typeof StoriesIconButtonRoute
+  '/stories/modal': typeof StoriesModalRoute
+  '/stories/scroll-area': typeof StoriesScrollAreaRoute
+  '/stories/tooltip': typeof StoriesTooltipRoute
+  '/stories/': typeof StoriesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof RouteRoute
+  '/stories/button': typeof StoriesButtonRoute
+  '/stories/drawer': typeof StoriesDrawerRoute
+  '/stories/icon-button': typeof StoriesIconButtonRoute
+  '/stories/modal': typeof StoriesModalRoute
+  '/stories/scroll-area': typeof StoriesScrollAreaRoute
+  '/stories/tooltip': typeof StoriesTooltipRoute
+  '/stories': typeof StoriesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof RouteRoute
+  '/stories': typeof StoriesRouteRouteWithChildren
+  '/stories/button': typeof StoriesButtonRoute
+  '/stories/drawer': typeof StoriesDrawerRoute
+  '/stories/icon-button': typeof StoriesIconButtonRoute
+  '/stories/modal': typeof StoriesModalRoute
+  '/stories/scroll-area': typeof StoriesScrollAreaRoute
+  '/stories/tooltip': typeof StoriesTooltipRoute
+  '/stories/': typeof StoriesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/stories'
+    | '/stories/button'
+    | '/stories/drawer'
+    | '/stories/icon-button'
+    | '/stories/modal'
+    | '/stories/scroll-area'
+    | '/stories/tooltip'
+    | '/stories/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/stories/button'
+    | '/stories/drawer'
+    | '/stories/icon-button'
+    | '/stories/modal'
+    | '/stories/scroll-area'
+    | '/stories/tooltip'
+    | '/stories'
+  id:
+    | '__root__'
+    | '/'
+    | '/stories'
+    | '/stories/button'
+    | '/stories/drawer'
+    | '/stories/icon-button'
+    | '/stories/modal'
+    | '/stories/scroll-area'
+    | '/stories/tooltip'
+    | '/stories/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   RouteRoute: typeof RouteRoute
+  StoriesRouteRoute: typeof StoriesRouteRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/stories': {
+      id: '/stories'
+      path: '/stories'
+      fullPath: '/stories'
+      preLoaderRoute: typeof StoriesRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,11 +154,85 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RouteRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/stories/': {
+      id: '/stories/'
+      path: '/'
+      fullPath: '/stories/'
+      preLoaderRoute: typeof StoriesIndexRouteImport
+      parentRoute: typeof StoriesRouteRoute
+    }
+    '/stories/tooltip': {
+      id: '/stories/tooltip'
+      path: '/tooltip'
+      fullPath: '/stories/tooltip'
+      preLoaderRoute: typeof StoriesTooltipRouteImport
+      parentRoute: typeof StoriesRouteRoute
+    }
+    '/stories/scroll-area': {
+      id: '/stories/scroll-area'
+      path: '/scroll-area'
+      fullPath: '/stories/scroll-area'
+      preLoaderRoute: typeof StoriesScrollAreaRouteImport
+      parentRoute: typeof StoriesRouteRoute
+    }
+    '/stories/modal': {
+      id: '/stories/modal'
+      path: '/modal'
+      fullPath: '/stories/modal'
+      preLoaderRoute: typeof StoriesModalRouteImport
+      parentRoute: typeof StoriesRouteRoute
+    }
+    '/stories/icon-button': {
+      id: '/stories/icon-button'
+      path: '/icon-button'
+      fullPath: '/stories/icon-button'
+      preLoaderRoute: typeof StoriesIconButtonRouteImport
+      parentRoute: typeof StoriesRouteRoute
+    }
+    '/stories/drawer': {
+      id: '/stories/drawer'
+      path: '/drawer'
+      fullPath: '/stories/drawer'
+      preLoaderRoute: typeof StoriesDrawerRouteImport
+      parentRoute: typeof StoriesRouteRoute
+    }
+    '/stories/button': {
+      id: '/stories/button'
+      path: '/button'
+      fullPath: '/stories/button'
+      preLoaderRoute: typeof StoriesButtonRouteImport
+      parentRoute: typeof StoriesRouteRoute
+    }
   }
 }
 
+interface StoriesRouteRouteChildren {
+  StoriesButtonRoute: typeof StoriesButtonRoute
+  StoriesDrawerRoute: typeof StoriesDrawerRoute
+  StoriesIconButtonRoute: typeof StoriesIconButtonRoute
+  StoriesModalRoute: typeof StoriesModalRoute
+  StoriesScrollAreaRoute: typeof StoriesScrollAreaRoute
+  StoriesTooltipRoute: typeof StoriesTooltipRoute
+  StoriesIndexRoute: typeof StoriesIndexRoute
+}
+
+const StoriesRouteRouteChildren: StoriesRouteRouteChildren = {
+  StoriesButtonRoute: StoriesButtonRoute,
+  StoriesDrawerRoute: StoriesDrawerRoute,
+  StoriesIconButtonRoute: StoriesIconButtonRoute,
+  StoriesModalRoute: StoriesModalRoute,
+  StoriesScrollAreaRoute: StoriesScrollAreaRoute,
+  StoriesTooltipRoute: StoriesTooltipRoute,
+  StoriesIndexRoute: StoriesIndexRoute,
+}
+
+const StoriesRouteRouteWithChildren = StoriesRouteRoute._addFileChildren(
+  StoriesRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   RouteRoute: RouteRoute,
+  StoriesRouteRoute: StoriesRouteRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

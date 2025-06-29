@@ -1,0 +1,173 @@
+:root {
+  --primary: #8300e6;
+  --secondary: #19c1d4;
+
+  --gray-0: #ffffff;
+  --gray-25: #f8fafc;
+  --gray-50: #eff3f7;
+  --gray-100: #e5eaf0;
+  --gray-200: #d9dfe8;
+  --gray-300: #bcc4d4;
+  --gray-400: #838b9e;
+  --gray-500: #697289;
+  --gray-600: #50576b;
+  --gray-700: #3d4354;
+  --gray-800: #323745;
+  --gray-900: #20242b;
+  --gray-950: #13151a;
+
+  --primary-25: #faf8ff;
+  --primary-50: #f5efff;
+  --primary-100: #efe4ff;
+  --primary-200: #e0d1ff;
+  --primary-300: #c2a6ff;
+  --primary-400: #a47aff;
+  --primary-500: #944dff;
+  --primary-600: #8300e6;
+  --primary-700: #6800b8;
+  --primary-800: #4d0089;
+  --primary-900: #33005a;
+  --primary-950: #1f0036;
+
+  --red-25: #fff5f6;
+  --red-50: #ffebed;
+  --red-100: #ffdce0;
+  --red-200: #ffc4c9;
+  --red-300: #fb979e;
+  --red-400: #f26f74;
+  --red-500: #e64a4d;
+  --red-600: #d52c2a;
+  --red-700: #a72b2b;
+  --red-800: #7d292a;
+  --red-900: #572324;
+  --red-950: #34191a;
+
+  --blue-25: #f2f9ff;
+  --blue-50: #ebf5ff;
+  --blue-100: #dcecff;
+  --blue-200: #c4ddff;
+  --blue-300: #93bfff;
+  --blue-400: #62a0ff;
+  --blue-500: #3680ff;
+  --blue-600: #1461fc;
+  --blue-700: #1757c7;
+  --blue-800: #174995;
+  --blue-900: #133766;
+  --blue-950: #0d2239;
+
+  --yellow-25: #fff9f0;
+  --yellow-50: #fff5e5;
+  --yellow-100: #ffefd6;
+  --yellow-200: #ffe6c4;
+  --yellow-300: #ffd193;
+  --yellow-400: #ffba62;
+  --yellow-500: #fca331;
+  --yellow-600: #ed8b07;
+  --yellow-700: #b86f11;
+  --yellow-800: #885517;
+  --yellow-900: #5d3d17;
+  --yellow-950: #372613;
+
+  --green-25: #f2fcf6;
+  --green-50: #e6faed;
+  --green-100: #dcf6e7;
+  --green-200: #c4efd7;
+  --green-300: #93deb9;
+  --green-400: #62ca9c;
+  --green-500: #31b27f;
+  --green-600: #029663;
+  --green-700: #09744e;
+  --green-800: #0d563b;
+  --green-900: #0e3b29;
+  --green-950: #0b2219;
+
+  --violet-25: #f5f6ff;
+  --violet-50: #ebedff;
+  --violet-100: #e1e2ff;
+  --violet-200: #cdceff;
+  --violet-300: #a8a8ff;
+  --violet-400: #8a87ff;
+  --violet-500: #726bff;
+  --violet-600: #5e52ff;
+  --violet-700: #534cca;
+  --violet-800: #474398;
+  --violet-900: #37366a;
+  --violet-950: #262540;
+
+  --pink-25: #fff5fc;
+  --pink-50: #ffedfa;
+  --pink-100: #fddcf5;
+  --pink-200: #fbc4ed;
+  --pink-300: #f397db;
+  --pink-400: #e76ec4;
+  --pink-500: #d849ab;
+  --pink-600: #c52790;
+  --pink-700: #9b2876;
+  --pink-800: #74265c;
+  --pink-900: #502042;
+  --pink-950: #301729;
+
+  --orange-25: #fff8f5;
+  --orange-50: #fff1eb;
+  --orange-100: #ffe8dc;
+  --orange-200: #ffd8c4;
+  --orange-300: #ffba93;
+  --orange-400: #ff9e62;
+  --orange-500: #fd8331;
+  --orange-600: #ee6a0c;
+  --orange-700: #b95715;
+  --orange-800: #894519;
+  --orange-900: #5e3319;
+  --orange-950: #372114;
+
+  --body: var(--gray-0);
+
+  --fc-1: var(--gray-950);
+  --fc-2: var(--gray-800);
+  --fc-3: var(--gray-600);
+
+  --gray-bc: var(--gray-700);
+  --gray-bc-hover: var(--gray-800);
+  --gray-fc: var(--gray-700);
+  --gray-fc-hover: var(--gray-800);
+
+  --primary-bc: var(--primary-600);
+  --primary-bc-hover: var(--primary-700);
+  --primary-fc: var(--primary-600);
+  --primary-fc-hover: var(--primary-700);
+
+  --red-bc: var(--red-600);
+  --red-bc-hover: var(--red-700);
+  --red-fc: var(--red-600);
+  --red-fc-hover: var(--red-700);
+
+  --blue-bc: var(--blue-600);
+  --blue-bc-hover: var(--blue-700);
+  --blue-fc: var(--blue-600);
+  --blue-fc-hover: var(--blue-700);
+
+  --yellow-bc: var(--yellow-600);
+  --yellow-bc-hover: var(--yellow-700);
+  --yellow-fc: var(--yellow-600);
+  --yellow-fc-hover: var(--yellow-700);
+
+  --green-bc: var(--green-600);
+  --green-bc-hover: var(--green-700);
+  --green-fc: var(--green-600);
+  --green-fc-hover: var(--green-700);
+
+  --violet-bc: var(--violet-600);
+  --violet-bc-hover: var(--violet-700);
+  --violet-fc: var(--violet-600);
+  --violet-fc-hover: var(--violet-700);
+
+  --pink-bc: var(--pink-600);
+  --pink-bc-hover: var(--pink-700);
+  --pink-fc: var(--pink-600);
+  --pink-fc-hover: var(--pink-700);
+
+  --orange-bc: var(--orange-600);
+  --orange-bc-hover: var(--orange-700);
+  --orange-fc: var(--orange-600);
+  --orange-fc-hover: var(--orange-700);
+}
