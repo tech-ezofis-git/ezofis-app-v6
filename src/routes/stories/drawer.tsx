@@ -17,10 +17,15 @@ function RouteComponent() {
 
       <div className='space-y-12'>
         <StorySubTitle># Default</StorySubTitle>
-        <Button label='Open' onClick={() => setIsOpened(true)} />
+        <Button
+          color='gray'
+          label='Open'
+          variant='outline'
+          onClick={() => setIsOpened(true)}
+        />
         <Drawer isOpened={isOpened} onClose={() => setIsOpened(false)}>
           <OverlayHeader title='Drawer' onClose={() => setIsOpened(false)} />
-          <div style={{ height: 'calc(100vh - 120px)' }}></div>
+          <div style={{ height: 'calc(100vh - 136px)' }}></div>
           <OverlayFooter
             onCancel={() => setIsOpened(false)}
             onSave={() => setIsOpened(false)}

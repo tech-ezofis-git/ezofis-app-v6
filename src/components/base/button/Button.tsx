@@ -57,7 +57,7 @@ const Button = React.forwardRef<HTMLButtonElement, Props>(
         {!isLoading && icon && (
           <Icon className={cn('-ml-0.5', iconClass)} name={icon} />
         )}
-        {label}
+        <span>{label}</span>
         {suffixIcon && (
           <Icon className={cn('-mr-0.5', suffixIconClass)} name={suffixIcon} />
         )}

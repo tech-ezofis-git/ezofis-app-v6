@@ -8,11 +8,13 @@
 
 @import '@mantine/core/styles.layer.css';
 @import '@mantine/dates/styles.layer.css';
+@import '@mantine/notifications/styles.layer.css';
 
 @import 'tailwindcss/utilities.css' layer(utilities);
 
 @import './light.css';
 @import './dark.css';
 @import './theme.css';
+@import './mantine.css';
 
 @custom-variant dark (&:where([data-mantine-color-scheme=dark], [data-mantine-color-scheme=dark] *));

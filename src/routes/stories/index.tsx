@@ -11,11 +11,21 @@ const routes = [
   { name: 'ScrollArea', path: '/stories/scroll-area' },
   { name: 'Drawer', path: '/stories/drawer' },
   { name: 'Modal', path: '/stories/modal' },
+  { name: 'Menu', path: '/stories/menu' },
+  { name: 'Avatar', path: '/stories/avatar' },
+  { name: 'Indicator', path: '/stories/indicator' },
+  { name: 'Divider', path: '/stories/divider' },
+  { name: 'Badge', path: '/stories/badge' },
+  { name: 'Tabs', path: '/stories/tabs' },
+  { name: 'Pagination', path: '/stories/pagination' },
+  { name: 'Popover', path: '/stories/popover' },
+  { name: 'Toast', path: '/stories/toast' },
+  { name: 'Highlight', path: '/stories/highlight' },
 ]
 
 function RouteComponent() {
   return (
-    <ul className='space-y-2'>
+    <ul className='space-y-3'>
       {routes.map((route, index) => (
         <li key={route.name}>
           <Link

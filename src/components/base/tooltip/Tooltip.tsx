@@ -28,9 +28,9 @@ const Tooltip: React.FC<Props> = ({
   width,
 }) => {
   const colorClasses = {
-    gray: 'bg-gray-bc-hover',
-    primary: 'bg-primary-bc',
-    red: 'bg-red-bc',
+    gray: 'bg-gray-800',
+    primary: 'bg-primary',
+    red: 'bg-red',
   }
 
   return (

@@ -30,8 +30,8 @@ const Modal: React.FC<Props> = ({
       centered
       classNames={{
         body: 'p-0',
-        content: cn('bg-body', isFullScreen ? 'rounded-none' : 'rounded-lg'),
-        overlay: 'bg-gray-800/60 dark:bg-gray-200/60',
+        content: cn('bg-surface', isFullScreen ? 'rounded-none' : 'rounded-lg'),
+        overlay: 'bg-overlay/60',
       }}
       onClose={onClose}
     >
