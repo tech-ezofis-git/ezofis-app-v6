@@ -22,17 +22,17 @@ function RouteComponent() {
 
         <StorySubTitle># Animated</StorySubTitle>
         <div className='flex items-center gap-4'>
-          <Indicator offset={5} isProcessing>
+          <Indicator offset={5} animate>
             <Avatar initials='CH' />
           </Indicator>
         </div>
 
         <StorySubTitle># Color</StorySubTitle>
         <div className='flex items-center gap-4'>
-          <Indicator offset={5} isProcessing>
+          <Indicator offset={5} animate>
             <Avatar initials='CH' />
           </Indicator>
-          <Indicator color='red' offset={5} isProcessing>
+          <Indicator color='red' offset={5} animate>
             <Avatar initials='CH' />
           </Indicator>
         </div>

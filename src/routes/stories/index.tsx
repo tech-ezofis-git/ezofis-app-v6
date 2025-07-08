@@ -21,6 +21,7 @@ const routes = [
   { name: 'Popover', path: '/stories/popover' },
   { name: 'Toast', path: '/stories/toast' },
   { name: 'Highlight', path: '/stories/highlight' },
+  { name: 'AI Icon', path: '/stories/ai-icon' },
 ]
 
 function RouteComponent() {

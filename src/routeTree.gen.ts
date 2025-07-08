@@ -28,6 +28,7 @@ import { Route as StoriesDividerRouteImport } from './routes/stories/divider'
 import { Route as StoriesButtonRouteImport } from './routes/stories/button'
 import { Route as StoriesBadgeRouteImport } from './routes/stories/badge'
 import { Route as StoriesAvatarRouteImport } from './routes/stories/avatar'
+import { Route as StoriesAiIconRouteImport } from './routes/stories/ai-icon'
 
 const StoriesRouteRoute = StoriesRouteRouteImport.update({
   id: '/stories',
@@ -124,10 +125,16 @@ const StoriesAvatarRoute = StoriesAvatarRouteImport.update({
   path: '/avatar',
   getParentRoute: () => StoriesRouteRoute,
 } as any)
+const StoriesAiIconRoute = StoriesAiIconRouteImport.update({
+  id: '/ai-icon',
+  path: '/ai-icon',
+  getParentRoute: () => StoriesRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof RouteRoute
   '/stories': typeof StoriesRouteRouteWithChildren
+  '/stories/ai-icon': typeof StoriesAiIconRoute
   '/stories/avatar': typeof StoriesAvatarRoute
   '/stories/badge': typeof StoriesBadgeRoute
   '/stories/button': typeof StoriesButtonRoute
@@ -148,6 +155,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof RouteRoute
+  '/stories/ai-icon': typeof StoriesAiIconRoute
   '/stories/avatar': typeof StoriesAvatarRoute
   '/stories/badge': typeof StoriesBadgeRoute
   '/stories/button': typeof StoriesButtonRoute
@@ -170,6 +178,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof RouteRoute
   '/stories': typeof StoriesRouteRouteWithChildren
+  '/stories/ai-icon': typeof StoriesAiIconRoute
   '/stories/avatar': typeof StoriesAvatarRoute
   '/stories/badge': typeof StoriesBadgeRoute
   '/stories/button': typeof StoriesButtonRoute
@@ -193,6 +202,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/stories'
+    | '/stories/ai-icon'
     | '/stories/avatar'
     | '/stories/badge'
     | '/stories/button'
@@ -213,6 +223,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/stories/ai-icon'
     | '/stories/avatar'
     | '/stories/badge'
     | '/stories/button'
@@ -234,6 +245,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/stories'
+    | '/stories/ai-icon'
     | '/stories/avatar'
     | '/stories/badge'
     | '/stories/button'
@@ -393,10 +405,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StoriesAvatarRouteImport
       parentRoute: typeof StoriesRouteRoute
     }
+    '/stories/ai-icon': {
+      id: '/stories/ai-icon'
+      path: '/ai-icon'
+      fullPath: '/stories/ai-icon'
+      preLoaderRoute: typeof StoriesAiIconRouteImport
+      parentRoute: typeof StoriesRouteRoute
+    }
   }
 }
 
 interface StoriesRouteRouteChildren {
+  StoriesAiIconRoute: typeof StoriesAiIconRoute
   StoriesAvatarRoute: typeof StoriesAvatarRoute
   StoriesBadgeRoute: typeof StoriesBadgeRoute
   StoriesButtonRoute: typeof StoriesButtonRoute
@@ -417,6 +437,7 @@ interface StoriesRouteRouteChildren {
 }
 
 const StoriesRouteRouteChildren: StoriesRouteRouteChildren = {
+  StoriesAiIconRoute: StoriesAiIconRoute,
   StoriesAvatarRoute: StoriesAvatarRoute,
   StoriesBadgeRoute: StoriesBadgeRoute,
   StoriesButtonRoute: StoriesButtonRoute,

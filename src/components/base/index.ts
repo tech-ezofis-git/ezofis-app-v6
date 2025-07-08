@@ -7,6 +7,7 @@ import Divider from './divider/Divider'
 import Drawer from './drawer/Drawer'
 import Highlight from './highlight/Highlight'
 import Icon from './icon/Icon'
+import IconAI from './icon/IconAI'
 import Indicator from './indicator/Indicator'
 import Menu from './menu/Menu'
 import MenuDivider from './menu/MenuDivider'
@@ -33,6 +34,7 @@ export {
   Drawer,
   Highlight,
   Icon,
+  IconAI,
   IconButton,
   Indicator,
   Menu,
