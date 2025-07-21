@@ -7,7 +7,7 @@ export const Route = createFileRoute('/stories')({
 function RouteComponent() {
   return (
     <div className='container mx-auto p-6 pb-20'>
-      <h1 className='mb-10 text-2xl font-bold text-fc-1'>Components</h1>
+      <h1 className='mb-10 text-2xl font-bold text-gray-900'>Components</h1>
       <Outlet />
     </div>
   )

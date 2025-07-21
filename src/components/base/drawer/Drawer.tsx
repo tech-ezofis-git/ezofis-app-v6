@@ -29,8 +29,8 @@ const Drawer: React.FC<Props> = ({
       withCloseButton={false}
       classNames={{
         body: 'p-0',
-        content: 'bg-body',
-        overlay: 'bg-gray-800/60 dark:bg-gray-200/60',
+        content: 'bg-surface',
+        overlay: 'bg-overlay/60',
       }}
       onClose={onClose}
     >

@@ -15,7 +15,7 @@ function RouteComponent() {
       <div className='space-y-12'>
         <StorySubTitle># Default</StorySubTitle>
         <div className='flex flex-wrap items-center gap-2'>
-          <Tooltip content='Default' position='right'>
+          <Tooltip content='Default' position='right' isOpened>
             <IconButton
               color='gray'
               icon='tabler:cloud-download'
@@ -26,17 +26,17 @@ function RouteComponent() {
 
         <StorySubTitle># Colors</StorySubTitle>
         <div className='flex flex-col items-start gap-4'>
-          <Tooltip color='primary' content='Primary' position='right'>
+          <Tooltip color='primary' content='Primary' position='right' isOpened>
             <IconButton icon='tabler:cloud-download' variant='subtle' />
           </Tooltip>
-          <Tooltip color='red' content='Red' position='right'>
+          <Tooltip color='red' content='Red' position='right' isOpened>
             <IconButton
               color='red'
               icon='tabler:cloud-download'
               variant='subtle'
             />
           </Tooltip>
-          <Tooltip content='Gray' position='right'>
+          <Tooltip content='Gray' position='right' isOpened>
             <IconButton
               color='gray'
               icon='tabler:cloud-download'

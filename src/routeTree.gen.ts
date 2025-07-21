@@ -13,11 +13,22 @@ import { Route as StoriesRouteRouteImport } from './routes/stories/route'
 import { Route as RouteRouteImport } from './routes/route'
 import { Route as StoriesIndexRouteImport } from './routes/stories/index'
 import { Route as StoriesTooltipRouteImport } from './routes/stories/tooltip'
+import { Route as StoriesToastRouteImport } from './routes/stories/toast'
+import { Route as StoriesTabsRouteImport } from './routes/stories/tabs'
 import { Route as StoriesScrollAreaRouteImport } from './routes/stories/scroll-area'
+import { Route as StoriesPopoverRouteImport } from './routes/stories/popover'
+import { Route as StoriesPaginationRouteImport } from './routes/stories/pagination'
 import { Route as StoriesModalRouteImport } from './routes/stories/modal'
+import { Route as StoriesMenuRouteImport } from './routes/stories/menu'
+import { Route as StoriesIndicatorRouteImport } from './routes/stories/indicator'
 import { Route as StoriesIconButtonRouteImport } from './routes/stories/icon-button'
+import { Route as StoriesHighlightRouteImport } from './routes/stories/highlight'
 import { Route as StoriesDrawerRouteImport } from './routes/stories/drawer'
+import { Route as StoriesDividerRouteImport } from './routes/stories/divider'
 import { Route as StoriesButtonRouteImport } from './routes/stories/button'
+import { Route as StoriesBadgeRouteImport } from './routes/stories/badge'
+import { Route as StoriesAvatarRouteImport } from './routes/stories/avatar'
+import { Route as StoriesAiIconRouteImport } from './routes/stories/ai-icon'
 
 const StoriesRouteRoute = StoriesRouteRouteImport.update({
   id: '/stories',
@@ -39,9 +50,29 @@ const StoriesTooltipRoute = StoriesTooltipRouteImport.update({
   path: '/tooltip',
   getParentRoute: () => StoriesRouteRoute,
 } as any)
+const StoriesToastRoute = StoriesToastRouteImport.update({
+  id: '/toast',
+  path: '/toast',
+  getParentRoute: () => StoriesRouteRoute,
+} as any)
+const StoriesTabsRoute = StoriesTabsRouteImport.update({
+  id: '/tabs',
+  path: '/tabs',
+  getParentRoute: () => StoriesRouteRoute,
+} as any)
 const StoriesScrollAreaRoute = StoriesScrollAreaRouteImport.update({
   id: '/scroll-area',
   path: '/scroll-area',
+  getParentRoute: () => StoriesRouteRoute,
+} as any)
+const StoriesPopoverRoute = StoriesPopoverRouteImport.update({
+  id: '/popover',
+  path: '/popover',
+  getParentRoute: () => StoriesRouteRoute,
+} as any)
+const StoriesPaginationRoute = StoriesPaginationRouteImport.update({
+  id: '/pagination',
+  path: '/pagination',
   getParentRoute: () => StoriesRouteRoute,
 } as any)
 const StoriesModalRoute = StoriesModalRouteImport.update({
@@ -49,9 +80,24 @@ const StoriesModalRoute = StoriesModalRouteImport.update({
   path: '/modal',
   getParentRoute: () => StoriesRouteRoute,
 } as any)
+const StoriesMenuRoute = StoriesMenuRouteImport.update({
+  id: '/menu',
+  path: '/menu',
+  getParentRoute: () => StoriesRouteRoute,
+} as any)
+const StoriesIndicatorRoute = StoriesIndicatorRouteImport.update({
+  id: '/indicator',
+  path: '/indicator',
+  getParentRoute: () => StoriesRouteRoute,
+} as any)
 const StoriesIconButtonRoute = StoriesIconButtonRouteImport.update({
   id: '/icon-button',
   path: '/icon-button',
+  getParentRoute: () => StoriesRouteRoute,
+} as any)
+const StoriesHighlightRoute = StoriesHighlightRouteImport.update({
+  id: '/highlight',
+  path: '/highlight',
   getParentRoute: () => StoriesRouteRoute,
 } as any)
 const StoriesDrawerRoute = StoriesDrawerRouteImport.update({
@@ -59,30 +105,72 @@ const StoriesDrawerRoute = StoriesDrawerRouteImport.update({
   path: '/drawer',
   getParentRoute: () => StoriesRouteRoute,
 } as any)
+const StoriesDividerRoute = StoriesDividerRouteImport.update({
+  id: '/divider',
+  path: '/divider',
+  getParentRoute: () => StoriesRouteRoute,
+} as any)
 const StoriesButtonRoute = StoriesButtonRouteImport.update({
   id: '/button',
   path: '/button',
+  getParentRoute: () => StoriesRouteRoute,
+} as any)
+const StoriesBadgeRoute = StoriesBadgeRouteImport.update({
+  id: '/badge',
+  path: '/badge',
+  getParentRoute: () => StoriesRouteRoute,
+} as any)
+const StoriesAvatarRoute = StoriesAvatarRouteImport.update({
+  id: '/avatar',
+  path: '/avatar',
+  getParentRoute: () => StoriesRouteRoute,
+} as any)
+const StoriesAiIconRoute = StoriesAiIconRouteImport.update({
+  id: '/ai-icon',
+  path: '/ai-icon',
   getParentRoute: () => StoriesRouteRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof RouteRoute
   '/stories': typeof StoriesRouteRouteWithChildren
+  '/stories/ai-icon': typeof StoriesAiIconRoute
+  '/stories/avatar': typeof StoriesAvatarRoute
+  '/stories/badge': typeof StoriesBadgeRoute
   '/stories/button': typeof StoriesButtonRoute
+  '/stories/divider': typeof StoriesDividerRoute
   '/stories/drawer': typeof StoriesDrawerRoute
+  '/stories/highlight': typeof StoriesHighlightRoute
   '/stories/icon-button': typeof StoriesIconButtonRoute
+  '/stories/indicator': typeof StoriesIndicatorRoute
+  '/stories/menu': typeof StoriesMenuRoute
   '/stories/modal': typeof StoriesModalRoute
+  '/stories/pagination': typeof StoriesPaginationRoute
+  '/stories/popover': typeof StoriesPopoverRoute
   '/stories/scroll-area': typeof StoriesScrollAreaRoute
+  '/stories/tabs': typeof StoriesTabsRoute
+  '/stories/toast': typeof StoriesToastRoute
   '/stories/tooltip': typeof StoriesTooltipRoute
   '/stories/': typeof StoriesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof RouteRoute
+  '/stories/ai-icon': typeof StoriesAiIconRoute
+  '/stories/avatar': typeof StoriesAvatarRoute
+  '/stories/badge': typeof StoriesBadgeRoute
   '/stories/button': typeof StoriesButtonRoute
+  '/stories/divider': typeof StoriesDividerRoute
   '/stories/drawer': typeof StoriesDrawerRoute
+  '/stories/highlight': typeof StoriesHighlightRoute
   '/stories/icon-button': typeof StoriesIconButtonRoute
+  '/stories/indicator': typeof StoriesIndicatorRoute
+  '/stories/menu': typeof StoriesMenuRoute
   '/stories/modal': typeof StoriesModalRoute
+  '/stories/pagination': typeof StoriesPaginationRoute
+  '/stories/popover': typeof StoriesPopoverRoute
   '/stories/scroll-area': typeof StoriesScrollAreaRoute
+  '/stories/tabs': typeof StoriesTabsRoute
+  '/stories/toast': typeof StoriesToastRoute
   '/stories/tooltip': typeof StoriesTooltipRoute
   '/stories': typeof StoriesIndexRoute
 }
@@ -90,11 +178,22 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof RouteRoute
   '/stories': typeof StoriesRouteRouteWithChildren
+  '/stories/ai-icon': typeof StoriesAiIconRoute
+  '/stories/avatar': typeof StoriesAvatarRoute
+  '/stories/badge': typeof StoriesBadgeRoute
   '/stories/button': typeof StoriesButtonRoute
+  '/stories/divider': typeof StoriesDividerRoute
   '/stories/drawer': typeof StoriesDrawerRoute
+  '/stories/highlight': typeof StoriesHighlightRoute
   '/stories/icon-button': typeof StoriesIconButtonRoute
+  '/stories/indicator': typeof StoriesIndicatorRoute
+  '/stories/menu': typeof StoriesMenuRoute
   '/stories/modal': typeof StoriesModalRoute
+  '/stories/pagination': typeof StoriesPaginationRoute
+  '/stories/popover': typeof StoriesPopoverRoute
   '/stories/scroll-area': typeof StoriesScrollAreaRoute
+  '/stories/tabs': typeof StoriesTabsRoute
+  '/stories/toast': typeof StoriesToastRoute
   '/stories/tooltip': typeof StoriesTooltipRoute
   '/stories/': typeof StoriesIndexRoute
 }
@@ -103,32 +202,65 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/stories'
+    | '/stories/ai-icon'
+    | '/stories/avatar'
+    | '/stories/badge'
     | '/stories/button'
+    | '/stories/divider'
     | '/stories/drawer'
+    | '/stories/highlight'
     | '/stories/icon-button'
+    | '/stories/indicator'
+    | '/stories/menu'
     | '/stories/modal'
+    | '/stories/pagination'
+    | '/stories/popover'
     | '/stories/scroll-area'
+    | '/stories/tabs'
+    | '/stories/toast'
     | '/stories/tooltip'
     | '/stories/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/stories/ai-icon'
+    | '/stories/avatar'
+    | '/stories/badge'
     | '/stories/button'
+    | '/stories/divider'
     | '/stories/drawer'
+    | '/stories/highlight'
     | '/stories/icon-button'
+    | '/stories/indicator'
+    | '/stories/menu'
     | '/stories/modal'
+    | '/stories/pagination'
+    | '/stories/popover'
     | '/stories/scroll-area'
+    | '/stories/tabs'
+    | '/stories/toast'
     | '/stories/tooltip'
     | '/stories'
   id:
     | '__root__'
     | '/'
     | '/stories'
+    | '/stories/ai-icon'
+    | '/stories/avatar'
+    | '/stories/badge'
     | '/stories/button'
+    | '/stories/divider'
     | '/stories/drawer'
+    | '/stories/highlight'
     | '/stories/icon-button'
+    | '/stories/indicator'
+    | '/stories/menu'
     | '/stories/modal'
+    | '/stories/pagination'
+    | '/stories/popover'
     | '/stories/scroll-area'
+    | '/stories/tabs'
+    | '/stories/toast'
     | '/stories/tooltip'
     | '/stories/'
   fileRoutesById: FileRoutesById
@@ -168,11 +300,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StoriesTooltipRouteImport
       parentRoute: typeof StoriesRouteRoute
     }
+    '/stories/toast': {
+      id: '/stories/toast'
+      path: '/toast'
+      fullPath: '/stories/toast'
+      preLoaderRoute: typeof StoriesToastRouteImport
+      parentRoute: typeof StoriesRouteRoute
+    }
+    '/stories/tabs': {
+      id: '/stories/tabs'
+      path: '/tabs'
+      fullPath: '/stories/tabs'
+      preLoaderRoute: typeof StoriesTabsRouteImport
+      parentRoute: typeof StoriesRouteRoute
+    }
     '/stories/scroll-area': {
       id: '/stories/scroll-area'
       path: '/scroll-area'
       fullPath: '/stories/scroll-area'
       preLoaderRoute: typeof StoriesScrollAreaRouteImport
+      parentRoute: typeof StoriesRouteRoute
+    }
+    '/stories/popover': {
+      id: '/stories/popover'
+      path: '/popover'
+      fullPath: '/stories/popover'
+      preLoaderRoute: typeof StoriesPopoverRouteImport
+      parentRoute: typeof StoriesRouteRoute
+    }
+    '/stories/pagination': {
+      id: '/stories/pagination'
+      path: '/pagination'
+      fullPath: '/stories/pagination'
+      preLoaderRoute: typeof StoriesPaginationRouteImport
       parentRoute: typeof StoriesRouteRoute
     }
     '/stories/modal': {
@@ -182,11 +342,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StoriesModalRouteImport
       parentRoute: typeof StoriesRouteRoute
     }
+    '/stories/menu': {
+      id: '/stories/menu'
+      path: '/menu'
+      fullPath: '/stories/menu'
+      preLoaderRoute: typeof StoriesMenuRouteImport
+      parentRoute: typeof StoriesRouteRoute
+    }
+    '/stories/indicator': {
+      id: '/stories/indicator'
+      path: '/indicator'
+      fullPath: '/stories/indicator'
+      preLoaderRoute: typeof StoriesIndicatorRouteImport
+      parentRoute: typeof StoriesRouteRoute
+    }
     '/stories/icon-button': {
       id: '/stories/icon-button'
       path: '/icon-button'
       fullPath: '/stories/icon-button'
       preLoaderRoute: typeof StoriesIconButtonRouteImport
+      parentRoute: typeof StoriesRouteRoute
+    }
+    '/stories/highlight': {
+      id: '/stories/highlight'
+      path: '/highlight'
+      fullPath: '/stories/highlight'
+      preLoaderRoute: typeof StoriesHighlightRouteImport
       parentRoute: typeof StoriesRouteRoute
     }
     '/stories/drawer': {
@@ -196,6 +377,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StoriesDrawerRouteImport
       parentRoute: typeof StoriesRouteRoute
     }
+    '/stories/divider': {
+      id: '/stories/divider'
+      path: '/divider'
+      fullPath: '/stories/divider'
+      preLoaderRoute: typeof StoriesDividerRouteImport
+      parentRoute: typeof StoriesRouteRoute
+    }
     '/stories/button': {
       id: '/stories/button'
       path: '/button'
@@ -203,25 +391,68 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StoriesButtonRouteImport
       parentRoute: typeof StoriesRouteRoute
     }
+    '/stories/badge': {
+      id: '/stories/badge'
+      path: '/badge'
+      fullPath: '/stories/badge'
+      preLoaderRoute: typeof StoriesBadgeRouteImport
+      parentRoute: typeof StoriesRouteRoute
+    }
+    '/stories/avatar': {
+      id: '/stories/avatar'
+      path: '/avatar'
+      fullPath: '/stories/avatar'
+      preLoaderRoute: typeof StoriesAvatarRouteImport
+      parentRoute: typeof StoriesRouteRoute
+    }
+    '/stories/ai-icon': {
+      id: '/stories/ai-icon'
+      path: '/ai-icon'
+      fullPath: '/stories/ai-icon'
+      preLoaderRoute: typeof StoriesAiIconRouteImport
+      parentRoute: typeof StoriesRouteRoute
+    }
   }
 }
 
 interface StoriesRouteRouteChildren {
+  StoriesAiIconRoute: typeof StoriesAiIconRoute
+  StoriesAvatarRoute: typeof StoriesAvatarRoute
+  StoriesBadgeRoute: typeof StoriesBadgeRoute
   StoriesButtonRoute: typeof StoriesButtonRoute
+  StoriesDividerRoute: typeof StoriesDividerRoute
   StoriesDrawerRoute: typeof StoriesDrawerRoute
+  StoriesHighlightRoute: typeof StoriesHighlightRoute
   StoriesIconButtonRoute: typeof StoriesIconButtonRoute
+  StoriesIndicatorRoute: typeof StoriesIndicatorRoute
+  StoriesMenuRoute: typeof StoriesMenuRoute
   StoriesModalRoute: typeof StoriesModalRoute
+  StoriesPaginationRoute: typeof StoriesPaginationRoute
+  StoriesPopoverRoute: typeof StoriesPopoverRoute
   StoriesScrollAreaRoute: typeof StoriesScrollAreaRoute
+  StoriesTabsRoute: typeof StoriesTabsRoute
+  StoriesToastRoute: typeof StoriesToastRoute
   StoriesTooltipRoute: typeof StoriesTooltipRoute
   StoriesIndexRoute: typeof StoriesIndexRoute
 }
 
 const StoriesRouteRouteChildren: StoriesRouteRouteChildren = {
+  StoriesAiIconRoute: StoriesAiIconRoute,
+  StoriesAvatarRoute: StoriesAvatarRoute,
+  StoriesBadgeRoute: StoriesBadgeRoute,
   StoriesButtonRoute: StoriesButtonRoute,
+  StoriesDividerRoute: StoriesDividerRoute,
   StoriesDrawerRoute: StoriesDrawerRoute,
+  StoriesHighlightRoute: StoriesHighlightRoute,
   StoriesIconButtonRoute: StoriesIconButtonRoute,
+  StoriesIndicatorRoute: StoriesIndicatorRoute,
+  StoriesMenuRoute: StoriesMenuRoute,
   StoriesModalRoute: StoriesModalRoute,
+  StoriesPaginationRoute: StoriesPaginationRoute,
+  StoriesPopoverRoute: StoriesPopoverRoute,
   StoriesScrollAreaRoute: StoriesScrollAreaRoute,
+  StoriesTabsRoute: StoriesTabsRoute,
+  StoriesToastRoute: StoriesToastRoute,
   StoriesTooltipRoute: StoriesTooltipRoute,
   StoriesIndexRoute: StoriesIndexRoute,
 }

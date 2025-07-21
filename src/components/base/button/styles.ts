@@ -3,74 +3,72 @@ import type { ButtonColor, ButtonVariant } from './types'
 
 export default function getStyles(variant: ButtonVariant, color: ButtonColor) {
   const styles = tv({
-    base: 'flex shrink-0 cursor-pointer appearance-none items-center gap-2 rounded-md border border-transparent font-medium outline-none select-none hover:transition-colors focus-visible:ring-2 focus-visible:ring-primary-300 active:translate-y-px disabled:pointer-events-none disabled:opacity-50 data-[loading]:pointer-events-none',
+    base: 'flex shrink-0 cursor-pointer appearance-none items-center gap-2 rounded-md border border-transparent font-medium outline-none select-none hover:transition-colors focus-visible:ring-2 focus-visible:ring-primary/35 active:translate-y-px disabled:pointer-events-none disabled:opacity-50 data-[loading]:pointer-events-none',
     compoundVariants: [
       {
-        class: 'bg-primary-bc hover:bg-primary-bc-hover',
+        class: 'bg-gray-600 hover:bg-gray-650',
+        color: 'gray',
+        variant: 'solid',
+      },
+      {
+        class: 'bg-primary hover:bg-primary-hover',
         color: 'primary',
         variant: 'solid',
       },
       {
-        class: 'bg-red-bc hover:bg-red-bc-hover',
+        class: 'bg-red hover:bg-red-hover',
         color: 'red',
-        variant: 'solid',
-      },
-      {
-        class: 'bg-gray-bc hover:bg-gray-bc-hover',
-        color: 'gray',
         variant: 'solid',
       },
 
       {
         class:
-          'border-gray-200 text-gray-fc hover:bg-gray-50 hover:text-gray-fc-hover',
+          'border-gray-600/20 text-gray-700 hover:bg-gray-600/5 hover:text-gray-750',
         color: 'gray',
         variant: 'outline',
       },
       {
         class:
-          'border-primary-200 text-primary-fc hover:bg-primary-50 hover:text-primary-fc-hover',
+          'border-primary/20 text-primary hover:bg-primary/5 hover:text-primary-hover',
         color: 'primary',
         variant: 'outline',
       },
       {
-        class:
-          'border-red-200 text-red-fc hover:bg-red-50 hover:text-red-fc-hover',
+        class: 'border-red/20 text-red hover:bg-red/5 hover:text-red-hover',
         color: 'red',
         variant: 'outline',
       },
 
       {
         class:
-          'bg-gray-50 text-gray-fc hover:bg-gray-100 hover:text-gray-fc-hover',
+          'bg-gray-600/5 text-gray-700 hover:bg-gray-600/10 hover:text-gray-750',
         color: 'gray',
         variant: 'subtle',
       },
       {
         class:
-          'bg-primary-50 text-primary-fc hover:bg-primary-100 hover:text-primary-fc-hover',
+          'bg-primary/5 text-primary hover:bg-primary/10 hover:text-primary-hover',
         color: 'primary',
         variant: 'subtle',
       },
       {
-        class: 'bg-red-50 text-red-fc hover:bg-red-100 hover:text-red-fc-hover',
+        class: 'bg-red/5 text-red hover:bg-red/10 hover:text-red-hover',
         color: 'red',
         variant: 'subtle',
       },
 
       {
-        class: 'text-gray-fc hover:bg-gray-50 hover:text-gray-fc-hover',
+        class: 'text-gray-700 hover:bg-gray-600/5 hover:text-gray-750',
         color: 'gray',
         variant: 'ghost',
       },
       {
-        class:
-          'text-primary-fc hover:bg-primary-50 hover:text-primary-fc-hover',
+        class: 'text-primary hover:bg-primary/5 hover:text-primary-hover',
         color: 'primary',
         variant: 'ghost',
       },
       {
-        class: 'text-red-fc hover:bg-red-50 hover:text-red-fc-hover',
+        class: 'text-red hover:bg-red/5 hover:text-red-hover',
         color: 'red',
         variant: 'ghost',
       },
@@ -84,7 +82,7 @@ export default function getStyles(variant: ButtonVariant, color: ButtonColor) {
       variant: {
         ghost: '',
         outline: '',
-        solid: 'text-gray-0 shadow-sm',
+        solid: 'text-white shadow-sm dark:text-black',
         subtle: '',
       },
     },

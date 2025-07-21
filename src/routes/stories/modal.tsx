@@ -17,7 +17,12 @@ function RouteComponent() {
 
       <div className='space-y-12'>
         <StorySubTitle># Default</StorySubTitle>
-        <Button label='Open' onClick={() => setIsOpened(true)} />
+        <Button
+          color='gray'
+          label='Open'
+          variant='outline'
+          onClick={() => setIsOpened(true)}
+        />
         <Modal isOpened={isOpened} onClose={() => setIsOpened(false)}>
           <OverlayHeader title='Modal' onClose={() => setIsOpened(false)} />
           <div className='h-40'></div>
