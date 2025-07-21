@@ -27,4 +27,5 @@ const Tab: React.FC<Props> = ({
   )
 }
 
+Tab.displayName = 'Tab'
 export default Tab

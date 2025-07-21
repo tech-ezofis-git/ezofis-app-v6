@@ -39,4 +39,5 @@ const Badge: React.FC<Props> = ({ color = 'gray', label }) => {
   )
 }
 
+Badge.displayName = 'Badge'
 export default Badge

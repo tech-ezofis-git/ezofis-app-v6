@@ -1,7 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { IconAI } from '@/components/base'
-import StorySubTitle from './-components/StorySubTitle'
-import StoryTitle from './-components/StoryTitle'
+import { StorySubTitle, StoryTitle } from './-components'
 
 export const Route = createFileRoute('/stories/ai-icon')({
   component: RouteComponent,
@@ -12,11 +11,11 @@ function RouteComponent() {
     <div>
       <StoryTitle>17. AI Icon</StoryTitle>
 
-      <div className='space-y-12'>
-        <StorySubTitle># Default</StorySubTitle>
+      <div className='space-y-16'>
+        <StorySubTitle>Default</StorySubTitle>
         <IconAI className='size-9' />
 
-        <StorySubTitle># Animated</StorySubTitle>
+        <StorySubTitle>Animated</StorySubTitle>
         <IconAI className='size-9' animate />
       </div>
     </div>

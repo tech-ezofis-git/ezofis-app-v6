@@ -11,9 +11,10 @@ const Tabs: React.FC<Props> = ({ children, onChange, value }) => {
     <Primitive
       value={value}
       classNames={{
-        list: 'before:border-0 before:border-b before:border-gray-100',
-        tab: 'group h-9 gap-2 px-4 py-2 font-medium text-gray-600 outline-0 hover:border-gray-100 hover:bg-gray-100 focus-visible:bg-gray-100 data-[active]:border-primary data-[active]:text-primary data-[active]:transition-colors data-[disabled]:pointer-events-none',
-        tabSection: 'm-0 text-gray-500 group-data-[active]:text-primary',
+        list: 'before:border-0 before:border-b before:border-gray-600/10',
+        tab: 'group h-9 gap-2 px-4 py-2 font-medium text-gray-500 outline-0 hover:border-surface-hover hover:bg-surface-hover hover:text-gray-600 hover:transition-colors focus-visible:bg-surface-hover data-[active]:border-primary data-[active]:text-primary data-[active]:transition-colors data-[disabled]:pointer-events-none',
+        tabSection:
+          'm-0 text-gray-400 group-hover:text-gray-500 group-hover:transition-colors group-data-[active]:text-primary',
       }}
       onChange={onChange}
     >
@@ -22,4 +23,5 @@ const Tabs: React.FC<Props> = ({ children, onChange, value }) => {
   )
 }
 
+Tabs.displayName = 'Tabs'
 export default Tabs

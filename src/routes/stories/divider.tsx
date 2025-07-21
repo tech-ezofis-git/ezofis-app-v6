@@ -1,7 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { Divider } from '@/components/base'
-import StorySubTitle from './-components/StorySubTitle'
-import StoryTitle from './-components/StoryTitle'
+import { StorySubTitle, StoryTitle } from './-components'
 
 export const Route = createFileRoute('/stories/divider')({
   component: RouteComponent,
@@ -12,18 +11,18 @@ function RouteComponent() {
     <div>
       <StoryTitle>10. Divider</StoryTitle>
 
-      <div className='space-y-12'>
-        <StorySubTitle># Default</StorySubTitle>
+      <div className='space-y-16'>
+        <StorySubTitle>Default</StorySubTitle>
         <Divider />
 
-        <StorySubTitle># With Label</StorySubTitle>
+        <StorySubTitle>With Label</StorySubTitle>
         <div className='space-y-6'>
           <Divider label='Label' />
           <Divider label='Label' labelPosition='left' />
           <Divider label='Label' labelPosition='right' />
         </div>
 
-        <StorySubTitle># Vertical</StorySubTitle>
+        <StorySubTitle>Vertical</StorySubTitle>
         <Divider className='h-10' orientation='vertical' />
       </div>
     </div>

@@ -13,7 +13,7 @@ const Highlight: React.FC<Props> = ({ children, words }) => {
       highlightStyles={{
         backgroundColor: 'var(--primary)',
         borderRadius: '1px',
-        color: 'var(--gray-50)',
+        color: 'var(--gray-0)',
       }}
     >
       {children}
@@ -21,4 +21,5 @@ const Highlight: React.FC<Props> = ({ children, words }) => {
   )
 }
 
+Highlight.displayName = 'Highlight'
 export default Highlight

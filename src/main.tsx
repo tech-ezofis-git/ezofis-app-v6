@@ -9,7 +9,6 @@ import '@/lib/web-vitals/report'
 import theme from '@/lib/mantine/theme'
 import TanstackQueryProvider from '@/lib/tanstack-query/Provider.tsx'
 import TanstackRouterProvider from '@/lib/tanstack-router/Provider.tsx'
-
 // import '@/lib/react-scan/scan'
 
 const rootElement = document.getElementById('app')

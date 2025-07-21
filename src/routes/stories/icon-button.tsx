@@ -1,7 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { IconButton } from '@/components/base'
-import StorySubTitle from './-components/StorySubTitle'
-import StoryTitle from './-components/StoryTitle'
+import { StorySubTitle, StoryTitle } from './-components'
 
 export const Route = createFileRoute('/stories/icon-button')({
   component: RouteComponent,
@@ -12,30 +11,30 @@ function RouteComponent() {
     <div>
       <StoryTitle>2. IconButton</StoryTitle>
 
-      <div className='space-y-12'>
-        <StorySubTitle># Default</StorySubTitle>
+      <div className='space-y-16'>
+        <StorySubTitle>Default</StorySubTitle>
         <div className='flex flex-wrap items-center gap-2'>
           <IconButton icon='tabler:cloud-download' />
         </div>
 
-        <StorySubTitle># Colors</StorySubTitle>
+        <StorySubTitle>Colors</StorySubTitle>
         <div className='flex flex-wrap items-center gap-2'>
           <IconButton icon='tabler:cloud-download' />
           <IconButton color='red' icon='tabler:cloud-download' />
           <IconButton color='gray' icon='tabler:cloud-download' />
         </div>
 
-        <StorySubTitle># Loading</StorySubTitle>
+        <StorySubTitle>Loading</StorySubTitle>
         <div className='flex flex-wrap items-center gap-2'>
           <IconButton icon='tabler:cloud-download' isLoading />
         </div>
 
-        <StorySubTitle># Disabled</StorySubTitle>
+        <StorySubTitle>Disabled</StorySubTitle>
         <div className='flex flex-wrap items-center gap-2'>
           <IconButton icon='tabler:cloud-download' isDisabled />
         </div>
 
-        <StorySubTitle># Variants</StorySubTitle>
+        <StorySubTitle>Variants</StorySubTitle>
         <div className='space-y-6'>
           <div className='flex flex-wrap items-center gap-2'>
             <IconButton icon='tabler:cloud-download' />
@@ -81,7 +80,7 @@ function RouteComponent() {
           </div>
         </div>
 
-        <StorySubTitle># Sizes</StorySubTitle>
+        <StorySubTitle>Sizes</StorySubTitle>
         <div className='flex flex-wrap items-center gap-2'>
           <IconButton icon='tabler:cloud-download' size='xs' />
           <IconButton icon='tabler:cloud-download' size='sm' />

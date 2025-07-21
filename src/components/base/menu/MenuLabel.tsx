@@ -10,7 +10,7 @@ const MenuLabel: React.FC<Props> = ({ children, className }) => {
   return (
     <Primitive.Label
       className={cn(
-        'flex h-7 items-center px-2 py-0 text-xs font-medium text-gray-500 dark:text-gray-550',
+        'flex h-7 items-center px-2 py-0 text-sx font-medium text-gray-500',
         className,
       )}
     >
@@ -19,4 +19,5 @@ const MenuLabel: React.FC<Props> = ({ children, className }) => {
   )
 }
 
+MenuLabel.displayName = 'MenuLabel'
 export default MenuLabel

@@ -20,11 +20,13 @@ const Divider: React.FC<Props> = ({
       labelPosition={labelPosition}
       orientation={orientation}
       classNames={{
-        label: 'text-gray-500 before:border-gray-100 after:border-gray-100',
-        root: 'border-gray-100',
+        label:
+          'text-gray-500 before:border-gray-600/10 after:border-gray-600/10',
+        root: 'border-gray-600/10',
       }}
     />
   )
 }
 
+Divider.displayName = 'Divider'
 export default Divider

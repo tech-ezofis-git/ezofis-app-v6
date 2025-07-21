@@ -20,6 +20,19 @@ import { Route as StoriesPopoverRouteImport } from './routes/stories/popover'
 import { Route as StoriesPaginationRouteImport } from './routes/stories/pagination'
 import { Route as StoriesModalRouteImport } from './routes/stories/modal'
 import { Route as StoriesMenuRouteImport } from './routes/stories/menu'
+import { Route as StoriesInputTimeRouteImport } from './routes/stories/input-time'
+import { Route as StoriesInputTextareaRouteImport } from './routes/stories/input-textarea'
+import { Route as StoriesInputTextRouteImport } from './routes/stories/input-text'
+import { Route as StoriesInputSwitchGroupRouteImport } from './routes/stories/input-switch-group'
+import { Route as StoriesInputSwitchRouteImport } from './routes/stories/input-switch'
+import { Route as StoriesInputRadioGroupRouteImport } from './routes/stories/input-radio-group'
+import { Route as StoriesInputRadioRouteImport } from './routes/stories/input-radio'
+import { Route as StoriesInputPinRouteImport } from './routes/stories/input-pin'
+import { Route as StoriesInputPasswordRouteImport } from './routes/stories/input-password'
+import { Route as StoriesInputNumberRouteImport } from './routes/stories/input-number'
+import { Route as StoriesInputDateRouteImport } from './routes/stories/input-date'
+import { Route as StoriesInputCheckboxGroupRouteImport } from './routes/stories/input-checkbox-group'
+import { Route as StoriesInputCheckboxRouteImport } from './routes/stories/input-checkbox'
 import { Route as StoriesIndicatorRouteImport } from './routes/stories/indicator'
 import { Route as StoriesIconButtonRouteImport } from './routes/stories/icon-button'
 import { Route as StoriesHighlightRouteImport } from './routes/stories/highlight'
@@ -85,6 +98,72 @@ const StoriesMenuRoute = StoriesMenuRouteImport.update({
   path: '/menu',
   getParentRoute: () => StoriesRouteRoute,
 } as any)
+const StoriesInputTimeRoute = StoriesInputTimeRouteImport.update({
+  id: '/input-time',
+  path: '/input-time',
+  getParentRoute: () => StoriesRouteRoute,
+} as any)
+const StoriesInputTextareaRoute = StoriesInputTextareaRouteImport.update({
+  id: '/input-textarea',
+  path: '/input-textarea',
+  getParentRoute: () => StoriesRouteRoute,
+} as any)
+const StoriesInputTextRoute = StoriesInputTextRouteImport.update({
+  id: '/input-text',
+  path: '/input-text',
+  getParentRoute: () => StoriesRouteRoute,
+} as any)
+const StoriesInputSwitchGroupRoute = StoriesInputSwitchGroupRouteImport.update({
+  id: '/input-switch-group',
+  path: '/input-switch-group',
+  getParentRoute: () => StoriesRouteRoute,
+} as any)
+const StoriesInputSwitchRoute = StoriesInputSwitchRouteImport.update({
+  id: '/input-switch',
+  path: '/input-switch',
+  getParentRoute: () => StoriesRouteRoute,
+} as any)
+const StoriesInputRadioGroupRoute = StoriesInputRadioGroupRouteImport.update({
+  id: '/input-radio-group',
+  path: '/input-radio-group',
+  getParentRoute: () => StoriesRouteRoute,
+} as any)
+const StoriesInputRadioRoute = StoriesInputRadioRouteImport.update({
+  id: '/input-radio',
+  path: '/input-radio',
+  getParentRoute: () => StoriesRouteRoute,
+} as any)
+const StoriesInputPinRoute = StoriesInputPinRouteImport.update({
+  id: '/input-pin',
+  path: '/input-pin',
+  getParentRoute: () => StoriesRouteRoute,
+} as any)
+const StoriesInputPasswordRoute = StoriesInputPasswordRouteImport.update({
+  id: '/input-password',
+  path: '/input-password',
+  getParentRoute: () => StoriesRouteRoute,
+} as any)
+const StoriesInputNumberRoute = StoriesInputNumberRouteImport.update({
+  id: '/input-number',
+  path: '/input-number',
+  getParentRoute: () => StoriesRouteRoute,
+} as any)
+const StoriesInputDateRoute = StoriesInputDateRouteImport.update({
+  id: '/input-date',
+  path: '/input-date',
+  getParentRoute: () => StoriesRouteRoute,
+} as any)
+const StoriesInputCheckboxGroupRoute =
+  StoriesInputCheckboxGroupRouteImport.update({
+    id: '/input-checkbox-group',
+    path: '/input-checkbox-group',
+    getParentRoute: () => StoriesRouteRoute,
+  } as any)
+const StoriesInputCheckboxRoute = StoriesInputCheckboxRouteImport.update({
+  id: '/input-checkbox',
+  path: '/input-checkbox',
+  getParentRoute: () => StoriesRouteRoute,
+} as any)
 const StoriesIndicatorRoute = StoriesIndicatorRouteImport.update({
   id: '/indicator',
   path: '/indicator',
@@ -143,6 +222,19 @@ export interface FileRoutesByFullPath {
   '/stories/highlight': typeof StoriesHighlightRoute
   '/stories/icon-button': typeof StoriesIconButtonRoute
   '/stories/indicator': typeof StoriesIndicatorRoute
+  '/stories/input-checkbox': typeof StoriesInputCheckboxRoute
+  '/stories/input-checkbox-group': typeof StoriesInputCheckboxGroupRoute
+  '/stories/input-date': typeof StoriesInputDateRoute
+  '/stories/input-number': typeof StoriesInputNumberRoute
+  '/stories/input-password': typeof StoriesInputPasswordRoute
+  '/stories/input-pin': typeof StoriesInputPinRoute
+  '/stories/input-radio': typeof StoriesInputRadioRoute
+  '/stories/input-radio-group': typeof StoriesInputRadioGroupRoute
+  '/stories/input-switch': typeof StoriesInputSwitchRoute
+  '/stories/input-switch-group': typeof StoriesInputSwitchGroupRoute
+  '/stories/input-text': typeof StoriesInputTextRoute
+  '/stories/input-textarea': typeof StoriesInputTextareaRoute
+  '/stories/input-time': typeof StoriesInputTimeRoute
   '/stories/menu': typeof StoriesMenuRoute
   '/stories/modal': typeof StoriesModalRoute
   '/stories/pagination': typeof StoriesPaginationRoute
@@ -164,6 +256,19 @@ export interface FileRoutesByTo {
   '/stories/highlight': typeof StoriesHighlightRoute
   '/stories/icon-button': typeof StoriesIconButtonRoute
   '/stories/indicator': typeof StoriesIndicatorRoute
+  '/stories/input-checkbox': typeof StoriesInputCheckboxRoute
+  '/stories/input-checkbox-group': typeof StoriesInputCheckboxGroupRoute
+  '/stories/input-date': typeof StoriesInputDateRoute
+  '/stories/input-number': typeof StoriesInputNumberRoute
+  '/stories/input-password': typeof StoriesInputPasswordRoute
+  '/stories/input-pin': typeof StoriesInputPinRoute
+  '/stories/input-radio': typeof StoriesInputRadioRoute
+  '/stories/input-radio-group': typeof StoriesInputRadioGroupRoute
+  '/stories/input-switch': typeof StoriesInputSwitchRoute
+  '/stories/input-switch-group': typeof StoriesInputSwitchGroupRoute
+  '/stories/input-text': typeof StoriesInputTextRoute
+  '/stories/input-textarea': typeof StoriesInputTextareaRoute
+  '/stories/input-time': typeof StoriesInputTimeRoute
   '/stories/menu': typeof StoriesMenuRoute
   '/stories/modal': typeof StoriesModalRoute
   '/stories/pagination': typeof StoriesPaginationRoute
@@ -187,6 +292,19 @@ export interface FileRoutesById {
   '/stories/highlight': typeof StoriesHighlightRoute
   '/stories/icon-button': typeof StoriesIconButtonRoute
   '/stories/indicator': typeof StoriesIndicatorRoute
+  '/stories/input-checkbox': typeof StoriesInputCheckboxRoute
+  '/stories/input-checkbox-group': typeof StoriesInputCheckboxGroupRoute
+  '/stories/input-date': typeof StoriesInputDateRoute
+  '/stories/input-number': typeof StoriesInputNumberRoute
+  '/stories/input-password': typeof StoriesInputPasswordRoute
+  '/stories/input-pin': typeof StoriesInputPinRoute
+  '/stories/input-radio': typeof StoriesInputRadioRoute
+  '/stories/input-radio-group': typeof StoriesInputRadioGroupRoute
+  '/stories/input-switch': typeof StoriesInputSwitchRoute
+  '/stories/input-switch-group': typeof StoriesInputSwitchGroupRoute
+  '/stories/input-text': typeof StoriesInputTextRoute
+  '/stories/input-textarea': typeof StoriesInputTextareaRoute
+  '/stories/input-time': typeof StoriesInputTimeRoute
   '/stories/menu': typeof StoriesMenuRoute
   '/stories/modal': typeof StoriesModalRoute
   '/stories/pagination': typeof StoriesPaginationRoute
@@ -211,6 +329,19 @@ export interface FileRouteTypes {
     | '/stories/highlight'
     | '/stories/icon-button'
     | '/stories/indicator'
+    | '/stories/input-checkbox'
+    | '/stories/input-checkbox-group'
+    | '/stories/input-date'
+    | '/stories/input-number'
+    | '/stories/input-password'
+    | '/stories/input-pin'
+    | '/stories/input-radio'
+    | '/stories/input-radio-group'
+    | '/stories/input-switch'
+    | '/stories/input-switch-group'
+    | '/stories/input-text'
+    | '/stories/input-textarea'
+    | '/stories/input-time'
     | '/stories/menu'
     | '/stories/modal'
     | '/stories/pagination'
@@ -232,6 +363,19 @@ export interface FileRouteTypes {
     | '/stories/highlight'
     | '/stories/icon-button'
     | '/stories/indicator'
+    | '/stories/input-checkbox'
+    | '/stories/input-checkbox-group'
+    | '/stories/input-date'
+    | '/stories/input-number'
+    | '/stories/input-password'
+    | '/stories/input-pin'
+    | '/stories/input-radio'
+    | '/stories/input-radio-group'
+    | '/stories/input-switch'
+    | '/stories/input-switch-group'
+    | '/stories/input-text'
+    | '/stories/input-textarea'
+    | '/stories/input-time'
     | '/stories/menu'
     | '/stories/modal'
     | '/stories/pagination'
@@ -254,6 +398,19 @@ export interface FileRouteTypes {
     | '/stories/highlight'
     | '/stories/icon-button'
     | '/stories/indicator'
+    | '/stories/input-checkbox'
+    | '/stories/input-checkbox-group'
+    | '/stories/input-date'
+    | '/stories/input-number'
+    | '/stories/input-password'
+    | '/stories/input-pin'
+    | '/stories/input-radio'
+    | '/stories/input-radio-group'
+    | '/stories/input-switch'
+    | '/stories/input-switch-group'
+    | '/stories/input-text'
+    | '/stories/input-textarea'
+    | '/stories/input-time'
     | '/stories/menu'
     | '/stories/modal'
     | '/stories/pagination'
@@ -349,6 +506,97 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StoriesMenuRouteImport
       parentRoute: typeof StoriesRouteRoute
     }
+    '/stories/input-time': {
+      id: '/stories/input-time'
+      path: '/input-time'
+      fullPath: '/stories/input-time'
+      preLoaderRoute: typeof StoriesInputTimeRouteImport
+      parentRoute: typeof StoriesRouteRoute
+    }
+    '/stories/input-textarea': {
+      id: '/stories/input-textarea'
+      path: '/input-textarea'
+      fullPath: '/stories/input-textarea'
+      preLoaderRoute: typeof StoriesInputTextareaRouteImport
+      parentRoute: typeof StoriesRouteRoute
+    }
+    '/stories/input-text': {
+      id: '/stories/input-text'
+      path: '/input-text'
+      fullPath: '/stories/input-text'
+      preLoaderRoute: typeof StoriesInputTextRouteImport
+      parentRoute: typeof StoriesRouteRoute
+    }
+    '/stories/input-switch-group': {
+      id: '/stories/input-switch-group'
+      path: '/input-switch-group'
+      fullPath: '/stories/input-switch-group'
+      preLoaderRoute: typeof StoriesInputSwitchGroupRouteImport
+      parentRoute: typeof StoriesRouteRoute
+    }
+    '/stories/input-switch': {
+      id: '/stories/input-switch'
+      path: '/input-switch'
+      fullPath: '/stories/input-switch'
+      preLoaderRoute: typeof StoriesInputSwitchRouteImport
+      parentRoute: typeof StoriesRouteRoute
+    }
+    '/stories/input-radio-group': {
+      id: '/stories/input-radio-group'
+      path: '/input-radio-group'
+      fullPath: '/stories/input-radio-group'
+      preLoaderRoute: typeof StoriesInputRadioGroupRouteImport
+      parentRoute: typeof StoriesRouteRoute
+    }
+    '/stories/input-radio': {
+      id: '/stories/input-radio'
+      path: '/input-radio'
+      fullPath: '/stories/input-radio'
+      preLoaderRoute: typeof StoriesInputRadioRouteImport
+      parentRoute: typeof StoriesRouteRoute
+    }
+    '/stories/input-pin': {
+      id: '/stories/input-pin'
+      path: '/input-pin'
+      fullPath: '/stories/input-pin'
+      preLoaderRoute: typeof StoriesInputPinRouteImport
+      parentRoute: typeof StoriesRouteRoute
+    }
+    '/stories/input-password': {
+      id: '/stories/input-password'
+      path: '/input-password'
+      fullPath: '/stories/input-password'
+      preLoaderRoute: typeof StoriesInputPasswordRouteImport
+      parentRoute: typeof StoriesRouteRoute
+    }
+    '/stories/input-number': {
+      id: '/stories/input-number'
+      path: '/input-number'
+      fullPath: '/stories/input-number'
+      preLoaderRoute: typeof StoriesInputNumberRouteImport
+      parentRoute: typeof StoriesRouteRoute
+    }
+    '/stories/input-date': {
+      id: '/stories/input-date'
+      path: '/input-date'
+      fullPath: '/stories/input-date'
+      preLoaderRoute: typeof StoriesInputDateRouteImport
+      parentRoute: typeof StoriesRouteRoute
+    }
+    '/stories/input-checkbox-group': {
+      id: '/stories/input-checkbox-group'
+      path: '/input-checkbox-group'
+      fullPath: '/stories/input-checkbox-group'
+      preLoaderRoute: typeof StoriesInputCheckboxGroupRouteImport
+      parentRoute: typeof StoriesRouteRoute
+    }
+    '/stories/input-checkbox': {
+      id: '/stories/input-checkbox'
+      path: '/input-checkbox'
+      fullPath: '/stories/input-checkbox'
+      preLoaderRoute: typeof StoriesInputCheckboxRouteImport
+      parentRoute: typeof StoriesRouteRoute
+    }
     '/stories/indicator': {
       id: '/stories/indicator'
       path: '/indicator'
@@ -425,6 +673,19 @@ interface StoriesRouteRouteChildren {
   StoriesHighlightRoute: typeof StoriesHighlightRoute
   StoriesIconButtonRoute: typeof StoriesIconButtonRoute
   StoriesIndicatorRoute: typeof StoriesIndicatorRoute
+  StoriesInputCheckboxRoute: typeof StoriesInputCheckboxRoute
+  StoriesInputCheckboxGroupRoute: typeof StoriesInputCheckboxGroupRoute
+  StoriesInputDateRoute: typeof StoriesInputDateRoute
+  StoriesInputNumberRoute: typeof StoriesInputNumberRoute
+  StoriesInputPasswordRoute: typeof StoriesInputPasswordRoute
+  StoriesInputPinRoute: typeof StoriesInputPinRoute
+  StoriesInputRadioRoute: typeof StoriesInputRadioRoute
+  StoriesInputRadioGroupRoute: typeof StoriesInputRadioGroupRoute
+  StoriesInputSwitchRoute: typeof StoriesInputSwitchRoute
+  StoriesInputSwitchGroupRoute: typeof StoriesInputSwitchGroupRoute
+  StoriesInputTextRoute: typeof StoriesInputTextRoute
+  StoriesInputTextareaRoute: typeof StoriesInputTextareaRoute
+  StoriesInputTimeRoute: typeof StoriesInputTimeRoute
   StoriesMenuRoute: typeof StoriesMenuRoute
   StoriesModalRoute: typeof StoriesModalRoute
   StoriesPaginationRoute: typeof StoriesPaginationRoute
@@ -446,6 +707,19 @@ const StoriesRouteRouteChildren: StoriesRouteRouteChildren = {
   StoriesHighlightRoute: StoriesHighlightRoute,
   StoriesIconButtonRoute: StoriesIconButtonRoute,
   StoriesIndicatorRoute: StoriesIndicatorRoute,
+  StoriesInputCheckboxRoute: StoriesInputCheckboxRoute,
+  StoriesInputCheckboxGroupRoute: StoriesInputCheckboxGroupRoute,
+  StoriesInputDateRoute: StoriesInputDateRoute,
+  StoriesInputNumberRoute: StoriesInputNumberRoute,
+  StoriesInputPasswordRoute: StoriesInputPasswordRoute,
+  StoriesInputPinRoute: StoriesInputPinRoute,
+  StoriesInputRadioRoute: StoriesInputRadioRoute,
+  StoriesInputRadioGroupRoute: StoriesInputRadioGroupRoute,
+  StoriesInputSwitchRoute: StoriesInputSwitchRoute,
+  StoriesInputSwitchGroupRoute: StoriesInputSwitchGroupRoute,
+  StoriesInputTextRoute: StoriesInputTextRoute,
+  StoriesInputTextareaRoute: StoriesInputTextareaRoute,
+  StoriesInputTimeRoute: StoriesInputTimeRoute,
   StoriesMenuRoute: StoriesMenuRoute,
   StoriesModalRoute: StoriesModalRoute,
   StoriesPaginationRoute: StoriesPaginationRoute,

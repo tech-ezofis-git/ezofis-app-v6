@@ -7,7 +7,6 @@ interface Props {
   content: string
   closeDelay?: number
   color?: 'gray' | 'primary' | 'red'
-  isMultiline?: boolean
   isOpened?: boolean
   offset?: TooltipProps['offset']
   openDelay?: number
@@ -20,7 +19,6 @@ const Tooltip: React.FC<Props> = ({
   closeDelay = 0,
   color = 'gray',
   content,
-  isMultiline,
   isOpened,
   offset,
   openDelay = 0,
@@ -35,12 +33,13 @@ const Tooltip: React.FC<Props> = ({
 
   return (
     <Primitive
+      arrowOffset={8}
       arrowRadius={1.5}
       arrowSize={6}
       closeDelay={closeDelay}
       defaultOpened={isOpened}
       label={content}
-      multiline={isMultiline}
+      multiline={!!width}
       offset={offset}
       openDelay={openDelay}
       position={position}
@@ -49,14 +48,15 @@ const Tooltip: React.FC<Props> = ({
       withArrow
       classNames={{
         tooltip: cn(
-          'rounded px-2 py-1 text-xs font-medium text-white dark:text-black',
+          'rounded px-2 py-1 text-xs font-medium text-gray-0',
           colorClasses[color],
         ),
       }}
     >
-      <div className='inline-block'>{children}</div>
+      <div className='group inline-block'>{children}</div>
     </Primitive>
   )
 }
 
+Tooltip.displayName = 'Tooltip'
 export default Tooltip

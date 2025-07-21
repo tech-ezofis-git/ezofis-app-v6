@@ -22,7 +22,8 @@ const Avatar: React.FC<Props> = ({
       size={size}
       src={image}
       classNames={{
-        placeholder: 'border-gray-200 bg-gray-100 font-semibold text-gray-700',
+        placeholder:
+          'border-gray-600/10 bg-gray-600/5 font-semibold text-gray-700',
       }}
     >
       {initials}
@@ -30,4 +31,5 @@ const Avatar: React.FC<Props> = ({
   )
 }
 
+Avatar.displayName = 'Avatar'
 export default Avatar

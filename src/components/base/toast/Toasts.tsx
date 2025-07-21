@@ -5,10 +5,11 @@ const Toasts = () => {
     <Primitive
       classNames={{
         notification:
-          'border border-gray-100 bg-surface-emphasized p-4 shadow-xl before:w-0 dark:border-gray-150',
+          'border border-gray-600/10 bg-surface-raised p-4 shadow-xl before:w-0',
       }}
     />
   )
 }
 
+Toasts.displayName = 'Toasts'
 export default Toasts

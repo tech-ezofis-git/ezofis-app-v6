@@ -14,6 +14,9 @@ const transition = {
 }
 const animate1 = { scale: [1, 0.6, 1, 0.6, 1] }
 const animate2 = { scale: [1, 1.6, 0.6, 1.6, 1] }
+const primary = '#b035ff'
+const secondary = '#19c1d4'
+const tertiary = '#6366f1'
 
 const IconAI: React.FC<Props> = ({ animate, className }) => {
   return (
@@ -28,20 +31,20 @@ const IconAI: React.FC<Props> = ({ animate, className }) => {
     >
       <defs>
         <linearGradient id='g1' x2='0' y2='1'>
-          <stop offset='0%' stopColor='#b035ff' />
-          <stop offset='100%' stopColor='#19c1d4' />
+          <stop offset='0%' stopColor={primary} />
+          <stop offset='100%' stopColor={secondary} />
         </linearGradient>
         <linearGradient id='g2' x2='0' y2='1'>
-          <stop offset='0%' stopColor='#19c1d4' />
-          <stop offset='100%' stopColor='#b035ff' />
+          <stop offset='0%' stopColor={secondary} />
+          <stop offset='100%' stopColor={primary} />
         </linearGradient>
         <linearGradient id='g3' x2='0' y2='1'>
-          <stop offset='0%' stopColor='#b035ff' />
-          <stop offset='100%' stopColor='#6366f1' />
+          <stop offset='0%' stopColor={primary} />
+          <stop offset='100%' stopColor={tertiary} />
         </linearGradient>
         <linearGradient id='g4' x2='0' y2='1'>
-          <stop offset='0%' stopColor='#19c1d4' />
-          <stop offset='100%' stopColor='#6366f1' />
+          <stop offset='0%' stopColor={secondary} />
+          <stop offset='100%' stopColor={tertiary} />
         </linearGradient>
       </defs>
       <g fill='none'>
@@ -62,4 +65,5 @@ const IconAI: React.FC<Props> = ({ animate, className }) => {
   )
 }
 
+IconAI.displayName = 'IconAI'
 export default IconAI

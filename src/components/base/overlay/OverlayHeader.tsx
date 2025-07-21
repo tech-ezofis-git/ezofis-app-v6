@@ -7,7 +7,7 @@ interface Props {
 
 const OverlayHeader: React.FC<Props> = ({ onClose, title }) => {
   return (
-    <header className='flex h-17 items-center justify-between border-b border-gray-100 px-4'>
+    <header className='flex h-17 items-center justify-between border-b border-gray-600/5 px-4'>
       <h1 className='font-poppins text-lg font-semibold text-gray-900'>
         {title}
       </h1>
@@ -16,4 +16,5 @@ const OverlayHeader: React.FC<Props> = ({ onClose, title }) => {
   )
 }
 
+OverlayHeader.displayName = 'OverlayHeader'
 export default OverlayHeader

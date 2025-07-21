@@ -27,4 +27,5 @@ const PaginationSummary: React.FC<Props> = ({
   )
 }
 
+PaginationSummary.displayName = 'PaginationSummary'
 export default PaginationSummary

@@ -27,9 +27,8 @@ const Menu: React.FC<Props> = ({
       width={width}
       returnFocus
       classNames={{
-        dropdown:
-          'border-gray-100 bg-surface-emphasized shadow-emphasized dark:border-gray-150',
-        item: 'group flex h-9 items-center gap-2 rounded px-2 hover:bg-gray-100 hover:transition-colors focus-visible:bg-gray-100 focus-visible:outline-0 dark:hover:bg-gray-200 dark:focus-visible:bg-gray-200',
+        dropdown: 'border-0 bg-surface-raised ring-1 ring-gray-600/10',
+        item: 'group flex h-9 items-center gap-2 rounded px-2 hover:bg-surface-raised-hover hover:transition-colors focus-visible:bg-surface-raised-hover focus-visible:outline-0',
         itemLabel:
           'font-medium text-gray-700 group-hover:text-gray-750 group-hover:transition-colors',
         itemSection: 'm-0',
@@ -43,4 +42,5 @@ const Menu: React.FC<Props> = ({
   )
 }
 
+Menu.displayName = 'Menu'
 export default Menu

@@ -6,7 +6,7 @@
 
   .mantine-Notification-description {
     color: var(--gray-600);
-    font-weight: 400;
+    font-weight: normal;
   }
 
   .mantine-Notification-closeButton {
@@ -15,14 +15,22 @@
 
   .mantine-Notification-closeButton:hover {
     color: var(--gray-600);
-    background-color: var(--gray-100);
-  }
-
-  [data-mantine-color-scheme='dark'] .mantine-Notification-closeButton:hover {
-    background-color: var(--gray-200);
+    background-color: var(--surface-raised-hover);
   }
 
   .mantine-Notification-icon {
     background-color: transparent;
+  }
+
+  input[readonly]:not([disabled]) {
+    border-style: dashed;
+  }
+
+  .mantine-Radio-icon circle {
+    fill: var(--surface);
+  }
+
+  input[value='--'] {
+    color: var(--gray-400);
   }
 }

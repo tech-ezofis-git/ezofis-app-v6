@@ -39,4 +39,5 @@ const Drawer: React.FC<Props> = ({
   )
 }
 
+Drawer.displayName = 'Drawer'
 export default Drawer

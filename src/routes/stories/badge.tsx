@@ -1,7 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { Badge } from '@/components/base'
-import StorySubTitle from './-components/StorySubTitle'
-import StoryTitle from './-components/StoryTitle'
+import { StorySubTitle, StoryTitle } from './-components'
 
 export const Route = createFileRoute('/stories/badge')({
   component: RouteComponent,
@@ -12,11 +11,11 @@ function RouteComponent() {
     <div>
       <StoryTitle>11. Badge</StoryTitle>
 
-      <div className='space-y-12'>
-        <StorySubTitle># Default</StorySubTitle>
+      <div className='space-y-16'>
+        <StorySubTitle>Default</StorySubTitle>
         <Badge label='Badge' />
 
-        <StorySubTitle># Colors</StorySubTitle>
+        <StorySubTitle>Colors</StorySubTitle>
         <div className='flex items-center gap-2'>
           <Badge label='Badge' />
           <Badge color='primary' label='Badge' />

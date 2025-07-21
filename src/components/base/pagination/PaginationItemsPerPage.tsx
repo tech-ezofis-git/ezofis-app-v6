@@ -40,4 +40,5 @@ const PaginationItemsPerPage: React.FC<Props> = ({
   )
 }
 
+PaginationItemsPerPage.displayName = 'PaginationItemsPerPage'
 export default PaginationItemsPerPage

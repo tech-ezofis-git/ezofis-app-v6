@@ -17,4 +17,5 @@ const CloseButton: React.FC<Props> = ({ onClick }) => {
   )
 }
 
+CloseButton.displayName = 'CloseButton'
 export default CloseButton

@@ -49,7 +49,7 @@ const PaginationControls: React.FC<Props> = ({
               variant={page === value ? 'outline' : 'ghost'}
               className={cn(
                 'min-w-9 justify-center p-2',
-                page === value && 'bg-gray-100',
+                page === value && 'border-gray-600/15 bg-gray-600/5',
               )}
               onClick={() => setPage(page)}
             />
@@ -67,4 +67,5 @@ const PaginationControls: React.FC<Props> = ({
   )
 }
 
+PaginationControls.displayName = 'PaginationControls'
 export default PaginationControls

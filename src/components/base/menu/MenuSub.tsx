@@ -41,4 +41,5 @@ const MenuSub: React.FC<Props> = ({
   )
 }
 
+MenuSub.displayName = 'MenuSub'
 export default MenuSub

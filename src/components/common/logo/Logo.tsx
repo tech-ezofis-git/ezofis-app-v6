@@ -10,4 +10,5 @@ const Logo = () => {
   )
 }
 
+Logo.displayName = 'Logo'
 export default Logo

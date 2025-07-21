@@ -23,8 +23,8 @@ const Indicator: React.FC<Props> = ({
   size = 8,
 }) => {
   const colorClasses = {
-    primary: 'bg-primary-bc before:bg-primary-bc',
-    red: 'bg-red-bc before:bg-red-bc',
+    primary: 'bg-primary before:bg-primary',
+    red: 'bg-red before:bg-red',
   }
 
   return (
@@ -44,4 +44,5 @@ const Indicator: React.FC<Props> = ({
   )
 }
 
+Indicator.displayName = 'Indicator'
 export default Indicator

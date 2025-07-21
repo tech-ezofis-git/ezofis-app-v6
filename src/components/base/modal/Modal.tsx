@@ -40,4 +40,5 @@ const Modal: React.FC<Props> = ({
   )
 }
 
+Modal.displayName = 'Modal'
 export default Modal

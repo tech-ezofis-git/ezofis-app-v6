@@ -7,6 +7,7 @@ interface Props {
   offset?: PopoverProps['offset']
   position?: PopoverProps['position']
   width?: PopoverProps['width']
+  withArrow?: boolean
 }
 
 const Popover: React.FC<Props> = ({
@@ -15,6 +16,7 @@ const Popover: React.FC<Props> = ({
   position,
   target,
   width,
+  withArrow = true,
 }) => {
   return (
     <Primitive
@@ -25,11 +27,10 @@ const Popover: React.FC<Props> = ({
       position={position}
       transitionProps={{ duration: 150 }}
       width={width}
-      withArrow
+      withArrow={withArrow}
       classNames={{
-        arrow: 'border-gray-150 bg-surface-emphasized dark:border-gray-200',
-        dropdown:
-          'border-gray-100 bg-surface-emphasized p-0 shadow-emphasized dark:border-gray-150',
+        arrow: 'bg-surface-raised',
+        dropdown: 'border-0 bg-surface-raised p-0 ring-1 ring-gray-600/10',
       }}
     >
       <Primitive.Target>{target}</Primitive.Target>
@@ -38,4 +39,5 @@ const Popover: React.FC<Props> = ({
   )
 }
 
+Popover.displayName = 'Popover'
 export default Popover

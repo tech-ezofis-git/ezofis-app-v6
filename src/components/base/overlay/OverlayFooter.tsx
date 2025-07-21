@@ -16,7 +16,7 @@ const OverlayFooter: React.FC<Props> = ({
   saveLabel = 'Save',
 }) => {
   return (
-    <footer className='flex h-17 items-center justify-end gap-2 border-t border-gray-100 px-4'>
+    <footer className='flex h-17 items-center justify-end gap-2 border-t border-gray-600/5 px-4'>
       <Button
         color='gray'
         label={cancelLabel}
@@ -28,4 +28,5 @@ const OverlayFooter: React.FC<Props> = ({
   )
 }
 
+OverlayFooter.displayName = 'OverlayFooter'
 export default OverlayFooter

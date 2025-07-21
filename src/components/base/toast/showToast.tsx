@@ -1,5 +1,5 @@
 import { notifications } from '@mantine/notifications'
-import type { Toast } from '@/types'
+import type { IToast } from '@/components/base/types'
 import { Icon } from '@/components/base'
 import { cn } from '@/utils'
 
@@ -26,7 +26,7 @@ const types = {
   },
 }
 
-const showToast = ({ message, type = 'default' }: Toast) => {
+const showToast = ({ message, type = 'default' }: IToast) => {
   const { className, icon, title } = types[type]
 
   return notifications.show({

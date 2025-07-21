@@ -4,7 +4,9 @@ interface Props {
 
 const StorySubTitle: React.FC<Props> = ({ children }) => {
   return (
-    <h3 className='mb-6 text-base font-medium text-gray-500'>{children}</h3>
+    <h3 className='mb-8 border-b border-gray-600/5 pb-2 text-base font-medium text-gray-600'>
+      # {children}
+    </h3>
   )
 }
 

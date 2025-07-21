@@ -1,7 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { Button } from '@/components/base'
-import StorySubTitle from './-components/StorySubTitle'
-import StoryTitle from './-components/StoryTitle'
+import { StorySubTitle, StoryTitle } from './-components'
 
 export const Route = createFileRoute('/stories/button')({
   component: RouteComponent,
@@ -12,36 +11,36 @@ function RouteComponent() {
     <div>
       <StoryTitle>1. Button</StoryTitle>
 
-      <div className='space-y-12'>
-        <StorySubTitle># Default</StorySubTitle>
+      <div className='space-y-16'>
+        <StorySubTitle>Default</StorySubTitle>
         <div className='flex flex-wrap items-center gap-2'>
           <Button label='Button' />
         </div>
 
-        <StorySubTitle># Colors</StorySubTitle>
+        <StorySubTitle>Colors</StorySubTitle>
         <div className='flex flex-wrap items-center gap-2'>
           <Button label='Button' />
           <Button color='red' label='Button' />
           <Button color='gray' label='Button' />
         </div>
 
-        <StorySubTitle># Loading</StorySubTitle>
+        <StorySubTitle>Loading</StorySubTitle>
         <div className='flex flex-wrap items-center gap-2'>
           <Button label='Button' isLoading />
         </div>
 
-        <StorySubTitle># Disabled</StorySubTitle>
+        <StorySubTitle>Disabled</StorySubTitle>
         <div className='flex flex-wrap items-center gap-2'>
           <Button label='Button' isDisabled />
         </div>
 
-        <StorySubTitle># With Icons</StorySubTitle>
+        <StorySubTitle>With Icons</StorySubTitle>
         <div className='flex flex-wrap items-center gap-2'>
           <Button icon='tabler:cloud-download' label='Button' />
           <Button label='Button' suffixIcon='tabler:cloud-download' />
         </div>
 
-        <StorySubTitle># Variants</StorySubTitle>
+        <StorySubTitle>Variants</StorySubTitle>
         <div className='space-y-6'>
           <div className='flex flex-wrap items-center gap-2'>
             <Button label='Button' />
@@ -63,7 +62,7 @@ function RouteComponent() {
           </div>
         </div>
 
-        <StorySubTitle># Sizes</StorySubTitle>
+        <StorySubTitle>Sizes</StorySubTitle>
         <div className='flex flex-wrap items-center gap-2'>
           <Button label='Button' size='xs' />
           <Button label='Button' size='sm' />
