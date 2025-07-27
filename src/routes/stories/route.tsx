@@ -1,8 +1,10 @@
 import { createFileRoute, Outlet } from '@tanstack/react-router'
+import SomethingWentWrong from '@/components/common/SomethingWentWrong'
 import ThemeSwitcher from '@/routes/stories/-components/ThemeSwitcher'
 
 export const Route = createFileRoute('/stories')({
   component: RouteComponent,
+  errorComponent: () => <SomethingWentWrong />,
 })
 
 function RouteComponent() {

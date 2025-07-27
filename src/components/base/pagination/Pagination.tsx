@@ -12,9 +12,9 @@ interface Props {
 
 const Pagination: React.FC<Props> = ({
   itemLabel = 'Items',
-  onChange,
   totalRows,
   value,
+  onChange,
 }) => {
   const [rowsPerPage, setRowsPerPage] = useState(10)
   const totalPages = Math.ceil(totalRows / rowsPerPage)

@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { InputDate } from '@/components/base'
+import React from 'react'
+import InputDate from '@/components/base/inputs/InputDate'
 import { StorySubTitle, StoryTitle } from './-components'
 
 export const Route = createFileRoute('/stories/input-date')({
@@ -7,6 +8,8 @@ export const Route = createFileRoute('/stories/input-date')({
 })
 
 function RouteComponent() {
+  const [value, setValue] = React.useState<string | null>(null)
+
   return (
     <div>
       <StoryTitle>29. Input Date</StoryTitle>
@@ -19,10 +22,10 @@ function RouteComponent() {
         <InputDate className='max-w-80' label='Date' />
 
         <StorySubTitle>Required</StorySubTitle>
-        <InputDate className='max-w-80' label='Date' isRequired />
+        <InputDate className='max-w-80' label='Date' required />
 
         <StorySubTitle>Optional</StorySubTitle>
-        <InputDate className='max-w-80' label='Date' isOptional />
+        <InputDate className='max-w-80' label='Date' optional />
 
         <StorySubTitle>Tooltip</StorySubTitle>
         <InputDate
@@ -43,11 +46,19 @@ function RouteComponent() {
         <StorySubTitle>Error</StorySubTitle>
         <InputDate className='max-w-80' error='Lorem ipsum dolar sit amit' />
 
+        <StorySubTitle>Clearable</StorySubTitle>
+        <InputDate
+          className='max-w-80'
+          value={value}
+          clearable
+          onChange={setValue}
+        />
+
         <StorySubTitle>Read Only</StorySubTitle>
-        <InputDate className='max-w-80' isReadOnly />
+        <InputDate className='max-w-80' readOnly />
 
         <StorySubTitle>Disabled</StorySubTitle>
-        <InputDate className='max-w-80' isDisabled />
+        <InputDate className='max-w-80' disabled />
 
         <StorySubTitle>Min Date</StorySubTitle>
         <InputDate className='max-w-80' minDate='2025-04-01' />

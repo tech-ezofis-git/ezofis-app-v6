@@ -1,16 +1,17 @@
-import type { IListDTO } from './types'
+import type { ItemList } from '@/types/item'
 
-function normalizeQueryParams(dto: IListDTO) {
-  const { filter, limit, order, query, select, skip, sortBy } = dto
-  return {
-    filter: filter ?? [],
-    limit: limit ?? 50,
-    order: order ?? 'asc',
-    query: query ?? '',
-    select: select ? select.join(',') : '',
-    skip: skip ?? 0,
-    sortBy: sortBy ?? 'id',
+export const getNextPageParam = ({ limit, skip, total }: ItemList) => {
+  if (skip + limit < total) {
+    return skip + limit
   }
+
+  return null
 }
 
-export { normalizeQueryParams }
+export const getPreviousPageParam = ({ limit, skip }: ItemList) => {
+  if (skip - limit >= 0) {
+    return skip - limit
+  }
+
+  return null
+}

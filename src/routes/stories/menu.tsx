@@ -1,12 +1,10 @@
 import { createFileRoute } from '@tanstack/react-router'
-import {
-  Button,
-  Menu,
-  MenuDivider,
-  MenuItem,
-  MenuLabel,
-  MenuSub,
-} from '@/components/base'
+import Button from '@/components/base/button/Button'
+import Menu from '@/components/base/menu/Menu'
+import MenuDivider from '@/components/base/menu/MenuDivider'
+import MenuItem from '@/components/base/menu/MenuItem'
+import MenuLabel from '@/components/base/menu/MenuLabel'
+import MenuSub from '@/components/base/menu/MenuSub'
 import { StorySubTitle, StoryTitle } from './-components'
 
 export const Route = createFileRoute('/stories/menu')({

@@ -1,6 +1,8 @@
 import { usePagination, useViewportSize } from '@mantine/hooks'
-import { Button, IconButton } from '@/components/base'
-import { cn } from '@/utils'
+import Button from '@/components/base/button/Button'
+import IconButton from '@/components/base/button/IconButton'
+import { SCREEN_SM } from '@/constants'
+import cn from '@/utils/cn'
 
 interface Props {
   totalPages: number
@@ -9,16 +11,16 @@ interface Props {
 }
 
 const PaginationControls: React.FC<Props> = ({
-  onChange,
   totalPages,
   value,
+  onChange,
 }) => {
   const { width } = useViewportSize()
   const { next, previous, range, setPage } = usePagination({
-    onChange,
     page: value,
-    siblings: width > 640 ? 1 : 0,
+    siblings: width > SCREEN_SM ? 1 : 0,
     total: totalPages,
+    onChange,
   })
 
   return (

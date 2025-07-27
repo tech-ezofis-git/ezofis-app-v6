@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { ScrollArea } from '@/components/base'
+import ScrollArea from '@/components/base/ScrollArea'
 import { StorySubTitle, StoryTitle } from './-components'
 
 export const Route = createFileRoute('/stories/scroll-area')({

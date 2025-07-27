@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { IconButton, Tooltip } from '@/components/base'
+import IconButton from '@/components/base/button/IconButton'
+import Tooltip from '@/components/base/Tooltip'
 import { StorySubTitle, StoryTitle } from './-components'
 
 export const Route = createFileRoute('/stories/tooltip')({

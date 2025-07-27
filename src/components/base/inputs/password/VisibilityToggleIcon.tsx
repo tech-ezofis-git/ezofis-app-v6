@@ -1,4 +1,4 @@
-import { Icon } from '@/components/base'
+import Icon from '@/components/base/Icon'
 
 interface Props {
   reveal: boolean

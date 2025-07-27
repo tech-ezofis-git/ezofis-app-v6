@@ -1,5 +1,5 @@
 import { useMantineColorScheme } from '@mantine/core'
-import { IconButton } from '@/components/base'
+import IconButton from '@/components/base/button/IconButton'
 
 interface Props {
   className?: string

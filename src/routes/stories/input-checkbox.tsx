@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { InputCheckbox } from '@/components/base'
+import InputCheckbox from '@/components/base/inputs/InputCheckbox'
 import { StorySubTitle, StoryTitle } from './-components'
 
 export const Route = createFileRoute('/stories/input-checkbox')({
@@ -22,7 +22,7 @@ function RouteComponent() {
         <InputCheckbox error='Error' label='Label' />
 
         <StorySubTitle>Disabled</StorySubTitle>
-        <InputCheckbox label='Label' isDisabled />
+        <InputCheckbox label='Label' disabled />
 
         <StorySubTitle>Indeterminate</StorySubTitle>
         <InputCheckbox label='Label' indeterminate />

@@ -25,6 +25,8 @@ import { Route as StoriesInputTextareaRouteImport } from './routes/stories/input
 import { Route as StoriesInputTextRouteImport } from './routes/stories/input-text'
 import { Route as StoriesInputSwitchGroupRouteImport } from './routes/stories/input-switch-group'
 import { Route as StoriesInputSwitchRouteImport } from './routes/stories/input-switch'
+import { Route as StoriesInputSelectMultipleRouteImport } from './routes/stories/input-select-multiple'
+import { Route as StoriesInputSelectRouteImport } from './routes/stories/input-select'
 import { Route as StoriesInputRadioGroupRouteImport } from './routes/stories/input-radio-group'
 import { Route as StoriesInputRadioRouteImport } from './routes/stories/input-radio'
 import { Route as StoriesInputPinRouteImport } from './routes/stories/input-pin'
@@ -121,6 +123,17 @@ const StoriesInputSwitchGroupRoute = StoriesInputSwitchGroupRouteImport.update({
 const StoriesInputSwitchRoute = StoriesInputSwitchRouteImport.update({
   id: '/input-switch',
   path: '/input-switch',
+  getParentRoute: () => StoriesRouteRoute,
+} as any)
+const StoriesInputSelectMultipleRoute =
+  StoriesInputSelectMultipleRouteImport.update({
+    id: '/input-select-multiple',
+    path: '/input-select-multiple',
+    getParentRoute: () => StoriesRouteRoute,
+  } as any)
+const StoriesInputSelectRoute = StoriesInputSelectRouteImport.update({
+  id: '/input-select',
+  path: '/input-select',
   getParentRoute: () => StoriesRouteRoute,
 } as any)
 const StoriesInputRadioGroupRoute = StoriesInputRadioGroupRouteImport.update({
@@ -230,6 +243,8 @@ export interface FileRoutesByFullPath {
   '/stories/input-pin': typeof StoriesInputPinRoute
   '/stories/input-radio': typeof StoriesInputRadioRoute
   '/stories/input-radio-group': typeof StoriesInputRadioGroupRoute
+  '/stories/input-select': typeof StoriesInputSelectRoute
+  '/stories/input-select-multiple': typeof StoriesInputSelectMultipleRoute
   '/stories/input-switch': typeof StoriesInputSwitchRoute
   '/stories/input-switch-group': typeof StoriesInputSwitchGroupRoute
   '/stories/input-text': typeof StoriesInputTextRoute
@@ -264,6 +279,8 @@ export interface FileRoutesByTo {
   '/stories/input-pin': typeof StoriesInputPinRoute
   '/stories/input-radio': typeof StoriesInputRadioRoute
   '/stories/input-radio-group': typeof StoriesInputRadioGroupRoute
+  '/stories/input-select': typeof StoriesInputSelectRoute
+  '/stories/input-select-multiple': typeof StoriesInputSelectMultipleRoute
   '/stories/input-switch': typeof StoriesInputSwitchRoute
   '/stories/input-switch-group': typeof StoriesInputSwitchGroupRoute
   '/stories/input-text': typeof StoriesInputTextRoute
@@ -300,6 +317,8 @@ export interface FileRoutesById {
   '/stories/input-pin': typeof StoriesInputPinRoute
   '/stories/input-radio': typeof StoriesInputRadioRoute
   '/stories/input-radio-group': typeof StoriesInputRadioGroupRoute
+  '/stories/input-select': typeof StoriesInputSelectRoute
+  '/stories/input-select-multiple': typeof StoriesInputSelectMultipleRoute
   '/stories/input-switch': typeof StoriesInputSwitchRoute
   '/stories/input-switch-group': typeof StoriesInputSwitchGroupRoute
   '/stories/input-text': typeof StoriesInputTextRoute
@@ -337,6 +356,8 @@ export interface FileRouteTypes {
     | '/stories/input-pin'
     | '/stories/input-radio'
     | '/stories/input-radio-group'
+    | '/stories/input-select'
+    | '/stories/input-select-multiple'
     | '/stories/input-switch'
     | '/stories/input-switch-group'
     | '/stories/input-text'
@@ -371,6 +392,8 @@ export interface FileRouteTypes {
     | '/stories/input-pin'
     | '/stories/input-radio'
     | '/stories/input-radio-group'
+    | '/stories/input-select'
+    | '/stories/input-select-multiple'
     | '/stories/input-switch'
     | '/stories/input-switch-group'
     | '/stories/input-text'
@@ -406,6 +429,8 @@ export interface FileRouteTypes {
     | '/stories/input-pin'
     | '/stories/input-radio'
     | '/stories/input-radio-group'
+    | '/stories/input-select'
+    | '/stories/input-select-multiple'
     | '/stories/input-switch'
     | '/stories/input-switch-group'
     | '/stories/input-text'
@@ -539,6 +564,20 @@ declare module '@tanstack/react-router' {
       path: '/input-switch'
       fullPath: '/stories/input-switch'
       preLoaderRoute: typeof StoriesInputSwitchRouteImport
+      parentRoute: typeof StoriesRouteRoute
+    }
+    '/stories/input-select-multiple': {
+      id: '/stories/input-select-multiple'
+      path: '/input-select-multiple'
+      fullPath: '/stories/input-select-multiple'
+      preLoaderRoute: typeof StoriesInputSelectMultipleRouteImport
+      parentRoute: typeof StoriesRouteRoute
+    }
+    '/stories/input-select': {
+      id: '/stories/input-select'
+      path: '/input-select'
+      fullPath: '/stories/input-select'
+      preLoaderRoute: typeof StoriesInputSelectRouteImport
       parentRoute: typeof StoriesRouteRoute
     }
     '/stories/input-radio-group': {
@@ -681,6 +720,8 @@ interface StoriesRouteRouteChildren {
   StoriesInputPinRoute: typeof StoriesInputPinRoute
   StoriesInputRadioRoute: typeof StoriesInputRadioRoute
   StoriesInputRadioGroupRoute: typeof StoriesInputRadioGroupRoute
+  StoriesInputSelectRoute: typeof StoriesInputSelectRoute
+  StoriesInputSelectMultipleRoute: typeof StoriesInputSelectMultipleRoute
   StoriesInputSwitchRoute: typeof StoriesInputSwitchRoute
   StoriesInputSwitchGroupRoute: typeof StoriesInputSwitchGroupRoute
   StoriesInputTextRoute: typeof StoriesInputTextRoute
@@ -715,6 +756,8 @@ const StoriesRouteRouteChildren: StoriesRouteRouteChildren = {
   StoriesInputPinRoute: StoriesInputPinRoute,
   StoriesInputRadioRoute: StoriesInputRadioRoute,
   StoriesInputRadioGroupRoute: StoriesInputRadioGroupRoute,
+  StoriesInputSelectRoute: StoriesInputSelectRoute,
+  StoriesInputSelectMultipleRoute: StoriesInputSelectMultipleRoute,
   StoriesInputSwitchRoute: StoriesInputSwitchRoute,
   StoriesInputSwitchGroupRoute: StoriesInputSwitchGroupRoute,
   StoriesInputTextRoute: StoriesInputTextRoute,

@@ -1,6 +1,9 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
-import { Button, Modal, OverlayFooter, OverlayHeader } from '@/components/base'
+import Button from '@/components/base/button/Button'
+import Modal from '@/components/base/Modal'
+import OverlayFooter from '@/components/base/overlay/OverlayFooter'
+import OverlayHeader from '@/components/base/overlay/OverlayHeader'
 import { StoryTitle } from './-components'
 
 export const Route = createFileRoute('/stories/modal')({

@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { InputRadio } from '@/components/base'
+import InputRadio from '@/components/base/inputs/InputRadio'
 import { StorySubTitle, StoryTitle } from './-components'
 
 export const Route = createFileRoute('/stories/input-radio')({
@@ -22,7 +22,7 @@ function RouteComponent() {
         <InputRadio error='Error' label='Label' />
 
         <StorySubTitle>Disabled</StorySubTitle>
-        <InputRadio label='Label' isDisabled />
+        <InputRadio label='Label' disabled />
       </div>
     </div>
   )

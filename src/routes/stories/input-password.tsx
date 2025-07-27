@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { Icon, InputPassword } from '@/components/base'
+import Icon from '@/components/base/Icon'
+import InputPassword from '@/components/base/inputs/password/InputPassword'
 import { StorySubTitle, StoryTitle } from './-components'
 
 export const Route = createFileRoute('/stories/input-password')({
@@ -19,10 +20,10 @@ function RouteComponent() {
         <InputPassword className='max-w-80' label='Password' />
 
         <StorySubTitle>Required</StorySubTitle>
-        <InputPassword className='max-w-80' label='Password' isRequired />
+        <InputPassword className='max-w-80' label='Password' required />
 
         <StorySubTitle>Optional</StorySubTitle>
-        <InputPassword className='max-w-80' label='Password' isOptional />
+        <InputPassword className='max-w-80' label='Password' optional />
 
         <StorySubTitle>Tooltip</StorySubTitle>
         <InputPassword
@@ -44,7 +45,7 @@ function RouteComponent() {
         />
 
         <StorySubTitle>Disabled</StorySubTitle>
-        <InputPassword className='max-w-80' isDisabled />
+        <InputPassword className='max-w-80' disabled />
 
         <StorySubTitle>Left Section</StorySubTitle>
         <InputPassword

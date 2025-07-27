@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import avatarImg from '@/assets/avatar.jpg'
-import { Avatar } from '@/components/base'
+import Avatar from '@/components/base/Avatar'
 import { StorySubTitle, StoryTitle } from './-components'
 
 export const Route = createFileRoute('/stories/avatar')({

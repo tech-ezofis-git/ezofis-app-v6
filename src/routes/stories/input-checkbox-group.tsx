@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
-import { InputCheckboxGroup } from '@/components/base'
+import InputCheckboxGroup from '@/components/base/inputs/InputCheckboxGroup'
 import { StorySubTitle, StoryTitle } from './-components'
 
 export const Route = createFileRoute('/stories/input-checkbox-group')({
@@ -10,54 +10,54 @@ export const Route = createFileRoute('/stories/input-checkbox-group')({
 const options1 = [
   {
     id: 1,
-    label: 'Option 1',
+    name: 'Option 1',
   },
   {
     id: 2,
-    label: 'Option 2',
+    name: 'Option 2',
   },
   {
     id: 3,
-    label: 'Option 3',
+    name: 'Option 3',
   },
 ]
 const options2 = [
   {
     id: 1,
-    label: 'Option 1',
+    name: 'Option 1',
   },
   {
     id: 2,
-    label: 'Option 2',
+    name: 'Option 2',
   },
   {
     id: 3,
-    label: 'Option 3',
+    name: 'Option 3',
   },
   {
     id: 4,
-    label: 'Option 4',
+    name: 'Option 4',
   },
   {
     id: 5,
-    label: 'Option 5',
+    name: 'Option 5',
   },
 ]
 const options3 = [
   {
     description: 'Lorem ipsum dolar sit amit',
     id: 1,
-    label: 'Option 1',
+    name: 'Option 1',
   },
   {
     description: 'Lorem ipsum dolar sit amit',
     id: 2,
-    label: 'Option 2',
+    name: 'Option 2',
   },
   {
     description: 'Lorem ipsum dolar sit amit',
     id: 3,
-    label: 'Option 3',
+    name: 'Option 3',
   },
 ]
 
@@ -81,12 +81,12 @@ function RouteComponent() {
           label='Label'
           options={options1}
           tooltip='Lorem ipsum dolar sit emit'
-          isOptional
+          optional
         />
 
         <StorySubTitle>Options Per Line</StorySubTitle>
         <div className='max-w-96'>
-          <InputCheckboxGroup options={options2} TOptionsPerLine={3} />
+          <InputCheckboxGroup options={options2} OptionsPerLine={3} />
         </div>
 
         <StorySubTitle>Description</StorySubTitle>
@@ -99,7 +99,7 @@ function RouteComponent() {
         />
 
         <StorySubTitle>Disabled</StorySubTitle>
-        <InputCheckboxGroup options={options1} isDisabled />
+        <InputCheckboxGroup options={options1} disabled />
       </div>
     </div>
   )

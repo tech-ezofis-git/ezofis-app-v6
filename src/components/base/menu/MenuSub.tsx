@@ -1,29 +1,29 @@
-import { Menu as Primitive } from '@mantine/core'
-import { Icon } from '@/components/base'
-import { cn } from '@/utils'
+import { Menu as Base } from '@mantine/core'
+import Icon from '@/components/base/Icon'
+import cn from '@/utils/cn'
 
 interface Props {
   children: React.ReactNode
   label: string
+  disabled?: boolean
   icon?: string
   iconClass?: string
-  isDisabled?: boolean
   width?: number
 }
 
 const MenuSub: React.FC<Props> = ({
   children,
+  disabled,
   icon,
   iconClass,
-  isDisabled,
   label,
   width,
 }) => {
   return (
-    <Primitive.Sub transitionProps={{ transition: 'pop' }} width={width}>
-      <Primitive.Sub.Target>
-        <Primitive.Sub.Item
-          disabled={isDisabled}
+    <Base.Sub transitionProps={{ transition: 'pop' }} width={width}>
+      <Base.Sub.Target>
+        <Base.Sub.Item
+          disabled={disabled}
           leftSection={
             icon && (
               <Icon className={cn('text-gray-500', iconClass)} name={icon} />
@@ -34,10 +34,10 @@ const MenuSub: React.FC<Props> = ({
           }
         >
           {label}
-        </Primitive.Sub.Item>
-      </Primitive.Sub.Target>
-      <Primitive.Sub.Dropdown>{children}</Primitive.Sub.Dropdown>
-    </Primitive.Sub>
+        </Base.Sub.Item>
+      </Base.Sub.Target>
+      <Base.Sub.Dropdown>{children}</Base.Sub.Dropdown>
+    </Base.Sub>
   )
 }
 

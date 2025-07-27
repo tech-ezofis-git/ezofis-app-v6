@@ -1,29 +1,23 @@
-import { Tabs as Primitive } from '@mantine/core'
-import { Icon } from '@/components/base'
+import { Tabs as Base } from '@mantine/core'
+import Icon from '@/components/base/Icon'
 
 interface Props {
   label: string
   value: string
+  disabled?: boolean
   icon?: string
   iconClass?: string
-  isDisabled?: boolean
 }
 
-const Tab: React.FC<Props> = ({
-  icon,
-  iconClass,
-  isDisabled,
-  label,
-  value,
-}) => {
+const Tab: React.FC<Props> = ({ disabled, icon, iconClass, label, value }) => {
   return (
-    <Primitive.Tab
-      disabled={isDisabled}
+    <Base.Tab
+      disabled={disabled}
       leftSection={icon && <Icon className={iconClass} name={icon} />}
       value={value}
     >
       {label}
-    </Primitive.Tab>
+    </Base.Tab>
   )
 }
 

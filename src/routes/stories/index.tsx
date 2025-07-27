@@ -20,13 +20,13 @@ const routes1 = [
   { name: 'Pagination', path: '/stories/pagination' },
   { name: 'Popover', path: '/stories/popover' },
   { name: 'Toast', path: '/stories/toast' },
-]
-const routes2 = [
   { name: 'Highlight', path: '/stories/highlight' },
   { name: 'AI Icon', path: '/stories/ai-icon' },
   { name: 'Input Text', path: '/stories/input-text' },
   { name: 'Input Number', path: '/stories/input-number' },
   { name: 'Input Password', path: '/stories/input-password' },
+]
+const routes2 = [
   { name: 'Input Textarea', path: '/stories/input-textarea' },
   { name: 'Input Pin', path: '/stories/input-pin' },
   { name: 'Input Radio', path: '/stories/input-radio' },
@@ -37,9 +37,11 @@ const routes2 = [
   { name: 'Input Switch Group', path: '/stories/input-switch-group' },
   { name: 'Input Date', path: '/stories/input-date' },
   { name: 'Input Time', path: '/stories/input-time' },
+  { name: 'Input Select', path: '/stories/input-select' },
+  { name: 'Input Select Multiple', path: '/stories/input-select-multiple' },
 ]
 
-function List({
+function Item({
   routes,
   start,
 }: {
@@ -65,8 +67,8 @@ function List({
 function RouteComponent() {
   return (
     <div className='grid max-h-160 grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3'>
-      {<List routes={routes1} start={0} />}
-      {<List routes={routes2} start={routes1.length} />}
+      {<Item routes={routes1} start={0} />}
+      {<Item routes={routes2} start={routes1.length} />}
     </div>
   )
 }

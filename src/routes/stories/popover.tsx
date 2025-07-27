@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { Button, Popover } from '@/components/base'
+import Button from '@/components/base/button/Button'
+import Popover from '@/components/base/Popover'
 import { StoryTitle } from './-components'
 
 export const Route = createFileRoute('/stories/popover')({

@@ -1,8 +1,8 @@
-import { Notifications as Primitive } from '@mantine/notifications'
+import { Notifications as Base } from '@mantine/notifications'
 
 const Toasts = () => {
   return (
-    <Primitive
+    <Base
       classNames={{
         notification:
           'border border-gray-600/10 bg-surface-raised p-4 shadow-xl before:w-0',

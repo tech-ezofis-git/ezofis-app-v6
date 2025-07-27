@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { InputTextarea } from '@/components/base'
+import InputTextarea from '@/components/base/inputs/InputTextarea'
 import { StorySubTitle, StoryTitle } from './-components'
 
 export const Route = createFileRoute('/stories/input-textarea')({
@@ -19,10 +19,10 @@ function RouteComponent() {
         <InputTextarea className='max-w-80' label='Textarea' />
 
         <StorySubTitle>Required</StorySubTitle>
-        <InputTextarea className='max-w-80' label='Textarea' isRequired />
+        <InputTextarea className='max-w-80' label='Textarea' required />
 
         <StorySubTitle>Optional</StorySubTitle>
-        <InputTextarea className='max-w-80' label='Textarea' isOptional />
+        <InputTextarea className='max-w-80' label='Textarea' optional />
 
         <StorySubTitle>Tooltip</StorySubTitle>
         <InputTextarea
@@ -47,10 +47,10 @@ function RouteComponent() {
         />
 
         <StorySubTitle>Read Only</StorySubTitle>
-        <InputTextarea className='max-w-80' isReadOnly />
+        <InputTextarea className='max-w-80' readOnly />
 
         <StorySubTitle>Disabled</StorySubTitle>
-        <InputTextarea className='max-w-80' isDisabled />
+        <InputTextarea className='max-w-80' disabled />
 
         <StorySubTitle>Resize</StorySubTitle>
         <InputTextarea className='max-w-80' resize='vertical' />

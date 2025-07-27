@@ -1,18 +1,18 @@
-import { PasswordInput as Primitive } from '@mantine/core'
+import { PasswordInput as Base } from '@mantine/core'
 import React, { type ChangeEvent } from 'react'
-import { InputLabel } from '@/components/base'
-import { classNames, inputWrapperOrder } from '../styles'
+import { classNames, inputWrapperOrder } from '../constants'
+import InputLabel from '../InputLabel'
 import VisibilityToggleIcon from './VisibilityToggleIcon'
 
 interface Props {
   className?: string
   description?: string
+  disabled?: boolean
   error?: string
-  isDisabled?: boolean
-  isOptional?: boolean
-  isRequired?: boolean
   label?: string
   leftSection?: React.ReactNode
+  optional?: boolean
+  required?: boolean
   tooltip?: string
   tooltipWidth?: number
   value?: string
@@ -24,30 +24,27 @@ const InputPassword = React.forwardRef<HTMLInputElement, Props>(
     {
       className,
       description,
+      disabled,
       error,
-      isDisabled,
-      isOptional,
-      isRequired,
       label,
       leftSection,
-      onChange,
+      optional,
+      required,
       tooltip,
       tooltipWidth,
       value,
+      onChange,
     },
     ref,
   ) => {
-    const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-      if (onChange) {
-        onChange(e.currentTarget.value)
-      }
-    }
+    const handleChange = (e: ChangeEvent<HTMLInputElement>) =>
+      onChange?.(e.currentTarget.value)
 
     return (
-      <Primitive
+      <Base
         className={className}
         description={error ? undefined : description}
-        disabled={isDisabled}
+        disabled={disabled}
         error={error}
         inputWrapperOrder={inputWrapperOrder}
         leftSection={leftSection}
@@ -65,9 +62,9 @@ const InputPassword = React.forwardRef<HTMLInputElement, Props>(
         label={
           label ? (
             <InputLabel
-              isOptional={isOptional}
-              isRequired={isRequired}
               label={label}
+              optional={optional}
+              required={required}
               tooltip={tooltip}
               tooltipWidth={tooltipWidth}
             />

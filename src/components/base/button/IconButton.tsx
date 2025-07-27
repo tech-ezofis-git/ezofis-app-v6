@@ -1,19 +1,25 @@
 import React from 'react'
-import { Icon } from '@/components/base'
-import { cn } from '@/utils'
+import Icon from '@/components/base/Icon'
+import cn from '@/utils/cn'
 import type { ButtonColor, ButtonSize, ButtonVariant } from './types'
-import getStyles from './styles'
+import { getVariantClassName } from './helpers'
 
 interface Props extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   icon: string
   ariaLabel?: string
   className?: string
   color?: ButtonColor
+  disabled?: boolean
   iconClass?: string
-  isDisabled?: boolean
-  isLoading?: boolean
+  loading?: boolean
   size?: ButtonSize
   variant?: ButtonVariant
+}
+
+const sizeClassName: Record<ButtonSize, string> = {
+  md: 'size-10',
+  sm: 'size-9',
+  xs: 'size-8',
 }
 
 const IconButton = React.forwardRef<HTMLButtonElement, Props>(
@@ -22,39 +28,37 @@ const IconButton = React.forwardRef<HTMLButtonElement, Props>(
       ariaLabel,
       className,
       color = 'primary',
+      disabled,
       icon,
       iconClass,
-      isDisabled,
-      isLoading,
+      loading,
       size = 'sm',
       variant = 'solid',
       ...props
     },
     ref,
   ) => {
-    const styles = getStyles(variant, color)
-    const sizeClasses = {
-      lg: 'size-11',
-      md: 'size-10',
-      sm: 'size-9',
-      xl: 'size-10',
-      xs: 'size-8',
-    }
+    const variantClassName = getVariantClassName(variant, color)
+    const computedClassName = cn(
+      variantClassName,
+      sizeClassName[size],
+      'justify-center',
+      className,
+    )
 
     return (
       <button
         aria-label={ariaLabel}
-        className={cn(styles, sizeClasses[size], 'justify-center', className)}
-        data-loading={isLoading}
-        disabled={isDisabled}
+        className={computedClassName}
+        data-loading={loading || undefined}
+        disabled={disabled}
         ref={ref}
         {...props}
       >
-        {isLoading ? (
-          <Icon className='animate-spin' name='gg:spinner' />
-        ) : (
-          <Icon className={iconClass} name={icon} />
-        )}
+        <Icon
+          className={loading ? 'animate-spin' : iconClass}
+          name={loading ? 'gg:spinner' : icon}
+        />
       </button>
     )
   },

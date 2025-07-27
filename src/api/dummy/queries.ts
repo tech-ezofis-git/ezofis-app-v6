@@ -1,33 +1,36 @@
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
-import type { IList } from '@/components/base/types'
-import type { IListDTO } from '../types'
-import { getUserList, getUsers } from './endpoints'
+import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query'
+import type { QueryParams } from '@/types/item'
+import type { InfiniteQueryOptions } from '@/types/option'
+import { TWO_MINUTES } from '@/constants'
+import { getNextPageParam, getPreviousPageParam } from '../helpers'
+import { getUserList, getUserOptionList } from './endpoints'
 
 const queryKeys = {
-  all: () => ['users'] as const,
-  list: () => [...queryKeys.all(), 'list'] as const,
+  list: () => ['users'] as const,
+  optionList: () => [...queryKeys.list(), 'options'] as const,
 }
 
-function useGetUserList(dto?: IListDTO) {
-  return useInfiniteQuery({
+export const getUserOptionListQueryOptions = (
+  params?: QueryParams,
+): InfiniteQueryOptions => {
+  return infiniteQueryOptions({
+    getNextPageParam,
+    getPreviousPageParam,
     initialPageParam: 0,
-    queryKey: queryKeys.list(),
-    getNextPageParam: ({ limit, skip, total }: IList) => {
-      if (skip + limit < total) {
-        return skip + limit
-      }
-
-      return null
-    },
-    queryFn: ({ pageParam }) => getUserList({ ...dto, skip: pageParam }),
-  })
+    queryKey: queryKeys.optionList(),
+    staleTime: TWO_MINUTES,
+    queryFn: ({ pageParam }) =>
+      getUserOptionList({
+        ...params,
+        skip: pageParam,
+      }),
+  }) as InfiniteQueryOptions
 }
 
-function useGetUsers() {
-  return useQuery({
-    queryFn: getUsers,
+export const getUserListQueryOptions = (params?: QueryParams) => {
+  return queryOptions({
     queryKey: queryKeys.list(),
+    staleTime: TWO_MINUTES,
+    queryFn: () => getUserList(params),
   })
 }
-
-export { useGetUserList, useGetUsers }

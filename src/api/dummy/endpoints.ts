@@ -1,44 +1,47 @@
-import type { IList } from '@/components/base/types'
-import { axios } from '@/api'
-import type { IListDTO } from '../types'
-import type { IUsersDTO } from './types'
-import { normalizeQueryParams } from '../helpers'
+import type { User, UserList } from '@/types/user'
+import axios from '@/api/axios'
+import { type QueryParams } from '@/types/item'
+import { type OptionList, OptionListSchema } from '@/types/option'
+import { UserListSchema } from '@/types/user'
 
 const URL_SLUG = '/users/'
 
-async function getUserList(dto?: IListDTO): Promise<IList> {
-  const response = await axios.instance.get<IUsersDTO>(URL_SLUG, {
-    params: normalizeQueryParams({
-      select: ['id', 'firstName', 'lastName'],
-      sortBy: 'firstName',
-      ...dto,
-    }),
+export async function getUserList(
+  queryParams?: QueryParams,
+): Promise<UserList> {
+  const response = await axios.instance.get(URL_SLUG, {
+    params: queryParams,
   })
 
   if (!response.data) {
     throw new Error('Failed to fetch users')
   }
 
-  const { limit, skip, total, users } = response.data
-  const items = users.map((user) => ({
-    id: user.id,
-    label: `${user.firstName} ${user.lastName}`,
+  const { users, ...rest } = response.data
+  const data = users.map((user: User) => ({
+    ...user,
+    name: `${user.firstName} ${user.lastName}`,
   }))
 
-  return {
-    items,
-    limit,
-    skip,
-    total,
-  }
+  return UserListSchema.parse({ data, ...rest })
 }
 
-async function getUsers(): Promise<IUsersDTO> {
-  const response = await axios.instance.get<IUsersDTO>(URL_SLUG)
-  if (!response.data) {
-    throw new Error('Failed to fetch users')
-  }
-  return response.data
-}
+export async function getUserOptionList(
+  queryParams?: QueryParams,
+): Promise<OptionList> {
+  const response = await getUserList({
+    order: 'asc',
+    sortBy: 'firstName',
+    ...queryParams,
+  })
 
-export { getUserList, getUsers }
+  const { data, ...rest } = response
+  const options = data.map((user: User) => ({
+    // description: user.email,
+    disabled: false,
+    id: user.id,
+    name: user.name,
+  }))
+
+  return OptionListSchema.parse({ data: options, ...rest })
+}

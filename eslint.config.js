@@ -54,7 +54,19 @@ export default tseslint.config(
       'perfectionist/sort-interfaces': [
         'error',
         {
-          groups: ['member', 'optional-member', 'method', 'optional-method'],
+          customGroups: [
+            {
+              elementNamePattern: '^on.+',
+              groupName: 'callback',
+            },
+          ],
+          groups: [
+            'member',
+            'optional-member',
+            'method',
+            'optional-method',
+            'callback',
+          ],
         },
       ],
       'perfectionist/sort-jsx-props': [
@@ -79,7 +91,16 @@ export default tseslint.config(
       ],
       'perfectionist/sort-objects': [
         'error',
-        { groups: ['member', 'method'], type: 'natural' },
+        {
+          customGroups: [
+            {
+              elementNamePattern: '^on.+',
+              groupName: 'callback',
+            },
+          ],
+          groups: ['member', 'method', 'callback'],
+          type: 'natural',
+        },
       ],
       'perfectionist/sort-variable-declarations': ['error'],
     },

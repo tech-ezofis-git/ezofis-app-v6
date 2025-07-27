@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
-import { Pagination } from '@/components/base'
+import Pagination from '@/components/base/pagination/Pagination'
 import { StoryTitle } from './-components'
 
 export const Route = createFileRoute('/stories/pagination')({

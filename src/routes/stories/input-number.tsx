@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
-import { InputNumber } from '@/components/base'
+import InputNumber from '@/components/base/inputs/InputNumber'
 import { StorySubTitle, StoryTitle } from './-components'
 
 export const Route = createFileRoute('/stories/input-number')({
@@ -16,23 +16,18 @@ function RouteComponent() {
 
       <div className='space-y-16'>
         <StorySubTitle>Default</StorySubTitle>
-
         <InputNumber className='max-w-80' />
 
         <StorySubTitle>Label</StorySubTitle>
-
         <InputNumber className='max-w-80' label='Number' />
 
         <StorySubTitle>Required</StorySubTitle>
-
-        <InputNumber className='max-w-80' label='Number' isRequired />
+        <InputNumber className='max-w-80' label='Number' required />
 
         <StorySubTitle>Optional</StorySubTitle>
-
-        <InputNumber className='max-w-80' label='Number' isOptional />
+        <InputNumber className='max-w-80' label='Number' optional />
 
         <StorySubTitle>Tooltip</StorySubTitle>
-
         <InputNumber
           className='max-w-80'
           label='Number'
@@ -40,30 +35,32 @@ function RouteComponent() {
         />
 
         <StorySubTitle>Description</StorySubTitle>
-
         <InputNumber
           className='max-w-80'
           description='Lorem ipsum dolar sit amit'
         />
 
         <StorySubTitle>Placeholder</StorySubTitle>
-
         <InputNumber className='max-w-80' placeholder='Placeholder' />
 
         <StorySubTitle>Error</StorySubTitle>
-
         <InputNumber className='max-w-80' error='Lorem ipsum dolar sit amit' />
 
-        <StorySubTitle>Read Only</StorySubTitle>
+        <StorySubTitle>Clearable</StorySubTitle>
+        <InputNumber
+          className='max-w-80'
+          value={value}
+          clearable
+          onChange={setValue}
+        />
 
-        <InputNumber className='max-w-80' isReadOnly />
+        <StorySubTitle>Read Only</StorySubTitle>
+        <InputNumber className='max-w-80' readOnly />
 
         <StorySubTitle>Disabled</StorySubTitle>
-
-        <InputNumber className='max-w-80' isDisabled />
+        <InputNumber className='max-w-80' disabled />
 
         <StorySubTitle>Prefix</StorySubTitle>
-
         <InputNumber
           className='max-w-80'
           prefix='$'
@@ -72,7 +69,6 @@ function RouteComponent() {
         />
 
         <StorySubTitle>Suffix</StorySubTitle>
-
         <InputNumber
           className='max-w-80'
           suffix='%'
@@ -81,7 +77,6 @@ function RouteComponent() {
         />
 
         <StorySubTitle>Controls</StorySubTitle>
-
         <InputNumber className='max-w-80' withControls />
       </div>
     </div>

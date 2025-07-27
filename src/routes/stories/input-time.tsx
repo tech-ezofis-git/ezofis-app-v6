@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
-import { InputTime } from '@/components/base'
+import InputTime from '@/components/base/inputs/InputTime'
 import { StorySubTitle, StoryTitle } from './-components'
 
 export const Route = createFileRoute('/stories/input-time')({
@@ -31,7 +31,7 @@ function RouteComponent() {
           className='max-w-80'
           label='Time'
           value={value}
-          isRequired
+          required
           onChange={setValue}
         />
 
@@ -40,7 +40,7 @@ function RouteComponent() {
           className='max-w-80'
           label='Time'
           value={value}
-          isOptional
+          optional
           onChange={setValue}
         />
 
@@ -69,11 +69,19 @@ function RouteComponent() {
           onChange={setValue}
         />
 
+        <StorySubTitle>Clearable</StorySubTitle>
+        <InputTime
+          className='max-w-80'
+          value={value}
+          clearable
+          onChange={setValue}
+        />
+
         <StorySubTitle>Read Only</StorySubTitle>
         <InputTime
           className='max-w-80'
           value={value}
-          isReadOnly
+          readOnly
           onChange={setValue}
         />
 
@@ -81,7 +89,23 @@ function RouteComponent() {
         <InputTime
           className='max-w-80'
           value={value}
-          isDisabled
+          disabled
+          onChange={setValue}
+        />
+
+        <StorySubTitle>Min Time</StorySubTitle>
+        <InputTime
+          className='max-w-80'
+          minTime='10:00:00'
+          value={value}
+          onChange={setValue}
+        />
+
+        <StorySubTitle>Max Time</StorySubTitle>
+        <InputTime
+          className='max-w-80'
+          maxTime='18:00:00'
+          value={value}
           onChange={setValue}
         />
       </div>

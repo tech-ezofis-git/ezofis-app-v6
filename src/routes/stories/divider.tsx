@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { Divider } from '@/components/base'
+import Divider from '@/components/base/Divider'
 import { StorySubTitle, StoryTitle } from './-components'
 
 export const Route = createFileRoute('/stories/divider')({

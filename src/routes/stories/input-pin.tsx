@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { InputPin } from '@/components/base'
+import InputPin from '@/components/base/inputs/InputPin'
 import { StorySubTitle, StoryTitle } from './-components'
 
 export const Route = createFileRoute('/stories/input-pin')({
@@ -19,7 +19,7 @@ function RouteComponent() {
         <InputPin placeholder='0' />
 
         <StorySubTitle>Disabled</StorySubTitle>
-        <InputPin isDisabled />
+        <InputPin disabled />
 
         <StorySubTitle>Error</StorySubTitle>
         <InputPin error />

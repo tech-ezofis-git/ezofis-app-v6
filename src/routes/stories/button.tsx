@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { Button } from '@/components/base'
+import Button from '@/components/base/button/Button'
 import { StorySubTitle, StoryTitle } from './-components'
 
 export const Route = createFileRoute('/stories/button')({
@@ -26,12 +26,12 @@ function RouteComponent() {
 
         <StorySubTitle>Loading</StorySubTitle>
         <div className='flex flex-wrap items-center gap-2'>
-          <Button label='Button' isLoading />
+          <Button label='Button' loading />
         </div>
 
         <StorySubTitle>Disabled</StorySubTitle>
         <div className='flex flex-wrap items-center gap-2'>
-          <Button label='Button' isDisabled />
+          <Button label='Button' disabled />
         </div>
 
         <StorySubTitle>With Icons</StorySubTitle>

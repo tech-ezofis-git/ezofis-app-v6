@@ -1,18 +1,19 @@
-import { Button, Menu, MenuItem } from '@/components/base'
-
+import Button from '@/components/base/button/Button'
+import Menu from '@/components/base/menu/Menu'
+import MenuItem from '@/components/base/menu/MenuItem'
 interface Props {
   value: number
   itemLabel?: string
   onChange: (value: number) => void
 }
 
+const options = [5, 10, 20, 30, 50, 100]
+
 const PaginationItemsPerPage: React.FC<Props> = ({
   itemLabel,
-  onChange,
   value,
+  onChange,
 }) => {
-  const options = [5, 10, 20, 30, 50, 100]
-
   return (
     <div className='hidden items-center justify-end gap-2 select-none md:flex'>
       <div className='text-gray-700'>{itemLabel} per page:</div>

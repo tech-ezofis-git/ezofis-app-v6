@@ -1,29 +1,29 @@
-import { Menu as Primitive } from '@mantine/core'
-import { Icon } from '@/components/base'
-import { cn } from '@/utils'
+import { Menu as Base } from '@mantine/core'
+import Icon from '@/components/base/Icon'
+import cn from '@/utils/cn'
 
 interface Props {
   label: string
+  disabled?: boolean
   icon?: string
   iconClass?: string
-  isDisabled?: boolean
   suffixIcon?: string
   suffixIconClass?: string
   onClick?: () => void
 }
 
 const MenuItem: React.FC<Props> = ({
+  disabled,
   icon,
   iconClass,
-  isDisabled,
   label,
-  onClick,
   suffixIcon,
   suffixIconClass,
+  onClick,
 }) => {
   return (
-    <Primitive.Item
-      disabled={isDisabled}
+    <Base.Item
+      disabled={disabled}
       leftSection={
         icon && <Icon className={cn('text-gray-500', iconClass)} name={icon} />
       }
@@ -38,7 +38,7 @@ const MenuItem: React.FC<Props> = ({
       onClick={onClick}
     >
       {label}
-    </Primitive.Item>
+    </Base.Item>
   )
 }
 

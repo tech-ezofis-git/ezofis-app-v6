@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
-import { Tab, Tabs } from '@/components/base'
+import Tab from '@/components/base/tabs/Tab'
+import Tabs from '@/components/base/tabs/Tabs'
 import { StorySubTitle, StoryTitle } from './-components'
 
 export const Route = createFileRoute('/stories/tabs')({
@@ -32,7 +33,7 @@ function RouteComponent() {
         <StorySubTitle>Disabled</StorySubTitle>
         <Tabs value={value} onChange={setValue}>
           <Tab label='Home' value='tab1' />
-          <Tab label='Users' value='tab2' isDisabled />
+          <Tab label='Users' value='tab2' disabled />
           <Tab label='Settings' value='tab3' />
         </Tabs>
       </div>

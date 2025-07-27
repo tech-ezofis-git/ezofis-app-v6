@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { InputSwitch } from '@/components/base'
+import InputSwitch from '@/components/base/inputs/InputSwitch'
 import { StorySubTitle, StoryTitle } from './-components'
 
 export const Route = createFileRoute('/stories/input-switch')({
@@ -22,7 +22,7 @@ function RouteComponent() {
         <InputSwitch error='Error' label='Label' />
 
         <StorySubTitle>Disabled</StorySubTitle>
-        <InputSwitch label='Label' isDisabled />
+        <InputSwitch label='Label' disabled />
       </div>
     </div>
   )

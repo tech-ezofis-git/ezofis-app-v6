@@ -1,9 +1,9 @@
 import { notifications } from '@mantine/notifications'
-import type { IToast } from '@/components/base/types'
-import { Icon } from '@/components/base'
-import { cn } from '@/utils'
+import Icon from '@/components/base/Icon'
+import cn from '@/utils/cn'
+import type { Toast } from './types'
 
-const types = {
+const variants = {
   default: {
     className: 'text-primary',
     icon: 'tabler:info-circle-filled',
@@ -26,8 +26,8 @@ const types = {
   },
 }
 
-const showToast = ({ message, type = 'default' }: IToast) => {
-  const { className, icon, title } = types[type]
+const showToast = ({ message, variant = 'default' }: Toast) => {
+  const { className, icon, title } = variants[variant]
 
   return notifications.show({
     icon: <Icon className={cn('size-7', className)} name={icon} />,
@@ -36,4 +36,4 @@ const showToast = ({ message, type = 'default' }: IToast) => {
   })
 }
 
-export { showToast }
+export default showToast
