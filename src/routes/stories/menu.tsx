@@ -5,7 +5,8 @@ import MenuDivider from '@/components/base/menu/MenuDivider'
 import MenuItem from '@/components/base/menu/MenuItem'
 import MenuLabel from '@/components/base/menu/MenuLabel'
 import MenuSub from '@/components/base/menu/MenuSub'
-import { StorySubTitle, StoryTitle } from './-components'
+import StorySubTitle from './-components/StorySubTitle'
+import StoryTitle from './-components/StoryTitle'
 
 export const Route = createFileRoute('/stories/menu')({
   component: RouteComponent,
@@ -27,7 +28,7 @@ function RouteComponent() {
                 color='gray'
                 label='Menu'
                 suffixIcon='tabler:chevron-down'
-                suffixIconClass='size-4 text-gray-500'
+                suffixIconClass='text-gray-9'
                 variant='outline'
               />
             }
@@ -49,7 +50,7 @@ function RouteComponent() {
                 color='gray'
                 label='Menu'
                 suffixIcon='tabler:chevron-down'
-                suffixIconClass='size-4 text-gray-500'
+                suffixIconClass='text-gray-9'
                 variant='outline'
               />
             }
@@ -65,7 +66,7 @@ function RouteComponent() {
             <MenuDivider />
             <MenuItem
               icon='tabler:logout'
-              iconClass='text-red'
+              iconClass='text-red-11'
               label='Log out'
             />
           </Menu>
@@ -81,7 +82,7 @@ function RouteComponent() {
                 color='gray'
                 label='Menu'
                 suffixIcon='tabler:chevron-down'
-                suffixIconClass='size-4 text-gray-500'
+                suffixIconClass='text-gray-9'
                 variant='outline'
               />
             }
@@ -94,7 +95,11 @@ function RouteComponent() {
               <MenuItem icon='tabler:heart' label='Favourites' />
             </MenuSub>
             <MenuDivider />
-            <MenuItem icon='tabler:trash' iconClass='text-red' label='Delete' />
+            <MenuItem
+              icon='tabler:trash'
+              iconClass='text-red-11'
+              label='Delete'
+            />
           </Menu>
         </div>
       </div>

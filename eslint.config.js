@@ -56,8 +56,16 @@ export default tseslint.config(
         {
           customGroups: [
             {
+              elementNamePattern: '^get.+',
+              groupName: 'getters',
+            },
+            {
+              elementNamePattern: '^set.+',
+              groupName: 'setters',
+            },
+            {
               elementNamePattern: '^on.+',
-              groupName: 'callback',
+              groupName: 'callbacks',
             },
           ],
           groups: [
@@ -65,7 +73,9 @@ export default tseslint.config(
             'optional-member',
             'method',
             'optional-method',
-            'callback',
+            'getters',
+            'setters',
+            'callbacks',
           ],
         },
       ],
@@ -74,11 +84,26 @@ export default tseslint.config(
         {
           customGroups: [
             {
+              elementNamePattern: '^get.+',
+              groupName: 'getters',
+            },
+            {
+              elementNamePattern: '^set.+',
+              groupName: 'setters',
+            },
+            {
               elementNamePattern: '^on.+',
-              groupName: 'callback',
+              groupName: 'callbacks',
             },
           ],
-          groups: ['unknown', 'shorthand-prop', 'multiline-prop', 'callback'],
+          groups: [
+            'unknown',
+            'shorthand-prop',
+            'multiline-prop',
+            'getters',
+            'setters',
+            'callbacks',
+          ],
           type: 'natural',
         },
       ],
@@ -92,13 +117,35 @@ export default tseslint.config(
       'perfectionist/sort-objects': [
         'error',
         {
+          customGroups: {
+            xs: '^xs$',
+            sm: '^sm$',
+            md: '^md$',
+            lg: '^lg$',
+            xl: '^xl$',
+          },
+          groups: ['xs', 'sm', 'md', 'lg', 'xl'],
+          useConfigurationIf: {
+            allNamesMatchPattern: '^xs|sm|md|lg|xl$',
+          },
+        },
+        {
+          // Fallback configuration for other objects
           customGroups: [
             {
+              elementNamePattern: '^get.+',
+              groupName: 'getters',
+            },
+            {
+              elementNamePattern: '^set.+',
+              groupName: 'setters',
+            },
+            {
               elementNamePattern: '^on.+',
-              groupName: 'callback',
+              groupName: 'callbacks',
             },
           ],
-          groups: ['member', 'method', 'callback'],
+          groups: ['member', 'method', 'getters', 'setters', 'callbacks'],
           type: 'natural',
         },
       ],

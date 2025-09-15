@@ -8,15 +8,15 @@ interface Props {
   onSave?: () => void
 }
 
-const OverlayFooter: React.FC<Props> = ({
+const OverlayFooter = ({
   cancelLabel = 'Cancel',
   saveButtonColor = 'primary',
   saveLabel = 'Save',
   onCancel,
   onSave,
-}) => {
+}: Props) => {
   return (
-    <footer className='flex h-17 items-center justify-end gap-2 border-t border-gray-600/5 px-4'>
+    <footer className='flex h-15 items-center justify-end gap-2 border-t border-gray-3 px-4'>
       <Button
         color='gray'
         label={cancelLabel}

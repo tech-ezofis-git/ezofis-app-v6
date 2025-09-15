@@ -4,11 +4,10 @@ interface Props {
   onClick: () => void
 }
 
-const CloseButton: React.FC<Props> = ({ onClick }) => {
+const CloseButton = ({ onClick }: Props) => {
   return (
     <IconButton
       ariaLabel='Close'
-      className='text-gray-600'
       color='gray'
       icon='tabler:x'
       variant='ghost'

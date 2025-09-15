@@ -1,19 +1,18 @@
 import IconButton from '@/components/base/button/IconButton'
-import cn from '@/utils/cn'
 
 interface Props {
   className?: string
   onClick: () => void
 }
 
-const ClearButton: React.FC<Props> = ({ className, onClick }) => {
+const ClearButton = ({ className, onClick }: Props) => {
   return (
     <IconButton
       ariaLabel='Clear'
-      className={cn('size-6 text-gray-500', className)}
+      className={className}
       color='gray'
       icon='tabler:x'
-      size='xs'
+      size='sm'
       variant='ghost'
       onClick={onClick}
     />

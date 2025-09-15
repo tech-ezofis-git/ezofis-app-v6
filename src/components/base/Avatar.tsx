@@ -8,13 +8,13 @@ interface Props {
   size?: number
 }
 
-const Avatar: React.FC<Props> = ({
+const Avatar = ({
   className,
   image,
   imageLabel = 'avatar',
   initials,
   size = 36,
-}) => {
+}: Props) => {
   return (
     <Base
       alt={imageLabel}
@@ -22,8 +22,7 @@ const Avatar: React.FC<Props> = ({
       size={size}
       src={image}
       classNames={{
-        placeholder:
-          'border-gray-600/10 bg-gray-600/5 font-semibold text-gray-700',
+        placeholder: 'border-none bg-gray-3 font-medium text-gray-11',
       }}
     >
       {initials}

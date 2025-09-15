@@ -2,7 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import type { ToastVariant } from '@/components/base/toast/types'
 import Button from '@/components/base/button/Button'
 import showToast from '@/components/base/toast/showToast'
-import { StoryTitle } from './-components'
+import StoryTitle from './-components/StoryTitle'
 
 export const Route = createFileRoute('/stories/toast')({
   component: RouteComponent,
@@ -12,7 +12,7 @@ function RouteComponent() {
   const handleClick = (variant: ToastVariant) => {
     showToast({
       message:
-        'Lorem ipsum dolar sit amit Lorem ipsum dolar sit amit Lorem ipsum dolar sit amit',
+        'Lorem ipsum dolor sit amet consectetur adipisicing elit. Commodi ex adipisci ipsam!',
       variant,
     })
   }

@@ -1,27 +1,30 @@
+import type { ReactNode } from 'react'
 import { Modal as Base } from '@mantine/core'
-import React from 'react'
 import cn from '@/utils/cn'
 
 interface Props {
-  children: React.ReactNode
-  isOpened: boolean
+  children: ReactNode
+  opened: boolean
   closeOnInteractOutside?: boolean
-  isFullScreen?: boolean
+  fullScreen?: boolean
   width?: number | string
   onClose: () => void
 }
 
-const Modal: React.FC<Props> = ({
+const Modal = ({
   children,
   closeOnInteractOutside = true,
-  isFullScreen,
-  isOpened,
+  fullScreen,
+  opened,
   width,
   onClose,
-}) => {
+}: Props) => {
   const classNames = {
     body: 'p-0',
-    content: cn('bg-surface', isFullScreen ? 'rounded-none' : 'rounded-lg'),
+    content: cn(
+      'bg-surface-raised shadow-lg',
+      fullScreen ? 'rounded-none' : 'rounded-lg',
+    ),
     overlay: 'bg-overlay/60',
   }
 
@@ -30,9 +33,8 @@ const Modal: React.FC<Props> = ({
       classNames={classNames}
       closeOnClickOutside={closeOnInteractOutside}
       closeOnEscape={closeOnInteractOutside}
-      fullScreen={isFullScreen}
-      opened={isOpened}
-      overlayProps={{ blur: 3 }}
+      fullScreen={fullScreen}
+      opened={opened}
       size={width}
       withCloseButton={false}
       centered

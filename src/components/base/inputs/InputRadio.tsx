@@ -1,41 +1,18 @@
 import { Radio as Base } from '@mantine/core'
-import React, { type ChangeEvent } from 'react'
+import { type ChangeEvent, forwardRef } from 'react'
 import cn from '@/utils/cn'
+import type { SelectionProps as Props } from './shared/types'
 
-interface Props {
-  label: string
-  checked?: boolean
-  className?: string
-  description?: string
-  disabled?: boolean
-  error?: string
-  value?: number
-  onChange?: (value: boolean) => void
-}
-
-const InputRadio = React.forwardRef<HTMLInputElement, Props>(
-  (
-    {
-      checked,
-      className,
-      description,
-      disabled,
-      error,
-      label,
-      value,
-      onChange,
-    },
-    ref,
-  ) => {
-    const hasError = Boolean(error)
-    const normalizedValue = value ? String(value) : undefined
-    const computedClassNames = {
-      description: 'mt-1 pl-2.5 text-sx text-gray-500',
-      inner: 'mt-[1px]',
-      label: 'pl-2.5 text-sm font-medium text-gray-800',
+const InputRadio = forwardRef<HTMLInputElement, Props>(
+  ({ className, error, onChange, ...rest }, ref) => {
+    const _classNames = {
+      description: 'mt-1 pl-2.5 text-sm text-gray-10',
+      icon: 'text-white',
+      inner: 'size-5 flex items-center justify-center',
+      label: 'pl-2.5 text-sm font-medium text-gray-12',
       radio: cn(
-        'border-gray-600/30 bg-transparent checked:border-primary checked:bg-primary focus-within:outline-primary/50 disabled:bg-surface-muted',
-        hasError && 'border-red',
+        'border-gray-8 bg-transparent checked:border-primary-9 checked:bg-primary-9 focus-within:outline-primary-8 disabled:opacity-50',
+        Boolean(error) && 'border-red-9',
       ),
     }
 
@@ -44,15 +21,11 @@ const InputRadio = React.forwardRef<HTMLInputElement, Props>(
 
     return (
       <Base
-        checked={checked}
-        className={cn(disabled && 'opacity-50', className)}
-        classNames={computedClassNames}
-        description={description}
-        disabled={disabled}
-        label={label}
+        {...rest}
+        className={cn(rest.disabled && 'opacity-50', className)}
+        classNames={_classNames}
         ref={ref}
         size='xs'
-        value={normalizedValue}
         onChange={handleChange}
       />
     )

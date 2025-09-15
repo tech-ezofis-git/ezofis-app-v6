@@ -1,117 +1,103 @@
 import { DateInput as Base } from '@mantine/dates'
-import React from 'react'
-import Icon from '@/components/base/Icon'
+import { forwardRef } from 'react'
+import Icon from '@/components/base/icon/Icon'
+import type { InputProps } from './shared/types'
 import ClearButton from './ClearButton'
-import { classNames, inputWrapperOrder } from './constants'
 import InputLabel from './InputLabel'
+import { classNames, inputWrapperOrder } from './shared/constants'
 
-interface Props {
-  className?: string
-  clearable?: boolean
-  description?: string
-  disabled?: boolean
-  error?: string
-  label?: string
+interface Props
+  extends Omit<
+    InputProps,
+    | 'leftSection'
+    | 'leftSectionPointerEvents'
+    | 'rightSection'
+    | 'rightSectionPointerEvents'
+  > {
+  value: string | null
   maxDate?: string
   minDate?: string
-  optional?: boolean
-  placeholder?: string
-  readOnly?: boolean
-  required?: boolean
-  tooltip?: string
-  tooltipWidth?: number
-  value?: string | null
   valueFormat?: string
-  onChange?: (value: string | null) => void
+  onChange: (value: string | null) => void
 }
 
 const _classNames = {
   calendarHeaderControl:
-    'text-gray-500 hover:bg-surface-raised-hover hover:text-gray-600 hover:transition-colors data-[disabled]:opacity-40',
+    'text-gray-11 transition-colors hover:bg-gray-4 hover:text-gray-12 data-[disabled]:opacity-50',
   calendarHeaderLevel:
-    'text-sm font-semibold text-gray-700 hover:bg-surface-raised-hover hover:text-gray-750 hover:transition-colors',
-  day: 'text-sx text-gray-800 hover:bg-surface-raised-hover hover:text-gray-850 hover:transition-colors data-[outside]:opacity-40 hover:data-[outside]:opacity-100 data-[selected]:!bg-primary data-[selected]:!font-medium data-[selected]:!text-gray-0 data-[today]:bg-primary/10 data-[today]:font-medium data-[today]:text-primary',
+    'text-sm font-semibold text-gray-11 transition-colors hover:bg-gray-4 hover:text-gray-12',
+  day: 'text-sm text-gray-11 hover:text-gray-12 transition-colors hover:bg-gray-4 data-[outside]:text-gray-8 data-[outside]:opacity-100 data-[outside]:hover:text-gray-12 data-[selected]:!bg-primary-9 data-[selected]:!font-medium data-[selected]:!text-white data-[today]:bg-primary-4 data-[today]:font-medium data-[today]:text-primary-11',
   description: classNames.description,
   error: classNames.error,
   input: classNames.input,
   label: classNames.label,
   monthsListControl:
-    'text-gray-700 hover:bg-surface-raised-hover hover:text-gray-750 hover:transition-colors data-[disabled]:opacity-40',
-  weekday: 'p-2 text-sx font-medium text-gray-600',
+    'text-gray-11 transition-colors hover:bg-gray-4 hover:text-gray-12 data-[disabled]:opacity-50 data-[selected]:!bg-primary-9 data-[selected]:!font-medium data-[selected]:!text-white',
+  weekday: 'p-2 text-sm text-gray-10',
   wrapper: classNames.wrapper,
   yearsListControl:
-    'text-gray-700 hover:bg-surface-raised-hover hover:text-gray-750 hover:transition-colors data-[disabled]:opacity-40',
+    'text-gray-11 transition-colors hover:bg-gray-4 hover:text-gray-12 data-[disabled]:opacity-50 data-[selected]:!bg-primary-9 data-[selected]:!font-medium data-[selected]:!text-white',
 }
 
-const InputDate = React.forwardRef<HTMLInputElement, Props>(
+const InputDate = forwardRef<HTMLInputElement, Props>(
   (
     {
-      className,
       clearable,
       description,
-      disabled,
-      error,
       label,
-      maxDate,
-      minDate,
       optional,
       placeholder = 'dd-mmm-yyyy',
-      readOnly,
       required,
       tooltip,
       tooltipWidth,
       value,
       valueFormat = 'DD-MMM-YYYY',
       onChange,
+      ...rest
     },
     ref,
   ) => {
-    const rightSection =
-      clearable && value ? (
-        <ClearButton onClick={() => onChange?.('')} />
-      ) : (
-        <Icon className='text-gray-500' name='tabler:calendar' />
-      )
-    const previousIcon = <Icon name='tabler:chevron-left' />
-    const nextIcon = <Icon name='tabler:chevron-right' />
+    const _label = label ? (
+      <InputLabel
+        label={label}
+        optional={optional}
+        required={required}
+        tooltip={tooltip}
+        tooltipWidth={tooltipWidth}
+      />
+    ) : undefined
+
+    const _clearable = clearable && value
+    const _rightSection = _clearable ? (
+      <ClearButton onClick={() => onChange(null)} />
+    ) : (
+      <Icon className='text-gray-9' name='tabler:calendar' />
+    )
+
+    const _previousIcon = <Icon name='tabler:chevron-left' />
+    const _nextIcon = <Icon name='tabler:chevron-right' />
 
     return (
       <Base
-        className={className}
+        {...rest}
         classNames={_classNames}
-        description={error ? undefined : description}
-        disabled={disabled}
-        error={error}
+        description={rest.error ? undefined : description}
         firstDayOfWeek={0}
         inputWrapperOrder={inputWrapperOrder}
-        maxDate={maxDate}
-        minDate={minDate}
-        nextIcon={nextIcon}
+        label={_label}
+        nextIcon={_nextIcon}
         placeholder={placeholder}
-        previousIcon={previousIcon}
-        readOnly={readOnly}
+        previousIcon={_previousIcon}
         ref={ref}
-        rightSection={rightSection}
-        rightSectionPointerEvents={clearable ? 'auto' : 'none'}
+        rightSection={_rightSection}
+        rightSectionPointerEvents={_clearable ? 'auto' : 'none'}
         type='default'
         value={value}
         valueFormat={valueFormat}
         allowDeselect
-        clearable
-        label={
-          label ? (
-            <InputLabel
-              label={label}
-              optional={optional}
-              required={required}
-              tooltip={tooltip}
-              tooltipWidth={tooltipWidth}
-            />
-          ) : undefined
-        }
         popoverProps={{
           classNames: {
-            dropdown: 'border-0 bg-surface-raised p-3 ring-1 ring-gray-600/10',
+            dropdown: 'border border-gray-3 bg-surface-raised p-3 shadow-lg',
           },
         }}
         onChange={onChange}

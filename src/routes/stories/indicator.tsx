@@ -1,7 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router'
 import Avatar from '@/components/base/Avatar'
 import Indicator from '@/components/base/Indicator'
-import { StorySubTitle, StoryTitle } from './-components'
+import StorySubTitle from './-components/StorySubTitle'
+import StoryTitle from './-components/StoryTitle'
 
 export const Route = createFileRoute('/stories/indicator')({
   component: RouteComponent,
@@ -30,6 +31,9 @@ function RouteComponent() {
         <StorySubTitle>Color</StorySubTitle>
         <div className='flex items-center gap-4'>
           <Indicator offset={5} animate>
+            <Avatar initials='CH' />
+          </Indicator>
+          <Indicator color='secondary' offset={5} animate>
             <Avatar initials='CH' />
           </Indicator>
           <Indicator color='red' offset={5} animate>

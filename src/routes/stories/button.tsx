@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import Button from '@/components/base/button/Button'
-import { StorySubTitle, StoryTitle } from './-components'
+import StorySubTitle from './-components/StorySubTitle'
+import StoryTitle from './-components/StoryTitle'
 
 export const Route = createFileRoute('/stories/button')({
   component: RouteComponent,
@@ -20,7 +21,9 @@ function RouteComponent() {
         <StorySubTitle>Colors</StorySubTitle>
         <div className='flex flex-wrap items-center gap-2'>
           <Button label='Button' />
+          <Button color='secondary' label='Button' />
           <Button color='red' label='Button' />
+          <Button color='green' label='Button' />
           <Button color='gray' label='Button' />
         </div>
 
@@ -36,8 +39,8 @@ function RouteComponent() {
 
         <StorySubTitle>With Icons</StorySubTitle>
         <div className='flex flex-wrap items-center gap-2'>
-          <Button icon='tabler:cloud-download' label='Button' />
-          <Button label='Button' suffixIcon='tabler:cloud-download' />
+          <Button icon='tabler:plus' label='Button' />
+          <Button label='Button' suffixIcon='tabler:plus' />
         </div>
 
         <StorySubTitle>Variants</StorySubTitle>
@@ -49,10 +52,22 @@ function RouteComponent() {
             <Button label='Button' variant='ghost' />
           </div>
           <div className='flex flex-wrap items-center gap-2'>
+            <Button color='secondary' label='Button' />
+            <Button color='secondary' label='Button' variant='outline' />
+            <Button color='secondary' label='Button' variant='subtle' />
+            <Button color='secondary' label='Button' variant='ghost' />
+          </div>
+          <div className='flex flex-wrap items-center gap-2'>
             <Button color='red' label='Button' />
             <Button color='red' label='Button' variant='outline' />
             <Button color='red' label='Button' variant='subtle' />
             <Button color='red' label='Button' variant='ghost' />
+          </div>
+          <div className='flex flex-wrap items-center gap-2'>
+            <Button color='green' label='Button' />
+            <Button color='green' label='Button' variant='outline' />
+            <Button color='green' label='Button' variant='subtle' />
+            <Button color='green' label='Button' variant='ghost' />
           </div>
           <div className='flex flex-wrap items-center gap-2'>
             <Button color='gray' label='Button' />
@@ -67,6 +82,8 @@ function RouteComponent() {
           <Button label='Button' size='xs' />
           <Button label='Button' size='sm' />
           <Button label='Button' size='md' />
+          <Button label='Button' size='lg' />
+          <Button label='Button' size='xl' />
         </div>
       </div>
     </div>

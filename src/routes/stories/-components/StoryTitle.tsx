@@ -1,10 +1,12 @@
+import type { ReactNode } from 'react'
+
 interface Props {
-  children: React.ReactNode
+  children: ReactNode
 }
 
-const StoryTitle: React.FC<Props> = ({ children }) => {
+const StoryTitle = ({ children }: Props) => {
   return (
-    <h2 className='mb-10 font-poppins text-xl font-semibold text-gray-700'>
+    <h2 className='mb-10 font-poppins text-xl font-semibold text-gray-12'>
       {children}
     </h2>
   )

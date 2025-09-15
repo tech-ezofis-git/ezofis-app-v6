@@ -5,7 +5,7 @@ interface Props {
   className?: string
 }
 
-const ThemeSwitcher: React.FC<Props> = ({ className }) => {
+const ThemeSwitcher = ({ className }: Props) => {
   const { colorScheme, toggleColorScheme } = useMantineColorScheme()
 
   return (

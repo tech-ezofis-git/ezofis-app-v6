@@ -1,8 +1,8 @@
-import type { User, UserList } from '@/types/user'
 import axios from '@/api/axios'
-import { type QueryParams } from '@/types/item'
-import { type OptionList, OptionListSchema } from '@/types/option'
-import { UserListSchema } from '@/types/user'
+import type { User, UserList } from './types/user'
+import { type QueryParams } from './types/item'
+import { type OptionList, OptionListSchema } from './types/option'
+import { UserListSchema } from './types/user'
 
 const URL_SLUG = '/users/'
 

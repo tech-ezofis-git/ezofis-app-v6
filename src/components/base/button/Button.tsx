@@ -1,17 +1,18 @@
-import React from 'react'
-import Icon from '@/components/base/Icon'
+import { type ComponentProps, forwardRef, type ReactNode } from 'react'
+import Icon from '@/components/base/icon/Icon'
 import cn from '@/utils/cn'
 import type { ButtonColor, ButtonSize, ButtonVariant } from './types'
 import { getVariantClassName } from './helpers'
 
-interface Props extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  label: string
+interface Props extends ComponentProps<'button'> {
+  children?: ReactNode
   className?: string
   color?: ButtonColor
-  disabled?: boolean
   icon?: string
   iconClass?: string
+  label?: string
   loading?: boolean
+  rightSection?: ReactNode
   size?: ButtonSize
   suffixIcon?: string
   suffixIconClass?: string
@@ -19,14 +20,17 @@ interface Props extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const sizeClassName: Record<ButtonSize, string> = {
-  md: 'h-10 px-4 text-sm',
-  sm: 'h-9 px-3.5 text-sm',
-  xs: 'h-8 px-2.5 text-xs',
+  xs: 'h-6 px-2 text-xs',
+  sm: 'h-7 px-2.5 text-sm',
+  md: 'h-8 px-3 text-sm',
+  lg: 'h-9 px-3.5 text-sm',
+  xl: 'h-10 px-4 text-sm',
 }
 
-const Button = React.forwardRef<HTMLButtonElement, Props>(
+const Button = forwardRef<HTMLButtonElement, Props>(
   (
     {
+      children,
       className,
       color = 'primary',
       disabled,
@@ -34,7 +38,8 @@ const Button = React.forwardRef<HTMLButtonElement, Props>(
       iconClass,
       label,
       loading,
-      size = 'sm',
+      rightSection,
+      size = 'lg',
       suffixIcon,
       suffixIconClass,
       variant = 'solid',
@@ -43,27 +48,33 @@ const Button = React.forwardRef<HTMLButtonElement, Props>(
     ref,
   ) => {
     const variantClassName = getVariantClassName(variant, color)
-    const computedClassName = cn(
-      variantClassName,
-      sizeClassName[size],
-      className,
-    )
+    const _className = cn(variantClassName, sizeClassName[size], className)
 
     return (
       <button
-        className={computedClassName}
+        className={_className}
         data-loading={loading || undefined}
         disabled={disabled}
         ref={ref}
         {...props}
       >
-        {loading && <Icon className='-ml-0.5 animate-spin' name='gg:spinner' />}
-        {!loading && icon && (
-          <Icon className={cn('-ml-0.5', iconClass)} name={icon} />
-        )}
-        <span>{label}</span>
-        {suffixIcon && (
-          <Icon className={cn('-mr-0.5', suffixIconClass)} name={suffixIcon} />
+        {children ?? (
+          <>
+            {loading && (
+              <Icon className='-ml-1 animate-spin' name='gg:spinner' />
+            )}
+            {!loading && icon && (
+              <Icon className={cn('-ml-1', iconClass)} name={icon} />
+            )}
+            <span>{label}</span>
+            {suffixIcon && (
+              <Icon
+                className={cn('-mr-1', suffixIconClass)}
+                name={suffixIcon}
+              />
+            )}
+            {rightSection && <span className='-mr-1'>{rightSection}</span>}
+          </>
         )}
       </button>
     )

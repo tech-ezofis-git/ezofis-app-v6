@@ -1,7 +1,9 @@
-import Icon from '@/components/base/Icon'
+import Icon from '@/components/base/icon/Icon'
 import Tooltip from '@/components/base/Tooltip'
+import cn from '@/utils/cn'
 
 interface Props {
+  className?: string
   label?: string
   optional?: boolean
   required?: boolean
@@ -9,21 +11,30 @@ interface Props {
   tooltipWidth?: number
 }
 
-const InputLabel: React.FC<Props> = ({
+const InputLabel = ({
+  className,
   label,
   optional,
   required,
   tooltip,
   tooltipWidth,
-}) => {
+}: Props) => {
   return (
-    <div className='flex items-center gap-1'>
+    <div
+      className={cn(
+        'flex items-center gap-1 text-sm font-medium text-gray-11',
+        className,
+      )}
+    >
       {label}
-      {optional && <span className='text-sx text-gray-500'>(optional)</span>}
-      {required && <span className='text-red'>*</span>}
+      {optional && <span className='font-normal text-gray-10'>(optional)</span>}
+      {required && <span className='text-red-11'>*</span>}
       {tooltip && (
         <Tooltip content={tooltip} position='top-start' width={tooltipWidth}>
-          <Icon className='-mt-0.5 text-gray-400' name='tabler:help' />
+          <Icon
+            className='hover:text-gray -mt-0.5 cursor-pointer text-gray-9 transition-colors'
+            name='tabler:help'
+          />
         </Tooltip>
       )}
     </div>

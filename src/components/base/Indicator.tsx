@@ -1,11 +1,12 @@
 import type { IndicatorProps } from '@mantine/core'
+import type { ReactNode } from 'react'
 import { Indicator as Base } from '@mantine/core'
 
-type IndicatorColor = 'primary' | 'red'
+type IndicatorColor = 'primary' | 'red' | 'secondary'
 
 interface Props {
   animate?: boolean
-  children?: React.ReactNode
+  children?: ReactNode
   className?: string
   color?: IndicatorColor
   disabled?: boolean
@@ -15,11 +16,12 @@ interface Props {
 }
 
 const colorClassName: Record<IndicatorColor, string> = {
-  primary: 'bg-primary before:bg-primary',
-  red: 'bg-red before:bg-red',
+  primary: 'bg-primary-9 before:bg-primary-9',
+  red: 'bg-red-9 before:bg-red-9',
+  secondary: 'bg-secondary-9 before:bg-secondary-9',
 }
 
-const Indicator: React.FC<Props> = ({
+const Indicator = ({
   animate,
   children,
   className,
@@ -28,7 +30,7 @@ const Indicator: React.FC<Props> = ({
   offset,
   position,
   size = 8,
-}) => {
+}: Props) => {
   return (
     <Base
       className={className}

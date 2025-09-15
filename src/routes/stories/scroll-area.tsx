@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
-import ScrollArea from '@/components/base/ScrollArea'
-import { StorySubTitle, StoryTitle } from './-components'
+import StorySubTitle from './-components/StorySubTitle'
+import StoryTitle from './-components/StoryTitle'
 
 export const Route = createFileRoute('/stories/scroll-area')({
   component: RouteComponent,
@@ -13,7 +13,7 @@ function RouteComponent() {
 
       <div className='space-y-16'>
         <StorySubTitle>Default</StorySubTitle>
-        <ScrollArea height={300} width={300}>
+        <div className='scrollbar h-80 w-80 overflow-auto'>
           <div className='space-y-6 pr-2'>
             <p>
               Lorem ipsum dolor sit amet consectetur adipisicing elit. Beatae
@@ -36,11 +36,11 @@ function RouteComponent() {
               tempora illum dignissimos!
             </p>
           </div>
-        </ScrollArea>
+        </div>
 
         <StorySubTitle>Horizontal</StorySubTitle>
-        <ScrollArea scrollbars='x' width={300}>
-          <div className='w-screen space-y-6 pb-2'>
+        <div className='scrollbar w-80 overflow-x-auto'>
+          <div className='w-160 space-y-6 pr-2 pb-2'>
             <p>
               Lorem ipsum dolor sit amet consectetur adipisicing elit. Beatae
               dolorem corrupti ipsum porro ex quidem? Eaque, laudantium
@@ -62,7 +62,7 @@ function RouteComponent() {
               tempora illum dignissimos!
             </p>
           </div>
-        </ScrollArea>
+        </div>
       </div>
     </div>
   )

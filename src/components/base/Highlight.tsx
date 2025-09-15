@@ -5,13 +5,13 @@ interface Props {
   words: string[]
 }
 
-const Highlight: React.FC<Props> = ({ children, words }) => {
+const Highlight = ({ children, words }: Props) => {
   return (
     <Base
       highlight={words}
       inherit
       highlightStyles={{
-        backgroundColor: 'var(--primary)',
+        backgroundColor: 'var(--primary-11)',
         borderRadius: '1px',
         color: 'var(--gray-0)',
       }}

@@ -1,7 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 import InputRadioGroup from '@/components/base/inputs/InputRadioGroup'
-import { StorySubTitle, StoryTitle } from './-components'
+import StorySubTitle from './-components/StorySubTitle'
+import StoryTitle from './-components/StoryTitle'
 
 export const Route = createFileRoute('/stories/input-radio-group')({
   component: RouteComponent,
@@ -62,7 +63,7 @@ const options3 = [
 ]
 
 function RouteComponent() {
-  const [value, setValue] = useState<number>()
+  const [value, setValue] = useState<number | null>(null)
 
   return (
     <div>
@@ -72,30 +73,47 @@ function RouteComponent() {
         <StorySubTitle>Default</StorySubTitle>
         <InputRadioGroup options={options1} value={value} onChange={setValue} />
 
-        <StorySubTitle>Label</StorySubTitle>
+        <StorySubTitle>Meta</StorySubTitle>
         <InputRadioGroup
+          className='max-w-80'
+          description='Lorem ipsum dolar sit amit'
           label='Label'
           options={options1}
-          tooltip='Lorem ipsum dolar sit emit'
+          tooltip='Lorem ipsum dolar sit amit'
+          value={value}
           optional
+          required
+          onChange={setValue}
         />
 
         <StorySubTitle>Options Per Line</StorySubTitle>
         <div className='max-w-96'>
-          <InputRadioGroup options={options2} OptionsPerLine={3} />
+          <InputRadioGroup
+            options={options2}
+            optionsPerLine={3}
+            value={value}
+            onChange={setValue}
+          />
         </div>
 
         <StorySubTitle>Description</StorySubTitle>
-        <InputRadioGroup options={options3} />
+        <InputRadioGroup options={options3} value={value} onChange={setValue} />
 
         <StorySubTitle>Error</StorySubTitle>
         <InputRadioGroup
           error='Lorem ipsum dolar sit emit'
           options={options1}
+          value={value}
+          onChange={setValue}
         />
 
         <StorySubTitle>Disabled</StorySubTitle>
-        <InputRadioGroup options={options1} disabled />
+        <InputRadioGroup
+          options={options1}
+          value={value}
+          disabled
+          onChange={setValue}
+        />
       </div>
     </div>
   )

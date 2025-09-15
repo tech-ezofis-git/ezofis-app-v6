@@ -1,11 +1,13 @@
+import type { ComponentProps } from 'react'
 import logoMark from '@/assets/logo/mark.png'
 import logoText from '@/assets/logo/text.png'
+import cn from '@/utils/cn'
 
-const Logo = () => {
+const Logo = ({ className }: ComponentProps<'div'>) => {
   return (
-    <div className='flex h-8.5 items-center gap-1'>
+    <div className={cn('flex h-8.5 items-center gap-1', className)}>
       <img alt='logo mark' className='size-8' src={logoMark} />
-      <img alt='logo text' className='hidden h-7 lg:block' src={logoText} />
+      <img alt='logo text' className='h-7' src={logoText} />
     </div>
   )
 }

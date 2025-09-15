@@ -1,7 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 import InputSwitchGroup from '@/components/base/inputs/InputSwitchGroup'
-import { StorySubTitle, StoryTitle } from './-components'
+import StorySubTitle from './-components/StorySubTitle'
+import StoryTitle from './-components/StoryTitle'
 
 export const Route = createFileRoute('/stories/input-switch-group')({
   component: RouteComponent,
@@ -76,30 +77,51 @@ function RouteComponent() {
           onChange={setValue}
         />
 
-        <StorySubTitle>Label</StorySubTitle>
+        <StorySubTitle>Meta</StorySubTitle>
         <InputSwitchGroup
+          className='max-w-80'
+          description='Lorem ipsum dolar sit amit'
           label='Label'
           options={options1}
-          tooltip='Lorem ipsum dolar sit emit'
+          tooltip='Lorem ipsum dolar sit amit'
+          value={value}
           optional
+          required
+          onChange={setValue}
         />
 
         <StorySubTitle>Options Per Line</StorySubTitle>
         <div className='max-w-96'>
-          <InputSwitchGroup options={options2} OptionsPerLine={3} />
+          <InputSwitchGroup
+            options={options2}
+            optionsPerLine={3}
+            value={value}
+            onChange={setValue}
+          />
         </div>
 
         <StorySubTitle>Description</StorySubTitle>
-        <InputSwitchGroup options={options3} />
+        <InputSwitchGroup
+          options={options3}
+          value={value}
+          onChange={setValue}
+        />
 
         <StorySubTitle>Error</StorySubTitle>
         <InputSwitchGroup
           error='Lorem ipsum dolar sit emit'
           options={options1}
+          value={value}
+          onChange={setValue}
         />
 
         <StorySubTitle>Disabled</StorySubTitle>
-        <InputSwitchGroup options={options1} disabled />
+        <InputSwitchGroup
+          options={options1}
+          value={value}
+          disabled
+          onChange={setValue}
+        />
       </div>
     </div>
   )

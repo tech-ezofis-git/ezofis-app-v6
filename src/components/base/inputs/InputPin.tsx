@@ -1,35 +1,30 @@
 import { PinInput as Base } from '@mantine/core'
-import React from 'react'
-import { classNames } from './constants'
+import { forwardRef } from 'react'
+import cn from '@/utils/cn'
+import { classNames } from './shared/constants'
 
 interface Props {
+  value: string
   className?: string
   disabled?: boolean
   error?: boolean
   length?: number
   placeholder?: string
-  value?: string
-  onChange?: (value: string) => void
+  onChange: (value: string) => void
 }
 
-const InputPin = React.forwardRef<HTMLInputElement, Props>(
-  (
-    { className, disabled, error, length, placeholder = '', value, onChange },
-    ref,
-  ) => {
+const InputPin = forwardRef<HTMLInputElement, Props>(
+  ({ placeholder = '', ...rest }, ref) => {
     return (
       <Base
-        className={className}
-        disabled={disabled}
-        error={error}
-        length={length}
+        {...rest}
         placeholder={placeholder}
         ref={ref}
-        value={value}
         classNames={{
-          input: classNames.input,
+          input: cn(classNames.input, 'h-10'),
+          pinInput: 'flex-1',
         }}
-        onChange={onChange}
+        oneTimeCode
       />
     )
   },

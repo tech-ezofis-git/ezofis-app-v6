@@ -1,30 +1,24 @@
 import { Radio as Base } from '@mantine/core'
-import React from 'react'
-import type { Option } from '@/types/option'
+import { forwardRef } from 'react'
 import cn from '@/utils/cn'
-import type { OptionsPerLine } from './types'
-import { classNames, inputWrapperOrder } from './constants'
-import { OptionsPerLineClass } from './constants'
+import type { SelectionGroupProps } from './shared/types'
 import InputLabel from './InputLabel'
 import InputRadio from './InputRadio'
+import { classNames, inputWrapperOrder } from './shared/constants'
+import { OptionsPerLineClass } from './shared/constants'
 
-interface Props {
-  options: Option[]
-  className?: string
-  description?: string
-  disabled?: boolean
-  error?: string
-  label?: string
-  optional?: boolean
-  OptionsPerLine?: OptionsPerLine
-  required?: boolean
-  tooltip?: string
-  tooltipWidth?: number
-  value?: number
-  onChange?: (value: number) => void
+interface Props extends SelectionGroupProps {
+  value: number | null
+  onChange: (value: number) => void
 }
 
-const InputRadioGroup = React.forwardRef<HTMLInputElement, Props>(
+const _classNames = {
+  description: classNames.description,
+  error: classNames.error,
+  label: classNames.label,
+}
+
+const InputRadioGroup = forwardRef<HTMLInputElement, Props>(
   (
     {
       className,
@@ -34,7 +28,7 @@ const InputRadioGroup = React.forwardRef<HTMLInputElement, Props>(
       label,
       optional,
       options,
-      OptionsPerLine = 1,
+      optionsPerLine,
       required,
       tooltip,
       tooltipWidth,
@@ -43,35 +37,30 @@ const InputRadioGroup = React.forwardRef<HTMLInputElement, Props>(
     },
     ref,
   ) => {
-    const optionsPerLineClass = OptionsPerLineClass[OptionsPerLine]
-    const normalizedValue = value ? String(value) : undefined
-    const handleChange = (value: string) => onChange?.(Number(value))
+    const _value = value ? String(value) : ''
+    const optionsPerLineClass = OptionsPerLineClass[optionsPerLine ?? 1]
+    const handleChange = (value: string) => onChange(Number(value))
+
+    const _label = label ? (
+      <InputLabel
+        label={label}
+        optional={optional}
+        required={required}
+        tooltip={tooltip}
+        tooltipWidth={tooltipWidth}
+      />
+    ) : undefined
 
     return (
       <Base.Group
         className={className}
+        classNames={_classNames}
         description={error ? undefined : description}
-        error={error}
         inputWrapperOrder={inputWrapperOrder}
+        label={_label}
         ref={ref}
         size='xs'
-        value={normalizedValue}
-        classNames={{
-          description: classNames.description,
-          error: classNames.error,
-          label: classNames.label,
-        }}
-        label={
-          label ? (
-            <InputLabel
-              label={label}
-              optional={optional}
-              required={required}
-              tooltip={tooltip}
-              tooltipWidth={tooltipWidth}
-            />
-          ) : undefined
-        }
+        value={_value}
         onChange={handleChange}
       >
         <div className={cn('grid gap-x-4 gap-y-3', optionsPerLineClass)}>
@@ -82,7 +71,7 @@ const InputRadioGroup = React.forwardRef<HTMLInputElement, Props>(
               error={error}
               key={option.id}
               label={option.name}
-              value={option.id}
+              value={String(option.id)}
             />
           ))}
         </div>

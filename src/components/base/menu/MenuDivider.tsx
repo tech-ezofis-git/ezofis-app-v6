@@ -5,8 +5,8 @@ interface Props {
   className?: string
 }
 
-const MenuDivider: React.FC<Props> = ({ className }) => {
-  return <Base.Divider className={cn('my-1.5 border-gray-600/10', className)} />
+const MenuDivider = ({ className }: Props) => {
+  return <Base.Divider className={cn('my-1.5 border-gray-3', className)} />
 }
 
 MenuDivider.displayName = 'MenuDivider'

@@ -1,9 +1,9 @@
-import type React from 'react'
+import type { ReactNode } from 'react'
 import { Drawer as Base } from '@mantine/core'
 
 interface Props {
-  children: React.ReactNode
-  isOpened: boolean
+  children: ReactNode
+  opened: boolean
   closeOnInteractOutside?: boolean
   position?: 'left' | 'right'
   width?: number | string
@@ -12,25 +12,24 @@ interface Props {
 
 const classNames = {
   body: 'p-0',
-  content: 'bg-surface',
+  content: 'bg-surface-raised',
   overlay: 'bg-overlay/60',
 }
 
-const Drawer: React.FC<Props> = ({
+const Drawer = ({
   children,
   closeOnInteractOutside = true,
-  isOpened,
+  opened,
   position = 'right',
   width = 420,
   onClose,
-}) => {
+}: Props) => {
   return (
     <Base
       classNames={classNames}
       closeOnClickOutside={closeOnInteractOutside}
       closeOnEscape={closeOnInteractOutside}
-      opened={isOpened}
-      overlayProps={{ blur: 3 }}
+      opened={opened}
       position={position}
       size={width}
       withCloseButton={false}

@@ -1,7 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 import InputTime from '@/components/base/inputs/InputTime'
-import { StorySubTitle, StoryTitle } from './-components'
+import StorySubTitle from './-components/StorySubTitle'
+import StoryTitle from './-components/StoryTitle'
 
 export const Route = createFileRoute('/stories/input-time')({
   component: RouteComponent,
@@ -18,46 +19,15 @@ function RouteComponent() {
         <StorySubTitle>Default</StorySubTitle>
         <InputTime className='max-w-80' value={value} onChange={setValue} />
 
-        <StorySubTitle>Label</StorySubTitle>
-        <InputTime
-          className='max-w-80'
-          label='Time'
-          value={value}
-          onChange={setValue}
-        />
-
-        <StorySubTitle>Required</StorySubTitle>
-        <InputTime
-          className='max-w-80'
-          label='Time'
-          value={value}
-          required
-          onChange={setValue}
-        />
-
-        <StorySubTitle>Optional</StorySubTitle>
-        <InputTime
-          className='max-w-80'
-          label='Time'
-          value={value}
-          optional
-          onChange={setValue}
-        />
-
-        <StorySubTitle>Tooltip</StorySubTitle>
-        <InputTime
-          className='max-w-80'
-          label='Time'
-          tooltip='Lorem ipsum dolar sit amit'
-          value={value}
-          onChange={setValue}
-        />
-
-        <StorySubTitle>Description</StorySubTitle>
+        <StorySubTitle>Meta</StorySubTitle>
         <InputTime
           className='max-w-80'
           description='Lorem ipsum dolar sit amit'
+          label='Label'
+          tooltip='Lorem ipsum dolar sit amit'
           value={value}
+          optional
+          required
           onChange={setValue}
         />
 
@@ -96,7 +66,8 @@ function RouteComponent() {
         <StorySubTitle>Min Time</StorySubTitle>
         <InputTime
           className='max-w-80'
-          minTime='10:00:00'
+          maxTime='24:00'
+          minTime='10:00'
           value={value}
           onChange={setValue}
         />
@@ -104,7 +75,8 @@ function RouteComponent() {
         <StorySubTitle>Max Time</StorySubTitle>
         <InputTime
           className='max-w-80'
-          maxTime='18:00:00'
+          maxTime='18:00'
+          minTime='00:00'
           value={value}
           onChange={setValue}
         />

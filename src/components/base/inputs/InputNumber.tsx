@@ -1,103 +1,76 @@
 import { NumberInput as Base } from '@mantine/core'
-import React from 'react'
+import { forwardRef } from 'react'
+import type { InputProps } from './shared/types'
 import ClearButton from './ClearButton'
-import { classNames, inputWrapperOrder } from './constants'
 import InputLabel from './InputLabel'
+import { classNames, inputWrapperOrder } from './shared/constants'
 
-interface Props {
+interface Props extends InputProps {
+  value: string | number
   allowDecimal?: boolean
-  className?: string
-  clearable?: boolean
   decimalScale?: number
-  description?: string
-  disabled?: boolean
-  error?: string
-  label?: string
-  optional?: boolean
-  placeholder?: string
   prefix?: string
-  readOnly?: boolean
-  required?: boolean
   suffix?: string
   thousandSeparator?: string | boolean
   thousandsGroupStyle?: 'none' | 'thousand' | 'lakh' | 'wan'
-  tooltip?: string
-  tooltipWidth?: number
-  value?: string | number
   withControls?: boolean
-  onChange?: (value: string | number) => void
+  onChange: (value: string | number) => void
 }
 
-const InputNumber = React.forwardRef<HTMLInputElement, Props>(
+const _classNames = {
+  control:
+    'border-gray-7 text-gray-11 hover:bg-gray-4 hover:text-gray-12 transition-colors',
+  description: classNames.description,
+  error: classNames.error,
+  input: classNames.input,
+  label: classNames.label,
+  wrapper: classNames.wrapper,
+}
+
+const InputNumber = forwardRef<HTMLInputElement, Props>(
   (
     {
-      allowDecimal,
-      className,
       clearable,
-      decimalScale,
       description,
-      disabled,
-      error,
       label,
       optional,
-      placeholder,
-      prefix,
-      readOnly,
       required,
-      suffix,
-      thousandSeparator,
-      thousandsGroupStyle,
       tooltip,
       tooltipWidth,
       value,
       withControls,
       onChange,
+      ...rest
     },
     ref,
   ) => {
-    const rightSection = clearable && value && (
-      <ClearButton className='mr-2' onClick={() => onChange?.('')} />
+    const _clearable = clearable && value
+    const _rightSection = _clearable && (
+      <ClearButton className='mr-2' onClick={() => onChange('')} />
     )
+
+    const _label = label ? (
+      <InputLabel
+        label={label}
+        optional={optional}
+        required={required}
+        tooltip={tooltip}
+        tooltipWidth={tooltipWidth}
+      />
+    ) : undefined
 
     return (
       <Base
-        allowDecimal={allowDecimal}
-        className={className}
-        decimalScale={decimalScale}
-        description={error ? undefined : description}
-        disabled={disabled}
-        error={error}
+        {...rest}
+        classNames={_classNames}
+        description={rest.error ? undefined : description}
         hideControls={!withControls}
         inputWrapperOrder={inputWrapperOrder}
-        placeholder={placeholder}
-        prefix={prefix}
-        readOnly={readOnly}
+        label={_label}
         ref={ref}
-        rightSection={rightSection}
-        rightSectionPointerEvents={rightSection ? 'auto' : 'none'}
-        suffix={suffix}
-        thousandSeparator={thousandSeparator}
-        thousandsGroupStyle={thousandsGroupStyle}
+        rightSection={_rightSection}
+        rightSectionPointerEvents={withControls || _clearable ? 'auto' : 'none'}
         value={value}
-        classNames={{
-          control: 'border-gray-600/25 text-gray-500 hover:bg-gray-600/10',
-          description: classNames.description,
-          error: classNames.error,
-          input: classNames.input,
-          label: classNames.label,
-          wrapper: classNames.wrapper,
-        }}
-        label={
-          label ? (
-            <InputLabel
-              label={label}
-              optional={optional}
-              required={required}
-              tooltip={tooltip}
-              tooltipWidth={tooltipWidth}
-            />
-          ) : undefined
-        }
         onChange={onChange}
       />
     )

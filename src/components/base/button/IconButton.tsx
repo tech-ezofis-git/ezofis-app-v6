@@ -1,10 +1,10 @@
-import React from 'react'
-import Icon from '@/components/base/Icon'
+import { type ComponentProps, forwardRef } from 'react'
+import Icon from '@/components/base/icon/Icon'
 import cn from '@/utils/cn'
 import type { ButtonColor, ButtonSize, ButtonVariant } from './types'
 import { getVariantClassName } from './helpers'
 
-interface Props extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface Props extends ComponentProps<'button'> {
   icon: string
   ariaLabel?: string
   className?: string
@@ -17,12 +17,14 @@ interface Props extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const sizeClassName: Record<ButtonSize, string> = {
-  md: 'size-10',
-  sm: 'size-9',
-  xs: 'size-8',
+  xs: 'size-6',
+  sm: 'size-7',
+  md: 'size-8',
+  lg: 'size-9',
+  xl: 'size-10',
 }
 
-const IconButton = React.forwardRef<HTMLButtonElement, Props>(
+const IconButton = forwardRef<HTMLButtonElement, Props>(
   (
     {
       ariaLabel,
@@ -32,14 +34,14 @@ const IconButton = React.forwardRef<HTMLButtonElement, Props>(
       icon,
       iconClass,
       loading,
-      size = 'sm',
+      size = 'lg',
       variant = 'solid',
       ...props
     },
     ref,
   ) => {
     const variantClassName = getVariantClassName(variant, color)
-    const computedClassName = cn(
+    const _className = cn(
       variantClassName,
       sizeClassName[size],
       'justify-center',
@@ -49,7 +51,7 @@ const IconButton = React.forwardRef<HTMLButtonElement, Props>(
     return (
       <button
         aria-label={ariaLabel}
-        className={computedClassName}
+        className={_className}
         data-loading={loading || undefined}
         disabled={disabled}
         ref={ref}

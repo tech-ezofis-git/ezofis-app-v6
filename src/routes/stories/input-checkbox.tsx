@@ -1,31 +1,55 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { useState } from 'react'
 import InputCheckbox from '@/components/base/inputs/InputCheckbox'
-import { StorySubTitle, StoryTitle } from './-components'
+import StorySubTitle from './-components/StorySubTitle'
+import StoryTitle from './-components/StoryTitle'
 
 export const Route = createFileRoute('/stories/input-checkbox')({
   component: RouteComponent,
 })
 
 function RouteComponent() {
+  const [checked, setChecked] = useState(false)
+
   return (
     <div>
       <StoryTitle>25. Input Checkbox</StoryTitle>
 
       <div className='space-y-16'>
         <StorySubTitle>Default</StorySubTitle>
-        <InputCheckbox label='Label' />
+        <InputCheckbox checked={checked} label='Label' onChange={setChecked} />
 
         <StorySubTitle>Description</StorySubTitle>
-        <InputCheckbox description='Lorem ipsum dolar sit amit' label='Label' />
+        <InputCheckbox
+          checked={checked}
+          description='Lorem ipsum dolar sit amit'
+          label='Label'
+          onChange={setChecked}
+        />
 
         <StorySubTitle>Error</StorySubTitle>
-        <InputCheckbox error='Error' label='Label' />
+        <InputCheckbox
+          checked={checked}
+          error='Error'
+          label='Label'
+          onChange={setChecked}
+        />
 
         <StorySubTitle>Disabled</StorySubTitle>
-        <InputCheckbox label='Label' disabled />
+        <InputCheckbox
+          checked={checked}
+          label='Label'
+          disabled
+          onChange={setChecked}
+        />
 
         <StorySubTitle>Indeterminate</StorySubTitle>
-        <InputCheckbox label='Label' indeterminate />
+        <InputCheckbox
+          checked={checked}
+          label='Label'
+          indeterminate
+          onChange={setChecked}
+        />
       </div>
     </div>
   )

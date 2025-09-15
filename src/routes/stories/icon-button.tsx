@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import IconButton from '@/components/base/button/IconButton'
-import { StorySubTitle, StoryTitle } from './-components'
+import StorySubTitle from './-components/StorySubTitle'
+import StoryTitle from './-components/StoryTitle'
 
 export const Route = createFileRoute('/stories/icon-button')({
   component: RouteComponent,
@@ -14,77 +15,73 @@ function RouteComponent() {
       <div className='space-y-16'>
         <StorySubTitle>Default</StorySubTitle>
         <div className='flex flex-wrap items-center gap-2'>
-          <IconButton icon='tabler:cloud-download' />
+          <IconButton icon='tabler:plus' />
         </div>
 
         <StorySubTitle>Colors</StorySubTitle>
         <div className='flex flex-wrap items-center gap-2'>
-          <IconButton icon='tabler:cloud-download' />
-          <IconButton color='red' icon='tabler:cloud-download' />
-          <IconButton color='gray' icon='tabler:cloud-download' />
+          <IconButton icon='tabler:plus' />
+          <IconButton color='secondary' icon='tabler:plus' />
+          <IconButton color='red' icon='tabler:plus' />
+          <IconButton color='green' icon='tabler:plus' />
+          <IconButton color='gray' icon='tabler:plus' />
         </div>
 
         <StorySubTitle>Loading</StorySubTitle>
         <div className='flex flex-wrap items-center gap-2'>
-          <IconButton icon='tabler:cloud-download' loading />
+          <IconButton icon='tabler:plus' loading />
         </div>
 
         <StorySubTitle>Disabled</StorySubTitle>
         <div className='flex flex-wrap items-center gap-2'>
-          <IconButton icon='tabler:cloud-download' disabled />
+          <IconButton icon='tabler:plus' disabled />
         </div>
 
         <StorySubTitle>Variants</StorySubTitle>
         <div className='space-y-6'>
           <div className='flex flex-wrap items-center gap-2'>
-            <IconButton icon='tabler:cloud-download' />
-            <IconButton icon='tabler:cloud-download' variant='outline' />
-            <IconButton icon='tabler:cloud-download' variant='subtle' />
-            <IconButton icon='tabler:cloud-download' variant='ghost' />
+            <IconButton icon='tabler:plus' />
+            <IconButton icon='tabler:plus' variant='outline' />
+            <IconButton icon='tabler:plus' variant='subtle' />
+            <IconButton icon='tabler:plus' variant='ghost' />
           </div>
           <div className='flex flex-wrap items-center gap-2'>
-            <IconButton color='red' icon='tabler:cloud-download' />
+            <IconButton color='secondary' icon='tabler:plus' />
             <IconButton
-              color='red'
-              icon='tabler:cloud-download'
+              color='secondary'
+              icon='tabler:plus'
               variant='outline'
             />
-            <IconButton
-              color='red'
-              icon='tabler:cloud-download'
-              variant='subtle'
-            />
-            <IconButton
-              color='red'
-              icon='tabler:cloud-download'
-              variant='ghost'
-            />
+            <IconButton color='secondary' icon='tabler:plus' variant='subtle' />
+            <IconButton color='secondary' icon='tabler:plus' variant='ghost' />
           </div>
           <div className='flex flex-wrap items-center gap-2'>
-            <IconButton color='gray' icon='tabler:cloud-download' />
-            <IconButton
-              color='gray'
-              icon='tabler:cloud-download'
-              variant='outline'
-            />
-            <IconButton
-              color='gray'
-              icon='tabler:cloud-download'
-              variant='subtle'
-            />
-            <IconButton
-              color='gray'
-              icon='tabler:cloud-download'
-              variant='ghost'
-            />
+            <IconButton color='red' icon='tabler:plus' />
+            <IconButton color='red' icon='tabler:plus' variant='outline' />
+            <IconButton color='red' icon='tabler:plus' variant='subtle' />
+            <IconButton color='red' icon='tabler:plus' variant='ghost' />
+          </div>
+          <div className='flex flex-wrap items-center gap-2'>
+            <IconButton color='green' icon='tabler:plus' />
+            <IconButton color='green' icon='tabler:plus' variant='outline' />
+            <IconButton color='green' icon='tabler:plus' variant='subtle' />
+            <IconButton color='green' icon='tabler:plus' variant='ghost' />
+          </div>
+          <div className='flex flex-wrap items-center gap-2'>
+            <IconButton color='gray' icon='tabler:plus' />
+            <IconButton color='gray' icon='tabler:plus' variant='outline' />
+            <IconButton color='gray' icon='tabler:plus' variant='subtle' />
+            <IconButton color='gray' icon='tabler:plus' variant='ghost' />
           </div>
         </div>
 
         <StorySubTitle>Sizes</StorySubTitle>
         <div className='flex flex-wrap items-center gap-2'>
-          <IconButton icon='tabler:cloud-download' size='xs' />
-          <IconButton icon='tabler:cloud-download' size='sm' />
-          <IconButton icon='tabler:cloud-download' size='md' />
+          <IconButton icon='tabler:plus' size='xs' />
+          <IconButton icon='tabler:plus' size='sm' />
+          <IconButton icon='tabler:plus' size='md' />
+          <IconButton icon='tabler:plus' size='lg' />
+          <IconButton icon='tabler:plus' size='xl' />
         </div>
       </div>
     </div>

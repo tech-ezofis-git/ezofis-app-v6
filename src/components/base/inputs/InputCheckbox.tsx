@@ -1,45 +1,27 @@
 import { Checkbox as Base } from '@mantine/core'
-import React, { type ChangeEvent } from 'react'
+import { type ChangeEvent, forwardRef } from 'react'
 import cn from '@/utils/cn'
+import type { SelectionProps } from './shared/types'
 
-interface Props {
-  label: string
-  checked?: boolean
-  className?: string
-  description?: string
-  disabled?: boolean
-  error?: string
+interface Props extends SelectionProps {
   indeterminate?: boolean
-  value?: string | number
-  onChange?: (value: boolean) => void
+  labelClassName?: string
 }
 
-const InputCheckbox = React.forwardRef<HTMLInputElement, Props>(
+const InputCheckbox = forwardRef<HTMLInputElement, Props>(
   (
-    {
-      checked,
-      className,
-      description,
-      disabled,
-      error,
-      indeterminate,
-      label,
-      value,
-      onChange,
-    },
+    { className, error, indeterminate, labelClassName, onChange, ...rest },
     ref,
   ) => {
-    const hasError = Boolean(error)
-    const normalizedValue = value ? String(value) : undefined
     const _classNames = {
-      description: 'mt-1 pl-2.5 text-sx text-gray-500',
-      icon: 'text-gray-0',
-      inner: 'mt-[1px]',
+      description: 'mt-1 pl-2 text-sm text-gray-10',
+      icon: 'text-white w-[50%]',
+      inner: 'size-5 flex items-center justify-center',
       input: cn(
-        'rounded border-gray-600/30 bg-transparent checked:border-primary checked:bg-primary focus-within:outline-primary/50 disabled:bg-surface-muted',
-        hasError && 'border-red',
+        'data-[indeterminate]:border-primary rounded border-gray-8 bg-transparent checked:border-primary-9 checked:bg-primary-9 focus-within:outline-primary-8 disabled:opacity-50 data-[indeterminate]:border-primary-9 data-[indeterminate]:bg-primary-9',
+        Boolean(error) && 'border-red-9',
       ),
-      label: 'pl-2.5 text-sm font-medium text-gray-800',
+      label: cn('pl-2 text-sm font-medium text-gray-12', labelClassName),
     }
 
     const handleChange = (e: ChangeEvent<HTMLInputElement>) =>
@@ -47,16 +29,12 @@ const InputCheckbox = React.forwardRef<HTMLInputElement, Props>(
 
     return (
       <Base
-        checked={checked}
-        className={cn(disabled && 'opacity-50', className)}
+        {...rest}
+        className={cn(rest.disabled && 'opacity-50', className)}
         classNames={_classNames}
-        description={description}
-        disabled={disabled}
         indeterminate={indeterminate}
-        label={label}
         ref={ref}
         size='xs'
-        value={normalizedValue}
         onChange={handleChange}
       />
     )

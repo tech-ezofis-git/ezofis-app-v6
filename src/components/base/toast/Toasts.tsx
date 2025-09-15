@@ -5,7 +5,7 @@ const Toasts = () => {
     <Base
       classNames={{
         notification:
-          'border border-gray-600/10 bg-surface-raised p-4 shadow-xl before:w-0',
+          'border border-gray-3 bg-surface-raised p-4 shadow-lg before:w-0',
       }}
     />
   )

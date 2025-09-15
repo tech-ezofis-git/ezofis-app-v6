@@ -4,7 +4,8 @@ import type { Option } from '@/types/option'
 import { getUserOptionListQueryOptions } from '@/api/dummy/queries'
 import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
 import InputSelectMultipleAsync from '@/components/base/inputs/InputSelectMultipleAsync'
-import { StorySubTitle, StoryTitle } from './-components'
+import StorySubTitle from './-components/StorySubTitle'
+import StoryTitle from './-components/StoryTitle'
 
 export const Route = createFileRoute('/stories/input-select-multiple')({
   component: RouteComponent,
@@ -178,7 +179,7 @@ const options3 = [
 ]
 
 function RouteComponent() {
-  const [selected, setSelected] = useState<Option[]>([])
+  const [value, setValue] = useState<Option[]>([])
 
   return (
     <div>
@@ -189,108 +190,65 @@ function RouteComponent() {
         <InputSelectMultiple
           className='max-w-80'
           options={options1}
-          value={selected}
-          onChange={setSelected}
+          value={value}
+          onChange={setValue}
+        />
+
+        <StorySubTitle>Meta</StorySubTitle>
+        <InputSelectMultiple
+          className='max-w-80'
+          description='Lorem ipsum dolar sit amit'
+          label='Label'
+          options={options1}
+          placeholder='Placeholder'
+          tooltip='Lorem ipsum dolar sit amit'
+          value={value}
+          optional
+          required
+          onChange={setValue}
         />
 
         <StorySubTitle>With Description</StorySubTitle>
         <InputSelectMultiple
           className='max-w-80'
           options={options2}
-          value={selected}
-          onChange={setSelected}
+          value={value}
+          onChange={setValue}
         />
 
         <StorySubTitle>With Disabled Options</StorySubTitle>
         <InputSelectMultiple
           className='max-w-80'
           options={options3}
-          value={selected}
-          onChange={setSelected}
+          value={value}
+          onChange={setValue}
         />
 
         <StorySubTitle>Searchable</StorySubTitle>
         <InputSelectMultiple
           className='max-w-80'
           options={options1}
-          value={selected}
+          value={value}
           searchable
-          onChange={setSelected}
+          onChange={setValue}
         />
 
         <StorySubTitle>Creatable</StorySubTitle>
         <InputSelectMultiple
           className='max-w-80'
           options={options1}
-          value={selected}
+          value={value}
           creatable
-          onChange={setSelected}
+          onChange={setValue}
         />
 
         <StorySubTitle>Dynamic Options</StorySubTitle>
         <InputSelectMultipleAsync
           className='max-w-80'
           description='Load more data on scroll'
+          value={value}
           getQueryOptions={getUserOptionListQueryOptions}
-          value={selected}
-          onChange={setSelected}
-        />
-
-        <StorySubTitle>Label</StorySubTitle>
-        <InputSelectMultiple
-          className='max-w-80'
-          label='Label'
-          options={options1}
-          value={selected}
-          onChange={setSelected}
-        />
-
-        <StorySubTitle>Required</StorySubTitle>
-        <InputSelectMultiple
-          className='max-w-80'
-          label='Label'
-          options={options1}
-          value={selected}
-          required
-          onChange={setSelected}
-        />
-
-        <StorySubTitle>Optional</StorySubTitle>
-        <InputSelectMultiple
-          className='max-w-80'
-          label='Label'
-          options={options1}
-          value={selected}
-          optional
-          onChange={setSelected}
-        />
-
-        <StorySubTitle>Tooltip</StorySubTitle>
-        <InputSelectMultiple
-          className='max-w-80'
-          label='Label'
-          options={options1}
-          tooltip='Lorem ipsum dolar sit amit'
-          value={selected}
-          onChange={setSelected}
-        />
-
-        <StorySubTitle>Description</StorySubTitle>
-        <InputSelectMultiple
-          className='max-w-80'
-          description='Lorem ipsum dolar sit amit'
-          options={options1}
-          value={selected}
-          onChange={setSelected}
-        />
-
-        <StorySubTitle>Placeholder</StorySubTitle>
-        <InputSelectMultiple
-          className='max-w-80'
-          options={options1}
-          placeholder='Select User'
-          value={selected}
-          onChange={setSelected}
+          onChange={setValue}
         />
 
         <StorySubTitle>Error</StorySubTitle>
@@ -298,8 +256,8 @@ function RouteComponent() {
           className='max-w-80'
           error='Lorem ipsum dolar sit amit'
           options={options1}
-          value={selected}
-          onChange={setSelected}
+          value={value}
+          onChange={setValue}
         />
 
         <StorySubTitle>Clearable</StorySubTitle>
@@ -307,27 +265,27 @@ function RouteComponent() {
           className='max-w-80'
           label='Label'
           options={options1}
-          value={selected}
+          value={value}
           clearable
-          onChange={setSelected}
+          onChange={setValue}
         />
 
         <StorySubTitle>Read Only</StorySubTitle>
         <InputSelectMultiple
           className='max-w-80'
           options={options1}
-          value={selected}
+          value={value}
           readOnly
-          onChange={setSelected}
+          onChange={setValue}
         />
 
         <StorySubTitle>Disabled</StorySubTitle>
         <InputSelectMultiple
           className='max-w-80'
           options={options1}
-          value={selected}
+          value={value}
           disabled
-          onChange={setSelected}
+          onChange={setValue}
         />
       </div>
     </div>

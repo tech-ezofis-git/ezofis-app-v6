@@ -1,65 +1,84 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { useState } from 'react'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
-import { StorySubTitle, StoryTitle } from './-components'
+import StorySubTitle from './-components/StorySubTitle'
+import StoryTitle from './-components/StoryTitle'
 
 export const Route = createFileRoute('/stories/input-textarea')({
   component: RouteComponent,
 })
 
 function RouteComponent() {
+  const [value, setValue] = useState('')
+
   return (
     <div>
       <StoryTitle>21. Input Textarea</StoryTitle>
 
       <div className='space-y-16'>
         <StorySubTitle>Default</StorySubTitle>
-        <InputTextarea className='max-w-80' />
+        <InputTextarea className='max-w-80' value={value} onChange={setValue} />
 
-        <StorySubTitle>Label</StorySubTitle>
-        <InputTextarea className='max-w-80' label='Textarea' />
-
-        <StorySubTitle>Required</StorySubTitle>
-        <InputTextarea className='max-w-80' label='Textarea' required />
-
-        <StorySubTitle>Optional</StorySubTitle>
-        <InputTextarea className='max-w-80' label='Textarea' optional />
-
-        <StorySubTitle>Tooltip</StorySubTitle>
-        <InputTextarea
-          className='max-w-80'
-          label='Textarea'
-          tooltip='Lorem ipsum dolar sit amit'
-        />
-
-        <StorySubTitle>Description</StorySubTitle>
+        <StorySubTitle>Meta</StorySubTitle>
         <InputTextarea
           className='max-w-80'
           description='Lorem ipsum dolar sit amit'
+          label='Label'
+          placeholder='Placeholder'
+          tooltip='Lorem ipsum dolar sit amit'
+          value={value}
+          optional
+          required
+          onChange={setValue}
         />
-
-        <StorySubTitle>Placeholder</StorySubTitle>
-        <InputTextarea className='max-w-80' placeholder='Placeholder' />
 
         <StorySubTitle>Error</StorySubTitle>
         <InputTextarea
           className='max-w-80'
           error='Lorem ipsum dolar sit amit'
+          value={value}
+          onChange={setValue}
         />
 
         <StorySubTitle>Read Only</StorySubTitle>
-        <InputTextarea className='max-w-80' readOnly />
+        <InputTextarea
+          className='max-w-80'
+          value={value}
+          readOnly
+          onChange={setValue}
+        />
 
         <StorySubTitle>Disabled</StorySubTitle>
-        <InputTextarea className='max-w-80' disabled />
+        <InputTextarea
+          className='max-w-80'
+          value={value}
+          disabled
+          onChange={setValue}
+        />
 
         <StorySubTitle>Resize</StorySubTitle>
-        <InputTextarea className='max-w-80' resize='vertical' />
+        <InputTextarea
+          className='max-w-80'
+          resize='vertical'
+          value={value}
+          onChange={setValue}
+        />
 
         <StorySubTitle>Autosize</StorySubTitle>
-        <InputTextarea className='max-w-80' autosize />
+        <InputTextarea
+          className='max-w-80'
+          value={value}
+          autosize
+          onChange={setValue}
+        />
 
         <StorySubTitle>Character Count</StorySubTitle>
-        <InputTextarea className='max-w-80' maxLength={200} />
+        <InputTextarea
+          className='max-w-80'
+          maxLength={200}
+          value={value}
+          onChange={setValue}
+        />
       </div>
     </div>
   )

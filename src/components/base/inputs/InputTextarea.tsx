@@ -1,45 +1,39 @@
 import { Textarea as Base } from '@mantine/core'
-import React, { type ChangeEvent, useState } from 'react'
-import { classNames, inputWrapperOrder } from './constants'
+import { type ChangeEvent, forwardRef, useState } from 'react'
+import cn from '@/utils/cn'
+import type { InputProps } from './shared/types'
 import InputLabel from './InputLabel'
+import { classNames, inputWrapperOrder } from './shared/constants'
 
-interface Props {
+interface Props extends InputProps {
+  value: string
   autosize?: boolean
-  className?: string
-  description?: string
-  disabled?: boolean
-  error?: string
-  label?: string
   maxLength?: number
   maxRows?: number
   minRows?: number
-  optional?: boolean
-  placeholder?: string
-  readOnly?: boolean
-  required?: boolean
   resize?: 'none' | 'vertical' | 'both'
   rows?: number
-  tooltip?: string
-  tooltipWidth?: number
-  value?: string
-  onChange?: (value: string) => void
+  onChange: (value: string) => void
 }
 
-const InputTextarea = React.forwardRef<HTMLTextAreaElement, Props>(
+const _classNames = {
+  description: classNames.description,
+  error: classNames.error,
+  input: cn(classNames.input, 'py-1'),
+  label: classNames.label,
+  wrapper: classNames.wrapper,
+}
+
+const InputTextarea = forwardRef<HTMLTextAreaElement, Props>(
   (
     {
       autosize,
-      className,
       description,
-      disabled,
-      error,
       label,
       maxLength,
       maxRows,
       minRows = 3,
       optional,
-      placeholder,
-      readOnly,
       required,
       resize,
       rows = 3,
@@ -47,12 +41,27 @@ const InputTextarea = React.forwardRef<HTMLTextAreaElement, Props>(
       tooltipWidth,
       value,
       onChange,
+      ...rest
     },
     ref,
   ) => {
     const [length, setLength] = useState(0)
 
+    const _label = label ? (
+      <InputLabel
+        label={label}
+        optional={optional}
+        required={required}
+        tooltip={tooltip}
+        tooltipWidth={tooltipWidth}
+      />
+    ) : undefined
+
     const getDescription = () => {
+      if (rest.error) {
+        return undefined
+      }
+
       if (maxLength) {
         return `${length}/${maxLength}`
       }
@@ -60,7 +69,7 @@ const InputTextarea = React.forwardRef<HTMLTextAreaElement, Props>(
     }
 
     const handleChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
-      onChange?.(e.currentTarget.value)
+      onChange(e.currentTarget.value)
 
       if (maxLength) {
         setLength(e.currentTarget.value.length)
@@ -69,39 +78,18 @@ const InputTextarea = React.forwardRef<HTMLTextAreaElement, Props>(
 
     return (
       <Base
+        {...rest}
         autosize={autosize}
-        className={className}
-        description={error ? undefined : getDescription()}
-        disabled={disabled}
-        error={error}
+        classNames={_classNames}
+        description={getDescription()}
         inputWrapperOrder={inputWrapperOrder}
+        label={_label}
         maxRows={maxRows}
         minRows={minRows}
-        placeholder={placeholder}
-        readOnly={readOnly}
         ref={ref}
         resize={resize}
         rows={rows}
         value={value}
-        classNames={{
-          description: classNames.description,
-          error: classNames.error,
-          input: classNames.input,
-          label: classNames.label,
-
-          wrapper: classNames.wrapper,
-        }}
-        label={
-          label ? (
-            <InputLabel
-              label={label}
-              optional={optional}
-              required={required}
-              tooltip={tooltip}
-              tooltipWidth={tooltipWidth}
-            />
-          ) : undefined
-        }
         onChange={handleChange}
       />
     )

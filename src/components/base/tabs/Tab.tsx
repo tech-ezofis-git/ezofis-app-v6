@@ -1,5 +1,5 @@
 import { Tabs as Base } from '@mantine/core'
-import Icon from '@/components/base/Icon'
+import Icon from '@/components/base/icon/Icon'
 
 interface Props {
   label: string
@@ -9,7 +9,7 @@ interface Props {
   iconClass?: string
 }
 
-const Tab: React.FC<Props> = ({ disabled, icon, iconClass, label, value }) => {
+const Tab = ({ disabled, icon, iconClass, label, value }: Props) => {
   return (
     <Base.Tab
       disabled={disabled}

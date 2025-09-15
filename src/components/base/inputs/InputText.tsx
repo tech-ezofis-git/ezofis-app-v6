@@ -1,44 +1,34 @@
 import { TextInput as Base } from '@mantine/core'
-import React, { type ChangeEvent } from 'react'
+import { type ChangeEvent, forwardRef, type ReactNode } from 'react'
+import type { InputProps } from './shared/types'
 import ClearButton from './ClearButton'
-import { classNames, inputWrapperOrder } from './constants'
 import InputLabel from './InputLabel'
+import { classNames, inputWrapperOrder } from './shared/constants'
 
-interface Props {
-  className?: string
-  clearable?: boolean
-  description?: string
-  disabled?: boolean
-  error?: string
-  label?: string
-  leftSection?: React.ReactNode
+interface Props extends InputProps {
+  value: string
+  leftSection?: ReactNode
   leftSectionPointerEvents?: 'auto' | 'none'
-  optional?: boolean
-  placeholder?: string
-  readOnly?: boolean
-  required?: boolean
-  rightSection?: React.ReactNode
+  rightSection?: ReactNode
   rightSectionPointerEvents?: 'auto' | 'none'
-  tooltip?: string
-  tooltipWidth?: number
-  value?: string
-  onChange?: (value: string) => void
+  onChange: (value: string) => void
 }
 
-const InputText = React.forwardRef<HTMLInputElement, Props>(
+const _classNames = {
+  description: classNames.description,
+  error: classNames.error,
+  input: classNames.input,
+  label: classNames.label,
+  wrapper: classNames.wrapper,
+}
+
+const InputText = forwardRef<HTMLInputElement, Props>(
   (
     {
-      className,
       clearable,
       description,
-      disabled,
-      error,
       label,
-      leftSection,
-      leftSectionPointerEvents = 'none',
       optional,
-      placeholder,
-      readOnly,
       required,
       rightSection,
       rightSectionPointerEvents = 'none',
@@ -46,53 +36,42 @@ const InputText = React.forwardRef<HTMLInputElement, Props>(
       tooltipWidth,
       value,
       onChange,
+      ...rest
     },
     ref,
   ) => {
-    const handleChange = (e: ChangeEvent<HTMLInputElement>) =>
-      onChange?.(e.currentTarget.value)
+    const _clearable = clearable && value
+    const _rightSection = _clearable ? (
+      <ClearButton onClick={() => onChange('')} />
+    ) : (
+      rightSection
+    )
 
-    const _rightSection =
-      clearable && value ? (
-        <ClearButton onClick={() => onChange?.('')} />
-      ) : (
-        rightSection
-      )
+    const _label = label ? (
+      <InputLabel
+        label={label}
+        optional={optional}
+        required={required}
+        tooltip={tooltip}
+        tooltipWidth={tooltipWidth}
+      />
+    ) : undefined
+
+    const handleChange = (e: ChangeEvent<HTMLInputElement>) =>
+      onChange(e.currentTarget.value)
 
     return (
       <Base
-        className={className}
-        description={error ? undefined : description}
-        disabled={disabled}
-        error={error}
+        {...rest}
+        classNames={_classNames}
+        description={rest.error ? undefined : description}
         inputWrapperOrder={inputWrapperOrder}
-        leftSection={leftSection}
-        leftSectionPointerEvents={leftSectionPointerEvents}
-        placeholder={placeholder}
-        readOnly={readOnly}
+        label={_label}
         ref={ref}
         rightSection={_rightSection}
         value={value}
-        classNames={{
-          description: classNames.description,
-          error: classNames.error,
-          input: classNames.input,
-          label: classNames.label,
-          wrapper: classNames.wrapper,
-        }}
-        label={
-          label ? (
-            <InputLabel
-              label={label}
-              optional={optional}
-              required={required}
-              tooltip={tooltip}
-              tooltipWidth={tooltipWidth}
-            />
-          ) : undefined
-        }
         rightSectionPointerEvents={
-          clearable ? 'auto' : rightSectionPointerEvents
+          _clearable ? 'auto' : rightSectionPointerEvents
         }
         onChange={handleChange}
       />

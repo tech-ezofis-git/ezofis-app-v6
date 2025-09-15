@@ -9,10 +9,11 @@ export const Route = createFileRoute('/')({
 
 function RouteComponent() {
   return (
-    <div className='flex min-h-screen'>
+    <div className='flex'>
       <ThemeSwitcher className='fixed top-6 right-6' />
 
-      <div className='mx-auto mt-6 hidden w-86 rounded-md border border-gray-600/5 bg-surface-raised p-6'></div>
+      {/* <div className='h-screen w-64 border-r border-gray-600/10 bg-surface p-6'></div>
+      <div className='h-screen flex-1 bg-surface-muted p-6'></div> */}
     </div>
   )
 }

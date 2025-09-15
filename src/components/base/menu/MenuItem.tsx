@@ -1,39 +1,51 @@
+import type { ReactNode } from 'react'
 import { Menu as Base } from '@mantine/core'
-import Icon from '@/components/base/Icon'
+import Icon from '@/components/base/icon/Icon'
 import cn from '@/utils/cn'
 
 interface Props {
   label: string
+  className?: string
   disabled?: boolean
   icon?: string
   iconClass?: string
+  leftSection?: ReactNode
+  rightSection?: ReactNode
   suffixIcon?: string
   suffixIconClass?: string
   onClick?: () => void
 }
 
-const MenuItem: React.FC<Props> = ({
+const MenuItem = ({
+  className,
   disabled,
   icon,
   iconClass,
   label,
+  leftSection,
+  rightSection,
   suffixIcon,
   suffixIconClass,
   onClick,
-}) => {
+}: Props) => {
   return (
     <Base.Item
+      className={className}
       disabled={disabled}
       leftSection={
-        icon && <Icon className={cn('text-gray-500', iconClass)} name={icon} />
+        leftSection ??
+        (icon && (
+          <Icon className={cn('transition-colors', iconClass)} name={icon} />
+        ))
       }
       rightSection={
-        suffixIcon && (
+        rightSection ??
+        (suffixIcon && (
           <Icon
-            className={cn('text-gray-500', suffixIconClass)}
+            className={cn('transition-colors', suffixIconClass)}
             name={suffixIcon}
           />
-        )
+        ))
       }
       onClick={onClick}
     >

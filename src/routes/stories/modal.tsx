@@ -4,14 +4,14 @@ import Button from '@/components/base/button/Button'
 import Modal from '@/components/base/Modal'
 import OverlayFooter from '@/components/base/overlay/OverlayFooter'
 import OverlayHeader from '@/components/base/overlay/OverlayHeader'
-import { StoryTitle } from './-components'
+import StoryTitle from './-components/StoryTitle'
 
 export const Route = createFileRoute('/stories/modal')({
   component: RouteComponent,
 })
 
 function RouteComponent() {
-  const [isOpened, setIsOpened] = useState(false)
+  const [opened, setopened] = useState(false)
 
   return (
     <div>
@@ -21,14 +21,14 @@ function RouteComponent() {
         color='gray'
         label='Open'
         variant='outline'
-        onClick={() => setIsOpened(true)}
+        onClick={() => setopened(true)}
       />
-      <Modal isOpened={isOpened} onClose={() => setIsOpened(false)}>
-        <OverlayHeader title='Modal' onClose={() => setIsOpened(false)} />
+      <Modal opened={opened} onClose={() => setopened(false)}>
+        <OverlayHeader title='Modal' onClose={() => setopened(false)} />
         <div className='h-40'></div>
         <OverlayFooter
-          onCancel={() => setIsOpened(false)}
-          onSave={() => setIsOpened(false)}
+          onCancel={() => setopened(false)}
+          onSave={() => setopened(false)}
         />
       </Modal>
     </div>

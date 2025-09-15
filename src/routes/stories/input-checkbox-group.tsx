@@ -1,7 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 import InputCheckboxGroup from '@/components/base/inputs/InputCheckboxGroup'
-import { StorySubTitle, StoryTitle } from './-components'
+import StorySubTitle from './-components/StorySubTitle'
+import StoryTitle from './-components/StoryTitle'
 
 export const Route = createFileRoute('/stories/input-checkbox-group')({
   component: RouteComponent,
@@ -76,30 +77,51 @@ function RouteComponent() {
           onChange={setValue}
         />
 
-        <StorySubTitle>Label</StorySubTitle>
+        <StorySubTitle>Meta</StorySubTitle>
         <InputCheckboxGroup
+          className='max-w-80'
+          description='Lorem ipsum dolar sit amit'
           label='Label'
           options={options1}
-          tooltip='Lorem ipsum dolar sit emit'
+          tooltip='Lorem ipsum dolar sit amit'
+          value={value}
           optional
+          required
+          onChange={setValue}
         />
 
         <StorySubTitle>Options Per Line</StorySubTitle>
         <div className='max-w-96'>
-          <InputCheckboxGroup options={options2} OptionsPerLine={3} />
+          <InputCheckboxGroup
+            options={options2}
+            optionsPerLine={3}
+            value={value}
+            onChange={setValue}
+          />
         </div>
 
         <StorySubTitle>Description</StorySubTitle>
-        <InputCheckboxGroup options={options3} />
+        <InputCheckboxGroup
+          options={options3}
+          value={value}
+          onChange={setValue}
+        />
 
         <StorySubTitle>Error</StorySubTitle>
         <InputCheckboxGroup
           error='Lorem ipsum dolar sit emit'
           options={options1}
+          value={value}
+          onChange={setValue}
         />
 
         <StorySubTitle>Disabled</StorySubTitle>
-        <InputCheckboxGroup options={options1} disabled />
+        <InputCheckboxGroup
+          options={options1}
+          value={value}
+          disabled
+          onChange={setValue}
+        />
       </div>
     </div>
   )

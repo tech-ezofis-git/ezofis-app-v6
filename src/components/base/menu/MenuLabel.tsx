@@ -1,18 +1,19 @@
+import type { ReactNode } from 'react'
 import { Menu as Base } from '@mantine/core'
 import cn from '@/utils/cn'
 
 interface Props {
-  children: React.ReactNode
+  children: ReactNode
   className?: string
 }
 
-const MenuLabel: React.FC<Props> = ({ children, className }) => {
-  const computedClassName = cn(
-    'flex h-7 items-center px-2 py-0 text-sx font-medium text-gray-500',
+const MenuLabel = ({ children, className }: Props) => {
+  const _className = cn(
+    'flex h-6 items-center px-2 py-0 text-xs font-medium text-gray-10',
     className,
   )
 
-  return <Base.Label className={computedClassName}>{children}</Base.Label>
+  return <Base.Label className={_className}>{children}</Base.Label>
 }
 
 MenuLabel.displayName = 'MenuLabel'

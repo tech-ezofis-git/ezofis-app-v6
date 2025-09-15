@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import Highlight from '@/components/base/Highlight'
-import { StoryTitle } from './-components'
+import StoryTitle from './-components/StoryTitle'
 
 export const Route = createFileRoute('/stories/highlight')({
   component: RouteComponent,

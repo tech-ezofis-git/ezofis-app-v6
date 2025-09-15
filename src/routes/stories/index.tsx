@@ -39,6 +39,12 @@ const routes2 = [
   { name: 'Input Time', path: '/stories/input-time' },
   { name: 'Input Select', path: '/stories/input-select' },
   { name: 'Input Select Multiple', path: '/stories/input-select-multiple' },
+  { name: 'Table', path: '/stories/table' },
+  { name: 'Data Table', path: '/stories/data-table' },
+  { name: 'Stepper', path: '/stories/stepper' },
+  { name: 'Input Radio Card', path: '/stories/input-radio-card' },
+  { name: 'Input Checkbox Card', path: '/stories/input-checkbox-card' },
+  { name: 'Empty State', path: '/stories/empty-state' },
 ]
 
 function Item({
@@ -53,7 +59,7 @@ function Item({
       {routes.map((route, index) => (
         <li key={route.name}>
           <Link
-            className='text-base font-medium transition-colors hover:text-gray-950 hover:underline'
+            className='text-base transition-colors hover:text-gray-12 hover:underline'
             to={route.path}
           >
             {start + index + 1}. {route.name}

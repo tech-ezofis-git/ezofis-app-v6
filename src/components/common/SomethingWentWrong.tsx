@@ -1,5 +1,5 @@
 import Button from '@/components/base/button/Button'
-import Icon from '@/components/base/Icon'
+import Icon from '@/components/base/icon/Icon'
 
 const SomethingWentWrong = () => {
   const goHome = () => {
@@ -13,14 +13,14 @@ const SomethingWentWrong = () => {
   return (
     <div className='flex h-screen w-screen items-center justify-center'>
       <div className='flex max-w-2xl flex-col items-center'>
-        <div className='mb-8 flex size-24 items-center justify-center rounded-full bg-gray-600/10'>
-          <Icon className='size-10 text-red' name='tabler:alert-triangle' />
+        <div className='bg-gray-200 mb-8 flex size-24 items-center justify-center rounded-full'>
+          <Icon className='text-red size-10' name='tabler:alert-triangle' />
         </div>
 
-        <h1 className='font-poppins text-xl font-bold text-gray-900'>
+        <h1 className='text-gray-800 font-poppins text-xl font-bold'>
           Oops! Something Went Wrong
         </h1>
-        <p className='mt-2 text-center text-sm text-balance text-gray-600'>
+        <p className='mt-2 text-center text-sm text-balance text-gray-9'>
           An unexpected error occurred. Please try reloading the page or come
           back later. We apologize for the inconvenience.
         </p>
@@ -39,4 +39,5 @@ const SomethingWentWrong = () => {
   )
 }
 
+SomethingWentWrong.displayName = 'SomethingWentWrong'
 export default SomethingWentWrong

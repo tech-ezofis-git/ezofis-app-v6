@@ -1,41 +1,42 @@
 import type { TooltipProps as BaseProps } from '@mantine/core'
+import type { ReactNode } from 'react'
 import { Tooltip as Base } from '@mantine/core'
-import React from 'react'
 import cn from '@/utils/cn'
 
 interface Props {
-  children: React.ReactNode
+  children: ReactNode
   content: string
   closeDelay?: number
   color?: TooltipColor
-  isOpened?: boolean
   offset?: BaseProps['offset']
   openDelay?: number
+  opened?: boolean
   position?: BaseProps['position']
   width?: number
 }
 
-type TooltipColor = 'gray' | 'primary' | 'red'
+type TooltipColor = 'gray' | 'primary' | 'secondary' | 'red'
 
 const colorClassName: Record<TooltipColor, string> = {
-  gray: 'bg-gray-800',
-  primary: 'bg-primary',
-  red: 'bg-red',
+  gray: 'bg-gray-12 text-gray-0',
+  primary: 'bg-primary-9',
+  red: 'bg-red-9',
+  secondary: 'bg-secondary-9',
 }
 
-const Tooltip: React.FC<Props> = ({
+const Tooltip = ({
   children,
   closeDelay = 0,
   color = 'gray',
   content,
-  isOpened,
   offset,
   openDelay = 0,
+  opened,
   position,
   width,
-}) => {
-  const computedClassName = cn(
-    'rounded px-2 py-1 text-xs font-medium text-gray-0',
+}: Props) => {
+  const _className = cn(
+    'rounded px-2 py-1 text-xs font-medium text-white',
     colorClassName[color],
   )
 
@@ -45,7 +46,7 @@ const Tooltip: React.FC<Props> = ({
       arrowRadius={1.5}
       arrowSize={6}
       closeDelay={closeDelay}
-      defaultOpened={isOpened}
+      defaultOpened={opened}
       label={content}
       multiline={!!width}
       offset={offset}
@@ -55,10 +56,12 @@ const Tooltip: React.FC<Props> = ({
       w={width}
       withArrow
       classNames={{
-        tooltip: computedClassName,
+        tooltip: _className,
       }}
     >
-      <div className='group inline-block'>{children}</div>
+      <div className='group inline-flex items-center justify-center'>
+        {children}
+      </div>
     </Base>
   )
 }

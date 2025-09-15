@@ -1,47 +1,90 @@
-import { useState } from 'react'
+import IconButton from '@/components/base/button/IconButton'
+import cn from '@/utils/cn'
 import PaginationControls from './PaginationControls'
 import PaginationItemsPerPage from './PaginationItemsPerPage'
 import PaginationSummary from './PaginationSummary'
 
-interface Props {
-  totalRows: number
-  value: number
+export interface Props {
+  page: number
+  pageSize: number
+  totalItems: number
+  className?: string
   itemLabel?: string
-  onChange: (value: number) => void
+  showPageNumbers?: boolean
+  onPageChange: (value: number) => void
+  onPageSizeChange: (value: number) => void
 }
 
-const Pagination: React.FC<Props> = ({
+const Pagination = ({
+  className,
   itemLabel = 'Items',
-  totalRows,
-  value,
-  onChange,
-}) => {
-  const [rowsPerPage, setRowsPerPage] = useState(10)
-  const totalPages = Math.ceil(totalRows / rowsPerPage)
+  page,
+  pageSize,
+  showPageNumbers = true,
+  totalItems,
+  onPageChange,
+  onPageSizeChange,
+}: Props) => {
+  const totalPages = Math.ceil(totalItems / pageSize)
 
-  const handleRowsPerPageChange = (value: number) => {
-    setRowsPerPage(value)
-    onChange(1)
+  const handlePageSizeChange = (value: number) => {
+    onPageSizeChange(value)
+    onPageChange(1)
   }
 
+  const _className = cn(
+    'grid gap-4 sm:grid-cols-2',
+    showPageNumbers && 'lg:grid-cols-3',
+    className,
+  )
+
   return (
-    <div className='grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3'>
+    <div className={_className}>
       <PaginationSummary
-        currentPage={value}
+        currentPage={page}
         itemLabel={itemLabel}
-        rowsPerPage={rowsPerPage}
-        totalRows={totalRows}
+        pageSize={pageSize}
+        totalItems={totalItems}
       />
-      <PaginationControls
-        totalPages={totalPages}
-        value={value}
-        onChange={onChange}
-      />
-      <PaginationItemsPerPage
-        itemLabel={itemLabel}
-        value={rowsPerPage}
-        onChange={handleRowsPerPageChange}
-      />
+      {showPageNumbers && (
+        <>
+          <PaginationControls
+            page={page}
+            totalPages={totalPages}
+            onPageChange={onPageChange}
+          />
+          <PaginationItemsPerPage
+            className='hidden lg:flex'
+            itemLabel={itemLabel}
+            pageSize={pageSize}
+            onPageSizeChange={handlePageSizeChange}
+          />
+        </>
+      )}
+
+      {!showPageNumbers && (
+        <div className='flex items-center justify-end gap-2'>
+          <PaginationItemsPerPage
+            itemLabel={itemLabel}
+            pageSize={pageSize}
+            onPageSizeChange={handlePageSizeChange}
+          />
+          <IconButton
+            color='gray'
+            disabled={page === 1}
+            icon='tabler:chevron-left'
+            variant='outline'
+            onClick={() => onPageChange(page - 1)}
+          />
+          <IconButton
+            color='gray'
+            disabled={page === totalPages}
+            icon='tabler:chevron-right'
+            variant='outline'
+            onClick={() => onPageChange(page + 1)}
+          />
+        </div>
+      )}
     </div>
   )
 }

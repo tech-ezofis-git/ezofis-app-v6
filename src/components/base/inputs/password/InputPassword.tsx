@@ -1,75 +1,68 @@
 import { PasswordInput as Base } from '@mantine/core'
-import React, { type ChangeEvent } from 'react'
-import { classNames, inputWrapperOrder } from '../constants'
+import { type ChangeEvent, forwardRef, type ReactNode } from 'react'
+import type { InputProps } from '../shared/types'
 import InputLabel from '../InputLabel'
+import { classNames, inputWrapperOrder } from '../shared/constants'
 import VisibilityToggleIcon from './VisibilityToggleIcon'
 
-interface Props {
-  className?: string
-  description?: string
-  disabled?: boolean
-  error?: string
-  label?: string
-  leftSection?: React.ReactNode
-  optional?: boolean
-  required?: boolean
-  tooltip?: string
-  tooltipWidth?: number
-  value?: string
-  onChange?: (value: string) => void
+interface Props
+  extends Omit<InputProps, 'clearable' | 'placeholder' | 'readOnly'> {
+  value: string
+  leftSection?: ReactNode
+  showPlaceholder?: boolean
+  onChange: (value: string) => void
 }
 
-const InputPassword = React.forwardRef<HTMLInputElement, Props>(
+const _classNames = {
+  description: classNames.description,
+  error: classNames.error,
+  innerInput: 'placeholder:font-normal placeholder:text-gray-8',
+  input: classNames.input,
+  label: classNames.label,
+  visibilityToggle: 'hover:bg-gray-4 group size-7',
+  wrapper: classNames.wrapper,
+}
+
+const InputPassword = forwardRef<HTMLInputElement, Props>(
   (
     {
-      className,
       description,
-      disabled,
-      error,
       label,
-      leftSection,
       optional,
       required,
+      showPlaceholder,
       tooltip,
       tooltipWidth,
       value,
       onChange,
+      ...rest
     },
     ref,
   ) => {
+    const _label = label ? (
+      <InputLabel
+        label={label}
+        optional={optional}
+        required={required}
+        tooltip={tooltip}
+        tooltipWidth={tooltipWidth}
+      />
+    ) : undefined
+
     const handleChange = (e: ChangeEvent<HTMLInputElement>) =>
-      onChange?.(e.currentTarget.value)
+      onChange(e.currentTarget.value)
 
     return (
       <Base
-        className={className}
-        description={error ? undefined : description}
-        disabled={disabled}
-        error={error}
+        {...rest}
+        classNames={_classNames}
+        description={rest.error ? undefined : description}
         inputWrapperOrder={inputWrapperOrder}
-        leftSection={leftSection}
+        label={_label}
+        placeholder={showPlaceholder ? '••••••••••' : undefined}
         ref={ref}
         value={value}
         visibilityToggleIcon={VisibilityToggleIcon}
-        classNames={{
-          description: classNames.description,
-          error: classNames.error,
-          input: classNames.input,
-          label: classNames.label,
-          visibilityToggle: 'hover:bg-gray-600/10',
-          wrapper: classNames.wrapper,
-        }}
-        label={
-          label ? (
-            <InputLabel
-              label={label}
-              optional={optional}
-              required={required}
-              tooltip={tooltip}
-              tooltipWidth={tooltipWidth}
-            />
-          ) : undefined
-        }
         onChange={handleChange}
       />
     )

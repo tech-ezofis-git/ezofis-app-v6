@@ -1,28 +1,29 @@
-import type { PopoverProps } from '@mantine/core'
+import type { PopoverProps as BaseProps } from '@mantine/core'
+import type { ReactNode } from 'react'
 import { Popover as Base } from '@mantine/core'
 
 interface Props {
-  children: React.ReactNode
-  target: React.ReactNode
-  offset?: PopoverProps['offset']
-  position?: PopoverProps['position']
-  width?: PopoverProps['width']
+  children: ReactNode
+  target: ReactNode
+  offset?: BaseProps['offset']
+  position?: BaseProps['position']
+  width?: BaseProps['width']
   withArrow?: boolean
 }
 
 const classNames = {
   arrow: 'bg-surface-raised',
-  dropdown: 'border-0 bg-surface-raised p-0 ring-1 ring-gray-600/10',
+  dropdown: 'bg-surface-raised p-0 shadow-lg border border-gray-3',
 }
 
-const Popover: React.FC<Props> = ({
+const Popover = ({
   children,
   offset,
   position,
   target,
   width,
-  withArrow = true,
-}) => {
+  withArrow = false,
+}: Props) => {
   return (
     <Base
       arrowOffset={20}
