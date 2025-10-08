@@ -1,6 +1,6 @@
 import { AnimatePresence } from 'motion/react'
 import { useState } from 'react'
-import AnimateEntrance from '@/components/common/AnimateEntrance'
+import AnimateEntrancePop from '@/components/common/animations/AnimateEntrancePop'
 import SignInForm from './components/SignInForm'
 import VerificationForm from './components/VerificationForm'
 
@@ -11,12 +11,12 @@ const SignInPage = () => {
 
   return (
     <AnimatePresence initial={false} mode='wait'>
-      <AnimateEntrance key={view}>
+      <AnimateEntrancePop key={view}>
         {view === 'verification-form' && <VerificationForm />}
         {view === 'sign-in-form' && (
           <SignInForm onChangeView={() => setView('verification-form')} />
         )}
-      </AnimateEntrance>
+      </AnimateEntrancePop>
     </AnimatePresence>
   )
 }

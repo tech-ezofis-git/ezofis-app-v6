@@ -3,7 +3,7 @@ import { useState } from 'react'
 import Button from '@/components/base/button/Button'
 import IconIllustrated from '@/components/base/icon/IconIllustrated'
 import InputPassword from '@/components/base/inputs/password/InputPassword'
-import AuthTitle from '@/layouts/auth/components/AuthTitle'
+import HeroText from '@/components/common/HeroText'
 import PasswordRequirements from '@/layouts/auth/components/PasswordRequirements'
 
 const ResetPasswordPage = () => {
@@ -23,7 +23,7 @@ const ResetPasswordPage = () => {
   return (
     <>
       <IconIllustrated icon='tabler:lock-password' />
-      <AuthTitle
+      <HeroText
         description='Create a new password for your account.'
         title='Reset Password'
       />

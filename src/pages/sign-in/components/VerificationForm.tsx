@@ -3,9 +3,9 @@ import { useState } from 'react'
 import Button from '@/components/base/button/Button'
 import IconIllustrated from '@/components/base/icon/IconIllustrated'
 import InputPin from '@/components/base/inputs/InputPin'
-import authUserStore from '@/hooks/authUserStore'
-import AuthTitle from '@/layouts/auth/components/AuthTitle'
+import HeroText from '@/components/common/HeroText'
 import useResendTimer from '@/layouts/auth/hooks/useResendTimer'
+import authUserStore from '@/stores/authUserStore'
 
 const VerificationForm = () => {
   const navigate = useNavigate()
@@ -43,7 +43,7 @@ const VerificationForm = () => {
   return (
     <>
       <IconIllustrated icon='tabler:shield' />
-      <AuthTitle description={description()} title='Two-Step Verification' />
+      <HeroText description={description()} title='Two-Step Verification' />
 
       <InputPin length={6} placeholder='0' value={code} onChange={setCode} />
 

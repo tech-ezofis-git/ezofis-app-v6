@@ -1,6 +1,6 @@
 import { useNavigate } from '@tanstack/react-router'
 import Button from '@/components/base/button/Button'
-import Logo from '@/components/common/logo/Logo'
+import Logo from '@/components/common/Logo'
 
 interface Props {
   isTokenValid: boolean

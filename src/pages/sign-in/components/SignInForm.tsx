@@ -9,8 +9,8 @@ import IconIllustrated from '@/components/base/icon/IconIllustrated'
 import InputCheckbox from '@/components/base/inputs/InputCheckbox'
 import InputText from '@/components/base/inputs/InputText'
 import InputPassword from '@/components/base/inputs/password/InputPassword'
-import authUserStore from '@/hooks/authUserStore'
-import AuthTitle from '@/layouts/auth/components/AuthTitle'
+import HeroText from '@/components/common/HeroText'
+import authUserStore from '@/stores/authUserStore'
 
 interface Props {
   onChangeView: () => void
@@ -42,7 +42,7 @@ const SignInForm = ({ onChangeView }: Props) => {
   return (
     <>
       <IconIllustrated icon='tabler:user' />
-      <AuthTitle
+      <HeroText
         description='Sign in to continue managing your workspace.'
         title='Welcome Back'
       />

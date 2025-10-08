@@ -31,18 +31,18 @@ const Stepper = ({
     <Base
       active={active}
       orientation={orientation}
-      size='sm'
+      size='xs'
       classNames={{
-        separator: 'rounded-full bg-gray-4',
+        separator: 'rounded-full bg-gray-3',
         step: 'disabled:opacity-50',
         stepBody: 'ml-4',
         stepCompletedIcon: 'text-primary-11 [&>svg]:!size-3.5',
         stepDescription: 'm-0 text-sm font-medium text-gray-12',
         stepIcon:
-          'border-0 bg-gray-4 text-sm font-semibold text-gray-11 data-[completed]:bg-primary-4 data-[progress]:bg-primary-9 data-[progress]:text-white',
+          'border-0 bg-gray-3 text-sm font-semibold text-gray-11 data-[completed]:bg-primary-4 data-[progress]:bg-primary-9 data-[progress]:text-white',
         stepLabel: 'text-xs leading-5 text-gray-10',
         stepLoader: 'after:border-white after:border-t-transparent',
-        verticalSeparator: 'rounded-full border-gray-4 bg-gray-4',
+        verticalSeparator: 'rounded-full border-gray-3 bg-gray-3',
       }}
       onStepClick={setActive}
     >

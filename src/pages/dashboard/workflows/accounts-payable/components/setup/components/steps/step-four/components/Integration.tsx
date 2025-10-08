@@ -1,0 +1,41 @@
+import Badge from '@/components/base/Badge'
+import Icon from '@/components/base/icon/Icon'
+
+interface Props {
+  account: string
+  icon: string
+  name: string
+  platform: string
+  status: string
+}
+
+const Integration = ({ account, icon, name, platform, status }: Props) => {
+  return (
+    <div className='rounded-md border border-gray-3 p-5' key={name}>
+      <div className='mb-3 flex flex-wrap items-center gap-4 border-b border-gray-3 pb-5'>
+        <div className='flex size-11 items-center justify-center rounded-md border border-gray-3 bg-gray-2'>
+          <Icon className='size-6' name={icon} />
+        </div>
+
+        <div className='text-base font-semibold text-gray-13'>{name}</div>
+        <div className='flex-1' />
+        <Badge className='capitalize' color='green' label={status} />
+      </div>
+
+      <div className='flex h-9 items-center justify-between gap-3'>
+        <div>Platform:</div>
+        <div className='truncate font-medium text-gray-12 capitalize'>
+          {platform}
+        </div>
+      </div>
+
+      <div className='flex h-9 items-center justify-between gap-3'>
+        <div>Account:</div>
+        <div className='truncate font-medium text-gray-12'>{account}</div>
+      </div>
+    </div>
+  )
+}
+
+Integration.displayName = 'Integration'
+export default Integration

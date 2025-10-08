@@ -1,6 +1,6 @@
 import Button from '@/components/base/button/Button'
 import IconIllustrated from '@/components/base/icon/IconIllustrated'
-import AuthTitle from '@/layouts/auth/components/AuthTitle'
+import HeroText from '@/components/common/HeroText'
 import authUserStore from '@/stores/authUserStore'
 import onBoardingStore from '../store/onBoardingStore'
 
@@ -13,7 +13,7 @@ const StepZero = () => {
   return (
     <>
       <IconIllustrated icon='solar:hand-shake-outline' />
-      <AuthTitle
+      <HeroText
         description="We're excited to have you join us! To personalize your experience and help you get the most out of EZOFIS, we'd love to learn a bit about you. This will only take a few minutes."
         title='Welcome to EZOFIS!'
       />

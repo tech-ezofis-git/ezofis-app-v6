@@ -3,7 +3,7 @@ import type { ButtonColor, ButtonVariant } from './types'
 
 function getVariantClassName(variant: ButtonVariant, color: ButtonColor) {
   const className = tv({
-    base: 'flex shrink-0 cursor-pointer appearance-none items-center gap-1.5 rounded-md border border-transparent font-medium transition-colors outline-none select-none focus-visible:ring-2 focus-visible:ring-primary-8 active:translate-y-px disabled:pointer-events-none disabled:opacity-50 data-[loading]:pointer-events-none',
+    base: 'flex shrink-0 cursor-pointer appearance-none items-center gap-2 rounded-md border border-transparent font-medium outline-primary-8 transition-colors select-none focus-visible:outline-2 active:translate-y-px disabled:pointer-events-none disabled:opacity-50 data-[loading]:pointer-events-none',
     compoundVariants: [
       {
         class: 'bg-gray-9 hover:bg-gray-10',
@@ -119,7 +119,7 @@ function getVariantClassName(variant: ButtonVariant, color: ButtonColor) {
       },
       variant: {
         ghost: '',
-        outline: '',
+        outline: 'bg-surface',
         solid: 'text-white shadow-sm',
         subtle: '',
       },

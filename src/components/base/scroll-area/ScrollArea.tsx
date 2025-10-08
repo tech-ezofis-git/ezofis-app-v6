@@ -5,13 +5,13 @@ import { ScrollArea as Base } from '@mantine/core'
 interface Props {
   children?: ReactNode
   className?: string
-  height?: number
+  height?: BaseProps['h']
   overscrollBehavior?: BaseProps['overscrollBehavior']
   scrollbars?: BaseProps['scrollbars']
   scrollbarSize?: number
   type?: BaseProps['type']
   viewportRef?: BaseProps['viewportRef']
-  width?: number
+  width?: BaseProps['w']
   onBottomReached?: () => void
   onScrollPositionChange?: BaseProps['onScrollPositionChange']
   onTopReached?: () => void
@@ -39,6 +39,7 @@ const ScrollArea = ({
       type={type}
       w={width}
       classNames={{
+        content: 'h-full',
         scrollbar: 'w-1 p-0',
         thumb: 'bg-gray-8',
       }}

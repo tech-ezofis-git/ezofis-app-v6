@@ -12,7 +12,7 @@ interface Props {
 
 const classNames = {
   body: 'p-0',
-  content: 'bg-surface-raised',
+  content: 'bg-surface',
   overlay: 'bg-overlay/60',
 }
 

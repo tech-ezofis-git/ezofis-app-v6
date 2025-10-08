@@ -28,3 +28,13 @@
     border-style: dashed;
   }
 }
+
+.sparkline-chart {
+  @mixin light {
+    --chart-color: var(--mantine-color-orange-8);
+  }
+
+  @mixin dark {
+    --chart-color: var(--mantine-color-lime-4);
+  }
+}

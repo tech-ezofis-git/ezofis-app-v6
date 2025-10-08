@@ -1,5 +1,5 @@
 import { Combobox as Base, Input, InputBase } from '@mantine/core'
-import { forwardRef, useMemo } from 'react'
+import { forwardRef, type ReactNode, useMemo } from 'react'
 import type { Option } from '@/types/option'
 import Icon from '@/components/base/icon/Icon'
 import cn from '@/utils/cn'
@@ -10,6 +10,7 @@ import { classNames, inputWrapperOrder } from '../shared/constants'
 
 interface Props extends InputProps {
   value: Option[]
+  leftSection?: ReactNode
   loading?: boolean
   variant?: SelectVariant
   onChange: (value: Option[]) => void

@@ -8,6 +8,7 @@ interface Props {
   content: string
   closeDelay?: number
   color?: TooltipColor
+  disabled?: boolean
   offset?: BaseProps['offset']
   openDelay?: number
   opened?: boolean
@@ -29,6 +30,7 @@ const Tooltip = ({
   closeDelay = 0,
   color = 'gray',
   content,
+  disabled,
   offset,
   openDelay = 0,
   opened,
@@ -47,6 +49,7 @@ const Tooltip = ({
       arrowSize={6}
       closeDelay={closeDelay}
       defaultOpened={opened}
+      disabled={disabled}
       label={content}
       multiline={!!width}
       offset={offset}

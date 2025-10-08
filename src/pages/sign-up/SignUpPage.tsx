@@ -1,6 +1,6 @@
 import { AnimatePresence } from 'motion/react'
 import { useState } from 'react'
-import AnimateEntrance from '@/components/common/AnimateEntrance'
+import AnimateEntrancePop from '@/components/common/animations/AnimateEntrancePop'
 import SignUpForm from './components/SignUpForm'
 import VerifyEmailForm from './components/VerifyEmailForm'
 
@@ -12,7 +12,7 @@ const SignUpPage = () => {
 
   return (
     <AnimatePresence initial={false} mode='wait'>
-      <AnimateEntrance key={view}>
+      <AnimateEntrancePop key={view}>
         {view === 'verify-email-form' && <VerifyEmailForm email={email} />}
         {view === 'sign-up-form' && (
           <SignUpForm
@@ -21,7 +21,7 @@ const SignUpPage = () => {
             onChangeView={() => setView('verify-email-form')}
           />
         )}
-      </AnimateEntrance>
+      </AnimateEntrancePop>
     </AnimatePresence>
   )
 }

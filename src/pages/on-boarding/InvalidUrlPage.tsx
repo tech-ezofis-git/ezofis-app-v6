@@ -1,5 +1,5 @@
 import EmptyState from '@/components/base/EmptyState'
-import Logo from '@/components/common/logo/Logo'
+import Logo from '@/components/common/Logo'
 import AuthFooter from '@/layouts/auth/components/AuthFooter'
 
 const InvalidUrlPage = () => {

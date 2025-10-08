@@ -2,3 +2,4 @@ onlyBuiltDependencies:
   - '@tailwindcss/oxide'
   - esbuild
   - unrs-resolver
+minimumReleaseAge: 1440

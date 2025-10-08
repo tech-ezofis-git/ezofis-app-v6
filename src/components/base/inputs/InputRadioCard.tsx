@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { Radio as Base } from '@mantine/core'
 import Icon from '@/components/base/icon/Icon'
 import cn from '@/utils/cn'
+import InputRadioIndicator from './InputRadioIndicator'
 
 interface Props {
   checked?: boolean
@@ -57,15 +58,7 @@ const InputRadioCard = ({
                 icon && 'order-last',
               )}
             >
-              <Base.Indicator
-                className='size-4 min-h-4 min-w-4 border-gray-8 bg-transparent transition-colors data-[checked]:border-primary-9 data-[checked]:bg-primary-9'
-                classNames={{
-                  icon: cn(
-                    'size-1.5',
-                    checked ? 'text-white' : 'text-transparent',
-                  ),
-                }}
-              />
+              <InputRadioIndicator checked={checked} />
             </div>
           )}
 

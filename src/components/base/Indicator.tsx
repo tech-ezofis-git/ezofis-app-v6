@@ -16,9 +16,9 @@ interface Props {
 }
 
 const colorClassName: Record<IndicatorColor, string> = {
-  primary: 'bg-primary-9 before:bg-primary-9',
-  red: 'bg-red-9 before:bg-red-9',
-  secondary: 'bg-secondary-9 before:bg-secondary-9',
+  primary: 'bg-primary-11 before:bg-primary-11',
+  red: 'bg-red-11 before:bg-red-11',
+  secondary: 'bg-secondary-11 before:bg-secondary-11',
 }
 
 const Indicator = ({
@@ -29,7 +29,7 @@ const Indicator = ({
   disabled,
   offset,
   position,
-  size = 8,
+  size = 5,
 }: Props) => {
   return (
     <Base

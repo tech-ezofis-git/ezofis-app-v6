@@ -11,7 +11,7 @@ export const Route = createFileRoute('/stories/drawer')({
 })
 
 function RouteComponent() {
-  const [opened, setopened] = useState(false)
+  const [opened, setOpened] = useState(false)
 
   return (
     <div>
@@ -21,14 +21,14 @@ function RouteComponent() {
         color='gray'
         label='Open'
         variant='outline'
-        onClick={() => setopened(true)}
+        onClick={() => setOpened(true)}
       />
-      <Drawer opened={opened} onClose={() => setopened(false)}>
-        <OverlayHeader title='Drawer' onClose={() => setopened(false)} />
+      <Drawer opened={opened} onClose={() => setOpened(false)}>
+        <OverlayHeader title='Drawer' onClose={() => setOpened(false)} />
         <div style={{ height: 'calc(100vh - 120px)' }}></div>
         <OverlayFooter
-          onCancel={() => setopened(false)}
-          onSave={() => setopened(false)}
+          onCancel={() => setOpened(false)}
+          onSave={() => setOpened(false)}
         />
       </Drawer>
     </div>

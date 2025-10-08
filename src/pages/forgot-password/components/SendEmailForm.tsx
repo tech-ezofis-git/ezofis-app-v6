@@ -3,7 +3,7 @@ import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
 import IconIllustrated from '@/components/base/icon/IconIllustrated'
 import InputText from '@/components/base/inputs/InputText'
-import AuthTitle from '@/layouts/auth/components/AuthTitle'
+import HeroText from '@/components/common/HeroText'
 import useResendTimer from '@/layouts/auth/hooks/useResendTimer'
 
 interface Props {
@@ -25,7 +25,7 @@ const SendEmailForm = ({ email }: Props) => {
   return (
     <>
       <IconIllustrated icon='tabler:mail-check' />
-      <AuthTitle
+      <HeroText
         description="We've sent a reset link to your email. Follow the instructions to set a new password."
         title='Check Your Email'
       />

@@ -1,6 +1,6 @@
 import { AnimatePresence } from 'motion/react'
 import { useState } from 'react'
-import AnimateEntrance from '@/components/common/AnimateEntrance'
+import AnimateEntrancePop from '@/components/common/animations/AnimateEntrancePop'
 import ForgotPasswordForm from './components/ForgotPasswordForm'
 import SendEmailForm from './components/SendEmailForm'
 
@@ -12,7 +12,7 @@ const ForgotPasswordPage = () => {
 
   return (
     <AnimatePresence initial={false} mode='wait'>
-      <AnimateEntrance key={view}>
+      <AnimateEntrancePop key={view}>
         {view === 'send-email-form' && <SendEmailForm email={email} />}
         {view === 'send-link-form' && (
           <ForgotPasswordForm
@@ -21,7 +21,7 @@ const ForgotPasswordPage = () => {
             onChangeView={() => setView('send-email-form')}
           />
         )}
-      </AnimateEntrance>
+      </AnimateEntrancePop>
     </AnimatePresence>
   )
 }

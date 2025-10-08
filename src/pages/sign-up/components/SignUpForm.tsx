@@ -6,7 +6,7 @@ import Divider from '@/components/base/Divider'
 import Icon from '@/components/base/icon/Icon'
 import IconIllustrated from '@/components/base/icon/IconIllustrated'
 import InputText from '@/components/base/inputs/InputText'
-import AuthTitle from '@/layouts/auth/components/AuthTitle'
+import HeroText from '@/components/common/HeroText'
 
 interface Props {
   email: string
@@ -28,7 +28,7 @@ const SignUpForm = ({ email, setEmail, onChangeView }: Props) => {
   return (
     <>
       <IconIllustrated icon='tabler:user-plus' />
-      <AuthTitle
+      <HeroText
         description='Sign up to start managing your workspace.'
         title='Create Your Account'
       />

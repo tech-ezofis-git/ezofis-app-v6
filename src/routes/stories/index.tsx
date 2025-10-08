@@ -45,6 +45,7 @@ const routes2 = [
   { name: 'Input Radio Card', path: '/stories/input-radio-card' },
   { name: 'Input Checkbox Card', path: '/stories/input-checkbox-card' },
   { name: 'Empty State', path: '/stories/empty-state' },
+  { name: 'Alert', path: '/stories/alert' },
 ]
 
 function Item({

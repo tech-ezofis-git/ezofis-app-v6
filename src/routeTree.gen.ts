@@ -11,9 +11,10 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as StoriesRouteRouteImport } from './routes/stories/route'
 import { Route as AuthRouteRouteImport } from './routes/_auth/route'
-import { Route as RouteRouteImport } from './routes/route'
+import { Route as AppRouteRouteImport } from './routes/_app/route'
 import { Route as StoriesIndexRouteImport } from './routes/stories/index'
 import { Route as OnBoardingIndexRouteImport } from './routes/on-boarding/index'
+import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as StoriesTooltipRouteImport } from './routes/stories/tooltip'
 import { Route as StoriesToastRouteImport } from './routes/stories/toast'
 import { Route as StoriesTabsRouteImport } from './routes/stories/tabs'
@@ -52,7 +53,17 @@ import { Route as StoriesButtonRouteImport } from './routes/stories/button'
 import { Route as StoriesBadgeRouteImport } from './routes/stories/badge'
 import { Route as StoriesAvatarRouteImport } from './routes/stories/avatar'
 import { Route as StoriesAiIconRouteImport } from './routes/stories/ai-icon'
+import { Route as StoriesAlertRouteImport } from './routes/stories/Alert'
 import { Route as OnBoardingTokenRouteImport } from './routes/on-boarding/$token'
+import { Route as AppWorkflowsRouteImport } from './routes/_app/workflows'
+import { Route as AppTrashRouteImport } from './routes/_app/trash'
+import { Route as AppTasksRouteImport } from './routes/_app/tasks'
+import { Route as AppSettingsRouteImport } from './routes/_app/settings'
+import { Route as AppReportsRouteImport } from './routes/_app/reports'
+import { Route as AppPortalsRouteImport } from './routes/_app/portals'
+import { Route as AppHelpCenterRouteImport } from './routes/_app/help-center'
+import { Route as AppFormsRouteImport } from './routes/_app/forms'
+import { Route as AppFoldersRouteImport } from './routes/_app/folders'
 import { Route as AuthSignUpIndexRouteImport } from './routes/_auth/sign-up/index'
 import { Route as AuthSignInIndexRouteImport } from './routes/_auth/sign-in/index'
 import { Route as AuthResetPasswordIndexRouteImport } from './routes/_auth/reset-password/index'
@@ -67,9 +78,8 @@ const AuthRouteRoute = AuthRouteRouteImport.update({
   id: '/_auth',
   getParentRoute: () => rootRouteImport,
 } as any)
-const RouteRoute = RouteRouteImport.update({
-  id: '/',
-  path: '/',
+const AppRouteRoute = AppRouteRouteImport.update({
+  id: '/_app',
   getParentRoute: () => rootRouteImport,
 } as any)
 const StoriesIndexRoute = StoriesIndexRouteImport.update({
@@ -81,6 +91,11 @@ const OnBoardingIndexRoute = OnBoardingIndexRouteImport.update({
   id: '/on-boarding/',
   path: '/on-boarding/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AppIndexRoute = AppIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppRouteRoute,
 } as any)
 const StoriesTooltipRoute = StoriesTooltipRouteImport.update({
   id: '/tooltip',
@@ -275,10 +290,60 @@ const StoriesAiIconRoute = StoriesAiIconRouteImport.update({
   path: '/ai-icon',
   getParentRoute: () => StoriesRouteRoute,
 } as any)
+const StoriesAlertRoute = StoriesAlertRouteImport.update({
+  id: '/Alert',
+  path: '/Alert',
+  getParentRoute: () => StoriesRouteRoute,
+} as any)
 const OnBoardingTokenRoute = OnBoardingTokenRouteImport.update({
   id: '/on-boarding/$token',
   path: '/on-boarding/$token',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AppWorkflowsRoute = AppWorkflowsRouteImport.update({
+  id: '/workflows',
+  path: '/workflows',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppTrashRoute = AppTrashRouteImport.update({
+  id: '/trash',
+  path: '/trash',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppTasksRoute = AppTasksRouteImport.update({
+  id: '/tasks',
+  path: '/tasks',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppSettingsRoute = AppSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppReportsRoute = AppReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppPortalsRoute = AppPortalsRouteImport.update({
+  id: '/portals',
+  path: '/portals',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppHelpCenterRoute = AppHelpCenterRouteImport.update({
+  id: '/help-center',
+  path: '/help-center',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppFormsRoute = AppFormsRouteImport.update({
+  id: '/forms',
+  path: '/forms',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppFoldersRoute = AppFoldersRouteImport.update({
+  id: '/folders',
+  path: '/folders',
+  getParentRoute: () => AppRouteRoute,
 } as any)
 const AuthSignUpIndexRoute = AuthSignUpIndexRouteImport.update({
   id: '/sign-up/',
@@ -302,9 +367,18 @@ const AuthForgotPasswordIndexRoute = AuthForgotPasswordIndexRouteImport.update({
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof RouteRoute
   '/stories': typeof StoriesRouteRouteWithChildren
+  '/folders': typeof AppFoldersRoute
+  '/forms': typeof AppFormsRoute
+  '/help-center': typeof AppHelpCenterRoute
+  '/portals': typeof AppPortalsRoute
+  '/reports': typeof AppReportsRoute
+  '/settings': typeof AppSettingsRoute
+  '/tasks': typeof AppTasksRoute
+  '/trash': typeof AppTrashRoute
+  '/workflows': typeof AppWorkflowsRoute
   '/on-boarding/$token': typeof OnBoardingTokenRoute
+  '/stories/Alert': typeof StoriesAlertRoute
   '/stories/ai-icon': typeof StoriesAiIconRoute
   '/stories/avatar': typeof StoriesAvatarRoute
   '/stories/badge': typeof StoriesBadgeRoute
@@ -343,6 +417,7 @@ export interface FileRoutesByFullPath {
   '/stories/tabs': typeof StoriesTabsRoute
   '/stories/toast': typeof StoriesToastRoute
   '/stories/tooltip': typeof StoriesTooltipRoute
+  '/': typeof AppIndexRoute
   '/on-boarding': typeof OnBoardingIndexRoute
   '/stories/': typeof StoriesIndexRoute
   '/forgot-password': typeof AuthForgotPasswordIndexRoute
@@ -351,8 +426,17 @@ export interface FileRoutesByFullPath {
   '/sign-up': typeof AuthSignUpIndexRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof RouteRoute
+  '/folders': typeof AppFoldersRoute
+  '/forms': typeof AppFormsRoute
+  '/help-center': typeof AppHelpCenterRoute
+  '/portals': typeof AppPortalsRoute
+  '/reports': typeof AppReportsRoute
+  '/settings': typeof AppSettingsRoute
+  '/tasks': typeof AppTasksRoute
+  '/trash': typeof AppTrashRoute
+  '/workflows': typeof AppWorkflowsRoute
   '/on-boarding/$token': typeof OnBoardingTokenRoute
+  '/stories/Alert': typeof StoriesAlertRoute
   '/stories/ai-icon': typeof StoriesAiIconRoute
   '/stories/avatar': typeof StoriesAvatarRoute
   '/stories/badge': typeof StoriesBadgeRoute
@@ -391,6 +475,7 @@ export interface FileRoutesByTo {
   '/stories/tabs': typeof StoriesTabsRoute
   '/stories/toast': typeof StoriesToastRoute
   '/stories/tooltip': typeof StoriesTooltipRoute
+  '/': typeof AppIndexRoute
   '/on-boarding': typeof OnBoardingIndexRoute
   '/stories': typeof StoriesIndexRoute
   '/forgot-password': typeof AuthForgotPasswordIndexRoute
@@ -400,10 +485,20 @@ export interface FileRoutesByTo {
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof RouteRoute
+  '/_app': typeof AppRouteRouteWithChildren
   '/_auth': typeof AuthRouteRouteWithChildren
   '/stories': typeof StoriesRouteRouteWithChildren
+  '/_app/folders': typeof AppFoldersRoute
+  '/_app/forms': typeof AppFormsRoute
+  '/_app/help-center': typeof AppHelpCenterRoute
+  '/_app/portals': typeof AppPortalsRoute
+  '/_app/reports': typeof AppReportsRoute
+  '/_app/settings': typeof AppSettingsRoute
+  '/_app/tasks': typeof AppTasksRoute
+  '/_app/trash': typeof AppTrashRoute
+  '/_app/workflows': typeof AppWorkflowsRoute
   '/on-boarding/$token': typeof OnBoardingTokenRoute
+  '/stories/Alert': typeof StoriesAlertRoute
   '/stories/ai-icon': typeof StoriesAiIconRoute
   '/stories/avatar': typeof StoriesAvatarRoute
   '/stories/badge': typeof StoriesBadgeRoute
@@ -442,6 +537,7 @@ export interface FileRoutesById {
   '/stories/tabs': typeof StoriesTabsRoute
   '/stories/toast': typeof StoriesToastRoute
   '/stories/tooltip': typeof StoriesTooltipRoute
+  '/_app/': typeof AppIndexRoute
   '/on-boarding/': typeof OnBoardingIndexRoute
   '/stories/': typeof StoriesIndexRoute
   '/_auth/forgot-password/': typeof AuthForgotPasswordIndexRoute
@@ -452,9 +548,18 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | '/'
     | '/stories'
+    | '/folders'
+    | '/forms'
+    | '/help-center'
+    | '/portals'
+    | '/reports'
+    | '/settings'
+    | '/tasks'
+    | '/trash'
+    | '/workflows'
     | '/on-boarding/$token'
+    | '/stories/Alert'
     | '/stories/ai-icon'
     | '/stories/avatar'
     | '/stories/badge'
@@ -493,6 +598,7 @@ export interface FileRouteTypes {
     | '/stories/tabs'
     | '/stories/toast'
     | '/stories/tooltip'
+    | '/'
     | '/on-boarding'
     | '/stories/'
     | '/forgot-password'
@@ -501,8 +607,17 @@ export interface FileRouteTypes {
     | '/sign-up'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/'
+    | '/folders'
+    | '/forms'
+    | '/help-center'
+    | '/portals'
+    | '/reports'
+    | '/settings'
+    | '/tasks'
+    | '/trash'
+    | '/workflows'
     | '/on-boarding/$token'
+    | '/stories/Alert'
     | '/stories/ai-icon'
     | '/stories/avatar'
     | '/stories/badge'
@@ -541,6 +656,7 @@ export interface FileRouteTypes {
     | '/stories/tabs'
     | '/stories/toast'
     | '/stories/tooltip'
+    | '/'
     | '/on-boarding'
     | '/stories'
     | '/forgot-password'
@@ -549,10 +665,20 @@ export interface FileRouteTypes {
     | '/sign-up'
   id:
     | '__root__'
-    | '/'
+    | '/_app'
     | '/_auth'
     | '/stories'
+    | '/_app/folders'
+    | '/_app/forms'
+    | '/_app/help-center'
+    | '/_app/portals'
+    | '/_app/reports'
+    | '/_app/settings'
+    | '/_app/tasks'
+    | '/_app/trash'
+    | '/_app/workflows'
     | '/on-boarding/$token'
+    | '/stories/Alert'
     | '/stories/ai-icon'
     | '/stories/avatar'
     | '/stories/badge'
@@ -591,6 +717,7 @@ export interface FileRouteTypes {
     | '/stories/tabs'
     | '/stories/toast'
     | '/stories/tooltip'
+    | '/_app/'
     | '/on-boarding/'
     | '/stories/'
     | '/_auth/forgot-password/'
@@ -600,7 +727,7 @@ export interface FileRouteTypes {
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  RouteRoute: typeof RouteRoute
+  AppRouteRoute: typeof AppRouteRouteWithChildren
   AuthRouteRoute: typeof AuthRouteRouteWithChildren
   StoriesRouteRoute: typeof StoriesRouteRouteWithChildren
   OnBoardingTokenRoute: typeof OnBoardingTokenRoute
@@ -623,11 +750,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof RouteRouteImport
+    '/_app': {
+      id: '/_app'
+      path: ''
+      fullPath: ''
+      preLoaderRoute: typeof AppRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/stories/': {
@@ -643,6 +770,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/on-boarding'
       preLoaderRoute: typeof OnBoardingIndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_app/': {
+      id: '/_app/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof AppIndexRouteImport
+      parentRoute: typeof AppRouteRoute
     }
     '/stories/tooltip': {
       id: '/stories/tooltip'
@@ -910,12 +1044,82 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StoriesAiIconRouteImport
       parentRoute: typeof StoriesRouteRoute
     }
+    '/stories/Alert': {
+      id: '/stories/Alert'
+      path: '/Alert'
+      fullPath: '/stories/Alert'
+      preLoaderRoute: typeof StoriesAlertRouteImport
+      parentRoute: typeof StoriesRouteRoute
+    }
     '/on-boarding/$token': {
       id: '/on-boarding/$token'
       path: '/on-boarding/$token'
       fullPath: '/on-boarding/$token'
       preLoaderRoute: typeof OnBoardingTokenRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_app/workflows': {
+      id: '/_app/workflows'
+      path: '/workflows'
+      fullPath: '/workflows'
+      preLoaderRoute: typeof AppWorkflowsRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/_app/trash': {
+      id: '/_app/trash'
+      path: '/trash'
+      fullPath: '/trash'
+      preLoaderRoute: typeof AppTrashRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/_app/tasks': {
+      id: '/_app/tasks'
+      path: '/tasks'
+      fullPath: '/tasks'
+      preLoaderRoute: typeof AppTasksRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/_app/settings': {
+      id: '/_app/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AppSettingsRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/_app/reports': {
+      id: '/_app/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof AppReportsRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/_app/portals': {
+      id: '/_app/portals'
+      path: '/portals'
+      fullPath: '/portals'
+      preLoaderRoute: typeof AppPortalsRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/_app/help-center': {
+      id: '/_app/help-center'
+      path: '/help-center'
+      fullPath: '/help-center'
+      preLoaderRoute: typeof AppHelpCenterRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/_app/forms': {
+      id: '/_app/forms'
+      path: '/forms'
+      fullPath: '/forms'
+      preLoaderRoute: typeof AppFormsRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/_app/folders': {
+      id: '/_app/folders'
+      path: '/folders'
+      fullPath: '/folders'
+      preLoaderRoute: typeof AppFoldersRouteImport
+      parentRoute: typeof AppRouteRoute
     }
     '/_auth/sign-up/': {
       id: '/_auth/sign-up/'
@@ -948,6 +1152,36 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AppRouteRouteChildren {
+  AppFoldersRoute: typeof AppFoldersRoute
+  AppFormsRoute: typeof AppFormsRoute
+  AppHelpCenterRoute: typeof AppHelpCenterRoute
+  AppPortalsRoute: typeof AppPortalsRoute
+  AppReportsRoute: typeof AppReportsRoute
+  AppSettingsRoute: typeof AppSettingsRoute
+  AppTasksRoute: typeof AppTasksRoute
+  AppTrashRoute: typeof AppTrashRoute
+  AppWorkflowsRoute: typeof AppWorkflowsRoute
+  AppIndexRoute: typeof AppIndexRoute
+}
+
+const AppRouteRouteChildren: AppRouteRouteChildren = {
+  AppFoldersRoute: AppFoldersRoute,
+  AppFormsRoute: AppFormsRoute,
+  AppHelpCenterRoute: AppHelpCenterRoute,
+  AppPortalsRoute: AppPortalsRoute,
+  AppReportsRoute: AppReportsRoute,
+  AppSettingsRoute: AppSettingsRoute,
+  AppTasksRoute: AppTasksRoute,
+  AppTrashRoute: AppTrashRoute,
+  AppWorkflowsRoute: AppWorkflowsRoute,
+  AppIndexRoute: AppIndexRoute,
+}
+
+const AppRouteRouteWithChildren = AppRouteRoute._addFileChildren(
+  AppRouteRouteChildren,
+)
+
 interface AuthRouteRouteChildren {
   AuthForgotPasswordIndexRoute: typeof AuthForgotPasswordIndexRoute
   AuthResetPasswordIndexRoute: typeof AuthResetPasswordIndexRoute
@@ -967,6 +1201,7 @@ const AuthRouteRouteWithChildren = AuthRouteRoute._addFileChildren(
 )
 
 interface StoriesRouteRouteChildren {
+  StoriesAlertRoute: typeof StoriesAlertRoute
   StoriesAiIconRoute: typeof StoriesAiIconRoute
   StoriesAvatarRoute: typeof StoriesAvatarRoute
   StoriesBadgeRoute: typeof StoriesBadgeRoute
@@ -1009,6 +1244,7 @@ interface StoriesRouteRouteChildren {
 }
 
 const StoriesRouteRouteChildren: StoriesRouteRouteChildren = {
+  StoriesAlertRoute: StoriesAlertRoute,
   StoriesAiIconRoute: StoriesAiIconRoute,
   StoriesAvatarRoute: StoriesAvatarRoute,
   StoriesBadgeRoute: StoriesBadgeRoute,
@@ -1055,7 +1291,7 @@ const StoriesRouteRouteWithChildren = StoriesRouteRoute._addFileChildren(
 )
 
 const rootRouteChildren: RootRouteChildren = {
-  RouteRoute: RouteRoute,
+  AppRouteRoute: AppRouteRouteWithChildren,
   AuthRouteRoute: AuthRouteRouteWithChildren,
   StoriesRouteRoute: StoriesRouteRouteWithChildren,
   OnBoardingTokenRoute: OnBoardingTokenRoute,

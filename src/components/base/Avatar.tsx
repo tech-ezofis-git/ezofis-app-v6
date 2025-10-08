@@ -13,7 +13,7 @@ const Avatar = ({
   image,
   imageLabel = 'avatar',
   initials,
-  size = 36,
+  size = 32,
 }: Props) => {
   return (
     <Base
@@ -22,7 +22,7 @@ const Avatar = ({
       size={size}
       src={image}
       classNames={{
-        placeholder: 'border-none bg-gray-3 font-medium text-gray-11',
+        placeholder: 'border-none bg-gray-3 font-semibold text-gray-11',
       }}
     >
       {initials}

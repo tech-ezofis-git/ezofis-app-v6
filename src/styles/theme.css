@@ -221,5 +221,5 @@
 
   --color-surface: var(--surface);
   --color-surface-raised: var(--surface-raised);
-  --color-surface-pinned: var(--surface-pinned);
+  --color-surface-muted: var(--surface-muted);
 }

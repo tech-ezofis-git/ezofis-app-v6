@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react'
+import { type ComboboxProps } from '@mantine/core'
 import type { Option } from '@/types/option'
 import type { OptionsPerLineClass } from './constants'
 
@@ -40,8 +42,11 @@ export interface SelectionProps {
 export interface SelectProps extends InputProps {
   options: Option[]
   creatable?: boolean
+  leftSection?: ReactNode
+  position?: ComboboxProps['position']
   searchable?: boolean
   searchPlaceholder?: string
+  width?: ComboboxProps['width']
 }
 
 export type SelectVariant = 'single' | 'multiple'

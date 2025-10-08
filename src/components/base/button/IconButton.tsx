@@ -1,15 +1,16 @@
-import { type ComponentProps, forwardRef } from 'react'
+import { type ComponentProps, forwardRef, type ReactNode } from 'react'
 import Icon from '@/components/base/icon/Icon'
 import cn from '@/utils/cn'
 import type { ButtonColor, ButtonSize, ButtonVariant } from './types'
 import { getVariantClassName } from './helpers'
 
 interface Props extends ComponentProps<'button'> {
-  icon: string
   ariaLabel?: string
+  children?: ReactNode
   className?: string
   color?: ButtonColor
   disabled?: boolean
+  icon?: string
   iconClass?: string
   loading?: boolean
   size?: ButtonSize
@@ -28,6 +29,7 @@ const IconButton = forwardRef<HTMLButtonElement, Props>(
   (
     {
       ariaLabel,
+      children,
       className,
       color = 'primary',
       disabled,
@@ -57,10 +59,13 @@ const IconButton = forwardRef<HTMLButtonElement, Props>(
         ref={ref}
         {...props}
       >
-        <Icon
-          className={loading ? 'animate-spin' : iconClass}
-          name={loading ? 'gg:spinner' : icon}
-        />
+        {children}
+        {icon && (
+          <Icon
+            className={loading ? 'animate-spin' : iconClass}
+            name={loading ? 'gg:spinner' : icon}
+          />
+        )}
       </button>
     )
   },

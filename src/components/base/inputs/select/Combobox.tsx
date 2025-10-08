@@ -22,11 +22,13 @@ const Combobox = forwardRef<HTMLButtonElement, Props>(
     {
       creatable,
       options,
+      position = 'bottom-start',
       search,
       searchable,
       searchPlaceholder,
       value,
       variant,
+      width = 'target',
       onBottomReached,
       onChange,
       onSearch,
@@ -42,7 +44,7 @@ const Combobox = forwardRef<HTMLButtonElement, Props>(
     })
 
     return (
-      <Base store={comboboxStore}>
+      <Base position={position} store={comboboxStore} width={width}>
         <ComboboxTarget
           {...rest}
           ref={ref}

@@ -11,6 +11,7 @@ interface Props extends ComponentProps<'button'> {
   icon?: string
   iconClass?: string
   label?: string
+  labelClass?: string
   loading?: boolean
   rightSection?: ReactNode
   size?: ButtonSize
@@ -37,6 +38,7 @@ const Button = forwardRef<HTMLButtonElement, Props>(
       icon,
       iconClass,
       label,
+      labelClass,
       loading,
       rightSection,
       size = 'lg',
@@ -66,7 +68,7 @@ const Button = forwardRef<HTMLButtonElement, Props>(
             {!loading && icon && (
               <Icon className={cn('-ml-1', iconClass)} name={icon} />
             )}
-            <span>{label}</span>
+            <span className={labelClass}>{label}</span>
             {suffixIcon && (
               <Icon
                 className={cn('-mr-1', suffixIconClass)}

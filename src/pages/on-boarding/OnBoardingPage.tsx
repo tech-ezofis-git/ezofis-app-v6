@@ -3,7 +3,7 @@ import { AnimatePresence } from 'motion/react'
 import { useEffect, useState } from 'react'
 import EmptyState from '@/components/base/EmptyState'
 import IconSpinner from '@/components/base/icon/IconSpinner'
-import AnimateEntrance from '@/components/common/AnimateEntrance'
+import AnimateEntrancePop from '@/components/common/animations/AnimateEntrancePop'
 import AuthFooter from '@/layouts/auth/components/AuthFooter'
 import PageHeader from './components/PageHeader'
 import StepFive from './components/StepFive'
@@ -36,7 +36,7 @@ const OnBoardingPage = () => {
   }, [])
 
   return (
-    <div className='relative p-6'>
+    <div className='relative bg-surface p-6'>
       <StepIndicator />
       <PageHeader isTokenValid={isTokenValid} />
 
@@ -60,7 +60,10 @@ const OnBoardingPage = () => {
             {isTokenValid && (
               <div className='flex w-120 flex-col gap-6'>
                 <AnimatePresence initial={false} mode='wait'>
-                  <AnimateEntrance key={step}>
+                  <AnimateEntrancePop
+                    className='flex flex-col gap-6'
+                    key={step}
+                  >
                     {step === 0 && <StepZero />}
                     {step === 1 && <StepOne />}
                     {step === 2 && <StepTwo />}
@@ -69,7 +72,7 @@ const OnBoardingPage = () => {
                     {step === 5 && <StepFive />}
                     {step === 6 && <StepSix />}
                     {step === 7 && <StepSeven />}
-                  </AnimateEntrance>
+                  </AnimateEntrancePop>
                 </AnimatePresence>
               </div>
             )}

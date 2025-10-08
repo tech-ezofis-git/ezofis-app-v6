@@ -55,7 +55,7 @@ const Features = () => {
             scale: 1,
           }}
         >
-          <h1 className='mt-0 mb-1 font-poppins text-2xl font-semibold text-balance text-gray-13'>
+          <h1 className='mb-2 font-poppins text-xl font-semibold text-gray-13'>
             {features[activeIndex].title}
           </h1>
           <div className='text-sm leading-6 text-pretty text-gray-11'>

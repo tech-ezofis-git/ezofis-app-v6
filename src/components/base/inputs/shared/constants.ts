@@ -4,7 +4,7 @@ export const classNames = {
   description: 'mt-2 text-sm text-gray-10',
   error: 'mt-2 text-sm text-red-11',
   input:
-    'border-gray-7 bg-transparent text-sm font-medium text-gray-12 placeholder:font-normal placeholder:text-gray-8 focus-within:border-primary-8 focus-within:ring-2 focus-within:ring-primary-6 disabled:bg-gray-3 data-[disabled]:bg-gray-3 data-[error]:border-red-8 data-[error]:ring-red-5',
+    'border-gray-6 bg-transparent text-sm font-medium text-gray-12 placeholder:font-normal placeholder:text-gray-8 focus-within:border-primary-8 focus-within:ring-2 focus-within:ring-primary-6 disabled:bg-gray-3 data-[disabled]:bg-gray-3 data-[error]:border-red-8 data-[error]:ring-red-5',
   label: 'mb-2 text-sm font-medium text-gray-11',
   required: 'text-red-11',
   wrapper: 'm-0',

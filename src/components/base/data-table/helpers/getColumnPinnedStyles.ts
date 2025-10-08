@@ -12,7 +12,7 @@ export default function getColumnPinnedStyles<TData>(
   const hasRightPinnedColumns = table.getRightLeafColumns().length > 0
 
   return {
-    backgroundColor: isPinned ? 'var(--surface-pinned)' : undefined,
+    backgroundColor: isPinned ? 'var(--surface-muted)' : undefined,
     borderLeftWidth: isFirstRightPinnedColumn ? '1px' : undefined,
     borderRightWidth:
       hasRightPinnedColumns && isLastCenterColumn ? '0px' : undefined,
