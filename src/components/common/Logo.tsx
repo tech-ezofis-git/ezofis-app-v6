@@ -5,12 +5,17 @@ import cn from '@/utils/cn'
 interface Props {
   className?: string
   hideText?: boolean
+  markClassName?: string
 }
 
-const Logo = ({ className, hideText = false }: Props) => {
+const Logo = ({ className, hideText = false, markClassName }: Props) => {
   return (
     <div className={cn('flex h-9 items-center gap-1', className)}>
-      <img alt='logo mark' className='size-8' src={logoMark} />
+      <img
+        alt='logo mark'
+        className={cn('size-8', markClassName)}
+        src={logoMark}
+      />
       {!hideText && <img alt='logo text' className='h-7' src={logoText} />}
     </div>
   )

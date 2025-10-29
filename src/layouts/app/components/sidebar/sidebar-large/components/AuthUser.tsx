@@ -4,7 +4,7 @@ import Icon from '@/components/base/icon/Icon'
 
 const AuthUser = () => {
   return (
-    <div className='mt-2 flex cursor-pointer items-center gap-3 border-t border-gray-3 pt-3'>
+    <div className='mt-2 flex cursor-pointer items-center gap-3 border-t border-gray-a4 pt-3'>
       <Avatar
         image={avatar}
         imageLabel='user picture'

@@ -29,7 +29,7 @@ const SortableItem = ({ children, className, handlerClassName, id }: Props) => {
       {children}
       <div
         className={cn(
-          'group flex size-9 shrink-0 cursor-grab items-center justify-center rounded-md outline-primary-8 transition-colors hover:bg-gray-4',
+          'group flex size-8 shrink-0 cursor-grab items-center justify-center rounded outline-primary-8 transition-colors hover:bg-gray-4',
           handlerClassName,
         )}
         {...attributes}

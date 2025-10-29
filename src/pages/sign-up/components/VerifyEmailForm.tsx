@@ -32,6 +32,7 @@ const VerifyEmailForm = ({ email }: Props) => {
 
       <InputText
         leftSection={<Icon className='text-gray-9' name='tabler:mail' />}
+        size='lg'
         value={email}
         disabled
         onChange={() => {}}
@@ -42,6 +43,7 @@ const VerifyEmailForm = ({ email }: Props) => {
         disabled={elapsed !== 0}
         label={resendLabel}
         loading={loading}
+        size='lg'
         onClick={resendLink}
       />
     </>

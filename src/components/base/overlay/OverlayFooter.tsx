@@ -1,4 +1,5 @@
 import Button from '@/components/base/button/Button'
+import OverlayFooterWrapper from './OverlayFooterWrapper'
 
 interface Props {
   cancelLabel?: string
@@ -16,7 +17,7 @@ const OverlayFooter = ({
   onSave,
 }: Props) => {
   return (
-    <footer className='flex h-15 items-center justify-end gap-2 border-t border-gray-3 px-4'>
+    <OverlayFooterWrapper className='justify-end gap-2'>
       <Button
         color='gray'
         label={cancelLabel}
@@ -24,7 +25,7 @@ const OverlayFooter = ({
         onClick={onCancel}
       />
       <Button color={saveButtonColor} label={saveLabel} onClick={onSave} />
-    </footer>
+    </OverlayFooterWrapper>
   )
 }
 

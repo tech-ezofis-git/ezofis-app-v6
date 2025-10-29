@@ -3,7 +3,7 @@ import Avatar from '@/components/base/Avatar'
 
 const AuthUser = () => {
   return (
-    <div className='flex size-15 shrink-0 items-center justify-center'>
+    <div className='flex size-13 shrink-0 items-center justify-center'>
       <Avatar image={avatar} imageLabel='user picture' initials='CV' />
     </div>
   )

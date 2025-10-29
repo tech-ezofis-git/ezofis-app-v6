@@ -1,13 +1,15 @@
 import IconButton from './IconButton'
 
 interface Props {
+  className?: string
   onClick: () => void
 }
 
-const CloseButton = ({ onClick }: Props) => {
+const CloseButton = ({ className, onClick }: Props) => {
   return (
     <IconButton
       ariaLabel='Close'
+      className={className}
       color='gray'
       icon='tabler:x'
       variant='ghost'

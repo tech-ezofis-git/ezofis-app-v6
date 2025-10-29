@@ -12,10 +12,10 @@ const AppLayout = ({ children }: Props) => {
     <>
       <Sidebar />
 
-      <div className='flex h-svh overflow-hidden xl:ml-15'>
-        <div className='flex-1'>
+      <div className='flex h-svh xl:ml-[49px]'>
+        <div className='relative min-w-0 flex-1'>
           <Topbar />
-          {children}
+          <div className='pb-20'>{children}</div>
         </div>
 
         <AIChatBar />

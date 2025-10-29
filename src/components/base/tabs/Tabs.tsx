@@ -6,20 +6,25 @@ interface Props {
   children: ReactNode
   value: string | null
   color?: 'gray' | 'primary' | 'secondary'
+  tabClassName?: string
   onChange: (value: string | null) => void
 }
 
-const Tabs = ({ children, color = 'gray', value, onChange }: Props) => {
+const Tabs = ({
+  children,
+  color = 'gray',
+  tabClassName = 'h-12',
+  value,
+  onChange,
+}: Props) => {
   const classNames = {
-    list: 'before:border-0 before:border-b before:border-gray-3',
+    list: 'before:border-0 gap-6',
     tab: cn(
-      'group h-9 gap-2 px-4 py-2 font-medium text-gray-10 outline-0 transition-colors hover:border-transparent hover:bg-gray-4 hover:text-gray-11 focus-visible:bg-gray-4 data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
-      color === 'primary' &&
-        'data-[active]:border-primary-9 data-[active]:text-primary-9',
-      color === 'gray' &&
-        'data-[active]:border-gray-11 data-[active]:text-gray-12',
-      color === 'secondary' &&
-        'data-[active]:border-secondary-9 data-[active]:text-secondary-9',
+      'group gap-2 px-0 font-medium text-gray-10 outline-0 transition-colors hover:border-transparent hover:bg-transparent hover:text-gray-12 focus-visible:bg-gray-4 data-[active]:text-gray-13 data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+      color === 'primary' && 'data-[active]:border-primary-9',
+      color === 'gray' && 'data-[active]:border-gray-11',
+      color === 'secondary' && 'd data-[active]:border-secondary-9',
+      tabClassName,
     ),
     tabSection: cn(
       'm-0 text-gray-9 group-hover:text-gray-10 group-data-[active]:text-gray-11',

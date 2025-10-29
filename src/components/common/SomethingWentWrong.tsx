@@ -20,7 +20,7 @@ const SomethingWentWrong = () => {
         <h1 className='text-gray-800 font-poppins text-xl font-bold'>
           Oops! Something Went Wrong
         </h1>
-        <p className='mt-2 text-center text-sm text-balance text-gray-9'>
+        <p className='mt-2 text-center text-small text-balance text-gray-9'>
           An unexpected error occurred. Please try reloading the page or come
           back later. We apologize for the inconvenience.
         </p>

@@ -1,26 +1,21 @@
 import type { ReactNode } from 'react'
 import { useViewportSize } from '@mantine/hooks'
-import Icon from '@/components/base/icon/Icon'
 import { SCREEN_XL } from '@/constants'
 import cn from '@/utils/cn'
 
 interface Props {
   children: ReactNode
-  icon: string
   title: string
 }
 
-const Section = ({ children, icon, title }: Props) => {
+const Section = ({ children, title }: Props) => {
   const { width } = useViewportSize()
 
   return (
     <div
-      className={cn('mb-10 px-6 md:px-10', width >= SCREEN_XL && '@container')}
+      className={cn('mb-8 px-6 md:px-8', width >= SCREEN_XL && '@container')}
     >
-      <div className='m-0 mb-5 flex items-center gap-2'>
-        <Icon className='size-5' name={icon} />
-        <h2 className='text-base font-medium text-gray-13'>{title}</h2>
-      </div>
+      <h2 className='m-0 mb-4 text-medium font-medium'>{title}</h2>
       {children}
     </div>
   )

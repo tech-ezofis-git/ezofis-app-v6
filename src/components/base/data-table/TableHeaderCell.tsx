@@ -88,9 +88,8 @@ const TableHeaderCell = <TData,>({ header, table }: Props<TData>) => {
         {/* sort button */}
         {isAccessorColumn && (
           <Button
-            className='flex-1 text-sm font-semibold'
+            className='flex-1 text-small font-semibold'
             color='gray'
-            size='md'
             variant='ghost'
             onClick={column.getToggleSortingHandler()}
           >
@@ -124,7 +123,6 @@ const TableHeaderCell = <TData,>({ header, table }: Props<TData>) => {
                 color='gray'
                 icon='tabler:selector'
                 iconClass='size-4 text-gray-9 group-hover:text-gray-10'
-                size='md'
                 variant='ghost'
               />
             }

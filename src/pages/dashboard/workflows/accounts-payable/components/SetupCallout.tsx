@@ -5,7 +5,7 @@ const SetupCallout = () => {
   const openSetup = setupStore((state) => state.openSetup)
 
   return (
-    <div className='mb-8 flex flex-wrap items-center gap-2 border-b border-gray-3 px-6 py-3 md:px-10'>
+    <div className='mb-6 flex flex-wrap items-center gap-2 border-b border-gray-3 px-6 py-3 md:px-8'>
       <div className='font-medium'>
         Complete setup to start your AP automation.{' '}
       </div>

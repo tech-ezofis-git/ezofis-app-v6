@@ -13,7 +13,7 @@ const Integrations = () => {
         description='Review your connections and confirm your setup before activation.'
         title='Configuration Summary'
       />
-      <div className='space-y-3'>
+      <div className='space-y-4'>
         <Integration
           account='charles@gmail.com'
           icon='tabler:mail'

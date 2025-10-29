@@ -46,7 +46,7 @@ const PaginationControls = ({ page, totalPages, onPageChange }: Props) => {
               label={_page.toString()}
               variant={_page === page ? 'subtle' : 'ghost'}
               className={cn(
-                'min-w-9 justify-center p-2 font-medium',
+                'min-w-8 justify-center p-2 font-medium',
                 _page === page && 'text-gray-12',
               )}
               onClick={() => setPage(_page)}

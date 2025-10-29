@@ -37,7 +37,7 @@ const InputCheckboxCard = ({
       radius='md'
       value={value}
       className={cn(
-        'rounded-md border-gray-6 p-3 outline-primary-8 disabled:pointer-events-none data-[checked]:border-primary-9',
+        'rounded border-gray-6 p-3 outline-primary-8 disabled:pointer-events-none data-checked:border-primary-9',
         className,
       )}
       onClick={onClick}
@@ -60,7 +60,7 @@ const InputCheckboxCard = ({
               )}
             >
               <Base.Indicator
-                className='size-4 min-h-4 min-w-4 rounded border-gray-8 bg-transparent transition-colors data-[checked]:border-primary-9 data-[checked]:bg-primary-9'
+                className='size-4 min-h-4 min-w-4 rounded border-gray-8 bg-transparent transition-colors data-checked:border-primary-9 data-checked:bg-primary-9'
                 classNames={{
                   icon: cn(
                     'w-[70%]',
@@ -71,11 +71,13 @@ const InputCheckboxCard = ({
             </div>
           )}
 
-          <div className='flex-1 space-y-1 text-sm'>
+          <div className='flex-1 space-y-1 text-small'>
             {labelSlot}
             {label && <div className='font-medium text-gray-13'>{label}</div>}
             {description && (
-              <div className='text-pretty text-gray-10'>{description}</div>
+              <div className='text-mini text-pretty text-gray-10'>
+                {description}
+              </div>
             )}
           </div>
         </div>

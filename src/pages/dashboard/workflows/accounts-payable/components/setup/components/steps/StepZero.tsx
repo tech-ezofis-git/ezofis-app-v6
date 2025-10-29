@@ -47,7 +47,7 @@ const getFeatureJSX = (label: string) => {
   return (
     <div className='flex items-center gap-2 rounded border border-gray-3 bg-gray-2 px-2 py-1'>
       <Icon className='size-4 text-green-11' name='lucide:circle-check-big' />
-      <span className='mt-0.25 text-xs font-medium text-gray-12'>{label}</span>
+      <span className='mt-px text-mini font-medium text-gray-12'>{label}</span>
     </div>
   )
 }
@@ -57,7 +57,7 @@ const StepZero = () => {
   const setStep = setupStore((state) => state.setStep)
 
   return (
-    <div className='flex h-full max-w-max flex-col gap-10 p-6 xl:p-10'>
+    <div className='flex h-full max-w-max flex-col gap-6 p-6 xl:px-8'>
       <HeroText
         className='items-start text-left'
         description='Get a quick overview of the setup process before connecting your tools.'
@@ -66,22 +66,22 @@ const StepZero = () => {
 
       <Divider />
 
-      <div className='space-y-5'>
+      <div className='space-y-4'>
         {items.map((item) => (
-          <div className='rounded-md border border-gray-3 p-5' key={item.id}>
-            <div className='mb-5 flex gap-5 xl:items-center'>
-              <div className='flex size-11 items-center justify-center rounded-md border border-gray-3 bg-gray-2'>
-                <Icon className='size-6' name={item.icon} />
+          <div className='rounded border border-gray-3 p-4' key={item.id}>
+            <div className='mb-4 flex gap-4 xl:items-center'>
+              <div className='flex size-10 items-center justify-center rounded bg-gray-3'>
+                <Icon className='size-5' name={item.icon} />
               </div>
               <div className='flex-1'>
-                <div className='mb-1 text-base font-semibold text-gray-13'>
+                <div className='mb-1 text-medium font-semibold text-gray-13'>
                   {item.name}
                 </div>
                 <div className='text-pretty'>{item.description}</div>
               </div>
             </div>
 
-            <ul className='m-0 flex flex-wrap items-center gap-3 pl-16'>
+            <ul className='m-0 flex flex-wrap items-center gap-3 pl-14'>
               {item.features.map((feature) => (
                 <li key={feature}>{getFeatureJSX(feature)}</li>
               ))}
@@ -97,11 +97,13 @@ const StepZero = () => {
           color='gray'
           icon='tabler:arrow-left'
           label='Back'
+          size='lg'
           variant='outline'
           onClick={() => setIsSetupStarted(false)}
         />
         <Button
           label='Continue'
+          size='lg'
           suffixIcon='tabler:arrow-right'
           onClick={() => setStep(1)}
         />

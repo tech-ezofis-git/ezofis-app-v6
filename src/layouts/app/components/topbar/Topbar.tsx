@@ -6,7 +6,7 @@ import SidebarToggle from './components/SidebarToggle'
 
 const Topbar = () => {
   return (
-    <header className='flex h-15 items-center justify-between border-b border-gray-3 px-8'>
+    <header className='flex h-12 items-center justify-between border-b border-gray-3 px-6'>
       <div className='flex items-center gap-2'>
         <SidebarToggle />
         <PageTitle />

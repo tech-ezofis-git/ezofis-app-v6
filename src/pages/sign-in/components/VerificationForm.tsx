@@ -51,6 +51,7 @@ const VerificationForm = () => {
         <Button
           className='w-full justify-center'
           label='Verify'
+          size='lg'
           onClick={verifyCode}
         />
 
@@ -61,6 +62,7 @@ const VerificationForm = () => {
             disabled={elapsed !== 0}
             label={resendLabel}
             loading={loading}
+            size='lg'
             variant='ghost'
             onClick={resendLink}
           />

@@ -7,9 +7,11 @@ const PageTitle = () => {
   const replacedPathname = pathname.replace('/', '').replace('-', ' ')
 
   return (
-    <h1 className='m-0 font-poppins text-base font-semibold text-gray-13 capitalize'>
-      {replacedPathname || 'Dashboard'}
-    </h1>
+    <div className='flex items-center gap-4'>
+      <h1 className='m-0 font-poppins text-large font-semibold text-gray-13 capitalize'>
+        {replacedPathname || 'Dashboard'}
+      </h1>
+    </div>
   )
 }
 

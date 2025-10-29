@@ -38,7 +38,7 @@ const Tooltip = ({
   width,
 }: Props) => {
   const _className = cn(
-    'rounded px-2 py-1 text-xs font-medium text-white',
+    'rounded px-2 py-1 text-small text-white',
     colorClassName[color],
   )
 
@@ -55,7 +55,6 @@ const Tooltip = ({
       offset={offset}
       openDelay={openDelay}
       position={position}
-      transitionProps={{ duration: 150 }}
       w={width}
       withArrow
       classNames={{

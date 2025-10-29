@@ -1,7 +1,7 @@
 import { FocusTrap } from '@mantine/core'
 import Modal from '@/components/base/Modal'
+import OverlayContent from '@/components/base/overlay/OverlayContent'
 import OverlayHeader from '@/components/base/overlay/OverlayHeader'
-import ScrollArea from '@/components/base/scroll-area/ScrollArea'
 import setupStore from '../../stores/useSetupStore'
 import Steps from './components/Steps'
 import WelcomeMessage from './components/WelcomeMessage'
@@ -15,10 +15,10 @@ const Setup = () => {
       <FocusTrap.InitialFocus />
       <OverlayHeader title='Accounts Payable Setup' onClose={closeSetup} />
 
-      <ScrollArea height='calc(100svh - 60px)' overscrollBehavior='contain'>
+      <OverlayContent hasHeader>
         <WelcomeMessage />
         <Steps />
-      </ScrollArea>
+      </OverlayContent>
     </Modal>
   )
 }

@@ -45,6 +45,7 @@ const SignUpForm = ({ email, setEmail, onChangeView }: Props) => {
         label='Email'
         leftSection={<Icon className='text-gray-9' name='tabler:mail' />}
         placeholder='hello@ezofis.com'
+        size='lg'
         value={email}
         onChange={setEmail}
       />
@@ -54,10 +55,11 @@ const SignUpForm = ({ email, setEmail, onChangeView }: Props) => {
           className='w-full justify-center'
           label='Sign Up'
           loading={loading}
+          size='lg'
           onClick={signUp}
         />
 
-        <div className='text-center text-xs leading-5 text-pretty text-gray-10'>
+        <div className='text-center text-mini leading-5 text-pretty text-gray-10'>
           By signing up, you agree to our{' '}
           <span className='cursor-pointer font-medium text-gray-11 underline'>
             Terms of Service

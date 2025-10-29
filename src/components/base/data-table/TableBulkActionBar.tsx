@@ -30,13 +30,13 @@ const TableBulkActionBar = <TData,>({ className, table }: Props<TData>) => {
       ref={ref}
       size='auto'
       className={cn(
-        'flex flex-wrap items-center gap-1 rounded-md border border-gray-3 bg-surface-raised !p-2 shadow-lg',
+        'flex flex-wrap items-center gap-1 rounded border border-gray-3 bg-surface-raised p-2! shadow-lg',
         className,
       )}
       onClose={() => setOpen(false)}
     >
       <Button
-        className='text-sm disabled:opacity-100'
+        className='text-small disabled:opacity-100'
         label={`${selectedRows.length} selected`}
         disabled
       />

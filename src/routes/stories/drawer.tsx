@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 import Button from '@/components/base/button/Button'
 import Drawer from '@/components/base/Drawer'
+import OverlayContent from '@/components/base/overlay/OverlayContent'
 import OverlayFooter from '@/components/base/overlay/OverlayFooter'
 import OverlayHeader from '@/components/base/overlay/OverlayHeader'
 import StoryTitle from './-components/StoryTitle'
@@ -25,7 +26,9 @@ function RouteComponent() {
       />
       <Drawer opened={opened} onClose={() => setOpened(false)}>
         <OverlayHeader title='Drawer' onClose={() => setOpened(false)} />
-        <div style={{ height: 'calc(100vh - 120px)' }}></div>
+        <OverlayContent hasFooter hasHeader>
+          <></>
+        </OverlayContent>
         <OverlayFooter
           onCancel={() => setOpened(false)}
           onSave={() => setOpened(false)}

@@ -16,12 +16,13 @@ const PageHeader = ({ isTokenValid }: Props) => {
 
       {isTokenValid && (
         <div className='flex items-center gap-2'>
-          <div className='hidden text-sm text-gray-10 sm:block'>
+          <div className='hidden text-small text-gray-10 sm:block'>
             Want to do this later?
           </div>
           <Button
             color='gray'
             label='Sign Out'
+            size='lg'
             variant='outline'
             onClick={signOut}
           />

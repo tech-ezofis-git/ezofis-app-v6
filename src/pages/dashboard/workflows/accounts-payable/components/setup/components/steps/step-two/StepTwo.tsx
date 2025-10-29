@@ -26,7 +26,7 @@ const StepTwo = () => {
   }
 
   return (
-    <div className='flex h-full max-w-max flex-col gap-10 p-6 xl:p-10'>
+    <div className='flex h-full max-w-max flex-col gap-6 p-6 xl:px-8'>
       <HeroText
         className='items-start text-left'
         description='Connect your ERP to sync vendors, purchase orders, and payments with your workflows.'
@@ -56,12 +56,14 @@ const StepTwo = () => {
           color='gray'
           icon='tabler:arrow-left'
           label='Back'
+          size='lg'
           variant='outline'
           onClick={() => setStep(1)}
         />
         {erpSettings.isConnected ? (
           <Button
             label='Continue'
+            size='lg'
             suffixIcon='tabler:arrow-right'
             onClick={() => setStep(3)}
           />
@@ -70,6 +72,7 @@ const StepTwo = () => {
             icon='tabler:plug'
             label={`Connect ${erpSettings.system}`}
             loading={erpSettings.isConnecting}
+            size='lg'
             onClick={handleConnect}
           />
         )}

@@ -2,6 +2,25 @@
   --font-inter: 'Inter', sans-serif;
   --font-poppins: 'Poppins', sans-serif;
 
+  --radius: 5px;
+
+  --text-micro: 0.6875rem;
+  --text-micro--line-height: calc(1 / 0.6875);
+
+  --text-mini: 0.75rem;
+  --text-mini--line-height: calc(1 / 0.75);
+
+  --text-small: 0.8125rem;
+  --text-small--line-height: calc(1.25 / 0.8125);
+
+  --text-medium: 0.9375rem;
+  --text-medium--line-height: calc(1.5 / 1);
+
+  --text-large: 1.0625rem;
+  --text-large--line-height: calc(1.75 / 1.0625);
+
+  --font-weight-normal: 450;
+
   --color-*: initial;
 
   --color-white: #ffffff;
@@ -216,6 +235,19 @@
   --color-gray-11: var(--gray-11);
   --color-gray-12: var(--gray-12);
   --color-gray-13: var(--gray-13);
+
+  --color-gray-a1: var(--gray-a1);
+  --color-gray-a2: var(--gray-a2);
+  --color-gray-a3: var(--gray-a3);
+  --color-gray-a4: var(--gray-a4);
+  --color-gray-a5: var(--gray-a5);
+  --color-gray-a6: var(--gray-a6);
+  --color-gray-a7: var(--gray-a7);
+  --color-gray-a8: var(--gray-a8);
+  --color-gray-a9: var(--gray-a9);
+  --color-gray-a10: var(--gray-a10);
+  --color-gray-a11: var(--gray-a11);
+  --color-gray-a12: var(--gray-a12);
 
   --color-overlay: var(--overlay);
 

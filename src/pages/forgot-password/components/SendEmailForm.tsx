@@ -32,6 +32,7 @@ const SendEmailForm = ({ email }: Props) => {
 
       <InputText
         leftSection={<Icon className='text-gray-8' name='tabler:mail' />}
+        size='lg'
         value={email || 'charles@ezofis.com'}
         disabled
         onChange={() => {}}
@@ -42,6 +43,7 @@ const SendEmailForm = ({ email }: Props) => {
         disabled={elapsed !== 0}
         label={resendLabel}
         loading={loading}
+        size='lg'
         onClick={resendLink}
       />
     </>

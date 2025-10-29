@@ -28,7 +28,7 @@ const ProviderSettings = () => {
         title='Choose Your Email Provider'
       />
 
-      <div className='grid grid-cols-1 gap-3 md:grid-cols-2'>
+      <div className='grid grid-cols-1 gap-2 md:grid-cols-2'>
         {items.map((item) => (
           <BrandCard
             checked={emailSettings.provider === item.value}

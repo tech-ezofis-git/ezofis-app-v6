@@ -1,6 +1,6 @@
 import cn from '@/utils/cn'
 
-type BadgeColor =
+export type BadgeColor =
   | 'blue'
   | 'bronze'
   | 'cyan'
@@ -41,7 +41,7 @@ const colorClassName: Record<BadgeColor, string> = {
 
 const Badge = ({ className, color = 'gray', label }: Props) => {
   const _className = cn(
-    'inline-flex h-6 w-fit shrink-0 items-center justify-center rounded px-2 text-xs font-medium whitespace-nowrap',
+    'inline-flex h-6 w-fit shrink-0 items-center justify-center rounded px-2 text-mini font-medium whitespace-nowrap',
     colorClassName[color],
     className,
   )

@@ -52,7 +52,7 @@ const TableSearch = <TData,>({ table }: Props<TData>) => {
   return (
     <div
       aria-label='Table search'
-      className='focus-within:border-primary flex h-9 items-center rounded-md border border-gray-6 pr-1 pl-3'
+      className='focus-within:border-primary flex h-8 items-center rounded border border-gray-6 pr-1 pl-3'
       ref={ref}
       role='search'
     >
@@ -64,8 +64,8 @@ const TableSearch = <TData,>({ table }: Props<TData>) => {
           placeholder='Search'
           type='text'
           className={cn(
-            'text-gray placeholder:text-gray h-full px-2 text-sm font-medium outline-0 transition-[width]',
-            focused ? 'w-56' : 'w-17',
+            'text-gray h-full px-2 text-small font-medium outline-0 transition-[width] placeholder:text-gray-11',
+            focused ? 'w-56' : 'w-16',
           )}
           onChange={(e) => handleValueChange(e.target.value)}
           onFocus={() => setFocused(true)}

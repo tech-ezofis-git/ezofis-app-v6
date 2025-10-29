@@ -33,6 +33,7 @@ const ForgotPasswordForm = ({ email, setEmail, onChangeView }: Props) => {
       <InputText
         leftSection={<Icon className='text-gray-8' name='tabler:mail' />}
         placeholder='hello@ezofis.com'
+        size='lg'
         value={email}
         onChange={setEmail}
       />
@@ -41,6 +42,7 @@ const ForgotPasswordForm = ({ email, setEmail, onChangeView }: Props) => {
         className='w-full justify-center'
         label='Send Link'
         loading={loading}
+        size='lg'
         onClick={sendLink}
       />
     </>

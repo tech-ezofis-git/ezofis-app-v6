@@ -27,16 +27,16 @@ const WhatHappensNext = () => {
         title='What Happens Next?'
       />
 
-      <div className='space-y-3'>
+      <div className='space-y-4'>
         {items.map((item) => (
           <div
-            className='flex flex-wrap gap-4 rounded-md border border-gray-3 p-5'
+            className='flex flex-wrap gap-4 rounded border border-gray-3 p-4'
             key={item.title}
           >
-            <Icon className='size-6 text-green-9' name='tabler:circle-check' />
+            <Icon className='size-5 text-green-9' name='tabler:circle-check' />
 
             <div className='flex-1 space-y-1'>
-              <div className='text-base font-medium text-gray-12'>
+              <div className='text-medium font-medium text-gray-12'>
                 {item.title}
               </div>
               <div className='text-gray-10'>{item.description}</div>

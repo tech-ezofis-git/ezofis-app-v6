@@ -21,6 +21,7 @@ const StepOne = () => {
       <div className='space-y-4'>
         <InputPassword
           label='Password'
+          size='lg'
           value={password}
           onChange={setPassword}
         />
@@ -29,6 +30,7 @@ const StepOne = () => {
 
         <InputPassword
           label='Confirm password'
+          size='lg'
           value={confirmPassword}
           onChange={setConfirmPassword}
         />

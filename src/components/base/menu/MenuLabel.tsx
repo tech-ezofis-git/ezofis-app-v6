@@ -9,7 +9,7 @@ interface Props {
 
 const MenuLabel = ({ children, className }: Props) => {
   const _className = cn(
-    'flex h-6 items-center px-2 py-0 text-xs font-medium text-gray-10',
+    'flex h-6 items-center px-2 py-0 text-mini text-gray-10',
     className,
   )
 

@@ -26,7 +26,7 @@ const StepThree = () => {
   }
 
   return (
-    <div className='flex h-full max-w-max flex-col gap-10 p-6 xl:p-10'>
+    <div className='flex h-full max-w-max flex-col gap-6 p-6 xl:px-8'>
       <HeroText
         className='items-start text-left'
         description='Choose your storage provider to securely store and access invoice documents.'
@@ -56,12 +56,14 @@ const StepThree = () => {
           color='gray'
           icon='tabler:arrow-left'
           label='Back'
+          size='lg'
           variant='outline'
           onClick={() => setStep(2)}
         />
         {storageSettings.isConnected ? (
           <Button
             label='Continue'
+            size='lg'
             suffixIcon='tabler:arrow-right'
             onClick={() => setStep(4)}
           />
@@ -70,6 +72,7 @@ const StepThree = () => {
             icon='tabler:plug'
             label={`Connect ${storageSettings.system}`}
             loading={storageSettings.isConnecting}
+            size='lg'
             onClick={handleConnect}
           />
         )}

@@ -28,7 +28,7 @@ const PasswordRequirements = ({ password }: Props) => {
   )
 
   return (
-    <div className='space-y-2 text-sm text-gray-9'>
+    <div className='space-y-2 text-small text-gray-9'>
       <div className='font-medium text-gray-11'>Must contain:</div>
 
       <ul className='space-y-2' role='list'>

@@ -15,10 +15,10 @@ const AIChatSuggestions = () => {
       <div className='px-2'>
         <IconAI className='size-10' />
 
-        <div className='mt-6 font-poppins text-lg font-semibold text-gray-12'>
+        <div className='mt-6 font-poppins text-large font-semibold text-gray-12'>
           How can I assist you?
         </div>
-        <div className='mt-2 text-sm text-gray-9'>
+        <div className='mt-1 text-small text-gray-9'>
           Here are a few things I can do, or ask me anything!
         </div>
       </div>

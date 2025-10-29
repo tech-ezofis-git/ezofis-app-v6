@@ -62,8 +62,11 @@ const theme = createTheme({
     ],
   },
   components: {},
-  defaultRadius: '6px',
+  defaultRadius: '5px',
   fontFamily: 'Inter, sans-serif',
+  fontSizes: {
+    sm: '0.8125rem',
+  },
   primaryColor: 'primary',
   primaryShade: 9,
 })

@@ -1,5 +1,5 @@
 const WorkflowsPage = () => {
-  return <div></div>
+  return <></>
 }
 
 WorkflowsPage.displayName = 'WorkflowsPage'

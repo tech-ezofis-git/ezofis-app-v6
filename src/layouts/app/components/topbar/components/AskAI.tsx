@@ -12,8 +12,7 @@ const AskAI = () => {
         ariaLabel='Ask AI'
         className='transition-none'
         color='gray'
-        icon='mingcute:ai-line'
-        iconClass='size-5 mb-0.5'
+        icon='tabler:flare'
         variant='ghost'
         onClick={toggleAIChat}
       />

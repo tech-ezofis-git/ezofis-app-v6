@@ -5,7 +5,11 @@ import cn from '@/utils/cn'
 import type { InputProps } from './shared/types'
 import ClearButton from './ClearButton'
 import InputLabel from './InputLabel'
-import { classNames, inputWrapperOrder } from './shared/constants'
+import {
+  classNames,
+  inputWrapperOrder,
+  sizeClassName,
+} from './shared/constants'
 
 interface Props
   extends Omit<
@@ -34,6 +38,7 @@ const InputTime = forwardRef<HTMLInputElement, Props>(
       minTime,
       optional,
       required,
+      size = 'md',
       tooltip,
       tooltipWidth,
       value,
@@ -53,7 +58,7 @@ const InputTime = forwardRef<HTMLInputElement, Props>(
         !!error && 'text-gray-12',
       ),
       fieldsGroup: value ? 'text-gray-12' : 'text-gray-8',
-      input: classNames.input,
+      input: cn(classNames.input, sizeClassName[size]),
       label: classNames.label,
       wrapper: classNames.wrapper,
     }

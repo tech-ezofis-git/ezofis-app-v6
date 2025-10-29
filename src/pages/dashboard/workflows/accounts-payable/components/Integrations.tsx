@@ -33,7 +33,7 @@ const Integrations = () => {
   const { width } = useViewportSize()
 
   return (
-    <Section icon='tabler:adjustments-horizontal' title='Integrations'>
+    <Section title='Integrations'>
       <div
         className={cn(
           'grid grid-cols-1 gap-3',
@@ -43,19 +43,19 @@ const Integrations = () => {
         )}
       >
         {items.map((item) => (
-          <div className='rounded-md border border-gray-3 p-5' key={item.name}>
-            <div className='mb-5 flex items-center gap-4 border-b border-gray-3 pb-5'>
-              <div className='flex size-11 items-center justify-center rounded-md border border-gray-3 bg-gray-2'>
-                <Icon className='size-6' name={item.icon} />
+          <div className='rounded border border-gray-3 p-4' key={item.name}>
+            <div className='mb-4 flex items-center gap-4 border-b border-gray-3 pb-4'>
+              <div className='flex size-10 items-center justify-center rounded bg-gray-3'>
+                <Icon className='size-5' name={item.icon} />
               </div>
 
-              <div className='text-base font-semibold text-gray-13'>
+              <div className='text-medium font-semibold text-gray-13'>
                 {item.name}
               </div>
             </div>
 
             <div>
-              <div className='flex h-9 items-center justify-between gap-3'>
+              <div className='flex h-8 items-center justify-between gap-3'>
                 <div>Status:</div>
                 <Badge
                   className='capitalize'
@@ -64,14 +64,14 @@ const Integrations = () => {
                 />
               </div>
 
-              <div className='flex h-9 items-center justify-between gap-3'>
+              <div className='flex h-8 items-center justify-between gap-3'>
                 <div>Platform:</div>
                 <div className='truncate font-medium text-gray-12 capitalize'>
                   {item.platform}
                 </div>
               </div>
 
-              <div className='flex h-9 items-center justify-between gap-3'>
+              <div className='flex h-8 items-center justify-between gap-3'>
                 <div>Account:</div>
                 <div className='truncate font-medium text-gray-12'>
                   {item.account}

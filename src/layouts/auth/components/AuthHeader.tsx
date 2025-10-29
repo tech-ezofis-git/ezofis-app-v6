@@ -61,12 +61,13 @@ const AuthHeader = ({ className, logoClassName }: Props) => {
 
       {action && (
         <div className='flex items-center gap-2'>
-          <div className='hidden text-sm text-gray-10 sm:block'>
+          <div className='hidden text-small text-gray-10 sm:block'>
             {action.description}
           </div>
           <Button
             color='gray'
             label={action.label}
+            size='lg'
             variant='outline'
             onClick={handleClick}
           />

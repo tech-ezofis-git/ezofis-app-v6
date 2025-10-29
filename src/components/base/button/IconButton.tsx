@@ -22,7 +22,6 @@ const sizeClassName: Record<ButtonSize, string> = {
   sm: 'size-7',
   md: 'size-8',
   lg: 'size-9',
-  xl: 'size-10',
 }
 
 const IconButton = forwardRef<HTMLButtonElement, Props>(
@@ -36,7 +35,7 @@ const IconButton = forwardRef<HTMLButtonElement, Props>(
       icon,
       iconClass,
       loading,
-      size = 'lg',
+      size = 'md',
       variant = 'solid',
       ...props
     },

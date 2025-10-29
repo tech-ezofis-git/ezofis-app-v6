@@ -35,7 +35,7 @@ const Overview = () => {
   const { width } = useViewportSize()
 
   return (
-    <Section icon='tabler:dashboard' title='Overview'>
+    <Section title='Overview'>
       <div
         className={cn(
           'grid grid-cols-1 gap-3',
@@ -45,21 +45,24 @@ const Overview = () => {
         )}
       >
         {items.map((item) => (
-          <div className='rounded-md border border-gray-3 p-5' key={item.name}>
-            <div className='mb-5 flex items-center justify-between gap-2'>
+          <div
+            className='rounded border border-gray-3 bg-surface p-4'
+            key={item.name}
+          >
+            <div className='mb-4 flex items-center justify-between gap-2'>
               <div>
-                <div className='mb-1 leading-6 font-medium'>{item.name}</div>
+                <div className='mb-1 font-medium'>{item.name}</div>
                 <div className='text-xl font-semibold text-gray-13'>
                   {item.value}
                 </div>
               </div>
 
-              <div className='flex size-11 items-center justify-center rounded-md border border-gray-3 bg-gray-2'>
-                <Icon className='size-6' name={item.icon} />
+              <div className='flex size-10 items-center justify-center rounded bg-gray-3'>
+                <Icon className='size-5' name={item.icon} />
               </div>
             </div>
 
-            <div className='flex items-center justify-between gap-1 border-t border-gray-3 pt-5'>
+            <div className='flex items-center justify-between gap-1 border-t border-gray-3 pt-4'>
               <div className='flex items-center gap-1'>
                 <div
                   className={cn('font-medium text-green-11', {

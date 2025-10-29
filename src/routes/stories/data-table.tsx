@@ -64,12 +64,7 @@ const columns: Column[] = [
           position='bottom-end'
           width={160}
           target={
-            <IconButton
-              color='gray'
-              icon='tabler:dots'
-              size='md'
-              variant='ghost'
-            />
+            <IconButton color='gray' icon='tabler:dots' variant='ghost' />
           }
         >
           <MenuItem

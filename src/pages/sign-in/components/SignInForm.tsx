@@ -59,12 +59,14 @@ const SignInForm = ({ onChangeView }: Props) => {
           label='Email'
           leftSection={<Icon className='text-gray-8' name='tabler:mail' />}
           placeholder='hello@ezofis.com'
+          size='lg'
           value={email}
           onChange={setEmail}
         />
         <InputPassword
           label='Password'
           leftSection={<Icon className='text-gray-8' name='tabler:lock' />}
+          size='lg'
           value={password}
           showPlaceholder
           onChange={setPassword}
@@ -86,6 +88,7 @@ const SignInForm = ({ onChangeView }: Props) => {
         className='w-full justify-center'
         label='Sign In'
         loading={loading}
+        size='lg'
         onClick={signIn}
       />
     </>

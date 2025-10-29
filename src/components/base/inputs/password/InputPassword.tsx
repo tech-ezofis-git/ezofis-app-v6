@@ -1,8 +1,13 @@
 import { PasswordInput as Base } from '@mantine/core'
 import { type ChangeEvent, forwardRef, type ReactNode } from 'react'
+import cn from '@/utils/cn'
 import type { InputProps } from '../shared/types'
 import InputLabel from '../InputLabel'
-import { classNames, inputWrapperOrder } from '../shared/constants'
+import {
+  classNames,
+  inputWrapperOrder,
+  sizeClassName,
+} from '../shared/constants'
 import VisibilityToggleIcon from './VisibilityToggleIcon'
 
 interface Props
@@ -13,16 +18,6 @@ interface Props
   onChange: (value: string) => void
 }
 
-const _classNames = {
-  description: classNames.description,
-  error: classNames.error,
-  innerInput: 'placeholder:font-normal placeholder:text-gray-8',
-  input: classNames.input,
-  label: classNames.label,
-  visibilityToggle: 'hover:bg-gray-4 group size-7',
-  wrapper: classNames.wrapper,
-}
-
 const InputPassword = forwardRef<HTMLInputElement, Props>(
   (
     {
@@ -31,6 +26,7 @@ const InputPassword = forwardRef<HTMLInputElement, Props>(
       optional,
       required,
       showPlaceholder,
+      size = 'md',
       tooltip,
       tooltipWidth,
       value,
@@ -55,7 +51,6 @@ const InputPassword = forwardRef<HTMLInputElement, Props>(
     return (
       <Base
         {...rest}
-        classNames={_classNames}
         description={rest.error ? undefined : description}
         inputWrapperOrder={inputWrapperOrder}
         label={_label}
@@ -63,6 +58,15 @@ const InputPassword = forwardRef<HTMLInputElement, Props>(
         ref={ref}
         value={value}
         visibilityToggleIcon={VisibilityToggleIcon}
+        classNames={{
+          description: classNames.description,
+          error: classNames.error,
+          innerInput: 'placeholder:font-normal placeholder:text-gray-8',
+          input: cn(classNames.input, sizeClassName[size]),
+          label: classNames.label,
+          visibilityToggle: 'group size-7 hover:bg-gray-4',
+          wrapper: classNames.wrapper,
+        }}
         onChange={handleChange}
       />
     )

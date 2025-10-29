@@ -19,7 +19,7 @@ interface Props extends InputProps {
 const _classNames = {
   description: classNames.description,
   error: classNames.error,
-  input: cn(classNames.input, 'py-1'),
+  input: cn(classNames.input, 'h-auto min-h-auto py-1'),
   label: classNames.label,
   wrapper: classNames.wrapper,
 }

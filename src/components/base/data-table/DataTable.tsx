@@ -39,7 +39,7 @@ const DataTable = <TData,>({
   const rows = table.getRowModel().rows
 
   return (
-    <div>
+    <>
       <TableActionBar
         isReloading={isReLoading}
         rowSize={rowSize}
@@ -48,55 +48,60 @@ const DataTable = <TData,>({
         onRowSizeChange={setRowSize}
       />
 
-      <Table className='table-fixed'>
-        <Thead>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <Tr key={headerGroup.id}>
-              {headerGroup.headers.map((header) => (
-                <TableHeaderCell
-                  header={header}
-                  key={header.id}
-                  table={table}
-                />
-              ))}
-            </Tr>
-          ))}
-        </Thead>
-
-        {isLoading && (
-          <TableSkeleton
-            pageSize={pageSize}
-            rowSizeClassNames={rowSizeClassNames[rowSize]}
-            table={table}
-          />
-        )}
-
-        {!isLoading && rows.length === 0 && <TableEmptyState table={table} />}
-
-        {!isLoading && rows.length > 0 && (
-          <Tbody>
-            {rows.map((row) => (
-              <Tr key={row.id}>
-                {row.getVisibleCells().map((cell) => (
-                  <Td
-                    key={cell.id}
-                    style={getColumnPinnedStyles(cell.column, table)}
-                    className={cn(
-                      rowSizeClassNames[rowSize],
-                      cell.column.columnDef.meta?.className,
-                    )}
-                  >
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </Td>
+      <div className='scrollbar w-full overflow-x-auto'>
+        <Table className='table-fixed'>
+          <Thead>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <Tr key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <TableHeaderCell
+                    header={header}
+                    key={header.id}
+                    table={table}
+                  />
                 ))}
               </Tr>
             ))}
-          </Tbody>
-        )}
-      </Table>
+          </Thead>
+
+          {isLoading && (
+            <TableSkeleton
+              pageSize={pageSize}
+              rowSizeClassNames={rowSizeClassNames[rowSize]}
+              table={table}
+            />
+          )}
+
+          {!isLoading && rows.length === 0 && <TableEmptyState table={table} />}
+
+          {!isLoading && rows.length > 0 && (
+            <Tbody>
+              {rows.map((row) => (
+                <Tr key={row.id}>
+                  {row.getVisibleCells().map((cell) => (
+                    <Td
+                      key={cell.id}
+                      style={getColumnPinnedStyles(cell.column, table)}
+                      className={cn(
+                        rowSizeClassNames[rowSize],
+                        cell.column.columnDef.meta?.className,
+                      )}
+                    >
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext(),
+                      )}
+                    </Td>
+                  ))}
+                </Tr>
+              ))}
+            </Tbody>
+          )}
+        </Table>
+      </div>
 
       <TableBulkActionBar table={table} />
-    </div>
+    </>
   )
 }
 

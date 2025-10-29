@@ -14,9 +14,9 @@ const transition = {
 }
 const animation1 = { scale: [1, 0.6, 1, 0.6, 1] }
 const animation2 = { scale: [1, 1.6, 0.6, 1.6, 1] }
-const primaryColor = '#8316e4'
+const primaryColor = '#9333ea'
 const secondaryColor = '#00bcd4'
-const tertiaryColor = '#4269DC'
+const tertiaryColor = '#4a78df'
 
 const IconAI = ({ animate, className }: Props) => {
   return (

@@ -14,9 +14,12 @@ export interface InputProps {
   placeholder?: string
   readOnly?: boolean
   required?: boolean
+  size?: InputSize
   tooltip?: string
   tooltipWidth?: number
 }
+
+export type InputSize = 'sm' | 'md' | 'lg'
 
 export type InputWrapperOrder = 'input' | 'label' | 'description' | 'error'
 

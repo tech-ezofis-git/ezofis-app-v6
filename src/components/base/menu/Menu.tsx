@@ -26,10 +26,10 @@ const Menu = ({
 }: Props) => {
   const _classNames = {
     dropdown: cn(
-      'border border-gray-3 bg-surface-raised p-1 shadow-lg',
+      'rounded-lg border border-gray-4 bg-surface-raised p-1 shadow-lg',
       className,
     ),
-    item: 'group flex h-9 items-center gap-2 rounded px-2 text-gray-11 transition-colors hover:bg-gray-4 hover:text-gray-12 focus-visible:bg-gray-4 focus-visible:outline-0',
+    item: 'group flex h-8 items-center gap-2 rounded px-2 text-gray-11 transition-colors hover:bg-gray-4 hover:text-gray-12 focus-visible:bg-gray-4 focus-visible:outline-0',
     itemLabel: 'font-medium transition-colors',
     itemSection: 'm-0 text-gray-9 group-hover:text-gray-10 transition-colors',
   }

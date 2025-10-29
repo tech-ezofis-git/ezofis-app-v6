@@ -59,6 +59,7 @@ import { Route as AppWorkflowsRouteImport } from './routes/_app/workflows'
 import { Route as AppTrashRouteImport } from './routes/_app/trash'
 import { Route as AppTasksRouteImport } from './routes/_app/tasks'
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
+import { Route as AppRequestsRouteImport } from './routes/_app/requests'
 import { Route as AppReportsRouteImport } from './routes/_app/reports'
 import { Route as AppPortalsRouteImport } from './routes/_app/portals'
 import { Route as AppHelpCenterRouteImport } from './routes/_app/help-center'
@@ -320,6 +321,11 @@ const AppSettingsRoute = AppSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AppRouteRoute,
 } as any)
+const AppRequestsRoute = AppRequestsRouteImport.update({
+  id: '/requests',
+  path: '/requests',
+  getParentRoute: () => AppRouteRoute,
+} as any)
 const AppReportsRoute = AppReportsRouteImport.update({
   id: '/reports',
   path: '/reports',
@@ -373,6 +379,7 @@ export interface FileRoutesByFullPath {
   '/help-center': typeof AppHelpCenterRoute
   '/portals': typeof AppPortalsRoute
   '/reports': typeof AppReportsRoute
+  '/requests': typeof AppRequestsRoute
   '/settings': typeof AppSettingsRoute
   '/tasks': typeof AppTasksRoute
   '/trash': typeof AppTrashRoute
@@ -431,6 +438,7 @@ export interface FileRoutesByTo {
   '/help-center': typeof AppHelpCenterRoute
   '/portals': typeof AppPortalsRoute
   '/reports': typeof AppReportsRoute
+  '/requests': typeof AppRequestsRoute
   '/settings': typeof AppSettingsRoute
   '/tasks': typeof AppTasksRoute
   '/trash': typeof AppTrashRoute
@@ -493,6 +501,7 @@ export interface FileRoutesById {
   '/_app/help-center': typeof AppHelpCenterRoute
   '/_app/portals': typeof AppPortalsRoute
   '/_app/reports': typeof AppReportsRoute
+  '/_app/requests': typeof AppRequestsRoute
   '/_app/settings': typeof AppSettingsRoute
   '/_app/tasks': typeof AppTasksRoute
   '/_app/trash': typeof AppTrashRoute
@@ -554,6 +563,7 @@ export interface FileRouteTypes {
     | '/help-center'
     | '/portals'
     | '/reports'
+    | '/requests'
     | '/settings'
     | '/tasks'
     | '/trash'
@@ -612,6 +622,7 @@ export interface FileRouteTypes {
     | '/help-center'
     | '/portals'
     | '/reports'
+    | '/requests'
     | '/settings'
     | '/tasks'
     | '/trash'
@@ -673,6 +684,7 @@ export interface FileRouteTypes {
     | '/_app/help-center'
     | '/_app/portals'
     | '/_app/reports'
+    | '/_app/requests'
     | '/_app/settings'
     | '/_app/tasks'
     | '/_app/trash'
@@ -1086,6 +1098,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSettingsRouteImport
       parentRoute: typeof AppRouteRoute
     }
+    '/_app/requests': {
+      id: '/_app/requests'
+      path: '/requests'
+      fullPath: '/requests'
+      preLoaderRoute: typeof AppRequestsRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
     '/_app/reports': {
       id: '/_app/reports'
       path: '/reports'
@@ -1158,6 +1177,7 @@ interface AppRouteRouteChildren {
   AppHelpCenterRoute: typeof AppHelpCenterRoute
   AppPortalsRoute: typeof AppPortalsRoute
   AppReportsRoute: typeof AppReportsRoute
+  AppRequestsRoute: typeof AppRequestsRoute
   AppSettingsRoute: typeof AppSettingsRoute
   AppTasksRoute: typeof AppTasksRoute
   AppTrashRoute: typeof AppTrashRoute
@@ -1171,6 +1191,7 @@ const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppHelpCenterRoute: AppHelpCenterRoute,
   AppPortalsRoute: AppPortalsRoute,
   AppReportsRoute: AppReportsRoute,
+  AppRequestsRoute: AppRequestsRoute,
   AppSettingsRoute: AppSettingsRoute,
   AppTasksRoute: AppTasksRoute,
   AppTrashRoute: AppTrashRoute,

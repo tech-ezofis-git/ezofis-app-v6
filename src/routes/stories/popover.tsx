@@ -18,7 +18,7 @@ function RouteComponent() {
         width={360}
       >
         <div className='p-4'>
-          <h1 className='mb-2 font-poppins text-base font-semibold text-gray-13'>
+          <h1 className='mb-2 text-medium font-semibold text-gray-13'>
             Get Started
           </h1>
           <p className='text-gray border-b border-gray-3 pb-4 text-balance'>
@@ -27,8 +27,8 @@ function RouteComponent() {
           </p>
           <div className='flex items-center gap-2 pt-4'>
             <div className='flex-1 text-gray-9'>6 of 8</div>
-            <Button color='gray' label='Skip' size='md' variant='outline' />
-            <Button label='Next' size='md' />
+            <Button color='gray' label='Skip' variant='outline' />
+            <Button label='Next' />
           </div>
         </div>
       </Popover>

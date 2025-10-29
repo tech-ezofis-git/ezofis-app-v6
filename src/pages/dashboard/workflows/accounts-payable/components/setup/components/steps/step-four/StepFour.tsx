@@ -10,7 +10,7 @@ const StepFour = () => {
   const closeSetup = setupStore((state) => state.closeSetup)
 
   return (
-    <div className='flex h-full max-w-max flex-col gap-10 p-6 xl:p-10'>
+    <div className='flex h-full max-w-max flex-col gap-6 p-6 xl:px-8'>
       <HeroText
         className='items-start text-left'
         description='Check your connections and confirm setup to activate AI-powered invoice automation.'
@@ -28,11 +28,13 @@ const StepFour = () => {
           color='gray'
           icon='tabler:arrow-left'
           label='Back'
+          size='lg'
           variant='outline'
           onClick={() => setStep(3)}
         />
         <Button
           label='Activate Automation'
+          size='lg'
           suffixIcon='tabler:arrow-right'
           onClick={closeSetup}
         />

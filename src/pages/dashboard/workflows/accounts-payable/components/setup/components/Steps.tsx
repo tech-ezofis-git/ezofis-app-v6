@@ -24,7 +24,7 @@ const Steps = () => {
   if (isSetupStarted) {
     return (
       <div className='grid min-h-full grid-cols-1 gap-6 xl:grid-cols-[auto_1fr] xl:gap-0'>
-        <div className='hidden border-r border-gray-3 p-10 xl:block'>
+        <div className='hidden border-r border-gray-3 px-8 py-6 xl:block'>
           <Stepper
             active={step}
             orientation='vertical'

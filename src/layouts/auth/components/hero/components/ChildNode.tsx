@@ -40,14 +40,14 @@ const ChildNode = ({ data }: NodeProps) => {
 
   return (
     <div className='flex size-18 items-center justify-center rounded-full bg-gray-3'>
-      <div className='flex size-12 items-center justify-center rounded-full bg-surface shadow-xs'>
+      <div className='flex size-12 items-center justify-center rounded-full bg-gray-1 shadow-xs'>
         <Handle
           className='pointer-events-none opacity-0'
           isConnectable={false}
           position={module.position}
           type='target'
         />
-        <Icon className='size-6 text-gray-11' name={module.icon} />
+        <Icon className='size-5 text-gray-11' name={module.icon} />
       </div>
     </div>
   )

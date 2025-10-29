@@ -15,7 +15,7 @@ const PaginationSummary = ({
   const to = Math.min(from + pageSize - 1, totalItems)
 
   return (
-    <div className='hidden text-sm font-medium text-gray-11 select-none sm:block'>
+    <div className='hidden text-small font-medium text-gray-11 select-none sm:block'>
       Showing {from} - {to} of {totalItems} {itemLabel}
     </div>
   )

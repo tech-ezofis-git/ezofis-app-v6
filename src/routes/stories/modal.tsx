@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 import Button from '@/components/base/button/Button'
 import Modal from '@/components/base/Modal'
+import OverlayContent from '@/components/base/overlay/OverlayContent'
 import OverlayFooter from '@/components/base/overlay/OverlayFooter'
 import OverlayHeader from '@/components/base/overlay/OverlayHeader'
 import StoryTitle from './-components/StoryTitle'
@@ -25,7 +26,9 @@ function RouteComponent() {
       />
       <Modal opened={opened} onClose={() => setopened(false)}>
         <OverlayHeader title='Modal' onClose={() => setopened(false)} />
-        <div className='h-40'></div>
+        <OverlayContent height='240px' hasFooter hasHeader>
+          <></>
+        </OverlayContent>
         <OverlayFooter
           onCancel={() => setopened(false)}
           onSave={() => setopened(false)}

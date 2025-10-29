@@ -74,18 +74,16 @@ const TableColumns = <TData,>({ table }: Props<TData>) => {
       <MenuDivider />
       <div className='flex items-center gap-1 pb-0.5'>
         <Button
-          className='flex-1 justify-center text-sm'
+          className='flex-1 justify-center text-small'
           color='gray'
           label='Show all'
-          size='md'
           variant='subtle'
           onClick={showAllColumns}
         />
         <Button
-          className='flex-1 justify-center text-sm'
+          className='flex-1 justify-center text-small'
           color='gray'
           label='Unpin all'
-          size='md'
           variant='subtle'
           onClick={() =>
             table.setColumnPinning(table.initialState.columnPinning)

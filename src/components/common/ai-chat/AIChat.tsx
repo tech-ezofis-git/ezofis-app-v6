@@ -10,7 +10,7 @@ const AIChat = ({ onClose }: Props) => {
   return (
     <>
       <AIChatHeader onClose={onClose} />
-      <div style={{ height: 'calc(100svh - 548px)' }}></div>
+      <div style={{ height: 'calc(100svh - 540px)' }}></div>
       <AIChatSuggestions />
       <AIChatInput />
     </>

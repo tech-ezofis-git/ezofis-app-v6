@@ -36,7 +36,7 @@ const OnBoardingPage = () => {
   }, [])
 
   return (
-    <div className='relative bg-surface p-6'>
+    <div className='relative bg-gray-1 p-6'>
       <StepIndicator />
       <PageHeader isTokenValid={isTokenValid} />
 

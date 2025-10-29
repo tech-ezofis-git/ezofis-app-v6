@@ -1,11 +1,20 @@
+import { useNavigate } from '@tanstack/react-router'
 import Button from '@/components/base/button/Button'
 import onBoardingStore from '../store/onBoardingStore'
 
 const StepFooter = () => {
+  const navigate = useNavigate()
   const back = onBoardingStore((state) => state.back)
   const next = onBoardingStore((state) => state.next)
   const step = onBoardingStore((state) => state.step)
   const totalSteps = onBoardingStore((state) => state.totalSteps)
+
+  const handleNext = () => {
+    if (step === totalSteps) {
+      navigate({ replace: true, to: '/' })
+    }
+    next()
+  }
 
   return (
     <div className='flex items-center justify-end gap-2'>
@@ -13,18 +22,26 @@ const StepFooter = () => {
         color='gray'
         icon='tabler:arrow-left'
         label='Back'
+        size='lg'
         variant='outline'
         onClick={back}
       />
       <div className='flex-1' />
 
       {step > 1 && (
-        <Button color='gray' label='Skip' variant='ghost' onClick={next} />
+        <Button
+          color='gray'
+          label='Skip'
+          size='lg'
+          variant='ghost'
+          onClick={handleNext}
+        />
       )}
       <Button
         label={step === totalSteps ? "Let's Go" : 'Continue'}
+        size='lg'
         suffixIcon='tabler:arrow-right'
-        onClick={next}
+        onClick={handleNext}
       />
     </div>
   )

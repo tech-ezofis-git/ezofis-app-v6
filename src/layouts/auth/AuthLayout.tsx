@@ -11,7 +11,7 @@ interface Props {
 const AuthLayout = ({ children }: Props) => {
   return (
     <div className='grid min-h-svh grid-cols-1 xl:grid-cols-2'>
-      <div className='relative col-span-1 bg-surface p-6'>
+      <div className='relative col-span-1 bg-gray-1 p-6'>
         <AuthHeader />
         <div
           className='flex items-center justify-center py-10 xl:py-24'

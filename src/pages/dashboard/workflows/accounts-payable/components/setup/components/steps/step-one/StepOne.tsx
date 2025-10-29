@@ -26,7 +26,7 @@ const StepOne = () => {
   }
 
   return (
-    <div className='flex h-full max-w-max flex-col gap-10 p-6 xl:p-10'>
+    <div className='flex h-full max-w-max flex-col gap-6 p-6 xl:px-8'>
       <HeroText
         className='items-start text-left'
         description='Link your email account so invoices can be automatically captured and processed.'
@@ -55,12 +55,14 @@ const StepOne = () => {
           color='gray'
           icon='tabler:arrow-left'
           label='Back'
+          size='lg'
           variant='outline'
           onClick={() => setStep(0)}
         />
         {emailSettings.isConnected ? (
           <Button
             label='Continue'
+            size='lg'
             suffixIcon='tabler:arrow-right'
             onClick={() => setStep(2)}
           />
@@ -69,6 +71,7 @@ const StepOne = () => {
             icon='tabler:plug'
             label={`Connect ${emailSettings.provider}`}
             loading={emailSettings.isConnecting}
+            size='lg'
             onClick={handleConnect}
           />
         )}

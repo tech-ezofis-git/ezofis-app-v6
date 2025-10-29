@@ -96,7 +96,7 @@ const TableSort = <TData,>({ table }: Props<TData>) => {
       }
     >
       <div className='p-4'>
-        <p className='mb-2 text-xs font-medium text-gray-9'>
+        <p className='mb-2 text-mini font-medium text-gray-9'>
           {sortState.length > 0 ? 'Sort by' : 'No sorting applied'}
         </p>
 
@@ -121,7 +121,6 @@ const TableSort = <TData,>({ table }: Props<TData>) => {
                         className='w-47 justify-between'
                         color='gray'
                         label={getColumnLabel(column.id)}
-                        size='md'
                         suffixIcon='tabler:chevron-down'
                         suffixIconClass='text-gray-9'
                         variant='outline'
@@ -148,7 +147,6 @@ const TableSort = <TData,>({ table }: Props<TData>) => {
                         className='w-20 justify-between'
                         color='gray'
                         label={column.desc ? 'Desc' : 'Asc'}
-                        size='md'
                         suffixIcon='tabler:chevron-down'
                         suffixIconClass='text-gray-9'
                         variant='outline'
@@ -173,8 +171,7 @@ const TableSort = <TData,>({ table }: Props<TData>) => {
                   <IconButton
                     color='gray'
                     icon='tabler:trash'
-                    iconClass='text-red'
-                    size='md'
+                    iconClass='text-red-11'
                     variant='outline'
                     onClick={() => removeSort(column.id)}
                   />
@@ -190,7 +187,6 @@ const TableSort = <TData,>({ table }: Props<TData>) => {
             disabled={isAddDisabled}
             icon='tabler:plus'
             label='Add'
-            size='md'
             variant='subtle'
             onClick={addSort}
           />
@@ -199,7 +195,6 @@ const TableSort = <TData,>({ table }: Props<TData>) => {
             <Button
               color='gray'
               label='Clear'
-              size='md'
               variant='outline'
               onClick={resetSorting}
             />

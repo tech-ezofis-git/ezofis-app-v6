@@ -5,9 +5,9 @@ interface Props {
 
 const SectionHeader = ({ description, title }: Props) => {
   return (
-    <div className='mb-8'>
-      <h3 className='mb-2 text-base font-medium text-gray-12'>{title}</h3>
-      <div className='text-gray-10'>{description}</div>
+    <div className='mb-6'>
+      <h3 className='mb-1 text-medium font-medium text-gray-12'>{title}</h3>
+      <div className='text-small/6 text-gray-10'>{description}</div>
     </div>
   )
 }

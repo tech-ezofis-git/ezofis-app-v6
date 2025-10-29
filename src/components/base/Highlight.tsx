@@ -11,9 +11,9 @@ const Highlight = ({ children, words }: Props) => {
       highlight={words}
       inherit
       highlightStyles={{
-        backgroundColor: 'var(--primary-11)',
+        backgroundColor: 'var(--primary-9)',
         borderRadius: '1px',
-        color: 'var(--gray-0)',
+        color: 'white',
       }}
     >
       {children}

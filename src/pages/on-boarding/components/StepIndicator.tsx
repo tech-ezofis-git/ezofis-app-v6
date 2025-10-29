@@ -14,7 +14,7 @@ const StepIndicator = () => {
 
   return (
     <Progress
-      className='absolute top-0 left-0 w-full bg-surface'
+      className='absolute top-0 left-0 w-full bg-gray-1'
       value={progress}
       animated
       classNames={{

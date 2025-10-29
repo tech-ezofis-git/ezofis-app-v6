@@ -81,7 +81,6 @@ function RouteComponent() {
           <IconButton icon='tabler:plus' size='sm' />
           <IconButton icon='tabler:plus' size='md' />
           <IconButton icon='tabler:plus' size='lg' />
-          <IconButton icon='tabler:plus' size='xl' />
         </div>
       </div>
     </div>

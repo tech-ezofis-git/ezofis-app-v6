@@ -3,15 +3,20 @@ import { forwardRef, type ReactNode, useMemo } from 'react'
 import type { Option } from '@/types/option'
 import Icon from '@/components/base/icon/Icon'
 import cn from '@/utils/cn'
-import type { InputProps, SelectVariant } from '../shared/types'
+import type { InputProps, InputSize, SelectVariant } from '../shared/types'
 import ClearButton from '../ClearButton'
 import InputLabel from '../InputLabel'
-import { classNames, inputWrapperOrder } from '../shared/constants'
+import {
+  classNames,
+  inputWrapperOrder,
+  sizeClassName,
+} from '../shared/constants'
 
 interface Props extends InputProps {
   value: Option[]
   leftSection?: ReactNode
   loading?: boolean
+  size?: InputSize
   variant?: SelectVariant
   onChange: (value: Option[]) => void
   onClick: () => void
@@ -28,6 +33,7 @@ const ComboboxTarget = forwardRef<HTMLButtonElement, Props>(
       placeholder,
       readOnly,
       required,
+      size = 'md',
       tooltip,
       tooltipWidth,
       value,
@@ -47,7 +53,11 @@ const ComboboxTarget = forwardRef<HTMLButtonElement, Props>(
     const _classNames = {
       description: classNames.description,
       error: classNames.error,
-      input: cn(classNames.input, readOnly && 'border-dashed'),
+      input: cn(
+        classNames.input,
+        readOnly && 'border-dashed',
+        sizeClassName[size],
+      ),
       label: classNames.label,
       wrapper: classNames.wrapper,
     }
@@ -81,7 +91,7 @@ const ComboboxTarget = forwardRef<HTMLButtonElement, Props>(
 
       if (variant === 'single') {
         return (
-          <div className='text-sm font-medium text-gray-12'>
+          <div className='text-small font-medium text-gray-12'>
             {firstValue?.name}
           </div>
         )
@@ -89,11 +99,11 @@ const ComboboxTarget = forwardRef<HTMLButtonElement, Props>(
 
       return (
         <div className='flex items-center gap-1 py-1'>
-          <div className='truncate rounded bg-gray-4 px-2 py-0.5 text-sm font-medium whitespace-nowrap text-gray-12'>
+          <div className='truncate rounded bg-gray-4 px-2 py-0.5 text-small font-medium whitespace-nowrap text-gray-12'>
             {firstValue?.name}
           </div>
           {counter && (
-            <div className='rounded bg-gray-4 px-2 py-0.5 text-sm font-medium whitespace-nowrap text-gray-12'>
+            <div className='rounded bg-gray-4 px-2 py-0.5 text-small font-medium whitespace-nowrap text-gray-12'>
               +{counter}
             </div>
           )}

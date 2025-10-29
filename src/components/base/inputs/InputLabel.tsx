@@ -22,7 +22,7 @@ const InputLabel = ({
   return (
     <div
       className={cn(
-        'flex items-center gap-1 text-sm font-medium text-gray-11',
+        'flex items-center gap-1 text-small font-medium text-gray-11',
         className,
       )}
     >

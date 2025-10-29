@@ -50,15 +50,16 @@ const Features = () => {
           exit={{ opacity: 0, scale: 0.9 }}
           initial={{ opacity: 0, scale: 0.9 }}
           key={activeIndex}
+          transition={{ ease: 'easeInOut' }}
           animate={{
             opacity: 1,
             scale: 1,
           }}
         >
-          <h1 className='mb-2 font-poppins text-xl font-semibold text-gray-13'>
+          <h1 className='mb-2 font-poppins text-lg font-semibold text-gray-13'>
             {features[activeIndex].title}
           </h1>
-          <div className='text-sm leading-6 text-pretty text-gray-11'>
+          <div className='text-sm/6 font-[400] text-pretty text-gray-11'>
             {features[activeIndex].description}
           </div>
         </motion.div>

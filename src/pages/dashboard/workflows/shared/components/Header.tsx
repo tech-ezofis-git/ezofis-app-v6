@@ -94,26 +94,24 @@ const Header = () => {
   })
 
   return (
-    <div className='flex flex-wrap items-end justify-between gap-6 border-b border-gray-3 px-6 py-8 md:px-10'>
+    <div className='flex flex-wrap items-end justify-between gap-6 border-b border-gray-3 p-6 md:px-8'>
       <div>
-        <div className='mb-2 font-poppins text-xl font-bold text-gray-13'>
+        <div className='mb-1 font-poppins text-xl font-bold text-gray-13'>
           Welcome back, Charles.
         </div>
-        <div className='text-gray-11'>
-          Here's your workflow automation overview for today.
-        </div>
+        <div>Here's your workflow automation overview for today.</div>
       </div>
 
       <div className='flex flex-wrap items-center gap-2'>
         <InputSelect
-          leftSection={<Icon className='text-gray-11' name='tabler:cube' />}
+          leftSection={<Icon className='text-gray-10' name='tabler:cube' />}
           options={modules}
           value={module}
           width={160}
           onChange={setModule}
         />
         <InputSelect
-          leftSection={<Icon className='text-gray-11' name='tabler:replace' />}
+          leftSection={<Icon className='text-gray-10' name='tabler:replace' />}
           options={moduleItems}
           value={moduleItem}
           width={240}
@@ -125,7 +123,7 @@ const Header = () => {
           orientation='vertical'
         />
         <InputSelect
-          leftSection={<Icon className='text-gray-11' name='tabler:calendar' />}
+          leftSection={<Icon className='text-gray-10' name='tabler:calendar' />}
           options={dateRanges}
           position='bottom-end'
           value={dateRange}

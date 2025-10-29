@@ -19,6 +19,7 @@ const SidebarLarge = ({ menus }: Props) => {
 
   return (
     <Drawer
+      offset={0}
       opened={isSidebarOpen}
       position='left'
       width={260}
@@ -39,7 +40,7 @@ const SidebarLarge = ({ menus }: Props) => {
           <nav className='space-y-4 px-3'>
             {menus.map((group) => (
               <div key={group.label}>
-                <div className='flex h-6 items-center px-2 py-0 text-xs font-medium text-gray-10'>
+                <div className='flex h-6 items-center px-2 py-0 text-mini text-gray-10'>
                   {group.label}
                 </div>
                 <ul className='m-0 list-none space-y-1 p-0'>

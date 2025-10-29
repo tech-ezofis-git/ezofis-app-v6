@@ -194,7 +194,7 @@
   --yellow-11: #ffca16;
   --yellow-12: #ffe7b3;
 
-  /* --gray-0: #000000;
+  --gray-0: #000000;
   --gray-1: #121113;
   --gray-2: #1a191b;
   --gray-3: #232225;
@@ -207,22 +207,20 @@
   --gray-10: #7c7a85;
   --gray-11: #b5b2bc;
   --gray-12: #d2d0d6;
-  --gray-13: #eeeef0; */
+  --gray-13: #eeeef0;
 
-  --gray-0: #000000;
-  --gray-1: #111111;
-  --gray-2: #191919;
-  --gray-3: #222222;
-  --gray-4: #2a2a2a;
-  --gray-5: #313131;
-  --gray-6: #3a3a3a;
-  --gray-7: #484848;
-  --gray-8: #606060;
-  --gray-9: #6e6e6e;
-  --gray-10: #7b7b7b;
-  --gray-11: #b4b4b4;
-  --gray-12: #d1d1d1;
-  --gray-13: #eeeeee;
+  --gray-a1: #00000000;
+  --gray-a2: #f5f4f609;
+  --gray-a3: #ebeaf814;
+  --gray-a4: #eee5f81d;
+  --gray-a5: #efe6fe25;
+  --gray-a6: #f1e6fd30;
+  --gray-a7: #eee9ff40;
+  --gray-a8: #eee7ff5d;
+  --gray-a9: #eae6fd6e;
+  --gray-a10: #ece9fd7c;
+  --gray-a11: #f5f1ffb7;
+  --gray-a12: #fdfdffef;
 
   --overlay: var(--gray-7);
 

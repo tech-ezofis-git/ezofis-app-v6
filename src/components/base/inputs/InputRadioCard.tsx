@@ -36,7 +36,7 @@ const InputRadioCard = ({
       radius='md'
       value={value}
       className={cn(
-        'rounded-md border-gray-6 p-3 outline-primary-8 disabled:pointer-events-none data-[checked]:border-primary-9',
+        'rounded border-gray-6 px-3 py-2.5 outline-primary-8 disabled:pointer-events-none data-checked:border-primary-9',
         className,
       )}
       onClick={onClick}
@@ -62,11 +62,13 @@ const InputRadioCard = ({
             </div>
           )}
 
-          <div className='flex-1 space-y-1 text-sm'>
+          <div className='flex-1 space-y-1 text-small'>
             {labelSlot}
             {label && <div className='font-medium text-gray-13'>{label}</div>}
             {description && (
-              <div className='text-pretty text-gray-10'>{description}</div>
+              <div className='text-mini text-pretty text-gray-10'>
+                {description}
+              </div>
             )}
           </div>
         </div>

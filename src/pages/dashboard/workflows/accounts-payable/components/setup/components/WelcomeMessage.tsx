@@ -18,6 +18,7 @@ const WelcomeMessage = () => {
         <div className='flex justify-center'>
           <Button
             label='Get Started'
+            size='lg'
             suffixIcon='tabler:arrow-right'
             onClick={() => setIsSetupStarted(true)}
           />

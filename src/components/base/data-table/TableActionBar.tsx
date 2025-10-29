@@ -29,7 +29,7 @@ const TableActionBar = <TData,>({
   onRowSizeChange,
 }: Props<TData>) => {
   return (
-    <div className={cn('mb-6 flex flex-wrap items-center gap-2', className)}>
+    <div className={cn('mb-4 flex flex-wrap items-center gap-2', className)}>
       <TableSearch table={table} />
       <TableFilters table={table} />
       <div className='flex-1'></div>

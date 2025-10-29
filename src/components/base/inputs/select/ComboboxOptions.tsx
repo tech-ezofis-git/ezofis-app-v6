@@ -64,7 +64,7 @@ const ComboboxOptions = ({
         onBottomReached={onBottomReached}
       >
         {!hasOptions && !creatable && (
-          <div className='flex h-10 items-center justify-center text-sm text-gray-11'>
+          <div className='flex h-10 items-center justify-center text-small text-gray-11'>
             No data found
           </div>
         )}
