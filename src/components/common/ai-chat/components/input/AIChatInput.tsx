@@ -5,7 +5,7 @@ const AIChatInput = () => {
   return (
     <div className='p-2'>
       <div className='rounded border border-gray-3 bg-surface-muted'>
-        <div className='p-2 text-mini font-medium'>
+        <div className='p-2 text-12 font-medium'>
           3 of 15 calls remaining • Upgrade
         </div>
 

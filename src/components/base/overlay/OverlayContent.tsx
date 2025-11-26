@@ -9,8 +9,8 @@ interface Props {
 
 const OverlayContent = ({ children, hasFooter, hasHeader, height }: Props) => {
   let _height = 16
-  if (hasHeader) _height += 49
-  if (hasFooter) _height += 49
+  if (hasHeader) _height += 53
+  if (hasFooter) _height += 53
 
   return (
     <ScrollArea height={height || `calc(100svh - ${_height}px)`}>

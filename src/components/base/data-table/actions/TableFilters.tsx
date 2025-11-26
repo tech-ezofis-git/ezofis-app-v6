@@ -29,7 +29,7 @@ const TableFilters = <TData,>({ table }: Props<TData>) => {
       }
     >
       <div className='p-4'>
-        <p className='mb-2 text-mini font-medium text-gray-9'>
+        <p className='mb-2 text-12 font-medium text-gray-9'>
           {filtersState.length > 0 ? 'Filter by' : 'No filters applied'}
         </p>
 

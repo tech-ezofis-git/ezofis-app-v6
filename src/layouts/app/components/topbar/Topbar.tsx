@@ -1,12 +1,13 @@
-import Divider from '@/components/base/Divider'
 import AskAI from './components/AskAI'
 import GlobalSearch from './components/GlobalSearch'
+import Notifications from './components/notifications/Notifications'
 import PageTitle from './components/PageTitle'
 import SidebarToggle from './components/SidebarToggle'
+import UserMenu from './components/user-menu/UserMenu'
 
 const Topbar = () => {
   return (
-    <header className='flex h-12 items-center justify-between border-b border-gray-3 px-6'>
+    <header className='flex h-13 items-center justify-between border-b border-gray-3 px-6'>
       <div className='flex items-center gap-2'>
         <SidebarToggle />
         <PageTitle />
@@ -14,8 +15,9 @@ const Topbar = () => {
 
       <div className='flex items-center gap-2'>
         <GlobalSearch />
-        <Divider className='my-auto h-5' orientation='vertical' />
         <AskAI />
+        <Notifications />
+        <UserMenu />
       </div>
     </header>
   )

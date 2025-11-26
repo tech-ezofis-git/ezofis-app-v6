@@ -13,6 +13,7 @@ const AskAI = () => {
         className='transition-none'
         color='gray'
         icon='tabler:flare'
+        iconClass='size-[18.75px]'
         variant='ghost'
         onClick={toggleAIChat}
       />

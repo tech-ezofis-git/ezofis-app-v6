@@ -4,7 +4,7 @@ import { type Table as TanstackTable } from '@tanstack/react-table'
 import { useCallback, useEffect, useState } from 'react'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
-import InputRadio from '@/components/base/inputs/InputRadio'
+import InputRadioIndicator from '@/components/base/inputs/InputRadioIndicator'
 import Menu from '@/components/base/menu/Menu'
 import MenuItem from '@/components/base/menu/MenuItem'
 import MenuLabel from '@/components/base/menu/MenuLabel'
@@ -64,7 +64,7 @@ const TableSearch = <TData,>({ table }: Props<TData>) => {
           placeholder='Search'
           type='text'
           className={cn(
-            'text-gray h-full px-2 text-small font-medium outline-0 transition-[width] placeholder:text-gray-11',
+            'text-gray h-full px-2 text-13 font-medium outline-0 transition-[width] placeholder:text-gray-11',
             focused ? 'w-56' : 'w-16',
           )}
           onChange={(e) => handleValueChange(e.target.value)}
@@ -97,7 +97,7 @@ const TableSearch = <TData,>({ table }: Props<TData>) => {
         <MenuItem
           label='All'
           leftSection={
-            <InputRadio
+            <InputRadioIndicator
               aria-label='Search in all'
               checked={searchState.id === ''}
             />
@@ -109,7 +109,7 @@ const TableSearch = <TData,>({ table }: Props<TData>) => {
             key={column.id}
             label={column.columnDef.meta?.label ?? column.id}
             leftSection={
-              <InputRadio
+              <InputRadioIndicator
                 aria-label={`Search in ${column.columnDef.meta?.label ?? column.id}`}
                 checked={searchState?.id === column.id}
               />

@@ -45,7 +45,7 @@ const AuditTrail = () => {
       >
         {auditTrail.map((item) => (
           <Timeline.Item key={item.action} title={item.action}>
-            <div className='text-mini text-gray-10'>{item.timestamp}</div>
+            <div className='text-12 text-gray-10'>{item.timestamp}</div>
           </Timeline.Item>
         ))}
       </Timeline>

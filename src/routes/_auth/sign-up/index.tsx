@@ -3,6 +3,9 @@ import SignUpPage from '@/pages/sign-up/SignUpPage'
 
 export const Route = createFileRoute('/_auth/sign-up/')({
   component: RouteComponent,
+  staticData: {
+    pageTitle: 'Sign Up',
+  },
 })
 
 function RouteComponent() {

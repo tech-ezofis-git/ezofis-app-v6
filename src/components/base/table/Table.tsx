@@ -5,7 +5,7 @@ const Table = ({ className, ...props }: ComponentProps<'table'>) => {
   return (
     <table
       className={cn(
-        'w-full border-separate border-spacing-0 text-left text-small',
+        'w-full border-separate border-spacing-0 text-left text-13',
         className,
       )}
       {...props}

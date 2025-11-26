@@ -59,7 +59,7 @@ const SignUpForm = ({ email, setEmail, onChangeView }: Props) => {
           onClick={signUp}
         />
 
-        <div className='text-center text-mini leading-5 text-pretty text-gray-10'>
+        <div className='text-center text-12 leading-5 text-pretty text-gray-10'>
           By signing up, you agree to our{' '}
           <span className='cursor-pointer font-medium text-gray-11 underline'>
             Terms of Service

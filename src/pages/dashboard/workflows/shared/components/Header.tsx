@@ -1,3 +1,4 @@
+import { Trans } from '@lingui/react/macro'
 import { useState } from 'react'
 import type { Option } from '@/types/option'
 import Divider from '@/components/base/Divider'
@@ -92,14 +93,17 @@ const Header = () => {
     id: 1,
     name: 'Today',
   })
+  const name = 'Charles'
 
   return (
     <div className='flex flex-wrap items-end justify-between gap-6 border-b border-gray-3 p-6 md:px-8'>
       <div>
-        <div className='mb-1 font-poppins text-xl font-bold text-gray-13'>
-          Welcome back, Charles.
+        <div className='mb-1 font-poppins text-21 font-bold text-gray-13'>
+          <Trans>Welcome back, {name}.</Trans>
         </div>
-        <div>Here's your workflow automation overview for today.</div>
+        <div>
+          <Trans>Here's your workflow automation overview for today.</Trans>
+        </div>
       </div>
 
       <div className='flex flex-wrap items-center gap-2'>

@@ -46,7 +46,7 @@ const InputRadioCard = ({
       ) : (
         <div className='flex gap-3'>
           {icon && (
-            <div className='flex size-11 items-center justify-center rounded-full bg-gray-3 text-gray-11'>
+            <div className='flex size-10 items-center justify-center rounded-full bg-gray-3 text-gray-11'>
               <Icon className='size-5' name={icon} />
             </div>
           )}
@@ -62,11 +62,20 @@ const InputRadioCard = ({
             </div>
           )}
 
-          <div className='flex-1 space-y-1 text-small'>
+          <div className='flex-1 space-y-1 text-13'>
             {labelSlot}
-            {label && <div className='font-medium text-gray-13'>{label}</div>}
+            {label && (
+              <div
+                className={cn(
+                  'font-medium',
+                  description ? 'text-gray-13' : 'text-gray-12',
+                )}
+              >
+                {label}
+              </div>
+            )}
             {description && (
-              <div className='text-mini text-pretty text-gray-10'>
+              <div className='text-12 text-pretty text-gray-10'>
                 {description}
               </div>
             )}

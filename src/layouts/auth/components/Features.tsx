@@ -43,7 +43,7 @@ const Features = () => {
   }, [activeIndex])
 
   return (
-    <div className='mt-20 w-130'>
+    <div className='mt-18 w-130'>
       <AnimatePresence mode='wait'>
         <motion.div
           className='flex h-28 flex-col items-center text-center'
@@ -56,16 +56,16 @@ const Features = () => {
             scale: 1,
           }}
         >
-          <h1 className='mb-2 font-poppins text-lg font-semibold text-gray-13'>
+          <h1 className='mb-2 font-poppins text-17 font-semibold text-gray-13'>
             {features[activeIndex].title}
           </h1>
-          <div className='text-sm/6 font-[400] text-pretty text-gray-11'>
+          <div className='text-13/6 font-[400] text-pretty text-gray-11'>
             {features[activeIndex].description}
           </div>
         </motion.div>
       </AnimatePresence>
 
-      <div className='mt-10 flex items-center justify-center gap-1'>
+      <div className='mt-6 flex items-center justify-center gap-1'>
         {features.map((_, index) => (
           <IconButton
             ariaLabel='change'

@@ -17,7 +17,7 @@ const BrandCard = ({ checked, logo, name, value, onClick }: Props) => {
       onClick={onClick}
     >
       <img alt={name} className='size-7' src={logo} />
-      <div className='text-small font-medium text-gray-13'>{name}</div>
+      <div className='text-13 font-medium text-gray-13'>{name}</div>
     </InputRadioCard>
   )
 }

@@ -1,4 +1,4 @@
-import { type MantineColorScheme, useMantineColorScheme } from '@mantine/core'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { useState } from 'react'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
@@ -7,41 +7,17 @@ import MenuItem from '@/components/base/menu/MenuItem'
 import MenuLabel from '@/components/base/menu/MenuLabel'
 import Tooltip from '@/components/base/Tooltip'
 import { TOOLTIP_DELAY } from '@/constants'
-
-interface ColorSchemeOption {
-  activeIcon: string
-  icon: string
-  label: string
-  value: MantineColorScheme
-}
+import useTheme from '@/hooks/useTheme'
 
 interface Props {
   withLabel?: boolean
 }
 
-const ColorSchemeOptions: ColorSchemeOption[] = [
-  {
-    activeIcon: 'tabler:device-desktop-filled',
-    icon: 'tabler:device-desktop',
-    label: 'System',
-    value: 'auto',
-  },
-  {
-    activeIcon: 'tabler:sun-high-filled',
-    icon: 'tabler:sun-high',
-    label: 'Light',
-    value: 'light',
-  },
-  {
-    activeIcon: 'tabler:moon-filled',
-    icon: 'tabler:moon',
-    label: 'Dark',
-    value: 'dark',
-  },
-]
-
 const ThemeSwitcher = ({ withLabel = false }: Props) => {
-  const { colorScheme, setColorScheme } = useMantineColorScheme()
+  const { t } = useLingui()
+  const { colorScheme, ColorSchemeOptions, handleColorSchemeChange } =
+    useTheme()
+
   const [isMenuOpened, setIsMenuOpened] = useState(false)
 
   const menuTrigger = withLabel ? (
@@ -50,12 +26,12 @@ const ThemeSwitcher = ({ withLabel = false }: Props) => {
       color='gray'
       icon='tabler:percentage-50'
       iconClass='m-0'
-      label='Change Theme'
+      label={t`Change Theme`}
       variant='ghost'
     />
   ) : (
     <Tooltip
-      content='Change theme'
+      content={t`Change theme`}
       disabled={isMenuOpened}
       openDelay={TOOLTIP_DELAY}
     >
@@ -68,9 +44,6 @@ const ThemeSwitcher = ({ withLabel = false }: Props) => {
     </Tooltip>
   )
 
-  const handleColorSchemeChange = (value: MantineColorScheme) => () =>
-    setColorScheme(value)
-
   const handleOnChange = (isOpened: boolean) => setIsMenuOpened(isOpened)
 
   return (
@@ -81,7 +54,9 @@ const ThemeSwitcher = ({ withLabel = false }: Props) => {
       width={144}
       onChange={handleOnChange}
     >
-      <MenuLabel>Change Theme</MenuLabel>
+      <MenuLabel>
+        <Trans>Change Theme</Trans>
+      </MenuLabel>
       {ColorSchemeOptions.map((option) => (
         <MenuItem
           icon={option.value === colorScheme ? option.activeIcon : option.icon}

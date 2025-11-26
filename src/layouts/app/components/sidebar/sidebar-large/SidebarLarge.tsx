@@ -3,11 +3,8 @@ import IconButton from '@/components/base/button/IconButton'
 import Drawer from '@/components/base/Drawer'
 import ScrollArea from '@/components/base/scroll-area/ScrollArea'
 import Logo from '@/components/common/Logo'
-import ThemeSwitcher from '@/components/common/ThemeSwitcher'
 import sidebarStore from '@/layouts/app/store/sidebarStore'
-import AuthUser from './components/AuthUser'
 import MenuItem from './components/MenuItem'
-import Notifications from './components/Notifications'
 
 interface Props {
   menus: Menus
@@ -40,7 +37,7 @@ const SidebarLarge = ({ menus }: Props) => {
           <nav className='space-y-4 px-3'>
             {menus.map((group) => (
               <div key={group.label}>
-                <div className='flex h-6 items-center px-2 py-0 text-mini text-gray-10'>
+                <div className='flex h-6 items-center px-2 py-0 text-12 text-gray-10'>
                   {group.label}
                 </div>
                 <ul className='m-0 list-none space-y-1 p-0'>
@@ -55,14 +52,6 @@ const SidebarLarge = ({ menus }: Props) => {
               </div>
             ))}
           </nav>
-
-          <div className='flex-1' />
-
-          <ul className='space-y-1 p-3'>
-            <Notifications />
-            <ThemeSwitcher withLabel />
-            <AuthUser />
-          </ul>
         </div>
       </ScrollArea>
     </Drawer>

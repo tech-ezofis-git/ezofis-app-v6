@@ -1,9 +1,9 @@
-import ThemeSwitcher from '@/components/common/ThemeSwitcher'
+import ThemeSwitcher from './ThemeSwitcher'
 
 const AuthFooter = () => {
   return (
     <div className='flex items-center justify-between gap-4'>
-      <div className='text-small text-gray-10'>© 2025 ezofis</div>
+      <div className='text-13 text-gray-10'>© 2025 ezofis</div>
       <ThemeSwitcher />
     </div>
   )

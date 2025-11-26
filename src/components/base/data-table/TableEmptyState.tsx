@@ -17,11 +17,11 @@ const TableEmptyState = <TData,>({ table }: Props<TData>) => {
           <div className='flex flex-col items-center justify-center pt-12 pb-24'>
             <IconIllustrated className='mb-4' icon='tabler:file-search' />
 
-            <div className='mb-1 text-medium font-semibold text-gray-13'>
+            <div className='mb-1 text-15 font-semibold text-gray-13'>
               No results found
             </div>
 
-            <div className='text-small text-balance text-gray-11'>
+            <div className='text-13 text-balance text-gray-11'>
               We couldn't find anything matching your search. Try changing
               filters or keywords.
             </div>

@@ -6,7 +6,7 @@ const AINode = () => {
     <div className='flex size-23 items-center justify-center rounded-full bg-linear-to-br from-secondary-9 to-primary-9'>
       <motion.div
         animate={{ scale: [1, 0.85, 1.15, 1] }}
-        className='flex size-15 items-center justify-center rounded-full bg-gray-1 shadow'
+        className='flex size-15 items-center justify-center rounded-full bg-surface shadow'
         transition={{
           duration: 1,
           ease: 'easeInOut',

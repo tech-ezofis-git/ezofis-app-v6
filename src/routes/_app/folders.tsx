@@ -3,6 +3,9 @@ import FoldersPage from '@/pages/folders/FoldersPage'
 
 export const Route = createFileRoute('/_app/folders')({
   component: RouteComponent,
+  staticData: {
+    pageTitle: 'Folders',
+  },
 })
 
 function RouteComponent() {

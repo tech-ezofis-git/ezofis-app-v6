@@ -45,11 +45,11 @@ const Integrations = () => {
         {items.map((item) => (
           <div className='rounded border border-gray-3 p-4' key={item.name}>
             <div className='mb-4 flex items-center gap-4 border-b border-gray-3 pb-4'>
-              <div className='flex size-10 items-center justify-center rounded bg-gray-3'>
+              <div className='flex size-10 items-center justify-center rounded bg-gray-3/80'>
                 <Icon className='size-5' name={item.icon} />
               </div>
 
-              <div className='text-medium font-semibold text-gray-13'>
+              <div className='text-15 font-semibold text-gray-13'>
                 {item.name}
               </div>
             </div>

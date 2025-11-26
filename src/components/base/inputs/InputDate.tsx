@@ -86,22 +86,22 @@ const InputDate = forwardRef<HTMLInputElement, Props>(
           calendarHeaderControl:
             'text-gray-11 transition-colors hover:bg-gray-4 hover:text-gray-12 data-[disabled]:opacity-50',
           calendarHeaderLevel:
-            'text-small font-semibold text-gray-11 transition-colors hover:bg-gray-4 hover:text-gray-12',
-          day: 'text-small text-gray-11 transition-colors hover:bg-gray-4 hover:text-gray-12 data-[outside]:text-gray-8 data-[outside]:opacity-100 data-[outside]:hover:text-gray-12 data-[selected]:!bg-primary-9 data-[selected]:!font-medium data-[selected]:!text-white data-[today]:bg-primary-4 data-[today]:font-medium data-[today]:text-primary-11',
+            'text-13 font-semibold text-gray-11 transition-colors hover:bg-gray-4 hover:text-gray-12',
+          day: 'text-13 text-gray-11 transition-colors hover:bg-gray-4 hover:text-gray-12 data-[outside]:text-gray-8 data-[outside]:opacity-100 data-[outside]:hover:text-gray-12 data-[selected]:!bg-primary-9 data-[selected]:!font-medium data-[selected]:!text-white data-[today]:bg-primary-4 data-[today]:font-medium data-[today]:text-primary-11',
           description: classNames.description,
           error: classNames.error,
           input: cn(classNames.input, sizeClassName[size]),
           label: classNames.label,
           monthsListControl:
             'text-gray-11 transition-colors hover:bg-gray-4 hover:text-gray-12 data-[disabled]:opacity-50 data-[selected]:!bg-primary-9 data-[selected]:!font-medium data-[selected]:!text-white',
-          weekday: 'p-2 text-small text-gray-10',
+          weekday: 'p-2 text-13 text-gray-10',
           wrapper: classNames.wrapper,
           yearsListControl:
             'text-gray-11 transition-colors hover:bg-gray-4 hover:text-gray-12 data-[disabled]:opacity-50 data-[selected]:!bg-primary-9 data-[selected]:!font-medium data-[selected]:!text-white',
         }}
         popoverProps={{
           classNames: {
-            dropdown: 'border border-gray-3 bg-surface-raised p-3 shadow-lg',
+            dropdown: 'border border-gray-3 bg-surface-raised p-3 shadow-md',
           },
         }}
         onChange={onChange}

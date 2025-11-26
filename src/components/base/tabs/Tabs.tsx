@@ -13,7 +13,7 @@ interface Props {
 const Tabs = ({
   children,
   color = 'gray',
-  tabClassName = 'h-12',
+  tabClassName = 'h-13',
   value,
   onChange,
 }: Props) => {

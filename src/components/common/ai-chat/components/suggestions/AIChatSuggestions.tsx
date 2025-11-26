@@ -1,5 +1,6 @@
 import Icon from '@/components/base/icon/Icon'
 import IconAI from '@/components/base/icon/IconAI'
+import HeroText from '@/components/common/HeroText'
 
 const suggestions = [
   'Show recent documents.',
@@ -13,14 +14,13 @@ const AIChatSuggestions = () => {
   return (
     <div className='p-2'>
       <div className='px-2'>
-        <IconAI className='size-10' />
+        <IconAI className='size-8' />
 
-        <div className='mt-6 font-poppins text-large font-semibold text-gray-12'>
-          How can I assist you?
-        </div>
-        <div className='mt-1 text-small text-gray-9'>
-          Here are a few things I can do, or ask me anything!
-        </div>
+        <HeroText
+          className='mt-6 block text-left'
+          description='Here are a few things I can do, or ask me anything!'
+          title='How can I assist you?'
+        />
       </div>
 
       <ul className='mt-6'>

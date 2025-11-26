@@ -96,7 +96,7 @@ const TableSort = <TData,>({ table }: Props<TData>) => {
       }
     >
       <div className='p-4'>
-        <p className='mb-2 text-mini font-medium text-gray-9'>
+        <p className='mb-2 text-12 font-medium text-gray-9'>
           {sortState.length > 0 ? 'Sort by' : 'No sorting applied'}
         </p>
 

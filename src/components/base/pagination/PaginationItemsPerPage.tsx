@@ -24,7 +24,7 @@ const PaginationItemsPerPage = ({
         className,
       )}
     >
-      <div className='text-gray-11'>{itemLabel} per page:</div>
+      <div className='text-13 text-gray-11'>{itemLabel} per page:</div>
       <Menu
         width='target'
         target={

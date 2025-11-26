@@ -1,4 +1,5 @@
 import js from '@eslint/js'
+import pluginLingui from 'eslint-plugin-lingui'
 import perfectionist from 'eslint-plugin-perfectionist'
 import prettier from 'eslint-plugin-prettier/recommended'
 import reactHooks from 'eslint-plugin-react-hooks'
@@ -7,6 +8,7 @@ import globals from 'globals'
 import tseslint from 'typescript-eslint'
 
 export default tseslint.config(
+  pluginLingui.configs['flat/recommended'],
   { ignores: ['dist'] },
   {
     extends: [

@@ -28,14 +28,14 @@ const PasswordRequirements = ({ password }: Props) => {
   )
 
   return (
-    <div className='space-y-2 text-small text-gray-9'>
+    <div className='space-y-2 text-13 text-gray-10'>
       <div className='font-medium text-gray-11'>Must contain:</div>
 
       <ul className='space-y-2' role='list'>
         {requirements.map(({ id, isValid, label }) => (
           <li className='flex items-center gap-x-2' key={id} role='listitem'>
             <Icon
-              className={isValid ? 'text-primary-11' : 'text-gray-7'}
+              className={isValid ? 'text-primary-11' : 'text-gray-8'}
               name='tabler:check'
             />
             <span>{label}</span>

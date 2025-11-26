@@ -13,7 +13,7 @@ interface Props {
 
 const classNames = {
   arrow: 'bg-surface-raised',
-  dropdown: 'bg-surface-raised p-0 shadow-lg border border-gray-3',
+  dropdown: 'bg-surface-raised p-0 shadow-md border border-gray-3',
 }
 
 const Popover = ({

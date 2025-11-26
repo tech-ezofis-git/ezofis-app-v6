@@ -23,7 +23,7 @@ const Card = ({
     <div className='rounded-xl border border-gray-3 bg-surface-muted'>
       <div className={cn('flex h-10 items-center gap-3 px-4', headerClassName)}>
         {!!icon && <Icon name={icon} />}
-        <div className='text-small font-medium text-gray-12'>{title}</div>
+        <div className='text-13 font-medium text-gray-12'>{title}</div>
         <div className='flex-1'></div>
         {!!suffixIcon && <Icon name={suffixIcon} />}
       </div>

@@ -16,20 +16,20 @@ const variantClassNames = {
 const variantIconNames = {
   green: 'tabler:circle-check',
   primary: 'tabler:info-circle',
-  red: 'tabler:alert-circle',
+  red: 'tabler:alert-triangle',
 } as const
 
 const Alert = ({ className, text, variant = 'primary' }: Props) => {
   return (
     <div
       className={cn(
-        'flex items-center gap-3 rounded border px-4 py-2.5',
+        'flex items-center gap-2 rounded border p-2',
         variantClassNames[variant],
         className,
       )}
     >
       <Icon className='size-5' name={variantIconNames[variant]} />
-      <div className='font-medium'>{text}</div>
+      <div className='text-13 font-medium'>{text}</div>
     </div>
   )
 }

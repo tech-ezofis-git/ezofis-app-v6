@@ -51,7 +51,7 @@ const InputTime = forwardRef<HTMLInputElement, Props>(
       control:
         'text-gray-11 transition-colors hover:bg-gray-4 hover:text-gray-12 data-[active]:!bg-primary-9 data-[active]:!font-medium data-[active]:!text-white',
       description: classNames.description,
-      dropdown: 'border border-gray-3 bg-surface-raised shadow-lg',
+      dropdown: 'border border-gray-3 bg-surface-raised shadow-md',
       error: classNames.error,
       field: cn(
         'placeholder:text-gray-8 focus:bg-primary-9 focus:text-white focus:placeholder:text-white',

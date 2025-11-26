@@ -1,6 +1,6 @@
 import { type Table as TanstackTable } from '@tanstack/react-table'
 import Button from '@/components/base/button/Button'
-import InputRadio from '@/components/base/inputs/InputRadio'
+import InputRadioIndicator from '@/components/base/inputs/InputRadioIndicator'
 import Menu from '@/components/base/menu/Menu'
 import MenuDivider from '@/components/base/menu/MenuDivider'
 import MenuItem from '@/components/base/menu/MenuItem'
@@ -27,26 +27,32 @@ const TableExport = <TData,>({ table }: Props<TData>) => {
       }
     >
       <MenuLabel>Columns to export</MenuLabel>
-      <MenuItem label='Visible columns' leftSection={<InputRadio />} />
-      <MenuItem label='All columns' leftSection={<InputRadio checked />} />
+      <MenuItem label='Visible columns' leftSection={<InputRadioIndicator />} />
+      <MenuItem
+        label='All columns'
+        leftSection={<InputRadioIndicator checked />}
+      />
       <MenuDivider />
 
       <MenuLabel>Rows to export</MenuLabel>
       <MenuItem
         disabled={!table.getIsSomeRowsSelected()}
         label='Selected rows'
-        leftSection={<InputRadio />}
+        leftSection={<InputRadioIndicator />}
       />
-      <MenuItem label='All rows' leftSection={<InputRadio checked />} />
+      <MenuItem
+        label='All rows'
+        leftSection={<InputRadioIndicator checked />}
+      />
       <MenuDivider />
 
       <MenuLabel>File format</MenuLabel>
-      <MenuItem label='CSV' leftSection={<InputRadio />} />
-      <MenuItem label='Excel' leftSection={<InputRadio checked />} />
+      <MenuItem label='CSV' leftSection={<InputRadioIndicator />} />
+      <MenuItem label='Excel' leftSection={<InputRadioIndicator checked />} />
       <MenuDivider />
 
       <Button
-        className='mb-px w-full justify-center text-small'
+        className='mb-px w-full justify-center text-13'
         color='gray'
         label='Download'
         variant='subtle'

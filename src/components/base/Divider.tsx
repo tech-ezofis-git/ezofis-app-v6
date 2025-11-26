@@ -8,7 +8,7 @@ interface Props {
 }
 
 const classNames = {
-  label: 'text-gray-11 before:border-gray-3 after:border-gray-3',
+  label: 'text-gray-11 text-13 before:border-gray-3 after:border-gray-3',
   root: 'border-gray-3',
 }
 

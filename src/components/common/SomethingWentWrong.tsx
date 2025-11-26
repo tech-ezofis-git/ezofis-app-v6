@@ -1,5 +1,6 @@
 import Button from '@/components/base/button/Button'
-import Icon from '@/components/base/icon/Icon'
+import HeroText from '@/components/common/HeroText'
+import IconIllustrated from '../base/icon/IconIllustrated'
 
 const SomethingWentWrong = () => {
   const goHome = () => {
@@ -11,21 +12,16 @@ const SomethingWentWrong = () => {
   }
 
   return (
-    <div className='flex h-screen w-screen items-center justify-center'>
-      <div className='flex max-w-2xl flex-col items-center'>
-        <div className='bg-gray-200 mb-8 flex size-24 items-center justify-center rounded-full'>
-          <Icon className='text-red size-10' name='tabler:alert-triangle' />
-        </div>
+    <div className='flex h-dvh w-dvw items-center justify-center'>
+      <div className='flex max-w-xl flex-col items-center gap-4 p-10'>
+        <IconIllustrated color='red' icon='tabler:alert-triangle' />
+        <HeroText
+          title='Oops! Something Went Wrong'
+          description='An unexpected error occurred. Please try reloading the page or come
+          back later. We apologize for the inconvenience.'
+        />
 
-        <h1 className='text-gray-800 font-poppins text-xl font-bold'>
-          Oops! Something Went Wrong
-        </h1>
-        <p className='mt-2 text-center text-small text-balance text-gray-9'>
-          An unexpected error occurred. Please try reloading the page or come
-          back later. We apologize for the inconvenience.
-        </p>
-
-        <div className='mt-6 flex justify-center gap-3'>
+        <div className='mt-2 flex justify-center gap-3'>
           <Button
             color='gray'
             label='Reload Page'

@@ -1,5 +1,5 @@
 import Button from '@/components/base/button/Button'
-import Divider from '@/components/base/Divider'
+// import Divider from '@/components/base/Divider'
 import Icon from '@/components/base/icon/Icon'
 import HeroText from '@/components/common/HeroText'
 import setupStore from '../../../../stores/useSetupStore'
@@ -47,7 +47,7 @@ const getFeatureJSX = (label: string) => {
   return (
     <div className='flex items-center gap-2 rounded border border-gray-3 bg-gray-2 px-2 py-1'>
       <Icon className='size-4 text-green-11' name='lucide:circle-check-big' />
-      <span className='mt-px text-mini font-medium text-gray-12'>{label}</span>
+      <span className='mt-px text-12 font-medium text-gray-12'>{label}</span>
     </div>
   )
 }
@@ -64,17 +64,15 @@ const StepZero = () => {
         title='Welcome to AP Automation Setup'
       />
 
-      <Divider />
-
       <div className='space-y-4'>
         {items.map((item) => (
           <div className='rounded border border-gray-3 p-4' key={item.id}>
             <div className='mb-4 flex gap-4 xl:items-center'>
-              <div className='flex size-10 items-center justify-center rounded bg-gray-3'>
+              <div className='flex size-10 items-center justify-center rounded bg-gray-3/80'>
                 <Icon className='size-5' name={item.icon} />
               </div>
               <div className='flex-1'>
-                <div className='mb-1 text-medium font-semibold text-gray-13'>
+                <div className='mb-1 text-15 font-semibold text-gray-13'>
                   {item.name}
                 </div>
                 <div className='text-pretty'>{item.description}</div>
@@ -90,20 +88,16 @@ const StepZero = () => {
         ))}
       </div>
 
-      <Divider />
-
       <div className='flex flex-wrap items-center justify-between gap-2'>
         <Button
           color='gray'
           icon='tabler:arrow-left'
           label='Back'
-          size='lg'
           variant='outline'
           onClick={() => setIsSetupStarted(false)}
         />
         <Button
           label='Continue'
-          size='lg'
           suffixIcon='tabler:arrow-right'
           onClick={() => setStep(1)}
         />

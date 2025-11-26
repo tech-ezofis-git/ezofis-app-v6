@@ -3,6 +3,9 @@ import AuthLayout from '@/layouts/auth/AuthLayout'
 
 export const Route = createFileRoute('/_auth')({
   component: RouteComponent,
+  staticData: {
+    pageTitle: 'Auth Layout',
+  },
 })
 
 function RouteComponent() {

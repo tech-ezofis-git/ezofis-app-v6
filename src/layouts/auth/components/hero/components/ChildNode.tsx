@@ -40,7 +40,7 @@ const ChildNode = ({ data }: NodeProps) => {
 
   return (
     <div className='flex size-18 items-center justify-center rounded-full bg-gray-3'>
-      <div className='flex size-12 items-center justify-center rounded-full bg-gray-1 shadow-xs'>
+      <div className='flex size-12 items-center justify-center rounded-full bg-surface shadow-xs'>
         <Handle
           className='pointer-events-none opacity-0'
           isConnectable={false}

@@ -21,20 +21,17 @@ const StepFour = () => {
       <Integrations />
       <Divider />
       <WhatHappensNext />
-      <Divider />
 
       <div className='flex flex-wrap items-center justify-between gap-2'>
         <Button
           color='gray'
           icon='tabler:arrow-left'
           label='Back'
-          size='lg'
           variant='outline'
           onClick={() => setStep(3)}
         />
         <Button
           label='Activate Automation'
-          size='lg'
           suffixIcon='tabler:arrow-right'
           onClick={closeSetup}
         />

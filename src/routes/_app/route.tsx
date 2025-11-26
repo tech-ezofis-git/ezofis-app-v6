@@ -3,6 +3,9 @@ import AppLayout from '@/layouts/app/AppLayout'
 
 export const Route = createFileRoute('/_app')({
   component: RouteComponent,
+  staticData: {
+    pageTitle: 'App Layout',
+  },
 })
 
 function RouteComponent() {

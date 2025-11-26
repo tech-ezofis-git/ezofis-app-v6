@@ -1,0 +1,29 @@
+{
+  "Function Component": {
+    "prefix": "crfc",
+    "body": [
+      "const $1 = () => {",
+      "\treturn <div>$2</div>;",
+      "};",
+      "",
+      "$1.displayName = '$1'",
+      "export default $1;",
+    ],
+    "description": "Create a function component without props",
+  },
+
+  "Function Component with Props": {
+    "prefix": "crfcp",
+    "body": [
+      "interface Props {$3}",
+      "",
+      "const $1 = ({ $4 }: Props) => {",
+      "\treturn <div>$2</div>;",
+      "};",
+      "",
+      "$1.displayName = '$1'",
+      "export default $1;",
+    ],
+    "description": "Create a function component with props",
+  },
+}

@@ -28,29 +28,27 @@ const EmptyState = ({
       <IconIllustrated icon={icon} />
 
       <div className='mt-4 space-y-1 text-center'>
-        <h1 className='text-medium font-semibold text-gray-13'>{title}</h1>
-        <p className='text-small text-pretty text-gray-11'>{description}</p>
+        <h1 className='text-16 font-semibold text-gray-13'>{title}</h1>
+        <p className='text-13 text-pretty text-gray-11'>{description}</p>
       </div>
 
-      <div className='mt-6 flex justify-center gap-3'>
-        {secondaryActionLabel && (
-          <Button
-            color='gray'
-            label={secondaryActionLabel}
-            size='lg'
-            variant='outline'
-            onClick={onSecondaryAction}
-          />
-        )}
+      {primaryActionLabel ||
+        (secondaryActionLabel && (
+          <div className='mt-6 flex justify-center gap-3'>
+            {secondaryActionLabel && (
+              <Button
+                color='gray'
+                label={secondaryActionLabel}
+                variant='outline'
+                onClick={onSecondaryAction}
+              />
+            )}
 
-        {primaryActionLabel && (
-          <Button
-            label={primaryActionLabel}
-            size='lg'
-            onClick={onPrimaryAction}
-          />
-        )}
-      </div>
+            {primaryActionLabel && (
+              <Button label={primaryActionLabel} onClick={onPrimaryAction} />
+            )}
+          </div>
+        ))}
     </div>
   )
 }

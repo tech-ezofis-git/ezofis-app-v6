@@ -8,10 +8,10 @@ interface Props {
 
 const AIChatHeader = ({ onClose }: Props) => {
   return (
-    <div className='flex h-14 items-center justify-between gap-2 border-b border-gray-3 px-2'>
+    <div className='flex h-13 items-center justify-between gap-2 border-b border-gray-3 px-2'>
       <div className='flex items-center gap-1.5'>
         <NewChat />
-        <h1 className='m-0 text-base font-semibold text-gray-13'>AI Chat</h1>
+        <h1 className='m-0 text-15 font-semibold text-gray-13'>AI Chat</h1>
       </div>
 
       <div className='flex items-center gap-1'>

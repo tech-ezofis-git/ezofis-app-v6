@@ -21,7 +21,6 @@ const StepZero = () => {
       <div className='flex justify-center'>
         <Button
           label='Continue'
-          size='lg'
           suffixIcon='tabler:arrow-right'
           onClick={handleNext}
         />

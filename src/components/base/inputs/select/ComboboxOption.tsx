@@ -1,10 +1,10 @@
 import { Combobox as Base } from '@mantine/core'
 import { memo } from 'react'
 import type { Option } from '@/types/option'
-import InputCheckbox from '@/components/base/inputs/InputCheckbox'
-import InputRadio from '@/components/base/inputs/InputRadio'
 import cn from '@/utils/cn'
 import type { SelectVariant } from '../shared/types'
+import InputCheckboxIndicator from '../InputCheckboxIndicator'
+import InputRadioIndicator from '../InputRadioIndicator'
 
 interface Props extends Option {
   icon?: string
@@ -32,18 +32,16 @@ const ComboboxOption = ({
       disabled={disabled}
       value={String(id)}
     >
-      <div className='flex size-5 items-center justify-center'>
-        {variant === 'multiple' ? (
-          <InputCheckbox checked={isSelected} />
-        ) : (
-          <InputRadio checked={isSelected} />
-        )}
-      </div>
+      {variant === 'multiple' ? (
+        <InputCheckboxIndicator checked={isSelected} />
+      ) : (
+        <InputRadioIndicator checked={isSelected} />
+      )}
 
       <div>
-        <div className='text-small font-medium text-gray-11'>{name}</div>
+        <div className='text-13 font-medium text-gray-12'>{name}</div>
         {description && (
-          <div className='mt-1 text-small text-gray-10'>{description}</div>
+          <div className='mt-1 text-12 text-gray-10'>{description}</div>
         )}
       </div>
     </Base.Option>

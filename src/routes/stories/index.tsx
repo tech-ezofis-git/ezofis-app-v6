@@ -56,11 +56,11 @@ function Item({
   start: number
 }) {
   return (
-    <ul className='space-y-3'>
+    <ul className='space-y-4'>
       {routes.map((route, index) => (
         <li key={route.name}>
           <Link
-            className='text-medium transition-colors hover:text-gray-12 hover:underline'
+            className='text-15 transition-colors hover:text-gray-12 hover:underline'
             to={route.path}
           >
             {start + index + 1}. {route.name}

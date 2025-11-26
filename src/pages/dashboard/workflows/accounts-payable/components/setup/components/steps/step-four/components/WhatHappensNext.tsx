@@ -36,7 +36,7 @@ const WhatHappensNext = () => {
             <Icon className='size-5 text-green-9' name='tabler:circle-check' />
 
             <div className='flex-1 space-y-1'>
-              <div className='text-medium font-medium text-gray-12'>
+              <div className='text-15/5 font-medium text-gray-12'>
                 {item.title}
               </div>
               <div className='text-gray-10'>{item.description}</div>

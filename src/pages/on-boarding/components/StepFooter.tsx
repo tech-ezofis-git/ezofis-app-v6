@@ -22,7 +22,6 @@ const StepFooter = () => {
         color='gray'
         icon='tabler:arrow-left'
         label='Back'
-        size='lg'
         variant='outline'
         onClick={back}
       />
@@ -32,14 +31,12 @@ const StepFooter = () => {
         <Button
           color='gray'
           label='Skip'
-          size='lg'
           variant='ghost'
           onClick={handleNext}
         />
       )}
       <Button
         label={step === totalSteps ? "Let's Go" : 'Continue'}
-        size='lg'
         suffixIcon='tabler:arrow-right'
         onClick={handleNext}
       />

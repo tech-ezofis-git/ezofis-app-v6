@@ -10,7 +10,7 @@ const OverlayFooterWrapper = ({ children, className }: Props) => {
   return (
     <footer
       className={cn(
-        'flex h-12 items-center border-t border-gray-3 px-6',
+        'flex h-13 items-center border-t border-gray-3 px-4',
         className,
       )}
     >

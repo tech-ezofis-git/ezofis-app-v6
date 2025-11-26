@@ -1,7 +1,7 @@
 import z from 'zod'
 import type { QueryParams } from '@/types/item'
 import { type User, type UserGroup, UserSchema } from '@/types/user'
-import usersJson from './users.json' assert { type: 'json' }
+import usersJson from './users.json' with { type: 'json' }
 
 const users = z.array(UserSchema).parse(usersJson)
 

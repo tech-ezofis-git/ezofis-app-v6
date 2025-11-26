@@ -1,9 +1,9 @@
 import Button from '@/components/base/button/Button'
-import InputRadio from '@/components/base/inputs/InputRadio'
 import Menu from '@/components/base/menu/Menu'
 import MenuItem from '@/components/base/menu/MenuItem'
 import MenuLabel from '@/components/base/menu/MenuLabel'
 import type { RowSize } from '../types'
+import InputRadioIndicator from '../../inputs/InputRadioIndicator'
 
 interface Props {
   rowSize: RowSize
@@ -33,7 +33,7 @@ const TableRows = ({ rowSize, onRowSizeChange }: Props) => {
           className='capitalize'
           key={item}
           label={item}
-          leftSection={<InputRadio checked={item === rowSize} />}
+          leftSection={<InputRadioIndicator checked={item === rowSize} />}
           onClick={() => onRowSizeChange(item as RowSize)}
         />
       ))}

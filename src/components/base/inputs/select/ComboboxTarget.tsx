@@ -73,11 +73,11 @@ const ComboboxTarget = forwardRef<HTMLButtonElement, Props>(
     ) : undefined
 
     const _rightSection = loading ? (
-      <Icon className='animate-spin text-gray-9' name='gg:spinner' />
+      <Icon className='animate-spin text-gray-10' name='gg:spinner' />
     ) : clearable && value.length ? (
       <ClearButton onClick={() => onChange([])} />
     ) : (
-      <Icon className='text-gray-9' name='tabler:chevron-down' />
+      <Icon className='text-gray-10' name='tabler:chevron-down' />
     )
 
     const children = useMemo(() => {
@@ -91,7 +91,7 @@ const ComboboxTarget = forwardRef<HTMLButtonElement, Props>(
 
       if (variant === 'single') {
         return (
-          <div className='text-small font-medium text-gray-12'>
+          <div className='text-13 font-medium text-gray-12'>
             {firstValue?.name}
           </div>
         )
@@ -99,11 +99,11 @@ const ComboboxTarget = forwardRef<HTMLButtonElement, Props>(
 
       return (
         <div className='flex items-center gap-1 py-1'>
-          <div className='truncate rounded bg-gray-4 px-2 py-0.5 text-small font-medium whitespace-nowrap text-gray-12'>
+          <div className='truncate rounded bg-gray-4 px-2 py-0.5 text-13 font-medium whitespace-nowrap text-gray-12'>
             {firstValue?.name}
           </div>
           {counter && (
-            <div className='rounded bg-gray-4 px-2 py-0.5 text-small font-medium whitespace-nowrap text-gray-12'>
+            <div className='rounded bg-gray-4 px-2 py-0.5 text-13 font-medium whitespace-nowrap text-gray-12'>
               +{counter}
             </div>
           )}

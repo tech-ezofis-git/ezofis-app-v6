@@ -16,7 +16,7 @@ const Discrepancy = ({
     <div className='flex flex-wrap items-center gap-4 p-4'>
       <div className='flex-1'>
         <div className='mb-1 font-medium text-gray-13'>{title}</div>
-        <div className='text-mini'>{description}</div>
+        <div className='text-12'>{description}</div>
       </div>
 
       <Badge

@@ -38,7 +38,7 @@ const Tooltip = ({
   width,
 }: Props) => {
   const _className = cn(
-    'rounded px-2 py-1 text-small text-white',
+    'rounded px-2 py-1 text-12 text-white',
     colorClassName[color],
   )
 

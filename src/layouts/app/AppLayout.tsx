@@ -12,7 +12,7 @@ const AppLayout = ({ children }: Props) => {
     <>
       <Sidebar />
 
-      <div className='flex h-svh xl:ml-[49px]'>
+      <div className='flex h-svh xl:ml-[53px]'>
         <div className='relative min-w-0 flex-1'>
           <Topbar />
           <div className='pb-20'>{children}</div>

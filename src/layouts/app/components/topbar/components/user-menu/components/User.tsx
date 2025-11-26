@@ -1,26 +1,22 @@
 import avatar from '@/assets/avatar.jpg'
 import Avatar from '@/components/base/Avatar'
-import Icon from '@/components/base/icon/Icon'
 
-const AuthUser = () => {
+const User = () => {
   return (
-    <div className='mt-2 flex cursor-pointer items-center gap-3 border-t border-gray-a4 pt-3'>
+    <div className='flex items-center gap-3 p-2'>
       <Avatar
         image={avatar}
         imageLabel='user picture'
         initials='CV'
-        size={36}
+        size={32}
       />
-
       <div className='min-w-0 flex-1'>
         <div className='font-medium text-gray-13'>Charles Vinoth</div>
         <div className='truncate'>charles@ezofis.com</div>
       </div>
-
-      <Icon name='tabler:dots-vertical' />
     </div>
   )
 }
 
-AuthUser.displayName = 'AuthUser'
-export default AuthUser
+User.displayName = 'User'
+export default User

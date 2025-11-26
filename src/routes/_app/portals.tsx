@@ -3,6 +3,9 @@ import PortalsPage from '@/pages/portals/PortalsPage'
 
 export const Route = createFileRoute('/_app/portals')({
   component: RouteComponent,
+  staticData: {
+    pageTitle: 'Portals',
+  },
 })
 
 function RouteComponent() {

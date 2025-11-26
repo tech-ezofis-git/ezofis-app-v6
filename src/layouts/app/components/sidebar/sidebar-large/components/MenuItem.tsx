@@ -41,7 +41,7 @@ const MenuItem = ({
           )}
         />
 
-        <div>{label}</div>
+        <div className='leading-5'>{label}</div>
       </Link>
     </li>
   )

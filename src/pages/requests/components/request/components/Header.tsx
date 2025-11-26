@@ -14,9 +14,7 @@ const Header = () => {
   return (
     <OverlayHeaderWrapper className='justify-between gap-4 px-6'>
       <div className='flex items-center gap-1'>
-        <div className='text-medium/9 font-semibold text-gray-13'>
-          REQ - 5649
-        </div>
+        <div className='text-15/9 font-semibold text-gray-13'>REQ - 5649</div>
 
         <Divider className='my-auto mr-2 ml-4 h-5' orientation='vertical' />
 

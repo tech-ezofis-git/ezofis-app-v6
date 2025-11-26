@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as StoriesRouteRouteImport } from './routes/stories/route'
+import { Route as PlaygroundRouteRouteImport } from './routes/playground/route'
 import { Route as AuthRouteRouteImport } from './routes/_auth/route'
 import { Route as AppRouteRouteImport } from './routes/_app/route'
 import { Route as StoriesIndexRouteImport } from './routes/stories/index'
@@ -69,10 +70,16 @@ import { Route as AuthSignUpIndexRouteImport } from './routes/_auth/sign-up/inde
 import { Route as AuthSignInIndexRouteImport } from './routes/_auth/sign-in/index'
 import { Route as AuthResetPasswordIndexRouteImport } from './routes/_auth/reset-password/index'
 import { Route as AuthForgotPasswordIndexRouteImport } from './routes/_auth/forgot-password/index'
+import { Route as AppMyAccountChar123SlugChar125RouteImport } from './routes/_app/my-account.{-$slug}'
 
 const StoriesRouteRoute = StoriesRouteRouteImport.update({
   id: '/stories',
   path: '/stories',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlaygroundRouteRoute = PlaygroundRouteRouteImport.update({
+  id: '/playground',
+  path: '/playground',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRouteRoute = AuthRouteRouteImport.update({
@@ -371,8 +378,15 @@ const AuthForgotPasswordIndexRoute = AuthForgotPasswordIndexRouteImport.update({
   path: '/forgot-password/',
   getParentRoute: () => AuthRouteRoute,
 } as any)
+const AppMyAccountChar123SlugChar125Route =
+  AppMyAccountChar123SlugChar125RouteImport.update({
+    id: '/my-account/{-$slug}',
+    path: '/my-account/{-$slug}',
+    getParentRoute: () => AppRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
+  '/playground': typeof PlaygroundRouteRoute
   '/stories': typeof StoriesRouteRouteWithChildren
   '/folders': typeof AppFoldersRoute
   '/forms': typeof AppFormsRoute
@@ -427,12 +441,14 @@ export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/on-boarding': typeof OnBoardingIndexRoute
   '/stories/': typeof StoriesIndexRoute
+  '/my-account/{-$slug}': typeof AppMyAccountChar123SlugChar125Route
   '/forgot-password': typeof AuthForgotPasswordIndexRoute
   '/reset-password': typeof AuthResetPasswordIndexRoute
   '/sign-in': typeof AuthSignInIndexRoute
   '/sign-up': typeof AuthSignUpIndexRoute
 }
 export interface FileRoutesByTo {
+  '/playground': typeof PlaygroundRouteRoute
   '/folders': typeof AppFoldersRoute
   '/forms': typeof AppFormsRoute
   '/help-center': typeof AppHelpCenterRoute
@@ -486,6 +502,7 @@ export interface FileRoutesByTo {
   '/': typeof AppIndexRoute
   '/on-boarding': typeof OnBoardingIndexRoute
   '/stories': typeof StoriesIndexRoute
+  '/my-account/{-$slug}': typeof AppMyAccountChar123SlugChar125Route
   '/forgot-password': typeof AuthForgotPasswordIndexRoute
   '/reset-password': typeof AuthResetPasswordIndexRoute
   '/sign-in': typeof AuthSignInIndexRoute
@@ -495,6 +512,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteRouteWithChildren
   '/_auth': typeof AuthRouteRouteWithChildren
+  '/playground': typeof PlaygroundRouteRoute
   '/stories': typeof StoriesRouteRouteWithChildren
   '/_app/folders': typeof AppFoldersRoute
   '/_app/forms': typeof AppFormsRoute
@@ -549,6 +567,7 @@ export interface FileRoutesById {
   '/_app/': typeof AppIndexRoute
   '/on-boarding/': typeof OnBoardingIndexRoute
   '/stories/': typeof StoriesIndexRoute
+  '/_app/my-account/{-$slug}': typeof AppMyAccountChar123SlugChar125Route
   '/_auth/forgot-password/': typeof AuthForgotPasswordIndexRoute
   '/_auth/reset-password/': typeof AuthResetPasswordIndexRoute
   '/_auth/sign-in/': typeof AuthSignInIndexRoute
@@ -557,6 +576,7 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
+    | '/playground'
     | '/stories'
     | '/folders'
     | '/forms'
@@ -611,12 +631,14 @@ export interface FileRouteTypes {
     | '/'
     | '/on-boarding'
     | '/stories/'
+    | '/my-account/{-$slug}'
     | '/forgot-password'
     | '/reset-password'
     | '/sign-in'
     | '/sign-up'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/playground'
     | '/folders'
     | '/forms'
     | '/help-center'
@@ -670,6 +692,7 @@ export interface FileRouteTypes {
     | '/'
     | '/on-boarding'
     | '/stories'
+    | '/my-account/{-$slug}'
     | '/forgot-password'
     | '/reset-password'
     | '/sign-in'
@@ -678,6 +701,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_app'
     | '/_auth'
+    | '/playground'
     | '/stories'
     | '/_app/folders'
     | '/_app/forms'
@@ -732,6 +756,7 @@ export interface FileRouteTypes {
     | '/_app/'
     | '/on-boarding/'
     | '/stories/'
+    | '/_app/my-account/{-$slug}'
     | '/_auth/forgot-password/'
     | '/_auth/reset-password/'
     | '/_auth/sign-in/'
@@ -741,6 +766,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   AppRouteRoute: typeof AppRouteRouteWithChildren
   AuthRouteRoute: typeof AuthRouteRouteWithChildren
+  PlaygroundRouteRoute: typeof PlaygroundRouteRoute
   StoriesRouteRoute: typeof StoriesRouteRouteWithChildren
   OnBoardingTokenRoute: typeof OnBoardingTokenRoute
   OnBoardingIndexRoute: typeof OnBoardingIndexRoute
@@ -753,6 +779,13 @@ declare module '@tanstack/react-router' {
       path: '/stories'
       fullPath: '/stories'
       preLoaderRoute: typeof StoriesRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/playground': {
+      id: '/playground'
+      path: '/playground'
+      fullPath: '/playground'
+      preLoaderRoute: typeof PlaygroundRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_auth': {
@@ -1168,6 +1201,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthForgotPasswordIndexRouteImport
       parentRoute: typeof AuthRouteRoute
     }
+    '/_app/my-account/{-$slug}': {
+      id: '/_app/my-account/{-$slug}'
+      path: '/my-account/{-$slug}'
+      fullPath: '/my-account/{-$slug}'
+      preLoaderRoute: typeof AppMyAccountChar123SlugChar125RouteImport
+      parentRoute: typeof AppRouteRoute
+    }
   }
 }
 
@@ -1183,6 +1223,7 @@ interface AppRouteRouteChildren {
   AppTrashRoute: typeof AppTrashRoute
   AppWorkflowsRoute: typeof AppWorkflowsRoute
   AppIndexRoute: typeof AppIndexRoute
+  AppMyAccountChar123SlugChar125Route: typeof AppMyAccountChar123SlugChar125Route
 }
 
 const AppRouteRouteChildren: AppRouteRouteChildren = {
@@ -1197,6 +1238,7 @@ const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppTrashRoute: AppTrashRoute,
   AppWorkflowsRoute: AppWorkflowsRoute,
   AppIndexRoute: AppIndexRoute,
+  AppMyAccountChar123SlugChar125Route: AppMyAccountChar123SlugChar125Route,
 }
 
 const AppRouteRouteWithChildren = AppRouteRoute._addFileChildren(
@@ -1314,6 +1356,7 @@ const StoriesRouteRouteWithChildren = StoriesRouteRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   AppRouteRoute: AppRouteRouteWithChildren,
   AuthRouteRoute: AuthRouteRouteWithChildren,
+  PlaygroundRouteRoute: PlaygroundRouteRoute,
   StoriesRouteRoute: StoriesRouteRouteWithChildren,
   OnBoardingTokenRoute: OnBoardingTokenRoute,
   OnBoardingIndexRoute: OnBoardingIndexRoute,

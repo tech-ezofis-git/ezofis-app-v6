@@ -1,7 +1,7 @@
 import z from 'zod'
 import type { QueryParams } from '@/types/item'
 import { type Request, type RequestGroup, RequestSchema } from '@/types/request'
-import requestsJson from './requests.json' assert { type: 'json' }
+import requestsJson from './requests.json' with { type: 'json' }
 
 const requests = z.array(RequestSchema).parse(requestsJson)
 

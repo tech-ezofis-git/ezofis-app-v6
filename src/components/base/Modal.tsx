@@ -22,7 +22,7 @@ const Modal = ({
   const classNames = {
     body: 'p-0',
     content: cn(
-      'bg-surface shadow-lg',
+      'bg-surface shadow-md',
       fullScreen ? 'rounded-none' : 'rounded-lg',
     ),
     overlay: 'bg-overlay/60',

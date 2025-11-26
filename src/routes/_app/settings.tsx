@@ -3,6 +3,9 @@ import SettingsPage from '@/pages/settings/SettingsPage'
 
 export const Route = createFileRoute('/_app/settings')({
   component: RouteComponent,
+  staticData: {
+    pageTitle: 'Settings',
+  },
 })
 
 function RouteComponent() {

@@ -74,14 +74,14 @@ const TableColumns = <TData,>({ table }: Props<TData>) => {
       <MenuDivider />
       <div className='flex items-center gap-1 pb-0.5'>
         <Button
-          className='flex-1 justify-center text-small'
+          className='flex-1 justify-center text-13'
           color='gray'
           label='Show all'
           variant='subtle'
           onClick={showAllColumns}
         />
         <Button
-          className='flex-1 justify-center text-small'
+          className='flex-1 justify-center text-13'
           color='gray'
           label='Unpin all'
           variant='subtle'

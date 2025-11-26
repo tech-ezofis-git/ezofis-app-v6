@@ -50,7 +50,12 @@ const Combobox = forwardRef<HTMLButtonElement, Props>(
     })
 
     return (
-      <Base position={position} store={comboboxStore} width={width}>
+      <Base
+        position={position}
+        store={comboboxStore}
+        transitionProps={{ transition: 'pop' }}
+        width={width}
+      >
         <ComboboxTarget
           {...rest}
           ref={ref}
@@ -62,7 +67,7 @@ const Combobox = forwardRef<HTMLButtonElement, Props>(
 
         <Base.Dropdown
           classNames={{
-            dropdown: 'border border-gray-3 bg-surface-raised p-0 shadow-lg',
+            dropdown: 'border border-gray-3 bg-surface-raised p-0 shadow-md',
           }}
         >
           {(searchable || creatable) && (

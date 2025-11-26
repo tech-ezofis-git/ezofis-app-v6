@@ -3,6 +3,9 @@ import HelpPage from '@/pages/help/HelpPage'
 
 export const Route = createFileRoute('/_app/help-center')({
   component: RouteComponent,
+  staticData: {
+    pageTitle: 'Help Center',
+  },
 })
 
 function RouteComponent() {

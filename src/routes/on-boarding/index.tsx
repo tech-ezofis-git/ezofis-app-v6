@@ -3,6 +3,9 @@ import InvalidUrlPage from '@/pages/on-boarding/InvalidUrlPage'
 
 export const Route = createFileRoute('/on-boarding/')({
   component: RouteComponent,
+  staticData: {
+    pageTitle: 'On Boarding',
+  },
 })
 
 function RouteComponent() {

@@ -7,6 +7,7 @@ interface Props {
   children: ReactNode
   target: ReactNode
   className?: string
+  closeOnClickOutside?: boolean
   closeOnItemClick?: boolean
   defaultOpened?: boolean
   offset?: BaseProps['offset']
@@ -20,24 +21,26 @@ interface Props {
 const Menu = ({
   children,
   className,
+  closeOnClickOutside = true,
   closeOnItemClick = true,
   target,
   ...rest
 }: Props) => {
   const _classNames = {
     dropdown: cn(
-      'rounded-lg border border-gray-4 bg-surface-raised p-1 shadow-lg',
+      'rounded-lg border border-gray-3 bg-surface-raised p-1 shadow-md',
       className,
     ),
-    item: 'group flex h-8 items-center gap-2 rounded px-2 text-gray-11 transition-colors hover:bg-gray-4 hover:text-gray-12 focus-visible:bg-gray-4 focus-visible:outline-0',
-    itemLabel: 'font-medium transition-colors',
-    itemSection: 'm-0 text-gray-9 group-hover:text-gray-10 transition-colors',
+    item: 'group flex h-8 items-center gap-2 rounded px-2 text-gray-12 transition-colors hover:bg-gray-4 hover:text-gray-13 focus-visible:bg-gray-4 focus-visible:outline-0',
+    itemLabel: 'font-medium transition-colors text-13',
+    itemSection: 'm-0 text-gray-10 group-hover:text-gray-11 transition-colors',
   }
 
   return (
     <Base
       {...rest}
       classNames={_classNames}
+      closeOnClickOutside={closeOnClickOutside}
       closeOnItemClick={closeOnItemClick}
       transitionProps={{ transition: 'pop' }}
       returnFocus

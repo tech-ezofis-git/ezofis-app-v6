@@ -18,17 +18,17 @@ function RouteComponent() {
         width={360}
       >
         <div className='p-4'>
-          <h1 className='mb-2 text-medium font-semibold text-gray-13'>
+          <h1 className='mb-2 text-15 font-semibold text-gray-13'>
             Get Started
           </h1>
-          <p className='text-gray border-b border-gray-3 pb-4 text-balance'>
+          <p className='text-gray border-b border-gray-3 pb-4 text-13 text-balance'>
             Lorem ipsum dolor, sit amet consectetur adipisicing elit.
             Consequatur possimus cupiditate molestias dolore, quasi ipsam rerum.
           </p>
           <div className='flex items-center gap-2 pt-4'>
-            <div className='flex-1 text-gray-9'>6 of 8</div>
-            <Button color='gray' label='Skip' variant='outline' />
-            <Button label='Next' />
+            <div className='flex-1 text-13 text-gray-10'>6 of 8</div>
+            <Button color='gray' label='Skip' size='sm' variant='outline' />
+            <Button label='Next' size='sm' />
           </div>
         </div>
       </Popover>

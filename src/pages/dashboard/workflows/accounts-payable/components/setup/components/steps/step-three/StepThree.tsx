@@ -49,21 +49,18 @@ const StepThree = () => {
           variant='green'
         />
       )}
-      <Divider />
 
       <div className='flex flex-wrap items-center justify-between gap-2'>
         <Button
           color='gray'
           icon='tabler:arrow-left'
           label='Back'
-          size='lg'
           variant='outline'
           onClick={() => setStep(2)}
         />
         {storageSettings.isConnected ? (
           <Button
             label='Continue'
-            size='lg'
             suffixIcon='tabler:arrow-right'
             onClick={() => setStep(4)}
           />
@@ -72,7 +69,6 @@ const StepThree = () => {
             icon='tabler:plug'
             label={`Connect ${storageSettings.system}`}
             loading={storageSettings.isConnecting}
-            size='lg'
             onClick={handleConnect}
           />
         )}

@@ -74,7 +74,7 @@ const TableGroup = <TData,>({ table }: Props<TData>) => {
 
       <MenuDivider />
       <Button
-        className='mb-px w-full justify-center text-small'
+        className='mb-px w-full justify-center text-13'
         color='gray'
         disabled={!groupState.length}
         label='Reset grouping'

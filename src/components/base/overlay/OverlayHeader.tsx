@@ -9,7 +9,7 @@ interface Props {
 const OverlayHeader = ({ title, onClose }: Props) => {
   return (
     <OverlayHeaderWrapper className='justify-between'>
-      <h1 className='m-0 text-medium font-semibold text-gray-13'>{title}</h1>
+      <h1 className='m-0 text-15 font-semibold text-gray-13'>{title}</h1>
       <CloseButton onClick={onClose} />
     </OverlayHeaderWrapper>
   )

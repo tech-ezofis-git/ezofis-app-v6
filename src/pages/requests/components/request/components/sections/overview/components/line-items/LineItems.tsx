@@ -83,7 +83,7 @@ const LineItems = () => {
           <Tr>
             {['Invoice', 'PO', 'GRN'].map((label) => (
               <Th
-                className='border-t-0 text-mini font-normal text-gray-11 first:rounded-none first:border-l-0 last:rounded-none'
+                className='border-t-0 text-12 font-normal text-gray-11 first:rounded-none first:border-l-0 last:rounded-none'
                 key={label}
               >
                 {label}
@@ -92,7 +92,7 @@ const LineItems = () => {
 
             {['Invoice', 'PO'].map((label) => (
               <Th
-                className='border-t-0 text-mini font-normal text-gray-11 first:rounded-none first:border-l-0 last:rounded-none'
+                className='border-t-0 text-12 font-normal text-gray-11 first:rounded-none first:border-l-0 last:rounded-none'
                 key={label}
               >
                 {label}
@@ -108,7 +108,7 @@ const LineItems = () => {
 
               <Td>
                 <div className='mb-1 font-medium text-gray-13'>{item.id}</div>
-                <div className='text-mini text-balance'>{item.name}</div>
+                <div className='text-12 text-balance'>{item.name}</div>
               </Td>
 
               <Td
