@@ -2,11 +2,18 @@ import CustomLogo from '@/assets/brands/email.svg'
 import MsExchangeLogo from '@/assets/brands/exchange.svg'
 import GmailLogo from '@/assets/brands/gmail.svg'
 import OutlookLogo from '@/assets/brands/outlook.svg'
+// import Icon from '@/components/base/icon/Icon'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import BrandCard from '../../components/BrandCard'
 import SectionHeader from '../../components/SectionHeader'
 
 const items = [
+  {
+    icon: 'tabler:upload',
+    name: 'Direct file upload',
+    value: 'DIRECT_UPLOAD',
+    description: 'Upload your documents yourself to get started.',
+  },
   { logo: GmailLogo, name: 'Gmail', value: 'Gmail' },
   { logo: OutlookLogo, name: 'Outlook', value: 'Outlook' },
   {
@@ -28,10 +35,12 @@ const ProviderSettings = () => {
         title='Choose Your Email Provider'
       />
 
-      <div className='grid grid-cols-1 gap-2 md:grid-cols-2'>
+      <div className='grid grid-cols-1 gap-2.5 sm:grid-cols-2'>
         {items.map((item) => (
           <BrandCard
             checked={emailSettings.provider === item.value}
+            description={item.description}
+            icon={item.icon}
             key={item.value}
             logo={item.logo}
             name={item.name}
@@ -39,7 +48,7 @@ const ProviderSettings = () => {
             onClick={() =>
               setEmailSettings({
                 ...emailSettings,
-                isConnected: false,
+                isConnected: item.value === 'DIRECT_UPLOAD',
                 provider: item.value,
               })
             }

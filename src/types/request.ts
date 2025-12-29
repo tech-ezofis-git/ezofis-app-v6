@@ -14,7 +14,7 @@ export const RequestSchema = ItemSchema.extend({
   ]),
   purchaseOrderNumber: z.string(),
   remarks: z.string().optional(),
-  status: z.enum(['Pending', 'Approved', 'Rejected']),
+  status: z.enum(['Pending', 'Approved', 'Rejected' , 'Duplicated']),
   updatedAt: z.iso.datetime(),
   updatedBy: z.email(),
   vendor: z.string(),

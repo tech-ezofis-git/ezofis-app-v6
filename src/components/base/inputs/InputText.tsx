@@ -17,6 +17,7 @@ interface Props extends InputProps {
   rightSection?: ReactNode
   rightSectionPointerEvents?: 'auto' | 'none'
   onChange: (value: string) => void
+  onKeyDown?: (e: any) => void
 }
 
 const InputText = forwardRef<HTMLInputElement, Props>(

@@ -2,6 +2,7 @@ import { useNavigate } from '@tanstack/react-router'
 import Menu from '@/components/base/menu/Menu'
 import MenuDivider from '@/components/base/menu/MenuDivider'
 import MenuItem from '@/components/base/menu/MenuItem'
+import authUserStore from '@/stores/authUserStore'
 import Language from './components/Language'
 import Theme from './components/Theme'
 import User from './components/User'
@@ -9,12 +10,14 @@ import UserMenuTrigger from './components/UserMenuTrigger'
 
 const UserMenu = () => {
   const navigate = useNavigate()
+  const resetAuthState = authUserStore((state) => state.resetAuthState)
 
   const goto = (slug: string) => {
     navigate({ params: { slug }, to: '/my-account/{-$slug}' })
   }
 
   const logout = () => {
+    resetAuthState()
     navigate({ replace: true, to: '/sign-in' })
   }
 

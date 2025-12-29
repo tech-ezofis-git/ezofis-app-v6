@@ -15,6 +15,9 @@ const RequestStatusBadge = ({ status }: Props) => {
         return 'orange'
       case 'Approved':
         return 'green'
+
+      case 'Duplicated':
+        return 'red'
       default:
         return 'gray'
     }

@@ -16,6 +16,9 @@ type ErpSettings = {
   isConnected: boolean
   isConnecting: boolean
   system: string
+  wantsFileBasedImport?: boolean
+  uploadedTemplate?: File | null
+  templateUploaded?: boolean
 }
 
 type StorageSettings = {
@@ -31,15 +34,19 @@ type Store = {
   erpSettings: ErpSettings
   isSetupOpen: boolean
   isSetupStarted: boolean
+  isSetupCalloutDismissed: boolean
   step: number
   storageSettings: StorageSettings
+  isApSetUpCompleted: boolean
   closeSetup: () => void
   openSetup: () => void
   setEmailSettings: (emailSettings: EmailSettings) => void
   setErpSettings: (erpSettings: ErpSettings) => void
   setIsSetupStarted: (value: boolean) => void
+  setIsSetupCalloutDismissed: (value: boolean) => void
   setStep: (value: number) => void
   setStorageSettings: (storageSettings: StorageSettings) => void
+  setisApSetUpCompleted: (value: boolean) => void
 }
 
 const initialEmailSettings: EmailSettings = {
@@ -58,6 +65,9 @@ const initialErpSettings: ErpSettings = {
   isConnected: false,
   isConnecting: false,
   system: '',
+  wantsFileBasedImport: false,
+  uploadedTemplate: null,
+  templateUploaded: false,
 }
 
 const initialStorageSettings: StorageSettings = {
@@ -65,17 +75,18 @@ const initialStorageSettings: StorageSettings = {
   apiUrl: '',
   isConnected: false,
   isConnecting: false,
-  system: '',
+  system: 'Included storage',
 }
 
 const setupStore = create<Store>()((set) => ({
   emailSettings: initialEmailSettings,
   erpSettings: initialErpSettings,
   isSetupOpen: false,
-  isSetupStarted: false,
+  isSetupStarted: true,
+  isSetupCalloutDismissed: false,
   step: 0,
   storageSettings: initialStorageSettings,
-
+  isApSetUpCompleted: false,
   closeSetup: () =>
     set({
       emailSettings: initialEmailSettings,
@@ -103,8 +114,11 @@ const setupStore = create<Store>()((set) => ({
 
   setIsSetupStarted: (value: boolean) => set({ isSetupStarted: value }),
 
-  setStep: (value: number) => set({ step: value }),
+  setIsSetupCalloutDismissed: (value: boolean) =>
+    set({ isSetupCalloutDismissed: value }),
 
+  setStep: (value: number) => set({ step: value }),
+  setisApSetUpCompleted: (value: boolean) => set({ isApSetUpCompleted: value }),
   setStorageSettings: (storageSettings: StorageSettings) =>
     set({
       storageSettings: {

@@ -26,7 +26,7 @@ const StepTwo = () => {
   }
 
   return (
-    <div className='flex h-full max-w-max flex-col gap-6 p-6 xl:px-8'>
+    <div className='flex min-h-full w-full flex-col gap-6 px-4 py-6 sm:px-6 md:px-8 lg:px-10'>
       <HeroText
         className='items-start text-left'
         description='Connect your ERP to sync vendors, purchase orders, and payments with your workflows.'
@@ -43,35 +43,42 @@ const StepTwo = () => {
         </>
       )}
 
-      {erpSettings.isConnected && (
+      {erpSettings.isConnected && erpSettings.system && (
         <Alert
           text={`Your ${erpSettings.system} account has been connected successfully.`}
           variant='green'
         />
       )}
 
-      <div className='flex flex-wrap items-center justify-between gap-2'>
+      {erpSettings.templateUploaded && (
+        <Alert
+          text='Template uploaded successfully. You can proceed to the next step.'
+          variant='green'
+        />
+      )}
+
+      <div className='flex flex-wrap items-center justify-between gap-2 border-t border-gray-3 pt-4'>
         <Button
           color='gray'
           icon='tabler:arrow-left'
           label='Back'
           variant='outline'
-          onClick={() => setStep(1)}
+          onClick={() => setStep(0)}
         />
-        {erpSettings.isConnected ? (
+        {erpSettings.isConnected || erpSettings.templateUploaded ? (
           <Button
             label='Continue'
             suffixIcon='tabler:arrow-right'
-            onClick={() => setStep(3)}
+            onClick={() => setStep(2)}
           />
-        ) : (
+        ) : erpSettings.system ? (
           <Button
             icon='tabler:plug'
             label={`Connect ${erpSettings.system}`}
             loading={erpSettings.isConnecting}
             onClick={handleConnect}
           />
-        )}
+        ) : null}
       </div>
     </div>
   )

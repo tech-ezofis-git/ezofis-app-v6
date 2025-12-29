@@ -9,6 +9,7 @@ const items = [
   {
     account: 'example@gmail.com',
     icon: 'tabler:mail',
+    iconColor: 'bg-red-2 text-red-9',
     name: 'Email Integration',
     platform: 'Gmail',
     status: 'connected',
@@ -16,6 +17,7 @@ const items = [
   {
     account: 'example@gmail.com',
     icon: 'tabler:database',
+    iconColor: 'bg-blue-2 text-blue-9',
     name: 'ERP System',
     platform: 'Quickbooks',
     status: 'connected',
@@ -23,6 +25,7 @@ const items = [
   {
     account: 'example@gmail.com',
     icon: 'tabler:cloud',
+    iconColor: 'bg-cyan-2 text-cyan-9',
     name: 'Document Storage',
     platform: 'Google Drive',
     status: 'connected',
@@ -45,7 +48,7 @@ const Integrations = () => {
         {items.map((item) => (
           <div className='rounded border border-gray-3 p-4' key={item.name}>
             <div className='mb-4 flex items-center gap-4 border-b border-gray-3 pb-4'>
-              <div className='flex size-10 items-center justify-center rounded bg-gray-3/80'>
+              <div className={cn('flex size-10 items-center justify-center rounded', item.iconColor)}>
                 <Icon className='size-5' name={item.icon} />
               </div>
 

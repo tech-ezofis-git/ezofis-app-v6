@@ -1,4 +1,4 @@
-import type { ILineItem } from '@/pages/requests/types'
+import { useMemo } from 'react'
 import Badge from '@/components/base/Badge'
 import Table from '@/components/base/table/Table'
 import Tbody from '@/components/base/table/Tbody'
@@ -8,151 +8,143 @@ import Thead from '@/components/base/table/Thead'
 import Tr from '@/components/base/table/Tr'
 import cn from '@/utils/cn'
 
-const lineItems: ILineItem[] = [
-  {
-    id: 'Acme-1',
-    name: 'Ballpoint Pens (Blue, Pack of 12)',
-    price: {
-      invoice: 45.5,
-      po: 45.5,
-    },
-    quantity: {
-      grn: 10,
-      invoice: 8,
-      po: 10,
-    },
-    status: 'mismatch',
-    total: 455.0,
-    variance: '2 (quantity)',
-  },
-  {
-    id: 'Acme-2',
-    name: 'A4 Copy Paper (500 sheets/ream)',
-    price: {
-      invoice: 120.0,
-      po: 120.0,
-    },
-    quantity: {
-      grn: 50,
-      invoice: 50,
-      po: 50,
-    },
-    status: 'match',
-    total: 6000.0,
-    variance: '-',
-  },
-  {
-    id: 'Acme-3',
-    name: 'Sticky Notes 3x3 (Yellow, 100 sheets)',
-    price: {
-      invoice: 20.0,
-      po: 18.75,
-    },
-    quantity: {
-      grn: 25,
-      invoice: 25,
-      po: 25,
-    },
-    status: 'mismatch',
-    total: 500.0,
-    variance: '$1.25 (price)',
-  },
-]
+interface Props {
+  data: any
+}
 
-const LineItems = () => {
+const LineItems = ({ data }: Props) => {
+  // Transform the Agent 'debug' data into table rows
+  const lineItems = useMemo(() => {
+    const rawLines = data?.debug?.['Side-by-side Line Item matching'] || []
+
+    return rawLines.map((line: any, index: number) => {
+      // Helper to parse values "10 (Units)" -> 10
+      // Adjust based on your actual data format
+      const invoiceQty = line['Quantity']?.['Invoice Value'] || '-'
+      const poQty = line['Quantity']?.['PO Value'] || '-'
+
+      const invoicePrice = line['Unit Price']?.['Invoice Value'] || '-'
+      const poPrice = line['Unit Price']?.['PO Value'] || '-'
+
+      const itemDesc = line['Description']?.['Invoice Value'] || 'Unknown Item'
+
+      const score = line['Line Score'] || 0
+      let status = 'match'
+      if (score < 100) status = 'mismatch'
+      if (score < 50) status = 'critical'
+
+      return {
+        id: index + 1,
+        name: itemDesc,
+        price: {
+          invoice: invoicePrice,
+          po: poPrice,
+        },
+        quantity: {
+          invoice: invoiceQty,
+          po: poQty,
+        },
+        score: score,
+        status: status,
+      }
+    })
+  }, [data])
+
+  if (lineItems.length === 0) return null
+
   return (
     <div>
-      <div className='mb-1 text-sm font-medium text-gray-13'>Line Items</div>
-      <div className='mb-4'>
-        3-way match validation: Invoice vs Purchase Order (PO) vs Goods Receipt
-        Note (GRN)
+      <div className='mb-1 text-sm font-medium text-gray-13'>Line Item Matching</div>
+      <div className='mb-4 text-sm text-gray-11'>
+        Comparison between Extracted Invoice Data and Purchase Order Data.
       </div>
 
-      <Table>
-        <Thead>
-          <Tr>
-            <Th rowSpan={2}>#</Th>
-            <Th rowSpan={2}>Item</Th>
-            <Th colSpan={3}>Quantity</Th>
-            <Th colSpan={2}>Price</Th>
-            <Th rowSpan={2}>Total</Th>
-            <Th rowSpan={2}>Variance</Th>
-            <Th rowSpan={2}>Status</Th>
-          </Tr>
-
-          <Tr>
-            {['Invoice', 'PO', 'GRN'].map((label) => (
-              <Th
-                className='border-t-0 text-12 font-normal text-gray-11 first:rounded-none first:border-l-0 last:rounded-none'
-                key={label}
-              >
-                {label}
-              </Th>
-            ))}
-
-            {['Invoice', 'PO'].map((label) => (
-              <Th
-                className='border-t-0 text-12 font-normal text-gray-11 first:rounded-none first:border-l-0 last:rounded-none'
-                key={label}
-              >
-                {label}
-              </Th>
-            ))}
-          </Tr>
-        </Thead>
-
-        <Tbody>
-          {lineItems.map((item, index) => (
-            <Tr key={item.id}>
-              <Td>{index + 1}</Td>
-
-              <Td>
-                <div className='mb-1 font-medium text-gray-13'>{item.id}</div>
-                <div className='text-12 text-balance'>{item.name}</div>
-              </Td>
-
-              <Td
-                className={cn('font-medium text-nowrap text-gray-13', {
-                  'bg-red-1 font-semibold text-red-11':
-                    item.quantity.invoice !== item.quantity.po,
-                })}
-              >
-                {item.quantity.invoice}
-              </Td>
-              <Td className='font-medium text-nowrap text-gray-13'>
-                {item.quantity.po}
-              </Td>
-              <Td className='font-medium text-nowrap text-gray-13'>
-                {item.quantity.grn}
-              </Td>
-
-              <Td
-                className={cn('font-medium text-nowrap text-gray-13', {
-                  'bg-red-1 font-semibold text-red-11':
-                    item.price.invoice !== item.price.po,
-                })}
-              >
-                ${item.price.invoice}
-              </Td>
-              <Td className='font-medium text-nowrap text-gray-13'>
-                ${item.price.po}
-              </Td>
-
-              <Td className='text-nowrap'>${item.total}</Td>
-
-              <Td>{item.variance}</Td>
-
-              <Td>
-                <Badge
-                  className='capitalize'
-                  color={item.status === 'match' ? 'green' : 'red'}
-                  label={item.status}
-                />
-              </Td>
+      <div className="overflow-x-auto">
+        <Table>
+          <Thead>
+            <Tr>
+              <Th rowSpan={2}>#</Th>
+              <Th rowSpan={2} className="min-w-[200px]">Item Description</Th>
+              <Th colSpan={2} className="text-center">Quantity</Th>
+              <Th colSpan={2} className="text-center">Unit Price</Th>
+              <Th rowSpan={2} className="text-right">Match Score</Th>
+              <Th rowSpan={2} className="text-center">Status</Th>
             </Tr>
-          ))}
-        </Tbody>
-      </Table>
+
+            <Tr>
+              {/* Quantity Sub-headers */}
+              {['Invoice', 'PO'].map((label) => (
+                <Th
+                  className='border-t-0 text-12 font-normal text-gray-11 text-center bg-gray-1'
+                  key={`qty-${label}`}
+                >
+                  {label}
+                </Th>
+              ))}
+
+              {/* Price Sub-headers */}
+              {['Invoice', 'PO'].map((label) => (
+                <Th
+                  className='border-t-0 text-12 font-normal text-gray-11 text-center bg-gray-1'
+                  key={`price-${label}`}
+                >
+                  {label}
+                </Th>
+              ))}
+            </Tr>
+          </Thead>
+
+          <Tbody>
+            {lineItems.map((item: any) => (
+              <Tr key={item.id}>
+                <Td>{item.id}</Td>
+
+                <Td>
+                  <div className='text-12 text-balance font-medium text-gray-13'>{item.name}</div>
+                </Td>
+
+                {/* Quantity */}
+                <Td className={cn('text-center font-medium', {
+                  'bg-red-1 text-red-11': item.quantity.invoice !== item.quantity.po && item.quantity.po !== '-'
+                })}>
+                  {item.quantity.invoice}
+                </Td>
+                <Td className='text-center text-gray-11'>
+                  {item.quantity.po}
+                </Td>
+
+                {/* Price */}
+                <Td className={cn('text-center font-medium', {
+                  'bg-red-1 text-red-11': item.price.invoice !== item.price.po && item.price.po !== '-'
+                })}>
+                  {item.price.invoice}
+                </Td>
+                <Td className='text-center text-gray-11'>
+                  {item.price.po}
+                </Td>
+
+                <Td className='text-right'>
+                  <span className={cn('font-bold', {
+                    'text-green-11': item.score >= 90,
+                    'text-orange-11': item.score >= 70 && item.score < 90,
+                    'text-red-11': item.score < 70
+                  })}>
+                    {Number(item.score).toFixed(2)}%
+                  </span>
+                </Td>
+
+                <Td className="text-center">
+                  <Badge
+                    className='capitalize'
+                    color={item.status === 'match' ? 'green' : item.status === 'mismatch' ? 'orange' : 'red'}
+                    label={item.status === 'match' ? 'Match' : 'Review'}
+                  />
+                </Td>
+              </Tr>
+            ))}
+          </Tbody>
+        </Table>
+      </div>
     </div>
   )
 }

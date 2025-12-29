@@ -1,4 +1,4 @@
-import axios from '@/api/axios'
+import { _axios } from '../axios'
 import type { User, UserList } from './types/user'
 import { type QueryParams } from './types/item'
 import { type OptionList, OptionListSchema } from './types/option'
@@ -9,7 +9,7 @@ const URL_SLUG = '/users/'
 export async function getUserList(
   queryParams?: QueryParams,
 ): Promise<UserList> {
-  const response = await axios.instance.get(URL_SLUG, {
+  const response = await _axios.get(URL_SLUG, {
     params: queryParams,
   })
 

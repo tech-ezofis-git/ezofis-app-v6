@@ -13,24 +13,28 @@ const Overview = () => {
     {
       change: '+23%',
       icon: 'tabler:file-description',
+      iconColor: 'bg-blue-2 text-blue-9',
       name: t`Invoices Processed`,
       value: '240',
     },
     {
       change: '-67%',
       icon: 'tabler:clock',
+      iconColor: 'bg-orange-2 text-orange-9',
       name: t`Average Processing Time`,
       value: '3.6 Minutes',
     },
     {
       change: '+156%',
       icon: 'tabler:currency-dollar',
+      iconColor: 'bg-green-2 text-green-9',
       name: t`Cost Savings`,
       value: '$24.5K',
     },
     {
       change: '+0.5%',
       icon: 'tabler:focus-2',
+      iconColor: 'bg-purple-2 text-purple-9',
       name: t`Accuracy Rate`,
       value: '99.9%',
     },
@@ -59,7 +63,7 @@ const Overview = () => {
                 </div>
               </div>
 
-              <div className='flex size-10 items-center justify-center rounded bg-gray-3/80'>
+              <div className={cn('flex size-10 items-center justify-center rounded', item.iconColor)}>
                 <Icon className='size-5' name={item.icon} />
               </div>
             </div>

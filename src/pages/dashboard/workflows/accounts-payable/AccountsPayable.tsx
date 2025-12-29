@@ -1,15 +1,33 @@
+import { AnimatePresence } from 'motion/react'
 import Integrations from './components/Integrations'
 import Overview from './components/Overview'
-import Setup from './components/setup/Setup'
 import SetupCallout from './components/SetupCallout'
+import setupStore from './stores/useSetupStore'
+import Steps from './components/setup/components/Steps'
 
 const AccountsPayable = () => {
+  const isSetupStarted = setupStore((state) => state.isSetupStarted)
+  const isApSetUpCompleted = setupStore((state) => state.isApSetUpCompleted)
+
+  // Show Overview and Integrations when setup is not started OR when setup is completed
+  const showOverviewAndIntegrations = !isSetupStarted || isApSetUpCompleted
+
   return (
     <>
       <SetupCallout />
-      <Overview />
-      <Integrations />
-      <Setup />
+
+      <AnimatePresence mode='wait'>
+        {isSetupStarted ? (
+          <Steps key='steps' />
+        ) : null}
+      </AnimatePresence>
+
+      {showOverviewAndIntegrations && (
+        <>
+          <Overview />
+          <Integrations />
+        </>
+      )}
     </>
   )
 }

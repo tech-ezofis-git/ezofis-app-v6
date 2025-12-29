@@ -4,8 +4,8 @@ export default function getPinStateWithDefaults(
   initialPinState?: ColumnPinningState,
 ): ColumnPinningState {
   const pinState: ColumnPinningState = {
-    left: ['select', 'group'],
-    right: [],
+    left: ['requestNo'],
+    right: ['actions'],
   }
 
   if (initialPinState?.left && pinState.left) {

@@ -31,6 +31,7 @@ const TableHeaderCell = <TData,>({ header, table }: Props<TData>) => {
   const isPinned = column.getIsPinned()
   const columnOrder = table.getState().columnOrder
 
+
   const getTargetColumnId = (id: string, direction: 'right' | 'left') => {
     const index = columns.findIndex((c) => c.id === id)
     if (index === -1) return ''

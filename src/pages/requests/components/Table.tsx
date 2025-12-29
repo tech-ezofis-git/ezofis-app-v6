@@ -25,7 +25,7 @@ const Table = () => {
       renderCell: (row) => (
         <span
           className='trensition-colors cursor-pointer font-medium underline hover:text-gray-13'
-          onClick={openRequest}
+          onClick={openRequest as any}
         >
           {String(row.name)}
         </span>

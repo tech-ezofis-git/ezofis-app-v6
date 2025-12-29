@@ -16,6 +16,7 @@ interface Props
   leftSection?: ReactNode
   showPlaceholder?: boolean
   onChange: (value: string) => void
+  onKeyDown?: (e: any) => void
 }
 
 const InputPassword = forwardRef<HTMLInputElement, Props>(

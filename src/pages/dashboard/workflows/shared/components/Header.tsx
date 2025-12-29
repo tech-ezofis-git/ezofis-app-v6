@@ -4,7 +4,7 @@ import type { Option } from '@/types/option'
 import Divider from '@/components/base/Divider'
 import Icon from '@/components/base/icon/Icon'
 import InputSelect from '@/components/base/inputs/InputSelect'
-
+import authUserStore from '@/stores/authUserStore'
 const modules = [
   {
     disabled: false,
@@ -93,7 +93,9 @@ const Header = () => {
     id: 1,
     name: 'Today',
   })
-  const name = 'Charles'
+  const store = authUserStore?.getState();
+
+  const name = store?.session?.firstName
 
   return (
     <div className='flex flex-wrap items-end justify-between gap-6 border-b border-gray-3 p-6 md:px-8'>
