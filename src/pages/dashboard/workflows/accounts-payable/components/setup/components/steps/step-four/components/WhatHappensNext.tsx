@@ -1,5 +1,5 @@
 import Icon from '@/components/base/icon/Icon'
-import SectionHeader from '../../components/SectionHeader'
+import Title from '@/components/base/Title'
 
 const items = [
   {
@@ -22,8 +22,10 @@ const items = [
 const WhatHappensNext = () => {
   return (
     <div className='max-w-2xl'>
-      <SectionHeader
+      <Title
+        className='mb-6'
         description="Here's what you can expect:"
+        level={3}
         title='What Happens Next?'
       />
 
@@ -33,14 +35,14 @@ const WhatHappensNext = () => {
             className='flex flex-wrap gap-4 rounded border border-gray-3 p-4'
             key={item.title}
           >
-            <Icon className='size-5 text-green-9' name='tabler:circle-check' />
+            <Icon className='text-green-11' name='lucide:circle-check' />
 
-            <div className='flex-1 space-y-1'>
-              <div className='text-15/5 font-medium text-gray-12'>
-                {item.title}
-              </div>
-              <div className='text-gray-10'>{item.description}</div>
-            </div>
+            <Title
+              className='flex-1'
+              description={item.description}
+              level={4}
+              title={item.title}
+            />
           </div>
         ))}
       </div>

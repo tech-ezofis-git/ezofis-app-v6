@@ -2,9 +2,9 @@ import CustomLogo from '@/assets/brands/email.svg'
 import MsExchangeLogo from '@/assets/brands/exchange.svg'
 import GmailLogo from '@/assets/brands/gmail.svg'
 import OutlookLogo from '@/assets/brands/outlook.svg'
+import Title from '@/components/base/Title'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import BrandCard from '../../components/BrandCard'
-import SectionHeader from '../../components/SectionHeader'
 
 const items = [
   { logo: GmailLogo, name: 'Gmail', value: 'Gmail' },
@@ -23,8 +23,10 @@ const ProviderSettings = () => {
 
   return (
     <div>
-      <SectionHeader
+      <Title
+        className='mb-6'
         description='Select from popular providers or choose Custom to enter your own settings.'
+        level={3}
         title='Choose Your Email Provider'
       />
 

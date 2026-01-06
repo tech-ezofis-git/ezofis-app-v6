@@ -14,9 +14,9 @@ const variantClassNames = {
 } as const
 
 const variantIconNames = {
-  green: 'tabler:circle-check',
-  primary: 'tabler:info-circle',
-  red: 'tabler:alert-triangle',
+  green: 'lucide:circle-check',
+  primary: 'lucide:info',
+  red: 'lucide:triangle-alert',
 } as const
 
 const Alert = ({ className, text, variant = 'primary' }: Props) => {
@@ -28,7 +28,7 @@ const Alert = ({ className, text, variant = 'primary' }: Props) => {
         className,
       )}
     >
-      <Icon className='size-5' name={variantIconNames[variant]} />
+      <Icon name={variantIconNames[variant]} />
       <div className='text-13 font-medium'>{text}</div>
     </div>
   )

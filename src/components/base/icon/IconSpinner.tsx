@@ -8,8 +8,8 @@ interface Props {
 const IconSpinner = ({ className }: Props) => {
   return (
     <Icon
-      className={cn('size-12 text-primary-11', className)}
-      name='svg-spinners:6-dots-scale'
+      className={cn('size-12 animate-spin text-primary-11', className)}
+      name='fa:spinner'
     />
   )
 }

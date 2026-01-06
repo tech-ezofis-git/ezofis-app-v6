@@ -1,14 +1,9 @@
 import { NumberInput as Base } from '@mantine/core'
 import { forwardRef } from 'react'
-import cn from '@/utils/cn'
 import type { InputProps } from './shared/types'
 import ClearButton from './ClearButton'
 import InputLabel from './InputLabel'
-import {
-  classNames,
-  inputWrapperOrder,
-  sizeClassName,
-} from './shared/constants'
+import { classNames, inputWrapperOrder } from './shared/constants'
 
 interface Props extends InputProps {
   value: string | number
@@ -30,7 +25,6 @@ const InputNumber = forwardRef<HTMLInputElement, Props>(
       label,
       optional,
       required,
-      size = 'md',
       tooltip,
       tooltipWidth,
       value,
@@ -71,7 +65,7 @@ const InputNumber = forwardRef<HTMLInputElement, Props>(
             'border-gray-7 text-gray-11 transition-colors hover:bg-gray-4 hover:text-gray-12',
           description: classNames.description,
           error: classNames.error,
-          input: cn(classNames.input, sizeClassName[size]),
+          input: classNames.input,
           label: classNames.label,
           wrapper: classNames.wrapper,
         }}

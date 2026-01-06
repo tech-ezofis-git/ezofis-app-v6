@@ -21,7 +21,7 @@ const ComboboxOption = ({
   variant = 'single',
 }: Props) => {
   const _className = cn(
-    'group flex min-h-8 gap-2.5 rounded px-1.5 py-1 transition-colors hover:bg-gray-4 data-[combobox-selected]:bg-gray-4',
+    'group flex min-h-9 gap-2.5 rounded px-1.5 py-1 transition-colors hover:bg-gray-4 data-[combobox-selected]:bg-gray-4',
     !description && 'items-center',
   )
 
@@ -41,7 +41,7 @@ const ComboboxOption = ({
       <div>
         <div className='text-13 font-medium text-gray-12'>{name}</div>
         {description && (
-          <div className='mt-1 text-12 text-gray-10'>{description}</div>
+          <div className='mt-1 text-xs text-gray-10'>{description}</div>
         )}
       </div>
     </Base.Option>

@@ -6,7 +6,7 @@ const SetupCallout = () => {
   const openSetup = setupStore((state) => state.openSetup)
 
   return (
-    <div className='mb-6 flex flex-wrap items-center gap-2 border-b border-gray-3 px-6 py-3 md:px-8'>
+    <div className='mb-6 flex flex-wrap items-center gap-2 border-b border-gray-3 px-6 py-3 xl:mb-8 xl:px-8'>
       <div className='font-medium'>
         <Trans>Complete setup to start your AP automation.</Trans>
       </div>
@@ -15,10 +15,10 @@ const SetupCallout = () => {
         className='flex cursor-pointer items-center gap-1 text-primary-11'
         onClick={openSetup}
       >
-        <div className='font-medium'>
+        <div className='font-poppins font-medium'>
           <Trans>Get Started</Trans>
         </div>
-        <Icon name='tabler:arrow-right' />
+        <Icon name='lucide:arrow-right' />
       </div>
     </div>
   )

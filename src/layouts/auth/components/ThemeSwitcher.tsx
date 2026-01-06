@@ -1,44 +1,25 @@
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useState } from 'react'
-import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
 import Menu from '@/components/base/menu/Menu'
 import MenuItem from '@/components/base/menu/MenuItem'
 import MenuLabel from '@/components/base/menu/MenuLabel'
 import Tooltip from '@/components/base/Tooltip'
-import { TOOLTIP_DELAY } from '@/constants'
 import useTheme from '@/hooks/useTheme'
 
-interface Props {
-  withLabel?: boolean
-}
-
-const ThemeSwitcher = ({ withLabel = false }: Props) => {
+const ThemeSwitcher = () => {
   const { t } = useLingui()
   const { colorScheme, ColorSchemeOptions, handleColorSchemeChange } =
     useTheme()
 
   const [isMenuOpened, setIsMenuOpened] = useState(false)
 
-  const menuTrigger = withLabel ? (
-    <Button
-      className='w-full gap-3 px-2'
-      color='gray'
-      icon='tabler:percentage-50'
-      iconClass='m-0'
-      label={t`Change Theme`}
-      variant='ghost'
-    />
-  ) : (
-    <Tooltip
-      content={t`Change theme`}
-      disabled={isMenuOpened}
-      openDelay={TOOLTIP_DELAY}
-    >
+  const menuTrigger = (
+    <Tooltip content={t`Change theme`} disabled={isMenuOpened} openDelay={500}>
       <IconButton
         ariaLabel='Change theme'
         color='gray'
-        icon='tabler:percentage-50'
+        icon='lucide:sun-moon'
         variant='ghost'
       />
     </Tooltip>
@@ -59,7 +40,7 @@ const ThemeSwitcher = ({ withLabel = false }: Props) => {
       </MenuLabel>
       {ColorSchemeOptions.map((option) => (
         <MenuItem
-          icon={option.value === colorScheme ? option.activeIcon : option.icon}
+          icon={option.icon}
           key={option.value}
           label={option.label}
           iconClass={

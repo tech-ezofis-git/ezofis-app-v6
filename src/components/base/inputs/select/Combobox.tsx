@@ -1,12 +1,7 @@
 import { Combobox as Base, useCombobox } from '@mantine/core'
 import { forwardRef } from 'react'
 import type { Option } from '@/types/option'
-import type {
-  InputProps,
-  InputSize,
-  SelectProps,
-  SelectVariant,
-} from '../shared/types'
+import type { InputProps, SelectProps, SelectVariant } from '../shared/types'
 import ComboboxOptions from './ComboboxOptions'
 import ComboboxSearch from './ComboboxSearch'
 import ComboboxTarget from './ComboboxTarget'
@@ -15,7 +10,6 @@ interface Props extends InputProps, SelectProps {
   search: string
   value: Option[]
   loading?: boolean
-  size?: InputSize
   variant?: SelectVariant
   onBottomReached?: () => void
   onChange: (value: Option[]) => void

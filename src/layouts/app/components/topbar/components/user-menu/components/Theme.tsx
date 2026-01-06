@@ -7,10 +7,10 @@ const Theme = () => {
     useTheme()
 
   return (
-    <MenuSub icon='tabler:percentage-50' label='Theme'>
+    <MenuSub icon='lucide:sun-moon' label='Theme'>
       {ColorSchemeOptions.map((option) => (
         <MenuItem
-          icon={option.value === colorScheme ? option.activeIcon : option.icon}
+          icon={option.icon}
           key={option.value}
           label={option.label}
           iconClass={

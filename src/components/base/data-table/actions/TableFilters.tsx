@@ -21,7 +21,7 @@ const TableFilters = <TData,>({ table }: Props<TData>) => {
       target={
         <Button
           color='gray'
-          icon='tabler:filter'
+          icon='lucide:filter'
           label='Filter'
           rightSection={_rightSection}
           variant='outline'
@@ -29,7 +29,7 @@ const TableFilters = <TData,>({ table }: Props<TData>) => {
       }
     >
       <div className='p-4'>
-        <p className='mb-2 text-12 font-medium text-gray-9'>
+        <p className='mb-2 text-xs font-medium text-gray-9'>
           {filtersState.length > 0 ? 'Filter by' : 'No filters applied'}
         </p>
 
@@ -37,7 +37,7 @@ const TableFilters = <TData,>({ table }: Props<TData>) => {
           <Button
             color='gray'
             disabled={false}
-            icon='tabler:plus'
+            icon='lucide:plus'
             label='Add'
             variant='subtle'
           />

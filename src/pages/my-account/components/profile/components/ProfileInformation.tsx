@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import InputDate from '@/components/base/inputs/InputDate'
 import InputText from '@/components/base/inputs/InputText'
-import SectionTitle from '../../SectionTitle'
+import Title from '@/components/base/Title'
 
 const ProfileInformation = () => {
   const [fullName, setFullName] = useState('')
@@ -10,8 +10,9 @@ const ProfileInformation = () => {
 
   return (
     <div className='grid grid-cols-1 gap-6 lg:grid-cols-2'>
-      <SectionTitle
+      <Title
         description='Manage your personal details'
+        level={4}
         title='Profile Information'
       />
 

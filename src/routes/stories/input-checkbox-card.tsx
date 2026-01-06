@@ -29,7 +29,7 @@ function RouteComponent() {
           checked={checked}
           className='w-80'
           description='Lorem ipsum dolar sit amit '
-          icon='tabler:user'
+          icon='lucide:user'
           label='Label'
           onClick={() => setChecked(!checked)}
         />

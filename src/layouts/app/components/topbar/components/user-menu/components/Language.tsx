@@ -6,12 +6,12 @@ const Language = () => {
   const { language, languages, setLanguage } = useLanguage()
 
   return (
-    <MenuSub icon='tabler:world' label='Language'>
+    <MenuSub icon='lucide:languages' label='Language'>
       {languages.map(({ code, name }) => (
         <MenuItem
           key={code}
           label={name}
-          suffixIcon={language === code ? 'tabler:check' : ''}
+          suffixIcon={language === code ? 'lucide:check' : ''}
           suffixIconClass='text-primary-11'
           onClick={() => setLanguage(code)}
         />

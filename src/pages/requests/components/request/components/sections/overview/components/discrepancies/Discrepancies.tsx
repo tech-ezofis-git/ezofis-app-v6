@@ -1,4 +1,5 @@
 import type { IDiscrepancy } from '@/pages/requests/types'
+import Title from '@/components/base/Title'
 import Discrepancy from './Discrepancy'
 
 const discrepancies: IDiscrepancy[] = [
@@ -22,7 +23,7 @@ const discrepancies: IDiscrepancy[] = [
 const Discrepancies = () => {
   return (
     <div>
-      <div className='mb-4 text-sm font-medium text-gray-13'>Discrepancies</div>
+      <Title className='mb-4' level={3} title='Discrepancies' />
 
       <div className='divide-y divide-gray-3 rounded border border-gray-3'>
         {discrepancies.map((discrepancy) => (

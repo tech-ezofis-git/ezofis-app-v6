@@ -9,7 +9,7 @@ import IconIllustrated from '@/components/base/icon/IconIllustrated'
 import InputCheckbox from '@/components/base/inputs/InputCheckbox'
 import InputText from '@/components/base/inputs/InputText'
 import InputPassword from '@/components/base/inputs/password/InputPassword'
-import HeroText from '@/components/common/HeroText'
+import Title from '@/components/base/Title'
 import authUserStore from '@/stores/authUserStore'
 
 interface Props {
@@ -41,9 +41,11 @@ const SignInForm = ({ onChangeView }: Props) => {
 
   return (
     <>
-      <IconIllustrated icon='tabler:user' />
-      <HeroText
+      <IconIllustrated icon='lucide:user' />
+      <Title
+        className='text-center'
         description='Sign in to continue managing your workspace.'
+        level={1}
         title='Welcome Back'
       />
 
@@ -57,16 +59,14 @@ const SignInForm = ({ onChangeView }: Props) => {
       <div className='-mt-2 space-y-4'>
         <InputText
           label='Email'
-          leftSection={<Icon className='text-gray-8' name='tabler:mail' />}
+          leftSection={<Icon className='text-gray-9' name='lucide:mail' />}
           placeholder='hello@ezofis.com'
-          size='lg'
           value={email}
           onChange={setEmail}
         />
         <InputPassword
           label='Password'
-          leftSection={<Icon className='text-gray-8' name='tabler:lock' />}
-          size='lg'
+          leftSection={<Icon className='text-gray-9' name='lucide:lock' />}
           value={password}
           showPlaceholder
           onChange={setPassword}
@@ -88,7 +88,6 @@ const SignInForm = ({ onChangeView }: Props) => {
         className='w-full justify-center'
         label='Sign In'
         loading={loading}
-        size='lg'
         onClick={signIn}
       />
     </>

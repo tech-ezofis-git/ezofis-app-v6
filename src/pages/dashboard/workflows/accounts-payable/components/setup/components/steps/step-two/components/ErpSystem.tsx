@@ -3,9 +3,9 @@ import OracleLogo from '@/assets/brands/oracle.svg'
 import QuickBooksLogo from '@/assets/brands/quickbooks.svg'
 import SapLogo from '@/assets/brands/sap.svg'
 import XeroLogo from '@/assets/brands/xero.svg'
+import Title from '@/components/base/Title'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import BrandCard from '../../components/BrandCard'
-import SectionHeader from '../../components/SectionHeader'
 
 const items = [
   { logo: SapLogo, name: 'SAP', value: 'SAP' },
@@ -25,8 +25,10 @@ const ErpSystem = () => {
 
   return (
     <div>
-      <SectionHeader
+      <Title
+        className='mb-6'
         description='Select your ERP provider to connect and synchronize invoices, and payments seamlessly.'
+        level={3}
         title='Choose Your ERP System'
       />
 

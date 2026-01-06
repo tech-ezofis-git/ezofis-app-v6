@@ -1,9 +1,10 @@
-import { Trans } from '@lingui/react/macro'
+import { useLingui } from '@lingui/react/macro'
 import { useState } from 'react'
 import type { Option } from '@/types/option'
 import Divider from '@/components/base/Divider'
 import Icon from '@/components/base/icon/Icon'
 import InputSelect from '@/components/base/inputs/InputSelect'
+import Title from '@/components/base/Title'
 
 const modules = [
   {
@@ -78,6 +79,7 @@ const dateRanges = [
 ]
 
 const Header = () => {
+  const { t } = useLingui()
   const [module, setModule] = useState<Option | null>({
     disabled: false,
     id: 2,
@@ -96,26 +98,23 @@ const Header = () => {
   const name = 'Charles'
 
   return (
-    <div className='flex flex-wrap items-end justify-between gap-6 border-b border-gray-3 p-6 md:px-8'>
-      <div>
-        <div className='mb-1 font-poppins text-21 font-bold text-gray-13'>
-          <Trans>Welcome back, {name}.</Trans>
-        </div>
-        <div>
-          <Trans>Here's your workflow automation overview for today.</Trans>
-        </div>
-      </div>
+    <div className='flex flex-wrap items-end justify-between gap-6 border-b border-gray-3 p-6 xl:p-8'>
+      <Title
+        description={t`Here's your workflow automation overview for today.`}
+        level={1}
+        title={t`Welcome back, ${name}.`}
+      />
 
       <div className='flex flex-wrap items-center gap-2'>
         <InputSelect
-          leftSection={<Icon className='text-gray-10' name='tabler:cube' />}
+          leftSection={<Icon className='text-gray-10' name='lucide:box' />}
           options={modules}
           value={module}
           width={160}
           onChange={setModule}
         />
         <InputSelect
-          leftSection={<Icon className='text-gray-10' name='tabler:replace' />}
+          leftSection={<Icon className='text-gray-10' name='lucide:workflow' />}
           options={moduleItems}
           value={moduleItem}
           width={240}
@@ -123,11 +122,11 @@ const Header = () => {
           onChange={setModuleItem}
         />
         <Divider
-          className='mx-2 my-auto hidden h-5 sm:block'
+          className='mx-2 my-auto hidden h-6 sm:block'
           orientation='vertical'
         />
         <InputSelect
-          leftSection={<Icon className='text-gray-10' name='tabler:calendar' />}
+          leftSection={<Icon className='text-gray-10' name='lucide:calendar' />}
           options={dateRanges}
           position='bottom-end'
           value={dateRange}

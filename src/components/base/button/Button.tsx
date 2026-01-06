@@ -25,6 +25,7 @@ const sizeClassName: Record<ButtonSize, string> = {
   sm: 'h-7 px-2.5 text-13',
   md: 'h-8 px-3 text-13',
   lg: 'h-9 px-3.5 text-13',
+  xl: 'h-10 px-4 text-15',
 }
 
 const Button = forwardRef<HTMLButtonElement, Props>(
@@ -62,7 +63,7 @@ const Button = forwardRef<HTMLButtonElement, Props>(
         {children ?? (
           <>
             {loading && (
-              <Icon className='-ml-1 animate-spin' name='gg:spinner' />
+              <Icon className='-ml-1 animate-spin' name='fa:spinner' />
             )}
             {!loading && icon && (
               <Icon className={cn('-ml-1', iconClass)} name={icon} />

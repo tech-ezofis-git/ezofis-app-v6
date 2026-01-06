@@ -1,6 +1,7 @@
 import Button from '@/components/base/button/Button'
 import IconIllustrated from '@/components/base/icon/IconIllustrated'
 import cn from '@/utils/cn'
+import Title from './Title'
 
 interface Props {
   description: string
@@ -27,28 +28,29 @@ const EmptyState = ({
     <div className={cn('max-w-xl', className)}>
       <IconIllustrated icon={icon} />
 
-      <div className='mt-4 space-y-1 text-center'>
-        <h1 className='text-16 font-semibold text-gray-13'>{title}</h1>
-        <p className='text-13 text-pretty text-gray-11'>{description}</p>
-      </div>
+      <Title
+        className='mt-6 text-center'
+        description={description}
+        level={3}
+        title={title}
+      />
 
-      {primaryActionLabel ||
-        (secondaryActionLabel && (
-          <div className='mt-6 flex justify-center gap-3'>
-            {secondaryActionLabel && (
-              <Button
-                color='gray'
-                label={secondaryActionLabel}
-                variant='outline'
-                onClick={onSecondaryAction}
-              />
-            )}
+      {(primaryActionLabel || secondaryActionLabel) && (
+        <div className='mt-6 flex justify-center gap-3'>
+          {secondaryActionLabel && (
+            <Button
+              color='gray'
+              label={secondaryActionLabel}
+              variant='outline'
+              onClick={onSecondaryAction}
+            />
+          )}
 
-            {primaryActionLabel && (
-              <Button label={primaryActionLabel} onClick={onPrimaryAction} />
-            )}
-          </div>
-        ))}
+          {primaryActionLabel && (
+            <Button label={primaryActionLabel} onClick={onPrimaryAction} />
+          )}
+        </div>
+      )}
     </div>
   )
 }

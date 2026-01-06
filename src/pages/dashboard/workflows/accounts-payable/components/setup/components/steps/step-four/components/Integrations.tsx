@@ -1,5 +1,5 @@
+import Title from '@/components/base/Title'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
-import SectionHeader from '../../components/SectionHeader'
 import Integration from './Integration'
 
 const Integrations = () => {
@@ -9,28 +9,30 @@ const Integrations = () => {
 
   return (
     <div>
-      <SectionHeader
+      <Title
+        className='mb-6'
         description='Review your connections and confirm your setup before activation.'
+        level={3}
         title='Configuration Summary'
       />
       <div className='space-y-4'>
         <Integration
           account='charles@gmail.com'
-          icon='tabler:mail'
+          icon='lucide:mail'
           name='Email Integration'
           platform={emailSettings.provider}
           status='connected'
         />
         <Integration
           account='charles@gmail.com'
-          icon='tabler:database'
+          icon='lucide:database'
           name='ERP System'
           platform={erpSettings.system}
           status='connected'
         />
         <Integration
           account='charles@gmail.com'
-          icon='tabler:cloud'
+          icon='lucide:cloud'
           name='Document Storage'
           platform={storageSettings.system}
           status='connected'

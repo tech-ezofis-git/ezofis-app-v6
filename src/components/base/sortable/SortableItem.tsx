@@ -37,7 +37,7 @@ const SortableItem = ({ children, className, handlerClassName, id }: Props) => {
       >
         <Icon
           className='group-hover:text-gray text-gray-9 transition-colors'
-          name='material-symbols:drag-indicator'
+          name='lucide:grip-vertical'
         />
       </div>
     </div>

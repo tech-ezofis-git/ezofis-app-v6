@@ -60,8 +60,8 @@ const Form = () => {
   const [remarks, setRemarks] = useState('')
 
   return (
-    <div className='p-6'>
-      <div className='mb-6 text-sm font-medium text-gray-13'>Properties</div>
+    <div className='px-4 py-6'>
+      <div className='mb-6 text-13 font-medium text-gray-13'>Properties</div>
 
       <div className='grid grid-cols-4 gap-4'>
         <InputSelect

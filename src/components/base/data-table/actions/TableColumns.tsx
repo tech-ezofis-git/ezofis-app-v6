@@ -46,7 +46,7 @@ const TableColumns = <TData,>({ table }: Props<TData>) => {
       target={
         <Button
           color='gray'
-          icon='tabler:columns-2'
+          icon='lucide:columns-3'
           label='Columns'
           rightSection={_rightSection}
           variant='outline'

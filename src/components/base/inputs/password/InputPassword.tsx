@@ -1,20 +1,18 @@
 import { PasswordInput as Base } from '@mantine/core'
 import { type ChangeEvent, forwardRef, type ReactNode } from 'react'
-import cn from '@/utils/cn'
 import type { InputProps } from '../shared/types'
 import InputLabel from '../InputLabel'
-import {
-  classNames,
-  inputWrapperOrder,
-  sizeClassName,
-} from '../shared/constants'
+import { classNames, inputWrapperOrder } from '../shared/constants'
 import VisibilityToggleIcon from './VisibilityToggleIcon'
 
-interface Props
-  extends Omit<InputProps, 'clearable' | 'placeholder' | 'readOnly'> {
+interface Props extends Omit<
+  InputProps,
+  'clearable' | 'placeholder' | 'readOnly'
+> {
   value: string
   leftSection?: ReactNode
   showPlaceholder?: boolean
+  onBlur?: () => void
   onChange: (value: string) => void
 }
 
@@ -26,7 +24,6 @@ const InputPassword = forwardRef<HTMLInputElement, Props>(
       optional,
       required,
       showPlaceholder,
-      size = 'md',
       tooltip,
       tooltipWidth,
       value,
@@ -62,7 +59,7 @@ const InputPassword = forwardRef<HTMLInputElement, Props>(
           description: classNames.description,
           error: classNames.error,
           innerInput: 'placeholder:font-normal placeholder:text-gray-8',
-          input: cn(classNames.input, sizeClassName[size]),
+          input: classNames.input,
           label: classNames.label,
           visibilityToggle: 'group size-7 hover:bg-gray-4',
           wrapper: classNames.wrapper,

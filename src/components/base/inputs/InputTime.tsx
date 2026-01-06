@@ -5,21 +5,16 @@ import cn from '@/utils/cn'
 import type { InputProps } from './shared/types'
 import ClearButton from './ClearButton'
 import InputLabel from './InputLabel'
-import {
-  classNames,
-  inputWrapperOrder,
-  sizeClassName,
-} from './shared/constants'
+import { classNames, inputWrapperOrder } from './shared/constants'
 
-interface Props
-  extends Omit<
-    InputProps,
-    | 'leftSection'
-    | 'leftSectionPointerEvents'
-    | 'placeholder'
-    | 'rightSection'
-    | 'rightSectionPointerEvents'
-  > {
+interface Props extends Omit<
+  InputProps,
+  | 'leftSection'
+  | 'leftSectionPointerEvents'
+  | 'placeholder'
+  | 'rightSection'
+  | 'rightSectionPointerEvents'
+> {
   value: string
   format?: '12h' | '24h'
   maxTime?: string
@@ -38,7 +33,6 @@ const InputTime = forwardRef<HTMLInputElement, Props>(
       minTime,
       optional,
       required,
-      size = 'md',
       tooltip,
       tooltipWidth,
       value,
@@ -58,7 +52,7 @@ const InputTime = forwardRef<HTMLInputElement, Props>(
         !!error && 'text-gray-12',
       ),
       fieldsGroup: value ? 'text-gray-12' : 'text-gray-8',
-      input: cn(classNames.input, sizeClassName[size]),
+      input: classNames.input,
       label: classNames.label,
       wrapper: classNames.wrapper,
     }
@@ -77,7 +71,7 @@ const InputTime = forwardRef<HTMLInputElement, Props>(
     const _rightSection = _clearable ? (
       <ClearButton onClick={() => onChange('')} />
     ) : (
-      <Icon className='text-gray-9' name='tabler:clock' />
+      <Icon className='text-gray-9' name='lucide:clock' />
     )
 
     return (

@@ -23,17 +23,17 @@ const UserMenu = () => {
       <User />
       <MenuDivider />
       <MenuItem
-        icon='tabler:user'
+        icon='lucide:user'
         label='Profile'
         onClick={() => goto('profile')}
       />
       <MenuItem
-        icon='tabler:shield'
+        icon='lucide:shield'
         label='Security'
         onClick={() => goto('security')}
       />
       <MenuItem
-        icon='tabler:adjustments-horizontal'
+        icon='lucide:settings-2'
         label='Preferences'
         onClick={() => goto('preferences')}
       />
@@ -42,7 +42,7 @@ const UserMenu = () => {
       <Language />
       <MenuDivider />
       <MenuItem
-        icon='tabler:logout'
+        icon='lucide:log-out'
         iconClass='text-red-11'
         label='Log out'
         onClick={logout}

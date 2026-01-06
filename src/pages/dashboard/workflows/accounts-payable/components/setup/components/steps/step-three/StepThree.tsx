@@ -1,7 +1,7 @@
 import Alert from '@/components/base/Alert'
 import Button from '@/components/base/button/Button'
 import Divider from '@/components/base/Divider'
-import HeroText from '@/components/common/HeroText'
+import Title from '@/components/base/Title'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import StorageSettings from './components/StorageSettings'
 import StorageSystem from './components/StorageSystem'
@@ -27,9 +27,9 @@ const StepThree = () => {
 
   return (
     <div className='flex h-full max-w-max flex-col gap-6 p-6 xl:px-8'>
-      <HeroText
-        className='items-start text-left'
+      <Title
         description='Choose your storage provider to securely store and access invoice documents.'
+        level={1}
         title='Link Your Document Storage'
       />
 
@@ -53,7 +53,7 @@ const StepThree = () => {
       <div className='flex flex-wrap items-center justify-between gap-2'>
         <Button
           color='gray'
-          icon='tabler:arrow-left'
+          icon='lucide:arrow-left'
           label='Back'
           variant='outline'
           onClick={() => setStep(2)}
@@ -61,12 +61,12 @@ const StepThree = () => {
         {storageSettings.isConnected ? (
           <Button
             label='Continue'
-            suffixIcon='tabler:arrow-right'
+            suffixIcon='lucide:arrow-right'
             onClick={() => setStep(4)}
           />
         ) : (
           <Button
-            icon='tabler:plug'
+            icon='lucide:plug'
             label={`Connect ${storageSettings.system}`}
             loading={storageSettings.isConnecting}
             onClick={handleConnect}

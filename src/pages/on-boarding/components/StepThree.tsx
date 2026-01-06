@@ -25,7 +25,7 @@ const StepThree = () => {
     <>
       <StepHeader
         description="Each department has unique automation opportunities. We'll highlight solutions that are most relevant to your team's daily challenges."
-        icon='tabler:building'
+        icon='lucide:building'
         title='Which Department Do You Work In?'
       />
 

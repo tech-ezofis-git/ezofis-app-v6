@@ -1,5 +1,4 @@
 export interface Menu {
-  activeIcon: string
   icon: string
   label: string
   route: string

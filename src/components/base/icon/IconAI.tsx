@@ -4,6 +4,7 @@ import cn from '@/utils/cn'
 interface Props {
   animate?: boolean
   className?: string
+  color?: 'default' | 'white'
 }
 
 const transition = {
@@ -14,11 +15,12 @@ const transition = {
 }
 const animation1 = { scale: [1, 0.6, 1, 0.6, 1] }
 const animation2 = { scale: [1, 1.6, 0.6, 1.6, 1] }
-const primaryColor = '#9333ea'
-const secondaryColor = '#00bcd4'
-const tertiaryColor = '#4a78df'
 
-const IconAI = ({ animate, className }: Props) => {
+const IconAI = ({ animate, className, color = 'default' }: Props) => {
+  const primaryColor = color === 'white' ? '#fff' : '#9333ea'
+  const secondaryColor = color === 'white' ? '#fff' : '#00bcd4'
+  const tertiaryColor = color === 'white' ? '#fff' : '#4a78df'
+
   return (
     <motion.svg
       aria-label='AI Icon'

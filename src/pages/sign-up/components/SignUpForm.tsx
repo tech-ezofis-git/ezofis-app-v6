@@ -6,7 +6,7 @@ import Divider from '@/components/base/Divider'
 import Icon from '@/components/base/icon/Icon'
 import IconIllustrated from '@/components/base/icon/IconIllustrated'
 import InputText from '@/components/base/inputs/InputText'
-import HeroText from '@/components/common/HeroText'
+import Title from '@/components/base/Title'
 
 interface Props {
   email: string
@@ -27,9 +27,11 @@ const SignUpForm = ({ email, setEmail, onChangeView }: Props) => {
 
   return (
     <>
-      <IconIllustrated icon='tabler:user-plus' />
-      <HeroText
+      <IconIllustrated icon='lucide:user-plus' />
+      <Title
+        className='text-center'
         description='Sign up to start managing your workspace.'
+        level={1}
         title='Create Your Account'
       />
 
@@ -43,9 +45,8 @@ const SignUpForm = ({ email, setEmail, onChangeView }: Props) => {
       <InputText
         className='-mt-2'
         label='Email'
-        leftSection={<Icon className='text-gray-9' name='tabler:mail' />}
+        leftSection={<Icon className='text-gray-9' name='lucide:mail' />}
         placeholder='hello@ezofis.com'
-        size='lg'
         value={email}
         onChange={setEmail}
       />
@@ -55,11 +56,10 @@ const SignUpForm = ({ email, setEmail, onChangeView }: Props) => {
           className='w-full justify-center'
           label='Sign Up'
           loading={loading}
-          size='lg'
           onClick={signUp}
         />
 
-        <div className='text-center text-12 leading-5 text-pretty text-gray-10'>
+        <div className='text-center text-xs leading-5 text-pretty text-gray-10'>
           By signing up, you agree to our{' '}
           <span className='cursor-pointer font-medium text-gray-11 underline'>
             Terms of Service

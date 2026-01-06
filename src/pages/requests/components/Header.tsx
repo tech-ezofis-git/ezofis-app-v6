@@ -33,7 +33,7 @@ const Header = () => {
   })
 
   return (
-    <div className='flex flex-wrap items-center justify-between gap-6 border-b border-gray-3 px-6 md:px-8'>
+    <div className='flex flex-wrap items-center justify-between gap-6 border-b border-gray-3 px-6 xl:px-8'>
       <Tabs color='primary' value={value} onChange={setValue}>
         <Tab label='Inbox (4)' value='Inbox' />
         <Tab label='Sent' value='Sent' />
@@ -42,15 +42,14 @@ const Header = () => {
 
       <div className='flex items-center gap-2'>
         <InputSelect
-          leftSection={<Icon className='text-gray-10' name='tabler:replace' />}
+          leftSection={<Icon className='text-gray-10' name='lucide:workflow' />}
           options={workflows}
-          size='sm'
           value={workflow}
           width={240}
           searchable
           onChange={setWorkflow}
         />
-        <Button icon='tabler:plus' label='New Request' />
+        <Button icon='lucide:plus' label='New Request' />
       </div>
     </div>
   )

@@ -3,32 +3,32 @@ import Icon from '@/components/base/icon/Icon'
 
 const modules = [
   {
-    icon: 'tabler:triangle-square-circle',
+    icon: 'lucide:blocks',
     name: 'Tasks',
     position: Position.Right,
   },
   {
-    icon: 'tabler:replace',
+    icon: 'lucide:workflow',
     name: 'Workflows',
     position: Position.Right,
   },
   {
-    icon: 'tabler:folder',
+    icon: 'lucide:folder',
     name: 'Folders',
     position: Position.Right,
   },
   {
-    icon: 'tabler:layout-dashboard',
+    icon: 'lucide:layout-dashboard',
     name: 'Dashboard',
     position: Position.Left,
   },
   {
-    icon: 'tabler:clipboard-text',
+    icon: 'lucide:clipboard-list',
     name: 'Forms',
     position: Position.Left,
   },
   {
-    icon: 'tabler:template',
+    icon: 'lucide:panels-top-left',
     name: 'Portals',
     position: Position.Left,
   },
@@ -47,7 +47,7 @@ const ChildNode = ({ data }: NodeProps) => {
           position={module.position}
           type='target'
         />
-        <Icon className='size-5 text-gray-11' name={module.icon} />
+        <Icon className='size-5.5 text-gray-11' name={module.icon} />
       </div>
     </div>
   )

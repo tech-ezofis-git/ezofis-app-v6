@@ -6,7 +6,7 @@ import Properties from './components/properties/Properties'
 
 const Overview = () => {
   return (
-    <div className='space-y-12 p-6'>
+    <div className='space-y-10 p-4 xl:px-6 xl:py-8'>
       <Alert
         text='3 discrepancies found — price variance, quantity mismatch, and missing GRN. Review before approval.'
         variant='red'

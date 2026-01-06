@@ -3,20 +3,15 @@ import { forwardRef, type ReactNode, useMemo } from 'react'
 import type { Option } from '@/types/option'
 import Icon from '@/components/base/icon/Icon'
 import cn from '@/utils/cn'
-import type { InputProps, InputSize, SelectVariant } from '../shared/types'
+import type { InputProps, SelectVariant } from '../shared/types'
 import ClearButton from '../ClearButton'
 import InputLabel from '../InputLabel'
-import {
-  classNames,
-  inputWrapperOrder,
-  sizeClassName,
-} from '../shared/constants'
+import { classNames, inputWrapperOrder } from '../shared/constants'
 
 interface Props extends InputProps {
   value: Option[]
   leftSection?: ReactNode
   loading?: boolean
-  size?: InputSize
   variant?: SelectVariant
   onChange: (value: Option[]) => void
   onClick: () => void
@@ -33,7 +28,6 @@ const ComboboxTarget = forwardRef<HTMLButtonElement, Props>(
       placeholder,
       readOnly,
       required,
-      size = 'md',
       tooltip,
       tooltipWidth,
       value,
@@ -53,11 +47,7 @@ const ComboboxTarget = forwardRef<HTMLButtonElement, Props>(
     const _classNames = {
       description: classNames.description,
       error: classNames.error,
-      input: cn(
-        classNames.input,
-        readOnly && 'border-dashed',
-        sizeClassName[size],
-      ),
+      input: cn(classNames.input, readOnly && 'border-dashed'),
       label: classNames.label,
       wrapper: classNames.wrapper,
     }
@@ -73,11 +63,11 @@ const ComboboxTarget = forwardRef<HTMLButtonElement, Props>(
     ) : undefined
 
     const _rightSection = loading ? (
-      <Icon className='animate-spin text-gray-10' name='gg:spinner' />
+      <Icon className='animate-spin text-gray-10' name='fa:spinner' />
     ) : clearable && value.length ? (
       <ClearButton onClick={() => onChange([])} />
     ) : (
-      <Icon className='text-gray-10' name='tabler:chevron-down' />
+      <Icon className='text-gray-10' name='lucide:chevron-down' />
     )
 
     const children = useMemo(() => {

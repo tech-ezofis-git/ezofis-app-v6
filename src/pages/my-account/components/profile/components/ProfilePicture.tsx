@@ -1,13 +1,14 @@
 import avatar from '@/assets/avatar.jpg'
 import Avatar from '@/components/base/Avatar'
 import Button from '@/components/base/button/Button'
-import SectionTitle from '../../SectionTitle'
+import Title from '@/components/base/Title'
 
 const ProfilePicture = () => {
   return (
     <div className='grid grid-cols-1 gap-6 lg:grid-cols-2'>
-      <SectionTitle
+      <Title
         description='Photos help your teammates recognize you'
+        level={4}
         title='Profile Picture'
       />
 
@@ -24,18 +25,18 @@ const ProfilePicture = () => {
           <div className='flex items-center gap-2'>
             <Button
               color='gray'
-              icon='tabler:upload'
+              icon='lucide:upload'
               label='Upload'
               variant='outline'
             />
             <Button
               color='red'
-              icon='tabler:trash'
+              icon='lucide:trash-2'
               label='Remove'
               variant='outline'
             />
           </div>
-          <div className='text-12 text-gray-10 md:text-13 md:leading-none'>
+          <div className='text-xs text-gray-10 md:text-13 md:leading-none'>
             We support PNGs and JPEGs under 5MB
           </div>
         </div>

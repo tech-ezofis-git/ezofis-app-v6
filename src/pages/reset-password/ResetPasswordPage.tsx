@@ -3,7 +3,7 @@ import { useState } from 'react'
 import Button from '@/components/base/button/Button'
 import IconIllustrated from '@/components/base/icon/IconIllustrated'
 import InputPassword from '@/components/base/inputs/password/InputPassword'
-import HeroText from '@/components/common/HeroText'
+import Title from '@/components/base/Title'
 import PasswordRequirements from '@/layouts/auth/components/PasswordRequirements'
 
 const ResetPasswordPage = () => {
@@ -21,10 +21,12 @@ const ResetPasswordPage = () => {
   }
 
   return (
-    <>
-      <IconIllustrated icon='tabler:lock-password' />
-      <HeroText
+    <div className='flex flex-col gap-6'>
+      <IconIllustrated icon='lucide:lock' />
+      <Title
+        className='text-center'
         description='Create a new password for your account.'
+        level={1}
         title='Reset Password'
       />
 
@@ -50,7 +52,7 @@ const ResetPasswordPage = () => {
         loading={loading}
         onClick={reset}
       />
-    </>
+    </div>
   )
 }
 

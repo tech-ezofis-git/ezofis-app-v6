@@ -12,25 +12,25 @@ const Overview = () => {
   const items = [
     {
       change: '+23%',
-      icon: 'tabler:file-description',
+      icon: 'lucide:file-text',
       name: t`Invoices Processed`,
       value: '240',
     },
     {
       change: '-67%',
-      icon: 'tabler:clock',
+      icon: 'lucide:clock',
       name: t`Average Processing Time`,
       value: '3.6 Minutes',
     },
     {
       change: '+156%',
-      icon: 'tabler:currency-dollar',
+      icon: 'lucide:dollar-sign',
       name: t`Cost Savings`,
       value: '$24.5K',
     },
     {
       change: '+0.5%',
-      icon: 'tabler:focus-2',
+      icon: 'lucide:crosshair',
       name: t`Accuracy Rate`,
       value: '99.9%',
     },
@@ -40,7 +40,7 @@ const Overview = () => {
     <Section title='Overview'>
       <div
         className={cn(
-          'grid grid-cols-1 gap-3',
+          'grid grid-cols-1 gap-4',
           width >= SCREEN_XL
             ? '@xl:grid-cols-2 @5xl:grid-cols-4'
             : 'md:grid-cols-2 xl:grid-cols-4',
@@ -53,13 +53,13 @@ const Overview = () => {
           >
             <div className='mb-4 flex items-center justify-between gap-2'>
               <div>
-                <div className='mb-1'>{item.name}</div>
-                <div className='text-18 font-semibold text-gray-13'>
+                <div className='mb-1 text-13/6'>{item.name}</div>
+                <div className='font-poppins text-lg font-semibold text-gray-13'>
                   {item.value}
                 </div>
               </div>
 
-              <div className='flex size-10 items-center justify-center rounded bg-gray-3/80'>
+              <div className='flex size-10 items-center justify-center rounded bg-gray-3'>
                 <Icon className='size-5' name={item.icon} />
               </div>
             </div>
@@ -78,15 +78,15 @@ const Overview = () => {
                 </div>
               </div>
 
-              <div className='flex w-13 items-center justify-center'>
+              <div className='flex w-10 items-center justify-center'>
                 <Icon
                   className={cn('size-5 text-green-11', {
                     'text-red-11': item.change.startsWith('-'),
                   })}
                   name={
                     item.change.startsWith('+')
-                      ? 'tabler:trending-up'
-                      : 'tabler:trending-down'
+                      ? 'lucide:trending-up'
+                      : 'lucide:trending-down'
                   }
                 />
               </div>

@@ -45,24 +45,24 @@ const TableBulkActionBar = <TData,>({ className, table }: Props<TData>) => {
 
       <Button
         color='gray'
-        icon='tabler:download'
+        icon='lucide:download'
         label='Export'
         variant='subtle'
       />
       <Button
         color='gray'
-        icon='tabler:trash'
+        icon='lucide:trash-2'
         iconClass='text-red-11'
         label='Delete'
         variant='subtle'
       />
-      <IconButton color='gray' icon='tabler:dots' variant='subtle' />
+      <IconButton color='gray' icon='lucide:more-vertical' variant='subtle' />
 
       <Divider className='mx-2 my-1.5' orientation='vertical' />
 
       <IconButton
         color='gray'
-        icon='tabler:x'
+        icon='lucide:x'
         variant='subtle'
         onClick={() => table.resetRowSelection()}
       />

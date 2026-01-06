@@ -36,7 +36,7 @@ const PasswordRequirements = ({ password }: Props) => {
           <li className='flex items-center gap-x-2' key={id} role='listitem'>
             <Icon
               className={isValid ? 'text-primary-11' : 'text-gray-8'}
-              name='tabler:check'
+              name='lucide:check'
             />
             <span>{label}</span>
           </li>

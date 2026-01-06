@@ -3,7 +3,7 @@ import Alert from '@/components/base/Alert'
 import StorySubTitle from './-components/StorySubTitle'
 import StoryTitle from './-components/StoryTitle'
 
-export const Route = createFileRoute('/stories/Alert')({
+export const Route = createFileRoute('/stories/alert')({
   component: RouteComponent,
 })
 
@@ -16,10 +16,10 @@ function RouteComponent() {
         <StorySubTitle>Default</StorySubTitle>
         <Alert text='Lorem ipsum dolar sit amit.' />
 
-        <StorySubTitle>Default</StorySubTitle>
+        <StorySubTitle>Green</StorySubTitle>
         <Alert text='Lorem ipsum dolar sit amit.' variant='green' />
 
-        <StorySubTitle>Default</StorySubTitle>
+        <StorySubTitle>Red</StorySubTitle>
         <Alert text='Lorem ipsum dolar sit amit.' variant='red' />
       </div>
     </div>

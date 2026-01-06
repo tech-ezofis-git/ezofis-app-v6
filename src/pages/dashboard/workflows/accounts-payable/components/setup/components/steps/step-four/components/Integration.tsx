@@ -1,5 +1,6 @@
 import Badge from '@/components/base/Badge'
 import Icon from '@/components/base/icon/Icon'
+import Title from '@/components/base/Title'
 
 interface Props {
   account: string
@@ -17,19 +18,19 @@ const Integration = ({ account, icon, name, platform, status }: Props) => {
           <Icon className='size-5' name={icon} />
         </div>
 
-        <div className='text-15 font-semibold text-gray-13'>{name}</div>
+        <Title level={3} title={name} />
         <div className='flex-1' />
         <Badge className='capitalize' color='green' label={status} />
       </div>
 
-      <div className='flex h-8 items-center justify-between gap-3'>
+      <div className='flex h-9 items-center justify-between gap-3'>
         <div>Platform:</div>
         <div className='truncate font-medium text-gray-12 capitalize'>
           {platform}
         </div>
       </div>
 
-      <div className='flex h-8 items-center justify-between gap-3'>
+      <div className='flex h-9 items-center justify-between gap-3'>
         <div>Account:</div>
         <div className='truncate font-medium text-gray-12'>{account}</div>
       </div>

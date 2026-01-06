@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import InputPassword from '@/components/base/inputs/password/InputPassword'
 import PasswordRequirements from '@/layouts/auth/components/PasswordRequirements'
-import onBoardingStore from '../store/onBoardingStore'
+import onBoardingStore from '../stores/onBoardingStore'
 import StepFooter from './StepFooter'
 import StepHeader from './StepHeader'
 
@@ -14,14 +14,13 @@ const StepOne = () => {
     <>
       <StepHeader
         description="Let's create a strong password to keep your account safe."
-        icon='tabler:lock'
+        icon='lucide:lock'
         title='Secure Your Account'
       />
 
       <div className='space-y-4'>
         <InputPassword
           label='Password'
-          size='lg'
           value={password}
           onChange={setPassword}
         />
@@ -30,7 +29,6 @@ const StepOne = () => {
 
         <InputPassword
           label='Confirm password'
-          size='lg'
           value={confirmPassword}
           onChange={setConfirmPassword}
         />

@@ -7,10 +7,10 @@ interface Props {
 
 const InputRadioIndicator = ({ checked, disabled }: Props) => {
   return (
-    <div className='flex size-4.5 items-center justify-center'>
+    <div className='flex size-5 items-center justify-center'>
       <Base.Indicator
         checked={checked}
-        className='group size-4 min-h-4 min-w-4 border-gray-8 bg-transparent data-checked:border-primary-9 data-checked:bg-primary-9'
+        className='group size-4.5 min-h-4.5 min-w-4.5 border-gray-8 bg-transparent data-checked:border-primary-9 data-checked:bg-primary-9'
         disabled={disabled}
         classNames={{
           icon: 'size-1.5 text-transparent group-data-checked:text-white',

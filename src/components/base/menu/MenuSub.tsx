@@ -26,7 +26,7 @@ const MenuSub = ({
           disabled={disabled}
           leftSection={icon && <Icon className={iconClass} name={icon} />}
           rightSection={
-            <Icon className='text-gray-10' name='tabler:chevron-right' />
+            <Icon className='text-gray-10' name='lucide:chevron-right' />
           }
         >
           {label}

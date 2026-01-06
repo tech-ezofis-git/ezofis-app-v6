@@ -1,14 +1,9 @@
 import { TextInput as Base } from '@mantine/core'
 import { type ChangeEvent, forwardRef, type ReactNode } from 'react'
-import cn from '@/utils/cn'
 import type { InputProps } from './shared/types'
 import ClearButton from './ClearButton'
 import InputLabel from './InputLabel'
-import {
-  classNames,
-  inputWrapperOrder,
-  sizeClassName,
-} from './shared/constants'
+import { classNames, inputWrapperOrder } from './shared/constants'
 
 interface Props extends InputProps {
   value: string
@@ -16,6 +11,7 @@ interface Props extends InputProps {
   leftSectionPointerEvents?: 'auto' | 'none'
   rightSection?: ReactNode
   rightSectionPointerEvents?: 'auto' | 'none'
+  onBlur?: () => void
   onChange: (value: string) => void
 }
 
@@ -29,7 +25,6 @@ const InputText = forwardRef<HTMLInputElement, Props>(
       required,
       rightSection,
       rightSectionPointerEvents = 'none',
-      size = 'md',
       tooltip,
       tooltipWidth,
       value,
@@ -70,7 +65,7 @@ const InputText = forwardRef<HTMLInputElement, Props>(
         classNames={{
           description: classNames.description,
           error: classNames.error,
-          input: cn(classNames.input, sizeClassName[size]),
+          input: classNames.input,
           label: classNames.label,
           wrapper: classNames.wrapper,
         }}

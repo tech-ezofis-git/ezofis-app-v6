@@ -14,19 +14,18 @@ export interface InputProps {
   placeholder?: string
   readOnly?: boolean
   required?: boolean
-  size?: InputSize
   tooltip?: string
   tooltipWidth?: number
 }
-
-export type InputSize = 'sm' | 'md' | 'lg'
 
 export type InputWrapperOrder = 'input' | 'label' | 'description' | 'error'
 
 export type OptionsPerLine = keyof typeof OptionsPerLineClass
 
-export interface SelectionGroupProps
-  extends Omit<InputProps, 'placeholder' | 'readOnly'> {
+export interface SelectionGroupProps extends Omit<
+  InputProps,
+  'placeholder' | 'readOnly'
+> {
   options: Option[]
   optionsPerLine?: OptionsPerLine
 }

@@ -1,6 +1,6 @@
 import Button from '@/components/base/button/Button'
 import Divider from '@/components/base/Divider'
-import HeroText from '@/components/common/HeroText'
+import Title from '@/components/base/Title'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import Integrations from './components/Integrations'
 import WhatHappensNext from './components/WhatHappensNext'
@@ -11,9 +11,9 @@ const StepFour = () => {
 
   return (
     <div className='flex h-full max-w-max flex-col gap-6 p-6 xl:px-8'>
-      <HeroText
-        className='items-start text-left'
+      <Title
         description='Check your connections and confirm setup to activate AI-powered invoice automation.'
+        level={1}
         title='Review & Complete Setup'
       />
 
@@ -25,14 +25,14 @@ const StepFour = () => {
       <div className='flex flex-wrap items-center justify-between gap-2'>
         <Button
           color='gray'
-          icon='tabler:arrow-left'
+          icon='lucide:arrow-left'
           label='Back'
           variant='outline'
           onClick={() => setStep(3)}
         />
         <Button
           label='Activate Automation'
-          suffixIcon='tabler:arrow-right'
+          suffixIcon='lucide:arrow-right'
           onClick={closeSetup}
         />
       </div>

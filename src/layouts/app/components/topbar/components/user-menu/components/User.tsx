@@ -8,11 +8,11 @@ const User = () => {
         image={avatar}
         imageLabel='user picture'
         initials='CV'
-        size={32}
+        size={36}
       />
-      <div className='min-w-0 flex-1'>
+      <div className='min-w-0 flex-1 truncate'>
         <div className='font-medium text-gray-13'>Charles Vinoth</div>
-        <div className='truncate'>charles@ezofis.com</div>
+        <div>charles@ezofis.com</div>
       </div>
     </div>
   )

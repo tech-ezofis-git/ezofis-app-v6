@@ -6,6 +6,7 @@ import Td from '@/components/base/table/Td'
 import Th from '@/components/base/table/Th'
 import Thead from '@/components/base/table/Thead'
 import Tr from '@/components/base/table/Tr'
+import Title from '@/components/base/Title'
 import cn from '@/utils/cn'
 
 const lineItems: ILineItem[] = [
@@ -62,11 +63,13 @@ const lineItems: ILineItem[] = [
 const LineItems = () => {
   return (
     <div>
-      <div className='mb-1 text-sm font-medium text-gray-13'>Line Items</div>
-      <div className='mb-4'>
-        3-way match validation: Invoice vs Purchase Order (PO) vs Goods Receipt
-        Note (GRN)
-      </div>
+      <Title
+        className='mb-4'
+        level={3}
+        title='Line Items'
+        description=' 3-way match validation: Invoice vs Purchase Order (PO) vs Goods Receipt
+        Note (GRN)'
+      />
 
       <Table>
         <Thead>
@@ -83,7 +86,7 @@ const LineItems = () => {
           <Tr>
             {['Invoice', 'PO', 'GRN'].map((label) => (
               <Th
-                className='border-t-0 text-12 font-normal text-gray-11 first:rounded-none first:border-l-0 last:rounded-none'
+                className='border-t-0 text-xs font-normal text-gray-11 first:rounded-none first:border-l-0 last:rounded-none'
                 key={label}
               >
                 {label}
@@ -92,7 +95,7 @@ const LineItems = () => {
 
             {['Invoice', 'PO'].map((label) => (
               <Th
-                className='border-t-0 text-12 font-normal text-gray-11 first:rounded-none first:border-l-0 last:rounded-none'
+                className='border-t-0 text-xs/5 font-normal text-gray-11 first:rounded-none first:border-l-0 last:rounded-none'
                 key={label}
               >
                 {label}
@@ -108,7 +111,7 @@ const LineItems = () => {
 
               <Td>
                 <div className='mb-1 font-medium text-gray-13'>{item.id}</div>
-                <div className='text-12 text-balance'>{item.name}</div>
+                <div className='text-xs text-balance'>{item.name}</div>
               </Td>
 
               <Td

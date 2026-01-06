@@ -78,8 +78,8 @@ export default function transformColumns(
               variant='ghost'
               icon={
                 row.getIsExpanded()
-                  ? 'tabler:chevron-down'
-                  : 'tabler:chevron-right'
+                  ? 'lucide:chevron-down'
+                  : 'lucide:chevron-right'
               }
               onClick={() => row.toggleExpanded()}
             />

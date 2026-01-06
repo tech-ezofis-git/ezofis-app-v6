@@ -21,7 +21,7 @@ const TableRows = ({ rowSize, onRowSizeChange }: Props) => {
       target={
         <Button
           color='gray'
-          icon='tabler:layout-rows'
+          icon='lucide:rows-3'
           label='Rows'
           variant='outline'
         />

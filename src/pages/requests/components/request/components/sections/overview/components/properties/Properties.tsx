@@ -1,11 +1,12 @@
 import Badge from '@/components/base/Badge'
+import Title from '@/components/base/Title'
 import RequestStatusBadge from '@/components/common/RequestStatusBadge'
 import Property from './Property'
 
 const Properties = () => {
   return (
     <div>
-      <div className='mb-4 text-sm font-medium text-gray-13'>Properties</div>
+      <Title className='mb-4' level={3} title='Properties' />
 
       <div className='grid grid-cols-2 overflow-hidden rounded border border-gray-3'>
         <Property title='Invoice Number'>INV-2024-5847</Property>

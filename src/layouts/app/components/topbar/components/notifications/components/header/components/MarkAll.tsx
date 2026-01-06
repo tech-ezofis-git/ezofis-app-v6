@@ -4,7 +4,7 @@ import Tooltip from '@/components/base/Tooltip'
 const MarkAll = () => {
   return (
     <Tooltip content='Mark all as read' position='top'>
-      <IconButton color='gray' icon='tabler:checks' variant='ghost' />
+      <IconButton color='gray' icon='lucide:check-check' variant='ghost' />
     </Tooltip>
   )
 }

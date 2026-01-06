@@ -4,7 +4,7 @@ import Avatar from '@/components/base/Avatar'
 const UserMenuTrigger = () => {
   return (
     <Avatar
-      className='ml-2 cursor-pointer'
+      className='ml-4 cursor-pointer'
       image={avatar}
       imageLabel='user picture'
       initials='CV'

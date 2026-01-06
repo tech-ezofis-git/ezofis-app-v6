@@ -4,7 +4,7 @@ import Tooltip from '@/components/base/Tooltip'
 const Search = () => {
   return (
     <Tooltip content='Search' position='top'>
-      <IconButton color='gray' icon='tabler:search' variant='ghost' />
+      <IconButton color='gray' icon='lucide:search' variant='ghost' />
     </Tooltip>
   )
 }

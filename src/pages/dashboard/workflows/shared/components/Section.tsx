@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { useViewportSize } from '@mantine/hooks'
+import Title from '@/components/base/Title'
 import { SCREEN_XL } from '@/constants'
 import cn from '@/utils/cn'
 
@@ -13,11 +14,12 @@ const Section = ({ children, title }: Props) => {
 
   return (
     <div
-      className={cn('mb-8 px-6 md:px-8', width >= SCREEN_XL && '@container')}
+      className={cn(
+        'mb-8 px-6 xl:mb-10 xl:px-8',
+        width >= SCREEN_XL && '@container',
+      )}
     >
-      <h2 className='m-0 mb-4 font-poppins text-15 font-medium text-gray-13'>
-        {title}
-      </h2>
+      <Title className='mb-4' title={title} />
       {children}
     </div>
   )

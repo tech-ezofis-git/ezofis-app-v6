@@ -46,6 +46,7 @@ const routes2 = [
   { name: 'Input Checkbox Card', path: '/stories/input-checkbox-card' },
   { name: 'Empty State', path: '/stories/empty-state' },
   { name: 'Alert', path: '/stories/alert' },
+  { name: 'Form', path: '/stories/form' },
 ]
 
 function Item({
@@ -60,7 +61,7 @@ function Item({
       {routes.map((route, index) => (
         <li key={route.name}>
           <Link
-            className='text-15 transition-colors hover:text-gray-12 hover:underline'
+            className='text-15 text-gray-12 transition-colors hover:text-gray-13 hover:underline'
             to={route.path}
           >
             {start + index + 1}. {route.name}

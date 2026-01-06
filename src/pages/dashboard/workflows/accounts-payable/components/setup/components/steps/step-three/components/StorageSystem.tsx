@@ -2,9 +2,9 @@ import AmazonLogo from '@/assets/brands/amazon.svg'
 import DropboxLogo from '@/assets/brands/dropbox.svg'
 import GoogleDriveLogo from '@/assets/brands/googledrive.svg'
 import OneDriveLogo from '@/assets/brands/onedrive.svg'
+import Title from '@/components/base/Title'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import BrandCard from '../../components/BrandCard'
-import SectionHeader from '../../components/SectionHeader'
 
 const items = [
   { logo: GoogleDriveLogo, name: 'Google Drive', value: 'Google Drive' },
@@ -23,8 +23,10 @@ const StorageSystem = () => {
 
   return (
     <div>
-      <SectionHeader
+      <Title
+        className='mb-6'
         description='Select your preferred storage provider to securely store and manage invoice documents.'
+        level={3}
         title='Choose Your Storage System'
       />
 

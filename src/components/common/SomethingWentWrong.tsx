@@ -1,5 +1,5 @@
 import Button from '@/components/base/button/Button'
-import HeroText from '@/components/common/HeroText'
+import Title from '@/components/base/Title'
 import IconIllustrated from '../base/icon/IconIllustrated'
 
 const SomethingWentWrong = () => {
@@ -14,8 +14,8 @@ const SomethingWentWrong = () => {
   return (
     <div className='flex h-dvh w-dvw items-center justify-center'>
       <div className='flex max-w-xl flex-col items-center gap-4 p-10'>
-        <IconIllustrated color='red' icon='tabler:alert-triangle' />
-        <HeroText
+        <IconIllustrated color='red' icon='lucide:alert-triangle' />
+        <Title
           title='Oops! Something Went Wrong'
           description='An unexpected error occurred. Please try reloading the page or come
           back later. We apologize for the inconvenience.'

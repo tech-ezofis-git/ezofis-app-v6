@@ -1,4 +1,5 @@
 import { Timeline } from '@mantine/core'
+import Title from '@/components/base/Title'
 
 const auditTrail = [
   {
@@ -32,20 +33,20 @@ const auditTrail = [
 const AuditTrail = () => {
   return (
     <div>
-      <div className='mb-4 text-sm font-medium text-gray-13'>Audit Trail</div>
+      <Title className='mb-4' level={3} title='Audit Trail' />
 
       <Timeline
         bulletSize={8}
         lineWidth={1}
         classNames={{
           item: 'mt-6 pl-3 before:top-[2.5px] before:border-dashed before:border-gray-3',
-          itemBullet: 'mt-[2.5px] border-primary-9 bg-surface',
+          itemBullet: 'mt-[2.5px] border-primary-11 bg-surface',
           itemTitle: 'font-medium text-gray-12',
         }}
       >
         {auditTrail.map((item) => (
           <Timeline.Item key={item.action} title={item.action}>
-            <div className='text-12 text-gray-10'>{item.timestamp}</div>
+            <div className='text-xs/5 text-gray-10'>{item.timestamp}</div>
           </Timeline.Item>
         ))}
       </Timeline>

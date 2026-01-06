@@ -2,8 +2,8 @@ import CloseButton from '@/components/base/button/CloseButton'
 import IconButton from '@/components/base/button/IconButton'
 import Divider from '@/components/base/Divider'
 import OverlayHeaderWrapper from '@/components/base/overlay/OverlayHeaderWrapper'
+import Title from '@/components/base/Title'
 import Tooltip from '@/components/base/Tooltip'
-import { TOOLTIP_DELAY } from '@/constants'
 import requestStore from '@/pages/requests/stores/useRequestStore'
 
 const Header = () => {
@@ -12,19 +12,19 @@ const Header = () => {
   const toggleMaximize = requestStore((state) => state.toggleMaximize)
 
   return (
-    <OverlayHeaderWrapper className='justify-between gap-4 px-6'>
+    <OverlayHeaderWrapper className='justify-between gap-4 px-4'>
       <div className='flex items-center gap-1'>
-        <div className='text-15/9 font-semibold text-gray-13'>REQ - 5649</div>
+        <Title level={3} title='REQ - 5649' />
 
         <Divider className='my-auto mr-2 ml-4 h-5' orientation='vertical' />
 
-        <Tooltip content='Previous' openDelay={TOOLTIP_DELAY}>
-          <IconButton color='gray' icon='tabler:chevron-left' variant='ghost' />
+        <Tooltip content='Previous' openDelay={500}>
+          <IconButton color='gray' icon='lucide:chevron-left' variant='ghost' />
         </Tooltip>
-        <Tooltip content='Next' openDelay={TOOLTIP_DELAY}>
+        <Tooltip content='Next' openDelay={500}>
           <IconButton
             color='gray'
-            icon='tabler:chevron-right'
+            icon='lucide:chevron-right'
             variant='ghost'
           />
         </Tooltip>
@@ -33,20 +33,15 @@ const Header = () => {
       <div className='flex items-center gap-1'>
         <Tooltip
           content={isMaximized ? 'Minimize' : 'Maximize'}
-          openDelay={TOOLTIP_DELAY}
+          openDelay={500}
         >
           <IconButton
             color='gray'
+            icon={isMaximized ? 'lucide:minimize' : 'lucide:maximize'}
             variant='ghost'
-            icon={
-              isMaximized
-                ? 'tabler:arrows-diagonal-minimize-2'
-                : 'tabler:arrows-diagonal'
-            }
             onClick={toggleMaximize}
           />
         </Tooltip>
-        <Divider className='mx-2 my-auto h-5' orientation='vertical' />
         <CloseButton onClick={closeRequest} />
       </div>
     </OverlayHeaderWrapper>

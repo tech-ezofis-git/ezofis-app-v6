@@ -39,8 +39,8 @@ function RouteComponent() {
 
         <StorySubTitle>With Icons</StorySubTitle>
         <div className='flex flex-wrap items-center gap-2'>
-          <Button icon='tabler:plus' label='Button' />
-          <Button label='Button' suffixIcon='tabler:plus' />
+          <Button icon='lucide:plus' label='Button' />
+          <Button label='Button' suffixIcon='lucide:plus' />
         </div>
 
         <StorySubTitle>Variants</StorySubTitle>
@@ -81,8 +81,9 @@ function RouteComponent() {
         <div className='flex flex-wrap items-center gap-2'>
           <Button label='Button' size='xs' />
           <Button label='Button' size='sm' />
-          <Button label='Button' size='md' />
+          <Button label='Button' />
           <Button label='Button' size='lg' />
+          <Button label='Button' size='xl' />
         </div>
       </div>
     </div>

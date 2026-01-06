@@ -20,7 +20,7 @@ const MyAccountPage = () => {
 
   return (
     <>
-      <div className='border-b border-gray-3 px-6 md:px-8'>
+      <div className='border-b border-gray-3 px-6'>
         <Tabs color='primary' value={slug || 'profile'} onChange={goto}>
           <Tab label='Profile' value='profile' />
           <Tab label='Security' value='security' />

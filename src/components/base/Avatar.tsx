@@ -13,7 +13,7 @@ const Avatar = ({
   image,
   imageLabel = 'avatar',
   initials,
-  size = 30,
+  size = 32,
 }: Props) => {
   return (
     <Base

@@ -9,7 +9,7 @@ const Sections = () => {
 
   return (
     <>
-      <div className='border-b border-gray-3 px-6'>
+      <div className='border-b border-gray-3 px-4 xl:px-6'>
         <Tabs color='primary' value={value} onChange={setValue}>
           <Tab label='Overview' value='Overview' />
           <Tab label='Form' value='Form' />

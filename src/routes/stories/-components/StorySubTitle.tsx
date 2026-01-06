@@ -6,7 +6,7 @@ interface Props {
 
 const StorySubTitle = ({ children }: Props) => {
   return (
-    <h3 className='mb-8 border-b border-gray-3 pb-2 text-15 font-medium text-gray-11'>
+    <h3 className='mb-8 border-b border-gray-3 pb-2 text-15 font-medium text-gray-12'>
       # {children}
     </h3>
   )

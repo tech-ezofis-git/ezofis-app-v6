@@ -27,7 +27,7 @@ const StepSix = () => {
     <>
       <StepHeader
         description='Understanding your pain points helps us prioritize which automations and features to show you first. We want to solve your most pressing problems quickly.'
-        icon='tabler:briefcase-2'
+        icon='lucide:briefcase-business'
         title='What Are Your Business Challenges?'
       />
 

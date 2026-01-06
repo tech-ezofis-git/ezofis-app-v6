@@ -15,8 +15,10 @@ const Property = ({ children, className, title }: Props) => {
         className,
       )}
     >
-      <div className='px-4 py-2 font-semibold'>{title}</div>
-      <div className='px-4 py-2 font-medium text-gray-13'>{children}</div>
+      <div className='flex min-h-10 items-center px-4'>{title}</div>
+      <div className='flex min-h-10 items-center px-4 font-medium text-gray-13'>
+        {children}
+      </div>
     </div>
   )
 }
