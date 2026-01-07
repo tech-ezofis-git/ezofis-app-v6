@@ -55,8 +55,8 @@ import { Route as StoriesDataTableRouteImport } from './routes/stories/data-tabl
 import { Route as StoriesButtonRouteImport } from './routes/stories/button'
 import { Route as StoriesBadgeRouteImport } from './routes/stories/badge'
 import { Route as StoriesAvatarRouteImport } from './routes/stories/avatar'
-import { Route as StoriesAlertRouteImport } from './routes/stories/alert'
 import { Route as StoriesAiIconRouteImport } from './routes/stories/ai-icon'
+import { Route as StoriesAlertRouteImport } from './routes/stories/Alert'
 import { Route as OnBoardingTokenRouteImport } from './routes/on-boarding/$token'
 import { Route as FormBuilderFormIdRouteImport } from './routes/form-builder/$formId'
 import { Route as AppWorkflowsRouteImport } from './routes/_app/workflows'
@@ -306,14 +306,14 @@ const StoriesAvatarRoute = StoriesAvatarRouteImport.update({
   path: '/avatar',
   getParentRoute: () => StoriesRouteRoute,
 } as any)
-const StoriesAlertRoute = StoriesAlertRouteImport.update({
-  id: '/alert',
-  path: '/alert',
-  getParentRoute: () => StoriesRouteRoute,
-} as any)
 const StoriesAiIconRoute = StoriesAiIconRouteImport.update({
   id: '/ai-icon',
   path: '/ai-icon',
+  getParentRoute: () => StoriesRouteRoute,
+} as any)
+const StoriesAlertRoute = StoriesAlertRouteImport.update({
+  id: '/Alert',
+  path: '/Alert',
   getParentRoute: () => StoriesRouteRoute,
 } as any)
 const OnBoardingTokenRoute = OnBoardingTokenRouteImport.update({
@@ -418,8 +418,8 @@ export interface FileRoutesByFullPath {
   '/workflows': typeof AppWorkflowsRoute
   '/form-builder/$formId': typeof FormBuilderFormIdRoute
   '/on-boarding/$token': typeof OnBoardingTokenRoute
+  '/stories/Alert': typeof StoriesAlertRoute
   '/stories/ai-icon': typeof StoriesAiIconRoute
-  '/stories/alert': typeof StoriesAlertRoute
   '/stories/avatar': typeof StoriesAvatarRoute
   '/stories/badge': typeof StoriesBadgeRoute
   '/stories/button': typeof StoriesButtonRoute
@@ -482,8 +482,8 @@ export interface FileRoutesByTo {
   '/workflows': typeof AppWorkflowsRoute
   '/form-builder/$formId': typeof FormBuilderFormIdRoute
   '/on-boarding/$token': typeof OnBoardingTokenRoute
+  '/stories/Alert': typeof StoriesAlertRoute
   '/stories/ai-icon': typeof StoriesAiIconRoute
-  '/stories/alert': typeof StoriesAlertRoute
   '/stories/avatar': typeof StoriesAvatarRoute
   '/stories/badge': typeof StoriesBadgeRoute
   '/stories/button': typeof StoriesButtonRoute
@@ -550,8 +550,8 @@ export interface FileRoutesById {
   '/_app/workflows': typeof AppWorkflowsRoute
   '/form-builder/$formId': typeof FormBuilderFormIdRoute
   '/on-boarding/$token': typeof OnBoardingTokenRoute
+  '/stories/Alert': typeof StoriesAlertRoute
   '/stories/ai-icon': typeof StoriesAiIconRoute
-  '/stories/alert': typeof StoriesAlertRoute
   '/stories/avatar': typeof StoriesAvatarRoute
   '/stories/badge': typeof StoriesBadgeRoute
   '/stories/button': typeof StoriesButtonRoute
@@ -617,8 +617,8 @@ export interface FileRouteTypes {
     | '/workflows'
     | '/form-builder/$formId'
     | '/on-boarding/$token'
+    | '/stories/Alert'
     | '/stories/ai-icon'
-    | '/stories/alert'
     | '/stories/avatar'
     | '/stories/badge'
     | '/stories/button'
@@ -681,8 +681,8 @@ export interface FileRouteTypes {
     | '/workflows'
     | '/form-builder/$formId'
     | '/on-boarding/$token'
+    | '/stories/Alert'
     | '/stories/ai-icon'
-    | '/stories/alert'
     | '/stories/avatar'
     | '/stories/badge'
     | '/stories/button'
@@ -748,8 +748,8 @@ export interface FileRouteTypes {
     | '/_app/workflows'
     | '/form-builder/$formId'
     | '/on-boarding/$token'
+    | '/stories/Alert'
     | '/stories/ai-icon'
-    | '/stories/alert'
     | '/stories/avatar'
     | '/stories/badge'
     | '/stories/button'
@@ -1134,18 +1134,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StoriesAvatarRouteImport
       parentRoute: typeof StoriesRouteRoute
     }
-    '/stories/alert': {
-      id: '/stories/alert'
-      path: '/alert'
-      fullPath: '/stories/alert'
-      preLoaderRoute: typeof StoriesAlertRouteImport
-      parentRoute: typeof StoriesRouteRoute
-    }
     '/stories/ai-icon': {
       id: '/stories/ai-icon'
       path: '/ai-icon'
       fullPath: '/stories/ai-icon'
       preLoaderRoute: typeof StoriesAiIconRouteImport
+      parentRoute: typeof StoriesRouteRoute
+    }
+    '/stories/Alert': {
+      id: '/stories/Alert'
+      path: '/Alert'
+      fullPath: '/stories/Alert'
+      preLoaderRoute: typeof StoriesAlertRouteImport
       parentRoute: typeof StoriesRouteRoute
     }
     '/on-boarding/$token': {
@@ -1323,8 +1323,8 @@ const AuthRouteRouteWithChildren = AuthRouteRoute._addFileChildren(
 )
 
 interface StoriesRouteRouteChildren {
-  StoriesAiIconRoute: typeof StoriesAiIconRoute
   StoriesAlertRoute: typeof StoriesAlertRoute
+  StoriesAiIconRoute: typeof StoriesAiIconRoute
   StoriesAvatarRoute: typeof StoriesAvatarRoute
   StoriesBadgeRoute: typeof StoriesBadgeRoute
   StoriesButtonRoute: typeof StoriesButtonRoute
@@ -1367,8 +1367,8 @@ interface StoriesRouteRouteChildren {
 }
 
 const StoriesRouteRouteChildren: StoriesRouteRouteChildren = {
-  StoriesAiIconRoute: StoriesAiIconRoute,
   StoriesAlertRoute: StoriesAlertRoute,
+  StoriesAiIconRoute: StoriesAiIconRoute,
   StoriesAvatarRoute: StoriesAvatarRoute,
   StoriesBadgeRoute: StoriesBadgeRoute,
   StoriesButtonRoute: StoriesButtonRoute,

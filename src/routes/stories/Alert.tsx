@@ -3,7 +3,7 @@ import Alert from '@/components/base/Alert'
 import StorySubTitle from './-components/StorySubTitle'
 import StoryTitle from './-components/StoryTitle'
 
-export const Route = createFileRoute('/stories/alert')({
+export const Route = createFileRoute('/stories/Alert')({
   component: RouteComponent,
 })
 
