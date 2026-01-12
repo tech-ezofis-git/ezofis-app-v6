@@ -8,6 +8,8 @@ import Step3PreviewConfirm from "./steps/Step3PreviewConfirm";
 
 import { SYSTEM_TEMPLATE_COLUMNS } from "./utils/templateSchema";
 import requestStore from "@/pages/requests/stores/useRequestStore";
+import folderApi from "@/api/folders/folders";
+import showToast from "@/components/base/toast/showToast";
 
 type Props = {
     // onExit: () => void;
@@ -43,6 +45,32 @@ export default function PoSetupFlowPage({ }: Props) {
 
         return false;
     };
+
+
+    const handlePoUpload = async () => {
+
+        try {
+            const payload = {
+                formId: 3,
+                file: uploadedFile
+            }
+            const { data, error } = await folderApi.uploadMasterFile(payload);
+            if (data) {
+                showToast({ message: "PO Data uploaded successfully", variant: "success" });
+            }
+            if (error) {
+                showToast({ message: "Error uploading file", variant: "error" })
+            }
+            closeNewRequest();
+        } catch (error) {
+            showToast({ message: "Error uploading file", variant: "error" });
+            console.error(error);
+        } finally { 
+            setUploadState("idle");
+        }
+    }
+
+
 
     return (
         <div className="flex flex-col h-[calc(100vh-110px)] bg-[var(--gray-1)]">
@@ -180,12 +208,7 @@ export default function PoSetupFlowPage({ }: Props) {
 
                                     onBack={() => setActiveStep(1)}
                                     onConfirm={() => {
-                                        console.log("[PO CONFIRM]", {
-                                            uploadedFile: uploadedFile?.name,
-                                            uploadedColumns,
-                                            mapping
-                                        });
-                                        closeNewRequest();
+                                        handlePoUpload();
                                     }}
                                 />
                             ) : null}

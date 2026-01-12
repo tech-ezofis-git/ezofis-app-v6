@@ -154,7 +154,7 @@ export default function Step1TemplateUpload({
                     <AnimateEntrancePop>
                         <h3 className="text-lg font-semibold text-[var(--gray-13)]">Upload Purchase Order</h3>
                         <p className="text-12 text-[var(--gray-11)]">
-                            Upload your PO file (CSV or XLSX) to begin the mapping process.
+                            Please upload your PO data file (CSV or XLSX) to begin the configuration.
                         </p>
                     </AnimateEntrancePop>
 

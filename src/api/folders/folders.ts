@@ -39,7 +39,31 @@ const uploadFileWithIndex = async (formData: FormData) => {
   }
   return response
 }
+const uploadMasterFile = async (payload: any) => {
+  const response: any = { data: '', error: '' }
+  try {
+    const store = authUserStore.getState()
+    const token = store?.identity?.token
+    const { status, data } = await _axios.post(
+      `/form/uploadMasterFile`,
+      payload,
+      {
+        headers: {
+          'Token': token,
+          'Accept': 'application/json',
+          'Content-Type': 'multipart/form-data',
+        },
+      },
+    )
 
-const folderApi = { fetchFoldersById, uploadFileWithIndex }
+    if (status != 200) return
+    response.data = data
+  } catch (error) {
+    console.error(error)
+    response.error = 'Error in uploading file'
+  }
+  return response
+}
+const folderApi = { fetchFoldersById, uploadFileWithIndex, uploadMasterFile }
 
 export default folderApi
