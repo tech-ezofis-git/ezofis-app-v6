@@ -36,7 +36,7 @@ const TableGroup = <TData,>({ table }: Props<TData>) => {
       target={
         <Button
           color='gray'
-          icon='tabler:copy'
+          icon='lucide:copy'
           label='Group'
           rightSection={_rightSection}
           variant='outline'

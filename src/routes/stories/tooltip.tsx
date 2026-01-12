@@ -17,39 +17,27 @@ function RouteComponent() {
         <StorySubTitle>Default</StorySubTitle>
         <div className='flex flex-wrap items-center gap-2'>
           <Tooltip content='Default' position='right'>
-            <IconButton
-              color='gray'
-              icon='tabler:cloud-download'
-              variant='outline'
-            />
+            <IconButton color='gray' icon='lucide:download' variant='outline' />
           </Tooltip>
         </div>
 
         <StorySubTitle>Colors</StorySubTitle>
         <div className='flex flex-col items-start gap-4'>
           <Tooltip color='primary' content='Primary' position='right'>
-            <IconButton icon='tabler:cloud-download' variant='subtle' />
+            <IconButton icon='lucide:download' variant='subtle' />
           </Tooltip>
           <Tooltip color='secondary' content='Secondary' position='right'>
             <IconButton
               color='secondary'
-              icon='tabler:cloud-download'
+              icon='lucide:download'
               variant='subtle'
             />
           </Tooltip>
           <Tooltip color='red' content='Red' position='right'>
-            <IconButton
-              color='red'
-              icon='tabler:cloud-download'
-              variant='subtle'
-            />
+            <IconButton color='red' icon='lucide:download' variant='subtle' />
           </Tooltip>
           <Tooltip content='Gray' position='right'>
-            <IconButton
-              color='gray'
-              icon='tabler:cloud-download'
-              variant='subtle'
-            />
+            <IconButton color='gray' icon='lucide:download' variant='subtle' />
           </Tooltip>
         </div>
       </div>

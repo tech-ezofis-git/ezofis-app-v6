@@ -6,10 +6,10 @@ import type { SelectionProps as Props } from './shared/types'
 const InputRadio = forwardRef<HTMLInputElement, Props>(
   ({ className, error, onChange, ...rest }, ref) => {
     const _classNames = {
-      description: 'mt-1 pl-2 text-12 text-gray-10',
+      description: 'mt-1 pl-2 text-xs text-gray-10',
       icon: 'text-white',
-      inner: 'size-4.5 flex items-center justify-center',
-      label: 'pl-2 text-13 font-medium text-gray-12 leading-[18px]',
+      inner: 'size-5 flex items-center justify-center',
+      label: 'pl-2 text-13 font-medium text-gray-12',
       radio: cn(
         'border-gray-8 bg-transparent checked:border-primary-9 checked:bg-primary-9 focus-within:outline-primary-8 disabled:opacity-50',
         Boolean(error) && 'border-red-9',

@@ -1,15 +1,19 @@
 import CloseButton from '@/components/base/button/CloseButton'
+import cn from '@/utils/cn'
+import Title from '../Title'
 import OverlayHeaderWrapper from './OverlayHeaderWrapper'
 
 interface Props {
   title: string
+  className?: string
   onClose: () => void
 }
 
-const OverlayHeader = ({ title, onClose }: Props) => {
+const OverlayHeader = ({ className, title, onClose }: Props) => {
   return (
-    <OverlayHeaderWrapper className='justify-between'>
-      <h1 className='m-0 text-15 font-semibold text-gray-13'>{title}</h1>
+    <OverlayHeaderWrapper className={cn('justify-between', className)}>
+      <Title level={3} title={title} />
+
       <CloseButton onClick={onClose} />
     </OverlayHeaderWrapper>
   )

@@ -33,7 +33,7 @@ const StepSeven = () => {
     <>
       <StepHeader
         description="Let's get you started with EZOFIS - here's what we recommend:"
-        icon='tabler:rocket'
+        icon='lucide:rocket'
         title="You're Almost Ready!"
       />
 

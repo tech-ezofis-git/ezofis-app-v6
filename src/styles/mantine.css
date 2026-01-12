@@ -2,13 +2,15 @@
   .mantine-Notification-title {
     color: var(--gray-13);
     font-weight: 600;
-    font-size: 15px;
+    font-size: 14px;
+    line-height: 24px;
   }
 
   .mantine-Notification-description {
     color: var(--gray-11);
     font-weight: normal;
-    font-size: 13px;
+    font-size: 12px;
+    line-height: 20px;
   }
 
   .mantine-Notification-closeButton {

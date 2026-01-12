@@ -15,9 +15,9 @@ const AuthLayout = ({ children }: Props) => {
         <AuthHeader />
         <div
           className='flex items-center justify-center py-10 xl:py-24'
-          style={{ minHeight: 'calc(100svh - 120px)' }}
+          style={{ minHeight: 'calc(100dvh - 120px)' }}
         >
-          <div className='flex w-105 flex-col gap-6'>{children}</div>
+          <div className='w-105'>{children}</div>
         </div>
         <AuthFooter />
       </div>

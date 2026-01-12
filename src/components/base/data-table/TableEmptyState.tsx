@@ -15,7 +15,7 @@ const TableEmptyState = <TData,>({ table }: Props<TData>) => {
       <Tr>
         <Td colSpan={table.getVisibleLeafColumns().length}>
           <div className='flex flex-col items-center justify-center pt-12 pb-24'>
-            <IconIllustrated className='mb-4' icon='tabler:file-search' />
+            <IconIllustrated className='mb-4' icon='lucide:file-search' />
 
             <div className='mb-1 text-15 font-semibold text-gray-13'>
               No results found

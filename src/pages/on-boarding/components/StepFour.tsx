@@ -19,7 +19,7 @@ const StepFour = () => {
     <>
       <StepHeader
         description="Different company sizes have different automation needs and complexities. We'll recommend solutions that fit your scale."
-        icon='tabler:users-group'
+        icon='lucide:users'
         title='How Big Is Your Company?'
       />
 

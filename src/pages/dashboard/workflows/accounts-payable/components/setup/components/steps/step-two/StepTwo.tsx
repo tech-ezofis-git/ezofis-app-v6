@@ -80,7 +80,7 @@ const StepTwo = () => {
       >
         <Button
           color='gray'
-          icon='tabler:arrow-left'
+          icon='lucide:arrow-left'
           label='Back'
           variant='outline'
           onClick={() => setStep(0)}
@@ -93,7 +93,7 @@ const StepTwo = () => {
           />
         ) : erpSettings.system && erpSettings.system !== "FILE_BASED_IMPORT" ? (
           <Button
-            icon='tabler:plug'
+            icon='lucide:plug'
             label={`Connect ${erpSettings.system}`}
             loading={erpSettings.isConnecting}
             onClick={handleConnect}

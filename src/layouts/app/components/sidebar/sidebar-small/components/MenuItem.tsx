@@ -2,14 +2,13 @@ import { Link, useLocation } from '@tanstack/react-router'
 import type { Menu } from '@/layouts/app/types'
 import Icon from '@/components/base/icon/Icon'
 import Tooltip from '@/components/base/Tooltip'
-import { TOOLTIP_DELAY } from '@/constants'
 import cn from '@/utils/cn'
 
 interface Props extends Menu {
   iconClassName?: string
 }
 
-const MenuItem = ({ activeIcon, icon, iconClassName, label, route }: Props) => {
+const MenuItem = ({ icon, iconClassName, label, route }: Props) => {
   const pathname = useLocation({
     select: (location) => location.pathname,
   })
@@ -17,7 +16,7 @@ const MenuItem = ({ activeIcon, icon, iconClassName, label, route }: Props) => {
 
   return (
     <li key={label}>
-      <Tooltip content={label} openDelay={TOOLTIP_DELAY} position='right'>
+      <Tooltip content={label} openDelay={500} position='right'>
         <Link
           to={route}
           className={cn(
@@ -26,7 +25,7 @@ const MenuItem = ({ activeIcon, icon, iconClassName, label, route }: Props) => {
           )}
         >
           <Icon
-            name={isActive ? activeIcon : icon}
+            name={icon}
             className={cn(
               'transition-colors',
               isActive

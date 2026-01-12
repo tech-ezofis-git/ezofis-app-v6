@@ -1,6 +1,6 @@
 import { useNavigate } from '@tanstack/react-router'
 import Button from '@/components/base/button/Button'
-import onBoardingStore from '../store/onBoardingStore'
+import onBoardingStore from '../stores/onBoardingStore'
 
 const StepFooter = () => {
   const navigate = useNavigate()
@@ -20,7 +20,7 @@ const StepFooter = () => {
     <div className='flex items-center justify-end gap-2'>
       <Button
         color='gray'
-        icon='tabler:arrow-left'
+        icon='lucide:arrow-left'
         label='Back'
         variant='outline'
         onClick={back}
@@ -37,7 +37,7 @@ const StepFooter = () => {
       )}
       <Button
         label={step === totalSteps ? "Let's Go" : 'Continue'}
-        suffixIcon='tabler:arrow-right'
+        suffixIcon='lucide:arrow-right'
         onClick={handleNext}
       />
     </div>

@@ -1,7 +1,7 @@
+import Badge from '@/components/base/Badge'
 import Button from '@/components/base/button/Button'
-// import Divider from '@/components/base/Divider'
 import Icon from '@/components/base/icon/Icon'
-import HeroText from '@/components/common/HeroText'
+import Title from '@/components/base/Title'
 import setupStore from '../../../../stores/useSetupStore'
 
 const items = [
@@ -13,7 +13,7 @@ const items = [
       'Extract key invoice details',
       'Support for multiple file formats',
     ],
-    icon: 'tabler:mail',
+    icon: 'lucide:mail',
     id: 1,
     name: 'Email Integration',
   },
@@ -25,7 +25,7 @@ const items = [
       'Automated data validation',
       'Built-in exception handling',
     ],
-    icon: 'tabler:database',
+    icon: 'lucide:database',
     id: 2,
     name: 'ERP Integration',
   },
@@ -37,7 +37,7 @@ const items = [
       'Version control for documents',
       'Secure, centralized storage',
     ],
-    icon: 'tabler:cloud',
+    icon: 'lucide:cloud',
     id: 3,
     name: 'Document Storage',
   },
@@ -45,10 +45,11 @@ const items = [
 
 const getFeatureJSX = (label: string) => {
   return (
-    <div className='flex items-center gap-2 rounded border border-gray-3 bg-gray-2 px-2 py-1'>
-      <Icon className='size-4 text-green-11' name='lucide:circle-check-big' />
-      <span className='mt-px text-12 font-medium text-gray-12'>{label}</span>
-    </div>
+    // <div className='flex items-center gap-2'>
+    //   <Icon className='text-green-11' name='lucide:circle-check' />
+    //   <span className='text-13/6 font-medium text-gray-12'>{label}</span>
+    // </div>
+    <Badge label={label} />
   )
 }
 
@@ -58,28 +59,26 @@ const StepZero = () => {
 
   return (
     <div className='flex h-full max-w-max flex-col gap-6 p-6 xl:px-8'>
-      <HeroText
-        className='items-start text-left'
+      <Title
         description='Get a quick overview of the setup process before connecting your tools.'
+        level={1}
         title='Welcome to AP Automation Setup'
       />
 
       <div className='space-y-4'>
         {items.map((item) => (
           <div className='rounded border border-gray-3 p-4' key={item.id}>
-            <div className='mb-4 flex gap-4 xl:items-center'>
-              <div className='flex size-10 items-center justify-center rounded bg-gray-3/80'>
-                <Icon className='size-5' name={item.icon} />
+            <div className='mb-4 flex gap-4 border-b border-gray-3 pb-4 xl:items-center'>
+              <div className='flex size-10 items-center justify-center rounded bg-gray-3'>
+                <Icon name={item.icon} />
               </div>
-              <div className='flex-1'>
-                <div className='mb-1 text-15 font-semibold text-gray-13'>
-                  {item.name}
-                </div>
+              <div className='flex-1 text-13/6'>
+                <div className='font-semibold text-gray-13'>{item.name}</div>
                 <div className='text-pretty'>{item.description}</div>
               </div>
             </div>
 
-            <ul className='m-0 flex flex-wrap items-center gap-3 pl-14'>
+            <ul className='m-0 flex flex-wrap items-center gap-4 pl-14'>
               {item.features.map((feature) => (
                 <li key={feature}>{getFeatureJSX(feature)}</li>
               ))}
@@ -91,14 +90,14 @@ const StepZero = () => {
       <div className='flex flex-wrap items-center justify-between gap-2'>
         <Button
           color='gray'
-          icon='tabler:arrow-left'
+          icon='lucide:arrow-left'
           label='Back'
           variant='outline'
           onClick={() => setIsSetupStarted(false)}
         />
         <Button
           label='Continue'
-          suffixIcon='tabler:arrow-right'
+          suffixIcon='lucide:arrow-right'
           onClick={() => setStep(1)}
         />
       </div>

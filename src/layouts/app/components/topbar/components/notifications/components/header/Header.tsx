@@ -11,7 +11,7 @@ const Header = () => {
   return (
     <div className='border-b border-gray-3 pr-2 pl-3'>
       <div className='flex flex-wrap items-center py-2'>
-        <div className='flex-1 text-15 font-semibold text-gray-13'>
+        <div className='flex-1 font-poppins text-15 font-semibold text-gray-12'>
           Notifications
         </div>
         <Search />

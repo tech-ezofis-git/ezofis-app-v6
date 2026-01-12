@@ -2,7 +2,6 @@ import { useLingui } from '@lingui/react/macro'
 import { type MantineColorScheme, useMantineColorScheme } from '@mantine/core'
 
 interface ColorSchemeOption {
-  activeIcon: string
   icon: string
   label: string
   value: MantineColorScheme
@@ -13,20 +12,17 @@ export default function useTheme() {
 
   const ColorSchemeOptions: ColorSchemeOption[] = [
     {
-      activeIcon: 'tabler:device-desktop-filled',
-      icon: 'tabler:device-desktop',
+      icon: 'lucide:monitor',
       label: t`System`,
       value: 'auto',
     },
     {
-      activeIcon: 'tabler:sun-high-filled',
-      icon: 'tabler:sun-high',
+      icon: 'lucide:sun',
       label: t`Light`,
       value: 'light',
     },
     {
-      activeIcon: 'tabler:moon-filled',
-      icon: 'tabler:moon',
+      icon: 'lucide:moon',
       label: t`Dark`,
       value: 'dark',
     },

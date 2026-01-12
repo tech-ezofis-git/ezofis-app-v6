@@ -50,16 +50,12 @@ const Header: React.FC<HeaderProps> = ({
       <div className='flex items-center gap-1'>
         {/* <Tooltip
           content={isMaximized ? 'Minimize' : 'Maximize'}
-          openDelay={TOOLTIP_DELAY}
+          openDelay={500}
         >
           <IconButton
             color='gray'
+            icon={isMaximized ? 'lucide:minimize' : 'lucide:maximize'}
             variant='ghost'
-            icon={
-              isMaximized
-                ? 'tabler:arrows-diagonal-minimize-2'
-                : 'tabler:arrows-diagonal'
-            }
             onClick={toggleMaximize}
           />
           

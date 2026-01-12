@@ -1,5 +1,5 @@
 import IconIllustrated from '@/components/base/icon/IconIllustrated'
-import HeroText from '@/components/common/HeroText'
+import Title from '@/components/base/Title'
 
 interface Props {
   description: string
@@ -11,7 +11,12 @@ const StepHeader = ({ description, icon, title }: Props) => {
   return (
     <>
       <IconIllustrated icon={icon} />
-      <HeroText description={description} title={title} />
+      <Title
+        className='text-center'
+        description={description}
+        level={1}
+        title={title}
+      />
     </>
   )
 }

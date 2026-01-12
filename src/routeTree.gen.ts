@@ -15,6 +15,7 @@ import { Route as AuthRouteRouteImport } from './routes/_auth/route'
 import { Route as AppRouteRouteImport } from './routes/_app/route'
 import { Route as StoriesIndexRouteImport } from './routes/stories/index'
 import { Route as OnBoardingIndexRouteImport } from './routes/on-boarding/index'
+import { Route as FormBuilderIndexRouteImport } from './routes/form-builder/index'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as StoriesTooltipRouteImport } from './routes/stories/tooltip'
 import { Route as StoriesToastRouteImport } from './routes/stories/toast'
@@ -46,6 +47,7 @@ import { Route as StoriesInputCheckboxRouteImport } from './routes/stories/input
 import { Route as StoriesIndicatorRouteImport } from './routes/stories/indicator'
 import { Route as StoriesIconButtonRouteImport } from './routes/stories/icon-button'
 import { Route as StoriesHighlightRouteImport } from './routes/stories/highlight'
+import { Route as StoriesFormRouteImport } from './routes/stories/form'
 import { Route as StoriesEmptyStateRouteImport } from './routes/stories/empty-state'
 import { Route as StoriesDrawerRouteImport } from './routes/stories/drawer'
 import { Route as StoriesDividerRouteImport } from './routes/stories/divider'
@@ -56,6 +58,7 @@ import { Route as StoriesAvatarRouteImport } from './routes/stories/avatar'
 import { Route as StoriesAiIconRouteImport } from './routes/stories/ai-icon'
 import { Route as StoriesAlertRouteImport } from './routes/stories/Alert'
 import { Route as OnBoardingTokenRouteImport } from './routes/on-boarding/$token'
+import { Route as FormBuilderFormIdRouteImport } from './routes/form-builder/$formId'
 import { Route as AppWorkflowsRouteImport } from './routes/_app/workflows'
 import { Route as AppTrashRouteImport } from './routes/_app/trash'
 import { Route as AppTasksRouteImport } from './routes/_app/tasks'
@@ -98,6 +101,11 @@ const StoriesIndexRoute = StoriesIndexRouteImport.update({
 const OnBoardingIndexRoute = OnBoardingIndexRouteImport.update({
   id: '/on-boarding/',
   path: '/on-boarding/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FormBuilderIndexRoute = FormBuilderIndexRouteImport.update({
+  id: '/form-builder/',
+  path: '/form-builder/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppIndexRoute = AppIndexRouteImport.update({
@@ -258,6 +266,11 @@ const StoriesHighlightRoute = StoriesHighlightRouteImport.update({
   path: '/highlight',
   getParentRoute: () => StoriesRouteRoute,
 } as any)
+const StoriesFormRoute = StoriesFormRouteImport.update({
+  id: '/form',
+  path: '/form',
+  getParentRoute: () => StoriesRouteRoute,
+} as any)
 const StoriesEmptyStateRoute = StoriesEmptyStateRouteImport.update({
   id: '/empty-state',
   path: '/empty-state',
@@ -306,6 +319,11 @@ const StoriesAlertRoute = StoriesAlertRouteImport.update({
 const OnBoardingTokenRoute = OnBoardingTokenRouteImport.update({
   id: '/on-boarding/$token',
   path: '/on-boarding/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FormBuilderFormIdRoute = FormBuilderFormIdRouteImport.update({
+  id: '/form-builder/$formId',
+  path: '/form-builder/$formId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppWorkflowsRoute = AppWorkflowsRouteImport.update({
@@ -398,6 +416,7 @@ export interface FileRoutesByFullPath {
   '/tasks': typeof AppTasksRoute
   '/trash': typeof AppTrashRoute
   '/workflows': typeof AppWorkflowsRoute
+  '/form-builder/$formId': typeof FormBuilderFormIdRoute
   '/on-boarding/$token': typeof OnBoardingTokenRoute
   '/stories/Alert': typeof StoriesAlertRoute
   '/stories/ai-icon': typeof StoriesAiIconRoute
@@ -408,6 +427,7 @@ export interface FileRoutesByFullPath {
   '/stories/divider': typeof StoriesDividerRoute
   '/stories/drawer': typeof StoriesDrawerRoute
   '/stories/empty-state': typeof StoriesEmptyStateRoute
+  '/stories/form': typeof StoriesFormRoute
   '/stories/highlight': typeof StoriesHighlightRoute
   '/stories/icon-button': typeof StoriesIconButtonRoute
   '/stories/indicator': typeof StoriesIndicatorRoute
@@ -439,6 +459,7 @@ export interface FileRoutesByFullPath {
   '/stories/toast': typeof StoriesToastRoute
   '/stories/tooltip': typeof StoriesTooltipRoute
   '/': typeof AppIndexRoute
+  '/form-builder': typeof FormBuilderIndexRoute
   '/on-boarding': typeof OnBoardingIndexRoute
   '/stories/': typeof StoriesIndexRoute
   '/my-account/{-$slug}': typeof AppMyAccountChar123SlugChar125Route
@@ -459,6 +480,7 @@ export interface FileRoutesByTo {
   '/tasks': typeof AppTasksRoute
   '/trash': typeof AppTrashRoute
   '/workflows': typeof AppWorkflowsRoute
+  '/form-builder/$formId': typeof FormBuilderFormIdRoute
   '/on-boarding/$token': typeof OnBoardingTokenRoute
   '/stories/Alert': typeof StoriesAlertRoute
   '/stories/ai-icon': typeof StoriesAiIconRoute
@@ -469,6 +491,7 @@ export interface FileRoutesByTo {
   '/stories/divider': typeof StoriesDividerRoute
   '/stories/drawer': typeof StoriesDrawerRoute
   '/stories/empty-state': typeof StoriesEmptyStateRoute
+  '/stories/form': typeof StoriesFormRoute
   '/stories/highlight': typeof StoriesHighlightRoute
   '/stories/icon-button': typeof StoriesIconButtonRoute
   '/stories/indicator': typeof StoriesIndicatorRoute
@@ -500,6 +523,7 @@ export interface FileRoutesByTo {
   '/stories/toast': typeof StoriesToastRoute
   '/stories/tooltip': typeof StoriesTooltipRoute
   '/': typeof AppIndexRoute
+  '/form-builder': typeof FormBuilderIndexRoute
   '/on-boarding': typeof OnBoardingIndexRoute
   '/stories': typeof StoriesIndexRoute
   '/my-account/{-$slug}': typeof AppMyAccountChar123SlugChar125Route
@@ -524,6 +548,7 @@ export interface FileRoutesById {
   '/_app/tasks': typeof AppTasksRoute
   '/_app/trash': typeof AppTrashRoute
   '/_app/workflows': typeof AppWorkflowsRoute
+  '/form-builder/$formId': typeof FormBuilderFormIdRoute
   '/on-boarding/$token': typeof OnBoardingTokenRoute
   '/stories/Alert': typeof StoriesAlertRoute
   '/stories/ai-icon': typeof StoriesAiIconRoute
@@ -534,6 +559,7 @@ export interface FileRoutesById {
   '/stories/divider': typeof StoriesDividerRoute
   '/stories/drawer': typeof StoriesDrawerRoute
   '/stories/empty-state': typeof StoriesEmptyStateRoute
+  '/stories/form': typeof StoriesFormRoute
   '/stories/highlight': typeof StoriesHighlightRoute
   '/stories/icon-button': typeof StoriesIconButtonRoute
   '/stories/indicator': typeof StoriesIndicatorRoute
@@ -565,6 +591,7 @@ export interface FileRoutesById {
   '/stories/toast': typeof StoriesToastRoute
   '/stories/tooltip': typeof StoriesTooltipRoute
   '/_app/': typeof AppIndexRoute
+  '/form-builder/': typeof FormBuilderIndexRoute
   '/on-boarding/': typeof OnBoardingIndexRoute
   '/stories/': typeof StoriesIndexRoute
   '/_app/my-account/{-$slug}': typeof AppMyAccountChar123SlugChar125Route
@@ -588,6 +615,7 @@ export interface FileRouteTypes {
     | '/tasks'
     | '/trash'
     | '/workflows'
+    | '/form-builder/$formId'
     | '/on-boarding/$token'
     | '/stories/Alert'
     | '/stories/ai-icon'
@@ -598,6 +626,7 @@ export interface FileRouteTypes {
     | '/stories/divider'
     | '/stories/drawer'
     | '/stories/empty-state'
+    | '/stories/form'
     | '/stories/highlight'
     | '/stories/icon-button'
     | '/stories/indicator'
@@ -629,6 +658,7 @@ export interface FileRouteTypes {
     | '/stories/toast'
     | '/stories/tooltip'
     | '/'
+    | '/form-builder'
     | '/on-boarding'
     | '/stories/'
     | '/my-account/{-$slug}'
@@ -649,6 +679,7 @@ export interface FileRouteTypes {
     | '/tasks'
     | '/trash'
     | '/workflows'
+    | '/form-builder/$formId'
     | '/on-boarding/$token'
     | '/stories/Alert'
     | '/stories/ai-icon'
@@ -659,6 +690,7 @@ export interface FileRouteTypes {
     | '/stories/divider'
     | '/stories/drawer'
     | '/stories/empty-state'
+    | '/stories/form'
     | '/stories/highlight'
     | '/stories/icon-button'
     | '/stories/indicator'
@@ -690,6 +722,7 @@ export interface FileRouteTypes {
     | '/stories/toast'
     | '/stories/tooltip'
     | '/'
+    | '/form-builder'
     | '/on-boarding'
     | '/stories'
     | '/my-account/{-$slug}'
@@ -713,6 +746,7 @@ export interface FileRouteTypes {
     | '/_app/tasks'
     | '/_app/trash'
     | '/_app/workflows'
+    | '/form-builder/$formId'
     | '/on-boarding/$token'
     | '/stories/Alert'
     | '/stories/ai-icon'
@@ -723,6 +757,7 @@ export interface FileRouteTypes {
     | '/stories/divider'
     | '/stories/drawer'
     | '/stories/empty-state'
+    | '/stories/form'
     | '/stories/highlight'
     | '/stories/icon-button'
     | '/stories/indicator'
@@ -754,6 +789,7 @@ export interface FileRouteTypes {
     | '/stories/toast'
     | '/stories/tooltip'
     | '/_app/'
+    | '/form-builder/'
     | '/on-boarding/'
     | '/stories/'
     | '/_app/my-account/{-$slug}'
@@ -768,7 +804,9 @@ export interface RootRouteChildren {
   AuthRouteRoute: typeof AuthRouteRouteWithChildren
   PlaygroundRouteRoute: typeof PlaygroundRouteRoute
   StoriesRouteRoute: typeof StoriesRouteRouteWithChildren
+  FormBuilderFormIdRoute: typeof FormBuilderFormIdRoute
   OnBoardingTokenRoute: typeof OnBoardingTokenRoute
+  FormBuilderIndexRoute: typeof FormBuilderIndexRoute
   OnBoardingIndexRoute: typeof OnBoardingIndexRoute
 }
 
@@ -814,6 +852,13 @@ declare module '@tanstack/react-router' {
       path: '/on-boarding'
       fullPath: '/on-boarding'
       preLoaderRoute: typeof OnBoardingIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/form-builder/': {
+      id: '/form-builder/'
+      path: '/form-builder'
+      fullPath: '/form-builder'
+      preLoaderRoute: typeof FormBuilderIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app/': {
@@ -1033,6 +1078,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StoriesHighlightRouteImport
       parentRoute: typeof StoriesRouteRoute
     }
+    '/stories/form': {
+      id: '/stories/form'
+      path: '/form'
+      fullPath: '/stories/form'
+      preLoaderRoute: typeof StoriesFormRouteImport
+      parentRoute: typeof StoriesRouteRoute
+    }
     '/stories/empty-state': {
       id: '/stories/empty-state'
       path: '/empty-state'
@@ -1101,6 +1153,13 @@ declare module '@tanstack/react-router' {
       path: '/on-boarding/$token'
       fullPath: '/on-boarding/$token'
       preLoaderRoute: typeof OnBoardingTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/form-builder/$formId': {
+      id: '/form-builder/$formId'
+      path: '/form-builder/$formId'
+      fullPath: '/form-builder/$formId'
+      preLoaderRoute: typeof FormBuilderFormIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app/workflows': {
@@ -1273,6 +1332,7 @@ interface StoriesRouteRouteChildren {
   StoriesDividerRoute: typeof StoriesDividerRoute
   StoriesDrawerRoute: typeof StoriesDrawerRoute
   StoriesEmptyStateRoute: typeof StoriesEmptyStateRoute
+  StoriesFormRoute: typeof StoriesFormRoute
   StoriesHighlightRoute: typeof StoriesHighlightRoute
   StoriesIconButtonRoute: typeof StoriesIconButtonRoute
   StoriesIndicatorRoute: typeof StoriesIndicatorRoute
@@ -1316,6 +1376,7 @@ const StoriesRouteRouteChildren: StoriesRouteRouteChildren = {
   StoriesDividerRoute: StoriesDividerRoute,
   StoriesDrawerRoute: StoriesDrawerRoute,
   StoriesEmptyStateRoute: StoriesEmptyStateRoute,
+  StoriesFormRoute: StoriesFormRoute,
   StoriesHighlightRoute: StoriesHighlightRoute,
   StoriesIconButtonRoute: StoriesIconButtonRoute,
   StoriesIndicatorRoute: StoriesIndicatorRoute,
@@ -1358,7 +1419,9 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRouteRoute: AuthRouteRouteWithChildren,
   PlaygroundRouteRoute: PlaygroundRouteRoute,
   StoriesRouteRoute: StoriesRouteRouteWithChildren,
+  FormBuilderFormIdRoute: FormBuilderFormIdRoute,
   OnBoardingTokenRoute: OnBoardingTokenRoute,
+  FormBuilderIndexRoute: FormBuilderIndexRoute,
   OnBoardingIndexRoute: OnBoardingIndexRoute,
 }
 export const routeTree = rootRouteImport

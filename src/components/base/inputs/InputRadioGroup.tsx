@@ -63,7 +63,7 @@ const InputRadioGroup = forwardRef<HTMLInputElement, Props>(
         value={_value}
         onChange={handleChange}
       >
-        <div className={cn('grid gap-x-4 gap-y-3', optionsPerLineClass)}>
+        <div className={cn('grid gap-x-4 gap-y-3 py-2', optionsPerLineClass)}>
           {options.map((option) => (
             <InputRadio
               description={option.description}

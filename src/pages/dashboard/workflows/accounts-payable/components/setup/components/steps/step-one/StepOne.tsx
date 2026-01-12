@@ -84,7 +84,7 @@ const StepOne = () => {
           />
         ) : (
           <Button
-            icon='tabler:plug'
+            icon='lucide:plug'
             label={`Connect ${emailSettings.provider}`}
             loading={emailSettings.isConnecting}
             onClick={handleConnect}

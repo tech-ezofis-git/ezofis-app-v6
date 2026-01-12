@@ -20,10 +20,10 @@ const Tabs = ({
   const classNames = {
     list: 'before:border-0 gap-6',
     tab: cn(
-      'group gap-2 px-0 font-medium text-gray-10 outline-0 transition-colors hover:border-transparent hover:bg-transparent hover:text-gray-12 focus-visible:bg-gray-4 data-[active]:text-gray-13 data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+      'group gap-2 px-0 text-13 font-medium text-gray-10 outline-0 transition-colors hover:border-transparent hover:bg-transparent hover:text-gray-12 focus-visible:bg-transparent focus-visible:text-gray-12 focus-visible:underline data-[active]:text-gray-13 data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
       color === 'primary' && 'data-[active]:border-primary-9',
       color === 'gray' && 'data-[active]:border-gray-11',
-      color === 'secondary' && 'd data-[active]:border-secondary-9',
+      color === 'secondary' && 'data-[active]:border-secondary-9',
       tabClassName,
     ),
     tabSection: cn(

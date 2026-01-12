@@ -12,7 +12,7 @@ const ThemeSwitcher = ({ className }: Props) => {
     <IconButton
       className={className}
       color='gray'
-      icon={colorScheme === 'dark' ? 'tabler:sun-high' : 'tabler:moon'}
+      icon={colorScheme === 'dark' ? 'lucide:sun' : 'lucide:moon'}
       variant='ghost'
       onClick={toggleColorScheme}
     />

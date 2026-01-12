@@ -22,21 +22,21 @@ function RouteComponent() {
         <div className='flex'>
           <Menu
             position='bottom-start'
-            width={200}
+            width={160}
             target={
               <Button
                 color='gray'
                 label='Menu'
-                suffixIcon='tabler:chevron-down'
+                suffixIcon='lucide:chevron-down'
                 suffixIconClass='text-gray-9'
                 variant='outline'
               />
             }
           >
-            <MenuItem icon='tabler:edit' label='Rename' />
-            <MenuItem icon='tabler:copy' label='Duplicate' />
-            <MenuItem icon='tabler:archive' label='Archive' />
-            <MenuItem icon='tabler:share' label='Share' />
+            <MenuItem icon='lucide:edit' label='Rename' />
+            <MenuItem icon='lucide:copy' label='Duplicate' />
+            <MenuItem icon='lucide:archive' label='Archive' />
+            <MenuItem icon='lucide:share-2' label='Share' />
           </Menu>
         </div>
 
@@ -44,28 +44,28 @@ function RouteComponent() {
         <div className='flex'>
           <Menu
             position='bottom-start'
-            width={200}
+            width={160}
             target={
               <Button
                 color='gray'
                 label='Menu'
-                suffixIcon='tabler:chevron-down'
+                suffixIcon='lucide:chevron-down'
                 suffixIconClass='text-gray-9'
                 variant='outline'
               />
             }
           >
             <MenuLabel>Security</MenuLabel>
-            <MenuItem icon='tabler:shield' label='Authentication' />
-            <MenuItem icon='tabler:lock' label='Sessions' />
+            <MenuItem icon='lucide:shield' label='Authentication' />
+            <MenuItem icon='lucide:lock' label='Sessions' />
             <MenuDivider />
             <MenuLabel>Developers</MenuLabel>
-            <MenuItem icon='tabler:key' label='API Keys' />
-            <MenuItem icon='tabler:webhook' label='Webhooks' />
-            <MenuItem icon='tabler:help' label='Documentation' />
+            <MenuItem icon='lucide:key-round' label='API Keys' />
+            <MenuItem icon='lucide:webhook' label='Webhooks' />
+            <MenuItem icon='lucide:circle-help' label='Documentation' />
             <MenuDivider />
             <MenuItem
-              icon='tabler:logout'
+              icon='lucide:log-out'
               iconClass='text-red-11'
               label='Log out'
             />
@@ -76,27 +76,27 @@ function RouteComponent() {
         <div className='flex'>
           <Menu
             position='bottom-start'
-            width={200}
+            width={160}
             target={
               <Button
                 color='gray'
                 label='Menu'
-                suffixIcon='tabler:chevron-down'
+                suffixIcon='lucide:chevron-down'
                 suffixIconClass='text-gray-9'
                 variant='outline'
               />
             }
           >
-            <MenuItem icon='tabler:edit' label='Rename' />
-            <MenuItem icon='tabler:copy' label='Duplicate' />
-            <MenuSub icon='tabler:brand-asana' label='More'>
-              <MenuItem icon='tabler:archive' label='Archive' />
-              <MenuItem icon='tabler:share' label='Share' />
-              <MenuItem icon='tabler:heart' label='Favourites' />
+            <MenuItem icon='lucide:edit' label='Rename' />
+            <MenuItem icon='lucide:copy' label='Duplicate' />
+            <MenuSub icon='lucide:shapes' label='More'>
+              <MenuItem icon='lucide:archive' label='Archive' />
+              <MenuItem icon='lucide:share-2' label='Share' />
+              <MenuItem icon='lucide:heart' label='Favourites' />
             </MenuSub>
             <MenuDivider />
             <MenuItem
-              icon='tabler:trash'
+              icon='lucide:trash-2'
               iconClass='text-red-11'
               label='Delete'
             />

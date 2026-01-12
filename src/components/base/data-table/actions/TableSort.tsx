@@ -88,7 +88,7 @@ const TableSort = <TData,>({ table }: Props<TData>) => {
       target={
         <Button
           color='gray'
-          icon='tabler:arrows-sort'
+          icon='lucide:arrow-down-up'
           label='Sort'
           rightSection={_rightSection}
           variant='outline'
@@ -96,7 +96,7 @@ const TableSort = <TData,>({ table }: Props<TData>) => {
       }
     >
       <div className='p-4'>
-        <p className='mb-2 text-12 font-medium text-gray-9'>
+        <p className='mb-2 text-xs font-medium text-gray-9'>
           {sortState.length > 0 ? 'Sort by' : 'No sorting applied'}
         </p>
 
@@ -121,7 +121,7 @@ const TableSort = <TData,>({ table }: Props<TData>) => {
                         className='w-47 justify-between'
                         color='gray'
                         label={getColumnLabel(column.id)}
-                        suffixIcon='tabler:chevron-down'
+                        suffixIcon='lucide:chevron-down'
                         suffixIconClass='text-gray-9'
                         variant='outline'
                       />
@@ -147,7 +147,7 @@ const TableSort = <TData,>({ table }: Props<TData>) => {
                         className='w-20 justify-between'
                         color='gray'
                         label={column.desc ? 'Desc' : 'Asc'}
-                        suffixIcon='tabler:chevron-down'
+                        suffixIcon='lucide:chevron-down'
                         suffixIconClass='text-gray-9'
                         variant='outline'
                       />
@@ -170,7 +170,7 @@ const TableSort = <TData,>({ table }: Props<TData>) => {
 
                   <IconButton
                     color='gray'
-                    icon='tabler:trash'
+                    icon='lucide:trash-2'
                     iconClass='text-red-11'
                     variant='outline'
                     onClick={() => removeSort(column.id)}
@@ -185,7 +185,7 @@ const TableSort = <TData,>({ table }: Props<TData>) => {
           <Button
             color='gray'
             disabled={isAddDisabled}
-            icon='tabler:plus'
+            icon='lucide:plus'
             label='Add'
             variant='subtle'
             onClick={addSort}

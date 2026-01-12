@@ -10,8 +10,8 @@ export const Route = createFileRoute('/stories')({
 function RouteComponent() {
   return (
     <div className='container mx-auto p-6 pb-20'>
-      <div className='mb-10 flex items-center justify-between'>
-        <h1 className='text-21 font-bold text-gray-13'>Components</h1>
+      <div className='mb-12 flex items-center justify-between'>
+        <h1 className='text-20 font-bold text-gray-13'>Components</h1>
         <ThemeSwitcher />
       </div>
       <Outlet />

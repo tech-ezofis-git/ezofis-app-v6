@@ -1,14 +1,13 @@
 import IconButton from '@/components/base/button/IconButton'
 import Tooltip from '@/components/base/Tooltip'
-import { TOOLTIP_DELAY } from '@/constants'
 
 const GlobalSearch = () => {
   return (
-    <Tooltip content='Search' openDelay={TOOLTIP_DELAY}>
+    <Tooltip content='Search' openDelay={500}>
       <IconButton
         ariaLabel='search'
         color='gray'
-        icon='tabler:search'
+        icon='lucide:search'
         variant='ghost'
       />
     </Tooltip>

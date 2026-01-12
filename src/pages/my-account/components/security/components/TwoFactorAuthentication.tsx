@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import InputRadioCard from '@/components/base/inputs/InputRadioCard'
-import SectionTitle from '../../SectionTitle'
+import Title from '@/components/base/Title'
 
 const TwoFactorAuthentication = () => {
   const options = [
@@ -24,8 +24,9 @@ const TwoFactorAuthentication = () => {
 
   return (
     <div className='grid grid-cols-1 gap-6 lg:grid-cols-2'>
-      <SectionTitle
+      <Title
         description='Choose a method to receive your verification code'
+        level={4}
         title='Two Factor Authentication'
       />
 

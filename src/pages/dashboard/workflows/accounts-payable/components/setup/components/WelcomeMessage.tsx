@@ -1,6 +1,6 @@
 import Button from '@/components/base/button/Button'
 import IconIllustrated from '@/components/base/icon/IconIllustrated'
-import HeroText from '@/components/common/HeroText'
+import Title from '@/components/base/Title'
 import setupStore from '../../../stores/useSetupStore'
 
 const WelcomeMessage = () => {
@@ -9,16 +9,18 @@ const WelcomeMessage = () => {
 
   if (!isSetupStarted) {
     return (
-      <div className='mx-auto flex h-full max-w-xl flex-col items-center justify-center gap-4 p-10'>
-        <IconIllustrated icon='tabler:replace' />
-        <HeroText
+      <div className='mx-auto flex h-full max-w-xl flex-col items-center justify-center gap-6 p-10'>
+        <IconIllustrated icon='lucide:cog' />
+        <Title
+          className='text-center'
           description='Connect your email, ERP, and document storage to enable AI-powered invoice processing—streamline approvals, reduce errors, and save time.'
+          level={1}
           title='Set Up Your AP Automation'
         />
-        <div className='mt-2 flex justify-center'>
+        <div className='flex justify-center'>
           <Button
             label='Get Started'
-            suffixIcon='tabler:arrow-right'
+            suffixIcon='lucide:arrow-right'
             onClick={() => setIsSetupStarted(true)}
           />
         </div>

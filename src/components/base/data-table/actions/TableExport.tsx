@@ -20,7 +20,7 @@ const TableExport = <TData,>({ table }: Props<TData>) => {
       target={
         <Button
           color='gray'
-          icon='tabler:download'
+          icon='lucide:download'
           label='Export'
           variant='outline'
         />

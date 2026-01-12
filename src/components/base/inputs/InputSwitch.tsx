@@ -7,7 +7,7 @@ const InputSwitch = forwardRef<HTMLInputElement, Props>(
   ({ className, error, onChange, ...rest }, ref) => {
     const _classNames = {
       body: 'inline-flex',
-      description: 'mt-1 pl-2 text-12 text-gray-10',
+      description: 'mt-1 pl-2 text-xs text-gray-10',
       input: 'peer',
       label: 'pl-2 text-13 font-medium text-gray-12',
       labelWrapper: 'data-[disabled]:opacity-50',

@@ -1,8 +1,8 @@
 import InputNumber from '@/components/base/inputs/InputNumber'
 import InputText from '@/components/base/inputs/InputText'
 import InputPassword from '@/components/base/inputs/password/InputPassword'
+import Title from '@/components/base/Title'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
-import SectionHeader from '../../components/SectionHeader'
 
 const ImapSettings = () => {
   const emailSettings = setupStore((state) => state.emailSettings)
@@ -10,8 +10,10 @@ const ImapSettings = () => {
 
   return (
     <div>
-      <SectionHeader
+      <Title
+        className='mb-6'
         description='Enter IMAP server details for your custom email provider.'
+        level={3}
         title='Custom Email Configuration (IMAP)'
       />
 

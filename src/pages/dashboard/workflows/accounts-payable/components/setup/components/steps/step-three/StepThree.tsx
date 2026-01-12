@@ -79,7 +79,7 @@ const StepThree = () => {
       >
         <Button
           color='gray'
-          icon='tabler:arrow-left'
+          icon='lucide:arrow-left'
           label='Back'
           variant='outline'
           onClick={() => setStep(1)}
@@ -92,7 +92,7 @@ const StepThree = () => {
           />
         ) : (
           <Button
-            icon='tabler:plug'
+            icon='lucide:plug'
             label={`Connect ${storageSettings.system}`}
             loading={storageSettings.isConnecting}
             onClick={handleConnect}

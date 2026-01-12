@@ -95,16 +95,20 @@ const Table = () => {
             position='bottom-end'
             width={160}
             target={
-              <IconButton color='gray' icon='tabler:dots' variant='ghost' />
+              <IconButton
+                color='gray'
+                icon='lucide:more-vertical'
+                variant='ghost'
+              />
             }
           >
             <MenuItem
-              icon='tabler:edit'
+              icon='lucide:edit'
               label='Edit'
               onClick={() => alert(row.itemId)}
             />
             <MenuItem
-              icon='tabler:trash'
+              icon='lucide:trash-2'
               iconClass='text-red-11'
               label='Delete'
               onClick={() => alert(row.itemId)}
@@ -151,7 +155,7 @@ const Table = () => {
   })
 
   return (
-    <div className='p-6 md:px-8'>
+    <div className='p-6 xl:p-8'>
       <DataTable
         isLoading={isPending}
         isReLoading={isFetching || isRefetching}

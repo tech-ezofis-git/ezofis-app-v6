@@ -224,7 +224,7 @@ const Overview = ({ agentData }: Props) => {
     <Section title='Overview'>
       <div
         className={cn(
-          'grid grid-cols-1 gap-3',
+          'grid grid-cols-1 gap-4',
           width >= SCREEN_XL
             ? '@xl:grid-cols-2'
             : 'md:grid-cols-2',

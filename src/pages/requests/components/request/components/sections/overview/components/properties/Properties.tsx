@@ -19,7 +19,7 @@ const Properties = ({ data }: Props) => {
 
   return (
     <div>
-      <div className='mb-4 text-sm font-medium text-gray-13'>Properties</div>
+      <Title className='mb-4' level={3} title='Properties' />
 
       <div className='grid grid-cols-2 overflow-hidden rounded border border-gray-3'>
         {/* These would ideally come from the parent process object, using placeholders if missing in agentData */}

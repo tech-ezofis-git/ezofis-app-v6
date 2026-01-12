@@ -20,6 +20,7 @@ const StepFour = () => {
       <Title
         className='items-start text-left'
         description='Check your connections and confirm setup to activate AI-powered invoice automation.'
+        level={1}
         title='Review & Complete Setup'
       />
 
@@ -31,7 +32,7 @@ const StepFour = () => {
       <div className='flex flex-wrap items-center justify-between gap-2 border-t border-gray-3 pt-4'>
         <Button
           color='gray'
-          icon='tabler:arrow-left'
+          icon='lucide:arrow-left'
           label='Back'
           variant='outline'
           onClick={() => setStep(2)}

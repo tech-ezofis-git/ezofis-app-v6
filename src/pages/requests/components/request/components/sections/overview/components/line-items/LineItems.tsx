@@ -6,6 +6,7 @@ import Td from '@/components/base/table/Td'
 import Th from '@/components/base/table/Th'
 import Thead from '@/components/base/table/Thead'
 import Tr from '@/components/base/table/Tr'
+import Title from '@/components/base/Title'
 import cn from '@/utils/cn'
 import Title from '@/components/base/Title'
 interface Props {

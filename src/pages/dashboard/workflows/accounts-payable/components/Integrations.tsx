@@ -64,7 +64,7 @@ const Integrations = () => {
     <Section title='Integrations'>
       <div
         className={cn(
-          'grid grid-cols-1 gap-3',
+          'grid grid-cols-1 gap-4',
           width >= SCREEN_XL
             ? '@xl:grid-cols-2 @5xl:grid-cols-3'
             : 'md:grid-cols-2 xl:grid-cols-3',

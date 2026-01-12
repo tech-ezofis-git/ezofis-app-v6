@@ -18,7 +18,7 @@ const ComboboxSearch = ({
   const handleChange = (e: ChangeEvent<HTMLInputElement>) =>
     onSearch(e.currentTarget.value)
 
-  const _leftSection = <Icon className='text-gray-8' name='tabler:search' />
+  const _leftSection = <Icon className='text-gray-8' name='lucide:search' />
 
   return (
     <Base.Search

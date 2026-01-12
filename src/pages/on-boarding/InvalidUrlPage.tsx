@@ -11,11 +11,11 @@ const InvalidUrlPage = () => {
 
       <div
         className='flex items-center justify-center py-10 xl:py-24'
-        style={{ minHeight: 'calc(100svh - 120px)' }}
+        style={{ minHeight: 'calc(100dvh - 120px)' }}
       >
         <EmptyState
           description='The link you followed may be broken or the page may have been removed. Please double-check the URL for errors and try again.'
-          icon='tabler:plug-connected-x'
+          icon='lucide:plug-connected-x'
           primaryActionLabel='Go Home'
           title='The link is not valid'
         />

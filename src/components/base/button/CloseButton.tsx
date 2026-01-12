@@ -11,7 +11,7 @@ const CloseButton = ({ className, onClick }: Props) => {
       ariaLabel='Close'
       className={className}
       color='gray'
-      icon='tabler:x'
+      icon='lucide:x'
       variant='ghost'
       onClick={onClick}
     />

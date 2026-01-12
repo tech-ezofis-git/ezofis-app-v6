@@ -11,7 +11,7 @@ const ClearButton = ({ className, onClick }: Props) => {
       ariaLabel='Clear'
       className={className}
       color='gray'
-      icon='tabler:x'
+      icon='lucide:x'
       size='sm'
       variant='ghost'
       onClick={onClick}

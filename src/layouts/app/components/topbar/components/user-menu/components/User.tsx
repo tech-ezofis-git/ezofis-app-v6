@@ -15,7 +15,7 @@ const User = () => {
         image={imageUrl}
         imageLabel='user picture'
         initials='CV'
-        size={32}
+        size={36}
       />
       <div className='min-w-0 flex-1'>
         <div className='font-medium text-gray-13'>{name}</div>

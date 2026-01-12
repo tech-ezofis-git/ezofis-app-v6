@@ -1,6 +1,6 @@
 import { Progress } from '@mantine/core'
 import authUserStore from '@/stores/authUserStore'
-import onBoardingStore from '../store/onBoardingStore'
+import onBoardingStore from '../stores/onBoardingStore'
 
 const StepIndicator = () => {
   const authUser = authUserStore((state) => state.user)

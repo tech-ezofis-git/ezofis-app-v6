@@ -152,6 +152,7 @@ const ResetPasswordPage = () => {
         onClick={handleSignUp}
       />
     </div>
+    </div >
   )
 }
 

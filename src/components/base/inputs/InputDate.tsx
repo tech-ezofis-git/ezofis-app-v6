@@ -1,24 +1,18 @@
 import { DateInput as Base } from '@mantine/dates'
 import { forwardRef } from 'react'
 import Icon from '@/components/base/icon/Icon'
-import cn from '@/utils/cn'
 import type { InputProps } from './shared/types'
 import ClearButton from './ClearButton'
 import InputLabel from './InputLabel'
-import {
-  classNames,
-  inputWrapperOrder,
-  sizeClassName,
-} from './shared/constants'
+import { classNames, inputWrapperOrder } from './shared/constants'
 
-interface Props
-  extends Omit<
-    InputProps,
-    | 'leftSection'
-    | 'leftSectionPointerEvents'
-    | 'rightSection'
-    | 'rightSectionPointerEvents'
-  > {
+interface Props extends Omit<
+  InputProps,
+  | 'leftSection'
+  | 'leftSectionPointerEvents'
+  | 'rightSection'
+  | 'rightSectionPointerEvents'
+> {
   value: string | null
   maxDate?: string
   minDate?: string
@@ -35,7 +29,6 @@ const InputDate = forwardRef<HTMLInputElement, Props>(
       optional,
       placeholder = 'dd-mmm-yyyy',
       required,
-      size = 'md',
       tooltip,
       tooltipWidth,
       value,
@@ -59,11 +52,11 @@ const InputDate = forwardRef<HTMLInputElement, Props>(
     const _rightSection = _clearable ? (
       <ClearButton onClick={() => onChange(null)} />
     ) : (
-      <Icon className='text-gray-9' name='tabler:calendar' />
+      <Icon className='text-gray-9' name='lucide:calendar' />
     )
 
-    const _previousIcon = <Icon name='tabler:chevron-left' />
-    const _nextIcon = <Icon name='tabler:chevron-right' />
+    const _previousIcon = <Icon name='lucide:chevron-left' />
+    const _nextIcon = <Icon name='lucide:chevron-right' />
 
     return (
       <Base
@@ -90,7 +83,7 @@ const InputDate = forwardRef<HTMLInputElement, Props>(
           day: 'text-13 text-gray-11 transition-colors hover:bg-gray-4 hover:text-gray-12 data-[outside]:text-gray-8 data-[outside]:opacity-100 data-[outside]:hover:text-gray-12 data-[selected]:!bg-primary-9 data-[selected]:!font-medium data-[selected]:!text-white data-[today]:bg-primary-4 data-[today]:font-medium data-[today]:text-primary-11',
           description: classNames.description,
           error: classNames.error,
-          input: cn(classNames.input, sizeClassName[size]),
+          input: classNames.input,
           label: classNames.label,
           monthsListControl:
             'text-gray-11 transition-colors hover:bg-gray-4 hover:text-gray-12 data-[disabled]:opacity-50 data-[selected]:!bg-primary-9 data-[selected]:!font-medium data-[selected]:!text-white',

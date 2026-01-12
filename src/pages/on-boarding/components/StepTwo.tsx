@@ -23,7 +23,7 @@ const StepTwo = () => {
     <>
       <StepHeader
         description='Different roles have different needs. Knowing your position helps us show you the most relevant tools and insights first.'
-        icon='tabler:user-question'
+        icon='lucide:user-star'
         title="What's Your Role?"
       />
 

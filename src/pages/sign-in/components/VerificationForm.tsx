@@ -3,7 +3,7 @@ import { useState } from 'react'
 import Button from '@/components/base/button/Button'
 import IconIllustrated from '@/components/base/icon/IconIllustrated'
 import InputPin from '@/components/base/inputs/InputPin'
-import HeroText from '@/components/common/HeroText'
+import Title from '@/components/base/Title'
 import useResendTimer from '@/layouts/auth/hooks/useResendTimer'
 import authUserStore from '@/stores/authUserStore'
 
@@ -42,8 +42,13 @@ const VerificationForm = () => {
 
   return (
     <>
-      <IconIllustrated icon='tabler:shield' />
-      <HeroText description={description()} title='Two-Step Verification' />
+      <IconIllustrated icon='lucide:shield' />
+      <Title
+        className='text-center'
+        description={description()}
+        level={1}
+        title='Two-Step Verification'
+      />
 
       <InputPin length={6} placeholder='0' value={code} onChange={setCode} />
 
@@ -51,7 +56,6 @@ const VerificationForm = () => {
         <Button
           className='w-full justify-center'
           label='Verify'
-          size='lg'
           onClick={verifyCode}
         />
 
@@ -62,7 +66,6 @@ const VerificationForm = () => {
             disabled={elapsed !== 0}
             label={resendLabel}
             loading={loading}
-            size='lg'
             variant='ghost'
             onClick={resendLink}
           />

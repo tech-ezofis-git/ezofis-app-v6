@@ -3,7 +3,7 @@ import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
 import IconIllustrated from '@/components/base/icon/IconIllustrated'
 import InputText from '@/components/base/inputs/InputText'
-import HeroText from '@/components/common/HeroText'
+import Title from '@/components/base/Title'
 import useResendTimer from '@/layouts/auth/hooks/useResendTimer'
 
 interface Props {
@@ -24,15 +24,16 @@ const SendEmailForm = ({ email }: Props) => {
 
   return (
     <>
-      <IconIllustrated icon='tabler:mail-check' />
-      <HeroText
+      <IconIllustrated icon='lucide:mail-check' />
+      <Title
+        className='text-center'
         description="We've sent a reset link to your email. Follow the instructions to set a new password."
+        level={1}
         title='Check Your Email'
       />
 
       <InputText
-        leftSection={<Icon className='text-gray-8' name='tabler:mail' />}
-        size='lg'
+        leftSection={<Icon className='text-gray-8' name='lucide:mail' />}
         value={email || 'charles@ezofis.com'}
         disabled
         onChange={() => {}}
@@ -43,7 +44,6 @@ const SendEmailForm = ({ email }: Props) => {
         disabled={elapsed !== 0}
         label={resendLabel}
         loading={loading}
-        size='lg'
         onClick={resendLink}
       />
     </>

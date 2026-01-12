@@ -25,7 +25,7 @@ const PaginationControls = ({ page, totalPages, onPageChange }: Props) => {
         <IconButton
           color='gray'
           disabled={page === 1}
-          icon='tabler:chevron-left'
+          icon='lucide:chevron-left'
           variant='ghost'
           onClick={previous}
         />
@@ -33,7 +33,7 @@ const PaginationControls = ({ page, totalPages, onPageChange }: Props) => {
           _page === 'dots' ? (
             <IconButton
               color='gray'
-              icon='tabler:dots'
+              icon='lucide:more-horizontal'
               key={index}
               variant='ghost'
               disabled
@@ -46,8 +46,8 @@ const PaginationControls = ({ page, totalPages, onPageChange }: Props) => {
               label={_page.toString()}
               variant={_page === page ? 'subtle' : 'ghost'}
               className={cn(
-                'min-w-8 justify-center p-2 font-medium',
-                _page === page && 'text-gray-12',
+                'min-w-9 justify-center p-2 font-medium',
+                _page === page && 'text-gray-13',
               )}
               onClick={() => setPage(_page)}
             />
@@ -56,7 +56,7 @@ const PaginationControls = ({ page, totalPages, onPageChange }: Props) => {
         <IconButton
           color='gray'
           disabled={page === totalPages}
-          icon='tabler:chevron-right'
+          icon='lucide:chevron-right'
           variant='ghost'
           onClick={next}
         />

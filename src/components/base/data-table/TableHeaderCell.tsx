@@ -89,7 +89,7 @@ const TableHeaderCell = <TData,>({ header, table }: Props<TData>) => {
         {/* sort button */}
         {isAccessorColumn && (
           <Button
-            className='flex-1 text-12 font-medium'
+            className='flex-1 px-3.5'
             color='gray'
             variant='ghost'
             onClick={column.getToggleSortingHandler()}
@@ -102,8 +102,8 @@ const TableHeaderCell = <TData,>({ header, table }: Props<TData>) => {
                     className='text-primary'
                     name={
                       isSorted === 'desc'
-                        ? 'tabler:arrow-down'
-                        : 'tabler:arrow-up'
+                        ? 'lucide:arrow-down'
+                        : 'lucide:arrow-up'
                     }
                   />
                 )}
@@ -122,7 +122,7 @@ const TableHeaderCell = <TData,>({ header, table }: Props<TData>) => {
               <IconButton
                 className='group'
                 color='gray'
-                icon='tabler:selector'
+                icon='lucide:chevrons-up-down'
                 iconClass='size-4 text-gray-9 group-hover:text-gray-10'
                 variant='ghost'
               />
@@ -132,18 +132,18 @@ const TableHeaderCell = <TData,>({ header, table }: Props<TData>) => {
             {column.id === 'group' && (
               <>
                 <MenuItem
-                  icon='tabler:chevron-down'
+                  icon='lucide:chevron-down'
                   label='Expand all'
                   onClick={() => table.toggleAllRowsExpanded(true)}
                 />
                 <MenuItem
-                  icon='tabler:chevron-right'
+                  icon='lucide:chevron-right'
                   label='Collapse all'
                   onClick={() => table.toggleAllRowsExpanded(false)}
                 />
                 <MenuDivider />
                 <MenuItem
-                  icon='tabler:copy-off'
+                  icon='lucide:copy-x'
                   label='Ungroup all'
                   onClick={() => table.resetGrouping()}
                 />
@@ -154,24 +154,24 @@ const TableHeaderCell = <TData,>({ header, table }: Props<TData>) => {
               <>
                 <MenuSub
                   disabled={!column.getCanSort()}
-                  icon='tabler:arrows-sort'
+                  icon='lucide:arrow-down-up'
                   label='Sort'
                 >
                   <MenuItem
                     disabled={isSorted === 'asc'}
-                    icon='tabler:arrow-up'
+                    icon='lucide:arrow-up'
                     label='Ascending'
                     onClick={() => column.toggleSorting(false)}
                   />
                   <MenuItem
                     disabled={isSorted === 'desc'}
-                    icon='tabler:arrow-down'
+                    icon='lucide:arrow-down'
                     label='Descending'
                     onClick={() => column.toggleSorting(true)}
                   />
                   <MenuItem
                     disabled={!isSorted}
-                    icon='tabler:x'
+                    icon='lucide:x'
                     label='Clear sort'
                     onClick={column.clearSorting}
                   />
@@ -179,35 +179,33 @@ const TableHeaderCell = <TData,>({ header, table }: Props<TData>) => {
 
                 <MenuItem
                   disabled={!column.getCanGroup()}
+                  icon={column.getIsGrouped() ? 'lucide:copy-x' : 'lucide:copy'}
                   label={column.getIsGrouped() ? 'Ungroup' : 'Group'}
-                  icon={
-                    column.getIsGrouped() ? 'tabler:copy-off' : 'tabler:copy'
-                  }
                   onClick={column.toggleGrouping}
                 />
 
                 <MenuSub
                   disabled={!column.getCanPin()}
-                  icon='tabler:pin'
+                  icon='lucide:pin'
                   label='Pin'
                 >
                   <MenuItem
                     disabled={!isPinned}
-                    icon='tabler:pinned-off'
+                    icon='lucide:pin-off'
                     label='Unpin'
                     onClick={() => pinColumn(false)}
                   />
                   <MenuItem
                     disabled={isPinned === 'left'}
-                    icon='tabler:pin'
-                    iconClass='rotate-45'
+                    icon='lucide:pin'
+                    iconClass='rotate-90'
                     label='Left'
                     onClick={() => pinColumn('left')}
                   />
                   <MenuItem
                     disabled={isPinned === 'right'}
-                    icon='tabler:pin'
-                    iconClass='rotate-225'
+                    icon='lucide:pin'
+                    iconClass='-rotate-90'
                     label='Right'
                     onClick={() => pinColumn('right')}
                   />
@@ -215,18 +213,18 @@ const TableHeaderCell = <TData,>({ header, table }: Props<TData>) => {
 
                 <MenuSub
                   disabled={!!isPinned}
-                  icon='tabler:arrow-bar-both'
+                  icon='lucide:move-horizontal'
                   label='Move'
                 >
                   <MenuItem
                     disabled={column.getIsFirstColumn('center')}
-                    icon='tabler:arrow-bar-left'
+                    icon='lucide:move-left'
                     label='Left'
                     onClick={() => moveColumn('left')}
                   />
                   <MenuItem
                     disabled={column.getIsLastColumn('center')}
-                    icon='tabler:arrow-bar-right'
+                    icon='lucide:move-right'
                     label='Right'
                     onClick={() => moveColumn('right')}
                   />
@@ -235,8 +233,8 @@ const TableHeaderCell = <TData,>({ header, table }: Props<TData>) => {
 
                 <MenuItem
                   disabled={!!isPinned || !column.getCanHide()}
-                  icon='tabler:eye-off'
-                  iconClass='text-red'
+                  icon='lucide:eye-off'
+                  iconClass='text-red-11'
                   label='Hide'
                   onClick={() =>
                     column.toggleVisibility(!column.getIsVisible())

@@ -20,7 +20,12 @@ export const Route = createFileRoute('/stories/data-table')({
 })
 
 const columns: Column[] = [
-  { id: 'name', label: 'Name', size: 200 },
+  {
+    className: 'text-gray-12 font-medium',
+    id: 'name',
+    label: 'Name',
+    size: 200,
+  },
   { id: 'email', label: 'Email', size: 240 },
   {
     enableGrouping: true,
@@ -64,17 +69,22 @@ const columns: Column[] = [
           position='bottom-end'
           width={160}
           target={
-            <IconButton color='gray' icon='tabler:dots' variant='ghost' />
+            <IconButton
+              color='gray'
+              icon='lucide:more-vertical'
+              size='md'
+              variant='ghost'
+            />
           }
         >
           <MenuItem
-            icon='tabler:edit'
+            icon='lucide:edit'
             label='Edit'
             onClick={() => alert(row.itemId)}
           />
           <MenuItem
-            icon='tabler:trash'
-            iconClass='text-red'
+            icon='lucide:trash-2'
+            iconClass='text-red-11'
             label='Delete'
             onClick={() => alert(row.itemId)}
           />

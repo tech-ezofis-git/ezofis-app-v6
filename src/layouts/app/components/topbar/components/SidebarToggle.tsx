@@ -1,17 +1,12 @@
 import IconButton from '@/components/base/button/IconButton'
 import Tooltip from '@/components/base/Tooltip'
-import { TOOLTIP_DELAY } from '@/constants'
-import sidebarStore from '@/layouts/app/store/sidebarStore'
+import useSidebarStore from '@/layouts/app/stores/useSidebarStore'
 
 const SidebarToggle = () => {
-  const openSidebar = sidebarStore((state) => state.openSidebar)
+  const openSidebar = useSidebarStore((state) => state.openSidebar)
 
   return (
-    <Tooltip
-      content='Toggle sidebar'
-      openDelay={TOOLTIP_DELAY}
-      position='bottom-start'
-    >
+    <Tooltip content='Toggle sidebar' openDelay={500} position='bottom-start'>
       <IconButton
         ariaLabel='toggle sidebar'
         color='gray'

@@ -1,8 +1,8 @@
 import Button from '@/components/base/button/Button'
 import Menu from '@/components/base/menu/Menu'
 import MenuItem from '@/components/base/menu/MenuItem'
+import Title from '@/components/base/Title'
 import useTheme from '@/hooks/useTheme'
-import SectionTitle from '../../SectionTitle'
 
 const ChangeTheme = () => {
   const {
@@ -14,8 +14,9 @@ const ChangeTheme = () => {
 
   return (
     <div className='grid grid-cols-1 gap-6 lg:grid-cols-2'>
-      <SectionTitle
+      <Title
         description='Select or customize your interface color scheme'
+        level={4}
         title='Change Theme'
       />
 
@@ -28,18 +29,16 @@ const ChangeTheme = () => {
               color='gray'
               icon={selectedColorScheme.icon}
               label={selectedColorScheme.label}
-              suffixIcon='tabler:chevron-down'
+              suffixIcon='lucide:chevron-down'
               variant='outline'
             />
           }
         >
           {ColorSchemeOptions.map((option) => (
             <MenuItem
+              icon={option.icon}
               key={option.value}
               label={option.label}
-              icon={
-                option.value === colorScheme ? option.activeIcon : option.icon
-              }
               iconClass={
                 option.value === colorScheme ? 'text-primary-11' : 'text-gray-9'
               }

@@ -16,10 +16,10 @@ function RouteComponent() {
         <StorySubTitle>Default</StorySubTitle>
         <Alert text='Lorem ipsum dolar sit amit.' />
 
-        <StorySubTitle>Default</StorySubTitle>
+        <StorySubTitle>Green</StorySubTitle>
         <Alert text='Lorem ipsum dolar sit amit.' variant='green' />
 
-        <StorySubTitle>Default</StorySubTitle>
+        <StorySubTitle>Red</StorySubTitle>
         <Alert text='Lorem ipsum dolar sit amit.' variant='red' />
       </div>
     </div>

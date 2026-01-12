@@ -8,7 +8,7 @@ interface Props {
 
 const PageHeader = ({ isTokenValid }: Props) => {
   const navigate = useNavigate()
-  const signOut = () => navigate({ to: '/' })
+  const signOut = () => navigate({ to: '/sign-in' })
 
   return (
     <div className='flex items-center justify-between gap-4'>

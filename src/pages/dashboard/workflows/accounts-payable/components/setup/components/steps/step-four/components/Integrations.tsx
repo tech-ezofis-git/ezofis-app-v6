@@ -106,6 +106,7 @@ const Integrations = () => {
     <div>
       <Title
         description='Review your connections and confirm your setup before activation.'
+        level={3}
         title='Configuration Summary'
       />
       <div className='mt-6'>

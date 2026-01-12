@@ -1,4 +1,5 @@
 import { useMatches } from '@tanstack/react-router'
+import Title from '@/components/base/Title'
 
 const PageTitle = () => {
   const matches = useMatches()
@@ -7,9 +8,7 @@ const PageTitle = () => {
 
   return (
     <div className='flex items-center gap-4'>
-      <h1 className='m-0 font-poppins text-16 font-semibold text-gray-13'>
-        {pageTitle}
-      </h1>
+      <Title level={3} title={pageTitle} />
     </div>
   )
 }

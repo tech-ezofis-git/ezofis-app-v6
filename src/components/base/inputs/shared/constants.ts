@@ -1,10 +1,10 @@
-import type { InputSize, InputWrapperOrder } from './types'
+import type { InputWrapperOrder } from './types'
 
 export const classNames = {
   description: 'mt-2 text-13 text-gray-10',
   error: 'mt-2 text-13 text-red-11',
   input:
-    'border-gray-6 bg-transparent text-13 font-medium text-gray-12 placeholder:font-normal placeholder:text-gray-8 focus-within:border-primary-8 focus-within:ring-2 focus-within:ring-primary-6 disabled:bg-gray-3 data-[disabled]:bg-gray-3 data-[error]:border-red-8 data-[error]:ring-red-5',
+    'border-gray-6 bg-transparent text-13 font-medium text-gray-12 placeholder:font-normal placeholder:text-gray-8 focus-within:border-primary-8 focus-within:ring-2 focus-within:ring-primary-6 disabled:bg-gray-3 data-[disabled]:bg-gray-3 data-[error]:border-red-8 data-[error]:ring-red-5 h-9 min-h-9',
   label: 'mb-2 text-13 font-medium text-gray-11',
   required: 'text-red-11',
   wrapper: 'm-0',
@@ -31,9 +31,3 @@ export const OptionsPerLineClass = {
   11: 'grid-cols-11',
   12: 'grid-cols-12',
 } as const
-
-export const sizeClassName: Record<InputSize, string> = {
-  sm: 'h-8 min-h-8',
-  md: 'h-8.5 min-h-8.5',
-  lg: 'h-9 min-h-9',
-}

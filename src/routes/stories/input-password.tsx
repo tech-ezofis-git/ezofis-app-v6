@@ -51,7 +51,7 @@ function RouteComponent() {
         <StorySubTitle>Left Section</StorySubTitle>
         <InputPassword
           className='max-w-80'
-          leftSection={<Icon className='text-gray-9' name='tabler:lock' />}
+          leftSection={<Icon className='text-gray-9' name='lucide:lock' />}
           value={value}
           onChange={setValue}
         />

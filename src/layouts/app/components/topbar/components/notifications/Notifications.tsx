@@ -25,7 +25,7 @@ const Notifications = () => {
       <div className='flex h-96 items-center justify-center px-10'>
         <EmptyState
           description="We'll let you know when we've got something new for you."
-          icon='tabler:bell'
+          icon='lucide:bell'
           title='No Notifications Yet'
         />
       </div>

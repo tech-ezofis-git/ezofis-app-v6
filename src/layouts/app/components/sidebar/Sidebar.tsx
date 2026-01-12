@@ -10,20 +10,17 @@ const Sidebar = () => {
     {
       items: [
         {
-          activeIcon: 'tabler:layout-dashboard-filled',
-          icon: 'tabler:layout-dashboard',
+          icon: 'lucide:layout-dashboard',
           label: t`Dashboard`,
           route: '/',
         },
         {
-          activeIcon: 'material-symbols:inbox-rounded',
-          icon: 'material-symbols:inbox-outline-rounded',
+          icon: 'lucide:inbox',
           label: t`Requests`,
           route: '/requests',
         },
         // {
-        //   activeIcon: 'tabler:chart-pie-2-filled',
-        //   icon: 'tabler:chart-pie-2',
+        //   icon: 'lucide:chart-pie',
         //   label: 'Reports',
         //   route: '/reports',
         // },
@@ -33,32 +30,27 @@ const Sidebar = () => {
     {
       items: [
         // {
-        //   activeIcon: 'tabler:replace-filled',
-        //   icon: 'tabler:replace',
+        //   icon: 'lucide:workflow',
         //   label: 'Workflows',
         //   route: '/workflows',
         // },
         {
-          activeIcon: 'tabler:clipboard-text-filled',
-          icon: 'tabler:clipboard-text',
+          icon: 'lucide:clipboard-list',
           label: 'Forms',
           route: '/forms',
         },
         // {
-        //   activeIcon: 'tabler:folder-filled',
-        //   icon: 'tabler:folder',
+        //   icon: 'lucide:folder',
         //   label: 'Folders',
         //   route: '/folders',
         // },
         // {
-        //   activeIcon: 'tabler:triangle-square-circle-filled',
-        //   icon: 'tabler:triangle-square-circle',
+        //   icon: 'lucide:blocks',
         //   label: 'Tasks',
         //   route: '/tasks',
         // },
         // {
-        //   activeIcon: 'tabler:template-filled',
-        //   icon: 'tabler:template',
+        //   icon: 'lucide:panels-top-left',
         //   label: 'Portals',
         //   route: '/portals',
         // },
@@ -68,20 +60,17 @@ const Sidebar = () => {
     // {
     //   items: [
     //     {
-    //       activeIcon: 'tabler:settings-filled',
-    //       icon: 'tabler:settings',
+    //       icon: 'lucide:settings',
     //       label: 'Settings',
     //       route: '/settings',
     //     },
     //     {
-    //       activeIcon: 'tabler:lifebuoy-filled',
-    //       icon: 'tabler:lifebuoy',
+    //       icon: 'lucide:life-buoy',
     //       label: 'Help Center',
     //       route: '/help-center',
     //     },
     //     {
-    //       activeIcon: 'tabler:trash-filled',
-    //       icon: 'tabler:trash',
+    //       icon: 'lucide:trash-2',
     //       label: 'Trash',
     //       route: '/trash',
     //     },

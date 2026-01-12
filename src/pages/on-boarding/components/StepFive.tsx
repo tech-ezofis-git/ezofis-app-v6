@@ -33,7 +33,7 @@ const StepFive = () => {
     <>
       <StepHeader
         description="We'll adjust our recommendations, tutorials, and interface complexity based on your comfort level. Everyone starts somewhere!"
-        icon='tabler:settings-automation'
+        icon='lucide:cog'
         title="What's Your Automation Experience?"
       />
 

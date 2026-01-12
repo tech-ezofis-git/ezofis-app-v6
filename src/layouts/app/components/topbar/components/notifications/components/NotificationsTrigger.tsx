@@ -1,7 +1,6 @@
 import IconButton from '@/components/base/button/IconButton'
 import Indicator from '@/components/base/Indicator'
 import Tooltip from '@/components/base/Tooltip'
-import { TOOLTIP_DELAY } from '@/constants'
 
 interface Props {
   isNotificationsOpened?: boolean
@@ -12,14 +11,14 @@ const NotificationsTrigger = ({ isNotificationsOpened = false }: Props) => {
     <Tooltip
       content='Notifications'
       disabled={isNotificationsOpened}
-      openDelay={TOOLTIP_DELAY}
+      openDelay={500}
       position='bottom'
     >
       <Indicator offset={9} animate>
         <IconButton
           ariaLabel='notifications'
           color='gray'
-          icon='tabler:bell'
+          icon='lucide:bell'
           variant='ghost'
         />
       </Indicator>

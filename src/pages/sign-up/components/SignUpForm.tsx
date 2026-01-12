@@ -176,6 +176,7 @@ const SignUpForm = ({ email, setEmail, onChangeView }: Props) => {
       <IconIllustrated icon='tabler:user-plus' />
       <Title
         description='Sign up to start managing your workspace.'
+        level={1}
         title='Create Your Account'
       />
 
@@ -189,9 +190,8 @@ const SignUpForm = ({ email, setEmail, onChangeView }: Props) => {
       <InputText
         className='-mt-2'
         label='Email'
-        leftSection={<Icon className='text-gray-9' name='tabler:mail' />}
+        leftSection={<Icon className='text-gray-9' name='lucide:mail' />}
         placeholder='hello@ezofis.com'
-        size='lg'
         value={email}
         onChange={(v) => {
           setEmail(v)

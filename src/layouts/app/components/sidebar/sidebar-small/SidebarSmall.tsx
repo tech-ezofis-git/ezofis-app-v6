@@ -10,14 +10,14 @@ interface Props {
 const SidebarSmall = ({ menus }: Props) => {
   return (
     <aside className='fixed top-0 left-0 z-5 hidden h-svh border-r border-gray-3 bg-surface-muted xl:block'>
-      <div className='w-13'>
-        <div className='mb-2 flex size-13 items-center justify-center'>
-          <Logo markClassName='size-7.5' hideText />
+      <div className='w-14'>
+        <div className='mb-2 flex size-14 items-center justify-center'>
+          <Logo markClassName='size-8' hideText />
         </div>
 
-        <ScrollArea height='calc(100svh - 56px)'>
+        <ScrollArea height='calc(100dvh - 56px)'>
           <div className='flex h-full flex-col items-center'>
-            <nav>
+            <nav className='space-y-1.5'>
               {menus.map((group) => (
                 <div key={group.label}>
                   {/* {index !== 0 && (

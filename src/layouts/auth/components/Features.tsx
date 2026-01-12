@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useState } from 'react'
 import IconButton from '@/components/base/button/IconButton'
+import Title from '@/components/base/Title'
 import cn from '@/utils/cn'
 
 const features = [
@@ -56,12 +57,12 @@ const Features = () => {
             scale: 1,
           }}
         >
-          <h1 className='mb-2 font-poppins text-17 font-semibold text-gray-13'>
-            {features[activeIndex].title}
-          </h1>
-          <div className='text-13/6 font-[400] text-pretty text-gray-11'>
-            {features[activeIndex].description}
-          </div>
+          <Title
+            className='text-center'
+            description={features[activeIndex].description}
+            level={1}
+            title={features[activeIndex].title}
+          />
         </motion.div>
       </AnimatePresence>
 
@@ -70,7 +71,7 @@ const Features = () => {
           <IconButton
             ariaLabel='change'
             color={activeIndex === index ? 'primary' : 'gray'}
-            icon='tabler:point-filled'
+            icon='lucide:point-filled'
             key={index}
             size='xs'
             variant='ghost'

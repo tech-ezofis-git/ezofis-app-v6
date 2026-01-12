@@ -16,7 +16,7 @@ function RouteComponent() {
         <StorySubTitle>Default</StorySubTitle>
         <EmptyState
           description='Try changing the search query or filter options.'
-          icon='tabler:database-search'
+          icon='lucide:folder-search'
           primaryActionLabel='Reset Filters'
           secondaryActionLabel='Try Again'
           title='No results found'

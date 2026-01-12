@@ -26,9 +26,9 @@ function RouteComponent() {
 
         <StorySubTitle>With Icon</StorySubTitle>
         <Tabs value={value} onChange={setValue}>
-          <Tab icon='tabler:home' label='Home' value='tab1' />
-          <Tab icon='tabler:users' label='Users' value='tab2' />
-          <Tab icon='tabler:settings' label='Settings' value='tab3' />
+          <Tab icon='lucide:home' label='Home' value='tab1' />
+          <Tab icon='lucide:user' label='Users' value='tab2' />
+          <Tab icon='lucide:settings' label='Settings' value='tab3' />
         </Tabs>
 
         <StorySubTitle>Disabled</StorySubTitle>

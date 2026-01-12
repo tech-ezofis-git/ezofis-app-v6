@@ -82,7 +82,7 @@ const initialStorageSettings: StorageSettings = {
   system: 'Included storage',
 }
 
-const setupStore = create<Store>()((set) => ({
+const useSetupStore = create<Store>()((set) => ({
   emailSettings: initialEmailSettings,
   erpSettings: initialErpSettings,
   isSetupOpen: false,
@@ -131,4 +131,4 @@ const setupStore = create<Store>()((set) => ({
     }),
 }))
 
-export default setupStore
+export default useSetupStore

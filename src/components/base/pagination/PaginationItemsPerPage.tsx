@@ -31,7 +31,7 @@ const PaginationItemsPerPage = ({
           <Button
             color='gray'
             label={pageSize.toString()}
-            suffixIcon='tabler:chevron-down'
+            suffixIcon='lucide:chevron-down'
             suffixIconClass='text-gray-9'
             variant='outline'
           />

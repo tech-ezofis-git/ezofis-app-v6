@@ -13,7 +13,7 @@ const TableReload = ({ className, isReloading, onReload }: Props) => {
       <IconButton
         className={className}
         color='gray'
-        icon='tabler:reload'
+        icon='lucide:rotate-cw'
         loading={isReloading}
         variant='outline'
         onClick={onReload}

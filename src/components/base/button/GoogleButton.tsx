@@ -11,7 +11,6 @@ const GoogleButton = ({ onClick }: Props) => {
       color='gray'
       icon='logos:google-icon'
       label='Continue with Google'
-      size='lg'
       variant='outline'
       onClick={onClick}
     />

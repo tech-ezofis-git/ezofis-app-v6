@@ -15,7 +15,7 @@ import StepSix from './components/StepSix'
 import StepThree from './components/StepThree'
 import StepTwo from './components/StepTwo'
 import StepZero from './components/StepZero'
-import onBoardingStore from './store/onBoardingStore'
+import onBoardingStore from './stores/onBoardingStore'
 
 const OnBoardingPage = () => {
   const { token } = useParams({ strict: false })
@@ -42,7 +42,7 @@ const OnBoardingPage = () => {
 
       <div
         className='flex items-center justify-center py-10 xl:py-20'
-        style={{ minHeight: 'calc(100svh - 116px)' }}
+        style={{ minHeight: 'calc(100dvh - 120px)' }}
       >
         {isLoading && <IconSpinner />}
 
@@ -51,14 +51,14 @@ const OnBoardingPage = () => {
             {!isTokenValid && (
               <EmptyState
                 description='The link you followed may be broken or the page may have been removed. Please double-check the URL for errors and try again.'
-                icon='tabler:plug-connected-x'
+                icon='lucide:plug-connected-x'
                 primaryActionLabel='Go Home'
                 title='The link is not valid'
               />
             )}
 
             {isTokenValid && (
-              <div className='flex w-120 flex-col gap-6'>
+              <div className='w-120'>
                 <AnimatePresence initial={false} mode='wait'>
                   <AnimateEntrancePop
                     className='flex flex-col gap-6'

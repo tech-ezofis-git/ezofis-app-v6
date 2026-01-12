@@ -1,4 +1,5 @@
 import { useLingui } from '@lingui/react/macro'
+import { useLingui } from '@lingui/react/macro'
 import { useState } from 'react'
 import type { Option } from '@/types/option'
 import Divider from '@/components/base/Divider'
