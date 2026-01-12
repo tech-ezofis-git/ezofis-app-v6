@@ -4,12 +4,12 @@ import OverlayFooterWrapper from '@/components/base/overlay/OverlayFooterWrapper
 const Footer = ({ onSubmit, submitting }: any) => {
   return (
     <OverlayFooterWrapper className='justify-end gap-3 px-4 py-3'>
-      <Button
+      {/* <Button
         color='red'
         label='Reject'
         variant='outline'
         className='text-15 px-4 py-4'
-      />
+      /> */}
       <Button
         label='Approve'
         className='text-15 px-4 py-4'

@@ -14,7 +14,7 @@ const Section = ({ children, title }: Props) => {
   const isApSetUpCompleted = setupStore((state) => state.isApSetUpCompleted)
   return (
     <div
-      className={cn(`${isApSetUpCompleted ? "pt-6" : ""} mb-8 px-6 md:px-8 `, width >= SCREEN_XL && '@container')}
+      className={cn(`${isApSetUpCompleted ? "pt-6" : "pt-4"} mb-8 px-6 md:px-8 `, width >= SCREEN_XL && '@container')}
     >
       <h2 className='m-0 mb-4 font-poppins text-15 font-medium text-gray-13'>
         {title}
