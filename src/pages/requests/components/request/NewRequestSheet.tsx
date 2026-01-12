@@ -23,8 +23,8 @@ const NewRequestSheet = ({ onClose }: Props) => {
             <Header
                 onClose={onClose}
                 title={mode === "po" ? "PO Setup" : "New Request"}
-                // optional: show a subtle badge when in PO mode
-                badge={mode === "po" ? "Configuration" : undefined}
+            // optional: show a subtle badge when in PO mode
+            // badge={mode === "po" ? "Configuration" : undefined}
             />
 
             {mode === "request" ? (

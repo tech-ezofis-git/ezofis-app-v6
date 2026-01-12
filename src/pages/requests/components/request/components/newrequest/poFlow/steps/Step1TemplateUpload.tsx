@@ -152,7 +152,7 @@ export default function Step1TemplateUpload({
                 {/* Header Section */}
                 <div className="flex items-start justify-between mb-6">
                     <AnimateEntrancePop>
-                        <h3 className="text-lg font-semibold text-[var(--gray-13)]">Template & Upload</h3>
+                        <h3 className="text-lg font-semibold text-[var(--gray-13)]">Upload Purchase Order</h3>
                         <p className="text-12 text-[var(--gray-11)]">
                             Upload your PO file (CSV or XLSX) to begin the mapping process.
                         </p>
@@ -251,20 +251,22 @@ export default function Step1TemplateUpload({
                     </AnimateEntrancePop>
                 )}
 
-                <footer className="flex items-center justify-end pt-4 ">
+                <footer className="flex items-center justify-end pt-6">
                     <button
                         onClick={onNext}
                         disabled={uploadState !== "ready"}
                         className={`
-                        group flex items-center gap-4 px-2 py-2 rounded-xl text-13 font-bold transition-all duration-200 bg-[var(--primary-11)] text-white 
-                        ${uploadState !== "ready" ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:bg-[var(--primary-10)]"}                                                  
+                            group flex items-center gap-2 px-2.5 py-2.5 rounded-xl text-12 font-bold transition-all duration-200 
+                            bg-[var(--primary-11)] text-white shadow-sm
+                            ${uploadState !== "ready" ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:bg-[var(--primary-10)] hover:shadow-md active:scale-95"}                                          
                         `}
                     >
                         {uploadState === "parsing" ? "Processing..." : "Continue"}
-                        {/* <Icon
-                            name="tabler:arrow-right"
-                            className={`size-4 transition-transform ${uploadState === "ready" ? "group-hover:translate-x-1" : "opacity-50"}`}
-                        /> */}
+                        <Icon
+                            name="tabler:arrow-narrow-right"
+                            className={`size-5 transition-transform duration-300 ${uploadState === "ready" ? "group-hover:translate-x-1" : "opacity-50"
+                                }`}
+                        />
                     </button>
                 </footer>
             </AnimateSlideUp>

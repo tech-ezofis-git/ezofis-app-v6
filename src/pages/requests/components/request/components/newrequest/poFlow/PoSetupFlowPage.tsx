@@ -59,7 +59,7 @@ export default function PoSetupFlowPage({ onExit }: Props) {
                             </div>
                         </div>
 
-                        <button
+                        {/* <button
                             type="button"
                             onClick={(e) => {
                                 e.preventDefault();
@@ -68,7 +68,7 @@ export default function PoSetupFlowPage({ onExit }: Props) {
                             className="cursor-pointer rounded-xl border border-[var(--gray-4)] bg-[var(--gray-0)] px-4 py-2 text-13 font-semibold text-[var(--gray-12)] hover:bg-[var(--gray-1)]"
                         >
                             Back to Request
-                        </button>
+                        </button> */}
                     </div>
                 </div>
             </div>
@@ -98,10 +98,22 @@ export default function PoSetupFlowPage({ onExit }: Props) {
                                         onStepClick={(step) => {
                                             if (canGoToStep(step)) setActiveStep(step as 0 | 1 | 2);
                                         }}
+                                        classNames={{
+                                            separator: 'rounded-full bg-gray-3',
+                                            step: 'disabled:opacity-50',
+                                            stepBody: 'ml-4',
+                                            stepCompletedIcon: 'text-green-11 [&>svg]:!size-3.5',
+                                            stepDescription: 'm-0 text-13 font-medium text-gray-12',
+                                            stepIcon:
+                                                'border-0 bg-gray-3 text-13 font-semibold text-gray-11 data-[completed]:bg-green-4 data-[progress]:bg-green-9 data-[progress]:text-white',
+                                            stepLabel: 'mb-1 text-12 text-gray-10',
+                                            stepLoader: 'after:border-gray-11 after:border-t-transparent',
+                                            verticalSeparator: 'rounded-full border-gray-3 bg-gray-3',
+                                        }}
                                     >
-                                        <Stepper.Step label="Upload PO" description="Upload CSV/XLSX and extract headers" />
-                                        <Stepper.Step label="Column Mapping" description="Map required fields to uploaded headers" />
-                                        <Stepper.Step label="Review & Confirm" description="Validate and confirm import" />
+                                        <Stepper.Step label="Upload PO" description="Upload your CSV/XLSX" />
+                                        <Stepper.Step label="Column Mapping" description="Align your fields with our system" />
+                                        <Stepper.Step label="Review & Confirm" description="Finalize configuration" />
                                     </Stepper>
                                 </div>
 
@@ -162,8 +174,7 @@ export default function PoSetupFlowPage({ onExit }: Props) {
                                 <Step3PreviewConfirm
                                     systemColumns={systemColumns as any}
                                     mapping={mapping}
-                                    errors={[""]}
-                                    warnings={[""]}
+
                                     onBack={() => setActiveStep(1)}
                                     onConfirm={() => {
                                         console.log("[PO CONFIRM]", {
