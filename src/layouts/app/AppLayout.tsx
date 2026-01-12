@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import AskAI from '@/components/common/ask-ai/AskAI'
+// import AskAI from '@/components/common/ask-ai/AskAI'
 import Sidebar from './components/sidebar/Sidebar'
 import Topbar from './components/topbar/Topbar'
 import NewRequest from './components/NewRequest'
@@ -14,7 +14,7 @@ const AppLayout = ({ children }: Props) => {
 
   return (
     <>
-      <AskAI />
+      {/* <AskAI /> */}
       <Sidebar />
 
       <div className='flex h-svh xl:ml-[53px] flex-col'>

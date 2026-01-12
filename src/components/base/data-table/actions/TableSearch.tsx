@@ -52,11 +52,11 @@ const TableSearch = <TData,>({ table }: Props<TData>) => {
   return (
     <div
       aria-label='Table search'
-      className='focus-within:border-primary flex h-9 items-center rounded border border-gray-6 pr-1 pl-3'
+      className='focus-within:border-primary flex h-8 items-center rounded border border-gray-6 pr-1 pl-3'
       ref={ref}
       role='search'
     >
-      <Icon className='text-gray' name='lucide:search' />
+      <Icon className='text-gray' name='tabler:search' />
 
       <div className='h-full flex-1'>
         <input
@@ -65,7 +65,7 @@ const TableSearch = <TData,>({ table }: Props<TData>) => {
           type='text'
           className={cn(
             'text-gray h-full px-2 text-13 font-medium outline-0 transition-[width] placeholder:text-gray-11',
-            focused ? 'w-56' : 'w-18',
+            focused ? 'w-56' : 'w-16',
           )}
           onChange={(e) => handleValueChange(e.target.value)}
           onFocus={() => setFocused(true)}
@@ -76,7 +76,7 @@ const TableSearch = <TData,>({ table }: Props<TData>) => {
         offset={{ crossAxis: 4, mainAxis: 8 }}
         opened={opened}
         position='bottom-end'
-        width={200}
+        width={160}
         withinPortal={false}
         target={
           <IconButton
