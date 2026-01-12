@@ -1,8 +1,9 @@
 import { Tabs as Base } from '@mantine/core'
 import Icon from '@/components/base/icon/Icon'
+import type React from 'react'
 
 interface Props {
-  label: string
+  label: string | React.ReactNode
   value: string
   disabled?: boolean
   icon?: string

@@ -19,6 +19,8 @@ type ErpSettings = {
   wantsFileBasedImport?: boolean
   uploadedTemplate?: File | null
   templateUploaded?: boolean
+  importMethod?: 'upload' | 'import'
+  selectedFormName?: string | null
 }
 
 type StorageSettings = {
@@ -51,23 +53,25 @@ type Store = {
 
 const initialEmailSettings: EmailSettings = {
   email: '',
-  isConnected: false,
+  isConnected: true,
   isConnecting: false,
   password: '',
   port: '',
-  provider: '',
+  provider: 'DIRECT_UPLOAD',
   server: '',
 }
 
 const initialErpSettings: ErpSettings = {
   apiKey: '',
   apiUrl: '',
-  isConnected: false,
+  isConnected: true,
   isConnecting: false,
   system: '',
-  wantsFileBasedImport: false,
+  wantsFileBasedImport: true,
   uploadedTemplate: null,
   templateUploaded: false,
+  importMethod: 'upload',
+  selectedFormName: null,
 }
 
 const initialStorageSettings: StorageSettings = {

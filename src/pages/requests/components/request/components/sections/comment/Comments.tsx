@@ -1,20 +1,24 @@
 // @/pages/requests/components/request/components/sections/comments/Comments.tsx
-import  { useMemo, useState } from 'react'
-import IconButton from '@/components/base/button/IconButton'
+import { useMemo, useState, useEffect, useRef } from 'react'
+import dayjs from 'dayjs'
+import relativeTime from 'dayjs/plugin/relativeTime'
+
 import requestApi from '@/api/requests/requests'
 import { formatDatetime } from '@/utils/dayjs'
 import authUserStore from '@/stores/authUserStore'
 import { useComments } from '@/pages/requests/hooks/useComments'
+import Icon from '@/components/base/icon/Icon'
+import IconButton from '@/components/base/button/IconButton'
+
+dayjs.extend(relativeTime)
 
 type Props = {
     workflowId?: number
     processId?: number
-    transactionId?: number | string // recommended: pass selectedItem.transactionId
+    transactionId?: number | string
     enabled?: boolean
-
-    // optional: feed attachments so user can attach existing file to a comment
     attachments?: Array<{ id?: any; itemId?: any; fileId?: any; name?: string; fileName?: string }>
-    repositoryId?: string | number // needed for embedJson like v5
+    repositoryId?: string | number
 }
 
 function pickFileId(x: any) {
@@ -24,47 +28,79 @@ function pickFileName(x: any) {
     return x?.name ?? x?.fileName ?? '-'
 }
 
+function getDisplayTime(dateString: string) {
+    const date = dayjs(dateString)
+    const diffInHours = dayjs().diff(date, 'hour')
+    if (diffInHours < 24) return date.fromNow()
+    return formatDatetime(dateString, 'datetime')
+}
+
+function extractFileIds(comment: any): Array<string | number> {
+    if (Array.isArray(comment?.fileIds) && comment.fileIds.length) return comment.fileIds
+    const ej = comment?.embedJson
+    if (!ej) return []
+    try {
+        const parsed = typeof ej === 'string' ? JSON.parse(ej) : ej
+        const itemIds = parsed?.itemIds
+        return Array.isArray(itemIds) ? itemIds : []
+    } catch {
+        return []
+    }
+}
+
 export default function Comments({
     workflowId,
     processId,
     transactionId,
-    enabled,
+    enabled = true,
     attachments = [],
     repositoryId,
 }: Props) {
     const { session } = authUserStore.getState()
-    const tenantId = session?.tenantId
+    const currentUserEmail = session?.email ?? 'me@app.com'
 
-    const { data, isLoading, error, refetch } = useComments(workflowId, processId, enabled)
+    const { data, isLoading, refetch } = useComments(workflowId, processId, enabled)
+    const comments = (data || []) as any[]
 
-    const [text, setText] = useState('')
     const [posting, setPosting] = useState(false)
-
-    // mirrors v5 “showTo” concept :contentReference[oaicite:5]{index=5}
-    const [showTo, setShowTo] = useState<number>(2) // pick your default (2 = public/internal depending on tenant config)
     const [notifyInitiator, setNotifyInitiator] = useState(false)
+    const [attachFileId, setAttachFileId] = useState<string | number | ''>('')
+    const [draft, setDraft] = useState('')
 
-    // attach an existing uploaded file to comment (v5 embedJson.itemIds) :contentReference[oaicite:6]{index=6}
+    const listRef = useRef<HTMLDivElement>(null)
+    const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+    const scrollToBottom = () => {
+        if (listRef.current) listRef.current.scrollTop = listRef.current.scrollHeight
+    }
+
+    useEffect(() => {
+        if (textareaRef.current) {
+            textareaRef.current.style.height = 'auto'
+            textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`
+        }
+    }, [draft])
+
+    useEffect(() => {
+        if (!enabled) return
+        if (!isLoading) setTimeout(scrollToBottom, 80)
+    }, [isLoading, comments.length, enabled])
+
     const fileOptions = useMemo(() => {
-        return attachments.map((a) => ({
-            id: pickFileId(a),
-            label: pickFileName(a),
-        })).filter((x) => x.id)
+        return attachments
+            .map((a) => ({ id: pickFileId(a), label: pickFileName(a) }))
+            .filter((x) => x.id)
     }, [attachments])
 
-    const [attachFileId, setAttachFileId] = useState<string | number | ''>('')
-
     const onPost = async () => {
-        if (!workflowId || !processId || !transactionId) return
-        const trimmed = text.trim()
-        if (!trimmed) return
+        const cleanText = draft.trim()
+        if (!workflowId || !processId || !transactionId || !cleanText) return
 
         setPosting(true)
         try {
-            // v5: workflow.insertProcessComment(workflowId, processId, transactionId, { comments, showTo, hasNotifytoInitiated, embedJson }) :contentReference[oaicite:7]{index=7}
             const body: any = {
-                comments: trimmed,
-                showTo,
+                comments: cleanText,
+                showTo: 2,
                 hasNotifytoInitiated: notifyInitiator,
             }
 
@@ -77,128 +113,169 @@ export default function Comments({
 
             await (requestApi as any).insertProcessComment(workflowId, processId, transactionId, body)
 
-            setText('')
+            setDraft('')
             setAttachFileId('')
             setNotifyInitiator(false)
 
-            // close the loop with a refresh to keep UI canonical
             await refetch()
+            setTimeout(scrollToBottom, 60)
         } finally {
             setPosting(false)
         }
     }
 
-    return (
-        <div className="p-6">
-            <div className="flex items-center justify-between mb-3">
-                <div className="text-sm font-semibold text-gray-800">
-                    Comments ({data?.length ?? 0})
-                </div>
+    const canSend = !posting && !!workflowId && !!processId && !!transactionId && draft.trim().length > 0
 
-                <div className="flex items-center gap-2">
-                    <IconButton icon="tabler:refresh" variant="ghost" color="gray" onClick={() => refetch()} />
+    return (
+        <div
+            className="flex flex-col mt-4 relative font-sans w-full mx-auto rounded-3xl overflow-hidden border bg-white shadow-sm transition-all duration-300"
+            style={{
+                borderColor: 'var(--gray-4)',
+                // Ensures the whole widget never exceeds the laptop viewport height.
+                // Tune 180px based on your page header/tabs area.
+                maxHeight: 'calc(95vh - 260px)',
+                minHeight: '200px',
+            }}
+        >
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-3 bg-white sticky top-0 z-20 border-b border-gray-4">
+                <div className="flex items-center gap-2.5">
+                    <div className="flex size-8 items-center justify-center rounded-lg bg-primary-2 text-primary-9 ring-1 ring-primary-4">
+                        <Icon name="tabler:message-circle-2" className="size-4" />
+                    </div>
+                    <h2 className="text-sm font-bold text-gray-12">Comments</h2>
                 </div>
+                <IconButton
+                    icon="tabler:refresh"
+                    variant="ghost"
+                    color="gray"
+                    size="xs"
+                    onClick={() => refetch()}
+                    loading={isLoading}
+                />
             </div>
 
-            {/* Composer */}
-            <div className="rounded-lg border border-gray-200 bg-white p-3 mb-4">
-                <div className="text-xs text-gray-500 mb-2">
-                    Tenant: {tenantId ?? '-'} • Visibility + optional file attachment
-                </div>
+            {/* Chat Feed (scrolls inside available space) */}
+            <div
+                className="flex-1 overflow-y-auto px-5 py-4 space-y-3 bg-slate-50/30 scroll-smooth"
+                ref={listRef}
+                style={{
+                    // Critical for flex layouts: allows this area to shrink and scroll
+                    // instead of pushing the whole component beyond the viewport.
+                    minHeight: 0,
+                }}
+            >
+                {comments.map((c, idx) => {
+                    const isMe = c?.createdByEmail === currentUserEmail
+                    const name = c?.createdByName ?? c?.createdByEmail ?? 'User'
+                    const fileIds = extractFileIds(c)
 
-                <textarea
-                    className="w-full border border-gray-200 rounded-md p-2 text-sm"
-                    rows={3}
-                    placeholder="Write a comment…"
-                    value={text}
-                    onChange={(e) => setText(e.target.value)}
-                />
+                    return (
+                        <div key={`${c?.id ?? idx}`} className={`flex w-full ${isMe ? 'justify-end' : 'justify-start'}`}>
+                            <div className={`flex flex-col max-w-[85%] ${isMe ? 'items-end' : 'items-start'}`}>
+                                {/* 1. Name */}
+                                <span className="text-[10px] font-bold text-gray-11 mb-0.5 px-1">{isMe ? 'You' : name}</span>
 
-                <div className="flex flex-wrap items-center gap-3 mt-3">
-                    <label className="text-sm flex items-center gap-2">
-                        <span className="text-gray-700">Show To</span>
-                        <select
-                            className="border border-gray-200 rounded-md p-1 text-sm"
-                            value={showTo}
-                            onChange={(e) => setShowTo(Number(e.target.value))}
-                        >
-                            <option value={1}>Internal</option>
-                            <option value={2}>Public</option>
-                        </select>
-                    </label>
+                                {/* 2. Message Bubble */}
+                                <div
+                                    className={`relative px-3 py-2 rounded-2xl text-xs leading-relaxed shadow-sm ${isMe
+                                        ? 'bg-primary-9 text-white rounded-tr-none'
+                                        : 'bg-white text-gray-12 border border-gray-4 rounded-tl-none'
+                                        }`}
+                                >
+                                    <div className="whitespace-pre-wrap font-medium">{c?.comments}</div>
 
-                    <label className="text-sm flex items-center gap-2">
-                        <input
-                            type="checkbox"
-                            checked={notifyInitiator}
-                            onChange={(e) => setNotifyInitiator(e.target.checked)}
-                        />
-                        <span className="text-gray-700">Notify initiator</span>
-                    </label>
+                                    {!!fileIds.length && (
+                                        <div className={`mt-1.5 pt-1.5 flex flex-wrap gap-1.5 border-t ${isMe ? 'border-white/20' : 'border-gray-3'}`}>
+                                            {fileIds.map((fid: any) => {
+                                                const fileRef = attachments.find((a) => String(pickFileId(a)) === String(fid))
+                                                const fileName = fileRef ? pickFileName(fileRef) : `Doc-${fid}`
+                                                return (
+                                                    <div
+                                                        key={String(fid)}
+                                                        className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold ${isMe ? 'bg-white/10 text-white' : 'bg-gray-2 text-gray-11 border border-gray-4'
+                                                            }`}
+                                                    >
+                                                        <Icon name="tabler:file" className="w-3 h-3" />
+                                                        <span className="truncate max-w-[120px]">{fileName}</span>
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
 
+                                {/* 3. Date */}
+                                <span className="text-[9px] font-medium text-gray-9 mt-0.5 px-1">
+                                    {c?.createdAt ? getDisplayTime(c.createdAt) : '-'}
+                                </span>
+                            </div>
+                        </div>
+                    )
+                })}
+            </div>
+
+            {/* Input Area */}
+            <div className="p-4 bg-white border-t border-gray-4">
+                <div className="flex flex-col gap-2">
+                    {/* File Picker */}
                     {!!fileOptions.length && (
-                        <label className="text-sm flex items-center gap-2">
-                            <span className="text-gray-700">Attach file</span>
+                        <div className="relative w-full sm:w-56">
                             <select
-                                className="border border-gray-200 rounded-md p-1 text-sm max-w-[280px]"
+                                className="appearance-none w-full pl-7 pr-7 py-1 text-[10px] font-bold rounded-lg bg-gray-1 border border-gray-4 text-gray-12 outline-none cursor-pointer"
                                 value={String(attachFileId)}
                                 onChange={(e) => setAttachFileId(e.target.value)}
                             >
-                                <option value="">None</option>
+                                <option value="">Attach a file...</option>
                                 {fileOptions.map((f) => (
                                     <option key={String(f.id)} value={String(f.id)}>
                                         {f.label}
                                     </option>
                                 ))}
                             </select>
-                        </label>
+                            <Icon name="tabler:paperclip" className="absolute left-2 top-1.5 w-3 h-3 text-gray-10" />
+                        </div>
                     )}
 
-                    <div className="ml-auto">
+                    {/* Textarea and Send Aligned */}
+                    <div className="flex items-center gap-2">
+                        <div className="flex-1 rounded-xl bg-gray-1 border border-gray-4 overflow-hidden focus-within:border-primary-7 transition-colors">
+                            <textarea
+                                ref={textareaRef}
+                                rows={1}
+                                value={draft}
+                                onChange={(e) => setDraft(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault()
+                                        onPost()
+                                    }
+                                }}
+                                placeholder="Write a comment..."
+                                className="w-full px-3 py-2 text-xs font-medium bg-transparent focus:outline-none resize-none text-gray-12 placeholder:text-gray-9"
+                                style={{ lineHeight: '1.4' }}
+                            />
+                        </div>
+
                         <button
-                            className="px-3 py-1.5 rounded-md bg-gray-900 text-white text-sm disabled:opacity-50"
-                            disabled={posting || !workflowId || !processId || !transactionId || !text.trim()}
                             onClick={onPost}
+                            disabled={!canSend}
+                            className="size-9 flex-shrink-0 flex items-center justify-center rounded-xl transition-all shadow-sm active:scale-95"
+                            style={{
+                                background: canSend ? 'var(--primary-9)' : 'var(--gray-3)',
+                                color: canSend ? 'white' : 'var(--gray-9)',
+                                cursor: canSend ? 'pointer' : 'not-allowed',
+                            }}
                         >
-                            {posting ? 'Posting…' : 'Post'}
+                            {posting ? (
+                                <div className="size-4 rounded-full animate-spin border-2 border-white/30 border-t-white" />
+                            ) : (
+                                <Icon name="tabler:send" className="size-5" />
+                            )}
                         </button>
                     </div>
                 </div>
             </div>
-
-            {/* List */}
-            {isLoading && <div className="text-sm text-gray-500">Loading comments…</div>}
-            {!isLoading && error && <div className="text-sm text-red-600">Couldn’t load comments.</div>}
-            {!isLoading && !data?.length && <div className="text-sm text-gray-500">No comments yet.</div>}
-
-            {!!data?.length && (
-                <div className="divide-y rounded-lg border border-gray-200 bg-white">
-                    {data.map((c: any, idx: number) => (
-                        <div key={`${c.id ?? idx}`} className="p-3">
-                            <div className="flex items-center justify-between">
-                                <div className="text-sm font-medium text-gray-900">
-                                    {c.createdByName ?? c.createdByEmail ?? 'User'}
-                                </div>
-                                <div className="text-xs text-gray-500">
-                                    {c.createdAt ? formatDatetime(c.createdAt, 'datetime') : '-'}
-                                </div>
-                            </div>
-
-                            <div className="text-sm text-gray-700 mt-1 whitespace-pre-wrap">
-                                {c.comments ?? '-'}
-                            </div>
-
-                            <div className="text-xs text-gray-500 mt-2 flex flex-wrap gap-3">
-                                <span>ShowTo: {String(c.showTo ?? '-')}</span>
-                                {c.hasNotifytoInitiated !== undefined && (
-                                    <span>Notify: {c.hasNotifytoInitiated ? 'Yes' : 'No'}</span>
-                                )}
-                                {!!c.fileIds?.length && <span>Files: {c.fileIds.length}</span>}
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            )}
         </div>
     )
 }

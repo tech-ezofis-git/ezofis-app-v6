@@ -4,25 +4,25 @@ import type { Toast } from './types'
 
 const variants = {
   default: {
-    className: 'before:bg-primary-9',
+    className: 'before:bg-blue-9 bg-blue-3',
     title: 'Info',
   },
   error: {
-    className: 'before:bg-red-9',
+    className: 'before:bg-red-9 bg-red-3',
     title: 'Error',
   },
   success: {
-    className: 'before:bg-green-9',
+    className: 'before:bg-green-9 bg-green-3',
     title: 'Success',
   },
   warning: {
-    className: 'before:bg-orange-9',
+    className: 'before:bg-orange-9 bg-orange-3',
     title: 'Warning',
   },
 }
 
-const showToast = ({ message, variant = 'default' }: Toast) => {
-  const { title } = variants[variant]
+const showToast = ({ message, variant = 'default', toastTitle }: Toast) => {
+  const { title } = toastTitle ? { title: toastTitle } : variants[variant]
 
   return notifications.show({
     className: cn(variants[variant].className, 'mt-4'),

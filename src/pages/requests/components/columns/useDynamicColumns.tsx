@@ -56,7 +56,8 @@ const resolveFormJson = (workflow: WorkflowOption | null): any | null => {
 
 export const useDynamicColumns = (
     workflow: WorkflowOption | null,
-    onRowClick?: (item: any, tab: string) => void,
+    onRowClick: (item: any, tab: string) => void,
+    selectedItem: any,
     /**
      * ✅ Optional: provide a real preview URL builder for your backend
      * Example: (file) => `/api/workflow/files/preview/${file.repositoryId}/${file.id}`
@@ -87,35 +88,42 @@ export const useDynamicColumns = (
                         {row?.isDuplicateInvoice && <RequestStatusBadge status="Duplicated" />}
                     </div>
                 ),
+                // sortingFn: 'alphanumeric',
+
+
             },
-            {
-                id: 'stage',
-                label: 'Stage',
-                size: 140,
-                renderCell: (row: any) => (
-                    <div className="min-w-0">
-                        <RequestStatusBadge status={row.stage as Request['status']} />
-                    </div>
-                ),
-            },
-            {
-                id: 'raisedBy',
-                label: 'Raised By',
-                size: 150,
-                renderCell: (row: any) => (
-                    <WrapOnHoverCell value={row.raisedBy ?? '-'} className="text-sm text-gray-700" />
-                ),
-            },
-            {
-                id: 'raisedAt',
-                label: 'Raised On',
-                size: 160,
-                renderCell: (row: any) => (
-                    <WrapOnHoverCell
-                        value={row.raisedAt ? formatDatetime(row.raisedAt as string, 'datetime') : '-'}
-                    />
-                ),
-            },
+            ...(selectedItem
+                ? []  // If a request is selected, hide all other columns
+                : [{
+                    id: 'stage',
+                    label: 'Stage',
+                    size: 140,
+                    renderCell: (row: any) => (
+                        <div className="min-w-0">
+                            <RequestStatusBadge status={row.stage as Request['status']} />
+                        </div>
+                    ),
+                },
+                {
+                    id: 'raisedBy',
+                    label: 'Raised By',
+
+                    size: 150,
+                    renderCell: (row: any) => (
+                        <WrapOnHoverCell value={row.raisedBy ?? '-'} className="text-sm text-gray-700" />
+                    ),
+                },
+                {
+                    id: 'raisedAt',
+                    label: 'Raised On',
+
+                    size: 160,
+                    renderCell: (row: any) => (
+                        <WrapOnHoverCell
+                            value={row.raisedAt ? formatDatetime(row.raisedAt as string, 'datetime') : '-'}
+                        />
+                    ),
+                },])
         ]
 
         const form = resolveFormJson(workflow)
@@ -150,70 +158,74 @@ export const useDynamicColumns = (
 
                 const label = getFieldLabel(field)
 
-                columns.push({
-                    id: fieldKey,
-                    label,
-                    size: 200,
-                    renderCell: (row: any) => {
-                        const rawVal = row[fieldKey] ?? row.formData?.[fieldKey]
+                if (!selectedItem) {
+                    columns.push({
+                        id: fieldKey,
+                        label,
+                        size: 200,
+                        renderCell: (row: any) => {
+                            const rawVal = row[fieldKey] ?? row.formData?.[fieldKey]
 
-                        if (rawVal === undefined || rawVal === null || rawVal === '') {
-                            return <WrapOnHoverCell value="-" />
-                        }
-
-                        if (isTableType(field.type)) {
-                            const tableParentId = field?.id
-                            const colMeta =
-                                tableParentId !== undefined && tableParentId !== null
-                                    ? tableMetaByParentId.get(String(tableParentId))
-                                    : undefined
-
-                            return (
-                                <span className="inline-flex items-center">
-                                    <DynamicTableCell
-                                        rawVal={rawVal}
-                                        title={String(label)}
-                                        colMeta={colMeta}
-                                        safeParse={safeParse}
-                                        modalWidth={900}
-                                    />
-                                </span>
-                            )
-                        }
-
-                        const type = String(field.type ?? '').toUpperCase()
-
-                        switch (type) {
-                            case 'FILE_UPLOAD': {
-                                // ✅ OPEN FILESHEET MODAL HERE
-                                return wrap(<FileUploadCell rawVal={rawVal} row={row} />)
-
+                            if (rawVal === undefined || rawVal === null || rawVal === '') {
+                                return <WrapOnHoverCell value="-" />
                             }
 
-                            case 'DATE':
-                                return <WrapOnHoverCell value={formatDatetime(rawVal as string, 'date')} />
+                            if (isTableType(field.type)) {
+                                const tableParentId = field?.id
+                                const colMeta =
+                                    tableParentId !== undefined && tableParentId !== null
+                                        ? tableMetaByParentId.get(String(tableParentId))
+                                        : undefined
 
-                            case 'CURRENCY':
                                 return (
-                                    <WrapOnHoverCell
-                                        value={<span className="font-medium text-gray-900">{String(rawVal)}</span>}
-                                    />
+                                    <span className="inline-flex items-center">
+                                        <DynamicTableCell
+                                            rawVal={rawVal}
+                                            title={String(label)}
+                                            colMeta={colMeta}
+                                            safeParse={safeParse}
+                                            modalWidth={900}
+                                        />
+                                    </span>
                                 )
+                            }
 
-                            case 'NUMBER':
-                                return <WrapOnHoverCell value={String(rawVal)} />
+                            const type = String(field.type ?? '').toUpperCase()
 
-                            default:
-                                return <WrapOnHoverCell value={String(rawVal)} />
-                        }
-                    },
-                } as Column)
+                            switch (type) {
+                                case 'FILE_UPLOAD': {
+                                    // ✅ OPEN FILESHEET MODAL HERE
+                                    return wrap(<FileUploadCell rawVal={rawVal} row={row} />)
+
+                                }
+
+                                case 'DATE':
+                                    return <WrapOnHoverCell value={formatDatetime(rawVal as string, 'date')} />
+
+                                case 'CURRENCY':
+                                    return (
+                                        <WrapOnHoverCell
+                                            value={<span className="font-medium text-gray-900">{String(rawVal)}</span>}
+                                        />
+                                    )
+
+                                case 'NUMBER':
+                                    return <WrapOnHoverCell value={String(rawVal)} />
+
+                                default:
+                                    return <WrapOnHoverCell value={String(rawVal)} />
+                            }
+                        },
+                    } as Column)
+                }
             })
         })
 
-        columns.push(makeActionsColumn(onRowClick))
+        if (!selectedItem) {
+            columns.push(makeActionsColumn(onRowClick));
+        }
         return columns
-    }, [workflow, onRowClick])
+    }, [workflow, onRowClick, selectedItem])
 }
 
 function makeActionsColumn(onRowClick?: (row: any, tab: string) => void): Column {

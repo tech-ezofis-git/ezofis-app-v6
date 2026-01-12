@@ -6,7 +6,7 @@ import InputSelect from '@/components/base/inputs/InputSelect'
 import Tab from '@/components/base/tabs/Tab'
 import Tabs from '@/components/base/tabs/Tabs'
 import type { IRequestMeta } from '../types'
-
+import requestStore from "../stores/useRequestStore"
 interface Props {
   workflow: Option | null
   allWorkflows: Option[] | null
@@ -35,6 +35,11 @@ const Header = ({
   //   name: 'Accounts Payable',
   // })
 
+  const openNewRequest = requestStore((state) => state.openNewRequest)
+  const handleOpenRequest = () => {
+    console.log("am running")
+    openNewRequest()
+  }
   return (
     <div className='flex flex-wrap items-center justify-between gap-6 border-b border-gray-3 px-6 md:px-8'>
       <Tabs color='primary' value={activeTab} onChange={(val) => setActiveTab(val as string)} >
@@ -47,13 +52,13 @@ const Header = ({
         <InputSelect
           leftSection={<Icon className='text-gray-10' name='tabler:replace' />}
           options={allWorkflows && allWorkflows?.length > 0 ? allWorkflows : []}
-          size='sm'
+          // size='sm'
           value={workflow}
           width={240}
           searchable
           onChange={setWorkflow}
         />
-        <Button icon='tabler:plus' label='New Request' />
+        <Button icon='tabler:plus' label='New Request' onClick={handleOpenRequest} />
       </div>
     </div>
   )

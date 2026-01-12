@@ -1,9 +1,9 @@
-import { PinInput as Base } from '@mantine/core'
+import { PinInput as Base, type PinInputProps } from '@mantine/core'
 import { forwardRef } from 'react'
 import cn from '@/utils/cn'
 import { classNames } from './shared/constants'
 
-interface Props {
+interface Props extends PinInputProps {
   value: string
   className?: string
   disabled?: boolean

@@ -1,11 +1,17 @@
+import { AnimateFadeIn, AnimateSlideUp } from '@/components/common/animations'
 import AccountsPayable from './workflows/accounts-payable/AccountsPayable'
 import Header from './workflows/shared/components/Header'
 
 const DashboardPage = () => {
+
   return (
     <>
-      <Header />
-      <AccountsPayable />
+      <AnimateSlideUp delay={0.1}>
+        <Header />
+      </AnimateSlideUp>
+      <AnimateFadeIn delay={0.2}>
+        <AccountsPayable />
+      </AnimateFadeIn>
     </>
   )
 }

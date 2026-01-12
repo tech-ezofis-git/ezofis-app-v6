@@ -4,13 +4,10 @@ import cn from '@/utils/cn'
 import type { InputProps } from './shared/types'
 import ClearButton from './ClearButton'
 import InputLabel from './InputLabel'
-import {
-  classNames,
-  inputWrapperOrder,
-  sizeClassName,
-} from './shared/constants'
+import { classNames, inputWrapperOrder, sizeClassName } from './shared/constants'
+import { type NumberInputProps } from '@mantine/core'
 
-interface Props extends InputProps {
+interface Props extends InputProps, Omit<NumberInputProps, keyof InputProps | 'value' | 'onChange'> {
   value: string | number
   allowDecimal?: boolean
   decimalScale?: number

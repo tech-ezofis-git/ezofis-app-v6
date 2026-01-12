@@ -1,9 +1,10 @@
 import { useMemo } from 'react'
 import Alert from '@/components/base/Alert'
 import Discrepancies from './components/discrepancies/Discrepancies'
-import LineItems from './components/line-items/LineItems'
-import Properties from './components/properties/Properties'
-
+// import LineItems from './components/line-items/LineItems'
+// import Properties from './components/properties/Properties'
+import PropertiesCards from './components/properties/PropertiesCards'
+import LineItemsCards from './components/line-items/LineItemsCards'
 interface OverviewProps {
   agentData: any // The raw JSON object from the backend
 }
@@ -46,15 +47,16 @@ const Overview = ({ agentData }: OverviewProps) => {
         text={alertStatus.text}
         variant={alertStatus.variant}
       // Assuming your Alert component supports an icon prop based on your prompt description
-      // icon={alertStatus.icon} 
+      // icon={alertStatus.icon}
       />
 
-      <Properties data={agentData} />
+      {/* <Properties data={agentData} /> */}
+      <PropertiesCards data={agentData} />
 
       {/* Only show sections if relevant data exists */}
       <Discrepancies data={agentData} />
 
-      <LineItems data={agentData} />
+      <LineItemsCards data={agentData} />
     </div>
   )
 }

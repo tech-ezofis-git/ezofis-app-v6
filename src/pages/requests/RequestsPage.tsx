@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import Header from './components/Header'
-import Request from './components/request/Request'
+// import Request from './components/request/Request'
 // import InboxList from './components/InboxList'
 import { useInboxData } from './hooks/useInboxData'
 import requestApi from '@/api/requests/requests'
@@ -18,10 +18,16 @@ const RequestsPage = () => {
   const [workflow, setWorkflow] = useState<Option | null>(null)
   const [metaData, setMetaData] = useState<IRequestMeta>()
   const [selectedWorkflow, setSelectedWorkflow] = useState<WorkflowOption | null>(null)
+  const [selectedItem, setSelectedItem] = useState(null);
 
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
 
+  const openRequest = requestStore((state) => state.openRequest)
+  const isClosed = requestStore((state) => state.isClosed)
+  const setRawWorflow = requestStore((state) => state.setRawWorkflowData)
+  const reloadMeta = requestStore((state) => state.reloadMeta)
+  const stopRefresh = requestStore((state) => state.stopRefresh)
 
   // --- 2. DATA FETCHING ---
   // Pass 'activeTab' to the hook so it knows which API to call
@@ -31,9 +37,9 @@ const RequestsPage = () => {
     isFetching,
     refetch
   } = useInboxData(selectedWorkflow, page, pageSize, [], activeTab);
-  const openRequest = requestStore((state) => state.openRequest)
 
   const handleRowClick = (row: any, tab: string) => {
+    setSelectedItem(row);
     // Only open if we have a valid workflow ID
     if (selectedWorkflow?.id) {
 
@@ -79,12 +85,13 @@ const RequestsPage = () => {
       const response = await requestApi?.getMetaDataByRequest(id)
       if (response?.data?.length) {
         // Update Metadata counts
+        setRawWorflow(response.data[0])
         setMetaData({
           inboxCount: response.data[0].inboxCount,
           sentCount: response.data[0].processCount,
           completedCount: response.data[0].completedCount
         });
-
+        console.log(response?.data, "this is meta data request")
         // Update Selected Workflow Details
         const wf = response.data[0];
 
@@ -112,25 +119,54 @@ const RequestsPage = () => {
 
   // Initial Load
   useEffect(() => {
+
     setIsLoading(true)
     handleSelectAllRequests()
+
   }, [])
 
   // Workflow Change Listener
   useEffect(() => {
-    if (workflow?.id) {
-      setIsLoading(true)
+    console.log(reloadMeta, isFetching, "this is reload meta")
+
+    if (workflow?.id && !reloadMeta && !isFetching) {
+      if (reloadMeta) {
+        setIsLoading(true)
+      }
+
       handleGetAllRequestMetaById(workflow.id)
       // Note: We don't need manual API calls here anymore. 
       // The useInboxData hook watches 'selectedWorkflow' and auto-fetches.
+    } else {
+      if (reloadMeta) {
+        workflow?.id && handleGetAllRequestMetaById(workflow.id)
+        stopRefresh()
+        refetch()
+
+      }
     }
-  }, [workflow])
+
+
+
+  }, [workflow, reloadMeta, isFetching])
+  useEffect(() => {
+    setSelectedItem(null)
+
+  }, [isClosed])
   console.log(inboxResult?.data, "this is inboxlist data ")
 
   console.log("selectedWorkflow", selectedWorkflow)
+
+
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab)
+    setSelectedItem(null)
+
+
+  }
   return (
     <>
-      <Header
+      {!selectedItem && <Header
         isLoading={isLoading}
         workflow={workflow}
         allWorkflows={allWorkflow}
@@ -138,8 +174,8 @@ const RequestsPage = () => {
         metaData={metaData}
         // Pass state and setter to Header
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
-      />
+        setActiveTab={handleTabChange}
+      />}
       {/* <Table /> */}
       <InboxList
         workflow={selectedWorkflow}
@@ -153,8 +189,10 @@ const RequestsPage = () => {
         setPageSize={setPageSize}
         onRefresh={refetch}
         onRowClick={handleRowClick}
+        selectedItem={selectedItem}
+        setSelectedItem={setSelectedItem}
       />
-      <Request />
+
     </>
   )
 }

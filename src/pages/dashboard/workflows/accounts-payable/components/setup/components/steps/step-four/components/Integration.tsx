@@ -1,37 +1,38 @@
-import Badge from '@/components/base/Badge'
 import Icon from '@/components/base/icon/Icon'
+import cn from '@/utils/cn'
 
 interface Props {
   account: string
   icon: string
   name: string
   platform: string
-  status: string
+  iconBgColor?: string
+  iconColor?: string
 }
 
-const Integration = ({ account, icon, name, platform, status }: Props) => {
+const Integration = ({ account, icon, name, platform, iconBgColor = 'bg-gray-3/75', iconColor = 'text-primary-11' }: Props) => {
+  const iconClass = cn('size-5', iconColor)
   return (
-    <div className='rounded border border-gray-3 p-4' key={name}>
-      <div className='mb-3 flex flex-wrap items-center gap-4 border-b border-gray-3 pb-4'>
-        <div className='flex size-10 items-center justify-center rounded bg-gray-3/75'>
-          <Icon className='size-5' name={icon} />
+    <div className='flex flex-col rounded-lg border border-gray-4 bg-white p-6 shadow-lg transition-shadow hover:shadow-xl max-w-full sm:max-w-xs lg:max-w-md w-full'> {/* Adjusted max-w and responsive width */}
+      <div className='mb-4 flex items-center gap-3 border-b border-gray-3 pb-4'>
+        <div className={cn('flex size-12 items-center justify-center rounded-lg shadow-sm', iconBgColor)}>
+          <Icon className={iconClass} name={icon} />
         </div>
-
-        <div className='text-15 font-semibold text-gray-13'>{name}</div>
-        <div className='flex-1' />
-        <Badge className='capitalize' color='green' label={status} />
-      </div>
-
-      <div className='flex h-8 items-center justify-between gap-3'>
-        <div>Platform:</div>
-        <div className='truncate font-medium text-gray-12 capitalize'>
-          {platform}
+        <div className='flex flex-1 items-center'>
+          <h4 className='text-16 font-semibold text-gray-13 overflow-hidden text-ellipsis whitespace-nowrap'>{name}</h4> {/* Prevent text overflow */}
         </div>
       </div>
 
-      <div className='flex h-8 items-center justify-between gap-3'>
-        <div>Account:</div>
-        <div className='truncate font-medium text-gray-12'>{account}</div>
+      <div className='flex flex-col gap-4'>
+        <div className='flex items-center justify-between'>
+          <span className='text-13 font-medium text-gray-10 mr-2'>Platform:</span> {/* Added margin-right to add space */}
+          <span className='text-right text-13 font-semibold text-gray-13 overflow-hidden text-ellipsis whitespace-nowrap'>{platform}</span>
+        </div>
+
+        <div className='flex items-center justify-between'>
+          <span className='text-13 font-medium text-gray-10 mr-2'>Account:</span> {/* Added margin-right to add space */}
+          <span className='text-right text-13 font-semibold text-gray-13 overflow-hidden text-ellipsis whitespace-nowrap'>{account}</span>
+        </div>
       </div>
     </div>
   )

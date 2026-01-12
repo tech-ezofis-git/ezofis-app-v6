@@ -1,7 +1,9 @@
 import React, { useMemo, useState } from 'react'
 import Modal from '@/components/base/Modal'
-import IconButton from '@/components/base/button/IconButton'
-import IconSpinner from '@/components/base/icon/IconSpinner'
+// import IconButton from '@/components/base/button/IconButton'
+// import IconSpinner from '@/components/base/icon/IconSpinner'
+import Icon from '@/components/base/icon/Icon'
+import { AnimatePresence, motion } from 'motion/react'
 // import { domain } from 'node_modules/zod/v4/core/regexes.d.cts'
 
 type FileLike = {
@@ -207,46 +209,89 @@ const FileSheet: React.FC<Props> = ({
     // alert("file name" + file.name + "domain" + src)
     return (
         <Modal opened={opened} onClose={onClose} fullScreen>
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
-                <div className="min-w-0">
-                    <div className="font-medium text-gray-900 truncate">{file.name}</div>
+            {/* Header: Clean, Light, and Airy */}
+            <div className="flex items-center justify-between px-2 py-2 bg-white border-b border-gray-3">
+                <div className="flex items-center gap-4 min-w-0">
+                    {/* Soft Primary Icon Wrapper */}
+                    <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary-2 text-primary-9 ring-1 ring-primary-4">
+                        <Icon name="tabler:file-search" className="size-6" />
+                    </div>
 
+                    <div className="min-w-0">
+                        <h3 className="text-base font-bold text-gray-12 truncate leading-tight">
+                            {file.name}
+                        </h3>
+                        <div className="flex items-center gap-2 mt-0.5">
+                            <span className="flex h-1.5 w-1.5 rounded-full bg-green-9 animate-pulse" />
+                            <p className="text-[11px] font-bold text-gray-10 uppercase tracking-wider">
+                                Live Document Preview
+                            </p>
+                        </div>
+                    </div>
                 </div>
 
-                <IconButton
-                    color="gray"
-                    icon="tabler:x"
-                    variant="ghost"
-                    onClick={onClose}
-                />
+                <div className="flex items-center gap-3">
+                    {/* Close Button - Clean Ghost Style */}
+                    <button
+                        onClick={onClose}
+                        className="group cursor-pointer flex items-center gap-2 rounded-xl bg-gray-2 px-4 py-2 text-sm font-bold text-gray-11 transition-all hover:bg-red-2 hover:text-red-11 active:scale-95"
+                    >
+                        {/* <span>Close</span> */}
+                        <Icon name="tabler:x" className="size-5 transition-transform group-hover:rotate-90" />
+                    </button>
+                </div>
             </div>
 
-            <div className="relative w-full" style={{ height: 'calc(100vh - 57px)' }}>
+            {/* Body Area */}
+            <div className="relative w-full overflow-hidden bg-gray-1" style={{ height: 'calc(100vh - 77px)' }}>
                 {src ? (
                     <>
-                        {isLoading && (
-                            <div className="absolute inset-0 flex items-center justify-center bg-gray-50 z-10">
-                                <div className="flex flex-col items-center gap-3">
-                                    <div style={{ animationDuration: '1.5s' }}>
-                                        <IconSpinner className="w-8 h-8 text-gray-400" />
+                        {/* Modern Light Loading State */}
+                        <AnimatePresence>
+                            {isLoading && (
+                                <motion.div
+                                    initial={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    className="absolute inset-0 z-20 flex items-center justify-center bg-white/90 backdrop-blur-md"
+                                >
+                                    <div className="flex flex-col items-center">
+                                        <div className="relative flex size-24 items-center justify-center">
+                                            {/* Rotating Outer Rings using Primary scale */}
+                                            <div className="absolute inset-0 animate-spin rounded-full border-[3px] border-transparent border-t-primary-9 border-r-primary-5" />
+                                            <div className="absolute inset-2 animate-[spin_2s_linear_infinite] rounded-full border-[2px] border-transparent border-t-secondary-8 border-l-secondary-4" />
+
+                                            {/* Centered Brand Icon */}
+                                            <div className="rounded-2xl bg-primary-1 p-3 shadow-sm">
+                                                <Icon name="tabler:loader-3" className="size-8 animate-pulse text-primary-9" />
+                                            </div>
+                                        </div>
+                                        <h4 className="mt-8 text-sm font-bold tracking-tight text-gray-12">
+                                            Fetching Document Data
+                                        </h4>
+                                        <p className="mt-1 text-xs font-medium text-gray-9">This will only take a moment</p>
                                     </div>
-                                    <span className="text-sm text-gray-500 animate-pulse">
-                                        Loading File
-                                    </span>
-                                </div>
-                            </div>
-                        )}
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+
                         <iframe
                             title="file-preview"
                             src={src}
-                            className="w-full h-full"
+                            className="w-full h-full border-none shadow-inner"
                             allowFullScreen
                             onLoad={handleIframeLoad}
                         />
                     </>
                 ) : (
-                    <div className="p-6 text-sm text-gray-600">
-                        Preview URL could not be resolved (missing apiBaseUrl or file).
+                    /* Redesigned Light Error State */
+                    <div className="flex h-full flex-col items-center justify-center text-center p-6">
+                        <div className="mb-6 rounded-3xl bg-red-2 p-5 text-red-9 ring-1 ring-red-4 shadow-sm">
+                            <Icon name="tabler:file-off" className="size-12" />
+                        </div>
+                        <h3 className="text-xl font-bold text-gray-13">Unable to display file</h3>
+                        <p className="mt-2 max-w-sm text-sm text-gray-10 leading-relaxed">
+                            We couldn't generate a preview for this document. Please try downloading the file directly or refresh the page.
+                        </p>
                     </div>
                 )}
             </div>

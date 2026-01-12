@@ -1,7 +1,9 @@
+import { motion } from 'motion/react'
 import Alert from '@/components/base/Alert'
 import Button from '@/components/base/button/Button'
 import Divider from '@/components/base/Divider'
-import HeroText from '@/components/common/HeroText'
+import Title from '@/components/base/Title'
+import { AnimateFadeIn, AnimateSlideUp } from '@/components/common/animations'
 import setupStore from '../../../../../stores/useSetupStore'
 import ImapSettings from './components/ImapSettings'
 import ProviderSettings from './components/ProviderSettings'
@@ -26,37 +28,54 @@ const StepOne = () => {
   }
 
   return (
-    <div className='flex min-h-full w-full flex-col gap-6 px-4 py-6 sm:px-6 md:px-8 lg:px-10'>
-      <HeroText
-        className='items-start text-left'
-        description='Link your email account so invoices can be automatically captured and processed.'
-        title='Connect Your Email'
-      />
-      <Divider />
-      <ProviderSettings />
+    <div className='flex min-h-full w-full flex-col gap-4 px-6 py-4 md:px-8'>
+      <AnimateSlideUp delay={0.1}>
+        <Title
+          className='items-start text-left'
+          description='Choose how you want to capture invoices. Upload files manually or connect an email account for automatic processing.'
+          title='Select the primary source for invoice processing'
+        />
+      </AnimateSlideUp>
+      <AnimateFadeIn delay={0.2}>
+        <Divider />
+      </AnimateFadeIn>
+      <AnimateFadeIn delay={0.3}>
+        <ProviderSettings />
+      </AnimateFadeIn>
 
       {emailSettings.provider === 'Custom' && (
-        <>
-          <Divider />
-          <ImapSettings />
-        </>
+        <AnimateFadeIn delay={0.4}>
+          <>
+            <Divider />
+            <ImapSettings />
+          </>
+        </AnimateFadeIn>
       )}
 
       {emailSettings.provider === 'DIRECT_UPLOAD' && (
-        <Alert
-          text='You can upload files directly in the next step.'
-          variant='green'
-        />
+        <AnimateSlideUp delay={0.4}>
+          <Alert
+            text='You can upload files directly in the next step.'
+            variant='green'
+          />
+        </AnimateSlideUp>
       )}
 
       {emailSettings.isConnected && emailSettings.provider !== 'DIRECT_UPLOAD' && (
-        <Alert
-          text={`Your ${emailSettings.provider} account has been connected successfully.`}
-          variant='green'
-        />
+        <AnimateSlideUp delay={0.4}>
+          <Alert
+            text={`Your ${emailSettings.provider} account has been connected successfully.`}
+            variant='green'
+          />
+        </AnimateSlideUp>
       )}
 
-      <div className='flex flex-wrap items-center justify-end gap-2 border-t border-gray-3 pt-4'>
+      <motion.div
+        animate={{ opacity: 1, y: 0 }}
+        className='flex flex-wrap items-center justify-end gap-2 border-t border-gray-3 pt-4'
+        initial={{ opacity: 0, y: 10 }}
+        transition={{ delay: 0.5, duration: 0.4 }}
+      >
         {emailSettings.provider === 'DIRECT_UPLOAD' || emailSettings.isConnected ? (
           <Button
             label='Continue'
@@ -71,7 +90,7 @@ const StepOne = () => {
             onClick={handleConnect}
           />
         )}
-      </div>
+      </motion.div>
     </div>
   )
 }

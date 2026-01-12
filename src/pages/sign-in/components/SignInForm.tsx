@@ -3,6 +3,7 @@ import { useState, useMemo } from 'react'
 import { useGoogleLogin } from '@react-oauth/google'
 import { useMsal } from '@azure/msal-react'
 
+import { AnimatePresence, motion } from 'motion/react'
 import Button from '@/components/base/button/Button'
 import GoogleButton from '@/components/base/button/GoogleButton'
 import MicrosoftButton from '@/components/base/button/MicrosoftButton'
@@ -12,9 +13,12 @@ import IconIllustrated from '@/components/base/icon/IconIllustrated'
 import InputCheckbox from '@/components/base/inputs/InputCheckbox'
 import InputText from '@/components/base/inputs/InputText'
 import InputPassword from '@/components/base/inputs/password/InputPassword'
-import HeroText from '@/components/common/HeroText'
+import Title from '@/components/base/Title'
+import { AnimateSlideLeft } from '@/components/common/animations'
 import authUserStore from '@/stores/authUserStore'
 import authApi from '@/api/auth'
+import showToast from '@/components/base/toast/showToast'
+
 
 interface Props {
   onChangeView: () => void
@@ -46,6 +50,7 @@ const SignInForm = ({ onChangeView }: Props) => {
   const [socialLogged, setSocialLogged] = useState(false)
   const [socialEmail, setSocialEmail] = useState('')
   const [loginType, setLoginType] = useState<'Google' | 'Microsoft' | ''>('')
+  const [selectedTenantId, setSelectedTenantId] = useState<number | string | null>(null)
 
   // === environment-based flags (computed in Vue) ===
   const origin = typeof window !== 'undefined' ? window.location.origin : ''
@@ -103,9 +108,9 @@ const SignInForm = ({ onChangeView }: Props) => {
     // For now, replicate the basic behavior: honor 2FA, then go home.
     if (user.profile.twoStepVerification.enabled) {
       // onChangeView()
-      navigate({ replace: true, to: '/' })
+      navigate({ replace: true, to: '/requests' })
     } else {
-      navigate({ replace: true, to: '/' })
+      navigate({ replace: true, to: '/requests' })
     }
     setLoading(false)
   }
@@ -115,6 +120,7 @@ const SignInForm = ({ onChangeView }: Props) => {
     try {
       setError(null)
       setLoading(true)
+
 
       // SOCIAL BRANCH (Google / Microsoft)
       if (socialLogged) {
@@ -137,6 +143,7 @@ const SignInForm = ({ onChangeView }: Props) => {
         }
 
         if (status === 300 && Array.isArray(data)) {
+
           const mapped: TenantOption[] = data.map((tenant: any) => ({
             id: tenant.id,
             label: tenant.name,
@@ -146,8 +153,13 @@ const SignInForm = ({ onChangeView }: Props) => {
           setTenantList(mapped)
           setShowTenantListModal(true)
         } else {
+
           setShowTenantListModal(false)
-          handleLoggedNavigation()
+          setTenantList([])
+
+          setTimeout(() => {
+            handleLoggedNavigation();
+          }, 100);
         }
 
 
@@ -178,6 +190,7 @@ const SignInForm = ({ onChangeView }: Props) => {
       }
 
       if (status === 300 && Array.isArray(data)) {
+        showToast({ message: "User found with multiple tenant", variant: "warning" })
         const mapped: TenantOption[] = data.map((tenant: any) => ({
           id: tenant.id,
           label: tenant.name,
@@ -187,7 +200,9 @@ const SignInForm = ({ onChangeView }: Props) => {
         setTenantList(mapped)
         setShowTenantListModal(true)
       } else {
+        showToast({ message: "SuccessFully Logged in", variant: "success" })
         setShowTenantListModal(false)
+        setTenantList([])
         handleLoggedNavigation()
       }
     } catch (e: any) {
@@ -328,8 +343,21 @@ const SignInForm = ({ onChangeView }: Props) => {
 
   // === TENANT SELECTION (status 300) ===
   const handleTenantClick = async (tenantId: number | string) => {
-    setShowTenantListModal(false)
+    setSelectedTenantId(tenantId)
+    setLoading(true)
+    // Don't close modal here, just sign in
     await signIn(tenantId)
+    // After successful sign in, redirect will happen in handleLoggedNavigation
+  }
+
+  const handleBackToSignIn = () => {
+    setShowTenantListModal(false)
+    setTenantList([])
+    setSocialLogged(false)
+    setSocialEmail('')
+    setLoginType('')
+    setSelectedTenantId(null)
+    setError(null)
   }
 
   const forgotPassword = () => navigate({ to: '/forgot-password' })
@@ -339,12 +367,131 @@ const SignInForm = ({ onChangeView }: Props) => {
     ? 'Hi, Welcome!'
     : `Hi, Welcome back to ${isOnpremiseTenant ? 'APP' : 'EZOFIS'}`
 
+  // Show tenant selection UI instead of sign-in form when tenant list is available
+  if (showTenantListModal && tenantList.length > 0) {
+    return (
+      <>
+        <AnimateSlideLeft delay={0.1} distance={30}>
+          {/* <IconIllustrated icon='tabler:user' /> */}
+        </AnimateSlideLeft>
+        <AnimateSlideLeft delay={0.15} distance={30}>
+          {/* <Title
+            description={welcomeDescription}
+            title='Select Account'
+            level={1}
+            className='text-center'
+          /> */}
+        </AnimateSlideLeft>
+
+        {/* Back button */}
+        <AnimateSlideLeft delay={0.2} distance={30}>
+          <button
+            type='button'
+            className='mb-6 flex items-center gap-2 text-sm font-medium text-gray-11 hover:text-primary-11 transition-all duration-200 cursor-pointer group'
+            onClick={handleBackToSignIn}
+          >
+            <Icon
+              name='tabler:arrow-left'
+              className='text-gray-9 group-hover:text-primary-11 group-hover:-translate-x-1 transition-all duration-200'
+            />
+            <span>Back to Sign In</span>
+          </button>
+        </AnimateSlideLeft>
+
+        <AnimateSlideLeft delay={0.25} distance={30}>
+          <div className='mb-6 text-sm leading-relaxed text-gray-12'>
+            It looks like <strong className='text-gray-13'>{socialLogged ? socialEmail : email}</strong>{' '}
+            is used with more than one account. Which account do you want to
+            use?
+          </div>
+        </AnimateSlideLeft>
+
+        {/* Animated tenant list - Compact Design */}
+        <AnimatePresence mode='wait'>
+          <div className='space-y-2'>
+            {tenantList.map((tenant, index) => {
+              const isSelected = selectedTenantId === tenant.id
+              const isLoading = loading && isSelected
+
+              return (
+                <AnimateSlideLeft
+                  key={tenant.id}
+                  delay={0.3 + index * 0.1}
+                  distance={50}
+                >
+                  <button
+                    type='button'
+                    className={`group relative flex w-full items-center justify-between rounded-lg border bg-white px-3 py-2.5 text-left transition-all duration-300 cursor-pointer ${isLoading
+                      ? 'border-primary-9 bg-primary-1 shadow-sm'
+                      : 'border-gray-4 hover:border-primary-6 hover:bg-gray-1'
+                      }`}
+                    onClick={() => handleTenantClick(tenant.id)}
+                    disabled={loading}
+                  >
+                    <div className='flex items-center gap-2.5'>
+                      {/* Compact user icon/avatar */}
+                      <div className={`flex size-7 shrink-0 items-center justify-center rounded-full transition-all duration-300 ${isLoading
+                        ? 'bg-primary-9 scale-105'
+                        : 'bg-gradient-to-br from-primary-4 to-primary-6 group-hover:from-primary-5 group-hover:to-primary-7'
+                        }`}>
+                        <Icon
+                          name='tabler:user'
+                          className={`size-3.5 transition-colors duration-300 ${isLoading ? 'text-white' : 'text-primary-11'
+                            }`}
+                        />
+                      </div>
+                      <div className='flex-1 min-w-0'>
+                        <div className={`text-sm font-medium transition-colors duration-300 ${isLoading ? 'text-primary-11' : 'text-gray-13 group-hover:text-primary-11'
+                          }`}>
+                          {tenant.label}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right side icon */}
+                    <div className='flex items-center'>
+                      {isLoading ? (
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                        >
+                          <Icon name='tabler:loader-2' className='size-4 text-primary-11' />
+                        </motion.div>
+                      ) : (
+                        <Icon
+                          name='tabler:chevron-right'
+                          className='size-4 text-gray-8 group-hover:text-primary-11 group-hover:translate-x-0.5 transition-all duration-300'
+                        />
+                      )}
+                    </div>
+                  </button>
+                </AnimateSlideLeft>
+              )
+            })}
+          </div>
+        </AnimatePresence>
+
+        <AnimateSlideLeft delay={0.4 + tenantList.length * 0.1} distance={30}>
+          <button
+            type='button'
+            className='mt-6 text-xs font-medium text-gray-11 hover:text-primary-11 underline transition-colors duration-200 cursor-pointer'
+            onClick={handleBackToSignIn}
+          >
+            Sign in with a different email address
+          </button>
+        </AnimateSlideLeft>
+      </>
+    )
+  }
+
   return (
     <>
       <IconIllustrated icon='tabler:user' />
-      <HeroText
+      <Title
         description={welcomeDescription}
         title='Sign in to your account'
+        level={1}
+        className='text-center'
       />
 
       {/* This replaces Legend + checkEnv visual in Vue.
@@ -364,7 +511,7 @@ const SignInForm = ({ onChangeView }: Props) => {
                     <Icon className='text-gray-8' name='tabler:mail' />
                   }
                   placeholder='hello@ezofis.com'
-                  size='lg'
+                  // size='lg'
                   value={email}
                   onChange={(v) => {
                     setEmail(v)
@@ -398,7 +545,7 @@ const SignInForm = ({ onChangeView }: Props) => {
                     <Icon className='text-gray-8' name='tabler:mail' />
                   }
                   placeholder='hello@ezofis.com'
-                  size='lg'
+                  // size='lg'
                   value={email}
                   onChange={(v) => {
                     setEmail(v)
@@ -413,7 +560,7 @@ const SignInForm = ({ onChangeView }: Props) => {
                   leftSection={
                     <Icon className='text-gray-8' name='tabler:lock' />
                   }
-                  size='lg'
+                  // size='lg'
                   value={password}
                   showPlaceholder
                   onChange={(v) => {
@@ -453,7 +600,7 @@ const SignInForm = ({ onChangeView }: Props) => {
                     <Icon className='text-gray-8' name='tabler:user' />
                   }
                   placeholder='username'
-                  size='lg'
+                  // size='lg'
                   value={email}
                   onChange={(v) => {
                     setEmail(v)
@@ -468,7 +615,7 @@ const SignInForm = ({ onChangeView }: Props) => {
                   leftSection={
                     <Icon className='text-gray-8' name='tabler:lock' />
                   }
-                  size='lg'
+                  // size='lg'
                   value={password}
                   showPlaceholder
                   onChange={(v) => {
@@ -489,7 +636,7 @@ const SignInForm = ({ onChangeView }: Props) => {
                     <Icon className='text-gray-8' name='tabler:mail' />
                   }
                   placeholder='hello@ezofis.com'
-                  size='lg'
+                  // size='lg'
                   value={email}
                   onChange={(v) => {
                     setEmail(v)
@@ -504,7 +651,7 @@ const SignInForm = ({ onChangeView }: Props) => {
                   leftSection={
                     <Icon className='text-gray-8' name='tabler:lock' />
                   }
-                  size='lg'
+                  // size='lg'
                   value={password}
                   showPlaceholder
                   onChange={(v) => {
@@ -563,45 +710,6 @@ const SignInForm = ({ onChangeView }: Props) => {
             </>
           )}
         </>
-      )}
-
-      {/* === Tenant list modal (status 300) === */}
-      {showTenantListModal && (
-        <div className='mt-6 rounded-md border border-gray-4 bg-gray-1 p-4'>
-          <div className='mb-3 text-sm text-gray-12'>
-            It looks like <strong>{socialLogged ? socialEmail : email}</strong>{' '}
-            is used with more than one account. Which account do you want to
-            use?
-          </div>
-          <div className='space-y-2'>
-            {tenantList.map((tenant) => (
-              <button
-                key={tenant.id}
-                type='button'
-                className='flex w-full items-center justify-between rounded-md border border-gray-4 bg-white px-3 py-2 text-left text-sm hover:bg-gray-2'
-                onClick={() => handleTenantClick(tenant.id)}
-              >
-                <div className='flex items-center gap-2'>
-                  <Icon name='tabler:user' className='text-gray-9' />
-                  <span>{tenant.label}</span>
-                </div>
-                <Icon name='tabler:chevron-right' className='text-gray-8' />
-              </button>
-            ))}
-          </div>
-          <button
-            type='button'
-            className='mt-3 text-xs text-gray-11 underline hover:text-gray-12'
-            onClick={() => {
-              setShowTenantListModal(false)
-              setSocialLogged(false)
-              setSocialEmail('')
-              setLoginType('')
-            }}
-          >
-            Sign in with a different email address
-          </button>
-        </div>
       )}
     </>
   )

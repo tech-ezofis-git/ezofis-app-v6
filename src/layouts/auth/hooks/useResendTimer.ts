@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 
 export default function useResendTimer(
-  label = "Didn't receive the email? Resend",
+  label = "Didn't receive the OTP? Resend",
 ) {
   const RESEND_SECONDS = 30
 

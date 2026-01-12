@@ -7,7 +7,7 @@ import Th from '@/components/base/table/Th'
 import Thead from '@/components/base/table/Thead'
 import Tr from '@/components/base/table/Tr'
 import cn from '@/utils/cn'
-
+import Title from '@/components/base/Title'
 interface Props {
   data: any
 }
@@ -54,10 +54,13 @@ const LineItems = ({ data }: Props) => {
 
   return (
     <div>
-      <div className='mb-1 text-sm font-medium text-gray-13'>Line Item Matching</div>
-      <div className='mb-4 text-sm text-gray-11'>
-        Comparison between Extracted Invoice Data and Purchase Order Data.
-      </div>
+      <Title
+        className='mb-4'
+        level={3}
+        title='Line Items'
+        description=' 3-way match validation: Invoice vs Purchase Order (PO) vs Goods Receipt
+        Note (GRN)'
+      />
 
       <div className="overflow-x-auto">
         <Table>
@@ -72,21 +75,19 @@ const LineItems = ({ data }: Props) => {
             </Tr>
 
             <Tr>
-              {/* Quantity Sub-headers */}
-              {['Invoice', 'PO'].map((label) => (
+              {['Invoice', 'PO', 'GRN'].map((label) => (
                 <Th
-                  className='border-t-0 text-12 font-normal text-gray-11 text-center bg-gray-1'
-                  key={`qty-${label}`}
+                  className='border-t-0 text-xs font-normal text-gray-11 first:rounded-none first:border-l-0 last:rounded-none'
+                  key={label}
                 >
                   {label}
                 </Th>
               ))}
 
-              {/* Price Sub-headers */}
               {['Invoice', 'PO'].map((label) => (
                 <Th
-                  className='border-t-0 text-12 font-normal text-gray-11 text-center bg-gray-1'
-                  key={`price-${label}`}
+                  className='border-t-0 text-xs/5 font-normal text-gray-11 first:rounded-none first:border-l-0 last:rounded-none'
+                  key={label}
                 >
                   {label}
                 </Th>
@@ -100,7 +101,8 @@ const LineItems = ({ data }: Props) => {
                 <Td>{item.id}</Td>
 
                 <Td>
-                  <div className='text-12 text-balance font-medium text-gray-13'>{item.name}</div>
+                  <div className='mb-1 font-medium text-gray-13'>{item.id}</div>
+                  <div className='text-xs text-balance'>{item.name}</div>
                 </Td>
 
                 {/* Quantity */}

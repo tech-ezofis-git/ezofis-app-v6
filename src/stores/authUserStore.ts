@@ -14,6 +14,15 @@ export type Session = {
   tenantId: string
   id: string
 }
+export type SignUpUserData = {
+  email: string
+  password: string
+  loginType: string | number
+  organisation: string
+  licenseType: string
+  firstName: string
+  lastName: string
+}
 export type ProfileMenu = unknown
 export type DefaultView = Record<string, unknown>
 
@@ -26,16 +35,26 @@ type Store = {
   defaultView: DefaultView
   preferenceId: number
   isAuthenticated: boolean
-
+  signUpUserData: SignUpUserData
   setUser: (user: User) => void
   setIdentity: (identity: Identity | null) => void
   setSession: (session: Session | null) => void
   setProfileMenu: (menus: ProfileMenu[]) => void
   setDefaultView: (view: DefaultView) => void
   setPreferenceId: (id: number) => void
+  setSignUpUserData: (partial: Partial<SignUpUserData>) => void
+  resetSignUpUserData: () => void
   resetAuthState: () => void
 }
-
+const emptySignUp: SignUpUserData = {
+  email: '',
+  password: '',
+  loginType: '',
+  organisation: '',
+  licenseType: '3', // keep string to match your type
+  firstName: '',
+  lastName: '',
+}
 const authUserStore = create<Store>()((set) => {
   // Hydrate from localStorage on first load
   let identity: Identity | null = null
@@ -89,8 +108,29 @@ const authUserStore = create<Store>()((set) => {
     setProfileMenu: (menus) => set(() => ({ profileMenus: menus })),
     setDefaultView: (view) => set(() => ({ defaultView: view })),
     setPreferenceId: (id) => set(() => ({ preferenceId: id })),
+    signUpUserData: emptySignUp,
 
-    resetAuthState: () =>
+    setSignUpUserData: (partial) =>
+      set((state) => ({
+        signUpUserData: {
+          ...state.signUpUserData,
+          ...partial,
+        },
+      })),
+
+    resetSignUpUserData: () =>
+      set(() => ({
+        signUpUserData: emptySignUp,
+      })),
+
+    resetAuthState: () => {
+      // Clear localStorage
+      if (typeof window !== 'undefined') {
+        window.localStorage.removeItem('identity')
+        window.localStorage.removeItem('session')
+      }
+
+      // Clear in-memory state
       set(() => ({
         identity: null,
         session: null,
@@ -98,7 +138,9 @@ const authUserStore = create<Store>()((set) => {
         defaultView: {},
         preferenceId: 0,
         isAuthenticated: false,
-      })),
+        signUpUserData: emptySignUp,
+      }))
+    },
   }
 })
 

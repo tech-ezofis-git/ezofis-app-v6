@@ -12,10 +12,10 @@ import MenuItem from '@/components/base/menu/MenuItem'
 import Pagination from '@/components/base/pagination/Pagination'
 import RequestStatusBadge from '@/components/common/RequestStatusBadge'
 import { formatDatetime } from '@/utils/dayjs'
-import requestStore from '../stores/useRequestStore'
+// import requestStore from '../stores/useRequestStore'
 
 const Table = () => {
-  const openRequest = requestStore((state) => state.openRequest)
+  // const openRequest = requestStore((state) => state.openRequest)
 
   const columns: Column[] = [
     {
@@ -24,8 +24,8 @@ const Table = () => {
       size: 160,
       renderCell: (row) => (
         <span
-          className='trensition-colors cursor-pointer font-medium underline hover:text-gray-13'
-          onClick={openRequest as any}
+          // onClick={openRequest}
+          className='cursor-pointer font-medium underline transition-colors hover:text-gray-13'
         >
           {String(row.name)}
         </span>

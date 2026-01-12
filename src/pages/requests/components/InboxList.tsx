@@ -1,10 +1,14 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useMemo } from 'react'
 import DataTable from '@/components/base/data-table/DataTable'
 import Pagination from '@/components/base/pagination/Pagination'
 import useDataTable from '@/components/base/data-table/hooks/useDataTable'
 import useDataTableState from '@/components/base/data-table/hooks/useDataTableState'
 import { useDynamicColumns } from './columns/useDynamicColumns'
 import type { WorkflowOption, TableGroup } from '../types'
+import Request from './request/Request'
+import { motion } from 'motion/react'
+
+import { AnimateFadeIn } from '@/components/common/animations'
 
 const hideRootGroupStyle = `
   .hide-root-header tbody > tr:first-child {
@@ -24,6 +28,41 @@ interface InboxListProps {
     setPageSize: (s: number) => void
     onRefresh: () => void
     onRowClick: (item: any, tab: string) => void
+    selectedItem: any
+    setSelectedItem: (item: any) => void
+}
+
+// ✅ robust flattener for your backend shape (group.items)
+function flattenRows(groups: any[]): any[] {
+    const out: any[] = []
+
+    const walk = (node: any) => {
+        if (!node) return
+
+        // Your shape: group has items: []
+        if (Array.isArray(node.items)) {
+            out.push(...node.items)
+        }
+
+        // Future-proof: some APIs use value/rows
+        if (Array.isArray(node.value)) {
+            out.push(...node.value)
+        }
+        if (Array.isArray(node.rows)) {
+            out.push(...node.rows)
+        }
+
+        // Nested groups (if any)
+        if (Array.isArray(node.children)) {
+            node.children.forEach(walk)
+        }
+        if (Array.isArray(node.groups)) {
+            node.groups.forEach(walk)
+        }
+    }
+
+        ; (groups || []).forEach(walk)
+    return out
 }
 
 const InboxList: React.FC<InboxListProps> = ({
@@ -38,9 +77,11 @@ const InboxList: React.FC<InboxListProps> = ({
     setPageSize,
     onRefresh,
     onRowClick,
+    selectedItem,
+    setSelectedItem,
 }) => {
-    const columns = useDynamicColumns(workflow, onRowClick) || []
-    console.log("InboxList rendered", columns)
+    const columns = useDynamicColumns(workflow, onRowClick, selectedItem) || []
+
     const initialVisibilityState = {
         createdAt: false,
         createdBy: false,
@@ -52,11 +93,9 @@ const InboxList: React.FC<InboxListProps> = ({
         initialVisibilityState,
     })
 
-
-
     // Auto-expand root group
     useEffect(() => {
-        setExpandState({ root: true });
+        setExpandState({ root: true })
     }, [setExpandState])
 
     const { table } = useDataTable({
@@ -64,58 +103,110 @@ const InboxList: React.FC<InboxListProps> = ({
         rows: (data || []) as any,
         enableRowSelection: false,
         state: { expandState, groupState, sortState, setExpandState, ...rest },
-
     })
+
+    // ✅ Use your actual API shape: data[0].items etc.
+    const flatRows = useMemo(() => flattenRows(data as any), [data])
+
+    // ✅ index of currently opened item in the flattened list
+    const selectedIndex = useMemo(() => {
+        if (!selectedItem) return -1
+
+        const selTid = selectedItem?.transactionId != null ? String(selectedItem.transactionId) : ''
+        const selPid = selectedItem?.processId != null ? String(selectedItem.processId) : ''
+        const selId = selectedItem?.id != null ? String(selectedItem.id) : ''
+
+        return flatRows.findIndex((r: any) => {
+            const rTid = r?.transactionId != null ? String(r.transactionId) : ''
+            const rPid = r?.processId != null ? String(r.processId) : ''
+            const rId = r?.id != null ? String(r.id) : ''
+
+            // strongest match first
+            if (selTid && rTid) return selTid === rTid
+            if (selPid && rPid) return selPid === rPid
+            if (selId && rId) return selId === rId
+
+            // extra fallback (optional)
+            if (selectedItem?.requestNo && r?.requestNo) return String(selectedItem.requestNo) === String(r.requestNo)
+
+            return false
+        })
+    }, [flatRows, selectedItem])
+
+    const hasPrev = selectedIndex > 0
+    const hasNext = selectedIndex >= 0 && selectedIndex < flatRows.length - 1
+
+    const goToRow = (row: any) => {
+        if (!row) return
+        setSelectedItem(row)        // keep RequestsPage selectedItem in sync
+        onRowClick(row, 'Overview') // triggers openRequest(row, workflow, tab)
+    }
+
+    const onPrev = () => {
+        if (!hasPrev) return
+        goToRow(flatRows[selectedIndex - 1])
+    }
+
+    const onNext = () => {
+        if (!hasNext) return
+        goToRow(flatRows[selectedIndex + 1])
+    }
+
+    // Debug (keep for a bit until stable)
+    // console.log({ selectedIndex, hasPrev, hasNext, flatRowsLen: flatRows.length, selectedItem }, 'nav-debug')
 
     return (
         <>
             <style>{hideRootGroupStyle}</style>
 
-            <div className='flex flex-col rounded-lg bg-primary shadow  px-6 md:px-6 py-4'>
-                {/* Header */}
-                {/* <div className='flex items-center justify-between border-b p-4 shrink-0'>
-                    <h2 className='text-lg font-semibold text-gray-800'>
-                        {workflow?.name || 'Inbox'}
-                    </h2>
-                    <div className='flex items-center gap-2 text-sm text-gray-500'>
-                        <span>{totalItems} Requests</span>
-                        <button onClick={onRefresh} className='rounded p-2 hover:bg-gray-100'>
-                            <span className='mdi mdi-refresh text-lg'></span>
-                        </button>
-                    </div>
-                </div> */}
-
-                {/* Table Body - FIX: changed overflow-hidden to overflow-auto */}
-                <div className='flex-1  p-2 hide-root-header relative '>
-                    <DataTable
-                        isLoading={isLoading}
-                        isReLoading={isRefetching}
-                        pageSize={pageSize}
-                        table={table}
-                        onReload={onRefresh}
-
-                    />
-
-                    {!isLoading && totalItems === 0 && (
-                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                            <div className="text-gray-400 text-sm">No requests found</div>
+            <div className="flex flex-col bg-primary px-6 md:px-6 py-4">
+                <div className="flex-1 p-2 hide-root-header relative">
+                    <div className="flex w-full gap-3">
+                        {/* Left */}
+                        <div className={`${selectedItem ? 'hidden' : 'basis-5/5'} min-w-0`}>
+                            <DataTable
+                                isLoading={isLoading}
+                                isReLoading={isRefetching}
+                                pageSize={pageSize}
+                                table={table}
+                                onReload={onRefresh}
+                                component={selectedItem}
+                            />
                         </div>
-                    )}
+
+                        {/* Right */}
+                        {selectedItem && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.3, duration: 0.5 }}
+                                className="basis-5/5 min-w-0 request-details-container"
+                            >
+                                <AnimateFadeIn>
+                                    <Request
+                                        onPrev={hasPrev ? onPrev : undefined}
+                                        onNext={hasNext ? onNext : undefined}
+                                    />
+                                </AnimateFadeIn>
+                            </motion.div>
+                        )}
+                    </div>
                 </div>
 
-                {/* Footer - FIX: Added shrink-0 and pageSizeOptions */}
-                <div className=' p-4 shrink-0 bg-primary-1 z-10'>
-                    <Pagination
-                        itemLabel='Requests'
-                        page={page}
-                        pageSize={pageSize}
-                        totalItems={totalItems}
-                        onPageChange={setPage}
-                        onPageSizeChange={setPageSize}
-                        showPageNumbers={false}
-
-                    />
-                </div>
+                {/* Footer */}
+                {!selectedItem && (
+                    <div className="p-4 shrink-0 bg-primary-1 z-10">
+                        <Pagination
+                            itemLabel="Requests"
+                            page={page}
+                            pageSize={pageSize}
+                            totalItems={totalItems}
+                            onPageChange={setPage}
+                            onPageSizeChange={setPageSize}
+                            showPageNumbers={false}
+                        />
+                    </div>
+                )}
             </div>
         </>
     )

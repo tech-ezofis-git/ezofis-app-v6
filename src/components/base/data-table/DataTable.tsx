@@ -20,6 +20,7 @@ interface Props<TData> extends ComponentProps<'table'> {
   isLoading?: boolean
   pageSize?: number
   onReload: () => void
+  component?: any
 }
 
 const rowSizeClassNames = {
@@ -34,21 +35,23 @@ const DataTable = <TData,>({
   pageSize,
   table,
   onReload,
+  component
 }: Props<TData>) => {
   const [rowSize, setRowSize] = useState<RowSize>('default')
   const rows = table.getRowModel().rows
 
   return (
-    <>
-      <TableActionBar
+    <div className={`flex ${!component ? "w-full" : "w-full"} flex-col`}>
+      {<TableActionBar
         isReloading={isReLoading}
         rowSize={rowSize}
         table={table}
         onReload={onReload}
         onRowSizeChange={setRowSize}
+        component={component}
       />
-
-      <div className='scrollbar w-full overflow-x-auto'>
+      }
+      <div className={`scrollbar flex w-full overflow-x-auto`}>
         <Table className='table-fixed'>
           <Thead>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -98,10 +101,11 @@ const DataTable = <TData,>({
             </Tbody>
           )}
         </Table>
+
       </div>
 
       <TableBulkActionBar table={table} />
-    </>
+    </div>
   )
 }
 

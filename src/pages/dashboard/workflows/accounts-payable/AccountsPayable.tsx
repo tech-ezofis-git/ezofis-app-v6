@@ -22,7 +22,7 @@ const AccountsPayable = () => {
         ) : null}
       </AnimatePresence>
 
-      {showOverviewAndIntegrations && (
+      {showOverviewAndIntegrations && isApSetUpCompleted && !isSetupStarted && (
         <>
           <Overview />
           <Integrations />
