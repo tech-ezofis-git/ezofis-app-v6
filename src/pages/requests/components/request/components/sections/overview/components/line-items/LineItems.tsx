@@ -8,7 +8,7 @@ import Thead from '@/components/base/table/Thead'
 import Tr from '@/components/base/table/Tr'
 import Title from '@/components/base/Title'
 import cn from '@/utils/cn'
-import Title from '@/components/base/Title'
+// import Title from '@/components/base/Title'
 interface Props {
   data: any
 }
