@@ -164,11 +164,11 @@ const InboxList: React.FC<InboxListProps> = ({
         <>
             <style>{hideRootGroupStyle}</style>
 
-            <div className="flex flex-col bg-primary px-6 md:px-6 py-4">
-                <div className="flex-1 p-2 hide-root-header relative">
+            <div className="flex flex-col bg-primary px-6 md:px-6 py-2">
+                <div className="flex-1  hide-root-header relative">
                     <div className="flex w-full gap-3">
                         {/* Left */}
-                        <div className={`${selectedItem ? 'hidden' : 'basis-5/5'} min-w-0`}>
+                        <div className={`${selectedItem ? 'hidden' : 'basis-5/5'} p-2 py-2 min-w-0`}>
                             <DataTable
                                 isLoading={isLoading}
                                 isReLoading={isRefetching}
@@ -193,7 +193,7 @@ const InboxList: React.FC<InboxListProps> = ({
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.3, duration: 0.5 }}
-                                className="basis-5/5 min-w-0 request-details-container"
+                                className="basis-5/5 min-w-0 "
                             >
                                 <AnimateFadeIn>
                                     <Request

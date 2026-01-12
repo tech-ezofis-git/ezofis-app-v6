@@ -242,7 +242,11 @@ const Request = ({ onPrev, onNext }: { onPrev?: () => void; onNext?: () => void 
       )}
 
       {/* Sticky Footer */}
-      {activeTab === 'Overview' && hasAgentData && <Footer onSubmit={handleVerifier} submitting={submitting} />}
+      {activeTab === 'Overview' && hasAgentData && (
+        <div className="fixed bottom-0 right-0 z-50 w-full border-t border-gray-3 bg-white">
+          <Footer onSubmit={handleVerifier} submitting={submitting} />
+        </div>
+      )}
     </div>
   );
 };
