@@ -1,40 +1,40 @@
-import { useEffect, useState } from "react";
+// import { useEffect, useState } from "react";
 import NewRequestFileUpload from "./components/newrequest/FileUpload";
 import Header from "./components/newrequest/Header";
 import PoSetupFlowPage from "./components/newrequest/poFlow/PoSetupFlowPage";
+import requestStore from "../../stores/useRequestStore";
 
 interface Props {
     onClose: () => void;
 }
 
-type SheetMode = "request" | "po";
+// type SheetMode = "request" | "po";
 
 const NewRequestSheet = ({ onClose }: Props) => {
-    const [mode, setMode] = useState<SheetMode>("request");
+    // const [mode, setMode] = useState<SheetMode>("request");
 
-    useEffect(() => {
+    const { newRequestMeta } = requestStore((state) => state)
 
-        console.log(mode)
-    }, [mode])
+
 
 
     return (
         <div className="flex flex-col">
             <Header
                 onClose={onClose}
-                title={mode === "po" ? "PO Setup" : "New Request"}
+                title={newRequestMeta === "po" ? "PO Setup" : "New Request"}
             // optional: show a subtle badge when in PO mode
             // badge={mode === "po" ? "Configuration" : undefined}
             />
 
-            {mode === "request" ? (
+            {newRequestMeta === "request" ? (
                 <NewRequestFileUpload
                     onClose={onClose}
-                    onStartPoImport={() => setMode("po")}
+                // onStartPoImport={() => setMode("po")}
                 />
             ) : (
                 <PoSetupFlowPage
-                    onExit={() => setMode("request")}
+                    // onExit={() => setMode("request")}
                     onClose={onClose}
                 />
             )}

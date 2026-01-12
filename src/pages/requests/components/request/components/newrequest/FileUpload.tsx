@@ -19,7 +19,7 @@ import {
     AnimateSlideUp,
     AnimateScale,
     AnimateStagger,
-    AnimateSlideRight,
+    // AnimateSlideRight,
     AnimateEntrancePop
 } from "@/components/common/animations";
 import showToast from "@/components/base/toast/showToast";
@@ -27,7 +27,7 @@ import { motion } from "motion/react";
 // import PoLaunchModal from "./poFlow/components/PoLaunchModal";
 // import { useDisclosure } from "@mantine/hooks";
 
-const FileUplaod = ({ onClose, onStartPoImport }: Props) => {
+const FileUplaod = ({ onClose }: Props) => {
     const rawWorkflow = requestStore((state) => state.rawWorkflowData);
     const workflowRefresh = requestStore((state) => state.workflowRefresh);
 
@@ -257,7 +257,7 @@ const FileUplaod = ({ onClose, onStartPoImport }: Props) => {
                     </AnimateSlideUp>
 
 
-                    <AnimateSlideRight className="rounded-2xl border border-[var(--gray-4)] bg-[var(--gray-0)] p-4 shadow-sm">
+                    {/* <AnimateSlideRight className="rounded-2xl border border-[var(--gray-4)] bg-[var(--gray-0)] p-4 shadow-sm">
                         <div className="flex items-center justify-between gap-4 rounded-lg border border-[var(--primary-3)] bg-[var(--primary-1)] p-3 sm:px-4">
                             <div className="flex items-center gap-2.5">
                                 <Icon name="tabler:info-circle" className="size-5 text-[var(--primary-9)]" />
@@ -277,8 +277,8 @@ const FileUplaod = ({ onClose, onStartPoImport }: Props) => {
                                 Link Po
 
                             </button>
-                        </div>
-                        {/* <PoLaunchModal
+                        </div> */}
+                    {/* <PoLaunchModal
                                 opened={poModalOpened}
                                 onClose={poModal.close}
                                 onProceed={() => {
@@ -286,7 +286,7 @@ const FileUplaod = ({ onClose, onStartPoImport }: Props) => {
                                     onStartPoImport?.();
                                 }}
                             /> */}
-                    </AnimateSlideRight>
+                    {/* </AnimateSlideRight> */}
 
 
                 </div>

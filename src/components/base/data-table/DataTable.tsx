@@ -8,7 +8,7 @@ import Tr from '@/components/base/table/Tr'
 import cn from '@/utils/cn'
 import type { RowSize } from './types'
 import getColumnPinnedStyles from './helpers/getColumnPinnedStyles'
-import TableActionBar from './TableActionBar'
+import TableActionBar, { type TableActionButton } from './TableActionBar'
 import TableBulkActionBar from './TableBulkActionBar'
 import TableEmptyState from './TableEmptyState'
 import TableHeaderCell from './TableHeaderCell'
@@ -21,6 +21,9 @@ interface Props<TData> extends ComponentProps<'table'> {
   pageSize?: number
   onReload: () => void
   component?: any
+
+  /** ✅ Custom actions for action bar */
+  actions?: TableActionButton[]
 }
 
 const rowSizeClassNames = {
@@ -35,33 +38,31 @@ const DataTable = <TData,>({
   pageSize,
   table,
   onReload,
-  component
+  component,
+  actions,
 }: Props<TData>) => {
   const [rowSize, setRowSize] = useState<RowSize>('default')
   const rows = table.getRowModel().rows
 
   return (
-    <div className={`flex ${!component ? "w-full" : "w-full"} flex-col`}>
-      {<TableActionBar
+    <div className={`flex ${!component ? 'w-full' : 'w-full'} flex-col`}>
+      <TableActionBar
         isReloading={isReLoading}
         rowSize={rowSize}
         table={table}
         onReload={onReload}
         onRowSizeChange={setRowSize}
         component={component}
+        actions={actions} // ✅ pass through
       />
-      }
-      <div className={`scrollbar flex w-full overflow-x-auto`}>
-        <Table className='table-fixed'>
+
+      <div className="scrollbar flex w-full overflow-x-auto">
+        <Table className="table-fixed">
           <Thead>
             {table.getHeaderGroups().map((headerGroup) => (
               <Tr key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
-                  <TableHeaderCell
-                    header={header}
-                    key={header.id}
-                    table={table}
-                  />
+                  <TableHeaderCell header={header} key={header.id} table={table} />
                 ))}
               </Tr>
             ))}
@@ -85,15 +86,9 @@ const DataTable = <TData,>({
                     <Td
                       key={cell.id}
                       style={getColumnPinnedStyles(cell.column, table)}
-                      className={cn(
-                        rowSizeClassNames[rowSize],
-                        cell.column.columnDef.meta?.className,
-                      )}
+                      className={cn(rowSizeClassNames[rowSize], cell.column.columnDef.meta?.className)}
                     >
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext(),
-                      )}
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </Td>
                   ))}
                 </Tr>
@@ -101,7 +96,6 @@ const DataTable = <TData,>({
             </Tbody>
           )}
         </Table>
-
       </div>
 
       <TableBulkActionBar table={table} />

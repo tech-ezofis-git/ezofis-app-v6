@@ -10,23 +10,24 @@ type Store = {
   selectedWorkflowId: number | null
   activeTabValue: string | null
   // Actions
-  closeRequest: () => void
-  openRequest: (item: any, workflowId: any, tab: string) => void // Updated signature
-  openNewRequest: () => void
-  closeNewRequest: () => void
-  toggleMaximize: () => void
   selectedWorkflow: any
   isClosed: boolean
   newRequest: boolean
   rawWorkflowData: any | null
-  setRawWorkflowData: (data: any) => void
+  newRequestMeta: string | null
   reloadMeta: boolean
+  repoData: any
+  pendingNav: any
+  closeRequest: () => void
+  openRequest: (item: any, workflowId: any, tab: string) => void // Updated signature
+  openNewRequest: (title: string) => void
+  closeNewRequest: () => void
+  toggleMaximize: () => void
+  setRawWorkflowData: (data: any) => void
   workflowRefresh: () => void
   stopRefresh: () => void
-  repoData: any
   handleSetRepoData: (data: any) => void
 
-  pendingNav: any
   setPendingNav: (v: any) => void
   clearPendingNav: () => void
 }
@@ -43,6 +44,7 @@ const requestStore = create<Store>()((set) => ({
   newRequest: false,
   reloadMeta: false,
   repoData: null,
+  newRequestMeta: null,
   // in useRequestStore
   pendingNav: null as null | { direction: 'NEXT' | 'PREV' },
   setPendingNav: (v) => set({ pendingNav: v }),
@@ -56,8 +58,9 @@ const requestStore = create<Store>()((set) => ({
       activeTabValue: null,
       isClosed: !state.isClosed,
     })),
-  openNewRequest: () => set({ newRequest: true }),
-  closeNewRequest: () => set({ newRequest: false }),
+  openNewRequest: (title: string) =>
+    set({ newRequest: true, newRequestMeta: title }),
+  closeNewRequest: () => set({ newRequest: false, newRequestMeta: null }),
   // FIX: Accept data when opening
   openRequest: (item, workflow, tab) =>
     set({

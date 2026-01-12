@@ -9,6 +9,7 @@ import Request from './request/Request'
 import { motion } from 'motion/react'
 
 import { AnimateFadeIn } from '@/components/common/animations'
+import requestStore from '../stores/useRequestStore'
 
 const hideRootGroupStyle = `
   .hide-root-header tbody > tr:first-child {
@@ -80,6 +81,7 @@ const InboxList: React.FC<InboxListProps> = ({
     selectedItem,
     setSelectedItem,
 }) => {
+    const { openNewRequest } = requestStore((state) => state)
     const columns = useDynamicColumns(workflow, onRowClick, selectedItem) || []
 
     const initialVisibilityState = {
@@ -154,7 +156,10 @@ const InboxList: React.FC<InboxListProps> = ({
 
     // Debug (keep for a bit until stable)
     // console.log({ selectedIndex, hasPrev, hasNext, flatRowsLen: flatRows.length, selectedItem }, 'nav-debug')
-
+    const handlePoSheet = () => {
+        // alert("hi")
+        openNewRequest("po")
+    }
     return (
         <>
             <style>{hideRootGroupStyle}</style>
@@ -171,6 +176,14 @@ const InboxList: React.FC<InboxListProps> = ({
                                 table={table}
                                 onReload={onRefresh}
                                 component={selectedItem}
+                                actions={[
+                                    {
+                                        label: 'Upload PO',
+                                        onClick: () => { handlePoSheet() },
+                                        icon: 'tabler:upload',
+                                        align: 'right', // or 'left'
+                                    },
+                                ]}
                             />
                         </div>
 

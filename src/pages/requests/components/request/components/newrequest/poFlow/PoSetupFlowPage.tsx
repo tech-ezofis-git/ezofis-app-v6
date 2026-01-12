@@ -7,15 +7,18 @@ import Step2ColumnMapping from "./steps/Step2ColumnMapping";
 import Step3PreviewConfirm from "./steps/Step3PreviewConfirm";
 
 import { SYSTEM_TEMPLATE_COLUMNS } from "./utils/templateSchema";
+import requestStore from "@/pages/requests/stores/useRequestStore";
 
 type Props = {
-    onExit: () => void;
+    // onExit: () => void;
     onClose: () => void;
 };
 
 export type UploadState = "idle" | "uploading" | "parsing" | "ready" | "error";
 
-export default function PoSetupFlowPage({ onExit }: Props) {
+export default function PoSetupFlowPage({ }: Props) {
+
+    const { closeNewRequest } = requestStore((state) => state)
     const [activeStep, setActiveStep] = useState<0 | 1 | 2>(0);
 
     const [uploadState, setUploadState] = useState<UploadState>("idle");
@@ -182,7 +185,7 @@ export default function PoSetupFlowPage({ onExit }: Props) {
                                             uploadedColumns,
                                             mapping
                                         });
-                                        onExit();
+                                        closeNewRequest();
                                     }}
                                 />
                             ) : null}
