@@ -2,9 +2,7 @@ import { useMemo, useState, useEffect } from 'react';
 import requestStore from '../../stores/useRequestStore';
 
 import Footer from './components/Footer';
-// import Header from './components/Header';
 import Overview from './components/sections/overview/Overview';
-// import Form from './components/sections/Sections';
 
 import Tabs from '@/components/base/tabs/Tabs';
 import Tab from '@/components/base/tabs/Tab';
@@ -19,7 +17,6 @@ import History from './components/sections/history/History';
 import {
   AnimateSlideUp,
   AnimateFadeIn,
-  // AnimateSlideRight,
   AnimateSlideLeft,
   AnimateStagger,
 } from '@/components/common/animations';
@@ -27,20 +24,16 @@ import IconButton from '@/components/base/button/IconButton';
 import Icon from '@/components/base/icon/Icon';
 import workflowApi from "../../../../api/workflow/workflow"
 import Header from './components/Header'
+
 const Request = ({ onPrev, onNext }: { onPrev?: () => void; onNext?: () => void }) => {
   const {
-    // isMaximized,
-    // isRequestOpen,
     closeRequest,
     selectedItem,
     selectedWorkflowId,
     activeTabValue,
     rawWorkflowData,
     workflowRefresh
-    // selectedWorkflow,
   } = requestStore((state) => state);
-
-
 
   const [activeTab, setActiveTab] = useState<string>(activeTabValue ? activeTabValue : 'Overview');
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
@@ -55,11 +48,11 @@ const Request = ({ onPrev, onNext }: { onPrev?: () => void; onNext?: () => void 
   const agentDataList = request?._agentData || [];
   const hasAgentData = agentDataList.length > 0;
 
-  console.log(request, "this is from the request")
+  console.log(selectedItem, "this is from the request")
+
   useEffect(() => {
     if (hasAgentData && activeTab === 'Form') {
       setActiveTab('Overview');
-
       if (!selectedAgentId) setSelectedAgentId(agentDataList[0].id);
     }
     if (activeTabValue) {
@@ -79,23 +72,20 @@ const Request = ({ onPrev, onNext }: { onPrev?: () => void; onNext?: () => void 
     return agentDataList.find((a: any) => a.id === selectedAgentId) || {};
   }, [agentDataList, selectedAgentId]);
 
+  console.log(currentAgentData, "currentAgentData")
   const handleActivetab = (tabValue: string) => {
     if (tabValue === 'close') {
+      setActiveTab("");
       closeRequest();
       return;
     }
     setActiveTab(tabValue);
   };
 
-
   const handleVerifier = async () => {
     try {
       setSubmitting(true)
-
       console.log(rawWorkflowData)
-      selectedItem?.processId,
-        selectedItem?.transactionId
-      console.log(selectedItem)
       const payload = {
         workflowId: rawWorkflowData?.id,
         transactionId: selectedItem?.transactionId,
@@ -104,59 +94,58 @@ const Request = ({ onPrev, onNext }: { onPrev?: () => void; onNext?: () => void 
           formId: rawWorkflowData?.wFormId,
           formEntryId: selectedItem?.formData.formEntryId,
           fields: selectedItem?.formData?.fields
-
         },
       }
 
-
-
       const response = await workflowApi?.createProcessTransaction(payload)
-
       console.log(response)
       workflowRefresh()
       closeRequest()
 
-
     } catch (e) {
-
+      console.error(e);
     } finally {
       setSubmitting(false)
     }
-
   }
+
   return (
     <div className="flex flex-col p-0 w-full">
-      <Header
-        requestNo={currentAgentData?.reqNo}
-        raisedAt={request?.createdAt}
-        isLoading={isLoading}
-        onPrev={onPrev}
-        onNext={onNext}
+      {/* Combined Sticky Wrapper: 
+        Keeps both Header and Tabs pinned to the top.
+        Added z-20 and bg-white (or bg-surface) to ensure content scrolls behind it.
+      */}
+      <div className="sticky top-0 z-20 bg-white">
+        <Header
+          requestNo={currentAgentData?.reqNo ? currentAgentData.reqNo : selectedItem?.requestNo}
+          raisedAt={request?.createdAt}
+          isLoading={isLoading}
+          onPrev={onPrev}
+          onNext={onNext}
+        />
 
-      />
-      {/* Sticky Tabs */}
-      <div className="border-b border-gray-3  bg-surface sticky top-0 z-10">
-        <Tabs color='primary' value={activeTab} onChange={(val) => handleActivetab(val as string)}>
-          <Tab label={
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation(); // ✅ prevents switching tabs if your library triggers it
-                handleActivetab("close");
-              }}
-              className="inline-flex items-center"
-            >
-              <IconButton aria-label="Back" variant='ghost' color='gray'>
-                <Icon name="tabler:arrow-left" className="size-4 text-gray-10" />
-              </IconButton>
-            </button>
-          } value="close" />
-          {<Tab label="Overview" value="Overview" />}
-          {/* <Tab label="Form" value="Form" /> */}
-          <Tab label={`Attachment `} value="Attachments" />
-          <Tab label={`Comment`} value="Comments" />
-          <Tab label="History" value="History" />
-        </Tabs>
+        <div className="border-b border-gray-3 bg-surface">
+          <Tabs color='primary' value={activeTab} onChange={(val) => handleActivetab(val as string)}>
+            <Tab label={
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleActivetab("close");
+                }}
+                className="inline-flex items-center"
+              >
+                <IconButton aria-label="Back" variant='ghost' color='gray'>
+                  <Icon name="tabler:arrow-left" className="size-4 text-gray-10" />
+                </IconButton>
+              </button>
+            } value="close" />
+            <Tab label="Overview" value="Overview" />
+            <Tab label={`Attachment `} value="Attachments" />
+            <Tab label={`Comment`} value="Comments" />
+            <Tab label="History" value="History" />
+          </Tabs>
+        </div>
       </div>
 
       {isLoading ? (
@@ -172,22 +161,6 @@ const Request = ({ onPrev, onNext }: { onPrev?: () => void; onNext?: () => void 
         </div>
       ) : (
         <>
-          {/* Sub-tabs - Sticky if present */}
-          {/* <AnimateSlideUp delay={0.5}>
-            {activeTab === 'Overview' && hasAgentData && agentDataList.length > 1 && (
-              <div className="px-6 pt-2 bg-gray-50 border-b sticky top-[53px] z-10">
-                <Tabs
-                  value={selectedAgentId}
-                  onChange={(val) => setSelectedAgentId(val as string)}
-                >
-                  {agentDataList.map((agent: any) => (
-                    <Tab key={agent.id} value={agent.id} label={agent.stage} />
-                  ))}
-                </Tabs>
-              </div>
-            )}
-          </AnimateSlideUp> */}
-
           {/* Tab Content */}
           <AnimateStagger>
             {activeTab === 'Overview' && (
@@ -195,12 +168,6 @@ const Request = ({ onPrev, onNext }: { onPrev?: () => void; onNext?: () => void 
                 <Overview agentData={currentAgentData} />
               </AnimateFadeIn>
             )}
-
-            {/* {activeTab === 'Form' && (
-              <AnimateSlideRight delay={0.7}>
-                <Form />
-              </AnimateSlideRight>
-            )} */}
 
             {activeTab === 'Attachments' && (
               <AnimateSlideUp delay={0.8}>
@@ -210,7 +177,6 @@ const Request = ({ onPrev, onNext }: { onPrev?: () => void; onNext?: () => void 
                   processId={Number(selectedItem?.processId)}
                   transactionId={Number(selectedItem?.transactionId)}
                   repositoryId={Number(rawWorkflowData?.repositoryId)}
-
                 />
               </AnimateSlideUp>
             )}
@@ -232,8 +198,6 @@ const Request = ({ onPrev, onNext }: { onPrev?: () => void; onNext?: () => void 
                   enabled={activeTab === 'History'}
                   workflowId={Number(selectedWorkflowId)}
                   processId={Number(selectedItem?.processId)}
-
-
                 />
               </AnimateFadeIn>
             )}

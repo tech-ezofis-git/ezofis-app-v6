@@ -30,23 +30,47 @@ const Header: React.FC<HeaderProps> = ({
   // const toggleMaximize = requestStore((state) => state.toggleMaximize)
 
   return (
-    <OverlayHeaderWrapper className='justify-between gap-4 '>
-      <div className='flex items-center gap-1 p-0  bg-white'>
+    <OverlayHeaderWrapper className='justify-between gap-4'>
+      {/* Left Side Group: Request Number + Navigation Buttons */}
+      <div className='flex items-center gap-3 bg-white p-0'>
+
         {/* Dynamic Request Number */}
         <div className='text-15/9 font-semibold text-gray-13'>
           {isLoading ? (
-            <span className="animate-pulse bg-gray-200 rounded px-2 text-transparent">REQ-Loading</span>
+            <span className="animate-pulse rounded bg-gray-200 px-2 text-transparent">REQ-Loading</span>
           ) : (
             requestNo || 'REQ - ...'
           )}
         </div>
 
-        {/* <Divider className='my-auto mr-2 ml-4 h-5' orientation='vertical' /> */}
-
-        {/* Navigation Buttons */}
+        {/* Navigation Buttons - Placed right next to REQ */}
+        <div className='flex items-center border-l border-gray-3 pl-2'>
+          <Tooltip content='Previous' openDelay={300}>
+            <IconButton
+              color='gray'
+              icon='tabler:chevron-left'
+              variant='ghost'
+              disabled={!onPrev || isLoading}
+              onClick={onPrev}
+              className="cursor-pointer"
+              size="sm" // Optional: makes buttons slightly smaller if needed
+            />
+          </Tooltip>
+          <Tooltip content='Next' openDelay={500}>
+            <IconButton
+              color='gray'
+              icon='lucide:chevron-right'
+              variant='ghost'
+              disabled={!onNext || isLoading}
+              onClick={onNext}
+              size="sm"
+            />
+          </Tooltip>
+        </div>
 
       </div>
 
+      {/* Right Side Group: (Maximize / Close - currently commented out) */}
       <div className='flex items-center gap-1'>
         {/* <Tooltip
           content={isMaximized ? 'Minimize' : 'Maximize'}
@@ -58,27 +82,8 @@ const Header: React.FC<HeaderProps> = ({
             variant='ghost'
             onClick={toggleMaximize}
           />
-          
         </Tooltip> */}
-        <Tooltip content='Previous' openDelay={300} >
-          <IconButton
-            color='gray'
-            icon='tabler:chevron-left'
-            variant='ghost'
-            disabled={!onPrev || isLoading}
-            onClick={onPrev}
-            className="cursor-pointer"
-          />
-        </Tooltip>
-        <Tooltip content='Next' openDelay={500}>
-          <IconButton
-            color='gray'
-            icon='lucide:chevron-right'
-            variant='ghost'
-            disabled={!onNext || isLoading}
-            onClick={onNext}
-          />
-        </Tooltip>
+
         {/* <CloseButton onClick={closeRequest} /> */}
       </div>
     </OverlayHeaderWrapper >

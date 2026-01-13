@@ -24,15 +24,12 @@ import {
 } from "@/components/common/animations";
 import showToast from "@/components/base/toast/showToast";
 import { motion } from "motion/react";
-// import PoLaunchModal from "./poFlow/components/PoLaunchModal";
-// import { useDisclosure } from "@mantine/hooks";
 
 const FileUplaod = ({ onClose }: Props) => {
     const rawWorkflow = requestStore((state) => state.rawWorkflowData);
     const workflowRefresh = requestStore((state) => state.workflowRefresh);
 
     const invoiceInputRef = useRef<HTMLInputElement | null>(null);
-    // const poInputRef = useRef<HTMLInputElement | null>(null);
 
     const [isDragOver, setIsDragOver] = useState(false);
     const [uploadedInvoiceName, setUploadedInvoiceName] = useState<string | null>(null);
@@ -41,8 +38,6 @@ const FileUplaod = ({ onClose }: Props) => {
     const [fileData, setFileData] = useState<File | null>(null);
     const [isInvoiceUploading, setIsInvoiceUploading] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    // const [poModalOpened, poModal] = useDisclosure(false);/
-    // const [dismissPoPrompt, setDismissPoPrompt] = useState(false);
 
     useEffect(() => {
         handleFolderFetch();
@@ -155,23 +150,33 @@ const FileUplaod = ({ onClose }: Props) => {
         }
     };
 
-    // const handleTemplateDownload = async () => {
-    //     try {
-    //         const tenantId = authUserStore.getState()?.session?.tenantId;
-    //         if (!tenantId) return;
-
-    //         await downloadTemplate(tenantId);
-    //         showToast({ message: "Template downloaded", variant: "success" });
-    //     } catch (e) {
-    //         console.error(e);
-    //         showToast({ message: "Failed to download template", variant: "error" });
-    //     }
-    // };
+    // --- Feature Cards Data ---
+    // const features = [
+    //     {
+    //         title: "Lightning Fast",
+    //         description: "Process documents faster with our agentic pipeline",
+    //         icon: "tabler:bolt",
+    //         colorClass: "bg-[var(--orange-2)] text-[var(--orange-9)]", // Yellow/Orange theme
+    //     },
+    //     {
+    //         title: "100% Accuracy",
+    //         description: "Industry-leading extraction accuracy",
+    //         icon: "tabler:sparkles",
+    //         colorClass: "bg-[var(--purple-2)] text-[var(--purple-9)]", // Purple theme
+    //     },
+    //     {
+    //         title: "Any Format",
+    //         description: "Support for PDF, images, and scanned documents",
+    //         icon: "tabler:files", // or tabler:clock based on your image
+    //         colorClass: "bg-[var(--green-2)] text-[var(--green-9)]", // Green theme
+    //     },
+    // ];
 
     return (
         <AnimateFadeIn className="h-[calc(100vh-110px)] overflow-hidden flex flex-col bg-[var(--gray-1)]">
             <div className="flex-1 overflow-y-auto px-5 py-3 flex flex-col items-center">
-                <div className="w-full max-w-[850px] flex flex-col gap-3">
+                <div className="w-full max-w-[850px] flex flex-col gap-6">
+
                     {/* INVOICE Upload Card */}
                     <AnimateSlideUp className="rounded-2xl border border-[var(--gray-4)] bg-[var(--gray-0)] p-5 shadow-sm">
                         <AnimateEntrancePop>
@@ -256,42 +261,36 @@ const FileUplaod = ({ onClose }: Props) => {
                         )}
                     </AnimateSlideUp>
 
+                    {/* Agentic Intelligence Feature Section */}
+                    {/* <AnimateSlideUp delay={0.2} className="mt-4 flex flex-col items-center">
+                        <h2 className="text-center text-lg font-bold text-[var(--gray-13)]">
+                            Pure Agentic Document Intelligence
+                        </h2>
+                        <p className="mt-1 text-center text-13 text-[var(--gray-10)] mb-6">
+                            Extract structured data from any document without LLM using VRP (Visual Reasoning Processor)
+                        </p>
 
-                    {/* <AnimateSlideRight className="rounded-2xl border border-[var(--gray-4)] bg-[var(--gray-0)] p-4 shadow-sm">
-                        <div className="flex items-center justify-between gap-4 rounded-lg border border-[var(--primary-3)] bg-[var(--primary-1)] p-3 sm:px-4">
-                            <div className="flex items-center gap-2.5">
-                                <Icon name="tabler:info-circle" className="size-5 text-[var(--primary-9)]" />
-                                <p className="text-sm text-[var(--gray-12)]">
-                                    Need to link a new Purchase Order first?
-                                </p>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    onStartPoImport?.();
-                                }}
-                                className="cursor-pointer whitespace-nowrap rounded-md bg-[var(--primary-9)] px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-[var(--primary-10)] active:transform active:scale-95"
-                            >
-                                Link Po
-
-                            </button>
-                        </div> */}
-                    {/* <PoLaunchModal
-                                opened={poModalOpened}
-                                onClose={poModal.close}
-                                onProceed={() => {
-                                    poModal.close();
-                                    onStartPoImport?.();
-                                }}
-                            /> */}
-                    {/* </AnimateSlideRight> */}
-
+                        <div className="grid w-full grid-cols-1 gap-4 md:grid-cols-3">
+                            {features.map((feature, index) => (
+                                <AnimateStagger key={index}>
+                                    <div className="flex h-full flex-col rounded-xl border border-[var(--gray-3)] bg-white p-5 shadow-sm transition-all duration-300 hover:shadow-md">
+                                        <div className={`mb-4 flex size-10 items-center justify-center rounded-lg ${feature.colorClass}`}>
+                                            <Icon name={feature.icon} className="size-5" />
+                                        </div>
+                                        <h4 className="mb-2 text-14 font-bold text-[var(--gray-12)]">
+                                            {feature.title}
+                                        </h4>
+                                        <p className="text-13 leading-relaxed text-[var(--gray-10)]">
+                                            {feature.description}
+                                        </p>
+                                    </div>
+                                </AnimateStagger>
+                            ))}
+                        </div>
+                    </AnimateSlideUp> */}
 
                 </div>
             </div>
-
 
             <AnimateSlideUp className="shrink-0 border-t border-[var(--gray-3)] bg-[var(--gray-0)] px-4">
                 <Footer onClose={onClose} onPrimaryClick={handleSubmit} isPrimaryLoading={isSubmitting} />

@@ -12,6 +12,7 @@ import formApi from '@/api/form/form'
 
 const RequestsPage = () => {
   const [activeTab, setActiveTab] = useState<string>('Inbox')
+  const [viewMode, setViewMode] = useState<'table' | 'grid'>('grid')
 
   const [isLoading, setIsLoading] = useState<Boolean>(false)
   const [allWorkflow, setAllWorkflow] = useState<Option[] | null>(null)
@@ -175,6 +176,8 @@ const RequestsPage = () => {
         // Pass state and setter to Header
         activeTab={activeTab}
         setActiveTab={handleTabChange}
+        viewMode={viewMode}
+        setViewMode={setViewMode}
       />}
       {/* <Table /> */}
       <InboxList
@@ -191,6 +194,7 @@ const RequestsPage = () => {
         onRowClick={handleRowClick}
         selectedItem={selectedItem}
         setSelectedItem={setSelectedItem}
+        viewMode={viewMode}
       />
 
     </>

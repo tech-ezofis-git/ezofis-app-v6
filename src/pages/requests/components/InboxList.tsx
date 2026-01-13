@@ -7,6 +7,7 @@ import { useDynamicColumns } from './columns/useDynamicColumns'
 import type { WorkflowOption, TableGroup } from '../types'
 import Request from './request/Request'
 import { motion } from 'motion/react'
+import GridView from './GridView'
 
 import { AnimateFadeIn } from '@/components/common/animations'
 import requestStore from '../stores/useRequestStore'
@@ -31,6 +32,7 @@ interface InboxListProps {
     onRowClick: (item: any, tab: string) => void
     selectedItem: any
     setSelectedItem: (item: any) => void
+    viewMode: 'table' | 'grid'
 }
 
 // ✅ robust flattener for your backend shape (group.items)
@@ -80,10 +82,12 @@ const InboxList: React.FC<InboxListProps> = ({
     onRowClick,
     selectedItem,
     setSelectedItem,
+    viewMode,
 }) => {
     const { openNewRequest } = requestStore((state) => state)
     const columns = useDynamicColumns(workflow, onRowClick, selectedItem) || []
 
+    console.log(data, "this is from inbox list")
     const initialVisibilityState = {
         createdAt: false,
         createdBy: false,
@@ -168,24 +172,36 @@ const InboxList: React.FC<InboxListProps> = ({
                 <div className="flex-1  hide-root-header relative">
                     <div className="flex w-full gap-3">
                         {/* Left */}
-                        <div className={`${selectedItem ? 'hidden' : 'basis-5/5'} p-2 py-2 min-w-0`}>
-                            <DataTable
-                                isLoading={isLoading}
-                                isReLoading={isRefetching}
-                                pageSize={pageSize}
-                                table={table}
-                                onReload={onRefresh}
-                                component={selectedItem}
-                                actions={[
-                                    {
-                                        label: 'Upload PO',
-                                        onClick: () => { handlePoSheet() },
-                                        icon: 'tabler:upload',
-                                        align: 'right', // or 'left'
-                                    },
-                                ]}
-                            />
-                        </div>
+                        {!selectedItem && viewMode === 'table' && (
+                            <div className="basis-5/5 p-2 py-2 min-w-0">
+                                <DataTable
+                                    isLoading={isLoading}
+                                    isReLoading={isRefetching}
+                                    pageSize={pageSize}
+                                    table={table}
+                                    onReload={onRefresh}
+                                    component={selectedItem}
+                                    actions={[
+                                        {
+                                            label: 'Upload PO',
+                                            onClick: () => { handlePoSheet() },
+                                            icon: 'tabler:upload',
+                                            align: 'right', // or 'left'
+                                        },
+                                    ]}
+                                />
+                            </div>
+                        )}
+
+                        {!selectedItem && viewMode === 'grid' && (
+                            <div className="basis-5/5 min-w-0">
+                                <GridView
+                                    data={data}
+                                    isLoading={isLoading}
+                                    onRowClick={onRowClick}
+                                />
+                            </div>
+                        )}
 
                         {/* Right */}
                         {selectedItem && (
