@@ -108,7 +108,7 @@ export const useDynamicColumns = (
                     id: 'raisedBy',
                     label: 'Raised By',
 
-                    size: 150,
+                    size: 200,
                     renderCell: (row: any) => (
                         <WrapOnHoverCell value={row.raisedBy ?? '-'} className="text-sm text-gray-700" />
                     ),

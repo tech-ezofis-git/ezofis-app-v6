@@ -7,118 +7,138 @@ import FieldGroup from './FieldGroup'
 
 const Fields = () => {
   const [search, setSearch] = useState('')
-
   const fieldGroups = [
     {
+      label: 'Display',
       items: [
         {
           icon: 'lucide:heading',
           label: 'Heading',
+          type: 'heading',
         },
         {
           icon: 'lucide:pilcrow',
           label: 'Paragraph',
+          type: 'paragraph',
         },
         {
           icon: 'lucide:minus',
           label: 'Divider',
+          type: 'divider',
         },
         {
           icon: 'lucide:space',
           label: 'Spacer',
+          type: 'spacer',
         },
       ],
-      label: 'Display',
     },
     {
+      label: 'Basic',
       items: [
         {
           icon: 'mdi:form-textbox',
           label: 'Short Text',
+          type: 'short_text',
         },
         {
           icon: 'mdi:form-textarea',
           label: 'Long Text',
+          type: 'long_text',
         },
         {
           icon: 'tabler:number-123',
           label: 'Number',
+          type: 'number',
         },
         {
           icon: 'lucide:dollar-sign',
           label: 'Currency',
+          type: 'currency',
         },
         {
           icon: 'lucide:calendar',
           label: 'Date',
+          type: 'date',
         },
         {
           icon: 'lucide:clock',
           label: 'Time',
+          type: 'time',
         },
         {
           icon: 'lucide:list-todo',
           label: 'Single Select',
+          type: 'single_select',
         },
         {
           icon: 'lucide:list-checks',
           label: 'Multiple Select',
+          type: 'multiple_select',
         },
         {
           icon: 'mdi:radiobox-marked',
           label: 'Single Choice',
+          type: 'single_choice',
         },
         {
           icon: 'lucide:square-check',
           label: 'Multiple Choice',
+          type: 'multiple_choice',
         },
         {
           icon: 'lucide:file-up',
           label: 'File Upload',
+          type: 'file_upload',
         },
       ],
-      label: 'Basic',
     },
     {
+      label: 'Rating',
       items: [
         {
           icon: 'lucide:star',
           label: 'Star Rating',
+          type: 'star_rating',
         },
         {
           icon: 'tabler:chart-bar-popular',
           label: 'Opinion Scale',
+          type: 'opinion_scale',
         },
         {
           icon: 'lucide:list-ordered',
           label: 'Ranking',
+          type: 'ranking',
         },
       ],
-      label: 'Rating',
     },
     {
+      label: 'Contact Details',
       items: [
         {
           icon: 'lucide:user',
           label: 'Full Name',
+          type: 'full_name',
         },
         {
           icon: 'lucide:mail',
           label: 'Email',
+          type: 'email',
         },
         {
           icon: 'lucide:map-pin',
           label: 'Address',
+          type: 'address',
         },
         {
           icon: 'lucide:phone',
           label: 'Phone Number',
+          type: 'phone_number',
         },
       ],
-      label: 'Contact Details',
     },
-  ]
-
+  ];
   return (
     <div className='space-y-6 p-4'>
       <InputText
@@ -149,6 +169,7 @@ const Fields = () => {
                 icon={item.icon}
                 key={item.label}
                 label={item.label}
+                type={item.type}
                 draggable
               />
             ))}

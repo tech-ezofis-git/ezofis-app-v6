@@ -22,24 +22,29 @@ type Props = {
     uploadState: UploadState;
     setUploadState: (s: UploadState) => void;
     uploadedFile: File | null;
+    rowCount: number | null;
     setUploadedFile: (f: File | null) => void;
     uploadedColumns: string[];
     setUploadedColumns: (c: string[]) => void;
+    setRowCount: (n: number | null) => void;
     onNext: () => void;
+    onCancel: () => void;
 };
 
-async function extractHeaders(file: File): Promise<string[]> {
+async function extractHeadersAndData(file: File): Promise<{ headers: string[], rowCount: number }> {
     const name = file.name.toLowerCase();
-    const parseCsv = async (csvFileOrText: File | string): Promise<string[]> => {
-        return await new Promise((resolve, reject) => {
+
+    const parseCsv = async (csvFileOrText: File | string): Promise<{ headers: string[], rowCount: number }> => {
+        return new Promise((resolve, reject) => {
             Papa.parse(csvFileOrText as any, {
                 header: true,
                 skipEmptyLines: true,
-                preview: 1,
                 complete: (results) => {
                     const fields = (results.meta?.fields ?? []).map(normalizeHeader).filter(Boolean);
+                    const rowCount = results.data.length; // Count rows of data
+
                     if (!fields.length) reject(new Error("No header row found in CSV."));
-                    else resolve(fields);
+                    else resolve({ headers: fields, rowCount });
                 },
                 error: (err) => reject(err)
             });
@@ -63,7 +68,9 @@ async function extractHeaders(file: File): Promise<string[]> {
             const rows = XLSX.utils.sheet_to_json(ws, { header: 1, blankrows: false }) as unknown[][];
             const headerRow = rows?.[0] ?? [];
             const headers = headerRow.map(normalizeHeader).filter(Boolean);
-            return headers;
+            const rowCount = rows.length - 1; // Subtract 1 to exclude header row
+
+            return { headers, rowCount };
         } catch {
             const text = await file.text();
             return parseCsv(text);
@@ -71,6 +78,7 @@ async function extractHeaders(file: File): Promise<string[]> {
     }
     throw new Error("Unsupported file type.");
 }
+
 
 function normalizeHeader(h: unknown) {
     return String(h ?? "").trim().replace(/\s+/g, " ");
@@ -80,10 +88,13 @@ export default function Step1TemplateUpload({
     uploadState,
     setUploadState,
     uploadedFile,
+    rowCount,
+    setRowCount,
     setUploadedFile,
     uploadedColumns,
     setUploadedColumns,
-    onNext
+    onNext,
+    onCancel
 }: Props) {
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const [isDragOver, setIsDragOver] = useState(false);
@@ -106,10 +117,12 @@ export default function Step1TemplateUpload({
             setUploadState("parsing");
             setUploadedFile(file);
 
-            const headers = await extractHeaders(file);
-            setUploadedColumns(headers);
+            const response = await extractHeadersAndData(file);
+            console.log("Extracted Data:", response);
+            setUploadedColumns(response?.headers);
 
-            showToast({ message: `Detected ${headers.length} columns`, variant: "success" });
+            setRowCount(response?.rowCount);
+            showToast({ message: `Detected ${response?.headers.length} columns and ${response?.rowCount} records`, variant: "success" });
             setUploadState("ready");
             onNext();
         } catch (err) {
@@ -150,9 +163,10 @@ export default function Step1TemplateUpload({
         <AnimateFadeIn className="flex flex-col gap-4">
             <AnimateSlideUp className="rounded-2xl border border-[var(--gray-4)] bg-[var(--gray-0)] p-6 shadow-sm">
                 {/* Header Section */}
-                <div className="flex items-start justify-between mb-6">
-                    <AnimateEntrancePop>
-                        <h3 className="text-lg font-semibold text-[var(--gray-13)]">Upload Purchase Order</h3>
+                <div className="flex items-start justify-between mb-2">
+                    <AnimateEntrancePop className="p-0">
+
+                        <h3 className="text-lg font-semibold text-[var(--gray-13)] pb-2">Upload Purchase Order</h3>
                         <p className="text-12 text-[var(--gray-11)]">
                             Please upload your PO data file (CSV or XLSX) to begin the configuration.
                         </p>
@@ -177,7 +191,7 @@ export default function Step1TemplateUpload({
                 <AnimateScale>
                     <div
                         className={[
-                            "group relative w-full h-[250px] rounded-3xl border-2 border-dashed transition-all duration-300",
+                            "group relative w-full h-[240px] rounded-3xl border-2 border-dashed transition-all duration-300",
                             "flex flex-col items-center justify-center gap-4 p-8 cursor-pointer",
                             isDragOver
                                 ? "border-[var(--primary-9)] bg-[var(--primary-2)] scale-[1.01]"
@@ -245,13 +259,20 @@ export default function Step1TemplateUpload({
                 {uploadedFile && (
                     <AnimateEntrancePop className="mt-6">
                         <Alert
-                            text={`Selected File: ${uploadedFile.name} (${uploadedColumns.length} columns detected)`}
+                            text={`Selected File: ${uploadedFile.name} (${uploadedColumns.length} columns and ${rowCount} data records are detected)`}
                             variant="green"
                         />
                     </AnimateEntrancePop>
                 )}
 
-                <footer className="flex items-center justify-end pt-6">
+                <footer className="flex items-center justify-between pt-6">
+                    <button
+                        onClick={onCancel}
+                        className="group cursor-pointer inline-flex items-center gap-2 rounded-xl border border-[var(--gray-4)] bg-[var(--gray-0)] px-2 py-2 text-12 font-semibold text-[var(--gray-12)] hover:bg-[var(--gray-1)] transition-colors"
+                    >
+                        <Icon name="tabler:chevron-left" className="size-5 transition-transform group-hover:-translate-x-1" />
+                        Cancel
+                    </button>
                     <button
                         onClick={onNext}
                         disabled={uploadState !== "ready"}
@@ -263,13 +284,13 @@ export default function Step1TemplateUpload({
                     >
                         {uploadState === "parsing" ? "Processing..." : "Continue"}
                         <Icon
-                            name="tabler:arrow-narrow-right"
+                            name="tabler:chevron-right"
                             className={`size-5 transition-transform duration-300 ${uploadState === "ready" ? "group-hover:translate-x-1" : "opacity-50"
                                 }`}
                         />
                     </button>
                 </footer>
             </AnimateSlideUp>
-        </AnimateFadeIn>
+        </AnimateFadeIn >
     );
 }

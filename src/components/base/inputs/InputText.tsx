@@ -14,6 +14,7 @@ interface Props extends InputProps {
   onBlur?: () => void
   onChange: (value: string) => void
   onKeyDown?: (e: any) => void
+  type?: string
 }
 
 const InputText = forwardRef<HTMLInputElement, Props>(
@@ -30,6 +31,7 @@ const InputText = forwardRef<HTMLInputElement, Props>(
       tooltipWidth,
       value,
       onChange,
+      type = "text",
       ...rest
     },
     ref,
@@ -60,6 +62,7 @@ const InputText = forwardRef<HTMLInputElement, Props>(
         description={rest.error ? undefined : description}
         inputWrapperOrder={inputWrapperOrder}
         label={_label}
+        type={type}
         ref={ref}
         rightSection={_rightSection}
         value={value}

@@ -5,6 +5,7 @@ import {
     AnimateFadeIn,
     AnimateStagger,
 } from "@/components/common/animations";
+import { compareHeaderSimilarity } from "../utils/headerSimilarity";
 
 type SystemCol = { key: string; required: boolean };
 
@@ -25,7 +26,6 @@ export default function Step2ColumnMapping({
     onBack,
     onNext,
 }: Props) {
-    const normalize = (s: string) => s.trim().toLowerCase().replace(/\s+/g, " ");
 
     // 1. Automatically run auto-map on mount
     useEffect(() => {
@@ -35,7 +35,7 @@ export default function Step2ColumnMapping({
         for (const col of systemColumns) {
             // Only auto-fill if not already mapped
             if (!next[col.key]) {
-                const match = uploadedColumns.find((u) => normalize(u) === normalize(col.key));
+                const match = uploadedColumns.find((u) => compareHeaderSimilarity(u, col.key)); // Use the similarity function
                 if (match) {
                     next[col.key] = match;
                     hasChanges = true;
@@ -175,7 +175,7 @@ export default function Step2ColumnMapping({
                             onClick={onBack}
                             className="group cursor-pointer inline-flex items-center gap-2 rounded-xl border border-[var(--gray-4)] bg-[var(--gray-0)] px-2 py-2 text-12 font-semibold text-[var(--gray-12)] hover:bg-[var(--gray-1)] transition-colors"
                         >
-                            <Icon name="tabler:arrow-narrow-left" className="size-5 transition-transform group-hover:-translate-x-1" />
+                            <Icon name="tabler:chevron-left" className="size-5 transition-transform group-hover:-translate-x-1" />
                             Back
                         </button>
 
@@ -199,7 +199,7 @@ export default function Step2ColumnMapping({
                             >
                                 Continue
                                 <Icon
-                                    name="tabler:arrow-narrow-right"
+                                    name="tabler:chevron-right"
                                     className={`size-5 transition-transform ${isReady ? "group-hover:translate-x-1" : ""}`}
                                 />
                             </button>

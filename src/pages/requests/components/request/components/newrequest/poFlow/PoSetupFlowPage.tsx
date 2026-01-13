@@ -11,6 +11,9 @@ import requestStore from "@/pages/requests/stores/useRequestStore";
 import folderApi from "@/api/folders/folders";
 import showToast from "@/components/base/toast/showToast";
 
+import * as XLSX from 'xlsx';
+
+
 type Props = {
     // onExit: () => void;
     onClose: () => void;
@@ -26,6 +29,8 @@ export default function PoSetupFlowPage({ }: Props) {
     const [uploadState, setUploadState] = useState<UploadState>("idle");
     const [uploadedFile, setUploadedFile] = useState<File | null>(null);
     const [uploadedColumns, setUploadedColumns] = useState<string[]>([]);
+    const [rowCount, setRowCount] = useState<number | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const systemColumns = useMemo(() => SYSTEM_TEMPLATE_COLUMNS, []);
 
     const [mapping, setMapping] = useState<Record<string, string>>({});
@@ -46,27 +51,109 @@ export default function PoSetupFlowPage({ }: Props) {
         return false;
     };
 
+    // Function to update the uploaded file with mapped headers
+    const updateFileHeaders = async (file: File, mapping: Record<string, string>) => {
+        const fileName = file.name;
+        const fileExtension = fileName.split('.').pop()?.toLowerCase();
 
-    const handlePoUpload = async () => {
+        return new Promise<File>((resolve, reject) => {
+            // Handle CSV files
+            if (fileExtension === 'csv') {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    if (event.target?.result) {
+                        const csvData = event.target.result as string;
+                        const lines = csvData.split('\n');
+                        const headers = lines[0].split(',');
+
+                        // Update headers based on the mapping
+                        const updatedHeaders = headers.map(header => mapping[header.trim()] || header);
+                        lines[0] = updatedHeaders.join(',');
+
+                        // Re-create the updated CSV file
+                        const updatedCsv = new Blob([lines.join('\n')], { type: 'text/csv' });
+                        resolve(new File([updatedCsv], fileName, { type: 'text/csv' }));
+                    }
+                };
+                reader.onerror = (error) => reject(error);
+                reader.readAsText(file);
+            }
+
+            // Handle XLSX files
+            else if (fileExtension === 'xlsx') {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    if (event.target?.result) {
+                        const data = event.target.result as ArrayBuffer;
+                        const wb = XLSX.read(data, { type: 'array' });
+                        const sheet = wb.Sheets[wb.SheetNames[0]];
+                        const rows: any = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+                        // Update headers based on the mapping
+                        const updatedHeaders = rows[0].map((header: string) => mapping[header.trim()] || header);
+                        rows[0] = updatedHeaders;
+
+                        // Create a new workbook with updated headers
+                        const updatedSheet = XLSX.utils.aoa_to_sheet(rows);
+                        const updatedWb = XLSX.utils.book_new();
+                        XLSX.utils.book_append_sheet(updatedWb, updatedSheet, 'Sheet1');
+
+                        // Convert the workbook back to a Blob
+                        const updatedBlob = XLSX.write(updatedWb, { bookType: 'xlsx', type: 'array' });
+                        resolve(new File([updatedBlob], fileName, { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
+                    }
+                };
+                reader.onerror = (error) => reject(error);
+                reader.readAsArrayBuffer(file);
+            }
+        });
+    };
+    const sendUpdatedFile = async (file: File) => {
+        const payload = {
+            formId: 3,
+            file: file,
+        };
 
         try {
-            const payload = {
-                formId: 3,
-                file: uploadedFile
-            }
             const { data, error } = await folderApi.uploadMasterFile(payload);
             if (data) {
-                showToast({ message: "PO Data uploaded successfully", variant: "success" });
+                showToast({ message: "PO data file uploaded successfully", variant: "success" });
             }
+
             if (error) {
-                showToast({ message: "Error uploading file", variant: "error" })
+                showToast({ message: "Error uploading file", variant: "error" });
             }
-            closeNewRequest();
         } catch (error) {
             showToast({ message: "Error uploading file", variant: "error" });
             console.error(error);
-        } finally { 
+        } finally {
+            closeNewRequest();
+        }
+    };
+
+    const handleConfirmMapping = async () => {
+        try {
+            // Update the file headers with the mapped master field names
+            const updatedFile = await updateFileHeaders(uploadedFile as File, mapping);
+
+            // Send the updated file to the server
+            await sendUpdatedFile(updatedFile);
+        } catch (error) {
+            showToast({ message: "Error processing file", variant: "error" });
+        }
+    };
+
+
+    const handlePoUpload = async () => {
+        setIsSubmitting(true)
+        try {
+            await handleConfirmMapping();
+        } catch (error) {
+            showToast({ message: "Error uploading file", variant: "error" });
+            console.error(error);
+        } finally {
             setUploadState("idle");
+            setIsSubmitting(false)
         }
     }
 
@@ -133,10 +220,10 @@ export default function PoSetupFlowPage({ }: Props) {
                                             separator: 'rounded-full bg-gray-3',
                                             step: 'disabled:opacity-50',
                                             stepBody: 'ml-4',
-                                            stepCompletedIcon: 'text-green-11 [&>svg]:!size-3.5',
+                                            stepCompletedIcon: 'text-white [&>svg]:!size-3.5',
                                             stepDescription: 'm-0 text-13 font-medium text-gray-12',
                                             stepIcon:
-                                                'border-0 bg-gray-3 text-13 font-semibold text-gray-11 data-[completed]:bg-green-4 data-[progress]:bg-green-9 data-[progress]:text-white',
+                                                'border-0 bg-gray-3 text-13 font-semibold text-gray-11 data-[completed]:bg-green-9 data-[progress]:bg-secondary-8 data-[progress]:text-white',
                                             stepLabel: 'mb-1 text-12 text-gray-10',
                                             stepLoader: 'after:border-gray-11 after:border-t-transparent',
                                             verticalSeparator: 'rounded-full border-gray-3 bg-gray-3',
@@ -177,7 +264,7 @@ export default function PoSetupFlowPage({ }: Props) {
                         </div>
 
                         {/* RIGHT: Step screen */}
-                        <div>
+                        <div className="mt-3">
                             {activeStep === 0 ? (
                                 <Step1TemplateUpload
                                     uploadState={uploadState}
@@ -187,6 +274,9 @@ export default function PoSetupFlowPage({ }: Props) {
                                     uploadedColumns={uploadedColumns}
                                     setUploadedColumns={setUploadedColumns}
                                     onNext={() => setActiveStep(1)}
+                                    onCancel={() => closeNewRequest()}
+                                    rowCount={rowCount}
+                                    setRowCount={setRowCount}
                                 />
                             ) : null}
 
@@ -210,6 +300,8 @@ export default function PoSetupFlowPage({ }: Props) {
                                     onConfirm={() => {
                                         handlePoUpload();
                                     }}
+                                    isSubmitting={isSubmitting}
+                                // setIsSubmitting={setIsSubmitting}
                                 />
                             ) : null}
                         </div>
