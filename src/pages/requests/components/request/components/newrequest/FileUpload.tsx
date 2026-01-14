@@ -150,27 +150,28 @@ const FileUplaod = ({ onClose }: Props) => {
         }
     };
 
+
     // --- Feature Cards Data ---
-    // const features = [
-    //     {
-    //         title: "Lightning Fast",
-    //         description: "Process documents faster with our agentic pipeline",
-    //         icon: "tabler:bolt",
-    //         colorClass: "bg-[var(--orange-2)] text-[var(--orange-9)]", // Yellow/Orange theme
-    //     },
-    //     {
-    //         title: "100% Accuracy",
-    //         description: "Industry-leading extraction accuracy",
-    //         icon: "tabler:sparkles",
-    //         colorClass: "bg-[var(--purple-2)] text-[var(--purple-9)]", // Purple theme
-    //     },
-    //     {
-    //         title: "Any Format",
-    //         description: "Support for PDF, images, and scanned documents",
-    //         icon: "tabler:files", // or tabler:clock based on your image
-    //         colorClass: "bg-[var(--green-2)] text-[var(--green-9)]", // Green theme
-    //     },
-    // ];
+    const features = [
+        {
+            title: "Invoice Extraction",
+            description: "Upload your invoice (PDF). Our agent automatically extracts line items and vendor details.",
+            icon: "tabler:file-invoice",
+            colorClass: "bg-[var(--orange-2)] text-[var(--orange-9)]",
+        },
+        {
+            title: "Automated PO Matching",
+            description: "The system cross-references extracted invoice data against your existing Purchase Orders to validate pricing and quantities.",
+            icon: "tabler:arrows-diff", // Represents comparison/matching
+            colorClass: "bg-[var(--purple-2)] text-[var(--purple-9)]",
+        },
+        {
+            title: "Smart Decisioning",
+            description: "Get instant AI-driven recommendations for payment approval or exception handling based on the match results.",
+            icon: "tabler:bulb", // Represents insights/ideas
+            colorClass: "bg-[var(--green-2)] text-[var(--green-9)]",
+        },
+    ];
 
     return (
         <AnimateFadeIn className="h-[calc(100vh-110px)] overflow-hidden flex flex-col bg-[var(--gray-1)]">
@@ -262,34 +263,35 @@ const FileUplaod = ({ onClose }: Props) => {
                     </AnimateSlideUp>
 
                     {/* Agentic Intelligence Feature Section */}
-                    {/* <AnimateSlideUp delay={0.2} className="mt-4 flex flex-col items-center">
-                        <h2 className="text-center text-lg font-bold text-[var(--gray-13)]">
-                            Pure Agentic Document Intelligence
-                        </h2>
-                        <p className="mt-1 text-center text-13 text-[var(--gray-10)] mb-6">
-                            Extract structured data from any document without LLM using VRP (Visual Reasoning Processor)
-                        </p>
 
-                        <div className="grid w-full grid-cols-1 gap-4 md:grid-cols-3">
-                            {features.map((feature, index) => (
-                                <AnimateStagger key={index}>
-                                    <div className="flex h-full flex-col rounded-xl border border-[var(--gray-3)] bg-white p-5 shadow-sm transition-all duration-300 hover:shadow-md">
-                                        <div className={`mb-4 flex size-10 items-center justify-center rounded-lg ${feature.colorClass}`}>
-                                            <Icon name={feature.icon} className="size-5" />
-                                        </div>
-                                        <h4 className="mb-2 text-14 font-bold text-[var(--gray-12)]">
-                                            {feature.title}
-                                        </h4>
-                                        <p className="text-13 leading-relaxed text-[var(--gray-10)]">
-                                            {feature.description}
-                                        </p>
-                                    </div>
-                                </AnimateStagger>
-                            ))}
-                        </div>
-                    </AnimateSlideUp> */}
 
                 </div>
+                <AnimateSlideUp delay={0.2} className="mt-4 flex flex-col items-center">
+                    <h2 className="text-center text-lg font-bold text-[var(--gray-13)]">
+                        Intelligent AP Agent
+                    </h2>
+                    <p className="mb-6 mt-1 text-center text-13 text-[var(--gray-10)]">
+                        Streamline your Accounts Payable. We extract invoice data, match it with Purchase Orders, and generate actionable decision insights.
+                    </p>
+
+                    <div className="grid w-[95%] grid-cols-1 gap-4 md:grid-cols-3">
+                        {features.map((feature, index) => (
+                            <AnimateStagger key={index}>
+                                <div className="flex h-full flex-col rounded-xl border border-[var(--gray-3)] bg-white p-5 shadow-sm transition-all duration-300 hover:shadow-md">
+                                    <div className={`mb-4 flex size-10 items-center justify-center rounded-lg ${feature.colorClass}`}>
+                                        <Icon name={feature.icon} className="size-5" />
+                                    </div>
+                                    <h4 className="mb-2 text-14 font-bold text-[var(--gray-12)]">
+                                        {feature.title}
+                                    </h4>
+                                    <p className="text-13 leading-relaxed text-[var(--gray-10)]">
+                                        {feature.description}
+                                    </p>
+                                </div>
+                            </AnimateStagger>
+                        ))}
+                    </div>
+                </AnimateSlideUp>
             </div>
 
             <AnimateSlideUp className="shrink-0 border-t border-[var(--gray-3)] bg-[var(--gray-0)] px-4">
