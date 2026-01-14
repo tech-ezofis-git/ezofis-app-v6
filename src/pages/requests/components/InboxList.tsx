@@ -11,7 +11,7 @@ import GridView from './GridView'
 
 import { AnimateFadeIn } from '@/components/common/animations'
 import requestStore from '../stores/useRequestStore'
-
+// import { getGroupedRowModel } from '@tanstack/react-table'
 const hideRootGroupStyle = `
   .hide-root-header tbody > tr:first-child {
     display: none !important;
@@ -108,6 +108,7 @@ const InboxList: React.FC<InboxListProps> = ({
         columns,
         rows: (data || []) as any,
         enableRowSelection: false,
+
         state: { expandState, groupState, sortState, setExpandState, ...rest },
     })
 
@@ -199,6 +200,15 @@ const InboxList: React.FC<InboxListProps> = ({
                                     data={data}
                                     isLoading={isLoading}
                                     onRowClick={onRowClick}
+
+                                    actions={[
+                                        {
+                                            label: 'Upload PO',
+                                            onClick: () => { handlePoSheet() },
+                                            icon: 'tabler:upload',
+                                            align: 'right',
+                                        },
+                                    ]}
                                 />
                             </div>
                         )}
