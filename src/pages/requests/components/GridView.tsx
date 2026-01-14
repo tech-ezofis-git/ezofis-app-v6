@@ -135,9 +135,10 @@ const GridView: React.FC<GridViewProps> = ({ data, isLoading, onRowClick }) => {
                     {requestNo}
                   </h3>
                   {row?.isDuplicateInvoice && (
-                    <span className="inline-flex items-center rounded-md border border-[var(--orange-4)] bg-[var(--orange-2)] px-2 py-0.5 text-11 font-medium text-[var(--orange-11)]">
-                      Duplicate
-                    </span>
+                    // <span className="inline-flex items-center rounded-md border border-[var(--orange-4)] bg-[var(--orange-2)] px-2 py-0.5 text-11 font-medium text-[var(--orange-11)]">
+                    //   Duplicate
+                    // </span>
+                    <RequestStatusBadge status="Duplicated" />
                   )}
                 </div>
 

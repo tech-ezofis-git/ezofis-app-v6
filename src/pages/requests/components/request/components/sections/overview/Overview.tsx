@@ -317,7 +317,7 @@ const Overview = ({ agentData }: Props) => {
 
   return (
     <Section title="">
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-6 pb-28">
         {isLoading ? (
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-4">
             {[1, 2, 3, 4].map((i) => (
@@ -470,6 +470,7 @@ const Overview = ({ agentData }: Props) => {
                     id="section-line-items"
                     className="scroll-mt-24 overflow-hidden rounded-xl border border-[var(--teal-4)] bg-[var(--teal-1)] shadow-sm"
                   >
+                    {/* Card Header */}
                     <div className="border-b border-[var(--teal-3)] bg-[var(--teal-2)] px-5 py-3">
                       <div className="flex items-center gap-3">
                         <Icon className="size-5 text-[var(--teal-9)]" name="tabler:list-check" />
@@ -477,46 +478,76 @@ const Overview = ({ agentData }: Props) => {
                       </div>
                     </div>
 
+                    {/* Content Area */}
                     <div className="overflow-x-auto">
                       {lineItemMatching.length > 0 ? (
-                        <table className="w-full text-left text-13">
-                          <thead>
-                            <tr className="bg-[var(--teal-2)] text-11 font-bold uppercase tracking-wider text-[var(--teal-9)] border-b border-[var(--teal-3)]">
-                              <th className="px-6 py-3">Description</th>
-                              <th className="px-6 py-3">Qty</th>
-                              <th className="px-6 py-3">Price</th>
-                              <th className="px-6 py-3">Total</th>
-                              <th className="px-6 py-3 text-right">Match</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-[var(--teal-3)]">
+                        // Wrapper with min-width to ensure horizontal scroll on small screens
+                        <div className="min-w-[700px]">
+
+                          {/* Header Row */}
+                          <div className="grid grid-cols-[2.5fr_1fr_1fr_1fr_1.2fr] border-b border-[var(--teal-3)] bg-[var(--teal-2)] px-6 py-3 text-11 font-bold uppercase tracking-wider text-[var(--teal-9)]">
+                            <div>Description</div>
+                            <div>Qty</div>
+                            <div>Price</div>
+                            <div>Total</div>
+                            <div className="text-right">Match</div>
+                          </div>
+
+                          {/* Data Rows */}
+                          <div className="divide-y divide-[var(--teal-3)]">
                             {lineItemMatching.map((item, index) => {
                               const score = item['Line Score'];
                               const isMatch = score >= 90;
+
                               return (
-                                <tr key={index} className="transition-colors hover:bg-[var(--teal-2)]">
-                                  <td className="px-6 py-4 align-top">
-                                    <div className="font-semibold text-[var(--gray-13)]">{item.Description['Invoice Value']}</div>
+                                <div
+                                  key={index}
+                                  className="grid grid-cols-[2.5fr_1fr_1fr_1fr_1.2fr] items-start px-6 py-4 transition-colors hover:bg-[var(--teal-2)]"
+                                >
+                                  {/* Description Column */}
+                                  <div className="pr-4">
+                                    <div className="font-semibold text-[var(--gray-13)]">
+                                      {item.Description['Invoice Value']}
+                                    </div>
                                     {!isMatch && (
                                       <div className="mt-1 flex items-center gap-1 text-12 text-[var(--orange-11)]">
                                         <Icon name="tabler:arrow-right" className="size-3" />
                                         Expected: {item.Description['PO Value']}
                                       </div>
                                     )}
-                                  </td>
-                                  <td className="px-6 py-4 align-top text-[var(--gray-11)]">{item.Quantity['Invoice Value']}</td>
-                                  <td className="px-6 py-4 align-top text-[var(--gray-11)]">{item.Price['Invoice Value']}</td>
-                                  <td className="px-6 py-4 align-top font-bold text-[var(--gray-12)]">{item.Amount['Invoice Value']}</td>
-                                  <td className="px-6 py-4 align-top text-right">
-                                    <div className={cn('inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-11 font-bold', isMatch ? 'border-[var(--green-4)] bg-[var(--green-2)] text-[var(--green-11)]' : 'border-[var(--red-4)] bg-[var(--red-2)] text-[var(--red-11)]')}>
+                                  </div>
+
+                                  {/* Quantity Column */}
+                                  <div className="text-[var(--gray-11)]">
+                                    {item.Quantity['Invoice Value']}
+                                  </div>
+
+                                  {/* Price Column */}
+                                  <div className="text-[var(--gray-11)]">
+                                    {item.Price['Invoice Value']}
+                                  </div>
+
+                                  {/* Total Column */}
+                                  <div className="font-bold text-[var(--gray-12)]">
+                                    {item.Amount['Invoice Value']}
+                                  </div>
+
+                                  {/* Match Status Column */}
+                                  <div className="text-right">
+                                    <div className={cn(
+                                      'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-11 font-bold',
+                                      isMatch
+                                        ? 'border-[var(--green-4)] bg-[var(--green-2)] text-[var(--green-11)]'
+                                        : 'border-[var(--red-4)] bg-[var(--red-2)] text-[var(--red-11)]'
+                                    )}>
                                       {isMatch ? 'Match' : 'Mismatch'}
                                     </div>
-                                  </td>
-                                </tr>
+                                  </div>
+                                </div>
                               );
                             })}
-                          </tbody>
-                        </table>
+                          </div>
+                        </div>
                       ) : (
                         <div className="p-8 text-center text-[var(--teal-10)]">No line items found.</div>
                       )}

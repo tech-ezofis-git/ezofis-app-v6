@@ -7,6 +7,10 @@ import { SkeletonCard } from '@/components/common/skeletons'
 import { SCREEN_XL } from '@/constants'
 import cn from '@/utils/cn'
 import Section from '../../shared/components/Section'
+import Table from '@/components/base/table/Table'
+import Tbody from '@/components/base/table/Tbody'
+import Td from '@/components/base/table/Td'
+import Tr from '@/components/base/table/Tr'
 
 // Custom hook to replace @mantine/hooks useViewportSize
 const useViewportSize = () => {
@@ -191,6 +195,35 @@ const Overview = ({ agentData }: Props) => {
   const lineItemMatching = data.debug?.['Side-by-side Line Item matching'] || []
   const invoiceHeader = data['Extracted Invoice JSON']?.invoice_header
   const lineItems = data['Extracted Invoice JSON']?.line_items || []
+
+  // #region agent log
+  useEffect(() => {
+    const logData = {
+      location: 'Overview.tsx:194',
+      message: 'lineItems array data',
+      data: {
+        length: lineItems.length,
+        items: lineItems.map((item, idx) => ({
+          index: idx,
+          line_no: item?.line_no,
+          description: item?.description,
+          isTruthy: !!item,
+        })),
+        hasIndex0: !!lineItems[0],
+        index0Value: lineItems[0],
+      },
+      timestamp: Date.now(),
+      sessionId: 'debug-session',
+      runId: 'run1',
+      hypothesisId: 'A,B,C,D',
+    }
+    fetch('http://127.0.0.1:7242/ingest/55a364bd-11ea-4589-affc-f06939d0aec8', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(logData),
+    }).catch(() => { })
+  }, [lineItems])
+  // #endregion
 
   const getScoreColor = (score: number) => {
     if (score >= 90) return 'text-green-11'
@@ -437,30 +470,70 @@ const Overview = ({ agentData }: Props) => {
                           />
                           Line Items
                         </div>
-                        <div className='space-y-1.5'>
-                          {lineItems.map((item, index) => (
-                            <div
-                              key={index}
-                              className='flex items-center justify-between rounded border border-gray-3 bg-gray-1 p-2'
-                            >
-                              <div className='flex items-center gap-2'>
-                                <div className='flex size-5 items-center justify-center rounded bg-purple-2 text-11 font-medium text-purple-11'>
-                                  {index + 1}
-                                </div>
-                                <div className='text-13 font-medium text-gray-13'>
-                                  {item.description}
-                                </div>
-                              </div>
-                              <div className='flex items-center gap-2'>
-                                <div className='text-12 text-gray-11'>
-                                  {item.quantity} × {item.price}
-                                </div>
-                                <div className='rounded bg-purple-2 px-2 py-0.5 text-12 font-medium text-purple-11'>
-                                  {item.amount}
-                                </div>
-                              </div>
-                            </div>
-                          ))}
+                        <div className='overflow-x-auto'>
+                          <Table>
+                            <Tbody>
+                              {lineItems.map((item, index) => {
+                                // #region agent log
+                                const logData2 = {
+                                  location: 'Overview.tsx:470',
+                                  message: 'map iteration',
+                                  data: {
+                                    index,
+                                    isIndex0: index === 0,
+                                    item: item
+                                      ? {
+                                          line_no: item.line_no,
+                                          description: item.description,
+                                          quantity: item.quantity,
+                                          price: item.price,
+                                          amount: item.amount,
+                                        }
+                                      : null,
+                                    itemIsTruthy: !!item,
+                                    willRender: !!item,
+                                    keyValue: item?.line_no ? `line-${item.line_no}` : `line-item-${index}`,
+                                  },
+                                  timestamp: Date.now(),
+                                  sessionId: 'debug-session',
+                                  runId: 'run1',
+                                  hypothesisId: 'A,B,C,D,E',
+                                }
+                                fetch('http://127.0.0.1:7242/ingest/55a364bd-11ea-4589-affc-f06939d0aec8', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify(logData2),
+                                }).catch(() => { })
+                                console.log('[DEBUG] Line item map:', { index, isIndex0: index === 0, item, key: item?.line_no ? `line-${item.line_no}` : `line-item-${index}` })
+                                // #endregion
+                                const rowKey = item?.line_no ? `line-${item.line_no}` : `line-item-${index}`
+                                return (
+                                  <Tr key={rowKey}>
+                                    <Td>
+                                      <div className='flex size-5 items-center justify-center rounded bg-purple-2 text-11 font-medium text-purple-11'>
+                                        {index + 1}
+                                      </div>
+                                    </Td>
+                                    <Td>
+                                      <div className='text-13 font-medium text-gray-13'>
+                                        {item.description}
+                                      </div>
+                                    </Td>
+                                    <Td>
+                                      <div className='text-12 text-gray-11'>
+                                        {item.quantity} × {item.price}
+                                      </div>
+                                    </Td>
+                                    <Td>
+                                      <div className='rounded bg-purple-2 px-2 py-0.5 text-12 font-medium text-purple-11'>
+                                        {item.amount}
+                                      </div>
+                                    </Td>
+                                  </Tr>
+                                )
+                              })}
+                            </Tbody>
+                          </Table>
                         </div>
                       </div>
                     )}
