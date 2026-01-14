@@ -54,15 +54,7 @@ const Header = ({
 
       <div className='flex items-center gap-2'>
         <div className='cursor-pointer flex items-center gap-1 border border-gray-3 rounded-md p-0.5'>
-          <button
-            onClick={() => setViewMode('table')}
-            className={`cursor-pointer px-3 py-1.5 rounded text-sm font-medium transition-colors ${viewMode === 'table'
-              ? 'bg-primary-9 text-white'
-              : 'text-gray-11 hover:bg-gray-2'
-              }`}
-          >
-            <Icon name='tabler:table' className='size-4' />
-          </button>
+
           <button
             onClick={() => setViewMode('grid')}
             className={`cursor-pointer px-3 py-1.5 rounded text-sm font-medium transition-colors ${viewMode === 'grid'
@@ -71,6 +63,15 @@ const Header = ({
               }`}
           >
             <Icon name='tabler:layout-grid' className='size-4' />
+          </button>
+          <button
+            onClick={() => setViewMode('table')}
+            className={`cursor-pointer px-3 py-1.5 rounded text-sm font-medium transition-colors ${viewMode === 'table'
+              ? 'bg-primary-9 text-white'
+              : 'text-gray-11 hover:bg-gray-2'
+              }`}
+          >
+            <Icon name='tabler:table' className='size-4' />
           </button>
         </div>
         <InputSelect
