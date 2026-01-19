@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAttachments } from '@/pages/requests/hooks/useAttachments';
 import FileSheet from '@/components/common/file-sheet/FileSheet';
 import authUserStore from '@/stores/authUserStore'
+import Icon from '@/components/base/icon/Icon';
 
 const Attachments = ({ workflowId, processId, transactionId }: any) => {
     const [fileSheetOpened, setFileSheetOpened] = useState(false);
@@ -41,8 +42,13 @@ const Attachments = ({ workflowId, processId, transactionId }: any) => {
                         />
                     </div>
                 ) : (
-                    <div className="text-center text-gray-500">
-                        No files available.
+                    <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
+                        <div className="flex size-12 items-center justify-center rounded-full bg-[var(--gray-2)]">
+                            <Icon name="tabler:file-off" className="size-6 text-[var(--gray-8)]" />
+                        </div>
+                        <p className="text-13 font-medium text-[var(--gray-10)]">
+                            No files available
+                        </p>
                     </div>
                 )}
             </div>

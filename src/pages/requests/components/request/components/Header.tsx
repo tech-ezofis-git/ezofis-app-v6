@@ -5,6 +5,7 @@ import IconButton from '@/components/base/button/IconButton'
 import OverlayHeaderWrapper from '@/components/base/overlay/OverlayHeaderWrapper'
 // import Title from '@/components/base/Title'
 import Tooltip from '@/components/base/Tooltip'
+import Button from '@/components/base/button/Button'
 // import { 300 } from '@/constants'
 // import requestStore from '../../../stores/useRequestStore' // Adjust path if needed
 
@@ -17,6 +18,8 @@ interface HeaderProps {
   onNext?: () => void
   onPrev?: () => void
   onBack?: () => void
+  onApprove?: () => void
+  approveLoading?: boolean
 }
 
 const Header: React.FC<HeaderProps> = ({
@@ -24,7 +27,9 @@ const Header: React.FC<HeaderProps> = ({
   isLoading,
   onNext,
   onPrev,
-  onBack
+  onBack,
+  onApprove,
+  approveLoading
 }) => {
   // Store UI state
   // const isMaximized = requestStore((state) => state.isMaximized)
@@ -83,7 +88,7 @@ const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* Right Side Group: (Maximize / Close - currently commented out) */}
-      <div className='flex items-center gap-1'>
+      <div className='flex items-center gap-1 pb-2'>
         {/* <Tooltip
           content={isMaximized ? 'Minimize' : 'Maximize'}
           openDelay={500}
@@ -97,6 +102,8 @@ const Header: React.FC<HeaderProps> = ({
         </Tooltip> */}
 
         {/* <CloseButton onClick={closeRequest} /> */}
+
+        {<Button onClick={onApprove} loading={approveLoading} className='cursor-pointer'> Approve</Button>}
       </div>
     </OverlayHeaderWrapper >
   )

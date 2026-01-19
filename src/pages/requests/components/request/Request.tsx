@@ -110,7 +110,7 @@ const Request = ({ onPrev, onNext }: { onPrev?: () => void; onNext?: () => void 
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-170px)] p-0 w-full ">
+    <div className="flex flex-col h-[calc(100vh-85px)] p-0 w-full ">
       {/* Combined Sticky Wrapper: 
         Keeps both Header and Tabs pinned to the top.
         Added z-20 and bg-white (or bg-surface) to ensure content scrolls behind it.
@@ -123,6 +123,8 @@ const Request = ({ onPrev, onNext }: { onPrev?: () => void; onNext?: () => void 
           onPrev={onPrev}
           onNext={onNext}
           onBack={closeRequest}
+          approveLoading={submitting}
+          onApprove={handleVerifier}
         />
 
         {/* <div className="border-b border-gray-3 bg-surface">
@@ -152,7 +154,7 @@ const Request = ({ onPrev, onNext }: { onPrev?: () => void; onNext?: () => void 
 
       {/* Tab Content */}
 
-      <AnimateFadeIn delay={0.6} className=" h-full">
+      <AnimateFadeIn delay={0.6} className=" h-full overflow-hidden">
         <Overview agentData={currentAgentData}
 
           workflowId={Number(selectedWorkflowId)}
@@ -165,9 +167,9 @@ const Request = ({ onPrev, onNext }: { onPrev?: () => void; onNext?: () => void 
 
       {/* Sticky Footer */}
 
-      <div className="fixed bottom-0 right-0 z-50 w-full border-t border-gray-3 bg-white">
+      {/* <div className="fixed bottom-0 right-0 z-50 w-full border-t border-gray-3 bg-white">
         <Footer onSubmit={handleVerifier} submitting={submitting} />
-      </div>
+      </div> */}
 
     </div>
   );

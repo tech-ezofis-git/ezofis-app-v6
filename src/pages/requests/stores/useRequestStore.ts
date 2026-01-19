@@ -18,6 +18,7 @@ type Store = {
   reloadMeta: boolean
   repoData: any
   pendingNav: any
+  summaryCache: Record<string, any>
   closeRequest: () => void
   openRequest: (item: any, workflowId: any, tab: string) => void // Updated signature
   openNewRequest: (title: string) => void
@@ -30,6 +31,7 @@ type Store = {
 
   setPendingNav: (v: any) => void
   clearPendingNav: () => void
+  cacheSummaryData: (reqNo: string, data: any) => void
 }
 
 const requestStore = create<Store>()((set) => ({
@@ -45,6 +47,7 @@ const requestStore = create<Store>()((set) => ({
   reloadMeta: false,
   repoData: null,
   newRequestMeta: null,
+  summaryCache: {},
   // in useRequestStore
   pendingNav: null as null | { direction: 'NEXT' | 'PREV' },
   setPendingNav: (v) => set({ pendingNav: v }),
@@ -70,7 +73,10 @@ const requestStore = create<Store>()((set) => ({
       selectedWorkflow: workflow,
       activeTabValue: tab,
     }),
-
+cacheSummaryData: (reqNo, data) => 
+    set((state) => ({
+      summaryCache: { ...state.summaryCache, [reqNo]: data }
+    })),
   workflowRefresh: () => set({ reloadMeta: true }),
   stopRefresh: () => set({ reloadMeta: false }),
   setRawWorkflowData: (data) => set({ rawWorkflowData: data }),

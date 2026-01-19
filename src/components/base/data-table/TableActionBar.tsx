@@ -36,6 +36,7 @@ interface Props<TData> extends ComponentProps<'div'> {
 
   /** ✅ Custom action buttons */
   actions?: TableActionButton[]
+  hideTableActions?: boolean
 }
 
 const TableActionBar = <TData,>({
@@ -47,6 +48,7 @@ const TableActionBar = <TData,>({
   onRowSizeChange,
   component,
   actions = [],
+  hideTableActions = false
 }: Props<TData>) => {
   const leftActions = actions.filter((a) => (a.align ?? 'right') === 'left')
   const rightActions = actions.filter((a) => (a.align ?? 'right') === 'right')
@@ -84,8 +86,8 @@ const TableActionBar = <TData,>({
           <div className="flex-1" />
 
           <TableSort table={table} />
-          <TableColumns table={table} />
-          <TableRows rowSize={rowSize} onRowSizeChange={onRowSizeChange} />
+          {!hideTableActions && <TableColumns table={table} />}
+          {!hideTableActions && <TableRows rowSize={rowSize} onRowSizeChange={onRowSizeChange} />}
           <TableExport table={table} />
           <TableReload isReloading={isReloading} onReload={onReload} />
 

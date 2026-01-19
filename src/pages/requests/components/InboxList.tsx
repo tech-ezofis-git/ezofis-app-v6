@@ -11,6 +11,7 @@ import GridView from './GridView'
 
 import { AnimateFadeIn } from '@/components/common/animations'
 import requestStore from '../stores/useRequestStore'
+import TableActionBar, { type TableActionButton } from '@/components/base/data-table/TableActionBar'
 // import { getGroupedRowModel } from '@tanstack/react-table'
 const hideRootGroupStyle = `
   .hide-root-header tbody > tr:first-child {
@@ -196,9 +197,13 @@ const InboxList: React.FC<InboxListProps> = ({
 
                         {!selectedItem && viewMode === 'grid' && (
                             <div className="basis-5/5 min-w-0">
+
                                 <GridView
-                                    data={data}
+                                    table={table} // Pass the instance
+                                    data={data} // Or table.getRowModel().rows.map(r => r.original)
                                     isLoading={isLoading}
+                                    isReloading={isRefetching}
+                                    onReload={onRefresh}
                                     onRowClick={onRowClick}
 
                                     actions={[
@@ -219,7 +224,7 @@ const InboxList: React.FC<InboxListProps> = ({
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.3, duration: 0.5 }}
-                                className="basis-5/5 min-w-0 "
+                                className="basis-5/5 min-w-0 h-[calc(100vh-160px)]"
                             >
                                 <AnimateFadeIn>
                                     <Request
