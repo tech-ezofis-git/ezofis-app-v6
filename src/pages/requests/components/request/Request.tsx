@@ -4,24 +4,24 @@ import requestStore from '../../stores/useRequestStore';
 import Footer from './components/Footer';
 import Overview from './components/sections/overview/Overview';
 
-import Tabs from '@/components/base/tabs/Tabs';
-import Tab from '@/components/base/tabs/Tab';
+// import Tabs from '@/components/base/tabs/Tabs';
+// import Tab from '@/components/base/tabs/Tab';
 
 import { useRequestDetail } from '../../hooks/useRequestDetails';
 
-import Attachments from './components/sections/attachment/Attachments';
-import Comments from './components/sections/comment/Comments';
-import History from './components/sections/history/History';
+// import Attachments from './components/sections/attachment/Attachments';
+// import Comments from './components/sections/comment/Comments';
+// import History from './components/sections/history/History';
 
 // Import your custom animation components
 import {
-  AnimateSlideUp,
+  // AnimateSlideUp,
   AnimateFadeIn,
-  AnimateSlideLeft,
-  AnimateStagger,
+  // AnimateSlideLeft,
+  // AnimateStagger,
 } from '@/components/common/animations';
-import IconButton from '@/components/base/button/IconButton';
-import Icon from '@/components/base/icon/Icon';
+// import IconButton from '@/components/base/button/IconButton';
+// import Icon from '@/components/base/icon/Icon';
 import workflowApi from "../../../../api/workflow/workflow"
 import Header from './components/Header'
 
@@ -73,14 +73,14 @@ const Request = ({ onPrev, onNext }: { onPrev?: () => void; onNext?: () => void 
   }, [agentDataList, selectedAgentId]);
 
   console.log(currentAgentData, "currentAgentData")
-  const handleActivetab = (tabValue: string) => {
-    if (tabValue === 'close') {
-      setActiveTab("");
-      closeRequest();
-      return;
-    }
-    setActiveTab(tabValue);
-  };
+  // const handleActivetab = (tabValue: string) => {
+  //   if (tabValue === 'close') {
+  //     setActiveTab("");
+  //     closeRequest();
+  //     return;
+  //   }
+  //   setActiveTab(tabValue);
+  // };
 
   const handleVerifier = async () => {
     try {
@@ -110,7 +110,7 @@ const Request = ({ onPrev, onNext }: { onPrev?: () => void; onNext?: () => void 
   }
 
   return (
-    <div className="flex flex-col p-0 w-full">
+    <div className="flex flex-col h-[calc(100vh-170px)] p-0 w-full ">
       {/* Combined Sticky Wrapper: 
         Keeps both Header and Tabs pinned to the top.
         Added z-20 and bg-white (or bg-surface) to ensure content scrolls behind it.
@@ -122,9 +122,10 @@ const Request = ({ onPrev, onNext }: { onPrev?: () => void; onNext?: () => void 
           isLoading={isLoading}
           onPrev={onPrev}
           onNext={onNext}
+          onBack={closeRequest}
         />
 
-        <div className="border-b border-gray-3 bg-surface">
+        {/* <div className="border-b border-gray-3 bg-surface">
           <Tabs color='primary' value={activeTab} onChange={(val) => handleActivetab(val as string)}>
             <Tab label={
               <button
@@ -145,72 +146,29 @@ const Request = ({ onPrev, onNext }: { onPrev?: () => void; onNext?: () => void 
             <Tab label={`Comment`} value="Comments" />
             <Tab label="History" value="History" />
           </Tabs>
-        </div>
+        </div> */}
       </div>
 
-      {isLoading ? (
-        <div className="flex h-[300px] w-full items-center justify-center">
-          <div className="flex items-center gap-3">
-            <div
-              className="h-8 text-primary-9 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-transparent"
-              aria-label="Loading"
-              role="status"
-            />
-            <span className="text-gray-500">Setting up the Request...</span>
-          </div>
-        </div>
-      ) : (
-        <>
-          {/* Tab Content */}
-          <AnimateStagger>
-            {activeTab === 'Overview' && (
-              <AnimateFadeIn delay={0.6}>
-                <Overview agentData={currentAgentData} />
-              </AnimateFadeIn>
-            )}
 
-            {activeTab === 'Attachments' && (
-              <AnimateSlideUp delay={0.8}>
-                <Attachments
-                  enabled={activeTab === 'Attachments'}
-                  workflowId={Number(selectedWorkflowId)}
-                  processId={Number(selectedItem?.processId)}
-                  transactionId={Number(selectedItem?.transactionId)}
-                  repositoryId={Number(rawWorkflowData?.repositoryId)}
-                />
-              </AnimateSlideUp>
-            )}
+      {/* Tab Content */}
 
-            {activeTab === 'Comments' && (
-              <AnimateSlideLeft delay={0.9}>
-                <Comments
-                  enabled={activeTab === 'Comments'}
-                  workflowId={Number(selectedWorkflowId)}
-                  processId={Number(selectedItem?.processId)}
-                  transactionId={Number(selectedItem?.transactionId)}
-                />
-              </AnimateSlideLeft>
-            )}
+      <AnimateFadeIn delay={0.6} className=" h-full">
+        <Overview agentData={currentAgentData}
 
-            {activeTab === 'History' && (
-              <AnimateFadeIn delay={1}>
-                <History
-                  enabled={activeTab === 'History'}
-                  workflowId={Number(selectedWorkflowId)}
-                  processId={Number(selectedItem?.processId)}
-                />
-              </AnimateFadeIn>
-            )}
-          </AnimateStagger>
-        </>
-      )}
+          workflowId={Number(selectedWorkflowId)}
+          processId={Number(selectedItem?.processId)}
+          transactionId={Number(selectedItem?.transactionId)}
+          repositoryId={Number(rawWorkflowData?.repositoryId)} />
+      </AnimateFadeIn>
+
+
 
       {/* Sticky Footer */}
-      {activeTab === 'Overview' && hasAgentData && (
-        <div className="fixed bottom-0 right-0 z-50 w-full border-t border-gray-3 bg-white">
-          <Footer onSubmit={handleVerifier} submitting={submitting} />
-        </div>
-      )}
+
+      <div className="fixed bottom-0 right-0 z-50 w-full border-t border-gray-3 bg-white">
+        <Footer onSubmit={handleVerifier} submitting={submitting} />
+      </div>
+
     </div>
   );
 };

@@ -8,7 +8,7 @@ import { formatDatetime } from '@/utils/dayjs'
 import authUserStore from '@/stores/authUserStore'
 import { useComments } from '@/pages/requests/hooks/useComments'
 import Icon from '@/components/base/icon/Icon'
-import IconButton from '@/components/base/button/IconButton'
+// import IconButton from '@/components/base/button/IconButton'
 
 dayjs.extend(relativeTime)
 
@@ -29,6 +29,7 @@ function pickFileName(x: any) {
 }
 
 function getDisplayTime(dateString: string) {
+    if (!dateString) return ''
     const date = dayjs(dateString)
     const diffInHours = dayjs().diff(date, 'hour')
     if (diffInHours < 24) return date.fromNow()
@@ -128,59 +129,58 @@ export default function Comments({
 
     return (
         <div
-            className="flex flex-col mt-4 relative font-sans w-full mx-auto rounded-3xl overflow-hidden border bg-white shadow-sm transition-all duration-300"
+            className="flex flex-col mt-0 bg-[var(--purple-2)] relative font-sans w-full mx-auto  overflow-hidden border bg-white shadow-sm transition-all duration-300"
             style={{
                 borderColor: 'var(--gray-4)',
-                // Ensures the whole widget never exceeds the laptop viewport height.
-                // Tune 180px based on your page header/tabs area.
-                maxHeight: 'calc(95vh - 260px)',
+                maxHeight: 'calc(100vh - 300px)',
                 minHeight: '200px',
             }}
         >
-            {/* Header */}
-            <div className="flex items-center justify-between px-5 py-3 bg-white sticky top-0 z-20 border-b border-gray-4">
-                <div className="flex items-center gap-2.5">
-                    <div className="flex size-8 items-center justify-center rounded-lg bg-primary-2 text-primary-9 ring-1 ring-primary-4">
-                        <Icon name="tabler:message-circle-2" className="size-4" />
-                    </div>
-                    <h2 className="text-sm font-bold text-gray-12">Comments</h2>
+            {/* Header - Compact */}
+            {/* <div className="flex items-center justify-between px-3 py-2 bg-white sticky top-0 z-20 border-b border-gray-4">
+                <div className="flex items-center gap-2">
+                    <Icon name="tabler:message-circle-2" className="size-4 text-gray-10" />
+                    <h2 className="text-12 font-bold text-gray-12">Comments</h2>
                 </div>
                 <IconButton
                     icon="tabler:refresh"
                     variant="ghost"
                     color="gray"
                     size="xs"
+                    className="size-6"
                     onClick={() => refetch()}
                     loading={isLoading}
                 />
-            </div>
+            </div> */}
 
-            {/* Chat Feed (scrolls inside available space) */}
+            {/* Chat Feed */}
             <div
-                className="flex-1 overflow-y-auto px-5 py-4 space-y-3 bg-slate-50/30 scroll-smooth"
+                className="flex-1 overflow-y-auto px-4 py-3 space-y-4 bg-[var(--purple-1)] scroll-smooth"
                 ref={listRef}
-                style={{
-                    // Critical for flex layouts: allows this area to shrink and scroll
-                    // instead of pushing the whole component beyond the viewport.
-                    minHeight: 0,
-                }}
+                style={{ minHeight: 0 }}
             >
+                {comments.length === 0 && !isLoading && (
+                    <div className="flex flex-col items-center justify-center h-full text-gray-400">
+                        <Icon name="tabler:messages-off" className="size-8 mb-2 opacity-50" />
+                        <span className="text-xs">No comments yet</span>
+                    </div>
+                )}
+
                 {comments.map((c, idx) => {
                     const isMe = c?.createdByEmail === currentUserEmail
-                    const name = c?.createdByName ?? c?.createdByEmail ?? 'User'
+                    const name = isMe ? 'You' : (c?.createdByName ?? c?.createdByEmail ?? 'User')
                     const fileIds = extractFileIds(c)
+                    const timeDisplay = getDisplayTime(c?.createdAt)
 
                     return (
                         <div key={`${c?.id ?? idx}`} className={`flex w-full ${isMe ? 'justify-end' : 'justify-start'}`}>
-                            <div className={`flex flex-col max-w-[85%] ${isMe ? 'items-end' : 'items-start'}`}>
-                                {/* 1. Name */}
-                                <span className="text-[10px] font-bold text-gray-11 mb-0.5 px-1">{isMe ? 'You' : name}</span>
+                            <div className={`flex flex-col max-w-[90%] ${isMe ? 'items-end' : 'items-start'}`}>
 
-                                {/* 2. Message Bubble */}
+                                {/* 1. Message Bubble (Top) */}
                                 <div
                                     className={`relative px-3 py-2 rounded-2xl text-xs leading-relaxed shadow-sm ${isMe
-                                        ? 'bg-primary-9 text-white rounded-tr-none'
-                                        : 'bg-white text-gray-12 border border-gray-4 rounded-tl-none'
+                                        ? 'bg-primary-9 text-white rounded-br-none' // Point bubble to metadata
+                                        : 'bg-white text-gray-12 border border-gray-4 rounded-bl-none'
                                         }`}
                                 >
                                     <div className="whitespace-pre-wrap font-medium">{c?.comments}</div>
@@ -196,7 +196,7 @@ export default function Comments({
                                                         className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold ${isMe ? 'bg-white/10 text-white' : 'bg-gray-2 text-gray-11 border border-gray-4'
                                                             }`}
                                                     >
-                                                        <Icon name="tabler:file" className="w-3 h-3" />
+                                                        <Icon name="tabler:file" className="size-3" />
                                                         <span className="truncate max-w-[120px]">{fileName}</span>
                                                     </div>
                                                 )
@@ -205,10 +205,14 @@ export default function Comments({
                                     )}
                                 </div>
 
-                                {/* 3. Date */}
-                                <span className="text-[9px] font-medium text-gray-9 mt-0.5 px-1">
-                                    {c?.createdAt ? getDisplayTime(c.createdAt) : '-'}
-                                </span>
+                                {/* 2. Metadata Row (Bottom: Name • Time) */}
+                                <div className={`flex items-center gap-1.5 mt-1 px-1 text-[10px] text-gray-9 ${isMe ? 'flex-row' : 'flex-row'}`}>
+                                    <span className="font-bold text-gray-11">{name}</span>
+                                    <span className="text-[8px] text-slate-400">•</span>
+
+                                    <span>{timeDisplay}</span>
+                                </div>
+
                             </div>
                         </div>
                     )
@@ -216,30 +220,30 @@ export default function Comments({
             </div>
 
             {/* Input Area */}
-            <div className="p-4 bg-white border-t border-gray-4">
+            <div className="p-2 bg-white border-t border-[var(--purple-2)] bg-[var(--purple-1)]">
                 <div className="flex flex-col gap-2">
-                    {/* File Picker */}
+                    {/* File Picker (Conditional) */}
                     {!!fileOptions.length && (
-                        <div className="relative w-full sm:w-56">
+                        <div className="relative w-full">
                             <select
-                                className="appearance-none w-full pl-7 pr-7 py-1 text-[10px] font-bold rounded-lg bg-gray-1 border border-gray-4 text-gray-12 outline-none cursor-pointer"
+                                className="appearance-none w-full pl-6 pr-4 py-1 text-[10px] font-semibold rounded bg-gray-1 border-none text-gray-11 outline-none cursor-pointer hover:bg-gray-2 transition-colors"
                                 value={String(attachFileId)}
                                 onChange={(e) => setAttachFileId(e.target.value)}
                             >
-                                <option value="">Attach a file...</option>
+                                <option value="">Attach file (optional)...</option>
                                 {fileOptions.map((f) => (
                                     <option key={String(f.id)} value={String(f.id)}>
                                         {f.label}
                                     </option>
                                 ))}
                             </select>
-                            <Icon name="tabler:paperclip" className="absolute left-2 top-1.5 w-3 h-3 text-gray-10" />
+                            <Icon name="tabler:paperclip" className="absolute left-1.5 top-1.5 size-3 text-gray-9" />
                         </div>
                     )}
 
-                    {/* Textarea and Send Aligned */}
-                    <div className="flex items-center gap-2">
-                        <div className="flex-1 rounded-xl bg-gray-1 border border-gray-4 overflow-hidden focus-within:border-primary-7 transition-colors">
+                    {/* Textarea & Send */}
+                    <div className="flex items-end gap-2">
+                        <div className="flex-1 rounded-lg bg-gray-1 border border-gray-3 overflow-hidden focus-within:border-primary-7 focus-within:ring-1 focus-within:ring-primary-4 transition-all">
                             <textarea
                                 ref={textareaRef}
                                 rows={1}
@@ -251,16 +255,16 @@ export default function Comments({
                                         onPost()
                                     }
                                 }}
-                                placeholder="Write a comment..."
-                                className="w-full px-3 py-2 text-xs font-medium bg-transparent focus:outline-none resize-none text-gray-12 placeholder:text-gray-9"
-                                style={{ lineHeight: '1.4' }}
+                                placeholder="Type a comment..."
+                                className="w-full px-3 py-2 text-xs font-medium bg-transparent focus:outline-none resize-none text-gray-12 placeholder:text-gray-8"
+                                style={{ lineHeight: '1.4', minHeight: '36px' }}
                             />
                         </div>
 
                         <button
                             onClick={onPost}
                             disabled={!canSend}
-                            className="size-9 flex-shrink-0 flex items-center justify-center rounded-xl transition-all shadow-sm active:scale-95"
+                            className="size-8 flex-shrink-0 flex items-center justify-center rounded-lg transition-all shadow-sm active:scale-95 mb-0.5"
                             style={{
                                 background: canSend ? 'var(--primary-9)' : 'var(--gray-3)',
                                 color: canSend ? 'white' : 'var(--gray-9)',
@@ -268,14 +272,14 @@ export default function Comments({
                             }}
                         >
                             {posting ? (
-                                <div className="size-4 rounded-full animate-spin border-2 border-white/30 border-t-white" />
+                                <div className="size-3.5 rounded-full animate-spin border-2 border-white/30 border-t-white" />
                             ) : (
-                                <Icon name="tabler:send" className="size-5" />
+                                <Icon name="tabler:send" className="size-4" />
                             )}
                         </button>
                     </div>
                 </div>
-            </div>
-        </div>
+            </div >
+        </div >
     )
 }

@@ -3,33 +3,36 @@ import Icon from '@/components/base/icon/Icon';
 import { AnimateSlideUp } from '@/components/common/animations';
 import { SkeletonCard } from '@/components/common/skeletons';
 import cn from '@/utils/cn';
-import Section from '@/pages/dashboard/workflows/shared/components/Section';
+// import Section from '@/pages/dashboard/workflows/shared/components/Section';
+import Attachments from '../attachment/Attachments';
+import History from "../history/History";
+import Comments from "../comment/Comments"
 
 // --- Helper for JSON Syntax Highlighting ---
-const syntaxHighlight = (json: any) => {
-  if (typeof json !== 'string') {
-    json = JSON.stringify(json, undefined, 2);
-  }
-  json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  return json.replace(
-    /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
-    function (match: string) {
-      let cls = 'text-[var(--blue-11)]'; // number
-      if (/^"/.test(match)) {
-        if (/:$/.test(match)) {
-          cls = 'text-[var(--purple-11)]'; // key
-        } else {
-          cls = 'text-[var(--green-11)]'; // string
-        }
-      } else if (/true|false/.test(match)) {
-        cls = 'text-[var(--orange-11)]'; // boolean
-      } else if (/null/.test(match)) {
-        cls = 'text-[var(--gray-10)]'; // null
-      }
-      return `<span class="${cls}">${match}</span>`;
-    }
-  );
-};
+// const syntaxHighlight = (json: any) => {
+//   if (typeof json !== 'string') {
+//     json = JSON.stringify(json, undefined, 2);
+//   }
+//   json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+//   return json.replace(
+//     /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
+//     function (match: string) {
+//       let cls = 'text-[var(--blue-11)]'; // number
+//       if (/^"/.test(match)) {
+//         if (/:$/.test(match)) {
+//           cls = 'text-[var(--purple-11)]'; // key
+//         } else {
+//           cls = 'text-[var(--green-11)]'; // string
+//         }
+//       } else if (/true|false/.test(match)) {
+//         cls = 'text-[var(--orange-11)]'; // boolean
+//       } else if (/null/.test(match)) {
+//         cls = 'text-[var(--gray-10)]'; // null
+//       }
+//       return `<span class="${cls}">${match}</span>`;
+//     }
+//   );
+// };
 
 // --- Types ---
 interface FieldMatch {
@@ -50,7 +53,7 @@ interface LineItemMatch {
 interface InvoiceHeader {
   'Supplier Name'?: string;
   'PO Number'?: string;
-  Currency?: string;
+  'Currency'?: string;
   'Total Due'?: string;
 }
 
@@ -89,91 +92,15 @@ interface AgentData {
   reqNo?: string;
 }
 
-interface Props {
-  agentData?: AgentData;
-}
-
-// --- Component: Stat Card ---
-interface StatCardProps {
-  title: string;
-  value: string | number;
-  subtext: string;
-  icon: string;
-  colorVar: string;
-  progress?: number;
-  isLoading?: boolean;
-  onClick?: () => void;
-}
-
-const StatCard = ({ title, value, subtext, icon, colorVar, progress = 100, isLoading, onClick }: StatCardProps) => {
-  return (
-    <div
-      onClick={onClick}
-      className={cn(
-        "relative flex flex-col justify-between overflow-hidden rounded-xl border border-[var(--gray-3)] bg-white p-5 shadow-sm transition-all duration-300 hover:shadow-md",
-        onClick && "cursor-pointer active:scale-[0.98]"
-      )}
-    >
-      {isLoading ? (
-        <div className="animate-pulse space-y-3">
-          <div className="h-8 w-8 rounded-md bg-[var(--gray-3)]"></div>
-          <div className="h-8 w-24 rounded-md bg-[var(--gray-3)]"></div>
-          <div className="h-4 w-16 rounded-md bg-[var(--gray-3)]"></div>
-        </div>
-      ) : (
-        <>
-          <div className="flex items-start justify-between">
-            <div className="flex flex-col gap-4">
-              {/* Icon & Title Group */}
-              <div className="flex items-center gap-3">
-                <div
-                  className="flex size-9 items-center justify-center rounded-lg border shadow-sm"
-                  style={{
-                    backgroundColor: `var(--${colorVar}-2)`,
-                    borderColor: `var(--${colorVar}-4)`,
-                    color: `var(--${colorVar}-11)`
-                  }}
-                >
-                  <Icon name={icon} className="size-5" />
-                </div>
-                <span className="text-14 font-semibold text-[var(--gray-11)]">{title}</span>
-              </div>
-
-              {/* Value */}
-              <div className="text-28 font-bold text-[var(--gray-13)] tracking-tight">
-                {value}
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-2 flex items-center justify-between">
-            <span className="text-13 font-medium text-[var(--gray-9)]">{subtext}</span>
-            <div className="flex size-6 items-center justify-center rounded-full bg-[var(--green-3)] text-[var(--green-11)]">
-              <Icon name="tabler:check" className="size-3.5" />
-            </div>
-          </div>
-
-          {/* Progress Bar at bottom */}
-          <div className="absolute bottom-0 left-0 h-1.5 w-full bg-[var(--gray-2)]">
-            <div
-              className="h-full transition-all duration-1000 ease-out"
-              style={{
-                width: `${progress}%`,
-                backgroundColor: `var(--${colorVar}-9)`
-              }}
-            />
-          </div>
-        </>
-      )}
-    </div>
-  );
-};
-
-
-const Overview = ({ agentData }: Props) => {
+const Overview = ({ agentData, workflowId,
+  processId,
+  transactionId,
+  repositoryId,
+  selectedItem,
+  rawWorkflowData, }: any) => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [activeTab, setActiveTab] = useState<'extracted' | 'matching' | 'po'>('extracted');
-  const [copied, setCopied] = useState<boolean>(false);
+  // const [activeTab, setActiveTab] = useState<'extracted' | 'matching' | 'po'>('extracted');
+  // const [copied, setCopied] = useState<boolean>(false);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -182,18 +109,10 @@ const Overview = ({ agentData }: Props) => {
     return () => clearTimeout(timer);
   }, []);
 
-  // --- Scroll Handler ---
-  const handleScrollTo = (id: string) => {
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  };
-
   const defaultAgentData: AgentData = {
     decision: 'APPROVED',
     score: 94,
-    reason: 'The invoice from Silverline Auto Parts matches the PO exactly. All line items and totals are verified.',
+    reason: 'The invoice from Silverline Auto Parts matches the PO exactly. All line items and totals are verified against the master record.',
     debug: {
       'Side-by-side Field Matching': [
         { Field: 'Supplier Name', 'Invoice Value': 'Silverline Auto Parts', 'PO Value': 'Silverline Auto Parts', Score: 100 },
@@ -222,7 +141,7 @@ const Overview = ({ agentData }: Props) => {
 
   const fieldMatching = data.debug?.['Side-by-side Field Matching'] || [];
   const lineItemMatching = data.debug?.['Side-by-side Line Item matching'] || [];
-  const invoiceHeader = data['Extracted Invoice JSON']?.invoice_header;
+  const invoiceHeader = data['Extracted Invoice JSON']?.invoice_header as any;
 
   const getStatusAttr = (decision: string) => {
     const d = decision?.toUpperCase() || '';
@@ -281,43 +200,100 @@ const Overview = ({ agentData }: Props) => {
 
   const getDecisionTitle = (status: string) => {
     switch (status) {
-      case 'APPROVED': return 'Invoice Approved';
-      case 'REJECTED': return 'Invoice Review Required';
-      case 'PARTIAL': return 'Partial Approval';
-      default: return 'Invoice Status Unknown';
+      case 'APPROVED': return 'Approved';
+      case 'REJECTED': return 'Review';
+      case 'PARTIAL': return 'Partial';
+      default: return 'Unknown';
     }
   };
 
-  const handleTabChange = (tab: 'extracted' | 'matching' | 'po') => {
-    setActiveTab(tab);
-    setCopied(false);
+  // const handleTabChange = (tab: 'extracted' | 'matching' | 'po') => {
+  //   setActiveTab(tab);
+  //   setCopied(false);
+  // };
+
+  // const getCurrentJsonData = () => {
+  //   if (activeTab === 'extracted') return data['Extracted Invoice JSON'];
+  //   if (activeTab === 'matching') return data.debug;
+  //   if (activeTab === 'po') return data.po_row;
+  //   return {};
+  // };
+
+  // const currentJsonData = getCurrentJsonData();
+  // const hasJsonData = currentJsonData && Object.keys(currentJsonData).length > 0;
+
+  // const handleCopy = () => {
+  //   const textToCopy = JSON.stringify(currentJsonData, null, 2);
+  //   navigator.clipboard.writeText(textToCopy);
+  //   setCopied(true);
+  //   setTimeout(() => setCopied(false), 2000);
+  // };
+  const getBannerConfig = (status: string) => {
+    switch (status) {
+      case 'APPROVED':
+        return {
+          statusTitle: 'Ready for Approval',
+          colorVar: 'green',
+          icon: 'tabler:circle-check',
+          progressColor: 'bg-[var(--green-9)]',
+          badgeText: 'Auto-verified',
+          badgeBg: 'bg-[var(--purple-3)]',
+          badgeColor: 'text-[var(--purple-11)]',
+          nextAction: 'Schedule Payment',
+          nextActionDate: 'Due Feb 12',
+          nextActionIcon: 'tabler:calendar-dollar'
+        };
+      case 'REJECTED':
+        return {
+          statusTitle: 'Review Required',
+          colorVar: 'red',
+          icon: 'tabler:alert-octagon',
+          progressColor: 'bg-[var(--red-9)]',
+          badgeText: 'Flagged',
+          badgeBg: 'bg-[var(--red-3)]',
+          badgeColor: 'text-[var(--red-11)]',
+          nextAction: 'Review Invoice',
+          nextActionDate: 'Urgent',
+          nextActionIcon: 'tabler:alert-triangle'
+        };
+      case 'PARTIAL':
+        return {
+          statusTitle: 'Partial Match',
+          colorVar: 'yellow',
+          icon: 'tabler:alert-circle',
+          progressColor: 'bg-[var(--yellow-9)]',
+          badgeText: 'Manual Check',
+          badgeBg: 'bg-[var(--yellow-3)]',
+          badgeColor: 'text-[var(--yellow-11)]',
+          nextAction: 'Verify Line Items',
+          nextActionDate: 'Net 30',
+          nextActionIcon: 'tabler:list-search'
+        };
+      default:
+        return {
+          statusTitle: 'Processing',
+          colorVar: 'gray',
+          icon: 'tabler:loader',
+          progressColor: 'bg-[var(--gray-9)]',
+          badgeText: 'Analyzing',
+          badgeBg: 'bg-[var(--gray-3)]',
+          badgeColor: 'text-[var(--gray-11)]',
+          nextAction: 'Wait for Agent',
+          nextActionDate: '-',
+          nextActionIcon: 'tabler:clock'
+        };
+    }
   };
 
-  const getCurrentJsonData = () => {
-    if (activeTab === 'extracted') return data['Extracted Invoice JSON'];
-    if (activeTab === 'matching') return data.debug;
-    if (activeTab === 'po') return data.po_row;
-    return {};
-  };
-
-  // Check if current active tab data is available
-  const currentJsonData = getCurrentJsonData();
-  const hasJsonData = currentJsonData && Object.keys(currentJsonData).length > 0;
-
-  const handleCopy = () => {
-    const textToCopy = JSON.stringify(currentJsonData, null, 2);
-    navigator.clipboard.writeText(textToCopy);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const fieldMatchingScore = fieldMatching.length > 0
-    ? Math.round(fieldMatching.reduce((acc, field) => acc + field.Score, 0) / fieldMatching.length)
-    : 0;
-
+  const banner = getBannerConfig(statusAttr);
+  // const colorVar = banner.colorVar;
   return (
-    <Section title="">
-      <div className="flex flex-col gap-6 pb-28">
+    <>
+      {/* Main Layout Container: 
+         - Uses h-screen minus header offset to fit exactly on screen
+         - Flex column to stack Banner on top, Split pane on bottom
+      */}
+      <div className="flex flex-col  gap-3 h-full overflow-hidden p-0">
         {isLoading ? (
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-4">
             {[1, 2, 3, 4].map((i) => (
@@ -326,317 +302,471 @@ const Overview = ({ agentData }: Props) => {
           </div>
         ) : (
           <>
-            {/* Top Stat Cards Grid */}
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-4">
-              <AnimateSlideUp delay={0.05}>
-                <StatCard
-                  title="AI Confidence"
-                  value={`${data.score ? data.score : 0}%`}
-                  subtext="Match Confidence"
-                  icon="tabler:brain"
-                  colorVar="primary"
-                  progress={data.score}
-                  onClick={() => handleScrollTo('section-confidence')}
-                />
-              </AnimateSlideUp>
+            {/* 1. TOP STAT/DECISION BANNER (Compact) */}
+            {/* 1. TOP STAT/DECISION BANNER (Pixel-aligned to reference) */}
+            {/* 1. TOP STAT/DECISION BANNER (Simple, no card layout, with divider like reference) */}
+            {/* 1. TOP STAT/DECISION BANNER (Simple, no card layout, full AI Analysis text) */}
+            <div className="w-full px-4 my-4">
+              <AnimateSlideUp delay={0.25}>
+                {/* CARD CONTAINER */}
+                <div className="w-full bg-white border border-[var(--gray-3)] rounded-xl shadow-sm p-5 transition-all duration-300 hover:shadow-md">
 
-              <AnimateSlideUp delay={0.1}>
-                <StatCard
-                  title="Field Matching"
-                  value={`${fieldMatchingScore}%`}
-                  subtext="Avg. Field Score"
-                  icon="tabler:scan-eye"
-                  colorVar="blue"
-                  progress={fieldMatchingScore}
-                  onClick={() => handleScrollTo('section-field-matching')}
-                />
-              </AnimateSlideUp>
+                  <div className="flex w-full items-center gap-6">
 
-              <AnimateSlideUp delay={0.15}>
-                <StatCard
-                  title="Line Items"
-                  value={`${lineItemMatching.length}`}
-                  subtext="Items processed"
-                  icon="tabler:list-details"
-                  colorVar="teal"
-                  progress={100}
-                  onClick={() => handleScrollTo('section-line-items')}
-                />
-              </AnimateSlideUp>
+                    {/* LEFT: Status & Score */}
+                    <div className="flex items-center gap-4 shrink-0 min-w-[180px]">
+                      <div
+                        className={cn(
+                          'size-10 rounded-full flex items-center justify-center shrink-0',
+                          statusAttr === 'APPROVED'
+                            ? 'bg-[var(--green-3)]'
+                            : statusAttr === 'REJECTED'
+                              ? 'bg-[var(--red-3)]'
+                              : statusAttr === 'PARTIAL'
+                                ? 'bg-[var(--yellow-3)]'
+                                : 'bg-[var(--gray-3)] animate-spin'
+                        )}
+                      >
+                        <Icon
+                          className={cn('size-6', decisionTheme.iconColor)}
+                          name={
+                            statusAttr === 'APPROVED'
+                              ? 'tabler:shield-check-filled'
+                              : statusAttr === 'REJECTED'
+                                ? 'tabler:alert-octagon-filled'
+                                : statusAttr === 'PARTIAL'
+                                  ? 'tabler:alert-circle-filled'
+                                  : 'tabler:loader'
+                          }
+                        />
+                      </div>
 
-              <AnimateSlideUp delay={0.2}>
-                <StatCard
-                  title="Total Value"
-                  value={invoiceHeader ? invoiceHeader['Total Due'] || '0.00' : '0.00'}
-                  subtext="Invoice Amount"
-                  icon="tabler:currency-dollar"
-                  colorVar="orange"
-                  progress={100}
-                  onClick={() => handleScrollTo('section-summary')}
-                />
+                      <div className="flex flex-col justify-center w-full">
+                        <div className={cn('text-[15px] font-bold leading-tight', decisionTheme.titleColor)}>
+                          {banner.statusTitle}
+                        </div>
+
+                        <div className="flex items-center gap-3 mt-1.5">
+                          <div className="h-2 w-full max-w-[100px] bg-[var(--gray-2)] rounded-full overflow-hidden relative">
+                            <div
+                              className={cn(
+                                'h-full rounded-full transition-all duration-500 ease-out',
+                                statusAttr === 'APPROVED'
+                                  ? 'bg-[var(--green-9)]'
+                                  : statusAttr === 'REJECTED'
+                                    ? 'bg-[var(--red-9)]'
+                                    : statusAttr === 'PARTIAL'
+                                      ? 'bg-[var(--yellow-9)]'
+                                      : 'bg-[var(--gray-9)]'
+                              )}
+                              style={{ width: `${Math.min(100, Math.max(0, Number(data.score) || 0))}%` }}
+                            />
+                          </div>
+                          <span className="text-[12px] font-bold text-[var(--gray-11)] whitespace-nowrap">
+                            {data.score}%
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* VERTICAL DIVIDER 1 */}
+                    {/* <div className="h-12 w-px bg-[var(--gray-3)] shrink-0" /> */}
+
+                    {/* MIDDLE: AI Analysis */}
+                    <div className="flex-1 min-w-0 py-1">
+                      <div className="flex items-start gap-3 h-full">
+                        {/* Visual Indicator Line */}
+                        <div className="w-2 self-stretch rounded-full bg-[#8B5CF6] opacity-30" />
+
+                        <div className="flex flex-col gap-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <Icon name="tabler:sparkles" className="size-3.5 text-[#8B5CF6]" />
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--gray-10)]">
+                              AI Analysis
+                            </span>
+                            {banner.badgeText && (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#8B5CF6]/10 text-[#7C3AED] border border-[#8B5CF6]/20">
+                                {banner.badgeText}
+                              </span>
+                            )}
+                          </div>
+
+                          <p className="text-[13px] leading-relaxed text-[var(--gray-11)] line-clamp-3 hover:line-clamp-none transition-all">
+                            {data.reason}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* VERTICAL DIVIDER 2 */}
+                    <div className="h-12 w-px bg-[var(--gray-3)] shrink-0" />
+
+                    {/* RIGHT: Action */}
+                    {/* RIGHT: Next Action */}
+                    <div className="flex items-center gap-5 shrink-0 justify-end">
+
+                      {/* Text Label & Action Name */}
+                      <div className="flex flex-col items-end text-right">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--gray-9)] mb-0.5">
+                          Next Action
+                        </span>
+                        <span className="text-[14px] font-bold text-[var(--gray-12)]">
+                          {banner.nextAction}
+                        </span>
+                      </div>
+
+                      {/* Date & Terms Card */}
+                      <div className="flex items-center gap-3 px-3 py-2 rounded-lg border border-[var(--gray-3)] bg-white shadow-sm min-w-[160px]">
+
+                        {/* Icon Container */}
+                        <div className="size-9 rounded-md flex items-center justify-center bg-[#FFEDD5]/50 text-[#F97316] shrink-0">
+                          <Icon name="tabler:calendar" className="size-5" />
+                        </div>
+
+                        {/* Text Details */}
+                        <div className="flex flex-col justify-center">
+
+                          {/* Top Line: Due Date + Dot */}
+                          <div className="flex items-center gap-1.5 leading-none mb-1">
+                            <span className="text-[13px] font-bold text-[var(--gray-12)] whitespace-nowrap">
+                              Due {banner.nextActionDate}
+                            </span>
+                            <div className="size-1.5 rounded-full bg-[#F97316]" />
+                          </div>
+
+                          {/* Bottom Line: Clock + Terms */}
+                          <div className="flex items-center gap-1 leading-none">
+                            <Icon name="tabler:clock" className="size-3 text-[var(--gray-8)]" />
+                            <span className="text-[11px] font-medium text-[var(--gray-9)] whitespace-nowrap">
+                              Net 30 Days
+                            </span>
+                          </div>
+
+                        </div>
+                      </div>
+
+                    </div>
+
+                  </div>
+                </div>
               </AnimateSlideUp>
             </div>
 
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-              {/* LEFT COLUMN */}
-              <div className="lg:col-span-2 flex flex-col gap-6">
 
-                {/* Decision Banner (ID: section-confidence) */}
-                <AnimateSlideUp delay={0.25}>
-                  <div
-                    id="section-confidence"
-                    className={cn('scroll-mt-24 relative h-full overflow-hidden rounded-xl border bg-white shadow-sm border-l-4', decisionTheme.bannerBorder, 'border-[var(--gray-3)]')}
-                  >
-                    <div className="flex flex-col gap-4 p-6">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <Icon className={cn('size-6', decisionTheme.iconColor)} name={statusAttr === 'APPROVED' ? 'tabler:circle-check-filled' : statusAttr === 'REJECTED' ? 'tabler:alert-octagon-filled' : 'tabler:alert-circle-filled'} />
-                          <div className={cn('text-20 font-bold', decisionTheme.titleColor)}>{getDecisionTitle(statusAttr)}</div>
-                        </div>
 
-                        <div className={cn('flex items-center gap-2 rounded-full px-4 py-1.5 text-13 font-bold', decisionTheme.badge)}>
-                          {data.score}% Score
-                        </div>
+            {/* 2. SPLIT VIEW (Fills remaining height) */}
+            <div className="flex flex-1  gap-4 overflow-hidden h-full">
+
+              {/* Left Column: Attachments */}
+              <div className="w-1/2 h-full overflow-hidden rounded-lg border border-[var(--gray-3)] bg-white">
+                <div className="h-full w-full overflow-y-auto  scrollbar-thin">
+                  <Attachments
+                    workflowId={workflowId}
+                    processId={processId}
+                    transactionId={transactionId}
+                    repositoryId={repositoryId}
+                    selectedItem={selectedItem}
+                    rawWorkflowData={rawWorkflowData}
+                  />
+                </div>
+              </div>
+
+              {/* Right Column: Analysis Data */}
+              <div className="w-1/2 h-full overflow-hidden rounded-lg">
+                <div className="h-full overflow-y-auto space-y-3 pr-1 pb-10 scrollbar-thin">
+                  <AnimateSlideUp delay={0.4}>
+                    <div className="flex flex-col gap-2">
+                      {/* Header Title */}
+                      <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--gray-9)] pl-1">
+                        Invoice Summary
                       </div>
 
-                      <div className={cn('rounded-lg border p-4', decisionTheme.box)}>
-                        <div className="flex gap-3">
-                          <Icon className={cn('mt-0.5 size-5 shrink-0', decisionTheme.iconColor)} name="tabler:info-circle" />
-                          <div>
-                            <div className={cn('mb-1 text-12 font-bold uppercase tracking-wide', decisionTheme.titleColor)}>Reasoning</div>
-                            <div className="text-14 leading-relaxed text-[var(--gray-12)]">{data.reason}</div>
+                      {/* Main Card */}
+                      <div id="section-summary" className="rounded-xl border border-[var(--gray-4)] bg-white p-4 shadow-sm">
+                        {invoiceHeader && (
+                          <div className="grid grid-cols-2 gap-y-5 gap-x-4">
+
+                            {/* 1. Supplier - PURPLE THEME */}
+                            <div className="flex items-center gap-3">
+                              <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[var(--purple-1)] text-[var(--purple-9)]">
+                                <Icon name="tabler:building-skyscraper" className="size-5" />
+                              </div>
+                              <div className="flex flex-col overflow-hidden">
+                                <span className="text-[11px] font-medium text-[var(--gray-9)]">Supplier</span>
+                                <span className="truncate text-13 font-bold text-[var(--gray-12)]">
+                                  {invoiceHeader['Supplier Name'] || '-'}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* 2. PO Number - BLUE THEME */}
+                            <div className="flex items-center gap-3">
+                              <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[var(--blue-1)] text-[var(--blue-9)]">
+                                <Icon name="tabler:file-text" className="size-5" />
+                              </div>
+                              <div className="flex flex-col overflow-hidden">
+                                <span className="text-[11px] font-medium text-[var(--gray-9)]">PO Number</span>
+                                <span className="truncate text-13 font-bold text-[var(--gray-12)]">
+                                  {invoiceHeader['PO Number'] || '-'}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* 3. Currency - ORANGE THEME */}
+                            <div className="flex items-center gap-3">
+                              <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[var(--orange-1)] text-[var(--orange-9)]">
+                                <Icon name="tabler:coins" className="size-5" />
+                              </div>
+                              <div className="flex flex-col overflow-hidden">
+                                <span className="text-[11px] font-medium text-[var(--gray-9)]">Currency</span>
+                                <span className="truncate text-13 font-bold text-[var(--gray-12)]">
+                                  {invoiceHeader['Currency'] || 'USD'}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* 4. Total Due - GREEN THEME */}
+                            <div className="flex items-center gap-3">
+                              <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[var(--green-1)] text-[var(--green-9)]">
+                                <Icon name="tabler:currency-dollar" className="size-5" />
+                              </div>
+                              <div className="flex flex-col overflow-hidden">
+                                <span className="text-[11px] font-medium text-[var(--gray-9)]">Total Due</span>
+                                <span className="truncate text-13 font-bold text-[var(--green-10)]">
+                                  {!invoiceHeader['Currency'] && '$'}
+                                  {invoiceHeader['Total Due'] || '-'}
+                                </span>
+                              </div>
+                            </div>
+
                           </div>
-                        </div>
+                        )}
                       </div>
                     </div>
-                  </div>
-                </AnimateSlideUp>
+                  </AnimateSlideUp>
 
-                {/* Field Matching Grid (ID: section-field-matching) - BLUE THEME */}
-                <AnimateSlideUp delay={0.3}>
-                  <div
-                    id="section-field-matching"
-                    className="scroll-mt-24 rounded-xl border border-[var(--blue-4)] bg-[var(--blue-1)] shadow-sm"
-                  >
-                    <div className="border-b border-[var(--blue-3)] bg-[var(--blue-2)] px-5 py-3">
-                      <div className="flex items-center gap-3">
-                        <Icon className="size-5 text-[var(--blue-9)]" name="tabler:layout-list" />
-                        <div className="text-15 font-semibold text-[var(--gray-13)]">Field Matching Breakdown</div>
+                  {/* --- SECTION 1: FIELD MATCHING --- */}
+                  {/* --- SECTION 1: FIELD MATCHING (Compact Grid Design) --- */}
+                  <AnimateSlideUp delay={0.3}>
+                    <div className="flex flex-col gap-2 mb-6">
+
+                      {/* Header - GRAY */}
+                      <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--gray-9)] pl-1">
+                        Field Matching
                       </div>
-                    </div>
 
-                    <div className="p-5">
-                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                      {/* Grid Layout for Compactness */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
                         {fieldMatching.length > 0 ? (
                           fieldMatching.map((field, index) => {
-                            const bandClass = getScoreBandClass(field.Score);
+                            const displayInvoice = field['Invoice Value'] || '-';
+                            const displayPO = field['PO Value'] || '-';
+                            const isPerfect = field.Score === 100;
+
                             return (
-                              <div key={index} className="group relative overflow-hidden rounded-lg border border-[var(--blue-3)] bg-white transition-all duration-200 hover:border-[var(--blue-5)] hover:shadow-md">
-                                <div className="p-4">
-                                  <div className="mb-3 flex items-center justify-between border-b border-[var(--gray-2)] pb-2">
-                                    <div className="text-13 font-bold text-[var(--gray-12)] truncate pr-2">{field.Field}</div>
-                                    <div className={cn('flex items-center justify-center min-w-[3rem] rounded-full border px-2 py-0.5 text-11 font-bold', bandClass)}>
-                                      {field.Score}%
+                              <div key={index} className="flex flex-col gap-3 rounded-xl border border-[var(--gray-3)] bg-white p-3 shadow-sm">
+
+                                {/* Header: Title & Score */}
+                                <div className="flex items-center justify-between">
+                                  <span className="text-13 font-bold text-[var(--gray-12)] truncate" title={field.Field}>
+                                    {field.Field}
+                                  </span>
+
+                                  <div className={cn(
+                                    "flex shrink-0 items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-bold",
+                                    isPerfect
+                                      ? "border-[var(--green-4)] bg-[var(--green-1)] text-[var(--green-9)]"
+                                      : "border-[var(--orange-4)] bg-[var(--orange-1)] text-[var(--orange-9)]"
+                                  )}>
+                                    {isPerfect && <Icon name="tabler:check" className="size-3" />}
+                                    {field.Score}%
+                                  </div>
+                                </div>
+
+                                {/* Compact Gray Boxes for Values */}
+                                <div className="grid grid-cols-2 gap-2 h-full">
+
+                                  {/* 1. Extracted */}
+                                  <div className="flex flex-col justify-center rounded-lg bg-[var(--gray-1)] px-2.5 py-2 border border-transparent">
+                                    <div className="text-[9px] font-medium text-[var(--gray-8)] uppercase tracking-wide mb-0.5">
+                                      Extracted
+                                    </div>
+                                    <div className="text-12 font-semibold text-[var(--gray-12)] break-all leading-tight line-clamp-2" title={String(displayInvoice)}>
+                                      {displayInvoice}
                                     </div>
                                   </div>
 
-                                  <div className="space-y-2">
-                                    <div>
-                                      <div className="text-10 font-medium uppercase tracking-wider text-[var(--gray-9)] mb-0.5">Extracted</div>
-                                      <div className="text-13 font-semibold text-[var(--gray-13)] break-all">{String(field['Invoice Value'])}</div>
+                                  {/* 2. PO Value */}
+                                  <div className="flex flex-col justify-center rounded-lg bg-[var(--gray-1)] px-2.5 py-2 border border-transparent">
+                                    <div className="text-[9px] font-medium text-[var(--gray-8)] uppercase tracking-wide mb-0.5">
+                                      PO Value
                                     </div>
-                                    <div>
-                                      <div className="text-10 font-medium uppercase tracking-wider text-[var(--gray-9)] mb-0.5">PO Value</div>
-                                      <div className="text-13 font-medium text-[var(--gray-11)] break-all">{String(field['PO Value'])}</div>
+                                    <div className="text-12 font-semibold text-[var(--gray-12)] break-all leading-tight line-clamp-2" title={String(displayPO)}>
+                                      {displayPO}
                                     </div>
                                   </div>
+
                                 </div>
                               </div>
                             );
                           })
                         ) : (
-                          <div className="col-span-full rounded-lg bg-[var(--blue-2)] p-6 text-center text-13 text-[var(--blue-10)]">
-                            No field matching data available
+                          <div className="col-span-full rounded-xl border border-[var(--gray-3)] bg-white p-4 text-center text-12 text-[var(--gray-8)] italic">
+                            No fields matched.
                           </div>
                         )}
                       </div>
                     </div>
-                  </div>
-                </AnimateSlideUp>
+                  </AnimateSlideUp>
 
-                {/* Line Items Table (ID: section-line-items) - TEAL THEME */}
-                <AnimateSlideUp delay={0.35}>
-                  <div
-                    id="section-line-items"
-                    className="scroll-mt-24 overflow-hidden rounded-xl border border-[var(--teal-4)] bg-[var(--teal-1)] shadow-sm"
-                  >
-                    {/* Card Header */}
-                    <div className="border-b border-[var(--teal-3)] bg-[var(--teal-2)] px-5 py-3">
-                      <div className="flex items-center gap-3">
-                        <Icon className="size-5 text-[var(--teal-9)]" name="tabler:list-check" />
-                        <div className="text-15 font-semibold text-[var(--gray-13)]">Line Items</div>
+
+                  {/* --- SECTION 2: LINE ITEMS (Compact) --- */}
+                  <AnimateSlideUp delay={0.35}>
+                    <div className="flex flex-col gap-2">
+
+                      {/* Header - GRAY */}
+                      <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--gray-9)] pl-1">
+                        Line Items
                       </div>
-                    </div>
 
-                    {/* Content Area */}
-                    <div className="overflow-x-auto">
-                      {lineItemMatching.length > 0 ? (
-                        // Wrapper with min-width to ensure horizontal scroll on small screens
-                        <div className="min-w-[700px]">
+                      {/* Main White Card */}
+                      <div id="section-line-items" className="rounded-xl border border-[var(--gray-4)] bg-white shadow-sm overflow-hidden">
 
-                          {/* Header Row */}
-                          <div className="grid grid-cols-[2.5fr_1fr_1fr_1fr_1.2fr] border-b border-[var(--teal-3)] bg-[var(--teal-2)] px-6 py-3 text-11 font-bold uppercase tracking-wider text-[var(--teal-9)]">
-                            <div>Description</div>
-                            <div>Qty</div>
-                            <div>Price</div>
-                            <div>Total</div>
-                            <div className="text-right">Match</div>
-                          </div>
+                        <div className="overflow-x-auto">
+                          {lineItemMatching.length > 0 ? (
+                            <div className="min-w-[600px]">
+                              {/* Table Header */}
+                              <div className="grid grid-cols-[2fr_0.8fr_0.8fr_1fr_1fr] border-b border-[var(--gray-3)] bg-[var(--gray-1)] px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-[var(--gray-9)]">
+                                <div>Description</div>
+                                <div>Qty</div>
+                                <div>Price</div>
+                                <div>Total</div>
+                                <div className="text-right">Match Status</div>
+                              </div>
 
-                          {/* Data Rows */}
-                          <div className="divide-y divide-[var(--teal-3)]">
-                            {lineItemMatching.map((item, index) => {
-                              const score = item['Line Score'];
-                              const isMatch = score >= 90;
+                              {/* Table Body */}
+                              <div className="divide-y divide-[var(--gray-2)]">
+                                {lineItemMatching.map((item, index) => {
+                                  const isMatch = item['Line Score'] >= 90;
 
-                              return (
-                                <div
-                                  key={index}
-                                  className="grid grid-cols-[2.5fr_1fr_1fr_1fr_1.2fr] items-start px-6 py-4 transition-colors hover:bg-[var(--teal-2)]"
-                                >
-                                  {/* Description Column */}
-                                  <div className="pr-4">
-                                    <div className="font-semibold text-[var(--gray-13)]">
-                                      {item.Description['Invoice Value']}
-                                    </div>
-                                    {!isMatch && (
-                                      <div className="mt-1 flex items-center gap-1 text-12 text-[var(--orange-11)]">
-                                        <Icon name="tabler:arrow-right" className="size-3" />
-                                        Expected: {item.Description['PO Value']}
+                                  const renderCell = (actual: any, expected: any) => {
+                                    const displayActual = actual || "-";
+                                    const showExpected = !isMatch && expected;
+
+                                    return (
+                                      <div className="flex flex-col leading-tight">
+                                        <span className={cn('truncate text-11 font-medium', !actual && 'text-[var(--gray-8)] italic')}>
+                                          {displayActual}
+                                        </span>
+                                        {showExpected && (
+                                          <span className="text-[9px] font-bold text-[var(--orange-9)] mt-0.5 truncate bg-[var(--orange-1)] px-1 py-px rounded w-fit">
+                                            Exp: {expected}
+                                          </span>
+                                        )}
                                       </div>
-                                    )}
-                                  </div>
+                                    );
+                                  };
 
-                                  {/* Quantity Column */}
-                                  <div className="text-[var(--gray-11)]">
-                                    {item.Quantity['Invoice Value']}
-                                  </div>
+                                  return (
+                                    <div key={index} className="grid grid-cols-[2fr_0.8fr_0.8fr_1fr_1fr] items-center px-4 py-2.5 hover:bg-[var(--gray-1)] transition-colors group">
 
-                                  {/* Price Column */}
-                                  <div className="text-[var(--gray-11)]">
-                                    {item.Price['Invoice Value']}
-                                  </div>
+                                      {/* Desc */}
+                                      <div className="text-[var(--gray-12)] pr-4">
+                                        {renderCell(item.Description['Invoice Value'], item.Description['PO Value'])}
+                                      </div>
 
-                                  {/* Total Column */}
-                                  <div className="font-bold text-[var(--gray-12)]">
-                                    {item.Amount['Invoice Value']}
-                                  </div>
+                                      {/* Qty */}
+                                      <div className="text-[var(--gray-11)]">
+                                        {renderCell(item.Quantity['Invoice Value'], item.Quantity['PO Value'])}
+                                      </div>
 
-                                  {/* Match Status Column */}
-                                  <div className="text-right">
-                                    <div className={cn(
-                                      'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-11 font-bold',
-                                      isMatch
-                                        ? 'border-[var(--green-4)] bg-[var(--green-2)] text-[var(--green-11)]'
-                                        : 'border-[var(--red-4)] bg-[var(--red-2)] text-[var(--red-11)]'
-                                    )}>
-                                      {isMatch ? 'Match' : 'Mismatch'}
+                                      {/* Price */}
+                                      <div className="text-[var(--gray-11)]">
+                                        {renderCell(item.Price['Invoice Value'], item.Price['PO Value'])}
+                                      </div>
+
+                                      {/* Amount */}
+                                      <div className="font-bold text-[var(--teal-9)]">
+                                        {renderCell(item.Amount['Invoice Value'], item.Amount['PO Value'])}
+                                      </div>
+
+                                      {/* Status Badge */}
+                                      <div className="text-right">
+                                        <span className={cn(
+                                          'inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-bold border',
+                                          isMatch
+                                            ? 'border-[var(--green-2)] bg-[var(--green-1)] text-[var(--green-9)]'
+                                            : 'border-[var(--red-2)] bg-[var(--red-1)] text-[var(--red-9)]'
+                                        )}>
+                                          {isMatch ? "MATCH" : "DIFF"}
+                                        </span>
+                                      </div>
                                     </div>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="p-8 text-center text-[var(--teal-10)]">No line items found.</div>
-                      )}
-                    </div>
-                  </div>
-                </AnimateSlideUp>
-              </div>
-
-              {/* RIGHT COLUMN */}
-              <div className="lg:col-span-1 space-y-6">
-
-                {/* Invoice Summary (ID: section-summary) - PURPLE THEME */}
-                <AnimateSlideUp delay={0.4}>
-                  <div
-                    id="section-summary"
-                    className="scroll-mt-24 overflow-hidden rounded-xl border border-[var(--purple-4)] bg-[var(--purple-1)] shadow-sm"
-                  >
-                    <div className="border-b border-[var(--purple-3)] bg-[var(--purple-2)] px-5 py-3">
-                      <div className="flex items-center gap-3">
-                        <Icon className="size-5 text-[var(--purple-9)]" name="tabler:file-invoice" />
-                        <div className="text-15 font-semibold text-[var(--gray-13)]">Summary</div>
-                      </div>
-                    </div>
-
-                    <div className="p-5 space-y-4">
-                      {invoiceHeader && (
-                        <>
-                          <div className="flex flex-col gap-1">
-                            <label className="text-11 font-medium text-[var(--purple-9)] uppercase tracking-wide">Supplier</label>
-                            <div className="text-14 font-semibold text-[var(--gray-12)]">{invoiceHeader['Supplier Name'] || 'N/A'}</div>
-                          </div>
-                          <div className="h-px bg-[var(--purple-3)]" />
-                          <div className="flex flex-col gap-1">
-                            <label className="text-11 font-medium text-[var(--purple-9)] uppercase tracking-wide">PO Number</label>
-                            <div className="text-14 font-semibold text-[var(--gray-12)]">{invoiceHeader['PO Number'] || 'N/A'}</div>
-                          </div>
-                          <div className="h-px bg-[var(--purple-3)]" />
-                          <div className="flex items-center justify-between">
-                            <label className="text-11 font-medium text-[var(--purple-9)] uppercase tracking-wide">Currency</label>
-                            <div className="text-14 font-medium text-[var(--gray-12)]">{invoiceHeader.Currency || 'N/A'}</div>
-                          </div>
-
-                          <div className="mt-2 rounded-lg bg-[var(--primary-2)] p-4 border border-[var(--primary-4)]">
-                            <label className="text-12 font-medium text-[var(--primary-9)]">Total Amount Due</label>
-                            <div className="text-24 font-bold text-[var(--primary-11)]">{invoiceHeader['Total Due'] || 'N/A'}</div>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </AnimateSlideUp>
-
-                {/* JSON VIEWER - GRAY THEME */}
-                {hasJsonData && (
-                  <AnimateSlideUp delay={0.45}>
-                    <div className="flex flex-col overflow-hidden rounded-xl border border-[var(--gray-4)] bg-[var(--gray-1)] shadow-sm">
-                      {/* Control Bar */}
-                      <div className="p-3 border-b border-[var(--gray-3)] bg-[var(--gray-2)]">
-                        {/* Tabs */}
-                        <div className="flex w-full items-center gap-1 rounded-lg bg-[var(--gray-4)] p-1">
-                          <button onClick={() => handleTabChange('extracted')} className={cn('flex-1 rounded-md py-1.5 text-11 font-bold uppercase tracking-wide transition-all', activeTab === 'extracted' ? 'bg-white text-[var(--gray-12)] shadow-sm' : 'text-[var(--gray-10)] hover:text-[var(--gray-12)]')}>
-                            Extracted
-                          </button>
-                          <button onClick={() => handleTabChange('matching')} className={cn('flex-1 rounded-md py-1.5 text-11 font-bold uppercase tracking-wide transition-all', activeTab === 'matching' ? 'bg-white text-[var(--gray-12)] shadow-sm' : 'text-[var(--gray-10)] hover:text-[var(--gray-12)]')}>
-                            Matches
-                          </button>
-                          <button onClick={() => handleTabChange('po')} className={cn('flex-1 rounded-md py-1.5 text-11 font-bold uppercase tracking-wide transition-all', activeTab === 'po' ? 'bg-white text-[var(--gray-12)] shadow-sm' : 'text-[var(--gray-10)] hover:text-[var(--gray-12)]')}>
-                            PO Data
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="relative">
-                        <button onClick={handleCopy} className="absolute right-3 top-3 z-10 rounded-md bg-[var(--gray-2)] p-1.5 text-[var(--gray-9)] hover:bg-[var(--gray-3)] hover:text-[var(--gray-12)]">
-                          <Icon name={copied ? 'tabler:check' : 'tabler:copy'} className="size-4" />
-                        </button>
-                        <div className="h-[300px] overflow-auto bg-white p-4">
-                          <pre className="font-mono text-11 leading-relaxed text-[var(--gray-12)]" dangerouslySetInnerHTML={{ __html: syntaxHighlight(currentJsonData) }} />
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="p-6 flex flex-col items-center justify-center text-[var(--gray-8)]">
+                              <span className="text-11 font-medium opacity-70">No line items found.</span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
                   </AnimateSlideUp>
-                )}
+                  {/* Summary Header */}
+
+                  {/* History & Comments - Styled as Cards */}
+                  <div className="grid grid-cols-1 gap-5">
+                    {/* History Card - Indigo Theme */}
+                    <div className="flex flex-col gap-2 mt-6">
+                      {/* Floating Header - GRAY */}
+                      <div className="flex items-center gap-2 pl-1">
+                        <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--gray-9)]">
+                          History
+                        </div>
+                      </div>
+
+                      {/* Main White Card */}
+                      <div className="rounded-xl border border-[var(--gray-4)] bg-white p-4 shadow-sm">
+                        <History workflowId={workflowId} processId={processId} enabled={true} />
+                      </div>
+                    </div>
+
+                    {/* Comments Card - Orange Theme */}
+                    <div className="flex flex-col gap-2 mt-3">
+                      {/* Floating Header - GRAY */}
+                      <div className="flex items-center gap-2 pl-1">
+                        <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--gray-9)]">
+                          Comments
+                        </div>
+                      </div>
+
+                      {/* Main White Card */}
+                      <div className="rounded-xl border border-[var(--gray-4)] bg-white shadow-sm overflow-hidden">
+                        {/* Internal padding removed (p-0) as requested since component handles it */}
+                        <div className="p-0">
+                          <Comments
+                            workflowId={workflowId}
+                            processId={processId}
+                            transactionId={transactionId}
+                            enabled={true}
+                            attachments={selectedItem?.attachments || []}
+                            repositoryId={repositoryId}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
               </div>
             </div>
           </>
         )}
       </div>
-    </Section>
+    </>
   );
 };
 

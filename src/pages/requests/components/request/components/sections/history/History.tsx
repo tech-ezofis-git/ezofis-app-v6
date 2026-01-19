@@ -1,12 +1,10 @@
 // @/pages/requests/components/request/components/sections/history/History.tsx
 import { useMemo } from 'react'
 import { Timeline } from '@mantine/core'
-import Title from '@/components/base/Title'
-import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
-import Badge from '@/components/base/Badge'
 import { formatDatetime } from '@/utils/dayjs'
 import { useHistory } from '@/pages/requests/hooks/useHistory'
+import cn from '@/utils/cn'
 
 type Props = {
     workflowId?: number
@@ -38,12 +36,78 @@ const toDate = (value: any): Date | null => {
     return Number.isNaN(d.getTime()) ? null : d
 }
 
-/** * Picks the most relevant actor name. 
- * Falls back through processedBy -> actionUser -> actionUserEmail.
- */
-const pickProcessedBy = (h: HistoryRow) => h.processedBy || h.actionUser || h.actionUserEmail || ''
+// Format date to match image: "10-Jan-2026 01:42 AM" or relative "4 days ago"
+const getDisplayDate = (h: HistoryRow) => {
+    const processed = toDate(h.processedOn)
+    const received = toDate(h.receivedOn) || toDate(h.actionAt)
 
-/** Relative time for non-processed events */
+    // If processed, show absolute date
+    if (processed) return formatDatetime(processed, 'datetime')
+
+    // If pending/received, show relative if recent, otherwise absolute
+    if (received) {
+        const diffHours = (Date.now() - received.getTime()) / (1000 * 60 * 60)
+        if (diffHours < 24) return 'Just now' // Simplified relative
+        if (diffHours < 48) return 'Yesterday'
+        if (diffHours > 24 * 3) return formatDatetime(received, 'datetime') // Fallback to date after 3 days
+        return `${Math.floor(diffHours / 24)} days ago`
+    }
+    return ''
+}
+
+// Config for Icons and Badge Colors based on status
+const getStepConfig = (h: HistoryRow, isStart: boolean) => {
+    const s = safeLower(h.status)
+    const stage = safeLower(h.stage)
+
+    // 1. Start Node
+    if (isStart || stage.includes('start')) {
+        return {
+            icon: 'tabler:send',
+            iconColor: 'text-blue-9',
+            bulletBg: 'bg-blue-5',
+            badgeBg: 'bg-blue-5',
+            badgeText: 'text-blue-9',
+            label: 'Submit'
+        }
+    }
+
+    // 2. Approved / Completed
+    const isApproved = s.includes('approved') || s.includes('approve') || s.includes('verified') || stage === 'end'
+    if (isApproved) {
+        return {
+            icon: 'tabler:check',
+            iconColor: 'text-green-9',
+            bulletBg: 'bg-green-5',
+            badgeBg: 'bg-green-5',
+            badgeText: 'text-green-9',
+            label: h.status || 'APPROVED'
+        }
+    }
+
+    // 3. Rejected
+    if (s.includes('reject')) {
+        return {
+            icon: 'tabler:x',
+            iconColor: 'text-red-9',
+            bulletBg: 'bg-red-5',
+            badgeBg: 'bg-red-5',
+            badgeText: 'text-red-9',
+            label: h.status || 'REJECTED'
+        }
+    }
+
+    // 4. Default / Pending / Received
+    return {
+        icon: 'tabler:clock', // Clock icon for pending
+        iconColor: 'text-gray-9',
+        bulletBg: 'bg-gray-5',
+        badgeBg: 'bg-gray-5',
+        badgeText: 'text-gray-9',
+        label: h.status || 'Received'
+    }
+}
+const pickProcessedBy = (h: HistoryRow) => h.processedBy || h.actionUser || h.actionUserEmail || ''
 const formatRelativeShort = (d: Date): string => {
     const now = Date.now()
     const diffMs = now - d.getTime()
@@ -144,8 +208,9 @@ const getStatusConfig = (h: HistoryRow) => {
     return { badgeColor: 'purple' as const, badgeLabel }
 }
 
+
 export default function History({ workflowId, processId, enabled }: Props) {
-    const { data, isLoading, error, refetch } = useHistory(workflowId, processId, enabled)
+    const { data, isLoading, error } = useHistory(workflowId, processId, enabled)
 
     const stageRollup = useMemo(() => {
         const seen = new Set<string>()
@@ -160,84 +225,90 @@ export default function History({ workflowId, processId, enabled }: Props) {
         return out
     }, [data])
 
-    return (
-        <div className="p-6">
-            <div className="flex items-center justify-between mb-6">
-                <Title className="mb-0" level={3} title="Process History" />
-                <IconButton
-                    icon="tabler:refresh"
-                    variant="ghost"
-                    color="gray"
-                    onClick={() => refetch()}
-                    loading={isLoading}
-                    title="Refresh history"
-                    ariaLabel="Refresh history"
-                />
+    if (isLoading) {
+        return (
+            <div className="flex flex-col items-center justify-center py-8">
+                <Icon name="tabler:loader-2" className="size-5 text-gray-400 animate-spin mb-2" />
+                <div className="text-xs font-medium text-gray-500">Loading history...</div>
             </div>
+        )
+    }
 
-            {isLoading && (
-                <div className="flex flex-col items-center justify-center py-10">
-                    <Icon name="tabler:loader-2" className="size-7 text-gray-400 animate-spin mb-3" />
-                    <div className="text-sm font-medium text-gray-600">Loading history…</div>
-                </div>
-            )}
+    if (error) {
+        return (
+            <div className="p-4 text-center">
+                <div className="text-xs text-red-500">Failed to load history.</div>
+            </div>
+        )
+    }
 
-            {!isLoading && error && (
-                <div className="rounded-lg border border-red-200 bg-red-50 p-4">
-                    <div className="flex items-center gap-2">
-                        <Icon name="tabler:alert-circle" className="size-5 text-red-600" />
-                        <div className="text-sm font-medium text-red-800">Couldn't load process history</div>
-                    </div>
-                    <div className="mt-1 text-sm text-red-600">Please refresh to re-sync the timeline.</div>
-                </div>
-            )}
+    if (!stageRollup.length) {
+        return (
+            <div className="py-8 text-center text-gray-400">
+                <Icon name="tabler:history-off" className="size-6 mx-auto mb-2 opacity-50" />
+                <div className="text-xs">No history available</div>
+            </div>
+        )
+    }
 
-            {!isLoading && !error && !stageRollup.length && (
-                <div className="flex flex-col items-center justify-center py-10">
-                    <div className="flex size-14 items-center justify-center rounded-full bg-gray-100 mb-3">
-                        <Icon name="tabler:history-off" className="size-7 text-gray-400" />
-                    </div>
-                    <div className="text-sm font-medium text-gray-900">No history events yet</div>
-                    <div className="text-sm text-gray-500 mt-1">History will appear here as the process progresses.</div>
-                </div>
-            )}
+    return (
+        <div className="px-4 pt-4 ">
+            <Timeline
+                lineWidth={2}
+                bulletSize={32} // Larger bullet to accommodate the circle background
+                styles={{
+                    item: {
+                        paddingLeft: 20,
+                        paddingBottom: 24, // Spacing between items
+                    },
+                    itemBullet: {
+                        backgroundColor: 'transparent', // We handle bg in the div
+                        border: 'none',
+                    },
+                    itemBody: {
+                        marginTop: -6 // Align text with the bullet
+                    }
+                }}
+            >
+                {stageRollup.map((h, idx) => {
+                    const isStart = idx === 0
+                    const config = getStepConfig(h, isStart)
+                    const dateDisplay = getDisplayDate(h)
+                    const sentence = getMeaningfulSentence(h)
 
-            {!isLoading && !error && !!stageRollup.length && (
-                <Timeline
-                    bulletSize={10}
-                    lineWidth={1}
-                    styles={{
-                        item: { marginTop: 28, paddingLeft: 16 },
-                        itemBullet: {
-                            borderColor: 'var(--primary-11)',
-                            backgroundColor: 'var(--surface)',
-                            top: 6,
-                        },
-                        itemTitle: { margin: 0, padding: 0, lineHeight: '24px' },
-                    }}
-                >
-                    {stageRollup.map((h, idx) => {
-                        const { badgeColor, badgeLabel } = getStatusConfig(h)
-                        const sentence = getMeaningfulSentence(h)
+                    return (
+                        <Timeline.Item
+                            key={`${h.activityId ?? idx}`}
+                            bullet={
+                                <div className={cn("flex size-8 items-center justify-center rounded-full border border-white ring-4 ring-white", config.bulletBg)}>
+                                    <Icon name={config.icon} className={cn("size-4", config.iconColor)} />
+                                </div>
+                            }
+                        >
+                            <div className="w-full flex items-start justify-between gap-4">
+                                {/* Left: Stage Name & Date */}
 
-                        return (
-                            <Timeline.Item
-                                key={`${h.activityId ?? idx}`}
-                                title={
-                                    <div className="flex items-center gap-2 min-h-[24px]">
-                                        <span className="text-base font-bold text-gray-900 leading-6">
-                                            {h.stage || 'Stage'}
-                                        </span>
-                                        <Badge color={badgeColor} label={badgeLabel} />
+                                <div className="flex flex-col gap-0.5">
+                                    <div className="text-13 font-bold text-[var(--gray-12)] leading-tight">
+                                        {h.stage || 'Stage'}
                                     </div>
-                                }
-                            >
-                                <div className="mt-2 text-sm text-gray-700">{sentence}</div>
-                            </Timeline.Item>
-                        )
-                    })}
-                </Timeline>
-            )}
+                                    <div className="text-12 font-medium text-[var(--gray-9)] leading-tight">
+                                        {sentence}
+                                    </div>
+                                </div>
+
+                                {/* Right: Badge */}
+                                <div className="flex items-center gap-1.5 shrink-0 pt-0.5">
+                                    <Icon name="tabler:clock" className="size-3 text-[var(--gray-7)]" />
+                                    <span className="text-11 font-medium text-[var(--gray-8)]">
+                                        {dateDisplay}
+                                    </span>
+                                </div>
+                            </div>
+                        </Timeline.Item>
+                    )
+                })}
+            </Timeline>
         </div>
     )
 }

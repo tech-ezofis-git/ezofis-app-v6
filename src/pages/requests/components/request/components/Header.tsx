@@ -16,13 +16,15 @@ interface HeaderProps {
   raisedAt: any
   onNext?: () => void
   onPrev?: () => void
+  onBack?: () => void
 }
 
 const Header: React.FC<HeaderProps> = ({
   requestNo,
   isLoading,
   onNext,
-  onPrev
+  onPrev,
+  onBack
 }) => {
   // Store UI state
   // const isMaximized = requestStore((state) => state.isMaximized)
@@ -31,11 +33,21 @@ const Header: React.FC<HeaderProps> = ({
 
   return (
     <OverlayHeaderWrapper className='justify-between gap-4'>
+
       {/* Left Side Group: Request Number + Navigation Buttons */}
       <div className='flex items-center gap-3 bg-white p-0'>
-
+        <IconButton
+          color='gray'
+          icon='tabler:arrow-left'
+          variant='ghost'
+          // disabled={!onPrev || isLoading}
+          onClick={onBack}
+          className="cursor-pointer"
+          size="sm" // Optional: makes buttons slightly smaller if needed
+        />
         {/* Dynamic Request Number */}
         <div className='text-15/9 font-semibold text-gray-13'>
+
           {isLoading ? (
             <span className="animate-pulse rounded bg-gray-200 px-2 text-transparent">REQ-Loading</span>
           ) : (

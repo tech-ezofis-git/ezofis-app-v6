@@ -483,12 +483,12 @@ const Overview = ({ agentData }: Props) => {
                                     isIndex0: index === 0,
                                     item: item
                                       ? {
-                                          line_no: item.line_no,
-                                          description: item.description,
-                                          quantity: item.quantity,
-                                          price: item.price,
-                                          amount: item.amount,
-                                        }
+                                        line_no: item.line_no,
+                                        description: item.description,
+                                        quantity: item.quantity,
+                                        price: item.price,
+                                        amount: item.amount,
+                                      }
                                       : null,
                                     itemIsTruthy: !!item,
                                     willRender: !!item,

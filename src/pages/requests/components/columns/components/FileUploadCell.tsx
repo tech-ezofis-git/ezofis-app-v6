@@ -9,7 +9,7 @@ type Props = {
     row: any
 
     // If you already have these in a global store, you can pass them in instead.
-    
+
     workflowId?: string | number
     processId?: string | number
 
@@ -19,7 +19,7 @@ type Props = {
 // Helper function to get file icon based on extension
 function getFileIcon(fileName: string): string {
     const ext = fileName.split('.').pop()?.toLowerCase() || ''
-    
+
     switch (ext) {
         case 'pdf':
             return 'tabler:file-type-pdf'
@@ -62,7 +62,7 @@ function pickSessionNumber(row: any, keys: string[]) {
 const FileUploadCell: React.FC<Props> = ({
     rawVal,
     row,
-  
+
     workflowId,
     processId,
     className = 'underline cursor-pointer',
@@ -113,7 +113,7 @@ const FileUploadCell: React.FC<Props> = ({
                 </span>
             </span>
 
-            <FileSheet
+            {opened && <FileSheet
                 opened={opened}
                 onClose={() => setOpened(false)}
                 file={file}
@@ -123,7 +123,8 @@ const FileUploadCell: React.FC<Props> = ({
                 processId={resolvedProcessId}
                 type={2}
                 actions="&action=all"
-            />
+                fullScreen={true}
+            />}
         </>
     )
 }
