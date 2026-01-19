@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import  { useMemo, useState } from 'react'
 import Icon from '@/components/base/icon/Icon'
 import { formatDatetime } from '@/utils/dayjs'
 import cn from '@/utils/cn'
@@ -12,38 +12,38 @@ import RequestSummary from './RequestSummary'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 
 // --- Helper: Safe JSON Parse ---
-const safeJsonParse = (value: any) => {
-  if (typeof value !== 'string') return value
-  try {
-    return JSON.parse(value)
-  } catch (e) {
-    return null
-  }
-}
+// const safeJsonParse = (value: any) => {
+//   if (typeof value !== 'string') return value
+//   try {
+//     return JSON.parse(value)
+//   } catch (e) {
+//     return null
+//   }
+// }
 
 // --- Helper: Detect Data Types for Summary (Existing) ---
-const getSummaryData = (fields: Record<string, any>) => {
-  const tables: { key: string; data: any[] }[] = []
-  const files: { key: string; data: any[] }[] = []
+// const getSummaryData = (fields: Record<string, any>) => {
+//   const tables: { key: string; data: any[] }[] = []
+//   const files: { key: string; data: any[] }[] = []
 
-  Object.entries(fields || {}).forEach(([key, value]) => {
-    const parsed = safeJsonParse(value)
+//   Object.entries(fields || {}).forEach(([key, value]) => {
+//     const parsed = safeJsonParse(value)
 
-    if (Array.isArray(parsed) && parsed.length > 0) {
-      if (
-        parsed[0].hasOwnProperty('fileName') ||
-        parsed[0].hasOwnProperty('fileId') ||
-        parsed[0].hasOwnProperty('size')
-      ) {
-        files.push({ key, data: parsed })
-      } else if (typeof parsed[0] === 'object') {
-        tables.push({ key, data: parsed })
-      }
-    }
-  })
+//     if (Array.isArray(parsed) && parsed.length > 0) {
+//       if (
+//         parsed[0].hasOwnProperty('fileName') ||
+//         parsed[0].hasOwnProperty('fileId') ||
+//         parsed[0].hasOwnProperty('size')
+//       ) {
+//         files.push({ key, data: parsed })
+//       } else if (typeof parsed[0] === 'object') {
+//         tables.push({ key, data: parsed })
+//       }
+//     }
+//   })
 
-  return { tables, files }
-}
+//   return { tables, files }
+// }
 const GridRowSkeleton = ({ index }: { index: number }) => {
   const prefersReducedMotion = useReducedMotion()
 

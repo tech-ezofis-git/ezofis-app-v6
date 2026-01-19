@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import requestStore from '../../stores/useRequestStore';
 
-import Footer from './components/Footer';
+// import Footer from './components/Footer';
 import Overview from './components/sections/overview/Overview';
 
 // import Tabs from '@/components/base/tabs/Tabs';

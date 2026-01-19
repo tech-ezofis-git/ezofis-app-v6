@@ -184,29 +184,29 @@ const getMeaningfulSentence = (h: HistoryRow): string => {
 }
 
 /** Badge Config: Visual indicators based on status */
-const getStatusConfig = (h: HistoryRow) => {
-    const s = safeLower(h.status)
-    const stage = safeLower(h.stage)
-    const action = safeLower(h.action)
+// const getStatusConfig = (h: HistoryRow) => {
+//     const s = safeLower(h.status)
+//     const stage = safeLower(h.stage)
+//     const action = safeLower(h.action)
 
-    const badgeLabel = h.status || (stage === 'end' || stage.includes('end') ? 'Completed' : 'Pending')
+//     const badgeLabel = h.status || (stage === 'end' || stage.includes('end') ? 'Completed' : 'Pending')
 
-    const isQueued =
-        h.actionStatus === 2 ||
-        s.includes('queued') ||
-        s.includes('pending') ||
-        action.includes('queued') ||
-        action.includes('pending')
+//     const isQueued =
+//         h.actionStatus === 2 ||
+//         s.includes('queued') ||
+//         s.includes('pending') ||
+//         action.includes('queued') ||
+//         action.includes('pending')
 
-    if (isQueued) return { badgeColor: 'purple' as const, badgeLabel }
-    if (s.includes('rejected') || s.includes('reject')) return { badgeColor: 'red' as const, badgeLabel }
-    if (s.includes('approved') || s.includes('approve')) return { badgeColor: 'green' as const, badgeLabel }
-    if (s.includes('verified') || s.includes('verify')) return { badgeColor: 'blue' as const, badgeLabel }
-    if (s.includes('submit') || s.includes('submitted')) return { badgeColor: 'indigo' as const, badgeLabel }
-    if (stage === 'end' || stage.includes('end')) return { badgeColor: 'green' as const, badgeLabel }
+//     if (isQueued) return { badgeColor: 'purple' as const, badgeLabel }
+//     if (s.includes('rejected') || s.includes('reject')) return { badgeColor: 'red' as const, badgeLabel }
+//     if (s.includes('approved') || s.includes('approve')) return { badgeColor: 'green' as const, badgeLabel }
+//     if (s.includes('verified') || s.includes('verify')) return { badgeColor: 'blue' as const, badgeLabel }
+//     if (s.includes('submit') || s.includes('submitted')) return { badgeColor: 'indigo' as const, badgeLabel }
+//     if (stage === 'end' || stage.includes('end')) return { badgeColor: 'green' as const, badgeLabel }
 
-    return { badgeColor: 'purple' as const, badgeLabel }
-}
+//     return { badgeColor: 'purple' as const, badgeLabel }
+// }
 
 
 export default function History({ workflowId, processId, enabled }: Props) {

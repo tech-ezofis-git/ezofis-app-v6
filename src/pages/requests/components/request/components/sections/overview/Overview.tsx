@@ -192,20 +192,20 @@ const Overview = ({ agentData, workflowId,
 
   const decisionTheme = getDecisionThemeClasses(statusAttr);
 
-  const getScoreBandClass = (score: number) => {
-    if (score >= 90) return 'bg-white border-[var(--green-6)] text-[var(--green-11)]';
-    if (score >= 70) return 'bg-white border-[var(--yellow-6)] text-[var(--yellow-11)]';
-    return 'bg-white border-[var(--red-6)] text-[var(--red-11)]';
-  };
+  // const getScoreBandClass = (score: number) => {
+  //   if (score >= 90) return 'bg-white border-[var(--green-6)] text-[var(--green-11)]';
+  //   if (score >= 70) return 'bg-white border-[var(--yellow-6)] text-[var(--yellow-11)]';
+  //   return 'bg-white border-[var(--red-6)] text-[var(--red-11)]';
+  // };
 
-  const getDecisionTitle = (status: string) => {
-    switch (status) {
-      case 'APPROVED': return 'Approved';
-      case 'REJECTED': return 'Review';
-      case 'PARTIAL': return 'Partial';
-      default: return 'Unknown';
-    }
-  };
+  // const getDecisionTitle = (status: string) => {
+  //   switch (status) {
+  //     case 'APPROVED': return 'Approved';
+  //     case 'REJECTED': return 'Review';
+  //     case 'PARTIAL': return 'Partial';
+  //     default: return 'Unknown';
+  //   }
+  // };
 
   // const handleTabChange = (tab: 'extracted' | 'matching' | 'po') => {
   //   setActiveTab(tab);
@@ -245,7 +245,7 @@ const Overview = ({ agentData, workflowId,
         };
       case 'REJECTED':
         return {
-          statusTitle: 'Review Required',
+          statusTitle: 'Rejected',
           colorVar: 'red',
           icon: 'tabler:alert-octagon',
           progressColor: 'bg-[var(--red-9)]',
