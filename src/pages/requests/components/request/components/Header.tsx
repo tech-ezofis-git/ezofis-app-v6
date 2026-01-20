@@ -6,6 +6,7 @@ import OverlayHeaderWrapper from '@/components/base/overlay/OverlayHeaderWrapper
 // import Title from '@/components/base/Title'
 import Tooltip from '@/components/base/Tooltip'
 import Button from '@/components/base/button/Button'
+import Icon from '@/components/base/icon/Icon'
 // import { 300 } from '@/constants'
 // import requestStore from '../../../stores/useRequestStore' // Adjust path if needed
 
@@ -103,7 +104,8 @@ const Header: React.FC<HeaderProps> = ({
 
         {/* <CloseButton onClick={closeRequest} /> */}
 
-        {<Button onClick={onApprove} loading={approveLoading} className='cursor-pointer'> Approve</Button>}
+        {<Button onClick={onApprove} loading={approveLoading} className='cursor-pointer'>   <Icon name="tabler:circle-dashed-check" className="size-5" />
+          <span>Approve</span></Button>}
       </div>
     </OverlayHeaderWrapper >
   )

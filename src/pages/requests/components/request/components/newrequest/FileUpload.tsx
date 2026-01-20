@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import Icon from "@/components/base/icon/Icon";
-// import Button from "@/components/base/button/Button";
+import Button from "@/components/base/button/Button";
 import Alert from "@/components/base/Alert";
-import Footer from "./Footer";
+// import Footer from "./Footer";
 
 import { PDF_ACCEPT } from "./utils";
 import { isPdf, MAX_SIZE } from "./utils";
@@ -102,6 +102,13 @@ const FileUplaod = ({ onClose }: Props) => {
         resetInput(invoiceInputRef);
     };
 
+    const handleCancel = () => {
+        setUploadedInvoiceName(null);
+        setFileId(null);
+        setFileData(null);
+        resetInput(invoiceInputRef);
+    };
+
     const handleSubmit = async () => {
         if (!fileId || !fileData || isSubmitting) return;
         try {
@@ -162,28 +169,28 @@ const FileUplaod = ({ onClose }: Props) => {
         {
             title: "Automated PO Matching",
             description: "The system cross-references extracted invoice data against your existing Purchase Orders to validate pricing and quantities.",
-            icon: "tabler:arrows-diff", // Represents comparison/matching
+            icon: "tabler:arrows-diff",
             colorClass: "bg-[var(--purple-2)] text-[var(--purple-9)]",
         },
         {
             title: "Smart Decisioning",
             description: "Get instant AI-driven recommendations for payment approval or exception handling based on the match results.",
-            icon: "tabler:bulb", // Represents insights/ideas
+            icon: "tabler:bulb",
             colorClass: "bg-[var(--green-2)] text-[var(--green-9)]",
         },
     ];
 
     return (
         <AnimateFadeIn className="h-[calc(100vh-110px)] overflow-hidden flex flex-col bg-[var(--gray-1)]">
-            <div className="flex-1 overflow-y-auto px-5 py-3 flex flex-col items-center">
-                <div className="w-full max-w-[850px] flex flex-col gap-6">
+            <div className="flex-1 overflow-y-auto px-5 py-2 flex flex-col items-center">
+                <div className="w-full max-w-[850px] flex flex-col gap-4">
 
                     {/* INVOICE Upload Card */}
-                    <AnimateSlideUp className="rounded-2xl border border-[var(--gray-4)] bg-[var(--gray-0)] p-5 shadow-sm">
+                    <AnimateSlideUp className="rounded-2xl border border-[var(--gray-4)] bg-[var(--gray-0)] p-4 shadow-sm">
                         <AnimateEntrancePop>
                             <h3 className="text-center text-lg font-semibold text-[var(--gray-13)]">Upload Invoice</h3>
-                            <p className="mb-3 text-center text-12 leading-relaxed text-[var(--gray-11)] mx-auto max-w-[650px]">
-                                Drop your invoice PDFs here to streamline extraction and validation. We’ll use the uploaded invoice data
+                            <p className="mb-2 text-center text-12 leading-relaxed text-[var(--gray-11)] mx-auto max-w-[650px]">
+                                Drop your invoice PDFs here to streamline extraction and validation. We'll use the uploaded invoice data
                                 to accelerate downstream matching and reconciliation.
                             </p>
                         </AnimateEntrancePop>
@@ -191,8 +198,8 @@ const FileUplaod = ({ onClose }: Props) => {
                         <AnimateScale>
                             <div
                                 className={[
-                                    "group relative w-full h-[250px] rounded-3xl border-2 border-dashed transition-all duration-300",
-                                    "flex flex-col items-center justify-center gap-6 p-8 cursor-pointer",
+                                    "group relative w-full h-[200px] rounded-2xl border-2 border-dashed transition-all duration-300",
+                                    "flex flex-col items-center justify-center gap-4 p-6 cursor-pointer",
                                     isDragOver
                                         ? "border-[var(--primary-9)] bg-[var(--primary-2)] scale-[1.01]"
                                         : "border-[var(--violet-4)] bg-[var(--gray-0)] hover:border-[var(--primary-7)] hover:bg-[var(--primary-1)]"
@@ -209,22 +216,22 @@ const FileUplaod = ({ onClose }: Props) => {
                                     handleInvoiceFiles(e.dataTransfer.files);
                                 }}
                             >
-                                <AnimateStagger className="mt-4 flex items-center gap-4">
-                                    <div className="flex size-16 items-center justify-center rounded-lg bg-[var(--primary-3)] text-[var(--primary-9)] shadow-sm">
+                                <AnimateStagger className="flex items-center gap-4">
+                                    <div className="flex size-14 items-center justify-center rounded-lg bg-[var(--primary-3)] text-[var(--primary-9)] shadow-sm">
                                         <Icon name="tabler:upload" className="size-6" />
                                     </div>
                                 </AnimateStagger>
 
                                 <div className="text-center">
-                                    <div className="text-20 font-medium text-[var(--gray-12)]">
+                                    <div className="text-18 font-medium text-[var(--gray-12)]">
                                         Drop your file here, or <span className="text-[var(--primary-9)]">browse</span>
                                     </div>
-                                    <div className="mt-2 text-14 text-[var(--gray-10)]">Supports PDF ONLY</div>
+                                    <div className="mt-1 text-13 text-[var(--gray-10)]">Supports PDF ONLY</div>
                                 </div>
 
-                                <AnimateStagger className="mb-4 flex items-center gap-4">
-                                    <div className="flex size-10 items-center justify-center rounded-lg bg-[var(--red-3)] text-[var(--red-9)] shadow-sm">
-                                        <Icon name="tabler:file-type-pdf" className="size-6" />
+                                <AnimateStagger className="flex items-center gap-4">
+                                    <div className="flex size-9 items-center justify-center rounded-lg bg-[var(--red-3)] text-[var(--red-9)] shadow-sm">
+                                        <Icon name="tabler:file-type-pdf" className="size-5" />
                                     </div>
                                 </AnimateStagger>
 
@@ -238,7 +245,7 @@ const FileUplaod = ({ onClose }: Props) => {
                                 />
 
                                 {isInvoiceUploading && (
-                                    <AnimateFadeIn className="absolute inset-0 z-10 flex items-center justify-center rounded-3xl bg-[var(--gray-0)] bg-opacity-80 backdrop-blur-sm">
+                                    <AnimateFadeIn className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-[var(--gray-0)] bg-opacity-80 backdrop-blur-sm">
                                         <div className="flex flex-col items-center gap-3">
                                             <span className="size-10 rounded-full border-4 border-[var(--primary-9)] border-t-transparent animate-spin" />
                                             <motion.span
@@ -256,9 +263,31 @@ const FileUplaod = ({ onClose }: Props) => {
                         </AnimateScale>
 
                         {uploadedInvoiceName && (
-                            <AnimateEntrancePop className="mt-8">
-                                <Alert text={`Selected File: ${uploadedInvoiceName}`} variant="green" />
-                            </AnimateEntrancePop>
+                            <div className="mt-4 space-y-3">
+                                <AnimateEntrancePop>
+                                    <Alert text={`Selected File: ${uploadedInvoiceName}`} variant="green" />
+                                </AnimateEntrancePop>
+
+                                {/* Submit button appears here when file is uploaded */}
+                                <AnimateEntrancePop >
+                                    <div className="flex items-center justify-end gap-3">
+                                        <Button
+                                            label="Cancel"
+                                            variant="outline"
+                                            size="md"
+                                            onClick={handleCancel}
+                                        />
+                                        <Button
+                                            label="Submit Invoice"
+                                            variant="solid"
+                                            size="md"
+                                            onClick={handleSubmit}
+                                            disabled={isSubmitting || !fileId}
+                                            loading={isSubmitting}
+                                        />
+                                    </div>
+                                </AnimateEntrancePop>
+                            </div>
                         )}
                     </AnimateSlideUp>
 
@@ -276,7 +305,7 @@ const FileUplaod = ({ onClose }: Props) => {
 
                     <div className="grid w-[95%] grid-cols-1 gap-4 md:grid-cols-3">
                         {features.map((feature, index) => (
-                            <AnimateStagger key={index}>
+                            <AnimateSlideUp key={index} delay={0.3 + (index * 0.15)}>
                                 <div className="flex h-full flex-col rounded-xl border border-[var(--gray-3)] bg-white p-5 shadow-sm transition-all duration-300 hover:shadow-md">
                                     <div className={`mb-4 flex size-10 items-center justify-center rounded-lg ${feature.colorClass}`}>
                                         <Icon name={feature.icon} className="size-5" />
@@ -288,15 +317,11 @@ const FileUplaod = ({ onClose }: Props) => {
                                         {feature.description}
                                     </p>
                                 </div>
-                            </AnimateStagger>
+                            </AnimateSlideUp>
                         ))}
                     </div>
                 </AnimateSlideUp>
             </div>
-
-            <AnimateSlideUp className="shrink-0 border-t border-[var(--gray-3)] bg-[var(--gray-0)] px-4">
-                <Footer onClose={onClose} onPrimaryClick={handleSubmit} isPrimaryLoading={isSubmitting} />
-            </AnimateSlideUp>
         </AnimateFadeIn >
     );
 };
