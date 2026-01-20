@@ -113,8 +113,64 @@ const InboxList: React.FC<InboxListProps> = ({
         state: { expandState, groupState, sortState, setExpandState, ...rest },
     })
 
+    // ✅ Get search state for filtering
+    const searchState = table.getState().globalFilter
+
     // ✅ Use your actual API shape: data[0].items etc.
     const flatRows = useMemo(() => flattenRows(data as any), [data])
+
+    // ✅ Filter rows based on search state
+    const filteredFlatRows = useMemo(() => {
+        if (!searchState?.value || searchState.value.trim() === '') {
+            return flatRows
+        }
+
+        const searchValue = searchState.value.toLowerCase().trim()
+        const searchColumnId = searchState.id
+
+        return flatRows.filter((row: any) => {
+            // If searching in a specific column
+            if (searchColumnId) {
+                const cellValue = row[searchColumnId]
+                if (cellValue == null) return false
+                return String(cellValue).toLowerCase().includes(searchValue)
+            }
+
+            // Search across all columns
+            return Object.entries(row).some(([key, value]) => {
+                if (value == null || key === 'id') return false
+
+                // Handle nested objects (like formData)
+                if (typeof value === 'object') {
+                    return JSON.stringify(value).toLowerCase().includes(searchValue)
+                }
+
+                return String(value).toLowerCase().includes(searchValue)
+            })
+        })
+    }, [flatRows, searchState])
+
+    // ✅ Rebuild grouped data structure with filtered rows
+    const filteredData = useMemo(() => {
+        if (!searchState?.value || searchState.value.trim() === '' || !data) {
+            return data
+        }
+
+        // Create a Set of filtered row IDs for fast lookup
+        const filteredIds = new Set(filteredFlatRows.map((row: any) => row.id || row.transactionId || row.processId))
+
+        // Filter the grouped data structure
+        return data.map((group: any) => {
+            if (!group.items || !Array.isArray(group.items)) return group
+
+            return {
+                ...group,
+                items: group.items.filter((item: any) =>
+                    filteredIds.has(item.id || item.transactionId || item.processId)
+                )
+            }
+        }).filter((group: any) => !group.items || group.items.length > 0)
+    }, [data, searchState, filteredFlatRows])
 
     // ✅ index of currently opened item in the flattened list
     const selectedIndex = useMemo(() => {
@@ -124,7 +180,7 @@ const InboxList: React.FC<InboxListProps> = ({
         const selPid = selectedItem?.processId != null ? String(selectedItem.processId) : ''
         const selId = selectedItem?.id != null ? String(selectedItem.id) : ''
 
-        return flatRows.findIndex((r: any) => {
+        return filteredFlatRows.findIndex((r: any) => {
             const rTid = r?.transactionId != null ? String(r.transactionId) : ''
             const rPid = r?.processId != null ? String(r.processId) : ''
             const rId = r?.id != null ? String(r.id) : ''
@@ -139,10 +195,10 @@ const InboxList: React.FC<InboxListProps> = ({
 
             return false
         })
-    }, [flatRows, selectedItem])
+    }, [filteredFlatRows, selectedItem])
 
     const hasPrev = selectedIndex > 0
-    const hasNext = selectedIndex >= 0 && selectedIndex < flatRows.length - 1
+    const hasNext = selectedIndex >= 0 && selectedIndex < filteredFlatRows.length - 1
 
     const goToRow = (row: any) => {
         if (!row) return
@@ -152,12 +208,12 @@ const InboxList: React.FC<InboxListProps> = ({
 
     const onPrev = () => {
         if (!hasPrev) return
-        goToRow(flatRows[selectedIndex - 1])
+        goToRow(filteredFlatRows[selectedIndex - 1])
     }
 
     const onNext = () => {
         if (!hasNext) return
-        goToRow(flatRows[selectedIndex + 1])
+        goToRow(filteredFlatRows[selectedIndex + 1])
     }
 
     // Debug (keep for a bit until stable)
@@ -200,7 +256,7 @@ const InboxList: React.FC<InboxListProps> = ({
 
                                 <GridView
                                     table={table} // Pass the instance
-                                    data={data} // Or table.getRowModel().rows.map(r => r.original)
+                                    data={filteredData} // ✅ Use filtered data
                                     isLoading={isLoading}
                                     isReloading={isRefetching}
                                     onReload={onRefresh}

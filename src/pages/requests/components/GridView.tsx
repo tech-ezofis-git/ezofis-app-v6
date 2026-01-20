@@ -433,7 +433,7 @@ const GridView = <TData,>({
                                   }}
                                   className="flex cursor-pointer items-center gap-2 rounded-lg bg-[var(--primary-9)] px-4 py-1.5 text-12 font-medium text-white shadow-sm transition-colors hover:bg-[var(--primary-10)]"
                                 >
-                                  <span>View Full Details</span>
+                                  <span>View Details</span>
                                   {/* ✅ Animated Arrow */}
                                   <motion.div
                                     variants={{
