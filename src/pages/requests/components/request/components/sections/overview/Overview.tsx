@@ -3,36 +3,9 @@ import Icon from '@/components/base/icon/Icon';
 import { AnimateSlideUp } from '@/components/common/animations';
 import { SkeletonCard } from '@/components/common/skeletons';
 import cn from '@/utils/cn';
-// import Section from '@/pages/dashboard/workflows/shared/components/Section';
 import Attachments from '../attachment/Attachments';
 import History from "../history/History";
-import Comments from "../comment/Comments"
-
-// --- Helper for JSON Syntax Highlighting ---
-// const syntaxHighlight = (json: any) => {
-//   if (typeof json !== 'string') {
-//     json = JSON.stringify(json, undefined, 2);
-//   }
-//   json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-//   return json.replace(
-//     /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
-//     function (match: string) {
-//       let cls = 'text-[var(--blue-11)]'; // number
-//       if (/^"/.test(match)) {
-//         if (/:$/.test(match)) {
-//           cls = 'text-[var(--purple-11)]'; // key
-//         } else {
-//           cls = 'text-[var(--green-11)]'; // string
-//         }
-//       } else if (/true|false/.test(match)) {
-//         cls = 'text-[var(--orange-11)]'; // boolean
-//       } else if (/null/.test(match)) {
-//         cls = 'text-[var(--gray-10)]'; // null
-//       }
-//       return `<span class="${cls}">${match}</span>`;
-//     }
-//   );
-// };
+import Comments from "../comment/Comments";
 
 // --- Types ---
 interface FieldMatch {
@@ -54,7 +27,7 @@ interface InvoiceHeader {
   'Supplier Name'?: string;
   'PO Number'?: string;
   'Currency'?: string;
-  'Total Due'?: string;
+  'Total Due'?: string | number;
 }
 
 interface ExtractedInvoice {
@@ -73,6 +46,42 @@ interface DebugData {
   'Side-by-side Line Item matching'?: LineItemMatch[];
 }
 
+/** invoice_errors can come as strings OR objects (your runtime error shows objects). */
+type InvoiceErrorItem =
+  | string
+  | {
+    code?: string;
+    field?: string;
+    detail?: any;
+    message?: string;
+  }
+  | Record<string, any>;
+
+interface InvoiceErrors {
+  severity?: string;
+  errors: InvoiceErrorItem[];
+}
+
+type BackorderReason = string;
+type BackorderRecommendation = string;
+
+interface BackorderItem {
+  po_line_id?: string;
+  po_qty: number;
+  invoice_qty: number | null;
+  remaining: number;
+  description?: string;
+  price?: number;
+  amount?: number;
+  reason?: BackorderReason;
+}
+
+interface BackorderData {
+  detected: boolean;
+  missing_qty_by_item?: BackorderItem[];
+  recommendation?: BackorderRecommendation;
+}
+
 interface AgentData {
   decision: string;
   score: number;
@@ -85,34 +94,32 @@ interface AgentData {
     Currency?: string;
   };
   'Extracted Invoice JSON'?: ExtractedInvoice;
-  invoice_errors?: {
-    severity: string;
-    errors: Array<string>;
-  };
+  invoice_errors?: InvoiceErrors;
+  backorder?: BackorderData;
   reqNo?: string;
 }
 
-const Overview = ({ agentData, workflowId,
+const Overview = ({
+  agentData,
+  workflowId,
   processId,
   transactionId,
   repositoryId,
   selectedItem,
-  rawWorkflowData, }: any) => {
+  rawWorkflowData,
+}: any) => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  // const [activeTab, setActiveTab] = useState<'extracted' | 'matching' | 'po'>('extracted');
-  // const [copied, setCopied] = useState<boolean>(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 800);
+    const timer = setTimeout(() => setIsLoading(false), 800);
     return () => clearTimeout(timer);
   }, []);
 
   const defaultAgentData: AgentData = {
     decision: 'APPROVED',
     score: 94,
-    reason: 'The invoice from Silverline Auto Parts matches the PO exactly. All line items and totals are verified against the master record.',
+    reason:
+      'The invoice from Silverline Auto Parts matches the PO exactly. All line items and totals are verified against the master record.',
     debug: {
       'Side-by-side Field Matching': [
         { Field: 'Supplier Name', 'Invoice Value': 'Silverline Auto Parts', 'PO Value': 'Silverline Auto Parts', Score: 100 },
@@ -143,6 +150,121 @@ const Overview = ({ agentData, workflowId,
   const lineItemMatching = data.debug?.['Side-by-side Line Item matching'] || [];
   const invoiceHeader = data['Extracted Invoice JSON']?.invoice_header as any;
 
+  // -----------------------------
+  // NEW: Invoice Errors + Backorder
+  // -----------------------------
+  const invoiceErrors = data.invoice_errors;
+  const backorder = data.backorder;
+
+  const hasInvoiceErrors =
+    !!invoiceErrors &&
+    Array.isArray(invoiceErrors.errors) &&
+    invoiceErrors.errors.length > 0;
+
+  const hasBackorder =
+    !!backorder &&
+    backorder.detected === true &&
+    Array.isArray(backorder.missing_qty_by_item) &&
+    backorder.missing_qty_by_item.length > 0;
+
+  /** Prevent "Objects are not valid as a React child" by normalizing to displayable strings. */
+  const formatInvoiceError = (err: InvoiceErrorItem): { title: string; subtitle?: string } => {
+    if (typeof err === 'string') return { title: err };
+
+    // If it's an object, pick meaningful fields.
+    const e: any = err || {};
+    const code = e.code ? String(e.code) : '';
+    const field = e.field ? String(e.field) : '';
+    const message = e.message ? String(e.message) : '';
+    const detail = e.detail;
+
+    // Try to build a clean, human readable line.
+    const titleParts = [code && `(${code})`, field && field, message].filter(Boolean);
+    const title = titleParts.length ? titleParts.join(' ') : 'Validation issue';
+
+    let subtitle: string | undefined;
+    if (detail != null) {
+      if (typeof detail === 'string') subtitle = detail;
+      else {
+        try {
+          subtitle = JSON.stringify(detail);
+        } catch {
+          subtitle = String(detail);
+        }
+      }
+    }
+
+    // fallback: stringify whole object if still empty
+    if (!titleParts.length && !subtitle) {
+      try {
+        subtitle = JSON.stringify(e);
+      } catch {
+        subtitle = String(e);
+      }
+    }
+
+    return { title, subtitle };
+  };
+
+  const getSeverityMeta = (severity?: string) => {
+    const s = (severity || '').toUpperCase();
+    if (s.includes('HIGH') || s.includes('CRITICAL')) {
+      return {
+        chip: 'border-[var(--red-4)] bg-[var(--red-1)] text-[var(--red-11)]',
+        iconWrap: 'bg-[var(--red-2)] text-[var(--red-9)]',
+        label: 'High severity',
+        icon: 'tabler:alert-octagon-filled',
+      };
+    }
+    if (s.includes('MED')) {
+      return {
+        chip: 'border-[var(--yellow-4)] bg-[var(--yellow-1)] text-[var(--yellow-11)]',
+        iconWrap: 'bg-[var(--yellow-2)] text-[var(--yellow-9)]',
+        label: 'Medium severity',
+        icon: 'tabler:alert-circle-filled',
+      };
+    }
+    return {
+      chip: 'border-[var(--gray-4)] bg-[var(--gray-1)] text-[var(--gray-11)]',
+      iconWrap: 'bg-[var(--gray-2)] text-[var(--gray-9)]',
+      label: 'Low severity',
+      icon: 'tabler:info-circle',
+    };
+  };
+
+  const getRecommendationMeta = (rec?: string) => {
+    const r = (rec || '').toUpperCase();
+    if (r.includes('WAIT')) {
+      return {
+        chip: 'border-[var(--blue-4)] bg-[var(--blue-1)] text-[var(--blue-11)]',
+        icon: 'tabler:hourglass',
+        label: 'Wait for balance',
+      };
+    }
+    if (r.includes('CONTACT')) {
+      return {
+        chip: 'border-[var(--purple-4)] bg-[var(--purple-1)] text-[var(--purple-11)]',
+        icon: 'tabler:message-circle-2',
+        label: 'Contact vendor',
+      };
+    }
+    if (r.includes('CANCEL')) {
+      return {
+        chip: 'border-[var(--red-4)] bg-[var(--red-1)] text-[var(--red-11)]',
+        icon: 'tabler:ban',
+        label: 'Cancel remaining',
+      };
+    }
+    return {
+      chip: 'border-[var(--gray-4)] bg-[var(--gray-1)] text-[var(--gray-11)]',
+      icon: 'tabler:settings',
+      label: rec || 'Recommendation',
+    };
+  };
+
+  // -----------------------------
+  // Existing banner helpers
+  // -----------------------------
   const getStatusAttr = (decision: string) => {
     const d = decision?.toUpperCase() || '';
     if (d.includes('PARTIAL')) return 'PARTIAL';
@@ -192,42 +314,6 @@ const Overview = ({ agentData, workflowId,
 
   const decisionTheme = getDecisionThemeClasses(statusAttr);
 
-  // const getScoreBandClass = (score: number) => {
-  //   if (score >= 90) return 'bg-white border-[var(--green-6)] text-[var(--green-11)]';
-  //   if (score >= 70) return 'bg-white border-[var(--yellow-6)] text-[var(--yellow-11)]';
-  //   return 'bg-white border-[var(--red-6)] text-[var(--red-11)]';
-  // };
-
-  // const getDecisionTitle = (status: string) => {
-  //   switch (status) {
-  //     case 'APPROVED': return 'Approved';
-  //     case 'REJECTED': return 'Review';
-  //     case 'PARTIAL': return 'Partial';
-  //     default: return 'Unknown';
-  //   }
-  // };
-
-  // const handleTabChange = (tab: 'extracted' | 'matching' | 'po') => {
-  //   setActiveTab(tab);
-  //   setCopied(false);
-  // };
-
-  // const getCurrentJsonData = () => {
-  //   if (activeTab === 'extracted') return data['Extracted Invoice JSON'];
-  //   if (activeTab === 'matching') return data.debug;
-  //   if (activeTab === 'po') return data.po_row;
-  //   return {};
-  // };
-
-  // const currentJsonData = getCurrentJsonData();
-  // const hasJsonData = currentJsonData && Object.keys(currentJsonData).length > 0;
-
-  // const handleCopy = () => {
-  //   const textToCopy = JSON.stringify(currentJsonData, null, 2);
-  //   navigator.clipboard.writeText(textToCopy);
-  //   setCopied(true);
-  //   setTimeout(() => setCopied(false), 2000);
-  // };
   const getBannerConfig = (status: string) => {
     switch (status) {
       case 'APPROVED':
@@ -240,8 +326,8 @@ const Overview = ({ agentData, workflowId,
           badgeBg: 'bg-[var(--purple-3)]',
           badgeColor: 'text-[var(--purple-11)]',
           nextAction: 'Schedule Payment',
-          nextActionDate: 'Due Feb 12',
-          nextActionIcon: 'tabler:calendar-dollar'
+          nextActionDate: 'Feb 12',
+          nextActionIcon: 'tabler:calendar-dollar',
         };
       case 'REJECTED':
         return {
@@ -254,7 +340,7 @@ const Overview = ({ agentData, workflowId,
           badgeColor: 'text-[var(--red-11)]',
           nextAction: 'Review Invoice',
           nextActionDate: 'Urgent',
-          nextActionIcon: 'tabler:alert-triangle'
+          nextActionIcon: 'tabler:alert-triangle',
         };
       case 'PARTIAL':
         return {
@@ -267,7 +353,7 @@ const Overview = ({ agentData, workflowId,
           badgeColor: 'text-[var(--yellow-11)]',
           nextAction: 'Verify Line Items',
           nextActionDate: 'Net 30',
-          nextActionIcon: 'tabler:list-search'
+          nextActionIcon: 'tabler:list-search',
         };
       default:
         return {
@@ -280,20 +366,16 @@ const Overview = ({ agentData, workflowId,
           badgeColor: 'text-[var(--gray-11)]',
           nextAction: 'Wait for Agent',
           nextActionDate: '-',
-          nextActionIcon: 'tabler:clock'
+          nextActionIcon: 'tabler:clock',
         };
     }
   };
 
   const banner = getBannerConfig(statusAttr);
-  // const colorVar = banner.colorVar;
+
   return (
     <>
-      {/* Main Layout Container: 
-         - Uses h-screen minus header offset to fit exactly on screen
-         - Flex column to stack Banner on top, Split pane on bottom
-      */}
-      <div className="flex flex-col  gap-3 h-full overflow-hidden p-0">
+      <div className="flex flex-col gap-3 h-full overflow-hidden p-0">
         {isLoading ? (
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-4">
             {[1, 2, 3, 4].map((i) => (
@@ -302,17 +384,11 @@ const Overview = ({ agentData, workflowId,
           </div>
         ) : (
           <>
-            {/* 1. TOP STAT/DECISION BANNER (Compact) */}
-            {/* 1. TOP STAT/DECISION BANNER (Pixel-aligned to reference) */}
-            {/* 1. TOP STAT/DECISION BANNER (Simple, no card layout, with divider like reference) */}
-            {/* 1. TOP STAT/DECISION BANNER (Simple, no card layout, full AI Analysis text) */}
+            {/* TOP STAT / DECISION BANNER */}
             <div className="w-full px-4 my-4">
               <AnimateSlideUp delay={0.25}>
-                {/* CARD CONTAINER */}
                 <div className="w-full bg-white border border-[var(--gray-3)] rounded-xl shadow-sm p-5 transition-all duration-300 hover:shadow-md">
-
                   <div className="flex w-full items-center gap-6">
-
                     {/* LEFT: Status & Score */}
                     <div className="flex items-center gap-4 shrink-0 min-w-[180px]">
                       <div
@@ -369,15 +445,10 @@ const Overview = ({ agentData, workflowId,
                       </div>
                     </div>
 
-                    {/* VERTICAL DIVIDER 1 */}
-                    {/* <div className="h-12 w-px bg-[var(--gray-3)] shrink-0" /> */}
-
                     {/* MIDDLE: AI Analysis */}
                     <div className="flex-1 min-w-0 py-1">
                       <div className="flex items-start gap-3 h-full">
-                        {/* Visual Indicator Line */}
                         <div className="w-2 self-stretch rounded-full bg-[#8B5CF6] opacity-30" />
-
                         <div className="flex flex-col gap-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <Icon name="tabler:sparkles" className="size-3.5 text-[#8B5CF6]" />
@@ -398,14 +469,11 @@ const Overview = ({ agentData, workflowId,
                       </div>
                     </div>
 
-                    {/* VERTICAL DIVIDER 2 */}
+                    {/* DIVIDER */}
                     <div className="h-12 w-px bg-[var(--gray-3)] shrink-0" />
 
-                    {/* RIGHT: Action */}
                     {/* RIGHT: Next Action */}
                     <div className="flex items-center gap-5 shrink-0 justify-end">
-
-                      {/* Text Label & Action Name */}
                       <div className="flex flex-col items-end text-right">
                         <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--gray-9)] mb-0.5">
                           Next Action
@@ -415,18 +483,12 @@ const Overview = ({ agentData, workflowId,
                         </span>
                       </div>
 
-                      {/* Date & Terms Card */}
                       <div className="flex items-center gap-3 px-3 py-2 rounded-lg border border-[var(--gray-3)] bg-white shadow-sm min-w-[160px]">
-
-                        {/* Icon Container */}
                         <div className="size-9 rounded-md flex items-center justify-center bg-[#FFEDD5]/50 text-[#F97316] shrink-0">
                           <Icon name="tabler:calendar" className="size-5" />
                         </div>
 
-                        {/* Text Details */}
                         <div className="flex flex-col justify-center">
-
-                          {/* Top Line: Due Date + Dot */}
                           <div className="flex items-center gap-1.5 leading-none mb-1">
                             <span className="text-[13px] font-bold text-[var(--gray-12)] whitespace-nowrap">
                               Due {banner.nextActionDate}
@@ -434,17 +496,14 @@ const Overview = ({ agentData, workflowId,
                             <div className="size-1.5 rounded-full bg-[#F97316]" />
                           </div>
 
-                          {/* Bottom Line: Clock + Terms */}
                           <div className="flex items-center gap-1 leading-none">
                             <Icon name="tabler:clock" className="size-3 text-[var(--gray-8)]" />
                             <span className="text-[11px] font-medium text-[var(--gray-9)] whitespace-nowrap">
                               Net 30 Days
                             </span>
                           </div>
-
                         </div>
                       </div>
-
                     </div>
 
                   </div>
@@ -452,14 +511,11 @@ const Overview = ({ agentData, workflowId,
               </AnimateSlideUp>
             </div>
 
-
-
-            {/* 2. SPLIT VIEW (Fills remaining height) */}
-            <div className="flex flex-1  gap-4 overflow-hidden h-full">
-
+            {/* SPLIT VIEW */}
+            <div className="flex flex-1 gap-4 overflow-hidden h-full">
               {/* Left Column: Attachments */}
               <div className="w-1/2 h-full overflow-hidden rounded-lg border border-[var(--gray-3)] bg-white">
-                <div className="h-full w-full overflow-y-auto  scrollbar-thin">
+                <div className="h-full w-full overflow-y-auto scrollbar-thin">
                   <Attachments
                     workflowId={workflowId}
                     processId={processId}
@@ -474,19 +530,17 @@ const Overview = ({ agentData, workflowId,
               {/* Right Column: Analysis Data */}
               <div className="w-1/2 h-full overflow-hidden rounded-lg">
                 <div className="h-full overflow-y-auto space-y-3 pr-1 pb-10 scrollbar-thin">
+
+                  {/* Invoice Summary */}
                   <AnimateSlideUp delay={0.4}>
                     <div className="flex flex-col gap-2">
-                      {/* Header Title */}
                       <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--gray-9)] pl-1">
                         Invoice Summary
                       </div>
 
-                      {/* Main Card */}
                       <div id="section-summary" className="rounded-xl border border-[var(--gray-4)] bg-white p-4 shadow-sm">
                         {invoiceHeader && (
                           <div className="grid grid-cols-2 gap-y-5 gap-x-4">
-
-                            {/* 1. Supplier - PURPLE THEME */}
                             <div className="flex items-center gap-3">
                               <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[var(--purple-1)] text-[var(--purple-9)]">
                                 <Icon name="tabler:building-skyscraper" className="size-5" />
@@ -499,7 +553,6 @@ const Overview = ({ agentData, workflowId,
                               </div>
                             </div>
 
-                            {/* 2. PO Number - BLUE THEME */}
                             <div className="flex items-center gap-3">
                               <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[var(--blue-1)] text-[var(--blue-9)]">
                                 <Icon name="tabler:file-text" className="size-5" />
@@ -512,7 +565,6 @@ const Overview = ({ agentData, workflowId,
                               </div>
                             </div>
 
-                            {/* 3. Currency - ORANGE THEME */}
                             <div className="flex items-center gap-3">
                               <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[var(--orange-1)] text-[var(--orange-9)]">
                                 <Icon name="tabler:coins" className="size-5" />
@@ -525,7 +577,6 @@ const Overview = ({ agentData, workflowId,
                               </div>
                             </div>
 
-                            {/* 4. Total Due - GREEN THEME */}
                             <div className="flex items-center gap-3">
                               <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[var(--green-1)] text-[var(--green-9)]">
                                 <Icon name="tabler:currency-dollar" className="size-5" />
@@ -533,29 +584,23 @@ const Overview = ({ agentData, workflowId,
                               <div className="flex flex-col overflow-hidden">
                                 <span className="text-[11px] font-medium text-[var(--gray-9)]">Total Due</span>
                                 <span className="truncate text-13 font-bold text-[var(--green-10)]">
-                                  {!invoiceHeader['Currency'] && '$'}
-                                  {invoiceHeader['Total Due'] || '-'}
+                                  {invoiceHeader['Total Due'] ?? '-'}
                                 </span>
                               </div>
                             </div>
-
                           </div>
                         )}
                       </div>
                     </div>
                   </AnimateSlideUp>
 
-                  {/* --- SECTION 1: FIELD MATCHING --- */}
-                  {/* --- SECTION 1: FIELD MATCHING (Compact Grid Design) --- */}
+                  {/* Field Matching */}
                   <AnimateSlideUp delay={0.3}>
                     <div className="flex flex-col gap-2 mb-6">
-
-                      {/* Header - GRAY */}
                       <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--gray-9)] pl-1">
                         Field Matching
                       </div>
 
-                      {/* Grid Layout for Compactness */}
                       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
                         {fieldMatching.length > 0 ? (
                           fieldMatching.map((field, index) => {
@@ -565,28 +610,25 @@ const Overview = ({ agentData, workflowId,
 
                             return (
                               <div key={index} className="flex flex-col gap-3 rounded-xl border border-[var(--gray-3)] bg-white p-3 shadow-sm">
-
-                                {/* Header: Title & Score */}
                                 <div className="flex items-center justify-between">
                                   <span className="text-13 font-bold text-[var(--gray-12)] truncate" title={field.Field}>
                                     {field.Field}
                                   </span>
 
-                                  <div className={cn(
-                                    "flex shrink-0 items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-bold",
-                                    isPerfect
-                                      ? "border-[var(--green-4)] bg-[var(--green-1)] text-[var(--green-9)]"
-                                      : "border-[var(--orange-4)] bg-[var(--orange-1)] text-[var(--orange-9)]"
-                                  )}>
+                                  <div
+                                    className={cn(
+                                      "flex shrink-0 items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-bold",
+                                      isPerfect
+                                        ? "border-[var(--green-4)] bg-[var(--green-1)] text-[var(--green-9)]"
+                                        : "border-[var(--orange-4)] bg-[var(--orange-1)] text-[var(--orange-9)]"
+                                    )}
+                                  >
                                     {isPerfect && <Icon name="tabler:check" className="size-3" />}
                                     {field.Score}%
                                   </div>
                                 </div>
 
-                                {/* Compact Gray Boxes for Values */}
                                 <div className="grid grid-cols-2 gap-2 h-full">
-
-                                  {/* 1. Extracted */}
                                   <div className="flex flex-col justify-center rounded-lg bg-[var(--gray-1)] px-2.5 py-2 border border-transparent">
                                     <div className="text-[9px] font-medium text-[var(--gray-8)] uppercase tracking-wide mb-0.5">
                                       Extracted
@@ -596,7 +638,6 @@ const Overview = ({ agentData, workflowId,
                                     </div>
                                   </div>
 
-                                  {/* 2. PO Value */}
                                   <div className="flex flex-col justify-center rounded-lg bg-[var(--gray-1)] px-2.5 py-2 border border-transparent">
                                     <div className="text-[9px] font-medium text-[var(--gray-8)] uppercase tracking-wide mb-0.5">
                                       PO Value
@@ -605,7 +646,6 @@ const Overview = ({ agentData, workflowId,
                                       {displayPO}
                                     </div>
                                   </div>
-
                                 </div>
                               </div>
                             );
@@ -619,23 +659,17 @@ const Overview = ({ agentData, workflowId,
                     </div>
                   </AnimateSlideUp>
 
-
-                  {/* --- SECTION 2: LINE ITEMS (Compact) --- */}
+                  {/* Line Items */}
                   <AnimateSlideUp delay={0.35}>
                     <div className="flex flex-col gap-2">
-
-                      {/* Header - GRAY */}
                       <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--gray-9)] pl-1">
                         Line Items
                       </div>
 
-                      {/* Main White Card */}
                       <div id="section-line-items" className="rounded-xl border border-[var(--gray-4)] bg-white shadow-sm overflow-hidden">
-
                         <div className="overflow-x-auto">
                           {lineItemMatching.length > 0 ? (
                             <div className="min-w-[600px]">
-                              {/* Table Header */}
                               <div className="grid grid-cols-[2fr_0.8fr_0.8fr_1fr_1fr] border-b border-[var(--gray-3)] bg-[var(--gray-1)] px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-[var(--gray-9)]">
                                 <div>Description</div>
                                 <div>Qty</div>
@@ -644,7 +678,6 @@ const Overview = ({ agentData, workflowId,
                                 <div className="text-right">Match Status</div>
                               </div>
 
-                              {/* Table Body */}
                               <div className="divide-y divide-[var(--gray-2)]">
                                 {lineItemMatching.map((item, index) => {
                                   const isMatch = item['Line Score'] >= 90;
@@ -669,35 +702,31 @@ const Overview = ({ agentData, workflowId,
 
                                   return (
                                     <div key={index} className="grid grid-cols-[2fr_0.8fr_0.8fr_1fr_1fr] items-center px-4 py-2.5 hover:bg-[var(--gray-1)] transition-colors group">
-
-                                      {/* Desc */}
                                       <div className="text-[var(--gray-12)] pr-4">
                                         {renderCell(item.Description['Invoice Value'], item.Description['PO Value'])}
                                       </div>
 
-                                      {/* Qty */}
                                       <div className="text-[var(--gray-11)]">
                                         {renderCell(item.Quantity['Invoice Value'], item.Quantity['PO Value'])}
                                       </div>
 
-                                      {/* Price */}
                                       <div className="text-[var(--gray-11)]">
                                         {renderCell(item.Price['Invoice Value'], item.Price['PO Value'])}
                                       </div>
 
-                                      {/* Amount */}
                                       <div className="font-bold text-[var(--teal-9)]">
                                         {renderCell(item.Amount['Invoice Value'], item.Amount['PO Value'])}
                                       </div>
 
-                                      {/* Status Badge */}
                                       <div className="text-right">
-                                        <span className={cn(
-                                          'inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-bold border',
-                                          isMatch
-                                            ? 'border-[var(--green-2)] bg-[var(--green-1)] text-[var(--green-9)]'
-                                            : 'border-[var(--red-2)] bg-[var(--red-1)] text-[var(--red-9)]'
-                                        )}>
+                                        <span
+                                          className={cn(
+                                            'inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-bold border',
+                                            isMatch
+                                              ? 'border-[var(--green-2)] bg-[var(--green-1)] text-[var(--green-9)]'
+                                              : 'border-[var(--red-2)] bg-[var(--red-1)] text-[var(--red-9)]'
+                                          )}
+                                        >
                                           {isMatch ? "MATCH" : "DIFF"}
                                         </span>
                                       </div>
@@ -715,37 +744,241 @@ const Overview = ({ agentData, workflowId,
                       </div>
                     </div>
                   </AnimateSlideUp>
-                  {/* Summary Header */}
 
-                  {/* History & Comments - Styled as Cards */}
+                  {/* NEW: Invoice Errors + Backorder (Must be above History & Comments) */}
                   <div className="grid grid-cols-1 gap-5">
-                    {/* History Card - Indigo Theme */}
+                    {hasInvoiceErrors && (
+                      <AnimateSlideUp delay={0.36}>
+                        <div className="flex flex-col gap-2 mt-6">
+                          <div className="flex items-center justify-between pl-1">
+                            <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--gray-9)]">
+                              Invoice Errors
+                            </div>
+
+                            {(() => {
+                              const meta = getSeverityMeta(invoiceErrors?.severity);
+                              return (
+                                <span
+                                  className={cn(
+                                    'inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-bold',
+                                    meta.chip
+                                  )}
+                                >
+                                  <Icon name={meta.icon} className="size-3" />
+                                  {meta.label}
+                                </span>
+                              );
+                            })()}
+                          </div>
+
+                          <div className="rounded-xl border border-[var(--gray-4)] bg-white p-4 shadow-sm">
+                            <div className="flex items-start gap-3">
+                              {(() => {
+                                const meta = getSeverityMeta(invoiceErrors?.severity);
+                                return (
+                                  <div className={cn('flex size-10 shrink-0 items-center justify-center rounded-lg', meta.iconWrap)}>
+                                    <Icon name={meta.icon} className="size-5" />
+                                  </div>
+                                );
+                              })()}
+
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center justify-between gap-3">
+                                  <div className="text-13 font-bold text-[var(--gray-12)] truncate">
+                                    Requires attention
+                                  </div>
+                                  <span className="text-[10px] font-bold text-[var(--gray-9)]">
+                                    {invoiceErrors?.errors?.length} issue(s)
+                                  </span>
+                                </div>
+
+                                <div className="mt-2 grid grid-cols-1 gap-2">
+                                  {invoiceErrors!.errors.slice(0, 6).map((err, idx) => {
+                                    const formatted = formatInvoiceError(err);
+                                    return (
+                                      <div
+                                        key={idx}
+                                        className="flex items-start gap-2 rounded-lg border border-[var(--gray-3)] bg-[var(--gray-1)] px-3 py-2"
+                                      >
+                                        <Icon name="tabler:point-filled" className="size-3 mt-0.5 text-[var(--red-9)]" />
+                                        <div className="min-w-0">
+                                          <p className="text-12 font-semibold text-[var(--gray-12)] leading-relaxed break-words">
+                                            {formatted.title}
+                                          </p>
+                                          {formatted.subtitle && (
+                                            <p className="mt-0.5 text-[11px] font-medium text-[var(--gray-9)] break-words line-clamp-2">
+                                              {formatted.subtitle}
+                                            </p>
+                                          )}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+
+                                  {invoiceErrors!.errors.length > 6 && (
+                                    <div className="text-[11px] font-medium text-[var(--gray-9)] pl-1">
+                                      +{invoiceErrors!.errors.length - 6} more issue(s)
+                                    </div>
+                                  )}
+                                </div>
+
+                                <div className="mt-3 flex items-center gap-2">
+                                  <span className="inline-flex items-center gap-1 rounded-md border border-[var(--gray-3)] bg-white px-2 py-1 text-[10px] font-bold text-[var(--gray-10)]">
+                                    <Icon name="tabler:shield-exclamation" className="size-3" />
+                                    Policy validation recommended
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </AnimateSlideUp>
+                    )}
+
+                    {hasBackorder && (
+                      <AnimateSlideUp delay={0.38}>
+                        <div className="flex flex-col gap-2 mt-3">
+                          <div className="flex items-center justify-between pl-1">
+                            <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--gray-9)]">
+                              Backorder
+                            </div>
+
+                            {(() => {
+                              const meta = getRecommendationMeta(backorder?.recommendation);
+                              return (
+                                <span
+                                  className={cn(
+                                    'inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-bold',
+                                    meta.chip
+                                  )}
+                                >
+                                  <Icon name={meta.icon} className="size-3" />
+                                  {meta.label}
+                                </span>
+                              );
+                            })()}
+                          </div>
+
+                          <div className="rounded-xl border border-[var(--gray-4)] bg-white shadow-sm overflow-hidden">
+                            <div className="flex items-center justify-between gap-4 px-4 py-3 border-b border-[var(--gray-3)] bg-[var(--gray-1)]">
+                              <div className="flex items-center gap-3">
+                                <div className="flex size-9 items-center justify-center rounded-lg bg-[var(--orange-1)] text-[var(--orange-9)]">
+                                  <Icon name="tabler:truck-delivery" className="size-5" />
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--gray-9)]">
+                                    Detected missing quantities
+                                  </span>
+                                  <span className="text-13 font-bold text-[var(--gray-12)]">
+                                    {backorder!.missing_qty_by_item!.length} impacted line(s)
+                                  </span>
+                                </div>
+                              </div>
+
+                              <span className="inline-flex items-center gap-1 rounded-md border border-[var(--orange-3)] bg-[var(--orange-1)] px-2 py-1 text-[10px] font-bold text-[var(--orange-10)]">
+                                <Icon name="tabler:alert-triangle" className="size-3" />
+                                Short ship risk
+                              </span>
+                            </div>
+
+                            <div className="overflow-x-auto">
+                              <div className="min-w-[720px]">
+                                <div className="grid grid-cols-[2fr_0.8fr_0.8fr_0.8fr_1fr_1fr] border-b border-[var(--gray-3)] bg-white px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-[var(--gray-9)]">
+                                  <div>Description</div>
+                                  <div>PO Qty</div>
+                                  <div>Inv Qty</div>
+                                  <div>Remaining</div>
+                                  <div>Value</div>
+                                  <div className="text-right">Reason</div>
+                                </div>
+
+                                <div className="divide-y divide-[var(--gray-2)]">
+                                  {backorder!.missing_qty_by_item!.map((row, idx) => {
+                                    const desc = row.description?.trim() || 'Unmapped item';
+                                    const invQty = row.invoice_qty ?? '-';
+                                    const value =
+                                      typeof row.amount === 'number'
+                                        ? row.amount
+                                        : typeof row.price === 'number' && typeof row.remaining === 'number'
+                                          ? row.price * row.remaining
+                                          : '-';
+                                    const reason = row.reason || 'BACKORDER';
+
+                                    return (
+                                      <div
+                                        key={idx}
+                                        className="grid grid-cols-[2fr_0.8fr_0.8fr_0.8fr_1fr_1fr] items-center px-4 py-2.5 hover:bg-[var(--gray-1)] transition-colors"
+                                      >
+                                        <div className="text-[var(--gray-12)] pr-4">
+                                          <div className="text-12 font-semibold truncate" title={desc}>
+                                            {desc}
+                                          </div>
+                                          {row.po_line_id && (
+                                            <div className="text-[10px] font-medium text-[var(--gray-9)] truncate">
+                                              PO Line: {row.po_line_id}
+                                            </div>
+                                          )}
+                                        </div>
+
+                                        <div className="text-12 font-medium text-[var(--gray-11)]">{row.po_qty}</div>
+                                        <div className="text-12 font-medium text-[var(--gray-11)]">{invQty as any}</div>
+                                        <div className="text-12 font-bold text-[var(--orange-10)]">{row.remaining}</div>
+                                        <div className="text-12 font-bold text-[var(--teal-9)]">{value as any}</div>
+
+                                        <div className="text-right">
+                                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-bold border border-[var(--orange-3)] bg-[var(--orange-1)] text-[var(--orange-10)]">
+                                            {reason}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+
+                                {backorder?.recommendation && (
+                                  <div className="px-4 py-3 border-t border-[var(--gray-3)] bg-white flex items-center justify-between">
+                                    <div className="flex items-center gap-2 text-[11px] font-bold text-[var(--gray-10)]">
+                                      <Icon name="tabler:route" className="size-4" />
+                                      Orchestration recommendation
+                                    </div>
+                                    <span
+                                      className={cn(
+                                        'inline-flex items-center gap-1 px-2 py-1 rounded-md border text-[10px] font-bold',
+                                        getRecommendationMeta(backorder.recommendation).chip
+                                      )}
+                                    >
+                                      <Icon name={getRecommendationMeta(backorder.recommendation).icon} className="size-3" />
+                                      {getRecommendationMeta(backorder.recommendation).label}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </AnimateSlideUp>
+                    )}
+
+                    {/* History */}
                     <div className="flex flex-col gap-2 mt-6">
-                      {/* Floating Header - GRAY */}
                       <div className="flex items-center gap-2 pl-1">
                         <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--gray-9)]">
                           History
                         </div>
                       </div>
-
-                      {/* Main White Card */}
                       <div className="rounded-xl border border-[var(--gray-4)] bg-white p-4 shadow-sm">
                         <History workflowId={workflowId} processId={processId} enabled={true} />
                       </div>
                     </div>
 
-                    {/* Comments Card - Orange Theme */}
+                    {/* Comments */}
                     <div className="flex flex-col gap-2 mt-3">
-                      {/* Floating Header - GRAY */}
                       <div className="flex items-center gap-2 pl-1">
                         <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--gray-9)]">
                           Comments
                         </div>
                       </div>
-
-                      {/* Main White Card */}
                       <div className="rounded-xl border border-[var(--gray-4)] bg-white shadow-sm overflow-hidden">
-                        {/* Internal padding removed (p-0) as requested since component handles it */}
                         <div className="p-0">
                           <Comments
                             workflowId={workflowId}
