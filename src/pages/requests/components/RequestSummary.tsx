@@ -83,7 +83,7 @@ const RequestSummary: React.FC<RequestSummaryProps> = ({
                 status: decision.label === 'APPROVED' ? 'Verified' : decision.label === 'REJECTED' ? 'Not Approved' : 'In review'
             },
             extraction: {
-                value: lineItems.length,
+                value: `${lineItems.length} Line Items`,
                 theme: (lineItems.length > 0 ? 'green' : 'orange') as SummaryTheme,
                 pct: lineItems.length > 0 ? 100 : 48,
                 status: lineItems.length > 0 ? 'Done' : 'Partial'
@@ -123,7 +123,7 @@ const RequestSummary: React.FC<RequestSummaryProps> = ({
 
                 <SummaryCard
                     label="AI Decision"
-                    subLabel="Policy + anomaly checks"
+                    subLabel="Based on PO Matching + Rules"
                     icon="tabler:gavel"
                     value={summaryMetrics.decision.value}
                     theme={summaryMetrics.decision.theme}
