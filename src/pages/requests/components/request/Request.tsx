@@ -115,7 +115,7 @@ const Request = ({ onPrev, onNext }: { onPrev?: () => void; onNext?: () => void 
         Keeps both Header and Tabs pinned to the top.
         Added z-20 and bg-white (or bg-surface) to ensure content scrolls behind it.
       */}
-      <div className="sticky top-0 z-20 bg-white">
+      <div className="sticky top-0 z-20 bg-white ">
         <Header
           requestNo={currentAgentData?.reqNo ? currentAgentData.reqNo : selectedItem?.requestNo}
           raisedAt={request?.createdAt}

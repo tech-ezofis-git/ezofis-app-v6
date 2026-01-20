@@ -80,13 +80,13 @@ const RequestSummary: React.FC<RequestSummaryProps> = ({
                 value: decision.label,
                 theme: decision.theme,
                 pct: decision.progress,
-                status: decision.label === 'APPROVED' ? 'Approved' : decision.label === 'REJECTED' ? 'Not Approved' : 'In review'
+                status: decision.label === 'APPROVED' ? 'Verified' : decision.label === 'REJECTED' ? 'Not Approved' : 'In review'
             },
             extraction: {
                 value: lineItems.length,
                 theme: (lineItems.length > 0 ? 'green' : 'orange') as SummaryTheme,
                 pct: lineItems.length > 0 ? 100 : 48,
-                status: lineItems.length > 0 ? 'Complete' : 'Partial'
+                status: lineItems.length > 0 ? 'Done' : 'Partial'
             },
             validation: {
                 value: validationValue,

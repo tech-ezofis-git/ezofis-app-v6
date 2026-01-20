@@ -385,7 +385,7 @@ const Overview = ({
         ) : (
           <>
             {/* TOP STAT / DECISION BANNER */}
-            <div className="w-full px-4 my-4">
+            <div className="w-full  mt-2">
               <AnimateSlideUp delay={0.25}>
                 <div className="w-full bg-white border border-[var(--gray-3)] rounded-xl shadow-sm p-5 transition-all duration-300 hover:shadow-md">
                   <div className="flex w-full items-center gap-6">
@@ -533,7 +533,7 @@ const Overview = ({
 
                   {/* Invoice Summary */}
                   <AnimateSlideUp delay={0.4}>
-                    <div className="flex flex-col gap-2">
+                    <div className="flex flex-col gap-2 ">
                       <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--gray-9)] pl-1">
                         Invoice Summary
                       </div>
@@ -596,12 +596,12 @@ const Overview = ({
 
                   {/* Field Matching */}
                   <AnimateSlideUp delay={0.3}>
-                    <div className="flex flex-col gap-2 mb-6">
+                    <div className="flex flex-col gap-2 mt-6">
                       <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--gray-9)] pl-1">
                         Field Matching
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-3">
                         {fieldMatching.length > 0 ? (
                           fieldMatching.map((field, index) => {
                             const displayInvoice = field['Invoice Value'] || '-';
@@ -661,7 +661,7 @@ const Overview = ({
 
                   {/* Line Items */}
                   <AnimateSlideUp delay={0.35}>
-                    <div className="flex flex-col gap-2">
+                    <div className="flex flex-col gap-2 mt-6">
                       <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--gray-9)] pl-1">
                         Line Items
                       </div>
@@ -746,10 +746,10 @@ const Overview = ({
                   </AnimateSlideUp>
 
                   {/* NEW: Invoice Errors + Backorder (Must be above History & Comments) */}
-                  <div className="grid grid-cols-1 gap-5">
+                  <div className="grid grid-cols-1 gap-2">
                     {hasInvoiceErrors && (
                       <AnimateSlideUp delay={0.36}>
-                        <div className="flex flex-col gap-2 mt-6">
+                        <div className="flex flex-col gap-2 mt-3">
                           <div className="flex items-center justify-between pl-1">
                             <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--gray-9)]">
                               Invoice Errors
@@ -960,7 +960,7 @@ const Overview = ({
                     )}
 
                     {/* History */}
-                    <div className="flex flex-col gap-2 mt-6">
+                    <div className="flex flex-col gap-2 mt-3">
                       <div className="flex items-center gap-2 pl-1">
                         <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--gray-9)]">
                           History
@@ -972,7 +972,7 @@ const Overview = ({
                     </div>
 
                     {/* Comments */}
-                    <div className="flex flex-col gap-2 mt-3">
+                    <div className="flex flex-col gap-2 mt-4">
                       <div className="flex items-center gap-2 pl-1">
                         <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--gray-9)]">
                           Comments

@@ -1,4 +1,4 @@
-import  { useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import Icon from '@/components/base/icon/Icon'
 import { formatDatetime } from '@/utils/dayjs'
 import cn from '@/utils/cn'
@@ -11,39 +11,6 @@ import RequestSummary from './RequestSummary'
 // ✅ Motion
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 
-// --- Helper: Safe JSON Parse ---
-// const safeJsonParse = (value: any) => {
-//   if (typeof value !== 'string') return value
-//   try {
-//     return JSON.parse(value)
-//   } catch (e) {
-//     return null
-//   }
-// }
-
-// --- Helper: Detect Data Types for Summary (Existing) ---
-// const getSummaryData = (fields: Record<string, any>) => {
-//   const tables: { key: string; data: any[] }[] = []
-//   const files: { key: string; data: any[] }[] = []
-
-//   Object.entries(fields || {}).forEach(([key, value]) => {
-//     const parsed = safeJsonParse(value)
-
-//     if (Array.isArray(parsed) && parsed.length > 0) {
-//       if (
-//         parsed[0].hasOwnProperty('fileName') ||
-//         parsed[0].hasOwnProperty('fileId') ||
-//         parsed[0].hasOwnProperty('size')
-//       ) {
-//         files.push({ key, data: parsed })
-//       } else if (typeof parsed[0] === 'object') {
-//         tables.push({ key, data: parsed })
-//       }
-//     }
-//   })
-
-//   return { tables, files }
-// }
 const GridRowSkeleton = ({ index }: { index: number }) => {
   const prefersReducedMotion = useReducedMotion()
 
@@ -185,8 +152,6 @@ const GridView = <TData,>({
 
   /**
    * ✅ Different animation per item:
-   * - We pick a variant set based on the index modulo N.
-   * - This creates differentiated motion while still feeling cohesive.
    */
   const itemVariantSet = (i: number) => {
     const k = i % 4
@@ -273,6 +238,7 @@ const GridView = <TData,>({
           rowSize={rowSize}
           onRowSizeChange={onRowSizeChange}
           hideTableActions={true}
+          className='!mb-1'
         />
       </div>
 
@@ -305,9 +271,6 @@ const GridView = <TData,>({
               const stage = row?.stage || 'Pending'
               const fieldCount = row?.formData?.fields ? Object.keys(row.formData.fields).length : 0
               const statusConfig = getStatusConfig(stage)
-
-              // computed but not used currently; keeping your existing logic
-              // const _summary = isExpanded ? getSummaryData(row?.formData?.fields) : { tables: [], files: [] }
 
               const variants = itemVariantSet(index)
 
@@ -446,13 +409,45 @@ const GridView = <TData,>({
                               animate="show"
                               className="mb-4"
                             >
-                              <div className="flex items-center justify-between">
-                                <h4 className="mb-2 text-12 font-semibold uppercase tracking-wider text-[var(--gray-10)]">
+                              <div className="flex items-center justify-between mb-4">
+                                <h4 className="text-12 font-semibold uppercase tracking-wider text-[var(--gray-10)]">
                                   Agent Intelligence
                                 </h4>
+
+                                {/* ✅ Animated Button */}
+                                <motion.button
+                                  initial="idle"
+                                  whileHover="hover"
+                                  whileTap="tap"
+                                  variants={{
+                                    idle: { scale: 1, y: 0 },
+                                    hover: {
+                                      scale: 1.02,
+                                      y: -1,
+                                    },
+                                    tap: { scale: 0.98, y: 0 },
+                                  }}
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    onRowClick(row, 'Overview')
+                                  }}
+                                  className="flex cursor-pointer items-center gap-2 rounded-lg bg-[var(--primary-9)] px-4 py-1.5 text-12 font-medium text-white shadow-sm transition-colors hover:bg-[var(--primary-10)]"
+                                >
+                                  <span>View Full Details</span>
+                                  {/* ✅ Animated Arrow */}
+                                  <motion.div
+                                    variants={{
+                                      idle: { x: 0 },
+                                      hover: { x: 3 },
+                                    }}
+                                    transition={{ type: 'spring', stiffness: 400, damping: 10 }}
+                                  >
+                                    <Icon name="tabler:arrow-right" className="size-4" />
+                                  </motion.div>
+                                </motion.button>
                               </div>
 
-                              {/* subtle stagger inside summary container */}
+                              {/* summary container */}
                               <motion.div
                                 initial={prefersReducedMotion ? false : { opacity: 0, y: 6 }}
                                 animate={{ opacity: 1, y: 0 }}
@@ -471,31 +466,6 @@ const GridView = <TData,>({
                               </motion.div>
                             </motion.div>
                           )}
-
-                          {/* Action Footer */}
-                          <motion.div
-                            initial={prefersReducedMotion ? false : { opacity: 0, y: 6 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={
-                              prefersReducedMotion
-                                ? { duration: 0 }
-                                : { delay: 0.05, duration: 0.2, ease: 'easeOut' }
-                            }
-                            className="flex justify-end pt-2 border-t border-[var(--gray-4)] mt-2"
-                          >
-                            <motion.button
-                              whileHover={prefersReducedMotion ? undefined : { scale: 1.01 }}
-                              whileTap={prefersReducedMotion ? undefined : { scale: 0.99 }}
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                onRowClick(row, 'Overview')
-                              }}
-                              className="flex cursor-pointer items-center gap-2 rounded-lg bg-[var(--primary-9)] px-4 py-2 text-13 font-medium text-white shadow-sm transition-colors hover:bg-[var(--primary-10)]"
-                            >
-                              View Full Details
-                              <Icon name="tabler:arrow-right" className="size-4" />
-                            </motion.button>
-                          </motion.div>
                         </div>
                       </motion.div>
                     )}

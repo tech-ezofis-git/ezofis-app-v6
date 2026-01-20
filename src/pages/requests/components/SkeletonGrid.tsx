@@ -1,9 +1,86 @@
 // import React from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
 import cn from '@/utils/cn'
-import { SUMMARY_THEMES, type SummaryTheme } from './SummaryCard'
+import { type SummaryTheme } from './SummaryCard'
 
-// Define the loading order/colors to match your typical data pattern
+const SUMMARY_THEMES: Record<
+    SummaryTheme,
+    {
+        iconBg: string
+        iconText: string
+        bar: string
+        ring: string
+        wash: string
+        glow: string
+        pillBg: string
+        pillText: string
+        subtleText: string
+        borderTint: string
+    }
+> = {
+    blue: {
+        iconBg: 'bg-blue-3/80',
+        iconText: 'text-blue-11',
+        bar: 'bg-blue-9',
+        ring: 'focus-visible:ring-blue-7/35',
+        wash: 'from-blue-2/70 via-transparent to-transparent',
+        glow: 'shadow-[0_18px_55px_rgba(0,86,255,0.10)]',
+        pillBg: 'bg-blue-3/80',
+        pillText: 'text-blue-11',
+        subtleText: 'text-blue-11',
+        borderTint: 'border-blue-5/30',
+    },
+    green: {
+        iconBg: 'bg-green-3/80',
+        iconText: 'text-green-11',
+        bar: 'bg-green-9',
+        ring: 'focus-visible:ring-green-7/35',
+        wash: 'from-green-2/70 via-transparent to-transparent',
+        glow: 'shadow-[0_18px_55px_rgba(0,200,120,0.10)]',
+        pillBg: 'bg-green-3/80',
+        pillText: 'text-green-11',
+        subtleText: 'text-green-11',
+        borderTint: 'border-green-5/30',
+    },
+    orange: {
+        iconBg: 'bg-orange-3/80',
+        iconText: 'text-orange-11',
+        bar: 'bg-orange-8',
+        ring: 'focus-visible:ring-orange-7/35',
+        wash: 'from-orange-2/70 via-transparent to-transparent',
+        glow: 'shadow-[0_18px_55px_rgba(255,140,0,0.10)]',
+        pillBg: 'bg-orange-3/80',
+        pillText: 'text-orange-11',
+        subtleText: 'text-orange-11',
+        borderTint: 'border-orange-5/30',
+    },
+    red: {
+        iconBg: 'bg-red-3/80',
+        iconText: 'text-red-11',
+        bar: 'bg-red-8',
+        ring: 'focus-visible:ring-red-7/35',
+        wash: 'from-red-2/70 via-transparent to-transparent',
+        glow: 'shadow-[0_18px_55px_rgba(255,70,70,0.10)]',
+        pillBg: 'bg-red-3/80',
+        pillText: 'text-red-11',
+        subtleText: 'text-red-11',
+        borderTint: 'border-red-5/30',
+    },
+    teal: {
+        iconBg: 'bg-teal-3/80',
+        iconText: 'text-teal-11',
+        bar: 'bg-teal-9',
+        ring: 'focus-visible:ring-teal-7/35',
+        wash: 'from-teal-2/70 via-transparent to-transparent',
+        glow: 'shadow-[0_18px_55px_rgba(0,190,200,0.10)]',
+        pillBg: 'bg-teal-3/80',
+        pillText: 'text-teal-11',
+        subtleText: 'text-teal-11',
+        borderTint: 'border-teal-5/30',
+    },
+}
+
+// Define the loading order/colors to match your typical data pattern   
 const LOADING_THEMES: SummaryTheme[] = ['blue', 'blue', 'green', 'orange']
 
 const SkeletonCard = ({ theme, index }: { theme: SummaryTheme; index: number }) => {
