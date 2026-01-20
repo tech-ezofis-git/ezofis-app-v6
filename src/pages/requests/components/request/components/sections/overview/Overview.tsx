@@ -749,85 +749,133 @@ const Overview = ({
                   <div className="grid grid-cols-1 gap-2">
                     {hasInvoiceErrors && (
                       <AnimateSlideUp delay={0.36}>
-                        <div className="flex flex-col gap-2 mt-3">
+                        <div className="flex flex-col gap-3 mt-3 ml-1">
+                          {/* Header with severity badge */}
                           <div className="flex items-center justify-between pl-1">
-                            <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--gray-9)]">
-                              Invoice Errors
+                            <div className="flex items-center gap-2">
+                              {/* <Icon
+                                name="tabler:alert-triangle-filled"
+                                className="size-4 text-[var(--red-9)]"
+                              /> */}
+                              <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--gray-9)]">
+                                Invoice Errors
+                              </div>
                             </div>
 
-                            {(() => {
+                            {/* {(() => {
                               const meta = getSeverityMeta(invoiceErrors?.severity);
                               return (
                                 <span
                                   className={cn(
-                                    'inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-bold',
+                                    'inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-[10px] font-bold shadow-sm',
                                     meta.chip
                                   )}
                                 >
-                                  <Icon name={meta.icon} className="size-3" />
+                                  <Icon name={meta.icon} className="size-3.5" />
                                   {meta.label}
                                 </span>
                               );
-                            })()}
+                            })()} */}
                           </div>
 
-                          <div className="rounded-xl border border-[var(--gray-4)] bg-white p-4 shadow-sm">
-                            <div className="flex items-start gap-3">
-                              {(() => {
-                                const meta = getSeverityMeta(invoiceErrors?.severity);
-                                return (
-                                  <div className={cn('flex size-10 shrink-0 items-center justify-center rounded-lg', meta.iconWrap)}>
-                                    <Icon name={meta.icon} className="size-5" />
-                                  </div>
-                                );
-                              })()}
+                          {/* Main error card with gradient */}
+                          <div className="relative rounded-xl   to-white p-5 shadow-sm overflow-hidden">
+                            {/* Decorative background pattern */}
+                            <div className="absolute inset-0 opacity-5">
+                              <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--red-9)] rounded-full blur-3xl" />
+                              <div className="absolute bottom-0 left-0 w-24 h-24 bg-[var(--red-9)] rounded-full blur-2xl" />
+                            </div>
 
+                            <div className="relative flex items-start gap-4">
+                              {/* Icon section */}
+
+
+                              {/* Content section */}
                               <div className="min-w-0 flex-1">
-                                <div className="flex items-center justify-between gap-3">
-                                  <div className="text-13 font-bold text-[var(--gray-12)] truncate">
-                                    Requires attention
+                                {/* Title and count */}
+                                <div className="flex items-center justify-between gap-3 mb-3">
+
+                                  <div className="flex flex-row gap-4 items-center">
+                                    {(() => {
+                                      const meta = getSeverityMeta(invoiceErrors?.severity);
+                                      return (
+                                        <div className={cn(
+                                          'flex size-9 shrink-0 items-center justify-center rounded-xl shadow-sm border',
+                                          meta.iconWrap,
+                                          'border-[var(--red-4)]'
+                                        )}>
+                                          <Icon name={meta.icon} className="size-5" />
+                                        </div>
+                                      );
+                                    })()}
+                                    <h4 className="text-14 font-bold text-[var(--red-11)] mb-0.5">
+                                      Validation Issues Detected
+                                      <p className="text-11 text-[var(--gray-10)] font-medium">
+                                        The following issues require attention before processing
+                                      </p>
+                                    </h4>
+
                                   </div>
-                                  <span className="text-[10px] font-bold text-[var(--gray-9)]">
-                                    {invoiceErrors?.errors?.length} issue(s)
-                                  </span>
+                                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-[var(--red-3)] shadow-sm shrink-0">
+                                    <Icon name="tabler:alert-circle" className="size-4 text-[var(--red-9)]" />
+                                    <span className="text-12 font-bold text-[var(--red-11)]">
+                                      {invoiceErrors?.errors?.length} {invoiceErrors?.errors?.length === 1 ? 'Issue' : 'Issues'}
+                                    </span>
+                                  </div>
                                 </div>
 
-                                <div className="mt-2 grid grid-cols-1 gap-2">
+                                {/* Error list */}
+                                <div className="mt-3 grid grid-cols-1 gap-2.5">
                                   {invoiceErrors!.errors.slice(0, 6).map((err, idx) => {
                                     const formatted = formatInvoiceError(err);
                                     return (
                                       <div
                                         key={idx}
-                                        className="flex items-start gap-2 rounded-lg border border-[var(--gray-3)] bg-[var(--gray-1)] px-3 py-2"
+                                        className="group flex items-start gap-3 rounded-lg border border-[var(--red-3)] bg-white px-4 py-3 shadow-sm transition-all duration-200 hover:shadow-md hover:border-[var(--red-5)] hover:-translate-y-0.5"
                                       >
-                                        <Icon name="tabler:point-filled" className="size-3 mt-0.5 text-[var(--red-9)]" />
-                                        <div className="min-w-0">
-                                          <p className="text-12 font-semibold text-[var(--gray-12)] leading-relaxed break-words">
+                                        {/* Error number badge */}
+                                        <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-[var(--red-2)] text-[10px] font-bold text-[var(--red-10)] ring-2 ring-white">
+                                          {idx + 1}
+                                        </div>
+
+                                        {/* Error content */}
+                                        <div className="min-w-0 flex-1">
+                                          <p className="text-12 font-semibold text-[var(--gray-13)] leading-relaxed break-words">
                                             {formatted.title}
                                           </p>
                                           {formatted.subtitle && (
-                                            <p className="mt-0.5 text-[11px] font-medium text-[var(--gray-9)] break-words line-clamp-2">
+                                            <p className="mt-1 text-[11px] font-medium text-[var(--gray-9)] break-words line-clamp-2 group-hover:line-clamp-none transition-all">
                                               {formatted.subtitle}
                                             </p>
                                           )}
+                                        </div>
+
+                                        {/* Status indicator */}
+                                        <div className="flex items-center shrink-0">
+                                          <div className="size-2 rounded-full bg-[var(--red-9)] animate-pulse" />
                                         </div>
                                       </div>
                                     );
                                   })}
 
+                                  {/* Show more indicator */}
                                   {invoiceErrors!.errors.length > 6 && (
-                                    <div className="text-[11px] font-medium text-[var(--gray-9)] pl-1">
-                                      +{invoiceErrors!.errors.length - 6} more issue(s)
+                                    <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--red-1)] border border-[var(--red-3)]">
+                                      <Icon name="tabler:dots" className="size-4 text-[var(--red-9)]" />
+                                      <span className="text-11 font-semibold text-[var(--red-10)]">
+                                        +{invoiceErrors!.errors.length - 6} more issue{invoiceErrors!.errors.length - 6 !== 1 ? 's' : ''} detected
+                                      </span>
                                     </div>
                                   )}
                                 </div>
 
-                                <div className="mt-3 flex items-center gap-2">
-                                  <span className="inline-flex items-center gap-1 rounded-md border border-[var(--gray-3)] bg-white px-2 py-1 text-[10px] font-bold text-[var(--gray-10)]">
-                                    <Icon name="tabler:shield-exclamation" className="size-3" />
-                                    Policy validation recommended
+                                {/* Action footer */}
+                                {/* <div className="mt-4 flex items-center gap-2 pt-3 border-t border-[var(--red-3)]">
+                                  <Icon name="tabler:shield-exclamation" className="size-4 text-[var(--orange-9)]" />
+                                  <span className="text-11 font-semibold text-[var(--gray-11)]">
+                                    Policy validation recommended before approval
                                   </span>
-                                </div>
+                                </div> */}
                               </div>
                             </div>
                           </div>

@@ -96,7 +96,7 @@ const InboxList: React.FC<InboxListProps> = ({
         updatedBy: false,
     }
 
-    const { expandState, groupState, sortState, setExpandState, ...rest } = useDataTableState({
+    const { expandState, groupState, sortState, searchState, setExpandState, ...rest } = useDataTableState({
         initialVisibilityState,
     })
 
@@ -104,17 +104,6 @@ const InboxList: React.FC<InboxListProps> = ({
     useEffect(() => {
         setExpandState({ root: true })
     }, [setExpandState])
-
-    const { table } = useDataTable({
-        columns,
-        rows: (data || []) as any,
-        enableRowSelection: false,
-
-        state: { expandState, groupState, sortState, setExpandState, ...rest },
-    })
-
-    // ✅ Get search state for filtering
-    const searchState = table.getState().globalFilter
 
     // ✅ Use your actual API shape: data[0].items etc.
     const flatRows = useMemo(() => flattenRows(data as any), [data])
@@ -171,6 +160,15 @@ const InboxList: React.FC<InboxListProps> = ({
             }
         }).filter((group: any) => !group.items || group.items.length > 0)
     }, [data, searchState, filteredFlatRows])
+
+    // ✅ Create table with filtered data
+    const { table } = useDataTable({
+        columns,
+        rows: (filteredData || []) as any,
+        enableRowSelection: false,
+
+        state: { expandState, groupState, sortState, searchState, setExpandState, ...rest },
+    })
 
     // ✅ index of currently opened item in the flattened list
     const selectedIndex = useMemo(() => {

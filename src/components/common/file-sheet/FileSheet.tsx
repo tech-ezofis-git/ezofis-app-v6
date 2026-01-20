@@ -164,7 +164,7 @@ const FileSheet: React.FC<any> = ({
     processId,
     apiBaseUrl,
     type = DEFAULT_TYPE,
-    actions = '&action=all',
+    actions = '',
     fullScreen = false,  // Default to false for inline view
 }) => {
     const [isLoading, setIsLoading] = useState(true);
