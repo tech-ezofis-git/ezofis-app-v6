@@ -21,6 +21,8 @@ interface HeaderProps {
   onBack?: () => void
   onApprove?: () => void
   approveLoading?: boolean
+  rightView: 'analysis' | 'comments' | 'attachments'
+  setRightView: (view: 'analysis' | 'comments' | 'attachments') => void
 }
 
 const Header: React.FC<HeaderProps> = ({
@@ -30,7 +32,9 @@ const Header: React.FC<HeaderProps> = ({
   onPrev,
   onBack,
   onApprove,
-  approveLoading
+  approveLoading,
+  rightView,
+  setRightView
 }) => {
   // Store UI state
   // const isMaximized = requestStore((state) => state.isMaximized)
@@ -88,21 +92,40 @@ const Header: React.FC<HeaderProps> = ({
 
       </div>
 
-      {/* Right Side Group: (Maximize / Close - currently commented out) */}
-      <div className='flex items-center gap-1 mb-2'>
-        {/* <Tooltip
-          content={isMaximized ? 'Minimize' : 'Maximize'}
-          openDelay={500}
-        >
-          <IconButton
-            color='gray'
-            icon={isMaximized ? 'lucide:minimize' : 'lucide:maximize'}
-            variant='ghost'
-            onClick={toggleMaximize}
-          />
-        </Tooltip> */}
+      {/* Right Side Group: Comments/Attachments + Approve */}
+      <div className='flex items-center gap-3 mb-2'>
 
-        {/* <CloseButton onClick={closeRequest} /> */}
+        {/* Comments & Attachments Toggles */}
+        {/* Comments & Attachments Toggles - Premium Segmented Look */}
+        {/* Comments & Attachments - Separate Premium Buttons */}
+        <div className="flex items-center gap-2">
+          <Tooltip content="Comments">
+            <button
+              onClick={() => setRightView(rightView === 'comments' ? 'analysis' : 'comments')}
+              className={`flex items-center justify-center size-9 rounded-full transition-all border ${rightView === 'comments'
+                ? 'bg-[var(--blue-1)] text-[var(--blue-9)] border-[var(--blue-3)] shadow-sm'
+                : 'bg-transparent text-[var(--gray-10)] border-transparent hover:bg-[var(--gray-2)] hover:text-[var(--gray-12)]'
+                }`}
+            >
+              <Icon name="tabler:message-circle" className="size-5" />
+            </button>
+          </Tooltip>
+
+          <Tooltip content="Attachments">
+            <button
+              onClick={() => setRightView(rightView === 'attachments' ? 'analysis' : 'attachments')}
+              className={`flex items-center justify-center size-9 rounded-full transition-all border ${rightView === 'attachments'
+                ? 'bg-[var(--blue-1)] text-[var(--blue-9)] border-[var(--blue-3)] shadow-sm'
+                : 'bg-transparent text-[var(--gray-10)] border-transparent hover:bg-[var(--gray-2)] hover:text-[var(--gray-12)]'
+                }`}
+            >
+              <Icon name="tabler:paperclip" className="size-5" />
+            </button>
+          </Tooltip>
+        </div>
+
+        {/* Divider */}
+        <div className="h-6 w-px bg-[var(--gray-3)] mx-1" />
 
         {<Button onClick={onApprove} loading={approveLoading} className='cursor-pointer'>   <Icon name="tabler:circle-dashed-check" className="size-5" />
           <span>Approve</span></Button>}

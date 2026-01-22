@@ -129,11 +129,9 @@ export default function Comments({
 
     return (
         <div
-            className="flex flex-col mt-0 bg-[var(--purple-2)] relative font-sans w-full mx-auto  overflow-hidden border bg-white shadow-sm transition-all duration-300"
+            className="flex flex-col mt-0 bg-[var(--purple-2)] relative font-sans w-full h-full mx-auto overflow-hidden border bg-white shadow-sm transition-all duration-300"
             style={{
                 borderColor: 'var(--gray-4)',
-                maxHeight: 'calc(100vh - 350px)',
-                minHeight: '200px',
             }}
         >
             {/* Header - Compact */}

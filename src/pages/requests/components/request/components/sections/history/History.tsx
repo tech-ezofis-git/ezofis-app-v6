@@ -220,10 +220,10 @@ export default function History({ workflowId, processId, enabled }: Props) {
                             <div className="w-full flex items-start justify-between gap-2 min-h-[24px]">
                                 {/* Left: Stage Name & Desc */}
                                 <div className="flex flex-col min-w-0">
-                                    <div className="text-xs font-semibold text-[var(--gray-12)] leading-none mb-0.5 truncate">
+                                    <div className="text-xs font-semibold text-[var(--gray-12)] leading-none mb-0.5 line-clamp-1 hover:line-clamp-none transition-all">
                                         {h.stage || 'Stage'}
                                     </div>
-                                    <div className="text-[11px] font-medium text-[var(--gray-9)] leading-tight line-clamp-2">
+                                    <div className="text-[11px] font-medium text-[var(--gray-9)] leading-tight line-clamp-2 hover:line-clamp-none transition-all">
                                         {sentence}
                                     </div>
                                 </div>

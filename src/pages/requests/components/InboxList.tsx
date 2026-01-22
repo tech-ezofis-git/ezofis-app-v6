@@ -218,16 +218,17 @@ const InboxList: React.FC<InboxListProps> = ({
     }
     return (
         <>
-            <div className="flex flex-col bg-primary px-6 md:px-6 py-2">
-                <div className="flex-1 relative">
-                    <div className="flex w-full gap-3">
+            <div className="flex flex-col h-full bg-primary px-6 md:px-6 py-2 overflow-hidden">
+                <div className="flex-1 w-full min-h-0 relative flex flex-col">
+                    <div className="flex w-full gap-3 h-full">
                         {/* Left */}
                         {!selectedItem && viewMode === 'table' && (
-                            <div className="basis-5/5 p-2 py-2 min-w-0">
+                            <div className="flex-1 flex flex-col min-w-0 h-full">
                                 <DataTable
                                     isLoading={isLoading}
                                     isReLoading={isRefetching}
                                     pageSize={pageSize}
+                                    stickyHeader={true}
                                     table={table}
                                     onReload={onRefresh}
                                     component={selectedItem}
@@ -244,8 +245,7 @@ const InboxList: React.FC<InboxListProps> = ({
                         )}
 
                         {!selectedItem && viewMode === 'grid' && (
-                            <div className="basis-5/5 min-w-0">
-
+                            <div className="flex-1 min-w-0 h-full overflow-y-auto">
                                 <GridView
                                     table={table} // Pass the instance
                                     data={filteredData} // ✅ Use filtered data
@@ -272,7 +272,7 @@ const InboxList: React.FC<InboxListProps> = ({
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.3, duration: 0.5 }}
-                                className="basis-5/5 min-w-0 h-[calc(100vh-160px)]"
+                                className="basis-5/5 min-w-0 h-full overflow-hidden"
                             >
                                 <AnimateFadeIn>
                                     <Request
@@ -287,7 +287,7 @@ const InboxList: React.FC<InboxListProps> = ({
 
                 {/* Footer */}
                 {!selectedItem && (
-                    <div className="p-4 shrink-0 bg-primary-1 z-10">
+                    <div className="pt-2 shrink-0 bg-primary-1 z-10">
                         <Pagination
                             itemLabel="Requests"
                             page={page}

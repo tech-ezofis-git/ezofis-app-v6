@@ -22,6 +22,26 @@
 
 :root,
 .scrollbar {
-  scrollbar-color: var(--gray-8) rgba(0, 0, 0, 0) !important;
-  scrollbar-width: thin !important;
+  /* Native scrollbar */
+}
+
+/* Minimal Scrollbar */
+.minimal-scrollbar::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+.minimal-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.minimal-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  /* gray-300 */
+  border-radius: 4px;
+}
+
+.minimal-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+  /* gray-400 */
 }

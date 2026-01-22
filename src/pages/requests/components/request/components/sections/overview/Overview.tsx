@@ -6,8 +6,13 @@ import cn from '@/utils/cn';
 import Attachments from '../attachment/Attachments';
 import History from "../history/History";
 import Comments from "../comment/Comments";
+import FileSheet from '@/components/common/file-sheet/FileSheet';
+import { useAttachments } from '@/pages/requests/hooks/useAttachments';
+import authUserStore from '@/stores/authUserStore';
 
 // --- Types ---
+type RightViewMode = 'analysis' | 'comments' | 'attachments';
+
 interface FieldMatch {
   Field: string;
   'Invoice Value': string | number;
@@ -107,6 +112,8 @@ const Overview = ({
   repositoryId,
   selectedItem,
   rawWorkflowData,
+  rightView,
+  setRightView,
 }: any) => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
@@ -143,6 +150,24 @@ const Overview = ({
     },
     reqNo: 'REQ-75',
   };
+
+  // State for Right View Mode and Selected File
+  // const [rightView, setRightView] = useState<RightViewMode>('analysis'); // Now props
+  const [selectedFile, setSelectedFile] = useState<any>(null); // Use appropriate type
+
+  // Fetch attachments to set default
+  const { data: attachmentData } = useAttachments(workflowId, processId, true);
+
+  const { session } = authUserStore.getState();
+  const tenantId = session?.tenantId;
+  const userId = session?.id;
+
+  // Set default file when attachments load
+  useEffect(() => {
+    if (attachmentData && attachmentData.length > 0 && !selectedFile) {
+      setSelectedFile(attachmentData[0]);
+    }
+  }, [attachmentData]);
 
   const data: AgentData = agentData || defaultAgentData;
 
@@ -513,22 +538,50 @@ const Overview = ({
 
             {/* SPLIT VIEW */}
             <div className="flex flex-1 gap-4 overflow-hidden h-full">
-              {/* Left Column: Attachments */}
-              <div className="w-1/2 h-full overflow-hidden rounded-lg border border-[var(--gray-3)] bg-white">
-                <div className="h-full w-full overflow-y-auto scrollbar-thin">
-                  <Attachments
-                    workflowId={workflowId}
-                    processId={processId}
-                    transactionId={transactionId}
-                    repositoryId={repositoryId}
-                    selectedItem={selectedItem}
-                    rawWorkflowData={rawWorkflowData}
-                  />
-                </div>
+              {/* Left Column: File Viewer (replaces Attachments) */}
+              <div
+                className={cn(
+                  "h-full overflow-hidden rounded-lg border border-[var(--gray-3)] bg-[var(--gray-1)] relative group/viewer transition-all duration-300",
+                  rightView === 'analysis' ? "w-1/2" : "w-[40%]"
+                )}
+              >
+                {selectedFile ? (
+                  <div className="absolute inset-0">
+                    <FileSheet
+                      opened={true}
+                      onClose={() => { }} // Viewer is always open in this layout
+                      file={selectedFile}
+                      tenantId={tenantId}
+                      userId={userId}
+                      workflowId={workflowId}
+                      processId={processId}
+                      type={2}
+                      actions=""
+                    // Adjusting FileSheet style to fit container if needed, assuming it fits parent
+                    />
+                  </div>
+                ) : (
+                  <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
+                    <div className="flex size-12 items-center justify-center rounded-full bg-[var(--gray-2)]">
+                      <Icon name="tabler:file-off" className="size-6 text-[var(--gray-8)]" />
+                    </div>
+                    <p className="text-13 font-medium text-[var(--gray-10)]">
+                      No document selected
+                    </p>
+                  </div>
+                )}
               </div>
 
-              {/* Right Column: Analysis Data */}
-              <div className="w-1/2 h-full overflow-hidden rounded-lg">
+              {/* Middle Column: Analysis Data (Always Visible, resizeable) */}
+              <div
+                className={cn(
+                  "h-full overflow-hidden rounded-lg relative transition-all duration-300",
+                  rightView === 'analysis' ? "w-1/2" : "w-[30%]"
+                )}
+              >
+                {/* Floating Action Buttons (Overlay) - Removed as moved to Header */}
+
+                {/* --- ANALYSIS CONTENT --- */}
                 <div className="h-full overflow-y-auto space-y-3 pr-1 pb-10 scrollbar-thin">
 
                   {/* Invoice Summary */}
@@ -547,7 +600,7 @@ const Overview = ({
                               </div>
                               <div className="flex flex-col overflow-hidden">
                                 <span className="text-[11px] font-medium text-[var(--gray-9)]">Supplier</span>
-                                <span className="truncate text-13 font-bold text-[var(--gray-12)]">
+                                <span className="line-clamp-1 hover:line-clamp-none transition-all text-13 font-bold text-[var(--gray-12)]">
                                   {invoiceHeader['Supplier Name'] || '-'}
                                 </span>
                               </div>
@@ -559,7 +612,7 @@ const Overview = ({
                               </div>
                               <div className="flex flex-col overflow-hidden">
                                 <span className="text-[11px] font-medium text-[var(--gray-9)]">PO Number</span>
-                                <span className="truncate text-13 font-bold text-[var(--gray-12)]">
+                                <span className="line-clamp-1 hover:line-clamp-none transition-all text-13 font-bold text-[var(--gray-12)]">
                                   {invoiceHeader['PO Number'] || '-'}
                                 </span>
                               </div>
@@ -571,7 +624,7 @@ const Overview = ({
                               </div>
                               <div className="flex flex-col overflow-hidden">
                                 <span className="text-[11px] font-medium text-[var(--gray-9)]">Currency</span>
-                                <span className="truncate text-13 font-bold text-[var(--gray-12)]">
+                                <span className="line-clamp-1 hover:line-clamp-none transition-all text-13 font-bold text-[var(--gray-12)]">
                                   {invoiceHeader['Currency'] || 'USD'}
                                 </span>
                               </div>
@@ -583,7 +636,7 @@ const Overview = ({
                               </div>
                               <div className="flex flex-col overflow-hidden">
                                 <span className="text-[11px] font-medium text-[var(--gray-9)]">Total Due</span>
-                                <span className="truncate text-13 font-bold text-[var(--green-10)]">
+                                <span className="line-clamp-1 hover:line-clamp-none transition-all text-13 font-bold text-[var(--green-10)]">
                                   {invoiceHeader['Total Due'] ?? '-'}
                                 </span>
                               </div>
@@ -601,7 +654,10 @@ const Overview = ({
                         Field Matching
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-3">
+                      <div className={cn(
+                        "grid gap-3 transition-all",
+                        rightView === 'analysis' ? "grid-cols-1 md:grid-cols-2 xl:grid-cols-2" : "grid-cols-1"
+                      )}>
                         {fieldMatching.length > 0 ? (
                           fieldMatching.map((field, index) => {
                             const displayInvoice = field['Invoice Value'] || '-';
@@ -611,7 +667,7 @@ const Overview = ({
                             return (
                               <div key={index} className="flex flex-col gap-3 rounded-xl border border-[var(--gray-3)] bg-white p-3 shadow-sm">
                                 <div className="flex items-center justify-between">
-                                  <span className="text-13 font-bold text-[var(--gray-12)] truncate" title={field.Field}>
+                                  <span className="text-13 font-bold text-[var(--gray-12)] line-clamp-1 hover:line-clamp-none transition-all" title={field.Field}>
                                     {field.Field}
                                   </span>
 
@@ -633,7 +689,7 @@ const Overview = ({
                                     <div className="text-[9px] font-medium text-[var(--gray-8)] uppercase tracking-wide mb-0.5">
                                       Extracted
                                     </div>
-                                    <div className="text-12 font-semibold text-[var(--gray-12)] break-all leading-tight line-clamp-2" title={String(displayInvoice)}>
+                                    <div className="text-12 font-semibold text-[var(--gray-12)] break-all leading-tight line-clamp-2 hover:line-clamp-none transition-all" title={String(displayInvoice)}>
                                       {displayInvoice}
                                     </div>
                                   </div>
@@ -642,7 +698,7 @@ const Overview = ({
                                     <div className="text-[9px] font-medium text-[var(--gray-8)] uppercase tracking-wide mb-0.5">
                                       PO Value
                                     </div>
-                                    <div className="text-12 font-semibold text-[var(--gray-12)] break-all leading-tight line-clamp-2" title={String(displayPO)}>
+                                    <div className="text-12 font-semibold text-[var(--gray-12)] break-all leading-tight line-clamp-2 hover:line-clamp-none transition-all" title={String(displayPO)}>
                                       {displayPO}
                                     </div>
                                   </div>
@@ -688,7 +744,7 @@ const Overview = ({
 
                                     return (
                                       <div className="flex flex-col leading-tight">
-                                        <span className={cn('truncate text-11 font-medium', !actual && 'text-[var(--gray-8)] italic')}>
+                                        <span className={cn('line-clamp-1 hover:line-clamp-none transition-all text-11 font-medium', !actual && 'text-[var(--gray-8)] italic')}>
                                           {displayActual}
                                         </span>
                                         {showExpected && (
@@ -958,11 +1014,11 @@ const Overview = ({
                                         className="grid grid-cols-[2fr_0.8fr_0.8fr_0.8fr_1fr_1fr] items-center px-4 py-2.5 hover:bg-[var(--gray-1)] transition-colors"
                                       >
                                         <div className="text-[var(--gray-12)] pr-4">
-                                          <div className="text-12 font-semibold truncate" title={desc}>
+                                          <div className="text-12 font-semibold line-clamp-1 hover:line-clamp-none transition-all" title={desc}>
                                             {desc}
                                           </div>
                                           {row.po_line_id && (
-                                            <div className="text-[10px] font-medium text-[var(--gray-9)] truncate">
+                                            <div className="text-[10px] font-medium text-[var(--gray-9)] line-clamp-1 hover:line-clamp-none transition-all">
                                               PO Line: {row.po_line_id}
                                             </div>
                                           )}
@@ -1019,30 +1075,78 @@ const Overview = ({
                       </div>
                     </div>
 
-                    {/* Comments */}
-                    <div className="flex flex-col gap-2 mt-4">
-                      <div className="flex items-center gap-2 pl-1">
-                        <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--gray-9)]">
-                          Comments
-                        </div>
-                      </div>
-                      <div className="rounded-xl border border-[var(--gray-4)] bg-white shadow-sm overflow-hidden">
-                        <div className="p-0">
-                          <Comments
-                            workflowId={workflowId}
-                            processId={processId}
-                            transactionId={transactionId}
-                            enabled={true}
-                            attachments={selectedItem?.attachments || []}
-                            repositoryId={repositoryId}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                    {/* Comments (Moved to Overlay View) */}
+                    {/* <div className="flex flex-col gap-2 mt-4"> ... </div> */}
 
+
+                  </div>
                 </div>
               </div>
+
+              {/* Right Column: Third Layout (Comments or Attachments) */}
+              {rightView !== 'analysis' && (
+                <div className="w-[30%] h-full overflow-hidden rounded-lg animate-in slide-in-from-right-10 duration-300">
+                  {rightView === 'comments' ? (
+                    /* --- COMMENTS VIEW --- */
+                    <div className="h-full flex flex-col bg-white rounded-lg border border-[var(--gray-3)] overflow-hidden">
+                      {/* Header */}
+                      <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-[var(--gray-3)] shrink-0 bg-[var(--gray-1)]">
+                        <div className="flex items-center gap-2">
+                          <Icon name="tabler:message-circle" className="size-5 text-[var(--blue-9)]" />
+                          <span className="font-bold text-[var(--gray-12)]">Comments</span>
+                        </div>
+                        <button
+                          onClick={() => setRightView('analysis')}
+                          className="flex items-center justify-center size-8 rounded-lg hover:bg-white text-[var(--gray-9)] transition-all border border-transparent hover:border-[var(--gray-3)] hover:shadow-sm cursor-pointer"
+                        >
+                          <Icon name="tabler:x" className="size-5" />
+                        </button>
+                      </div>
+                      {/* Content */}
+                      <div className="flex-1 overflow-hidden p-0">
+                        <Comments
+                          workflowId={workflowId}
+                          processId={processId}
+                          transactionId={transactionId}
+                          enabled={true}
+                          attachments={selectedItem?.attachments || []}
+                          repositoryId={repositoryId}
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    /* --- ATTACHMENTS VIEW --- */
+                    <div className="h-full flex flex-col bg-white rounded-lg border border-[var(--gray-3)] overflow-hidden">
+                      {/* Header */}
+                      <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-[var(--gray-3)] shrink-0 bg-[var(--gray-1)]">
+                        <div className="flex items-center gap-2">
+                          <Icon name="tabler:paperclip" className="size-5 text-[var(--blue-9)]" />
+                          <span className="font-bold text-[var(--gray-12)]">Attachments</span>
+                        </div>
+                        <button
+                          onClick={() => setRightView('analysis')}
+                          className="flex items-center justify-center size-8 rounded-lg hover:bg-white text-[var(--gray-9)] transition-all border border-transparent hover:border-[var(--gray-3)] hover:shadow-sm cursor-pointer"
+                        >
+                          <Icon name="tabler:x" className="size-5" />
+                        </button>
+                      </div>
+                      {/* Content */}
+                      <div className="flex-1 overflow-hidden">
+                        <Attachments
+                          workflowId={workflowId}
+                          processId={processId}
+                          enabled={true}
+                          onSelect={(file) => {
+                            setSelectedFile(file);
+                            // No action needed to close, it's 3rd column now
+                          }}
+                          onClose={() => setRightView('analysis')}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </>
         )}

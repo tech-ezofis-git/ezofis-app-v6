@@ -24,6 +24,7 @@ interface Props<TData> extends ComponentProps<'table'> {
 
   /** ✅ Custom actions for action bar */
   actions?: TableActionButton[]
+  stickyHeader?: boolean
 }
 
 const rowSizeClassNames = {
@@ -40,12 +41,16 @@ const DataTable = <TData,>({
   onReload,
   component,
   actions,
+  stickyHeader = false,
 }: Props<TData>) => {
   const [rowSize, setRowSize] = useState<RowSize>('default')
   const rows = table.getRowModel().rows
 
   return (
-    <div className={`flex ${!component ? 'w-full' : 'w-full'} flex-col`}>
+    <div className={cn(
+      `flex ${!component ? 'w-full' : 'w-full'} flex-col`,
+      stickyHeader && "h-full min-h-0"
+    )}>
       <TableActionBar
         isReloading={isReLoading}
         rowSize={rowSize}
@@ -54,48 +59,59 @@ const DataTable = <TData,>({
         onRowSizeChange={setRowSize}
         component={component}
         actions={actions} // ✅ pass through
+        className={cn("mb-4", stickyHeader && "mb-2")}
       />
 
-      <div className="scrollbar flex w-full overflow-x-auto">
-        <Table className="table-fixed">
-          <Thead>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <Tr key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHeaderCell header={header} key={header.id} table={table} />
-                ))}
-              </Tr>
-            ))}
-          </Thead>
-
-          {isLoading && (
-            <TableSkeleton
-              pageSize={pageSize}
-              rowSizeClassNames={rowSizeClassNames[rowSize]}
-              table={table}
-            />
-          )}
-
-          {!isLoading && rows.length === 0 && <TableEmptyState table={table} />}
-
-          {!isLoading && rows.length > 0 && (
-            <Tbody>
-              {rows.map((row) => (
-                <Tr key={row.id}>
-                  {row.getVisibleCells().map((cell) => (
-                    <Td
-                      key={cell.id}
-                      style={getColumnPinnedStyles(cell.column, table)}
-                      className={cn(rowSizeClassNames[rowSize], cell.column.columnDef.meta?.className)}
-                    >
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </Td>
+      <div className={cn(
+        "flex w-full rounded-xl border border-[var(--gray-3)] bg-white shadow-sm",
+        stickyHeader ? "flex-1 min-h-0 flex-col" : "overflow-hidden"
+      )}>
+        <div className={cn(
+          "flex w-full items-start",
+          stickyHeader ? "flex-1 overflow-auto minimal-scrollbar" : "overflow-x-auto scrollbar"
+        )}>
+          <Table className="table-fixed">
+            <Thead className={cn(
+              stickyHeader ? "sticky top-0 z-10 bg-[var(--gray-2)] shadow-sm" : ""
+            )}>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <Tr key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => (
+                    <TableHeaderCell header={header} key={header.id} table={table} />
                   ))}
                 </Tr>
               ))}
-            </Tbody>
-          )}
-        </Table>
+            </Thead>
+
+            {isLoading && (
+              <TableSkeleton
+                pageSize={pageSize}
+                rowSizeClassNames={rowSizeClassNames[rowSize]}
+                table={table}
+              />
+            )}
+
+            {!isLoading && rows.length === 0 && <TableEmptyState table={table} />}
+
+            {!isLoading && rows.length > 0 && (
+              <Tbody>
+                {rows.map((row) => (
+                  <Tr key={row.id}>
+                    {row.getVisibleCells().map((cell) => (
+                      <Td
+                        key={cell.id}
+                        style={getColumnPinnedStyles(cell.column, table)}
+                        className={cn(rowSizeClassNames[rowSize], cell.column.columnDef.meta?.className)}
+                      >
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </Td>
+                    ))}
+                  </Tr>
+                ))}
+              </Tbody>
+            )}
+          </Table>
+        </div>
       </div>
 
       <TableBulkActionBar table={table} />

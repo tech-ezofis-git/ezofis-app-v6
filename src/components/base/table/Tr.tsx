@@ -5,7 +5,7 @@ const Tr = ({ className, ...props }: ComponentProps<'tr'>) => {
   return (
     <tr
       className={cn(
-        'last:[&>td:first-child]:rounded-bl last:[&>td:last-child]:rounded-br',
+        'transition-colors hover:bg-[var(--gray-2)]',
         className,
       )}
       {...props}

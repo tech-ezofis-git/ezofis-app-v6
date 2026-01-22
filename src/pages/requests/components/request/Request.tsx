@@ -38,6 +38,7 @@ const Request = ({ onPrev, onNext }: { onPrev?: () => void; onNext?: () => void 
   const [activeTab, setActiveTab] = useState<string>(activeTabValue ? activeTabValue : 'Overview');
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState<boolean>(false);
+  const [rightView, setRightView] = useState<'analysis' | 'comments' | 'attachments'>('analysis');
 
   const { data: request, isLoading } = useRequestDetail(
     selectedWorkflowId,
@@ -125,6 +126,8 @@ const Request = ({ onPrev, onNext }: { onPrev?: () => void; onNext?: () => void 
           onBack={closeRequest}
           approveLoading={submitting}
           onApprove={handleVerifier}
+          rightView={rightView}
+          setRightView={setRightView}
         />
 
         {/* <div className="border-b border-gray-3 bg-surface">
@@ -155,8 +158,10 @@ const Request = ({ onPrev, onNext }: { onPrev?: () => void; onNext?: () => void 
       {/* Tab Content */}
 
       <AnimateFadeIn delay={0.6} className=" h-full overflow-hidden">
-        <Overview agentData={currentAgentData}
-
+        <Overview
+          agentData={currentAgentData}
+          rightView={rightView}
+          setRightView={setRightView}
           workflowId={Number(selectedWorkflowId)}
           processId={Number(selectedItem?.processId)}
           transactionId={Number(selectedItem?.transactionId)}
