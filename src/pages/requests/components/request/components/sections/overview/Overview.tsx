@@ -453,7 +453,7 @@ const Overview = ({
                           <div className="flex items-center gap-2">
                             <Icon name="tabler:sparkles" className="size-3.5 text-[#8B5CF6]" />
                             <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--gray-10)]">
-                              AI Analysis
+                              Analysis
                             </span>
                             {banner.badgeText && (
                               <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#8B5CF6]/10 text-[#7C3AED] border border-[#8B5CF6]/20">

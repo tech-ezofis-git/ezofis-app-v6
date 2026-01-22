@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react'
+import React, { useMemo } from 'react'
 import DataTable from '@/components/base/data-table/DataTable'
 import Pagination from '@/components/base/pagination/Pagination'
 import useDataTable from '@/components/base/data-table/hooks/useDataTable'
@@ -13,11 +13,7 @@ import { AnimateFadeIn } from '@/components/common/animations'
 import requestStore from '../stores/useRequestStore'
 // import TableActionBar, { type TableActionButton } from '@/components/base/data-table/TableActionBar'
 // import { getGroupedRowModel } from '@tanstack/react-table'
-const hideRootGroupStyle = `
-  .hide-root-header tbody > tr:first-child {
-    display: none !important;
-  }
-`
+
 
 interface InboxListProps {
     workflow: WorkflowOption | null
@@ -100,10 +96,10 @@ const InboxList: React.FC<InboxListProps> = ({
         initialVisibilityState,
     })
 
-    // Auto-expand root group
-    useEffect(() => {
-        setExpandState({ root: true })
-    }, [setExpandState])
+    // Auto-expand root group -- NO LONGER NEEDED
+    // useEffect(() => {
+    //     setExpandState({ root: true })
+    // }, [setExpandState])
 
     // ✅ Use your actual API shape: data[0].items etc.
     const flatRows = useMemo(() => flattenRows(data as any), [data])
@@ -222,10 +218,8 @@ const InboxList: React.FC<InboxListProps> = ({
     }
     return (
         <>
-            <style>{hideRootGroupStyle}</style>
-
             <div className="flex flex-col bg-primary px-6 md:px-6 py-2">
-                <div className="flex-1  hide-root-header relative">
+                <div className="flex-1 relative">
                     <div className="flex w-full gap-3">
                         {/* Left */}
                         {!selectedItem && viewMode === 'table' && (

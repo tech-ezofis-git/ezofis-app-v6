@@ -120,10 +120,10 @@ export const useInboxData = (
       const groupedData: TableGroup[] = [
         {
           groupId: 'root',
-          groupKey: activeTab,
-          groupValue: `${activeTab} Requests`, // e.g. "Inbox Requests"
+          // groupKey: activeTab, // Removed to allow flattening
+          // groupValue: `${activeTab} Requests`, // Removed to allow flattening
           groupCount: flatList.length,
-          items: flatList, // The table looks for this .items property!
+          items: flatList, 
         },
       ]
 

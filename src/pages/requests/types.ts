@@ -65,8 +65,8 @@ export interface ActionButton {
 
 export interface TableGroup {
   groupId: string
-  groupKey: string
-  groupValue: string
+  groupKey?: string
+  groupValue?: string
   groupCount: number
   items: InboxItem[]
 }

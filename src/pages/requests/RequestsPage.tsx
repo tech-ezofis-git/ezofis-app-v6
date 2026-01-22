@@ -29,6 +29,8 @@ const RequestsPage = () => {
   const setRawWorflow = requestStore((state) => state.setRawWorkflowData)
   const reloadMeta = requestStore((state) => state.reloadMeta)
   const stopRefresh = requestStore((state) => state.stopRefresh)
+  const setRequestListTab = requestStore((state) => state.setRequestListTab)
+
 
   // --- 2. DATA FETCHING ---
   // Pass 'activeTab' to the hook so it knows which API to call
@@ -161,10 +163,14 @@ const RequestsPage = () => {
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab)
+    setRequestListTab(tab) // Sync to store
     setSelectedItem(null)
-
-
   }
+
+  // Sync initial tab
+  useEffect(() => {
+    setRequestListTab(activeTab)
+  }, [])
   return (
     <>
       {!selectedItem && <Header

@@ -1,10 +1,32 @@
 import { useMatches } from '@tanstack/react-router'
 import Title from '@/components/base/Title'
+import Badge from '@/components/base/Badge'
+import requestStore from '@/pages/requests/stores/useRequestStore'
 
 const PageTitle = () => {
   const matches = useMatches()
+  const { isRequestOpen, selectedWorkflow, requestListTab, closeRequest } = requestStore((state) => state)
   const current = matches[matches.length - 1]
   const pageTitle = current?.staticData?.pageTitle ?? 'Untitled'
+
+  if (isRequestOpen && selectedWorkflow?.name) {
+    const badgeColor =
+      requestListTab === 'Sent' ? 'orange' :
+        requestListTab === 'Closed' ? 'green' :
+          'blue';
+
+    return (
+      <div className='flex items-center gap-3 text-15/5 font-semibold text-gray-13'>
+        <span
+          onClick={closeRequest}
+          className='cursor-pointer hover:underline hover:text-primary'
+        >
+          {selectedWorkflow.name}
+        </span>
+        <Badge color={badgeColor} label={requestListTab || 'Inbox'} />
+      </div>
+    )
+  }
 
   return (
     <div className='flex items-center gap-4'>

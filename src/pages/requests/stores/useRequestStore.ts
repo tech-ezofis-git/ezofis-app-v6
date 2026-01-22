@@ -9,6 +9,7 @@ type Store = {
   selectedItem: any | null
   selectedWorkflowId: number | null
   activeTabValue: string | null
+  requestListTab: string // New state for main list tabs
   // Actions
   selectedWorkflow: any
   isClosed: boolean
@@ -32,6 +33,7 @@ type Store = {
   setPendingNav: (v: any) => void
   clearPendingNav: () => void
   cacheSummaryData: (reqNo: string, data: any) => void
+  setRequestListTab: (tab: string) => void
 }
 
 const requestStore = create<Store>()((set) => ({
@@ -40,6 +42,7 @@ const requestStore = create<Store>()((set) => ({
   selectedItem: null,
   selectedWorkflowId: null,
   activeTabValue: null,
+  requestListTab: 'Inbox', // Default
   selectedWorkflow: null,
   rawWorkflowData: null,
   isClosed: false,
@@ -82,6 +85,7 @@ cacheSummaryData: (reqNo, data) =>
   setRawWorkflowData: (data) => set({ rawWorkflowData: data }),
   toggleMaximize: () =>
     set(({ isMaximized }) => ({ isMaximized: !isMaximized })),
+  setRequestListTab: (tab) => set({ requestListTab: tab }),
 }))
 
 export default requestStore
