@@ -137,7 +137,7 @@ const Request = ({
   }
 
   return (
-    <div className={`flex flex-col p-0 w-full ${hideActions ? 'h-full' : 'h-[calc(100vh-85px)]'}`}>
+    <div className={`flex flex-col p-0 w-full ${hideActions ? 'h-full p-4 bg-grey-2' : 'h-[calc(100vh-85px)]'}`}>
       {/* Combined Sticky Wrapper: 
         Keeps both Header and Tabs pinned to the top.
         Added z-20 and bg-white (or bg-surface) to ensure content scrolls behind it.
