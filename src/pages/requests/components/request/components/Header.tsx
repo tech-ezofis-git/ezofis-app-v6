@@ -106,7 +106,7 @@ const Header: React.FC<HeaderProps> = ({
           <Tooltip content="Comments">
             <button
               onClick={() => setRightView(rightView === 'comments' ? 'analysis' : 'comments')}
-              className={`flex items-center justify-center size-9 rounded-full transition-all border ${rightView === 'comments'
+              className={`flex cursor-pointer items-center justify-center size-9 rounded-full transition-all border ${rightView === 'comments'
                 ? 'bg-[var(--blue-1)] text-[var(--blue-9)] border-[var(--blue-3)] shadow-sm'
                 : 'bg-transparent text-[var(--gray-10)] border-transparent hover:bg-[var(--gray-2)] hover:text-[var(--gray-12)]'
                 }`}
@@ -115,15 +115,15 @@ const Header: React.FC<HeaderProps> = ({
             </button>
           </Tooltip>
 
-          <Tooltip content="Attachments">
+          <Tooltip content="Attachments" >
             <button
               onClick={() => setRightView(rightView === 'attachments' ? 'analysis' : 'attachments')}
-              className={`flex items-center justify-center size-9 rounded-full transition-all border ${rightView === 'attachments'
+              className={`flex cursor-pointer items-center justify-center size-9 rounded-full transition-all border ${rightView === 'attachments'
                 ? 'bg-[var(--blue-1)] text-[var(--blue-9)] border-[var(--blue-3)] shadow-sm'
                 : 'bg-transparent text-[var(--gray-10)] border-transparent hover:bg-[var(--gray-2)] hover:text-[var(--gray-12)]'
                 }`}
             >
-              <Icon name="tabler:paperclip" className="size-5" />
+              <Icon name="tabler:paperclip" className="size-5 !cursor-pointer" />
             </button>
           </Tooltip>
         </div>

@@ -70,7 +70,8 @@ const listVariants = {
   },
 }
 
-const itemVariantSet = (index: number) => ({
+const itemVariantSet = () => ({
+
   hidden: { opacity: 0, y: 10 },
   show: { opacity: 1, y: 0 },
   exit: { opacity: 0, scale: 0.95 },
@@ -105,18 +106,11 @@ const GridView = <TData,>({
   hideGrouping = false,
 }: GridViewProps<TData>) => {
   const prefersReducedMotion = useReducedMotion()
-  const [collapsedGroups, setCollapsedGroups] = useState<Set<string | number>>(new Set())
-
   const toggleGroup = (groupId: string | number) => {
-    setCollapsedGroups(prev => {
-      const next = new Set(prev)
-      if (next.has(groupId)) {
-        next.delete(groupId)
-      } else {
-        next.add(groupId)
-      }
-      return next
-    })
+    const row = table.getRow(String(groupId))
+    if (row) {
+      row.toggleExpanded()
+    }
   }
 
   // Pre-calculate all items across all groups for easy indexing if needed, 
@@ -184,12 +178,13 @@ const GridView = <TData,>({
             const hasHeader = group.groupValue && group.groupId !== 'root'
             const groupItems = group.items || []
             const groupId = group.groupId || gIdx
-            const isCollapsed = collapsedGroups.has(groupId)
+            const row = table.getRow(String(groupId))
+            const isCollapsed = row ? !row.getIsExpanded() : false
 
             if (groupItems.length === 0) return null
 
             return (
-              <div key={groupId} className="flex flex-col gap-4">
+              <div key={groupId} className="flex flex-col !cursor-pointer gap-4 relative hover:z-[100]">
                 {hasHeader && (
                   <div
                     onClick={() => toggleGroup(groupId)}
@@ -229,6 +224,11 @@ const GridView = <TData,>({
                       exit={{ height: 0, opacity: 0 }}
                       transition={{ duration: 0.3, ease: 'easeInOut' }}
                       className="overflow-hidden"
+                      onAnimationComplete={() => {
+                        const el = document.getElementById(`group-container-${groupId}`);
+                        if (el) el.style.overflow = 'visible';
+                      }}
+                      id={`group-container-${groupId}`}
                     >
                       <motion.div
                         variants={listVariants as any}
@@ -242,7 +242,7 @@ const GridView = <TData,>({
                           const raisedBy = row?.raisedBy || 'Unknown User'
                           const raisedAt = row?.raisedAt || row?.transaction_createdAt
                           const dummySummary = dummySummaryMap.get(rowId) || generateDummySummary(rowId)
-                          const variants = itemVariantSet(index)
+                          const variants = itemVariantSet()
 
                           return (
                             <motion.div
@@ -257,7 +257,7 @@ const GridView = <TData,>({
                                   : { type: 'spring', stiffness: 400, damping: 25 }
                               }
                               className={cn(
-                                'group relative flex w-full flex-col rounded-xl border border-[var(--gray-3)] bg-[var(--surface)] transition-all duration-200 hover:border-[var(--primary-3)] z-0 hover:z-10'
+                                'group relative flex w-full flex-col rounded-xl border border-[var(--gray-3)] bg-[var(--surface)] transition-all duration-200 hover:border-[var(--primary-3)] z-0 hover:z-[70]'
                               )}
                             >
                               {/* Header (Click to view details) */}
@@ -313,9 +313,8 @@ const GridView = <TData,>({
                                           />
                                         </motion.div>
 
-                                        {/* Hover Card */}
                                         <AnimatePresence>
-                                          <div className="absolute bottom-full right-0 mb-3 opacity-0 invisible group-hover/icon:opacity-100 group-hover/icon:visible transition-all duration-300 z-50 pointer-events-none translate-y-2 group-hover/icon:translate-y-0">
+                                          <div className="absolute right-0 bottom-full mb-3 opacity-0 invisible group-hover/icon:opacity-100 group-hover/icon:visible transition-all duration-300 z-[100] pointer-events-none translate-y-2 group-hover/icon:translate-y-0">
                                             <motion.div
                                               initial={{ opacity: 0, y: 10, scale: 0.95 }}
                                               whileInView={{ opacity: 1, y: 0, scale: 1 }}

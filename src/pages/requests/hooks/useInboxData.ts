@@ -26,13 +26,13 @@ export const useInboxData = (
         itemsPerPage: pageSize,
         currentPage: page,
         sortBy: { criteria: '', order: 'DESC' },
-        groupBy: groupBy.length > 0 ? groupBy : ["RXwLGHILLrreMmRqlk9mj"],
+
         filterBy: [],
       }
 
       // Only add groupBy for Inbox to avoid API errors
-      if (activeTab === 'Inbox' && groupBy.length > 0) {
-        config.groupBy = groupBy
+      if (activeTab === 'Inbox') {
+        config.groupBy = groupBy.length > 0 ? groupBy : ["RXwLGHILLrreMmRqlk9mj"]
       }
 
       const workflowId = selectedWorkflow?.id as Number

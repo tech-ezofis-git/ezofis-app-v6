@@ -107,10 +107,7 @@ const InboxList: React.FC<InboxListProps> = ({
         }
     }, [groupState, onGroupByChange])
 
-    // Auto-expand root group -- NO LONGER NEEDED
-    // useEffect(() => {
-    //     setExpandState({ root: true })
-    // }, [setExpandState])
+
 
     // ✅ Use your actual API shape: data[0].items etc.
     const flatRows = useMemo(() => flattenRows(data as any), [data])
@@ -167,6 +164,22 @@ const InboxList: React.FC<InboxListProps> = ({
             }
         }).filter((group: any) => !group.items || group.items.length > 0)
     }, [data, searchState, filteredFlatRows])
+
+    // ✅ Handle default expansion: Expand ALL groups when data or grouping changes
+    React.useEffect(() => {
+        if (filteredData && filteredData.length > 0) {
+            const allGroupIds = filteredData
+                .filter((g: any) => g.groupId && g.groupId !== 'root')
+                .reduce((acc: any, g: any) => {
+                    acc[g.groupId] = true
+                    return acc
+                }, {})
+
+            setExpandState(allGroupIds)
+        } else {
+            setExpandState({})
+        }
+    }, [filteredData, groupState, setExpandState])
 
     // ✅ Create table with filtered data
     const { table } = useDataTable({

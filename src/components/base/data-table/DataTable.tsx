@@ -131,7 +131,7 @@ const DataTable = <TData,>({
                   }
 
                   return (
-                    <Tr key={row.id} className="hover:bg-[var(--gray-1)]">
+                    <Tr key={row.id} className="hover:bg-[var(--gray-1)] relative hover:z-50">
                       {row.getVisibleCells().map((cell) => (
                         <Td
                           key={cell.id}

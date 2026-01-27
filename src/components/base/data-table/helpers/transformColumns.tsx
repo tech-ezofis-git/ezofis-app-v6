@@ -12,7 +12,7 @@ const renderCell = (column: Column, info: CellContext<Row, unknown>) => {
   if (isGroupRow) return ''
 
   if (!isGroupRow && column.renderCell) {
-    return column.renderCell(info.row.original)
+    return (column.renderCell as any)(info.row.original, info.row.index)
   }
 
   return String(value)
@@ -42,10 +42,10 @@ export default function transformColumns(
 
     return column.isDisplayColumn
       ? columnHelper.display({
-          ...config,
-          enableGrouping: false,
-          enableSorting: false,
-        })
+        ...config,
+        enableGrouping: false,
+        enableSorting: false,
+      })
       : columnHelper.accessor(column.id, { ...config })
   })
 
