@@ -1,0 +1,184 @@
+import { useEffect, useState } from 'react'
+import Icon from '@/components/base/icon/Icon'
+
+interface ProcessingScreenProps {
+    file: File | null
+    onComplete: () => void
+}
+
+const ProcessingScreen = ({ file, onComplete }: ProcessingScreenProps) => {
+    const [step, setStep] = useState(0)
+    const [fileUrl, setFileUrl] = useState<string | null>(null)
+
+    useEffect(() => {
+        if (file) {
+            const url = URL.createObjectURL(file)
+            setFileUrl(url)
+            return () => URL.revokeObjectURL(url)
+        }
+    }, [file])
+
+    useEffect(() => {
+        const timers = [
+            setTimeout(() => setStep(1), 3000), // Move to extracting after 3s
+            setTimeout(() => setStep(2), 6000), // Move to matching after another 3s
+            setTimeout(() => {
+                setStep(3)
+                setTimeout(onComplete, 1000) // Finish shortly after matching
+            }, 9000)
+        ]
+        return () => timers.forEach(clearTimeout)
+    }, [onComplete])
+
+    return (
+        <div className="max-w-[1600px] mx-auto p-6 grid grid-cols-12 gap-6 h-[calc(100vh-150px)] overflow-hidden">
+            {/* Left Column: File Preview */}
+            <section className="col-span-8 flex flex-col space-y-4">
+                <div className="flex items-center justify-between px-2">
+                    <div className="flex items-center space-x-4 bg-[var(--gray-2)] p-1 rounded-lg">
+                        <button className="p-1.5 hover:bg-white rounded transition-all text-[var(--gray-11)]">
+                            <Icon name="material-symbols:zoom-in" className="text-xl" />
+                        </button>
+                        <button className="p-1.5 hover:bg-white rounded transition-all text-[var(--gray-11)]">
+                            <Icon name="material-symbols:zoom-out" className="text-xl" />
+                        </button>
+                        <div className="h-4 w-px bg-[var(--gray-6)] mx-1"></div>
+                        <span className="text-sm font-medium px-2 text-[var(--gray-11)]">100%</span>
+                    </div>
+                    <div className="text-sm text-[var(--gray-10)] font-medium">
+                        {file?.name || 'INV-2007.pdf'}
+                    </div>
+                </div>
+
+                <div className="flex-grow relative bg-[var(--gray-3)] rounded-xl overflow-hidden border border-[var(--gray-6)] shadow-inner flex justify-center p-8 overflow-y-auto no-scrollbar">
+                    <div className="absolute inset-x-0 h-1 scanning-bar animate-scan z-20 pointer-events-none"></div>
+
+                    <div className="bg-white text-[var(--gray-13)] w-full max-w-[700px] min-h-[1000px] shadow-2xl relative transition-all duration-700 blur-[3px]">
+                        {file?.type === 'application/pdf' ? (
+                            <iframe src={fileUrl || ''} className="w-full h-full min-h-[1000px]" title="PDF Preview" />
+                        ) : (
+                            <img src={fileUrl || ''} alt="Preview" className="w-full h-auto object-contain" />
+                        )}
+                    </div>
+                </div>
+            </section>
+
+            {/* Right Column: Timeline */}
+            <section className="col-span-4 flex flex-col space-y-6">
+                <div className="bg-white border border-[var(--gray-3)] rounded-xl p-6 shadow-sm flex-grow overflow-y-auto no-scrollbar">
+                    <div className="flex items-center justify-between mb-8">
+                        <h2 className="text-lg font-bold text-[var(--gray-12)]">Processing Timeline</h2>
+                        <span className="text-xs bg-[var(--primary-1)] text-[var(--primary-9)] px-3 py-1 rounded-full font-bold">LIVE</span>
+                    </div>
+
+                    <div className="relative space-y-12 pl-2">
+                        {/* Continuous Vertical Line */}
+                        <div className="absolute left-6 top-2 bottom-4 w-0.5 bg-[var(--gray-3)] -z-0">
+                            <div
+                                className="absolute top-0 left-0 w-full bg-[var(--primary-9)] transition-all duration-1000 ease-linear"
+                                style={{ height: `${(step / 3) * 100}%` }}
+                            ></div>
+                        </div>
+
+                        {/* Step 1: Upload */}
+                        <div className="relative flex items-start space-x-6">
+                            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-[var(--green-9)] flex items-center justify-center z-10 ring-4 ring-white shadow-lg shadow-[var(--green-9)]/20">
+                                <Icon name="material-symbols:check" className="text-white text-lg" />
+                            </div>
+                            <div className="pt-1">
+                                <p className="font-bold text-[var(--green-11)] flex items-center transition-colors duration-300">
+                                    File uploaded successfully
+                                </p>
+                                <p className="text-sm text-[var(--gray-10)] mt-1">{file?.name} (Verified)</p>
+                            </div>
+                        </div>
+
+                        {/* Step 2: Extraction */}
+                        <div className={`relative flex items-start space-x-6 transition-opacity duration-300 ${step < 1 ? 'opacity-50' : 'opacity-100'}`}>
+                            <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center z-10 ring-4 ring-white shadow-lg transition-all duration-300 ${step >= 1 ? (step > 1 ? 'bg-[var(--green-9)] shadow-[var(--green-9)]/20' : 'bg-[var(--primary-9)] shadow-[var(--primary-9)]/30 animate-pulse') : 'bg-white border-2 border-[var(--gray-4)]'}`}>
+                                {step > 1 ? (
+                                    <Icon name="material-symbols:check" className="text-white text-lg" />
+                                ) : (
+                                    step === 1 ? <Icon name="material-symbols:autorenew" className="text-white text-lg animate-spin" /> : <div className="w-2.5 h-2.5 rounded-full bg-[var(--gray-4)]" />
+                                )}
+                            </div>
+                            <div className="pt-1 w-full">
+                                <p className={`font-bold flex items-center transition-colors duration-300 ${step === 1 ? 'text-[var(--primary-9)]' : (step > 1 ? 'text-[var(--gray-12)]' : 'text-[var(--gray-10)]')}`}>
+                                    Extracting data...
+                                    {step === 1 && (
+                                        <span className="ml-2 flex space-x-1">
+                                            <span className="w-1.5 h-1.5 bg-[var(--primary-9)] rounded-full animate-bounce"></span>
+                                            <span className="w-1.5 h-1.5 bg-[var(--primary-9)] rounded-full animate-bounce [animation-delay:0.2s]"></span>
+                                            <span className="w-1.5 h-1.5 bg-[var(--primary-9)] rounded-full animate-bounce [animation-delay:0.4s]"></span>
+                                        </span>
+                                    )}
+                                </p>
+                                {step === 1 && (
+                                    <div className="mt-4 space-y-3 bg-[var(--surface-muted)] p-4 rounded-xl border border-[var(--gray-3)] animate-fade-in-up">
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-xs font-bold text-[var(--gray-10)] uppercase tracking-wide">OCR Confidence</span>
+                                            <span className="text-xs font-bold text-[var(--green-9)]">99.8%</span>
+                                        </div>
+                                        <div className="w-full bg-[var(--gray-4)] h-2 rounded-full overflow-hidden">
+                                            <div className="bg-gradient-to-r from-[var(--primary-9)] to-[var(--violet-9)] h-full rounded-full transition-all duration-1000 w-[94%] animate-pulse"></div>
+                                        </div>
+                                        <p className="text-xs text-[var(--gray-9)] italic font-medium flex items-center gap-2">
+                                            <Icon name="material-symbols:magic-button" className="text-[var(--primary-9)]" />
+                                            Analyzing document structure...
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Step 3: Matching */}
+                        <div className={`relative flex items-start space-x-6 transition-opacity duration-300 ${step < 2 ? 'opacity-50' : 'opacity-100'}`}>
+                            <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center z-10 ring-4 ring-white shadow-lg transition-all duration-300 ${step >= 2 ? (step > 2 ? 'bg-[var(--green-9)] shadow-[var(--green-9)]/20' : 'bg-[var(--primary-9)] shadow-[var(--primary-9)]/30 animate-pulse') : 'bg-white border-2 border-[var(--gray-4)]'}`}>
+                                {step > 2 ? (
+                                    <Icon name="material-symbols:check" className="text-white text-lg" />
+                                ) : (
+                                    step === 2 ? <Icon name="material-symbols:autorenew" className="text-white text-lg animate-spin" /> : <div className="w-2.5 h-2.5 rounded-full bg-[var(--gray-4)]" />
+                                )}
+                            </div>
+                            <div className="pt-1">
+                                <p className={`font-bold transition-colors duration-300 ${step === 2 ? 'text-[var(--primary-9)]' : (step > 2 ? 'text-[var(--gray-12)]' : 'text-[var(--gray-10)]')}`}>Matching PO details...</p>
+                                <p className="text-sm text-[var(--gray-9)] mt-1">Cross-referencing with ERP records.</p>
+                            </div>
+                        </div>
+
+                        {/* Step 4: Policy */}
+                        <div className={`relative flex items-start space-x-6 transition-opacity duration-300 ${step < 3 ? 'opacity-50' : 'opacity-100'}`}>
+                            <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center z-10 ring-4 ring-white shadow-lg transition-all duration-300 ${step >= 3 ? 'bg-[var(--green-9)] shadow-[var(--green-9)]/20' : 'bg-white border-2 border-[var(--gray-4)]'}`}>
+                                {step >= 3 ? (
+                                    <Icon name="material-symbols:check" className="text-white text-lg" />
+                                ) : (
+                                    <div className="w-2.5 h-2.5 rounded-full bg-[var(--gray-4)]" />
+                                )}
+                            </div>
+                            <div className="pt-1">
+                                <p className={`font-bold transition-colors duration-300 ${step === 3 ? 'text-[var(--green-11)]' : 'text-[var(--gray-10)]'}`}>Policy Compliance Check</p>
+                                <p className="text-sm text-[var(--gray-9)] mt-1">Validating against guidelines.</p>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <div className="bg-gradient-to-br from-[var(--primary-9)] to-[var(--violet-9)] rounded-xl p-6 text-white shadow-xl shadow-[var(--primary-9)]/20 relative overflow-hidden group">
+                    <div className="absolute -right-4 -top-4 opacity-20 group-hover:scale-110 transition-transform duration-700">
+                        <Icon name="material-symbols:bolt" className="text-8xl" />
+                    </div>
+                    <h3 className="font-bold mb-2 flex items-center">
+                        <Icon name="material-symbols:lightbulb" className="text-lg mr-2" />
+                        Did you know?
+                    </h3>
+                    <p className="text-sm text-white/80 leading-relaxed">
+                        VRP (Visual Reasoning Processor) is analyzing the spatial relationship of fields to ensure the highest extraction accuracy in the industry.
+                    </p>
+                </div>
+            </section>
+        </div>
+    )
+}
+
+export default ProcessingScreen

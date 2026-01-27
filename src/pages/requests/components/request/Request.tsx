@@ -25,15 +25,33 @@ import {
 import workflowApi from "../../../../api/workflow/workflow"
 import Header from './components/Header'
 
-const Request = ({ onPrev, onNext }: { onPrev?: () => void; onNext?: () => void }) => {
+const Request = ({
+  onPrev,
+  onNext,
+  item,
+  workflowId,
+  onBack,
+  hideActions
+}: {
+  onPrev?: () => void;
+  onNext?: () => void,
+  item?: any,
+  workflowId?: number | string,
+  onBack?: () => void,
+  hideActions?: boolean
+}) => {
   const {
     closeRequest,
-    selectedItem,
+    selectedItem: storeSelectedItem,
     selectedWorkflowId,
     activeTabValue,
     rawWorkflowData,
-    workflowRefresh
+    workflowRefresh,
+    requestListTab
   } = requestStore((state) => state);
+
+  const selectedItem = item || storeSelectedItem;
+  const resolvedWorkflowId = workflowId ? Number(workflowId) : selectedWorkflowId;
 
   const [activeTab, setActiveTab] = useState<string>(activeTabValue ? activeTabValue : 'Overview');
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
@@ -41,7 +59,7 @@ const Request = ({ onPrev, onNext }: { onPrev?: () => void; onNext?: () => void 
   const [rightView, setRightView] = useState<'analysis' | 'comments' | 'attachments'>('analysis');
 
   const { data: request, isLoading } = useRequestDetail(
-    selectedWorkflowId,
+    resolvedWorkflowId,
     selectedItem?.processId,
     selectedItem?.transactionId
   );
@@ -49,7 +67,15 @@ const Request = ({ onPrev, onNext }: { onPrev?: () => void; onNext?: () => void 
   const agentDataList = request?._agentData || [];
   const hasAgentData = agentDataList.length > 0;
 
-  console.log(selectedItem, "this is from the request")
+  console.log("=== REQUEST COMPONENT DEBUG LOGS ===");
+  console.log("Prop item:", item);
+  console.log("Store SelectedItem:", storeSelectedItem);
+  console.log("Resolved SelectedItem:", selectedItem);
+  console.log("Process ID:", selectedItem?.processId);
+  console.log("Transaction ID:", selectedItem?.transactionId);
+  console.log("Selected Workflow ID:", resolvedWorkflowId);
+  console.log("UseRequestDetail Data:", request);
+  console.log("Agent Data List:", agentDataList);
 
   useEffect(() => {
     if (hasAgentData && activeTab === 'Form') {
@@ -111,7 +137,7 @@ const Request = ({ onPrev, onNext }: { onPrev?: () => void; onNext?: () => void 
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-85px)] p-0 w-full ">
+    <div className={`flex flex-col p-0 w-full ${hideActions ? 'h-full' : 'h-[calc(100vh-85px)]'}`}>
       {/* Combined Sticky Wrapper: 
         Keeps both Header and Tabs pinned to the top.
         Added z-20 and bg-white (or bg-surface) to ensure content scrolls behind it.
@@ -123,11 +149,13 @@ const Request = ({ onPrev, onNext }: { onPrev?: () => void; onNext?: () => void 
           isLoading={isLoading}
           onPrev={onPrev}
           onNext={onNext}
-          onBack={closeRequest}
+          onBack={onBack || closeRequest}
           approveLoading={submitting}
           onApprove={handleVerifier}
           rightView={rightView}
           setRightView={setRightView}
+          hideActions={hideActions}
+          showApprove={requestListTab === 'Inbox'}
         />
 
         {/* <div className="border-b border-gray-3 bg-surface">
@@ -162,7 +190,7 @@ const Request = ({ onPrev, onNext }: { onPrev?: () => void; onNext?: () => void 
           agentData={currentAgentData}
           rightView={rightView}
           setRightView={setRightView}
-          workflowId={Number(selectedWorkflowId)}
+          workflowId={Number(resolvedWorkflowId)}
           processId={Number(selectedItem?.processId)}
           transactionId={Number(selectedItem?.transactionId)}
           repositoryId={Number(rawWorkflowData?.repositoryId)} />

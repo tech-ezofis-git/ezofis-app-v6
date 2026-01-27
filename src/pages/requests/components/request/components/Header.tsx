@@ -23,6 +23,8 @@ interface HeaderProps {
   approveLoading?: boolean
   rightView: 'analysis' | 'comments' | 'attachments'
   setRightView: (view: 'analysis' | 'comments' | 'attachments') => void
+  hideActions?: boolean
+  showApprove?: boolean
 }
 
 const Header: React.FC<HeaderProps> = ({
@@ -34,7 +36,9 @@ const Header: React.FC<HeaderProps> = ({
   onApprove,
   approveLoading,
   rightView,
-  setRightView
+  setRightView,
+  hideActions,
+  showApprove = true
 }) => {
   // Store UI state
   // const isMaximized = requestStore((state) => state.isMaximized)
@@ -125,10 +129,14 @@ const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Divider */}
-        <div className="h-6 w-px bg-[var(--gray-3)] mx-1" />
+        {!hideActions && showApprove && <div className="h-6 w-px bg-[var(--gray-3)] mx-1" />}
 
-        {<Button onClick={onApprove} loading={approveLoading} className='cursor-pointer'>   <Icon name="tabler:circle-dashed-check" className="size-5" />
-          <span>Approve</span></Button>}
+        {!hideActions && showApprove && (
+          <Button onClick={onApprove} loading={approveLoading} className='cursor-pointer'>
+            <Icon name="tabler:circle-dashed-check" className="size-5" />
+            <span>Approve</span>
+          </Button>
+        )}
       </div>
     </OverlayHeaderWrapper >
   )

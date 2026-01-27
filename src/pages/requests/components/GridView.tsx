@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { generateDummySummary } from '@/pages/requests/utils/dummyData'
 import SummaryBadge from '@/components/common/SummaryBadge'
 import Icon from '@/components/base/icon/Icon'
@@ -102,31 +102,31 @@ const GridView = <TData,>({
     return out
   }, [data])
 
-  const getStatusConfig = (stage: string) => {
-    const s = stage?.toUpperCase() || ''
-    if (s === 'APPROVED' || s === 'COMPLETED') {
-      return {
-        bg: 'bg-[var(--green-2)]',
-        text: 'text-[var(--green-11)]',
-        border: 'border-[var(--green-4)]',
-        icon: 'tabler:circle-check-filled',
-      }
-    }
-    if (s === 'REJECTED') {
-      return {
-        bg: 'bg-[var(--red-2)]',
-        text: 'text-[var(--red-11)]',
-        border: 'border-[var(--red-4)]',
-        icon: 'tabler:circle-x-filled',
-      }
-    }
-    return {
-      bg: 'bg-[var(--primary-2)]',
-      text: 'text-[var(--primary-11)]',
-      border: 'border-[var(--primary-4)]',
-      icon: 'tabler:clock-filled',
-    }
-  }
+  // const getStatusConfig = (stage: string) => {
+  //   const s = stage?.toUpperCase() || ''
+  //   if (s === 'APPROVED' || s === 'COMPLETED') {
+  //     return {
+  //       bg: 'bg-[var(--green-2)]',
+  //       text: 'text-[var(--green-11)]',
+  //       border: 'border-[var(--green-4)]',
+  //       icon: 'tabler:circle-check-filled',
+  //     }
+  //   }
+  //   if (s === 'REJECTED') {
+  //     return {
+  //       bg: 'bg-[var(--red-2)]',
+  //       text: 'text-[var(--red-11)]',
+  //       border: 'border-[var(--red-4)]',
+  //       icon: 'tabler:circle-x-filled',
+  //     }
+  //   }
+  //   return {
+  //     bg: 'bg-[var(--primary-2)]',
+  //     text: 'text-[var(--primary-11)]',
+  //     border: 'border-[var(--primary-4)]',
+  //     icon: 'tabler:clock-filled',
+  //   }
+  // }
 
   // const handleToggle = (id: string | number) => {
   //   setExpandedId((prev) => (prev === id ? null : id))
@@ -241,9 +241,9 @@ const GridView = <TData,>({
               const requestNo = row?.requestNo || `REQ-${rowId}`
               const raisedBy = row?.raisedBy || 'Unknown User'
               const raisedAt = row?.raisedAt || row?.transaction_createdAt
-              const stage = row?.stage || 'Pending'
+              // const stage = row?.stage || 'Pending'
               // const fieldCount = row?.formData?.fields ? Object.keys(row.formData.fields).length : 0
-              const statusConfig = getStatusConfig(stage)
+              // const statusConfig = getStatusConfig(stage)
 
               // Get dummy summary data from the map
               const dummySummary = dummySummaryMap.get(rowId) || generateDummySummary(rowId)

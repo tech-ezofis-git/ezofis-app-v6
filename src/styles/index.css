@@ -41,7 +41,49 @@
   border-radius: 4px;
 }
 
-.minimal-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
-  /* gray-400 */
+
+@layer utilities {
+  @keyframes scan {
+
+    0%,
+    100% {
+      top: 0%;
+    }
+
+    50% {
+      top: 95%;
+    }
+  }
+
+  .animate-scan {
+    animation: scan 3s ease-in-out infinite;
+  }
+
+  .animate-spin-slow {
+    animation: spin 3s linear infinite;
+  }
+
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .scanning-bar {
+    background: linear-gradient(to bottom, transparent, rgba(124, 58, 237, 0.3), rgba(124, 58, 237, 0.6), rgba(124, 58, 237, 0.3), transparent);
+    box-shadow: 0 0 15px rgba(124, 58, 237, 0.4);
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 }

@@ -11,7 +11,7 @@ import { useAttachments } from '@/pages/requests/hooks/useAttachments';
 import authUserStore from '@/stores/authUserStore';
 
 // --- Types ---
-type RightViewMode = 'analysis' | 'comments' | 'attachments';
+// type RightViewMode = 'analysis' | 'comments' | 'attachments';
 
 interface FieldMatch {
   Field: string;
@@ -111,7 +111,7 @@ const Overview = ({
   transactionId,
   repositoryId,
   selectedItem,
-  rawWorkflowData,
+  // rawWorkflowData,
   rightView,
   setRightView,
 }: any) => {

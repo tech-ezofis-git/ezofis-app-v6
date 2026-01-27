@@ -1,4 +1,4 @@
-import { useState } from 'react'
+// import { useState } from 'react'
 import clsx, { type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 import Icon from '@/components/base/icon/Icon'
@@ -27,36 +27,36 @@ function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs))
 }
 
-function TooltipButton({
-    icon,
-    label,
-    onClick,
-    disabled,
-    active
-}: {
-    icon: string
-    label: string
-    onClick: () => void
-    disabled?: boolean
-    active?: boolean
-}) {
-    return (
-        <button
-            onClick={onClick}
-            disabled={disabled}
-            title={label}
-            className={cn(
-                "group relative rounded-xl p-2 transition-all hover:bg-white/20 disabled:opacity-40 disabled:hover:bg-transparent",
-                active && "bg-white/20"
-            )}
-        >
-            <Icon name={icon} className="size-5" />
-            <span className="absolute -top-10 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-black px-2 py-1 text-[10px] font-bold text-white opacity-0 transition-opacity group-hover:opacity-100 Pointer-events-none">
-                {label}
-            </span>
-        </button>
-    )
-}
+// function TooltipButton({
+//     icon,
+//     label,
+//     onClick,
+//     disabled,
+//     active
+// }: {
+//     icon: string
+//     label: string
+//     onClick: () => void
+//     disabled?: boolean
+//     active?: boolean
+// }) {
+//     return (
+//         <button
+//             onClick={onClick}
+//             disabled={disabled}
+//             title={label}
+//             className={cn(
+//                 "group relative rounded-xl p-2 transition-all hover:bg-white/20 disabled:opacity-40 disabled:hover:bg-transparent",
+//                 active && "bg-white/20"
+//             )}
+//         >
+//             <Icon name={icon} className="size-5" />
+//             <span className="absolute -top-10 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-black px-2 py-1 text-[10px] font-bold text-white opacity-0 transition-opacity group-hover:opacity-100 Pointer-events-none">
+//                 {label}
+//             </span>
+//         </button>
+//     )
+// }
 
 function resolveApiBaseUrl() {
     const v = (import.meta as any)?.env?.VITE_BASE_URL
@@ -65,26 +65,26 @@ function resolveApiBaseUrl() {
 
 const getExt = (name?: string) => (name?.split('.').pop() || '').toLowerCase()
 
-const fileSupport = (ext: string) => {
-    const allowed = [
-        'pdf',
-        'doc',
-        'docx',
-        'xls',
-        'xlsx',
-        'ppt',
-        'pptx',
-        'png',
-        'jpg',
-        'jpeg',
-        'webp',
-        'gif',
-        'csv',
-        'txt',
-        'rtf',
-    ]
-    return allowed.includes(ext.toLowerCase())
-}
+// const fileSupport = (ext: string) => {
+//     const allowed = [
+//         'pdf',
+//         'doc',
+//         'docx',
+//         'xls',
+//         'xlsx',
+//         'ppt',
+//         'pptx',
+//         'png',
+//         'jpg',
+//         'jpeg',
+//         'webp',
+//         'gif',
+//         'csv',
+//         'txt',
+//         'rtf',
+//     ]
+//     return allowed.includes(ext.toLowerCase())
+// }
 
 const getFileIcon = (ext: string): string => {
     const iconMap: Record<string, string> = {
@@ -140,7 +140,7 @@ export default function Attachments({
     processId,
     enabled = true,
     onSelect,
-    onClose
+    // onClose
 }: Props) {
     const { data: files, isLoading } = useAttachments(workflowId, processId, enabled)
     const { session } = authUserStore.getState()
