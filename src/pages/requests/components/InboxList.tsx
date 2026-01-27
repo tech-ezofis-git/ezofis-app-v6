@@ -30,6 +30,8 @@ interface InboxListProps {
     selectedItem: any
     setSelectedItem: (item: any) => void
     viewMode: 'table' | 'grid'
+    onGroupByChange?: (groups: string[]) => void
+    activeTab?: string
 }
 
 // ✅ robust flattener for your backend shape (group.items)
@@ -80,6 +82,8 @@ const InboxList: React.FC<InboxListProps> = ({
     selectedItem,
     setSelectedItem,
     viewMode,
+    onGroupByChange,
+    activeTab,
 }) => {
     const { openNewRequest } = requestStore((state) => state)
     const columns = useDynamicColumns(workflow, onRowClick, selectedItem) || []
@@ -95,6 +99,13 @@ const InboxList: React.FC<InboxListProps> = ({
     const { expandState, groupState, sortState, searchState, setExpandState, ...rest } = useDataTableState({
         initialVisibilityState,
     })
+
+    // ✅ Sync groupState with parent
+    React.useEffect(() => {
+        if (onGroupByChange) {
+            onGroupByChange(groupState)
+        }
+    }, [groupState, onGroupByChange])
 
     // Auto-expand root group -- NO LONGER NEEDED
     // useEffect(() => {
@@ -232,6 +243,7 @@ const InboxList: React.FC<InboxListProps> = ({
                                     table={table}
                                     onReload={onRefresh}
                                     component={selectedItem}
+                                    hideGrouping={activeTab !== 'Inbox'}
                                     actions={[
                                         {
                                             label: 'Upload PO',
@@ -253,7 +265,7 @@ const InboxList: React.FC<InboxListProps> = ({
                                     isReloading={isRefetching}
                                     onReload={onRefresh}
                                     onRowClick={onRowClick}
-
+                                    hideGrouping={activeTab !== 'Inbox'}
                                     actions={[
                                         {
                                             label: 'Upload PO',

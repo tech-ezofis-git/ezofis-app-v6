@@ -26,6 +26,7 @@ export const useInboxData = (
         itemsPerPage: pageSize,
         currentPage: page,
         sortBy: { criteria: '', order: 'DESC' },
+        groupBy: groupBy.length > 0 ? groupBy : ["RXwLGHILLrreMmRqlk9mj"],
         filterBy: [],
       }
 
@@ -57,75 +58,76 @@ export const useInboxData = (
         console.error(error)
         return { data: [], meta: { totalItems: 0 } }
       }
-
       return response || { data: [], meta: { totalItems: 0 } }
     },
 
     select: (payload: any) => {
-      let apiData = payload?.data?.data || payload?.data || []
-
-      if (
-        !Array.isArray(apiData) &&
-        payload?.data &&
-        Array.isArray(payload.data)
-      ) {
-        apiData = payload.data
-      }
-
+      const apiData = payload?.data?.data || payload?.data || []
       const totalItems =
         payload?.meta?.totalItems || payload?.data?.meta?.totalItems || 0
-      const flatList: InboxItem[] = []
+
+      const groupedData: TableGroup[] = []
+
+      // Helper to transform process into InboxItem
+      const transformProcess = (process: any, groupKey: string): InboxItem => {
+        const dynamicFields = process.formData?.fields || {}
+        let actions: any[] = []
+        if (activeTab === 'Inbox') {
+          actions = getActionsForActivity(
+            process.activityId,
+            selectedWorkflow?.flowJson,
+          )
+        }
+        return {
+          ...process,
+          ...dynamicFields,
+          id: process.processId || process.id,
+          _groupKey: groupKey || activeTab,
+          _actions: actions,
+        }
+      }
 
       if (Array.isArray(apiData)) {
-        apiData.forEach((group: any) => {
-          const subGroups = Array.isArray(group.value) ? group.value : [group]
+        apiData.forEach((outer: any) => {
+          // outer is usually { key: "", totalCount: X, value: [...] }
+          if (outer && Array.isArray(outer.value)) {
+            outer.value.forEach((inner: any, idx: number) => {
+              // Format 1: Grouped (inner has 'value' array of items)
+              if (inner && Array.isArray(inner.value)) {
+                const groupItems = inner.value
+                  .filter((p: any) => p && (p.processId || p.id))
+                  .map((p: any) => transformProcess(p, inner.key))
 
-          subGroups.forEach((subGroup: any) => {
-            const processes = Array.isArray(subGroup.value)
-              ? subGroup.value
-              : [subGroup]
-
-            processes.forEach((process: any) => {
-              if (!process || !process.processId) return
-
-              const dynamicFields = process.formData?.fields || {}
-
-              let actions: any[] = []
-              if (activeTab === 'Inbox') {
-                actions = getActionsForActivity(
-                  process.activityId,
-                  selectedWorkflow?.flowJson,
-                )
-              } else {
-                // You can add 'View' action for Sent/Closed here if needed
-                actions = []
+                if (groupItems.length > 0) {
+                  groupedData.push({
+                    groupId: inner.key || `group-${idx}`,
+                    groupKey: inner.key,
+                    groupValue: inner.key,
+                    groupCount: inner.totalCount || groupItems.length,
+                    items: groupItems,
+                  })
+                }
               }
+              // Format 2: Flat (inner is the item itself)
+              else if (inner && (inner.processId || inner.id)) {
+                let rootGroup = groupedData.find((g) => g.groupId === 'root')
+                const transformed = transformProcess(inner, activeTab)
 
-              flatList.push({
-                ...process,
-                ...dynamicFields,
-                id: process.processId,
-                _groupKey: group.key || activeTab,
-                _actions: actions,
-              })
+                if (rootGroup) {
+                  rootGroup.items.push(transformed)
+                  rootGroup.groupCount = rootGroup.items.length
+                } else {
+                  groupedData.push({
+                    groupId: 'root',
+                    groupCount: 1,
+                    items: [transformed],
+                  })
+                }
+              }
             })
-          })
+          }
         })
       }
-      if (flatList.length === 0) {
-        return { data: [], totalItems: 0 }
-      }
-      // --- CRITICAL FIX ---
-      // We MUST wrap the flat list in a Group Object because useDataTable expects it.
-      const groupedData: TableGroup[] = [
-        {
-          groupId: 'root',
-          // groupKey: activeTab, // Removed to allow flattening
-          // groupValue: `${activeTab} Requests`, // Removed to allow flattening
-          groupCount: flatList.length,
-          items: flatList, 
-        },
-      ]
 
       return { data: groupedData, totalItems }
     },

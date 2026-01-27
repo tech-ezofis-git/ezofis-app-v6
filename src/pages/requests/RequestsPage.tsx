@@ -23,6 +23,7 @@ const RequestsPage = () => {
 
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+  const [groupBy, setGroupBy] = useState<string[]>([])
 
   const openRequest = requestStore((state) => state.openRequest)
   const isClosed = requestStore((state) => state.isClosed)
@@ -30,8 +31,6 @@ const RequestsPage = () => {
   const reloadMeta = requestStore((state) => state.reloadMeta)
   const stopRefresh = requestStore((state) => state.stopRefresh)
   const setRequestListTab = requestStore((state) => state.setRequestListTab)
-
-
   // --- 2. DATA FETCHING ---
   // Pass 'activeTab' to the hook so it knows which API to call
   const {
@@ -39,7 +38,7 @@ const RequestsPage = () => {
     isPending,
     isFetching,
     refetch
-  } = useInboxData(selectedWorkflow, page, pageSize, [], activeTab);
+  } = useInboxData(selectedWorkflow, page, pageSize, groupBy, activeTab);
 
   const handleRowClick = (row: any, tab: string) => {
     setSelectedItem(row);
@@ -156,15 +155,17 @@ const RequestsPage = () => {
     setSelectedItem(null)
 
   }, [isClosed])
-  console.log(inboxResult?.data, "this is inboxlist data ")
-
-  console.log("selectedWorkflow", selectedWorkflow)
 
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab)
     setRequestListTab(tab) // Sync to store
     setSelectedItem(null)
+
+    // Only grouping for Inbox
+    if (tab !== 'Inbox') {
+      setGroupBy([])
+    }
   }
 
   // Sync initial tab
@@ -201,6 +202,8 @@ const RequestsPage = () => {
         selectedItem={selectedItem}
         setSelectedItem={setSelectedItem}
         viewMode={viewMode}
+        onGroupByChange={setGroupBy}
+        activeTab={activeTab}
       />
 
     </>

@@ -220,7 +220,7 @@ export const useDynamicColumns = (
                 if (isIgnorableField(field)) return
                 if (!isParentField(field)) return
 
-                const fieldKey = getFieldKey(field)
+                const fieldKey = getFieldKey(field) // Uses encrypted jsonId if available
                 if (!fieldKey) return
 
                 const label = getFieldLabel(field)

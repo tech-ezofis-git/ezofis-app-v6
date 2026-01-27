@@ -5,6 +5,7 @@ import type { RowSize } from './types'
 import TableColumns from './actions/TableColumns'
 import TableExport from './actions/TableExport'
 import TableFilters from './actions/TableFilters'
+import TableGroup from './actions/TableGroup'
 import TableReload from './actions/TableReload'
 import TableRows from './actions/TableRows'
 import TableSearch from './actions/TableSearch'
@@ -37,6 +38,7 @@ interface Props<TData> extends ComponentProps<'div'> {
   /** ✅ Custom action buttons */
   actions?: TableActionButton[]
   hideTableActions?: boolean
+  hideGrouping?: boolean
 }
 
 const TableActionBar = <TData,>({
@@ -48,7 +50,8 @@ const TableActionBar = <TData,>({
   onRowSizeChange,
   component,
   actions = [],
-  hideTableActions = false
+  hideTableActions = false,
+  hideGrouping = false
 }: Props<TData>) => {
   const leftActions = actions.filter((a) => (a.align ?? 'right') === 'left')
   const rightActions = actions.filter((a) => (a.align ?? 'right') === 'right')
@@ -82,6 +85,7 @@ const TableActionBar = <TData,>({
 
           <TableSearch table={table} />
           <TableFilters table={table} />
+          {!hideGrouping && <TableGroup table={table} />}
 
           <div className="flex-1" />
 
