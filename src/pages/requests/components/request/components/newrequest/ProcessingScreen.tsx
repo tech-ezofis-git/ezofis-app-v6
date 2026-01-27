@@ -53,11 +53,17 @@ const ProcessingScreen = ({ file, stage, uploadStatus, onComplete }: ProcessingS
     // }, []);
 
     useEffect(() => {
-        const timer = setTimeout(() => {
-            setShowLongWaitMessage(true);
-        }, 24000); // reduced from 12000 for testing, or keep 12s
+        let timer: NodeJS.Timeout;
+        // Check if step is 1 (Extraction)
+        if (step === 1) {
+            timer = setTimeout(() => {
+                setShowLongWaitMessage(true);
+            }, 180000); // 3 minutes
+        } else {
+            setShowLongWaitMessage(false);
+        }
         return () => clearTimeout(timer);
-    }, []);
+    }, [step]);
 
     const getTargetStep = (s: string) => {
         const lower = s.toLowerCase();
@@ -70,7 +76,7 @@ const ProcessingScreen = ({ file, stage, uploadStatus, onComplete }: ProcessingS
     const targetStep = getTargetStep(stage);
 
     useEffect(() => {
-        if (uploadStatus === 'uploading') return;
+        if (uploadStatus === 'uploading' || uploadStatus === 'error') return;
 
         if (step < targetStep) {
             let delay = 1500;
@@ -152,18 +158,28 @@ const ProcessingScreen = ({ file, stage, uploadStatus, onComplete }: ProcessingS
 
                             {/* Step 1: Upload */}
                             <div className="relative flex items-start space-x-6 z-10">
-                                <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ring-4 ring-white shadow-lg transition-all duration-300 ${uploadStatus === 'success' ? 'bg-[var(--green-9)]' : 'bg-[var(--primary-9)]'}`}>
+                                <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ring-4 ring-white shadow-lg transition-all duration-300 ${uploadStatus === 'success' ? 'bg-[var(--green-9)]' :
+                                    uploadStatus === 'error' ? 'bg-[var(--red-9)]' : 'bg-[var(--primary-9)]'
+                                    }`}>
                                     {uploadStatus === 'success' ? (
                                         <Icon name="material-symbols:check" className="text-white text-lg" />
+                                    ) : uploadStatus === 'error' ? (
+                                        <Icon name="material-symbols:error-outline" className="text-white text-lg" />
                                     ) : (
                                         <Icon name="tabler:rotate-clockwise-2" className="text-white text-lg animate-spin" />
                                     )}
                                 </div>
                                 <div className="pt-1">
-                                    <p className={`font-bold transition-colors duration-300 ${uploadStatus === 'success' ? 'text-[var(--green-11)]' : 'text-[var(--primary-11)]'}`}>
-                                        {uploadStatus === 'success' ? 'File uploaded successfully' : 'Uploading file...'}
+                                    <p className={`font-bold transition-colors duration-300 ${uploadStatus === 'success' ? 'text-[var(--green-11)]' :
+                                        uploadStatus === 'error' ? 'text-[var(--red-11)]' : 'text-[var(--primary-11)]'
+                                        }`}>
+                                        {uploadStatus === 'success' ? 'File uploaded successfully' :
+                                            uploadStatus === 'error' ? 'Upload failed' : 'Uploading file...'}
                                     </p>
                                     <p className="text-sm text-[var(--gray-10)] mt-1">{file?.name} {uploadStatus === 'success' && '(Verified)'}</p>
+                                    {uploadStatus === 'error' && (
+                                        <p className="text-xs text-[var(--red-9)] mt-1">Please try again.</p>
+                                    )}
                                 </div>
                             </div>
 
@@ -201,6 +217,9 @@ const ProcessingScreen = ({ file, stage, uploadStatus, onComplete }: ProcessingS
                                             </div>
                                         </div>
                                     )}
+                                    {step != 0 && step != 1 && (<p className="text-sm font-medium text-[var(--gray-11)] animate-fade-in">
+                                        Extracted Successfully
+                                    </p>)}
                                 </div>
                             </div>
 
@@ -236,46 +255,25 @@ const ProcessingScreen = ({ file, stage, uploadStatus, onComplete }: ProcessingS
                         </div>
 
                         {/* Insight / Alert Card */}
-                        <div className={`rounded-xl p-4 mt-6 text-white shadow-xl relative overflow-hidden group shrink-0 transition-all duration-500 ease-in-out ${showLongWaitMessage ? 'bg-[var(--blue-9)] shadow-[var(--blue-9)]/20' : 'bg-gradient-to-br from-[var(--primary-9)] to-[var(--violet-9)] shadow-[var(--primary-9)]/20'}`}>
-
-                            {showLongWaitMessage ? (
-                                // Long Wait Message View
-                                <div className="animate-fade-in relative z-10">
-                                    <div className="absolute -right-4 -top-4 opacity-10 rotate-12">
-                                        <Icon name="material-symbols:timer-rounded" className="text-8xl" />
-                                    </div>
-                                    <div className="flex items-start gap-3">
-                                        <Icon name="material-symbols:info-rounded" className="text-2xl shrink-0 mt-0.5" />
-                                        <div>
-                                            <h3 className="font-bold mb-1">Taking longer than usual</h3>
-                                            <p className="text-sm text-white/90 leading-relaxed">
-                                                You can navigate away. The process will continue in the background. We'll notify you when it's done.
-                                            </p>
-                                            {/* <button
-                                                onClick={() => setShowLongWaitMessage(false)}
-                                                className="mt-3 text-xs bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-lg transition-colors font-medium backdrop-blur-sm"
-                                            >
-                                                Dismiss
-                                            </button> */}
-                                        </div>
-                                    </div>
-                                </div>
-                            ) : (
-                                // Normal Insight View
-                                <div className="animate-fade-in">
-                                    <div className="absolute -right-4 -top-4 opacity-20 group-hover:scale-110 transition-transform duration-700">
-                                        <Icon name="material-symbols:receipt-long" className="text-8xl" />
-                                    </div>
-                                    <h3 className="font-bold mb-2 flex items-center">
-                                        <Icon name="material-symbols:smart-toy" className="text-md mr-2" />
-                                        AP Agent Insight
-                                    </h3>
-                                    <p className="text-sm text-white/80 leading-relaxed">
-                                        The AP Agent is autonomously cross-referencing invoice line items with purchase orders to validate amounts.
+                        {showLongWaitMessage && (
+                            <div className="absolute bottom-6 right-6 z-50 animate-fade-in-up">
+                                <div className="bg-[var(--primary-9)] text-white p-4 rounded-lg shadow-lg max-w-sm relative pr-10">
+                                    <button
+                                        onClick={() => setShowLongWaitMessage(false)}
+                                        className="absolute top-2 right-2 text-white/80 hover:text-white transition-colors"
+                                    >
+                                        <Icon name="material-symbols:close" className="text-xl" />
+                                    </button>
+                                    <h4 className="font-bold mb-1 flex items-center gap-2">
+                                        <Icon name="material-symbols:info-outline" className="text-lg" />
+                                        Taking longer than usual
+                                    </h4>
+                                    <p className="text-sm text-white/90 leading-relaxed">
+                                        You can go back and do other activities. The process will continue in the background.
                                     </p>
                                 </div>
-                            )}
-                        </div>
+                            </div>
+                        )}
                     </div>
 
                 </section>

@@ -152,6 +152,11 @@ const FileUpload = ({ onRequestCreated, onClose }: { onRequestCreated?: () => vo
         const validFiles = files.filter((f) => isPdf(f) && f.size <= MAX_SIZE);
 
         if (validFiles.length) {
+            if (!rawWorkflow?.repositoryId) {
+                showToast({ message: "Repository ID is missing. Cannot upload.", variant: "error" });
+                return;
+            }
+
             setUploadedFile(validFiles[0]);
             // setUploadedInvoiceName(validFiles[0].name);
             setUploadStatus('uploading');
@@ -309,15 +314,15 @@ const FileUpload = ({ onRequestCreated, onClose }: { onRequestCreated?: () => vo
 
     // Step 1: Upload (Existing UI)
     return (
-        <AnimateFadeIn className="h-[calc(100vh-150px)] overflow-y-auto flex flex-col items-center justify-center bg-surface-muted px-8 py-8 lg:px-12">
-            <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+        <AnimateFadeIn className="min-h-[calc(100vh-150px)] overflow-y-auto flex flex-col items-center justify-center bg-surface-muted px-4 py-6 sm:px-6 lg:px-10">
+            <div className="w-full  max-w-6xl grid grid-cols-1 xl:grid-cols-2 gap-6 xl:gap-12 items-center">
 
                 {/* Left Column: Upload Hub */}
                 <AnimateSlideUp className="w-full relative">
                     <div className="group relative bg-white rounded-[2.5rem] border border-[var(--gray-3)] p-2 transition-all duration-500 overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1">
                         <div
                             className={[
-                                "border-2 border-dashed border-[var(--primary-4)] rounded-[2.2rem] p-12 lg:p-16",
+                                "border-2 border-dashed border-[var(--primary-4)] rounded-[2.2rem] p-6 sm:p-8 lg:p-10 xl:p-14",
                                 "flex flex-col items-center text-center cursor-pointer transition-all duration-300 ease-out",
                                 isDragOver ? "bg-[var(--primary-1)]/80 border-[var(--primary-6)] scale-[0.99]" : "hover:bg-[var(--primary-1)]/60 hover:border-[var(--primary-5)]"
                             ].join(" ")}
@@ -380,7 +385,7 @@ const FileUpload = ({ onRequestCreated, onClose }: { onRequestCreated?: () => vo
                 </AnimateSlideUp>
 
                 {/* Right Column: Info & Features */}
-                <div className="flex flex-col gap-8 lg:pl-4">
+                <div className="flex flex-col relative gap-8 lg:pl-4">
                     <AnimateSlideUp delay={0.1}>
                         <h1 className="text-3xl font-bold text-[var(--gray-13)] mb-6">
                             Intelligent <span className="text-[var(--primary-9)]">AP Agent</span>
