@@ -314,15 +314,15 @@ const FileUpload = ({ onRequestCreated, onClose }: { onRequestCreated?: () => vo
 
     // Step 1: Upload (Existing UI)
     return (
-        <AnimateFadeIn className="min-h-[calc(100vh-150px)] overflow-y-auto flex flex-col items-center justify-center bg-surface-muted px-4 py-6 sm:px-6 lg:px-10">
-            <div className="w-full  max-w-6xl grid grid-cols-1 xl:grid-cols-2 gap-6 xl:gap-12 items-center">
+        <AnimateFadeIn className="min-h-[calc(100vh-150px)] overflow-y-auto flex flex-col items-center justify-center bg-surface-muted px-4 py-4 lg:py-6 sm:px-6 lg:px-10">
+            <div className="w-full max-w-6xl grid grid-cols-1 xl:grid-cols-2 gap-6 xl:gap-8 2xl:gap-12 items-center">
 
                 {/* Left Column: Upload Hub */}
                 <AnimateSlideUp className="w-full relative">
                     <div className="group relative bg-white rounded-[2.5rem] border border-[var(--gray-3)] p-2 transition-all duration-500 overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1">
                         <div
                             className={[
-                                "border-2 border-dashed border-[var(--primary-4)] rounded-[2.2rem] p-6 sm:p-8 lg:p-10 xl:p-14",
+                                "border-2 border-dashed border-[var(--primary-4)] rounded-[2.2rem] p-6 lg:p-8 xl:p-10 2xl:p-14",
                                 "flex flex-col items-center text-center cursor-pointer transition-all duration-300 ease-out",
                                 isDragOver ? "bg-[var(--primary-1)]/80 border-[var(--primary-6)] scale-[0.99]" : "hover:bg-[var(--primary-1)]/60 hover:border-[var(--primary-5)]"
                             ].join(" ")}
@@ -340,17 +340,17 @@ const FileUpload = ({ onRequestCreated, onClose }: { onRequestCreated?: () => vo
                         >
                             <AnimateStagger className="flex flex-col items-center z-10 w-full">
                                 {/* Icon Container */}
-                                <div className="w-20 h-20 bg-[var(--primary-1)] rounded-2xl flex items-center justify-center mb-8 group-hover:scale-110 group-hover:bg-[var(--primary-2)] transition-all duration-300">
-                                    <Icon name="tabler:cloud-upload" className="size-9 text-[var(--primary-9)] transition-colors duration-300" />
+                                <div className="size-16 2xl:size-20 bg-[var(--primary-1)] rounded-2xl flex items-center justify-center mb-6 2xl:mb-8 group-hover:scale-110 group-hover:bg-[var(--primary-2)] transition-all duration-300">
+                                    <Icon name="tabler:cloud-upload" className="size-8 2xl:size-9 text-[var(--primary-9)] transition-colors duration-300" />
                                 </div>
 
                                 {/* Headline */}
-                                <h2 className="text-3xl font-bold text-[var(--gray-13)] mb-3 tracking-tight transition-colors duration-300 group-hover:text-[var(--primary-10)]">
+                                <h2 className="text-2xl 2xl:text-3xl font-bold text-[var(--gray-13)] mb-3 tracking-tight transition-colors duration-300 group-hover:text-[var(--primary-10)]">
                                     Drop your file here, or <span className="text-[var(--primary-9)] underline decoration-transparent group-hover:decoration-[var(--primary-9)] transition-all duration-300">browse</span>
                                 </h2>
 
                                 {/* Subtext */}
-                                <p className="text-[var(--gray-9)] mb-10 text-base font-medium">
+                                <p className="text-[var(--gray-9)] mb-6 2xl:mb-10 text-sm 2xl:text-base font-medium">
                                     Supports PDF Files · Max 4 MB
                                 </p>
 
@@ -385,20 +385,20 @@ const FileUpload = ({ onRequestCreated, onClose }: { onRequestCreated?: () => vo
                 </AnimateSlideUp>
 
                 {/* Right Column: Info & Features */}
-                <div className="flex flex-col relative gap-8 lg:pl-4">
+                <div className="flex flex-col relative gap-6 2xl:gap-8 lg:pl-4">
                     <AnimateSlideUp delay={0.1}>
-                        <h1 className="text-3xl font-bold text-[var(--gray-13)] mb-6">
+                        <h1 className="text-2xl 2xl:text-3xl font-bold text-[var(--gray-13)] mb-4 2xl:mb-6">
                             Intelligent <span className="text-[var(--primary-9)]">AP Agent</span>
                         </h1>
-                        <div className="bg-[var(--gray-3)] border border-[var(--gray-4)] rounded-3xl p-6">
+                        <div className="bg-[var(--gray-3)] border border-[var(--gray-4)] rounded-3xl p-5 2xl:p-6">
                             <p className="text-[var(--gray-11)] text-sm leading-relaxed font-medium">
                                 Streamline your Accounts Payable. Automatically process invoices, match Purchase Orders, and gain complete visibility into all your payables from a single dashboard.
                             </p>
                         </div>
                     </AnimateSlideUp>
 
-                    <div className="space-y-4">
-                        <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1 mb-2">
+                    <div className="space-y-3 2xl:space-y-4">
+                        <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1 mb-1 2xl:mb-2">
                             POST-UPLOAD CAPABILITIES
                         </div>
 
@@ -423,8 +423,8 @@ const FileUpload = ({ onRequestCreated, onClose }: { onRequestCreated?: () => vo
                             }
                         ].map((item, idx) => (
                             <AnimateSlideUp key={idx} delay={0.2 + (idx * 0.1)} className="group">
-                                <div className="flex items-start gap-4 p-4 rounded-2xl bg-white border border-[var(--gray-3)] shadow-sm hover:shadow-md transition-all duration-300">
-                                    <div className={`shrink-0 size-10 rounded-lg flex items-center justify-center ${item.color} mt-1`}>
+                                <div className="flex items-start gap-4 p-3 2xl:p-4 rounded-2xl bg-white border border-[var(--gray-3)] shadow-sm hover:shadow-md transition-all duration-300">
+                                    <div className={`shrink-0 size-9 2xl:size-10 rounded-lg flex items-center justify-center ${item.color} mt-1`}>
                                         <Icon name={item.icon} className="size-5" />
                                     </div>
                                     <div>

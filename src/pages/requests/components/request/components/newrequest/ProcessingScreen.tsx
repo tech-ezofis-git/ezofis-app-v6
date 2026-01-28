@@ -97,19 +97,12 @@ const ProcessingScreen = ({ file, stage, uploadStatus, onComplete }: ProcessingS
     // Handle closing the alert automatically or manually isn't needed if we move it to the insight card
 
     return (
-        <div className="w-full h-[calc(100vh-110px)] p-6 box-border overflow-hidden">
-            <div className="max-w-[1600px] mx-auto grid grid-cols-12 gap-6 h-full">
+        <div className="w-full h-[calc(100vh-110px)] p-4 lg:p-6 box-border overflow-hidden">
+            <div className="max-w-[1600px] mx-auto grid grid-cols-12 gap-4 2xl:gap-6 h-full">
 
                 {/* Left Column: File Preview */}
                 <section className="col-span-8 flex flex-col h-full min-h-0">
                     <div className="flex-grow relative bg-[var(--gray-3)] rounded-xl overflow-hidden border border-[var(--gray-6)] shadow-inner flex justify-center items-center h-full">
-                        {/* Blur overlay container - This blurs whatever is behind it if we used backdrop-filter, 
-                            but here we want the container itself to look distinct or the content inside.
-                            The user asked to "fill the viewer with the left container and mke the full container as blur the viewer container"
-                            I will assume they want the image inside to be slightly blurred to show 'processing' state or just the container look.
-                            Let's use a glass effect on the top layer.
-                        */}
-
                         <div className="absolute inset-0 z-0">
                             {file?.type === 'application/pdf' ? (
                                 fileUrl ? (
@@ -127,29 +120,23 @@ const ProcessingScreen = ({ file, stage, uploadStatus, onComplete }: ProcessingS
                         {/* Scanning effect wrapper */}
                         <div className="absolute inset-0 z-10 backdrop-blur-[1px] bg-white/10"></div>
                         <div className="absolute inset-x-0 h-1 scanning-bar animate-scan z-20 pointer-events-none shadow-[0_0_15px_rgba(var(--primary-9),0.5)]"></div>
-
-                        {/* Center Logo or indicator suitable for processing state */}
-                        {/* <div className="z-30 bg-white/80 backdrop-blur-md p-6 rounded-2xl shadow-2xl border border-white/50 flex flex-col items-center animate-pulse-slow">
-                            <Icon name="material-symbols:document-scanner-rounded" className="text-6xl text-[var(--primary-9)] mb-3" />
-                            <p className="text-[var(--gray-11)] font-medium">Processing Document...</p>
-                        </div> */}
                     </div>
                 </section>
 
                 {/* Right Column: Timeline */}
                 <section className="col-span-4 flex flex-col h-full min-h-0">
 
-                    <div className="bg-white border border-[var(--gray-3)] rounded-xl p-6 shadow-sm h-full flex flex-col overflow-hidden relative">
+                    <div className="bg-white border border-[var(--gray-3)] rounded-xl p-4 2xl:p-6 shadow-sm h-full flex flex-col overflow-hidden relative">
 
-                        <div className="flex items-center justify-between mb-4 shrink-0">
-                            <h2 className="text-lg font-bold text-[var(--gray-12)]">Processing Timeline</h2>
+                        <div className="flex items-center justify-between mb-2 2xl:mb-4 shrink-0">
+                            <h2 className="text-base 2xl:text-lg font-bold text-[var(--gray-12)]">Processing Timeline</h2>
                             {/* <span className="text-xs bg-[var(--primary-1)] text-[var(--primary-9)] px-3 py-1 rounded-full font-bold">LIVE</span> */}
                         </div>
 
                         {/* Use flex-1 and justify-between to distribute space evenly so it fits without scroll */}
-                        <div className="flex-1 flex flex-col justify-between relative pl-2 min-h-0 py-2">
+                        <div className="flex-1 flex flex-col justify-between relative pl-1 min-h-0 py-1 2xl:py-2">
                             {/* Vertical Line - Absolute across the flex container */}
-                            <div className="absolute left-6 top-4 bottom-4 w-0.5 bg-[var(--gray-3)] -z-0">
+                            <div className="absolute left-[1.15rem] 2xl:left-6 top-3 2xl:top-4 bottom-3 2xl:bottom-4 w-0.5 bg-[var(--gray-3)] -z-0">
                                 <div
                                     className="absolute top-0 left-0 w-full bg-[var(--primary-9)] transition-all duration-1000 ease-linear"
                                     style={{ height: `${(step / 3) * 100}%` }}
@@ -157,43 +144,43 @@ const ProcessingScreen = ({ file, stage, uploadStatus, onComplete }: ProcessingS
                             </div>
 
                             {/* Step 1: Upload */}
-                            <div className="relative flex items-start space-x-6 z-10">
-                                <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ring-4 ring-white shadow-lg transition-all duration-300 ${uploadStatus === 'success' ? 'bg-[var(--green-9)]' :
+                            <div className="relative flex items-start space-x-4 2xl:space-x-6 z-10">
+                                <div className={`flex-shrink-0 w-7 h-7 2xl:w-8 2xl:h-8 rounded-full flex items-center justify-center ring-4 ring-white shadow-lg transition-all duration-300 ${uploadStatus === 'success' ? 'bg-[var(--green-9)]' :
                                     uploadStatus === 'error' ? 'bg-[var(--red-9)]' : 'bg-[var(--primary-9)]'
                                     }`}>
                                     {uploadStatus === 'success' ? (
-                                        <Icon name="material-symbols:check" className="text-white text-lg" />
+                                        <Icon name="material-symbols:check" className="text-white text-base 2xl:text-lg" />
                                     ) : uploadStatus === 'error' ? (
-                                        <Icon name="material-symbols:error-outline" className="text-white text-lg" />
+                                        <Icon name="material-symbols:error-outline" className="text-white text-base 2xl:text-lg" />
                                     ) : (
-                                        <Icon name="tabler:rotate-clockwise-2" className="text-white text-lg animate-spin" />
+                                        <Icon name="tabler:rotate-clockwise-2" className="text-white text-base 2xl:text-lg animate-spin" />
                                     )}
                                 </div>
-                                <div className="pt-1">
-                                    <p className={`font-bold transition-colors duration-300 ${uploadStatus === 'success' ? 'text-[var(--green-11)]' :
+                                <div className="pt-0.5 2xl:pt-1">
+                                    <p className={`font-bold text-sm 2xl:text-base transition-colors duration-300 ${uploadStatus === 'success' ? 'text-[var(--green-11)]' :
                                         uploadStatus === 'error' ? 'text-[var(--red-11)]' : 'text-[var(--primary-11)]'
                                         }`}>
                                         {uploadStatus === 'success' ? 'File uploaded successfully' :
                                             uploadStatus === 'error' ? 'Upload failed' : 'Uploading file...'}
                                     </p>
-                                    <p className="text-sm text-[var(--gray-10)] mt-1">{file?.name} {uploadStatus === 'success' && '(Verified)'}</p>
+                                    <p className="text-xs 2xl:text-sm text-[var(--gray-10)] mt-0.5 2xl:mt-1">{file?.name} {uploadStatus === 'success' && '(Verified)'}</p>
                                     {uploadStatus === 'error' && (
-                                        <p className="text-xs text-[var(--red-9)] mt-1">Please try again.</p>
+                                        <p className="text-[10px] 2xl:text-xs text-[var(--red-9)] mt-0.5 2xl:mt-1">Please try again.</p>
                                     )}
                                 </div>
                             </div>
 
                             {/* Step 2: Extraction */}
-                            <div className={`relative flex items-start space-x-6 z-10 transition-opacity duration-300 opacity-100`}>
-                                <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ring-4 ring-white shadow-lg transition-all duration-300 ${step >= 1 ? (step > 1 ? 'bg-[var(--green-9)] shadow-[var(--green-9)]/20' : 'bg-[var(--primary-9)] shadow-[var(--primary-9)]/30') : 'bg-white border-2 border-[var(--gray-4)]'}`}>
+                            <div className={`relative flex items-start space-x-4 2xl:space-x-6 z-10 transition-opacity duration-300 opacity-100`}>
+                                <div className={`flex-shrink-0 w-7 h-7 2xl:w-8 2xl:h-8 rounded-full flex items-center justify-center ring-4 ring-white shadow-lg transition-all duration-300 ${step >= 1 ? (step > 1 ? 'bg-[var(--green-9)] shadow-[var(--green-9)]/20' : 'bg-[var(--primary-9)] shadow-[var(--primary-9)]/30') : 'bg-white border-2 border-[var(--gray-4)]'}`}>
                                     {step > 1 ? (
-                                        <Icon name="material-symbols:check" className="text-white text-lg" />
+                                        <Icon name="material-symbols:check" className="text-white text-base 2xl:text-lg" />
                                     ) : (
-                                        step === 1 ? <Icon name="tabler:rotate-clockwise-2" className="text-white text-lg animate-spin" /> : <div className="w-2.5 h-2.5 rounded-full bg-[var(--gray-4)]" />
+                                        step === 1 ? <Icon name="tabler:rotate-clockwise-2" className="text-white text-base 2xl:text-lg animate-spin" /> : <div className="w-2 2xl:w-2.5 h-2 2xl:h-2.5 rounded-full bg-[var(--gray-4)]" />
                                     )}
                                 </div>
-                                <div className="pt-1 w-full">
-                                    <p className={`font-bold flex items-center transition-colors duration-300 ${step === 1 ? 'text-[var(--primary-9)]' : (step > 1 ? 'text-[var(--gray-12)]' : 'text-[var(--gray-10)]')}`}>
+                                <div className="pt-0.5 2xl:pt-1 w-full">
+                                    <p className={`font-bold text-sm 2xl:text-base flex items-center transition-colors duration-300 ${step === 1 ? 'text-[var(--primary-9)]' : (step > 1 ? 'text-[var(--gray-12)]' : 'text-[var(--gray-10)]')}`}>
                                         Extracting data
                                         {step === 1 && (
                                             <span className="ml-1 flex space-x-1 mt-1.5">
@@ -204,78 +191,72 @@ const ProcessingScreen = ({ file, stage, uploadStatus, onComplete }: ProcessingS
                                         )}
                                     </p>
                                     {step === 1 && (
-                                        <div className="mt-2 animate-fade-in-up">
-                                            <div className="flex items-center gap-3">
-                                                <div className="flex h-8 w-8 items-center justify-center rounded-full">
+                                        <div className="mt-1 2xl:mt-2 animate-fade-in-up">
+                                            <div className="flex items-center gap-2 2xl:gap-3">
+                                                <div className="flex h-6 w-6 2xl:h-8 2xl:w-8 items-center justify-center rounded-full">
                                                     <BarLoader />
                                                 </div>
                                                 <div className="flex-1">
-                                                    <p key={loadingTextIndex} className="text-sm font-medium text-[var(--gray-11)] animate-fade-in">
+                                                    <p key={loadingTextIndex} className="text-xs 2xl:text-sm font-medium text-[var(--gray-11)] animate-fade-in">
                                                         {loadingPhrases[loadingTextIndex]}
                                                     </p>
                                                 </div>
                                             </div>
                                         </div>
                                     )}
-                                    {step != 0 && step != 1 && (<p className="text-sm font-medium text-[var(--gray-11)] animate-fade-in">
+                                    {step != 0 && step != 1 && (<p className="text-xs 2xl:text-sm font-medium text-[var(--gray-11)] animate-fade-in">
                                         Extracted Successfully
                                     </p>)}
                                 </div>
                             </div>
 
                             {/* Step 3: Matching */}
-                            <div className={`relative flex items-start space-x-6 z-10 transition-opacity duration-300 opacity-100`}>
-                                <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ring-4 ring-white shadow-lg transition-all duration-300 ${step >= 2 ? (step > 2 ? 'bg-[var(--green-9)] shadow-[var(--green-9)]/20' : 'bg-[var(--primary-9)] shadow-[var(--primary-9)]/30') : 'bg-white border-2 border-[var(--gray-4)]'}`}>
+                            <div className={`relative flex items-start space-x-4 2xl:space-x-6 z-10 transition-opacity duration-300 opacity-100`}>
+                                <div className={`flex-shrink-0 w-7 h-7 2xl:w-8 2xl:h-8 rounded-full flex items-center justify-center ring-4 ring-white shadow-lg transition-all duration-300 ${step >= 2 ? (step > 2 ? 'bg-[var(--green-9)] shadow-[var(--green-9)]/20' : 'bg-[var(--primary-9)] shadow-[var(--primary-9)]/30') : 'bg-white border-2 border-[var(--gray-4)]'}`}>
                                     {step > 2 ? (
-                                        <Icon name="material-symbols:check" className="text-white text-lg" />
+                                        <Icon name="material-symbols:check" className="text-white text-base 2xl:text-lg" />
                                     ) : (
-                                        step === 2 ? <Icon name="tabler:rotate-clockwise-2" className="text-white text-lg animate-spin" /> : <div className="w-2.5 h-2.5 rounded-full bg-[var(--gray-4)]" />
+                                        step === 2 ? <Icon name="tabler:rotate-clockwise-2" className="text-white text-base 2xl:text-lg animate-spin" /> : <div className="w-2 2xl:w-2.5 h-2 2xl:h-2.5 rounded-full bg-[var(--gray-4)]" />
                                     )}
                                 </div>
-                                <div className="pt-1">
-                                    <p className={`font-bold transition-colors duration-300 ${step === 2 ? 'text-[var(--primary-9)]' : (step > 2 ? 'text-[var(--gray-12)]' : 'text-[var(--gray-10)]')}`}>Matching PO details...</p>
-                                    <p className="text-sm text-[var(--gray-9)] mt-1">Cross-referencing with ERP records.</p>
+                                <div className="pt-0.5 2xl:pt-1">
+                                    <p className={`font-bold text-sm 2xl:text-base transition-colors duration-300 ${step === 2 ? 'text-[var(--primary-9)]' : (step > 2 ? 'text-[var(--gray-12)]' : 'text-[var(--gray-10)]')}`}>Matching PO details...</p>
+                                    <p className="text-xs 2xl:text-sm text-[var(--gray-9)] mt-0.5 2xl:mt-1">Cross-referencing with ERP records.</p>
                                 </div>
                             </div>
 
                             {/* Step 4: Policy */}
-                            <div className={`relative flex items-start space-x-6 z-10 transition-opacity duration-300 opacity-100`}>
-                                <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ring-4 ring-white shadow-lg transition-all duration-300 ${step >= 3 ? 'bg-[var(--green-9)] shadow-[var(--green-9)]/20' : 'bg-white border-2 border-[var(--gray-4)]'}`}>
+                            <div className={`relative flex items-start space-x-4 2xl:space-x-6 z-10 transition-opacity duration-300 opacity-100`}>
+                                <div className={`flex-shrink-0 w-7 h-7 2xl:w-8 2xl:h-8 rounded-full flex items-center justify-center ring-4 ring-white shadow-lg transition-all duration-300 ${step >= 3 ? 'bg-[var(--green-9)] shadow-[var(--green-9)]/20' : 'bg-white border-2 border-[var(--gray-4)]'}`}>
                                     {step >= 3 ? (
-                                        <Icon name="material-symbols:check" className="text-white text-lg" />
+                                        <Icon name="material-symbols:check" className="text-white text-base 2xl:text-lg" />
                                     ) : (
-                                        <div className="w-2.5 h-2.5 rounded-full bg-[var(--gray-4)]" />
+                                        <div className="w-2 2xl:w-2.5 h-2 2xl:h-2.5 rounded-full bg-[var(--gray-4)]" />
                                     )}
                                 </div>
-                                <div className="pt-1">
-                                    <p className={`font-bold transition-colors duration-300 ${step === 3 ? 'text-[var(--green-11)]' : 'text-[var(--gray-10)]'}`}>Policy Compliance Check</p>
-                                    <p className="text-sm text-[var(--gray-9)] mt-1">Validating against guidelines.</p>
+                                <div className="pt-0.5 2xl:pt-1">
+                                    <p className={`font-bold text-sm 2xl:text-base transition-colors duration-300 ${step === 3 ? 'text-[var(--green-11)]' : 'text-[var(--gray-10)]'}`}>Policy Compliance Check</p>
+                                    <p className="text-xs 2xl:text-sm text-[var(--gray-9)] mt-0.5 2xl:mt-1">Validating against guidelines.</p>
                                 </div>
                             </div>
                         </div>
 
                         {/* Insight / Alert Card */}
-                        <div className={`rounded-xl p-4 mt-6 text-white shadow-xl relative overflow-hidden group shrink-0 transition-all duration-500 ease-in-out ${showLongWaitMessage ? 'bg-[var(--blue-9)] shadow-[var(--blue-9)]/20' : 'bg-gradient-to-br from-[var(--primary-9)] to-[var(--violet-9)] shadow-[var(--primary-9)]/20'}`}>
+                        <div className={`rounded-xl p-3 2xl:p-4 mt-3 2xl:mt-6 text-white shadow-xl relative overflow-hidden group shrink-0 transition-all duration-500 ease-in-out ${showLongWaitMessage ? 'bg-[var(--blue-9)] shadow-[var(--blue-9)]/20' : 'bg-gradient-to-br from-[var(--primary-9)] to-[var(--violet-9)] shadow-[var(--primary-9)]/20'}`}>
 
                             {showLongWaitMessage ? (
                                 // Long Wait Message View
                                 <div className="animate-fade-in relative z-10">
                                     <div className="absolute -right-4 -top-4 opacity-10 rotate-12">
-                                        <Icon name="material-symbols:timer-rounded" className="text-8xl" />
+                                        <Icon name="material-symbols:timer-rounded" className="text-6xl 2xl:text-8xl" />
                                     </div>
                                     <div className="flex items-start gap-3">
-                                        <Icon name="material-symbols:info-rounded" className="text-2xl shrink-0 mt-0.5" />
+                                        <Icon name="material-symbols:info-rounded" className="text-xl 2xl:text-2xl shrink-0 mt-0.5" />
                                         <div>
-                                            <h3 className="font-bold mb-1">Taking longer than usual</h3>
-                                            <p className="text-sm text-white/90 leading-relaxed">
+                                            <h3 className="font-bold text-sm 2xl:text-base mb-1">Taking longer than usual</h3>
+                                            <p className="text-xs 2xl:text-sm text-white/90 leading-relaxed">
                                                 You can navigate away. The process will continue in the background. We'll notify you when it's done.
                                             </p>
-                                            {/* <button
-                                                onClick={() => setShowLongWaitMessage(false)}
-                                                className="mt-3 text-xs bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-lg transition-colors font-medium backdrop-blur-sm"
-                                            >
-                                                Dismiss
-                                            </button> */}
                                         </div>
                                     </div>
                                 </div>
@@ -283,13 +264,13 @@ const ProcessingScreen = ({ file, stage, uploadStatus, onComplete }: ProcessingS
                                 // Normal Insight View
                                 <div className="animate-fade-in">
                                     <div className="absolute -right-4 -top-4 opacity-20 group-hover:scale-110 transition-transform duration-700">
-                                        <Icon name="material-symbols:receipt-long" className="text-8xl" />
+                                        <Icon name="material-symbols:receipt-long" className="text-6xl 2xl:text-8xl" />
                                     </div>
-                                    <h3 className="font-bold mb-2 flex items-center">
-                                        <Icon name="material-symbols:smart-toy" className="text-md mr-2" />
+                                    <h3 className="font-bold text-sm 2xl:text-base mb-1 2xl:mb-2 flex items-center">
+                                        <Icon name="material-symbols:smart-toy" className="text-sm 2xl:text-md mr-2" />
                                         AP Agent Insight
                                     </h3>
-                                    <p className="text-sm text-white/80 leading-relaxed">
+                                    <p className="text-xs 2xl:text-sm text-white/80 leading-relaxed">
                                         The AP Agent is autonomously cross-referencing invoice line items with purchase orders to validate amounts.
                                     </p>
                                 </div>
