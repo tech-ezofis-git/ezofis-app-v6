@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { generateDummySummary } from '@/pages/requests/utils/dummyData'
 import SummaryBadge from '@/components/common/SummaryBadge'
 import Icon from '@/components/base/icon/Icon'
@@ -178,7 +178,7 @@ const GridView = <TData,>({
             const hasHeader = group.groupValue && group.groupId !== 'root'
             const groupItems = group.items || []
             const groupId = group.groupId || gIdx
-            const row = table.getRow(String(groupId))
+            const row = groupId === 'root' ? null : table.getRow(String(groupId))
             const isCollapsed = row ? !row.getIsExpanded() : false
 
             if (groupItems.length === 0) return null
