@@ -34,7 +34,7 @@ import FileUploadCell from './components/FileUploadCell'
 
 
 const LINK_TEXT =
-    'transition-colors cursor-pointer font-medium underline hover:text-gray-13'
+    'transition-colors cursor-pointer font-medium underline hover:text-gray-13 text-14'
 
 const wrap = (content: React.ReactNode) => (
     <WrapOnHoverCell value={content} />

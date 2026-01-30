@@ -196,7 +196,7 @@ const GridView = <TData,>({
                         <Icon name="tabler:folders" className="size-5" />
                       </div>
                       <div className="flex flex-col">
-                        <h2 className="text-sm font-bold text-[var(--gray-13)] tracking-tight">
+                        <h2 className="text-14 font-bold text-[var(--gray-13)] tracking-tight">
                           {group.groupValue}
                         </h2>
                         <span className="text-10 text-[var(--gray-10)] uppercase font-semibold">
@@ -283,7 +283,7 @@ const GridView = <TData,>({
 
                                   <div className="flex flex-col gap-1 min-w-0">
                                     <div className="flex items-center gap-2">
-                                      <h3 className="truncate text-15 font-semibold text-[var(--gray-13)]">
+                                      <h3 className="truncate text-14 font-semibold text-[var(--gray-13)]">
                                         {requestNo}
                                       </h3>
                                       {row?.isDuplicateInvoice && <RequestStatusBadge status="Duplicated" />}

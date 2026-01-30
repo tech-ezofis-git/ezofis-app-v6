@@ -120,7 +120,7 @@ const DataTable = <TData,>({
                                 )}
                               />
                               <Icon name="tabler:folders" className="size-4 text-[var(--primary-9)]" />
-                              <span className="text-13 font-bold text-[var(--gray-13)]">
+                              <span className="text-14 font-bold text-[var(--gray-13)]">
                                 {(row.original as any).group}
                               </span>
                             </div>
