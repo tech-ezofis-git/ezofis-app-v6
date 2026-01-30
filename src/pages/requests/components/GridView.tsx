@@ -174,7 +174,7 @@ const GridView = <TData,>({
           <p className="mt-4 text-[var(--gray-11)] font-medium">No requests found</p>
         </motion.div>
       ) : (
-        <div className="flex flex-col gap-8 px-2 pb-6">
+        <div className="flex flex-col gap-2 px-2 pb-6">
           {data.map((group: any, gIdx: number) => {
             const hasHeader = group.groupValue && group.groupId !== 'root'
             const groupItems = group.items || []
@@ -235,7 +235,7 @@ const GridView = <TData,>({
                         variants={listVariants as any}
                         initial="hidden"
                         animate="show"
-                        className="flex flex-col gap-3 pt-1"
+                        className="flex flex-col gap-3 pt-1 pb-6"
                       >
                         {groupItems.map((row: any, index: number) => {
                           const rowId = row?.id || row?.processId || `item-${gIdx}-${index}`
