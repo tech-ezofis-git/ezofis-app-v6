@@ -1,6 +1,7 @@
 import React from 'react'
 // import CloseButton from '@/components/base/button/CloseButton'
 import IconButton from '@/components/base/button/IconButton'
+import Indicator from '@/components/base/Indicator'
 // import Divider from '@/components/base/Divider'
 import OverlayHeaderWrapper from '@/components/base/overlay/OverlayHeaderWrapper'
 // import Title from '@/components/base/Title'
@@ -25,6 +26,8 @@ interface HeaderProps {
   setRightView: (view: 'analysis' | 'comments' | 'attachments') => void
   hideActions?: boolean
   showApprove?: boolean
+  attachmentCount?: number
+  commentsCount?: number
 }
 
 const Header: React.FC<HeaderProps> = ({
@@ -38,7 +41,9 @@ const Header: React.FC<HeaderProps> = ({
   rightView,
   setRightView,
   hideActions,
-  showApprove = true
+  showApprove = true,
+  attachmentCount = 0,
+  commentsCount = 0
 }) => {
   // Store UI state
   // const isMaximized = requestStore((state) => state.isMaximized)
@@ -104,27 +109,31 @@ const Header: React.FC<HeaderProps> = ({
         {/* Comments & Attachments - Separate Premium Buttons */}
         <div className="flex items-center gap-2">
           <Tooltip content="Comments">
-            <button
-              onClick={() => setRightView(rightView === 'comments' ? 'analysis' : 'comments')}
-              className={`flex cursor-pointer items-center justify-center size-9 rounded-full transition-all border ${rightView === 'comments'
-                ? 'bg-[var(--blue-1)] text-[var(--blue-9)] border-[var(--blue-3)] shadow-sm'
-                : 'bg-transparent text-[var(--gray-10)] border-transparent hover:bg-[var(--gray-2)] hover:text-[var(--gray-12)]'
-                }`}
-            >
-              <Icon name="tabler:message-circle" className="size-5" />
-            </button>
+            <Indicator disabled={!commentsCount} offset={8} className="z-10">
+              <button
+                onClick={() => setRightView(rightView === 'comments' ? 'analysis' : 'comments')}
+                className={`relative flex cursor-pointer items-center justify-center size-9 rounded-full transition-all border ${rightView === 'comments'
+                  ? 'bg-[var(--blue-1)] text-[var(--blue-9)] border-[var(--blue-3)] shadow-sm'
+                  : 'bg-transparent text-[var(--gray-10)] border-transparent hover:bg-[var(--gray-2)] hover:text-[var(--gray-12)]'
+                  }`}
+              >
+                <Icon name="tabler:message-circle" className="size-5" />
+              </button>
+            </Indicator>
           </Tooltip>
 
           <Tooltip content="Attachments" >
-            <button
-              onClick={() => setRightView(rightView === 'attachments' ? 'analysis' : 'attachments')}
-              className={`flex cursor-pointer items-center justify-center size-9 rounded-full transition-all border ${rightView === 'attachments'
-                ? 'bg-[var(--blue-1)] text-[var(--blue-9)] border-[var(--blue-3)] shadow-sm'
-                : 'bg-transparent text-[var(--gray-10)] border-transparent hover:bg-[var(--gray-2)] hover:text-[var(--gray-12)]'
-                }`}
-            >
-              <Icon name="tabler:paperclip" className="size-5 !cursor-pointer" />
-            </button>
+            <Indicator disabled={!attachmentCount} offset={8} className="z-10">
+              <button
+                onClick={() => setRightView(rightView === 'attachments' ? 'analysis' : 'attachments')}
+                className={`relative flex cursor-pointer items-center justify-center size-9 rounded-full transition-all border ${rightView === 'attachments'
+                  ? 'bg-[var(--blue-1)] text-[var(--blue-9)] border-[var(--blue-3)] shadow-sm'
+                  : 'bg-transparent text-[var(--gray-10)] border-transparent hover:bg-[var(--gray-2)] hover:text-[var(--gray-12)]'
+                  }`}
+              >
+                <Icon name="tabler:paperclip" className="size-5 !cursor-pointer" />
+              </button>
+            </Indicator>
           </Tooltip>
         </div>
 

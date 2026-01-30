@@ -193,7 +193,7 @@ const FileUpload = ({ onRequestCreated, onClose }: { onRequestCreated?: () => vo
                     setFileId(data?.fileId);
                     setFileData(validFiles[0]);
                     setUploadStatus('success');
-                    showToast({ message: "File uploaded successfully", variant: "success" });
+                    // showToast({ message: "File uploaded successfully", variant: "success" });
                     // No timeout needed here, logic above handles next step
                 }
                 if (error) {

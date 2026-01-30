@@ -156,6 +156,8 @@ const Request = ({
           setRightView={setRightView}
           hideActions={hideActions}
           showApprove={requestListTab === 'Inbox'}
+          attachmentCount={selectedItem?.attachmentCount || 0}
+          commentsCount={selectedItem?.commentsCount || 0}
         />
 
         {/* <div className="border-b border-gray-3 bg-surface">
