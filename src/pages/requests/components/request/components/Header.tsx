@@ -54,28 +54,18 @@ const Header: React.FC<HeaderProps> = ({
     <OverlayHeaderWrapper className='justify-between gap-4'>
 
       {/* Left Side Group: Request Number + Navigation Buttons */}
-      <div className='flex items-center gap-3 bg-white p-0 '>
+      <div className='flex items-center gap-2 bg-white p-0 '>
         <IconButton
           color='gray'
           icon='tabler:arrow-left'
           variant='ghost'
-          // disabled={!onPrev || isLoading}
           onClick={onBack}
           className="cursor-pointer"
-          size="sm" // Optional: makes buttons slightly smaller if needed
+          size="sm"
         />
-        {/* Dynamic Request Number */}
-        <div className='text-15/9 font-semibold text-gray-13'>
 
-          {isLoading ? (
-            <span className="animate-pulse rounded bg-gray-200 px-2 text-transparent">REQ-Loading</span>
-          ) : (
-            requestNo || 'REQ - ...'
-          )}
-        </div>
-
-        {/* Navigation Buttons - Placed right next to REQ */}
-        <div className='flex items-center border-l border-gray-3 pl-2'>
+        {/* Navigation & Title Group */}
+        <div className="flex items-center gap-0.5">
           <Tooltip content='Previous' openDelay={300}>
             <IconButton
               color='gray'
@@ -84,9 +74,19 @@ const Header: React.FC<HeaderProps> = ({
               disabled={!onPrev || isLoading}
               onClick={onPrev}
               className="cursor-pointer"
-              size="sm" // Optional: makes buttons slightly smaller if needed
+              size="sm"
             />
           </Tooltip>
+
+          {/* Dynamic Request Number */}
+          <div className='text-15/9 font-semibold text-gray-13 px-1 text-center min-w-[80px]'>
+            {isLoading ? (
+              <span className="animate-pulse rounded bg-gray-200 px-2 text-transparent">REQ-Loading</span>
+            ) : (
+              requestNo || 'REQ - ...'
+            )}
+          </div>
+
           <Tooltip content='Next' openDelay={500}>
             <IconButton
               color='gray'
@@ -98,42 +98,45 @@ const Header: React.FC<HeaderProps> = ({
             />
           </Tooltip>
         </div>
-
       </div>
 
       {/* Right Side Group: Comments/Attachments + Approve */}
-      <div className='flex items-center gap-3 mb-2'>
+      <div className='flex items-center pt-2 gap-3 mb-2'>
 
         {/* Comments & Attachments Toggles */}
-        {/* Comments & Attachments Toggles - Premium Segmented Look */}
-        {/* Comments & Attachments - Separate Premium Buttons */}
         <div className="flex items-center gap-2">
           <Tooltip content="Comments">
-            <Indicator disabled={!commentsCount} offset={8} className="z-10">
-              <button
-                onClick={() => setRightView(rightView === 'comments' ? 'analysis' : 'comments')}
-                className={`relative flex cursor-pointer items-center justify-center size-9 rounded-full transition-all border ${rightView === 'comments'
-                  ? 'bg-[var(--blue-1)] text-[var(--blue-9)] border-[var(--blue-3)] shadow-sm'
-                  : 'bg-transparent text-[var(--gray-10)] border-transparent hover:bg-[var(--gray-2)] hover:text-[var(--gray-12)]'
-                  }`}
-              >
-                <Icon name="tabler:message-circle" className="size-5" />
-              </button>
-            </Indicator>
+            <button
+              onClick={() => setRightView(rightView === 'comments' ? 'analysis' : 'comments')}
+              className={`relative flex cursor-pointer items-center justify-center size-9 rounded-full transition-all border overflow-visible ${rightView === 'comments'
+                ? 'bg-[var(--blue-1)] text-[var(--blue-9)] border-[var(--blue-3)] shadow-sm'
+                : 'bg-transparent text-[var(--gray-10)] border-transparent hover:bg-[var(--gray-2)] hover:text-[var(--gray-12)]'
+                }`}
+            >
+              <Icon name="tabler:message-circle" className="size-5" />
+              {commentsCount > 0 && (
+                <div className="absolute -top-1 -right-1 z-50 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--red-9)] px-1 text-[10px] font-bold text-white ring-2 ring-white">
+                  {commentsCount}
+                </div>
+              )}
+            </button>
           </Tooltip>
 
           <Tooltip content="Attachments" >
-            <Indicator disabled={!attachmentCount} offset={8} className="z-10">
-              <button
-                onClick={() => setRightView(rightView === 'attachments' ? 'analysis' : 'attachments')}
-                className={`relative flex cursor-pointer items-center justify-center size-9 rounded-full transition-all border ${rightView === 'attachments'
-                  ? 'bg-[var(--blue-1)] text-[var(--blue-9)] border-[var(--blue-3)] shadow-sm'
-                  : 'bg-transparent text-[var(--gray-10)] border-transparent hover:bg-[var(--gray-2)] hover:text-[var(--gray-12)]'
-                  }`}
-              >
-                <Icon name="tabler:paperclip" className="size-5 !cursor-pointer" />
-              </button>
-            </Indicator>
+            <button
+              onClick={() => setRightView(rightView === 'attachments' ? 'analysis' : 'attachments')}
+              className={`relative flex cursor-pointer items-center justify-center size-9 rounded-full transition-all border overflow-visible ${rightView === 'attachments'
+                ? 'bg-[var(--blue-1)] text-[var(--blue-9)] border-[var(--blue-3)] shadow-sm'
+                : 'bg-transparent text-[var(--gray-10)] border-transparent hover:bg-[var(--gray-2)] hover:text-[var(--gray-12)]'
+                }`}
+            >
+              <Icon name="tabler:paperclip" className="size-5 !cursor-pointer" />
+              {attachmentCount > 0 && (
+                <div className="absolute -top-1 -right-1 z-50 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--red-9)] px-1 text-[10px] font-bold text-white ring-2 ring-white">
+                  {attachmentCount}
+                </div>
+              )}
+            </button>
           </Tooltip>
         </div>
 
