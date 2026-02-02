@@ -7,9 +7,10 @@ interface ProcessingScreenProps {
     stage: string
     uploadStatus: 'idle' | 'uploading' | 'success' | 'error'
     onComplete: () => void
+    onRedirect?: () => void
 }
 
-const ProcessingScreen = ({ file, stage, uploadStatus, onComplete }: ProcessingScreenProps) => {
+const ProcessingScreen = ({ file, stage, uploadStatus, onComplete, onRedirect }: ProcessingScreenProps) => {
     const [step, setStep] = useState(0)
     const [fileUrl, setFileUrl] = useState<string | null>(null)
     const [loadingTextIndex, setLoadingTextIndex] = useState(0)
@@ -93,6 +94,15 @@ const ProcessingScreen = ({ file, stage, uploadStatus, onComplete }: ProcessingS
             return () => clearTimeout(timer);
         }
     }, [step, targetStep, onComplete, uploadStatus]);
+
+    useEffect(() => {
+        if (showLongWaitMessage && onRedirect) {
+            const timer = setTimeout(() => {
+                onRedirect();
+            }, 5000);
+            return () => clearTimeout(timer);
+        }
+    }, [showLongWaitMessage, onRedirect]);
 
     // Handle closing the alert automatically or manually isn't needed if we move it to the insight card
 
@@ -255,9 +265,15 @@ const ProcessingScreen = ({ file, stage, uploadStatus, onComplete }: ProcessingS
                                         <div>
                                             <h3 className="font-bold text-sm 2xl:text-base mb-1">Taking longer than usual</h3>
                                             <p className="text-xs 2xl:text-sm text-white/90 leading-relaxed">
-                                                You can navigate away. The process will continue in the background. We'll notify you when it's done.
+                                                Redirecting you to the inbox. The process will continue in the background.
                                             </p>
                                         </div>
+                                    </div>
+                                    <div className="h-1 w-full bg-white/30 mt-3 rounded-full overflow-hidden">
+                                        <div
+                                            className="h-full bg-white transition-all duration-[5000ms] ease-linear"
+                                            style={{ width: `${showLongWaitMessage ? 100 : 0}%` }}
+                                        />
                                     </div>
                                 </div>
                             ) : (

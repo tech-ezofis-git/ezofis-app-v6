@@ -221,6 +221,13 @@ const GridView = <TData,>({
                           className="hidden md:flex items-center gap-3 2xl:gap-6 px-3 py-1 2xl:px-5 2xl:py-1.5 rounded-full bg-[var(--surface-raised)] border border-[var(--gray-3)] shadow-sm hover:shadow-md transition-shadow"
                         >
                           <div className="flex items-baseline gap-2">
+                            <span className="text-[10px] uppercase font-bold text-[var(--gray-9)] tracking-wider">Supplier</span>
+                            <span className="text-xs 2xl:text-14 font-bold text-[var(--gray-12)] truncate max-w-[150px]">
+                              {groupItems[0]?.vendor || groupItems[0]?.original?.vendor || 'ABC Vendors'}
+                            </span>
+                          </div>
+                          <div className="w-px h-3 bg-[var(--gray-3)]"></div>
+                          <div className="flex items-baseline gap-2">
                             <span className="text-[10px] uppercase font-bold text-[var(--gray-9)] tracking-wider">PO Amount</span>
                             <span className="text-xs 2xl:text-14 font-bold text-[var(--gray-12)]">$50,000.00</span>
                           </div>
@@ -237,7 +244,7 @@ const GridView = <TData,>({
                           <div className="w-px h-3 bg-[var(--gray-3)]"></div>
 
                           {/* Duplicate Alert */}
-                          <div className="flex items-center gap-2 -my-1">
+                          <div className="flex items-center gap-2 px-2 py-0.5 2xl:px-3  rounded-lg -my-1">
                             <span className=" 2xl:inline text-[10px] uppercase font-bold text-[var(--red-9)]">Duplicates : {groupItems.filter((i: any) => i.isDuplicateInvoice).length}</span>
                             <div className="hidden flex items-center gap-1">
                               <Icon name="tabler:alert-triangle" className="text-[var(--red-9)] size-3.5" />

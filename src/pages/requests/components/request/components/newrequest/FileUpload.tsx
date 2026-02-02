@@ -290,6 +290,10 @@ const FileUpload = ({ onRequestCreated, onClose }: { onRequestCreated?: () => vo
                     stage={currentStage}
                     uploadStatus={uploadStatus}
                     onComplete={() => setStep('summary')}
+                    onRedirect={() => {
+                        requestStore.getState().setRequestListTab('Sent');
+                        if (onClose) onClose();
+                    }}
                 />
             </AnimateFadeIn>
         )

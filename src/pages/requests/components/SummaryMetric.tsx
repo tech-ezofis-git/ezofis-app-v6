@@ -7,9 +7,10 @@ import cn from '@/utils/cn'
 interface SummaryMetricProps {
     metric: any
     onFileSelect?: (file: any) => void
+    children?: React.ReactNode
 }
 
-const SummaryMetric: React.FC<SummaryMetricProps> = ({ metric, onFileSelect }) => {
+const SummaryMetric: React.FC<SummaryMetricProps> = ({ metric, onFileSelect, children }) => {
     const triggerRef = useRef<HTMLDivElement>(null)
     const [position, setPosition] = useState<'top' | 'bottom'>('top')
 
@@ -32,17 +33,21 @@ const SummaryMetric: React.FC<SummaryMetricProps> = ({ metric, onFileSelect }) =
             className="relative group/icon"
             onMouseEnter={handleMouseEnter}
         >
+            {/* Trigger (Badge or Custom) */}
             <motion.div
-                whileHover={{ scale: 1.05, y: -1 }}
+                whileHover={{ y: -1 }}
                 transition={{ type: 'spring', stiffness: 400, damping: 20 }}
             >
-                <SummaryBadge
-                    label={metric.badgeText}
-                    icon={metric.icon}
-                    theme={metric.theme}
-                    variant="outline"
-                    className="cursor-default w-[160px]"
-                />
+                {/* Allow custom trigger (e.g. compact chip) or default to SummaryBadge */}
+                {children ? children : (
+                    <SummaryBadge
+                        label={metric.badgeText}
+                        icon={metric.icon}
+                        theme={metric.theme}
+                        variant="outline"
+                        className="cursor-default"
+                    />
+                )}
             </motion.div>
 
             <AnimatePresence>
