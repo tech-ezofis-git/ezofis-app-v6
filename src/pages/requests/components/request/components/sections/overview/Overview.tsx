@@ -154,6 +154,7 @@ const Overview = ({
   // State for Right View Mode and Selected File
   // const [rightView, setRightView] = useState<RightViewMode>('analysis'); // Now props
   const [selectedFile, setSelectedFile] = useState<any>(null); // Use appropriate type
+  const [isFileLoading, setIsFileLoading] = useState(false);
 
   // Fetch attachments to set default
   const { data: attachmentData } = useAttachments(workflowId, processId, true);
@@ -557,6 +558,7 @@ const Overview = ({
                       processId={processId}
                       type={2}
                       actions=""
+                      customLoading={isFileLoading}
                     // Adjusting FileSheet style to fit container if needed, assuming it fits parent
                     />
                   </div>
@@ -1137,8 +1139,12 @@ const Overview = ({
                           processId={processId}
                           enabled={true}
                           onSelect={(file) => {
-                            setSelectedFile(file);
-                            // No action needed to close, it's 3rd column now
+                            if (selectedFile?.id === file.id) {
+                              setIsFileLoading(true);
+                              setTimeout(() => setIsFileLoading(false), 500);
+                            } else {
+                              setSelectedFile(file);
+                            }
                           }}
                           onClose={() => setRightView('analysis')}
                         />

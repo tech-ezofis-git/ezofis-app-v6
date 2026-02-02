@@ -199,14 +199,14 @@ export default function Attachments({
                             <div
                                 key={file.id}
                                 onClick={() => onSelect?.(file)}
-                                className="group flex items-center gap-3 p-3 rounded-xl border border-[var(--gray-3)] bg-white hover:border-[var(--blue-4)] hover:shadow-sm transition-all cursor-pointer"
+                                className="group flex items-start gap-3 p-3 rounded-xl border border-[var(--gray-3)] bg-white hover:border-[var(--blue-4)] hover:shadow-sm transition-all cursor-pointer"
                             >
                                 <div className={cn("flex size-10 shrink-0 items-center justify-center rounded-lg", styles.wrap)}>
                                     <Icon name={icon} className="size-5" />
                                 </div>
 
                                 <div className="flex-1 min-w-0">
-                                    <div className="text-13 font-semibold text-[var(--gray-12)] truncate" title={file.name}>
+                                    <div className="text-13 font-semibold text-[var(--gray-12)] break-all line-clamp-1 group-hover:line-clamp-none transition-all hover:underline" title={file.name}>
                                         {file.name || 'Untitled'}
                                     </div>
                                     <div className="flex items-center gap-2 mt-0.5">

@@ -6,17 +6,16 @@ import cn from '@/utils/cn'
 
 interface SummaryMetricProps {
     metric: any
+    onFileSelect?: (file: any) => void
 }
 
-const SummaryMetric: React.FC<SummaryMetricProps> = ({ metric }) => {
+const SummaryMetric: React.FC<SummaryMetricProps> = ({ metric, onFileSelect }) => {
     const triggerRef = useRef<HTMLDivElement>(null)
     const [position, setPosition] = useState<'top' | 'bottom'>('top')
 
     const handleMouseEnter = () => {
         if (triggerRef.current) {
             const rect = triggerRef.current.getBoundingClientRect()
-            // If the element is too close to the top (e.g. < 250px), show below
-            // Adjust threshold based on card height (~200px) + header height
             if (rect.top < 250) {
                 setPosition('bottom')
             } else {
@@ -24,6 +23,8 @@ const SummaryMetric: React.FC<SummaryMetricProps> = ({ metric }) => {
             }
         }
     }
+
+    const isAttachments = metric.label === 'Attachments'
 
     return (
         <div
@@ -52,10 +53,11 @@ const SummaryMetric: React.FC<SummaryMetricProps> = ({ metric }) => {
                         : "top-full mt-3 -translate-y-2 group-hover/icon:translate-y-0"
                 )}>
                     <motion.div
+                        layout
                         initial={{ opacity: 0, y: position === 'top' ? 10 : -10, scale: 0.95 }}
                         whileInView={{ opacity: 1, y: 0, scale: 1 }}
                         transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                        className="bg-white rounded-xl border border-[var(--gray-3)] shadow-xl p-4 min-w-[260px] overflow-hidden relative"
+                        className="bg-white rounded-xl border border-[var(--gray-3)] shadow-xl p-4 min-w-[260px] overflow-hidden relative pointer-events-auto"
                     >
                         {/* Background decoration */}
                         <div className={cn(
@@ -92,42 +94,65 @@ const SummaryMetric: React.FC<SummaryMetricProps> = ({ metric }) => {
                             </div>
                         </div>
 
-                        <div className="mb-4 relative z-10">
-                            <h4 className="text-24 font-bold text-[var(--gray-12)] tracking-tight">
-                                {metric.value}
-                            </h4>
-                        </div>
-
-                        <div className="flex items-end justify-between relative z-10">
-                            <div className="flex flex-col gap-1.5 flex-1 mr-4">
-                                <div className="flex items-center gap-1.5 text-[var(--gray-10)]">
-                                    <span className="text-12 font-medium">{metric.description}</span>
-                                    {metric.theme === 'red' && <Icon name="tabler:exclamation-circle" className="size-4 text-[var(--red-9)]" />}
-                                </div>
-                                <div className="h-1.5 w-full bg-[var(--gray-3)] rounded-full overflow-hidden">
+                        {/* Content */}
+                        {isAttachments && metric.files ? (
+                            <div className="flex flex-col gap-2 relative z-10">
+                                {metric.files.map((file: any, index: number) => (
                                     <motion.div
-                                        initial={{ width: 0 }}
-                                        animate={{ width: `${metric.pct}%` }}
-                                        transition={{ duration: 0.5, delay: 0.1 }}
-                                        className={cn(
-                                            'h-full rounded-full',
-                                            metric.theme === 'green' ? 'bg-[var(--green-9)]' :
-                                                metric.theme === 'orange' ? 'bg-[var(--orange-9)]' :
-                                                    metric.theme === 'red' ? 'bg-[var(--red-9)]' :
-                                                        'bg-[var(--blue-9)]'
-                                        )}
-                                    />
-                                </div>
+                                        key={index}
+                                        layout
+                                        whileHover={{ x: 4 }}
+                                        className="group/file flex items-start gap-2 cursor-pointer text-[var(--primary-9)] hover:underline"
+                                        onClick={(e) => {
+                                            e.stopPropagation()
+                                            onFileSelect?.(file)
+                                        }}
+                                    >
+                                        <Icon name="tabler:file" className="size-4 opacity-70 mt-0.5 shrink-0" />
+                                        <span className="text-12 font-medium break-all line-clamp-1 group-hover/file:line-clamp-none transition-all">{file.name}</span>
+                                    </motion.div>
+                                ))}
                             </div>
+                        ) : (
+                            <>
+                                <div className="mb-4 relative z-10">
+                                    <h4 className="text-24 font-bold text-[var(--gray-12)] tracking-tight">
+                                        {metric.value}
+                                    </h4>
+                                </div>
 
-                            {/* Animated Arrow */}
-                            <motion.div
-                                whileHover={{ x: 3 }}
-                                className="flex items-center justify-center p-1.5 rounded-full bg-[var(--gray-2)] text-[var(--gray-10)]"
-                            >
-                                <Icon name="tabler:chevron-right" className="size-4" />
-                            </motion.div>
-                        </div>
+                                <div className="flex items-end justify-between relative z-10">
+                                    <div className="flex flex-col gap-1.5 flex-1 mr-4">
+                                        <div className="flex items-center gap-1.5 text-[var(--gray-10)]">
+                                            <span className="text-12 font-medium">{metric.description}</span>
+                                            {metric.theme === 'red' && <Icon name="tabler:exclamation-circle" className="size-4 text-[var(--red-9)]" />}
+                                        </div>
+                                        <div className="h-1.5 w-full bg-[var(--gray-3)] rounded-full overflow-hidden">
+                                            <motion.div
+                                                initial={{ width: 0 }}
+                                                animate={{ width: `${metric.pct}%` }}
+                                                transition={{ duration: 0.5, delay: 0.1 }}
+                                                className={cn(
+                                                    'h-full rounded-full',
+                                                    metric.theme === 'green' ? 'bg-[var(--green-9)]' :
+                                                        metric.theme === 'orange' ? 'bg-[var(--orange-9)]' :
+                                                            metric.theme === 'red' ? 'bg-[var(--red-9)]' :
+                                                                'bg-[var(--blue-9)]'
+                                                )}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Animated Arrow */}
+                                    <motion.div
+                                        whileHover={{ x: 3 }}
+                                        className="flex items-center justify-center p-1.5 rounded-full bg-[var(--gray-2)] text-[var(--gray-10)]"
+                                    >
+                                        <Icon name="tabler:chevron-right" className="size-4" />
+                                    </motion.div>
+                                </div>
+                            </>
+                        )}
                     </motion.div>
                 </div>
             </AnimatePresence>

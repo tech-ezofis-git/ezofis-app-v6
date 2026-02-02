@@ -18,6 +18,12 @@
 @import './mantine.css';
 @import '@xyflow/react/dist/style.css';
 
+@layer base {
+  button {
+    cursor: pointer;
+  }
+}
+
 @custom-variant dark (&:where([data-mantine-color-scheme=dark], [data-mantine-color-scheme=dark] *));
 
 :root,

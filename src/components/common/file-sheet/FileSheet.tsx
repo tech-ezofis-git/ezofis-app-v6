@@ -165,9 +165,13 @@ const FileSheet: React.FC<any> = ({
     apiBaseUrl,
     type = DEFAULT_TYPE,
     actions = '',
+
     fullScreen = false,  // Default to false for inline view
+    customLoading = false, // New capability: allow parent to force loading state
 }) => {
     const [isLoading, setIsLoading] = useState(true);
+    const showLoader = isLoading || customLoading;
+
     const baseUrl = useMemo(() => resolveApiBaseUrl(apiBaseUrl), [apiBaseUrl])
 
     const src = useMemo(() => {
@@ -229,7 +233,7 @@ const FileSheet: React.FC<any> = ({
                         <>
                             {/* Loading State */}
                             <AnimatePresence>
-                                {isLoading && (
+                                {showLoader && (
                                     <motion.div
                                         initial={{ opacity: 1 }}
                                         exit={{ opacity: 0 }}
@@ -279,7 +283,7 @@ const FileSheet: React.FC<any> = ({
         <div className="relative w-full h-full ">
 
             <AnimatePresence>
-                {isLoading && (
+                {showLoader && (
                     <motion.div
                         initial={{ opacity: 1 }}
                         exit={{ opacity: 0 }}

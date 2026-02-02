@@ -166,19 +166,10 @@ const InboxList: React.FC<InboxListProps> = ({
     }, [data, searchState, filteredFlatRows])
 
     // ✅ Handle default expansion: Expand ALL groups when data or grouping changes
+    // ✅ Handle default expansion: Default to COLLAPSED
     React.useEffect(() => {
-        if (filteredData && filteredData.length > 0) {
-            const allGroupIds = filteredData
-                .filter((g: any) => g.groupId && g.groupId !== 'root')
-                .reduce((acc: any, g: any) => {
-                    acc[g.groupId] = true
-                    return acc
-                }, {})
-
-            setExpandState(allGroupIds)
-        } else {
-            setExpandState({})
-        }
+        // User requested default collapsed state
+        setExpandState({})
     }, [filteredData, groupState, setExpandState])
 
     // ✅ Create table with filtered data
