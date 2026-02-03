@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react'
 import Icon from '@/components/base/icon/Icon'
 import BarLoader from '@/components/base/BarLoader'
+import { Worker, Viewer } from '@react-pdf-viewer/core';
+import '@react-pdf-viewer/core/lib/styles/index.css';
+import fileApi from '@/api/file/file';
 
 interface ProcessingScreenProps {
     file: File | null
@@ -8,14 +11,18 @@ interface ProcessingScreenProps {
     uploadStatus: 'idle' | 'uploading' | 'success' | 'error'
     onComplete: () => void
     onRedirect?: () => void
+    fileId: number | null
+    repositoryId: number | null
 }
 
-const ProcessingScreen = ({ file, stage, uploadStatus, onComplete, onRedirect }: ProcessingScreenProps) => {
+const ProcessingScreen = ({ file, stage, uploadStatus, onComplete, onRedirect, fileId, repositoryId }: ProcessingScreenProps) => {
     const [step, setStep] = useState(0)
-    const [fileUrl, setFileUrl] = useState<string | null>(null)
     const [loadingTextIndex, setLoadingTextIndex] = useState(0)
     const [showLongWaitMessage, setShowLongWaitMessage] = useState(false);
-    // const [dotCount, setDotCount] = useState(0);
+
+    // File Preview State
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const [fileType, setFileType] = useState<string | null>(null);
 
     const loadingPhrases = [
         "Extracting text layers",
@@ -25,13 +32,46 @@ const ProcessingScreen = ({ file, stage, uploadStatus, onComplete, onRedirect }:
         "Analyzing spatial layout"
     ]
 
+    // Fetch File Data from API
     useEffect(() => {
         if (file) {
             const url = URL.createObjectURL(file)
-            setFileUrl(url)
+            setPreviewUrl(url)
+            setFileType(file.type)
             return () => URL.revokeObjectURL(url)
         }
-    }, [file])
+        const fetchFile = async () => {
+            if (fileId && repositoryId) {
+                // Hardcoded parameters
+                const tId = 2;
+                const uId = "2";
+                const type = 1; // 2 for file
+
+                try {
+                    const response = await fileApi.viewBinary(tId, uId, repositoryId, fileId, type);
+
+                    if (response?.file) {
+                        const base64 = response.file;
+                        let mimeType = 'application/pdf'; // Default fallback
+
+                        // Simple signature detection
+                        if (base64.startsWith('/9j/')) mimeType = 'image/jpeg';
+                        else if (base64.startsWith('iVBORw0KGgo')) mimeType = 'image/png';
+                        else if (base64.startsWith('JVBERi0')) mimeType = 'application/pdf';
+
+                        const url = `data:${base64}`;
+                        console.log(url, "this is the url for the file preview")
+                        setPreviewUrl(url);
+                        setFileType(mimeType);
+                    }
+                } catch (error) {
+                    console.error("Error fetching file:", error);
+                }
+            }
+        };
+
+        fetchFile();
+    }, [fileId, repositoryId, file]);
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -113,23 +153,38 @@ const ProcessingScreen = ({ file, stage, uploadStatus, onComplete, onRedirect }:
                 {/* Left Column: File Preview */}
                 <section className="col-span-8 flex flex-col h-full min-h-0">
                     <div className="flex-grow relative bg-[var(--gray-3)] rounded-xl overflow-hidden border border-[var(--gray-6)] shadow-inner flex justify-center items-center h-full">
-                        <div className="absolute inset-0 z-0">
-                            {file?.type === 'application/pdf' ? (
-                                fileUrl ? (
-                                    <iframe
-                                        src={`${fileUrl}#view=FitH`}
-                                        className="w-full h-full border-none opacity-50 blur-[2px]"
-                                        title="PDF Preview"
+                        <div className="absolute inset-0 z-0 h-full w-full overflow-hidden">
+                            {previewUrl ? (
+                                fileType === 'application/pdf' ? (
+                                    <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js">
+                                        <div className="h-full w-full overflow-y-auto no-scrollbar">
+                                            <Viewer
+                                                fileUrl={previewUrl}
+                                            />
+                                        </div>
+                                    </Worker>
+                                ) : (
+                                    <img
+                                        src={previewUrl}
+                                        alt="Document Preview"
+                                        className="w-full h-full object-contain"
                                     />
-                                ) : null
+                                )
                             ) : (
-                                <img src={fileUrl || ''} alt="Preview" className="w-full h-full object-contain opacity-60 blur-sm scale-105" />
+                                <div className="flex flex-col items-center justify-center h-full text-[var(--gray-8)]">
+                                    <BarLoader />
+                                    <p className="mt-4 text-sm font-medium">Loading document...</p>
+                                </div>
                             )}
                         </div>
 
-                        {/* Scanning effect wrapper */}
-                        <div className="absolute inset-0 z-10 backdrop-blur-[1px] bg-white/10"></div>
-                        <div className="absolute inset-x-0 h-1 scanning-bar animate-scan z-20 pointer-events-none shadow-[0_0_15px_rgba(var(--primary-9),0.5)]"></div>
+                        {/* Scanning effect wrapper - Conditional visibility */}
+                        {!previewUrl && (
+                            <>
+                                <div className="absolute inset-0 z-10 backdrop-blur-[1px] bg-white/10"></div>
+                                <div className="absolute inset-x-0 h-1 scanning-bar animate-scan z-20 pointer-events-none shadow-[0_0_15px_rgba(var(--primary-9),0.5)]"></div>
+                            </>
+                        )}
                     </div>
                 </section>
 

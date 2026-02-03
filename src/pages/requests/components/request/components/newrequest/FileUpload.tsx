@@ -289,6 +289,8 @@ const FileUpload = ({ onRequestCreated, onClose }: { onRequestCreated?: () => vo
                     file={uploadedFile}
                     stage={currentStage}
                     uploadStatus={uploadStatus}
+                    fileId={fileId ? Number(fileId) : null}
+                    repositoryId={rawWorkflow?.repositoryId ? Number(rawWorkflow.repositoryId) : null}
                     onComplete={() => setStep('summary')}
                     onRedirect={() => {
                         requestStore.getState().setRequestListTab('Sent');
