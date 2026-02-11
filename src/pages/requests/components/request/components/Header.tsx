@@ -1,7 +1,7 @@
 import React from 'react'
 // import CloseButton from '@/components/base/button/CloseButton'
 import IconButton from '@/components/base/button/IconButton'
-import Indicator from '@/components/base/Indicator'
+// import Indicator from '@/components/base/Indicator'
 // import Divider from '@/components/base/Divider'
 import OverlayHeaderWrapper from '@/components/base/overlay/OverlayHeaderWrapper'
 // import Title from '@/components/base/Title'
