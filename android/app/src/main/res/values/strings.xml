@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">EZAP Agent</string>
+    <string name="title_activity_main">EZAP Agent</string>
+    <string name="package_name">com.ezofis.app</string>
+    <string name="custom_url_scheme">com.ezofis.app</string>
+</resources>
