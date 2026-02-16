@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'motion/react'
+// Removed unused imports
 import IconButton from '@/components/base/button/IconButton'
 import IconAI from '@/components/base/icon/IconAI'
 import OverlayHeader from '@/components/base/overlay/OverlayHeader'
@@ -13,44 +13,38 @@ const AskAI = () => {
   const open = useAskAIStore((state) => state.open)
   const close = useAskAIStore((state) => state.close)
 
-  return (
-    <>
+  if (!isOpen) {
+    return (
       <IconButton
-        className='fixed right-6 bottom-6 size-10 rounded-full'
+        className='fixed right-6 bottom-6 size-10 rounded-full z-50 shadow-lg hover:scale-110 active:scale-95 transition-all bg-accent-primary text-white border-0'
         icon='mingcute:ai-fill'
         iconClass='size-5'
         onClick={open}
       />
+    )
+  }
 
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            animate={{ opacity: 1, scale: 1 }}
-            className='fixed right-2 bottom-2 z-200 w-96 origin-bottom-right rounded border border-gray-3 bg-surface shadow-md'
-            exit={{ opacity: 0, scale: 0 }}
-            initial={{ opacity: 0, scale: 0 }}
-            transition={{ bounce: 0, duration: 0.2 }}
-          >
-            <OverlayHeader className='pr-2' title='Ask AI' onClose={close} />
-            <ScrollArea height='calc(100dvh - 120px)'>
-              <div className='flex h-full flex-col justify-end'>
-                <div className='px-4'>
-                  <IconAI className='size-9' />
-                  <Title
-                    className='mt-6'
-                    description='Here are a few things I can do, or ask me anything!'
-                    level={1}
-                    title='How can I assist you?'
-                  />
-                </div>
-                <Suggestions />
-                <PromptInput />
-              </div>
-            </ScrollArea>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </>
+  return (
+    <div className='flex h-full flex-col bg-surface-primary'>
+      <OverlayHeader className='pr-2' title='Ask AI' onClose={close} />
+      <ScrollArea className='flex-1'>
+        <div className='flex h-full flex-col justify-end min-h-[calc(100dvh-64px)]'>
+          <div className='px-4'>
+            <IconAI className='size-9' />
+            <Title
+              className='mt-6'
+              description='Here are a few things I can do, or ask me anything!'
+              level={1}
+              title='How can I assist you?'
+            />
+          </div>
+          <Suggestions />
+          <div className='mt-auto'>
+            <PromptInput />
+          </div>
+        </div>
+      </ScrollArea>
+    </div>
   )
 }
 
