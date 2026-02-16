@@ -2,6 +2,7 @@
 import { create } from 'zustand'
 import type { User } from '@/schemas/user'
 import { getFromLocalStorage } from '@/utils/local-storage'
+import posthog from "posthog-js";
 
 export type Identity = {
   token: string
@@ -104,7 +105,16 @@ const authUserStore = create<Store>()((set) => {
         isAuthenticated: !!identity,
       })),
 
-    setSession: (session) => set(() => ({ session })),
+    setSession: (session) => {
+      if (session?.id) {
+        posthog.identify(session.id, {
+          email: session.email,
+          name: session.firstName,
+          tenantId: session.tenantId,
+        })
+      }
+      set(() => ({ session }))
+    },
     setProfileMenu: (menus) => set(() => ({ profileMenus: menus })),
     setDefaultView: (view) => set(() => ({ defaultView: view })),
     setPreferenceId: (id) => set(() => ({ preferenceId: id })),

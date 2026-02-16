@@ -17,11 +17,13 @@ import { Route as StoriesIndexRouteImport } from './routes/stories/index'
 import { Route as OnBoardingIndexRouteImport } from './routes/on-boarding/index'
 import { Route as FormBuilderIndexRouteImport } from './routes/form-builder/index'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
+import { Route as StoriesTypographyRouteImport } from './routes/stories/typography'
 import { Route as StoriesTooltipRouteImport } from './routes/stories/tooltip'
 import { Route as StoriesToastRouteImport } from './routes/stories/toast'
 import { Route as StoriesTabsRouteImport } from './routes/stories/tabs'
 import { Route as StoriesTableRouteImport } from './routes/stories/table'
 import { Route as StoriesStepperRouteImport } from './routes/stories/stepper'
+import { Route as StoriesSkeletonRouteImport } from './routes/stories/skeleton'
 import { Route as StoriesScrollAreaRouteImport } from './routes/stories/scroll-area'
 import { Route as StoriesPopoverRouteImport } from './routes/stories/popover'
 import { Route as StoriesPaginationRouteImport } from './routes/stories/pagination'
@@ -52,10 +54,14 @@ import { Route as StoriesEmptyStateRouteImport } from './routes/stories/empty-st
 import { Route as StoriesDrawerRouteImport } from './routes/stories/drawer'
 import { Route as StoriesDividerRouteImport } from './routes/stories/divider'
 import { Route as StoriesDataTableRouteImport } from './routes/stories/data-table'
+import { Route as StoriesColorsRouteImport } from './routes/stories/colors'
+import { Route as StoriesCardRouteImport } from './routes/stories/card'
 import { Route as StoriesButtonRouteImport } from './routes/stories/button'
+import { Route as StoriesBarLoaderRouteImport } from './routes/stories/bar-loader'
 import { Route as StoriesBadgeRouteImport } from './routes/stories/badge'
 import { Route as StoriesAvatarRouteImport } from './routes/stories/avatar'
 import { Route as StoriesAiIconRouteImport } from './routes/stories/ai-icon'
+import { Route as StoriesAccordionRouteImport } from './routes/stories/accordion'
 import { Route as StoriesAlertRouteImport } from './routes/stories/Alert'
 import { Route as OnBoardingTokenRouteImport } from './routes/on-boarding/$token'
 import { Route as FormBuilderFormIdRouteImport } from './routes/form-builder/$formId'
@@ -113,6 +119,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppRouteRoute,
 } as any)
+const StoriesTypographyRoute = StoriesTypographyRouteImport.update({
+  id: '/typography',
+  path: '/typography',
+  getParentRoute: () => StoriesRouteRoute,
+} as any)
 const StoriesTooltipRoute = StoriesTooltipRouteImport.update({
   id: '/tooltip',
   path: '/tooltip',
@@ -136,6 +147,11 @@ const StoriesTableRoute = StoriesTableRouteImport.update({
 const StoriesStepperRoute = StoriesStepperRouteImport.update({
   id: '/stepper',
   path: '/stepper',
+  getParentRoute: () => StoriesRouteRoute,
+} as any)
+const StoriesSkeletonRoute = StoriesSkeletonRouteImport.update({
+  id: '/skeleton',
+  path: '/skeleton',
   getParentRoute: () => StoriesRouteRoute,
 } as any)
 const StoriesScrollAreaRoute = StoriesScrollAreaRouteImport.update({
@@ -291,9 +307,24 @@ const StoriesDataTableRoute = StoriesDataTableRouteImport.update({
   path: '/data-table',
   getParentRoute: () => StoriesRouteRoute,
 } as any)
+const StoriesColorsRoute = StoriesColorsRouteImport.update({
+  id: '/colors',
+  path: '/colors',
+  getParentRoute: () => StoriesRouteRoute,
+} as any)
+const StoriesCardRoute = StoriesCardRouteImport.update({
+  id: '/card',
+  path: '/card',
+  getParentRoute: () => StoriesRouteRoute,
+} as any)
 const StoriesButtonRoute = StoriesButtonRouteImport.update({
   id: '/button',
   path: '/button',
+  getParentRoute: () => StoriesRouteRoute,
+} as any)
+const StoriesBarLoaderRoute = StoriesBarLoaderRouteImport.update({
+  id: '/bar-loader',
+  path: '/bar-loader',
   getParentRoute: () => StoriesRouteRoute,
 } as any)
 const StoriesBadgeRoute = StoriesBadgeRouteImport.update({
@@ -309,6 +340,11 @@ const StoriesAvatarRoute = StoriesAvatarRouteImport.update({
 const StoriesAiIconRoute = StoriesAiIconRouteImport.update({
   id: '/ai-icon',
   path: '/ai-icon',
+  getParentRoute: () => StoriesRouteRoute,
+} as any)
+const StoriesAccordionRoute = StoriesAccordionRouteImport.update({
+  id: '/accordion',
+  path: '/accordion',
   getParentRoute: () => StoriesRouteRoute,
 } as any)
 const StoriesAlertRoute = StoriesAlertRouteImport.update({
@@ -419,10 +455,14 @@ export interface FileRoutesByFullPath {
   '/form-builder/$formId': typeof FormBuilderFormIdRoute
   '/on-boarding/$token': typeof OnBoardingTokenRoute
   '/stories/Alert': typeof StoriesAlertRoute
+  '/stories/accordion': typeof StoriesAccordionRoute
   '/stories/ai-icon': typeof StoriesAiIconRoute
   '/stories/avatar': typeof StoriesAvatarRoute
   '/stories/badge': typeof StoriesBadgeRoute
+  '/stories/bar-loader': typeof StoriesBarLoaderRoute
   '/stories/button': typeof StoriesButtonRoute
+  '/stories/card': typeof StoriesCardRoute
+  '/stories/colors': typeof StoriesColorsRoute
   '/stories/data-table': typeof StoriesDataTableRoute
   '/stories/divider': typeof StoriesDividerRoute
   '/stories/drawer': typeof StoriesDrawerRoute
@@ -453,11 +493,13 @@ export interface FileRoutesByFullPath {
   '/stories/pagination': typeof StoriesPaginationRoute
   '/stories/popover': typeof StoriesPopoverRoute
   '/stories/scroll-area': typeof StoriesScrollAreaRoute
+  '/stories/skeleton': typeof StoriesSkeletonRoute
   '/stories/stepper': typeof StoriesStepperRoute
   '/stories/table': typeof StoriesTableRoute
   '/stories/tabs': typeof StoriesTabsRoute
   '/stories/toast': typeof StoriesToastRoute
   '/stories/tooltip': typeof StoriesTooltipRoute
+  '/stories/typography': typeof StoriesTypographyRoute
   '/': typeof AppIndexRoute
   '/form-builder': typeof FormBuilderIndexRoute
   '/on-boarding': typeof OnBoardingIndexRoute
@@ -483,10 +525,14 @@ export interface FileRoutesByTo {
   '/form-builder/$formId': typeof FormBuilderFormIdRoute
   '/on-boarding/$token': typeof OnBoardingTokenRoute
   '/stories/Alert': typeof StoriesAlertRoute
+  '/stories/accordion': typeof StoriesAccordionRoute
   '/stories/ai-icon': typeof StoriesAiIconRoute
   '/stories/avatar': typeof StoriesAvatarRoute
   '/stories/badge': typeof StoriesBadgeRoute
+  '/stories/bar-loader': typeof StoriesBarLoaderRoute
   '/stories/button': typeof StoriesButtonRoute
+  '/stories/card': typeof StoriesCardRoute
+  '/stories/colors': typeof StoriesColorsRoute
   '/stories/data-table': typeof StoriesDataTableRoute
   '/stories/divider': typeof StoriesDividerRoute
   '/stories/drawer': typeof StoriesDrawerRoute
@@ -517,11 +563,13 @@ export interface FileRoutesByTo {
   '/stories/pagination': typeof StoriesPaginationRoute
   '/stories/popover': typeof StoriesPopoverRoute
   '/stories/scroll-area': typeof StoriesScrollAreaRoute
+  '/stories/skeleton': typeof StoriesSkeletonRoute
   '/stories/stepper': typeof StoriesStepperRoute
   '/stories/table': typeof StoriesTableRoute
   '/stories/tabs': typeof StoriesTabsRoute
   '/stories/toast': typeof StoriesToastRoute
   '/stories/tooltip': typeof StoriesTooltipRoute
+  '/stories/typography': typeof StoriesTypographyRoute
   '/': typeof AppIndexRoute
   '/form-builder': typeof FormBuilderIndexRoute
   '/on-boarding': typeof OnBoardingIndexRoute
@@ -551,10 +599,14 @@ export interface FileRoutesById {
   '/form-builder/$formId': typeof FormBuilderFormIdRoute
   '/on-boarding/$token': typeof OnBoardingTokenRoute
   '/stories/Alert': typeof StoriesAlertRoute
+  '/stories/accordion': typeof StoriesAccordionRoute
   '/stories/ai-icon': typeof StoriesAiIconRoute
   '/stories/avatar': typeof StoriesAvatarRoute
   '/stories/badge': typeof StoriesBadgeRoute
+  '/stories/bar-loader': typeof StoriesBarLoaderRoute
   '/stories/button': typeof StoriesButtonRoute
+  '/stories/card': typeof StoriesCardRoute
+  '/stories/colors': typeof StoriesColorsRoute
   '/stories/data-table': typeof StoriesDataTableRoute
   '/stories/divider': typeof StoriesDividerRoute
   '/stories/drawer': typeof StoriesDrawerRoute
@@ -585,11 +637,13 @@ export interface FileRoutesById {
   '/stories/pagination': typeof StoriesPaginationRoute
   '/stories/popover': typeof StoriesPopoverRoute
   '/stories/scroll-area': typeof StoriesScrollAreaRoute
+  '/stories/skeleton': typeof StoriesSkeletonRoute
   '/stories/stepper': typeof StoriesStepperRoute
   '/stories/table': typeof StoriesTableRoute
   '/stories/tabs': typeof StoriesTabsRoute
   '/stories/toast': typeof StoriesToastRoute
   '/stories/tooltip': typeof StoriesTooltipRoute
+  '/stories/typography': typeof StoriesTypographyRoute
   '/_app/': typeof AppIndexRoute
   '/form-builder/': typeof FormBuilderIndexRoute
   '/on-boarding/': typeof OnBoardingIndexRoute
@@ -618,10 +672,14 @@ export interface FileRouteTypes {
     | '/form-builder/$formId'
     | '/on-boarding/$token'
     | '/stories/Alert'
+    | '/stories/accordion'
     | '/stories/ai-icon'
     | '/stories/avatar'
     | '/stories/badge'
+    | '/stories/bar-loader'
     | '/stories/button'
+    | '/stories/card'
+    | '/stories/colors'
     | '/stories/data-table'
     | '/stories/divider'
     | '/stories/drawer'
@@ -652,11 +710,13 @@ export interface FileRouteTypes {
     | '/stories/pagination'
     | '/stories/popover'
     | '/stories/scroll-area'
+    | '/stories/skeleton'
     | '/stories/stepper'
     | '/stories/table'
     | '/stories/tabs'
     | '/stories/toast'
     | '/stories/tooltip'
+    | '/stories/typography'
     | '/'
     | '/form-builder'
     | '/on-boarding'
@@ -682,10 +742,14 @@ export interface FileRouteTypes {
     | '/form-builder/$formId'
     | '/on-boarding/$token'
     | '/stories/Alert'
+    | '/stories/accordion'
     | '/stories/ai-icon'
     | '/stories/avatar'
     | '/stories/badge'
+    | '/stories/bar-loader'
     | '/stories/button'
+    | '/stories/card'
+    | '/stories/colors'
     | '/stories/data-table'
     | '/stories/divider'
     | '/stories/drawer'
@@ -716,11 +780,13 @@ export interface FileRouteTypes {
     | '/stories/pagination'
     | '/stories/popover'
     | '/stories/scroll-area'
+    | '/stories/skeleton'
     | '/stories/stepper'
     | '/stories/table'
     | '/stories/tabs'
     | '/stories/toast'
     | '/stories/tooltip'
+    | '/stories/typography'
     | '/'
     | '/form-builder'
     | '/on-boarding'
@@ -749,10 +815,14 @@ export interface FileRouteTypes {
     | '/form-builder/$formId'
     | '/on-boarding/$token'
     | '/stories/Alert'
+    | '/stories/accordion'
     | '/stories/ai-icon'
     | '/stories/avatar'
     | '/stories/badge'
+    | '/stories/bar-loader'
     | '/stories/button'
+    | '/stories/card'
+    | '/stories/colors'
     | '/stories/data-table'
     | '/stories/divider'
     | '/stories/drawer'
@@ -783,11 +853,13 @@ export interface FileRouteTypes {
     | '/stories/pagination'
     | '/stories/popover'
     | '/stories/scroll-area'
+    | '/stories/skeleton'
     | '/stories/stepper'
     | '/stories/table'
     | '/stories/tabs'
     | '/stories/toast'
     | '/stories/tooltip'
+    | '/stories/typography'
     | '/_app/'
     | '/form-builder/'
     | '/on-boarding/'
@@ -868,6 +940,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRouteRoute
     }
+    '/stories/typography': {
+      id: '/stories/typography'
+      path: '/typography'
+      fullPath: '/stories/typography'
+      preLoaderRoute: typeof StoriesTypographyRouteImport
+      parentRoute: typeof StoriesRouteRoute
+    }
     '/stories/tooltip': {
       id: '/stories/tooltip'
       path: '/tooltip'
@@ -901,6 +980,13 @@ declare module '@tanstack/react-router' {
       path: '/stepper'
       fullPath: '/stories/stepper'
       preLoaderRoute: typeof StoriesStepperRouteImport
+      parentRoute: typeof StoriesRouteRoute
+    }
+    '/stories/skeleton': {
+      id: '/stories/skeleton'
+      path: '/skeleton'
+      fullPath: '/stories/skeleton'
+      preLoaderRoute: typeof StoriesSkeletonRouteImport
       parentRoute: typeof StoriesRouteRoute
     }
     '/stories/scroll-area': {
@@ -1113,11 +1199,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StoriesDataTableRouteImport
       parentRoute: typeof StoriesRouteRoute
     }
+    '/stories/colors': {
+      id: '/stories/colors'
+      path: '/colors'
+      fullPath: '/stories/colors'
+      preLoaderRoute: typeof StoriesColorsRouteImport
+      parentRoute: typeof StoriesRouteRoute
+    }
+    '/stories/card': {
+      id: '/stories/card'
+      path: '/card'
+      fullPath: '/stories/card'
+      preLoaderRoute: typeof StoriesCardRouteImport
+      parentRoute: typeof StoriesRouteRoute
+    }
     '/stories/button': {
       id: '/stories/button'
       path: '/button'
       fullPath: '/stories/button'
       preLoaderRoute: typeof StoriesButtonRouteImport
+      parentRoute: typeof StoriesRouteRoute
+    }
+    '/stories/bar-loader': {
+      id: '/stories/bar-loader'
+      path: '/bar-loader'
+      fullPath: '/stories/bar-loader'
+      preLoaderRoute: typeof StoriesBarLoaderRouteImport
       parentRoute: typeof StoriesRouteRoute
     }
     '/stories/badge': {
@@ -1139,6 +1246,13 @@ declare module '@tanstack/react-router' {
       path: '/ai-icon'
       fullPath: '/stories/ai-icon'
       preLoaderRoute: typeof StoriesAiIconRouteImport
+      parentRoute: typeof StoriesRouteRoute
+    }
+    '/stories/accordion': {
+      id: '/stories/accordion'
+      path: '/accordion'
+      fullPath: '/stories/accordion'
+      preLoaderRoute: typeof StoriesAccordionRouteImport
       parentRoute: typeof StoriesRouteRoute
     }
     '/stories/Alert': {
@@ -1324,10 +1438,14 @@ const AuthRouteRouteWithChildren = AuthRouteRoute._addFileChildren(
 
 interface StoriesRouteRouteChildren {
   StoriesAlertRoute: typeof StoriesAlertRoute
+  StoriesAccordionRoute: typeof StoriesAccordionRoute
   StoriesAiIconRoute: typeof StoriesAiIconRoute
   StoriesAvatarRoute: typeof StoriesAvatarRoute
   StoriesBadgeRoute: typeof StoriesBadgeRoute
+  StoriesBarLoaderRoute: typeof StoriesBarLoaderRoute
   StoriesButtonRoute: typeof StoriesButtonRoute
+  StoriesCardRoute: typeof StoriesCardRoute
+  StoriesColorsRoute: typeof StoriesColorsRoute
   StoriesDataTableRoute: typeof StoriesDataTableRoute
   StoriesDividerRoute: typeof StoriesDividerRoute
   StoriesDrawerRoute: typeof StoriesDrawerRoute
@@ -1358,20 +1476,26 @@ interface StoriesRouteRouteChildren {
   StoriesPaginationRoute: typeof StoriesPaginationRoute
   StoriesPopoverRoute: typeof StoriesPopoverRoute
   StoriesScrollAreaRoute: typeof StoriesScrollAreaRoute
+  StoriesSkeletonRoute: typeof StoriesSkeletonRoute
   StoriesStepperRoute: typeof StoriesStepperRoute
   StoriesTableRoute: typeof StoriesTableRoute
   StoriesTabsRoute: typeof StoriesTabsRoute
   StoriesToastRoute: typeof StoriesToastRoute
   StoriesTooltipRoute: typeof StoriesTooltipRoute
+  StoriesTypographyRoute: typeof StoriesTypographyRoute
   StoriesIndexRoute: typeof StoriesIndexRoute
 }
 
 const StoriesRouteRouteChildren: StoriesRouteRouteChildren = {
   StoriesAlertRoute: StoriesAlertRoute,
+  StoriesAccordionRoute: StoriesAccordionRoute,
   StoriesAiIconRoute: StoriesAiIconRoute,
   StoriesAvatarRoute: StoriesAvatarRoute,
   StoriesBadgeRoute: StoriesBadgeRoute,
+  StoriesBarLoaderRoute: StoriesBarLoaderRoute,
   StoriesButtonRoute: StoriesButtonRoute,
+  StoriesCardRoute: StoriesCardRoute,
+  StoriesColorsRoute: StoriesColorsRoute,
   StoriesDataTableRoute: StoriesDataTableRoute,
   StoriesDividerRoute: StoriesDividerRoute,
   StoriesDrawerRoute: StoriesDrawerRoute,
@@ -1402,11 +1526,13 @@ const StoriesRouteRouteChildren: StoriesRouteRouteChildren = {
   StoriesPaginationRoute: StoriesPaginationRoute,
   StoriesPopoverRoute: StoriesPopoverRoute,
   StoriesScrollAreaRoute: StoriesScrollAreaRoute,
+  StoriesSkeletonRoute: StoriesSkeletonRoute,
   StoriesStepperRoute: StoriesStepperRoute,
   StoriesTableRoute: StoriesTableRoute,
   StoriesTabsRoute: StoriesTabsRoute,
   StoriesToastRoute: StoriesToastRoute,
   StoriesTooltipRoute: StoriesTooltipRoute,
+  StoriesTypographyRoute: StoriesTypographyRoute,
   StoriesIndexRoute: StoriesIndexRoute,
 }
 

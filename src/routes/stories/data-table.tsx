@@ -13,6 +13,8 @@ import MenuItem from '@/components/base/menu/MenuItem'
 import Pagination from '@/components/base/pagination/Pagination'
 import UserRoleBadge from '@/components/common/UserRoleBadge'
 import { formatDatetime } from '@/utils/dayjs'
+import StoryCode from './-components/StoryCode'
+import StorySubTitle from './-components/StorySubTitle'
 import StoryTitle from './-components/StoryTitle'
 
 export const Route = createFileRoute('/stories/data-table')({
@@ -130,25 +132,85 @@ function TableStory() {
   })
 
   return (
-    <div>
-      <StoryTitle>34. Data Table</StoryTitle>
-      <DataTable
-        isLoading={isPending}
-        isReLoading={isFetching || isRefetching}
-        pageSize={pageSize}
-        table={table}
-        onReload={refetch}
-      />
-      <Pagination
-        className='mt-6'
-        itemLabel='Users'
-        page={page}
-        pageSize={pageSize}
-        showPageNumbers={false}
-        totalItems={248}
-        onPageChange={setPage}
-        onPageSizeChange={setPageSize}
-      />
+    <div className='max-w-7xl p-6'>
+      <StoryTitle>Data Table</StoryTitle>
+      <p className='text-15 text-gray-11 mb-10'>
+        The Data Table is a powerful, high-performance component built for complex data orchestration. It supports advanced features like dynamic sorting, grouping, expansion, and custom cell rendering, all while integrated with a unified state management hook.
+      </p>
+
+      <p className='text-14 text-gray-11 mb-4'>Before using Data Table, import the core component and its essential hooks:</p>
+      <StoryCode>
+        {`import DataTable from '@/components/base/data-table/DataTable'
+import useDataTable from '@/components/base/data-table/hooks/useDataTable'
+import useDataTableState from '@/components/base/data-table/hooks/useDataTableState'`}
+      </StoryCode>
+
+      <div className='space-y-16'>
+        {/* Core Integration Section */}
+        <section>
+          <StorySubTitle>Hook Integration</StorySubTitle>
+          <p className='text-14 text-gray-11 mb-6'>
+            The <code>useDataTableState</code> hook manages UI states (sorting, grouping), which are then passed to your API call and finally to the <code>useDataTable</code> hook for rendering.
+          </p>
+          <StoryCode>
+            {`const state = useDataTableState({ initialVisibilityState })
+const { table } = useDataTable({ columns, rows, state })
+
+<DataTable isLoading={isLoading} table={table} onReload={refetch} />`}
+          </StoryCode>
+        </section>
+
+        {/* Live Demo Section */}
+        <section>
+          <StorySubTitle>Interactive Example</StorySubTitle>
+          <p className='text-14 text-gray-11 mb-4'>
+            A live demonstration showing server-side integration, custom badges, and action menus.
+          </p>
+          <div className='mt-8 border border-gray-3 rounded-xl overflow-hidden bg-white'>
+            <div className='p-4 border-b border-gray-3 bg-gray-1'>
+              <p className='text-13 font-medium text-gray-12'>User Management System</p>
+            </div>
+            <div className='overflow-x-auto'>
+              <DataTable
+                isLoading={isPending}
+                isReLoading={isFetching || isRefetching}
+                pageSize={pageSize}
+                table={table}
+                onReload={refetch}
+              />
+            </div>
+            <div className='p-4 border-t border-gray-3 bg-gray-1'>
+              <Pagination
+                itemLabel='Users'
+                page={page}
+                pageSize={pageSize}
+                showPageNumbers={false}
+                totalItems={248}
+                onPageChange={setPage}
+                onPageSizeChange={setPageSize}
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* Configuration Section */}
+        <section>
+          <StorySubTitle>Column Definition</StorySubTitle>
+          <p className='text-14 text-gray-11 mb-4'>
+            Columns are defined as an array of objects, allowing for flexible rendering and behavior mapping.
+          </p>
+          <StoryCode>
+            {`const columns: Column[] = [
+  { id: 'name', label: 'Name', size: 200 },
+  { 
+    id: 'role', 
+    label: 'Role', 
+    renderCell: (row) => <UserRoleBadge role={row.role} /> 
+  }
+]`}
+          </StoryCode>
+        </section>
+      </div>
     </div>
   )
 }

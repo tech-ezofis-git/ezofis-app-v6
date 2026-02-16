@@ -4,6 +4,7 @@ import type { Option } from '@/types/option'
 import { getUserOptionListQueryOptions } from '@/api/dummy/queries'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import InputSelectAsync from '@/components/base/inputs/InputSelectAsync'
+import StoryCode from './-components/StoryCode'
 import StorySubTitle from './-components/StorySubTitle'
 import StoryTitle from './-components/StoryTitle'
 
@@ -11,7 +12,7 @@ export const Route = createFileRoute('/stories/input-select')({
   component: RouteComponent,
 })
 
-const options1 = [
+const optionsDefault = [
   {
     disabled: false,
     id: 1,
@@ -125,7 +126,7 @@ const options2 = [
     name: 'Isabella Anderson',
   },
 ]
-const options3 = [
+const optionsWithDisabled = [
   {
     disabled: false,
     id: 1,
@@ -176,117 +177,179 @@ const options3 = [
     id: 10,
     name: 'Isabella Anderson',
   },
+];
+
+const optionsDefault1 = [
+  { id: 1, name: 'Emily Johnson' },
+  { id: 2, name: 'Michael Williams' },
+  { id: 3, name: 'Sophia Brown' },
+  { id: 4, name: 'James Davis' },
+]
+
+const optionsWithDescription = [
+  { id: 1, name: 'Emily Johnson', description: 'emily.j@example.com' },
+  { id: 2, name: 'Michael Williams', description: 'michael.w@example.com' },
+]
+
+const optionsWithDisabled1 = [
+  { id: 1, name: 'Active User' },
+  { id: 2, name: 'Suspended User', disabled: true },
 ]
 
 function RouteComponent() {
   const [value, setValue] = useState<Option | null>(null)
 
   return (
-    <div>
-      <StoryTitle>31. Input Select</StoryTitle>
+    <div className='max-w-4xl p-6'>
+      <StoryTitle>Input Select</StoryTitle>
+      <p className='text-15 text-gray-11 mb-10'>
+        The Select component provides a searchable and customizable dropdown for picking a single option from a list. It supports async loading, custom item rendering, and creation of new options.
+      </p>
+
+      <p className='text-14 text-gray-11 mb-4'>Before using InputSelect, import it from its location:</p>
+      <StoryCode>
+        {`import InputSelect from '@/components/base/inputs/InputSelect'`}
+      </StoryCode>
 
       <div className='space-y-16'>
-        <StorySubTitle>Default</StorySubTitle>
-        <InputSelect
-          className='max-w-80'
-          options={options1}
-          value={value}
-          onChange={setValue}
-        />
+        {/* Default Section */}
+        <section>
+          <StorySubTitle>Default Usage</StorySubTitle>
+          <p className='text-14 text-gray-11 mb-4'>
+            A standard searchable dropdown.
+          </p>
+          <StoryCode>
+            {`<InputSelect options={options} value={value} onChange={setValue} />`}
+          </StoryCode>
+          <div className='max-w-sm ml-1'>
+            <InputSelect options={optionsDefault} value={value} onChange={setValue} className='w-full' />
+          </div>
+        </section>
 
-        <StorySubTitle>Meta</StorySubTitle>
-        <InputSelect
-          className='max-w-80'
-          description='Lorem ipsum dolar sit amit'
-          label='Label'
-          options={options1}
-          placeholder='Placeholder'
-          tooltip='Lorem ipsum dolar sit amit'
-          value={value}
-          optional
-          required
-          onChange={setValue}
-        />
+        {/* Metadata Section */}
+        <section>
+          <StorySubTitle>Metadata (Label, Description, Tooltip)</StorySubTitle>
+          <p className='text-14 text-gray-11 mb-4'>
+            Configure headings and hints to guide the user:
+          </p>
+          <ul className='list-disc list-inside space-y-2 text-14 text-gray-11 mb-6 ml-2'>
+            <li><strong>Label:</strong> The title of the select field.</li>
+            <li><strong>Description:</strong> Contextual hint below the field.</li>
+            <li><strong>Tooltip:</strong> Detailed information on hover icon.</li>
+          </ul>
+          <StoryCode>
+            {`<InputSelect
+  label='Assignee'
+  description='Choose a team member to assign this task'
+  tooltip='Only members of the current workspace are shown'
+  placeholder='Search members...'
+  options={options}
+  value={value}
+  onChange={setValue}
+  required
+/>`}
+          </StoryCode>
+          <div className='max-w-sm ml-1'>
+            <InputSelect
+              label='Assignee'
+              description='Choose a team member to assign this task'
+              tooltip='Only members of the current workspace are shown'
+              placeholder='Search members...'
+              options={optionsDefault}
+              value={value}
+              onChange={setValue}
+              className='w-full'
+              required
+            />
+          </div>
+        </section>
 
-        <StorySubTitle>With Description</StorySubTitle>
-        <InputSelect
-          className='max-w-80'
-          options={options2}
-          value={value}
-          onChange={setValue}
-        />
+        {/* Features Section */}
+        <section>
+          <StorySubTitle>Advanced Features</StorySubTitle>
+          <p className='text-14 text-gray-11 mb-6'>
+            Additional functionality for complex selection needs:
+          </p>
+          <div className='grid grid-cols-1 md:grid-cols-2 gap-8'>
+            <div>
+              <p className='text-13 font-medium mb-3'>Item Descriptions</p>
+              <StoryCode>{"<InputSelect options={optionsWithDescription} />"}</StoryCode>
+              <div className='mt-4'>
+                <InputSelect options={optionsWithDescription} value={value}
+                  onChange={setValue} />
+              </div>
+            </div>
+            <div>
+              <p className='text-13 font-medium mb-3'>Clearable & Searchable</p>
+              <StoryCode>{"<InputSelect clearable searchable />"}</StoryCode>
+              <div className='mt-4'>
+                <InputSelect clearable searchable options={optionsDefault} value={value} onChange={setValue} />
+              </div>
+            </div>
+            <div>
+              <p className='text-13 font-medium mb-3'>Creatable Options</p>
+              <StoryCode>{"<InputSelect creatable />"}</StoryCode>
+              <div className='mt-4'>
+                <InputSelect creatable options={optionsDefault} value={value} onChange={setValue} />
+              </div>
+            </div>
+            <div>
+              <p className='text-13 font-medium mb-3'>With Disabled Options</p>
+              <StoryCode>{"<InputSelect options={optionsWithDisabled} />"}</StoryCode>
+              <div className='mt-4'>
+                <InputSelect options={optionsWithDisabled} value={value}
+                  onChange={setValue} />
+              </div>
+            </div>
+            <div>
+              <p className='text-13 font-medium mb-3'>Async Loading</p>
+              <p className='text-14 text-gray-11 mb-4'>
+                before using InputSelectAsync, import it from its location:
+              </p>
+              <StoryCode>{`import InputSelectAsync from '@/components/base/inputs/InputSelectAsync'`}</StoryCode>
+              <StoryCode>{"<InputSelectAsync getQueryOptions={...} />"}</StoryCode>
+              <div className='mt-4'>
+                <InputSelectAsync
+                  description='Loads data on scroll'
+                  value={value}
+                  getQueryOptions={getUserOptionListQueryOptions}
+                  onChange={setValue}
+                />
+              </div>
+            </div>
+          </div>
+        </section>
 
-        <StorySubTitle>With Disabled Options</StorySubTitle>
-        <InputSelect
-          className='max-w-80'
-          options={options3}
-          value={value}
-          onChange={setValue}
-        />
-
-        <StorySubTitle>Searchable</StorySubTitle>
-        <InputSelect
-          className='max-w-80'
-          options={options1}
-          value={value}
-          searchable
-          onChange={setValue}
-        />
-
-        <StorySubTitle>Creatable</StorySubTitle>
-        <InputSelect
-          className='max-w-80'
-          options={options1}
-          value={value}
-          creatable
-          onChange={setValue}
-        />
-
-        <StorySubTitle>Dynamic Options</StorySubTitle>
-        <InputSelectAsync
-          className='max-w-80'
-          description='Load more data on scroll'
-          value={value}
-          getQueryOptions={getUserOptionListQueryOptions}
-          onChange={setValue}
-        />
-
-        <StorySubTitle>Error</StorySubTitle>
-        <InputSelect
-          className='max-w-80'
-          error='Lorem ipsum dolar sit amit'
-          options={options1}
-          value={value}
-          onChange={setValue}
-        />
-
-        <StorySubTitle>Clearable</StorySubTitle>
-        <InputSelect
-          className='max-w-80'
-          label='Label'
-          options={options1}
-          value={value}
-          clearable
-          onChange={setValue}
-        />
-
-        <StorySubTitle>Read Only</StorySubTitle>
-        <InputSelect
-          className='max-w-80'
-          options={options1}
-          value={value}
-          readOnly
-          onChange={setValue}
-        />
-
-        <StorySubTitle>Disabled</StorySubTitle>
-        <InputSelect
-          className='max-w-80'
-          options={options1}
-          value={value}
-          disabled
-          onChange={setValue}
-        />
+        {/* States Section */}
+        <section>
+          <StorySubTitle>Interaction States</StorySubTitle>
+          <p className='text-14 text-gray-11 mb-6'>
+            Visual feedback for invalid inputs or restricted interaction:
+          </p>
+          <div className='grid grid-cols-1 md:grid-cols-2 gap-8'>
+            <div>
+              <p className='text-13 font-medium mb-3'>Error State</p>
+              <StoryCode>{"<InputSelect error='Invalid selection' />"}</StoryCode>
+              <div className='mt-4'>
+                <InputSelect error='Please select a valid user' options={optionsDefault} value={value} onChange={setValue} />
+              </div>
+            </div>
+            <div>
+              <p className='text-13 font-medium mb-3'>Disabled State</p>
+              <StoryCode>{"<InputSelect disabled />"}</StoryCode>
+              <div className='mt-4'>
+                <InputSelect disabled options={optionsDefault} value={value} onChange={() => { }} />
+              </div>
+            </div>
+            <div>
+              <p className='text-13 font-medium mb-3'>Read Only State</p>
+              <StoryCode>{"<InputSelect readOnly />"}</StoryCode>
+              <div className='mt-4'>
+                <InputSelect readOnly options={optionsDefault} value={optionsDefault[0]} onChange={() => { }} />
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
   )
