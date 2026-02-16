@@ -267,6 +267,15 @@
   --color-gray-a11: var(--gray-a11);
   --color-gray-a12: var(--gray-a12);
 
+  --color-surface-primary: var(--surface-primary);
+  --color-surface-secondary: var(--surface-secondary);
+
+  --color-accent-primary: var(--accent-primary);
+  --color-accent-soft: var(--accent-soft);
+
+  --color-error-main: var(--error-main);
+  --color-success-subtle: var(--success-subtle);
+
   --color-overlay: var(--overlay);
 
   --color-surface: var(--surface);

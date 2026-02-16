@@ -18,16 +18,16 @@ const Tabs = ({
   onChange,
 }: Props) => {
   const classNames = {
-    list: 'before:border-0 gap-6',
+    list: 'animate-in fade-in slide-in-from-left-4 duration-300 before:border-0 gap-6',
     tab: cn(
-      'group gap-2 px-0 text-13 font-medium text-gray-10 outline-0 transition-colors hover:border-transparent hover:bg-transparent hover:text-gray-12 focus-visible:bg-transparent focus-visible:text-gray-12 focus-visible:underline data-[active]:text-gray-13 data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
-      color === 'primary' && 'data-[active]:border-primary-9',
+      '!group !gap-2 !px-0 !text-13 !font-medium !text-gray-10 !outline-0 !transition-all !hover:border-transparent !hover:bg-transparent !hover:text-gray-12 !focus-visible:bg-transparent !focus-visible:text-gray-12 !focus-visible:underline !data-[active]:text-gray-13 !data-[disabled]:pointer-events-none !data-[disabled]:opacity-50 active:scale-95',
+      color === 'primary' && 'data-[active]:border-accent-primary',
       color === 'gray' && 'data-[active]:border-gray-11',
       color === 'secondary' && 'data-[active]:border-secondary-9',
       tabClassName,
     ),
     tabSection: cn(
-      'm-0 text-gray-9 group-hover:text-gray-10 group-data-[active]:text-gray-11',
+      'sm-0 text-gray-9 group-hover:text-gray-10 group-data-[active]:text-gray-11',
     ),
   }
 

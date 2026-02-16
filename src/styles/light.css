@@ -224,6 +224,15 @@
 
   --overlay: var(--gray-11);
 
+  --surface-primary: white;
+  --surface-secondary: var(--gray-2);
+
+  --accent-primary: var(--primary-9);
+  --accent-soft: var(--primary-3);
+
+  --error-main: var(--red-9);
+  --success-subtle: var(--green-3);
+
   --surface: white;
   --surface-raised: white;
   --surface-muted: var(--gray-2);

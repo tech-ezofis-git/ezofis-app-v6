@@ -1,51 +1,118 @@
-import Button from '@/components/base/button/Button'
-import IconButton from '@/components/base/button/IconButton'
-import Tab from '@/components/base/tabs/Tab'
-import Tabs from '@/components/base/tabs/Tabs'
-import useFieldListStore from '../../stores/useFieldListStore'
+import { ActionIcon, Button, Group, SegmentedControl, Switch, Box, TextInput } from '@mantine/core'
+import Icon from '@/components/base/icon/Icon'
+import { useFormStore } from '@/pages/form-builder/store/formStore'
 
-interface Props {
-  tab: string | null
+interface HeaderProps {
   setTab: (value: string | null) => void
 }
 
-const Header = ({ tab, setTab }: Props) => {
-  const toggleFieldList = useFieldListStore((state) => state.toggleFieldList)
+const Header = ({ setTab }: HeaderProps) => {
+  const {
+    name,
+    setName,
+    previewMode,
+    setPreviewMode,
+    hidePreview,
+    setHidePreview
+  } = useFormStore()
+
+  const handleSave = () => {
+    // As per user request: rename it as New Form once the user saves the form
+    setName('New Form')
+  }
 
   return (
-    <header className='flex h-13 flex-wrap items-center border-b border-gray-3 pr-6 pl-4'>
-      <div className='flex flex-1 items-center'>
-        <IconButton
-          color='gray'
-          icon='tabler:menu-3'
-          variant='ghost'
-          onClick={toggleFieldList}
-        />
-        <Button
-          className='-ml-1 text-15 font-semibold text-gray-13'
-          color='gray'
-          label='New Form'
-          variant='ghost'
-        />
-      </div>
+    <header className='sticky top-0 z-50 flex h-14 items-center justify-between border-b border-surface-secondary bg-surface-primary px-4 shadow-sm animate-in fade-in slide-in-from-top-4 duration-500'>
+      <Group gap="sm">
+        <ActionIcon
+          variant="ghost"
+          color="gray"
+          className="hover:bg-surface-secondary transition-all active:scale-90"
+          onClick={() => window.history.back()}
+        >
+          <Icon name="tabler:arrow-left" width={18} height={18} />
+        </ActionIcon>
 
-      <div className='flex flex-1 justify-center'>
-        <Tabs color='primary' value={tab} onChange={setTab}>
-          <Tab label='Build' value='Build' />
-          <Tab label='Publish' value='Publish' />
-          <Tab label='Settings' value='Settings' />
-        </Tabs>
-      </div>
+        <Box className="flex items-center gap-2 group">
+          <TextInput
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            variant="unstyled"
+            classNames={{
+              input: 'text-16 font-bold tracking-tight text-gray-13 p-0 h-auto min-w-[100px] hover:bg-gray-1 focus:bg-gray-1 px-2 rounded transition-colors'
+            }}
+          />
+          <ActionIcon
+            variant="subtle"
+            color="gray"
+            size="sm"
+            onClick={() => setTab('Settings')}
+            className="opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <Icon name="tabler:settings" width={16} height={16} />
+          </ActionIcon>
+        </Box>
+      </Group>
 
-      <div className='flex flex-1 items-center justify-end gap-2'>
-        <Button
-          color='gray'
-          icon='lucide:eye'
-          label='Preview'
-          variant='outline'
-        />
-        <Button icon='lucide:save' label='Save' />
-      </div>
+      <Group gap="md">
+        {!hidePreview && (
+          <SegmentedControl
+            value={previewMode}
+            onChange={(value) => setPreviewMode(value as any)}
+            data={[
+              { label: 'Typeform', value: 'typeform' },
+              { label: 'Grid', value: 'grid' },
+            ]}
+            size="xs"
+            radius="md"
+            classNames={{
+              root: 'bg-gray-1 p-1 border-0',
+              indicator: 'bg-surface-primary shadow-sm',
+              label: 'px-4 font-medium transition-colors'
+            }}
+          />
+        )}
+
+        <Group gap="xs" className="mr-2">
+          <Switch
+            checked={hidePreview}
+            onChange={(event) => setHidePreview(event.currentTarget.checked)}
+            label="Hide Preview"
+            labelPosition="left"
+            size="sm"
+            onLabel={<Icon name="tabler:eye-off" width={12} height={12} />}
+            styles={{
+              track: { backgroundColor: 'var(--accent-soft)' },
+              thumb: { border: '1px solid var(--accent-primary)' }
+            }}
+          />
+        </Group>
+
+        <Box className="h-8 w-px bg-gray-2" />
+
+        <Group gap="sm">
+          <Button
+            variant="outline"
+            color="gray"
+            size="sm"
+            leftSection={<Icon name="tabler:device-floppy" width={16} height={16} />}
+            className="border-gray-3 hover:bg-gray-1 transition-all active:scale-95"
+            onClick={handleSave}
+          >
+            Save
+          </Button>
+          <Button
+            variant="filled"
+            bg="accent-primary"
+            size="sm"
+            leftSection={<Icon name="tabler:rocket" width={16} height={16} />}
+            className="hover:opacity-90 transition-all active:scale-95 shadow-md shadow-accent-soft/20"
+            onClick={() => setTab('Publish')}
+          >
+            Publish
+          </Button>
+        </Group>
+      </Group>
     </header>
   )
 }
