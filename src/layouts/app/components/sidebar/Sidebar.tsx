@@ -29,11 +29,11 @@ const Sidebar = () => {
     },
     {
       items: [
-        // {
-        //   icon: 'lucide:workflow',
-        //   label: 'Workflows',
-        //   route: '/workflows',
-        // },
+        {
+          icon: 'lucide:workflow',
+          label: 'Workflows',
+          route: '/workflows',
+        },
         {
           icon: 'lucide:clipboard-list',
           label: 'Forms',
