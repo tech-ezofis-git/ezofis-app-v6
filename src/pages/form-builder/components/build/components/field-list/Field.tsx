@@ -22,10 +22,10 @@ const Field = ({ type, label, icon, draggable }: Props) => {
     <div
       draggable={draggable}
       onDragStart={onDragStart}
-      className='flex cursor-grab items-center gap-2 rounded border border-gray-3 bg-surface p-2 active:cursor-grabbing'
+      className='flex cursor-grab items-center gap-3 rounded-lg border border-gray-2 bg-white p-2.5 active:cursor-grabbing hover:border-accent-primary hover:shadow-sm transition-all group'
     >
-      {icon && <Icon name={icon} />}
-      <span className='text-13 text-gray-11'>{label}</span>
+      {icon && <Icon name={icon} className="text-gray-7 group-hover:text-accent-primary" />}
+      <span className='text-13 font-medium text-gray-13'>{label}</span>
     </div>
   )
 }

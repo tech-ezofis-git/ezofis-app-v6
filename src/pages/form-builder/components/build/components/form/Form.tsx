@@ -1,118 +1,177 @@
-import { ActionIcon, Button, Group } from '@mantine/core'
+import { ActionIcon, Button, Group, Text } from '@mantine/core'
 import Icon from '@/components/base/icon/Icon'
-import QuestionCard from './QuestionCard'
-import AddFieldInline from './AddFieldInline'
-import { useFormStore, type QuestionType, type Question } from '@/pages/form-builder/store/formStore'
-import { Fragment, useState } from 'react'
-import useAskAIStore from '@/components/common/ask-ai/stores/useAskAIStore'
+import Page from './Page'
+import { useFormStore, type Page as PageType } from '@/pages/form-builder/store/formStore'
+import { useEffect, useState } from 'react'
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragOverlay,
+  type DragStartEvent,
+  type DragEndEvent
+} from '@dnd-kit/core';
+import {
+  sortableKeyboardCoordinates,
+} from '@dnd-kit/sortable';
+import QuestionCard from './QuestionCard';
 
 const Form = () => {
   const {
-    questions,
-    addQuestion,
-    updateQuestion,
-    deleteQuestion,
-    activeQuestionId,
-    setActiveQuestionId
+    pages,
+    addPage,
+    moveQuestion,
   } = useFormStore()
 
-  const [showAddFieldAt, setShowAddFieldAt] = useState<number | null>(null)
+  const [activeId, setActiveId] = useState<string | null>(null);
 
-  const handleAddField = (type: QuestionType, index: number) => {
-    const newQuestion: Question = {
-      id: crypto.randomUUID(),
-      title: "",
-      description: "",
-      type,
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  useEffect(() => {
+    if (pages.length === 0) {
+      addPage()
     }
-    addQuestion(newQuestion, index)
-    setShowAddFieldAt(null)
-  }
+  }, [pages.length, addPage])
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveId(null);
+
+    if (!over) return;
+
+    const activeId = active.id as string;
+    const overId = over.id as string;
+
+    let sourcePageId = '';
+    let destPageId = '';
+    let sourceQuestionIndex = -1;
+    let destQuestionIndex = -1;
+
+    for (const page of pages) {
+      const qIndex = page.questions.findIndex(q => q.id === activeId)
+      if (qIndex !== -1) {
+        sourcePageId = page.id
+        sourceQuestionIndex = qIndex
+        break
+      }
+    }
+
+    for (const page of pages) {
+      const qIndex = page.questions.findIndex(q => q.id === overId)
+      if (qIndex !== -1) {
+        destPageId = page.id
+        destQuestionIndex = qIndex
+        break
+      }
+    }
+
+    if (sourcePageId && destPageId && sourcePageId === destPageId) {
+      if (sourceQuestionIndex !== destQuestionIndex) {
+        moveQuestion(activeId, destPageId, destQuestionIndex)
+      }
+    } else if (sourcePageId && destPageId) {
+      moveQuestion(activeId, destPageId, destQuestionIndex)
+    }
+  };
+
+  const activeQuestion = pages.flatMap(p => p.questions).find(q => q.id === activeId)
 
   return (
-    <div className='w-full max-w-[800px] mx-auto pb-40 px-4'>
-      {/* Question List */}
-      <div className='space-y-4'>
-        {questions.map((q: Question, i: number) => (
-          <Fragment key={q.id}>
-            {/* Inline Add Button Component */}
-            <div className="relative group/add flex justify-center h-4 items-center -my-2 z-10">
-              <div className="absolute inset-x-0 h-px bg-gray-2 group-hover/add:bg-accent-primary transition-colors" />
-              <ActionIcon
-                size="sm"
-                radius="xl"
-                variant="filled"
-                bg="accent-primary"
-                className="opacity-0 group-hover/add:opacity-100 transition-all scale-50 group-hover/add:scale-100 z-20 shadow-lg"
-                onClick={() => setShowAddFieldAt(i)}
-              >
-                <Icon name="tabler:plus" width={14} height={14} />
-              </ActionIcon>
-            </div>
-
-            {showAddFieldAt === i && (
-              <AddFieldInline
-                onSelect={(type) => handleAddField(type, i)}
-              />
-            )}
-
-            <QuestionCard
-              question={q}
-              index={i + 1}
-              isActive={activeQuestionId === q.id}
-              onSelect={() => setActiveQuestionId(q.id)}
-              onUpdate={(updates) => updateQuestion(q.id, updates)}
-              onDelete={() => deleteQuestion(q.id)}
-            />
-          </Fragment>
-        ))}
-
-        {/* Bottom Add Area */}
-        <div className="relative group/add flex justify-center h-4 items-center mt-4">
-          <div className="absolute inset-x-0 h-px bg-gray-2 group-hover/add:bg-accent-primary transition-colors" />
-          <ActionIcon
-            size="sm"
-            radius="xl"
-            variant="filled"
-            bg="accent-primary"
-            className="opacity-0 group-hover/add:opacity-100 transition-all scale-50 group-hover/add:scale-100 z-20"
-            onClick={() => setShowAddFieldAt(questions.length)}
-          >
-            <Icon name="tabler:plus" width={14} height={14} />
-          </ActionIcon>
+    <div className='w-full max-w-[860px] mx-auto pb-40 px-4'>
+      {/* Form Structure Header */}
+      <div className='flex items-center justify-between mb-6'>
+        <div className='flex items-center gap-2'>
+          <Icon name="tabler:layout-list" width={18} height={18} className="text-accent-primary" />
+          <Text size="lg" fw={700} className="text-gray-13">Form Structure</Text>
         </div>
 
-        {showAddFieldAt === questions.length && (
-          <AddFieldInline
-            onSelect={(type) => handleAddField(type, questions.length)}
-          />
-        )}
+        <Group gap="xs">
+          {/* Auto-save badge */}
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-success-subtle border border-green-200">
+            <div className="size-1.5 rounded-full bg-green-500" />
+            <Text size="10px" fw={700} className="text-green-700 uppercase tracking-wider">
+              Auto-saved 2m ago
+            </Text>
+          </div>
 
-        {/* Compact Footer Actions */}
-        <Group justify="center" gap="xs" mt="xl" className="pt-8 border-t border-gray-1">
-          <Button
+          {/* Undo / Redo */}
+          <ActionIcon
             variant="subtle"
             color="gray"
-            size="xs"
-            leftSection={<Icon name="tabler:plus" width={14} height={14} />}
-            className="hover:bg-gray-1 transition-all"
-            onClick={() => setShowAddFieldAt(questions.length)}
+            size="sm"
+            className="hover:bg-gray-2 active:scale-90 transition-all"
+            title="Undo"
           >
-            Add Field
-          </Button>
-
-          <Button
-            variant="gradient"
-            gradient={{ from: 'indigo', to: 'violet' }}
-            size="xs"
-            radius="md"
-            leftSection={<Icon name="tabler:sparkles" width={14} height={14} />}
-            className="shadow-sm hover:scale-[1.02] active:scale-95 transition-all"
-            onClick={() => useAskAIStore.getState().open()}
+            <Icon name="tabler:arrow-back-up" width={16} height={16} />
+          </ActionIcon>
+          <ActionIcon
+            variant="subtle"
+            color="gray"
+            size="sm"
+            className="hover:bg-gray-2 active:scale-90 transition-all"
+            title="Redo"
           >
-            Ask with AI
-          </Button>
+            <Icon name="tabler:arrow-forward-up" width={16} height={16} />
+          </ActionIcon>
         </Group>
+      </div>
+
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
+        <div className='space-y-6'>
+          {pages.map((page: PageType, i: number) => (
+            <Page key={page.id} page={page} pageIndex={i} />
+          ))}
+        </div>
+
+        <DragOverlay>
+          {activeQuestion ? (
+            <div className="opacity-80 rotate-1 scale-105 cursor-grabbing">
+              <QuestionCard
+                question={activeQuestion}
+                index={0}
+                isActive={true}
+                onSelect={() => { }}
+                onUpdate={() => { }}
+                onDelete={() => { }}
+              />
+            </div>
+          ) : null}
+        </DragOverlay>
+      </DndContext>
+
+      {/* Add Page Button */}
+      <div className="flex justify-center mt-8">
+        <Button
+          variant="outline"
+          color="gray"
+          size="md"
+          className="border-2 border-dashed border-gray-3 hover:border-accent-primary hover:bg-accent-soft/5 hover:text-accent-primary transition-all"
+          leftSection={<Icon name="tabler:circle-plus" width={18} height={18} />}
+          onClick={() => addPage()}
+        >
+          Add New Page
+        </Button>
       </div>
     </div>
   )

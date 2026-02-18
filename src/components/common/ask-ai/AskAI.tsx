@@ -1,5 +1,3 @@
-// Removed unused imports
-import IconButton from '@/components/base/button/IconButton'
 import IconAI from '@/components/base/icon/IconAI'
 import OverlayHeader from '@/components/base/overlay/OverlayHeader'
 import ScrollArea from '@/components/base/scroll-area/ScrollArea'
@@ -10,18 +8,10 @@ import useAskAIStore from './stores/useAskAIStore'
 
 const AskAI = () => {
   const isOpen = useAskAIStore((state) => state.isOpen)
-  const open = useAskAIStore((state) => state.open)
   const close = useAskAIStore((state) => state.close)
 
   if (!isOpen) {
-    return (
-      <IconButton
-        className='fixed right-6 bottom-6 size-10 rounded-full z-50 shadow-lg hover:scale-110 active:scale-95 transition-all bg-accent-primary text-white border-0'
-        icon='mingcute:ai-fill'
-        iconClass='size-5'
-        onClick={open}
-      />
-    )
+    return null
   }
 
   return (

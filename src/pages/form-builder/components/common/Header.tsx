@@ -1,6 +1,7 @@
-import { ActionIcon, Button, Group, SegmentedControl, Switch, Box, TextInput } from '@mantine/core'
+import { ActionIcon, Button, Group, SegmentedControl, Box, TextInput, Text } from '@mantine/core'
 import Icon from '@/components/base/icon/Icon'
 import { useFormStore } from '@/pages/form-builder/store/formStore'
+import useAskAIStore from '@/components/common/ask-ai/stores/useAskAIStore'
 
 interface HeaderProps {
   setTab: (value: string | null) => void
@@ -10,93 +11,99 @@ const Header = ({ setTab }: HeaderProps) => {
   const {
     name,
     setName,
-    previewMode,
-    setPreviewMode,
-    hidePreview,
-    setHidePreview
+    isBuilderMode,
+    setIsBuilderMode
   } = useFormStore()
 
   const handleSave = () => {
-    // As per user request: rename it as New Form once the user saves the form
     setName('New Form')
   }
 
   return (
-    <header className='sticky top-0 z-50 flex h-14 items-center justify-between border-b border-surface-secondary bg-surface-primary px-4 shadow-sm animate-in fade-in slide-in-from-top-4 duration-500'>
+    <header className='sticky top-0 z-50 flex h-[60px] items-center justify-between border-b border-gray-3 bg-surface-primary px-4 shadow-sm animate-in fade-in slide-in-from-top-4 duration-500'>
+      {/* Left: Back + Form Name + Status */}
       <Group gap="sm">
         <ActionIcon
-          variant="ghost"
+          variant="subtle"
           color="gray"
-          className="hover:bg-surface-secondary transition-all active:scale-90"
+          className="hover:bg-gray-2 transition-all active:scale-90"
           onClick={() => window.history.back()}
         >
           <Icon name="tabler:arrow-left" width={18} height={18} />
         </ActionIcon>
 
-        <Box className="flex items-center gap-2 group">
-          <TextInput
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            variant="unstyled"
-            classNames={{
-              input: 'text-16 font-bold tracking-tight text-gray-13 p-0 h-auto min-w-[100px] hover:bg-gray-1 focus:bg-gray-1 px-2 rounded transition-colors'
-            }}
-          />
-          <ActionIcon
-            variant="subtle"
-            color="gray"
-            size="sm"
-            onClick={() => setTab('Settings')}
-            className="opacity-0 group-hover:opacity-100 transition-opacity"
-          >
-            <Icon name="tabler:settings" width={16} height={16} />
-          </ActionIcon>
+        <Box className="flex flex-col justify-center group">
+          <Box className="flex items-center gap-1.5">
+            <TextInput
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              variant="unstyled"
+              classNames={{
+                input: 'text-[15px] font-bold tracking-tight text-gray-13 p-0 h-auto min-w-[100px] hover:bg-gray-1 focus:bg-gray-1 px-1.5 rounded transition-colors leading-tight'
+              }}
+            />
+            <ActionIcon
+              variant="subtle"
+              color="gray"
+              size="sm"
+              onClick={() => setTab('Settings')}
+              className="opacity-0 group-hover:opacity-100 transition-opacity hover:bg-gray-2"
+            >
+              <Icon name="tabler:settings" width={14} height={14} />
+            </ActionIcon>
+          </Box>
+          {/* Auto-save status */}
+          <Text size="10px" className="text-gray-7 px-1.5 leading-tight">
+            Draft · Last saved 2m ago
+          </Text>
         </Box>
       </Group>
 
+      {/* Right: Controls */}
       <Group gap="md">
-        {!hidePreview && (
-          <SegmentedControl
-            value={previewMode}
-            onChange={(value) => setPreviewMode(value as any)}
-            data={[
-              { label: 'Typeform', value: 'typeform' },
-              { label: 'Grid', value: 'grid' },
-            ]}
-            size="xs"
-            radius="md"
-            classNames={{
-              root: 'bg-gray-1 p-1 border-0',
-              indicator: 'bg-surface-primary shadow-sm',
-              label: 'px-4 font-medium transition-colors'
-            }}
-          />
-        )}
+        <SegmentedControl
+          value={isBuilderMode ? 'edit' : 'preview'}
+          onChange={(v) => setIsBuilderMode(v === 'edit')}
+          data={[
+            { label: 'Edit', value: 'edit' },
+            { label: 'Preview', value: 'preview' }
+          ]}
+          size="xs"
+          radius="md"
+          className="bg-gray-2 border border-gray-3"
+        />
 
-        <Group gap="xs" className="mr-2">
-          <Switch
-            checked={hidePreview}
-            onChange={(event) => setHidePreview(event.currentTarget.checked)}
-            label="Hide Preview"
-            labelPosition="left"
-            size="sm"
-            onLabel={<Icon name="tabler:eye-off" width={12} height={12} />}
-            styles={{
-              track: { backgroundColor: 'var(--accent-soft)' },
-              thumb: { border: '1px solid var(--accent-primary)' }
-            }}
-          />
-        </Group>
+        <Button
+          variant="gradient"
+          gradient={{ from: 'indigo', to: 'violet' }}
+          size="sm"
+          radius="md"
+          leftSection={<Icon name="tabler:sparkles" width={15} height={15} />}
+          className="shadow-sm hover:scale-[1.02] active:scale-95 transition-all"
+          onClick={() => useAskAIStore.getState().open()}
+        >
+          Ask AI
+        </Button>
 
-        <Box className="h-8 w-px bg-gray-2" />
+        <Button
+          variant="default"
+          size="sm"
+          leftSection={<Icon name="tabler:eye" width={15} height={15} />}
+          className="border-gray-3 hover:bg-gray-2 transition-all"
+          onClick={() => useFormStore.getState().setIsPreviewOpen(true)}
+        >
+          Preview
+        </Button>
+
+        <Box className="h-7 w-px bg-gray-3" />
 
         <Group gap="sm">
           <Button
             variant="outline"
             color="gray"
             size="sm"
-            leftSection={<Icon name="tabler:device-floppy" width={16} height={16} />}
-            className="border-gray-3 hover:bg-gray-1 transition-all active:scale-95"
+            leftSection={<Icon name="tabler:device-floppy" width={15} height={15} />}
+            className="border-gray-3 hover:bg-gray-2 transition-all active:scale-95"
             onClick={handleSave}
           >
             Save
@@ -105,7 +112,7 @@ const Header = ({ setTab }: HeaderProps) => {
             variant="filled"
             bg="accent-primary"
             size="sm"
-            leftSection={<Icon name="tabler:rocket" width={16} height={16} />}
+            leftSection={<Icon name="tabler:rocket" width={15} height={15} />}
             className="hover:opacity-90 transition-all active:scale-95 shadow-md shadow-accent-soft/20"
             onClick={() => setTab('Publish')}
           >
