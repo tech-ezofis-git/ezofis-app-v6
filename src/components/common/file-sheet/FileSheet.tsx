@@ -231,24 +231,30 @@ const FileSheet: React.FC<any> = ({
                 <div className="relative w-full overflow-hidden bg-gray-1" style={{ height: 'calc(100vh - 77px)' }}>
                     {src ? (
                         <>
-                            {/* Loading State */}
+                            {/* Loading State: Scanning Animation */}
                             <AnimatePresence>
                                 {showLoader && (
                                     <motion.div
                                         initial={{ opacity: 1 }}
                                         exit={{ opacity: 0 }}
-                                        className="absolute inset-0 z-20 flex items-center justify-center bg-white/90 backdrop-blur-md"
+                                        className="absolute inset-0 z-30 pointer-events-none"
                                     >
-                                        <div className="flex flex-col items-center">
-                                            <div className="relative flex size-24 items-center justify-center">
-                                                <div className="absolute inset-0 animate-spin rounded-full border-[3px] border-transparent border-t-primary-9 border-r-primary-5" />
-                                                <div className="absolute inset-2 animate-[spin_2s_linear_infinite] rounded-full border-[2px] border-transparent border-t-secondary-8 border-l-secondary-4" />
-                                                <div className="rounded-2xl bg-primary-1 p-3 shadow-sm">
-                                                    <Icon name="tabler:loader-3" className="size-8 animate-pulse text-primary-9" />
+                                        {/* Backdrop with subtle primary tint */}
+                                        <div className="absolute inset-0 bg-[var(--primary-9)]/5"></div>
+
+                                        {/* Scanning Bar (defined in index.css) */}
+                                        <div className="absolute inset-x-0 h-1 scanning-bar animate-scan z-40 shadow-[0_0_15px_rgba(var(--primary-9),0.8)] bg-[var(--primary-9)]"></div>
+
+                                        {/* Floating Indicator Pill */}
+                                        <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 z-50 flex items-center gap-2 bg-white/90 backdrop-blur-sm px-5 py-2.5 rounded-full border border-[var(--gray-4)] shadow-xl shrink-0">
+                                            <div className="flex items-center gap-3">
+                                                <div className="size-5 rounded-full bg-[var(--primary-1)] flex items-center justify-center">
+                                                    <Icon name="tabler:scan" className="size-3.5 text-[var(--primary-9)] animate-pulse" />
                                                 </div>
+                                                {/* <span className="text-sm font-bold text-[var(--gray-12)] tracking-tight whitespace-nowrap">
+                                                    Scanning Document...
+                                                </span> */}
                                             </div>
-                                            <h4 className="mt-8 text-sm font-bold tracking-tight text-gray-12">Fetching Document Data</h4>
-                                            <p className="mt-1 text-xs font-medium text-gray-9">This will only take a moment</p>
                                         </div>
                                     </motion.div>
                                 )}
@@ -282,24 +288,22 @@ const FileSheet: React.FC<any> = ({
     return (
         <div className="relative w-full h-full ">
 
+            {/* Loading State: Scanning Animation */}
             <AnimatePresence>
                 {showLoader && (
                     <motion.div
                         initial={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="absolute inset-0 z-20 flex items-center justify-center bg-white/90 backdrop-blur-md"
+                        className="absolute inset-0 z-30 pointer-events-none"
                     >
-                        <div className="flex flex-col items-center">
-                            <div className="relative flex size-24 items-center justify-center">
-                                <div className="absolute inset-0 animate-spin rounded-full border-[3px] border-transparent border-t-primary-9 border-r-primary-5" />
-                                <div className="absolute inset-2 animate-[spin_2s_linear_infinite] rounded-full border-[2px] border-transparent border-t-secondary-8 border-l-secondary-4" />
-                                <div className="rounded-2xl bg-primary-1 p-3 shadow-sm">
-                                    <Icon name="tabler:loader-3" className="size-8 animate-pulse text-primary-9" />
-                                </div>
-                            </div>
-                            <h4 className="mt-8 text-sm font-bold tracking-tight text-gray-12">Fetching Document Data</h4>
-                            <p className="mt-1 text-xs font-medium text-gray-9">This will only take a moment</p>
-                        </div>
+                        {/* Backdrop with subtle primary tint */}
+                        <div className="absolute inset-0 bg-[var(--primary-9)]/5"></div>
+
+                        {/* Scanning Bar (defined in index.css) */}
+                        <div className="absolute inset-x-0 h-1 scanning-bar animate-scan z-40 shadow-[0_0_15px_rgba(var(--primary-9),0.8)] bg-[var(--primary-9)]"></div>
+
+                        {/* Floating Indicator Pill */}
+
                     </motion.div>
                 )}
             </AnimatePresence> {/* You can adjust the height based on your design */}

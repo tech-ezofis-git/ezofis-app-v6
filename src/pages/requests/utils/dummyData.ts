@@ -24,13 +24,13 @@ export const generateDummySummary = (seed: number | string = 0) => {
 
     return {
       score: {
-        value: `${randomScore}% Match Score`,
-        badgeText: `${randomScore}% Match Score`,
+        value: `${randomScore}% Confidence`,
+        badgeText: `${randomScore}% Confidence`,
         shortText: `${randomScore}%`,
         theme: randomScore > 80 ? 'green' : randomScore > 50 ? 'orange' : 'red',
         pct: randomScore,
         icon: 'tabler:gauge',
-        label: 'Match Score',
+        label: 'Confidence',
         status: randomScore > 80 ? 'High' : randomScore > 50 ? 'Medium' : 'Low',
         description: 'Extraction quality'
       },

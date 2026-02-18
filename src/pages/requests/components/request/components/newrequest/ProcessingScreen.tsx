@@ -1,20 +1,34 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import Icon from '@/components/base/icon/Icon'
 import BarLoader from '@/components/base/BarLoader'
+import { Worker, Viewer, SpecialZoomLevel, type Plugin } from '@react-pdf-viewer/core';
+import '@react-pdf-viewer/core/lib/styles/index.css';
+import fileApi from '@/api/file/file';
 
 interface ProcessingScreenProps {
     file: File | null
     stage: string
     uploadStatus: 'idle' | 'uploading' | 'success' | 'error'
     onComplete: () => void
+    onRedirect?: () => void
+    fileId: number | null
+    repositoryId: number | null
 }
 
-const ProcessingScreen = ({ file, stage, uploadStatus, onComplete }: ProcessingScreenProps) => {
+const ProcessingScreen = ({ file, stage, uploadStatus, onComplete, onRedirect, fileId, repositoryId }: ProcessingScreenProps) => {
     const [step, setStep] = useState(0)
-    const [fileUrl, setFileUrl] = useState<string | null>(null)
     const [loadingTextIndex, setLoadingTextIndex] = useState(0)
     const [showLongWaitMessage, setShowLongWaitMessage] = useState(false);
-    // const [dotCount, setDotCount] = useState(0);
+
+    // File Preview State
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const [fileType, setFileType] = useState<string | null>(null);
+
+    // Viewer State
+    // // const [scale, setScale] = useState(1);
+    // const [currentPage, setCurrentPage] = useState(0);
+    // const [totalPages, setTotalPages] = useState(0);
+    const viewerRef = useRef<any>(null);
 
     const loadingPhrases = [
         "Extracting text layers",
@@ -24,13 +38,93 @@ const ProcessingScreen = ({ file, stage, uploadStatus, onComplete }: ProcessingS
         "Analyzing spatial layout"
     ]
 
+    // Custom Plugin to expose viewer methods
+    const toolbarPlugin = (): Plugin => {
+        return {
+            install: (pluginFunctions) => {
+                viewerRef.current = pluginFunctions;
+            },
+            // onDocumentLoad: (e) => {
+            //     setTotalPages(e.doc.numPages);
+            //     setCurrentPage(0);
+            // },
+            // onPageChange: (e) => {
+            //     setCurrentPage(e.currentPage);
+            // },
+            // onZoom: (e: any) => {
+            //     setScale(e.scale);
+            // }
+        };
+    };
+
+    // Memoize the plugin instance to prevent re-creation on render
+    // However, since we need to capture the ref and it doesn't depend on props, we can just use a constant reference or create it once.
+    // In React 18 strict mode, this might be called twice, but install will update the ref.
+    const toolbarPluginInstance = useRef(toolbarPlugin()).current;
+
+    // const handleZoomIn = () => {
+    //     if (viewerRef.current) {
+    //         viewerRef.current.zoom(scale + 0.1);
+    //     }
+    // };
+
+    // const handleZoomOut = () => {
+    //     if (viewerRef.current) {
+    //         viewerRef.current.zoom(Math.max(0.1, scale - 0.1));
+    //     }
+    // };
+
+    // const handlePrevPage = () => {
+    //     if (viewerRef.current && currentPage > 0) {
+    //         viewerRef.current.jumpToPage(currentPage - 1);
+    //     }
+    // };
+
+    // const handleNextPage = () => {
+    //     if (viewerRef.current && currentPage < totalPages - 1) {
+    //         viewerRef.current.jumpToPage(currentPage + 1);
+    //     }
+    // };
+
+    // Fetch File Data from API
     useEffect(() => {
         if (file) {
             const url = URL.createObjectURL(file)
-            setFileUrl(url)
+            setPreviewUrl(url)
+            setFileType(file.type)
             return () => URL.revokeObjectURL(url)
         }
-    }, [file])
+        const fetchFile = async () => {
+            if (fileId && repositoryId) {
+                // Hardcoded parameters
+                const tId = 2;
+                const uId = "2";
+                const type = 1; // 2 for file
+
+                try {
+                    const response = await fileApi.viewBinary(tId, uId, repositoryId, fileId, type);
+
+                    if (response?.file) {
+                        const base64 = response.file;
+                        let mimeType = 'application/pdf'; // Default fallback
+
+                        // Simple signature detection
+                        if (base64.startsWith('/9j/')) mimeType = 'image/jpeg';
+                        else if (base64.startsWith('iVBORw0KGgo')) mimeType = 'image/png';
+                        else if (base64.startsWith('JVBERi0')) mimeType = 'application/pdf';
+
+                        const url = `data:${base64}`;
+                        setPreviewUrl(url);
+                        setFileType(mimeType);
+                    }
+                } catch (error) {
+                    console.error("Error fetching file:", error);
+                }
+            }
+        };
+
+        fetchFile();
+    }, [fileId, repositoryId, file]);
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -45,20 +139,13 @@ const ProcessingScreen = ({ file, stage, uploadStatus, onComplete }: ProcessingS
         return () => clearInterval(interval)
     }, [])
 
-    // useEffect(() => {
-    //     const interval = setInterval(() => {
-    //         setDotCount((prev) => (prev + 1) % 4);
-    //     }, 500);
-    //     return () => clearInterval(interval);
-    // }, []);
-
     useEffect(() => {
         let timer: NodeJS.Timeout;
         // Check if step is 1 (Extraction)
         if (step === 1) {
             timer = setTimeout(() => {
                 setShowLongWaitMessage(true);
-            }, 40000);
+            }, 40000); // 40s wait
         } else {
             setShowLongWaitMessage(false);
         }
@@ -94,32 +181,99 @@ const ProcessingScreen = ({ file, stage, uploadStatus, onComplete }: ProcessingS
         }
     }, [step, targetStep, onComplete, uploadStatus]);
 
-    // Handle closing the alert automatically or manually isn't needed if we move it to the insight card
+    useEffect(() => {
+        if (showLongWaitMessage && onRedirect) {
+            const timer = setTimeout(() => {
+                onRedirect();
+            }, 5000);
+            return () => clearTimeout(timer);
+        }
+    }, [showLongWaitMessage, onRedirect]);
 
     return (
         <div className="w-full h-[calc(100vh-110px)] p-4 lg:p-6 box-border overflow-hidden">
             <div className="max-w-[1600px] mx-auto grid grid-cols-12 gap-4 2xl:gap-6 h-full">
 
                 {/* Left Column: File Preview */}
-                <section className="col-span-8 flex flex-col h-full min-h-0">
+                <section className="col-span-8 flex flex-col h-full min-h-0 relative group">
                     <div className="flex-grow relative bg-[var(--gray-3)] rounded-xl overflow-hidden border border-[var(--gray-6)] shadow-inner flex justify-center items-center h-full">
-                        <div className="absolute inset-0 z-0">
-                            {file?.type === 'application/pdf' ? (
-                                fileUrl ? (
-                                    <iframe
-                                        src={`${fileUrl}#view=FitH`}
-                                        className="w-full h-full border-none opacity-50 blur-[2px]"
-                                        title="PDF Preview"
+                        <div className="absolute inset-0 z-0 h-full w-full overflow-hidden">
+                            {previewUrl ? (
+                                fileType === 'application/pdf' ? (
+                                    <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js">
+                                        <div className="h-full w-full overflow-hidden relative">
+                                            <Viewer
+                                                fileUrl={previewUrl}
+                                                defaultScale={SpecialZoomLevel.PageFit}
+                                                plugins={[toolbarPluginInstance]}
+                                            />
+                                        </div>
+                                    </Worker>
+                                ) : (
+                                    <img
+                                        src={previewUrl}
+                                        alt="Document Preview"
+                                        className="w-full h-full object-contain"
                                     />
-                                ) : null
+                                )
                             ) : (
-                                <img src={fileUrl || ''} alt="Preview" className="w-full h-full object-contain opacity-60 blur-sm scale-105" />
+                                <div className="flex flex-col items-center justify-center h-full text-[var(--gray-8)]">
+                                    <BarLoader />
+                                    <p className="mt-4 text-sm font-medium">Loading document...</p>
+                                </div>
                             )}
                         </div>
 
-                        {/* Scanning effect wrapper */}
-                        <div className="absolute inset-0 z-10 backdrop-blur-[1px] bg-white/10"></div>
-                        <div className="absolute inset-x-0 h-1 scanning-bar animate-scan z-20 pointer-events-none shadow-[0_0_15px_rgba(var(--primary-9),0.5)]"></div>
+                        {/* Floating Toolbar */}
+                        {/* {previewUrl && fileType === 'application/pdf' && (
+                            <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-30 flex items-center gap-2 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full border border-[var(--gray-4)] shadow-lg transition-opacity duration-300 opacity-0 group-hover:opacity-100">
+                                <button
+                                    onClick={handleZoomOut}
+                                    className="p-1.5 hover:bg-[var(--gray-3)] rounded-full text-[var(--gray-11)] transition-colors"
+                                    title="Zoom Out"
+                                >
+                                    <Icon name="material-symbols:remove" className="text-lg" />
+                                </button>
+                                <span className="text-sm font-medium text-[var(--gray-12)] min-w-[3rem] text-center">
+                                    {Math.round(scale * 100)}%
+                                </span>
+                                <button
+                                    onClick={handleZoomIn}
+                                    className="p-1.5 hover:bg-[var(--gray-3)] rounded-full text-[var(--gray-11)] transition-colors"
+                                    title="Zoom In"
+                                >
+                                    <Icon name="material-symbols:add" className="text-lg" />
+                                </button>
+                                <div className="w-px h-4 bg-[var(--gray-5)] mx-1" />
+                                <button
+                                    onClick={handlePrevPage}
+                                    disabled={currentPage === 0}
+                                    className="p-1.5 hover:bg-[var(--gray-3)] rounded-full text-[var(--gray-11)] disabled:opacity-50 transition-colors"
+                                    title="Previous Page"
+                                >
+                                    <Icon name="material-symbols:chevron-left" className="text-lg" />
+                                </button>
+                                <span className="text-sm font-medium text-[var(--gray-12)]">
+                                    {currentPage + 1} / {totalPages}
+                                </span>
+                                <button
+                                    onClick={handleNextPage}
+                                    disabled={currentPage === totalPages - 1}
+                                    className="p-1.5 hover:bg-[var(--gray-3)] rounded-full text-[var(--gray-11)] disabled:opacity-50 transition-colors"
+                                    title="Next Page"
+                                >
+                                    <Icon name="material-symbols:chevron-right" className="text-lg" />
+                                </button>
+                            </div>
+                        )} */}
+
+                        {/* Scanner effect wrapper - Visible during processing (steps 0, 1, 2) */}
+                        {previewUrl && step < 3 && (
+                            <div className="absolute inset-0 z-10 pointer-events-none">
+                                <div className="absolute inset-0 bg-[var(--primary-9)]/5"></div>
+                                <div className="absolute inset-x-0 h-1 scanning-bar animate-scan z-20 shadow-[0_0_15px_rgba(var(--primary-9),0.8)] bg-[var(--primary-9)]"></div>
+                            </div>
+                        )}
                     </div>
                 </section>
 
@@ -130,7 +284,6 @@ const ProcessingScreen = ({ file, stage, uploadStatus, onComplete }: ProcessingS
 
                         <div className="flex items-center justify-between mb-2 2xl:mb-4 shrink-0">
                             <h2 className="text-base 2xl:text-lg font-bold text-[var(--gray-12)]">Processing Timeline</h2>
-                            {/* <span className="text-xs bg-[var(--primary-1)] text-[var(--primary-9)] px-3 py-1 rounded-full font-bold">LIVE</span> */}
                         </div>
 
                         {/* Use flex-1 and justify-between to distribute space evenly so it fits without scroll */}
@@ -241,41 +394,29 @@ const ProcessingScreen = ({ file, stage, uploadStatus, onComplete }: ProcessingS
                             </div>
                         </div>
 
-                        {/* Insight / Alert Card */}
-                        <div className={`rounded-xl p-3 2xl:p-4 mt-3 2xl:mt-6 text-white shadow-xl relative overflow-hidden group shrink-0 transition-all duration-500 ease-in-out ${showLongWaitMessage ? 'bg-[var(--blue-9)] shadow-[var(--blue-9)]/20' : 'bg-gradient-to-br from-[var(--primary-9)] to-[var(--violet-9)] shadow-[var(--primary-9)]/20'}`}>
-
-                            {showLongWaitMessage ? (
-                                // Long Wait Message View
-                                <div className="animate-fade-in relative z-10">
-                                    <div className="absolute -right-4 -top-4 opacity-10 rotate-12">
-                                        <Icon name="material-symbols:timer-rounded" className="text-6xl 2xl:text-8xl" />
-                                    </div>
-                                    <div className="flex items-start gap-3">
-                                        <Icon name="material-symbols:info-rounded" className="text-xl 2xl:text-2xl shrink-0 mt-0.5" />
-                                        <div>
-                                            <h3 className="font-bold text-sm 2xl:text-base mb-1">Taking longer than usual</h3>
-                                            <p className="text-xs 2xl:text-sm text-white/90 leading-relaxed">
-                                                You can navigate away. The process will continue in the background. We'll notify you when it's done.
-                                            </p>
-                                        </div>
+                        {/* Long Wait Alert Link - Replacing Insight Card */}
+                        {showLongWaitMessage && (
+                            <div className="rounded-xl p-3 2xl:p-4 mt-3 2xl:mt-6 bg-[var(--amber-9)] text-white shadow-xl relative overflow-hidden group shrink-0 transition-all duration-500 ease-in-out animate-fade-in">
+                                <div className="absolute -right-4 -top-4 opacity-10 rotate-12">
+                                    <Icon name="material-symbols:timer-rounded" className="text-6xl 2xl:text-8xl" />
+                                </div>
+                                <div className="flex items-start gap-3">
+                                    <Icon name="material-symbols:warning-rounded" className="text-xl 2xl:text-2xl shrink-0 mt-0.5" />
+                                    <div>
+                                        <h3 className="font-bold text-sm 2xl:text-base mb-1">Taking longer than usual</h3>
+                                        <p className="text-xs 2xl:text-sm text-white/90 leading-relaxed">
+                                            Redirecting you to the inbox. The process will continue in the background.
+                                        </p>
                                     </div>
                                 </div>
-                            ) : (
-                                // Normal Insight View
-                                <div className="animate-fade-in">
-                                    <div className="absolute -right-4 -top-4 opacity-20 group-hover:scale-110 transition-transform duration-700">
-                                        <Icon name="material-symbols:receipt-long" className="text-6xl 2xl:text-8xl" />
-                                    </div>
-                                    <h3 className="font-bold text-sm 2xl:text-base mb-1 2xl:mb-2 flex items-center">
-                                        <Icon name="material-symbols:smart-toy" className="text-sm 2xl:text-md mr-2" />
-                                        AP Agent Insight
-                                    </h3>
-                                    <p className="text-xs 2xl:text-sm text-white/80 leading-relaxed">
-                                        The AP Agent is autonomously cross-referencing invoice line items with purchase orders to validate amounts.
-                                    </p>
+                                <div className="h-1 w-full bg-white/30 mt-3 rounded-full overflow-hidden">
+                                    <div
+                                        className="h-full bg-white transition-all duration-[5000ms] ease-linear"
+                                        style={{ width: '100%' }}
+                                    />
                                 </div>
-                            )}
-                        </div>
+                            </div>
+                        )}
                     </div>
 
                 </section>

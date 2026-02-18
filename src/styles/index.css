@@ -22,12 +22,21 @@
   button {
     cursor: pointer;
   }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: geometricPrecision;
+  }
 }
 
 @custom-variant dark (&:where([data-mantine-color-scheme=dark], [data-mantine-color-scheme=dark] *));
 
 :root,
 .scrollbar {
+  /* Responsive Typography Tokens */
+  --po-title: clamp(13px, 1.2vw, 16px);
+  --po-sub: clamp(11px, 1vw, 13px);
   /* Native scrollbar */
 }
 

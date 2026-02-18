@@ -1,11 +1,15 @@
 import GeneralSettings from './components/GeneralSettings'
 
-const Settings = () => {
+interface SettingsProps {
+  setTab: (value: string | null) => void
+}
+
+const Settings = ({ setTab }: SettingsProps) => {
   return (
     <div className='flex'>
       <div className='hidden'></div>
       <div className='flex-1'>
-        <GeneralSettings />
+        <GeneralSettings setTab={setTab} />
       </div>
     </div>
   )

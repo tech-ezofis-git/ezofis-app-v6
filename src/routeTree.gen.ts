@@ -17,6 +17,7 @@ import { Route as StoriesIndexRouteImport } from './routes/stories/index'
 import { Route as OnBoardingIndexRouteImport } from './routes/on-boarding/index'
 import { Route as FormBuilderIndexRouteImport } from './routes/form-builder/index'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
+import { Route as WorkflowBuilderWorkflowIdRouteImport } from './routes/workflow-builder/$workflowId'
 import { Route as StoriesTypographyRouteImport } from './routes/stories/typography'
 import { Route as StoriesTooltipRouteImport } from './routes/stories/tooltip'
 import { Route as StoriesToastRouteImport } from './routes/stories/toast'
@@ -119,6 +120,12 @@ const AppIndexRoute = AppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppRouteRoute,
 } as any)
+const WorkflowBuilderWorkflowIdRoute =
+  WorkflowBuilderWorkflowIdRouteImport.update({
+    id: '/workflow-builder/$workflowId',
+    path: '/workflow-builder/$workflowId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const StoriesTypographyRoute = StoriesTypographyRouteImport.update({
   id: '/typography',
   path: '/typography',
@@ -500,6 +507,7 @@ export interface FileRoutesByFullPath {
   '/stories/toast': typeof StoriesToastRoute
   '/stories/tooltip': typeof StoriesTooltipRoute
   '/stories/typography': typeof StoriesTypographyRoute
+  '/workflow-builder/$workflowId': typeof WorkflowBuilderWorkflowIdRoute
   '/': typeof AppIndexRoute
   '/form-builder': typeof FormBuilderIndexRoute
   '/on-boarding': typeof OnBoardingIndexRoute
@@ -570,6 +578,7 @@ export interface FileRoutesByTo {
   '/stories/toast': typeof StoriesToastRoute
   '/stories/tooltip': typeof StoriesTooltipRoute
   '/stories/typography': typeof StoriesTypographyRoute
+  '/workflow-builder/$workflowId': typeof WorkflowBuilderWorkflowIdRoute
   '/': typeof AppIndexRoute
   '/form-builder': typeof FormBuilderIndexRoute
   '/on-boarding': typeof OnBoardingIndexRoute
@@ -644,6 +653,7 @@ export interface FileRoutesById {
   '/stories/toast': typeof StoriesToastRoute
   '/stories/tooltip': typeof StoriesTooltipRoute
   '/stories/typography': typeof StoriesTypographyRoute
+  '/workflow-builder/$workflowId': typeof WorkflowBuilderWorkflowIdRoute
   '/_app/': typeof AppIndexRoute
   '/form-builder/': typeof FormBuilderIndexRoute
   '/on-boarding/': typeof OnBoardingIndexRoute
@@ -717,6 +727,7 @@ export interface FileRouteTypes {
     | '/stories/toast'
     | '/stories/tooltip'
     | '/stories/typography'
+    | '/workflow-builder/$workflowId'
     | '/'
     | '/form-builder'
     | '/on-boarding'
@@ -787,6 +798,7 @@ export interface FileRouteTypes {
     | '/stories/toast'
     | '/stories/tooltip'
     | '/stories/typography'
+    | '/workflow-builder/$workflowId'
     | '/'
     | '/form-builder'
     | '/on-boarding'
@@ -860,6 +872,7 @@ export interface FileRouteTypes {
     | '/stories/toast'
     | '/stories/tooltip'
     | '/stories/typography'
+    | '/workflow-builder/$workflowId'
     | '/_app/'
     | '/form-builder/'
     | '/on-boarding/'
@@ -878,6 +891,7 @@ export interface RootRouteChildren {
   StoriesRouteRoute: typeof StoriesRouteRouteWithChildren
   FormBuilderFormIdRoute: typeof FormBuilderFormIdRoute
   OnBoardingTokenRoute: typeof OnBoardingTokenRoute
+  WorkflowBuilderWorkflowIdRoute: typeof WorkflowBuilderWorkflowIdRoute
   FormBuilderIndexRoute: typeof FormBuilderIndexRoute
   OnBoardingIndexRoute: typeof OnBoardingIndexRoute
 }
@@ -939,6 +953,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRouteRoute
+    }
+    '/workflow-builder/$workflowId': {
+      id: '/workflow-builder/$workflowId'
+      path: '/workflow-builder/$workflowId'
+      fullPath: '/workflow-builder/$workflowId'
+      preLoaderRoute: typeof WorkflowBuilderWorkflowIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/stories/typography': {
       id: '/stories/typography'
@@ -1547,6 +1568,7 @@ const rootRouteChildren: RootRouteChildren = {
   StoriesRouteRoute: StoriesRouteRouteWithChildren,
   FormBuilderFormIdRoute: FormBuilderFormIdRoute,
   OnBoardingTokenRoute: OnBoardingTokenRoute,
+  WorkflowBuilderWorkflowIdRoute: WorkflowBuilderWorkflowIdRoute,
   FormBuilderIndexRoute: FormBuilderIndexRoute,
   OnBoardingIndexRoute: OnBoardingIndexRoute,
 }

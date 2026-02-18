@@ -183,10 +183,81 @@ const GridView = <TData,>({
               const hasHeader = group.groupValue && group.groupId !== 'root'
               const groupItems = group.items || []
               const groupId = group.groupId || gIdx
-              const row = groupId === 'root' ? null : table.getRow(String(groupId))
-              const isCollapsed = row ? !row.getIsExpanded() : false
+
+              let row = null
+              let isCollapsed = false
+              let groupError = false
+
+              if (groupId !== 'root') {
+                try {
+                  row = table.getRow(String(groupId))
+                  isCollapsed = row ? !row.getIsExpanded() : false
+                } catch (e) {
+                  console.warn("GridView: failed to get row for group", groupId, e)
+                  groupError = true
+                }
+              }
 
               if (groupItems.length === 0) return null
+
+              if (groupError) {
+                return (
+                  <div key={groupId} className="flex flex-col gap-3 pb-6">
+                    {groupItems.map((row: any, index: number) => {
+                      const rowId = row?.id || row?.processId || `item-${gIdx}-${index}`
+                      const requestNo = row?.requestNo || `REQ-${rowId}`
+                      const raisedBy = row?.raisedBy || 'Unknown User'
+                      const raisedAt = row?.raisedAt || row?.transaction_createdAt
+                      const dummySummary = dummySummaryMap.get(rowId) || generateDummySummary(rowId)
+
+                      return (
+                        <div
+                          key={rowId}
+                          className="group relative flex w-full flex-col rounded-xl border border-[var(--gray-3)] bg-[var(--surface)] transition-all duration-200 hover:border-[var(--primary-3)]"
+                        >
+                          <div
+                            onClick={() => onRowClick(row, 'Overview')}
+                            className="flex cursor-pointer items-center justify-between gap-4 p-3"
+                          >
+                            <div className="flex items-center gap-4 min-w-0">
+                              <div className="flex size-12 shrink-0 items-center justify-center rounded-lg border border-[var(--primary-3)] bg-[var(--primary-2)] text-[var(--primary-9)]">
+                                <Icon name="tabler:file-invoice" className="size-6" />
+                              </div>
+                              <div className="flex flex-col gap-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <h3 className="truncate text-14 font-semibold text-[var(--gray-13)]">
+                                    {requestNo}
+                                  </h3>
+                                  {row?.isDuplicateInvoice && <RequestStatusBadge status="Duplicated" />}
+                                </div>
+                                <div className="flex items-center gap-2 text-12 text-[var(--gray-10)] truncate">
+                                  <span className="truncate max-w-[200px]">{raisedBy}</span>
+                                  <span className="h-1 w-1 rounded-full bg-[var(--gray-6)] shrink-0" />
+                                  <span className="shrink-0">{formatDatetime(raisedAt, 'datetime')}</span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-4 shrink-0">
+                              <div className="hidden lg:flex items-center gap-3">
+                                {Object.entries(dummySummary).map(([key, metric]: any) => (
+                                  <SummaryMetric
+                                    key={key}
+                                    metric={metric}
+                                    onFileSelect={(file) => setSelectedFile(file)}
+                                  />
+                                ))}
+                              </div>
+                              <div className="text-[var(--gray-8)] group-hover:text-[var(--primary-9)] transition-colors pr-2">
+                                <Icon name="tabler:chevron-right" className="size-5" />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )
+              }
 
               return (
                 <div key={groupId} className="flex flex-col !cursor-pointer gap-4 relative hover:z-[100]">
@@ -220,16 +291,7 @@ const GridView = <TData,>({
                           transition={{ delay: 0.1, duration: 0.4 }}
                           className="hidden md:flex items-center gap-3 2xl:gap-6 px-3 py-1 2xl:px-5 2xl:py-1.5 rounded-full bg-[var(--surface-raised)] border border-[var(--gray-3)] shadow-sm hover:shadow-md transition-shadow"
                         >
-                          <div className="flex items-baseline gap-2">
-                            <span className="text-[10px] uppercase font-bold text-[var(--gray-9)] tracking-wider">PO Amount</span>
-                            <span className="text-xs 2xl:text-14 font-bold text-[var(--gray-12)]">$50,000.00</span>
-                          </div>
-                          <div className="w-px h-3 bg-[var(--gray-3)]"></div>
-                          <div className="flex items-baseline gap-2">
-                            <span className="text-[10px] uppercase font-bold text-[var(--gray-9)] tracking-wider">Invoiced</span>
-                            <span className="text-xs 2xl:text-14 font-bold text-[var(--gray-12)]">$42,500.00</span>
-                          </div>
-                          <div className="w-px h-3 bg-[var(--gray-3)]"></div>
+
                           <div className="flex items-baseline gap-2">
                             <span className="text-[10px] uppercase font-bold text-[var(--gray-9)] tracking-wider">Invoice Received</span>
                             <span className="text-xs 2xl:text-14 font-bold text-[var(--gray-12)]">{groupItems.length}</span>
@@ -237,7 +299,7 @@ const GridView = <TData,>({
                           <div className="w-px h-3 bg-[var(--gray-3)]"></div>
 
                           {/* Duplicate Alert */}
-                          <div className="flex items-center gap-2 -my-1">
+                          <div className="flex items-center gap-2 px-2 py-0.5 2xl:px-3  rounded-lg -my-1">
                             <span className=" 2xl:inline text-[10px] uppercase font-bold text-[var(--red-9)]">Duplicates : {groupItems.filter((i: any) => i.isDuplicateInvoice).length}</span>
                             <div className="hidden flex items-center gap-1">
                               <Icon name="tabler:alert-triangle" className="text-[var(--red-9)] size-3.5" />
