@@ -20,7 +20,7 @@ interface IntegrationItem {
 const AddNodeMenu = () => {
     const { addMenu, closeAddMenu, selectedNode, selectNode } = useWorkflowStore((state) => state)
     const { position } = addMenu
-    const { getViewport, setNodes, getNodes, setEdges, getEdge } = useReactFlow()
+    const { getViewport, setNodes, getNodes, setEdges, getEdge, getEdges } = useReactFlow()
     const menuRef = useRef<HTMLDivElement>(null)
     const listRef = useRef<HTMLDivElement>(null)
 
@@ -76,33 +76,78 @@ const AddNodeMenu = () => {
                 selectNode(updatedNode)
             }
         } else if (edgeId && position) {
-            // Add new node on edge
+            // Add new node on edge with Auto-Layout
             const edge = getEdge(edgeId)
+            const allNodes = getNodes()
+            const allEdges = getEdges() // Ensure we have latest edges for traversal
+
             if (edge) {
-                const newNodeId = `node-${Date.now()}`
-                const newNode = {
-                    id: newNodeId,
-                    type: 'custom',
-                    position: { x: position.x - 140, y: position.y - 50 }, // Center node (assuming ~280px width)
-                    data: {
-                        label: item.label,
-                        icon: item.icon,
-                        iconColor: item.iconColor,
-                        subLabel: item.description,
-                        type: item.category === 'triggers' ? 'trigger' : 'action',
-                    },
+                const sourceNode = allNodes.find((n) => n.id === edge.source)
+                const targetNode = allNodes.find((n) => n.id === edge.target)
+
+                if (sourceNode && targetNode) {
+                    const GAP = 250 // Vertical spacing matches initial nodes (50 -> 300)
+
+                    const newNodeId = `node-${Date.now()}`
+                    const newNode = {
+                        id: newNodeId,
+                        type: 'custom',
+                        // Align X with source, Place Y at source Y + GAP
+                        position: { x: sourceNode.position.x, y: sourceNode.position.y + GAP },
+                        data: {
+                            label: item.label,
+                            icon: item.icon,
+                            iconColor: item.iconColor,
+                            subLabel: item.description,
+                            type: item.category === 'triggers' ? 'trigger' : 'action',
+                        },
+                    }
+
+                    // 1. Identify all downstream nodes starting from the current target
+                    // We need to shift these down to make room for the new node
+                    const downstreamNodeIds = new Set<string>()
+                    const queue = [edge.target]
+
+                    while (queue.length > 0) {
+                        const currentId = queue.shift()!
+                        if (!downstreamNodeIds.has(currentId)) {
+                            downstreamNodeIds.add(currentId)
+                            // Find all nodes connected to outgoing edges of currentId
+                            const outgoingEdges = allEdges.filter(e => e.source === currentId)
+                            outgoingEdges.forEach(e => {
+                                if (!downstreamNodeIds.has(e.target)) {
+                                    queue.push(e.target)
+                                }
+                            })
+                        }
+                    }
+
+                    // 2. Create updated nodes arrays
+                    const shiftedNodes = allNodes.map(n => {
+                        if (downstreamNodeIds.has(n.id)) {
+                            return {
+                                ...n,
+                                position: {
+                                    ...n.position,
+                                    y: n.position.y + GAP // Shift down by one gap unit
+                                }
+                            }
+                        }
+                        return n
+                    })
+
+                    const newEdges = [
+                        { id: `${edge.source}->${newNodeId}`, source: edge.source, target: newNodeId, type: 'custom' },
+                        { id: `${newNodeId}->${edge.target}`, source: newNodeId, target: edge.target, type: 'custom' },
+                    ]
+
+                    // Add new node to the shifted nodes
+                    setNodes(shiftedNodes.concat(newNode))
+                    setEdges((eds) => eds.filter((e) => e.id !== edgeId).concat(newEdges))
+
+                    // Select the new node
+                    selectNode(newNode as any)
                 }
-
-                const newEdges = [
-                    { id: `${edge.source}->${newNodeId}`, source: edge.source, target: newNodeId, type: 'custom' },
-                    { id: `${newNodeId}->${edge.target}`, source: newNodeId, target: edge.target, type: 'custom' },
-                ]
-
-                setNodes((nds) => nds.concat(newNode))
-                setEdges((eds) => eds.filter((e) => e.id !== edgeId).concat(newEdges))
-
-                // Select the new node
-                selectNode(newNode as any)
             }
         }
         closeAddMenu()
@@ -204,16 +249,16 @@ const AddNodeMenu = () => {
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id as TabType)}
                         className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-sm font-medium transition-all duration-200 group ${activeTab === tab.id
-                                ? 'bg-[var(--primary-3)] text-[var(--primary-9)]'
-                                : 'text-gray-600 hover:bg-[var(--primary-1)] hover:text-[var(--primary-9)]'
+                            ? 'bg-[var(--primary-3)] text-[var(--primary-9)]'
+                            : 'text-gray-600 hover:bg-[var(--primary-1)] hover:text-[var(--primary-9)]'
                             }`}
                     >
                         {/* Icon - keeping it as requested "Mainly icon with text" */}
                         <Icon
                             name={tab.icon}
                             className={`h-4 w-4 transition-colors ${activeTab === tab.id
-                                    ? 'text-[var(--primary-9)]'
-                                    : 'text-gray-500 group-hover:text-[var(--primary-9)]'
+                                ? 'text-[var(--primary-9)]'
+                                : 'text-gray-500 group-hover:text-[var(--primary-9)]'
                                 }`}
                         />
                         <span>{tab.label}</span>
@@ -234,7 +279,7 @@ const AddNodeMenu = () => {
                             {appsAndAgents.map((item, i) => (
                                 <button
                                     key={i}
-                                    className='flex items-center gap-3 rounded-xl p-2.5 hover:bg-gray-50 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] text-left group'
+                                    className='flex items-center gap-3 rounded-xl p-2.5 hover:bg-[var(--primary-1)] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] text-left group'
                                     onClick={() => handleItemSelect(item)}
                                 >
                                     <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg ${item.bgColor === 'bg-transparent' ? '' : item.bgColor}`}>
@@ -244,7 +289,7 @@ const AddNodeMenu = () => {
                                             style={{ color: item.iconColor }}
                                         />
                                     </div>
-                                    <span className='text-sm font-medium text-gray-700 group-hover:text-gray-900'>{item.label}</span>
+                                    <span className='text-sm font-medium text-gray-700 group-hover:text-[var(--primary-9)]'>{item.label}</span>
                                 </button>
                             ))}
                         </div>
@@ -255,13 +300,13 @@ const AddNodeMenu = () => {
                             {triggerItems.map((item, i) => (
                                 <button
                                     key={i}
-                                    className='flex items-center gap-3 rounded-xl p-2.5 hover:bg-gray-50 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] text-left group'
+                                    className='flex items-center gap-3 rounded-xl p-2.5 hover:bg-[var(--primary-1)] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] text-left group'
                                     onClick={() => handleItemSelect(item)}
                                 >
                                     <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${item.bgColor}`}>
                                         <Icon name={item.icon} className='h-4 w-4' style={{ color: item.iconColor }} />
                                     </div>
-                                    <span className='text-sm font-medium text-gray-700 group-hover:text-gray-900'>{item.label}</span>
+                                    <span className='text-sm font-medium text-gray-700 group-hover:text-[var(--primary-9)]'>{item.label}</span>
                                 </button>
                             ))}
                         </div>
@@ -272,7 +317,7 @@ const AddNodeMenu = () => {
                         {filteredIntegrations.map((item, i) => (
                             <button
                                 key={i}
-                                className='flex items-center gap-3 rounded-xl p-2 hover:bg-gray-50 transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] text-left group'
+                                className='flex items-center gap-3 rounded-xl p-2 hover:bg-[var(--primary-1)] transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] text-left group'
                                 onClick={() => handleItemSelect(item)}
                             >
                                 <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${item.bgColor === 'bg-transparent' ? '' : item.bgColor}`}>
@@ -283,7 +328,7 @@ const AddNodeMenu = () => {
                                     />
                                 </div>
                                 <div className='flex flex-col'>
-                                    <span className='text-sm font-medium text-gray-900'>{item.label}</span>
+                                    <span className='text-sm font-medium text-gray-900 group-hover:text-[var(--primary-9)]'>{item.label}</span>
                                     {search && <span className='text-xs text-gray-500'>{item.description}</span>}
                                 </div>
                             </button>

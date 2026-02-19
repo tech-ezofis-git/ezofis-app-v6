@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 import InputCheckboxGroup from '@/components/base/inputs/InputCheckboxGroup'
+import StoryCode from './-components/StoryCode'
 import StorySubTitle from './-components/StorySubTitle'
 import StoryTitle from './-components/StoryTitle'
 
@@ -9,119 +10,153 @@ export const Route = createFileRoute('/stories/input-checkbox-group')({
 })
 
 const options1 = [
-  {
-    id: 1,
-    name: 'Option 1',
-  },
-  {
-    id: 2,
-    name: 'Option 2',
-  },
-  {
-    id: 3,
-    name: 'Option 3',
-  },
+  { id: 1, name: 'Standard Delivery' },
+  { id: 2, name: 'Express Delivery' },
+  { id: 3, name: 'Pick-up from Store' },
 ]
-const options2 = [
-  {
-    id: 1,
-    name: 'Option 1',
-  },
-  {
-    id: 2,
-    name: 'Option 2',
-  },
-  {
-    id: 3,
-    name: 'Option 3',
-  },
-  {
-    id: 4,
-    name: 'Option 4',
-  },
-  {
-    id: 5,
-    name: 'Option 5',
-  },
-]
-const options3 = [
-  {
-    description: 'Lorem ipsum dolar sit amit',
-    id: 1,
-    name: 'Option 1',
-  },
-  {
-    description: 'Lorem ipsum dolar sit amit',
-    id: 2,
-    name: 'Option 2',
-  },
-  {
-    description: 'Lorem ipsum dolar sit amit',
-    id: 3,
-    name: 'Option 3',
-  },
+
+const optionsLarge = Array.from({ length: 6 }, (_, i) => ({
+  id: i + 1,
+  name: `Option ${i + 1}`,
+}))
+
+const optionsWithDescription = [
+  { id: 1, name: 'Basic Plan', description: 'Up to 5 projects and limited storage' },
+  { id: 2, name: 'Pro Plan', description: 'Unlimited projects and 50GB storage' },
+  { id: 3, name: 'Enterprise Plan', description: 'Custom solutions for large teams' },
 ]
 
 function RouteComponent() {
   const [value, setValue] = useState<number[]>([])
 
   return (
-    <div>
-      <StoryTitle>26. Input Checkbox Group</StoryTitle>
+    <div className='max-w-4xl p-6'>
+      <StoryTitle>Input Checkbox Group</StoryTitle>
+      <p className='text-15 text-gray-11 mb-10'>
+        The Checkbox Group component manages a collection of checkboxes as a single field. It's ideal for multi-select scenarios where users can choose several options from a list.
+      </p>
+
+      <p className='text-14 text-gray-11 mb-4'>Before using InputCheckboxGroup, import it from its location:</p>
+      <StoryCode>
+        {`import InputCheckboxGroup from '@/components/base/inputs/InputCheckboxGroup'`}
+      </StoryCode>
 
       <div className='space-y-16'>
-        <StorySubTitle>Default</StorySubTitle>
-        <InputCheckboxGroup
-          options={options1}
-          value={value}
-          onChange={setValue}
-        />
+        {/* Default Section */}
+        <section>
+          <StorySubTitle>Default Usage</StorySubTitle>
+          <p className='text-14 text-gray-11 mb-4'>
+            A simple group with vertically stacked checkboxes.
+          </p>
+          <StoryCode>
+            {`<InputCheckboxGroup options={options} value={value} onChange={setValue} />`}
+          </StoryCode>
+          <div className='ml-1'>
+            <InputCheckboxGroup options={options1} value={value} onChange={setValue} />
+          </div>
+        </section>
 
-        <StorySubTitle>Meta</StorySubTitle>
-        <InputCheckboxGroup
-          className='max-w-80'
-          description='Lorem ipsum dolar sit amit'
-          label='Label'
-          options={options1}
-          tooltip='Lorem ipsum dolar sit amit'
-          value={value}
-          optional
-          required
-          onChange={setValue}
-        />
+        {/* Metadata Section */}
+        <section>
+          <StorySubTitle>Metadata (Label, Description, Tooltip)</StorySubTitle>
+          <p className='text-14 text-gray-11 mb-4'>
+            Configure headings, instructions, and necessity indicators for the group:
+          </p>
+          <ul className='list-disc list-inside space-y-2 text-14 text-gray-11 mb-6 ml-2'>
+            <li><strong>Label:</strong> A clear title for the whole group.</li>
+            <li><strong>Description:</strong> Contextual help text below the label.</li>
+            <li><strong>Tooltip:</strong> Detailed info accessible via hover icon.</li>
+          </ul>
+          <StoryCode>
+            {`<InputCheckboxGroup
+  label='Shipping Methods'
+  description='Choose all methods you would like to enable'
+  tooltip='Standard delivery takes 3-5 business days'
+  options={options}
+  value={value}
+  onChange={setValue}
+  required
+/>`}
+          </StoryCode>
+          <div className='max-w-sm ml-1'>
+            <InputCheckboxGroup
+              label='Shipping Methods'
+              description='Choose all methods you would like to enable'
+              tooltip='Standard delivery takes 3-5 business days'
+              options={options1}
+              value={value}
+              onChange={setValue}
+              className='w-full'
+              required
+            />
+          </div>
+        </section>
 
-        <StorySubTitle>Options Per Line</StorySubTitle>
-        <div className='max-w-96'>
-          <InputCheckboxGroup
-            options={options2}
-            optionsPerLine={3}
-            value={value}
-            onChange={setValue}
-          />
-        </div>
+        {/* Layout Section */}
+        <section>
+          <StorySubTitle>Grid Layout (Options Per Line)</StorySubTitle>
+          <p className='text-14 text-gray-11 mb-4'>
+            Organize options into a multi-column grid using the <code>optionsPerLine</code> prop:
+          </p>
+          <StoryCode>
+            {`<InputCheckboxGroup options={options} optionsPerLine={3} />`}
+          </StoryCode>
+          <div className='ml-1 max-w-lg'>
+            <InputCheckboxGroup
+              options={optionsLarge}
+              optionsPerLine={3}
+              value={value}
+              onChange={setValue}
+            />
+          </div>
+        </section>
 
-        <StorySubTitle>Description</StorySubTitle>
-        <InputCheckboxGroup
-          options={options3}
-          value={value}
-          onChange={setValue}
-        />
+        {/* Item Descriptions */}
+        <section>
+          <StorySubTitle>Item Descriptions</StorySubTitle>
+          <p className='text-14 text-gray-11 mb-4'>
+            Individual options within the group can also have their own descriptions:
+          </p>
+          <StoryCode>
+            {`<InputCheckboxGroup options={optionsWithDescription} />`}
+          </StoryCode>
+          <div className='ml-1 max-w-sm'>
+            <InputCheckboxGroup
+              options={optionsWithDescription}
+              value={value}
+              onChange={setValue}
+            />
+          </div>
+        </section>
 
-        <StorySubTitle>Error</StorySubTitle>
-        <InputCheckboxGroup
-          error='Lorem ipsum dolar sit emit'
-          options={options1}
-          value={value}
-          onChange={setValue}
-        />
-
-        <StorySubTitle>Disabled</StorySubTitle>
-        <InputCheckboxGroup
-          options={options1}
-          value={value}
-          disabled
-          onChange={setValue}
-        />
+        {/* States Section */}
+        <section>
+          <StorySubTitle>Interaction States</StorySubTitle>
+          <p className='text-14 text-gray-11 mb-6'>
+            Visual feedback for invalid inputs or restricted interaction:
+          </p>
+          <div className='grid grid-cols-1 md:grid-cols-2 gap-8 max-w-2xl'>
+            <div>
+              <p className='text-13 font-medium mb-3'>Disabled State</p>
+              <StoryCode>{"<InputCheckboxGroup disabled options={options} />"}</StoryCode>
+              <div className='ml-1 mt-4'>
+                <InputCheckboxGroup disabled options={options1} value={[1]} onChange={() => { }} />
+              </div>
+            </div>
+            <div>
+              <p className='text-13 font-medium mb-3'>Error State</p>
+              <StoryCode>{"<InputCheckboxGroup error='Selection required' options={options} />"}</StoryCode>
+              <div className='ml-1 mt-4'>
+                <InputCheckboxGroup
+                  error='Please select at least one plan'
+                  options={options1}
+                  value={value}
+                  onChange={setValue}
+                />
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
   )

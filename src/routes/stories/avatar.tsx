@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import avatarImg from '@/assets/avatar.jpg'
 import Avatar from '@/components/base/Avatar'
+import StoryCode from './-components/StoryCode'
 import StorySubTitle from './-components/StorySubTitle'
 import StoryTitle from './-components/StoryTitle'
 
@@ -10,15 +11,47 @@ export const Route = createFileRoute('/stories/avatar')({
 
 function RouteComponent() {
   return (
-    <div>
-      <StoryTitle>8. Avatar</StoryTitle>
+    <div className='max-w-4xl p-6'>
+      <StoryTitle>Avatar</StoryTitle>
+      <p className='text-15 text-gray-11 mb-10'>
+        The Avatar component is used to represent a user or an entity visually. It supports images, initials, and fallback icons to ensure a consistent representation even when user data is partially missing.
+      </p>
+
+      <p className='text-14 text-gray-11 mb-4'>Before using Avatar, import it from its location:</p>
+      <StoryCode>
+        {`import Avatar from '@/components/base/Avatar'`}
+      </StoryCode>
 
       <div className='space-y-16'>
-        <StorySubTitle>Default</StorySubTitle>
-        <Avatar initials='CH' />
+        {/* Default Section */}
+        <section>
+          <StorySubTitle>Default Usage (Initials)</StorySubTitle>
+          <p className='text-14 text-gray-11 mb-4'>
+            When an image is unavailable, the component displays initials as a fallback.
+          </p>
+          <StoryCode>
+            {`<Avatar initials='CH' />`}
+          </StoryCode>
+          <div className='ml-1'>
+            <Avatar initials='CH' />
+          </div>
+        </section>
 
-        <StorySubTitle>Image</StorySubTitle>
-        <Avatar image={avatarImg} initials='CH' />
+        {/* Image Section */}
+        <section>
+          <StorySubTitle>Image Representation</StorySubTitle>
+          <p className='text-14 text-gray-11 mb-4'>
+            Pass an image source to display a user's profile photo.
+          </p>
+          <StoryCode>
+            {`import avatarImg from '@/assets/avatar.jpg'
+
+<Avatar image={avatarImg} initials='CH' />`}
+          </StoryCode>
+          <div className='ml-1'>
+            <Avatar image={avatarImg} initials='CH' />
+          </div>
+        </section>
       </div>
     </div>
   )
