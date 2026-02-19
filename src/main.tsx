@@ -15,9 +15,9 @@ import { GoogleOAuthProvider } from '@react-oauth/google'
 import { MsalProvider } from '@azure/msal-react'
 import { PublicClientApplication } from '@azure/msal-browser'
 
-
 const googleClientId = import.meta.env?.VITE_GOOGLE_CLIENT_ID as string;
 const microsoftClientId = import.meta.env?.VITE_MSAL_CLIENT_ID_DEFAULT as string;
+
 
 const msalInstance = new PublicClientApplication({
   auth: {
