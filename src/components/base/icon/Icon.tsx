@@ -7,12 +7,13 @@ interface Props extends SVGProps<SVGSVGElement> {
   className?: string
 }
 
-const Icon = forwardRef<SVGSVGElement, Props>(({ className, name }, ref) => {
+const Icon = forwardRef<SVGSVGElement, Props>(({ className, name, ...props }, ref) => {
   return (
     <Base
       className={cn('inline-block size-4 shrink-0 text-inherit', className)}
       icon={name}
       ref={ref}
+      {...props as any}
     />
   )
 })

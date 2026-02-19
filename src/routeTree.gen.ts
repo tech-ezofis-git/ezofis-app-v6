@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as StoriesRouteRouteImport } from './routes/stories/route'
 import { Route as PlaygroundRouteRouteImport } from './routes/playground/route'
 import { Route as AuthRouteRouteImport } from './routes/_auth/route'
@@ -76,6 +77,11 @@ import { Route as AuthResetPasswordIndexRouteImport } from './routes/_auth/reset
 import { Route as AuthForgotPasswordIndexRouteImport } from './routes/_auth/forgot-password/index'
 import { Route as AppMyAccountChar123SlugChar125RouteImport } from './routes/_app/my-account.{-$slug}'
 
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const StoriesRouteRoute = StoriesRouteRouteImport.update({
   id: '/stories',
   path: '/stories',
@@ -413,6 +419,7 @@ const AppMyAccountChar123SlugChar125Route =
 export interface FileRoutesByFullPath {
   '/playground': typeof PlaygroundRouteRoute
   '/stories': typeof StoriesRouteRouteWithChildren
+  '/auth': typeof AuthRoute
   '/folders': typeof AppFoldersRoute
   '/forms': typeof AppFormsRoute
   '/help-center': typeof AppHelpCenterRoute
@@ -478,6 +485,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/playground': typeof PlaygroundRouteRoute
+  '/auth': typeof AuthRoute
   '/folders': typeof AppFoldersRoute
   '/forms': typeof AppFormsRoute
   '/help-center': typeof AppHelpCenterRoute
@@ -547,6 +555,7 @@ export interface FileRoutesById {
   '/_auth': typeof AuthRouteRouteWithChildren
   '/playground': typeof PlaygroundRouteRoute
   '/stories': typeof StoriesRouteRouteWithChildren
+  '/auth': typeof AuthRoute
   '/_app/folders': typeof AppFoldersRoute
   '/_app/forms': typeof AppFormsRoute
   '/_app/help-center': typeof AppHelpCenterRoute
@@ -615,6 +624,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/playground'
     | '/stories'
+    | '/auth'
     | '/folders'
     | '/forms'
     | '/help-center'
@@ -680,6 +690,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/playground'
+    | '/auth'
     | '/folders'
     | '/forms'
     | '/help-center'
@@ -748,6 +759,7 @@ export interface FileRouteTypes {
     | '/_auth'
     | '/playground'
     | '/stories'
+    | '/auth'
     | '/_app/folders'
     | '/_app/forms'
     | '/_app/help-center'
@@ -817,6 +829,7 @@ export interface RootRouteChildren {
   AuthRouteRoute: typeof AuthRouteRouteWithChildren
   PlaygroundRouteRoute: typeof PlaygroundRouteRoute
   StoriesRouteRoute: typeof StoriesRouteRouteWithChildren
+  AuthRoute: typeof AuthRoute
   FormBuilderFormIdRoute: typeof FormBuilderFormIdRoute
   OnBoardingTokenRoute: typeof OnBoardingTokenRoute
   WorkflowBuilderWorkflowIdRoute: typeof WorkflowBuilderWorkflowIdRoute
@@ -826,6 +839,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/stories': {
       id: '/stories'
       path: '/stories'
@@ -1440,6 +1460,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRouteRoute: AuthRouteRouteWithChildren,
   PlaygroundRouteRoute: PlaygroundRouteRoute,
   StoriesRouteRoute: StoriesRouteRouteWithChildren,
+  AuthRoute: AuthRoute,
   FormBuilderFormIdRoute: FormBuilderFormIdRoute,
   OnBoardingTokenRoute: OnBoardingTokenRoute,
   WorkflowBuilderWorkflowIdRoute: WorkflowBuilderWorkflowIdRoute,
