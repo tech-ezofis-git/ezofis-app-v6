@@ -292,8 +292,7 @@ const renderBuilderPreview = (question: Question) => {
 
                     <ActionIcon
                         variant="filled"
-                        bg="accent-primary"
-                        className="absolute right-2 top-1/2 -translate-y-1/2 shadow-sm hover:opacity-90 active:scale-90 transition-all z-10"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 shadow-sm hover:opacity-90 active:scale-90 transition-all z-10 bg-accent-primary"
                         size="sm"
                     >
                         <Icon name="tabler:sparkles" width={13} height={13} />

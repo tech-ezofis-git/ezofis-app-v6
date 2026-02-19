@@ -1,6 +1,14 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
+export const generateId = () => {
+    try {
+        return crypto.randomUUID()
+    } catch (e) {
+        return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
+    }
+}
+
 export type QuestionType =
   | 'short_text'
   | 'label'
@@ -58,6 +66,8 @@ export interface Page {
   questions: Question[]
 }
 
+export type FormLayout = 'typeform' | 'grid' | 'full'
+export type FormType = 'workflow' | 'master' | 'task' | 'sla' | 'feedback'
 export type PreviewMode = 'typeform' | 'grid' | 'heatmap'
 
 interface FormStore {
@@ -68,6 +78,30 @@ interface FormStore {
   previewMode: PreviewMode
   hidePreview: boolean
   isBuilderMode: boolean
+  
+  // New Metadata
+  formType: FormType
+  coordinator: string
+  layout: FormLayout
+  
+  showWelcomePage: boolean
+  welcomePage: {
+    title: string
+    description: string
+    buttonText: string
+    enabled: boolean
+  }
+  
+  showThankYouPage: boolean
+  thankYouPage: {
+    title: string
+    description: string
+    enabled: boolean
+  }
+  
+  showHeaderFooter: boolean
+  headerText: string
+  footerText: string
 
   setName: (name: string) => void
   setDescription: (description: string) => void
@@ -76,6 +110,14 @@ interface FormStore {
   setPreviewMode: (mode: PreviewMode) => void
   setHidePreview: (hide: boolean) => void
   setIsBuilderMode: (isBuilder: boolean) => void
+  
+  // Metadata Setters
+  setFormType: (type: FormType) => void
+  setCoordinator: (coordinator: string) => void
+  setLayout: (layout: FormLayout) => void
+  setWelcomePage: (updates: Partial<FormStore['welcomePage']>) => void
+  setThankYouPage: (updates: Partial<FormStore['thankYouPage']>) => void
+  setHeaderFooter: (updates: { show?: boolean, header?: string, footer?: string }) => void
 
   // Page Actions
   addPage: (index?: number) => void
@@ -94,6 +136,9 @@ interface FormStore {
   // UI State
   isPreviewOpen: boolean
   setIsPreviewOpen: (open: boolean) => void
+
+  // AI Actions
+  appendAIResponse: (data: { name: string, description: string, pages: any[] }) => void
 }
 
 export const useFormStore = create<FormStore>()(
@@ -119,6 +164,29 @@ export const useFormStore = create<FormStore>()(
       hidePreview: false,
       isPreviewOpen: false,
       isBuilderMode: true,
+      
+      formType: 'workflow',
+      coordinator: '',
+      layout: 'typeform',
+      
+      showWelcomePage: false,
+      welcomePage: {
+        title: 'Welcome to our form',
+        description: 'Please take a moment to fill out this information.',
+        buttonText: 'Start',
+        enabled: false
+      },
+      
+      showThankYouPage: false,
+      thankYouPage: {
+        title: 'Thank you!',
+        description: 'Your response has been recorded.',
+        enabled: false
+      },
+      
+      showHeaderFooter: false,
+      headerText: '',
+      footerText: '',
 
       setName: (name) => set({ name }),
       setDescription: (description) => set({ description }),
@@ -128,10 +196,27 @@ export const useFormStore = create<FormStore>()(
       setHidePreview: (hidePreview) => set({ hidePreview }),
       setIsPreviewOpen: (isPreviewOpen) => set({ isPreviewOpen }),
       setIsBuilderMode: (isBuilderMode) => set({ isBuilderMode }),
+      
+      setFormType: (formType) => set({ formType }),
+      setCoordinator: (coordinator) => set({ coordinator }),
+      setLayout: (layout) => set({ layout }),
+      setWelcomePage: (updates) => set((state) => ({ 
+        welcomePage: { ...state.welcomePage, ...updates },
+        showWelcomePage: updates.enabled ?? state.showWelcomePage
+      })),
+      setThankYouPage: (updates) => set((state) => ({ 
+        thankYouPage: { ...state.thankYouPage, ...updates },
+        showThankYouPage: updates.enabled ?? state.showThankYouPage
+      })),
+      setHeaderFooter: (updates) => set((state) => ({
+        showHeaderFooter: updates.show ?? state.showHeaderFooter,
+        headerText: updates.header ?? state.headerText,
+        footerText: updates.footer ?? state.footerText
+      })),
 
       addPage: (index) => set((state) => {
         const newPage: Page = {
-          id: crypto.randomUUID(),
+          id: generateId(),
           title: `Page ${state.pages.length + 1}`,
           description: '',
           questions: []
@@ -146,7 +231,6 @@ export const useFormStore = create<FormStore>()(
       }),
 
       deletePage: (id) => set((state) => {
-        if (state.pages.length <= 1) return state // Prevent deleting the last page
         return { pages: state.pages.filter(p => p.id !== id) }
       }),
 
@@ -161,9 +245,9 @@ export const useFormStore = create<FormStore>()(
         const pageToClone = state.pages[pageIndex]
         const newPage: Page = {
           ...pageToClone,
-          id: crypto.randomUUID(),
+          id: generateId(),
           title: `${pageToClone.title} (Copy)`,
-          questions: pageToClone.questions.map(q => ({ ...q, id: crypto.randomUUID() }))
+          questions: pageToClone.questions.map(q => ({ ...q, id: generateId() }))
         }
         
         const newPages = [...state.pages]
@@ -189,18 +273,18 @@ export const useFormStore = create<FormStore>()(
         let templateQuestions: Question[] = []
         if (templateType === 'address_info') {
           templateQuestions = [
-            { id: crypto.randomUUID(), title: 'Street Address', description: '', type: 'short_text', width: 'full' },
-            { id: crypto.randomUUID(), title: 'City', description: '', type: 'short_text', width: '1/2' },
-            { id: crypto.randomUUID(), title: 'State / Province', description: '', type: 'short_text', width: '1/2' },
-            { id: crypto.randomUUID(), title: 'ZIP / Postal Code', description: '', type: 'short_text', width: '1/2' },
-            { id: crypto.randomUUID(), title: 'Country', description: '', type: 'country_code', width: '1/2' },
+            { id: generateId(), title: 'Street Address', description: '', type: 'short_text', width: 'full' },
+            { id: generateId(), title: 'City', description: '', type: 'short_text', width: '1/2' },
+            { id: generateId(), title: 'State / Province', description: '', type: 'short_text', width: '1/2' },
+            { id: generateId(), title: 'ZIP / Postal Code', description: '', type: 'short_text', width: '1/2' },
+            { id: generateId(), title: 'Country', description: '', type: 'country_code', width: '1/2' },
           ]
         } else if (templateType === 'contact_info') {
           templateQuestions = [
-            { id: crypto.randomUUID(), title: 'Full Name', description: '', type: 'full_name', width: '1/2' },
-            { id: crypto.randomUUID(), title: 'Email Address', description: '', type: 'email', width: '1/2' },
-            { id: crypto.randomUUID(), title: 'Phone Number', description: '', type: 'phone', width: '1/2' },
-            { id: crypto.randomUUID(), title: 'Company / Organization', description: '', type: 'short_text', width: '1/2' },
+            { id: generateId(), title: 'Full Name', description: '', type: 'full_name', width: '1/2' },
+            { id: generateId(), title: 'Email Address', description: '', type: 'email', width: '1/2' },
+            { id: generateId(), title: 'Phone Number', description: '', type: 'phone', width: '1/2' },
+            { id: generateId(), title: 'Company / Organization', description: '', type: 'short_text', width: '1/2' },
           ]
         }
 
@@ -257,7 +341,7 @@ export const useFormStore = create<FormStore>()(
           if (qIndex === -1) return p
           
           const qToClone = p.questions[qIndex]
-          const newQuestion = { ...qToClone, id: crypto.randomUUID(), title: `${qToClone.title} (Copy)` }
+          const newQuestion = { ...qToClone, id: generateId(), title: `${qToClone.title} (Copy)` }
           const newQuestions = [...p.questions]
           newQuestions.splice(qIndex + 1, 0, newQuestion)
           
@@ -288,6 +372,35 @@ export const useFormStore = create<FormStore>()(
             newQuestions.splice(index, 0, questionToMove!)
             return { ...p, questions: newQuestions }
           })
+        }
+      }),
+
+      appendAIResponse: (data) => set((state) => {
+        // Update name/description if they are default
+        const updates: Partial<FormStore> = {}
+        if (state.name === 'Untitled Form') updates.name = data.name
+        if (!state.description) updates.description = data.description
+
+        const mappedPages: Page[] = data.pages.map(p => ({
+          id: generateId(),
+          title: p.title || 'Untitled Page',
+          description: p.description || '',
+          questions: (p.questions || []).map((q: any) => ({
+            ...q,
+            id: generateId(),
+            width: q.width || 'full',
+            columns: q.columns?.map((c: any) => ({
+              ...c,
+              id: generateId(),
+              size: c.size === '1/2' ? 'md' : c.size === '1/3' ? 'sm' : 'lg'
+            }))
+          }))
+        }))
+
+        return {
+          ...updates,
+          pages: [...state.pages, ...mappedPages],
+          activeQuestionId: mappedPages[0]?.questions[0]?.id || state.activeQuestionId
         }
       })
     }),

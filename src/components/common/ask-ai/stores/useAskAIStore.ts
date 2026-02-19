@@ -1,5 +1,4 @@
 import { create } from 'zustand'
-import { generateFormFields } from '@/services/ai/gemini'
 import { useFormStore } from '@/pages/form-builder/store/formStore'
 
 type Store = {
@@ -37,14 +36,20 @@ const useAskAIStore = create<Store>((set) => ({
 
     set({ isLoading: true })
     try {
-      const questions = await generateFormFields(prompt)
-      useFormStore.getState().setQuestions(questions)
-      // Optionally rename the form based on a simple heuristic or ask AI for a title too
-      // For now, let's keep it simple
+      const response = await fetch('http://localhost:5000/api/generate-form', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt })
+      })
+
+      if (!response.ok) throw new Error('Failed to generate form')
+      
+      const data = await response.json()
+      useFormStore.getState().appendAIResponse(data)
+      
       set({ isOpen: false, suggestion: '' }) 
     } catch (error) {
-      console.error(error)
-      // minimal error handling
+      console.error('AI Form Generation Error:', error)
     } finally {
       set({ isLoading: false })
     }

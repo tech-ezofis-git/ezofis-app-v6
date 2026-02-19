@@ -1,10 +1,10 @@
 import { SegmentedControl, Switch, Text, TextInput, Select, Textarea, Button, Divider, ActionIcon, Group, Paper } from '@mantine/core'
-import { useFormStore, type QuestionWidth, type QuestionType } from '@/pages/form-builder/store/formStore'
+import { useFormStore, type QuestionWidth, type QuestionType, generateId } from '@/pages/form-builder/store/formStore'
 import Icon from '@/components/base/icon/Icon'
 import { useEffect, useState } from 'react'
 
 const FieldSettings = () => {
-    const { pages, activeQuestionId, updateQuestion } = useFormStore()
+    const { pages, activeQuestionId, updateQuestion, deleteQuestion } = useFormStore()
 
     const activeQuestion = pages
         .flatMap(p => p.questions)
@@ -140,7 +140,7 @@ const FieldSettings = () => {
                                     className="hover:bg-gray-2 transition-all"
                                     onClick={() => {
                                         const newColumn = {
-                                            id: crypto.randomUUID(),
+                                            id: generateId(),
                                             name: `Column ${(activeQuestion.columns?.length || 0) + 1}`,
                                             type: 'short_text' as QuestionType,
                                             size: 'md' as const
@@ -248,7 +248,7 @@ const FieldSettings = () => {
                     leftSection={<Icon name="tabler:trash" width={14} height={14} />}
                     className="border-red-200 text-error-main hover:bg-red-50 active:scale-[0.98] transition-all"
                     onClick={() => {
-                        useFormStore.getState().deleteQuestion(activeQuestion.id)
+                        deleteQuestion(activeQuestion.id)
                     }}
                 >
                     Delete Field

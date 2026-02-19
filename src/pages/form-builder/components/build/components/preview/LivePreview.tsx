@@ -10,12 +10,17 @@ const LivePreview = () => {
     const {
         pages,
         isPreviewOpen,
-        setIsPreviewOpen
+        setIsPreviewOpen,
+        welcomePage,
+        showWelcomePage,
+        thankYouPage,
+        showThankYouPage
     } = useFormStore()
 
     const [viewMode, setViewMode] = useState<ViewMode>('typeform')
-    const [currentIndex, setCurrentIndex] = useState(0) // For Typeform (Question Index) & Grid (Page Index)
+    const [currentIndex, setCurrentIndex] = useState(0)
     const [isCompleted, setIsCompleted] = useState(false)
+    const [showWelcome, setShowWelcome] = useState(false)
 
     // Flatten all questions for Typeform mode
     const allQuestions = pages.flatMap(p => p.questions)
@@ -27,8 +32,9 @@ const LivePreview = () => {
         if (isPreviewOpen) {
             setCurrentIndex(0)
             setIsCompleted(false)
+            setShowWelcome(showWelcomePage)
         }
-    }, [isPreviewOpen])
+    }, [isPreviewOpen, showWelcomePage])
 
     // Close on Escape
     useEffect(() => {
@@ -43,26 +49,41 @@ const LivePreview = () => {
 
     // Handlers
     const handleNext = () => {
+        if (showWelcome) {
+            setShowWelcome(false)
+            return
+        }
+
         if (viewMode === 'typeform') {
             if (currentIndex < totalQuestions - 1) {
                 setCurrentIndex(prev => prev + 1)
-            } else {
+            } else if (showThankYouPage) {
                 setIsCompleted(true)
+            } else {
+                setIsPreviewOpen(false)
             }
         } else if (viewMode === 'grid') {
             if (currentIndex < totalPages - 1) {
                 setCurrentIndex(prev => prev + 1)
-            } else {
+            } else if (showThankYouPage) {
                 setIsCompleted(true)
+            } else {
+                setIsPreviewOpen(false)
             }
         } else {
-            setIsCompleted(true)
+            if (showThankYouPage) {
+                setIsCompleted(true)
+            } else {
+                setIsPreviewOpen(false)
+            }
         }
     }
 
     const handlePrev = () => {
         if (currentIndex > 0) {
             setCurrentIndex(prev => prev - 1)
+        } else if (showWelcomePage && !showWelcome) {
+            setShowWelcome(true)
         }
     }
 
@@ -77,15 +98,15 @@ const LivePreview = () => {
     }
 
     return (
-        <div className="fixed inset-0 z-[200] bg-surface-primary flex flex-col animate-in slide-in-from-bottom-10 fade-in duration-300">
+        <div className="fixed inset-0 z-[200] bg-white flex flex-col animate-in fade-in duration-500 font-inter">
             {/* Header */}
-            <div className="h-14 border-b border-gray-2 flex items-center justify-between px-6 bg-white shrink-0">
+            <div className="h-16 border-b border-gray-2 flex items-center justify-between px-6 bg-white shrink-0 z-30">
                 <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2">
-                        <div className="bg-accent-primary/10 text-accent-primary p-1.5 rounded-md">
-                            <Icon name="tabler:eye" width={18} height={18} />
+                    <div className="flex items-center gap-3">
+                        <div className="bg-accent-soft/30 text-accent-primary size-9 rounded-xl flex items-center justify-center">
+                            <Icon name="tabler:eye" width={20} height={20} />
                         </div>
-                        <span className="font-bold text-gray-9">Form Preview</span>
+                        <span className="font-extrabold text-gray-13 tracking-tight text-lg">Preview</span>
                     </div>
 
                     <div className="h-6 w-px bg-gray-2 mx-2" />
@@ -96,6 +117,7 @@ const LivePreview = () => {
                             setViewMode(v as ViewMode)
                             setCurrentIndex(0)
                             setIsCompleted(false)
+                            setShowWelcome(showWelcomePage)
                         }}
                         data={[
                             { label: 'One at a time', value: 'typeform' },
@@ -103,102 +125,118 @@ const LivePreview = () => {
                             { label: 'All Questions', value: 'full' },
                         ]}
                         size="xs"
-                        radius="md"
+                        radius="xl"
                         classNames={{
-                            root: 'bg-gray-1 p-1 border-0',
+                            root: 'bg-gray-1 p-1 border border-gray-2',
                             indicator: 'bg-white shadow-sm',
-                            label: 'px-3 font-medium text-xs'
+                            label: 'px-6 font-bold text-[10px] uppercase tracking-wider'
                         }}
                     />
                 </div>
 
                 <div className="flex items-center gap-4">
-                    <span className="text-sm text-gray-5 flex items-center gap-1 hidden sm:flex">
-                        <Icon name="tabler:device-desktop" width={16} height={16} />
-                        Desktop
-                    </span>
+                    <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-2 border border-gray-3">
+                        <Icon name="tabler:device-desktop" width={14} height={14} className="text-gray-9" />
+                        <Text size="10px" fw={700} className="text-gray-11 uppercase tracking-wider">Live Preview</Text>
+                    </div>
                     <Button
                         variant="subtle"
                         color="gray"
-                        size="xs"
+                        size="sm"
                         onClick={() => setIsPreviewOpen(false)}
-                        leftSection={<Icon name="tabler:x" width={16} height={16} />}
+                        className="hover:bg-gray-1 rounded-xl h-10 px-4"
+                        leftSection={<Icon name="tabler:x" width={18} height={18} />}
                     >
-                        Close
+                        Exit
                     </Button>
                 </div>
             </div>
 
             {/* Main Content Area */}
-            <div className="flex-1 overflow-hidden relative bg-gray-50 flex flex-col items-center justify-center p-4 sm:p-8">
+            <div className="flex-1 overflow-hidden relative bg-white flex flex-col items-center justify-center p-4 sm:p-8">
+                <div className="w-full max-w-4xl bg-white rounded-3xl overflow-hidden flex flex-col h-full max-h-[850px] transition-all duration-300 border border-gray-2 relative">
 
-                {isCompleted ? (
-                    <CompletionScreen onClose={() => setIsPreviewOpen(false)} />
-                ) : (
-                    <div className="w-full max-w-2xl bg-white shadow-xl rounded-xl overflow-hidden flex flex-col min-h-[500px] max-h-full transition-all duration-300">
-                        {/* Progress Bar (Only for stepped views) */}
-                        {viewMode !== 'full' && (
-                            <div className="h-1 w-full bg-gray-1">
-                                <div
-                                    className="h-full bg-accent-primary transition-all duration-500 ease-out"
-                                    style={{ width: `${progress}%` }}
-                                />
+                    {/* Progress Bar */}
+                    {!showWelcome && !isCompleted && viewMode !== 'full' && (
+                        <div className="h-1.5 w-full bg-gray-1 absolute top-0 left-0 z-10">
+                            <div
+                                className="h-full bg-accent-primary transition-all duration-700 ease-in-out shadow-[0_0_10px_rgba(var(--accent-primary-rgb),0.5)]"
+                                style={{ width: `${progress}%` }}
+                            />
+                        </div>
+                    )}
+
+                    <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col relative">
+                        {showWelcome ? (
+                            <WelcomeScreen
+                                page={welcomePage}
+                                onStart={handleNext}
+                            />
+                        ) : isCompleted ? (
+                            <CompletionScreen
+                                page={thankYouPage}
+                                onClose={() => setIsPreviewOpen(false)}
+                            />
+                        ) : (
+                            <div className="flex-1 p-10 sm:p-14">
+                                {viewMode === 'typeform' && (
+                                    <TypeformView
+                                        question={allQuestions[currentIndex]}
+                                        index={currentIndex}
+                                    />
+                                )}
+                                {viewMode === 'grid' && (
+                                    <PageView
+                                        page={pages[currentIndex]}
+                                        pageIndex={currentIndex}
+                                    />
+                                )}
+                                {viewMode === 'full' && (
+                                    <FullFormView pages={pages} />
+                                )}
                             </div>
                         )}
+                    </div>
 
-                        <div className="flex-1 overflow-y-auto custom-scrollbar p-8 sm:p-12">
-                            {viewMode === 'typeform' && (
-                                <TypeformView
-                                    question={allQuestions[currentIndex]}
-                                    index={currentIndex}
-                                />
-                            )}
-                            {viewMode === 'grid' && (
-                                <PageView
-                                    page={pages[currentIndex]}
-                                    pageIndex={currentIndex}
-                                />
-                            )}
-                            {viewMode === 'full' && (
-                                <FullFormView pages={pages} />
-                            )}
+                    {/* Footer / Navigation */}
+                    <div className="px-8 py-6 border-t border-gray-1 bg-white flex justify-between items-center shrink-0 z-20">
+                        <div className="flex items-center gap-2 opacity-80 hover:opacity-100 transition-opacity cursor-default group">
+                            <div className="size-6 bg-accent-soft/30 rounded-lg flex items-center justify-center group-hover:bg-accent-soft/50 transition-colors">
+                                <Icon name="lucide:zap" width={14} height={14} className="text-accent-primary group-hover:scale-110 transition-transform" />
+                            </div>
+                            <Text size="10px" fw={800} className="text-gray-11 uppercase tracking-[0.2em]">
+                                Powered By <span className="text-gray-13 border-b border-gray-3 pb-0.5">EZOFIS</span>
+                            </Text>
                         </div>
 
-                        {/* Footer / Navigation */}
-                        <div className="p-6 border-t border-gray-1 bg-gray-50 flex justify-between items-center shrink-0">
-                            <div className="text-xs text-gray-4 font-bold uppercase tracking-wider">
-                                Powered by Antigravity
-                            </div>
-
-                            <div className="flex gap-2">
-                                {viewMode !== 'full' && (
+                        {!isCompleted && (
+                            <div className="flex gap-4">
+                                {(showWelcome || (viewMode !== 'full' && currentIndex > 0) || (!showWelcome && showWelcomePage)) && (
                                     <Button
-                                        variant="default"
+                                        variant="subtle"
+                                        color="gray"
                                         onClick={handlePrev}
-                                        disabled={currentIndex === 0}
-                                        size="sm"
+                                        disabled={showWelcome}
+                                        size="md"
+                                        className="rounded-2xl font-bold px-6 h-11"
                                     >
-                                        Previous
+                                        {showWelcome ? '' : 'Back'}
                                     </Button>
                                 )}
                                 <Button
                                     variant="filled"
-                                    color="dark"
+                                    bg="accent-primary"
                                     onClick={handleNext}
-                                    size="sm"
-                                    rightSection={<Icon name={viewMode === 'full' ? "tabler:check" : "tabler:chevron-right"} width={16} height={16} />}
+                                    size="md"
+                                    className="rounded-2xl font-black px-8 h-11 shadow-lg shadow-accent-soft/50 hover:opacity-90 active:scale-95 transition-all text-white"
+                                    rightSection={<Icon name={isCompleted || (viewMode === 'full') ? "tabler:check" : "tabler:arrow-right"} width={18} height={18} />}
                                 >
-                                    {viewMode === 'full'
-                                        ? 'Submit Form'
-                                        : (viewMode === 'typeform' && currentIndex === totalQuestions - 1) || (viewMode === 'grid' && currentIndex === totalPages - 1)
-                                            ? 'Submit'
-                                            : 'Next'
-                                    }
+                                    {showWelcome ? welcomePage.buttonText : (viewMode === 'full' ? 'Submit' : (currentIndex === totalQuestions - 1 || (viewMode === 'grid' && currentIndex === totalPages - 1) ? 'Submit' : 'Next'))}
                                 </Button>
                             </div>
-                        </div>
+                        )}
                     </div>
-                )}
+                </div>
             </div>
         </div>
     )
@@ -206,16 +244,50 @@ const LivePreview = () => {
 
 // --- Sub-Components ---
 
-const CompletionScreen = ({ onClose }: { onClose: () => void }) => (
-    <div className="w-full max-w-lg bg-white shadow-xl rounded-xl p-12 text-center animate-in zoom-in-95 fade-in duration-300">
-        <div className="size-20 bg-green-50 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Icon name="tabler:check" width={40} height={40} />
+const WelcomeScreen = ({ page, onStart }: { page: any, onStart: () => void }) => (
+    <div className="flex-1 flex flex-col items-center justify-center p-12 text-center animate-in fade-in zoom-in-95 duration-500">
+        <div className="size-28 bg-accent-soft/30 text-accent-primary rounded-[2.5rem] flex items-center justify-center mb-10 rotate-3 shadow-sm border border-accent-soft/60">
+            <Icon name="lucide:megaphone" className='size-12'/>
         </div>
-        <h2 className="text-2xl font-bold text-gray-9 mb-2">Thank You!</h2>
-        <p className="text-gray-5 mb-8">Your form has been successfully submitted.</p>
-        <Button variant="outline" color="gray" onClick={onClose}>
-            Back to Builder
+        <h1 className="text-5xl font-black text-gray-13 mb-6 tracking-tight leading-tight">
+            {page.title}
+        </h1>
+        <p className="text-xl text-gray-11 max-w-lg mx-auto mb-12 leading-relaxed font-medium">
+            {page.description}
+        </p>
+        <Button
+            size="xl"
+            bg="accent-primary"
+            onClick={onStart}
+            className="rounded-2xl px-12 h-16 text-xl font-black shadow-xl shadow-accent-soft/60 hover:scale-[1.02] active:scale-95 transition-all text-white"
+        >
+            {page.buttonText}
         </Button>
+    </div>
+)
+
+const CompletionScreen = ({ page, onClose }: { page: any, onClose: () => void }) => (
+    <div className="flex-1 flex flex-col items-center justify-center p-12 text-center animate-in fade-in zoom-in-95 duration-500">
+        <div className="size-28 bg-green-10/5 text-green-6 rounded-full flex items-center justify-center mb-10 shadow-sm border border-green-200 animate-bounce-slow">
+            <Icon name="tabler:circle-check" className='size-12' />
+        </div>
+        <h2 className="text-5xl font-black text-gray-13 mb-6 tracking-tight">
+            {page.title}
+        </h2>
+        <p className="text-xl text-gray-11 max-w-md mx-auto mb-12 leading-relaxed font-medium">
+            {page.description}
+        </p>
+        <div className="flex flex-col gap-4">
+            <Button
+                variant="outline"
+                color="gray"
+                size="lg"
+                onClick={onClose}
+                className="rounded-2xl border-2 border-gray-3 px-10 font-bold hover:bg-gray-1 transition-all h-14"
+            >
+                Close Preview
+            </Button>
+        </div>
     </div>
 )
 
