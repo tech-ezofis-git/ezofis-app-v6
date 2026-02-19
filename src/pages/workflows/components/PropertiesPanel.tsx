@@ -150,11 +150,10 @@ const PropertiesPanel = ({ node: selectedNode, edge, onClose }: PropertiesPanelP
                         variant='outline'
                         color='red'
                         className='w-full justify-start'
-                        leftSection={<Icon name='lucide:trash-2' className='h-4 w-4' />}
+                        icon='lucide:trash-2'
+                        label='Delete Connection'
                         onClick={handleDeleteEdge}
-                    >
-                        Delete Connection
-                    </Button>
+                    />
                 </div>
             </div>
         )

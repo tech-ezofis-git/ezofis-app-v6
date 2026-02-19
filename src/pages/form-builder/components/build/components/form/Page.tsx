@@ -38,8 +38,6 @@ const Page = ({ page, pageIndex }: Props) => {
 
     const pageRef = useRef<HTMLDivElement>(null)
     const [showAddFieldAt, setShowAddFieldAt] = useState<number | null>(null)
-    const [modalPos, setModalPos] = useState<{ x: number, y: number } | null>(null)
-    const modalRef = useRef<HTMLDivElement>(null)
 
     // Handle auto-scroll when page is added via AI
     useEffect(() => {
@@ -49,25 +47,10 @@ const Page = ({ page, pageIndex }: Props) => {
         }
     }, [lastAddedPageId, page.id, clearLastAddedPageId])
 
-    // Handle click outside to close floating modal
-    useEffect(() => {
-        const handleClickOutside = (e: MouseEvent) => {
-            if (modalRef.current && !modalRef.current.contains(e.target as Node)) {
-                setShowAddFieldAt(null)
-                setModalPos(null)
-            }
-        }
-        if (showAddFieldAt !== null) {
-            document.addEventListener('mousedown', handleClickOutside)
-        }
-        return () => document.removeEventListener('mousedown', handleClickOutside)
-    }, [showAddFieldAt])
-
     const handleAddField = (type: QuestionType | 'address_info' | 'contact_info', index: number) => {
         if (type === 'address_info' || type === 'contact_info') {
             addTemplateGroup(page.id, type, index)
             setShowAddFieldAt(null)
-            setModalPos(null)
             return
         }
 
@@ -80,36 +63,12 @@ const Page = ({ page, pageIndex }: Props) => {
         }
         addQuestion(page.id, newQuestion, index)
         setShowAddFieldAt(null)
-        setModalPos(null)
-    }
-
-    const openModalAt = (e: React.MouseEvent, index: number) => {
-        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
-        const PADDING = 20
-        const MENU_HEIGHT = 450
-        const MENU_WIDTH = 420
-        const screenY = rect.bottom
-        const spaceBelow = window.innerHeight - screenY - PADDING
-        const spaceAbove = rect.top - PADDING
-
-        let y: number
-        if (spaceBelow >= MENU_HEIGHT || spaceBelow >= spaceAbove) {
-            y = screenY + PADDING
-        } else {
-            y = Math.max(PADDING, rect.top - PADDING - MENU_HEIGHT)
-        }
-
-        // Clamp X to viewport
-        let x = rect.left + rect.width / 2
-        x = Math.max(MENU_WIDTH / 2 + PADDING, Math.min(window.innerWidth - MENU_WIDTH / 2 - PADDING, x))
-
-        setModalPos({ x, y })
-        setShowAddFieldAt(index)
     }
 
     return (
         <div
             ref={pageRef}
+            id={page.id}
             className="bg-surface-primary rounded-2xl border border-gray-3 shadow-sm relative group/page transition-all duration-300 hover:shadow-md animate-in fade-in slide-in-from-bottom-2 duration-500 font-inter"
             onDragOver={(e) => e.preventDefault()}
         >
@@ -161,7 +120,7 @@ const Page = ({ page, pageIndex }: Props) => {
                 isBuilderMode ? "bg-gray-1/60" : "bg-transparent"
             )}>
                 <SortableContext items={page.questions.map(q => q.id)} strategy={rectSortingStrategy}>
-                    <div className="flex flex-wrap gap-y-3 relative z-10">
+                    <div className="flex flex-wrap gap-y-3 relative z-10 w-full">
                         {page.questions.length === 0 && (
                             <div className="w-full py-14 flex flex-col items-center justify-center border-2 border-dashed border-gray-3 rounded-xl bg-surface-primary/60 animate-in fade-in duration-500">
                                 <div className="size-12 rounded-full bg-gray-2 flex items-center justify-center mb-3">
@@ -174,10 +133,20 @@ const Page = ({ page, pageIndex }: Props) => {
                                     bg="accent-primary"
                                     className="hover:scale-[1.02] active:scale-95 transition-all shadow-md shadow-accent-soft/20 font-inter font-bold"
                                     leftSection={<Icon name="lucide:plus" width={14} height={14} />}
-                                    onClick={(e) => openModalAt(e, 0)}
+                                    onClick={() => setShowAddFieldAt(0)}
                                 >
                                     Add first question
                                 </Button>
+                            </div>
+                        )}
+
+                        {/* Inline Selector at start */}
+                        {showAddFieldAt === 0 && (
+                            <div className="w-full px-2 mb-4 animate-in slide-in-from-top-1 duration-200">
+                                <AddFieldInline
+                                    onSelect={(type) => handleAddField(type, 0)}
+                                    onClose={() => setShowAddFieldAt(null)}
+                                />
                             </div>
                         )}
 
@@ -193,7 +162,7 @@ const Page = ({ page, pageIndex }: Props) => {
                                 <div className="absolute top-[-10px] left-0 right-0 h-5 z-[50] flex items-center justify-center opacity-0 group-hover/field:opacity-100 transition-opacity duration-200 pointer-events-none">
                                     <div className="w-full h-[1px] bg-accent-primary/40 absolute pointer-events-none" />
                                     <button
-                                        onClick={(e) => openModalAt(e, i)}
+                                        onClick={() => setShowAddFieldAt(i)}
                                         className="size-6 rounded-full bg-accent-primary text-white flex items-center justify-center shadow-lg hover:scale-125 transition-all pointer-events-auto"
                                     >
                                         <Icon name="lucide:plus" width={14} height={14} />
@@ -210,40 +179,32 @@ const Page = ({ page, pageIndex }: Props) => {
                                     isBuilderMode={isBuilderMode}
                                 />
 
-                                {/* Insert Hook (Bottom - Only for last) */}
-                                {i === page.questions.length - 1 && (
-                                    <div className="absolute bottom-[-10px] left-0 right-0 h-5 z-[50] flex items-center justify-center opacity-0 group-hover/field:opacity-100 transition-opacity duration-200 pointer-events-none">
-                                        <div className="w-full h-[1px] bg-accent-primary/40 absolute pointer-events-none" />
-                                        <button
-                                            onClick={(e) => openModalAt(e, i + 1)}
-                                            className="size-6 rounded-full bg-accent-primary text-white flex items-center justify-center shadow-lg hover:scale-125 transition-all pointer-events-auto"
-                                        >
-                                            <Icon name="lucide:plus" width={14} height={14} />
-                                        </button>
+                                {/* Insert Hook (Bottom - Only for last) OR Inline Selector below */}
+                                {showAddFieldAt === i + 1 ? (
+                                    <div className="w-full mt-4 mb-4 animate-in slide-in-from-top-1 duration-200 z-50">
+                                        <AddFieldInline
+                                            onSelect={(type) => handleAddField(type, i + 1)}
+                                            onClose={() => setShowAddFieldAt(null)}
+                                        />
                                     </div>
+                                ) : (
+                                    i === page.questions.length - 1 && (
+                                        <div className="absolute bottom-[-10px] left-0 right-0 h-5 z-[50] flex items-center justify-center opacity-0 group-hover/field:opacity-100 transition-opacity duration-200 pointer-events-none">
+                                            <div className="w-full h-[1px] bg-accent-primary/40 absolute pointer-events-none" />
+                                            <button
+                                                onClick={() => setShowAddFieldAt(i + 1)}
+                                                className="size-6 rounded-full bg-accent-primary text-white flex items-center justify-center shadow-lg hover:scale-125 transition-all pointer-events-auto"
+                                            >
+                                                <Icon name="lucide:plus" width={14} height={14} />
+                                            </button>
+                                        </div>
+                                    )
                                 )}
                             </div>
                         ))}
                     </div>
                 </SortableContext>
             </div>
-
-            {/* Floating Modal Layer */}
-            {showAddFieldAt !== null && modalPos && (
-                <div
-                    ref={modalRef}
-                    className="fixed z-[1000] pointer-events-auto animate-in fade-in zoom-in-95 duration-200"
-                    style={{
-                        top: modalPos.y,
-                        left: modalPos.x,
-                        transform: 'translateX(-50%)',
-                    }}
-                >
-                    <AddFieldInline
-                        onSelect={(type) => handleAddField(type, showAddFieldAt)}
-                    />
-                </div>
-            )}
 
             {/* Page Footer */}
             <div className="px-6 pb-6 pt-4 flex flex-col items-center">

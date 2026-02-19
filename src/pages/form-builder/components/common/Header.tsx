@@ -1,26 +1,20 @@
-import { ActionIcon, Button, Group, Box, TextInput, Text, Badge } from '@mantine/core'
+import { Button, Box } from '@mantine/core'
 import Icon from '@/components/base/icon/Icon'
 import { useFormStore } from '@/pages/form-builder/store/formStore'
 import useAskAIStore from '@/components/common/ask-ai/stores/useAskAIStore'
 import IconButton from '@/components/base/button/IconButton'
 import { useNavigate } from '@tanstack/react-router'
 
-interface HeaderProps {
-  setTab: (value: string | null) => void
-}
 
-const Header = ({ setTab }: HeaderProps) => {
+const Header = () => {
   const navigate = useNavigate()
   const {
     name,
-    setName,
     isBuilderMode,
-    setIsBuilderMode
+    setSelectionType,
+    setPublishOpen,
+    setIsPreviewOpen
   } = useFormStore()
-
-  const handleSave = () => {
-    //setName('New Form')
-  }
 
   return (
     <header className='flex h-16 items-center justify-between border-b border-gray-3 bg-white px-4 shrink-0'>
@@ -33,12 +27,12 @@ const Header = ({ setTab }: HeaderProps) => {
           onClick={() => navigate({ to: '/forms' })}
         />
 
-        <div className='flex flex-col group/name cursor-pointer' onClick={() => setTab('Settings')}>
+        <div className='flex flex-col group/name cursor-pointer' onClick={() => setSelectionType('general')}>
           <div className='flex items-center gap-2'>
             <input
               value={name}
               readOnly
-              className='text-base font-semibold text-gray-13 p-0 h-auto min-w-[120px] bg-transparent border-none focus:outline-none pointer-events-none'
+              className='text-base font-semibold text-gray-13 p-0 h-auto min-w-[120px] bg-transparent border-none focus:outline-none cursor-pointer'
             />
             <Icon
               name="lucide:pencil"
@@ -58,7 +52,6 @@ const Header = ({ setTab }: HeaderProps) => {
       {/* Right: Controls */}
       <div className='flex items-center gap-2'>
         <Button
-          // variant="subtle"
           color="gray"
           size="xs"
           leftSection={<Icon name="lucide:sparkles" width={14} height={14} />}
@@ -68,6 +61,15 @@ const Header = ({ setTab }: HeaderProps) => {
           Ask AI
         </Button>
 
+        <IconButton
+          icon="lucide:settings"
+          size="sm"
+          variant="ghost"
+          color="gray"
+          className="text-gray-7 hover:bg-gray-1"
+          onClick={() => setSelectionType('general')}
+        />
+
         <Box className="h-6 w-px bg-gray-2 mx-2" />
 
         <Button
@@ -76,7 +78,7 @@ const Header = ({ setTab }: HeaderProps) => {
           size="xs"
           leftSection={<Icon name="lucide:eye" width={14} height={14} />}
           className="border-gray-3 text-gray-11 font-bold uppercase tracking-wider text-[10px]"
-          onClick={() => useFormStore.getState().setIsPreviewOpen(true)}
+          onClick={() => setIsPreviewOpen(true)}
         >
           Preview
         </Button>
@@ -87,7 +89,7 @@ const Header = ({ setTab }: HeaderProps) => {
           size="xs"
           leftSection={<Icon name="lucide:rocket" width={14} height={14} />}
           className="hover:opacity-90 transition-all font-bold uppercase tracking-wider text-[10px] shadow-sm shadow-accent-soft/20"
-          onClick={() => setTab('Publish')}
+          onClick={() => setPublishOpen(true)}
         >
           Publish
         </Button>

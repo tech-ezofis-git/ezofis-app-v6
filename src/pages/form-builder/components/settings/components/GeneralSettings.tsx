@@ -68,7 +68,7 @@ const GeneralSettings = ({ setTab }: GeneralSettingsProps) => {
     coordinator, setCoordinator,
     layout, setLayout
   } = useFormStore()
-
+  console.log(setTab)
   return (
     <Box className="max-w-[1000px] mx-auto py-10 px-8 animate-in fade-in slide-in-from-bottom-4 duration-500 font-inter">
       <Stack gap={32}>

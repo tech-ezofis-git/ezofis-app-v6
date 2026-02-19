@@ -61,7 +61,7 @@ export const generateFormFields = async (prompt: string): Promise<Question[]> =>
       },
     });
 
-    const result = response.parsed as any;
+    const result = JSON.parse(response.text || '{}');
     
     if (!result) return [];
 
@@ -102,6 +102,7 @@ function mapType(apiType: string): string {
 }
 
 export async function suggestImprovements(formJson: string) {
+  console.log(formJson)
     // Placeholder for improvement suggestion if we needed it later
     return [];
 }

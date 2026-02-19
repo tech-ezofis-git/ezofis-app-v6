@@ -39,7 +39,7 @@ const CustomNode = ({ id, data, selected }: NodeProps) => {
     return (
         <div className='relative group'>
             {/* Delete Button (Right of Node) */}
-            {isDeletable && (
+            {isDeletable as any && (
                 <div
                     className={cn(
                         'absolute -right-14 top-1/2 -translate-y-1/2 z-10 transition-opacity duration-200 pl-4',

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import GeneralSettings from './components/GeneralSettings'
 import WelcomeThankYouSettings from './components/WelcomeThankYouSettings'
 import HeaderFooterSettings from './components/HeaderFooterSettings'
-import { Box, Group, Button, ActionIcon } from '@mantine/core'
+import { Box, Group, Button } from '@mantine/core'
 import Icon from '@/components/base/icon/Icon'
 import cn from '@/utils/cn'
 

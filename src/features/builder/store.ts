@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { t } from '@lingui/macro'
+// import { t } from '@lingui/macro'
 
 export type FieldType = 
   | 'short_text'
@@ -46,7 +46,7 @@ interface FormHistory {
   future: FormState[]
 }
 
-interface FormStore extends FormState {
+interface FormStore extends FormState, FormHistory {
   // Actions
   setTitle: (title: string) => void
   setActiveFieldId: (id: string | null) => void

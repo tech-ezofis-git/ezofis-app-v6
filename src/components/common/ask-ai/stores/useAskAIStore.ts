@@ -44,7 +44,7 @@ const useAskAIStore = create<Store>((set, get) => ({
     set({ isLoading: true, messages: newMessages, credits: Math.max(0, get().credits - 1) })
     
     try {
-      const response = await fetch('http://localhost:5000/api/generate-form', {
+      const response = await fetch('https://form-builder-ai-seven.vercel.app/api/generate-form', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt })

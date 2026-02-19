@@ -16,7 +16,7 @@ const Page = ({ page, index }: PageProps) => {
         <Box className="bg-white rounded-[2.5rem] border-2 border-slate-400 shadow-xl overflow-hidden mb-12">
             <Box className="px-12 py-10 border-b-2 border-slate-200 bg-slate-50">
                 <Text size="xs" fw={900} className="text-indigo-800 uppercase tracking-[0.3em] mb-4">
-                    {t`Section ${index + 1}.0`}
+                    {t`Section ${index + 1} .0`}
                 </Text>
                 <Text size="3rem" fw={900} className="text-slate-950 tracking-tighter leading-none">
                     {page.title}
@@ -41,7 +41,7 @@ const Page = ({ page, index }: PageProps) => {
 
             <Box className="px-8 py-3 border-t border-slate-100 flex items-center justify-center">
                 <Text size="10px" fw={700} className="text-slate-400 uppercase tracking-widest">
-                    {t`End of Section ${index + 1}.0`}
+                    {t`End of Section ${index + 1} .0`}
                 </Text>
             </Box>
         </Box>

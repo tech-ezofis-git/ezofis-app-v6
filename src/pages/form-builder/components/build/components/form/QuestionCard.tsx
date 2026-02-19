@@ -30,27 +30,31 @@ const QuestionCard = ({ question, index, isActive, onSelect, onUpdate, onDelete,
                 marginBottom: '12px'
             }}
         >
-            {/* Indicator Rail */}
-            <div className={cn(
-                "absolute left-0 top-0 bottom-0 w-[3px] transition-all duration-300 rounded-l-[10px]",
-                isActive ? "bg-accent-primary scale-y-100" : "bg-gray-3 group-hover:bg-gray-5"
-            )} />
-
-            {/* Persistent Drag Handle */}
-            {isBuilderMode && (
-                <div
-                    className={cn(
-                        "absolute left-[-26px] top-1/2 -translate-y-1/2 transition-all duration-300",
-                        isActive ? "opacity-100" : "opacity-0 group-hover:opacity-60"
-                    )}
-                    {...dragListeners}
-                >
-                    <Icon name="tabler:grip-vertical" width={18} height={18} className="text-gray-7 cursor-grab active:cursor-grabbing" />
+            {/* Integrated Drag Handle & Indicator Rail */}
+            <div 
+                className={cn(
+                    "absolute top-0 left-0 bottom-0 w-6 flex items-center justify-center rounded-l-[10px] transition-all duration-300 group/handle",
+                    isActive ? "bg-accent-soft/50" : "hover:bg-gray-1"
+                )}
+                {...dragListeners}
+            >
+                {/* The Color Indicator Line */}
+                <div className={cn(
+                    "absolute left-0 top-0 bottom-0 w-1 transition-all duration-300 rounded-l-[10px]",
+                    isActive ? "bg-accent-primary" : "bg-gray-3 group-hover/handle:bg-gray-5"
+                )} />
+                
+                {/* The Grip Icon */}
+                <div className={cn(
+                    "transition-all duration-300",
+                    isActive ? "opacity-100 scale-110 text-accent-primary" : "opacity-0 group-hover/field:opacity-40 group-hover/handle:opacity-100 text-gray-7"
+                )}>
+                    <Icon name="tabler:grip-vertical" width={18} height={18} className="cursor-grab active:cursor-grabbing" />
                 </div>
-            )}
+            </div>
 
             {/* Card Inner Padding */}
-            <div className="p-5">
+            <div className="p-5 pl-10">
                 {/* Header Row */}
                 <Group justify="space-between" mb={10}>
                     <Group gap="xs">
@@ -176,47 +180,10 @@ const QuestionCard = ({ question, index, isActive, onSelect, onUpdate, onDelete,
                 </Box>
             </div>
 
-            {/* Floating Width Controls (Pill Style) */}
-            <div className={cn(
-                "absolute -bottom-3 left-1/2 -translate-x-1/2 z-20 transition-all duration-200 ease-out",
-                isActive || "group-hover:opacity-100 group-hover:translate-y-0",
-                !isActive && "opacity-0 translate-y-1 pointer-events-none group-hover:pointer-events-auto"
-            )}>
-                <div className="flex items-center gap-1 p-1 bg-surface-primary rounded-full shadow-lg border border-gray-3">
-                    <WidthButton
-                        label="1/3"
-                        active={question.width === '1/3'}
-                        onClick={(e) => { e.stopPropagation(); onUpdate({ width: '1/3' }) }}
-                    />
-                    <WidthButton
-                        label="1/2"
-                        active={question.width === '1/2'}
-                        onClick={(e) => { e.stopPropagation(); onUpdate({ width: '1/2' }) }}
-                    />
-                    <WidthButton
-                        label="1/1"
-                        active={!question.width || question.width === 'full'}
-                        onClick={(e) => { e.stopPropagation(); onUpdate({ width: 'full' }) }}
-                    />
-                </div>
-            </div>
         </Card>
     )
 }
 
-const WidthButton = ({ label, active, onClick }: { label: string, active: boolean, onClick: (e: any) => void }) => (
-    <button
-        onClick={onClick}
-        className={cn(
-            "w-8 h-6 text-[10px] font-bold rounded-full transition-all flex items-center justify-center",
-            active
-                ? "bg-accent-primary text-white shadow-sm"
-                : "text-gray-7 hover:bg-gray-2 hover:text-gray-11"
-        )}
-    >
-        {label}
-    </button>
-)
 
 const renderBuilderPreview = (question: Question) => {
     const type = question.type

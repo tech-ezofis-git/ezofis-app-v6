@@ -117,7 +117,7 @@ function RouteComponent() {
             </Link>
           </div>
           <TextInput
-            leftSection={<Icon name='lucide:search' size={14} />}
+            leftSection={<Icon name='lucide:search' className='size-4' />}
             onChange={(e) => setSearch(e.target.value)}
             placeholder='Search components...'
             size='xs'

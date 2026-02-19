@@ -32,6 +32,7 @@ export type QuestionType =
   | 'full_name'
   | 'email'
   | 'phone'
+  | 'heading'
   | 'divider'
   | 'file_upload'
 
@@ -136,6 +137,13 @@ interface FormStore {
   // UI State
   isPreviewOpen: boolean
   setIsPreviewOpen: (open: boolean) => void
+  isPublishOpen: boolean
+  setPublishOpen: (open: boolean) => void
+  
+  // Selection State
+  selectionType: 'general' | 'welcome' | 'thank_you' | 'question'
+  setSelectionType: (type: 'general' | 'welcome' | 'thank_you' | 'question') => void
+  clearSelection: () => void
 
   // AI Actions
   appendAIResponse: (data: { name: string, description: string, pages: any[] }) => void
@@ -145,7 +153,7 @@ interface FormStore {
 
 export const useFormStore = create<FormStore>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       name: 'Untitled Form',
       description: '',
       pages: [
@@ -165,7 +173,9 @@ export const useFormStore = create<FormStore>()(
       previewMode: 'typeform',
       hidePreview: false,
       isPreviewOpen: false,
+      isPublishOpen: false,
       isBuilderMode: true,
+      selectionType: 'question',
       
       formType: 'workflow',
       coordinator: '',
@@ -194,12 +204,19 @@ export const useFormStore = create<FormStore>()(
       setName: (name) => set({ name }),
       setDescription: (description) => set({ description }),
       setPages: (pages) => set({ pages }),
-      setActiveQuestionId: (activeQuestionId) => set({ activeQuestionId }),
+      setActiveQuestionId: (activeQuestionId) => set((state) => ({ 
+        activeQuestionId,
+        selectionType: activeQuestionId ? 'question' : (['welcome', 'thank_you', 'general'].includes(state.selectionType) ? state.selectionType : 'general')
+      })),
       setPreviewMode: (previewMode) => set({ previewMode }),
       setHidePreview: (hidePreview) => set({ hidePreview }),
       setIsPreviewOpen: (isPreviewOpen) => set({ isPreviewOpen }),
+      setPublishOpen: (isPublishOpen) => set({ isPublishOpen }),
       setIsBuilderMode: (isBuilderMode) => set({ isBuilderMode }),
       
+      setSelectionType: (selectionType) => set({ selectionType, activeQuestionId: selectionType === 'question' ? get().activeQuestionId : null }),
+      clearSelection: () => set({ selectionType: 'general', activeQuestionId: null }),
+
       setFormType: (formType) => set({ formType }),
       setCoordinator: (coordinator) => set({ coordinator }),
       setLayout: (layout) => set({ layout }),
