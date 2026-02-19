@@ -30,7 +30,7 @@ const Header = ({ setTab }: HeaderProps) => {
           color='gray'
           icon='lucide:chevron-left'
           variant='ghost'
-          onClick={() => navigate({ to: '/dashboard' })}
+          onClick={() => navigate({ to: '/forms' })}
         />
 
         <div className='flex flex-col group/name cursor-pointer' onClick={() => setTab('Settings')}>
@@ -58,11 +58,11 @@ const Header = ({ setTab }: HeaderProps) => {
       {/* Right: Controls */}
       <div className='flex items-center gap-2'>
         <Button
-          variant="subtle"
+          // variant="subtle"
           color="gray"
           size="xs"
           leftSection={<Icon name="lucide:sparkles" width={14} height={14} />}
-          className="hover:bg-gray-1 text-gray-7 font-bold uppercase tracking-wider text-[10px]"
+          className="bg-blue-10 hover:bg-blue-9 text-white font-bold uppercase tracking-wider text-[10px]"
           onClick={() => useAskAIStore.getState().open()}
         >
           Ask AI

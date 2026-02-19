@@ -31,12 +31,23 @@ const Page = ({ page, pageIndex }: Props) => {
         addTemplateGroup,
         deletePage,
         updatePage,
-        isBuilderMode
+        isBuilderMode,
+        lastAddedPageId,
+        clearLastAddedPageId
     } = useFormStore()
 
+    const pageRef = useRef<HTMLDivElement>(null)
     const [showAddFieldAt, setShowAddFieldAt] = useState<number | null>(null)
     const [modalPos, setModalPos] = useState<{ x: number, y: number } | null>(null)
     const modalRef = useRef<HTMLDivElement>(null)
+
+    // Handle auto-scroll when page is added via AI
+    useEffect(() => {
+        if (lastAddedPageId === page.id && pageRef.current) {
+            pageRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            clearLastAddedPageId()
+        }
+    }, [lastAddedPageId, page.id, clearLastAddedPageId])
 
     // Handle click outside to close floating modal
     useEffect(() => {
@@ -98,6 +109,7 @@ const Page = ({ page, pageIndex }: Props) => {
 
     return (
         <div
+            ref={pageRef}
             className="bg-surface-primary rounded-2xl border border-gray-3 shadow-sm relative group/page transition-all duration-300 hover:shadow-md animate-in fade-in slide-in-from-bottom-2 duration-500 font-inter"
             onDragOver={(e) => e.preventDefault()}
         >

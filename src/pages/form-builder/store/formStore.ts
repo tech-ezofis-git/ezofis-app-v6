@@ -139,6 +139,8 @@ interface FormStore {
 
   // AI Actions
   appendAIResponse: (data: { name: string, description: string, pages: any[] }) => void
+  lastAddedPageId: string | null
+  clearLastAddedPageId: () => void
 }
 
 export const useFormStore = create<FormStore>()(
@@ -168,6 +170,7 @@ export const useFormStore = create<FormStore>()(
       formType: 'workflow',
       coordinator: '',
       layout: 'typeform',
+      lastAddedPageId: null,
       
       showWelcomePage: false,
       welcomePage: {
@@ -400,9 +403,12 @@ export const useFormStore = create<FormStore>()(
         return {
           ...updates,
           pages: [...state.pages, ...mappedPages],
-          activeQuestionId: mappedPages[0]?.questions[0]?.id || state.activeQuestionId
+          activeQuestionId: mappedPages[0]?.questions[0]?.id || state.activeQuestionId,
+          lastAddedPageId: mappedPages[0]?.id || null
         }
-      })
+      }),
+
+      clearLastAddedPageId: () => set({ lastAddedPageId: null })
     }),
     {
       name: 'form-builder-storage-v2', // Change storage key to avoid conflicts

@@ -7,6 +7,8 @@ type Store = {
   isLoading: boolean
   suggestion: string
   suggestions: string[]
+  credits: number
+  messages: { role: 'user' | 'assistant', content: string, data?: any }[]
   close: () => void
   open: () => void
   setSuggestion: (suggestion: string) => void
@@ -14,7 +16,7 @@ type Store = {
   sendMessage: (prompt: string) => Promise<void>
 }
 
-const useAskAIStore = create<Store>((set) => ({
+const useAskAIStore = create<Store>((set, get) => ({
   isMaximized: false,
   isOpen: false,
   isLoading: false,
@@ -26,6 +28,8 @@ const useAskAIStore = create<Store>((set) => ({
     'Make a contact us form with email validation.',
     'Generate a product survey with rating fields.',
   ],
+  credits: 15,
+  messages: [],
   close: () => set({ isOpen: false }),
   open: () => set({ isOpen: true }),
   toggleMaximize: () =>
@@ -34,7 +38,11 @@ const useAskAIStore = create<Store>((set) => ({
   sendMessage: async (prompt: string) => {
     if (!prompt.trim()) return
 
-    set({ isLoading: true })
+    const currentMessages = get().messages
+    const newMessages = [...currentMessages, { role: 'user' as const, content: prompt }]
+    
+    set({ isLoading: true, messages: newMessages, credits: Math.max(0, get().credits - 1) })
+    
     try {
       const response = await fetch('http://localhost:5000/api/generate-form', {
         method: 'POST',
@@ -47,9 +55,25 @@ const useAskAIStore = create<Store>((set) => ({
       const data = await response.json()
       useFormStore.getState().appendAIResponse(data)
       
-      set({ isOpen: false, suggestion: '' }) 
+      set((state) => ({ 
+        messages: [
+          ...state.messages, 
+          { 
+            role: 'assistant' as const, 
+            content: 'I have generated the form structure for you. You can see the details below:',
+            data 
+          }
+        ],
+        suggestion: '' 
+      })) 
     } catch (error) {
       console.error('AI Form Generation Error:', error)
+      set((state) => ({
+        messages: [
+          ...state.messages,
+          { role: 'assistant' as const, content: 'Sorry, I encountered an error while generating your form. Please try again.' }
+        ]
+      }))
     } finally {
       set({ isLoading: false })
     }

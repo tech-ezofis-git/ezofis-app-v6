@@ -1,4 +1,4 @@
-import { ActionIcon, Button, Group, Text, Box, UnstyledButton } from '@mantine/core'
+import { ActionIcon, Button, Text, Box, UnstyledButton } from '@mantine/core'
 import Icon from '@/components/base/icon/Icon'
 import Page from './Page'
 import { useFormStore, type Page as PageType } from '@/pages/form-builder/store/formStore'
