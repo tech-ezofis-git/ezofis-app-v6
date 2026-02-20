@@ -9,7 +9,7 @@ const DashboardPage = () => {
       <AnimateSlideUp delay={0.1}>
         <Header />
       </AnimateSlideUp>
-      <AnimateFadeIn delay={0.2}>
+      <AnimateFadeIn delay={0.2} className='flex-1 min-h-0 flex flex-col relative'>
         <AccountsPayable />
       </AnimateFadeIn>
     </>

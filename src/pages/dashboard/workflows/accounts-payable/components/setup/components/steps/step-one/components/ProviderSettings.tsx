@@ -23,8 +23,8 @@ const directUploadItem = {
 }
 
 const emailProviders = [
-  { logo: GmailLogo, name: 'Gmail', value: 'Gmail' },
-  { logo: OutlookLogo, name: 'Outlook', value: 'Outlook' },
+  { logo: GmailLogo, name: 'Gmail', value: 'gmail' },
+  { logo: OutlookLogo, name: 'Outlook', value: 'outlook' },
   // {
   //   logo: MsExchangeLogo,
   //   name: 'Microsoft Exchange',

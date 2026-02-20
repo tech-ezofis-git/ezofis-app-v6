@@ -42,9 +42,10 @@ const Steps = () => {
       exit={{ opacity: 0, y: 20 }}
       initial={{ opacity: 0, y: 20 }}
       transition={{ duration: 0.4, ease: 'easeOut' }}
-      className='flex h-full w-full flex-col overflow-hidden'
+      // Changed h-full to flex-1 to work well within flex container
+      className='flex flex-1 min-h-0 w-full flex-col overflow-hidden'
     >
-      <div className='mb-4 flex items-center justify-between border-b border-gray-3 px-6 py-3 md:px-8'>
+      <div className='mb-4 flex items-center justify-between border-b border-gray-3 px-6 py-3 md:px-8 shrink-0'>
         <div className='flex flex-col gap-0.5'>
           <h2 className='text-18 font-semibold text-gray-13'>
             Accounts Payable Setup
@@ -54,10 +55,11 @@ const Steps = () => {
           </p>
         </div>
       </div>
-      <div className='grid min-h-0 min-h-full grid-cols-1 gap-0 xl:grid-cols-[240px_1fr]'>
+      {/* Changed min-h-full to flex-1 to avoid overflow */}
+      <div className='grid min-h-0 flex-1 grid-cols-1 gap-0 xl:grid-cols-[240px_1fr]'>
 
         <AnimateSlideUp delay={0.2}>
-          <div className='hidden border-r border-gray-3 bg-gray-1/30 px-4 py-3 xl:block'>
+          <div className='hidden border-r border-gray-3 bg-gray-1/30 px-4 py-3 xl:block h-full'>
             <Stepper
               active={step}
               orientation='vertical'
@@ -68,7 +70,7 @@ const Steps = () => {
         </AnimateSlideUp>
 
         <div ref={scrollContainerRef} className='col-span-1 h-full w-full overflow-y-auto'>
-          <div className='ml-32 mr-auto max-w-3xl'>
+          <div className='ml-32 mr-auto max-w-3xl pb-10'>
             <AnimatePresence initial={false} mode='wait'>
               {step === 0 && (
                 <AnimateSlideUp key='step-0' delay={0.1}>

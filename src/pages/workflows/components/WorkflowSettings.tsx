@@ -74,7 +74,7 @@ const WorkflowSettings = () => {
                     <label className="mb-2 block text-13 font-medium text-gray-11">Description</label>
                     <div className="relative">
                         <textarea
-                            className="w-full min-h-[80px] rounded-md border border-gray-3 px-3 py-2 text-13 text-gray-13 focus:border-primary-9 focus:ring-1 focus:ring-primary-4 outline-none resize-none"
+                            className="w-full min-h-[80px] rounded-md border border-gray-6 bg-transparent px-3 py-2 text-13 font-medium text-gray-12 placeholder:font-normal placeholder:text-gray-8 focus:border-primary-8 focus:ring-2 focus:ring-primary-6 outline-none resize-none"
                             value={workflowDescription}
                             onChange={(e) => setWorkflowDescription(e.target.value)}
                         />
