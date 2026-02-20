@@ -8,7 +8,7 @@ export const Route = createFileRoute('/stories/colors')({
     component: ColorsStory,
 })
 
-const colorScales = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+//const colorScales = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 
 const rgbToHex = (rgb: string) => {
     if (!rgb) return ''

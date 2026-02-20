@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Textarea } from '@mantine/core'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
@@ -8,6 +8,14 @@ const PromptInput = () => {
   const [prompt, setPrompt] = useState('')
   const sendMessage = useAskAIStore((state) => state.sendMessage)
   const isLoading = useAskAIStore((state) => state.isLoading)
+  const credits = useAskAIStore((state) => state.credits)
+  const suggestion = useAskAIStore((state) => state.suggestion)
+
+  useEffect(() => {
+    if (suggestion) {
+      setPrompt(suggestion)
+    }
+  }, [suggestion])
 
   const handleSend = () => {
     if (prompt.trim() && !isLoading) {
@@ -27,7 +35,7 @@ const PromptInput = () => {
     <div className='p-2'>
       <div className={`rounded border bg-surface-muted transition-colors focus-within:border-primary-9 ${isLoading ? 'opacity-50 pointer-events-none border-gray-3' : 'border-gray-4'}`}>
         <div className='p-2 text-xs font-medium'>
-          {isLoading ? 'Generating form...' : '3 of 15 calls remaining'} •{' '}
+          {isLoading ? 'Generating form...' : `${credits} of 15 calls remaining`} •{' '}
           <span className='cursor-pointer hover:text-gray-13 hover:underline'>
             Upgrade
           </span>

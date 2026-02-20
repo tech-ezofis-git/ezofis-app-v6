@@ -64,68 +64,68 @@ const optionsDefault = [
     name: 'Isabella Anderson',
   },
 ]
-const options2 = [
-  {
-    description: 'emily.johnson@x.dummyjson.com',
-    disabled: false,
-    id: 1,
-    name: 'Emily Johnson',
-  },
-  {
-    description: 'michael.williams@x.dummyjson.com',
-    disabled: false,
-    id: 2,
-    name: 'Michael Williams',
-  },
-  {
-    description: 'sophia.brown@x.dummyjson.com',
-    disabled: false,
-    id: 3,
-    name: 'Sophia Brown',
-  },
-  {
-    description: 'james.davis@x.dummyjson.com',
-    disabled: false,
-    id: 4,
-    name: 'James Davis',
-  },
-  {
-    description: 'emma.miller@x.dummyjson.com',
-    disabled: false,
-    id: 5,
-    name: 'Emma Miller',
-  },
-  {
-    description: 'olivia.wilson@x.dummyjson.com',
-    disabled: false,
-    id: 6,
-    name: 'Olivia Wilson',
-  },
-  {
-    description: 'alexander.jones@x.dummyjson.com',
-    disabled: false,
-    id: 7,
-    name: 'Alexander Jones',
-  },
-  {
-    description: 'ava.taylor@x.dummyjson.com',
-    disabled: false,
-    id: 8,
-    name: 'Ava Taylor',
-  },
-  {
-    description: 'ethan.martinez@x.dummyjson.com',
-    disabled: false,
-    id: 9,
-    name: 'Ethan Martinez',
-  },
-  {
-    description: 'isabella.anderson@x.dummyjson.com',
-    disabled: false,
-    id: 10,
-    name: 'Isabella Anderson',
-  },
-]
+// const options2 = [
+//   {
+//     description: 'emily.johnson@x.dummyjson.com',
+//     disabled: false,
+//     id: 1,
+//     name: 'Emily Johnson',
+//   },
+//   {
+//     description: 'michael.williams@x.dummyjson.com',
+//     disabled: false,
+//     id: 2,
+//     name: 'Michael Williams',
+//   },
+//   {
+//     description: 'sophia.brown@x.dummyjson.com',
+//     disabled: false,
+//     id: 3,
+//     name: 'Sophia Brown',
+//   },
+//   {
+//     description: 'james.davis@x.dummyjson.com',
+//     disabled: false,
+//     id: 4,
+//     name: 'James Davis',
+//   },
+//   {
+//     description: 'emma.miller@x.dummyjson.com',
+//     disabled: false,
+//     id: 5,
+//     name: 'Emma Miller',
+//   },
+//   {
+//     description: 'olivia.wilson@x.dummyjson.com',
+//     disabled: false,
+//     id: 6,
+//     name: 'Olivia Wilson',
+//   },
+//   {
+//     description: 'alexander.jones@x.dummyjson.com',
+//     disabled: false,
+//     id: 7,
+//     name: 'Alexander Jones',
+//   },
+//   {
+//     description: 'ava.taylor@x.dummyjson.com',
+//     disabled: false,
+//     id: 8,
+//     name: 'Ava Taylor',
+//   },
+//   {
+//     description: 'ethan.martinez@x.dummyjson.com',
+//     disabled: false,
+//     id: 9,
+//     name: 'Ethan Martinez',
+//   },
+//   {
+//     description: 'isabella.anderson@x.dummyjson.com',
+//     disabled: false,
+//     id: 10,
+//     name: 'Isabella Anderson',
+//   },
+// ]
 const optionsWithDisabled = [
   {
     disabled: false,
@@ -179,22 +179,22 @@ const optionsWithDisabled = [
   },
 ];
 
-const optionsDefault1 = [
-  { id: 1, name: 'Emily Johnson' },
-  { id: 2, name: 'Michael Williams' },
-  { id: 3, name: 'Sophia Brown' },
-  { id: 4, name: 'James Davis' },
-]
+// const optionsDefault1 = [
+//   { id: 1, name: 'Emily Johnson' },
+//   { id: 2, name: 'Michael Williams' },
+//   { id: 3, name: 'Sophia Brown' },
+//   { id: 4, name: 'James Davis' },
+// ]
 
 const optionsWithDescription = [
   { id: 1, name: 'Emily Johnson', description: 'emily.j@example.com' },
   { id: 2, name: 'Michael Williams', description: 'michael.w@example.com' },
 ]
 
-const optionsWithDisabled1 = [
-  { id: 1, name: 'Active User' },
-  { id: 2, name: 'Suspended User', disabled: true },
-]
+// const optionsWithDisabled1 = [
+//   { id: 1, name: 'Active User' },
+//   { id: 2, name: 'Suspended User', disabled: true },
+// ]
 
 function RouteComponent() {
   const [value, setValue] = useState<Option | null>(null)

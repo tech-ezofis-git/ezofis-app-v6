@@ -43,6 +43,8 @@ type Store = {
     openAddMenu: (position: { x: number; y: number }, edgeId: string) => void
     openChangeMenu: (position: { x: number; y: number }, nodeId: string) => void
     closeAddMenu: () => void
+    isBuilderOpen: boolean
+    closeBuilder: () => void
 }
 
 const useWorkflowStore = create<Store>()((set) => ({
@@ -100,6 +102,8 @@ const useWorkflowStore = create<Store>()((set) => ({
         set({ addMenu: { isOpen: true, position, edgeId: null, nodeId } }),
     closeAddMenu: () =>
         set((state) => ({ addMenu: { ...state.addMenu, isOpen: false, nodeId: null, edgeId: null } })),
+    isBuilderOpen: false,
+    closeBuilder: () => set({ isBuilderOpen: false }),
 }))
 
 export default useWorkflowStore

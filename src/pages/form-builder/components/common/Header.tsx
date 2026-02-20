@@ -1,118 +1,99 @@
-import { ActionIcon, Button, Group, SegmentedControl, Switch, Box, TextInput } from '@mantine/core'
+import { Button, Box } from '@mantine/core'
 import Icon from '@/components/base/icon/Icon'
 import { useFormStore } from '@/pages/form-builder/store/formStore'
+import useAskAIStore from '@/components/common/ask-ai/stores/useAskAIStore'
+import IconButton from '@/components/base/button/IconButton'
+import { useNavigate } from '@tanstack/react-router'
 
-interface HeaderProps {
-  setTab: (value: string | null) => void
-}
 
-const Header = ({ setTab }: HeaderProps) => {
+const Header = () => {
+  const navigate = useNavigate()
   const {
     name,
-    setName,
-    previewMode,
-    setPreviewMode,
-    hidePreview,
-    setHidePreview
+    isBuilderMode,
+    setSelectionType,
+    setPublishOpen,
+    setIsPreviewOpen
   } = useFormStore()
 
-  const handleSave = () => {
-    // As per user request: rename it as New Form once the user saves the form
-    setName('New Form')
-  }
-
   return (
-    <header className='sticky top-0 z-50 flex h-14 items-center justify-between border-b border-surface-secondary bg-surface-primary px-4 shadow-sm animate-in fade-in slide-in-from-top-4 duration-500'>
-      <Group gap="sm">
-        <ActionIcon
+    <header className='flex h-16 items-center justify-between border-b border-gray-3 bg-white px-4 shrink-0'>
+      {/* Left: Back + Form Name + Status */}
+      <div className='flex items-center gap-4'>
+        <IconButton
+          color='gray'
+          icon='lucide:chevron-left'
+          variant='ghost'
+          onClick={() => navigate({ to: '/forms' })}
+        />
+
+        <div className='flex flex-col group/name cursor-pointer' onClick={() => setSelectionType('general')}>
+          <div className='flex items-center gap-2'>
+            <input
+              value={name}
+              readOnly
+              className='text-base font-semibold text-gray-13 p-0 h-auto min-w-[120px] bg-transparent border-none focus:outline-none cursor-pointer'
+            />
+            <Icon
+              name="lucide:pencil"
+              width={12} height={12}
+              className="text-gray-5 opacity-0 group-hover/name:opacity-100 transition-opacity"
+            />
+            <span className='rounded-full bg-gray-3 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-gray-11'>
+              Draft
+            </span>
+          </div>
+          <span className='text-xs text-gray-10'>
+            Last saved 2m ago · {isBuilderMode ? 'Editor' : 'Preview'} Mode
+          </span>
+        </div>
+      </div>
+
+      {/* Right: Controls */}
+      <div className='flex items-center gap-2'>
+        <Button
+          color="gray"
+          size="xs"
+          leftSection={<Icon name="lucide:sparkles" width={14} height={14} />}
+          className="bg-blue-10 hover:bg-blue-9 text-white font-bold uppercase tracking-wider text-[10px]"
+          onClick={() => useAskAIStore.getState().open()}
+        >
+          Ask AI
+        </Button>
+
+        <IconButton
+          icon="lucide:settings"
+          size="sm"
           variant="ghost"
           color="gray"
-          className="hover:bg-surface-secondary transition-all active:scale-90"
-          onClick={() => window.history.back()}
+          className="text-gray-7 hover:bg-gray-1"
+          onClick={() => setSelectionType('general')}
+        />
+
+        <Box className="h-6 w-px bg-gray-2 mx-2" />
+
+        <Button
+          variant="outline"
+          color="gray"
+          size="xs"
+          leftSection={<Icon name="lucide:eye" width={14} height={14} />}
+          className="border-gray-3 text-gray-11 font-bold uppercase tracking-wider text-[10px]"
+          onClick={() => setIsPreviewOpen(true)}
         >
-          <Icon name="tabler:arrow-left" width={18} height={18} />
-        </ActionIcon>
+          Preview
+        </Button>
 
-        <Box className="flex items-center gap-2 group">
-          <TextInput
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            variant="unstyled"
-            classNames={{
-              input: 'text-16 font-bold tracking-tight text-gray-13 p-0 h-auto min-w-[100px] hover:bg-gray-1 focus:bg-gray-1 px-2 rounded transition-colors'
-            }}
-          />
-          <ActionIcon
-            variant="subtle"
-            color="gray"
-            size="sm"
-            onClick={() => setTab('Settings')}
-            className="opacity-0 group-hover:opacity-100 transition-opacity"
-          >
-            <Icon name="tabler:settings" width={16} height={16} />
-          </ActionIcon>
-        </Box>
-      </Group>
-
-      <Group gap="md">
-        {!hidePreview && (
-          <SegmentedControl
-            value={previewMode}
-            onChange={(value) => setPreviewMode(value as any)}
-            data={[
-              { label: 'Typeform', value: 'typeform' },
-              { label: 'Grid', value: 'grid' },
-            ]}
-            size="xs"
-            radius="md"
-            classNames={{
-              root: 'bg-gray-1 p-1 border-0',
-              indicator: 'bg-surface-primary shadow-sm',
-              label: 'px-4 font-medium transition-colors'
-            }}
-          />
-        )}
-
-        <Group gap="xs" className="mr-2">
-          <Switch
-            checked={hidePreview}
-            onChange={(event) => setHidePreview(event.currentTarget.checked)}
-            label="Hide Preview"
-            labelPosition="left"
-            size="sm"
-            onLabel={<Icon name="tabler:eye-off" width={12} height={12} />}
-            styles={{
-              track: { backgroundColor: 'var(--accent-soft)' },
-              thumb: { border: '1px solid var(--accent-primary)' }
-            }}
-          />
-        </Group>
-
-        <Box className="h-8 w-px bg-gray-2" />
-
-        <Group gap="sm">
-          <Button
-            variant="outline"
-            color="gray"
-            size="sm"
-            leftSection={<Icon name="tabler:device-floppy" width={16} height={16} />}
-            className="border-gray-3 hover:bg-gray-1 transition-all active:scale-95"
-            onClick={handleSave}
-          >
-            Save
-          </Button>
-          <Button
-            variant="filled"
-            bg="accent-primary"
-            size="sm"
-            leftSection={<Icon name="tabler:rocket" width={16} height={16} />}
-            className="hover:opacity-90 transition-all active:scale-95 shadow-md shadow-accent-soft/20"
-            onClick={() => setTab('Publish')}
-          >
-            Publish
-          </Button>
-        </Group>
-      </Group>
+        <Button
+          variant="filled"
+          bg="accent-primary"
+          size="xs"
+          leftSection={<Icon name="lucide:rocket" width={14} height={14} />}
+          className="hover:opacity-90 transition-all font-bold uppercase tracking-wider text-[10px] shadow-sm shadow-accent-soft/20"
+          onClick={() => setPublishOpen(true)}
+        >
+          Publish
+        </Button>
+      </div>
     </header>
   )
 }

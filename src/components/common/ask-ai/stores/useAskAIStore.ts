@@ -1,5 +1,4 @@
 import { create } from 'zustand'
-import { generateFormFields } from '@/services/ai/gemini'
 import { useFormStore } from '@/pages/form-builder/store/formStore'
 
 type Store = {
@@ -8,6 +7,8 @@ type Store = {
   isLoading: boolean
   suggestion: string
   suggestions: string[]
+  credits: number
+  messages: { role: 'user' | 'assistant', content: string, data?: any }[]
   close: () => void
   open: () => void
   setSuggestion: (suggestion: string) => void
@@ -15,7 +16,7 @@ type Store = {
   sendMessage: (prompt: string) => Promise<void>
 }
 
-const useAskAIStore = create<Store>((set) => ({
+const useAskAIStore = create<Store>((set, get) => ({
   isMaximized: false,
   isOpen: false,
   isLoading: false,
@@ -27,6 +28,8 @@ const useAskAIStore = create<Store>((set) => ({
     'Make a contact us form with email validation.',
     'Generate a product survey with rating fields.',
   ],
+  credits: 15,
+  messages: [],
   close: () => set({ isOpen: false }),
   open: () => set({ isOpen: true }),
   toggleMaximize: () =>
@@ -35,16 +38,42 @@ const useAskAIStore = create<Store>((set) => ({
   sendMessage: async (prompt: string) => {
     if (!prompt.trim()) return
 
-    set({ isLoading: true })
+    const currentMessages = get().messages
+    const newMessages = [...currentMessages, { role: 'user' as const, content: prompt }]
+    
+    set({ isLoading: true, messages: newMessages, credits: Math.max(0, get().credits - 1) })
+    
     try {
-      const questions = await generateFormFields(prompt)
-      useFormStore.getState().setQuestions(questions)
-      // Optionally rename the form based on a simple heuristic or ask AI for a title too
-      // For now, let's keep it simple
-      set({ isOpen: false, suggestion: '' }) 
+      const response = await fetch('https://form-builder-ai-seven.vercel.app/api/generate-form', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt })
+      })
+
+      if (!response.ok) throw new Error('Failed to generate form')
+      
+      const data = await response.json()
+      useFormStore.getState().appendAIResponse(data)
+      
+      set((state) => ({ 
+        messages: [
+          ...state.messages, 
+          { 
+            role: 'assistant' as const, 
+            content: 'I have generated the form structure for you. You can see the details below:',
+            data 
+          }
+        ],
+        suggestion: '' 
+      })) 
     } catch (error) {
-      console.error(error)
-      // minimal error handling
+      console.error('AI Form Generation Error:', error)
+      set((state) => ({
+        messages: [
+          ...state.messages,
+          { role: 'assistant' as const, content: 'Sorry, I encountered an error while generating your form. Please try again.' }
+        ]
+      }))
     } finally {
       set({ isLoading: false })
     }
