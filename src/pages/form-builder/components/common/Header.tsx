@@ -10,7 +10,7 @@ const Header = () => {
   const navigate = useNavigate()
   const {
     name,
-    isBuilderMode,
+    description,
     setSelectionType,
     setPublishOpen,
     setIsPreviewOpen
@@ -29,22 +29,20 @@ const Header = () => {
 
         <div className='flex flex-col group/name cursor-pointer' onClick={() => setSelectionType('general')}>
           <div className='flex items-center gap-2'>
-            <input
-              value={name}
-              readOnly
-              className='text-base font-semibold text-gray-13 p-0 h-auto min-w-[120px] bg-transparent border-none focus:outline-none cursor-pointer'
-            />
-            <Icon
+            <h1 className='text-base font-semibold text-gray-13'>
+              {name}
+            </h1>
+            {/* <Icon
               name="lucide:pencil"
               width={12} height={12}
               className="text-gray-5 opacity-0 group-hover/name:opacity-100 transition-opacity"
-            />
+            /> */}
             <span className='rounded-full bg-gray-3 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-gray-11'>
               Draft
             </span>
           </div>
           <span className='text-xs text-gray-10'>
-            Last saved 2m ago · {isBuilderMode ? 'Editor' : 'Preview'} Mode
+            {description || 'No description'}
           </span>
         </div>
       </div>
@@ -69,8 +67,6 @@ const Header = () => {
           className="text-gray-7 hover:bg-gray-1"
           onClick={() => setSelectionType('general')}
         />
-
-        <Box className="h-6 w-px bg-gray-2 mx-2" />
 
         <Button
           variant="outline"
