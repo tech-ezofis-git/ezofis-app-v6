@@ -100,6 +100,10 @@ interface FormStore {
     enabled: boolean
   }
   
+  copiedQuestion: Question | null
+  setCopiedQuestion: (question: Question | null) => void
+  pasteQuestion: (pageId: string, index: number) => void
+  
   showHeaderFooter: boolean
   headerText: string
   footerText: string
@@ -125,6 +129,7 @@ interface FormStore {
   deletePage: (id: string) => void
   updatePage: (id: string, updates: Partial<Page>) => void
   duplicatePage: (id: string) => void
+  movePage: (id: string, direction: 'up' | 'down') => void
 
   // Question Actions
   addQuestion: (pageId: string, question: Question, index?: number) => void
@@ -156,7 +161,7 @@ interface FormStore {
 
 export const useFormStore = create<FormStore>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       name: 'Untitled Form',
       description: '',
       pages: [
@@ -185,6 +190,7 @@ export const useFormStore = create<FormStore>()(
       coordinator: '',
       layout: 'typeform',
       lastAddedPageId: null,
+      copiedQuestion: null,
       
       showWelcomePage: false,
       welcomePage: {
@@ -206,6 +212,26 @@ export const useFormStore = create<FormStore>()(
       footerText: '',
 
       setName: (name) => set({ name }),
+      setCopiedQuestion: (copiedQuestion) => set({ copiedQuestion }),
+
+      pasteQuestion: (pageId, index) => set((state) => {
+        if (!state.copiedQuestion) return state
+
+        const newQuestion = { 
+          ...state.copiedQuestion, 
+          id: generateId(),
+          title: `${state.copiedQuestion.title} (Copy)`
+        }
+
+        const newPages = state.pages.map(p => {
+          if (p.id !== pageId) return p
+          const newQuestions = [...p.questions]
+          newQuestions.splice(index, 0, newQuestion)
+          return { ...p, questions: newQuestions }
+        })
+
+        return { pages: newPages, activeQuestionId: newQuestion.id }
+      }),
       setDescription: (description) => set({ description }),
       setPages: (pages) => set({ pages }),
       setActiveQuestionId: (activeQuestionId) => set((state) => ({ 
@@ -282,6 +308,21 @@ export const useFormStore = create<FormStore>()(
         
         const newPages = [...state.pages]
         newPages.splice(pageIndex + 1, 0, newPage)
+        return { pages: newPages }
+      }),
+
+      movePage: (id, direction) => set((state) => {
+        const pageIndex = state.pages.findIndex(p => p.id === id)
+        if (pageIndex === -1) return state
+
+        const newPages = [...state.pages]
+        const newIndex = direction === 'up' ? pageIndex - 1 : pageIndex + 1
+
+        if (newIndex < 0 || newIndex >= newPages.length) return state
+
+        const [movedPage] = newPages.splice(pageIndex, 1)
+        newPages.splice(newIndex, 0, movedPage)
+
         return { pages: newPages }
       }),
 

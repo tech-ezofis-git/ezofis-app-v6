@@ -86,7 +86,7 @@ const Page = ({ page, pageIndex }: Props) => {
                         value={page.title}
                         onChange={(e) => updatePage(page.id, { title: e.target.value })}
                         placeholder="Page Title"
-                        className="w-full bg-transparent text-xl font-bold text-gray-13 placeholder:text-gray-4 focus:outline-none"
+                        className="w-full bg-transparent text-xl font-semibold text-gray-13 placeholder:text-gray-4 focus:outline-none tracking-tight"
                     />
 
                     <input
@@ -94,11 +94,36 @@ const Page = ({ page, pageIndex }: Props) => {
                         value={page.description}
                         onChange={(e) => updatePage(page.id, { description: e.target.value })}
                         placeholder="Add a description for this page..."
-                        className="w-full bg-transparent text-[13px] text-gray-9 placeholder:text-gray-4 focus:outline-none"
+                        className="w-full bg-transparent text-xs text-gray-5 placeholder:text-gray-4 focus:outline-none"
                     />
                 </div>
 
                 <div className="flex items-center gap-1 opacity-0 group-hover/page:opacity-100 transition-opacity duration-200">
+                    {pageIndex > 0 && (
+                        <ActionIcon
+                            variant="subtle"
+                            color="gray"
+                            size="sm"
+                            onClick={() => useFormStore.getState().movePage(page.id, 'up')}
+                            className="hover:bg-gray-2 focus:ring-0 active:scale-95 transition-all"
+                        >
+                            <Icon name="lucide:chevron-up" width={15} height={15} />
+                        </ActionIcon>
+                    )}
+                    {pageIndex < useFormStore.getState().pages.length - 1 && (
+                        <ActionIcon
+                            variant="subtle"
+                            color="gray"
+                            size="sm"
+                            onClick={() => useFormStore.getState().movePage(page.id, 'down')}
+                            className="hover:bg-gray-2 focus:ring-0 active:scale-95 transition-all"
+                        >
+                            <Icon name="lucide:chevron-down" width={15} height={15} />
+                        </ActionIcon>
+                    )}
+                    {(pageIndex > 0 || pageIndex < useFormStore.getState().pages.length - 1) && (
+                        <div className="w-[1px] h-4 bg-gray-2 mx-1" />
+                    )}
                     <ActionIcon variant="subtle" color="gray" size="sm" className="hover:bg-gray-2 focus:ring-0 active:scale-95 transition-all">
                         <Icon name="lucide:pencil" width={15} height={15} />
                     </ActionIcon>
@@ -126,7 +151,7 @@ const Page = ({ page, pageIndex }: Props) => {
                                 <div className="size-10 rounded-lg bg-gray-50 flex items-center justify-center mb-3">
                                     <Icon name="lucide:layout-list" width={20} height={20} className="text-gray-4" />
                                 </div>
-                                <Text size="sm" fw={700} className="text-gray-13 mb-1">Emply Page</Text>
+                                <Text size="sm" fw={700} className="text-gray-13 mb-1">Empty Page</Text>
                                 <Text size="xs" className="text-gray-5 mb-5 px-6 text-center">Start adding fields to this page to build your form content.</Text>
                                 <Button
                                     size="xs"

@@ -38,6 +38,7 @@ const Form = () => {
 
   const [activeId, setActiveId] = useState<string | null>(null);
   const [showAddPageAt, setShowAddPageAt] = useState<number | null>(null)
+  const [addPageAnchorRect, setAddPageAnchorRect] = useState<DOMRect | null>(null)
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -153,7 +154,44 @@ const Form = () => {
       setActiveQuestionId(null)
     }
     setShowAddPageAt(null)
+    setAddPageAnchorRect(null)
   }
+
+  // Handle Ctrl+V Paste
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+        const { copiedQuestion, pasteQuestion, activeQuestionId, pages } = useFormStore.getState()
+        if (!copiedQuestion) return
+
+        // Find where to paste: after active question on its page
+        let targetPageId = ''
+        let targetIndex = -1
+
+        for (const page of pages) {
+          const qIndex = page.questions.findIndex(q => q.id === activeQuestionId)
+          if (qIndex !== -1) {
+            targetPageId = page.id
+            targetIndex = qIndex + 1 // Paste below
+            break
+          }
+        }
+
+        // If no active question, paste at end of first page
+        if (!targetPageId && pages.length > 0) {
+          targetPageId = pages[0].id
+          targetIndex = pages[0].questions.length
+        }
+
+        if (targetPageId) {
+          pasteQuestion(targetPageId, targetIndex)
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
 
   const activeQuestion = pages.flatMap(p => p.questions).find(q => q.id === activeId)
 
@@ -186,7 +224,11 @@ const Form = () => {
                   <div className="absolute top-[-20px] left-0 right-0 h-10 z-[50] flex items-center justify-center opacity-0 group-hover/page-wrapper:opacity-100 transition-opacity duration-200 pointer-events-none group/add-page">
                     <div className="w-full h-[1px] bg-accent-primary/40 absolute pointer-events-none group-hover/add-page:bg-accent-primary/60" />
                     <button
-                      onClick={() => setShowAddPageAt(i)}
+                      onClick={(e) => {
+                        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+                        setAddPageAnchorRect(rect)
+                        setShowAddPageAt(i)
+                      }}
                       className="size-8 rounded-full bg-accent-primary text-white flex items-center justify-center shadow-lg hover:scale-125 transition-all pointer-events-auto"
                     >
                       <Icon name="lucide:plus" width={18} height={18} />
@@ -200,7 +242,11 @@ const Form = () => {
                     <div className="absolute bottom-[-24px] left-0 right-0 h-10 z-[50] flex items-center justify-center opacity-0 group-hover/page-wrapper:opacity-100 transition-opacity duration-200 pointer-events-none group/add-page">
                       <div className="w-full h-[1px] bg-accent-primary/40 absolute pointer-events-none group-hover/add-page:bg-accent-primary/60" />
                       <button
-                        onClick={() => setShowAddPageAt(i + 1)}
+                        onClick={(e) => {
+                          const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+                          setAddPageAnchorRect(rect)
+                          setShowAddPageAt(i + 1)
+                        }}
                         className="size-8 rounded-full bg-accent-primary text-white flex items-center justify-center shadow-lg hover:scale-125 transition-all pointer-events-auto"
                       >
                         <Icon name="lucide:plus" width={18} height={18} />
@@ -271,7 +317,11 @@ const Form = () => {
       {showAddPageAt !== null && (
         <AddPageInline
           onSelect={(type) => handleAddPage(type, showAddPageAt)}
-          onClose={() => setShowAddPageAt(null)}
+          onClose={() => {
+            setShowAddPageAt(null)
+            setAddPageAnchorRect(null)
+          }}
+          anchorRect={addPageAnchorRect}
         />
       )}
 
@@ -319,8 +369,8 @@ const CanvasSlot = ({ type, title }: { type: 'welcome' | 'thank_you', enabled: b
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
                 <div className="flex items-center gap-1.5">
-                  <Text size="10px" fw={900} className={cn(
-                    "uppercase tracking-[0.15em]",
+                  <Text size="10px" fw={800} className={cn(
+                    "uppercase tracking-tight",
                     isActive ? "text-accent-primary" : "text-gray-5"
                   )}>
                     {isWelcome ? 'Welcome Screen' : 'Completion Screen'}
@@ -329,7 +379,7 @@ const CanvasSlot = ({ type, title }: { type: 'welcome' | 'thank_you', enabled: b
                     <div className="size-1 rounded-full bg-accent-primary" />
                   )}
                 </div>
-                <div className="px-1.5 py-0.5 rounded-full bg-gray-1 border border-gray-2 text-[8px] font-black text-gray-4 tracking-tighter uppercase">
+                <div className="px-1.5 py-0.5 rounded-full bg-gray-1 border border-gray-2 text-[8px] font-extrabold text-gray-4 tracking-tighter uppercase">
                   Fixed Section
                 </div>
               </div>

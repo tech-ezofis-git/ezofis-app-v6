@@ -7,9 +7,10 @@ import { useFormStore } from '@/pages/form-builder/store/formStore'
 interface Props {
     onSelect: (type: 'blank' | 'welcome' | 'thank_you') => void
     onClose: () => void
+    anchorRect?: DOMRect | null
 }
 
-const AddPageInline = ({ onSelect, onClose }: Props) => {
+const AddPageInline = ({ onSelect, onClose, anchorRect }: Props) => {
     const { welcomePage, thankYouPage } = useFormStore()
 
     const PAGE_TYPES = [
@@ -43,7 +44,7 @@ const AddPageInline = ({ onSelect, onClose }: Props) => {
 
     return (
         <Portal>
-            <div className="fixed inset-0 pointer-events-none z-[9999] flex items-center justify-center">
+            <div className="fixed inset-0 pointer-events-none z-[9999]">
                 {/* Click outside overlay - capture events */}
                 <div className="absolute inset-0 z-0 pointer-events-auto" onClick={onClose} />
 
@@ -51,20 +52,34 @@ const AddPageInline = ({ onSelect, onClose }: Props) => {
                     drag
                     dragMomentum={false}
                     dragElastic={0}
-                    className='w-full max-w-[420px] pointer-events-auto flex flex-col overflow-hidden rounded-xl bg-white border border-gray-2 shadow-2xl font-inter z-10'
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
+                    className='absolute w-full max-w-[420px] pointer-events-auto flex flex-col overflow-hidden rounded-xl bg-white border border-gray-2 shadow-2xl font-inter z-10'
+                    initial={{
+                        opacity: 0,
+                        scale: 0.9,
+                        x: anchorRect ? anchorRect.left - 210 + (anchorRect.width / 2) : 0,
+                        y: anchorRect ? anchorRect.top + 40 : 100
+                    }}
+                    animate={{
+                        opacity: 1,
+                        scale: 1,
+                        x: anchorRect ? anchorRect.left - 210 + (anchorRect.width / 2) : 0,
+                        y: anchorRect ? anchorRect.top + 40 : 100
+                    }}
+                    style={{
+                        left: 0,
+                        top: 0
+                    }}
                 >
 
 
-                    {/* Options */}
-                    <div className="p-3 space-y-2">
+                    {/* Options Grid */}
+                    <div className="p-3 grid grid-cols-2 gap-1.5 custom-scrollbar overflow-y-auto max-h-[300px]">
                         {PAGE_TYPES.map((type) => (
                             <button
                                 key={type.id}
                                 disabled={type.disabled}
                                 className={cn(
-                                    'w-full flex items-center gap-4 p-3 rounded-xl transition-all duration-200 text-left border border-transparent',
+                                    'flex items-center gap-3 p-2.5 rounded-xl transition-all duration-200 text-left border border-transparent',
                                     type.disabled
                                         ? 'opacity-50 grayscale cursor-not-allowed'
                                         : 'hover:bg-gray-50 hover:border-gray-200 group'
@@ -72,28 +87,35 @@ const AddPageInline = ({ onSelect, onClose }: Props) => {
                                 onClick={() => !type.disabled && onSelect(type.id as any)}
                             >
                                 <div className={cn(
-                                    'flex shrink-0 items-center justify-center rounded-xl h-12 w-12 shadow-sm transition-transform group-hover:scale-110',
+                                    'flex shrink-0 items-center justify-center rounded-lg h-9 w-9 shadow-sm transition-transform group-hover:scale-110',
                                     type.bg
                                 )}>
                                     <Icon
                                         name={type.icon}
-                                        className={cn('h-6 w-6', type.color)}
+                                        className={cn('h-5 w-5', type.color)}
                                     />
                                 </div>
                                 <div className='flex flex-col min-w-0'>
                                     <span className={cn(
-                                        'text-sm font-extrabold text-gray-13 leading-tight transition-colors',
-                                        !type.disabled && 'group-hover:text-accent-primary'
+                                        'text-xs font-bold text-gray-13 group-hover:text-accent-primary truncate leading-tight transition-colors',
                                     )}>
                                         {type.label}
                                     </span>
-                                    <span className='text-[11px] text-gray-5 mt-0.5 leading-tight'>
-                                        {type.disabled ? 'Already added to form' : type.description}
+                                    <span className='text-[10px] text-gray-5 truncate mt-0.5 leading-none'>
+                                        {type.disabled ? 'Already added' : type.description}
                                     </span>
                                 </div>
                             </button>
                         ))}
                     </div>
+
+                    <style dangerouslySetInnerHTML={{
+                        __html: `
+                        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+                        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+                        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 10px; }
+                        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #d1d5db; }
+                    `}} />
                 </motion.div>
             </div>
         </Portal>
