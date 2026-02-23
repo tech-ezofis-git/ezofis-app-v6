@@ -1,4 +1,4 @@
-import { Button, Box } from '@mantine/core'
+import { Button } from '@mantine/core'
 import Icon from '@/components/base/icon/Icon'
 import { useFormStore } from '@/pages/form-builder/store/formStore'
 import useAskAIStore from '@/components/common/ask-ai/stores/useAskAIStore'
@@ -65,7 +65,11 @@ const Header = () => {
           variant="ghost"
           color="gray"
           className="text-gray-7 hover:bg-gray-1"
-          onClick={() => setSelectionType('general')}
+          onClick={() => {
+            const current = useFormStore.getState().isSidebarOpen
+            useFormStore.getState().setSidebarOpen(!current)
+            if (!current) setSelectionType('general')
+          }}
         />
 
         <Button

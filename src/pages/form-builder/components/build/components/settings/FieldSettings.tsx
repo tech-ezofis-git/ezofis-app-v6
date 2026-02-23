@@ -6,22 +6,21 @@ import Icon from '@/components/base/icon/Icon'
 // import Fields from '../field-list/Fields'
 
 const FieldSettings = () => {
-    const {
-        pages,
-        activeQuestionId,
-        updateQuestion,
-        deleteQuestion,
-        selectionType,
-        clearSelection,
-        name,
-        setName,
-        description,
-        setDescription,
-        welcomePage,
-        setWelcomePage,
-        thankYouPage,
-        setThankYouPage
-    } = useFormStore()
+    const pages = useFormStore((state) => state.pages)
+    const activeQuestionId = useFormStore((state) => state.activeQuestionId)
+    const updateQuestion = useFormStore((state) => state.updateQuestion)
+    const deleteQuestion = useFormStore((state) => state.deleteQuestion)
+    const selectionType = useFormStore((state) => state.selectionType)
+    const clearSelection = useFormStore((state) => state.clearSelection)
+    const name = useFormStore((state) => state.name)
+    const setName = useFormStore((state) => state.setName)
+    const description = useFormStore((state) => state.description)
+    const setDescription = useFormStore((state) => state.setDescription)
+    const welcomePage = useFormStore((state) => state.welcomePage)
+    const setWelcomePage = useFormStore((state) => state.setWelcomePage)
+    const thankYouPage = useFormStore((state) => state.thankYouPage)
+    const setThankYouPage = useFormStore((state) => state.setThankYouPage)
+    const setSidebarOpen = useFormStore((state) => state.setSidebarOpen)
 
     const activeQuestion = pages
         .flatMap(p => p.questions)
@@ -33,7 +32,7 @@ const FieldSettings = () => {
     const SettingsHeader = ({ title, icon, subtitle }: { title: string, icon: string, subtitle?: string, type?: string }) => (
         <div className="px-4 py-3.5 border-b border-gray-2 flex items-center justify-between bg-gray-1/50 shrink-0">
             <div className="flex items-center gap-2">
-                {isSomethingSelected && (
+                {isSomethingSelected ? (
                     <Tooltip label="Back to Fields">
                         <ActionIcon
                             variant="subtle"
@@ -45,15 +44,28 @@ const FieldSettings = () => {
                             <Icon name="lucide:arrow-left" width={14} height={14} />
                         </ActionIcon>
                     </Tooltip>
+                ) : (
+                    <Icon name={icon} width={15} height={15} className="text-accent-primary" />
                 )}
-                <Icon name={icon} width={15} height={15} className="text-accent-primary" />
+                {isSomethingSelected && <Icon name={icon} width={15} height={15} className="text-accent-primary" />}
                 <Text fw={700} size="xs" className="uppercase tracking-wider text-gray-11">{title}</Text>
             </div>
-            {subtitle && (
-                <div className="text-[10px] bg-accent-soft/30 text-accent-primary px-2 py-0.5 rounded-full font-mono font-bold border border-accent-soft/40 uppercase tracking-tighter">
-                    {subtitle}
-                </div>
-            )}
+            <div className="flex items-center gap-2">
+                {subtitle && (
+                    <div className="text-[10px] bg-accent-soft/30 text-accent-primary px-2 py-0.5 rounded-full font-mono font-bold border border-accent-soft/40 uppercase tracking-tighter">
+                        {subtitle}
+                    </div>
+                )}
+                <ActionIcon
+                    variant="subtle"
+                    color="gray"
+                    size="md"
+                    onClick={() => setSidebarOpen(false)}
+                    className="hover:bg-gray-2 rounded-lg transition-colors"
+                >
+                    <Icon name="lucide:x" width={16} height={16} />
+                </ActionIcon>
+            </div>
         </div>
     )
 
@@ -63,7 +75,7 @@ const FieldSettings = () => {
     // 2. General Settings View (Form Name & Description only)
     if (selectionType === 'general') {
         return (
-            <div className="h-full flex flex-col bg-surface-primary border border-gray-3 rounded-2xl overflow-hidden shadow-sm animate-in fade-in slide-in-from-right-2 duration-300 font-inter">
+            <div className="h-full w-[400px] flex flex-col bg-surface-primary animate-in slide-in-from-right duration-300 font-inter">
                 <SettingsHeader title="General Settings" icon="tabler:settings" subtitle="Core" />
                 <div className="flex-1 overflow-y-auto p-5 space-y-6">
                     <Stack gap="sm">
@@ -105,7 +117,7 @@ const FieldSettings = () => {
     // 3. Welcome Page Settings
     if (selectionType === 'welcome') {
         return (
-            <div className="h-full flex flex-col bg-surface-primary border border-gray-3 rounded-2xl overflow-hidden shadow-sm animate-in fade-in slide-in-from-right-2 duration-300">
+            <div className="h-full w-[400px] flex flex-col bg-surface-primary animate-in slide-in-from-right duration-300">
                 <SettingsHeader title="Welcome Screen" icon="lucide:megaphone" subtitle="Header" />
                 <div className="flex-1 overflow-y-auto p-4 space-y-5">
                     <Stack gap="xl">
@@ -150,7 +162,7 @@ const FieldSettings = () => {
     // 4. Thank You Page Settings
     if (selectionType === 'thank_you') {
         return (
-            <div className="h-full flex flex-col bg-surface-primary border border-gray-3 rounded-2xl overflow-hidden shadow-sm animate-in fade-in slide-in-from-right-2 duration-300">
+            <div className="h-full w-[400px] flex flex-col bg-surface-primary animate-in slide-in-from-right duration-300">
                 <SettingsHeader title="Completion Screen" icon="lucide:party-popper" subtitle="Footer" />
                 <div className="flex-1 overflow-y-auto p-4 space-y-5">
                     <Stack gap="xl">
@@ -189,7 +201,7 @@ const FieldSettings = () => {
     if (!activeQuestion) return null
 
     return (
-        <div className="h-full flex flex-col bg-surface-primary border border-gray-3 rounded-2xl overflow-hidden shadow-sm animate-in fade-in slide-in-from-right-2 duration-300">
+        <div className="h-full w-[400px] flex flex-col bg-surface-primary animate-in slide-in-from-right duration-300">
             <SettingsHeader
                 title="Field Settings"
                 icon="tabler:adjustments-horizontal"

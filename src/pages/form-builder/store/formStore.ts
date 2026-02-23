@@ -140,6 +140,9 @@ interface FormStore {
   isPublishOpen: boolean
   setPublishOpen: (open: boolean) => void
   
+  isSidebarOpen: boolean
+  setSidebarOpen: (open: boolean) => void
+  
   // Selection State
   selectionType: 'general' | 'welcome' | 'thank_you' | 'question'
   setSelectionType: (type: 'general' | 'welcome' | 'thank_you' | 'question') => void
@@ -174,6 +177,7 @@ export const useFormStore = create<FormStore>()(
       hidePreview: false,
       isPreviewOpen: false,
       isPublishOpen: false,
+      isSidebarOpen: true,
       isBuilderMode: true,
       selectionType: 'question',
       
@@ -212,6 +216,7 @@ export const useFormStore = create<FormStore>()(
       setHidePreview: (hidePreview) => set({ hidePreview }),
       setIsPreviewOpen: (isPreviewOpen) => set({ isPreviewOpen }),
       setPublishOpen: (isPublishOpen) => set({ isPublishOpen }),
+      setSidebarOpen: (isSidebarOpen) => set({ isSidebarOpen }),
       setIsBuilderMode: (isBuilderMode) => set({ isBuilderMode }),
       
       setSelectionType: (selectionType) => set({ selectionType, activeQuestionId: selectionType === 'question' ? get().activeQuestionId : null }),

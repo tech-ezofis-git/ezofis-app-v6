@@ -21,24 +21,27 @@ const PublishSidebar = () => {
     ]
 
     return (
-        <div className="h-full flex flex-col bg-surface-primary border border-gray-3 rounded-2xl overflow-hidden shadow-sm animate-in fade-in slide-in-from-right-4 duration-500 font-inter">
+        <div className="h-full w-[400px] flex flex-col bg-surface-primary animate-in slide-in-from-right duration-500 font-inter">
             {/* Header */}
-            <div className="p-5 bg-gradient-to-br from-accent-primary to-indigo-600 text-white shrink-0">
+            <div className="p-4 border-b border-gray-2 bg-gray-1 shrink-0">
                 <Group justify="space-between" mb="xs">
-                    <div className="size-8 bg-white/20 rounded-lg flex items-center justify-center">
-                        <Icon name="tabler:rocket" width={16} height={16} />
+                    <div className="flex items-center gap-2">
+                        <div className="size-8 bg-accent-soft/20 text-accent-primary rounded-lg flex items-center justify-center">
+                            <Icon name="tabler:rocket" width={16} height={16} />
+                        </div>
+                        <Text fw={800} size="sm" className="tracking-tight uppercase text-gray-13">Ready to Deploy</Text>
                     </div>
                     <ActionIcon
-                        variant="transparent"
-                        color="white"
+                        variant="subtle"
+                        color="gray"
+                        size="md"
                         onClick={() => setPublishOpen(false)}
-                        className="hover:bg-white/10 rounded-lg transition-colors"
+                        className="hover:bg-gray-2 rounded-lg transition-colors"
                     >
                         <Icon name="tabler:x" width={16} height={16} />
                     </ActionIcon>
                 </Group>
-                <Text fw={800} size="sm" className="tracking-tight uppercase">Ready to Deploy</Text>
-                <Text size="xs" className="opacity-80 mt-0.5 leading-tight">Review settings before finalizing.</Text>
+                <Text size="xs" className="text-gray-10 mt-1 leading-tight px-0.5">Review settings before finalizing your form publication.</Text>
             </div>
 
             <div className="flex-1 overflow-y-auto p-5 space-y-6 custom-scrollbar">
