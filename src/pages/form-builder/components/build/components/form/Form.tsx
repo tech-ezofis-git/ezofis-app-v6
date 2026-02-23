@@ -1,4 +1,4 @@
-import { ActionIcon, Button, Text,  UnstyledButton } from '@mantine/core'
+import { ActionIcon, Button, Text, UnstyledButton } from '@mantine/core'
 import Icon from '@/components/base/icon/Icon'
 import Page from './Page'
 import { useFormStore, type Page as PageType } from '@/pages/form-builder/store/formStore'
@@ -20,6 +20,7 @@ import {
 } from '@dnd-kit/sortable';
 import QuestionCard from './QuestionCard';
 import cn from '@/utils/cn'
+import AddPageInline from './AddPageInline'
 // import PublishModal from './PublishModal'
 
 const Form = () => {
@@ -29,11 +30,14 @@ const Form = () => {
     moveQuestion,
     welcomePage,
     thankYouPage,
-    // setSelectionType,
-    // setActiveQuestionId
+    setWelcomePage,
+    setThankYouPage,
+    setSelectionType,
+    setActiveQuestionId
   } = useFormStore()
 
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [showAddPageAt, setShowAddPageAt] = useState<number | null>(null)
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -136,6 +140,21 @@ const Form = () => {
     }
   };
 
+  const handleAddPage = (type: 'blank' | 'welcome' | 'thank_you', index: number) => {
+    if (type === 'blank') {
+      addPage(index)
+    } else if (type === 'welcome') {
+      setWelcomePage({ enabled: true })
+      setSelectionType('welcome')
+      setActiveQuestionId(null)
+    } else if (type === 'thank_you') {
+      setThankYouPage({ enabled: true })
+      setSelectionType('thank_you')
+      setActiveQuestionId(null)
+    }
+    setShowAddPageAt(null)
+  }
+
   const activeQuestion = pages.flatMap(p => p.questions).find(q => q.id === activeId)
 
   return (
@@ -151,12 +170,14 @@ const Form = () => {
       </div>
 
       <div className='space-y-8'>
-        {/* Welcome Page Slot */}
-        <CanvasSlot
-          type="welcome"
-          enabled={welcomePage.enabled}
-          title={welcomePage.title}
-        />
+        {/* Welcome Page Slot (Only if enabled) */}
+        {welcomePage.enabled && (
+          <CanvasSlot
+            type="welcome"
+            enabled={true}
+            title={welcomePage.title}
+          />
+        )}
 
         <DndContext
           sensors={sensors}
@@ -165,10 +186,36 @@ const Form = () => {
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
         >
-          <div className='space-y-6'>
+          <div className='space-y-6 relative'>
             {pages.length > 0 ? (
               pages.map((page: PageType, i: number) => (
-                <Page key={page.id} page={page} pageIndex={i} />
+                <div key={page.id} className="relative group/page-wrapper">
+                  {/* Insertion trigger before each page */}
+                  <div className="absolute top-[-20px] left-0 right-0 h-10 z-[50] flex items-center justify-center opacity-0 group-hover/page-wrapper:opacity-100 transition-opacity duration-200 pointer-events-none group/add-page">
+                    <div className="w-full h-[1px] bg-accent-primary/40 absolute pointer-events-none group-hover/add-page:bg-accent-primary/60" />
+                    <button
+                      onClick={() => setShowAddPageAt(i)}
+                      className="size-8 rounded-full bg-accent-primary text-white flex items-center justify-center shadow-lg hover:scale-125 transition-all pointer-events-auto"
+                    >
+                      <Icon name="lucide:plus" width={18} height={18} />
+                    </button>
+                  </div>
+
+                  <Page page={page} pageIndex={i} />
+
+                  {/* Final insertion trigger (Only after last page) */}
+                  {i === pages.length - 1 && (
+                    <div className="absolute bottom-[-24px] left-0 right-0 h-10 z-[50] flex items-center justify-center opacity-0 group-hover/page-wrapper:opacity-100 transition-opacity duration-200 pointer-events-none group/add-page">
+                      <div className="w-full h-[1px] bg-accent-primary/40 absolute pointer-events-none group-hover/add-page:bg-accent-primary/60" />
+                      <button
+                        onClick={() => setShowAddPageAt(i + 1)}
+                        className="size-8 rounded-full bg-accent-primary text-white flex items-center justify-center shadow-lg hover:scale-125 transition-all pointer-events-auto"
+                      >
+                        <Icon name="lucide:plus" width={18} height={18} />
+                      </button>
+                    </div>
+                  )}
+                </div>
               ))
             ) : (
               <div className="py-20 flex flex-col items-center justify-center text-center bg-white/40 rounded-3xl border-2 border-dashed border-gray-2 animate-in fade-in zoom-in-95 duration-500">
@@ -180,7 +227,7 @@ const Form = () => {
                   Your form needs at least one page to start adding questions. Click the button below to add your first page.
                 </Text>
                 <UnstyledButton
-                  onClick={() => addPage()}
+                  onClick={() => setShowAddPageAt(0)}
                   className="flex items-center gap-2 px-6 py-3 bg-accent-primary text-white rounded-xl font-bold hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-accent-soft/20"
                 >
                   <Icon name="lucide:plus-circle" width={18} height={18} />
@@ -206,27 +253,36 @@ const Form = () => {
           </DragOverlay>
         </DndContext>
 
-        {/* Add Page Button */}
-        <div className="flex justify-center">
+        {/* Global Add Page Button */}
+        <div className="flex justify-center pt-8">
           <Button
             variant="outline"
             color="gray"
             size="md"
-            className="border-2 border-dashed border-gray-7 hover:border-accent-primary hover:bg-accent-soft/5 hover:text-accent-primary transition-all rounded-xl h-12"
-            leftSection={<Icon name="tabler:circle-plus" width={18} height={18} />}
-            onClick={() => addPage()}
+            className="border-2 border-dashed border-gray-7 hover:border-accent-primary hover:bg-accent-soft/5 hover:text-accent-primary transition-all rounded-xl h-12 px-10"
+            leftSection={<Icon name="lucide:plus" width={18} height={18} />}
+            onClick={() => setShowAddPageAt(pages.length)}
           >
             Add New Page
           </Button>
         </div>
 
-        {/* Thank You Page Slot */}
-        <CanvasSlot
-          type="thank_you"
-          enabled={thankYouPage.enabled}
-          title={thankYouPage.title}
-        />
+        {/* Thank You Page Slot (Only if enabled) */}
+        {thankYouPage.enabled && (
+          <CanvasSlot
+            type="thank_you"
+            enabled={true}
+            title={thankYouPage.title}
+          />
+        )}
       </div>
+
+      {showAddPageAt !== null && (
+        <AddPageInline
+          onSelect={(type) => handleAddPage(type, showAddPageAt)}
+          onClose={() => setShowAddPageAt(null)}
+        />
+      )}
 
       {/* <PublishModal /> */}
     </div>
@@ -235,23 +291,8 @@ const Form = () => {
 
 const CanvasSlot = ({ type, enabled, title }: { type: 'welcome' | 'thank_you', enabled: boolean, title: string }) => {
   const isWelcome = type === 'welcome'
-  const { setSelectionType, setActiveQuestionId, selectionType } = useFormStore()
+  const { setSelectionType, setActiveQuestionId, selectionType, setWelcomePage, setThankYouPage } = useFormStore()
   const isActive = selectionType === type
-
-  if (!enabled && !isActive) {
-    return (
-      <UnstyledButton
-        onClick={() => {
-          setSelectionType(type)
-          setActiveQuestionId(null)
-        }}
-        className="w-full py-4 border-2 border-dashed border-gray-2 rounded-2xl flex items-center justify-center gap-3 text-gray-4 hover:border-accent-primary hover:text-accent-primary transition-all group"
-      >
-        <Icon name={isWelcome ? "lucide:megaphone" : "lucide:party-popper"} width={16} height={16} className="opacity-50 group-hover:opacity-100" />
-        <Text size="xs" fw={700} className="uppercase tracking-widest">Toggle {isWelcome ? 'Welcome' : 'Thank You'} Page</Text>
-      </UnstyledButton>
-    )
-  }
 
   return (
     <div
@@ -286,12 +327,17 @@ const CanvasSlot = ({ type, enabled, title }: { type: 'welcome' | 'thank_you', e
 
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
-                <Text size="10px" fw={900} className={cn(
-                  "uppercase tracking-[0.15em]",
-                  isActive ? "text-accent-primary" : "text-gray-5"
-                )}>
-                  {isWelcome ? 'Welcome Screen' : 'Completion Screen'}
-                </Text>
+                <div className="flex items-center gap-1.5">
+                  <Text size="10px" fw={900} className={cn(
+                    "uppercase tracking-[0.15em]",
+                    isActive ? "text-accent-primary" : "text-gray-5"
+                  )}>
+                    {isWelcome ? 'Welcome Screen' : 'Completion Screen'}
+                  </Text>
+                  {isActive && (
+                    <div className="size-1 rounded-full bg-accent-primary" />
+                  )}
+                </div>
                 <div className="px-1.5 py-0.5 rounded-full bg-gray-1 border border-gray-2 text-[8px] font-black text-gray-4 tracking-tighter uppercase">
                   Fixed Section
                 </div>
@@ -313,6 +359,20 @@ const CanvasSlot = ({ type, enabled, title }: { type: 'welcome' | 'thank_you', e
             "flex items-center gap-1 transition-opacity",
             !isActive && "opacity-0 group-hover:opacity-100"
           )}>
+            <ActionIcon
+              variant="subtle"
+              color="red"
+              size="sm"
+              className="hover:bg-red-50 text-red-500 active:scale-95 transition-all"
+              onClick={(e) => {
+                e.stopPropagation()
+                if (isWelcome) setWelcomePage({ enabled: false })
+                else setThankYouPage({ enabled: false })
+                setSelectionType('general')
+              }}
+            >
+              <Icon name="lucide:trash" width={14} height={14} />
+            </ActionIcon>
             <ActionIcon variant="subtle" color="gray" size="sm" className="hover:bg-gray-2 active:scale-95 transition-all">
               <Icon name="lucide:settings" width={14} height={14} />
             </ActionIcon>
