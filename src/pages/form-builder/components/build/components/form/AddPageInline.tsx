@@ -1,6 +1,6 @@
 import { motion } from 'motion/react'
 import Icon from '@/components/base/icon/Icon'
-import { Text, ActionIcon, Portal } from '@mantine/core'
+import { Portal } from '@mantine/core'
 import cn from '@/utils/cn'
 import { useFormStore } from '@/pages/form-builder/store/formStore'
 
@@ -44,23 +44,18 @@ const AddPageInline = ({ onSelect, onClose }: Props) => {
     return (
         <Portal>
             <div className="fixed inset-0 pointer-events-none z-[9999] flex items-center justify-center">
+                {/* Click outside overlay - capture events */}
+                <div className="absolute inset-0 z-0 pointer-events-auto" onClick={onClose} />
+
                 <motion.div
-                    className='w-full max-w-[420px] pointer-events-auto flex flex-col overflow-hidden rounded-xl bg-white border border-gray-2 shadow-2xl font-inter'
+                    drag
+                    dragMomentum={false}
+                    dragElastic={0}
+                    className='w-full max-w-[420px] pointer-events-auto flex flex-col overflow-hidden rounded-xl bg-white border border-gray-2 shadow-2xl font-inter z-10'
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                 >
-                    {/* Header */}
-                    <div className='px-4 py-3 shrink-0 flex items-center justify-between border-b border-gray-1 bg-white'>
-                        <div className="flex items-center gap-2">
-                            <div className="size-8 bg-gray-1 border border-gray-2 rounded-lg flex items-center justify-center">
-                                <Icon name="lucide:plus" width={16} height={16} className="text-gray-11" />
-                            </div>
-                            <Text size="xs" fw={700} className="text-gray-13">ADD NEW PAGE</Text>
-                        </div>
-                        <ActionIcon variant="subtle" color="gray" size="sm" onClick={onClose} className="hover:bg-gray-1 rounded-md">
-                            <Icon name="lucide:x" width={16} height={16} />
-                        </ActionIcon>
-                    </div>
+
 
                     {/* Options */}
                     <div className="p-3 space-y-2">

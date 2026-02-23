@@ -4,7 +4,7 @@ import Icon from '@/components/base/icon/Icon'
 import Input from '@/components/base/inputs/InputText'
 import type { QuestionType } from '@/pages/form-builder/store/formStore'
 import cn from '@/utils/cn'
-import { Text, ActionIcon, Portal } from '@mantine/core'
+import { Portal } from '@mantine/core'
 
 type TabType = 'explore' | 'popular' | 'advanced' | 'templates' | 'all' | 'display' | 'date_time'
 
@@ -106,33 +106,31 @@ const AddFieldInline = ({ onSelect, onClose }: Props) => {
     return (
         <Portal>
             <div className="fixed inset-0 pointer-events-none z-[9999] flex items-center justify-center">
+                {/* Click outside overlay - capture events */}
+                <div className="absolute inset-0 z-0 pointer-events-auto" onClick={onClose} />
+
                 <motion.div
-                    className='w-full max-w-[500px] pointer-events-auto flex flex-col overflow-hidden rounded-xl bg-white border border-gray-2 shadow-2xl font-inter'
+                    drag
+                    dragMomentum={false}
+                    dragElastic={0}
+                    className='w-full max-w-[500px] pointer-events-auto flex flex-col overflow-hidden rounded-xl bg-white border border-gray-2 shadow-2xl font-inter z-10'
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                 >
-                    {/* Header */}
-                    <div className='px-4 py-3 shrink-0 flex items-center justify-between border-b border-gray-1 bg-white'>
-                        <div className="flex items-center gap-2">
-                            <div className="size-8 bg-gray-1 border border-gray-2 rounded-lg flex items-center justify-center">
-                                <Icon name="lucide:plus" width={16} height={16} className="text-gray-11" />
-                            </div>
-                            <Text size="xs" fw={700} className="text-gray-13">ADD NEW FIELD</Text>
-                        </div>
-                        <ActionIcon variant="subtle" color="gray" size="sm" onClick={onClose} className="hover:bg-gray-1 rounded-md">
-                            <Icon name="lucide:x" width={16} height={16} />
-                        </ActionIcon>
-                    </div>
+
 
                     {/* Search */}
-                    <div className='p-3 shrink-0'>
+                    <div className='p-3 shrink-0 border-b border-gray-1 bg-white'>
                         <div className='relative'>
                             <Input
-                                placeholder='Search elements, templates, or logic...'
+                                placeholder='Search fields...'
                                 value={search}
-                                onChange={(val) => setSearch(val)}
-                                className='w-full text-xs bg-gray-1 border-transparent focus:bg-white rounded-xl py-2.5 transition-all'
-                                leftSection={<Icon name='lucide:search' className='h-4 w-4 text-gray-400' />}
+                                onChange={(val: any) => setSearch(val.target.value)}
+                                className='w-full'
+                                classNames={{
+                                    input: 'bg-gray-1 border-gray-2 focus:bg-white text-xs py-1.5'
+                                }}
+                                leftSection={<Icon name='lucide:search' width={14} height={14} className='text-gray-4' />}
 
                             />
                         </div>
@@ -153,10 +151,10 @@ const AddFieldInline = ({ onSelect, onClose }: Props) => {
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id as any)}
                                     className={cn(
-                                        'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[10px] font-bold transition-all duration-200 whitespace-nowrap uppercase tracking-wider',
+                                        'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold transition-all duration-200 whitespace-nowrap uppercase tracking-wider',
                                         activeTab === tab.id
-                                            ? 'bg-gray-13 text-white'
-                                            : 'text-gray-5 hover:bg-gray-100'
+                                            ? 'bg-accent-soft text-accent-primary'
+                                            : 'text-gray-11 hover:bg-gray-100'
                                     )}
                                 >
                                     <Icon name={tab.icon} width={12} height={12} />
