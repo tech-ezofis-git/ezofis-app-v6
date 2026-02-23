@@ -159,15 +159,7 @@ const Form = () => {
 
   return (
     <div className='w-full max-w-[860px] mx-auto pb-40 px-4 font-inter'>
-      {/* Form Structure Header */}
-      <div className='flex items-center justify-between mb-8'>
-        <div className='flex items-center gap-3'>
-          <div className="size-8 bg-accent-soft/20 rounded-lg flex items-center justify-center">
-            <Icon name="tabler:layout-list" width={18} height={18} className="text-accent-primary" />
-          </div>
-          <Text size="lg" fw={800} className="text-gray-13 tracking-tight">Form Structure</Text>
-        </div>
-      </div>
+
 
       <div className='space-y-8'>
         {/* Welcome Page Slot (Only if enabled) */}
@@ -242,7 +234,6 @@ const Form = () => {
               <div className="z-[1000] rotate-[2deg] scale-[1.02] cursor-grabbing shadow-2xl rounded-2xl ring-2 ring-accent-primary/20">
                 <QuestionCard
                   question={activeQuestion}
-                  index={0}
                   isActive={true}
                   onSelect={() => { }}
                   onUpdate={() => { }}
@@ -289,7 +280,7 @@ const Form = () => {
   )
 }
 
-const CanvasSlot = ({ type, enabled, title }: { type: 'welcome' | 'thank_you', enabled: boolean, title: string }) => {
+const CanvasSlot = ({ type, title }: { type: 'welcome' | 'thank_you', enabled: boolean, title: string }) => {
   const isWelcome = type === 'welcome'
   const { setSelectionType, setActiveQuestionId, selectionType, setWelcomePage, setThankYouPage } = useFormStore()
   const isActive = selectionType === type

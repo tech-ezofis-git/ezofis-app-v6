@@ -171,7 +171,6 @@ const Page = ({ page, pageIndex }: Props) => {
 
                                 <SortableQuestionItem
                                     question={q}
-                                    index={i}
                                     activeQuestionId={activeQuestionId}
                                     setActiveQuestionId={setActiveQuestionId}
                                     updateQuestion={updateQuestion}
@@ -218,7 +217,7 @@ const Page = ({ page, pageIndex }: Props) => {
     )
 }
 
-const SortableQuestionItem = ({ question, index, activeQuestionId, setActiveQuestionId, updateQuestion, deleteQuestion, isBuilderMode }: any) => {
+const SortableQuestionItem = ({ question, activeQuestionId, setActiveQuestionId, updateQuestion, deleteQuestion, isBuilderMode }: any) => {
     const {
         attributes,
         listeners,
@@ -244,7 +243,6 @@ const SortableQuestionItem = ({ question, index, activeQuestionId, setActiveQues
         >
             <QuestionCard
                 question={question}
-                index={index + 1}
                 isActive={activeQuestionId === question.id}
                 onSelect={() => setActiveQuestionId(question.id)}
                 onUpdate={(updates) => updateQuestion(question.id, updates)}
