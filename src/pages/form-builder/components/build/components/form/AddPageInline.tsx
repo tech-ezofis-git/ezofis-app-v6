@@ -45,23 +45,20 @@ const AddPageInline = ({ onSelect, onClose }: Props) => {
         <Portal>
             <div className="fixed inset-0 pointer-events-none z-[9999] flex items-center justify-center">
                 <motion.div
-                    drag
-                    dragMomentum={false}
-                    dragElastic={0}
-                    className='w-full max-w-[420px] pointer-events-auto flex flex-col overflow-hidden rounded-2xl bg-white border border-accent-primary ring-4 ring-accent-soft/10 shadow-2xl font-inter'
+                    className='w-full max-w-[420px] pointer-events-auto flex flex-col overflow-hidden rounded-xl bg-white border border-gray-2 shadow-2xl font-inter'
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                 >
                     {/* Header */}
-                    <div className='px-4 py-3 shrink-0 flex items-center justify-between border-b border-gray-1 bg-gray-50/50 cursor-grab active:cursor-grabbing'>
+                    <div className='px-4 py-3 shrink-0 flex items-center justify-between border-b border-gray-1 bg-white'>
                         <div className="flex items-center gap-2">
-                            <div className="size-6 bg-accent-primary rounded flex items-center justify-center shadow-sm">
-                                <Icon name="lucide:plus" width={14} height={14} className="text-white" />
+                            <div className="size-8 bg-gray-1 border border-gray-2 rounded-lg flex items-center justify-center">
+                                <Icon name="lucide:plus" width={16} height={16} className="text-gray-11" />
                             </div>
-                            <Text size="xs" fw={800} className="uppercase tracking-widest text-gray-13">Add New Page</Text>
+                            <Text size="xs" fw={700} className="text-gray-13">ADD NEW PAGE</Text>
                         </div>
-                        <ActionIcon variant="subtle" color="gray" size="sm" onClick={onClose} className="hover:bg-gray-2 rounded-full">
-                            <Icon name="lucide:x" width={14} height={14} />
+                        <ActionIcon variant="subtle" color="gray" size="sm" onClick={onClose} className="hover:bg-gray-1 rounded-md">
+                            <Icon name="lucide:x" width={16} height={16} />
                         </ActionIcon>
                     </div>
 

@@ -74,9 +74,9 @@ const Page = ({ page, pageIndex }: Props) => {
         >
             {/* Page Header */}
             <div className="px-6 pt-6 pb-4 border-b border-gray-2 flex items-start justify-between gap-4 font-inter">
-                <div className="flex-1 space-y-1.5">
+                <div className="flex-1 space-y-1">
                     <div className="flex items-center gap-2">
-                        <div className="bg-accent-soft/20 text-accent-primary text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-widest border border-accent-soft/40">
+                        <div className="bg-gray-1 text-gray-11 text-[10px] font-bold px-2 py-0.5 rounded-md border border-gray-2 uppercase tracking-widest shrink-0">
                             Page {pageIndex + 1}
                         </div>
                     </div>
@@ -86,7 +86,7 @@ const Page = ({ page, pageIndex }: Props) => {
                         value={page.title}
                         onChange={(e) => updatePage(page.id, { title: e.target.value })}
                         placeholder="Page Title"
-                        className="w-full bg-transparent text-2xl font-bold text-gray-13 placeholder:text-gray-4 focus:outline-none font-inter"
+                        className="w-full bg-transparent text-xl font-bold text-gray-13 placeholder:text-gray-4 focus:outline-none"
                     />
 
                     <input
@@ -94,7 +94,7 @@ const Page = ({ page, pageIndex }: Props) => {
                         value={page.description}
                         onChange={(e) => updatePage(page.id, { description: e.target.value })}
                         placeholder="Add a description for this page..."
-                        className="w-full bg-transparent text-sm text-gray-9 placeholder:text-gray-4 focus:outline-none font-inter"
+                        className="w-full bg-transparent text-[13px] text-gray-9 placeholder:text-gray-4 focus:outline-none"
                     />
                 </div>
 
@@ -122,20 +122,20 @@ const Page = ({ page, pageIndex }: Props) => {
                 <SortableContext items={page.questions.map(q => q.id)} strategy={rectSortingStrategy}>
                     <div className="flex flex-wrap gap-y-3 relative z-10 w-full">
                         {page.questions.length === 0 && (
-                            <div className="w-full py-14 flex flex-col items-center justify-center border-2 border-dashed border-gray-3 rounded-xl bg-surface-primary/60 animate-in fade-in duration-500">
-                                <div className="size-12 rounded-full bg-gray-2 flex items-center justify-center mb-3">
-                                    <Icon name="lucide:layout-list" width={22} height={22} className="text-gray-6" />
+                            <div className="w-full py-12 flex flex-col items-center justify-center border-2 border-dashed border-gray-2 rounded-xl bg-white animate-in fade-in duration-500">
+                                <div className="size-10 rounded-lg bg-gray-50 flex items-center justify-center mb-3">
+                                    <Icon name="lucide:layout-list" width={20} height={20} className="text-gray-4" />
                                 </div>
-                                <Text className="text-sm font-black uppercase tracking-tight text-gray-700 font-inter">This page is empty</Text>
-                                <Text className="text-xs text-gray-500 mb-4 font-inter">Click below to add your first question</Text>
+                                <Text size="sm" fw={700} className="text-gray-13 mb-1">Emply Page</Text>
+                                <Text size="xs" className="text-gray-5 mb-5 px-6 text-center">Start adding fields to this page to build your form content.</Text>
                                 <Button
-                                    size="sm"
+                                    size="xs"
                                     bg="accent-primary"
-                                    className="hover:scale-[1.02] active:scale-95 transition-all shadow-md shadow-accent-soft/20 font-inter font-bold"
+                                    className="hover:scale-[1.02] active:scale-95 transition-all shadow-md shadow-accent-soft/20 font-bold px-4"
                                     leftSection={<Icon name="lucide:plus" width={14} height={14} />}
                                     onClick={() => setShowAddFieldAt(0)}
                                 >
-                                    Add first question
+                                    Add Question
                                 </Button>
                             </div>
                         )}
@@ -160,7 +160,7 @@ const Page = ({ page, pageIndex }: Props) => {
                             >
                                 {/* Insert Hook (Top) */}
                                 <div className="absolute top-[-10px] left-0 right-0 h-5 z-[50] flex items-center justify-center opacity-0 group-hover/field:opacity-100 transition-opacity duration-200 pointer-events-none">
-                                    <div className="w-full h-[1px] bg-accent-primary/40 absolute pointer-events-none" />
+                                    <div className="w-full h-[1px] bg-gray-13/10 absolute pointer-events-none" />
                                     <button
                                         onClick={() => setShowAddFieldAt(i)}
                                         className="size-6 rounded-full bg-accent-primary text-white flex items-center justify-center shadow-lg hover:scale-125 transition-all pointer-events-auto"
@@ -190,7 +190,7 @@ const Page = ({ page, pageIndex }: Props) => {
                                 ) : (
                                     i === page.questions.length - 1 && (
                                         <div className="absolute bottom-[-10px] left-0 right-0 h-5 z-[50] flex items-center justify-center opacity-0 group-hover/field:opacity-100 transition-opacity duration-200 pointer-events-none">
-                                            <div className="w-full h-[1px] bg-accent-primary/40 absolute pointer-events-none" />
+                                            <div className="w-full h-[1px] bg-gray-13/10 absolute pointer-events-none" />
                                             <button
                                                 onClick={() => setShowAddFieldAt(i + 1)}
                                                 className="size-6 rounded-full bg-accent-primary text-white flex items-center justify-center shadow-lg hover:scale-125 transition-all pointer-events-auto"

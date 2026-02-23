@@ -210,6 +210,7 @@ export const useFormStore = create<FormStore>()(
       setPages: (pages) => set({ pages }),
       setActiveQuestionId: (activeQuestionId) => set((state) => ({ 
         activeQuestionId,
+        isSidebarOpen: !!activeQuestionId || state.isSidebarOpen,
         selectionType: activeQuestionId ? 'question' : (['welcome', 'thank_you', 'general'].includes(state.selectionType) ? state.selectionType : 'general')
       })),
       setPreviewMode: (previewMode) => set({ previewMode }),
@@ -219,7 +220,11 @@ export const useFormStore = create<FormStore>()(
       setSidebarOpen: (isSidebarOpen) => set({ isSidebarOpen }),
       setIsBuilderMode: (isBuilderMode) => set({ isBuilderMode }),
       
-      setSelectionType: (selectionType) => set({ selectionType, activeQuestionId: selectionType === 'question' ? get().activeQuestionId : null }),
+      setSelectionType: (selectionType) => set((state) => ({ 
+        selectionType, 
+        isSidebarOpen: true,
+        activeQuestionId: selectionType === 'question' ? state.activeQuestionId : null 
+      })),
       clearSelection: () => set({ selectionType: 'general', activeQuestionId: null }),
 
       setFormType: (formType) => set({ formType }),
