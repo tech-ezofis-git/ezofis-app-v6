@@ -20,7 +20,7 @@ const StepOne = () => {
     const handleMessage = (event: MessageEvent) => {
       if (event.origin !== window.location.origin) return
       if (event.data.type === 'CONNECTION_SUCCESS') {
-        const { connector, provider } = event.data
+
 
         setEmailSettings({
           ...emailSettings,
