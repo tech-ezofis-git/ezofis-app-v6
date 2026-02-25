@@ -17,7 +17,7 @@ export const getField = (fieldType: string) => {
         settings: {
             general: {
                 hideLabel: false,
-                size: "col-12",
+                size: "col-6",
                 visibility: "NORMAL",
                 placeholder: "",
                 tooltip: "",

@@ -1,8 +1,7 @@
-import { SegmentedControl, Switch, Text, TextInput, Select, Textarea, Button, Divider, ActionIcon, Group, Paper, Stack, Tooltip, Box } from '@mantine/core'
-import { useFormStore, type QuestionType, generateId, type Question } from '@/pages/form-builder/store/formStore'
+import { SegmentedControl, Switch, Text, TextInput, Select, Textarea, Button, Divider, ActionIcon, Group, Paper, Stack, Tooltip, Box, Badge } from '@mantine/core'
+import { useFormStore, generateId, type Question } from '@/pages/form-builder/store/formStore'
 import Icon from '@/components/base/icon/Icon'
 import { useEffect, useState, useRef } from 'react'
-import cn from '@/utils/cn'
 
 const FieldSettings = () => {
     const panels = useFormStore((state) => state.panels)
@@ -29,14 +28,20 @@ const FieldSettings = () => {
     const isSomethingSelected = selectionType !== 'question' || activeQuestionId !== null
 
     const [isEditingLabel, setIsEditingLabel] = useState(false)
-    const [editedLabel, setEditedLabel] = useState('')
+    const [headerLabel, setHeaderLabel] = useState('')
+    const [localLabel, setLocalLabel] = useState('')
+    const [localDesc, setLocalDesc] = useState('')
+    const [localPlaceholder, setLocalPlaceholder] = useState('')
     const inputRef = useRef<HTMLInputElement>(null)
 
     useEffect(() => {
         if (activeQuestion) {
-            setEditedLabel(activeQuestion.label || '')
+            setHeaderLabel(activeQuestion.label || '')
+            setLocalLabel(activeQuestion.label || '')
+            setLocalDesc(activeQuestion.settings.general.description || '')
+            setLocalPlaceholder(activeQuestion.settings.general.placeholder || '')
         }
-    }, [activeQuestion?.id, activeQuestion?.label])
+    }, [activeQuestion?.id]) // Only reset when changing fields
 
     useEffect(() => {
         if (isEditingLabel && inputRef.current) {
@@ -45,8 +50,8 @@ const FieldSettings = () => {
     }, [isEditingLabel])
 
     const handleLabelSave = () => {
-        if (activeQuestion && editedLabel.trim() !== '') {
-            updateQuestion(activeQuestion.id, { label: editedLabel })
+        if (activeQuestion && headerLabel.trim() !== '') {
+            updateQuestion(activeQuestion.id, { label: headerLabel })
         }
         setIsEditingLabel(false)
     }
@@ -82,123 +87,32 @@ const FieldSettings = () => {
         }))
     }
 
-    // Settings Header
-    const SettingsHeader = ({ title, icon, subtitle }: { title: string, icon: string, subtitle?: string, type?: string }) => (
-        <div className="px-4 py-3 border-b border-gray-2 flex items-center justify-between bg-white shrink-0 gap-2">
-            <div className="flex items-center gap-2 min-w-0 flex-1">
-                {isSomethingSelected && selectionType !== 'question' && (
-                    <Tooltip label="Back to Fields">
-                        <ActionIcon
-                            variant="subtle"
-                            color="gray"
-                            size="sm"
-                            onClick={() => clearSelection()}
-                            className="mr-1 hover:bg-gray-2 shrink-0"
-                        >
-                            <Icon name="lucide:arrow-left" width={14} height={14} />
-                        </ActionIcon>
-                    </Tooltip>
-                )}
-
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-1 border border-gray-2">
-                    <Icon name={icon} width={16} height={16} className="text-gray-11" />
-                </div>
-
-                {selectionType === 'question' && activeQuestion ? (
-                    isEditingLabel ? (
-                        <div className="flex-1 flex items-center gap-1">
-                            <input
-                                ref={inputRef}
-                                type="text"
-                                value={editedLabel}
-                                onChange={(e) => setEditedLabel(e.target.value)}
-                                onBlur={handleLabelSave}
-                                onKeyDown={handleKeyDown}
-                                className="flex-1 min-w-0 text-xs font-semibold text-gray-13 border border-primary-5 rounded px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-primary-5 bg-white"
-                            />
-                        </div>
-                    ) : (
-                        <div className="flex items-center gap-1 min-w-0 flex-1 group/title">
-                            <Text
-                                fw={700}
-                                size="xs"
-                                className="text-gray-13 truncate cursor-pointer hover:text-gray-11"
-                                onClick={() => setIsEditingLabel(true)}
-                            >
-                                {activeQuestion.label || 'Untitled Field'}
-                            </Text>
-                            <Icon
-                                name="lucide:pencil"
-                                width={12} height={12}
-                                className="text-gray-4 opacity-0 group-hover/title:opacity-100 cursor-pointer hover:text-gray-7 transition-opacity"
-                                onClick={() => setIsEditingLabel(true)}
-                            />
-                        </div>
-                    )
-                ) : (
-                    <Text fw={700} size="xs" className="uppercase tracking-widest text-gray-11 truncate">{title}</Text>
-                )}
-            </div>
-
-            <div className="flex items-center gap-0.5 shrink-0">
-                {selectionType === 'question' && (
-                    <>
-                        <div className='flex items-center gap-0.5'>
-                            <ActionIcon
-                                variant="subtle"
-                                color="gray"
-                                size="sm"
-                                disabled={!hasPrev}
-                                onClick={handlePrev}
-                                className={cn("hover:bg-gray-2", !hasPrev && "opacity-30")}
-                            >
-                                <Icon name="lucide:chevron-left" width={16} height={16} />
-                            </ActionIcon>
-                            <ActionIcon
-                                variant="subtle"
-                                color="gray"
-                                size="sm"
-                                disabled={!hasNext}
-                                onClick={handleNext}
-                                className={cn("hover:bg-gray-2", !hasNext && "opacity-30")}
-                            >
-                                <Icon name="lucide:chevron-right" width={16} height={16} />
-                            </ActionIcon>
-                        </div>
-
-                        <ActionIcon
-                            variant="subtle"
-                            color="gray"
-                            size="sm"
-                            className="hover:bg-red-50 hover:text-error-main transition-colors mx-0.5"
-                            onClick={() => deleteQuestion(activeQuestion!.id)}
-                            title="Delete Field"
-                        >
-                            <Icon name="lucide:trash-2" width={15} height={15} />
-                        </ActionIcon>
-                    </>
-                )}
-
-                <div className="w-px h-4 bg-gray-2 mx-1" />
-
-                <ActionIcon
-                    variant="subtle"
-                    color="gray"
-                    size="sm"
-                    onClick={() => setSidebarOpen(false)}
-                    className="hover:bg-gray-2 rounded-lg transition-colors"
-                >
-                    <Icon name="lucide:x" width={16} height={16} />
-                </ActionIcon>
-            </div>
-        </div>
-    )
+    // Memoized Header Props
+    const headerProps = {
+        activeQuestion,
+        selectionType,
+        isSomethingSelected,
+        isEditingLabel,
+        headerLabel,
+        setHeaderLabel,
+        setIsEditingLabel,
+        handleLabelSave,
+        handleKeyDown,
+        inputRef,
+        hasPrev,
+        hasNext,
+        handlePrev,
+        handleNext,
+        clearSelection,
+        deleteQuestion,
+        setSidebarOpen
+    }
 
     // 2. General Settings View (Form Name & Description only)
     if (selectionType === 'general') {
         return (
             <div className="h-full w-[400px] flex flex-col bg-surface-primary animate-in slide-in-from-right duration-300 font-inter">
-                <SettingsHeader title="General Settings" icon="tabler:settings" subtitle="Core" />
+                <SettingsHeader title="General Settings" icon="tabler:settings" headerProps={headerProps} />
                 <div className="flex-1 overflow-y-auto p-5 space-y-6">
                     <Stack gap="sm">
                         <TextInput
@@ -240,7 +154,7 @@ const FieldSettings = () => {
     if (selectionType === 'welcome') {
         return (
             <div className="h-full w-[400px] flex flex-col bg-surface-primary animate-in slide-in-from-right duration-300">
-                <SettingsHeader title="Welcome Screen" icon="lucide:megaphone" subtitle="Header" />
+                <SettingsHeader title="Welcome Screen" icon="lucide:megaphone" headerProps={headerProps} />
                 <div className="flex-1 overflow-y-auto p-4 space-y-5">
                     <Stack gap="xl">
                         <div className="flex items-center justify-between py-1 px-1">
@@ -285,7 +199,7 @@ const FieldSettings = () => {
     if (selectionType === 'thank_you') {
         return (
             <div className="h-full w-[400px] flex flex-col bg-surface-primary animate-in slide-in-from-right duration-300">
-                <SettingsHeader title="Completion Screen" icon="lucide:party-popper" subtitle="Footer" />
+                <SettingsHeader title="Completion Screen" icon="lucide:party-popper" headerProps={headerProps} />
                 <div className="flex-1 overflow-y-auto p-4 space-y-5">
                     <Stack gap="xl">
                         <div className="flex items-center justify-between py-1 px-1">
@@ -336,15 +250,16 @@ const FieldSettings = () => {
             <SettingsHeader
                 title="Field Settings"
                 icon="tabler:adjustments-horizontal"
-                subtitle={activeQuestion.type.replace(/_/g, ' ')}
+                headerProps={headerProps}
             />
 
             <div className="flex-1 overflow-y-auto p-4 space-y-5 custom-scrollbar">
                 <div className="space-y-4">
                     <TextInput
                         label={<Text size="13px" fw={500} className="text-gray-11 mb-1">Field Label</Text>}
-                        value={activeQuestion.label}
-                        onChange={(e) => updateQuestion(activeQuestion.id, { label: e.target.value })}
+                        value={localLabel}
+                        onChange={(e) => setLocalLabel(e.target.value)}
+                        onBlur={() => updateQuestion(activeQuestion.id, { label: localLabel })}
                         placeholder="e.g. What is your name?"
                         size="sm"
                         classNames={{ input: 'bg-gray-1 border-gray-2 focus:bg-white text-xs' }}
@@ -352,8 +267,9 @@ const FieldSettings = () => {
 
                     <Textarea
                         label={<Text size="13px" fw={500} className="text-gray-11 mb-1">Description</Text>}
-                        value={activeQuestion.settings.general.description}
-                        onChange={(e) => updateNested('general', { description: e.target.value })}
+                        value={localDesc}
+                        onChange={(e) => setLocalDesc(e.target.value)}
+                        onBlur={() => updateNested('general', { description: localDesc })}
                         placeholder="Add extra instructions..."
                         autosize
                         minRows={2}
@@ -363,8 +279,9 @@ const FieldSettings = () => {
 
                     <TextInput
                         label={<Text size="13px" fw={500} className="text-gray-11 mb-1">Placeholder</Text>}
-                        value={activeQuestion.settings.general.placeholder || ''}
-                        onChange={(e) => updateNested('general', { placeholder: e.target.value })}
+                        value={localPlaceholder}
+                        onChange={(e) => setLocalPlaceholder(e.target.value)}
+                        onBlur={() => updateNested('general', { placeholder: localPlaceholder })}
                         placeholder="e.g. Type here..."
                         size="sm"
                         classNames={{ input: 'bg-gray-1 border-gray-2 focus:bg-white text-xs' }}
@@ -430,7 +347,7 @@ const FieldSettings = () => {
                                     size="sm"
                                     className="hover:bg-gray-2 transition-all"
                                     onClick={() => {
-                                        const newColumn = { id: generateId(), label: `Column ${(activeQuestion.settings.specific.columns?.length || 0) + 1}`, type: 'SHORT_TEXT', size: 'col-6' }
+                                        const newColumn = { id: generateId(), label: `Column ${(activeQuestion.settings.specific.columns?.length || 0) + 1} `, type: 'SHORT_TEXT', size: 'col-6' }
                                         updateNested('specific', { columns: [...(activeQuestion.settings.specific.columns || []), newColumn] })
                                     }}
                                 >
@@ -489,6 +406,162 @@ const FieldSettings = () => {
                 >
                     Delete Field
                 </Button>
+            </div>
+        </div>
+    )
+}
+
+const SettingsHeader = ({
+    title, icon, headerProps
+}: {
+    title: string, icon: string, headerProps: any
+}) => {
+    const {
+        activeQuestion, selectionType, isSomethingSelected,
+        isEditingLabel, headerLabel, setHeaderLabel,
+        setIsEditingLabel, handleLabelSave, handleKeyDown,
+        inputRef, hasPrev, hasNext, handlePrev, handleNext,
+        clearSelection, deleteQuestion, setSidebarOpen
+    } = headerProps
+
+    return (
+        <div className="px-4 py-3 border-b border-gray-2 flex items-center justify-between bg-white shrink-0 gap-2">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+                {isSomethingSelected && selectionType !== 'question' && (
+                    <Tooltip label="Back to Fields">
+                        <ActionIcon
+                            variant="subtle"
+                            color="gray"
+                            size="sm"
+                            onClick={() => clearSelection()}
+                            className="mr-1 hover:bg-gray-2 shrink-0"
+                        >
+                            <Icon name="lucide:arrow-left" width={14} height={14} />
+                        </ActionIcon>
+                    </Tooltip>
+                )}
+
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-1 border border-gray-2">
+                    <Icon name={icon} width={16} height={16} className="text-gray-11" />
+                </div>
+
+                {selectionType === 'question' && activeQuestion ? (
+                    isEditingLabel ? (
+                        <div className="flex-1 flex items-center gap-1">
+                            <input
+                                ref={inputRef}
+                                type="text"
+                                value={headerLabel}
+                                onChange={(e) => setHeaderLabel(e.target.value)}
+                                onBlur={handleLabelSave}
+                                onKeyDown={handleKeyDown}
+                                className="flex-1 min-w-0 text-xs font-semibold text-gray-13 border border-primary-5 rounded px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-primary-5 bg-white"
+                            />
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-2 min-w-0 flex-1 group/title overflow-hidden">
+                            <Tooltip
+                                label={activeQuestion.label || 'Untitled Field'}
+                                position="top-start"
+                                withArrow
+                                disabled={!activeQuestion.label || activeQuestion.label.length < 15}
+                                openDelay={400}
+                                withinPortal
+                            >
+                                <div className="inline-grid items-center min-w-0 max-w-[140px]">
+                                    <span className="invisible whitespace-pre text-[xs] font-bold tracking-tight h-0 overflow-hidden px-0">
+                                        {activeQuestion.label || 'Untitled Field'}
+                                    </span>
+                                    <Text
+                                        fw={700}
+                                        size="xs"
+                                        className="text-gray-13 truncate cursor-pointer hover:text-gray-11"
+                                        style={{ gridArea: '1/1/2/2' }}
+                                        onClick={() => setIsEditingLabel(true)}
+                                    >
+                                        {activeQuestion.label || 'Untitled Field'}
+                                    </Text>
+                                </div>
+                            </Tooltip>
+
+                            <Badge
+                                size="xs"
+                                variant="outline"
+                                color="gray"
+                                radius="xs"
+                                className="border-gray-3 text-[9px] px-1 py-0 h-4 uppercase tracking-tighter shrink-0"
+                            >
+                                {activeQuestion.type.replace(/_/g, ' ')}
+                            </Badge>
+
+                            <ActionIcon
+                                variant="subtle"
+                                color="gray"
+                                size="xs"
+                                className="text-gray-4 opacity-0 group-hover/title:opacity-100 cursor-pointer hover:text-gray-7 transition-opacity"
+                                onClick={(e) => { e.stopPropagation(); setIsEditingLabel(true); }}
+                            >
+                                <Icon name="lucide:pencil" width={12} height={12} />
+                            </ActionIcon>
+                        </div>
+                    )
+                ) : (
+                    <Text fw={700} size="xs" className="uppercase tracking-widest text-gray-11 truncate">{title}</Text>
+                )}
+            </div>
+
+            <div className="flex items-center gap-0.5 shrink-0">
+                {selectionType === 'question' && (
+                    <>
+                        <div className='flex items-center gap-0.5'>
+                            {hasPrev && (
+                                <ActionIcon
+                                    variant="subtle"
+                                    color="gray"
+                                    size="sm"
+                                    onClick={handlePrev}
+                                    className="hover:bg-gray-2"
+                                >
+                                    <Icon name="lucide:chevron-left" width={16} height={16} />
+                                </ActionIcon>
+                            )}
+                            {hasNext && (
+                                <ActionIcon
+                                    variant="subtle"
+                                    color="gray"
+                                    size="sm"
+                                    onClick={handleNext}
+                                    className="hover:bg-gray-2"
+                                >
+                                    <Icon name="lucide:chevron-right" width={16} height={16} />
+                                </ActionIcon>
+                            )}
+                        </div>
+
+                        <ActionIcon
+                            variant="subtle"
+                            color="gray"
+                            size="sm"
+                            className="hover:bg-red-50 hover:text-error-main transition-colors mx-0.5"
+                            onClick={() => deleteQuestion(activeQuestion!.id)}
+                            title="Delete Field"
+                        >
+                            <Icon name="lucide:trash-2" width={15} height={15} />
+                        </ActionIcon>
+                    </>
+                )}
+
+                <div className="w-px h-4 bg-gray-2 mx-1" />
+
+                <ActionIcon
+                    variant="subtle"
+                    color="gray"
+                    size="sm"
+                    onClick={() => setSidebarOpen(false)}
+                    className="hover:bg-gray-2 rounded-lg transition-colors"
+                >
+                    <Icon name="lucide:x" width={16} height={16} />
+                </ActionIcon>
             </div>
         </div>
     )

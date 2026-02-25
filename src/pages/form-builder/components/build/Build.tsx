@@ -9,8 +9,8 @@ const Build = () => {
 
   return (
     <div className='bg-surface-muted h-full w-full overflow-hidden flex'>
-      <div className='flex-1 overflow-auto px-8 py-10'>
-        <div className='max-w-[1000px] mx-auto animate-in fade-in slide-in-from-left-4 duration-500'>
+      <div className='flex-1 overflow-auto px-4 py-6'>
+        <div className='max-w-[1600px] mx-auto animate-in fade-in slide-in-from-left-4 duration-500'>
           <Form />
         </div>
       </div>

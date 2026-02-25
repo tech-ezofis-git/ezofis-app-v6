@@ -54,6 +54,9 @@ export interface Question {
       size: QuestionWidth
       visibility: 'NORMAL' | 'READ_ONLY' | 'HIDDEN'
       placeholder?: string
+      description?: string
+      hidden?: boolean
+      readOnly?: boolean
       tooltip?: string
       dividerType?: string
       url?: string
@@ -67,6 +70,7 @@ export interface Question {
       allowToAddNewOptions?: boolean
       optionsPerLine?: number
       tableColumns?: any[]
+      columns?: any[]
       tableRowsType?: string
       matrixColumns?: any[]
       matrixRows?: any[]
