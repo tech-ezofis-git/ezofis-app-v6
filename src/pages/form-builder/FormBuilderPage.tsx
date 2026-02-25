@@ -11,7 +11,7 @@ import formApi from '@/api/form/form'
 import { LoadingOverlay } from '@mantine/core'
 
 const FormBuilderPage = () => {
-  const { formId } = useParams({ from: '/form-builder/$formId' }) as { formId?: string }
+  const { formId } = useParams({ strict: false }) as any
   const { loadForm, resetForm } = useFormStore()
   const [isLoading, setIsLoading] = useState(false)
   const isOpen = useAskAIStore((state) => state.isOpen)
