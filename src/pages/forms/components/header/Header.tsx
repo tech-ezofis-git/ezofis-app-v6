@@ -35,7 +35,7 @@ const Header = () => {
   })
 
   const openFormBuilder = () => {
-    navigate({ params: { formId: 5 }, to: '/form-builder' })
+    navigate({ to: '/form-builder' })
   }
 
   return (

@@ -1,12 +1,11 @@
 import { SegmentedControl, Switch, Text, TextInput, Select, Textarea, Button, Divider, ActionIcon, Group, Paper, Stack, Tooltip, Box } from '@mantine/core'
-import { useFormStore, type QuestionWidth, type QuestionType, generateId } from '@/pages/form-builder/store/formStore'
+import { useFormStore, type QuestionType, generateId, type Question } from '@/pages/form-builder/store/formStore'
 import Icon from '@/components/base/icon/Icon'
 import { useEffect, useState, useRef } from 'react'
 import cn from '@/utils/cn'
-// import Fields from '../field-list/Fields'
 
 const FieldSettings = () => {
-    const pages = useFormStore((state) => state.pages)
+    const panels = useFormStore((state) => state.panels)
     const activeQuestionId = useFormStore((state) => state.activeQuestionId)
     const updateQuestion = useFormStore((state) => state.updateQuestion)
     const deleteQuestion = useFormStore((state) => state.deleteQuestion)
@@ -23,8 +22,8 @@ const FieldSettings = () => {
     const setSidebarOpen = useFormStore((state) => state.setSidebarOpen)
     const setActiveQuestionId = useFormStore((state) => state.setActiveQuestionId)
 
-    const activeQuestion = pages
-        .flatMap(p => p.questions)
+    const activeQuestion = panels
+        .flatMap(p => p.fields)
         .find(q => q.id === activeQuestionId)
 
     const isSomethingSelected = selectionType !== 'question' || activeQuestionId !== null
@@ -35,9 +34,9 @@ const FieldSettings = () => {
 
     useEffect(() => {
         if (activeQuestion) {
-            setEditedLabel(activeQuestion.title || '')
+            setEditedLabel(activeQuestion.label || '')
         }
-    }, [activeQuestion?.id, activeQuestion?.title])
+    }, [activeQuestion?.id, activeQuestion?.label])
 
     useEffect(() => {
         if (isEditingLabel && inputRef.current) {
@@ -47,7 +46,7 @@ const FieldSettings = () => {
 
     const handleLabelSave = () => {
         if (activeQuestion && editedLabel.trim() !== '') {
-            updateQuestion(activeQuestion.id, { title: editedLabel })
+            updateQuestion(activeQuestion.id, { label: editedLabel })
         }
         setIsEditingLabel(false)
     }
@@ -58,7 +57,7 @@ const FieldSettings = () => {
         }
     }
 
-    const allQuestions = pages.flatMap(p => p.questions)
+    const allQuestions = panels.flatMap(p => p.fields)
     const currentIndex = activeQuestion ? allQuestions.findIndex(q => q.id === activeQuestion.id) : -1
     const hasPrev = currentIndex > 0
     const hasNext = currentIndex < allQuestions.length - 1
@@ -71,7 +70,19 @@ const FieldSettings = () => {
         if (hasNext) setActiveQuestionId(allQuestions[currentIndex + 1].id)
     }
 
-    // Helper for Settings Header
+    // Deep update helper
+    const updateNested = (path: 'general' | 'validation' | 'specific', updates: any) => {
+        if (!activeQuestion) return
+        updateQuestion(activeQuestion.id, (q: Question) => ({
+            ...q,
+            settings: {
+                ...q.settings,
+                [path]: { ...q.settings[path as keyof typeof q.settings], ...updates }
+            }
+        }))
+    }
+
+    // Settings Header
     const SettingsHeader = ({ title, icon, subtitle }: { title: string, icon: string, subtitle?: string, type?: string }) => (
         <div className="px-4 py-3 border-b border-gray-2 flex items-center justify-between bg-white shrink-0 gap-2">
             <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -114,7 +125,7 @@ const FieldSettings = () => {
                                 className="text-gray-13 truncate cursor-pointer hover:text-gray-11"
                                 onClick={() => setIsEditingLabel(true)}
                             >
-                                {activeQuestion.title || 'Untitled Field'}
+                                {activeQuestion.label || 'Untitled Field'}
                             </Text>
                             <Icon
                                 name="lucide:pencil"
@@ -182,9 +193,6 @@ const FieldSettings = () => {
             </div>
         </div>
     )
-
-    // Field Library is removed as per requirements.
-    // Defaulting to General Settings if nothing else is specific.
 
     // 2. General Settings View (Form Name & Description only)
     if (selectionType === 'general') {
@@ -314,6 +322,15 @@ const FieldSettings = () => {
     // Default Fallback
     if (!activeQuestion) return null
 
+    const sizeMap: Record<string, string> = {
+        'col-12': 'full',
+        'col-6': '1/2',
+        'col-4': '1/3',
+        'full': 'col-12',
+        '1/2': 'col-6',
+        '1/3': 'col-4'
+    }
+
     return (
         <div className="h-full w-[400px] flex flex-col bg-surface-primary animate-in slide-in-from-right duration-300">
             <SettingsHeader
@@ -326,8 +343,8 @@ const FieldSettings = () => {
                 <div className="space-y-4">
                     <TextInput
                         label={<Text size="13px" fw={500} className="text-gray-11 mb-1">Field Label</Text>}
-                        value={activeQuestion.title}
-                        onChange={(e) => updateQuestion(activeQuestion.id, { title: e.target.value })}
+                        value={activeQuestion.label}
+                        onChange={(e) => updateQuestion(activeQuestion.id, { label: e.target.value })}
                         placeholder="e.g. What is your name?"
                         size="sm"
                         classNames={{ input: 'bg-gray-1 border-gray-2 focus:bg-white text-xs' }}
@@ -335,8 +352,8 @@ const FieldSettings = () => {
 
                     <Textarea
                         label={<Text size="13px" fw={500} className="text-gray-11 mb-1">Description</Text>}
-                        value={activeQuestion.description}
-                        onChange={(e) => updateQuestion(activeQuestion.id, { description: e.target.value })}
+                        value={activeQuestion.settings.general.description}
+                        onChange={(e) => updateNested('general', { description: e.target.value })}
                         placeholder="Add extra instructions..."
                         autosize
                         minRows={2}
@@ -346,8 +363,8 @@ const FieldSettings = () => {
 
                     <TextInput
                         label={<Text size="13px" fw={500} className="text-gray-11 mb-1">Placeholder</Text>}
-                        value={activeQuestion.placeholder || ''}
-                        onChange={(e) => updateQuestion(activeQuestion.id, { placeholder: e.target.value })}
+                        value={activeQuestion.settings.general.placeholder || ''}
+                        onChange={(e) => updateNested('general', { placeholder: e.target.value })}
                         placeholder="e.g. Type here..."
                         size="sm"
                         classNames={{ input: 'bg-gray-1 border-gray-2 focus:bg-white text-xs' }}
@@ -360,8 +377,8 @@ const FieldSettings = () => {
                     <div>
                         <Text size="13px" fw={500} mb="xs" className="text-gray-11">Field Width</Text>
                         <SegmentedControl
-                            value={activeQuestion.width || 'full'}
-                            onChange={(value) => updateQuestion(activeQuestion.id, { width: value as QuestionWidth })}
+                            value={sizeMap[activeQuestion.settings.general.size] || 'full'}
+                            onChange={(value) => updateNested('general', { size: sizeMap[value] })}
                             fullWidth
                             size="xs"
                             data={[
@@ -375,12 +392,18 @@ const FieldSettings = () => {
                     <div className="space-y-3">
                         <div className="flex items-center justify-between py-2 border-b border-gray-1">
                             <Text size="xs" fw={500} className="text-gray-11">Required</Text>
-                            <Switch checked={activeQuestion.required || false} onChange={(e) => updateQuestion(activeQuestion.id, { required: e.currentTarget.checked })} size="xs" color="violet" />
+                            <Switch
+                                checked={activeQuestion.settings.validation.fieldRule === 'REQUIRED'}
+                                onChange={(e) => updateNested('validation', { fieldRule: e.currentTarget.checked ? 'REQUIRED' : 'NONE' })}
+                                size="xs" color="violet" />
                         </div>
 
                         <div className="flex items-center justify-between py-2 border-b border-gray-1">
                             <Text size="xs" fw={500} className="text-gray-11">Hidden Field</Text>
-                            <Switch checked={activeQuestion.hidden || false} onChange={(e) => updateQuestion(activeQuestion.id, { hidden: e.currentTarget.checked })} size="xs" color="violet" />
+                            <Switch
+                                checked={activeQuestion.settings.general.hidden || false}
+                                onChange={(e) => updateNested('general', { hidden: e.currentTarget.checked })}
+                                size="xs" color="violet" />
                         </div>
 
                         <div className="flex items-center justify-between py-2">
@@ -388,12 +411,15 @@ const FieldSettings = () => {
                                 <Text size="xs" fw={500} className="text-gray-11">Read Only</Text>
                                 <Text size="10px" className="text-gray-6">User cannot edit this field</Text>
                             </div>
-                            <Switch checked={activeQuestion.readOnly || false} onChange={(e) => updateQuestion(activeQuestion.id, { readOnly: e.currentTarget.checked })} size="xs" color="violet" />
+                            <Switch
+                                checked={activeQuestion.settings.general.readOnly || false}
+                                onChange={(e) => updateNested('general', { readOnly: e.currentTarget.checked })}
+                                size="xs" color="violet" />
                         </div>
                     </div>
                 </div>
 
-                {activeQuestion.type === 'table' && (
+                {activeQuestion.type === 'TABLE' && (
                     <>
                         <Divider className="border-gray-2" />
                         <div className="space-y-4">
@@ -404,8 +430,8 @@ const FieldSettings = () => {
                                     size="sm"
                                     className="hover:bg-gray-2 transition-all"
                                     onClick={() => {
-                                        const newColumn = { id: generateId(), name: `Column ${(activeQuestion.columns?.length || 0) + 1}`, type: 'short_text' as QuestionType, size: 'md' as const }
-                                        updateQuestion(activeQuestion.id, { columns: [...(activeQuestion.columns || []), newColumn] })
+                                        const newColumn = { id: generateId(), label: `Column ${(activeQuestion.settings.specific.columns?.length || 0) + 1}`, type: 'SHORT_TEXT', size: 'col-6' }
+                                        updateNested('specific', { columns: [...(activeQuestion.settings.specific.columns || []), newColumn] })
                                     }}
                                 >
                                     <Icon name="tabler:plus" width={14} height={14} />
@@ -413,33 +439,33 @@ const FieldSettings = () => {
                             </Group>
 
                             <div className="space-y-2">
-                                {(activeQuestion.columns || []).map((col, idx) => (
+                                {(activeQuestion.settings.specific.columns || []).map((col: any, idx: number) => (
                                     <Paper key={col.id} p="xs" withBorder className="bg-gray-1/50 border-gray-3">
                                         <div className="space-y-2">
                                             <Group gap="xs" wrap="nowrap">
                                                 <Icon name="tabler:grip-vertical" width={13} height={13} className="text-gray-5 cursor-grab" />
-                                                <TextInput size="xs" placeholder="Column Name" value={col.name} className="flex-1" onChange={(e) => {
-                                                    const newCols = [...(activeQuestion.columns || [])]
-                                                    newCols[idx] = { ...col, name: e.target.value }
-                                                    updateQuestion(activeQuestion.id, { columns: newCols })
+                                                <TextInput size="xs" placeholder="Column Name" value={col.label} className="flex-1" onChange={(e) => {
+                                                    const newCols = [...(activeQuestion.settings.specific.columns || [])]
+                                                    newCols[idx] = { ...col, label: e.target.value }
+                                                    updateNested('specific', { columns: newCols })
                                                 }} />
                                                 <ActionIcon variant="subtle" color="red" size="xs" className="hover:bg-red-50 transition-all" onClick={() => {
-                                                    const newCols = (activeQuestion.columns || []).filter(c => c.id !== col.id)
-                                                    updateQuestion(activeQuestion.id, { columns: newCols })
+                                                    const newCols = (activeQuestion.settings.specific.columns || []).filter((c: any) => c.id !== col.id)
+                                                    updateNested('specific', { columns: newCols })
                                                 }}>
                                                     <Icon name="tabler:x" width={12} height={12} />
                                                 </ActionIcon>
                                             </Group>
                                             <Group gap="xs" grow>
-                                                <Select size="xs" data={[{ label: 'Short Text', value: 'short_text' }, { label: 'Long Text', value: 'long_text' }, { label: 'Number', value: 'number' }, { label: 'Date', value: 'date' }, { label: 'Choices', value: 'choices' }]} value={col.type} onChange={(val) => {
-                                                    const newCols = [...(activeQuestion.columns || [])]
-                                                    newCols[idx] = { ...col, type: val as QuestionType }
-                                                    updateQuestion(activeQuestion.id, { columns: newCols })
+                                                <Select size="xs" data={[{ label: 'Short Text', value: 'SHORT_TEXT' }, { label: 'Long Text', value: 'LONG_TEXT' }, { label: 'Number', value: 'NUMBER' }, { label: 'Date', value: 'DATE' }, { label: 'Choices', value: 'CHOICES' }]} value={col.type} onChange={(val) => {
+                                                    const newCols = [...(activeQuestion.settings.specific.columns || [])]
+                                                    newCols[idx] = { ...col, type: val as any }
+                                                    updateNested('specific', { columns: newCols })
                                                 }} />
-                                                <Select size="xs" data={[{ label: 'Small', value: 'sm' }, { label: 'Medium', value: 'md' }, { label: 'Large', value: 'lg' }]} value={col.size} onChange={(val) => {
-                                                    const newCols = [...(activeQuestion.columns || [])]
+                                                <Select size="xs" data={[{ label: 'Small', value: 'col-3' }, { label: 'Medium', value: 'col-6' }, { label: 'Large', value: 'col-12' }]} value={col.size} onChange={(val) => {
+                                                    const newCols = [...(activeQuestion.settings.specific.columns || [])]
                                                     newCols[idx] = { ...col, size: val as any }
-                                                    updateQuestion(activeQuestion.id, { columns: newCols })
+                                                    updateNested('specific', { columns: newCols })
                                                 }} />
                                             </Group>
                                         </div>

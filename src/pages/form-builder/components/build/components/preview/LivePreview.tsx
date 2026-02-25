@@ -1,6 +1,6 @@
 import { Button, TextInput, SegmentedControl, Text, Divider } from '@mantine/core'
 import Icon from '@/components/base/icon/Icon'
-import { useFormStore, type Question, type Page } from '@/pages/form-builder/store/formStore'
+import { useFormStore, type Question, type Panel as PanelType } from '@/pages/form-builder/store/formStore'
 import { useState, useEffect } from 'react'
 import cn from '@/utils/cn'
 
@@ -8,7 +8,7 @@ type ViewMode = 'typeform' | 'grid' | 'full'
 
 const LivePreview = () => {
     const {
-        pages,
+        panels,
         isPreviewOpen,
         setIsPreviewOpen,
         welcomePage,
@@ -22,10 +22,10 @@ const LivePreview = () => {
     const [isCompleted, setIsCompleted] = useState(false)
     const [showWelcome, setShowWelcome] = useState(false)
 
-    // Flatten all questions for Typeform mode
-    const allQuestions = pages.flatMap(p => p.questions)
-    const totalQuestions = allQuestions.length
-    const totalPages = pages.length
+    // Flatten all fields for Typeform mode
+    const allFields = panels.flatMap(p => p.fields)
+    const totalFields = allFields.length
+    const totalPanels = panels.length
 
     // Reset state when opening
     useEffect(() => {
@@ -55,7 +55,7 @@ const LivePreview = () => {
         }
 
         if (viewMode === 'typeform') {
-            if (currentIndex < totalQuestions - 1) {
+            if (currentIndex < totalFields - 1) {
                 setCurrentIndex(prev => prev + 1)
             } else if (showThankYouPage) {
                 setIsCompleted(true)
@@ -63,7 +63,7 @@ const LivePreview = () => {
                 setIsPreviewOpen(false)
             }
         } else if (viewMode === 'grid') {
-            if (currentIndex < totalPages - 1) {
+            if (currentIndex < totalPanels - 1) {
                 setCurrentIndex(prev => prev + 1)
             } else if (showThankYouPage) {
                 setIsCompleted(true)
@@ -90,9 +90,9 @@ const LivePreview = () => {
     // Progress Calculation
     let progress = 0
     if (viewMode === 'typeform') {
-        progress = totalQuestions > 0 ? Math.round(((currentIndex + 1) / totalQuestions) * 100) : 0
+        progress = totalFields > 0 ? Math.round(((currentIndex + 1) / totalFields) * 100) : 0
     } else if (viewMode === 'grid') {
-        progress = totalPages > 0 ? Math.round(((currentIndex + 1) / totalPages) * 100) : 0
+        progress = totalPanels > 0 ? Math.round(((currentIndex + 1) / totalPanels) * 100) : 0
     } else {
         progress = 100
     }
@@ -121,7 +121,7 @@ const LivePreview = () => {
                         }}
                         data={[
                             { label: 'One at a time', value: 'typeform' },
-                            { label: 'Page by Page', value: 'grid' },
+                            { label: 'Section by Section', value: 'grid' },
                             { label: 'All Questions', value: 'full' },
                         ]}
                         size="xs"
@@ -181,18 +181,18 @@ const LivePreview = () => {
                             <div className="flex-1 p-10 sm:p-14">
                                 {viewMode === 'typeform' && (
                                     <TypeformView
-                                        question={allQuestions[currentIndex]}
+                                        field={allFields[currentIndex]}
                                         index={currentIndex}
                                     />
                                 )}
                                 {viewMode === 'grid' && (
-                                    <PageView
-                                        page={pages[currentIndex]}
-                                        pageIndex={currentIndex}
+                                    <PanelPreview
+                                        panel={panels[currentIndex]}
+                                        panelIndex={currentIndex}
                                     />
                                 )}
                                 {viewMode === 'full' && (
-                                    <FullFormView pages={pages} />
+                                    <FullFormView panels={panels} />
                                 )}
                             </div>
                         )}
@@ -231,7 +231,7 @@ const LivePreview = () => {
                                     className="rounded-2xl font-black px-8 h-11 shadow-lg shadow-accent-soft/50 hover:opacity-90 active:scale-95 transition-all text-white"
                                     rightSection={<Icon name={isCompleted || (viewMode === 'full') ? "tabler:check" : "tabler:arrow-right"} width={18} height={18} />}
                                 >
-                                    {showWelcome ? welcomePage.buttonText : (viewMode === 'full' ? 'Submit' : (currentIndex === totalQuestions - 1 || (viewMode === 'grid' && currentIndex === totalPages - 1) ? 'Submit' : 'Next'))}
+                                    {showWelcome ? welcomePage.buttonText : (viewMode === 'full' ? 'Submit' : (currentIndex === totalFields - 1 || (viewMode === 'grid' && currentIndex === totalPanels - 1) ? 'Submit' : 'Next'))}
                                 </Button>
                             </div>
                         )}
@@ -247,7 +247,7 @@ const LivePreview = () => {
 const WelcomeScreen = ({ page, onStart }: { page: any, onStart: () => void }) => (
     <div className="flex-1 flex flex-col items-center justify-center p-12 text-center animate-in fade-in zoom-in-95 duration-500">
         <div className="size-28 bg-accent-soft/30 text-accent-primary rounded-[2.5rem] flex items-center justify-center mb-10 rotate-3 shadow-sm border border-accent-soft/60">
-            <Icon name="lucide:megaphone" className='size-12'/>
+            <Icon name="lucide:megaphone" className='size-12' />
         </div>
         <h1 className="text-5xl font-black text-gray-13 mb-6 tracking-tight leading-tight">
             {page.title}
@@ -291,26 +291,26 @@ const CompletionScreen = ({ page, onClose }: { page: any, onClose: () => void })
     </div>
 )
 
-const TypeformView = ({ question, index }: { question: Question, index: number }) => {
-    if (!question) return <EmptyState />
+const TypeformView = ({ field, index }: { field: Question, index: number }) => {
+    if (!field) return <EmptyState />
 
     return (
-        <div className="flex flex-col justify-center min-h-[300px] animate-in fade-in slide-in-from-bottom-4 duration-500 key={question.id}">
+        <div className="flex flex-col justify-center min-h-[300px] animate-in fade-in slide-in-from-bottom-4 duration-500" key={field.id}>
             <div className="mb-6">
                 <h2 className="text-2xl font-bold text-gray-9 mb-2 leading-tight">
                     <span className="text-accent-primary text-xl mr-2">{index + 1}.</span>
-                    {question.title || "Untitled Question"}
+                    {field.label || "Untitled Question"}
                 </h2>
-                {question.description && (
-                    <p className="text-gray-5 text-lg">{question.description}</p>
+                {field.settings.general.description && (
+                    <p className="text-gray-5 text-lg">{field.settings.general.description}</p>
                 )}
             </div>
 
             <div className="mb-6">
-                {renderPreviewInput(question)}
+                {renderPreviewInput(field)}
             </div>
 
-            {question.required && (
+            {field.settings.validation.fieldRule === 'REQUIRED' && (
                 <div className="flex items-center gap-1 text-red-500 text-xs font-bold uppercase tracking-wider">
                     <Icon name="tabler:asterisk" width={10} height={10} />
                     Required
@@ -320,33 +320,33 @@ const TypeformView = ({ question, index }: { question: Question, index: number }
     )
 }
 
-const PageView = ({ page, pageIndex }: { page: Page, pageIndex: number }) => {
-    if (!page || page.questions.length === 0) return <EmptyState />
+const PanelPreview = ({ panel, panelIndex }: { panel: PanelType, panelIndex: number }) => {
+    if (!panel || panel.fields.length === 0) return <EmptyState />
 
     return (
-        <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500 key={page.id}">
+        <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500" key={panel.id}>
             <div className="border-b border-gray-1 pb-4 mb-4">
-                <Text size="sm" fw={700} className="text-gray-4 uppercase tracking-wider">Page {pageIndex + 1}</Text>
+                <Text size="sm" fw={700} className="text-gray-4 uppercase tracking-wider">Section {panelIndex + 1}</Text>
             </div>
 
             <div className="grid grid-cols-12 gap-6">
-                {page.questions.map((q) => (
+                {panel.fields.map((f) => (
                     <div
-                        key={q.id}
+                        key={f.id}
                         className={cn(
                             "col-span-12",
-                            q.width === '1/2' && "md:col-span-6",
-                            q.width === '1/3' && "md:col-span-4"
+                            f.settings.general.size === 'col-6' && "md:col-span-6",
+                            f.settings.general.size === 'col-4' && "md:col-span-4"
                         )}
                     >
                         <div className="mb-2">
                             <label className="block text-sm font-bold text-gray-9 mb-1">
-                                {q.title || "Untitled Question"}
-                                {q.required && <span className="text-red-500 ml-1">*</span>}
+                                {f.label || "Untitled Question"}
+                                {f.settings.validation.fieldRule === 'REQUIRED' && <span className="text-red-500 ml-1">*</span>}
                             </label>
-                            {q.description && <p className="text-xs text-gray-5 mb-2">{q.description}</p>}
+                            {f.settings.general.description && <p className="text-xs text-gray-5 mb-2">{f.settings.general.description}</p>}
                         </div>
-                        {renderPreviewInput(q, 'sm')}
+                        {renderPreviewInput(f, 'sm')}
                     </div>
                 ))}
             </div>
@@ -354,37 +354,37 @@ const PageView = ({ page, pageIndex }: { page: Page, pageIndex: number }) => {
     )
 }
 
-const FullFormView = ({ pages }: { pages: Page[] }) => {
-    const allQuestions = pages.flatMap(p => p.questions)
-    if (allQuestions.length === 0) return <EmptyState />
+const FullFormView = ({ panels }: { panels: PanelType[] }) => {
+    const allFields = panels.flatMap(p => p.fields)
+    if (allFields.length === 0) return <EmptyState />
 
     return (
         <div className="space-y-12 animate-in fade-in duration-500">
-            {pages.map((page, i) => (
-                <div key={page.id} className="space-y-6">
-                    {pages.length > 1 && (
+            {panels.map((panel, i) => (
+                <div key={panel.id} className="space-y-6">
+                    {panels.length > 1 && (
                         <div className="border-b border-gray-1 pb-2">
-                            <Text size="sm" fw={700} className="text-gray-4 uppercase tracking-wider">Page {i + 1}</Text>
+                            <Text size="sm" fw={700} className="text-gray-4 uppercase tracking-wider">Section {i + 1}</Text>
                         </div>
                     )}
                     <div className="grid grid-cols-12 gap-6">
-                        {page.questions.map((q) => (
+                        {panel.fields.map((f) => (
                             <div
-                                key={q.id}
+                                key={f.id}
                                 className={cn(
                                     "col-span-12",
-                                    q.width === '1/2' && "md:col-span-6",
-                                    q.width === '1/3' && "md:col-span-4"
+                                    f.settings.general.size === 'col-6' && "md:col-span-6",
+                                    f.settings.general.size === 'col-4' && "md:col-span-4"
                                 )}
                             >
                                 <div className="mb-2">
                                     <label className="block text-sm font-bold text-gray-9 mb-1">
-                                        {q.title || "Untitled Question"}
-                                        {q.required && <span className="text-red-500 ml-1">*</span>}
+                                        {f.label || "Untitled Question"}
+                                        {f.settings.validation.fieldRule === 'REQUIRED' && <span className="text-red-500 ml-1">*</span>}
                                     </label>
-                                    {q.description && <p className="text-xs text-gray-5 mb-2">{q.description}</p>}
+                                    {f.settings.general.description && <p className="text-xs text-gray-5 mb-2">{f.settings.general.description}</p>}
                                 </div>
-                                {renderPreviewInput(q, 'sm')}
+                                {renderPreviewInput(f, 'sm')}
                             </div>
                         ))}
                     </div>
@@ -401,18 +401,18 @@ const EmptyState = () => (
     </div>
 )
 
-const renderPreviewInput = (question: Question, size: 'lg' | 'sm' = 'lg') => {
+const renderPreviewInput = (field: Question, size: 'lg' | 'sm' = 'lg') => {
     const isSmall = size === 'sm'
-    switch (question.type) {
-        case 'label':
+    switch (field.type) {
+        case 'LABEL':
             return (
                 <div className={cn("text-gray-9 font-medium", isSmall ? "text-sm" : "text-xl")}>
-                    {question.title || "Label Text"}
+                    {field.label || "Label Text"}
                 </div>
             )
-        case 'divider':
+        case 'DIVIDER':
             return <Divider className="my-4" />
-        case 'text_builder':
+        case 'TEXT_BUILDER':
             return (
                 <div className={cn(
                     "w-full border border-gray-2 rounded-lg bg-white overflow-hidden",
@@ -426,7 +426,7 @@ const renderPreviewInput = (question: Question, size: 'lg' | 'sm' = 'lg') => {
                     <div className="p-4 text-gray-4 italic">Rich text editor placeholder...</div>
                 </div>
             )
-        case 'file_upload':
+        case 'FILE_UPLOAD':
             return (
                 <div className={cn(
                     "w-full border-2 border-dashed border-gray-2 rounded-xl flex flex-col items-center justify-center bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer",
@@ -437,7 +437,7 @@ const renderPreviewInput = (question: Question, size: 'lg' | 'sm' = 'lg') => {
                     <Text size="xs" className="text-gray-4 mt-1 text-center">Any file up to 10MB</Text>
                 </div>
             )
-        case 'time':
+        case 'TIME':
             return (
                 <div className={cn(
                     "flex items-center gap-3 border border-gray-2 rounded-lg text-gray-5 bg-white",
@@ -447,25 +447,25 @@ const renderPreviewInput = (question: Question, size: 'lg' | 'sm' = 'lg') => {
                     <span>HH : MM AM/PM</span>
                 </div>
             )
-        case 'table':
-            const columns = question.columns || [
-                { id: '1', name: 'Column 1', type: 'short_text', size: 'md' },
-                { id: '2', name: 'Column 2', type: 'short_text', size: 'md' },
-                { id: '3', name: 'Column 3', type: 'short_text', size: 'md' }
+        case 'TABLE':
+            const columns = field.settings.specific.columns || [
+                { id: '1', label: 'Column 1', type: 'SHORT_TEXT', size: 'col-4' },
+                { id: '2', label: 'Column 2', type: 'SHORT_TEXT', size: 'col-4' },
+                { id: '3', label: 'Column 3', type: 'SHORT_TEXT', size: 'col-4' }
             ]
             return (
                 <div className="border border-gray-2 rounded-lg overflow-x-auto bg-white">
                     <table className="w-full text-left text-sm border-collapse">
                         <thead className="bg-gray-50 border-b border-gray-2">
                             <tr>
-                                {columns.map(col => (
+                                {columns.map((col: any) => (
                                     <th key={col.id} className={cn(
                                         "p-3 font-bold text-gray-7 whitespace-nowrap",
-                                        col.size === 'sm' && "w-[100px]",
-                                        col.size === 'md' && "w-[200px]",
-                                        col.size === 'lg' && "w-[300px]"
+                                        col.size === 'col-3' && "w-[100px]",
+                                        col.size === 'col-6' && "w-[200px]",
+                                        col.size === 'col-12' && "w-[300px]"
                                     )}>
-                                        {col.name}
+                                        {col.label}
                                     </th>
                                 ))}
                             </tr>
@@ -473,7 +473,7 @@ const renderPreviewInput = (question: Question, size: 'lg' | 'sm' = 'lg') => {
                         <tbody>
                             {[1, 2].map(i => (
                                 <tr key={i} className="border-b border-gray-1 last:border-0">
-                                    {columns.map(col => (
+                                    {columns.map((col: any) => (
                                         <td key={col.id} className="p-3">
                                             <TextInput variant="unstyled" placeholder="..." size="xs" />
                                         </td>
@@ -484,16 +484,16 @@ const renderPreviewInput = (question: Question, size: 'lg' | 'sm' = 'lg') => {
                     </table>
                 </div>
             )
-        case 'short_text':
-        case 'email':
-        case 'phone':
-        case 'number':
-        case 'currency':
-        case 'address':
-        case 'full_name':
+        case 'SHORT_TEXT':
+        case 'EMAIL':
+        case 'PHONE':
+        case 'NUMBER':
+        case 'CURRENCY':
+        case 'ADDRESS':
+        case 'FULL_NAME':
             return (
                 <TextInput
-                    placeholder={question.placeholder || "Type your answer here..."}
+                    placeholder={field.settings.general.placeholder || "Type your answer here..."}
                     variant={isSmall ? "default" : "unstyled"}
                     size={isSmall ? "sm" : "xl"}
                     classNames={{
@@ -503,10 +503,10 @@ const renderPreviewInput = (question: Question, size: 'lg' | 'sm' = 'lg') => {
                     }}
                 />
             )
-        case 'long_text':
+        case 'LONG_TEXT':
             return (
                 <textarea
-                    placeholder={question.placeholder || "Type your answer here..."}
+                    placeholder={field.settings.general.placeholder || "Type your answer here..."}
                     className={cn(
                         "w-full outline-none transition-colors resize-none",
                         isSmall
@@ -515,7 +515,7 @@ const renderPreviewInput = (question: Question, size: 'lg' | 'sm' = 'lg') => {
                     )}
                 />
             )
-        case 'date':
+        case 'DATE':
             return (
                 <div className={cn(
                     "inline-flex items-center gap-3 border border-gray-2 rounded-lg text-gray-5 hover:border-accent-primary/50 transition-colors cursor-pointer bg-white",
@@ -525,7 +525,7 @@ const renderPreviewInput = (question: Question, size: 'lg' | 'sm' = 'lg') => {
                     <span>MM / DD / YYYY</span>
                 </div>
             )
-        case 'rating':
+        case 'RATING':
             return (
                 <div className="flex gap-2 sm:gap-4">
                     {[1, 2, 3, 4, 5].map((s) => (
@@ -538,9 +538,9 @@ const renderPreviewInput = (question: Question, size: 'lg' | 'sm' = 'lg') => {
                     ))}
                 </div>
             )
-        case 'choices':
-        case 'checkbox':
-        case 'dropdown':
+        case 'CHOICES':
+        case 'CHECKBOX':
+        case 'DROPDOWN':
             return (
                 <div className="space-y-2">
                     {['Option A', 'Option B', 'Option C'].map((opt, i) => (
@@ -550,7 +550,7 @@ const renderPreviewInput = (question: Question, size: 'lg' | 'sm' = 'lg') => {
                         )}>
                             <div className={cn(
                                 "border border-gray-3 flex items-center justify-center",
-                                question.type === 'choices' ? 'rounded-full' : 'rounded-md',
+                                field.type === 'CHOICES' ? 'rounded-full' : 'rounded-md',
                                 isSmall ? "size-4" : "size-5"
                             )}>
                             </div>
@@ -562,7 +562,7 @@ const renderPreviewInput = (question: Question, size: 'lg' | 'sm' = 'lg') => {
         default:
             return (
                 <TextInput
-                    placeholder={question.placeholder || "Type your answer here..."}
+                    placeholder={field.settings.general.placeholder || "Type your answer here..."}
                     variant={isSmall ? "default" : "unstyled"}
                     size={isSmall ? "sm" : "xl"}
                     classNames={{

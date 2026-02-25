@@ -14,6 +14,8 @@ interface Props {
 }
 
 const QuestionCard = ({ question, isActive, onSelect, onUpdate, onDelete, dragListeners }: Props) => {
+    const isRequired = question.settings.validation.fieldRule === 'REQUIRED'
+
     return (
         <Card
             onClick={onSelect}
@@ -29,8 +31,6 @@ const QuestionCard = ({ question, isActive, onSelect, onUpdate, onDelete, dragLi
                 marginBottom: '12px'
             }}
         >
-
-
             {/* Card Inner Padding */}
             <div className="p-3 px-4 flex flex-col gap-2">
                 {/* Header Row */}
@@ -46,7 +46,6 @@ const QuestionCard = ({ question, isActive, onSelect, onUpdate, onDelete, dragLi
                         >
                             <Icon name="tabler:grip-vertical" width={16} height={16} />
                         </div>
-
 
                         {/* Field Type Badge */}
                         <div className={cn(
@@ -67,23 +66,13 @@ const QuestionCard = ({ question, isActive, onSelect, onUpdate, onDelete, dragLi
                         </div>
 
                         {/* Required Badge */}
-                        {question.required && (
+                        {isRequired && (
                             <Group gap={4}>
                                 <div className="size-1.5 rounded-full bg-error-main" />
                                 <Text size="10px" fw={800} className="text-error-main uppercase tracking-tight">
                                     Required
                                 </Text>
                             </Group>
-                        )}
-
-                        {/* AI Risk Score */}
-                        {(question.aiRiskScore !== undefined) && (
-                            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-orange-50 border border-orange-100">
-                                <Icon name="tabler:alert-triangle" className="text-orange-500 w-3 h-3" />
-                                <span className="text-[10px] font-extrabold text-orange-700 uppercase tracking-tight">
-                                    Risk: {question.aiRiskScore}%
-                                </span>
-                            </div>
                         )}
                     </Group>
 
@@ -133,9 +122,9 @@ const QuestionCard = ({ question, isActive, onSelect, onUpdate, onDelete, dragLi
                 {/* Question Title */}
                 <Box>
                     <TextInput
-                        value={question.title}
-                        onChange={(e) => onUpdate({ title: e.target.value })}
-                        placeholder="Enter your question title..."
+                        value={question.label}
+                        onChange={(e) => onUpdate({ label: e.target.value })}
+                        placeholder="Enter your field label..."
                         variant="unstyled"
                         classNames={{
                             input: 'text-gray-13 font-semibold text-sm p-0 min-h-0 placeholder:text-gray-4 tracking-tight'
@@ -144,34 +133,31 @@ const QuestionCard = ({ question, isActive, onSelect, onUpdate, onDelete, dragLi
                     />
                 </Box>
             </div>
-
         </Card>
     )
 }
 
-
-
-
 const TYPE_ICONS: Record<string, string> = {
-    short_text: 'tabler:letter-t',
-    long_text: 'tabler:square-letter-t',
-    email: 'tabler:mail',
-    phone: 'tabler:phone',
-    choices: 'tabler:circle',
-    password: 'tabler:lock',
-    file_upload: 'tabler:cloud-upload',
-    text_builder: 'tabler:type',
-    table: 'tabler:table',
-    divider: 'tabler:minus',
-    label: 'tabler:heading',
-    date: 'tabler:calendar',
-    time: 'tabler:clock',
-    date_time: 'tabler:calendar-time',
-    rating: 'tabler:star',
-    counter: 'tabler:circle-dot',
-    calculated: 'tabler:calculator',
-    country_code: 'tabler:globe',
-    address: 'tabler:home',
+    SHORT_TEXT: 'tabler:letter-t',
+    LONG_TEXT: 'tabler:square-letter-t',
+    EMAIL: 'tabler:mail',
+    PHONE_NUMBER: 'tabler:phone',
+    SINGLE_CHOICE: 'tabler:circle',
+    PASSWORD: 'tabler:lock',
+    FILE_UPLOAD: 'tabler:cloud-upload',
+    TEXT_BUILDER: 'tabler:type',
+    TABLE: 'tabler:table',
+    DIVIDER: 'tabler:minus',
+    HEADING: 'tabler:heading',
+    LABEL: 'tabler:heading',
+    DATE: 'tabler:calendar',
+    TIME: 'tabler:clock',
+    DATE_TIME: 'tabler:calendar-time',
+    RATING: 'tabler:star',
+    COUNTER: 'tabler:circle-dot',
+    CALCULATED: 'tabler:calculator',
+    COUNTRY_CODE: 'tabler:globe',
+    ADDRESS: 'tabler:home',
 }
 
 export default QuestionCard

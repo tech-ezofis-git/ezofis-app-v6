@@ -11,7 +11,8 @@ const PublishSidebar = () => {
         description,
         setDescription,
         layout,
-        setLayout
+        setLayout,
+        panels
     } = useFormStore()
 
     const layouts = [
@@ -113,7 +114,7 @@ const PublishSidebar = () => {
                     <Text size="10px" fw={800} className="text-gray-5 uppercase tracking-[0.15em] mb-2">Pre-flight Checklist</Text>
                     <div className="flex items-center gap-2 text-[11px] text-gray-7">
                         <Icon name="lucide:check-circle" width={12} height={12} className="text-green-500" />
-                        <span>All {useFormStore.getState().pages.reduce((acc, p) => acc + p.questions.length, 0)} questions validated</span>
+                        <span>All {panels.reduce((acc, p) => acc + p.fields.length, 0)} questions validated</span>
                     </div>
                     <div className="flex items-center gap-2 text-[11px] text-gray-7">
                         <Icon name="lucide:check-circle" width={12} height={12} className="text-green-500" />

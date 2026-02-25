@@ -16,9 +16,9 @@ const AddPageInline = ({ onSelect, onClose, anchorRect }: Props) => {
     const PAGE_TYPES = [
         {
             id: 'blank',
-            label: 'Blank Page',
+            label: 'Blank Section',
             icon: 'lucide:layout',
-            description: 'Start with a fresh empty page',
+            description: 'Start with a fresh empty section',
             color: 'text-blue-500',
             bg: 'bg-blue-50'
         },
