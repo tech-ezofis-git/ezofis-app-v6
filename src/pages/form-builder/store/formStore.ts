@@ -1,5 +1,8 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import formApi from '@/api/form/form'
+import { notifications } from '@mantine/notifications'
+
 
 export const generateId = () => {
     try {
@@ -10,477 +13,599 @@ export const generateId = () => {
 }
 
 export type QuestionType =
-  | 'short_text'
-  | 'label'
-  | 'long_text'
-  | 'number'
-  | 'date'
-  | 'time'
-  | 'date_time'
-  | 'choices'
-  | 'dropdown'
-  | 'checkbox'
-  | 'rating'
-  | 'counter'
-  | 'calculated'
-  | 'country_code'
-  | 'password'
-  | 'text_builder' // Rich Text
-  | 'table'
-  | 'currency'
-  | 'address'
-  | 'full_name'
-  | 'email'
-  | 'phone'
-  | 'heading'
-  | 'divider'
-  | 'file_upload'
+  | 'SHORT_TEXT'
+  | 'LONG_TEXT'
+  | 'NUMBER'
+  | 'DATE'
+  | 'TIME'
+  | 'DATE_TIME'
+  | 'SINGLE_SELECT'
+  | 'MULTI_SELECT'
+  | 'SINGLE_CHOICE'
+  | 'MULTIPLE_CHOICE'
+  | 'TABLE'
+  | 'DYNAMIC_TABLE'
+  | 'MATRIX'
+  | 'FILL_IN_THE_BLANKS'
+  | 'SIGNATURE'
+  | 'FILE_UPLOAD'
+  | 'CURRENCY_AMOUNT'
+  | 'PHONE_NUMBER'
+  | 'HEADING'
+  | 'DIVIDER'
+  | 'LABEL'
+  | 'RATING'
+  | 'COUNTER'
+  | 'CALCULATED'
+  | 'COUNTRY_CODE'
+  | 'ADDRESS'
+  | 'FULL_NAME'
+  | 'EMAIL'
+  | 'PASSWORD'
+  | 'TEXT_BUILDER'
 
-export type QuestionWidth = 'full' | '1/2' | '1/3'
-
-export interface TableColumn {
-  id: string
-  name: string
-  type: QuestionType
-  size: 'sm' | 'md' | 'lg'
-}
+export type QuestionWidth = 'col-3' | 'col-4' | 'col-6' | 'col-12'
 
 export interface Question {
   id: string
-  title: string
-  description: string
+  label: string
+  displayLabel?: string
   type: QuestionType
-  placeholder?: string
-  options?: string[]
-  required?: boolean
-  hidden?: boolean
-  readOnly?: boolean
-  aiRiskScore?: number
-  width?: QuestionWidth
-  columns?: TableColumn[]
+  settings: {
+    general: {
+      hideLabel: boolean
+      size: QuestionWidth
+      visibility: 'NORMAL' | 'READ_ONLY' | 'HIDDEN'
+      placeholder?: string
+      description?: string
+      hidden?: boolean
+      readOnly?: boolean
+      tooltip?: string
+      dividerType?: string
+      url?: string
+    }
+    specific: {
+      defaultValue?: string
+      customDefaultValue?: any
+      optionsType?: string
+      customOptions?: string
+      separateOptionsUsing?: string
+      allowToAddNewOptions?: boolean
+      optionsPerLine?: number
+      tableColumns?: any[]
+      columns?: any[]
+      tableRowsType?: string
+      matrixColumns?: any[]
+      matrixRows?: any[]
+      fibFields?: any[]
+      autoGenerateValue?: { prefix: string, suffix: string }
+    }
+    validation: {
+      fieldRule: 'OPTIONAL' | 'REQUIRED'
+      contentRule?: string
+      minimum?: string | number
+      maximum?: string | number
+      allowedFileTypes?: string[]
+      maxFileSize?: number
+    }
+    aiSettings: {
+      validateTypeKeyword?: string
+      formControlValidate?: { masterFormId: number, masterFormColumn: any[] }
+    }
+    lookupSettings: {
+      columnName?: string
+      connectionId?: number
+    }
+  }
 }
 
-export interface Page {
+export interface Panel {
   id: string
-  title: string
-  description: string
-  questions: Question[]
+  settings: {
+    title: string
+    description: string
+  }
+  fields: Question[]
 }
 
 export type FormLayout = 'typeform' | 'grid' | 'full'
-export type FormType = 'workflow' | 'master' | 'task' | 'sla' | 'feedback'
-export type PreviewMode = 'typeform' | 'grid' | 'heatmap'
+export type FormType = 'WORKFLOW' | 'FEEDBACK'
+export type PublishStatus = 'DRAFT' | 'PUBLISHED'
+
+interface WelcomePage {
+  enabled: boolean;
+  title: string;
+  description: string;
+  buttonText: string;
+}
 
 interface FormStore {
+  uid: string
   name: string
   description: string
-  pages: Page[]
+  panels: Panel[]
+  secondaryPanels: Panel[]
   activeQuestionId: string | null
-  previewMode: PreviewMode
-  hidePreview: boolean
   isBuilderMode: boolean
   
-  // New Metadata
-  formType: FormType
-  coordinator: string
+  // UI State
+  isSidebarOpen: boolean
+  isPublishOpen: boolean
+  isPreviewOpen: boolean
+  selectionType: 'general' | 'question' | 'welcome' | 'thank_you'
+  
+  // Settings
   layout: FormLayout
+  formType: FormType
+  publishStatus: PublishStatus
+  hubLinkIds: any[]
+  coordinator: string
+  previewMode: 'typeform' | 'grid' | 'full'
   
+  // Special Pages
+  welcomePage: WelcomePage
+  thankYouPage: WelcomePage
   showWelcomePage: boolean
-  welcomePage: {
-    title: string
-    description: string
-    buttonText: string
-    enabled: boolean
-  }
-  
   showThankYouPage: boolean
-  thankYouPage: {
-    title: string
-    description: string
-    enabled: boolean
-  }
-  
+
   copiedQuestion: Question | null
   setCopiedQuestion: (question: Question | null) => void
-  pasteQuestion: (pageId: string, index: number) => void
-  
-  showHeaderFooter: boolean
-  headerText: string
-  footerText: string
+  pasteQuestion: (panelId: string, index: number) => void
 
   setName: (name: string) => void
   setDescription: (description: string) => void
-  setPages: (pages: Page[]) => void
+  setPanels: (panels: Panel[]) => void
   setActiveQuestionId: (id: string | null) => void
-  setPreviewMode: (mode: PreviewMode) => void
-  setHidePreview: (hide: boolean) => void
   setIsBuilderMode: (isBuilder: boolean) => void
   
-  // Metadata Setters
   setFormType: (type: FormType) => void
-  setCoordinator: (coordinator: string) => void
   setLayout: (layout: FormLayout) => void
-  setWelcomePage: (updates: Partial<FormStore['welcomePage']>) => void
-  setThankYouPage: (updates: Partial<FormStore['thankYouPage']>) => void
-  setHeaderFooter: (updates: { show?: boolean, header?: string, footer?: string }) => void
+  setCoordinator: (coordinator: string) => void
+  setPublishStatus: (status: PublishStatus) => void
 
-  // Page Actions
-  addPage: (index?: number) => void
-  deletePage: (id: string) => void
-  updatePage: (id: string, updates: Partial<Page>) => void
-  duplicatePage: (id: string) => void
-  movePage: (id: string, direction: 'up' | 'down') => void
-
-  // Question Actions
-  addQuestion: (pageId: string, question: Question, index?: number) => void
-  addTemplateGroup: (pageId: string, templateType: 'address_info' | 'contact_info', index?: number) => void
-  updateQuestion: (id: string, updates: Partial<Question>) => void
-  deleteQuestion: (id: string) => void
-  duplicateQuestion: (id: string) => void
-  moveQuestion: (id: string, toPageId: string, index: number) => void
-
-  // UI State
-  isPreviewOpen: boolean
-  setIsPreviewOpen: (open: boolean) => void
-  isPublishOpen: boolean
-  setPublishOpen: (open: boolean) => void
-  
-  isSidebarOpen: boolean
+  // UI Actions
   setSidebarOpen: (open: boolean) => void
+  setPublishOpen: (open: boolean) => void
+  setPreviewMode: (mode: 'typeform' | 'grid' | 'full') => void
+  setIsPreviewOpen: (open: boolean) => void
+  setSelectionType: (type: 'general' | 'question' | 'welcome' | 'thank_you') => void
   
-  // Selection State
-  selectionType: 'general' | 'welcome' | 'thank_you' | 'question'
-  setSelectionType: (type: 'general' | 'welcome' | 'thank_you' | 'question') => void
+  // Special Page Actions
+  setWelcomePage: (updates: Partial<WelcomePage>) => void
+  setThankYouPage: (updates: Partial<WelcomePage>) => void
+  setShowWelcomePage: (show: boolean) => void
+  setShowThankYouPage: (show: boolean) => void
+
   clearSelection: () => void
 
+  // Panel Actions (formerly Page)
+  addPanel: (index?: number) => void
+  deletePanel: (id: string) => void
+  updatePanel: (id: string, updates: Partial<Panel['settings']>) => void
+  movePanel: (id: string, direction: 'up' | 'down') => void
+
+  // Question Actions (formerly Question)
+  addQuestion: (panelId: string, question: Question, index?: number) => void
+  updateQuestion: (id: string, updates: any) => void
+  deleteQuestion: (id: string) => void
+  duplicateQuestion: (id: string) => void
+  moveQuestion: (id: string, toPanelId: string, index: number) => void
+
   // AI Actions
-  appendAIResponse: (data: { name: string, description: string, pages: any[] }) => void
-  lastAddedPageId: string | null
-  clearLastAddedPageId: () => void
+  appendAIResponse: (data: any) => void
+  lastAddedPanelId: string | null
+  clearLastAddedPanelId: () => void
+
+  loadForm: (data: any) => void
+  resetForm: () => void
+  saveForm: (targetStatus?: PublishStatus) => Promise<boolean>
 }
+
+
+
+
+const initialState = {
+  uid: '',
+  name: 'Untitled Form',
+  description: '',
+  panels: [
+    {
+      id: 'panel-1',
+      settings: { title: 'Section 1', description: '' },
+      fields: []
+    }
+  ],
+  secondaryPanels: [],
+  activeQuestionId: null,
+  isBuilderMode: true,
+  
+  isSidebarOpen: true,
+  isPublishOpen: false,
+  isPreviewOpen: false,
+  selectionType: 'general' as const,
+  
+  layout: 'typeform' as const,
+  formType: 'WORKFLOW' as const,
+  publishStatus: 'DRAFT' as const,
+  hubLinkIds: [],
+  coordinator: '',
+  previewMode: 'typeform' as const,
+  
+  welcomePage: {
+    enabled: false,
+    title: 'Welcome to our form',
+    description: 'Please take a moment to fill out this information.',
+    buttonText: 'Start'
+  },
+  thankYouPage: {
+    enabled: false,
+    title: 'Thank you!',
+    description: 'Your submission has been received.',
+    buttonText: 'Submit'
+  },
+  showWelcomePage: false,
+  showThankYouPage: false,
+
+  lastAddedPanelId: null,
+  copiedQuestion: null
+}
+
+
 
 export const useFormStore = create<FormStore>()(
   persist(
-    (set) => ({
-      name: 'Untitled Form',
-      description: '',
-      pages: [
-        {
-          id: 'page-1',
-          title: 'Page 1',
-          description: '',
-          questions: [
-            { id: '1', title: "Can you tell me what you're wondering about?", description: "", type: 'short_text', width: 'full' },
-            { id: '2', title: "Full Name", description: "", type: 'full_name', placeholder: "Enter your full name", width: '1/2' },
-            { id: '3', title: "Preferred Appointment Date", description: "", type: 'date', width: '1/2' },
-            { id: '4', title: "Rate Our Service", description: "", type: 'rating', width: 'full' },
-          ]
-        }
-      ],
-      activeQuestionId: '1',
-      previewMode: 'typeform',
-      hidePreview: false,
-      isPreviewOpen: false,
-      isPublishOpen: false,
-      isSidebarOpen: true,
-      isBuilderMode: true,
-      selectionType: 'question',
+    (set, get) => ({
+      ...initialState,
+      uid: generateId(),
       
-      formType: 'workflow',
-      coordinator: '',
-      layout: 'typeform',
-      lastAddedPageId: null,
-      copiedQuestion: null,
-      
-      showWelcomePage: false,
-      welcomePage: {
-        title: 'Welcome to our form',
-        description: 'Please take a moment to fill out this information.',
-        buttonText: 'Start',
-        enabled: false
-      },
-      
-      showThankYouPage: false,
-      thankYouPage: {
-        title: 'Thank you!',
-        description: 'Your response has been recorded.',
-        enabled: false
-      },
-      
-      showHeaderFooter: false,
-      headerText: '',
-      footerText: '',
-
       setName: (name) => set({ name }),
       setCopiedQuestion: (copiedQuestion) => set({ copiedQuestion }),
 
-      pasteQuestion: (pageId, index) => set((state) => {
+      pasteQuestion: (panelId, index) => set((state) => {
         if (!state.copiedQuestion) return state
 
         const newQuestion = { 
           ...state.copiedQuestion, 
           id: generateId(),
-          title: `${state.copiedQuestion.title} (Copy)`
+          label: `${state.copiedQuestion.label} (Copy)`
         }
 
-        const newPages = state.pages.map(p => {
-          if (p.id !== pageId) return p
-          const newQuestions = [...p.questions]
-          newQuestions.splice(index, 0, newQuestion)
-          return { ...p, questions: newQuestions }
+        const newPanels = state.panels.map(p => {
+          if (p.id !== panelId) return p
+          const newFields = [...p.fields]
+          newFields.splice(index, 0, newQuestion)
+          return { ...p, fields: newFields }
         })
 
-        return { pages: newPages, activeQuestionId: newQuestion.id }
+        return { panels: newPanels, activeQuestionId: newQuestion.id }
       }),
+
       setDescription: (description) => set({ description }),
-      setPages: (pages) => set({ pages }),
-      setActiveQuestionId: (activeQuestionId) => set((state) => ({ 
-        activeQuestionId,
-        isSidebarOpen: !!activeQuestionId || state.isSidebarOpen,
-        selectionType: activeQuestionId ? 'question' : (['welcome', 'thank_you', 'general'].includes(state.selectionType) ? state.selectionType : 'general')
-      })),
-      setPreviewMode: (previewMode) => set({ previewMode }),
-      setHidePreview: (hidePreview) => set({ hidePreview }),
-      setIsPreviewOpen: (isPreviewOpen) => set({ isPreviewOpen }),
-      setPublishOpen: (isPublishOpen) => set({ isPublishOpen }),
-      setSidebarOpen: (isSidebarOpen) => set({ isSidebarOpen }),
+      setPanels: (panels) => set({ panels }),
+      setActiveQuestionId: (activeQuestionId) => set({ activeQuestionId }),
       setIsBuilderMode: (isBuilderMode) => set({ isBuilderMode }),
       
-      setSelectionType: (selectionType) => set((state) => ({ 
-        selectionType, 
-        isSidebarOpen: true,
-        activeQuestionId: selectionType === 'question' ? state.activeQuestionId : null 
-      })),
-      clearSelection: () => set({ selectionType: 'general', activeQuestionId: null }),
-
       setFormType: (formType) => set({ formType }),
-      setCoordinator: (coordinator) => set({ coordinator }),
       setLayout: (layout) => set({ layout }),
-      setWelcomePage: (updates) => set((state) => ({ 
-        welcomePage: { ...state.welcomePage, ...updates },
-        showWelcomePage: updates.enabled ?? state.showWelcomePage
-      })),
-      setThankYouPage: (updates) => set((state) => ({ 
-        thankYouPage: { ...state.thankYouPage, ...updates },
-        showThankYouPage: updates.enabled ?? state.showThankYouPage
-      })),
-      setHeaderFooter: (updates) => set((state) => ({
-        showHeaderFooter: updates.show ?? state.showHeaderFooter,
-        headerText: updates.header ?? state.headerText,
-        footerText: updates.footer ?? state.footerText
-      })),
+      setCoordinator: (coordinator) => set({ coordinator }),
+      setPublishStatus: (publishStatus) => set({ publishStatus }),
 
-      addPage: (index) => set((state) => {
-        const newPage: Page = {
+      setSidebarOpen: (open) => set({ isSidebarOpen: open }),
+      setPublishOpen: (open) => set({ isPublishOpen: open }),
+      setPreviewMode: (mode) => set({ previewMode: mode }),
+      setIsPreviewOpen: (open) => set({ isPreviewOpen: open }),
+      setSelectionType: (selectionType) => set({ selectionType }),
+
+      setWelcomePage: (updates) => set((state) => ({
+        welcomePage: { ...state.welcomePage, ...updates }
+      })),
+      setThankYouPage: (updates) => set((state) => ({
+        thankYouPage: { ...state.thankYouPage, ...updates }
+      })),
+      setShowWelcomePage: (showWelcomePage) => set({ showWelcomePage }),
+      setShowThankYouPage: (showThankYouPage) => set({ showThankYouPage }),
+
+      clearSelection: () => set({ activeQuestionId: null, selectionType: 'general' }),
+
+      addPanel: (index) => set((state) => {
+        const newPanel: Panel = {
           id: generateId(),
-          title: `Page ${state.pages.length + 1}`,
-          description: '',
-          questions: []
+          settings: { title: `Section ${state.panels.length + 1}`, description: '' },
+          fields: []
         }
-        const newPages = [...state.pages]
+        const newPanels = [...state.panels]
         if (typeof index === 'number') {
-          newPages.splice(index, 0, newPage)
+          newPanels.splice(index, 0, newPanel)
         } else {
-          newPages.push(newPage)
+          newPanels.push(newPanel)
         }
-        return { pages: newPages }
+        return { panels: newPanels }
       }),
 
-      deletePage: (id) => set((state) => {
-        return { pages: state.pages.filter(p => p.id !== id) }
-      }),
-
-      updatePage: (id, updates) => set((state) => ({
-        pages: state.pages.map(p => p.id === id ? { ...p, ...updates } : p)
+      deletePanel: (id) => set((state) => ({
+        panels: state.panels.filter(p => p.id !== id)
       })),
 
-      duplicatePage: (id) => set((state) => {
-        const pageIndex = state.pages.findIndex(p => p.id === id)
-        if (pageIndex === -1) return state
-        
-        const pageToClone = state.pages[pageIndex]
-        const newPage: Page = {
-          ...pageToClone,
-          id: generateId(),
-          title: `${pageToClone.title} (Copy)`,
-          questions: pageToClone.questions.map(q => ({ ...q, id: generateId() }))
-        }
-        
-        const newPages = [...state.pages]
-        newPages.splice(pageIndex + 1, 0, newPage)
-        return { pages: newPages }
+      updatePanel: (id, updates) => set((state) => ({
+        panels: state.panels.map(p => p.id === id ? { ...p, settings: { ...p.settings, ...updates } } : p)
+      })),
+
+      movePanel: (id, direction) => set((state) => {
+        const index = state.panels.findIndex(p => p.id === id)
+        if (index === -1) return state
+        const newPanels = [...state.panels]
+        const newIndex = direction === 'up' ? index - 1 : index + 1
+        if (newIndex < 0 || newIndex >= newPanels.length) return state
+        const [moved] = newPanels.splice(index, 1)
+        newPanels.splice(newIndex, 0, moved)
+        return { panels: newPanels }
       }),
 
-      movePage: (id, direction) => set((state) => {
-        const pageIndex = state.pages.findIndex(p => p.id === id)
-        if (pageIndex === -1) return state
-
-        const newPages = [...state.pages]
-        const newIndex = direction === 'up' ? pageIndex - 1 : pageIndex + 1
-
-        if (newIndex < 0 || newIndex >= newPages.length) return state
-
-        const [movedPage] = newPages.splice(pageIndex, 1)
-        newPages.splice(newIndex, 0, movedPage)
-
-        return { pages: newPages }
-      }),
-
-      addQuestion: (pageId, question, index) => set((state) => ({
-        pages: state.pages.map(p => {
-          if (p.id !== pageId) return p
-          const newQuestions = [...p.questions]
+      addQuestion: (panelId, question, index) => set((state) => ({
+        panels: state.panels.map(p => {
+          if (p.id !== panelId) return p
+          const newFields = [...p.fields]
           if (typeof index === 'number') {
-            newQuestions.splice(index, 0, { ...question, width: question.width || 'full' })
+            newFields.splice(index, 0, question)
           } else {
-            newQuestions.push({ ...question, width: question.width || 'full' })
+            newFields.push(question)
           }
-          return { ...p, questions: newQuestions }
+          return { ...p, fields: newFields }
         }),
         activeQuestionId: question.id
       })),
 
-      addTemplateGroup: (pageId, templateType, index) => set((state) => {
-        let templateQuestions: Question[] = []
-        if (templateType === 'address_info') {
-          templateQuestions = [
-            { id: generateId(), title: 'Street Address', description: '', type: 'short_text', width: 'full' },
-            { id: generateId(), title: 'City', description: '', type: 'short_text', width: '1/2' },
-            { id: generateId(), title: 'State / Province', description: '', type: 'short_text', width: '1/2' },
-            { id: generateId(), title: 'ZIP / Postal Code', description: '', type: 'short_text', width: '1/2' },
-            { id: generateId(), title: 'Country', description: '', type: 'country_code', width: '1/2' },
-          ]
-        } else if (templateType === 'contact_info') {
-          templateQuestions = [
-            { id: generateId(), title: 'Full Name', description: '', type: 'full_name', width: '1/2' },
-            { id: generateId(), title: 'Email Address', description: '', type: 'email', width: '1/2' },
-            { id: generateId(), title: 'Phone Number', description: '', type: 'phone', width: '1/2' },
-            { id: generateId(), title: 'Company / Organization', description: '', type: 'short_text', width: '1/2' },
-          ]
-        }
-
-        const newPages = state.pages.map(p => {
-          if (p.id !== pageId) return p
-          const newQuestions = [...p.questions]
-          const insertIndex = typeof index === 'number' ? index : newQuestions.length
-          newQuestions.splice(insertIndex, 0, ...templateQuestions)
-          return { ...p, questions: newQuestions }
-        })
-
-        return {
-          pages: newPages,
-          activeQuestionId: templateQuestions[0]?.id || state.activeQuestionId
-        }
-      }),
-
       updateQuestion: (id, updates) => set((state) => ({
-        pages: state.pages.map(p => ({
+        panels: state.panels.map(p => ({
           ...p,
-          questions: p.questions.map(q => q.id === id ? { ...q, ...updates } : q)
+          fields: p.fields.map(f => {
+              if (f.id !== id) return f
+              if (typeof updates === 'function') return updates(f)
+              return { ...f, ...updates }
+          })
         }))
       })),
 
-      deleteQuestion: (id) => set((state) => {
-        let nextActiveId = state.activeQuestionId
-        
-        const newPages = state.pages.map(p => {
-          const qIndex = p.questions.findIndex(q => q.id === id)
-          if (qIndex === -1) return p
-
-          // If deleting active question, try to set active to next, prev, or parent page
-          if (state.activeQuestionId === id) {
-            if (p.questions.length > 1) {
-              nextActiveId = p.questions[qIndex + 1]?.id || p.questions[qIndex - 1]?.id || null
-            } else {
-              nextActiveId = null
-            }
-          }
-          
-          const newQuestions = p.questions.filter(q => q.id !== id)
-          return {
-            ...p,
-            questions: newQuestions
-          }
-        })
-
-        return { pages: newPages, activeQuestionId: nextActiveId }
-      }),
+      deleteQuestion: (id) => set((state) => ({
+        panels: state.panels.map(p => ({
+          ...p,
+          fields: p.fields.filter(f => f.id !== id)
+        })),
+        activeQuestionId: state.activeQuestionId === id ? null : state.activeQuestionId
+      })),
 
       duplicateQuestion: (id) => set((state) => {
-        const newPages = state.pages.map(p => {
-          const qIndex = p.questions.findIndex(q => q.id === id)
-          if (qIndex === -1) return p
-          
-          const qToClone = p.questions[qIndex]
-          const newQuestion = { ...qToClone, id: generateId(), title: `${qToClone.title} (Copy)` }
-          const newQuestions = [...p.questions]
-          newQuestions.splice(qIndex + 1, 0, newQuestion)
-          
-          return { ...p, questions: newQuestions }
+        const newPanels = state.panels.map(p => {
+          const index = p.fields.findIndex(f => f.id === id)
+          if (index === -1) return p
+          const clone = { ...p.fields[index], id: generateId(), label: `${p.fields[index].label} (Copy)` }
+          const newFields = [...p.fields]
+          newFields.splice(index + 1, 0, clone)
+          return { ...p, fields: newFields }
         })
-        return { pages: newPages }
+        return { panels: newPanels }
       }),
 
-      moveQuestion: (id, toPageId, index) => set((state) => {
-        // Find and remove question
+      moveQuestion: (id, toPanelId, index) => set((state) => {
         let questionToMove: Question | undefined
-        const pagesWithoutQuestion = state.pages.map(p => {
-          const q = p.questions.find(q => q.id === id)
+        const panelsWithout = state.panels.map(p => {
+          const q = p.fields.find(f => f.id === id)
           if (q) {
             questionToMove = q
-            return { ...p, questions: p.questions.filter(q => q.id !== id) }
+            return { ...p, fields: p.fields.filter(f => f.id !== id) }
           }
           return p
         })
-
         if (!questionToMove) return state
-
-        // Add to new location
         return {
-          pages: pagesWithoutQuestion.map(p => {
-            if (p.id !== toPageId) return p
-            const newQuestions = [...p.questions]
-            newQuestions.splice(index, 0, questionToMove!)
-            return { ...p, questions: newQuestions }
+          panels: panelsWithout.map(p => {
+            if (p.id !== toPanelId) return p
+            const newFields = [...p.fields]
+            newFields.splice(index, 0, questionToMove!)
+            return { ...p, fields: newFields }
           })
         }
       }),
 
       appendAIResponse: (data) => set((state) => {
-        // Update name/description if they are default
-        const updates: Partial<FormStore> = {}
-        if (state.name === 'Untitled Form') updates.name = data.name
-        if (!state.description) updates.description = data.description
-
-        const mappedPages: Page[] = data.pages.map(p => ({
+        if (!data) return state
+        
+        const panels = (data.panels || []).map((p: any) => ({
           id: generateId(),
-          title: p.title || 'Untitled Page',
-          description: p.description || '',
-          questions: (p.questions || []).map((q: any) => ({
-            ...q,
+          settings: {
+            title: p.settings?.title || p.title || 'Untitled Section',
+            description: p.settings?.description || p.description || ''
+          },
+          fields: (p.fields || []).map((f: any) => ({
+            ...f,
             id: generateId(),
-            width: q.width || 'full',
-            columns: q.columns?.map((c: any) => ({
-              ...c,
-              id: generateId(),
-              size: c.size === '1/2' ? 'md' : c.size === '1/3' ? 'sm' : 'lg'
-            }))
+            label: f.label || f.title || 'Untitled Field',
+            type: (f.type || 'SHORT_TEXT').toUpperCase(),
+            settings: {
+              general: {
+                hideLabel: f.settings?.general?.hideLabel ?? false,
+                size: f.settings?.general?.size || 'col-12',
+                visibility: f.settings?.general?.visibility || 'NORMAL',
+                placeholder: f.settings?.general?.placeholder || '',
+                tooltip: f.settings?.general?.tooltip || ''
+              },
+              specific: {
+                ...f.settings?.specific,
+                customOptions: Array.isArray(f.settings?.specific?.options) 
+                  ? f.settings.specific.options.join('\n') 
+                  : f.settings?.specific?.customOptions || '',
+                tableColumns: f.settings?.specific?.tableColumns || []
+              },
+              validation: {
+                fieldRule: f.settings?.validation?.fieldRule || 'OPTIONAL',
+                ...f.settings?.validation
+              },
+              aiSettings: f.settings?.aiSettings || {},
+              lookupSettings: f.settings?.lookupSettings || {}
+            }
           }))
         }))
 
         return {
-          ...updates,
-          pages: [...state.pages, ...mappedPages],
-          activeQuestionId: mappedPages[0]?.questions[0]?.id || state.activeQuestionId,
-          lastAddedPageId: mappedPages[0]?.id || null
+          ...state,
+          name: data.name || state.name,
+          description: data.description || state.description,
+          panels: panels.length > 0 ? panels : state.panels,
+          layout: data.layout || state.layout,
+          formType: data.formType || state.formType,
+          welcomePage: data.welcomePage ? { ...state.welcomePage, ...data.welcomePage } : state.welcomePage,
+          thankYouPage: data.thankYouPage ? { ...state.thankYouPage, ...data.thankYouPage } : state.thankYouPage,
+          showWelcomePage: data.welcomePage?.enabled ?? state.showWelcomePage,
+          showThankYouPage: data.thankYouPage?.enabled ?? state.showThankYouPage,
+          activeQuestionId: null,
+          selectionType: 'general'
         }
       }),
 
-      clearLastAddedPageId: () => set({ lastAddedPageId: null })
+
+      clearLastAddedPanelId: () => set({ lastAddedPanelId: null }),
+
+      loadForm: (data: any) => {
+        if (!data || !data.formJson) return
+        const json = data.formJson
+        const genSettings = json.settings?.general || {}
+        
+        set({
+          uid: data.uid || generateId(),
+          name: genSettings.name || 'Untitled Form',
+          description: genSettings.description || '',
+          panels: json.panels || [],
+          secondaryPanels: json.secondaryPanels || [],
+          activeQuestionId: null,
+          layout: genSettings.layout || 'typeform',
+          formType: ['WORKFLOW', 'FEEDBACK'].includes(genSettings.type) 
+            ? genSettings.type 
+            : 'WORKFLOW',
+          coordinator: genSettings.coordinator || '',
+          publishStatus: json.settings?.publish?.publishOption || 'DRAFT',
+          hubLinkIds: json.settings?.hubLinkIds || [],
+        })
+      },
+
+
+      resetForm: () => set({ ...initialState, uid: generateId() }),
+
+      saveForm: async (targetStatus) => {
+        const state = get()
+        const currentStatus = targetStatus || state.publishStatus
+        
+        // Update status in state if targetStatus provided
+        if (targetStatus) {
+           set({ publishStatus: targetStatus })
+        }
+
+        const payload = cleanFormPayload({ ...state, publishStatus: currentStatus })
+        
+        // Mandatory check: at least one field
+        const hasFields = state.panels.some(p => p.fields.length > 0)
+        if (!hasFields) {
+           notifications.show({
+             title: 'Empty Form',
+             message: 'Please add at least one field to your form before saving.',
+             color: 'orange'
+           })
+           return false
+        }
+
+        try {
+           console.log('[FormStore] Attempting to save form...', { uid: state.uid, name: state.name, status: currentStatus })
+           let response;
+           
+           const path = window.location.pathname
+           const isCreation = path === '/form-builder' || path === '/form-builder/' || path.endsWith('/form-builder')
+           
+           console.log('[FormStore] Mode:', isCreation ? 'CREATE' : 'UPDATE', 'Path:', path)
+
+           if (!isCreation) {
+              const parts = path.split('/')
+              const formId = parts[parts.length - 1]
+              console.log('[FormStore] Calling updateForm:', formId)
+              response = await formApi.updateForm(formId, payload)
+           } else {
+              console.log('[FormStore] Calling createForm...')
+              response = await formApi.createForm(payload)
+           }
+           
+           console.log('[FormStore] API Response:', response)
+
+           if (response.error) {
+             console.error('[FormStore] Save failed with error:', response.error)
+
+             notifications.show({
+               title: 'Error Saving Form',
+               message: response.error,
+               color: 'red'
+             })
+             return false
+           }
+
+           notifications.show({
+             title: 'Success!',
+             message: `Your form has been ${currentStatus === 'PUBLISHED' ? 'published' : 'saved'} successfully.`,
+             color: 'teal'
+           })
+           return true
+        } catch (error) {
+          console.error('Save failed:', error)
+          notifications.show({
+            title: 'Unexpected Error',
+            message: 'An unexpected error occurred while saving.',
+            color: 'red'
+          })
+          return false
+        }
+      }
     }),
+
+
+
     {
-      name: 'form-builder-storage-v2', // Change storage key to avoid conflicts
-      version: 2,
+      name: 'form-builder-storage-v3',
+      version: 3,
     }
   )
 )
+
+export const cleanField = (field: Question) => {
+    const cleaned = JSON.parse(JSON.stringify(field))
+    const keysToRemove = ['filterBy', 'filter', 'filters', 'isManualChange', 'lookupFilterBy', 'lookupFilter']
+    keysToRemove.forEach(key => delete (cleaned as any)[key])
+    return cleaned
+}
+
+export const cleanFormPayload = (state: any) => {
+    return {
+        uid: state.uid,
+        panels: state.panels.map((p: any) => ({
+            ...p,
+            fields: p.fields.map((f: any) => cleanField(f))
+        })),
+        secondaryPanels: state.secondaryPanels.map((p: any) => ({
+            ...p,
+            fields: p.fields.map((f: any) => cleanField(f))
+        })),
+        settings: {
+            general: {
+                name: state.name,
+                description: state.description,
+                layout: state.layout,
+                type: state.formType,
+                coordinator: state.coordinator
+            },
+
+            rules: [],
+            publish: {
+                publishOption: state.publishStatus,
+                publishSchedule: "",
+                unpublishSchedule: ""
+            },
+            hubLinkIds: state.hubLinkIds
+        },
+        isDeleted: false
+    }
+}

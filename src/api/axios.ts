@@ -21,37 +21,31 @@ export const axiosCrypto = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
-// Helper type to extend Axios config with metadata for timing
+// Helper type to extend Axios config with metadata for timing and crypto bypass
 interface CustomConfig extends InternalAxiosRequestConfig {
   metadata?: { startTime: Date }
+  skipDecryption?: boolean
+  skipEncryption?: boolean
 }
 
 // --- Request Interceptor ---
 axiosCrypto.interceptors.request.use(
   async (config: CustomConfig) => {
     const store = authUserStore.getState()
-    // 1. Get Key/IV/Token from Redux Store
     const iv = store?.identity?.iv
     const token: any = store?.identity?.token
     const key = store?.identity?.key
 
-    // 2. Attach Token
     if (token) {
       config.headers.set('Token', token)
     }
-    console.log(key, iv, token)
 
-    // 3. Encrypt Payload (Async)
-    if (config.data && key && iv) {
+    if (config.data && key && iv && !config.skipEncryption) {
       const encrypted = await encrypt(JSON.stringify(config.data), key, iv)
       config.data = encrypted
     }
 
-    // 4. Metadata for timing
     config.metadata = { startTime: new Date() }
-    console.table(config)
-    // 5. Logging (omitted for brevity)
-
     return config
   },
   (error) => Promise.reject(error),
@@ -60,60 +54,39 @@ axiosCrypto.interceptors.request.use(
 // --- Response Interceptor ---
 axiosCrypto.interceptors.response.use(
   async (response: AxiosResponse) => {
-    // const config = response.config as CustomConfig
-    const store = authUserStore.getState() // ⬅️ Get fresh state on response
+    const config = response.config as CustomConfig
+    const store = authUserStore.getState()
+    const key = store?.identity?.key
+    const iv = store?.identity?.iv
 
-    // ⭐️ Use the actual keys from the store!
-    const key = store?.identity?.key // ⬅️ FIX: Reading key from store
-    const iv = store?.identity?.iv // ⬅️ FIX: Reading IV from store
-
-    // 1. Calculate Duration
-    // const startTime = config.metadata?.startTime || new Date()
-    // const duration = new Date().getTime() - startTime.getTime()
-    // const durationSec = (duration / 1000).toFixed(2)
-
-    // 3. Decrypt Data (Async)
-    if (response.data && key && iv) {
+    if (typeof response.data === 'string' && key && iv && !config.skipDecryption) {
       try {
         const decryptedString = await decrypt(response.data, key, iv)
-        console.log(decryptedString)
-        // Important: Native decrypt returns a string. We must parse it back to JSON.
-        response.data = JSON.parse(decryptedString)
+        try {
+          response.data = JSON.parse(decryptedString)
+        } catch (parseError) {
+          response.data = decryptedString
+        }
       } catch (e) {
         console.error('Failed to decrypt response', e)
       }
     }
 
-    // 4. Logging (omitted for brevity)
-    console.table(response)
-
     return response
   },
   async (error: AxiosError) => {
-    const store = authUserStore.getState() // ⬅️ Get fresh state on error
-    const key = store?.identity?.key // ⬅️ FIX: Reading key from store
-    const iv = store?.identity?.iv // ⬅️ FIX: Reading IV from store
+    const store = authUserStore.getState()
+    const key = store?.identity?.key
+    const iv = store?.identity?.iv
 
-    // Handle Error Logging
-    if (error.config) {
-      const config = error.config as CustomConfig
-      const startTime = config.metadata?.startTime || new Date()
-      const duration = new Date().getTime() - startTime.getTime()
-      console.log(duration)
-    }
-
-    // Attempt to decrypt error response body
-    if (error.response?.data && key && iv) {
+    if (error.response?.data && typeof error.response.data === 'string' && key && iv) {
       try {
-        const decryptedString = await decrypt(
-          error.response.data as string,
-          key,
-          iv,
-        )
-        error.response.data = JSON.parse(decryptedString)
-
-        // Log decrypted error
-        // ... (Error logging omitted for brevity)
+        const decryptedString = await decrypt(error.response.data, key, iv)
+        try {
+          error.response.data = JSON.parse(decryptedString)
+        } catch {
+          error.response.data = decryptedString
+        }
       } catch (e) {
         console.error('Could not decrypt error response', e)
       }

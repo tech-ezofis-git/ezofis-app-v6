@@ -8,10 +8,10 @@ interface Props {
 
 const FormStatusBadge = ({ status }: Props) => {
   const color = useMemo(() => {
-    switch (status) {
-      case 'Draft':
+    switch (status?.toUpperCase()) {
+      case 'DRAFT':
         return 'orange'
-      case 'Published':
+      case 'PUBLISHED':
         return 'green'
       default:
         return 'gray'
