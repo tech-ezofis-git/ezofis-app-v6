@@ -7,13 +7,12 @@ interface GeneralSettingsProps {
   setTab: (value: string | null) => void
 }
 
-const FORM_TYPES: { value: FormType, label: string, description: string }[] = [
-  { value: 'workflow', label: 'Workflow', description: 'Use this form in workflows' },
-  { value: 'master', label: 'Master', description: 'Use this form to collect master data' },
-  { value: 'task', label: 'Task', description: 'Use this Form in tasks' },
-  { value: 'sla', label: 'SLA', description: 'Use this Form in SLA' },
-  { value: 'feedback', label: 'Feedback Form', description: 'Use this Form in workflow for feedback' },
+const FORM_TYPES: { value: FormType, label: string, description: string, icon: string }[] = [
+  { value: 'WORKFLOW', label: 'Workflow', description: 'For business processes & automation', icon: 'tabler:git-branch' },
+  { value: 'FEEDBACK', label: 'Feedback', description: 'For surveys & reviews', icon: 'tabler:message-star' },
 ]
+
+
 
 const LAYOUTS: { id: FormLayout, label: string, description: string }[] = [
   { id: 'typeform', label: 'One at a time', description: 'Show one question per screen' },
@@ -60,15 +59,16 @@ const LayoutSkeleton = ({ type }: { type: FormLayout }) => {
   )
 }
 
-const GeneralSettings = ({ setTab }: GeneralSettingsProps) => {
+const GeneralSettings = () => {
   const {
     name, setName,
     description, setDescription,
     formType, setFormType,
+
     coordinator, setCoordinator,
     layout, setLayout
   } = useFormStore()
-  console.log(setTab)
+
   return (
     <Box className="max-w-[1000px] mx-auto py-10 px-8 animate-in fade-in slide-in-from-bottom-4 duration-500 font-inter">
       <Stack gap={32}>
@@ -80,34 +80,34 @@ const GeneralSettings = ({ setTab }: GeneralSettingsProps) => {
           <Box>
             <h2 className="text-xl font-bold text-gray-13">General</h2>
             <p className="text-sm text-gray-9 mt-1 max-w-[300px]">
-              Name your form and provide detailed description for your reference
+              Define your form's core identity and administrative properties
             </p>
           </Box>
 
           <Stack gap="lg" className="flex-1 ml-auto">
             <TextInput
-              label="Name"
+              label="Form Name"
               required
-              placeholder="Form Name"
+              placeholder="e.g. Q1 Performance Review"
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="w-full"
               classNames={{
-                label: 'text-xs font-bold text-gray-900 mb-2',
-                input: 'focus:border-accent-primary transition-all rounded-lg bg-white border-gray-2'
+                label: 'text-xs font-bold text-gray-9 mb-2 uppercase tracking-wider',
+                input: 'focus:border-accent-primary transition-all h-10 rounded-xl bg-gray-50 border-gray-2 font-medium'
               }}
             />
 
             <Textarea
               label="Description"
-              placeholder="Briefly describe the purpose of this form"
+              placeholder="Internal notes or context for this form..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               className="w-full"
               minRows={3}
               classNames={{
-                label: 'text-xs font-bold text-gray-900 mb-2',
-                input: 'focus:border-accent-primary transition-all rounded-lg bg-white border-gray-2'
+                label: 'text-xs font-bold text-gray-9 mb-2 uppercase tracking-wider',
+                input: 'focus:border-accent-primary transition-all rounded-xl bg-gray-50 border-gray-2 font-medium'
               }}
             />
           </Stack>
@@ -121,38 +121,48 @@ const GeneralSettings = ({ setTab }: GeneralSettingsProps) => {
             <Icon name="lucide:layers" className="text-accent-primary" width={20} height={20} />
           </div>
           <Box className="w-[200px] shrink-0">
-            <h3 className="text-sm font-bold text-gray-900">Form Type</h3>
-            <p className="text-xs text-gray-500 mt-1">Select the classification</p>
+            <h3 className="text-sm font-bold text-gray-13">Form Type</h3>
+            <p className="text-xs text-gray-5 mt-1 font-medium">Choose how this form will be utilized in the system</p>
           </Box>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 flex-1">
-            {FORM_TYPES.map((type) => (
-              <UnstyledButton
-                key={type.value}
-                onClick={() => setFormType(type.value)}
-                className={cn(
-                  "flex items-center gap-4 p-3 rounded-xl border-2 transition-all group",
-                  formType === type.value
-                    ? "border-accent-primary bg-accent-soft/5 shadow-sm"
-                    : "border-gray-2 hover:border-gray-3 hover:bg-gray-50/50"
-                )}
-              >
-                <div className={cn(
-                  "size-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all",
-                  formType === type.value
-                    ? "border-accent-primary bg-white"
-                    : "border-gray-3 group-hover:border-gray-4"
-                )}>
-                  {formType === type.value && <div className="size-2.5 rounded-full bg-accent-primary" />}
-                </div>
-                <div>
-                  <Text className="text-sm font-bold text-gray-900 leading-none">{type.label}</Text>
-                  <Text className="text-[10px] text-gray-500 leading-tight mt-1">{type.description}</Text>
-                </div>
-              </UnstyledButton>
-            ))}
+          <div className="flex flex-col gap-4 flex-1 max-w-[500px]">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 w-full">
+              {FORM_TYPES.map((type) => {
+                const isActive = formType === type.value
+                return (
+                  <UnstyledButton
+                    key={type.value}
+                    onClick={() => setFormType(type.value)}
+                    className={cn(
+                      "flex flex-col items-center justify-center p-6 rounded-2xl border-2 transition-all group aspect-[4/3] text-center",
+                      isActive
+                        ? "border-accent-primary bg-accent-soft/5 shadow-md ring-4 ring-accent-soft/10"
+                        : "border-transparent bg-gray-50 hover:bg-gray-100/80"
+                    )}
+                  >
+                    <div className={cn(
+                      "size-12 rounded-xl flex items-center justify-center mb-4 transition-transform group-hover:scale-110 duration-300",
+                      isActive ? "bg-accent-primary text-white shadow-lg shadow-accent-soft/50" : "bg-white text-gray-4 border border-gray-2"
+                    )}>
+                      <Icon name={type.icon} width={24} height={24} />
+                    </div>
+                    <div>
+                      <Text className={cn(
+                        "text-sm font-extrabold uppercase tracking-tight",
+                        isActive ? "text-gray-13" : "text-gray-9"
+                      )}>{type.label}</Text>
+                      <Text className="text-[10px] text-gray-5 mt-1 font-bold opacity-70 italic tracking-wide">
+                        {type.description}
+                      </Text>
+                    </div>
+                  </UnstyledButton>
+                )
+              })}
+            </div>
           </div>
+
         </Group>
+
 
         <div className="h-px bg-gray-1" />
 

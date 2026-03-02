@@ -1,7 +1,7 @@
 import { ActionIcon, Button, Text, UnstyledButton } from '@mantine/core'
 import Icon from '@/components/base/icon/Icon'
 import Page from './Page'
-import { useFormStore, type Page as PageType } from '@/pages/form-builder/store/formStore'
+import { useFormStore, type Panel as PanelType } from '@/pages/form-builder/store/formStore'
 import { useEffect, useState } from 'react'
 import {
   DndContext,
@@ -25,8 +25,8 @@ import AddPageInline from './AddPageInline'
 
 const Form = () => {
   const {
-    pages,
-    addPage,
+    panels,
+    addPanel,
     moveQuestion,
     welcomePage,
     thankYouPage,
@@ -52,10 +52,10 @@ const Form = () => {
   );
 
   useEffect(() => {
-    if (pages.length === 0) {
-      addPage()
+    if (panels.length === 0) {
+      addPanel()
     }
-  }, [pages.length, addPage])
+  }, [panels.length, addPanel])
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string);
@@ -70,34 +70,34 @@ const Form = () => {
 
     if (activeId === overId) return;
 
-    // Find source and destination pages
-    let sourcePageId = '';
-    let destPageId = '';
+    // Find source and destination panels
+    let sourcePanelId = '';
+    let destPanelId = '';
     let destIndex = -1;
 
-    for (const page of pages) {
-      if (page.questions.some(q => q.id === activeId)) {
-        sourcePageId = page.id;
+    for (const panel of panels) {
+      if (panel.fields.some(f => f.id === activeId)) {
+        sourcePanelId = panel.id;
       }
-      const qIndex = page.questions.findIndex(q => q.id === overId);
+      const qIndex = panel.fields.findIndex(f => f.id === overId);
       if (qIndex !== -1) {
-        destPageId = page.id;
+        destPanelId = panel.id;
         destIndex = qIndex;
       }
     }
 
-    // Is it over a page container directly?
-    if (!destPageId) {
-      const page = pages.find(p => p.id === overId);
-      if (page) {
-        destPageId = page.id;
-        destIndex = page.questions.length;
+    // Is it over a panel container directly?
+    if (!destPanelId) {
+      const panel = panels.find(p => p.id === overId);
+      if (panel) {
+        destPanelId = panel.id;
+        destIndex = panel.fields.length;
       }
     }
 
-    if (sourcePageId && destPageId && sourcePageId !== destPageId) {
-      // CROSS-PAGE MOVE: Update immediately for visual feedback
-      moveQuestion(activeId, destPageId, destIndex);
+    if (sourcePanelId && destPanelId && sourcePanelId !== destPanelId) {
+      // CROSS-PANEL MOVE: Update immediately for visual feedback
+      moveQuestion(activeId, destPanelId, destIndex);
     }
   };
 
@@ -111,39 +111,39 @@ const Form = () => {
     const overId = over.id as string;
 
     // Find source and destination
-    let sourcePageId = '';
-    let destPageId = '';
+    let sourcePanelId = '';
+    let destPanelId = '';
     let destIndex = -1;
 
-    for (const page of pages) {
-      if (page.questions.some(q => q.id === activeId)) {
-        sourcePageId = page.id;
+    for (const panel of panels) {
+      if (panel.fields.some(f => f.id === activeId)) {
+        sourcePanelId = panel.id;
       }
-      const qIndex = page.questions.findIndex(q => q.id === overId);
+      const qIndex = panel.fields.findIndex(f => f.id === overId);
       if (qIndex !== -1) {
-        destPageId = page.id;
+        destPanelId = panel.id;
         destIndex = qIndex;
       }
     }
 
-    // Check if over a page container
-    if (!destPageId) {
-      const page = pages.find(p => p.id === overId);
-      if (page) {
-        destPageId = page.id;
-        destIndex = page.questions.length;
+    // Check if over a panel container
+    if (!destPanelId) {
+      const panel = panels.find(p => p.id === overId);
+      if (panel) {
+        destPanelId = panel.id;
+        destIndex = panel.fields.length;
       }
     }
 
-    if (sourcePageId && destPageId) {
-      // Final update (handles both same-page and cross-page)
-      moveQuestion(activeId, destPageId, destIndex);
+    if (sourcePanelId && destPanelId) {
+      // Final update (handles both same-panel and cross-panel)
+      moveQuestion(activeId, destPanelId, destIndex);
     }
   };
 
-  const handleAddPage = (type: 'blank' | 'welcome' | 'thank_you', index: number) => {
+  const handleAddPanel = (type: 'blank' | 'welcome' | 'thank_you', index: number) => {
     if (type === 'blank') {
-      addPage(index)
+      addPanel(index)
     } else if (type === 'welcome') {
       setWelcomePage({ enabled: true })
       setSelectionType('welcome')
@@ -161,30 +161,30 @@ const Form = () => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
-        const { copiedQuestion, pasteQuestion, activeQuestionId, pages } = useFormStore.getState()
+        const { copiedQuestion, pasteQuestion, activeQuestionId, panels } = useFormStore.getState()
         if (!copiedQuestion) return
 
-        // Find where to paste: after active question on its page
-        let targetPageId = ''
+        // Find where to paste: after active question on its panel
+        let targetPanelId = ''
         let targetIndex = -1
 
-        for (const page of pages) {
-          const qIndex = page.questions.findIndex(q => q.id === activeQuestionId)
+        for (const panel of panels) {
+          const qIndex = panel.fields.findIndex(f => f.id === activeQuestionId)
           if (qIndex !== -1) {
-            targetPageId = page.id
+            targetPanelId = panel.id
             targetIndex = qIndex + 1 // Paste below
             break
           }
         }
 
-        // If no active question, paste at end of first page
-        if (!targetPageId && pages.length > 0) {
-          targetPageId = pages[0].id
-          targetIndex = pages[0].questions.length
+        // If no active question, paste at end of first panel
+        if (!targetPanelId && panels.length > 0) {
+          targetPanelId = panels[0].id
+          targetIndex = panels[0].fields.length
         }
 
-        if (targetPageId) {
-          pasteQuestion(targetPageId, targetIndex)
+        if (targetPanelId) {
+          pasteQuestion(targetPanelId, targetIndex)
         }
       }
     }
@@ -193,7 +193,7 @@ const Form = () => {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
 
-  const activeQuestion = pages.flatMap(p => p.questions).find(q => q.id === activeId)
+  const activeQuestion = panels.flatMap(p => p.fields).find(f => f.id === activeId)
 
   return (
     <div className='w-full max-w-[860px] mx-auto pb-40 px-4 font-inter'>
@@ -217,10 +217,10 @@ const Form = () => {
           onDragEnd={handleDragEnd}
         >
           <div className='space-y-6 relative'>
-            {pages.length > 0 ? (
-              pages.map((page: PageType, i: number) => (
-                <div key={page.id} className="relative group/page-wrapper">
-                  {/* Insertion trigger before each page */}
+            {panels.length > 0 ? (
+              panels.map((panel: PanelType, i: number) => (
+                <div key={panel.id} className="relative group/page-wrapper">
+                  {/* Insertion trigger before each panel */}
                   <div className="absolute top-[-20px] left-0 right-0 h-10 z-[50] flex items-center justify-center opacity-0 group-hover/page-wrapper:opacity-100 transition-opacity duration-200 pointer-events-none group/add-page">
                     <div className="w-full h-[1px] bg-accent-primary/40 absolute pointer-events-none group-hover/add-page:bg-accent-primary/60" />
                     <button
@@ -235,10 +235,10 @@ const Form = () => {
                     </button>
                   </div>
 
-                  <Page page={page} pageIndex={i} />
+                  <Page panel={panel} panelIndex={i} />
 
-                  {/* Final insertion trigger (Only after last page) */}
-                  {i === pages.length - 1 && (
+                  {/* Final insertion trigger (Only after last panel) */}
+                  {i === panels.length - 1 && (
                     <div className="absolute bottom-[-24px] left-0 right-0 h-10 z-[50] flex items-center justify-center opacity-0 group-hover/page-wrapper:opacity-100 transition-opacity duration-200 pointer-events-none group/add-page">
                       <div className="w-full h-[1px] bg-accent-primary/40 absolute pointer-events-none group-hover/add-page:bg-accent-primary/60" />
                       <button
@@ -260,16 +260,16 @@ const Form = () => {
                 <div className="size-20 bg-gray-100 rounded-2xl flex items-center justify-center mb-6">
                   <Icon name="lucide:layout" width={40} height={40} className="text-gray-300" />
                 </div>
-                <Text size="xl" fw={800} className="text-gray-13 tracking-tight mb-2">No pages yet</Text>
+                <Text size="xl" fw={800} className="text-gray-13 tracking-tight mb-2">No sections yet</Text>
                 <Text size="sm" className="text-gray-500 max-w-xs mx-auto mb-8">
-                  Your form needs at least one page to start adding questions. Click the button below to add your first page.
+                  Your form needs at least one section to start adding questions. Click the button below to add your first section.
                 </Text>
                 <UnstyledButton
                   onClick={() => setShowAddPageAt(0)}
                   className="flex items-center gap-2 px-6 py-3 bg-accent-primary text-white rounded-xl font-bold hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-accent-soft/20"
                 >
                   <Icon name="lucide:plus-circle" width={18} height={18} />
-                  <span>Add First Page</span>
+                  <span>Add First Section</span>
                 </UnstyledButton>
               </div>
             )}
@@ -298,9 +298,9 @@ const Form = () => {
             size="md"
             className="border-2 border-dashed border-gray-7 hover:border-accent-primary hover:bg-accent-soft/5 hover:text-accent-primary transition-all rounded-xl h-12 px-10"
             leftSection={<Icon name="lucide:plus" width={18} height={18} />}
-            onClick={() => setShowAddPageAt(pages.length)}
+            onClick={() => setShowAddPageAt(panels.length)}
           >
-            Add New Page
+            Add New Section
           </Button>
         </div>
 
@@ -316,7 +316,7 @@ const Form = () => {
 
       {showAddPageAt !== null && (
         <AddPageInline
-          onSelect={(type) => handleAddPage(type, showAddPageAt)}
+          onSelect={(type) => handleAddPanel(type, showAddPageAt)}
           onClose={() => {
             setShowAddPageAt(null)
             setAddPageAnchorRect(null)
@@ -332,7 +332,7 @@ const Form = () => {
 
 const CanvasSlot = ({ type, title }: { type: 'welcome' | 'thank_you', enabled: boolean, title: string }) => {
   const isWelcome = type === 'welcome'
-  const { setSelectionType, setActiveQuestionId, selectionType, setWelcomePage, setThankYouPage } = useFormStore()
+  const { setSelectionType, setActiveQuestionId, selectionType, setWelcomePage, setThankYouPage, setSidebarOpen } = useFormStore()
   const isActive = selectionType === type
 
   return (
@@ -340,6 +340,7 @@ const CanvasSlot = ({ type, title }: { type: 'welcome' | 'thank_you', enabled: b
       onClick={() => {
         setSelectionType(type)
         setActiveQuestionId(null)
+        setSidebarOpen(true)
       }}
       className={cn(
         "group relative bg-white rounded-2xl border transition-all duration-300 cursor-pointer",

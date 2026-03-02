@@ -8,11 +8,15 @@ interface Props {
 
 const FormTypeBadge = ({ type }: Props) => {
   const color = useMemo(() => {
-    switch (type) {
-      case 'Workflow':
+    switch (type?.toUpperCase()) {
+      case 'WORKFLOW':
         return 'cyan'
-      case 'Master':
+      case 'MASTER':
         return 'purple'
+      case 'TASK':
+        return 'blue'
+      case 'FEEDBACK':
+        return 'pink'
       default:
         return 'gray'
     }

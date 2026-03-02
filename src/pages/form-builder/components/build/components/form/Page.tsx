@@ -1,137 +1,128 @@
-import { ActionIcon, Button, Text } from '@mantine/core'
+import { ActionIcon, Button, Text, Divider } from '@mantine/core'
 import Icon from '@/components/base/icon/Icon'
 import QuestionCard from './QuestionCard'
 import AddFieldInline from './AddFieldInline'
-import { useFormStore, type Question, type Page as PageType, type QuestionType } from '@/pages/form-builder/store/formStore'
+import { useFormStore, type Question, type Panel as PanelType, type QuestionType } from '@/pages/form-builder/store/formStore'
 import { useState, useRef, useEffect } from 'react'
 import cn from '@/utils/cn'
 import { useSortable, SortableContext, rectSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import { getField } from '@/helpers/new-field'
 
 interface Props {
-    page: PageType
-    pageIndex: number
+    panel: PanelType
+    panelIndex: number
 }
 
-const generateId = () => {
-    try {
-        return crypto.randomUUID()
-    } catch (e) {
-        return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
-    }
-}
-
-const Page = ({ page, pageIndex }: Props) => {
+const Page = ({ panel, panelIndex }: Props) => {
     const {
         activeQuestionId,
         setActiveQuestionId,
         updateQuestion,
         deleteQuestion,
         addQuestion,
-        addTemplateGroup,
-        deletePage,
-        updatePage,
+        deletePanel,
+        updatePanel,
+        movePanel,
+        panels,
         isBuilderMode,
-        lastAddedPageId,
-        clearLastAddedPageId
+        lastAddedPanelId,
+        clearLastAddedPanelId
     } = useFormStore()
 
     const pageRef = useRef<HTMLDivElement>(null)
     const [showAddFieldAt, setShowAddFieldAt] = useState<number | null>(null)
+    const [isCollapsed, setIsCollapsed] = useState(false)
 
     // Handle auto-scroll when page is added via AI
     useEffect(() => {
-        if (lastAddedPageId === page.id && pageRef.current) {
+        if (lastAddedPanelId === panel.id && pageRef.current) {
             pageRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
-            clearLastAddedPageId()
+            clearLastAddedPanelId()
         }
-    }, [lastAddedPageId, page.id, clearLastAddedPageId])
+    }, [lastAddedPanelId, panel.id, clearLastAddedPanelId])
 
-    const handleAddField = (type: QuestionType | 'address_info' | 'contact_info', index: number) => {
-        if (type === 'address_info' || type === 'contact_info') {
-            addTemplateGroup(page.id, type, index)
-            setShowAddFieldAt(null)
-            return
-        }
-
-        const newQuestion: Question = {
-            id: generateId(),
-            title: "",
-            description: "",
-            type: type as QuestionType,
-            width: 'full'
-        }
-        addQuestion(page.id, newQuestion, index)
+    const handleAddField = (type: string, index: number) => {
+        const newQuestion = getField(type)
+        addQuestion(panel.id, newQuestion as Question, index)
         setShowAddFieldAt(null)
     }
 
     return (
         <div
             ref={pageRef}
-            id={page.id}
-            className="bg-surface-primary rounded-2xl border border-gray-3 shadow-sm relative group/page transition-all duration-300 hover:shadow-md animate-in fade-in slide-in-from-bottom-2 duration-500 font-inter"
+            id={panel.id}
+            className="bg-white rounded-2xl border border-gray-1 shadow-sm relative group/page transition-all duration-300 font-inter mb-6"
             onDragOver={(e) => e.preventDefault()}
         >
-            {/* Page Header */}
-            <div className="px-6 pt-6 pb-4 border-b border-gray-2 flex items-start justify-between gap-4 font-inter">
+            {/* Page Header - Cleaner Title/Desc only */}
+            <div className="px-6 pt-4 pb-2 flex items-start justify-between gap-4 font-inter">
                 <div className="flex-1 space-y-1">
-                    <div className="flex items-center gap-2">
-                        <div className="bg-gray-1 text-gray-11 text-[10px] font-bold px-2 py-0.5 rounded-md border border-gray-2 uppercase tracking-widest shrink-0">
-                            Page {pageIndex + 1}
-                        </div>
-                    </div>
-
                     <input
                         type="text"
-                        value={page.title}
-                        onChange={(e) => updatePage(page.id, { title: e.target.value })}
+                        value={panel.settings.title}
+                        onChange={(e) => updatePanel(panel.id, { title: e.target.value })}
                         placeholder="Page Title"
-                        className="w-full bg-transparent text-xl font-semibold text-gray-13 placeholder:text-gray-4 focus:outline-none tracking-tight"
+                        className="w-full bg-transparent text-2xl font-bold text-gray-13 placeholder:text-gray-3 focus:outline-none tracking-tight"
                     />
 
                     <input
                         type="text"
-                        value={page.description}
-                        onChange={(e) => updatePage(page.id, { description: e.target.value })}
+                        value={panel.settings.description}
+                        onChange={(e) => updatePanel(panel.id, { description: e.target.value })}
                         placeholder="Add a description for this page..."
-                        className="w-full bg-transparent text-xs text-gray-5 placeholder:text-gray-4 focus:outline-none"
+                        className="w-full bg-transparent text-sm text-gray-5 placeholder:text-gray-3 focus:outline-none"
                     />
                 </div>
 
-                <div className="flex items-center gap-1 opacity-0 group-hover/page:opacity-100 transition-opacity duration-200">
-                    {pageIndex > 0 && (
+                <div className="flex items-center gap-1 opacity-100 group-hover/page:opacity-100 transition-opacity duration-200">
+                    {/* Move Up */}
+                    {panelIndex > 0 && (
                         <ActionIcon
                             variant="subtle"
                             color="gray"
                             size="sm"
-                            onClick={() => useFormStore.getState().movePage(page.id, 'up')}
-                            className="hover:bg-gray-2 focus:ring-0 active:scale-95 transition-all"
+                            onClick={() => movePanel(panel.id, 'up')}
+                            className="hover:bg-gray-1 active:scale-95 transition-all"
+                            title="Move Up"
                         >
-                            <Icon name="lucide:chevron-up" width={15} height={15} />
+                            <Icon name="lucide:arrow-up" width={15} height={15} />
                         </ActionIcon>
                     )}
-                    {pageIndex < useFormStore.getState().pages.length - 1 && (
+
+                    {/* Move Down */}
+                    {panelIndex < panels.length - 1 && (
                         <ActionIcon
                             variant="subtle"
                             color="gray"
                             size="sm"
-                            onClick={() => useFormStore.getState().movePage(page.id, 'down')}
-                            className="hover:bg-gray-2 focus:ring-0 active:scale-95 transition-all"
+                            onClick={() => movePanel(panel.id, 'down')}
+                            className="hover:bg-gray-1 active:scale-95 transition-all"
+                            title="Move Down"
                         >
-                            <Icon name="lucide:chevron-down" width={15} height={15} />
+                            <Icon name="lucide:arrow-down" width={15} height={15} />
                         </ActionIcon>
                     )}
-                    {(pageIndex > 0 || pageIndex < useFormStore.getState().pages.length - 1) && (
-                        <div className="w-[1px] h-4 bg-gray-2 mx-1" />
-                    )}
-                    <ActionIcon variant="subtle" color="gray" size="sm" className="hover:bg-gray-2 focus:ring-0 active:scale-95 transition-all">
-                        <Icon name="lucide:pencil" width={15} height={15} />
+
+                    <Divider orientation="vertical" mx={4} className="h-4 border-gray-2" />
+
+                    {/* Collapse/Expand Toggle */}
+                    <ActionIcon
+                        variant="subtle"
+                        color="gray"
+                        size="sm"
+                        onClick={() => setIsCollapsed(!isCollapsed)}
+                        className="hover:bg-gray-1 active:scale-95 transition-all"
+                        title={isCollapsed ? "Expand" : "Collapse"}
+                    >
+                        <Icon name={isCollapsed ? "lucide:chevron-down" : "lucide:chevron-up"} width={15} height={15} />
                     </ActionIcon>
+
                     <ActionIcon
                         variant="subtle"
                         color="red"
                         size="sm"
-                        onClick={() => deletePage(page.id)}
+                        onClick={() => deletePanel(panel.id)}
                         className="hover:bg-red-50 focus:ring-0 active:scale-95 transition-all"
                     >
                         <Icon name="lucide:trash" width={15} height={15} />
@@ -140,104 +131,104 @@ const Page = ({ page, pageIndex }: Props) => {
             </div>
 
             {/* Page Canvas */}
-            <div className={cn(
-                "px-6 pt-5 pb-8 rounded-b-2xl relative transition-all duration-500",
-                isBuilderMode ? "bg-gray-1/60" : "bg-transparent"
-            )}>
-                <SortableContext items={page.questions.map(q => q.id)} strategy={rectSortingStrategy}>
-                    <div className="flex flex-wrap gap-y-3 relative z-10 w-full">
-                        {page.questions.length === 0 && (
-                            <div className="w-full py-12 flex flex-col items-center justify-center border-2 border-dashed border-gray-2 rounded-xl bg-white animate-in fade-in duration-500">
-                                <div className="size-10 rounded-lg bg-gray-50 flex items-center justify-center mb-3">
-                                    <Icon name="lucide:layout-list" width={20} height={20} className="text-gray-4" />
-                                </div>
-                                <Text size="sm" fw={700} className="text-gray-13 mb-1">Empty Page</Text>
-                                <Text size="xs" className="text-gray-5 mb-5 px-6 text-center">Start adding fields to this page to build your form content.</Text>
-                                <Button
-                                    size="xs"
-                                    bg="accent-primary"
-                                    className="hover:scale-[1.02] active:scale-95 transition-all shadow-md shadow-accent-soft/20 font-bold px-4"
-                                    leftSection={<Icon name="lucide:plus" width={14} height={14} />}
-                                    onClick={() => setShowAddFieldAt(0)}
-                                >
-                                    Add Question
-                                </Button>
-                            </div>
-                        )}
-
-                        {/* Inline Selector at start */}
-                        {showAddFieldAt === 0 && (
-                            <div className="w-full px-2 mb-4 animate-in slide-in-from-top-1 duration-200">
-                                <AddFieldInline
-                                    onSelect={(type) => handleAddField(type, 0)}
-                                    onClose={() => setShowAddFieldAt(null)}
-                                />
-                            </div>
-                        )}
-
-                        {page.questions.length > 0 && page.questions.map((q: Question, i: number) => (
-                            <div
-                                key={q.id}
-                                className={cn(
-                                    "transition-all duration-500 px-2 relative group-item group/field",
-                                    q.width === '1/3' ? 'w-1/3' : q.width === '1/2' ? 'w-1/2' : 'w-full'
-                                )}
-                            >
-                                {/* Insert Hook (Top) */}
-                                <div className="absolute top-[-10px] left-0 right-0 h-5 z-[50] flex items-center justify-center opacity-0 group-hover/field:opacity-100 transition-opacity duration-200 pointer-events-none">
-                                    <div className="w-full h-[1px] bg-gray-13/10 absolute pointer-events-none" />
+            {!isCollapsed && (
+                <div className="relative z-10 px-4 pb-4">
+                    <SortableContext items={panel.fields.map(q => q.id)} strategy={rectSortingStrategy}>
+                        <div className="flex flex-wrap gap-y-1 w-full">
+                            {panel.fields.length === 0 && (
+                                <div className="w-full px-1">
                                     <button
-                                        onClick={() => setShowAddFieldAt(i)}
-                                        className="size-6 rounded-full bg-accent-primary text-white flex items-center justify-center shadow-lg hover:scale-125 transition-all pointer-events-auto"
+                                        onClick={() => setShowAddFieldAt(0)}
+                                        className="w-full py-8 flex items-center justify-center border-2 border-dashed border-gray-2 rounded-xl bg-white hover:border-accent-primary hover:bg-accent-soft/5 transition-all text-gray-4 hover:text-accent-primary group/empty"
                                     >
-                                        <Icon name="lucide:plus" width={14} height={14} />
+                                        <div className="flex items-center gap-2">
+                                            <Icon name="lucide:plus" width={18} height={18} />
+                                            <Text size="sm" fw={700}>Add your first field</Text>
+                                        </div>
                                     </button>
                                 </div>
+                            )}
 
-                                <SortableQuestionItem
-                                    question={q}
-                                    activeQuestionId={activeQuestionId}
-                                    setActiveQuestionId={setActiveQuestionId}
-                                    updateQuestion={updateQuestion}
-                                    deleteQuestion={deleteQuestion}
-                                    isBuilderMode={isBuilderMode}
-                                />
+                            {panel.fields.map((q: Question, i: number) => {
+                                const isHalfWidth = q.settings.general.size === 'col-6'
+                                const isNextHalfWidth = panel.fields[i + 1]?.settings.general.size === 'col-6'
+                                const isLastInRow = !isHalfWidth || (isHalfWidth && (!isNextHalfWidth || i === panel.fields.length - 1))
 
-                                {/* Insert Hook (Bottom - Only for last) OR Inline Selector below */}
-                                {showAddFieldAt === i + 1 ? (
-                                    <div className="w-full mt-4 mb-4 animate-in slide-in-from-top-1 duration-200 z-50">
-                                        <AddFieldInline
-                                            onSelect={(type) => handleAddField(type, i + 1)}
-                                            onClose={() => setShowAddFieldAt(null)}
-                                        />
-                                    </div>
-                                ) : (
-                                    i === page.questions.length - 1 && (
-                                        <div className="absolute bottom-[-10px] left-0 right-0 h-5 z-[50] flex items-center justify-center opacity-0 group-hover/field:opacity-100 transition-opacity duration-200 pointer-events-none">
-                                            <div className="w-full h-[1px] bg-gray-13/10 absolute pointer-events-none" />
-                                            <button
-                                                onClick={() => setShowAddFieldAt(i + 1)}
-                                                className="size-6 rounded-full bg-accent-primary text-white flex items-center justify-center shadow-lg hover:scale-125 transition-all pointer-events-auto"
+                                return (
+                                    <div
+                                        key={q.id}
+                                        className={cn(
+                                            "transition-all duration-500 px-1 relative group-item group/field",
+                                            q.settings.general.size === 'col-3' ? 'w-1/4' : q.settings.general.size === 'col-4' ? 'w-1/3' : q.settings.general.size === 'col-6' ? 'w-1/2' : 'w-full'
+                                        )}
+                                    >
+                                        {/* Inline Add Button (Above this field) */}
+                                        <div className="absolute top-[-10px] left-0 w-full h-[20px] z-[20] flex items-center justify-center opacity-0 hover:opacity-100 group/insert transition-all pointer-events-auto">
+                                            <div className="w-[calc(100%-16px)] h-px bg-accent-soft/50 group-hover/insert:bg-accent-primary/40 mx-2" />
+                                            <ActionIcon
+                                                size="sm"
+                                                radius="xl"
+                                                color="violet"
+                                                variant="filled"
+                                                className="absolute shadow-sm scale-75 group-hover/insert:scale-105 transition-all hover:bg-accent-primary"
+                                                onClick={() => setShowAddFieldAt(i)}
                                             >
                                                 <Icon name="lucide:plus" width={14} height={14} />
-                                            </button>
+                                            </ActionIcon>
                                         </div>
-                                    )
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                </SortableContext>
-            </div>
+                                        <SortableQuestionItem
+                                            question={q}
+                                            activeQuestionId={activeQuestionId}
+                                            setActiveQuestionId={setActiveQuestionId}
+                                            updateQuestion={updateQuestion}
+                                            deleteQuestion={deleteQuestion}
+                                            isBuilderMode={isBuilderMode}
+                                        />
 
-            {/* Page Footer */}
-            <div className="px-6 pb-6 pt-4 flex flex-col items-center">
-                {!page.questions.length && <div className="h-4" />}
-                <div className="w-full h-[1px] bg-gray-3 border-dashed border-t mb-4" />
-                <Text size="10px" fw={600} className="text-gray-5 uppercase tracking-widest font-inter">
-                    End of Section {pageIndex + 1}.0
-                </Text>
-            </div>
+                                        {/* If this is the last item and it's half width, and we have an empty slot next to it */}
+                                        {i === panel.fields.length - 1 && isHalfWidth && (
+                                            <div className="absolute right-[-100%] top-0 w-full px-1 h-full z-10 pointer-events-none opacity-0 group-hover/field:opacity-100 transition-opacity">
+                                                <button
+                                                    onClick={() => setShowAddFieldAt(i + 1)}
+                                                    className="w-full h-full flex items-center justify-center border-2 border-dashed border-gray-2 rounded-xl bg-white/50 hover:bg-white hover:border-accent-primary transition-all text-gray-4 hover:text-accent-primary pointer-events-auto"
+                                                >
+                                                    <Icon name="lucide:plus" width={16} height={16} />
+                                                    <Text size="xs" fw={700} ml={4}>Add field</Text>
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                )
+                            })}
+
+                            {/* Standard Add Field at the bottom if no empty slots in grid */}
+                            {panel.fields.length > 0 && (
+                                <div className={cn(
+                                    "px-1 transition-all mt-1",
+                                    (panel.fields[panel.fields.length - 1]?.settings.general.size === 'col-6') ? 'w-1/2' : 'w-full'
+                                )}>
+                                    <button
+                                        onClick={() => setShowAddFieldAt(panel.fields.length)}
+                                        className="w-full py-3 flex items-center justify-center border-2 border-dashed border-gray-2 rounded-xl bg-white/50 hover:bg-white hover:border-accent-primary transition-all text-gray-4 hover:text-accent-primary"
+                                    >
+                                        <Icon name="lucide:plus" width={16} height={16} />
+                                        <Text size="xs" fw={700} ml={4}>Add field</Text>
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </SortableContext>
+
+                    {showAddFieldAt !== null && (
+                        <div className="fixed inset-0 z-[100]">
+                            <AddFieldInline
+                                onSelect={(type) => handleAddField(type, showAddFieldAt)}
+                                onClose={() => setShowAddFieldAt(null)}
+                            />
+                        </div>
+                    )}
+                </div>
+            )}
         </div>
     )
 }
@@ -269,8 +260,12 @@ const SortableQuestionItem = ({ question, activeQuestionId, setActiveQuestionId,
             <QuestionCard
                 question={question}
                 isActive={activeQuestionId === question.id}
-                onSelect={() => setActiveQuestionId(question.id)}
-                onUpdate={(updates) => updateQuestion(question.id, updates)}
+                onSelect={() => {
+                    setActiveQuestionId(question.id)
+                    useFormStore.getState().setSelectionType('question')
+                    useFormStore.getState().setSidebarOpen(true)
+                }}
+                onUpdate={(updates: Partial<Question>) => updateQuestion(question.id, updates)}
                 onDelete={() => deleteQuestion(question.id)}
                 isBuilderMode={isBuilderMode}
                 dragListeners={listeners}

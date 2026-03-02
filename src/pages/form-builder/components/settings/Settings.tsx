@@ -65,7 +65,7 @@ const Settings = ({ setTab }: SettingsProps) => {
       </div>
 
       <div className='flex-1 overflow-auto bg-gray-50/30'>
-        {activeSubTab === 'General' && <GeneralSettings setTab={setTab} />}
+        {activeSubTab === 'General' && <GeneralSettings />}
         {activeSubTab === 'Welcome Page' && <WelcomeThankYouSettings type="welcome" />}
         {activeSubTab === 'Thank You Page' && <WelcomeThankYouSettings type="thank_you" />}
         {activeSubTab === 'Header & Footer' && <HeaderFooterSettings />}

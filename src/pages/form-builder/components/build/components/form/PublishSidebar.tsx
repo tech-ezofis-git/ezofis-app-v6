@@ -2,6 +2,7 @@ import { TextInput, Textarea, Button, Text, Group, Stack, UnstyledButton, Action
 import { useFormStore } from '@/pages/form-builder/store/formStore'
 import Icon from '@/components/base/icon/Icon'
 import cn from '@/utils/cn'
+import { useState } from 'react'
 
 const PublishSidebar = () => {
     const {
@@ -11,8 +12,28 @@ const PublishSidebar = () => {
         description,
         setDescription,
         layout,
-        setLayout
+        setLayout,
+        panels,
+        saveForm
     } = useFormStore()
+
+    const [isSavingDraft, setIsSavingDraft] = useState(false)
+    const [isPublishing, setIsPublishing] = useState(false)
+
+    const handleAction = async (status: 'DRAFT' | 'PUBLISHED') => {
+        if (status === 'DRAFT') setIsSavingDraft(true)
+        else setIsPublishing(true)
+
+        try {
+            const success = await saveForm(status)
+            if (success) {
+                setPublishOpen(false)
+            }
+        } finally {
+            setIsSavingDraft(false)
+            setIsPublishing(false)
+        }
+    }
 
     const layouts = [
         { id: 'typeform', name: 'Focus Mode', description: 'One question at a time', icon: 'tabler:square-rotated' },
@@ -21,15 +42,15 @@ const PublishSidebar = () => {
     ]
 
     return (
-        <div className="h-full w-[400px] flex flex-col bg-surface-primary animate-in slide-in-from-right duration-500 font-inter">
+        <div className="h-full w-[400px] flex flex-col bg-surface-primary animate-in slide-in-from-right duration-500 font-inter border-l border-gray-2 shadow-2xl">
             {/* Header */}
-            <div className="p-4 border-b border-gray-2 bg-gray-1 shrink-0">
+            <div className="p-4 border-b border-gray-2 bg-gray-50/80 backdrop-blur-sm shrink-0">
                 <Group justify="space-between" mb="xs">
                     <div className="flex items-center gap-2">
                         <div className="size-8 bg-accent-soft/20 text-accent-primary rounded-lg flex items-center justify-center">
                             <Icon name="tabler:rocket" width={16} height={16} />
                         </div>
-                        <Text fw={800} size="sm" className="tracking-tight uppercase text-gray-13">Ready to Deploy</Text>
+                        <Text fw={800} size="sm" className="tracking-tight uppercase text-gray-13">Deploy Settings</Text>
                     </div>
                     <ActionIcon
                         variant="subtle"
@@ -41,20 +62,20 @@ const PublishSidebar = () => {
                         <Icon name="tabler:x" width={16} height={16} />
                     </ActionIcon>
                 </Group>
-                <Text size="xs" className="text-gray-10 mt-1 leading-tight px-0.5">Review settings before finalizing your form publication.</Text>
+                <Text size="xs" className="text-gray-10 mt-1 leading-tight px-0.5 font-medium">Configure deployment properties and go live.</Text>
             </div>
 
             <div className="flex-1 overflow-y-auto p-5 space-y-6 custom-scrollbar">
                 {/* Basic Info */}
                 <Stack gap="xs">
-                    <Text size="10px" fw={800} className="text-gray-5 uppercase tracking-[0.15em]">Deployment Strategy</Text>
+                    <Text size="10px" fw={800} className="text-gray-5 uppercase tracking-widest">Metadata</Text>
                     <TextInput
                         label={<Text size="xs" fw={700} className="text-gray-12 mb-1">Form Name</Text>}
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         placeholder="e.g. Q1 Customer Survey"
                         size="sm"
-                        classNames={{ input: 'bg-gray-1 border-gray-2 focus:bg-white' }}
+                        classNames={{ input: 'bg-gray-50 border-gray-2 focus:bg-white h-10' }}
                     />
                     <Textarea
                         label={<Text size="xs" fw={700} className="text-gray-12 mb-1">Description</Text>}
@@ -64,13 +85,13 @@ const PublishSidebar = () => {
                         autosize
                         minRows={2}
                         size="sm"
-                        classNames={{ input: 'bg-gray-1 border-gray-2 focus:bg-white' }}
+                        classNames={{ input: 'bg-gray-50 border-gray-2 focus:bg-white' }}
                     />
                 </Stack>
 
                 {/* Layout Selector */}
                 <div>
-                    <Text size="10px" fw={800} className="text-gray-5 uppercase tracking-[0.15em] mb-3">Display Layout</Text>
+                    <Text size="10px" fw={800} className="text-gray-5 uppercase tracking-widest mb-3">Display Layout</Text>
                     <div className="flex flex-col gap-2">
                         {layouts.map((l) => {
                             const isActive = layout === l.id
@@ -109,13 +130,13 @@ const PublishSidebar = () => {
                 </div>
 
                 {/* Status List */}
-                <div className="space-y-2 pt-4 border-t border-gray-1">
-                    <Text size="10px" fw={800} className="text-gray-5 uppercase tracking-[0.15em] mb-2">Pre-flight Checklist</Text>
-                    <div className="flex items-center gap-2 text-[11px] text-gray-7">
+                <div className="space-y-2 pt-4 border-t border-gray-2">
+                    <Text size="10px" fw={800} className="text-gray-5 uppercase tracking-widest mb-2">Checklist</Text>
+                    <div className="flex items-center gap-2 text-[11px] text-gray-7 font-medium">
                         <Icon name="lucide:check-circle" width={12} height={12} className="text-green-500" />
-                        <span>All {useFormStore.getState().pages.reduce((acc, p) => acc + p.questions.length, 0)} questions validated</span>
+                        <span>All {panels.reduce((acc, p) => acc + p.fields.length, 0)} questions validated</span>
                     </div>
-                    <div className="flex items-center gap-2 text-[11px] text-gray-7">
+                    <div className="flex items-center gap-2 text-[11px] text-gray-7 font-medium">
                         <Icon name="lucide:check-circle" width={12} height={12} className="text-green-500" />
                         <span>Responsive layouts optimized</span>
                     </div>
@@ -123,18 +144,34 @@ const PublishSidebar = () => {
             </div>
 
             {/* Footer */}
-            <div className="p-5 border-t border-gray-2 bg-gray-50/50 shrink-0">
-                <Button
-                    fullWidth
-                    size="md"
-                    radius="xl"
-                    bg="accent-primary"
-                    className="hover:scale-[1.02] active:scale-95 transition-all font-bold shadow-lg shadow-accent-soft/30 h-11 text-xs uppercase tracking-widest"
-                    onClick={() => setPublishOpen(false)}
-                >
-                    Deploy Form
-                </Button>
-                <div className="flex items-center justify-center gap-2 mt-4 opacity-50">
+            <div className="p-5 border-t border-gray-2 bg-gray-50 shrink-0 space-y-3">
+                <Group grow gap="sm">
+                    <Button
+                        variant="light"
+                        color="gray"
+                        size="md"
+                        radius="xl"
+                        loading={isSavingDraft}
+                        disabled={isPublishing}
+                        className="font-bold text-[11px] uppercase tracking-wider h-11"
+                        onClick={() => handleAction('DRAFT')}
+                    >
+                        Save Draft
+                    </Button>
+                    <Button
+                        size="md"
+                        radius="xl"
+                        bg="accent-primary"
+                        loading={isPublishing}
+                        disabled={isSavingDraft}
+                        className="hover:scale-[1.02] active:scale-95 transition-all font-bold shadow-lg shadow-accent-soft/30 h-11 text-[11px] uppercase tracking-wider"
+                        onClick={() => handleAction('PUBLISHED')}
+                    >
+                        Publish
+                    </Button>
+                </Group>
+                <div className="flex items-center justify-center gap-2 opacity-50">
+
                     <div className="size-1 bg-gray-400 rounded-full" />
                     <Text size="9px" className="text-gray-5 uppercase font-black">v1.0.4 Staging</Text>
                     <div className="size-1 bg-gray-400 rounded-full" />
