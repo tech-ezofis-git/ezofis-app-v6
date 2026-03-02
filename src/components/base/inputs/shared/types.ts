@@ -49,6 +49,8 @@ export interface SelectProps extends InputProps {
   searchable?: boolean
   searchPlaceholder?: string
   width?: ComboboxProps['width']
+  dropdownFooter?: ReactNode
+  rightSectionIcon?: string
 }
 
 export type SelectVariant = 'single' | 'multiple'

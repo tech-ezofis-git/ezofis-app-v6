@@ -15,6 +15,8 @@ interface Props extends InputProps, SelectProps {
   onChange: (value: Option[]) => void
   onCreate?: () => void
   onSearch: (search: string) => void
+  dropdownFooter?: React.ReactNode
+  rightSectionIcon?: string
 }
 
 const Combobox = forwardRef<HTMLButtonElement, Props>(
@@ -32,6 +34,8 @@ const Combobox = forwardRef<HTMLButtonElement, Props>(
       onBottomReached,
       onChange,
       onSearch,
+      dropdownFooter,
+      rightSectionIcon,
       ...rest
     },
     ref,
@@ -55,6 +59,7 @@ const Combobox = forwardRef<HTMLButtonElement, Props>(
           ref={ref}
           value={value}
           variant={variant}
+          rightSectionIcon={rightSectionIcon}
           onChange={onChange}
           onClick={() => comboboxStore.toggleDropdown()}
         />
@@ -82,6 +87,12 @@ const Combobox = forwardRef<HTMLButtonElement, Props>(
             onBottomReached={onBottomReached}
             onChange={onChange}
           />
+
+          {dropdownFooter && (
+            <div className='border-t border-gray-1 bg-surface-raised p-1'>
+              {dropdownFooter}
+            </div>
+          )}
         </Base.Dropdown>
       </Base>
     )

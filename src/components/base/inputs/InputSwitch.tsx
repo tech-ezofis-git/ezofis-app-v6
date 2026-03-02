@@ -13,7 +13,7 @@ const InputSwitch = forwardRef<HTMLInputElement, Props>(
       labelWrapper: 'data-[disabled]:opacity-50',
       thumb: 'bg-white shadow-sm',
       track: cn(
-        'mt-0.5 bg-gray-6 peer-checked:bg-primary-9 focus-within:outline-primary-8',
+        'mt-0.5 bg-gray-200 peer-checked:bg-primary-9 transition-all duration-300 ring-0 peer-checked:ring-2 peer-checked:ring-primary-4 peer-checked:ring-offset-1 focus-within:outline-primary-8',
         Boolean(error) && 'border border-red-9',
       ),
     }
