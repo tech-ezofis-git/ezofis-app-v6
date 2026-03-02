@@ -1,7 +1,6 @@
-import { Button, Group } from '@mantine/core'
+import { Button } from '@mantine/core'
 import Icon from '@/components/base/icon/Icon'
 import { useFormStore } from '@/pages/form-builder/store/formStore'
-import useAskAIStore from '@/components/common/ask-ai/stores/useAskAIStore'
 import IconButton from '@/components/base/button/IconButton'
 import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
@@ -60,19 +59,6 @@ const Header = () => {
 
       {/* Right: Controls */}
       <div className='flex items-center gap-3'>
-        <Button
-          variant="subtle"
-          color="gray"
-          size="xs"
-          leftSection={<Icon name="lucide:sparkles" width={14} height={14} className="text-accent-primary" />}
-          className="text-accent-primary hover:bg-accent-soft/10 font-bold uppercase tracking-wider text-[10px]"
-          onClick={() => useAskAIStore.getState().open()}
-        >
-          Ask AI
-        </Button>
-
-        <div className="h-4 w-px bg-gray-3 mx-1" />
-
         <IconButton
           icon="lucide:settings"
           size="sm"

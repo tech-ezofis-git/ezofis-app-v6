@@ -55,10 +55,13 @@ const ALL_FIELDS: FieldType[] = [
 interface Props {
     onSelect: (type: QuestionType | 'ADDRESS_INFO' | 'CONTACT_INFO') => void
     onClose: () => void
+    anchorRect: DOMRect | null
 }
 
-const AddFieldInline = ({ onSelect, onClose }: Props) => {
+const AddFieldInline = ({ onSelect, onClose, anchorRect }: Props) => {
     const [search, setSearch] = useState('')
+    const [position, setPosition] = useState<{ top: number, left: number }>({ top: 0, left: 0 })
+    const containerRef = useRef<HTMLDivElement>(null)
     const [activeTab, setActiveTab] = useState<TabType>('all')
     const listRef = useRef<HTMLDivElement>(null)
 
@@ -67,6 +70,32 @@ const AddFieldInline = ({ onSelect, onClose }: Props) => {
             listRef.current.scrollTop = 0
         }
     }, [activeTab, search])
+
+    useEffect(() => {
+        if (anchorRect && containerRef.current) {
+            const menuWidth = 500 // Max width
+            const menuHeight = containerRef.current.offsetHeight || 420
+            const windowWidth = window.innerWidth
+            const windowHeight = window.innerHeight
+
+            let left = anchorRect.left + (anchorRect.width / 2) - (menuWidth / 2)
+            let top = anchorRect.bottom + 12
+
+            // Keep within horizontal bounds
+            if (left < 20) left = 20
+            if (left + menuWidth > windowWidth - 20) left = windowWidth - menuWidth - 20
+
+            // If would go off bottom, show above instead
+            if (top + menuHeight > windowHeight - 20) {
+                top = anchorRect.top - menuHeight - 12
+            }
+
+            // Ensure top is not negative
+            if (top < 20) top = 20
+
+            setPosition({ top, left })
+        }
+    }, [anchorRect])
 
     const filteredFields = ALL_FIELDS.filter(field => {
         const matchesSearch = field.label.toLowerCase().includes(search.toLowerCase()) ||
@@ -103,19 +132,24 @@ const AddFieldInline = ({ onSelect, onClose }: Props) => {
         </button>
     )
 
+    if (!anchorRect) return null
+
     return (
         <Portal>
-            <div className="fixed inset-0 pointer-events-none z-[9999] flex items-center justify-center">
+            <div className="fixed inset-0 pointer-events-none z-[10001] flex items-start justify-start">
                 {/* Click outside overlay - capture events */}
-                <div className="absolute inset-0 z-0 pointer-events-auto" onClick={onClose} />
+                <div className="absolute inset-0 z-0 pointer-events-auto bg-gray-900/5 backdrop-blur-[1px] animate-in fade-in duration-300" onClick={onClose} />
 
                 <motion.div
-                    drag
-                    dragMomentum={false}
-                    dragElastic={0}
-                    className='w-full max-w-[500px] pointer-events-auto flex flex-col overflow-hidden rounded-xl bg-white border border-gray-2 shadow-2xl font-inter z-10'
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
+                    ref={containerRef}
+                    style={{
+                        top: position.top,
+                        left: position.left,
+                        position: 'absolute'
+                    }}
+                    className='w-full max-w-[500px] pointer-events-auto flex flex-col overflow-hidden rounded-xl bg-white border border-gray-2 shadow-[0_20px_50px_rgba(0,0,0,0.15)] font-inter z-10'
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
                 >
 
 

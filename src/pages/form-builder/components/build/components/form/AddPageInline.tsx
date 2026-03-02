@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect } from 'react'
 import { motion } from 'motion/react'
 import Icon from '@/components/base/icon/Icon'
 import { Portal } from '@mantine/core'
@@ -12,6 +13,38 @@ interface Props {
 
 const AddPageInline = ({ onSelect, onClose, anchorRect }: Props) => {
     const { welcomePage, thankYouPage } = useFormStore()
+    const [position, setPosition] = useState<{ top: number, left: number }>({ top: 0, left: 0 })
+    const containerRef = useRef<HTMLDivElement>(null)
+
+    useEffect(() => {
+        const updatePosition = () => {
+            if (anchorRect) {
+                const menuWidth = 420
+                const menuHeight = containerRef.current?.offsetHeight || 190
+                const windowWidth = window.innerWidth
+                const windowHeight = window.innerHeight
+
+                let left = anchorRect.left + (anchorRect.width / 2) - (menuWidth / 2)
+                let top = anchorRect.bottom + 8
+
+                // Keep within horizontal bounds
+                if (left < 20) left = 20
+                if (left + menuWidth > windowWidth - 20) left = windowWidth - menuWidth - 20
+
+                // If would go off bottom, show above instead
+                if (top + menuHeight > windowHeight - 20) {
+                    top = Math.max(20, anchorRect.top - menuHeight - 8)
+                }
+
+                setPosition({ top, left })
+            }
+        }
+
+        updatePosition()
+        // Run again after a short delay to account for layout shifts
+        const timer = setTimeout(updatePosition, 50)
+        return () => clearTimeout(timer)
+    }, [anchorRect])
 
     const PAGE_TYPES = [
         {
@@ -42,33 +75,24 @@ const AddPageInline = ({ onSelect, onClose, anchorRect }: Props) => {
         },
     ]
 
+    if (!anchorRect) return null
+
     return (
         <Portal>
-            <div className="fixed inset-0 pointer-events-none z-[9999]">
+            <div className="fixed inset-0 pointer-events-none z-[10001]">
                 {/* Click outside overlay - capture events */}
-                <div className="absolute inset-0 z-0 pointer-events-auto" onClick={onClose} />
+                <div className="absolute inset-0 z-0 pointer-events-auto bg-gray-900/5 backdrop-blur-[1px] animate-in fade-in duration-300" onClick={onClose} />
 
                 <motion.div
-                    drag
-                    dragMomentum={false}
-                    dragElastic={0}
-                    className='absolute w-full max-w-[420px] pointer-events-auto flex flex-col overflow-hidden rounded-xl bg-white border border-gray-2 shadow-2xl font-inter z-10'
-                    initial={{
-                        opacity: 0,
-                        scale: 0.9,
-                        x: anchorRect ? anchorRect.left - 210 + (anchorRect.width / 2) : 0,
-                        y: anchorRect ? anchorRect.top + 40 : 100
-                    }}
-                    animate={{
-                        opacity: 1,
-                        scale: 1,
-                        x: anchorRect ? anchorRect.left - 210 + (anchorRect.width / 2) : 0,
-                        y: anchorRect ? anchorRect.top + 40 : 100
-                    }}
+                    ref={containerRef}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
                     style={{
-                        left: 0,
-                        top: 0
+                        position: 'absolute',
+                        top: position.top,
+                        left: position.left,
                     }}
+                    className='w-full max-w-[420px] pointer-events-auto flex flex-col overflow-hidden rounded-xl bg-white border border-gray-2 shadow-[0_20px_50px_rgba(0,0,0,0.15)] font-inter z-10'
                 >
 
 

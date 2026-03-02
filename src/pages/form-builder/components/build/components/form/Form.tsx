@@ -196,7 +196,7 @@ const Form = () => {
   const activeQuestion = panels.flatMap(p => p.fields).find(f => f.id === activeId)
 
   return (
-    <div className='w-full max-w-[860px] mx-auto pb-40 px-4 font-inter'>
+    <div className='w-full max-w-[1200px] mx-auto pb-40 px-4 font-inter'>
 
 
       <div className='space-y-8'>
@@ -265,7 +265,11 @@ const Form = () => {
                   Your form needs at least one section to start adding questions. Click the button below to add your first section.
                 </Text>
                 <UnstyledButton
-                  onClick={() => setShowAddPageAt(0)}
+                  onClick={(e) => {
+                    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+                    setAddPageAnchorRect(rect)
+                    setShowAddPageAt(0)
+                  }}
                   className="flex items-center gap-2 px-6 py-3 bg-accent-primary text-white rounded-xl font-bold hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-accent-soft/20"
                 >
                   <Icon name="lucide:plus-circle" width={18} height={18} />
@@ -296,9 +300,13 @@ const Form = () => {
             variant="outline"
             color="gray"
             size="md"
-            className="border-2 border-dashed border-gray-7 hover:border-accent-primary hover:bg-accent-soft/5 hover:text-accent-primary transition-all rounded-xl h-12 px-10"
+            className="w-full flex items-center justify-center border border-dashed border-accent-primary rounded-xl bg-accent-soft/5 hover:bg-accent-soft/10 transition-all text-accent-primary group/add h-12 py-3 px-4 font-bold uppercase tracking-widest text-[11px]"
             leftSection={<Icon name="lucide:plus" width={18} height={18} />}
-            onClick={() => setShowAddPageAt(panels.length)}
+            onClick={(e) => {
+              const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+              setAddPageAnchorRect(rect)
+              setShowAddPageAt(panels.length)
+            }}
           >
             Add New Section
           </Button>
