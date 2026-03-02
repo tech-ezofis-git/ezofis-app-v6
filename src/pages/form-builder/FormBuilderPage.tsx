@@ -3,12 +3,12 @@ import useAskAIStore from '@/components/common/ask-ai/stores/useAskAIStore'
 import Build from './components/build/Build'
 import Header from './components/common/Header'
 import LivePreview from './components/build/components/preview/LivePreview'
+import FormBuilderSkeleton from './components/common/FormBuilderSkeleton'
 
 import { useParams } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { useFormStore } from './store/formStore'
 import formApi from '@/api/form/form'
-import { LoadingOverlay } from '@mantine/core'
 
 const FormBuilderPage = () => {
   const { formId } = useParams({ strict: false }) as any
@@ -38,9 +38,12 @@ const FormBuilderPage = () => {
     fetchForm()
   }, [formId, loadForm, resetForm])
 
+  if (isLoading) {
+    return <FormBuilderSkeleton />
+  }
+
   return (
     <div className='flex h-dvh flex-col overflow-hidden relative'>
-      <LoadingOverlay visible={isLoading} overlayProps={{ blur: 2, radius: 'sm' }} loaderProps={{ color: 'violet', type: 'bars' }} />
       <Header />
       <div className='flex flex-1 overflow-hidden'>
         <div className='flex-1 overflow-auto'>

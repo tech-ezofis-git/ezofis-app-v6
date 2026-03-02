@@ -4,6 +4,7 @@ import type { InputProps } from './shared/types'
 import ClearButton from './ClearButton'
 import InputLabel from './InputLabel'
 import { classNames, inputWrapperOrder } from './shared/constants'
+import cn from '@/utils/cn'
 
 interface Props extends InputProps {
   value: string
@@ -67,11 +68,11 @@ const InputText = forwardRef<HTMLInputElement, Props>(
         rightSection={_rightSection}
         value={value}
         classNames={{
-          description: classNames.description,
-          error: classNames.error,
-          input: classNames.input,
-          label: classNames.label,
-          wrapper: classNames.wrapper,
+          description: cn(classNames.description, rest.classNames?.description),
+          error: cn(classNames.error, rest.classNames?.error),
+          input: cn(classNames.input, rest.classNames?.input),
+          label: cn(classNames.label, rest.classNames?.label),
+          wrapper: cn(classNames.wrapper, rest.classNames?.wrapper),
         }}
         rightSectionPointerEvents={
           _clearable ? 'auto' : rightSectionPointerEvents

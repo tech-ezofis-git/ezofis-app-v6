@@ -1,7 +1,41 @@
-import { SegmentedControl, Switch, Text, TextInput, Select, Textarea, Button, Divider, ActionIcon, Group, Paper, Stack, Tooltip, Box, Badge } from '@mantine/core'
+import { SegmentedControl, Switch, Text, TextInput, Select, Textarea, Button, Divider, ActionIcon, Group, Paper, Stack, Tooltip, Box, Badge, UnstyledButton } from '@mantine/core'
 import { useFormStore, generateId, type Question } from '@/pages/form-builder/store/formStore'
 import Icon from '@/components/base/icon/Icon'
 import { useEffect, useState, useRef } from 'react'
+import cn from '@/utils/cn'
+
+const FIELD_ICONS: Record<string, string> = {
+    SHORT_TEXT: 'mdi:form-textbox',
+    LONG_TEXT: 'mdi:form-textarea',
+    NUMBER: 'tabler:number-123',
+    DATE: 'lucide:calendar',
+    TIME: 'lucide:clock',
+    DATE_TIME: 'lucide:calendar-clock',
+    SINGLE_SELECT: 'lucide:list-todo',
+    MULTI_SELECT: 'lucide:list-checks',
+    SINGLE_CHOICE: 'mdi:radiobox-marked',
+    MULTIPLE_CHOICE: 'lucide:square-check',
+    HEADING: 'lucide:heading',
+    LABEL: 'lucide:type',
+    TEXT_BUILDER: 'lucide:pilcrow',
+    DIVIDER: 'lucide:minus',
+    RATING: 'lucide:star',
+    FILE_UPLOAD: 'lucide:file-up',
+    TABLE: 'lucide:table',
+    DYNAMIC_TABLE: 'lucide:table-2',
+    MATRIX: 'lucide:grid-3x3',
+    EMAIL: 'lucide:mail',
+    PASSWORD: 'lucide:lock',
+    ADDRESS: 'lucide:map-pin',
+    FULL_NAME: 'lucide:user',
+    PHONE_NUMBER: 'lucide:phone',
+    CURRENCY_AMOUNT: 'lucide:dollar-sign',
+    COUNTER: 'tabler:circle-dot',
+    CALCULATED: 'lucide:calculator',
+    COUNTRY_CODE: 'lucide:globe',
+    CONTACT_INFO: 'lucide:contact',
+    ADDRESS_INFO: 'lucide:home',
+}
 
 const FieldSettings = () => {
     const panels = useFormStore((state) => state.panels)
@@ -20,6 +54,12 @@ const FieldSettings = () => {
     const setThankYouPage = useFormStore((state) => state.setThankYouPage)
     const setSidebarOpen = useFormStore((state) => state.setSidebarOpen)
     const setActiveQuestionId = useFormStore((state) => state.setActiveQuestionId)
+    const formType = useFormStore((state) => state.formType)
+    const setFormType = useFormStore((state) => state.setFormType)
+    const layout = useFormStore((state) => state.layout)
+    const setLayout = useFormStore((state) => state.setLayout)
+    const coordinator = useFormStore((state) => state.coordinator)
+    const setCoordinator = useFormStore((state) => state.setCoordinator)
 
     const activeQuestion = panels
         .flatMap(p => p.fields)
@@ -108,41 +148,136 @@ const FieldSettings = () => {
         setSidebarOpen
     }
 
-    // 2. General Settings View (Form Name & Description only)
+    // 2. General Settings View
     if (selectionType === 'general') {
+        const FORM_TYPES = [
+            { value: 'WORKFLOW', label: 'Workflow', icon: 'tabler:git-branch', desc: 'For business processes & automation' },
+            { value: 'FEEDBACK', label: 'Feedback', icon: 'tabler:message-star', desc: 'For surveys & reviews' },
+        ]
+
+
+
         return (
-            <div className="h-full w-[400px] flex flex-col bg-surface-primary animate-in slide-in-from-right duration-300 font-inter">
+            <div className="flex h-full w-[400px] flex-col border-l border-gray-3 bg-white shadow-xl transition-all animate-in slide-in-from-right duration-300 font-inter">
                 <SettingsHeader title="General Settings" icon="tabler:settings" headerProps={headerProps} />
-                <div className="flex-1 overflow-y-auto p-5 space-y-6">
-                    <Stack gap="sm">
-                        <TextInput
-                            label={<Text size="xs" fw={700} className="text-gray-12 mb-1">Global Form Name</Text>}
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            placeholder="e.g. Employee Feedback 2024"
-                            size="sm"
-                            classNames={{ input: 'bg-gray-1 border-gray-2 focus:bg-white text-xs' }}
-                        />
-                        <Textarea
-                            label={<Text size="xs" fw={700} className="text-gray-12 mb-1">Detailed Description</Text>}
-                            value={description}
-                            onChange={(e) => setDescription(e.target.value)}
-                            placeholder="Provide context for respondents..."
-                            autosize
-                            minRows={3}
-                            size="sm"
-                            classNames={{ input: 'bg-gray-1 border-gray-2 focus:bg-white text-xs' }}
-                        />
+                <div className="flex-1 overflow-y-auto p-5 space-y-4 custom-scrollbar">
+                    {/* Basic Info */}
+                    <Stack gap="lg">
+                        <div className="space-y-4">
+                            <TextInput
+                                label={<Text size="xs" fw={800} className="text-gray-11 uppercase tracking-wider mb-1.5 flex items-center gap-2">
+                                    <Icon name="lucide:type" width={14} height={14} /> Form Name
+                                </Text>}
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                placeholder="e.g. Employee Feedback"
+                                size="sm"
+                                classNames={{ input: 'bg-gray-1 border-gray-2 focus:border-accent-primary transition-all rounded-xl h-10 font-medium' }}
+                                maxLength={50}
+                            />
+                            <Textarea
+                                label={<Text size="xs" fw={800} className="text-gray-11 uppercase tracking-wider mb-1.5 flex items-center gap-2">
+                                    <Icon name="lucide:text-quote" width={14} height={14} /> Description
+                                </Text>}
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                                placeholder="What is this form for?"
+                                autosize
+                                minRows={3}
+                                size="sm"
+                                classNames={{ input: 'bg-gray-1 border-gray-2 focus:border-accent-primary transition-all rounded-xl font-medium' }}
+                            />
+                        </div>
                     </Stack>
 
-                    <Box className="p-4 bg-accent-soft/5 rounded-xl border border-accent-soft/20">
-                        <Group gap="xs" mb={4}>
-                            <Icon name="lucide:info" width={14} height={14} className="text-accent-primary" />
-                            <Text size="11px" fw={800} className="text-accent-primary uppercase tracking-wider">Builder Note</Text>
+                    <Divider className="border-gray-2" />
+
+                    {/* Form Type Cards */}
+                    <div className='space-y-3'>
+                        <Text size="xs" fw={800} className="text-gray-11 uppercase tracking-wider flex items-center gap-2">
+                            <Icon name="lucide:layers" width={14} height={14} /> Form Type
+                        </Text>
+                        <div className="grid grid-cols-2 gap-3">
+                            {FORM_TYPES.map((t) => {
+                                const active = formType === t.value
+                                return (
+                                    <UnstyledButton
+                                        key={t.value}
+                                        onClick={() => setFormType(t.value as any)}
+                                        className={cn(
+                                            "flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all group gap-2 text-center h-[120px]",
+                                            active
+                                                ? "border-accent-primary bg-accent-soft/5 shadow-sm ring-2 ring-accent-soft/10"
+                                                : "border-gray-5 bg-transparent hover:bg-gray-1"
+                                        )}
+                                    >
+                                        <div className={cn(
+                                            "size-9 rounded-lg flex items-center justify-center transition-transform group-hover:scale-11",
+                                            active ? "bg-accent-primary text-white shadow-md shadow-accent-soft/3" : "bg-white text-gray-8 border border-gray-4"
+                                        )}>
+                                            <Icon name={t.icon} width={18} height={18} />
+                                        </div>
+                                        <div className="px-1">
+                                            <Text size="xs" fw={800} className={cn("uppercase tracking-tight leading-none mb-1", active ? "text-gray-9" : "text-gray-9")}>{t.label}</Text>
+                                            <Text size="9px" fw={600} className="text-gray-5 leading-tight opacity-8 italic">{t.desc}</Text>
+                                        </div>
+                                    </UnstyledButton>
+                                )
+                            })}
+                        </div>
+                    </div>
+
+                    <Divider className="border-gray-2" />
+
+                    {/* Coordinator & Layout */}
+                    {/* <div className="space-y-6">
+                        <Select
+                            label={<Text size="xs" fw={800} className="text-gray-11 uppercase tracking-wider mb-2 flex items-center gap-2">
+                                <Icon name="lucide:user-cog" width={14} height={14} /> Coordinator
+                            </Text>}
+                            placeholder="Select primary contact"
+                            data={['Admin', 'Manager', 'HR', 'IT']}
+                            value={coordinator}
+                            onChange={(val) => setCoordinator(val || '')}
+                            size="sm"
+                            classNames={{ input: 'bg-gray-1 border-gray-2 focus:bg-white rounded-xl font-medium' }}
+                        />
+
+                        <div className='space-y-3'>
+                            <Text size="xs" fw={800} className="text-gray-11 uppercase tracking-wider flex items-center gap-2">
+                                <Icon name="lucide:monitor" width={14} height={14} /> Presentation
+                            </Text>
+                            <SegmentedControl
+                                value={layout}
+                                onChange={(val) => setLayout(val as any)}
+                                fullWidth
+                                size="xs"
+                                radius="lg"
+                                data={LAYOUT_OPTIONS.map(lo => ({
+                                    label: (
+                                        <Group gap={4} wrap="nowrap" justify="center" p={2}>
+                                            <Icon name={lo.icon} width={13} height={13} />
+                                            <Text size="10px" fw={700}>{lo.label}</Text>
+                                        </Group>
+                                    ),
+                                    value: lo.value
+                                }))}
+                                classNames={{
+                                    root: 'bg-gray-1 p-1',
+                                    control: 'border-none',
+                                    indicator: 'bg-white shadow-sm'
+                                }}
+                            />
+                        </div>
+                    </div> */}
+
+                    <Box className="p-4 bg-gray-50 rounded-2xl border border-gray-2">
+                        <Group gap="xs" mb={8}>
+                            <Icon name="lucide:sparkles" width={14} height={14} className="text-accent-primary" />
+                            <Text size="11px" fw={800} className="text-gray-11 uppercase tracking-wider">Quick Note</Text>
                         </Group>
                         <Text size="10px" className="text-gray-6 font-medium leading-relaxed">
-                            These settings define the primary appearance and metadata of your form.
-                            Changes here will reflect in the public link and social sharing.
+                            These settings apply to the entire form experience. You can also customize Welcome and Thank You pages in their respective screens.
                         </Text>
                     </Box>
                 </div>
@@ -150,10 +285,11 @@ const FieldSettings = () => {
         )
     }
 
+
     // 3. Welcome Page Settings
     if (selectionType === 'welcome') {
         return (
-            <div className="h-full w-[400px] flex flex-col bg-surface-primary animate-in slide-in-from-right duration-300">
+            <div className="flex h-full w-[400px] flex-col border-l border-gray-3 bg-white shadow-xl transition-all animate-in slide-in-from-right duration-300 font-inter">
                 <SettingsHeader title="Welcome Screen" icon="lucide:megaphone" headerProps={headerProps} />
                 <div className="flex-1 overflow-y-auto p-4 space-y-5">
                     <Stack gap="xl">
@@ -198,7 +334,7 @@ const FieldSettings = () => {
     // 4. Thank You Page Settings
     if (selectionType === 'thank_you') {
         return (
-            <div className="h-full w-[400px] flex flex-col bg-surface-primary animate-in slide-in-from-right duration-300">
+            <div className="flex h-full w-[400px] flex-col border-l border-gray-3 bg-white shadow-xl transition-all animate-in slide-in-from-right duration-300 font-inter">
                 <SettingsHeader title="Completion Screen" icon="lucide:party-popper" headerProps={headerProps} />
                 <div className="flex-1 overflow-y-auto p-4 space-y-5">
                     <Stack gap="xl">
@@ -246,7 +382,7 @@ const FieldSettings = () => {
     }
 
     return (
-        <div className="h-full w-[400px] flex flex-col bg-surface-primary animate-in slide-in-from-right duration-300">
+        <div className="flex h-full w-[400px] flex-col border-l border-gray-3 bg-white shadow-xl transition-all animate-in slide-in-from-right duration-300 font-inter">
             <SettingsHeader
                 title="Field Settings"
                 icon="tabler:adjustments-horizontal"
@@ -411,11 +547,7 @@ const FieldSettings = () => {
     )
 }
 
-const SettingsHeader = ({
-    title, icon, headerProps
-}: {
-    title: string, icon: string, headerProps: any
-}) => {
+const SettingsHeader = ({ title, icon, headerProps }: { title: string, icon: string, headerProps: any }) => {
     const {
         activeQuestion, selectionType, isSomethingSelected,
         isEditingLabel, headerLabel, setHeaderLabel,
@@ -423,6 +555,10 @@ const SettingsHeader = ({
         inputRef, hasPrev, hasNext, handlePrev, handleNext,
         clearSelection, deleteQuestion, setSidebarOpen
     } = headerProps
+
+    const headerIcon = selectionType === 'question' && activeQuestion
+        ? (FIELD_ICONS[activeQuestion.type] || 'lucide:settings-2')
+        : icon
 
     return (
         <div className="px-4 py-3 border-b border-gray-2 flex items-center justify-between bg-white shrink-0 gap-2">
@@ -436,13 +572,13 @@ const SettingsHeader = ({
                             onClick={() => clearSelection()}
                             className="mr-1 hover:bg-gray-2 shrink-0"
                         >
-                            <Icon name="lucide:arrow-left" width={14} height={14} />
+                            <Icon name="lucide:arrow-left" width={14} height={14} className="text-gray-10" />
                         </ActionIcon>
                     </Tooltip>
                 )}
 
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-1 border border-gray-2">
-                    <Icon name={icon} width={16} height={16} className="text-gray-11" />
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent-soft/10 border border-accent-soft/20">
+                    <Icon name={headerIcon} width={16} height={16} className="text-accent-primary" />
                 </div>
 
                 {selectionType === 'question' && activeQuestion ? (
@@ -472,15 +608,13 @@ const SettingsHeader = ({
                                     <span className="invisible whitespace-pre text-[xs] font-bold tracking-tight h-0 overflow-hidden px-0">
                                         {activeQuestion.label || 'Untitled Field'}
                                     </span>
-                                    <Text
-                                        fw={700}
-                                        size="xs"
-                                        className="text-gray-13 truncate cursor-pointer hover:text-gray-11"
+                                    <h2
+                                        className="text-15/5 font-semibold text-gray-13 truncate cursor-pointer hover:text-gray-11"
                                         style={{ gridArea: '1/1/2/2' }}
                                         onClick={() => setIsEditingLabel(true)}
                                     >
                                         {activeQuestion.label || 'Untitled Field'}
-                                    </Text>
+                                    </h2>
                                 </div>
                             </Tooltip>
 
@@ -506,7 +640,7 @@ const SettingsHeader = ({
                         </div>
                     )
                 ) : (
-                    <Text fw={700} size="xs" className="uppercase tracking-widest text-gray-11 truncate">{title}</Text>
+                    <h2 className='text-15/5 font-semibold text-gray-13 truncate capitalize'>{title}</h2>
                 )}
             </div>
 

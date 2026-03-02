@@ -9,7 +9,7 @@ import { Portal } from '@mantine/core'
 type TabType = 'explore' | 'popular' | 'advanced' | 'templates' | 'all' | 'display' | 'date_time'
 
 interface FieldType {
-    type: QuestionType | 'address_info' | 'contact_info'
+    type: QuestionType | 'ADDRESS_INFO' | 'CONTACT_INFO'
     label: string
     icon: string
     description: string
@@ -20,39 +20,40 @@ interface FieldType {
 
 const ALL_FIELDS: FieldType[] = [
     // Basic
-    { type: 'short_text', label: 'Short Text', icon: 'mdi:form-textbox', category: 'popular', description: 'Single line text input', iconColor: '#3b82f6', bgColor: 'bg-blue-50' },
-    { type: 'long_text', label: 'Long Text', icon: 'mdi:form-textarea', category: 'popular', description: 'Multi-line text area', iconColor: '#10b981', bgColor: 'bg-emerald-50' },
-    { type: 'number', label: 'Number', icon: 'tabler:number-123', category: 'popular', description: 'Numeric only entry', iconColor: '#f59e0b', bgColor: 'bg-amber-50' },
-    { type: 'email', label: 'Email', icon: 'lucide:mail', category: 'popular', description: 'Validated email input', iconColor: '#ef4444', bgColor: 'bg-red-50' },
-    { type: 'phone', label: 'Phone', icon: 'lucide:phone', category: 'popular', description: 'Phone number field', iconColor: '#8b5cf6', bgColor: 'bg-violet-50' },
-    { type: 'password', label: 'Password', icon: 'lucide:lock', category: 'popular', description: 'Secure text entry', iconColor: '#6366f1', bgColor: 'bg-indigo-50' },
+    { type: 'SHORT_TEXT', label: 'Short Text', icon: 'mdi:form-textbox', category: 'popular', description: 'Single line text input', iconColor: '#3b82f6', bgColor: 'bg-blue-50' },
+    { type: 'LONG_TEXT', label: 'Long Text', icon: 'mdi:form-textarea', category: 'popular', description: 'Multi-line text area', iconColor: '#10b981', bgColor: 'bg-emerald-50' },
+    { type: 'NUMBER', label: 'Number', icon: 'tabler:number-123', category: 'popular', description: 'Numeric only entry', iconColor: '#f59e0b', bgColor: 'bg-amber-50' },
+    { type: 'EMAIL', label: 'Email', icon: 'lucide:mail', category: 'popular', description: 'Validated email input', iconColor: '#ef4444', bgColor: 'bg-red-50' },
+    { type: 'PHONE_NUMBER', label: 'Phone', icon: 'lucide:phone', category: 'popular', description: 'Phone number field', iconColor: '#8b5cf6', bgColor: 'bg-violet-50' },
+    { type: 'PASSWORD', label: 'Password', icon: 'lucide:lock', category: 'popular', description: 'Secure text entry', iconColor: '#6366f1', bgColor: 'bg-indigo-50' },
 
     // Selections
-    { type: 'choices', label: 'Choice', icon: 'mdi:radiobox-marked', category: 'popular', description: 'Radio selection', iconColor: '#ec4899', bgColor: 'bg-pink-50' },
-    { type: 'dropdown', label: 'Dropdown', icon: 'lucide:list-todo', category: 'popular', description: 'Select from list', iconColor: '#f97316', bgColor: 'bg-orange-50' },
-    { type: 'checkbox', label: 'Checkbox', icon: 'lucide:square-check', category: 'popular', description: 'Multi-select options', iconColor: '#14b8a6', bgColor: 'bg-teal-50' },
+    { type: 'SINGLE_CHOICE', label: 'Choice', icon: 'mdi:radiobox-marked', category: 'popular', description: 'Radio selection', iconColor: '#ec4899', bgColor: 'bg-pink-50' },
+    { type: 'SINGLE_SELECT', label: 'Dropdown', icon: 'lucide:list-todo', category: 'popular', description: 'Select from list', iconColor: '#f97316', bgColor: 'bg-orange-50' },
+    { type: 'MULTI_SELECT', label: 'Checkbox', icon: 'lucide:square-check', category: 'popular', description: 'Multi-select options', iconColor: '#14b8a6', bgColor: 'bg-teal-50' },
 
     // Date/Time
-    { type: 'date', label: 'Date', icon: 'lucide:calendar', category: 'date_time', description: 'Date picker', iconColor: '#3b82f6', bgColor: 'bg-blue-50' },
-    { type: 'time', label: 'Time', icon: 'lucide:clock', category: 'date_time', description: 'Time picker', iconColor: '#10b981', bgColor: 'bg-emerald-50' },
+    { type: 'DATE', label: 'Date', icon: 'lucide:calendar', category: 'date_time', description: 'Date picker', iconColor: '#3b82f6', bgColor: 'bg-blue-50' },
+    { type: 'TIME', label: 'Time', icon: 'lucide:clock', category: 'date_time', description: 'Time picker', iconColor: '#10b981', bgColor: 'bg-emerald-50' },
 
     // Templates
-    { type: 'contact_info', label: 'Contact Template', icon: 'lucide:contact', category: 'templates', description: 'Name, Email, Phone block', iconColor: '#ec4899', bgColor: 'bg-pink-50' },
-    { type: 'address_info', label: 'Address Template', icon: 'lucide:home', category: 'templates', description: 'Complete address group', iconColor: '#f97316', bgColor: 'bg-orange-50' },
+    { type: 'CONTACT_INFO', label: 'Contact Template', icon: 'lucide:contact', category: 'templates', description: 'Name, Email, Phone block', iconColor: '#ec4899', bgColor: 'bg-pink-50' },
+    { type: 'ADDRESS_INFO', label: 'Address Template', icon: 'lucide:home', category: 'templates', description: 'Complete address group', iconColor: '#f97316', bgColor: 'bg-orange-50' },
 
     // Advanced
-    { type: 'table', label: 'Table Grid', icon: 'lucide:table', category: 'advanced', description: 'Structured data table', iconColor: '#4f46e5', bgColor: 'bg-indigo-100' },
-    { type: 'file_upload', label: 'File Upload', icon: 'lucide:file-up', category: 'advanced', description: 'Upload documents/images', iconColor: '#6366f1', bgColor: 'bg-indigo-50' },
-    { type: 'rating', label: 'Rating', icon: 'lucide:star', category: 'advanced', description: 'Star or scale rating', iconColor: '#f59e0b', bgColor: 'bg-amber-50' },
-    { type: 'country_code', label: 'Country', icon: 'lucide:globe', category: 'advanced', description: 'Location selector', iconColor: '#3b82f6', bgColor: 'bg-blue-100' },
+    { type: 'TABLE', label: 'Table Grid', icon: 'lucide:table', category: 'advanced', description: 'Structured data table', iconColor: '#4f46e5', bgColor: 'bg-indigo-100' },
+    { type: 'FILE_UPLOAD', label: 'File Upload', icon: 'lucide:file-up', category: 'advanced', description: 'Upload documents/images', iconColor: '#6366f1', bgColor: 'bg-indigo-50' },
+    { type: 'RATING', label: 'Rating', icon: 'lucide:star', category: 'advanced', description: 'Star or scale rating', iconColor: '#f59e0b', bgColor: 'bg-amber-50' },
+    { type: 'COUNTRY_CODE', label: 'Country', icon: 'lucide:globe', category: 'advanced', description: 'Location selector', iconColor: '#3b82f6', bgColor: 'bg-blue-100' },
 
     // Display
-    { type: 'heading', label: 'Heading', icon: 'lucide:heading', category: 'display', description: 'Section title', iconColor: '#94a3b8', bgColor: 'bg-slate-50' },
-    { type: 'divider', label: 'Divider', icon: 'lucide:minus', category: 'display', description: 'Visual separator', iconColor: '#94a3b8', bgColor: 'bg-slate-50' },
+    { type: 'TEXT_BUILDER', label: 'Paragraph', icon: 'lucide:text', category: 'display', description: 'Static text or instructions', iconColor: '#94a3b8', bgColor: 'bg-slate-50' },
+    { type: 'HEADING', label: 'Heading', icon: 'lucide:heading', category: 'display', description: 'Section title', iconColor: '#94a3b8', bgColor: 'bg-slate-50' },
+    { type: 'DIVIDER', label: 'Divider', icon: 'lucide:minus', category: 'display', description: 'Visual separator', iconColor: '#94a3b8', bgColor: 'bg-slate-50' },
 ]
 
 interface Props {
-    onSelect: (type: QuestionType | 'address_info' | 'contact_info') => void
+    onSelect: (type: QuestionType | 'ADDRESS_INFO' | 'CONTACT_INFO') => void
     onClose: () => void
 }
 
@@ -90,8 +91,7 @@ const AddFieldInline = ({ onSelect, onClose }: Props) => {
             )}>
                 <Icon
                     name={field.icon}
-                    className='h-5 w-5'
-                    style={{ color: field.iconColor || 'var(--gray-12)' }}
+                    className='h-5 w-5 text-accent-primary'
                 />
             </div>
             <div className='flex flex-col min-w-0'>
@@ -125,7 +125,7 @@ const AddFieldInline = ({ onSelect, onClose }: Props) => {
                             <Input
                                 placeholder='Search fields...'
                                 value={search}
-                                onChange={(val: any) => setSearch(val.target.value)}
+                                onChange={(val: string) => setSearch(val)}
                                 className='w-full'
                                 classNames={{
                                     input: 'bg-gray-1 border-gray-2 focus:bg-white text-xs py-1.5'

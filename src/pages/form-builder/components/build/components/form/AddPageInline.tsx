@@ -19,16 +19,16 @@ const AddPageInline = ({ onSelect, onClose, anchorRect }: Props) => {
             label: 'Blank Section',
             icon: 'lucide:layout',
             description: 'Start with a fresh empty section',
-            color: 'text-blue-500',
-            bg: 'bg-blue-50'
+            color: 'text-accent-primary',
+            bg: 'bg-accent-soft/10'
         },
         {
             id: 'welcome',
             label: 'Welcome Screen',
             icon: 'lucide:megaphone',
             description: 'The first screen your users see',
-            color: 'text-orange-500',
-            bg: 'bg-orange-50',
+            color: 'text-accent-primary',
+            bg: 'bg-accent-soft/10',
             disabled: welcomePage.enabled
         },
         {
@@ -36,8 +36,8 @@ const AddPageInline = ({ onSelect, onClose, anchorRect }: Props) => {
             label: 'Completion Screen',
             icon: 'lucide:party-popper',
             description: 'Final screen shown after submission',
-            color: 'text-pink-500',
-            bg: 'bg-pink-50',
+            color: 'text-accent-primary',
+            bg: 'bg-accent-soft/10',
             disabled: thankYouPage.enabled
         },
     ]

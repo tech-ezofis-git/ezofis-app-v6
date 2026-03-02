@@ -99,7 +99,7 @@ const QuestionCard = ({ question, isActive, onSelect, onUpdate, onDelete, dragLi
                     "shrink-0 transition-opacity duration-200 ml-1",
                     isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"
                 )}>
-                    <Menu shadow="sm" width={180} position="bottom-end" withinPortal={false} transitionProps={{ transition: 'pop-top-right' }}>
+                    <Menu shadow="sm" width={180} position="bottom-end" withinPortal={true} transitionProps={{ transition: 'pop-top-right' }}>
                         <Menu.Target>
                             <ActionIcon
                                 variant="subtle"
@@ -156,7 +156,7 @@ const TYPE_ICONS: Record<string, string> = {
     MULTI_SELECT: 'lucide:list-todo',
     PASSWORD: 'lucide:lock',
     FILE_UPLOAD: 'lucide:file-up',
-    TEXT_BUILDER: 'tabler:type',
+    TEXT_BUILDER: 'lucide:text',
     TABLE: 'lucide:table',
     DIVIDER: 'lucide:minus',
     HEADING: 'lucide:heading',

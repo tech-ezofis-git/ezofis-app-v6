@@ -1,5 +1,8 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import formApi from '@/api/form/form'
+import { notifications } from '@mantine/notifications'
+
 
 export const generateId = () => {
     try {
@@ -105,9 +108,9 @@ export interface Panel {
   fields: Question[]
 }
 
-export type FormLayout = 'CLASSIC' | 'STEPPER'
-export type FormType = 'WORKFLOW' | 'TASK' | 'SLA' | 'FEEDBACK'
-export type PublishStatus = 'DRAFT' | 'PUBLISH'
+export type FormLayout = 'typeform' | 'grid' | 'full'
+export type FormType = 'WORKFLOW' | 'FEEDBACK'
+export type PublishStatus = 'DRAFT' | 'PUBLISHED'
 
 interface WelcomePage {
   enabled: boolean;
@@ -136,6 +139,8 @@ interface FormStore {
   formType: FormType
   publishStatus: PublishStatus
   hubLinkIds: any[]
+  coordinator: string
+  previewMode: 'typeform' | 'grid' | 'full'
   
   // Special Pages
   welcomePage: WelcomePage
@@ -155,11 +160,13 @@ interface FormStore {
   
   setFormType: (type: FormType) => void
   setLayout: (layout: FormLayout) => void
+  setCoordinator: (coordinator: string) => void
   setPublishStatus: (status: PublishStatus) => void
 
   // UI Actions
   setSidebarOpen: (open: boolean) => void
   setPublishOpen: (open: boolean) => void
+  setPreviewMode: (mode: 'typeform' | 'grid' | 'full') => void
   setIsPreviewOpen: (open: boolean) => void
   setSelectionType: (type: 'general' | 'question' | 'welcome' | 'thank_you') => void
   
@@ -191,7 +198,11 @@ interface FormStore {
 
   loadForm: (data: any) => void
   resetForm: () => void
+  saveForm: (targetStatus?: PublishStatus) => Promise<boolean>
 }
+
+
+
 
 const initialState = {
   uid: '',
@@ -213,10 +224,12 @@ const initialState = {
   isPreviewOpen: false,
   selectionType: 'general' as const,
   
-  layout: 'CLASSIC' as const,
+  layout: 'typeform' as const,
   formType: 'WORKFLOW' as const,
   publishStatus: 'DRAFT' as const,
   hubLinkIds: [],
+  coordinator: '',
+  previewMode: 'typeform' as const,
   
   welcomePage: {
     enabled: false,
@@ -234,12 +247,14 @@ const initialState = {
   showThankYouPage: false,
 
   lastAddedPanelId: null,
-  copiedQuestion: null,
+  copiedQuestion: null
 }
+
+
 
 export const useFormStore = create<FormStore>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       ...initialState,
       uid: generateId(),
       
@@ -272,11 +287,13 @@ export const useFormStore = create<FormStore>()(
       
       setFormType: (formType) => set({ formType }),
       setLayout: (layout) => set({ layout }),
+      setCoordinator: (coordinator) => set({ coordinator }),
       setPublishStatus: (publishStatus) => set({ publishStatus }),
 
-      setSidebarOpen: (isSidebarOpen) => set({ isSidebarOpen }),
-      setPublishOpen: (isPublishOpen) => set({ isPublishOpen }),
-      setIsPreviewOpen: (isPreviewOpen) => set({ isPreviewOpen }),
+      setSidebarOpen: (open) => set({ isSidebarOpen: open }),
+      setPublishOpen: (open) => set({ isPublishOpen: open }),
+      setPreviewMode: (mode) => set({ previewMode: mode }),
+      setIsPreviewOpen: (open) => set({ isPreviewOpen: open }),
       setSelectionType: (selectionType) => set({ selectionType }),
 
       setWelcomePage: (updates) => set((state) => ({
@@ -390,32 +407,163 @@ export const useFormStore = create<FormStore>()(
         }
       }),
 
-      appendAIResponse: (_data) => set((state) => {
-          return state 
+      appendAIResponse: (data) => set((state) => {
+        if (!data) return state
+        
+        const panels = (data.panels || []).map((p: any) => ({
+          id: generateId(),
+          settings: {
+            title: p.settings?.title || p.title || 'Untitled Section',
+            description: p.settings?.description || p.description || ''
+          },
+          fields: (p.fields || []).map((f: any) => ({
+            ...f,
+            id: generateId(),
+            label: f.label || f.title || 'Untitled Field',
+            type: (f.type || 'SHORT_TEXT').toUpperCase(),
+            settings: {
+              general: {
+                hideLabel: f.settings?.general?.hideLabel ?? false,
+                size: f.settings?.general?.size || 'col-12',
+                visibility: f.settings?.general?.visibility || 'NORMAL',
+                placeholder: f.settings?.general?.placeholder || '',
+                tooltip: f.settings?.general?.tooltip || ''
+              },
+              specific: {
+                ...f.settings?.specific,
+                customOptions: Array.isArray(f.settings?.specific?.options) 
+                  ? f.settings.specific.options.join('\n') 
+                  : f.settings?.specific?.customOptions || '',
+                tableColumns: f.settings?.specific?.tableColumns || []
+              },
+              validation: {
+                fieldRule: f.settings?.validation?.fieldRule || 'OPTIONAL',
+                ...f.settings?.validation
+              },
+              aiSettings: f.settings?.aiSettings || {},
+              lookupSettings: f.settings?.lookupSettings || {}
+            }
+          }))
+        }))
+
+        return {
+          ...state,
+          name: data.name || state.name,
+          description: data.description || state.description,
+          panels: panels.length > 0 ? panels : state.panels,
+          layout: data.layout || state.layout,
+          formType: data.formType || state.formType,
+          welcomePage: data.welcomePage ? { ...state.welcomePage, ...data.welcomePage } : state.welcomePage,
+          thankYouPage: data.thankYouPage ? { ...state.thankYouPage, ...data.thankYouPage } : state.thankYouPage,
+          showWelcomePage: data.welcomePage?.enabled ?? state.showWelcomePage,
+          showThankYouPage: data.thankYouPage?.enabled ?? state.showThankYouPage,
+          activeQuestionId: null,
+          selectionType: 'general'
+        }
       }),
+
 
       clearLastAddedPanelId: () => set({ lastAddedPanelId: null }),
 
       loadForm: (data: any) => {
         if (!data || !data.formJson) return
         const json = data.formJson
+        const genSettings = json.settings?.general || {}
+        
         set({
           uid: data.uid || generateId(),
-          name: json.settings?.general?.name || 'Untitled Form',
-          description: json.settings?.general?.description || '',
+          name: genSettings.name || 'Untitled Form',
+          description: genSettings.description || '',
           panels: json.panels || [],
           secondaryPanels: json.secondaryPanels || [],
           activeQuestionId: null,
-          layout: json.settings?.general?.layout || 'CLASSIC',
-          formType: json.settings?.general?.type || 'WORKFLOW',
+          layout: genSettings.layout || 'typeform',
+          formType: ['WORKFLOW', 'FEEDBACK'].includes(genSettings.type) 
+            ? genSettings.type 
+            : 'WORKFLOW',
+          coordinator: genSettings.coordinator || '',
           publishStatus: json.settings?.publish?.publishOption || 'DRAFT',
           hubLinkIds: json.settings?.hubLinkIds || [],
-          // Map other settings as needed
         })
       },
 
-      resetForm: () => set({ ...initialState, uid: generateId() })
+
+      resetForm: () => set({ ...initialState, uid: generateId() }),
+
+      saveForm: async (targetStatus) => {
+        const state = get()
+        const currentStatus = targetStatus || state.publishStatus
+        
+        // Update status in state if targetStatus provided
+        if (targetStatus) {
+           set({ publishStatus: targetStatus })
+        }
+
+        const payload = cleanFormPayload({ ...state, publishStatus: currentStatus })
+        
+        // Mandatory check: at least one field
+        const hasFields = state.panels.some(p => p.fields.length > 0)
+        if (!hasFields) {
+           notifications.show({
+             title: 'Empty Form',
+             message: 'Please add at least one field to your form before saving.',
+             color: 'orange'
+           })
+           return false
+        }
+
+        try {
+           console.log('[FormStore] Attempting to save form...', { uid: state.uid, name: state.name, status: currentStatus })
+           let response;
+           
+           const path = window.location.pathname
+           const isCreation = path === '/form-builder' || path === '/form-builder/' || path.endsWith('/form-builder')
+           
+           console.log('[FormStore] Mode:', isCreation ? 'CREATE' : 'UPDATE', 'Path:', path)
+
+           if (!isCreation) {
+              const parts = path.split('/')
+              const formId = parts[parts.length - 1]
+              console.log('[FormStore] Calling updateForm:', formId)
+              response = await formApi.updateForm(formId, payload)
+           } else {
+              console.log('[FormStore] Calling createForm...')
+              response = await formApi.createForm(payload)
+           }
+           
+           console.log('[FormStore] API Response:', response)
+
+           if (response.error) {
+             console.error('[FormStore] Save failed with error:', response.error)
+
+             notifications.show({
+               title: 'Error Saving Form',
+               message: response.error,
+               color: 'red'
+             })
+             return false
+           }
+
+           notifications.show({
+             title: 'Success!',
+             message: `Your form has been ${currentStatus === 'PUBLISHED' ? 'published' : 'saved'} successfully.`,
+             color: 'teal'
+           })
+           return true
+        } catch (error) {
+          console.error('Save failed:', error)
+          notifications.show({
+            title: 'Unexpected Error',
+            message: 'An unexpected error occurred while saving.',
+            color: 'red'
+          })
+          return false
+        }
+      }
     }),
+
+
+
     {
       name: 'form-builder-storage-v3',
       version: 3,
@@ -446,8 +594,10 @@ export const cleanFormPayload = (state: any) => {
                 name: state.name,
                 description: state.description,
                 layout: state.layout,
-                type: state.formType
+                type: state.formType,
+                coordinator: state.coordinator
             },
+
             rules: [],
             publish: {
                 publishOption: state.publishStatus,

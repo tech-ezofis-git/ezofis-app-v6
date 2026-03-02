@@ -22,7 +22,7 @@ const Table = () => {
       id: 'name',
       label: 'Name',
       size: 200,
-      renderCell: (row) => (
+      renderCell: (row: any) => (
         <span
           onClick={() => navigate({ params: { formId: row.uid || row.id }, to: '/form-builder/$formId' })}
           className='cursor-pointer font-medium underline transition-colors hover:text-gray-13'
@@ -36,7 +36,7 @@ const Table = () => {
       id: 'status',
       label: 'Status',
       size: 140,
-      renderCell: (row) => (
+      renderCell: (row: any) => (
         <FormStatusBadge
           status={(row._json?.settings?.publish?.publishOption || row.publishOption) as Form['status']}
         />
@@ -50,7 +50,7 @@ const Table = () => {
       isDisplayColumn: true,
       label: 'Favourite',
       size: 40,
-      renderCell: (row) => (
+      renderCell: (row: any) => (
         <div className='flex items-center justify-center'>
           <IconButton
             className='group'
@@ -68,7 +68,7 @@ const Table = () => {
       id: 'description',
       label: 'Description',
       size: 240,
-      renderCell: (row) => (
+      renderCell: (row: any) => (
         <span className='text-gray-10 line-clamp-1'>
           {row._json?.settings?.general?.description || row.description || '-'}
         </span>
@@ -79,7 +79,7 @@ const Table = () => {
       id: 'type',
       label: 'Type',
       size: 140,
-      renderCell: (row) => (
+      renderCell: (row: any) => (
         <FormTypeBadge type={(row._json?.settings?.general?.type || row.type) as Form['type']} />
       ),
     },
@@ -92,7 +92,7 @@ const Table = () => {
       id: 'createdAt',
       label: 'Created At',
       size: 200,
-      renderCell: (row) => formatDatetime(row.createdAt as string, 'datetime'),
+      renderCell: (row: any) => formatDatetime(row.createdAt as string, 'datetime'),
     },
     {
       id: 'updatedBy',
@@ -103,7 +103,7 @@ const Table = () => {
       id: 'updatedAt',
       label: 'Last Modified At',
       size: 200,
-      renderCell: (row) => formatDatetime(row.updatedAt as string, 'datetime'),
+      renderCell: (row: any) => formatDatetime(row.updatedAt as string, 'datetime'),
     },
     {
       className: 'p-1',
@@ -112,7 +112,7 @@ const Table = () => {
       isDisplayColumn: true,
       label: 'Actions',
       size: 40,
-      renderCell: (row) => (
+      renderCell: (row: any) => (
         <div className='flex items-center justify-center'>
           <Menu
             position='bottom-end'

@@ -11,7 +11,7 @@ export const getField = (fieldType: string) => {
     
     const baseField = {
         id,
-        label: fieldType.replace(/_/g, ' ').toLowerCase(),
+        label: fieldType.toLowerCase() === 'text_builder' ? 'Paragraph' : fieldType.replace(/_/g, ' ').toLowerCase(),
         displayLabel: "",
         type: fieldType.toUpperCase(),
         settings: {
@@ -32,11 +32,11 @@ export const getField = (fieldType: string) => {
                 separateOptionsUsing: "COMMA",
                 allowToAddNewOptions: false,
                 optionsPerLine: 0,
-                tableColumns: [],
+                tableColumns: [] as any[],
                 tableRowsType: "ON_DEMAND",
-                matrixColumns: [],
-                matrixRows: [],
-                fibFields: [],
+                matrixColumns: [] as any[],
+                matrixRows: [] as any[],
+                fibFields: [] as any[],
                 autoGenerateValue: { prefix: "", suffix: "" }
             },
             validation: {

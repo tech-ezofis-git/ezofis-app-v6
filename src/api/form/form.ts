@@ -27,7 +27,7 @@ const createForm = async (payload: any) => {
     const response: any = { data: null, error: '' }
     try {
         const { status, data } = await axiosCrypto.post('/form', payload)
-        if (status !== 200 && status !== 201) throw new Error('Invalid status code')
+        if (![200, 201, 202].includes(status)) throw new Error(`Invalid status code ${status}`)
         response.data = data // Should be Form ID (String)
     } catch (e) {
         console.error(e)
@@ -40,12 +40,16 @@ const updateForm = async (id: string, payload: any) => {
     const response: any = { data: null, error: '' }
     try {
         const { status, data } = await axiosCrypto.put(`/form/${id}`, payload)
-        if (status !== 200) throw new Error('Invalid status code')
+        if (![200, 201, 202, 204].includes(status)) {
+            console.error(`[formApi.updateForm] Error: Invalid status code ${status}`, data)
+            throw new Error(`Invalid status code ${status}`)
+        }
         response.data = data // Success Message
-    } catch (e) {
-        console.error(e)
-        response.error = 'Error updating form'
+    } catch (e: any) {
+        console.error('[formApi.updateForm] Failed:', e)
+        response.error = e.message || 'Error updating form'
     }
+
     return response
 }
 

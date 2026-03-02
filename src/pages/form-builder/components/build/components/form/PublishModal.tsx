@@ -2,6 +2,7 @@ import { Modal, TextInput, Textarea, Button, Text, Group, Stack, UnstyledButton 
 import { useFormStore } from '@/pages/form-builder/store/formStore'
 import Icon from '@/components/base/icon/Icon'
 import cn from '@/utils/cn'
+import { useState } from 'react'
 
 const PublishModal = () => {
     const {
@@ -12,14 +13,35 @@ const PublishModal = () => {
         description,
         setDescription,
         previewMode,
-        setPreviewMode
+        setPreviewMode,
+        saveForm
     } = useFormStore()
+
+    const [isSavingDraft, setIsSavingDraft] = useState(false)
+    const [isPublishing, setIsPublishing] = useState(false)
 
     const layouts = [
         { id: 'typeform', name: 'Typeform', description: 'One question at a time', icon: 'tabler:square-rotated' },
         { id: 'grid', name: 'Grid', description: 'Classic multi-column layout', icon: 'tabler:layout-grid' },
         { id: 'full', name: 'Full', description: 'Single column vertical flow', icon: 'tabler:layout-list' }
     ]
+
+    const handleAction = async (status: 'DRAFT' | 'PUBLISHED') => {
+        if (status === 'DRAFT') setIsSavingDraft(true)
+        else setIsPublishing(true)
+
+        try {
+            const success = await saveForm(status)
+            if (success) {
+                setPublishOpen(false)
+            }
+        } finally {
+            setIsSavingDraft(false)
+            setIsPublishing(false)
+        }
+    }
+
+
 
     return (
         <Modal
@@ -35,7 +57,7 @@ const PublishModal = () => {
             }}
             transitionProps={{ transition: 'slide-up', duration: 300 }}
         >
-            <div className="overflow-hidden font-inter">
+            <div className="overflow-hidden font-inter border border-surface-secondary shadow-2xl">
                 {/* Header */}
                 <div className="p-6 bg-gradient-to-br from-accent-primary to-indigo-600 text-white relative">
                     <div className="relative z-10">
@@ -55,30 +77,36 @@ const PublishModal = () => {
                     </div>
                 </div>
 
-                <div className="p-6 space-y-6">
+                <div className="p-6 space-y-6 bg-surface-primary">
                     {/* Basic Info */}
                     <Stack gap="md">
                         <TextInput
-                            label="Deployment Name"
+                            label={<Text size="xs" fw={700} className="text-gray-11 mb-1 uppercase tracking-wider">Deployment Name</Text>}
                             value={name}
                             onChange={(e) => setName(e.target.value)}
                             placeholder="e.g. Q1 Customer Survey"
                             size="sm"
+                            classNames={{
+                                input: 'bg-gray-50 border-gray-2 focus:border-accent-primary transition-colors h-11'
+                            }}
                         />
                         <Textarea
-                            label="Form Description"
+                            label={<Text size="xs" fw={700} className="text-gray-11 mb-1 uppercase tracking-wider">Form Description</Text>}
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
                             placeholder="Add a description for your team..."
                             autosize
                             minRows={2}
                             size="sm"
+                            classNames={{
+                                input: 'bg-gray-50 border-gray-2 focus:border-accent-primary transition-colors'
+                            }}
                         />
                     </Stack>
 
                     {/* Layout Selector */}
                     <div>
-                        <Text size="sm" fw={700} className="text-gray-12 mb-3">Choose Display Layout</Text>
+                        <Text size="xs" fw={700} className="text-gray-11 mb-3 uppercase tracking-wider">Choose Display Layout</Text>
                         <div className="grid grid-cols-1 gap-2">
                             {layouts.map((layout) => {
                                 const isActive = previewMode === layout.id
@@ -117,21 +145,37 @@ const PublishModal = () => {
                     </div>
 
                     {/* Footer */}
-                    <div className="pt-2">
-                        <Button
-                            fullWidth
-                            size="md"
-                            radius="xl"
-                            bg="accent-primary"
-                            className="hover:opacity-90 transition-all font-bold shadow-lg shadow-accent-soft/30 h-12"
-                            onClick={() => setPublishOpen(false)}
-                        >
-                            Save & Deploy
-                        </Button>
-                        <Text size="10px" className="text-center text-gray-4 mt-3 uppercase tracking-widest font-black">
+                    <div className="pt-2 flex flex-col gap-3">
+                        <Group grow gap="md">
+                            <Button
+                                variant="light"
+                                color="gray"
+                                size="md"
+                                radius="xl"
+                                loading={isSavingDraft}
+                                disabled={isPublishing}
+                                className="font-bold text-[11px] uppercase tracking-wider h-11"
+                                onClick={() => handleAction('DRAFT')}
+                            >
+                                Save Draft
+                            </Button>
+                            <Button
+                                size="md"
+                                radius="xl"
+                                bg="accent-primary"
+                                loading={isPublishing}
+                                disabled={isSavingDraft}
+                                className="hover:scale-[1.02] active:scale-95 transition-all font-bold shadow-lg shadow-accent-soft/30 h-11 text-[11px] uppercase tracking-wider"
+                                onClick={() => handleAction('PUBLISHED')}
+                            >
+                                Publish
+                            </Button>
+                        </Group>
+                        <Text size="10px" className="text-center text-gray-4 mt-1 uppercase tracking-widest font-black">
                             Deployment version 1.0.4
                         </Text>
                     </div>
+
                 </div>
             </div>
         </Modal>
@@ -139,3 +183,4 @@ const PublishModal = () => {
 }
 
 export default PublishModal
+
