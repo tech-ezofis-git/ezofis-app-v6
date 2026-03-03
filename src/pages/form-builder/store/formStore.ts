@@ -35,6 +35,7 @@ export type QuestionType =
   | 'DIVIDER'
   | 'LABEL'
   | 'RATING'
+  | 'OPINION_SCALE'
   | 'COUNTER'
   | 'CALCULATED'
   | 'COUNTRY_CODE'
@@ -61,13 +62,14 @@ export interface Question {
       hidden?: boolean
       readOnly?: boolean
       tooltip?: string
-      dividerType?: string
       url?: string
     }
     specific: {
       defaultValue?: string
       customDefaultValue?: any
       optionsType?: string
+      optionsSource?: string
+      dividerStyle?: 'SOLID' | 'DASHED' | 'DOTTED'
       customOptions?: string
       separateOptionsUsing?: string
       allowToAddNewOptions?: boolean
@@ -75,10 +77,20 @@ export interface Question {
       tableColumns?: any[]
       columns?: any[]
       tableRowsType?: string
+      numRows?: number
       matrixColumns?: any[]
       matrixRows?: any[]
+      matrixRowLabels?: string[]
+      matrixColumnLabels?: string[]
       fibFields?: any[]
-      autoGenerateValue?: { prefix: string, suffix: string }
+      autoGenerateValue?: { enabled: boolean, prefix: string, suffix: string }
+      iconType?: 'STAR' | 'HEART'
+      iconCount?: number
+      allowHalfRating?: boolean
+      allowMultipleFiles?: boolean
+      allowMultipleSignatures?: boolean
+      maxLevel?: number
+      childFieldType?: string
     }
     validation: {
       fieldRule: 'OPTIONAL' | 'REQUIRED'
@@ -87,10 +99,19 @@ export interface Question {
       maximum?: string | number
       allowedFileTypes?: string[]
       maxFileSize?: number
+      dateRange?: 'PAST' | 'FUTURE' | 'CUSTOM'
+      timeRange?: string
+      correctAnswer?: string
     }
     aiSettings: {
       validateTypeKeyword?: string
-      formControlValidate?: { masterFormId: number, masterFormColumn: any[] }
+      formControlValidate?: { masterFormId: number, masterFormColumn: any[], conditionFields?: string[] }
+      fileValidation?: {
+        enableExtraction?: boolean
+        extractionRules?: string
+        enableClassification?: boolean
+        classificationRules?: string
+      }
     }
     lookupSettings: {
       columnName?: string
@@ -98,6 +119,7 @@ export interface Question {
     }
   }
 }
+
 
 export interface Panel {
   id: string

@@ -52,8 +52,64 @@ const Page = ({ panel, panelIndex }: Props) => {
     }, [lastAddedPanelId, panel.id, clearLastAddedPanelId])
 
     const handleAddField = (type: string, index: number) => {
-        const newQuestion = getField(type)
-        addQuestion(panel.id, newQuestion as Question, index)
+        if (type === 'FULL_NAME') {
+            const firstName = getField('SHORT_TEXT')
+            firstName.label = 'First Name'
+            firstName.settings.general.size = 'col-6'
+
+            const lastName = getField('SHORT_TEXT')
+            lastName.label = 'Last Name'
+            lastName.settings.general.size = 'col-6'
+
+            addQuestion(panel.id, firstName as Question, index)
+            addQuestion(panel.id, lastName as Question, index + 1)
+        } else if (type === 'CONTACT_INFO') {
+            const name = getField('SHORT_TEXT')
+            name.label = 'Full Name'
+
+            const email = getField('EMAIL')
+            const phone = getField('PHONE_NUMBER')
+            const company = getField('SHORT_TEXT')
+            company.label = 'Company'
+
+            addQuestion(panel.id, name as Question, index)
+            addQuestion(panel.id, email as Question, index + 1)
+            addQuestion(panel.id, phone as Question, index + 2)
+            addQuestion(panel.id, company as Question, index + 3)
+        } else if (type === 'ADDRESS' || type === 'ADDRESS_INFO') {
+            const street = getField('SHORT_TEXT')
+            street.label = 'Street Address'
+            street.settings.general.size = 'col-12'
+
+            const city = getField('SHORT_TEXT')
+            city.label = 'City'
+            city.settings.general.size = 'col-6'
+
+            const state = getField('SHORT_TEXT')
+            state.label = 'State / Province'
+            state.settings.general.size = 'col-6'
+
+            const zip = getField('SHORT_TEXT')
+            zip.label = 'Zip / Postal Code'
+            zip.settings.general.size = 'col-6'
+
+            const country = getField('COUNTRY_CODE')
+            country.settings.general.size = 'col-6'
+
+            addQuestion(panel.id, street as Question, index)
+            addQuestion(panel.id, city as Question, index + 1)
+            addQuestion(panel.id, state as Question, index + 2)
+            addQuestion(panel.id, zip as Question, index + 3)
+            addQuestion(panel.id, country as Question, index + 4)
+        } else if (type === 'OPINION_SCALE') {
+            const rating = getField('RATING') as any
+            rating.label = 'How would you rate your experience?'
+            rating.settings.specific.iconCount = 10
+            addQuestion(panel.id, rating as Question, index)
+        } else {
+            const newQuestion = getField(type)
+            addQuestion(panel.id, newQuestion as Question, index)
+        }
         setShowAddFieldAt(null)
         setAddFieldAnchorRect(null)
     }

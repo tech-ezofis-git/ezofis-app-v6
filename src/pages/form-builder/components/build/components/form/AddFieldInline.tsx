@@ -20,6 +20,7 @@ interface FieldType {
 
 const ALL_FIELDS: FieldType[] = [
     // Basic
+    { type: 'FULL_NAME', label: 'Full Name', icon: 'lucide:user', category: 'popular', description: 'Combined first & last name', iconColor: '#3b82f6', bgColor: 'bg-blue-50' },
     { type: 'SHORT_TEXT', label: 'Short Text', icon: 'mdi:form-textbox', category: 'popular', description: 'Single line text input', iconColor: '#3b82f6', bgColor: 'bg-blue-50' },
     { type: 'LONG_TEXT', label: 'Long Text', icon: 'mdi:form-textarea', category: 'popular', description: 'Multi-line text area', iconColor: '#10b981', bgColor: 'bg-emerald-50' },
     { type: 'NUMBER', label: 'Number', icon: 'tabler:number-123', category: 'popular', description: 'Numeric only entry', iconColor: '#f59e0b', bgColor: 'bg-amber-50' },
@@ -39,11 +40,13 @@ const ALL_FIELDS: FieldType[] = [
     // Templates
     { type: 'CONTACT_INFO', label: 'Contact Template', icon: 'lucide:contact', category: 'templates', description: 'Name, Email, Phone block', iconColor: '#ec4899', bgColor: 'bg-pink-50' },
     { type: 'ADDRESS_INFO', label: 'Address Template', icon: 'lucide:home', category: 'templates', description: 'Complete address group', iconColor: '#f97316', bgColor: 'bg-orange-50' },
+    { type: 'ADDRESS', label: 'Address', icon: 'lucide:map-pin', category: 'templates', description: 'Street, City, State, Zip', iconColor: '#f97316', bgColor: 'bg-orange-50' },
 
     // Advanced
     { type: 'TABLE', label: 'Table Grid', icon: 'lucide:table', category: 'advanced', description: 'Structured data table', iconColor: '#4f46e5', bgColor: 'bg-indigo-100' },
     { type: 'FILE_UPLOAD', label: 'File Upload', icon: 'lucide:file-up', category: 'advanced', description: 'Upload documents/images', iconColor: '#6366f1', bgColor: 'bg-indigo-50' },
     { type: 'RATING', label: 'Rating', icon: 'lucide:star', category: 'advanced', description: 'Star or scale rating', iconColor: '#f59e0b', bgColor: 'bg-amber-50' },
+    { type: 'OPINION_SCALE', label: 'Opinion Scale', icon: 'lucide:bar-chart', category: 'advanced', description: '1-10 rating scale', iconColor: '#f59e0b', bgColor: 'bg-amber-50' },
     { type: 'COUNTRY_CODE', label: 'Country', icon: 'lucide:globe', category: 'advanced', description: 'Location selector', iconColor: '#3b82f6', bgColor: 'bg-blue-100' },
 
     // Display

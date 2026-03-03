@@ -1,4 +1,4 @@
-import { SegmentedControl, Switch, Text, TextInput, Select, Textarea, Button, Divider, ActionIcon, Group, Paper, Stack, Tooltip, Box, Badge, UnstyledButton } from '@mantine/core'
+import { SegmentedControl, Switch, Text, TextInput, Select, Textarea, Button, Divider, ActionIcon, Group, Paper, Stack, Tooltip, Box, Badge, UnstyledButton, Collapse } from '@mantine/core'
 import { useFormStore, generateId, type Question } from '@/pages/form-builder/store/formStore'
 import Icon from '@/components/base/icon/Icon'
 import { useEffect, useState, useRef } from 'react'
@@ -35,6 +35,7 @@ const FIELD_ICONS: Record<string, string> = {
     COUNTRY_CODE: 'lucide:globe',
     CONTACT_INFO: 'lucide:contact',
     ADDRESS_INFO: 'lucide:home',
+    OPINION_SCALE: 'lucide:bar-chart',
 }
 
 const FieldSettings = () => {
@@ -116,15 +117,17 @@ const FieldSettings = () => {
     }
 
     // Deep update helper
-    const updateNested = (path: 'general' | 'validation' | 'specific', updates: any) => {
+    const updateNested = (path: any, updates: any) => {
         if (!activeQuestion) return
-        updateQuestion(activeQuestion.id, (q: Question) => ({
-            ...q,
+        updateQuestion(activeQuestion.id, {
             settings: {
-                ...q.settings,
-                [path]: { ...q.settings[path as keyof typeof q.settings], ...updates }
+                ...activeQuestion.settings,
+                [path]: {
+                    ... (activeQuestion.settings as any)[path],
+                    ...updates
+                }
             }
-        }))
+        })
     }
 
     // Memoized Header Props
@@ -389,145 +392,492 @@ const FieldSettings = () => {
                 headerProps={headerProps}
             />
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-5 custom-scrollbar">
-                <div className="space-y-4">
-                    <TextInput
-                        label={<Text size="13px" fw={500} className="text-gray-11 mb-1">Field Label</Text>}
-                        value={localLabel}
-                        onChange={(e) => setLocalLabel(e.target.value)}
-                        onBlur={() => updateQuestion(activeQuestion.id, { label: localLabel })}
-                        placeholder="e.g. What is your name?"
-                        size="sm"
-                        classNames={{ input: 'bg-gray-1 border-gray-2 focus:bg-white text-xs' }}
-                    />
+            <div className="flex-1 overflow-y-auto custom-scrollbar bg-gray-50/30">
+                {/* 1. GENERAL SECTION */}
+                <CollapsibleSection
+                    title="General"
+                    icon="lucide:settings-2"
+                    accentColor="bg-purple-9"
+                    iconColor="text-purple-9"
+                    defaultOpen={true}
+                >
+                    {/* A. Identity */}
+                    <Stack gap="sm">
+                        <TextInput
+                            label={<Text size="xs" fw={700} className="text-gray-9 uppercase tracking-wider mb-1.5 flex items-center gap-2">
+                                <Icon name="lucide:type" width={14} height={14} /> Field Name
+                            </Text>}
+                            value={activeQuestion.label}
+                            onChange={(e) => updateQuestion(activeQuestion.id, { label: e.target.value })}
+                            placeholder="Enter field label..."
+                            size="sm"
+                            classNames={{ input: 'bg-white border-gray-2 rounded-xl' }}
+                        />
 
-                    <Textarea
-                        label={<Text size="13px" fw={500} className="text-gray-11 mb-1">Description</Text>}
-                        value={localDesc}
-                        onChange={(e) => setLocalDesc(e.target.value)}
-                        onBlur={() => updateNested('general', { description: localDesc })}
-                        placeholder="Add extra instructions..."
-                        autosize
-                        minRows={2}
-                        size="sm"
-                        classNames={{ input: 'bg-gray-1 border-gray-2 focus:bg-white text-xs' }}
-                    />
+                        <div className="flex items-center justify-between py-1 px-1">
+                            <Text size="xs" fw={700} className="text-gray-11 uppercase tracking-wider">Hide Label</Text>
+                            <Switch
+                                checked={activeQuestion.settings.general.hideLabel || false}
+                                onChange={(e) => updateNested('general', { hideLabel: e.currentTarget.checked })}
+                                size="xs" color="violet" />
+                        </div>
+                    </Stack>
 
-                    <TextInput
-                        label={<Text size="13px" fw={500} className="text-gray-11 mb-1">Placeholder</Text>}
-                        value={localPlaceholder}
-                        onChange={(e) => setLocalPlaceholder(e.target.value)}
-                        onBlur={() => updateNested('general', { placeholder: localPlaceholder })}
-                        placeholder="e.g. Type here..."
-                        size="sm"
-                        classNames={{ input: 'bg-gray-1 border-gray-2 focus:bg-white text-xs' }}
-                    />
-                </div>
+                    <Divider className="border-gray-1 dotted" />
 
-                <Divider className="border-gray-2" />
+                    {/* B. Layout & Visibility */}
+                    <div className="space-y-4">
+                        <div className="space-y-2">
+                            <Text size="xs" fw={700} className="text-gray-11 uppercase tracking-wider mb-1.5 px-0.5">Field Width</Text>
+                            <SegmentedControl
+                                value={activeQuestion.settings.general.size || 'col-12'}
+                                onChange={(val) => updateNested('general', { size: val })}
+                                size="xs"
+                                radius="md"
+                                fullWidth
+                                data={[
+                                    { label: 'Full', value: 'col-12' },
+                                    { label: '1/2', value: 'col-6' },
+                                    { label: '1/3', value: 'col-4' }
+                                ]}
+                                classNames={{ root: 'bg-gray-1 p-1', indicator: 'bg-white shadow-sm' }}
+                            />
+                        </div>
 
-                <div className="space-y-4">
-                    <div>
-                        <Text size="13px" fw={500} mb="xs" className="text-gray-11">Field Width</Text>
-                        <SegmentedControl
-                            value={sizeMap[activeQuestion.settings.general.size] || 'full'}
-                            onChange={(value) => updateNested('general', { size: sizeMap[value] })}
-                            fullWidth
-                            size="xs"
-                            data={[
-                                { label: 'Full', value: 'full' },
-                                { label: '1/2', value: '1/2' },
-                                { label: '1/3', value: '1/3' },
-                            ]}
+                        <Select
+                            label={<Text size="xs" fw={700} className="text-gray-11 uppercase tracking-wider mb-1.5">Visibility</Text>}
+                            value={activeQuestion.settings.general.visibility || 'NORMAL'}
+                            onChange={(val) => updateNested('general', { visibility: val })}
+                            data={[{ label: 'Normal', value: 'NORMAL' }, { label: 'Read Only', value: 'READ_ONLY' }, { label: 'Hidden', value: 'HIDDEN' }]}
+                            size="sm"
+                            classNames={{ input: 'bg-white border-gray-2 rounded-xl' }}
                         />
                     </div>
 
-                    <div className="space-y-3">
-                        <div className="flex items-center justify-between py-2 border-b border-gray-1">
-                            <Text size="xs" fw={500} className="text-gray-11">Required</Text>
-                            <Switch
-                                checked={activeQuestion.settings.validation.fieldRule === 'REQUIRED'}
-                                onChange={(e) => updateNested('validation', { fieldRule: e.currentTarget.checked ? 'REQUIRED' : 'NONE' })}
-                                size="xs" color="violet" />
-                        </div>
+                    <Divider className="border-gray-1 dotted" />
 
-                        <div className="flex items-center justify-between py-2 border-b border-gray-1">
-                            <Text size="xs" fw={500} className="text-gray-11">Hidden Field</Text>
-                            <Switch
-                                checked={activeQuestion.settings.general.hidden || false}
-                                onChange={(e) => updateNested('general', { hidden: e.currentTarget.checked })}
-                                size="xs" color="violet" />
-                        </div>
-
-                        <div className="flex items-center justify-between py-2">
-                            <div>
-                                <Text size="xs" fw={500} className="text-gray-11">Read Only</Text>
-                                <Text size="10px" className="text-gray-6">User cannot edit this field</Text>
-                            </div>
-                            <Switch
-                                checked={activeQuestion.settings.general.readOnly || false}
-                                onChange={(e) => updateNested('general', { readOnly: e.currentTarget.checked })}
-                                size="xs" color="violet" />
-                        </div>
+                    {/* C. Assets */}
+                    <div className="space-y-4">
+                        <TextInput
+                            label={<Text size="xs" fw={700} className="text-gray-11 uppercase tracking-wider mb-1.5">Placeholder</Text>}
+                            value={activeQuestion.settings.general.placeholder || ''}
+                            onChange={(e) => updateNested('general', { placeholder: e.target.value })}
+                            placeholder="Ghost text..."
+                            size="sm"
+                            classNames={{ input: 'bg-white border-gray-2 rounded-xl' }}
+                        />
+                        <TextInput
+                            label={<Text size="xs" fw={700} className="text-gray-11 uppercase tracking-wider mb-1.5">Tooltip</Text>}
+                            value={activeQuestion.settings.general.tooltip || ''}
+                            onChange={(e) => updateNested('general', { tooltip: e.target.value })}
+                            placeholder="Help text on hover..."
+                            size="sm"
+                            classNames={{ input: 'bg-white border-gray-2 rounded-xl' }}
+                        />
+                        {activeQuestion.type === 'DIVIDER' && (
+                            <Select
+                                label={<Text size="xs" fw={700} className="text-gray-11 uppercase tracking-wider mb-1.5">Divider Style</Text>}
+                                value={activeQuestion.settings.specific.dividerStyle || 'SOLID'}
+                                onChange={(val) => updateNested('specific', { dividerStyle: val })}
+                                data={[{ label: 'Solid', value: 'SOLID' }, { label: 'Dashed', value: 'DASHED' }, { label: 'Dotted', value: 'DOTTED' }]}
+                                size="sm"
+                                classNames={{ input: 'bg-white border-gray-2 rounded-xl' }}
+                            />
+                        )}
                     </div>
-                </div>
+                </CollapsibleSection>
 
-                {activeQuestion.type === 'TABLE' && (
-                    <>
-                        <Divider className="border-gray-2" />
-                        <div className="space-y-4">
-                            <Group justify="space-between">
-                                <Text size="xs" fw={600} className="text-gray-11 uppercase tracking-wider">Columns</Text>
-                                <ActionIcon
-                                    variant="subtle"
-                                    size="sm"
-                                    className="hover:bg-gray-2 transition-all"
-                                    onClick={() => {
-                                        const newColumn = { id: generateId(), label: `Column ${(activeQuestion.settings.specific.columns?.length || 0) + 1} `, type: 'SHORT_TEXT', size: 'col-6' }
-                                        updateNested('specific', { columns: [...(activeQuestion.settings.specific.columns || []), newColumn] })
-                                    }}
-                                >
-                                    <Icon name="tabler:plus" width={14} height={14} />
-                                </ActionIcon>
-                            </Group>
-
+                {/* 2. CONFIGURATION SECTION */}
+                <CollapsibleSection
+                    title="Configuration"
+                    icon="lucide:settings"
+                    accentColor="bg-indigo-9"
+                    iconColor="text-indigo-9"
+                >
+                    {/* A. Choice Options */}
+                    {['SINGLE_SELECT', 'MULTI_SELECT', 'SINGLE_CHOICE', 'MULTIPLE_CHOICE'].includes(activeQuestion.type) && (
+                        <Stack gap="md">
                             <div className="space-y-2">
-                                {(activeQuestion.settings.specific.columns || []).map((col: any, idx: number) => (
-                                    <Paper key={col.id} p="xs" withBorder className="bg-gray-1/50 border-gray-3">
-                                        <div className="space-y-2">
-                                            <Group gap="xs" wrap="nowrap">
-                                                <Icon name="tabler:grip-vertical" width={13} height={13} className="text-gray-5 cursor-grab" />
-                                                <TextInput size="xs" placeholder="Column Name" value={col.label} className="flex-1" onChange={(e) => {
-                                                    const newCols = [...(activeQuestion.settings.specific.columns || [])]
-                                                    newCols[idx] = { ...col, label: e.target.value }
-                                                    updateNested('specific', { columns: newCols })
-                                                }} />
-                                                <ActionIcon variant="subtle" color="red" size="xs" className="hover:bg-red-50 transition-all" onClick={() => {
-                                                    const newCols = (activeQuestion.settings.specific.columns || []).filter((c: any) => c.id !== col.id)
-                                                    updateNested('specific', { columns: newCols })
-                                                }}>
-                                                    <Icon name="tabler:x" width={12} height={12} />
-                                                </ActionIcon>
-                                            </Group>
-                                            <Group gap="xs" grow>
-                                                <Select size="xs" data={[{ label: 'Short Text', value: 'SHORT_TEXT' }, { label: 'Long Text', value: 'LONG_TEXT' }, { label: 'Number', value: 'NUMBER' }, { label: 'Date', value: 'DATE' }, { label: 'Choices', value: 'CHOICES' }]} value={col.type} onChange={(val) => {
-                                                    const newCols = [...(activeQuestion.settings.specific.columns || [])]
-                                                    newCols[idx] = { ...col, type: val as any }
-                                                    updateNested('specific', { columns: newCols })
-                                                }} />
-                                                <Select size="xs" data={[{ label: 'Small', value: 'col-3' }, { label: 'Medium', value: 'col-6' }, { label: 'Large', value: 'col-12' }]} value={col.size} onChange={(val) => {
-                                                    const newCols = [...(activeQuestion.settings.specific.columns || [])]
-                                                    newCols[idx] = { ...col, size: val as any }
-                                                    updateNested('specific', { columns: newCols })
-                                                }} />
-                                            </Group>
-                                        </div>
-                                    </Paper>
-                                ))}
+                                <Text size="xs" fw={700} className="text-gray-11 uppercase tracking-wider px-0.5">Options Source</Text>
+                                <SegmentedControl
+                                    value={activeQuestion.settings.specific.optionsSource || 'CUSTOM'}
+                                    onChange={(val) => updateNested('specific', { optionsSource: val })}
+                                    size="xs"
+                                    radius="md"
+                                    fullWidth
+                                    data={[{ label: 'Custom', value: 'CUSTOM' }, { label: 'Lookup', value: 'LOOKUP' }]}
+                                    classNames={{ root: 'bg-gray-1 p-1', indicator: 'bg-white shadow-sm' }}
+                                />
+                            </div>
+                            {activeQuestion.settings.specific.optionsSource === 'LOOKUP' ? (
+                                <Select
+                                    label={<Text size="xs" fw={700} className="text-gray-11 uppercase tracking-wider mb-1.5">Master Data</Text>}
+                                    placeholder="Select source..."
+                                    data={['Countries', 'Departments', 'Employees']}
+                                    size="sm"
+                                    classNames={{ input: 'bg-white border-gray-2 rounded-xl' }}
+                                />
+                            ) : (
+                                <div className="space-y-2">
+                                    <Text size="xs" fw={700} className="text-gray-11 uppercase tracking-wider px-0.5">Manage Options</Text>
+                                    <div className="p-3 bg-gray-50 border border-gray-2 rounded-xl text-center">
+                                        <Text size="xs" className="text-gray-6 italic">Dynamic option editor placeholder</Text>
+                                    </div>
+                                </div>
+                            )}
+                        </Stack>
+                    )}
+
+                    {/* B. Data Automation */}
+                    <Stack gap="md">
+                        <TextInput
+                            label={<Text size="xs" fw={700} className="text-gray-11 uppercase tracking-wider mb-1.5">Default Value</Text>}
+                            value={activeQuestion.settings.specific.defaultValue || ''}
+                            onChange={(e) => updateNested('specific', { defaultValue: e.target.value })}
+                            placeholder="Static value..."
+                            size="sm"
+                            classNames={{ input: 'bg-white border-gray-2 rounded-xl' }}
+                        />
+                        <div className="flex items-center justify-between py-1 px-1">
+                            <Text size="xs" fw={700} className="text-gray-11 uppercase tracking-wider">Auto-Generate Value</Text>
+                            <Switch
+                                checked={activeQuestion.settings.specific.autoGenerateValue?.enabled || false}
+                                onChange={(e) => updateNested('specific', { autoGenerateValue: { ...activeQuestion.settings.specific.autoGenerateValue, enabled: e.currentTarget.checked } })}
+                                size="xs" color="violet" />
+                        </div>
+                        {activeQuestion.settings.specific.autoGenerateValue?.enabled && (
+                            <div className="grid grid-cols-2 gap-3 p-3 bg-gray-50 border border-gray-2 rounded-xl animate-in slide-in-from-top-2">
+                                <TextInput
+                                    label="Prefix"
+                                    value={activeQuestion.settings.specific.autoGenerateValue.prefix || ''}
+                                    onChange={(e) => updateNested('specific', { autoGenerateValue: { ...activeQuestion.settings.specific.autoGenerateValue, prefix: e.target.value } })}
+                                    size="xs"
+                                />
+                                <Select
+                                    label="Suffix"
+                                    value={activeQuestion.settings.specific.autoGenerateValue.suffix || 'ID'}
+                                    onChange={(val) => updateNested('specific', { autoGenerateValue: { ...activeQuestion.settings.specific.autoGenerateValue, suffix: val } })}
+                                    data={[
+                                        { label: 'Date Time', value: 'DATE_TIME' },
+                                        { label: 'Unique ID', value: 'ID' },
+                                    ]}
+                                    size="xs"
+                                />
+                            </div>
+                        )}
+                    </Stack>
+
+                    {/* C. Rating */}
+                    {(activeQuestion.type === 'RATING' || activeQuestion.type === 'OPINION_SCALE') && (
+                        <Stack gap="sm">
+                            <Select
+                                label={<Text size="xs" fw={700} className="text-gray-11 uppercase tracking-wider mb-1.5">Icon Type</Text>}
+                                value={activeQuestion.settings.specific.iconType || 'STAR'}
+                                onChange={(val) => updateNested('specific', { iconType: val })}
+                                data={[{ label: 'Star', value: 'STAR' }, { label: 'Heart', value: 'HEART' }]}
+                                size="sm"
+                                classNames={{ input: 'bg-white border-gray-2 rounded-xl' }}
+                            />
+                            <Select
+                                label={<Text size="xs" fw={700} className="text-gray-11 uppercase tracking-wider mb-1.5">Icon Count</Text>}
+                                value={String(activeQuestion.settings.specific.iconCount || (activeQuestion.type === 'OPINION_SCALE' ? 10 : 5))}
+                                onChange={(val) => updateNested('specific', { iconCount: Number(val) })}
+                                data={[
+                                    { label: '5 Icons', value: '5' },
+                                    { label: '10 Icons', value: '10' },
+                                    { label: '11 Icons', value: '11' }
+                                ]}
+                                size="sm"
+                                classNames={{ input: 'bg-white border-gray-2 rounded-xl' }}
+                            />
+                            <div className="flex items-center justify-between py-1">
+                                <Text size="xs" fw={600} className="text-gray-11 uppercase tracking-wider">Allow Half Rating</Text>
+                                <Switch
+                                    checked={activeQuestion.settings.specific.allowHalfRating || false}
+                                    onChange={(e) => updateNested('specific', { allowHalfRating: e.currentTarget.checked })}
+                                    size="xs" color="violet" />
+                            </div>
+                        </Stack>
+                    )}
+
+                    {/* D. File Upload */}
+                    {activeQuestion.type === 'FILE_UPLOAD' && (
+                        <Stack gap="sm">
+                            <div className="flex items-center justify-between py-1 border-b border-gray-1">
+                                <Text size="xs" fw={600} className="text-gray-11 uppercase tracking-wider">Allow Multiple Files</Text>
+                                <Switch
+                                    checked={activeQuestion.settings.specific.allowMultipleFiles || false}
+                                    onChange={(e) => updateNested('specific', { allowMultipleFiles: e.currentTarget.checked })}
+                                    size="xs" color="violet" />
+                            </div>
+                            <div className="flex items-center justify-between py-1">
+                                <Text size="xs" fw={600} className="text-gray-11 uppercase tracking-wider">Allow Multiple Signatures</Text>
+                                <Switch
+                                    checked={activeQuestion.settings.specific.allowMultipleSignatures || false}
+                                    onChange={(e) => updateNested('specific', { allowMultipleSignatures: e.currentTarget.checked })}
+                                    size="xs" color="violet" />
+                            </div>
+                        </Stack>
+                    )}
+
+                    {/* E. Table / Matrix */}
+                    {['TABLE', 'MATRIX'].includes(activeQuestion.type) && (
+                        <Stack gap="sm">
+                            <Select
+                                label={<Text size="xs" fw={700} className="text-gray-11 uppercase tracking-wider mb-1.5">Rows Type</Text>}
+                                value={activeQuestion.settings.specific.tableRowsType || 'ON_DEMAND'}
+                                onChange={(val) => updateNested('specific', { tableRowsType: val })}
+                                data={[{ label: 'Fixed Rows', value: 'FIXED' }, { label: 'On Demand', value: 'ON_DEMAND' }]}
+                                size="sm"
+                                classNames={{ input: 'bg-white border-gray-2 rounded-xl' }}
+                            />
+                            {activeQuestion.type === 'TABLE' && (
+                                <div className="space-y-4">
+                                    <Group justify="space-between">
+                                        <Text size="xs" fw={800} className="text-gray-11 uppercase tracking-wider">Columns</Text>
+                                        <Button
+                                            variant="light"
+                                            size="compact-xs"
+                                            leftSection={<Icon name="tabler:plus" width={12} height={12} />}
+                                            onClick={() => {
+                                                const newColumn = { id: generateId(), label: `Column ${(activeQuestion.settings.specific.tableColumns?.length || 0) + 1} `, type: 'SHORT_TEXT', size: 'col-6' }
+                                                updateNested('specific', { tableColumns: [...(activeQuestion.settings.specific.tableColumns || []), newColumn] })
+                                            }}
+                                        >
+                                            Add Column
+                                        </Button>
+                                    </Group>
+                                    <div className="space-y-2">
+                                        {(activeQuestion.settings.specific.tableColumns || []).map((col: any, idx: number) => (
+                                            <Paper key={col.id} p="xs" withBorder className="bg-white border-gray-2 rounded-xl shadow-sm">
+                                                <Stack gap="xs">
+                                                    <Group gap="xs" wrap="nowrap">
+                                                        <TextInput size="xs" className="flex-1" value={col.label} onChange={(e) => {
+                                                            const newCols = [...(activeQuestion.settings.specific.tableColumns || [])]
+                                                            newCols[idx] = { ...col, label: e.target.value }
+                                                            updateNested('specific', { tableColumns: newCols })
+                                                        }} />
+                                                        <ActionIcon variant="subtle" color="red" size="xs" onClick={() => {
+                                                            const newCols = activeQuestion.settings.specific.tableColumns?.filter((c: any) => c.id !== col.id)
+                                                            updateNested('specific', { tableColumns: newCols })
+                                                        }}>
+                                                            <Icon name="tabler:x" width={12} height={12} />
+                                                        </ActionIcon>
+                                                    </Group>
+                                                    <Select
+                                                        size="xs"
+                                                        data={[{ label: 'Short Text', value: 'SHORT_TEXT' }, { label: 'Number', value: 'NUMBER' }, { label: 'Checkbox', value: 'BOOLEAN' }]}
+                                                        value={col.type}
+                                                        onChange={(val) => {
+                                                            const newCols = [...(activeQuestion.settings.specific.tableColumns || [])]
+                                                            newCols[idx] = { ...col, type: val }
+                                                            updateNested('specific', { tableColumns: newCols })
+                                                        }}
+                                                    />
+                                                </Stack>
+                                            </Paper>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                            {activeQuestion.type === 'MATRIX' && (
+                                <Stack gap="sm">
+                                    <Textarea
+                                        label={<Text size="xs" fw={700} className="text-gray-11 uppercase tracking-wider mb-1.5">Row Labels</Text>}
+                                        description="Enter one label per line"
+                                        value={activeQuestion.settings.specific.matrixRowLabels?.join('\n') || ''}
+                                        onChange={(e) => updateNested('specific', { matrixRowLabels: e.target.value.split('\n') })}
+                                        size="sm"
+                                        classNames={{ input: 'bg-white border-gray-2 rounded-xl' }}
+                                    />
+                                    <Textarea
+                                        label={<Text size="xs" fw={700} className="text-gray-11 uppercase tracking-wider mb-1.5">Column Labels</Text>}
+                                        description="Enter one label per line"
+                                        value={activeQuestion.settings.specific.matrixColumnLabels?.join('\n') || ''}
+                                        onChange={(e) => updateNested('specific', { matrixColumnLabels: e.target.value.split('\n') })}
+                                        size="sm"
+                                        classNames={{ input: 'bg-white border-gray-2 rounded-xl' }}
+                                    />
+                                </Stack>
+                            )}
+                        </Stack>
+                    )}
+                </CollapsibleSection>
+
+                <CollapsibleSection
+                    title="Rules"
+                    icon="lucide:shield-check"
+                    accentColor="bg-cyan-9"
+                    iconColor="text-cyan-9"
+                >
+                    <Stack gap="md">
+                        <div className="space-y-2">
+                            <div className="flex items-center gap-2 mb-1 px-0.5">
+                                <Icon name="lucide:alert-circle" width={14} height={14} className="text-red-9" />
+                                <Text size="xs" fw={700} className="text-gray-11 uppercase tracking-wider">Field Rule</Text>
+                            </div>
+                            <SegmentedControl
+                                size="xs"
+                                value={activeQuestion.settings.validation.fieldRule || 'OPTIONAL'}
+                                onChange={(val) => updateNested('validation', { fieldRule: val })}
+                                data={[{ label: 'Optional', value: 'OPTIONAL' }, { label: 'Required', value: 'REQUIRED' }]}
+                                classNames={{ root: 'bg-gray-1', indicator: 'bg-white shadow-sm' }}
+                            />
+                        </div>
+
+                        <Select
+                            label={<Text size="xs" fw={700} className="text-gray-11 uppercase tracking-wider mb-1.5">Content Type</Text>}
+                            value={activeQuestion.settings.validation.contentRule || ''}
+                            onChange={(val) => updateNested('validation', { contentRule: val })}
+                            data={[
+                                { label: 'No Restriction', value: '' },
+                                { label: 'Text Only', value: 'TEXT' },
+                                { label: 'Numeric Only', value: 'DECIMAL' },
+                                { label: 'Email', value: 'EMAIL' },
+                                { label: 'Phone', value: 'PHONE' },
+                                { label: 'Alphanumeric', value: 'ALPHANUMERIC' },
+                            ]}
+                            size="sm"
+                            classNames={{ input: 'bg-white border-gray-2 rounded-xl' }}
+                        />
+
+                        <Group grow gap="sm">
+                            <TextInput
+                                label={<Text size="10px" fw={700} className="text-gray-11 uppercase tracking-wider mb-1">Min Length/Value</Text>}
+                                value={activeQuestion.settings.validation.minimum || ''}
+                                onChange={(e) => updateNested('validation', { minimum: e.target.value })}
+                                size="xs"
+                                classNames={{ input: 'bg-white border-gray-2 rounded-md' }}
+                            />
+                            <TextInput
+                                label={<Text size="10px" fw={700} className="text-gray-11 uppercase tracking-wider mb-1">Max Length/Value</Text>}
+                                value={activeQuestion.settings.validation.maximum || ''}
+                                onChange={(e) => updateNested('validation', { maximum: e.target.value })}
+                                size="xs"
+                                classNames={{ input: 'bg-white border-gray-2 rounded-md' }}
+                            />
+                        </Group>
+
+                        {activeQuestion.type === 'FILE_UPLOAD' && (
+                            <Stack gap="sm" className="p-3 bg-gray-50 border border-gray-2 rounded-xl">
+                                <TextInput
+                                    label={<Text size="10px" fw={700} className="text-gray-11 uppercase tracking-wider mb-1">Allowed Extensions</Text>}
+                                    placeholder="pdf, docx, jpg"
+                                    value={activeQuestion.settings.validation.allowedFileTypes?.join(', ') || ''}
+                                    onChange={(e) => updateNested('validation', { allowedFileTypes: e.target.value.split(',').map(s => s.trim()) })}
+                                    size="xs"
+                                />
+                                <TextInput
+                                    label={<Text size="10px" fw={700} className="text-gray-11 uppercase tracking-wider mb-1">Max Size (MB)</Text>}
+                                    value={activeQuestion.settings.validation.maxFileSize || ''}
+                                    onChange={(e) => updateNested('validation', { maxFileSize: Number(e.target.value) })}
+                                    size="xs"
+                                />
+                            </Stack>
+                        )}
+
+                        {activeQuestion.type === 'DATE' && (
+                            <Select
+                                label={<Text size="10px" fw={700} className="text-gray-11 uppercase tracking-wider mb-1">Date Range</Text>}
+                                value={activeQuestion.settings.validation.dateRange || 'CUSTOM'}
+                                onChange={(val) => updateNested('validation', { dateRange: val })}
+                                data={[{ label: 'Past Only', value: 'PAST' }, { label: 'Future Only', value: 'FUTURE' }, { label: 'Custom', value: 'CUSTOM' }]}
+                                size="xs"
+                                classNames={{ input: 'bg-white border-gray-2 rounded-md' }}
+                            />
+                        )}
+
+                        <TextInput
+                            label={<Text size="xs" fw={700} className="text-gray-11 uppercase tracking-wider mb-1.5 mt-2">Correct Answer</Text>}
+                            value={activeQuestion.settings.validation.correctAnswer || ''}
+                            onChange={(e) => updateNested('validation', { correctAnswer: e.target.value })}
+                            placeholder="Identify target answer..."
+                            size="sm"
+                            classNames={{ input: 'bg-white border-gray-2 rounded-xl' }}
+                        />
+                    </Stack>
+                </CollapsibleSection>
+
+                <CollapsibleSection
+                    title="Automation"
+                    icon="lucide:sparkles"
+                    accentColor="bg-orange-9"
+                    iconColor="text-orange-9"
+                >
+                    <Stack gap="md">
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-2 px-0.5">
+                                <Icon name="lucide:database" width={14} height={14} className="text-blue-6" />
+                                <Text size="xs" fw={700} className="text-gray-11 uppercase tracking-wider">Master Data Link</Text>
+                            </div>
+                            <Select
+                                size="sm"
+                                label={<Text size="xs" fw={700} className="text-gray-11 uppercase tracking-wider mb-1.5">Master Form ID</Text>}
+                                placeholder="Select source..."
+                                value={String(activeQuestion.settings?.aiSettings?.formControlValidate?.masterFormId || '')}
+                                onChange={(val) => updateNested('aiSettings', {
+                                    formControlValidate: {
+                                        ...(activeQuestion.settings?.aiSettings?.formControlValidate || {}),
+                                        masterFormId: Number(val)
+                                    }
+                                })}
+                                data={['101', '202', '303']}
+                                classNames={{ input: 'bg-white border-gray-2 rounded-xl' }}
+                            />
+                        </div>
+
+                        <Divider className="border-gray-1 dotted" />
+
+                        <div className="space-y-4">
+                            <Text size="11px" fw={800} className="text-accent-primary uppercase tracking-widest flex items-center gap-2">
+                                <Icon name="lucide:sparkles" width={14} height={14} /> AI Validation
+                            </Text>
+
+                            <div className="flex items-center justify-between py-1 px-1">
+                                <Text size="xs" fw={700} className="text-gray-11 uppercase tracking-wider">Enable Data Extraction</Text>
+                                <Switch
+                                    size="xs" color="violet"
+                                    checked={activeQuestion.settings?.aiSettings?.fileValidation?.enableExtraction || false}
+                                    onChange={(e) => updateNested('aiSettings', {
+                                        fileValidation: {
+                                            ...(activeQuestion.settings?.aiSettings?.fileValidation || {}),
+                                            enableExtraction: e.currentTarget.checked
+                                        }
+                                    })}
+                                />
+                            </div>
+
+                            <Textarea
+                                size="sm"
+                                label={<Text size="xs" fw={700} className="text-gray-11 uppercase tracking-wider mb-1.5">Extraction Rules</Text>}
+                                placeholder="Define AI extraction rules..."
+                                value={activeQuestion.settings?.aiSettings?.fileValidation?.extractionRules || ''}
+                                onChange={(e) => updateNested('aiSettings', {
+                                    fileValidation: {
+                                        ...(activeQuestion.settings?.aiSettings?.fileValidation || {}),
+                                        extractionRules: e.target.value
+                                    }
+                                })}
+                                minRows={2}
+                                classNames={{ input: 'bg-white border-gray-2 rounded-xl' }}
+                            />
+
+                            <div className="flex items-center justify-between py-1 px-1">
+                                <Text size="xs" fw={700} className="text-gray-11 uppercase tracking-wider">Enable Image Classification</Text>
+                                <Switch
+                                    size="xs" color="violet"
+                                    checked={activeQuestion.settings?.aiSettings?.fileValidation?.enableClassification || false}
+                                    onChange={(e) => updateNested('aiSettings', {
+                                        fileValidation: {
+                                            ...(activeQuestion.settings?.aiSettings?.fileValidation || {}),
+                                            enableClassification: e.currentTarget.checked
+                                        }
+                                    })}
+                                />
                             </div>
                         </div>
-                    </>
-                )}
+                    </Stack>
+                </CollapsibleSection>
             </div>
 
             <div className="p-4 border-t border-gray-2 bg-white shrink-0">
@@ -537,12 +887,41 @@ const FieldSettings = () => {
                     size="sm"
                     fullWidth
                     leftSection={<Icon name="lucide:trash-2" width={14} height={14} />}
-                    className="border-gray-3 text-red-9 hover:bg-red-50 active:scale-[0.98] transition-all justify-start px-3"
+                    className="border-gray-3 text-red-9 hover:bg-red-50 active:scale-[0.98] transition-all justify-start px-3 h-10 rounded-xl"
                     onClick={() => deleteQuestion(activeQuestion.id)}
                 >
                     Delete Field
                 </Button>
             </div>
+        </div>
+    )
+}
+
+const CollapsibleSection = ({ title, icon, accentColor, iconColor, children, defaultOpen = false }: any) => {
+    const [isOpen, setIsOpen] = useState(defaultOpen)
+    return (
+        <div className={cn("flex flex-col gap-1", isOpen && "mb-2.5")}>
+            <div
+                onClick={() => setIsOpen(!isOpen)}
+                className="cursor-pointer select-none flex items-center justify-between group p-2 -mx-2 rounded-xl hover:bg-[#f0f2f5] active:scale-[0.99] transition-all duration-300"
+            >
+                <div className="flex items-center gap-2">
+                    <span className={cn("inline-block w-1 h-5 rounded transition-transform group-hover:scale-y-110", accentColor)} />
+                    <Icon name={icon} className={cn("h-5 w-5 animate-in zoom-in-50 duration-500", iconColor)} />
+                    <span className="font-medium text-13 text-gray-13 group-hover:text-purple-600 transition-colors duration-300">{title}</span>
+                </div>
+                <div className="text-gray-8 group-hover:text-purple-600 transition-all duration-300">
+                    <Icon
+                        name="lucide:chevron-down"
+                        className={cn("h-4 w-4 transition-transform duration-300", isOpen && "rotate-180")}
+                    />
+                </div>
+            </div>
+            <Collapse in={isOpen}>
+                <div className="bg-white rounded-xl shadow-sm border border-gray-2 p-3.5 space-y-3.5 animate-in fade-in slide-in-from-top-2 duration-300">
+                    {children}
+                </div>
+            </Collapse>
         </div>
     )
 }
