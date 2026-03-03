@@ -85,10 +85,29 @@ const CustomNode = ({ id, data, selected }: NodeProps) => {
                     !selected && !isActive ? 'border-gray-3 hover:border-primary-7 hover:shadow-md' : ''
                 )}
             >
-                {/* Input Handle */}
+                {/* Input Handles (Target) */}
                 <Handle
                     type='target'
                     position={Position.Top}
+                    id='t-top'
+                    className='!bg-primary-9 !border-2 !border-white !h-3.5 !w-3.5 !shadow-sm transition-transform hover:scale-125'
+                />
+                <Handle
+                    type='target'
+                    position={Position.Bottom}
+                    id='t-bottom'
+                    className='!bg-primary-9 !border-2 !border-white !h-3.5 !w-3.5 !shadow-sm transition-transform hover:scale-125'
+                />
+                <Handle
+                    type='target'
+                    position={Position.Left}
+                    id='t-left'
+                    className='!bg-primary-9 !border-2 !border-white !h-3.5 !w-3.5 !shadow-sm transition-transform hover:scale-125'
+                />
+                <Handle
+                    type='target'
+                    position={Position.Right}
+                    id='t-right'
                     className='!bg-primary-9 !border-2 !border-white !h-3.5 !w-3.5 !shadow-sm transition-transform hover:scale-125'
                 />
 
@@ -97,12 +116,12 @@ const CustomNode = ({ id, data, selected }: NodeProps) => {
                     <div
                         className={cn(
                             'flex h-14 w-14 shrink-0 items-center justify-center rounded-xl transition-transform group-hover/node:rotate-3',
-                            (data.icon as string)?.startsWith('logos:')
+                            ((data.icon as string)?.startsWith('logos:') || (data.icon as string)?.startsWith('vscode-icons:'))
                                 ? 'bg-transparent'
                                 : 'bg-white border border-gray-2 shadow-inner'
                         )}
                         style={{
-                            backgroundColor: (data.icon as string)?.startsWith('logos:')
+                            backgroundColor: ((data.icon as string)?.startsWith('logos:') || (data.icon as string)?.startsWith('vscode-icons:'))
                                 ? 'transparent'
                                 : `${(data.iconColor as string) || '#ef4444'}10`
                         }}
@@ -111,10 +130,10 @@ const CustomNode = ({ id, data, selected }: NodeProps) => {
                             name={(data.icon as string) || 'lucide:box'}
                             className={cn(
                                 'drop-shadow-sm',
-                                (data.icon as string)?.startsWith('logos:') ? 'h-10 w-10' : 'h-9 w-9'
+                                ((data.icon as string)?.startsWith('logos:') || (data.icon as string)?.startsWith('vscode-icons:')) ? 'h-10 w-10' : 'h-9 w-9'
                             )}
                             style={{
-                                color: (data.icon as string)?.startsWith('logos:')
+                                color: ((data.icon as string)?.startsWith('logos:') || (data.icon as string)?.startsWith('vscode-icons:'))
                                     ? undefined
                                     : (data.iconColor as string) || '#ef4444'
                             }}
@@ -143,16 +162,32 @@ const CustomNode = ({ id, data, selected }: NodeProps) => {
                     </div>
                 </div>
 
-                {/* Output Handle */}
+                {/* Output Handles (Source) */}
+                <Handle
+                    type='source'
+                    position={Position.Top}
+                    id='s-top'
+                    className='!bg-primary-9 !border-2 !border-white !h-3.5 !w-3.5 !shadow-sm transition-transform hover:scale-125'
+                />
                 <Handle
                     type='source'
                     position={Position.Bottom}
+                    id='s-bottom'
+                    className='!bg-primary-9 !border-2 !border-white !h-3.5 !w-3.5 !shadow-sm transition-transform hover:scale-125'
+                />
+                <Handle
+                    type='source'
+                    position={Position.Left}
+                    id='s-left'
+                    className='!bg-primary-9 !border-2 !border-white !h-3.5 !w-3.5 !shadow-sm transition-transform hover:scale-125'
+                />
+                <Handle
+                    type='source'
+                    position={Position.Right}
+                    id='s-right'
                     className='!bg-primary-9 !border-2 !border-white !h-3.5 !w-3.5 !shadow-sm transition-transform hover:scale-125'
                 />
             </div>
-
-            {/* Progress Line (Visual Only) */}
-            <div className='absolute -bottom-6 left-1/2 w-0.5 h-6 bg-primary-3 -translate-x-1/2 -z-10' />
         </div>
     )
 }

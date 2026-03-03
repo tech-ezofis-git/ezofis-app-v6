@@ -136,9 +136,26 @@ const AddNodeMenu = () => {
                         return n
                     })
 
+                    const sourceHandle = 's-bottom';
+                    const targetHandle = 't-top';
+
                     const newEdges = [
-                        { id: `${edge.source}->${newNodeId}`, source: edge.source, target: newNodeId, type: 'custom' },
-                        { id: `${newNodeId}->${edge.target}`, source: newNodeId, target: edge.target, type: 'custom' },
+                        {
+                            id: `${edge.source}->${newNodeId}`,
+                            source: edge.source,
+                            target: newNodeId,
+                            sourceHandle: sourceHandle,
+                            targetHandle: targetHandle,
+                            type: 'custom'
+                        },
+                        {
+                            id: `${newNodeId}->${edge.target}`,
+                            source: newNodeId,
+                            target: edge.target,
+                            sourceHandle: sourceHandle,
+                            targetHandle: targetHandle,
+                            type: 'custom'
+                        },
                     ]
 
                     // Add new node to the shifted nodes
@@ -187,7 +204,8 @@ const AddNodeMenu = () => {
 
     const integrations: IntegrationItem[] = [
         // Apps
-        { label: 'Gmail Connect', icon: 'logos:google-gmail', iconColor: '', bgColor: 'bg-transparent', type: 'popular', category: 'apps', description: 'Send or receive emails', actions: ['New Email', 'New Label'] },
+        { label: 'Gmail', icon: 'logos:google-gmail', iconColor: '', bgColor: 'bg-transparent', type: 'popular', category: 'apps', description: 'Send or receive emails', actions: ['New Email', 'New Label'] },
+        { label: 'Outlook', icon: 'vscode-icons:file-type-outlook', iconColor: '', bgColor: 'bg-transparent', type: 'popular', category: 'apps', description: 'Microsoft Outlook integration', actions: ['New Email'] },
         { label: 'Slack', icon: 'logos:slack-icon', iconColor: '', bgColor: 'bg-transparent', type: 'popular', category: 'apps', description: 'Send channel messages' },
         { label: 'Teams', icon: 'logos:microsoft-teams', iconColor: '', bgColor: 'bg-transparent', type: 'popular', category: 'apps', description: 'Microsoft Teams integration' },
 

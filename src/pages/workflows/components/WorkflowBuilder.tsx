@@ -39,8 +39,7 @@ const initialNodes = [
         position: { x: 400, y: 50 },
         data: {
             type: 'trigger',
-            stepNumber: 1,
-            label: 'Gmail Connect',
+            label: 'Gmail',
             subLabel: 'Send or receive emails',
             icon: 'logos:google-gmail',
             warning: true,
@@ -81,6 +80,43 @@ const WorkflowBuilder = () => {
             }))
         )
     }, [selectedNode, setNodes])
+
+    // Dynamic Edge Handle Logic: Snap to best face based on relative position
+    useEffect(() => {
+        setEdges((eds) => {
+            let hasChanged = false;
+            const newEdges = eds.map((edge) => {
+                const sourceNode = nodes.find((n) => n.id === edge.source);
+                const targetNode = nodes.find((n) => n.id === edge.target);
+
+                if (!sourceNode || !targetNode) return edge;
+
+                const dx = targetNode.position.x - sourceNode.position.x;
+                const dy = targetNode.position.y - sourceNode.position.y;
+
+                let sourceHandle = edge.sourceHandle;
+                let targetHandle = edge.targetHandle;
+
+                if (Math.abs(dx) > Math.abs(dy) + 100) {
+                    // Primarily Horizontal
+                    sourceHandle = dx > 0 ? 's-right' : 's-left';
+                    targetHandle = dx > 0 ? 't-left' : 't-right';
+                } else {
+                    // Primarily Vertical
+                    sourceHandle = dy > 0 ? 's-bottom' : 's-top';
+                    targetHandle = dy > 0 ? 't-top' : 't-bottom';
+                }
+
+                if (sourceHandle !== edge.sourceHandle || targetHandle !== edge.targetHandle) {
+                    hasChanged = true;
+                    return { ...edge, sourceHandle, targetHandle };
+                }
+                return edge;
+            });
+
+            return hasChanged ? newEdges : eds;
+        });
+    }, [nodes, setEdges]);
 
     const { isRunningTest, stopTestRun, setActiveEdge, setActiveNode } = useWorkflowStore((state) => state)
 

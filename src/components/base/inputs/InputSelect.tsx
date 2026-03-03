@@ -10,7 +10,7 @@ interface Props extends SelectProps {
 }
 
 const InputSelect = forwardRef<HTMLButtonElement, Props>(
-  ({ options, value, onChange, ...rest }, ref) => {
+  ({ options, value, onChange, dropdownFooter, ...rest }, ref) => {
     const { filteredOptions, search, onSearch } = useLocalSearch(options)
 
     const handleChange = (value: Option[]) => {
@@ -27,6 +27,7 @@ const InputSelect = forwardRef<HTMLButtonElement, Props>(
         variant='single'
         onChange={handleChange}
         onSearch={onSearch}
+        dropdownFooter={dropdownFooter}
       />
     )
   },
