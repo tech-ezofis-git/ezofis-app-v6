@@ -73,12 +73,6 @@ export default function APAgentSettingsPanel({ node }: Props) {
   const [glSource, setGlSource] = useState(glSourceOptions[0]);
   const [matterSource, setMatterSource] = useState(matterSourceOptions[0]);
 
-  const routingActionOptions = [
-    { id: 1, name: 'Submit' },
-    { id: 2, name: 'Approve' },
-    { id: 3, name: 'Reject' },
-    { id: 4, name: 'Verify' },
-  ];
 
   const isPO = invoiceType.name === 'PO Invoices';
   const isNonPO = invoiceType.name === 'Non-PO';

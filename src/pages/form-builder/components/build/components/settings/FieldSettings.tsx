@@ -1,5 +1,6 @@
 import { SegmentedControl, Switch, Text, TextInput, Select, Textarea, Button, Divider, ActionIcon, Group, Paper, Stack, Tooltip, Box, Badge, UnstyledButton } from '@mantine/core'
-import { useFormStore, generateId, type Question } from '@/pages/form-builder/store/formStore'
+import { useFormStore, generateId } from '@/pages/form-builder/store/formStore'
+import type { Question, FormType } from '@/pages/form-builder/store/formStore'
 import Icon from '@/components/base/icon/Icon'
 import { useEffect, useState, useRef } from 'react'
 import cn from '@/utils/cn'
@@ -56,10 +57,6 @@ const FieldSettings = () => {
     const setActiveQuestionId = useFormStore((state) => state.setActiveQuestionId)
     const formType = useFormStore((state) => state.formType)
     const setFormType = useFormStore((state) => state.setFormType)
-    const layout = useFormStore((state) => state.layout)
-    const setLayout = useFormStore((state) => state.setLayout)
-    const coordinator = useFormStore((state) => state.coordinator)
-    const setCoordinator = useFormStore((state) => state.setCoordinator)
 
     const activeQuestion = panels
         .flatMap(p => p.fields)
