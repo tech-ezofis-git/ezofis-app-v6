@@ -40,6 +40,7 @@ const initialNodes = [
         data: {
             type: 'trigger',
             label: 'Gmail',
+            toolType: 'Gmail',
             subLabel: 'Send or receive emails',
             icon: 'logos:google-gmail',
             warning: true,

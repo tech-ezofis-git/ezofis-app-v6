@@ -9,7 +9,7 @@ interface GeneralSettingsProps {
 
 const FORM_TYPES: { value: FormType, label: string, description: string, icon: string }[] = [
   { value: 'WORKFLOW', label: 'Workflow', description: 'For business processes & automation', icon: 'tabler:git-branch' },
-  { value: 'FEEDBACK', label: 'Feedback', description: 'For surveys & reviews', icon: 'tabler:message-star' },
+  { value: 'MASTER', label: 'Master', description: 'For managing datas', icon: 'tabler:message-star' },
 ]
 
 
