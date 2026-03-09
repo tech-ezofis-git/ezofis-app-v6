@@ -1,12 +1,10 @@
 import { useState, useEffect } from 'react';
-import InputSelect from '@/components/base/inputs/InputSelect';
 import Input from '@/components/base/inputs/InputText';
 import Button from '@/components/base/button/Button';
 import Icon from '@/components/base/icon/Icon';
 import cn from '@/utils/cn';
 import { useReactFlow, useNodes } from '@xyflow/react';
 import type { Node } from '@xyflow/react';
-import authUserStore from '@/stores/authUserStore';
 import SettingsSection from './common/SettingsSection';
 import ConnectionsRouting from './common/ConnectionsRouting';
 
@@ -34,7 +32,6 @@ export default function FTPAgentSettingsPanel({ node: initialNode }: { node: Nod
 
     const [isConnectionOpen, setIsConnectionOpen] = useState(false);
     const [isCreatingConnection, setIsCreatingConnection] = useState(false);
-    const [newConnectionName, setNewConnectionName] = useState('');
     const [connectionOptions, setConnectionOptions] = useState<{ label: string; value: string }[]>([]);
     const [path, setPath] = useState(nodeData.path || '');
 
@@ -177,7 +174,6 @@ export default function FTPAgentSettingsPanel({ node: initialNode }: { node: Nod
     };
 
     const [openBasic, setOpenBasic] = useState(false);
-    const session = authUserStore((state) => state.session);
 
     return (
         <div className="flex flex-col h-full bg-white overflow-hidden font-inter text-gray-12">

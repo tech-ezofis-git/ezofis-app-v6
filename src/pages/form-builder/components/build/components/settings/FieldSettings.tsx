@@ -1,5 +1,5 @@
 import { Switch, Text, TextInput, Select, Textarea, Button, Divider, ActionIcon, Group, Paper, Stack, Tooltip, Box, Badge, UnstyledButton, NumberInput } from '@mantine/core'
-import { useFormStore, generateId, type Question } from '@/pages/form-builder/store/formStore'
+import { useFormStore, generateId, type Question, type FormType } from '@/pages/form-builder/store/formStore'
 import Icon from '@/components/base/icon/Icon'
 import InputRadioCard from '@/components/base/inputs/InputRadioCard'
 import InputSelect from '@/components/base/inputs/InputSelect'

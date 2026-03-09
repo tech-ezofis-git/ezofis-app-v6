@@ -12,7 +12,6 @@ import cn from '@/utils/cn'
 import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
 import useWorkflowStore from '../stores/useWorkflowStore'
-import authUserStore from '@/stores/authUserStore'
 import ConnectionsRouting from './settings/common/ConnectionsRouting'
 
 interface PropertiesPanelProps {
@@ -61,9 +60,6 @@ function PropertiesPanel({ node: selectedNode, edge, onClose }: PropertiesPanelP
             if (event.data.type === 'CONNECTION_SUCCESS') {
                 const { connector, provider } = event.data
                 const newValue = `${provider}-${Date.now()}`
-                const newOption = { label: connector, value: newValue }
-
-                setConnectionOptions(prev => [...prev, newOption])
 
                 // Select the new connection
                 if (node) {
@@ -73,11 +69,6 @@ function PropertiesPanel({ node: selectedNode, edge, onClose }: PropertiesPanelP
                         )
                     )
                 }
-
-                setIsCreatingConnection(false)
-                setIsConnectionOpen(false)
-                setNewConnectionName('')
-                setIsConnecting(false)
             }
         }
 
