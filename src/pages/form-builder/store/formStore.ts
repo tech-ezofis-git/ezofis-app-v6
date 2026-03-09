@@ -104,6 +104,7 @@ export interface Question {
       allowMultipleSignatures?: boolean
       maxLevel?: number
       childFieldType?: string
+      lookupMaster?: string
     }
     validation: {
       fieldRule: 'OPTIONAL' | 'REQUIRED'
@@ -194,6 +195,11 @@ interface FormStore {
   closedMessage?: string
   conversationalMode: boolean
 
+  // Header & Footer
+  showHeaderFooter: boolean
+  headerText: string
+  footerText: string
+
   copiedQuestion: Question | null
   setCopiedQuestion: (question: Question | null) => void
   pasteQuestion: (panelId: string, index: number) => void
@@ -226,6 +232,7 @@ interface FormStore {
   setSchedule: (start?: string, end?: string) => void
   setClosedMessage: (message: string) => void
   setConversationalMode: (enabled: boolean) => void
+  setHeaderFooter: (updates: { show?: boolean, header?: string, footer?: string }) => void
 
   clearSelection: () => void
 
@@ -303,6 +310,10 @@ const initialState = {
   closedMessage: 'This form is currently closed.',
   conversationalMode: false,
 
+  showHeaderFooter: false,
+  headerText: '',
+  footerText: '',
+
   lastAddedPanelId: null,
   copiedQuestion: null
 }
@@ -366,6 +377,12 @@ export const useFormStore = create<FormStore>()(
       setSchedule: (scheduleStart, scheduleEnd) => set({ scheduleStart, scheduleEnd }),
       setClosedMessage: (closedMessage) => set({ closedMessage }),
       setConversationalMode: (conversationalMode) => set({ conversationalMode }),
+
+      setHeaderFooter: (updates) => set((state) => ({
+        showHeaderFooter: updates.show ?? state.showHeaderFooter,
+        headerText: updates.header ?? state.headerText,
+        footerText: updates.footer ?? state.footerText,
+      })),
 
       clearSelection: () => set({ activeQuestionId: null, selectionType: 'general' }),
 

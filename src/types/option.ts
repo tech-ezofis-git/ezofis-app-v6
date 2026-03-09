@@ -5,6 +5,7 @@ import { ItemListSchema, ItemSchema } from './item'
 export const OptionSchema = ItemSchema.extend({
   description: z.string().optional(),
   disabled: z.boolean().optional(),
+  value: z.string().optional(),
 })
 
 export type Option = z.infer<typeof OptionSchema>

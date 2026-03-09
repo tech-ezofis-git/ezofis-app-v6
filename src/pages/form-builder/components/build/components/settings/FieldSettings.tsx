@@ -1,4 +1,4 @@
-import { SegmentedControl, Switch, Text, TextInput, Select, Textarea, Button, Divider, ActionIcon, Group, Paper, Stack, Tooltip, Box, Badge, UnstyledButton, Collapse, NumberInput } from '@mantine/core'
+import { Switch, Text, TextInput, Select, Textarea, Button, Divider, ActionIcon, Group, Paper, Stack, Tooltip, Box, Badge, UnstyledButton, NumberInput } from '@mantine/core'
 import { useFormStore, generateId, type Question } from '@/pages/form-builder/store/formStore'
 import Icon from '@/components/base/icon/Icon'
 import InputRadioCard from '@/components/base/inputs/InputRadioCard'
@@ -65,10 +65,6 @@ const FieldSettings = () => {
     const setActiveQuestionId = useFormStore((state) => state.setActiveQuestionId)
     const formType = useFormStore((state) => state.formType)
     const setFormType = useFormStore((state) => state.setFormType)
-    const layout = useFormStore((state) => state.layout)
-    const setLayout = useFormStore((state) => state.setLayout)
-    const coordinator = useFormStore((state) => state.coordinator)
-    const setCoordinator = useFormStore((state) => state.setCoordinator)
 
     // Phase 4 State
     const responseLimit = useFormStore((state) => state.responseLimit)
@@ -514,10 +510,9 @@ const FieldSettings = () => {
                                 value={{
                                     id: 0,
                                     name: (activeQuestion.settings.general.visibility || 'Normal').toLowerCase().replace('_', ' '),
-                                    // @ts-ignore
                                     value: activeQuestion.settings.general.visibility || 'NORMAL'
-                                } as any}
-                                onChange={(val: any) => updateNested('general', { visibility: val.value })}
+                                }}
+                                onChange={(val: any) => updateNested('general', { visibility: val?.value })}
                             />
                         </div>
                     </div>
@@ -597,8 +592,8 @@ const FieldSettings = () => {
                                             { id: 2, name: 'Departments', value: 'Departments' },
                                             { id: 3, name: 'Employees', value: 'Employees' }
                                         ]}
-                                        value={{ id: 0, name: activeQuestion.settings.specific.lookupMaster || 'Select source...', value: activeQuestion.settings.specific.lookupMaster || '' } as any}
-                                        onChange={(val: any) => updateNested('specific', { lookupMaster: val.value })}
+                                        value={{ id: 0, name: activeQuestion.settings.specific.lookupMaster || 'Select source...', value: activeQuestion.settings.specific.lookupMaster || '' }}
+                                        onChange={(val: any) => updateNested('specific', { lookupMaster: val?.value })}
                                     />
                                 </div>
                             ) : (
@@ -670,8 +665,8 @@ const FieldSettings = () => {
                                             id: 0,
                                             name: (activeQuestion.settings.specific.autoGenerateValue.suffix || 'ID').replace('_', ' '),
                                             value: activeQuestion.settings.specific.autoGenerateValue.suffix || 'ID'
-                                        } as any}
-                                        onChange={(val: any) => updateNested('specific', { autoGenerateValue: { ...activeQuestion.settings.specific.autoGenerateValue, suffix: val.value } })}
+                                        }}
+                                        onChange={(val: any) => updateNested('specific', { autoGenerateValue: { ...activeQuestion.settings.specific.autoGenerateValue, suffix: val?.value } })}
                                     />
                                 </div>
                             </div>

@@ -50,7 +50,7 @@ interface Props {
   node?: Node;
 }
 
-export default function APAgentSettingsPanel({ node }: Props) {
+export default function APAgentSettingsPanel({ node: _node }: Props) {
   const [openBasic, setOpenBasic] = useState(true);
   const [openValidation, setOpenValidation] = useState(true);
   const [invoiceType, setInvoiceType] = useState(invoiceTypeOptions[0]);

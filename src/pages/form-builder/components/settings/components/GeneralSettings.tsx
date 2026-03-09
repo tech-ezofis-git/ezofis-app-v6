@@ -3,9 +3,6 @@ import Icon from '@/components/base/icon/Icon'
 import { useFormStore, type FormType, type FormLayout } from '@/pages/form-builder/store/formStore'
 import cn from '@/utils/cn'
 
-interface GeneralSettingsProps {
-  setTab: (value: string | null) => void
-}
 
 const FORM_TYPES: { value: FormType, label: string, description: string, icon: string }[] = [
   { value: 'WORKFLOW', label: 'Workflow', description: 'For business processes & automation', icon: 'tabler:git-branch' },
