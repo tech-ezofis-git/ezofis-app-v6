@@ -161,9 +161,9 @@ const FieldSettings = () => {
 
     // 2. General Settings View
     if (selectionType === 'general') {
-        const FORM_TYPES = [
+        const FORM_TYPES: { value: FormType, label: string, icon: string, desc: string }[] = [
             { value: 'WORKFLOW', label: 'Workflow', icon: 'tabler:git-branch', desc: 'For business processes & automation' },
-            { value: 'FEEDBACK', label: 'Feedback', icon: 'tabler:message-star', desc: 'For surveys & reviews' },
+            { value: 'MASTER', label: 'Master', icon: 'tabler:message-star', desc: 'For surveys & reviews' },
         ]
 
 
@@ -214,7 +214,7 @@ const FieldSettings = () => {
                                 return (
                                     <UnstyledButton
                                         key={t.value}
-                                        onClick={() => setFormType(t.value as any)}
+                                        onClick={() => setFormType(t.value)}
                                         className={cn(
                                             "flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all group gap-2 text-center h-[120px]",
                                             active

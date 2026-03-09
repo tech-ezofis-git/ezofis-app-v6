@@ -6,14 +6,14 @@ import type { SelectionProps as Props } from './shared/types'
 const InputSwitch = forwardRef<HTMLInputElement, Props>(
   ({ className, error, onChange, ...rest }, ref) => {
     const _classNames = {
-      body: 'inline-flex',
+      body: 'inline-flex cursor-pointer',
       description: 'mt-1 pl-2 text-xs text-gray-10',
-      input: 'peer',
-      label: 'pl-2 text-13 font-medium text-gray-12',
-      labelWrapper: 'data-[disabled]:opacity-50',
-      thumb: 'bg-white shadow-sm',
+      input: 'peer cursor-pointer',
+      label: 'pl-2 text-13 font-medium text-gray-12 cursor-pointer',
+      labelWrapper: 'data-[disabled]:opacity-50 cursor-pointer',
+      thumb: 'bg-white shadow-sm pointer-events-none',
       track: cn(
-        'mt-0.5 bg-gray-200 peer-checked:bg-primary-9 transition-all duration-300 ring-0 peer-checked:ring-2 peer-checked:ring-primary-4 peer-checked:ring-offset-1 focus-within:outline-primary-8',
+        'mt-0.5 bg-gray-200 peer-checked:bg-primary-9 transition-all duration-300 ring-0 peer-checked:ring-2 peer-checked:ring-primary-4 peer-checked:ring-offset-1 focus-within:outline-primary-8 cursor-pointer',
         Boolean(error) && 'border border-red-9',
       ),
     }

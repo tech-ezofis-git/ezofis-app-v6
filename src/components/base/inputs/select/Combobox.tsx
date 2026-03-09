@@ -1,5 +1,5 @@
 import { Combobox as Base, useCombobox } from '@mantine/core'
-import { forwardRef } from 'react'
+import { forwardRef, useEffect } from 'react'
 import type { Option } from '@/types/option'
 import type { InputProps, SelectProps, SelectVariant } from '../shared/types'
 import ComboboxOptions from './ComboboxOptions'
@@ -47,6 +47,30 @@ const Combobox = forwardRef<HTMLButtonElement, Props>(
       },
     })
 
+    useEffect(() => {
+      if (comboboxStore.dropdownOpened) {
+        comboboxStore.focusSearchInput()
+      }
+    }, [comboboxStore.dropdownOpened])
+
+    const handleSearchKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+      if (event.key === 'Enter' && creatable && search.trim()) {
+        // If there's an exact match in current options, let Mantine handle it naturally
+        const hasExactMatch = options.some(o => o.name.toLowerCase() === search.toLowerCase());
+        if (hasExactMatch) return;
+
+        const id = Date.now();
+        const newOption = { id, name: search, description: '', disabled: false };
+
+        if (variant === 'single') {
+          onChange([newOption]);
+        } else {
+          onChange([...value, newOption]);
+        }
+        comboboxStore.closeDropdown();
+      }
+    };
+
     return (
       <Base
         position={position}
@@ -74,6 +98,7 @@ const Combobox = forwardRef<HTMLButtonElement, Props>(
               placeholder={searchPlaceholder}
               search={search}
               onSearch={onSearch}
+              onKeyDown={handleSearchKeyDown}
             />
           )}
 

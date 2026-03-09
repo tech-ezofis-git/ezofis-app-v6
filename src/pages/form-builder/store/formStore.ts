@@ -5,11 +5,11 @@ import { notifications } from '@mantine/notifications'
 
 
 export const generateId = () => {
-    try {
-        return crypto.randomUUID()
-    } catch (e) {
-        return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
-    }
+  try {
+    return crypto.randomUUID()
+  } catch (e) {
+    return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
+  }
 }
 
 export type QuestionType =
@@ -147,7 +147,7 @@ export interface Panel {
 }
 
 export type FormLayout = 'typeform' | 'grid' | 'full'
-export type FormType = 'WORKFLOW' | 'FEEDBACK'
+export type FormType = 'WORKFLOW' | 'FEEDBACK' | 'MASTER'
 export type PublishStatus = 'DRAFT' | 'PUBLISHED'
 
 interface WelcomePage {
@@ -167,13 +167,13 @@ interface FormStore {
   secondaryPanels: Panel[]
   activeQuestionId: string | null
   isBuilderMode: boolean
-  
+
   // UI State
   isSidebarOpen: boolean
   isPublishOpen: boolean
   isPreviewOpen: boolean
   selectionType: 'general' | 'question' | 'welcome' | 'thank_you'
-  
+
   // Settings
   layout: FormLayout
   formType: FormType
@@ -181,7 +181,7 @@ interface FormStore {
   hubLinkIds: any[]
   coordinator: string
   previewMode: 'typeform' | 'grid' | 'full'
-  
+
   // Special Pages
   welcomePage: WelcomePage
   thankYouPage: WelcomePage
@@ -209,7 +209,7 @@ interface FormStore {
   setPanels: (panels: Panel[]) => void
   setActiveQuestionId: (id: string | null) => void
   setIsBuilderMode: (isBuilder: boolean) => void
-  
+
   setFormType: (type: FormType) => void
   setLayout: (layout: FormLayout) => void
   setCoordinator: (coordinator: string) => void
@@ -221,7 +221,7 @@ interface FormStore {
   setPreviewMode: (mode: 'typeform' | 'grid' | 'full') => void
   setIsPreviewOpen: (open: boolean) => void
   setSelectionType: (type: 'general' | 'question' | 'welcome' | 'thank_you') => void
-  
+
   // Special Page Actions
   setWelcomePage: (updates: Partial<WelcomePage>) => void
   setThankYouPage: (updates: Partial<WelcomePage>) => void
@@ -276,19 +276,19 @@ const initialState = {
   secondaryPanels: [],
   activeQuestionId: null,
   isBuilderMode: true,
-  
+
   isSidebarOpen: true,
   isPublishOpen: false,
   isPreviewOpen: false,
   selectionType: 'general' as const,
-  
+
   layout: 'typeform' as const,
   formType: 'WORKFLOW' as const,
   publishStatus: 'DRAFT' as const,
   hubLinkIds: [],
   coordinator: '',
   previewMode: 'typeform' as const,
-  
+
   welcomePage: {
     enabled: false,
     title: 'Welcome to our form',
@@ -325,15 +325,15 @@ export const useFormStore = create<FormStore>()(
     (set, get) => ({
       ...initialState,
       uid: generateId(),
-      
+
       setName: (name) => set({ name }),
       setCopiedQuestion: (copiedQuestion) => set({ copiedQuestion }),
 
       pasteQuestion: (panelId, index) => set((state) => {
         if (!state.copiedQuestion) return state
 
-        const newQuestion = { 
-          ...state.copiedQuestion, 
+        const newQuestion = {
+          ...state.copiedQuestion,
           id: generateId(),
           label: `${state.copiedQuestion.label} (Copy)`
         }
@@ -352,7 +352,7 @@ export const useFormStore = create<FormStore>()(
       setPanels: (panels) => set({ panels }),
       setActiveQuestionId: (activeQuestionId) => set({ activeQuestionId }),
       setIsBuilderMode: (isBuilderMode) => set({ isBuilderMode }),
-      
+
       setFormType: (formType) => set({ formType }),
       setLayout: (layout) => set({ layout }),
       setCoordinator: (coordinator) => set({ coordinator }),
@@ -438,9 +438,9 @@ export const useFormStore = create<FormStore>()(
         panels: state.panels.map(p => ({
           ...p,
           fields: p.fields.map(f => {
-              if (f.id !== id) return f
-              if (typeof updates === 'function') return updates(f)
-              return { ...f, ...updates }
+            if (f.id !== id) return f
+            if (typeof updates === 'function') return updates(f)
+            return { ...f, ...updates }
           })
         }))
       })),
@@ -488,7 +488,7 @@ export const useFormStore = create<FormStore>()(
 
       appendAIResponse: (data) => set((state) => {
         if (!data) return state
-        
+
         const panels = (data.panels || []).map((p: any) => ({
           id: generateId(),
           settings: {
@@ -510,8 +510,8 @@ export const useFormStore = create<FormStore>()(
               },
               specific: {
                 ...f.settings?.specific,
-                customOptions: Array.isArray(f.settings?.specific?.options) 
-                  ? f.settings.specific.options.join('\n') 
+                customOptions: Array.isArray(f.settings?.specific?.options)
+                  ? f.settings.specific.options.join('\n')
                   : f.settings?.specific?.customOptions || '',
                 tableColumns: f.settings?.specific?.tableColumns || []
               },
@@ -548,7 +548,7 @@ export const useFormStore = create<FormStore>()(
         if (!data || !data.formJson) return
         const json = data.formJson
         const genSettings = json.settings?.general || {}
-        
+
         set({
           uid: data.uid || generateId(),
           name: genSettings.name || 'Untitled Form',
@@ -557,8 +557,8 @@ export const useFormStore = create<FormStore>()(
           secondaryPanels: json.secondaryPanels || [],
           activeQuestionId: null,
           layout: genSettings.layout || 'typeform',
-          formType: ['WORKFLOW', 'FEEDBACK'].includes(genSettings.type) 
-            ? genSettings.type 
+          formType: ['WORKFLOW', 'FEEDBACK', 'MASTER'].includes(genSettings.type)
+            ? genSettings.type
             : 'WORKFLOW',
           coordinator: genSettings.coordinator || '',
           publishStatus: json.settings?.publish?.publishOption || 'DRAFT',
@@ -572,63 +572,63 @@ export const useFormStore = create<FormStore>()(
       saveForm: async (targetStatus) => {
         const state = get()
         const currentStatus = targetStatus || state.publishStatus
-        
+
         // Update status in state if targetStatus provided
         if (targetStatus) {
-           set({ publishStatus: targetStatus })
+          set({ publishStatus: targetStatus })
         }
 
         const payload = cleanFormPayload({ ...state, publishStatus: currentStatus })
-        
+
         // Mandatory check: at least one field
         const hasFields = state.panels.some(p => p.fields.length > 0)
         if (!hasFields) {
-           notifications.show({
-             title: 'Empty Form',
-             message: 'Please add at least one field to your form before saving.',
-             color: 'orange'
-           })
-           return false
+          notifications.show({
+            title: 'Empty Form',
+            message: 'Please add at least one field to your form before saving.',
+            color: 'orange'
+          })
+          return false
         }
 
         try {
-           console.log('[FormStore] Attempting to save form...', { uid: state.uid, name: state.name, status: currentStatus })
-           let response;
-           
-           const path = window.location.pathname
-           const isCreation = path === '/form-builder' || path === '/form-builder/' || path.endsWith('/form-builder')
-           
-           console.log('[FormStore] Mode:', isCreation ? 'CREATE' : 'UPDATE', 'Path:', path)
+          console.log('[FormStore] Attempting to save form...', { uid: state.uid, name: state.name, status: currentStatus })
+          let response;
 
-           if (!isCreation) {
-              const parts = path.split('/')
-              const formId = parts[parts.length - 1]
-              console.log('[FormStore] Calling updateForm:', formId)
-              response = await formApi.updateForm(formId, payload)
-           } else {
-              console.log('[FormStore] Calling createForm...')
-              response = await formApi.createForm(payload)
-           }
-           
-           console.log('[FormStore] API Response:', response)
+          const path = window.location.pathname
+          const isCreation = path === '/form-builder' || path === '/form-builder/' || path.endsWith('/form-builder')
 
-           if (response.error) {
-             console.error('[FormStore] Save failed with error:', response.error)
+          console.log('[FormStore] Mode:', isCreation ? 'CREATE' : 'UPDATE', 'Path:', path)
 
-             notifications.show({
-               title: 'Error Saving Form',
-               message: response.error,
-               color: 'red'
-             })
-             return false
-           }
+          if (!isCreation) {
+            const parts = path.split('/')
+            const formId = parts[parts.length - 1]
+            console.log('[FormStore] Calling updateForm:', formId)
+            response = await formApi.updateForm(formId, payload)
+          } else {
+            console.log('[FormStore] Calling createForm...')
+            response = await formApi.createForm(payload)
+          }
 
-           notifications.show({
-             title: 'Success!',
-             message: `Your form has been ${currentStatus === 'PUBLISHED' ? 'published' : 'saved'} successfully.`,
-             color: 'teal'
-           })
-           return true
+          console.log('[FormStore] API Response:', response)
+
+          if (response.error) {
+            console.error('[FormStore] Save failed with error:', response.error)
+
+            notifications.show({
+              title: 'Error Saving Form',
+              message: response.error,
+              color: 'red'
+            })
+            return false
+          }
+
+          notifications.show({
+            title: 'Success!',
+            message: `Your form has been ${currentStatus === 'PUBLISHED' ? 'published' : 'saved'} successfully.`,
+            color: 'teal'
+          })
+          return true
         } catch (error) {
           console.error('Save failed:', error)
           notifications.show({
@@ -651,40 +651,40 @@ export const useFormStore = create<FormStore>()(
 )
 
 export const cleanField = (field: Question) => {
-    const cleaned = JSON.parse(JSON.stringify(field))
-    const keysToRemove = ['filterBy', 'filter', 'filters', 'isManualChange', 'lookupFilterBy', 'lookupFilter']
-    keysToRemove.forEach(key => delete (cleaned as any)[key])
-    return cleaned
+  const cleaned = JSON.parse(JSON.stringify(field))
+  const keysToRemove = ['filterBy', 'filter', 'filters', 'isManualChange', 'lookupFilterBy', 'lookupFilter']
+  keysToRemove.forEach(key => delete (cleaned as any)[key])
+  return cleaned
 }
 
 export const cleanFormPayload = (state: any) => {
-    return {
-        uid: state.uid,
-        panels: state.panels.map((p: any) => ({
-            ...p,
-            fields: p.fields.map((f: any) => cleanField(f))
-        })),
-        secondaryPanels: state.secondaryPanels.map((p: any) => ({
-            ...p,
-            fields: p.fields.map((f: any) => cleanField(f))
-        })),
-        settings: {
-            general: {
-                name: state.name,
-                description: state.description,
-                layout: state.layout,
-                type: state.formType,
-                coordinator: state.coordinator
-            },
+  return {
+    uid: state.uid,
+    panels: state.panels.map((p: any) => ({
+      ...p,
+      fields: p.fields.map((f: any) => cleanField(f))
+    })),
+    secondaryPanels: state.secondaryPanels.map((p: any) => ({
+      ...p,
+      fields: p.fields.map((f: any) => cleanField(f))
+    })),
+    settings: {
+      general: {
+        name: state.name,
+        description: state.description,
+        layout: state.layout,
+        type: state.formType,
+        coordinator: state.coordinator
+      },
 
-            rules: [],
-            publish: {
-                publishOption: state.publishStatus,
-                publishSchedule: "",
-                unpublishSchedule: ""
-            },
-            hubLinkIds: state.hubLinkIds
-        },
-        isDeleted: false
-    }
+      rules: [],
+      publish: {
+        publishOption: state.publishStatus,
+        publishSchedule: "",
+        unpublishSchedule: ""
+      },
+      hubLinkIds: state.hubLinkIds
+    },
+    isDeleted: false
+  }
 }

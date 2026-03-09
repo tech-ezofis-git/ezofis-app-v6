@@ -62,6 +62,7 @@ const AddNodeMenu = () => {
                             iconColor: item.iconColor,
                             subLabel: item.description,
                             type: item.category === 'triggers' ? 'trigger' : 'action',
+                            toolType: item.label,
                         },
                     }
                 }
@@ -100,6 +101,7 @@ const AddNodeMenu = () => {
                             iconColor: item.iconColor,
                             subLabel: item.description,
                             type: item.category === 'triggers' ? 'trigger' : 'action',
+                            toolType: item.label,
                         },
                     }
 
