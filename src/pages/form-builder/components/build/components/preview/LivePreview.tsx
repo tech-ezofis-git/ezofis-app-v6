@@ -18,6 +18,7 @@ const LivePreview = () => {
     } = useFormStore()
 
     const [viewMode, setViewMode] = useState<ViewMode>('typeform')
+    const [deviceType, setDeviceType] = useState<'desktop' | 'tablet' | 'mobile'>('desktop')
     const [currentIndex, setCurrentIndex] = useState(0)
     const [isCompleted, setIsCompleted] = useState(false)
     const [showWelcome, setShowWelcome] = useState(false)
@@ -103,42 +104,61 @@ const LivePreview = () => {
             <div className="h-16 border-b border-gray-2 flex items-center justify-between px-6 bg-white shrink-0 z-30">
                 <div className="flex items-center gap-4">
                     <div className="flex items-center gap-3">
-                        <div className="bg-accent-soft/30 text-accent-primary size-9 rounded-xl flex items-center justify-center">
-                            <Icon name="tabler:eye" width={20} height={20} />
+                        <div className="bg-gray-1 border border-gray-2 text-gray-7 size-9 rounded-xl flex items-center justify-center">
+                            <Icon name="tabler:eye" width={18} height={18} />
                         </div>
-                        <span className="font-extrabold text-gray-13 tracking-tight text-lg">Preview</span>
+                        <span className="font-bold text-gray-13 tracking-tight text-lg">Preview</span>
                     </div>
 
                     <div className="h-6 w-px bg-gray-2 mx-2" />
 
+                    <div className="flex bg-gray-1 p-1 rounded-xl border border-gray-2 gap-1 overflow-hidden">
+                        {[
+                            { value: 'typeform', icon: 'lucide:layout-list', label: 'One at a time' },
+                            { value: 'grid', icon: 'lucide:layout-grid', label: 'Section by Section' },
+                            { value: 'full', icon: 'lucide:file-text', label: 'All Questions' },
+                        ].map((v) => {
+                            const active = viewMode === v.value
+                            return (
+                                <Tooltip key={v.value} label={v.label} openDelay={500}>
+                                    <UnstyledButton
+                                        onClick={() => {
+                                            setViewMode(v.value as ViewMode)
+                                            setCurrentIndex(0)
+                                            setIsCompleted(false)
+                                            setShowWelcome(showWelcomePage)
+                                        }}
+                                        className={cn(
+                                            "flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all",
+                                            active ? "bg-white text-accent-primary shadow-sm" : "text-gray-5 hover:bg-gray-2"
+                                        )}
+                                    >
+                                        <Icon name={v.icon} width={14} height={14} />
+                                        <Text size="10px" fw={800} className="uppercase tracking-wider">{active ? v.label : ''}</Text>
+                                    </UnstyledButton>
+                                </Tooltip>
+                            )
+                        })}
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-4">
                     <SegmentedControl
-                        value={viewMode}
-                        onChange={(v) => {
-                            setViewMode(v as ViewMode)
-                            setCurrentIndex(0)
-                            setIsCompleted(false)
-                            setShowWelcome(showWelcomePage)
-                        }}
+                        value={deviceType}
+                        onChange={(v) => setDeviceType(v as any)}
                         data={[
-                            { label: 'One at a time', value: 'typeform' },
-                            { label: 'Section by Section', value: 'grid' },
-                            { label: 'All Questions', value: 'full' },
+                            { label: <Icon name="tabler:device-desktop" width={14} height={14} />, value: 'desktop' },
+                            { label: <Icon name="tabler:device-tablet" width={14} height={14} />, value: 'tablet' },
+                            { label: <Icon name="tabler:device-mobile" width={14} height={14} />, value: 'mobile' },
                         ]}
                         size="xs"
                         radius="xl"
                         classNames={{
                             root: 'bg-gray-1 p-1 border border-gray-2',
                             indicator: 'bg-white shadow-sm',
-                            label: 'px-6 font-bold text-[10px] uppercase tracking-wider'
                         }}
                     />
-                </div>
-
-                <div className="flex items-center gap-4">
-                    <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-2 border border-gray-3">
-                        <Icon name="tabler:device-desktop" width={14} height={14} className="text-gray-9" />
-                        <Text size="10px" fw={700} className="text-gray-11 uppercase tracking-wider">Live Preview</Text>
-                    </div>
+                    <div className="h-6 w-px bg-gray-2 mx-1" />
                     <Button
                         variant="subtle"
                         color="gray"
@@ -153,8 +173,15 @@ const LivePreview = () => {
             </div>
 
             {/* Main Content Area */}
-            <div className="flex-1 overflow-hidden relative bg-white flex flex-col items-center justify-center p-4 sm:p-8">
-                <div className="w-full max-w-4xl bg-white rounded-3xl overflow-hidden flex flex-col h-full max-h-[850px] transition-all duration-300 border border-gray-2 relative">
+            <div className="flex-1 overflow-hidden relative bg-gray-50 flex flex-col items-center justify-center p-4 sm:p-8 transition-all duration-500">
+                <div
+                    className={cn(
+                        "bg-white rounded-[2rem] overflow-hidden flex flex-col h-full max-h-[850px] transition-all duration-500 shadow-2xl border border-gray-2 relative",
+                        deviceType === 'desktop' && "w-full max-w-4xl",
+                        deviceType === 'tablet' && "w-[768px] max-w-full",
+                        deviceType === 'mobile' && "w-[375px] max-w-full"
+                    )}
+                >
 
                     {/* Progress Bar */}
                     {!showWelcome && !isCompleted && viewMode !== 'full' && (
@@ -486,9 +513,9 @@ const renderPreviewInput = (field: Question, size: 'lg' | 'sm' = 'lg') => {
             )
         case 'SHORT_TEXT':
         case 'EMAIL':
-        case 'PHONE':
+        case 'PHONE_NUMBER':
         case 'NUMBER':
-        case 'CURRENCY':
+        case 'CURRENCY_AMOUNT':
         case 'ADDRESS':
         case 'FULL_NAME':
             return (
@@ -538,9 +565,10 @@ const renderPreviewInput = (field: Question, size: 'lg' | 'sm' = 'lg') => {
                     ))}
                 </div>
             )
-        case 'CHOICES':
-        case 'CHECKBOX':
-        case 'DROPDOWN':
+        case 'SINGLE_CHOICE':
+        case 'MULTIPLE_CHOICE':
+        case 'SINGLE_SELECT':
+        case 'MULTI_SELECT':
             return (
                 <div className="space-y-2">
                     {['Option A', 'Option B', 'Option C'].map((opt, i) => (
@@ -550,7 +578,7 @@ const renderPreviewInput = (field: Question, size: 'lg' | 'sm' = 'lg') => {
                         )}>
                             <div className={cn(
                                 "border border-gray-3 flex items-center justify-center",
-                                field.type === 'CHOICES' ? 'rounded-full' : 'rounded-md',
+                                field.type === 'SINGLE_CHOICE' ? 'rounded-full' : 'rounded-md',
                                 isSmall ? "size-4" : "size-5"
                             )}>
                             </div>

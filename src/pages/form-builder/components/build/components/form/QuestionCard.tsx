@@ -15,8 +15,64 @@ interface Props {
 }
 
 const QuestionCard = ({ question, isActive, onSelect, onUpdate, onDelete, dragListeners }: Props) => {
+    const { panels } = useFormStore()
+    const allQuestions = panels.flatMap(p => p.fields)
+
+    // Logic Evaluation
+    const checkLogic = () => {
+        const rules = question.settings.logic || []
+        if (rules.length === 0) return true
+
+        // Simple evaluator: returns true if ALL rules pass (AND logic)
+        // Note: For builder, we assume default values or empty
+        return rules.every(rule => {
+            const target = allQuestions.find(q => q.id === rule.fieldId)
+            const val = target?.settings.specific.defaultValue || ''
+
+            switch (rule.condition) {
+                case 'IS': return val === rule.value
+                case 'IS_NOT': return val !== rule.value
+                case 'CONTAINS': return String(val).includes(rule.value)
+                case 'EMPTY': return !val
+                case 'NOT_EMPTY': return !!val
+                default: return true
+            }
+        })
+    }
+
+    const isVisible = checkLogic()
     const isRequired = question.settings.validation.fieldRule === 'REQUIRED'
     const isNarrow = question.settings.general.size === 'col-4'
+
+    // Answer Piping Resolution
+    const resolvePiping = (text: string) => {
+        if (!text) return ''
+        return text.replace(/\{([^}]+)\}/g, (_match, fieldId) => {
+            const target = allQuestions.find(q => q.id === fieldId)
+            return target?.settings.specific.defaultValue || _match
+        })
+    }
+
+    const evaluateFormula = (formula: string) => {
+        if (!formula) return '0'
+        try {
+            const resolved = formula.replace(/\{([^}]+)\}/g, (_, fieldId) => {
+                const target = allQuestions.find(q => q.id === fieldId)
+                const val = Number(target?.settings.specific.defaultValue || 0)
+                return isNaN(val) ? '0' : String(val)
+            })
+            // Safe-ish eval for basic math
+            const cleaned = resolved.replace(/[^-()\d/*+.]/g, '')
+            return Function(`'use strict'; return (${cleaned})`)()
+        } catch (e) {
+            return '??'
+        }
+    }
+
+    const isCalculated = question.type === 'CALCULATED'
+    const displayLabel = isCalculated
+        ? `${question.label} = ${evaluateFormula(question.settings.specific.defaultValue || '')}`
+        : resolvePiping(question.label)
 
     // Truncation detection
     const [isTruncated, setIsTruncated] = useState(false)
@@ -44,10 +100,10 @@ const QuestionCard = ({ question, isActive, onSelect, onUpdate, onDelete, dragLi
             onClick={onSelect}
             className={cn(
                 "group relative border transition-all duration-300 cursor-pointer overflow-visible bg-white",
-                "animate-in fade-in zoom-in-[0.98] duration-500",
+                "animate-in fade-in slide-in-from-bottom-2 duration-500",
                 isActive
-                    ? "border-accent-primary shadow-lg bg-white ring-1 ring-accent-primary"
-                    : "border-gray-3 hover:border-accent-soft hover:shadow-md hover:-translate-y-0.5"
+                    ? "border-accent-primary shadow-lg bg-white ring-1 ring-accent-primary scale-[1.01]"
+                    : "border-gray-3 hover:border-accent-soft hover:shadow-md hover:-translate-y-1 active:scale-95"
             )}
             style={{
                 padding: 0,
@@ -75,7 +131,7 @@ const QuestionCard = ({ question, isActive, onSelect, onUpdate, onDelete, dragLi
                     {/* 2. Field Icon & Badge */}
                     <div className="flex items-center gap-2.5 min-w-0 flex-1">
                         <div className={cn(
-                            "flex items-center justify-center size-8 rounded-lg shrink-0 transition-colors shadow-sm border",
+                            "flex items-center justify-center size-8 rounded-xl shrink-0 transition-colors shadow-sm border",
                             isActive ? "bg-accent-soft text-accent-primary border-accent-soft" : "bg-gray-1 text-gray-8 border-gray-2"
                         )}>
                             <Icon
@@ -98,18 +154,24 @@ const QuestionCard = ({ question, isActive, onSelect, onUpdate, onDelete, dragLi
                                 <div className="w-full">
                                     <TextInput
                                         ref={labelRef}
-                                        value={question.label}
+                                        value={isActive ? question.label : displayLabel}
                                         onChange={(e) => {
-                                            onUpdate({ label: e.target.value })
+                                            if (isActive) onUpdate({ label: e.target.value })
                                         }}
                                         placeholder="Field label..."
                                         variant="unstyled"
                                         classNames={{
                                             input: cn(
-                                                "text-sm font-bold p-0 min-h-0 placeholder:text-gray-3 tracking-tight truncate h-auto",
-                                                isActive ? "text-accent-primary" : "text-gray-13"
+                                                "text-15/5 font-semibold p-0 min-h-0 placeholder:text-gray-3 tracking-tight truncate h-auto transition-all",
+                                                isActive ? "text-accent-primary" : "text-gray-13",
+                                                !isVisible && "opacity-50 line-through decoration-gray-4"
                                             )
                                         }}
+                                        rightSection={!isVisible && (
+                                            <Tooltip label="Hidden by logic rules">
+                                                <Icon name="lucide:eye-off" width={12} height={12} className="text-gray-4" />
+                                            </Tooltip>
+                                        )}
                                         onClick={(e) => e.stopPropagation()}
                                     />
                                 </div>
@@ -292,6 +354,11 @@ const TYPE_ICONS: Record<string, string> = {
     CALCULATED: 'tabler:calculator',
     COUNTRY_CODE: 'lucide:globe',
     ADDRESS: 'lucide:home',
+    YES_NO_TOGGLE: 'lucide:toggle-left',
+    SCORE: 'lucide:hash',
+    IMAGE_UPLOAD: 'lucide:image',
+    CONSENT: 'lucide:shield-check',
+    SIGNATURE: 'lucide:pen-tool',
 }
 
 export default QuestionCard

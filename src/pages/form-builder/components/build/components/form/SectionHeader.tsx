@@ -18,7 +18,7 @@ const SectionHeader = ({ panel, panelIndex, fieldCount, isCollapsed, onToggleCol
             {/* Top Row: Icon, Title, Actions */}
             <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <div className="flex items-center justify-center size-9 rounded-xl bg-accent-soft text-accent-primary shadow-sm">
+                    <div className="flex items-center justify-center size-9 rounded-xl bg-accent-soft/20 text-accent-primary border border-accent-soft/30 shadow-sm">
                         <Icon name="lucide:layout" width={20} height={20} />
                     </div>
 
@@ -29,7 +29,7 @@ const SectionHeader = ({ panel, panelIndex, fieldCount, isCollapsed, onToggleCol
                                 value={panel.settings.title}
                                 onChange={(e) => updatePanel(panel.id, { title: e.target.value })}
                                 placeholder="Section Title"
-                                className="bg-transparent text-xl font-bold text-gray-13 placeholder:text-gray-3 focus:outline-none tracking-tight truncate py-0"
+                                className="bg-transparent text-[22px] font-semibold text-gray-13 placeholder:text-gray-3 focus:outline-none tracking-tight truncate py-0"
                             />
                             <div className="px-2 py-0.5 rounded-full bg-gray-2 border border-gray-3 shrink-0">
                                 <Text size="xs" fw={700} className="text-gray-9 whitespace-nowrap">
@@ -109,7 +109,7 @@ const SectionHeader = ({ panel, panelIndex, fieldCount, isCollapsed, onToggleCol
                     value={panel.settings.description}
                     onChange={(e) => updatePanel(panel.id, { description: e.target.value })}
                     placeholder="Add a description for this section..."
-                    className="w-full bg-transparent text-sm text-gray-5 placeholder:text-gray-3 focus:outline-none"
+                    className="w-full bg-transparent text-13/5 text-gray-11 placeholder:text-gray-3 focus:outline-none"
                 />
             </div>
         </div>

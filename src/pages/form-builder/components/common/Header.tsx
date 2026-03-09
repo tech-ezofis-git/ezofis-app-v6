@@ -1,5 +1,4 @@
-import { Button } from '@mantine/core'
-import Icon from '@/components/base/icon/Icon'
+import Button from '@/components/base/button/Button'
 import { useFormStore } from '@/pages/form-builder/store/formStore'
 import IconButton from '@/components/base/button/IconButton'
 import { useNavigate } from '@tanstack/react-router'
@@ -75,37 +74,33 @@ const Header = () => {
         <Button
           variant="outline"
           color="gray"
-          size="xs"
-          leftSection={<Icon name="lucide:eye" width={14} height={14} className="text-gray-11" />}
-          className="text-gray-11 font-bold uppercase tracking-wider text-[10px]"
+          size="sm"
+          icon="lucide:eye"
+          label="Preview"
           onClick={() => setIsPreviewOpen(true)}
-        >
-          Preview
-        </Button>
+        />
 
         <Button
-          variant="light"
+          variant="outline"
           color="gray"
-          size="xs"
+          size="sm"
           loading={isSaving}
-          leftSection={<Icon name="lucide:save" width={14} height={14} className="text-gray-11" />}
-          className="border-gray-3 text-gray-11 font-bold uppercase tracking-wider text-[10px]"
+          icon="lucide:save"
+          label="Save"
           onClick={handleQuickSave}
-        >
-          Save
-        </Button>
+        />
 
         <Button
-          variant="filled"
-          bg="accent-primary"
-          size="xs"
-          leftSection={<Icon name="lucide:rocket" width={14} height={14} className="text-white" />}
-          className="hover:opacity-90 transition-all font-bold uppercase tracking-wider text-[10px] shadow-md shadow-accent-soft/20 px-4"
+          variant="solid"
+          color="primary"
+          size="sm"
+          icon="lucide:rocket"
+          label="Publish"
           onClick={() => setPublishOpen(true)}
-        >
-          Publish
-        </Button>
+          className="px-4"
+        />
       </div>
+
     </header>
   )
 }

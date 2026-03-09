@@ -44,8 +44,21 @@ export type QuestionType =
   | 'EMAIL'
   | 'PASSWORD'
   | 'TEXT_BUILDER'
+  | 'URL'
+  | 'YES_NO_TOGGLE'
+  | 'SCORE'
+  | 'IMAGE_UPLOAD'
+  | 'CONSENT'
 
 export type QuestionWidth = 'col-3' | 'col-4' | 'col-6' | 'col-12'
+
+export interface LogicRule {
+  id: string
+  fieldId: string // The field being checked
+  condition: 'IS' | 'IS_NOT' | 'CONTAINS' | 'NOT_CONTAINS' | 'EMPTY' | 'NOT_EMPTY' | 'GT' | 'LT'
+  value: any
+  action: 'SHOW' | 'HIDE'
+}
 
 export interface Question {
   id: string
@@ -117,6 +130,8 @@ export interface Question {
       columnName?: string
       connectionId?: number
     }
+    logic?: LogicRule[]
+    pipingEnabled?: boolean
   }
 }
 
@@ -139,6 +154,8 @@ interface WelcomePage {
   title: string;
   description: string;
   buttonText: string;
+  imageUrl?: string;
+  redirectUrl?: string; // For custom completion redirect
 }
 
 interface FormStore {
@@ -170,6 +187,13 @@ interface FormStore {
   showWelcomePage: boolean
   showThankYouPage: boolean
 
+  // Phase 4: Management
+  responseLimit?: number
+  scheduleStart?: string
+  scheduleEnd?: string
+  closedMessage?: string
+  conversationalMode: boolean
+
   copiedQuestion: Question | null
   setCopiedQuestion: (question: Question | null) => void
   pasteQuestion: (panelId: string, index: number) => void
@@ -197,6 +221,11 @@ interface FormStore {
   setThankYouPage: (updates: Partial<WelcomePage>) => void
   setShowWelcomePage: (show: boolean) => void
   setShowThankYouPage: (show: boolean) => void
+
+  setResponseLimit: (limit: number | undefined) => void
+  setSchedule: (start?: string, end?: string) => void
+  setClosedMessage: (message: string) => void
+  setConversationalMode: (enabled: boolean) => void
 
   clearSelection: () => void
 
@@ -268,6 +297,12 @@ const initialState = {
   showWelcomePage: false,
   showThankYouPage: false,
 
+  responseLimit: undefined,
+  scheduleStart: '',
+  scheduleEnd: '',
+  closedMessage: 'This form is currently closed.',
+  conversationalMode: false,
+
   lastAddedPanelId: null,
   copiedQuestion: null
 }
@@ -326,6 +361,11 @@ export const useFormStore = create<FormStore>()(
       })),
       setShowWelcomePage: (showWelcomePage) => set({ showWelcomePage }),
       setShowThankYouPage: (showThankYouPage) => set({ showThankYouPage }),
+
+      setResponseLimit: (responseLimit) => set({ responseLimit }),
+      setSchedule: (scheduleStart, scheduleEnd) => set({ scheduleStart, scheduleEnd }),
+      setClosedMessage: (closedMessage) => set({ closedMessage }),
+      setConversationalMode: (conversationalMode) => set({ conversationalMode }),
 
       clearSelection: () => set({ activeQuestionId: null, selectionType: 'general' }),
 

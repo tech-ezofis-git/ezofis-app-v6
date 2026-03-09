@@ -45,7 +45,7 @@ export const getField = (fieldType: string) => {
                 contentRule: "",
                 minimum: "",
                 maximum: "",
-                allowedFileTypes: [],
+                allowedFileTypes: [] as string[],
                 maxFileSize: 10
             },
             aiSettings: {
@@ -79,6 +79,31 @@ export const getField = (fieldType: string) => {
         case 'OPINION_SCALE':
             s.iconType = 'STAR'
             s.iconCount = 10
+            break
+        case 'EMAIL':
+            baseField.settings.validation.contentRule = 'EMAIL'
+            break
+        case 'URL':
+            baseField.settings.validation.contentRule = 'URL'
+            break
+        case 'PHONE_NUMBER':
+            baseField.settings.validation.contentRule = 'PHONE'
+            break
+        case 'YES_NO_TOGGLE':
+            s.customOptions = 'Yes,No'
+            s.optionsType = 'CUSTOM'
+            break
+        case 'SCORE':
+            s.iconType = 'NUMBER'
+            s.iconCount = 10
+            break
+        case 'IMAGE_UPLOAD':
+            baseField.settings.validation.allowedFileTypes = ['IMAGE'] as string[]
+            break
+        case 'CONSENT':
+            baseField.label = 'Consent'
+            s.customOptions = 'I agree to the terms and conditions'
+            s.optionsType = 'CUSTOM'
             break
     }
 
