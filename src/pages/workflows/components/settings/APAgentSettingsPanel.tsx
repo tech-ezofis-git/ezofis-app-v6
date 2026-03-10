@@ -53,8 +53,8 @@ interface Props {
 }
 
 export default function APAgentSettingsPanel({ node }: Props) {
-  const [openBasic, setOpenBasic] = useState(false);
-  const [openValidation, setOpenValidation] = useState(false);
+  const [openBasic, setOpenBasic] = useState(true);
+  const [openValidation, setOpenValidation] = useState(true);
   const [invoiceType, setInvoiceType] = useState(invoiceTypeOptions[0]);
   const [poMatching, setPoMatching] = useState(poMatchingOptions[0]);
   const [poMaster, setPoMaster] = useState(poMasterOptions[0]);

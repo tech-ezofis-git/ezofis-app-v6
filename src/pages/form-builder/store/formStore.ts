@@ -35,6 +35,7 @@ export type QuestionType =
   | 'DIVIDER'
   | 'LABEL'
   | 'RATING'
+  | 'OPINION_SCALE'
   | 'COUNTER'
   | 'CALCULATED'
   | 'COUNTRY_CODE'
@@ -43,8 +44,21 @@ export type QuestionType =
   | 'EMAIL'
   | 'PASSWORD'
   | 'TEXT_BUILDER'
+  | 'URL'
+  | 'YES_NO_TOGGLE'
+  | 'SCORE'
+  | 'IMAGE_UPLOAD'
+  | 'CONSENT'
 
 export type QuestionWidth = 'col-3' | 'col-4' | 'col-6' | 'col-12'
+
+export interface LogicRule {
+  id: string
+  fieldId: string // The field being checked
+  condition: 'IS' | 'IS_NOT' | 'CONTAINS' | 'NOT_CONTAINS' | 'EMPTY' | 'NOT_EMPTY' | 'GT' | 'LT'
+  value: any
+  action: 'SHOW' | 'HIDE'
+}
 
 export interface Question {
   id: string
@@ -61,13 +75,14 @@ export interface Question {
       hidden?: boolean
       readOnly?: boolean
       tooltip?: string
-      dividerType?: string
       url?: string
     }
     specific: {
       defaultValue?: string
       customDefaultValue?: any
       optionsType?: string
+      optionsSource?: string
+      dividerStyle?: 'SOLID' | 'DASHED' | 'DOTTED'
       customOptions?: string
       separateOptionsUsing?: string
       allowToAddNewOptions?: boolean
@@ -75,10 +90,21 @@ export interface Question {
       tableColumns?: any[]
       columns?: any[]
       tableRowsType?: string
+      numRows?: number
       matrixColumns?: any[]
       matrixRows?: any[]
+      matrixRowLabels?: string[]
+      matrixColumnLabels?: string[]
       fibFields?: any[]
-      autoGenerateValue?: { prefix: string, suffix: string }
+      autoGenerateValue?: { enabled: boolean, prefix: string, suffix: string }
+      iconType?: 'STAR' | 'HEART'
+      iconCount?: number
+      allowHalfRating?: boolean
+      allowMultipleFiles?: boolean
+      allowMultipleSignatures?: boolean
+      maxLevel?: number
+      childFieldType?: string
+      lookupMaster?: string
     }
     validation: {
       fieldRule: 'OPTIONAL' | 'REQUIRED'
@@ -87,17 +113,29 @@ export interface Question {
       maximum?: string | number
       allowedFileTypes?: string[]
       maxFileSize?: number
+      dateRange?: 'PAST' | 'FUTURE' | 'CUSTOM'
+      timeRange?: string
+      correctAnswer?: string
     }
     aiSettings: {
       validateTypeKeyword?: string
-      formControlValidate?: { masterFormId: number, masterFormColumn: any[] }
+      formControlValidate?: { masterFormId: number, masterFormColumn: any[], conditionFields?: string[] }
+      fileValidation?: {
+        enableExtraction?: boolean
+        extractionRules?: string
+        enableClassification?: boolean
+        classificationRules?: string
+      }
     }
     lookupSettings: {
       columnName?: string
       connectionId?: number
     }
+    logic?: LogicRule[]
+    pipingEnabled?: boolean
   }
 }
+
 
 export interface Panel {
   id: string
@@ -117,6 +155,8 @@ interface WelcomePage {
   title: string;
   description: string;
   buttonText: string;
+  imageUrl?: string;
+  redirectUrl?: string; // For custom completion redirect
 }
 
 interface FormStore {
@@ -148,6 +188,18 @@ interface FormStore {
   showWelcomePage: boolean
   showThankYouPage: boolean
 
+  // Phase 4: Management
+  responseLimit?: number
+  scheduleStart?: string
+  scheduleEnd?: string
+  closedMessage?: string
+  conversationalMode: boolean
+
+  // Header & Footer
+  showHeaderFooter: boolean
+  headerText: string
+  footerText: string
+
   copiedQuestion: Question | null
   setCopiedQuestion: (question: Question | null) => void
   pasteQuestion: (panelId: string, index: number) => void
@@ -175,6 +227,12 @@ interface FormStore {
   setThankYouPage: (updates: Partial<WelcomePage>) => void
   setShowWelcomePage: (show: boolean) => void
   setShowThankYouPage: (show: boolean) => void
+
+  setResponseLimit: (limit: number | undefined) => void
+  setSchedule: (start?: string, end?: string) => void
+  setClosedMessage: (message: string) => void
+  setConversationalMode: (enabled: boolean) => void
+  setHeaderFooter: (updates: { show?: boolean, header?: string, footer?: string }) => void
 
   clearSelection: () => void
 
@@ -246,6 +304,16 @@ const initialState = {
   showWelcomePage: false,
   showThankYouPage: false,
 
+  responseLimit: undefined,
+  scheduleStart: '',
+  scheduleEnd: '',
+  closedMessage: 'This form is currently closed.',
+  conversationalMode: false,
+
+  showHeaderFooter: false,
+  headerText: '',
+  footerText: '',
+
   lastAddedPanelId: null,
   copiedQuestion: null
 }
@@ -304,6 +372,17 @@ export const useFormStore = create<FormStore>()(
       })),
       setShowWelcomePage: (showWelcomePage) => set({ showWelcomePage }),
       setShowThankYouPage: (showThankYouPage) => set({ showThankYouPage }),
+
+      setResponseLimit: (responseLimit) => set({ responseLimit }),
+      setSchedule: (scheduleStart, scheduleEnd) => set({ scheduleStart, scheduleEnd }),
+      setClosedMessage: (closedMessage) => set({ closedMessage }),
+      setConversationalMode: (conversationalMode) => set({ conversationalMode }),
+
+      setHeaderFooter: (updates) => set((state) => ({
+        showHeaderFooter: updates.show ?? state.showHeaderFooter,
+        headerText: updates.header ?? state.headerText,
+        footerText: updates.footer ?? state.footerText,
+      })),
 
       clearSelection: () => set({ activeQuestionId: null, selectionType: 'general' }),
 

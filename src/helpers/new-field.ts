@@ -21,13 +21,13 @@ export const getField = (fieldType: string) => {
                 visibility: "NORMAL",
                 placeholder: "",
                 tooltip: "",
-                dividerType: "SOLID",
                 url: ""
             },
             specific: {
                 defaultValue: "CUSTOM",
                 customDefaultValue: "",
                 optionsType: "CUSTOM",
+                optionsSource: "CUSTOM",
                 customOptions: "Option 1,Option 2,Option 3",
                 separateOptionsUsing: "COMMA",
                 allowToAddNewOptions: false,
@@ -37,14 +37,15 @@ export const getField = (fieldType: string) => {
                 matrixColumns: [] as any[],
                 matrixRows: [] as any[],
                 fibFields: [] as any[],
-                autoGenerateValue: { prefix: "", suffix: "" }
+                dividerStyle: "SOLID",
+                autoGenerateValue: { enabled: false, prefix: "", suffix: "" }
             },
             validation: {
                 fieldRule: "OPTIONAL",
                 contentRule: "",
                 minimum: "",
                 maximum: "",
-                allowedFileTypes: [],
+                allowedFileTypes: [] as string[],
                 maxFileSize: 10
             },
             aiSettings: {
@@ -59,22 +60,50 @@ export const getField = (fieldType: string) => {
     }
 
     // Specific tweaks based on type
+    const s = baseField.settings.specific as any
     switch (fieldType.toUpperCase()) {
         case 'TABLE':
         case 'DYNAMIC_TABLE':
-            baseField.settings.specific.tableColumns = [
-                { id: generateId(), name: 'Column 1', type: 'SHORT_TEXT', size: 'md' }
+            s.tableColumns = [
+                { id: generateId(), label: 'Column 1', type: 'SHORT_TEXT', size: 'col-6' }
             ]
             break
         case 'MATRIX':
-            baseField.settings.specific.matrixColumns = ['Col 1', 'Col 2']
-            baseField.settings.specific.matrixRows = ['Row 1', 'Row 2']
+            s.matrixRowLabels = ['Row 1', 'Row 2']
+            s.matrixColumnLabels = ['Col 1', 'Col 2', 'Col 3']
             break
-        case 'SINGLE_SELECT':
-        case 'MULTI_SELECT':
-        case 'SINGLE_CHOICE':
-        case 'MULTIPLE_CHOICE':
-            // Defaults are already set in specific block
+        case 'RATING':
+            s.iconType = 'STAR'
+            s.iconCount = 5
+            break
+        case 'OPINION_SCALE':
+            s.iconType = 'STAR'
+            s.iconCount = 10
+            break
+        case 'EMAIL':
+            baseField.settings.validation.contentRule = 'EMAIL'
+            break
+        case 'URL':
+            baseField.settings.validation.contentRule = 'URL'
+            break
+        case 'PHONE_NUMBER':
+            baseField.settings.validation.contentRule = 'PHONE'
+            break
+        case 'YES_NO_TOGGLE':
+            s.customOptions = 'Yes,No'
+            s.optionsType = 'CUSTOM'
+            break
+        case 'SCORE':
+            s.iconType = 'NUMBER'
+            s.iconCount = 10
+            break
+        case 'IMAGE_UPLOAD':
+            baseField.settings.validation.allowedFileTypes = ['IMAGE'] as string[]
+            break
+        case 'CONSENT':
+            baseField.label = 'Consent'
+            s.customOptions = 'I agree to the terms and conditions'
+            s.optionsType = 'CUSTOM'
             break
     }
 
