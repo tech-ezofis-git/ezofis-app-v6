@@ -10,14 +10,6 @@ import cn from '@/utils/cn'
 import { useSortable, SortableContext, rectSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { getField } from '@/helpers/new-field'
-import {
-  type Panel as PanelType,
-  type Question,
-  useFormStore,
-} from '@/pages/form-builder/store/formStore'
-import cn from '@/utils/cn'
-import AddFieldInline from './AddFieldInline'
-import QuestionCard from './QuestionCard'
 
 interface Props {
   panel: PanelType

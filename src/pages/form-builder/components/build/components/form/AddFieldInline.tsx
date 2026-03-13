@@ -5,9 +5,9 @@ import type { QuestionType } from '@/pages/form-builder/store/formStore'
 import Icon from '@/components/base/icon/Icon'
 import Input from '@/components/base/inputs/InputText'
 import cn from '@/utils/cn'
-import { Portal, Text } from '@mantine/core'
+import { Text } from '@mantine/core'
 
-type TabType = 'explore' | 'popular' | 'advanced' | 'templates' | 'all' | 'display' | 'date_time'
+// type TabType = 'explore' | 'popular' | 'advanced' | 'templates' | 'all' | 'display' | 'date_time'
 
 interface FieldType {
   category: TabType

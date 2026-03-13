@@ -65,10 +65,10 @@ const RequestsPage = () => {
 
       let data
       if (response?.data) {
-        data = response?.data[0]?.value.map((request: InboxItem) => ({
+        data = response?.data[0]?.value.map((request: any) => ({
           disabled: false,
-          id: request?.id || request?.requestId, // Matching InboxItem property
-          name: request?.requestNo || 'Request',
+          id: request?.id || request?.requestId,
+          name: request?.name || request?.requestNo || 'Request',
         }))
       }
       if (data && data.length > 0) {

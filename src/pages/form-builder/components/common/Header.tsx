@@ -3,10 +3,10 @@ import { useFormStore } from '@/pages/form-builder/store/formStore'
 import IconButton from '@/components/base/button/IconButton'
 import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
-import IconButton from '@/components/base/button/IconButton'
-import Icon from '@/components/base/icon/Icon'
+// import IconButton from '@/components/base/button/IconButton'
+// import Icon from '@/components/base/icon/Icon'/
 import useAskAIStore from '@/components/common/ask-ai/stores/useAskAIStore'
-import { useFormStore } from '@/pages/form-builder/store/formStore'
+// import { useFormStore } from '@/pages/form-builder/store/formStore'/
 
 const Header = () => {
   const navigate = useNavigate()
@@ -50,8 +50,8 @@ const Header = () => {
             <h1 className='text-15/5 font-semibold text-gray-13'>{name}</h1>
             <span
               className={`rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase ${publishStatus === 'PUBLISHED'
-                  ? 'text-success-main bg-success-subtle'
-                  : 'bg-gray-3 text-gray-11'
+                ? 'text-success-main bg-success-subtle'
+                : 'bg-gray-3 text-gray-11'
                 }`}
             >
               {publishStatus === 'PUBLISHED' ? 'Published' : 'Draft'}
@@ -72,10 +72,24 @@ const Header = () => {
           size='sm'
           variant='ghost'
           onClick={() => {
+            useAskAIStore.getState().close() // Close AI if it's open
             const current = useFormStore.getState().isSidebarOpen
             useFormStore.getState().setSidebarOpen(!current)
             if (!current) setSelectionType('general')
           }}
+        />
+
+        <Button
+          variant="solid"
+          color="primary"
+          size="sm"
+          icon="lucide:sparkles"
+          label="Ask AI"
+          onClick={() => {
+            useFormStore.getState().setSidebarOpen(false) // Close settings if it's open
+            useAskAIStore.getState().open()
+          }}
+          className="bg-gradient-to-r from-violet-600 to-indigo-600 border-none shadow-md hover:shadow-lg transition-all"
         />
 
         <Button

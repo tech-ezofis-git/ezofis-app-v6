@@ -122,7 +122,7 @@ const FieldSettings = () => {
       ...q,
       settings: {
         ...q.settings,
-        [path]: { ...q.settings[path as keyof typeof q.settings], ...updates }
+        [path]: { ...(q.settings[path] as any), ...updates }
       }
     }))
   }
@@ -495,7 +495,7 @@ const FieldSettings = () => {
               <Text size="xs" fw={500} className="text-gray-11">Required</Text>
               <Switch
                 checked={activeQuestion.settings.validation.fieldRule === 'REQUIRED'}
-                onChange={(e) => updateNested('validation', { fieldRule: e.currentTarget.checked ? 'REQUIRED' : 'NONE' })}
+                onChange={(e) => updateNested('validation', { fieldRule: e.currentTarget.checked ? 'REQUIRED' : 'OPTIONAL' })}
                 size="xs" color="violet" />
             </div>
 
@@ -595,24 +595,24 @@ const FieldSettings = () => {
   )
 }
 
-const SectionWrapper = ({ title, icon, children }: any) => {
-  return (
-    <div className="flex flex-col gap-1 mb-6 animate-in fade-in slide-in-from-bottom-2 duration-500 last:mb-0">
-      <div className="select-none flex items-center justify-between py-1 mb-1 rounded-xl group transition-all duration-300">
-        <div className="flex items-center gap-2.5">
-          <div className="w-1 h-5 rounded-full bg-accent-primary shadow-[0_0_8px_rgba(var(--accent-primary-rgb),0.4)]" />
-          <div className="flex items-center justify-center size-7 rounded-lg bg-accent-soft/10 text-accent-primary">
-            <Icon name={icon} className="h-4 w-4" />
-          </div>
-          <span className="font-semibold text-13 text-gray-13 tracking-tight uppercase tracking-wider">{title}</span>
-        </div>
-      </div>
-      <div className="bg-white rounded-2xl border border-gray-1 p-4 space-y-4 shadow-sm hover:shadow-md transition-shadow">
-        {children}
-      </div>
-    </div>
-  )
-}
+// const SectionWrapper = ({ title, icon, children }: any) => {
+//   return (
+//     <div className="flex flex-col gap-1 mb-6 animate-in fade-in slide-in-from-bottom-2 duration-500 last:mb-0">
+//       <div className="select-none flex items-center justify-between py-1 mb-1 rounded-xl group transition-all duration-300">
+//         <div className="flex items-center gap-2.5">
+//           <div className="w-1 h-5 rounded-full bg-accent-primary shadow-[0_0_8px_rgba(var(--accent-primary-rgb),0.4)]" />
+//           <div className="flex items-center justify-center size-7 rounded-lg bg-accent-soft/10 text-accent-primary">
+//             <Icon name={icon} className="h-4 w-4" />
+//           </div>
+//           <span className="font-semibold text-13 text-gray-13 tracking-tight uppercase tracking-wider">{title}</span>
+//         </div>
+//       </div>
+//       <div className="bg-white rounded-2xl border border-gray-1 p-4 space-y-4 shadow-sm hover:shadow-md transition-shadow">
+//         {children}
+//       </div>
+//     </div>
+//   )
+// }
 
 
 const SettingsHeader = ({ title, icon, headerProps }: { title: string, icon: string, headerProps: any }) => {

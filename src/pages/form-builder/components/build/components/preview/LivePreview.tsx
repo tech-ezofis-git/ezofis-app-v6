@@ -7,6 +7,7 @@ import {
   useFormStore,
 } from '@/pages/form-builder/store/formStore'
 import cn from '@/utils/cn'
+import { useState, useEffect } from 'react'
 
 type ViewMode = 'typeform' | 'grid' | 'full'
 
@@ -302,12 +303,12 @@ const LivePreview = () => {
   )
 }
 
-interface TableColumn {
-  id: string
-  label: string
-  size: string
-  type: string
-}
+// interface TableColumn {
+//   id: string
+//   label: string
+//   size: string
+//   type: string
+// }
 
 // --- Sub-Components ---
 

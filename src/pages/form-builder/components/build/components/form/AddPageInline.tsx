@@ -3,7 +3,7 @@ import { motion } from 'motion/react'
 import Icon from '@/components/base/icon/Icon'
 import { useFormStore } from '@/pages/form-builder/store/formStore'
 import cn from '@/utils/cn'
-
+import { Portal } from '@mantine/core'
 interface Props {
   anchorRect?: DOMRect | null
   onClose: () => void
