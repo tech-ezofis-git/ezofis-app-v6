@@ -1,10 +1,10 @@
 import { Fragment } from 'react'
+import Icon from '@/components/base/icon/Icon'
+import Title from '@/components/base/Title'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 // import { ArrowDown, ArrowRight } from 'lucide-react'
 // import SectionHeader from '../../components/SectionHeader'
 import Integration from './Integration'
-import Icon from '@/components/base/icon/Icon'
-import Title from '@/components/base/Title'
 
 const Integrations = () => {
   const storageSettings = setupStore((state) => state.storageSettings)
@@ -19,7 +19,10 @@ const Integrations = () => {
   }
 
   const getErpDisplayName = () => {
-    if (erpSettings.wantsFileBasedImport || erpSettings.system === 'FILE_BASED_IMPORT') {
+    if (
+      erpSettings.wantsFileBasedImport ||
+      erpSettings.system === 'FILE_BASED_IMPORT'
+    ) {
       return 'Manual PO Import  '
     }
     return erpSettings.system || 'Not selected'
@@ -40,7 +43,10 @@ const Integrations = () => {
   }
 
   const getErpIcon = () => {
-    if (erpSettings.wantsFileBasedImport || erpSettings.system === 'FILE_BASED_IMPORT') {
+    if (
+      erpSettings.wantsFileBasedImport ||
+      erpSettings.system === 'FILE_BASED_IMPORT'
+    ) {
       return 'tabler:file-spreadsheet'
     }
     return 'tabler:file-spreadsheet'
@@ -72,7 +78,10 @@ const Integrations = () => {
 
   const integrations = [
     {
-      account: emailSettings.provider === 'DIRECT_UPLOAD' ? 'N/A' : emailSettings.email || 'Not configured',
+      account:
+        emailSettings.provider === 'DIRECT_UPLOAD'
+          ? 'N/A'
+          : emailSettings.email || 'Not configured',
       icon: getErpIcon(),
       iconBgColor: getErpIconBg(),
       iconColor: getErpIconColor(),
@@ -81,18 +90,28 @@ const Integrations = () => {
       status: emailSettings.isConnected ? 'connected' : 'pending',
     },
     {
-      account: erpSettings.importMethod === 'import'
-        ? (erpSettings.selectedFormName || 'Not configured')
-        : (erpSettings.uploadedTemplate?.name || (erpSettings.wantsFileBasedImport ? 'N/A' : 'Not configured')),
+      account:
+        erpSettings.importMethod === 'import'
+          ? erpSettings.selectedFormName || 'Not configured'
+          : erpSettings.uploadedTemplate?.name ||
+            (erpSettings.wantsFileBasedImport ? 'N/A' : 'Not configured'),
       icon: getEmailIcon(),
       iconBgColor: getEmailIconBg(),
       iconColor: getEmailIconColor(),
       name: 'File Upload',
       platform: getErpDisplayName(),
-      status: erpSettings.isConnected || erpSettings.templateUploaded || erpSettings.selectedFormName ? 'connected' : 'pending',
+      status:
+        erpSettings.isConnected ||
+        erpSettings.templateUploaded ||
+        erpSettings.selectedFormName
+          ? 'connected'
+          : 'pending',
     },
     {
-      account: storageSettings.system === 'Included storage' ? 'Basic' : storageSettings.apiUrl || 'Basic',
+      account:
+        storageSettings.system === 'Included storage'
+          ? 'Basic'
+          : storageSettings.apiUrl || 'Basic',
       icon: 'tabler:cloud-filled',
       iconBgColor: getStorageIconBg(),
       iconColor: getStorageIconColor(),
@@ -111,10 +130,10 @@ const Integrations = () => {
       />
       <div className='mt-6'>
         {/* Horizontal flow with visual connection */}
-        <div className="flex flex-col lg:flex-row w-full max-w-6xl mx-auto px-4 items-stretch gap-6">
+        <div className='mx-auto flex w-full max-w-6xl flex-col items-stretch gap-6 px-4 lg:flex-row'>
           {integrations.map((integration, index) => (
             <Fragment key={integration.name}>
-              <div className='flex flex-col flex-1'>
+              <div className='flex flex-1 flex-col'>
                 <Integration
                   account={integration.account}
                   icon={integration.icon}
@@ -126,19 +145,25 @@ const Integrations = () => {
               </div>
               {/* Add flow indicator - arrow or line */}
               {index < integrations.length - 1 && (
-                <div className="flex flex-col lg:flex-row justify-center items-center shrink-0">
-                  <div className="hidden lg:flex items-center w-16 relative justify-center mx-2">
-                    <div className="absolute inset-0 top-1/2 -translate-y-1/2 h-[2px] bg-gray-200 w-full" />
-                    <div className="relative z-10 bg-gray-50 p-1.5 rounded-full shadow-sm text-gray-400">
-                      <Icon className='size-8' name="tabler:arrow-narrow-right-dashed" />
+                <div className='flex shrink-0 flex-col items-center justify-center lg:flex-row'>
+                  <div className='relative mx-2 hidden w-16 items-center justify-center lg:flex'>
+                    <div className='bg-gray-200 absolute inset-0 top-1/2 h-[2px] w-full -translate-y-1/2' />
+                    <div className='bg-gray-50 text-gray-400 relative z-10 rounded-full p-1.5 shadow-sm'>
+                      <Icon
+                        className='size-8'
+                        name='tabler:arrow-narrow-right-dashed'
+                      />
                     </div>
                   </div>
 
                   {/* Mobile Vertical Line with Arrow */}
-                  <div className="lg:hidden flex flex-col items-center h-16 relative justify-center my-2">
-                    <div className="absolute inset-0 left-1/2 -translate-x-1/2 w-[2px] bg-gray-200 h-full" />
-                    <div className="relative z-10 bg-gray-50 p-1.5 rounded-full border border-gray-200 shadow-sm text-gray-400">
-                      <Icon className='size-8' name="tabler:arrow-narrow-down-dashed" />
+                  <div className='relative my-2 flex h-16 flex-col items-center justify-center lg:hidden'>
+                    <div className='bg-gray-200 absolute inset-0 left-1/2 h-full w-[2px] -translate-x-1/2' />
+                    <div className='bg-gray-50 border-gray-200 text-gray-400 relative z-10 rounded-full border p-1.5 shadow-sm'>
+                      <Icon
+                        className='size-8'
+                        name='tabler:arrow-narrow-down-dashed'
+                      />
                     </div>
                   </div>
                 </div>

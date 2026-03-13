@@ -42,11 +42,16 @@ function RouteComponent() {
   return (
     <div className='max-w-4xl p-6'>
       <StoryTitle>Form Integration</StoryTitle>
-      <p className='text-15 text-gray-11 mb-10'>
-        The design system is optimized for **TanStack Form** and **Zod** validation. This combination provides a type-safe, performant solution for handling complex inputs, nested fields, and real-time validation feedback.
+      <p className='mb-10 text-15 text-gray-11'>
+        The design system is optimized for **TanStack Form** and **Zod**
+        validation. This combination provides a type-safe, performant solution
+        for handling complex inputs, nested fields, and real-time validation
+        feedback.
       </p>
 
-      <p className='text-14 text-gray-11 mb-4'>Standard form assembly with TanStack Form:</p>
+      <p className='mb-4 text-14 text-gray-11'>
+        Standard form assembly with TanStack Form:
+      </p>
       <StoryCode>
         {`import { useForm } from '@tanstack/react-form'
 import * as z from 'zod'
@@ -61,10 +66,11 @@ const form = useForm({
         {/* Interactive Section */}
         <section>
           <StorySubTitle>Login Example (Validation Demo)</StorySubTitle>
-          <p className='text-14 text-gray-11 mb-8'>
-            Try submitting the form with invalid data to see real-time feedback and state handling:
+          <p className='mb-8 text-14 text-gray-11'>
+            Try submitting the form with invalid data to see real-time feedback
+            and state handling:
           </p>
-          <div className='p-8 bg-gray-1 border border-gray-3 rounded-2xl max-w-md ml-1 shadow-sm'>
+          <div className='ml-1 max-w-md rounded-2xl border border-gray-3 bg-gray-1 p-8 shadow-sm'>
             <form
               className='space-y-5'
               onSubmit={(e) => {
@@ -93,8 +99,8 @@ const form = useForm({
                   <InputPassword
                     error={field.state.meta.errors[0]?.message}
                     label='Password'
-                    showPlaceholder
                     value={field.state.value}
+                    showPlaceholder
                     onBlur={field.handleBlur}
                     onChange={field.handleChange}
                   />
@@ -131,8 +137,9 @@ const form = useForm({
         {/* Code Snippet Section */}
         <section>
           <StorySubTitle>Field Subscription</StorySubTitle>
-          <p className='text-14 text-gray-11 mb-4'>
-            Use <code>form.Subscribe</code> to conditionally disable controls or show loading states based on form metadata.
+          <p className='mb-4 text-14 text-gray-11'>
+            Use <code>form.Subscribe</code> to conditionally disable controls or
+            show loading states based on form metadata.
           </p>
           <StoryCode>
             {`<form.Subscribe 

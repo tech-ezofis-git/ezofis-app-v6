@@ -39,11 +39,15 @@ const StorageSystem = () => {
 
   // Set default to "Included storage" if no system is selected
   useEffect(() => {
-    if (!storageSettings.system || storageSettings.system === 'Default Storage' || storageSettings.system === 'Available Storage') {
+    if (
+      !storageSettings.system ||
+      storageSettings.system === 'Default Storage' ||
+      storageSettings.system === 'Available Storage'
+    ) {
       setStorageSettings({
         ...storageSettings,
-        system: 'Included storage',
         isConnected: true,
+        system: 'Included storage',
       })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -101,12 +105,10 @@ const StorageSystem = () => {
         </AnimateSlideUp>
         <div className='grid grid-cols-1 gap-2.5 sm:grid-cols-1'>
           {cloudStorageProviders.map((item, index) => {
-            const AnimationComponent = animationVariants[index % animationVariants.length]
+            const AnimationComponent =
+              animationVariants[index % animationVariants.length]
             return (
-              <AnimationComponent
-                key={item.value}
-                delay={0.25 + index * 0.08}
-              >
+              <AnimationComponent delay={0.25 + index * 0.08} key={item.value}>
                 <BrandCard
                   checked={storageSettings.system === item.value}
                   logo={item.logo}

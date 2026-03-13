@@ -6,16 +6,16 @@ interface Props {
   search: string
   className?: string
   placeholder?: string
-  onSearch: (search: string) => void
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void
+  onSearch: (search: string) => void
 }
 
 const ComboboxSearch = ({
   className,
   placeholder = 'Search',
   search,
-  onSearch,
   onKeyDown,
+  onSearch,
 }: Props) => {
   const handleChange = (e: ChangeEvent<HTMLInputElement>) =>
     onSearch(e.currentTarget.value)

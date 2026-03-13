@@ -134,11 +134,17 @@ function TableStory() {
   return (
     <div className='max-w-7xl p-6'>
       <StoryTitle>Data Table</StoryTitle>
-      <p className='text-15 text-gray-11 mb-10'>
-        The Data Table is a powerful, high-performance component built for complex data orchestration. It supports advanced features like dynamic sorting, grouping, expansion, and custom cell rendering, all while integrated with a unified state management hook.
+      <p className='mb-10 text-15 text-gray-11'>
+        The Data Table is a powerful, high-performance component built for
+        complex data orchestration. It supports advanced features like dynamic
+        sorting, grouping, expansion, and custom cell rendering, all while
+        integrated with a unified state management hook.
       </p>
 
-      <p className='text-14 text-gray-11 mb-4'>Before using Data Table, import the core component and its essential hooks:</p>
+      <p className='mb-4 text-14 text-gray-11'>
+        Before using Data Table, import the core component and its essential
+        hooks:
+      </p>
       <StoryCode>
         {`import DataTable from '@/components/base/data-table/DataTable'
 import useDataTable from '@/components/base/data-table/hooks/useDataTable'
@@ -149,8 +155,10 @@ import useDataTableState from '@/components/base/data-table/hooks/useDataTableSt
         {/* Core Integration Section */}
         <section>
           <StorySubTitle>Hook Integration</StorySubTitle>
-          <p className='text-14 text-gray-11 mb-6'>
-            The <code>useDataTableState</code> hook manages UI states (sorting, grouping), which are then passed to your API call and finally to the <code>useDataTable</code> hook for rendering.
+          <p className='mb-6 text-14 text-gray-11'>
+            The <code>useDataTableState</code> hook manages UI states (sorting,
+            grouping), which are then passed to your API call and finally to the{' '}
+            <code>useDataTable</code> hook for rendering.
           </p>
           <StoryCode>
             {`const state = useDataTableState({ initialVisibilityState })
@@ -163,12 +171,15 @@ const { table } = useDataTable({ columns, rows, state })
         {/* Live Demo Section */}
         <section>
           <StorySubTitle>Interactive Example</StorySubTitle>
-          <p className='text-14 text-gray-11 mb-4'>
-            A live demonstration showing server-side integration, custom badges, and action menus.
+          <p className='mb-4 text-14 text-gray-11'>
+            A live demonstration showing server-side integration, custom badges,
+            and action menus.
           </p>
-          <div className='mt-8 border border-gray-3 rounded-xl overflow-hidden bg-white'>
-            <div className='p-4 border-b border-gray-3 bg-gray-1'>
-              <p className='text-13 font-medium text-gray-12'>User Management System</p>
+          <div className='mt-8 overflow-hidden rounded-xl border border-gray-3 bg-white'>
+            <div className='border-b border-gray-3 bg-gray-1 p-4'>
+              <p className='text-13 font-medium text-gray-12'>
+                User Management System
+              </p>
             </div>
             <div className='overflow-x-auto'>
               <DataTable
@@ -179,7 +190,7 @@ const { table } = useDataTable({ columns, rows, state })
                 onReload={refetch}
               />
             </div>
-            <div className='p-4 border-t border-gray-3 bg-gray-1'>
+            <div className='border-t border-gray-3 bg-gray-1 p-4'>
               <Pagination
                 itemLabel='Users'
                 page={page}
@@ -196,8 +207,9 @@ const { table } = useDataTable({ columns, rows, state })
         {/* Configuration Section */}
         <section>
           <StorySubTitle>Column Definition</StorySubTitle>
-          <p className='text-14 text-gray-11 mb-4'>
-            Columns are defined as an array of objects, allowing for flexible rendering and behavior mapping.
+          <p className='mb-4 text-14 text-gray-11'>
+            Columns are defined as an array of objects, allowing for flexible
+            rendering and behavior mapping.
           </p>
           <StoryCode>
             {`const columns: Column[] = [

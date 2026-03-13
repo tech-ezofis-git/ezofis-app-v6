@@ -1,4 +1,5 @@
 import { useRef } from 'react'
+import type { Option } from '@/types/option'
 // import MondayLogo from '@/assets/brands/monday.svg'
 // import OracleLogo from '@/assets/brands/oracle.svg'
 import QuickBooksLogo from '@/assets/brands/quickbooks.svg'
@@ -8,7 +9,6 @@ import Alert from '@/components/base/Alert'
 import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
 import InputSelect from '@/components/base/inputs/InputSelect'
-import type { Option } from '@/types/option'
 import {
   AnimateBounce,
   AnimateFadeIn,
@@ -42,12 +42,15 @@ const ErpSystem = () => {
   const setErpSettings = setupStore((state) => state.setErpSettings)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const isFileBasedImportSelected = erpSettings.wantsFileBasedImport || erpSettings.system === 'FILE_BASED_IMPORT'
+  const isFileBasedImportSelected =
+    erpSettings.wantsFileBasedImport ||
+    erpSettings.system === 'FILE_BASED_IMPORT'
   const selectedOption = erpSettings.importMethod || 'upload' // 'upload' or 'import'
 
   const handleTemplateDownload = () => {
     // Create a simple CSV template
-    const csvContent = 'Purchase Order Number,Vendor,Amount,Date,Status\nPO-001,Example Vendor,1000.00,2024-01-01,Pending'
+    const csvContent =
+      'Purchase Order Number,Vendor,Amount,Date,Status\nPO-001,Example Vendor,1000.00,2024-01-01,Pending'
     const blob = new Blob([csvContent], { type: 'text/csv' })
     const url = window.URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -64,12 +67,12 @@ const ErpSystem = () => {
     if (file) {
       setErpSettings({
         ...erpSettings,
-        uploadedTemplate: file,
-        templateUploaded: true,
-        isConnected: true,
-        wantsFileBasedImport: true,
-        system: 'FILE_BASED_IMPORT',
         importMethod: 'upload',
+        isConnected: true,
+        system: 'FILE_BASED_IMPORT',
+        templateUploaded: true,
+        uploadedTemplate: file,
+        wantsFileBasedImport: true,
       })
     }
   }
@@ -82,12 +85,12 @@ const ErpSystem = () => {
     if (option) {
       setErpSettings({
         ...erpSettings,
-        selectedFormName: option.name,
-        templateUploaded: false,
-        isConnected: true,
-        wantsFileBasedImport: true,
-        system: 'FILE_BASED_IMPORT',
         importMethod: 'import',
+        isConnected: true,
+        selectedFormName: option.name,
+        system: 'FILE_BASED_IMPORT',
+        templateUploaded: false,
+        wantsFileBasedImport: true,
       })
     }
   }
@@ -112,30 +115,35 @@ const ErpSystem = () => {
         </AnimateSlideUp>
 
         {/* Two options: Upload PO and Import from your form */}
-        <div className='mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3'>
+        <div className='mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2'>
           <AnimateSlideUp delay={0.15}>
             <button
-              className={`flex w-full items-center gap-3 rounded-lg border-2 p-4 text-left transition-all ${selectedOption === 'upload' && isFileBasedImportSelected
-                ? 'border-green-9 bg-green-1'
-                : 'border-gray-4 bg-white hover:border-gray-5'
-                }`}
+              type='button'
+              className={`flex w-full items-center gap-3 rounded-lg border-2 p-4 text-left transition-all ${
+                selectedOption === 'upload' && isFileBasedImportSelected
+                  ? 'border-green-9 bg-green-1'
+                  : 'border-gray-4 bg-white hover:border-gray-5'
+              }`}
               onClick={() => {
                 setErpSettings({
                   ...erpSettings,
-                  wantsFileBasedImport: true,
-                  system: 'FILE_BASED_IMPORT',
                   importMethod: 'upload',
                   isConnected: erpSettings.templateUploaded || false,
+                  system: 'FILE_BASED_IMPORT',
+                  wantsFileBasedImport: true,
                 })
               }}
-              type='button'
             >
               <div className='flex size-10 shrink-0 items-center justify-center rounded-lg bg-blue-2'>
                 <Icon className='size-5 text-blue-9' name='tabler:upload' />
               </div>
               <div className='flex flex-1 flex-col'>
-                <span className='text-14 font-semibold text-gray-13'>Direct Upload</span>
-                <span className='text-12 text-gray-10'>Upload your PO file directly</span>
+                <span className='text-14 font-semibold text-gray-13'>
+                  Direct Upload
+                </span>
+                <span className='text-12 text-gray-10'>
+                  Upload your PO file directly
+                </span>
               </div>
               {selectedOption === 'upload' && isFileBasedImportSelected && (
                 <div className='flex shrink-0 items-center justify-center'>
@@ -147,27 +155,35 @@ const ErpSystem = () => {
 
           <AnimateSlideUp delay={0.18}>
             <button
-              className={`flex w-full items-center gap-3 rounded-lg border-2 p-4 text-left transition-all ${selectedOption === 'import' && isFileBasedImportSelected
-                ? 'border-green-9 bg-green-1'
-                : 'border-gray-4 bg-white hover:border-gray-5'
-                }`}
+              type='button'
+              className={`flex w-full items-center gap-3 rounded-lg border-2 p-4 text-left transition-all ${
+                selectedOption === 'import' && isFileBasedImportSelected
+                  ? 'border-green-9 bg-green-1'
+                  : 'border-gray-4 bg-white hover:border-gray-5'
+              }`}
               onClick={() => {
                 setErpSettings({
                   ...erpSettings,
-                  wantsFileBasedImport: true,
-                  system: 'FILE_BASED_IMPORT',
                   importMethod: 'import',
                   isConnected: erpSettings.selectedFormName ? true : false,
+                  system: 'FILE_BASED_IMPORT',
+                  wantsFileBasedImport: true,
                 })
               }}
-              type='button'
             >
               <div className='flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary-2'>
-                <Icon className='size-5 text-primary-9' name='tabler:file-import' />
+                <Icon
+                  className='size-5 text-primary-9'
+                  name='tabler:file-import'
+                />
               </div>
               <div className='flex flex-1 flex-col'>
-                <span className='text-14 font-semibold text-gray-13'>Import from your form</span>
-                <span className='text-12 text-gray-10'>Import data from your existing form</span>
+                <span className='text-14 font-semibold text-gray-13'>
+                  Import from your form
+                </span>
+                <span className='text-12 text-gray-10'>
+                  Import data from your existing form
+                </span>
               </div>
               {selectedOption === 'import' && isFileBasedImportSelected && (
                 <div className='flex shrink-0 items-center justify-center'>
@@ -182,10 +198,10 @@ const ErpSystem = () => {
         <input
           accept='.csv,.xlsx,.xls'
           className='hidden'
-          onChange={handleFileUpload}
+          id='fileUploadInput'
           ref={fileInputRef}
           type='file'
-          id='fileUploadInput'
+          onChange={handleFileUpload}
         />
 
         {isFileBasedImportSelected && (
@@ -194,7 +210,10 @@ const ErpSystem = () => {
               {/* Header with icon and time estimate */}
               <div className='mb-4 flex items-center gap-2'>
                 <div className='flex size-8 items-center justify-center rounded-full bg-primary-2'>
-                  <Icon className='size-4 text-secondary-9' name={`${erpSettings.templateUploaded ? "tabler:file-description" : selectedOption === 'upload' ? "tabler:upload" : "tabler:file-import"}`} />
+                  <Icon
+                    className='size-4 text-secondary-9'
+                    name={`${erpSettings.templateUploaded ? 'tabler:file-description' : selectedOption === 'upload' ? 'tabler:upload' : 'tabler:file-import'}`}
+                  />
                 </div>
                 <span className='text-13 font-medium text-gray-11'>
                   {erpSettings.templateUploaded
@@ -220,12 +239,12 @@ const ErpSystem = () => {
                   <p className='mb-4 text-14 leading-relaxed text-gray-11'>
                     {erpSettings.templateUploaded
                       ? 'Your purchase order file has been uploaded. You can proceed to the next step or upload another file if needed.'
-                      : 'If you don\'t have a file, download the PO template to get started. Then upload your completed file to import your purchase orders.'}{' '}
+                      : "If you don't have a file, download the PO template to get started. Then upload your completed file to import your purchase orders."}{' '}
                     {!erpSettings.templateUploaded && (
                       <button
-                        className='cursor-pointer text-primary-11 underline hover:text-primary-10 transition-colors'
-                        onClick={handleTemplateDownload}
+                        className='cursor-pointer text-primary-11 underline transition-colors hover:text-primary-10'
                         type='button'
+                        onClick={handleTemplateDownload}
                       >
                         Download the PO template
                       </button>
@@ -236,9 +255,13 @@ const ErpSystem = () => {
                   <div className='mb-4 flex justify-start'>
                     <Button
                       icon='tabler:upload'
-                      label={erpSettings.templateUploaded ? 'Upload another PO file' : 'Upload your PO'}
-                      onClick={handleUploadClick}
                       size='sm'
+                      label={
+                        erpSettings.templateUploaded
+                          ? 'Upload another PO file'
+                          : 'Upload your PO'
+                      }
+                      onClick={handleUploadClick}
                     />
                   </div>
 
@@ -261,7 +284,13 @@ const ErpSystem = () => {
                       <InputSelect
                         label='Select Form'
                         options={formOptions}
-                        value={erpSettings.selectedFormName ? formOptions.find(f => f.name === erpSettings.selectedFormName) || null : null}
+                        value={
+                          erpSettings.selectedFormName
+                            ? formOptions.find(
+                                (f) => f.name === erpSettings.selectedFormName,
+                              ) || null
+                            : null
+                        }
                         onChange={handleFormSelect}
                       />
                     </div>
@@ -283,7 +312,9 @@ const ErpSystem = () => {
               {selectedOption === 'upload' && erpSettings.uploadedTemplate && (
                 <div className='mt-3 flex items-center gap-2 text-14 text-gray-11'>
                   <Icon className='size-4' name='tabler:file-check' />
-                  <span className='font-medium'>{erpSettings.uploadedTemplate.name}</span>
+                  <span className='font-medium'>
+                    {erpSettings.uploadedTemplate.name}
+                  </span>
                 </div>
               )}
 
@@ -299,7 +330,6 @@ const ErpSystem = () => {
             </div>
           </AnimateFadeIn>
         )}
-
       </div>
 
       {/* Divider with (OR) */}
@@ -319,23 +349,24 @@ const ErpSystem = () => {
         </AnimateSlideUp>
         <div className='grid grid-cols-1 gap-2.5 sm:grid-cols-1'>
           {items.map((item, index) => {
-            const AnimationComponent = animationVariants[index % animationVariants.length]
+            const AnimationComponent =
+              animationVariants[index % animationVariants.length]
             return (
-              <AnimationComponent
-                key={item.value}
-                delay={0.25 + index * 0.08}
-              >
+              <AnimationComponent delay={0.25 + index * 0.08} key={item.value}>
                 <BrandCard
-                  checked={erpSettings.system === item.value && !isFileBasedImportSelected}
                   logo={item.logo}
                   name={item.name}
                   value={item.value}
+                  checked={
+                    erpSettings.system === item.value &&
+                    !isFileBasedImportSelected
+                  }
                   onClick={() =>
                     setErpSettings({
                       ...erpSettings,
-                      wantsFileBasedImport: false,
                       isConnected: false,
                       system: item.value,
+                      wantsFileBasedImport: false,
                     })
                   }
                 />

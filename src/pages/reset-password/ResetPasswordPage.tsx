@@ -1,17 +1,15 @@
 import { useNavigate } from '@tanstack/react-router'
-import { useMemo, useState, useEffect } from 'react'
-
+import { useEffect, useMemo, useState } from 'react'
+import authApi from '@/api/auth'
 import Button from '@/components/base/button/Button'
 import IconIllustrated from '@/components/base/icon/IconIllustrated'
 import InputText from '@/components/base/inputs/InputText'
 import InputPassword from '@/components/base/inputs/password/InputPassword'
+import Title from '@/components/base/Title'
+import showToast from '@/components/base/toast/showToast'
 // import HeroText from '@/components/common/HeroText'
 import PasswordRequirements from '@/layouts/auth/components/PasswordRequirements'
-import authApi from '@/api/auth'
-
 import authUserStore from '@/stores/authUserStore'
-import showToast from '@/components/base/toast/showToast'
-import Title from '@/components/base/Title'
 
 const ResetPasswordPage = () => {
   const navigate = useNavigate()
@@ -25,7 +23,9 @@ const ResetPasswordPage = () => {
 
   const [firstName, setFirstName] = useState(signUpUserData.firstName || '')
   const [lastName, setLastName] = useState(signUpUserData.lastName || '')
-  const [organisation, setOrganisation] = useState(signUpUserData.organisation || '')
+  const [organisation, setOrganisation] = useState(
+    signUpUserData.organisation || '',
+  )
   const [password, setPassword] = useState(signUpUserData.password || '')
   const [confirmPassword, setConfirmPassword] = useState('')
 
@@ -37,10 +37,10 @@ const ResetPasswordPage = () => {
     setSignUpUserData({
       firstName,
       lastName,
-      organisation,
-      password: isSocial ? '' : password,
       licenseType: '3',
       loginType,
+      organisation,
+      password: isSocial ? '' : password,
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [firstName, lastName, organisation, password, isSocial, loginType])
@@ -61,38 +61,38 @@ const ResetPasswordPage = () => {
 
       if (!isSocial) {
         if (!password) return setError('Password is required')
-        if (password !== confirmPassword) return setError('Passwords do not match')
+        if (password !== confirmPassword)
+          return setError('Passwords do not match')
       }
 
       setLoading(true)
 
       // final canonical payload (exactly like your example)
       const payload = {
+        email,
         firstName: firstName.trim(),
         lastName: lastName.trim(),
-        password: isSocial ? '' : password,
-        organisation: organisation.trim(),
         licenseType: 3,
-        email,
         loginType, // "GOOGLE" | "MICROSOFT" | "NORMAL"
+        organisation: organisation.trim(),
+        password: isSocial ? '' : password,
       }
 
       console.log(payload)
 
-      const { status, data } = await authApi.signUp(payload)
+      const { data, status } = await authApi.signUp(payload)
 
-      if (status === 200 || status === 201 || data === "Success") {
-        showToast({ message: "Account Setup Completed Successfully", variant: "success" })
+      if (status === 200 || status === 201 || data === 'Success') {
+        showToast({
+          message: 'Account Setup Completed Successfully',
+          variant: 'success',
+        })
         setLoading(false)
         navigate({ to: '/sign-in' })
       }
 
       console.log(data)
-    } catch (error) {
-
-    }
-
-
+    } catch (error) {}
   }
 
   return (
@@ -109,19 +109,28 @@ const ResetPasswordPage = () => {
         <InputText
           label='First name'
           value={firstName}
-          onChange={(v) => { setFirstName(v); setError(null) }}
+          onChange={(v) => {
+            setFirstName(v)
+            setError(null)
+          }}
         />
 
         <InputText
           label='Last name'
           value={lastName}
-          onChange={(v) => { setLastName(v); setError(null) }}
+          onChange={(v) => {
+            setLastName(v)
+            setError(null)
+          }}
         />
 
         <InputText
           label='Organisation'
           value={organisation}
-          onChange={(v) => { setOrganisation(v); setError(null) }}
+          onChange={(v) => {
+            setOrganisation(v)
+            setError(null)
+          }}
         />
 
         {!isSocial && (
@@ -129,21 +138,25 @@ const ResetPasswordPage = () => {
             <InputPassword
               label='Password'
               value={password}
-              onChange={(v) => { setPassword(v); setError(null) }}
+              onChange={(v) => {
+                setPassword(v)
+                setError(null)
+              }}
             />
             <PasswordRequirements password={password} />
             <InputPassword
               label='Confirm password'
               value={confirmPassword}
-              onChange={(v) => { setConfirmPassword(v); setError(null) }}
+              onChange={(v) => {
+                setConfirmPassword(v)
+                setError(null)
+              }}
             />
           </>
         )}
       </div>
 
-      {error && (
-        <div className='text-center text-sm text-red-500'>{error}</div>
-      )}
+      {error && <div className='text-red-500 text-center text-sm'>{error}</div>}
 
       <Button
         className='w-full justify-center'
@@ -152,7 +165,6 @@ const ResetPasswordPage = () => {
         onClick={handleSignUp}
       />
     </div>
-
   )
 }
 

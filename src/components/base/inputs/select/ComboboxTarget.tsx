@@ -12,10 +12,10 @@ interface Props extends InputProps {
   value: Option[]
   leftSection?: ReactNode
   loading?: boolean
+  rightSectionIcon?: string
   variant?: SelectVariant
   onChange: (value: Option[]) => void
   onClick: () => void
-  rightSectionIcon?: string
 }
 
 const ComboboxTarget = forwardRef<HTMLButtonElement, Props>(
@@ -29,13 +29,13 @@ const ComboboxTarget = forwardRef<HTMLButtonElement, Props>(
       placeholder,
       readOnly,
       required,
+      rightSectionIcon,
       tooltip,
       tooltipWidth,
       value,
       variant = 'single',
       onChange,
       onClick,
-      rightSectionIcon,
       ...rest
     },
     ref,
@@ -69,7 +69,10 @@ const ComboboxTarget = forwardRef<HTMLButtonElement, Props>(
     ) : clearable && value.length ? (
       <ClearButton onClick={() => onChange([])} />
     ) : (
-      <Icon className='text-gray-10' name={rightSectionIcon || 'lucide:chevron-down'} />
+      <Icon
+        className='text-gray-10'
+        name={rightSectionIcon || 'lucide:chevron-down'}
+      />
     )
 
     const children = useMemo(() => {

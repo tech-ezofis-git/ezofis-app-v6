@@ -1,10 +1,10 @@
-import { axiosCrypto, _axios } from '../axios'
 import authUserStore from '../../stores/authUserStore'
+import { _axios, axiosCrypto } from '../axios'
 
-const fetchFoldersById = async (folderId: Number) => {
+const fetchFoldersById = async (folderId: number) => {
   const response: any = { data: '', error: '' }
   try {
-    const { status, data } = await axiosCrypto(`/repository/${folderId}`)
+    const { data, status } = await axiosCrypto(`/repository/${folderId}`)
     if (status != 200) return
     response.data = data
   } catch (error) {
@@ -19,14 +19,14 @@ const uploadFileWithIndex = async (formData: FormData) => {
   try {
     const store = authUserStore.getState()
     const token = store?.identity?.token
-    const { status, data } = await _axios.post(
+    const { data, status } = await _axios.post(
       `/uploadAndIndex/upload`,
       formData,
       {
         headers: {
-          'Token': token,
           'Accept': 'application/json',
           'Content-Type': 'multipart/form-data',
+          'Token': token,
         },
       },
     )
@@ -44,14 +44,14 @@ const uploadMasterFile = async (payload: any) => {
   try {
     const store = authUserStore.getState()
     const token = store?.identity?.token
-    const { status, data } = await _axios.post(
+    const { data, status } = await _axios.post(
       `/form/uploadMasterFile`,
       payload,
       {
         headers: {
-          'Token': token,
           'Accept': 'application/json',
           'Content-Type': 'multipart/form-data',
+          'Token': token,
         },
       },
     )
@@ -64,6 +64,32 @@ const uploadMasterFile = async (payload: any) => {
   }
   return response
 }
-const folderApi = { fetchFoldersById, uploadFileWithIndex, uploadMasterFile }
+
+const getRepositoryList = async (criteria = '', value = '') => {
+  const response: any = { data: '', error: '' }
+  try {
+    const { data, status } = await axiosCrypto.post('/repository/list', {
+      criteria,
+      value,
+    })
+
+    if (status !== 200) {
+      throw new Error('Failed to fetch repositories')
+    }
+
+    response.data = typeof data === 'string' ? JSON.parse(data) : data
+  } catch (e: any) {
+    console.error(e)
+    response.error = e.message || 'error fetching repositories'
+  }
+  return response
+}
+
+const folderApi = {
+  fetchFoldersById,
+  uploadFileWithIndex,
+  uploadMasterFile,
+  getRepositoryList,
+}
 
 export default folderApi

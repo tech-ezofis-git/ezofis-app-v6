@@ -24,4 +24,4 @@ const Theme = () => {
 }
 
 Theme.displayName = 'Theme'
-export default Theme  
+export default Theme

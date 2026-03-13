@@ -16,11 +16,16 @@ function RouteComponent() {
   return (
     <div className='max-w-4xl p-6'>
       <StoryTitle>Pagination</StoryTitle>
-      <p className='text-15 text-gray-11 mb-10'>
-        The Pagination component allows users to navigate through large datasets by dividing them into manageable chunks or pages. It provides controls for changing the current page and adjusting the number of items displayed per page.
+      <p className='mb-10 text-15 text-gray-11'>
+        The Pagination component allows users to navigate through large datasets
+        by dividing them into manageable chunks or pages. It provides controls
+        for changing the current page and adjusting the number of items
+        displayed per page.
       </p>
 
-      <p className='text-14 text-gray-11 mb-4'>Before using Pagination, import it from its location:</p>
+      <p className='mb-4 text-14 text-gray-11'>
+        Before using Pagination, import it from its location:
+      </p>
       <StoryCode>
         {`import Pagination from '@/components/base/pagination/Pagination'`}
       </StoryCode>
@@ -29,8 +34,9 @@ function RouteComponent() {
         {/* Default Section */}
         <section>
           <StorySubTitle>Default Usage</StorySubTitle>
-          <p className='text-14 text-gray-11 mb-4'>
-            A comprehensive pagination control with page numbers, page size selector, and item count.
+          <p className='mb-4 text-14 text-gray-11'>
+            A comprehensive pagination control with page numbers, page size
+            selector, and item count.
           </p>
           <StoryCode>
             {`<Pagination
@@ -42,7 +48,7 @@ function RouteComponent() {
   onPageSizeChange={setPageSize}
 />`}
           </StoryCode>
-          <div className='mt-8 p-4 bg-gray-1 border border-gray-3 rounded-lg'>
+          <div className='mt-8 rounded-lg border border-gray-3 bg-gray-1 p-4'>
             <Pagination
               itemLabel='Users'
               page={page}
@@ -57,8 +63,9 @@ function RouteComponent() {
         {/* Compact Section */}
         <section>
           <StorySubTitle>Simplified View</StorySubTitle>
-          <p className='text-14 text-gray-11 mb-4'>
-            Toggle <code>showPageNumbers={'{false}'}</code> to display only the previous/next buttons and metadata.
+          <p className='mb-4 text-14 text-gray-11'>
+            Toggle <code>showPageNumbers={'{false}'}</code> to display only the
+            previous/next buttons and metadata.
           </p>
           <StoryCode>
             {`<Pagination
@@ -67,7 +74,7 @@ function RouteComponent() {
   /* ...other props */
 />`}
           </StoryCode>
-          <div className='mt-8 p-4 bg-gray-1 border border-gray-3 rounded-lg'>
+          <div className='mt-8 rounded-lg border border-gray-3 bg-gray-1 p-4'>
             <Pagination
               itemLabel='Records'
               page={page}

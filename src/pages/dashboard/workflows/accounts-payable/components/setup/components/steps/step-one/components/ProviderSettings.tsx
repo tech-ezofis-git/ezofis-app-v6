@@ -16,10 +16,10 @@ import BrandCard from '../../components/BrandCard'
 import SectionHeader from '../../components/SectionHeader'
 
 const directUploadItem = {
+  description: 'Quickly upload any document saved to your current device.',
   icon: 'tabler:upload',
   name: 'Quick Drop',
   value: 'DIRECT_UPLOAD',
-  description: "Quickly upload any document saved to your current device."
 }
 
 const emailProviders = [
@@ -90,12 +90,10 @@ const ProviderSettings = () => {
         </AnimateSlideUp>
         <div className='grid grid-cols-1 gap-2.5 sm:grid-cols-2'>
           {emailProviders.map((item, index) => {
-            const AnimationComponent = animationVariants[index % animationVariants.length]
+            const AnimationComponent =
+              animationVariants[index % animationVariants.length]
             return (
-              <AnimationComponent
-                key={item.value}
-                delay={0.25 + index * 0.08}
-              >
+              <AnimationComponent delay={0.25 + index * 0.08} key={item.value}>
                 <BrandCard
                   checked={emailSettings.provider === item.value}
                   logo={item.logo}

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
-import { useMemo, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
+import { useMemo, useState } from 'react'
 import type { Column } from '@/components/base/data-table/types'
 import type { Form } from '@/types/form'
 import { getFormsListQueryOptions } from '@/api/form/queries'
@@ -24,10 +24,17 @@ const Table = () => {
       size: 200,
       renderCell: (row: any) => (
         <span
-          onClick={() => navigate({ params: { formId: row.uid || row.id }, to: '/form-builder/$formId' })}
           className='cursor-pointer font-medium underline transition-colors hover:text-gray-13'
+          onClick={() =>
+            navigate({
+              params: { formId: row.uid || row.id },
+              to: '/form-builder/$formId',
+            })
+          }
         >
-          {String(row._json?.settings?.general?.name || row.name || 'Untitled Form')}
+          {String(
+            row._json?.settings?.general?.name || row.name || 'Untitled Form',
+          )}
         </span>
       ),
     },
@@ -38,7 +45,10 @@ const Table = () => {
       size: 140,
       renderCell: (row: any) => (
         <FormStatusBadge
-          status={(row._json?.settings?.publish?.publishOption || row.publishOption) as Form['status']}
+          status={
+            (row._json?.settings?.publish?.publishOption ||
+              row.publishOption) as Form['status']
+          }
         />
       ),
     },
@@ -58,7 +68,9 @@ const Table = () => {
             icon={row.isFavourite ? 'tabler:star-filled' : 'tabler:star'}
             variant='ghost'
             iconClass={
-              row.isFavourite ? 'text-yellow-10' : 'text-gray-8 group-hover:text-gray-9'
+              row.isFavourite
+                ? 'text-yellow-10'
+                : 'text-gray-8 group-hover:text-gray-9'
             }
           />
         </div>
@@ -69,7 +81,7 @@ const Table = () => {
       label: 'Description',
       size: 240,
       renderCell: (row: any) => (
-        <span className='text-gray-10 line-clamp-1'>
+        <span className='line-clamp-1 text-gray-10'>
           {row._json?.settings?.general?.description || row.description || '-'}
         </span>
       ),
@@ -80,7 +92,11 @@ const Table = () => {
       label: 'Type',
       size: 140,
       renderCell: (row: any) => (
-        <FormTypeBadge type={(row._json?.settings?.general?.type || row.type) as Form['type']} />
+        <FormTypeBadge
+          type={
+            (row._json?.settings?.general?.type || row.type) as Form['type']
+          }
+        />
       ),
     },
     {
@@ -92,7 +108,8 @@ const Table = () => {
       id: 'createdAt',
       label: 'Created At',
       size: 200,
-      renderCell: (row: any) => formatDatetime(row.createdAt as string, 'datetime'),
+      renderCell: (row: any) =>
+        formatDatetime(row.createdAt as string, 'datetime'),
     },
     {
       id: 'updatedBy',
@@ -103,7 +120,8 @@ const Table = () => {
       id: 'updatedAt',
       label: 'Last Modified At',
       size: 200,
-      renderCell: (row: any) => formatDatetime(row.updatedAt as string, 'datetime'),
+      renderCell: (row: any) =>
+        formatDatetime(row.updatedAt as string, 'datetime'),
     },
     {
       className: 'p-1',
@@ -117,13 +135,22 @@ const Table = () => {
           <Menu
             position='bottom-end'
             width={160}
-            target={<IconButton color='gray' icon='lucide:more-vertical' variant='ghost' />}
+            target={
+              <IconButton
+                color='gray'
+                icon='lucide:more-vertical'
+                variant='ghost'
+              />
+            }
           >
             <MenuItem
               icon='lucide:edit'
               label='Edit'
               onClick={() =>
-                navigate({ params: { formId: row.uid || row.id }, to: '/form-builder/$formId' })
+                navigate({
+                  params: { formId: row.uid || row.id },
+                  to: '/form-builder/$formId',
+                })
               }
             />
             <MenuItem
@@ -166,8 +193,13 @@ const Table = () => {
 
     const mapItem = (item: any) => ({
       ...item,
-      id: String(item.uid || item.id || Math.random().toString(36).substring(2, 11)),
-      _json: typeof item.formJson === 'string' ? JSON.parse(item.formJson) : item.formJson,
+      _json:
+        typeof item.formJson === 'string'
+          ? JSON.parse(item.formJson)
+          : item.formJson,
+      id: String(
+        item.uid || item.id || Math.random().toString(36).substring(2, 11),
+      ),
     })
 
     // Recursive helper to find the first array in the object tree
@@ -185,7 +217,11 @@ const Table = () => {
         }
         // Check all other keys if needed, but usually it's under 'data'
         for (const key in obj) {
-          if (key !== 'data' && key !== 'value' && typeof obj[key] === 'object') {
+          if (
+            key !== 'data' &&
+            key !== 'value' &&
+            typeof obj[key] === 'object'
+          ) {
             const results = findDeepData(obj[key])
             if (results) return results
           }
@@ -199,12 +235,17 @@ const Table = () => {
 
     if (rawList.length > 0) {
       // Check if it's grouped: [{ key: '...', value: [...] }, ...]
-      const isGrouped = 'key' in rawList[0] && ('value' in rawList[0] || 'data' in rawList[0])
+      const isGrouped =
+        'key' in rawList[0] && ('value' in rawList[0] || 'data' in rawList[0])
       console.log('3. Is grouped structure?:', isGrouped)
 
       if (isGrouped) {
         const grouped = rawList.map((group: any) => {
-          const items = Array.isArray(group.value) ? group.value : (Array.isArray(group.data) ? group.data : [])
+          const items = Array.isArray(group.value)
+            ? group.value
+            : Array.isArray(group.data)
+              ? group.data
+              : []
           return {
             groupCount: items.length,
             groupId: String(group.key),
@@ -258,7 +299,8 @@ const Table = () => {
     }
 
     const meta = findDeepMeta(data)
-    const count = meta?.totalItems ?? forms.reduce((acc, g) => acc + g.groupCount, 0)
+    const count =
+      meta?.totalItems ?? forms.reduce((acc, g) => acc + g.groupCount, 0)
 
     console.log('📊 totalItems detected:', count, { metaDetected: meta })
     return count

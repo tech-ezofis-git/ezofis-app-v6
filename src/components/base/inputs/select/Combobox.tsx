@@ -9,22 +9,24 @@ import ComboboxTarget from './ComboboxTarget'
 interface Props extends InputProps, SelectProps {
   search: string
   value: Option[]
+  dropdownFooter?: React.ReactNode
   loading?: boolean
+  rightSectionIcon?: string
   variant?: SelectVariant
   onBottomReached?: () => void
   onChange: (value: Option[]) => void
   onCreate?: () => void
   onSearch: (search: string) => void
-  dropdownFooter?: React.ReactNode
-  rightSectionIcon?: string
 }
 
 const Combobox = forwardRef<HTMLButtonElement, Props>(
   (
     {
       creatable,
+      dropdownFooter,
       options,
       position = 'bottom-start',
+      rightSectionIcon,
       search,
       searchable,
       searchPlaceholder,
@@ -34,8 +36,6 @@ const Combobox = forwardRef<HTMLButtonElement, Props>(
       onBottomReached,
       onChange,
       onSearch,
-      dropdownFooter,
-      rightSectionIcon,
       ...rest
     },
     ref,
@@ -53,23 +53,27 @@ const Combobox = forwardRef<HTMLButtonElement, Props>(
       }
     }, [comboboxStore.dropdownOpened])
 
-    const handleSearchKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    const handleSearchKeyDown = (
+      event: React.KeyboardEvent<HTMLInputElement>,
+    ) => {
       if (event.key === 'Enter' && creatable && search.trim()) {
         // If there's an exact match in current options, let Mantine handle it naturally
-        const hasExactMatch = options.some(o => o.name.toLowerCase() === search.toLowerCase());
-        if (hasExactMatch) return;
+        const hasExactMatch = options.some(
+          (o) => o.name.toLowerCase() === search.toLowerCase(),
+        )
+        if (hasExactMatch) return
 
-        const id = Date.now();
-        const newOption = { id, name: search, description: '', disabled: false };
+        const id = Date.now()
+        const newOption = { description: '', disabled: false, id, name: search }
 
         if (variant === 'single') {
-          onChange([newOption]);
+          onChange([newOption])
         } else {
-          onChange([...value, newOption]);
+          onChange([...value, newOption])
         }
-        comboboxStore.closeDropdown();
+        comboboxStore.closeDropdown()
       }
-    };
+    }
 
     return (
       <Base
@@ -81,9 +85,9 @@ const Combobox = forwardRef<HTMLButtonElement, Props>(
         <ComboboxTarget
           {...rest}
           ref={ref}
+          rightSectionIcon={rightSectionIcon}
           value={value}
           variant={variant}
-          rightSectionIcon={rightSectionIcon}
           onChange={onChange}
           onClick={() => comboboxStore.toggleDropdown()}
         />
@@ -97,8 +101,8 @@ const Combobox = forwardRef<HTMLButtonElement, Props>(
             <ComboboxSearch
               placeholder={searchPlaceholder}
               search={search}
-              onSearch={onSearch}
               onKeyDown={handleSearchKeyDown}
+              onSearch={onSearch}
             />
           )}
 

@@ -1,5 +1,5 @@
-import { useEffect } from 'react'
 import { motion } from 'motion/react'
+import { useEffect } from 'react'
 import Alert from '@/components/base/Alert'
 import Button from '@/components/base/button/Button'
 import Divider from '@/components/base/Divider'
@@ -20,8 +20,6 @@ const StepOne = () => {
     const handleMessage = (event: MessageEvent) => {
       if (event.origin !== window.location.origin) return
       if (event.data.type === 'CONNECTION_SUCCESS') {
-
-
         setEmailSettings({
           ...emailSettings,
           isConnected: true,
@@ -99,14 +97,15 @@ const StepOne = () => {
         </AnimateSlideUp>
       )}
 
-      {emailSettings.isConnected && emailSettings.provider !== 'DIRECT_UPLOAD' && (
-        <AnimateSlideUp delay={0.4}>
-          <Alert
-            text={`Your ${emailSettings.provider} account has been connected successfully.`}
-            variant='green'
-          />
-        </AnimateSlideUp>
-      )}
+      {emailSettings.isConnected &&
+        emailSettings.provider !== 'DIRECT_UPLOAD' && (
+          <AnimateSlideUp delay={0.4}>
+            <Alert
+              text={`Your ${emailSettings.provider} account has been connected successfully.`}
+              variant='green'
+            />
+          </AnimateSlideUp>
+        )}
 
       <motion.div
         animate={{ opacity: 1, y: 0 }}
@@ -114,7 +113,8 @@ const StepOne = () => {
         initial={{ opacity: 0, y: 10 }}
         transition={{ delay: 0.5, duration: 0.4 }}
       >
-        {emailSettings.provider === 'DIRECT_UPLOAD' || emailSettings.isConnected ? (
+        {emailSettings.provider === 'DIRECT_UPLOAD' ||
+        emailSettings.isConnected ? (
           <Button
             label='Continue'
             suffixIcon='tabler:arrow-right'

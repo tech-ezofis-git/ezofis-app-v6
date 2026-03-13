@@ -1,11 +1,10 @@
 // import avatar from '@/assets/avatar.jpg'
 import Avatar from '@/components/base/Avatar'
-import authUserStore from '@/stores/authUserStore';
+import authUserStore from '@/stores/authUserStore'
 
 const UserMenuTrigger = () => {
   const API_URI = import.meta.env?.VITE_BASE_URL
-  const store = authUserStore?.getState();
-
+  const store = authUserStore?.getState()
 
   const imageUrl = `${API_URI}/user/avatar/${store?.session?.tenantId}/${store?.session?.id}`
 

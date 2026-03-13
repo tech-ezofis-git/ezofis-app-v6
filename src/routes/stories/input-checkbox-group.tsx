@@ -21,9 +21,21 @@ const optionsLarge = Array.from({ length: 6 }, (_, i) => ({
 }))
 
 const optionsWithDescription = [
-  { id: 1, name: 'Basic Plan', description: 'Up to 5 projects and limited storage' },
-  { id: 2, name: 'Pro Plan', description: 'Unlimited projects and 50GB storage' },
-  { id: 3, name: 'Enterprise Plan', description: 'Custom solutions for large teams' },
+  {
+    description: 'Up to 5 projects and limited storage',
+    id: 1,
+    name: 'Basic Plan',
+  },
+  {
+    description: 'Unlimited projects and 50GB storage',
+    id: 2,
+    name: 'Pro Plan',
+  },
+  {
+    description: 'Custom solutions for large teams',
+    id: 3,
+    name: 'Enterprise Plan',
+  },
 ]
 
 function RouteComponent() {
@@ -32,11 +44,15 @@ function RouteComponent() {
   return (
     <div className='max-w-4xl p-6'>
       <StoryTitle>Input Checkbox Group</StoryTitle>
-      <p className='text-15 text-gray-11 mb-10'>
-        The Checkbox Group component manages a collection of checkboxes as a single field. It's ideal for multi-select scenarios where users can choose several options from a list.
+      <p className='mb-10 text-15 text-gray-11'>
+        The Checkbox Group component manages a collection of checkboxes as a
+        single field. It's ideal for multi-select scenarios where users can
+        choose several options from a list.
       </p>
 
-      <p className='text-14 text-gray-11 mb-4'>Before using InputCheckboxGroup, import it from its location:</p>
+      <p className='mb-4 text-14 text-gray-11'>
+        Before using InputCheckboxGroup, import it from its location:
+      </p>
       <StoryCode>
         {`import InputCheckboxGroup from '@/components/base/inputs/InputCheckboxGroup'`}
       </StoryCode>
@@ -45,27 +61,39 @@ function RouteComponent() {
         {/* Default Section */}
         <section>
           <StorySubTitle>Default Usage</StorySubTitle>
-          <p className='text-14 text-gray-11 mb-4'>
+          <p className='mb-4 text-14 text-gray-11'>
             A simple group with vertically stacked checkboxes.
           </p>
           <StoryCode>
             {`<InputCheckboxGroup options={options} value={value} onChange={setValue} />`}
           </StoryCode>
           <div className='ml-1'>
-            <InputCheckboxGroup options={options1} value={value} onChange={setValue} />
+            <InputCheckboxGroup
+              options={options1}
+              value={value}
+              onChange={setValue}
+            />
           </div>
         </section>
 
         {/* Metadata Section */}
         <section>
           <StorySubTitle>Metadata (Label, Description, Tooltip)</StorySubTitle>
-          <p className='text-14 text-gray-11 mb-4'>
-            Configure headings, instructions, and necessity indicators for the group:
+          <p className='mb-4 text-14 text-gray-11'>
+            Configure headings, instructions, and necessity indicators for the
+            group:
           </p>
-          <ul className='list-disc list-inside space-y-2 text-14 text-gray-11 mb-6 ml-2'>
-            <li><strong>Label:</strong> A clear title for the whole group.</li>
-            <li><strong>Description:</strong> Contextual help text below the label.</li>
-            <li><strong>Tooltip:</strong> Detailed info accessible via hover icon.</li>
+          <ul className='mb-6 ml-2 list-inside list-disc space-y-2 text-14 text-gray-11'>
+            <li>
+              <strong>Label:</strong> A clear title for the whole group.
+            </li>
+            <li>
+              <strong>Description:</strong> Contextual help text below the
+              label.
+            </li>
+            <li>
+              <strong>Tooltip:</strong> Detailed info accessible via hover icon.
+            </li>
           </ul>
           <StoryCode>
             {`<InputCheckboxGroup
@@ -78,16 +106,16 @@ function RouteComponent() {
   required
 />`}
           </StoryCode>
-          <div className='max-w-sm ml-1'>
+          <div className='ml-1 max-w-sm'>
             <InputCheckboxGroup
-              label='Shipping Methods'
-              description='Choose all methods you would like to enable'
-              tooltip='Standard delivery takes 3-5 business days'
-              options={options1}
-              value={value}
-              onChange={setValue}
               className='w-full'
+              description='Choose all methods you would like to enable'
+              label='Shipping Methods'
+              options={options1}
+              tooltip='Standard delivery takes 3-5 business days'
+              value={value}
               required
+              onChange={setValue}
             />
           </div>
         </section>
@@ -95,8 +123,9 @@ function RouteComponent() {
         {/* Layout Section */}
         <section>
           <StorySubTitle>Grid Layout (Options Per Line)</StorySubTitle>
-          <p className='text-14 text-gray-11 mb-4'>
-            Organize options into a multi-column grid using the <code>optionsPerLine</code> prop:
+          <p className='mb-4 text-14 text-gray-11'>
+            Organize options into a multi-column grid using the{' '}
+            <code>optionsPerLine</code> prop:
           </p>
           <StoryCode>
             {`<InputCheckboxGroup options={options} optionsPerLine={3} />`}
@@ -114,8 +143,9 @@ function RouteComponent() {
         {/* Item Descriptions */}
         <section>
           <StorySubTitle>Item Descriptions</StorySubTitle>
-          <p className='text-14 text-gray-11 mb-4'>
-            Individual options within the group can also have their own descriptions:
+          <p className='mb-4 text-14 text-gray-11'>
+            Individual options within the group can also have their own
+            descriptions:
           </p>
           <StoryCode>
             {`<InputCheckboxGroup options={optionsWithDescription} />`}
@@ -132,21 +162,32 @@ function RouteComponent() {
         {/* States Section */}
         <section>
           <StorySubTitle>Interaction States</StorySubTitle>
-          <p className='text-14 text-gray-11 mb-6'>
+          <p className='mb-6 text-14 text-gray-11'>
             Visual feedback for invalid inputs or restricted interaction:
           </p>
-          <div className='grid grid-cols-1 md:grid-cols-2 gap-8 max-w-2xl'>
+          <div className='grid max-w-2xl grid-cols-1 gap-8 md:grid-cols-2'>
             <div>
-              <p className='text-13 font-medium mb-3'>Disabled State</p>
-              <StoryCode>{"<InputCheckboxGroup disabled options={options} />"}</StoryCode>
-              <div className='ml-1 mt-4'>
-                <InputCheckboxGroup disabled options={options1} value={[1]} onChange={() => { }} />
+              <p className='mb-3 text-13 font-medium'>Disabled State</p>
+              <StoryCode>
+                {'<InputCheckboxGroup disabled options={options} />'}
+              </StoryCode>
+              <div className='mt-4 ml-1'>
+                <InputCheckboxGroup
+                  options={options1}
+                  value={[1]}
+                  disabled
+                  onChange={() => {}}
+                />
               </div>
             </div>
             <div>
-              <p className='text-13 font-medium mb-3'>Error State</p>
-              <StoryCode>{"<InputCheckboxGroup error='Selection required' options={options} />"}</StoryCode>
-              <div className='ml-1 mt-4'>
+              <p className='mb-3 text-13 font-medium'>Error State</p>
+              <StoryCode>
+                {
+                  "<InputCheckboxGroup error='Selection required' options={options} />"
+                }
+              </StoryCode>
+              <div className='mt-4 ml-1'>
                 <InputCheckboxGroup
                   error='Please select at least one plan'
                   options={options1}

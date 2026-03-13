@@ -1,62 +1,63 @@
-import { useMemo, useState } from 'react'
-import { generateDummySummary } from '@/pages/requests/utils/dummyData'
-// import SummaryBadge from '@/components/common/SummaryBadge'
-import Icon from '@/components/base/icon/Icon'
-import { formatDatetime } from '@/utils/dayjs'
-import cn from '@/utils/cn'
-import SummaryMetric from './SummaryMetric'
-import RequestStatusBadge from '@/components/common/RequestStatusBadge'
 import { type Table as TanstackTable } from '@tanstack/react-table'
-import TableActionBar, { type TableActionButton } from '@/components/base/data-table/TableActionBar'
-import type { RowSize } from '@/components/base/data-table/types'
-// import RequestSummary from './RequestSummary'
-import FileSheet from '@/components/common/file-sheet/FileSheet'
-
 // ✅ Motion
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
+import { useMemo, useState } from 'react'
+import type { RowSize } from '@/components/base/data-table/types'
+import TableActionBar, {
+  type TableActionButton,
+} from '@/components/base/data-table/TableActionBar'
+// import SummaryBadge from '@/components/common/SummaryBadge'
+import Icon from '@/components/base/icon/Icon'
+// import RequestSummary from './RequestSummary'
+import FileSheet from '@/components/common/file-sheet/FileSheet'
+import RequestStatusBadge from '@/components/common/RequestStatusBadge'
+import { generateDummySummary } from '@/pages/requests/utils/dummyData'
+import cn from '@/utils/cn'
+import { formatDatetime } from '@/utils/dayjs'
+import SummaryMetric from './SummaryMetric'
 
 const GridRowSkeleton = ({ index }: { index: number }) => {
   const prefersReducedMotion = useReducedMotion()
 
   return (
     <motion.div
-      initial={prefersReducedMotion ? false : { opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
+      aria-busy='true'
+      className='relative flex w-full items-center justify-between gap-4 overflow-hidden rounded-xl border border-[var(--gray-3)] bg-white p-4'
+      initial={prefersReducedMotion ? false : { opacity: 0, y: 6 }}
       transition={{ delay: index * 0.05 }}
-      className="relative flex w-full items-center justify-between gap-4 rounded-xl border border-[var(--gray-3)] bg-white p-4 overflow-hidden"
-      aria-busy="true"
     >
       {/* shimmer */}
       {!prefersReducedMotion && (
         <motion.div
-          className="pointer-events-none absolute inset-0 bg-[linear-gradient(110deg,transparent,rgba(255,255,255,0.6),transparent)]"
-          style={{ mixBlendMode: 'overlay' }}
           animate={{ x: ['-60%', '160%'] }}
+          className='pointer-events-none absolute inset-0 bg-[linear-gradient(110deg,transparent,rgba(255,255,255,0.6),transparent)]'
+          style={{ mixBlendMode: 'overlay' }}
           transition={{
-            duration: 1.2,
-            repeat: Infinity,
-            ease: [0, 0, 1, 1],
             delay: index * 0.1,
+            duration: 1.2,
+            ease: [0, 0, 1, 1],
+            repeat: Infinity,
           }}
         />
       )}
 
       {/* Left */}
-      <div className="flex items-center gap-4 min-w-0">
+      <div className='flex min-w-0 items-center gap-4'>
         {/* Icon */}
-        <div className="size-12 rounded-lg bg-[var(--gray-3)]/80" />
+        <div className='size-12 rounded-lg bg-[var(--gray-3)]/80' />
 
         {/* Text */}
-        <div className="flex flex-col gap-2 min-w-0">
-          <div className="h-4 w-44 rounded bg-[var(--gray-3)]/80" />
-          <div className="h-3 w-32 rounded bg-[var(--gray-3)]/60" />
+        <div className='flex min-w-0 flex-col gap-2'>
+          <div className='h-4 w-44 rounded bg-[var(--gray-3)]/80' />
+          <div className='h-3 w-32 rounded bg-[var(--gray-3)]/60' />
         </div>
       </div>
 
       {/* Right */}
-      <div className="hidden md:flex items-center gap-8 shrink-0">
+      <div className='hidden shrink-0 items-center gap-8 md:flex'>
         {/* Status */}
-        <div className="h-8 w-24 rounded-full bg-[var(--gray-3)]/70" />
+        <div className='h-8 w-24 rounded-full bg-[var(--gray-3)]/70' />
       </div>
     </motion.div>
   )
@@ -73,39 +74,36 @@ const listVariants = {
 }
 
 const itemVariantSet = () => ({
-
-  hidden: { opacity: 0, y: 10 },
-  show: { opacity: 1, y: 0 },
   exit: { opacity: 0, scale: 0.95 },
-  rowHover: { scale: 1.005, backgroundColor: 'var(--gray-1)' },
+  hidden: { opacity: 0, y: 10 },
+  rowHover: { backgroundColor: 'var(--gray-1)', scale: 1.005 },
+  show: { opacity: 1, y: 0 },
 })
-
-
 
 interface GridViewProps<TData> {
   data: any[]
   isLoading: boolean
-  onRowClick: (item: any, tab: string) => void
-  actions?: TableActionButton[]
   table: TanstackTable<TData>
-  isReloading?: boolean
-  onReload?: () => void
-  rowSize?: RowSize
-  onRowSizeChange?: (rowSize: RowSize) => void
+  actions?: TableActionButton[]
   hideGrouping?: boolean
+  isReloading?: boolean
+  rowSize?: RowSize
+  onReload?: () => void
+  onRowClick: (item: any, tab: string) => void
+  onRowSizeChange?: (rowSize: RowSize) => void
 }
 
 const GridView = <TData,>({
-  data,
-  isLoading,
-  onRowClick,
   actions = [],
-  table,
-  isReloading = false,
-  onReload = () => { },
-  rowSize = 'default',
-  onRowSizeChange = () => { },
+  data,
   hideGrouping = false,
+  isLoading,
+  isReloading = false,
+  rowSize = 'default',
+  table,
+  onReload = () => {},
+  onRowClick,
+  onRowSizeChange = () => {},
 }: GridViewProps<TData>) => {
   const prefersReducedMotion = useReducedMotion()
   const [selectedFile, setSelectedFile] = useState<any>(null)
@@ -117,7 +115,7 @@ const GridView = <TData,>({
     }
   }
 
-  // Pre-calculate all items across all groups for easy indexing if needed, 
+  // Pre-calculate all items across all groups for easy indexing if needed,
   // though we'll iterate by group for rendering.
   const allItems = useMemo(() => {
     const items: any[] = []
@@ -141,9 +139,9 @@ const GridView = <TData,>({
 
   if (isLoading) {
     return (
-      <div className="flex flex-col gap-3 p-2">
+      <div className='flex flex-col gap-3 p-2'>
         {[1, 2, 3].map((i) => (
-          <GridRowSkeleton key={i} index={i} />
+          <GridRowSkeleton index={i} key={i} />
         ))}
       </div>
     )
@@ -151,34 +149,39 @@ const GridView = <TData,>({
 
   return (
     <>
-      <div className="flex flex-col gap-3">
-        <div className="px-2 pt-1">
+      <div className='flex flex-col gap-3'>
+        <div className='px-2 pt-1'>
           <TableActionBar
-            table={table}
             actions={actions}
-            isReloading={isReloading}
-            onReload={onReload}
-            rowSize={rowSize}
-            onRowSizeChange={onRowSizeChange}
-            hideTableActions={true}
+            className='!mb-1'
             hideGrouping={hideGrouping}
-            className="!mb-1"
+            hideTableActions={true}
+            isReloading={isReloading}
+            rowSize={rowSize}
+            table={table}
+            onReload={onReload}
+            onRowSizeChange={onRowSizeChange}
           />
         </div>
 
         {allItems.length === 0 ? (
           <motion.div
-            initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col items-center justify-center p-12"
+            className='flex flex-col items-center justify-center p-12'
+            initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
           >
-            <div className="flex size-16 items-center justify-center rounded-full bg-[var(--gray-2)]">
-              <Icon name="tabler:inbox" className="size-8 text-[var(--gray-8)]" />
+            <div className='flex size-16 items-center justify-center rounded-full bg-[var(--gray-2)]'>
+              <Icon
+                className='size-8 text-[var(--gray-8)]'
+                name='tabler:inbox'
+              />
             </div>
-            <p className="mt-4 text-[var(--gray-11)] font-medium">No requests found</p>
+            <p className='mt-4 font-medium text-[var(--gray-11)]'>
+              No requests found
+            </p>
           </motion.div>
         ) : (
-          <div className="flex flex-col gap-2 px-2 pb-6">
+          <div className='flex flex-col gap-2 px-2 pb-6'>
             {data.map((group: any, gIdx: number) => {
               const hasHeader = group.groupValue && group.groupId !== 'root'
               const groupItems = group.items || []
@@ -193,7 +196,11 @@ const GridView = <TData,>({
                   row = table.getRow(String(groupId))
                   isCollapsed = row ? !row.getIsExpanded() : false
                 } catch (e) {
-                  console.warn("GridView: failed to get row for group", groupId, e)
+                  console.warn(
+                    'GridView: failed to get row for group',
+                    groupId,
+                    e,
+                  )
                   groupError = true
                 }
               }
@@ -202,53 +209,73 @@ const GridView = <TData,>({
 
               if (groupError) {
                 return (
-                  <div key={groupId} className="flex flex-col gap-3 pb-6">
+                  <div className='flex flex-col gap-3 pb-6' key={groupId}>
                     {groupItems.map((row: any, index: number) => {
-                      const rowId = row?.id || row?.processId || `item-${gIdx}-${index}`
+                      const rowId =
+                        row?.id || row?.processId || `item-${gIdx}-${index}`
                       const requestNo = row?.requestNo || `REQ-${rowId}`
                       const raisedBy = row?.raisedBy || 'Unknown User'
-                      const raisedAt = row?.raisedAt || row?.transaction_createdAt
-                      const dummySummary = dummySummaryMap.get(rowId) || generateDummySummary(rowId)
+                      const raisedAt =
+                        row?.raisedAt || row?.transaction_createdAt
+                      const dummySummary =
+                        dummySummaryMap.get(rowId) ||
+                        generateDummySummary(rowId)
 
                       return (
                         <div
+                          className='group relative flex w-full flex-col rounded-xl border border-[var(--gray-3)] bg-[var(--surface)] transition-all duration-200 hover:border-[var(--primary-3)]'
                           key={rowId}
-                          className="group relative flex w-full flex-col rounded-xl border border-[var(--gray-3)] bg-[var(--surface)] transition-all duration-200 hover:border-[var(--primary-3)]"
                         >
                           <div
+                            className='flex cursor-pointer items-center justify-between gap-4 p-3'
                             onClick={() => onRowClick(row, 'Overview')}
-                            className="flex cursor-pointer items-center justify-between gap-4 p-3"
                           >
-                            <div className="flex items-center gap-4 min-w-0">
-                              <div className="flex size-12 shrink-0 items-center justify-center rounded-lg border border-[var(--primary-3)] bg-[var(--primary-2)] text-[var(--primary-9)]">
-                                <Icon name="tabler:file-invoice" className="size-6" />
+                            <div className='flex min-w-0 items-center gap-4'>
+                              <div className='flex size-12 shrink-0 items-center justify-center rounded-lg border border-[var(--primary-3)] bg-[var(--primary-2)] text-[var(--primary-9)]'>
+                                <Icon
+                                  className='size-6'
+                                  name='tabler:file-invoice'
+                                />
                               </div>
-                              <div className="flex flex-col gap-1 min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <h3 className="truncate text-14 font-semibold text-[var(--gray-13)]">
+                              <div className='flex min-w-0 flex-col gap-1'>
+                                <div className='flex items-center gap-2'>
+                                  <h3 className='truncate text-14 font-semibold text-[var(--gray-13)]'>
                                     {requestNo}
                                   </h3>
-                                  {row?.isDuplicateInvoice && <RequestStatusBadge status="Duplicated" />}
+                                  {row?.isDuplicateInvoice && (
+                                    <RequestStatusBadge status='Duplicated' />
+                                  )}
                                 </div>
-                                <div className="flex items-center gap-2 text-12 text-[var(--gray-10)] truncate">
-                                  <span className="truncate max-w-[200px]">{raisedBy}</span>
-                                  <span className="h-1 w-1 rounded-full bg-[var(--gray-6)] shrink-0" />
-                                  <span className="shrink-0">{formatDatetime(raisedAt, 'datetime')}</span>
+                                <div className='flex items-center gap-2 truncate text-12 text-[var(--gray-10)]'>
+                                  <span className='max-w-[200px] truncate'>
+                                    {raisedBy}
+                                  </span>
+                                  <span className='h-1 w-1 shrink-0 rounded-full bg-[var(--gray-6)]' />
+                                  <span className='shrink-0'>
+                                    {formatDatetime(raisedAt, 'datetime')}
+                                  </span>
                                 </div>
                               </div>
                             </div>
-                            <div className="flex items-center gap-4 shrink-0">
-                              <div className="hidden lg:flex items-center gap-3">
-                                {Object.entries(dummySummary).map(([key, metric]: any) => (
-                                  <SummaryMetric
-                                    key={key}
-                                    metric={metric}
-                                    onFileSelect={(file) => setSelectedFile(file)}
-                                  />
-                                ))}
+                            <div className='flex shrink-0 items-center gap-4'>
+                              <div className='hidden items-center gap-3 lg:flex'>
+                                {Object.entries(dummySummary).map(
+                                  ([key, metric]: any) => (
+                                    <SummaryMetric
+                                      key={key}
+                                      metric={metric}
+                                      onFileSelect={(file) =>
+                                        setSelectedFile(file)
+                                      }
+                                    />
+                                  ),
+                                )}
                               </div>
-                              <div className="text-[var(--gray-8)] group-hover:text-[var(--primary-9)] transition-colors pr-2">
-                                <Icon name="tabler:chevron-right" className="size-5" />
+                              <div className='pr-2 text-[var(--gray-8)] transition-colors group-hover:text-[var(--primary-9)]'>
+                                <Icon
+                                  className='size-5'
+                                  name='tabler:chevron-right'
+                                />
                               </div>
                             </div>
                           </div>
@@ -260,61 +287,87 @@ const GridView = <TData,>({
               }
 
               return (
-                <div key={groupId} className="flex flex-col !cursor-pointer gap-4 relative hover:z-[100]">
+                <div
+                  className='relative flex !cursor-pointer flex-col gap-4 hover:z-[100]'
+                  key={groupId}
+                >
                   {hasHeader && (
                     <motion.div
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      className='group/header sticky top-0 z-20 -mx-2 flex cursor-pointer items-center justify-between gap-4 border-b border-[var(--gray-3)] bg-[var(--surface)] px-3 py-3'
+                      initial={{ opacity: 0, scale: 0.98, y: -20 }}
                       layout
+                      transition={{
+                        damping: 25,
+                        duration: 0.4,
+                        stiffness: 300,
+                        type: 'spring',
+                      }}
                       onClick={() => toggleGroup(groupId)}
-                      className="sticky top-0 z-20 -mx-2 px-3 py-3 bg-[var(--surface)] border-b border-[var(--gray-3)] flex items-center justify-between gap-4 cursor-pointer group/header"
-                      initial={{ opacity: 0, y: -20, scale: 0.98 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      transition={{ duration: 0.4, type: "spring", stiffness: 300, damping: 25 }}
                     >
                       {/* Left Side: Icon + Title */}
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-[var(--primary-2)] rounded-lg">
-                          <Icon name="tabler:folder-open" className="size-5 text-[var(--primary-9)]" />
+                      <div className='flex items-center gap-3'>
+                        <div className='rounded-lg bg-[var(--primary-2)] p-2'>
+                          <Icon
+                            className='size-5 text-[var(--primary-9)]'
+                            name='tabler:folder-open'
+                          />
                         </div>
                         <div>
-                          <h2 className="text-14 font-bold text-[var(--gray-13)] leading-tight">
+                          <h2 className='text-14 leading-tight font-bold text-[var(--gray-13)]'>
                             {group.groupValue}
                           </h2>
                         </div>
                       </div>
 
                       {/* Right Side: Stats + Chevron */}
-                      <div className="flex items-center gap-4">
+                      <div className='flex items-center gap-4'>
                         {/* Stats Pills (Hidden on mobile) */}
                         <motion.div
-                          initial={{ opacity: 0, x: 20 }}
                           animate={{ opacity: 1, x: 0 }}
+                          className='hidden items-center gap-3 rounded-full border border-[var(--gray-3)] bg-[var(--surface-raised)] px-3 py-1 shadow-sm transition-shadow hover:shadow-md md:flex 2xl:gap-6 2xl:px-5 2xl:py-1.5'
+                          initial={{ opacity: 0, x: 20 }}
                           transition={{ delay: 0.1, duration: 0.4 }}
-                          className="hidden md:flex items-center gap-3 2xl:gap-6 px-3 py-1 2xl:px-5 2xl:py-1.5 rounded-full bg-[var(--surface-raised)] border border-[var(--gray-3)] shadow-sm hover:shadow-md transition-shadow"
                         >
-
-                          <div className="flex items-baseline gap-2">
-                            <span className="text-[10px] uppercase font-bold text-[var(--gray-9)] tracking-wider">Invoice Received</span>
-                            <span className="text-xs 2xl:text-14 font-bold text-[var(--gray-12)]">{groupItems.length}</span>
+                          <div className='flex items-baseline gap-2'>
+                            <span className='text-[10px] font-bold tracking-wider text-[var(--gray-9)] uppercase'>
+                              Invoice Received
+                            </span>
+                            <span className='text-xs font-bold text-[var(--gray-12)] 2xl:text-14'>
+                              {groupItems.length}
+                            </span>
                           </div>
-                          <div className="w-px h-3 bg-[var(--gray-3)]"></div>
+                          <div className='h-3 w-px bg-[var(--gray-3)]'></div>
 
                           {/* Duplicate Alert */}
-                          <div className="flex items-center gap-2 px-2 py-0.5 2xl:px-3  rounded-lg -my-1">
-                            <span className=" 2xl:inline text-[10px] uppercase font-bold text-[var(--red-9)]">Duplicates : {groupItems.filter((i: any) => i.isDuplicateInvoice).length}</span>
-                            <div className="hidden flex items-center gap-1">
-                              <Icon name="tabler:alert-triangle" className="text-[var(--red-9)] size-3.5" />
-                              <span className="text-xs 2xl:text-14 font-bold text-[var(--red-9)]">$1,200.00</span>
+                          <div className='-my-1 flex items-center gap-2 rounded-lg px-2 py-0.5 2xl:px-3'>
+                            <span className='text-[10px] font-bold text-[var(--red-9)] uppercase 2xl:inline'>
+                              Duplicates :{' '}
+                              {
+                                groupItems.filter(
+                                  (i: any) => i.isDuplicateInvoice,
+                                ).length
+                              }
+                            </span>
+                            <div className='flex hidden items-center gap-1'>
+                              <Icon
+                                className='size-3.5 text-[var(--red-9)]'
+                                name='tabler:alert-triangle'
+                              />
+                              <span className='text-xs font-bold text-[var(--red-9)] 2xl:text-14'>
+                                $1,200.00
+                              </span>
                             </div>
                           </div>
                         </motion.div>
 
                         {/* Expand Button */}
-                        <button className="p-2 text-[var(--gray-10)] hover:text-[var(--primary-9)] transition-colors bg-transparent hover:bg-[var(--primary-2)] rounded-full">
+                        <button className='rounded-full bg-transparent p-2 text-[var(--gray-10)] transition-colors hover:bg-[var(--primary-2)] hover:text-[var(--primary-9)]'>
                           <Icon
-                            name="tabler:chevron-down"
+                            name='tabler:chevron-down'
                             className={cn(
-                              "size-5 transition-transform duration-300",
-                              isCollapsed ? "-rotate-90" : "rotate-0"
+                              'size-5 transition-transform duration-300',
+                              isCollapsed ? '-rotate-90' : 'rotate-0',
                             )}
                           />
                         </button>
@@ -325,103 +378,137 @@ const GridView = <TData,>({
                   <AnimatePresence initial={false}>
                     {!isCollapsed && (
                       <motion.div
-                        key="items-container"
-                        initial={{ height: 0, opacity: 0 }}
                         animate={{ height: 'auto', opacity: 1 }}
+                        className='overflow-hidden'
                         exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.3, ease: 'easeInOut' }}
-                        className="overflow-hidden"
-                        onAnimationComplete={() => {
-                          const el = document.getElementById(`group-container-${groupId}`);
-                          if (el) el.style.overflow = 'visible';
-                        }}
                         id={`group-container-${groupId}`}
+                        initial={{ height: 0, opacity: 0 }}
+                        key='items-container'
+                        transition={{ duration: 0.3, ease: 'easeInOut' }}
+                        onAnimationComplete={() => {
+                          const el = document.getElementById(
+                            `group-container-${groupId}`,
+                          )
+                          if (el) el.style.overflow = 'visible'
+                        }}
                       >
                         <motion.div
+                          animate='show'
+                          className='flex flex-col gap-3 pt-1 pb-6'
+                          initial='hidden'
                           variants={listVariants as any}
-                          initial="hidden"
-                          animate="show"
-                          className="flex flex-col gap-3 pt-1 pb-6"
                         >
                           {groupItems.map((row: any, index: number) => {
-                            const rowId = row?.id || row?.processId || `item-${gIdx}-${index}`
+                            const rowId =
+                              row?.id ||
+                              row?.processId ||
+                              `item-${gIdx}-${index}`
                             const requestNo = row?.requestNo || `REQ-${rowId}`
                             const raisedBy = row?.raisedBy || 'Unknown User'
-                            const raisedAt = row?.raisedAt || row?.transaction_createdAt
-                            const dummySummary = dummySummaryMap.get(rowId) || generateDummySummary(rowId)
+                            const raisedAt =
+                              row?.raisedAt || row?.transaction_createdAt
+                            const dummySummary =
+                              dummySummaryMap.get(rowId) ||
+                              generateDummySummary(rowId)
                             const variants = itemVariantSet()
 
                             return (
                               <motion.div
+                                exit='exit'
                                 key={rowId}
-                                layout
                                 variants={variants as any}
-                                exit="exit"
-                                whileHover="rowHover"
+                                whileHover='rowHover'
+                                layout
+                                className={cn(
+                                  'group relative z-0 flex w-full flex-col rounded-xl border border-[var(--gray-3)] bg-[var(--surface)] transition-all duration-200 hover:z-[70] hover:border-[var(--primary-3)]',
+                                )}
                                 transition={
                                   prefersReducedMotion
                                     ? { duration: 0 }
-                                    : { type: 'spring', stiffness: 400, damping: 25 }
+                                    : {
+                                        damping: 25,
+                                        stiffness: 400,
+                                        type: 'spring',
+                                      }
                                 }
-                                className={cn(
-                                  'group relative flex w-full flex-col rounded-xl border border-[var(--gray-3)] bg-[var(--surface)] transition-all duration-200 hover:border-[var(--primary-3)] z-0 hover:z-[70]'
-                                )}
                               >
                                 {/* Header (Click to view details) */}
                                 <div
+                                  className='flex cursor-pointer items-center justify-between gap-4 p-3'
                                   onClick={() => onRowClick(row, 'Overview')}
-                                  className="flex cursor-pointer items-center justify-between gap-4 p-3"
                                 >
-                                  <div className="flex items-center gap-4 min-w-0">
+                                  <div className='flex min-w-0 items-center gap-4'>
                                     <motion.div
-                                      whileHover={
-                                        prefersReducedMotion ? undefined : { rotate: -2, scale: 1.02 }
-                                      }
+                                      className='flex size-12 shrink-0 items-center justify-center rounded-lg border border-[var(--primary-3)] bg-[var(--primary-2)] text-[var(--primary-9)]'
                                       transition={
                                         prefersReducedMotion
                                           ? { duration: 0 }
-                                          : { type: 'spring', stiffness: 520, damping: 26 }
+                                          : {
+                                              damping: 26,
+                                              stiffness: 520,
+                                              type: 'spring',
+                                            }
                                       }
-                                      className="flex size-12 shrink-0 items-center justify-center rounded-lg border border-[var(--primary-3)] bg-[var(--primary-2)] text-[var(--primary-9)]"
+                                      whileHover={
+                                        prefersReducedMotion
+                                          ? undefined
+                                          : { rotate: -2, scale: 1.02 }
+                                      }
                                     >
-                                      <Icon name="tabler:file-invoice" className="size-6" />
+                                      <Icon
+                                        className='size-6'
+                                        name='tabler:file-invoice'
+                                      />
                                     </motion.div>
 
-                                    <div className="flex flex-col gap-1 min-w-0">
-                                      <div className="flex items-center gap-2">
-                                        <h3 className="truncate text-14 font-semibold text-[var(--gray-13)]">
+                                    <div className='flex min-w-0 flex-col gap-1'>
+                                      <div className='flex items-center gap-2'>
+                                        <h3 className='truncate text-14 font-semibold text-[var(--gray-13)]'>
                                           {requestNo}
                                         </h3>
-                                        {row?.isDuplicateInvoice && <RequestStatusBadge status="Duplicated" />}
+                                        {row?.isDuplicateInvoice && (
+                                          <RequestStatusBadge status='Duplicated' />
+                                        )}
                                       </div>
-                                      <div className="flex items-center gap-2 text-12 text-[var(--gray-10)] truncate">
-                                        <span className="truncate max-w-[200px]">{raisedBy}</span>
-                                        <span className="h-1 w-1 rounded-full bg-[var(--gray-6)] shrink-0" />
-                                        <span className="shrink-0">{formatDatetime(raisedAt, 'datetime')}</span>
+                                      <div className='flex items-center gap-2 truncate text-12 text-[var(--gray-10)]'>
+                                        <span className='max-w-[200px] truncate'>
+                                          {raisedBy}
+                                        </span>
+                                        <span className='h-1 w-1 shrink-0 rounded-full bg-[var(--gray-6)]' />
+                                        <span className='shrink-0'>
+                                          {formatDatetime(raisedAt, 'datetime')}
+                                        </span>
                                       </div>
                                     </div>
                                   </div>
 
-                                  <div className="flex items-center gap-4 shrink-0">
+                                  <div className='flex shrink-0 items-center gap-4'>
                                     {/* Summary Icons with Hover Cards */}
-                                    <div className="hidden lg:flex items-center gap-3">
-                                      {Object.entries(dummySummary).map(([key, metric]: any) => (
-                                        <SummaryMetric
-                                          key={key}
-                                          metric={metric}
-                                          onFileSelect={(file) => setSelectedFile(file)}
-                                        />
-                                      ))}
+                                    <div className='hidden items-center gap-3 lg:flex'>
+                                      {Object.entries(dummySummary).map(
+                                        ([key, metric]: any) => (
+                                          <SummaryMetric
+                                            key={key}
+                                            metric={metric}
+                                            onFileSelect={(file) =>
+                                              setSelectedFile(file)
+                                            }
+                                          />
+                                        ),
+                                      )}
                                     </div>
 
                                     {/* Row Navigation Chevron */}
                                     <motion.div
-                                      className="text-[var(--gray-8)] group-hover:text-[var(--primary-9)] transition-colors pr-2"
+                                      className='pr-2 text-[var(--gray-8)] transition-colors group-hover:text-[var(--primary-9)]'
                                       variants={{
-                                        rowHover: { x: 8 }
+                                        rowHover: { x: 8 },
                                       }}
                                     >
-                                      <Icon name="tabler:chevron-right" className="size-5" />
+                                      <Icon
+                                        className='size-5'
+                                        name='tabler:chevron-right'
+                                      />
                                     </motion.div>
                                   </div>
                                 </div>
@@ -441,12 +528,12 @@ const GridView = <TData,>({
 
       {/* File Preview Sheet */}
       <FileSheet
-        opened={!!selectedFile}
-        onClose={() => setSelectedFile(null)}
         file={selectedFile}
-        tenantId="dummy"
-        userId="dummy"
         fullScreen={true}
+        opened={!!selectedFile}
+        tenantId='dummy'
+        userId='dummy'
+        onClose={() => setSelectedFile(null)}
       />
     </>
   )

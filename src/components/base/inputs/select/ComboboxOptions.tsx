@@ -30,7 +30,8 @@ const ComboboxOptions = ({
   const counter = useRef(-1)
   const hasOptions = options.length > 0
 
-  const isSelected = (id: number) => value.some((item) => item.id === id)
+  const isSelected = (id: string | number) =>
+    value.some((item) => item.id === id)
 
   const handleClick = (option: Option) => {
     if (option.disabled) return

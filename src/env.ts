@@ -4,8 +4,8 @@ import { z } from 'zod'
 export const env = createEnv({
   client: {
     VITE_BASE_URL: z.string().min(1),
-    VITE_POSTHOG_KEY: z.string().min(1),
     VITE_POSTHOG_HOST: z.string().min(1),
+    VITE_POSTHOG_KEY: z.string().min(1),
   },
   clientPrefix: 'VITE_',
   emptyStringAsUndefined: true,

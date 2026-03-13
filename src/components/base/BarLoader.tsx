@@ -1,49 +1,49 @@
-import React from "react";
+import React from 'react'
 
 interface BarLoaderProps {
-  className?: string;
-  style?: React.CSSProperties;
+  className?: string
+  /**
+   * Any valid CSS color string.
+   * Defaults to your grey token.
+   */
+  color?: string
 
   /**
    * Overall loader height in px.
    * Optimized for inline text: default 12px.
    * Recommended range: 10–16px.
    */
-  size?: number;
+  size?: number
 
-  /**
-   * Any valid CSS color string.
-   * Defaults to your grey token.
-   */
-  color?: string;
+  style?: React.CSSProperties
 }
 
 const BarLoader: React.FC<BarLoaderProps> = ({
-  className = "",
-  style,
+  className = '',
+  color = 'var(--gray-9)',
   size = 10, // inline-text default (10–12px sweet spot)
-  color = "var(--gray-9)",
+  style,
 }) => {
   // Preserve original proportions
-  const barW = (13.6 / 32) * size;
-  const barH = size;
-  const lift = (8 / 32) * size;
-  const peakH = (40 / 32) * size;
-  const centerGap = (19.992 / 32) * size;
+  const barW = (13.6 / 32) * size
+  const barH = size
+  const lift = (8 / 32) * size
+  const peakH = (40 / 32) * size
+  const centerGap = (19.992 / 32) * size
 
-  const containerW = barW * 3 + centerGap * 2;
+  const containerW = barW * 3 + centerGap * 2
 
   return (
     <span
-      className={`relative inline-flex align-middle items-center justify-center ${className}`}
+      aria-label='Loading'
+      className={`relative inline-flex items-center justify-center align-middle ${className}`}
+      role='status'
       style={{
         ...style,
-        width: containerW,
+        ['--barloader-color' as any]: color,
         height: barH,
-        ["--barloader-color" as any]: color,
+        width: containerW,
       }}
-      aria-label="Loading"
-      role="status"
     >
       <style>{`
         @keyframes barloader-pulse {
@@ -67,13 +67,16 @@ const BarLoader: React.FC<BarLoaderProps> = ({
         }
       `}</style>
 
-      <span className="flex items-center justify-center" style={{ gap: centerGap }}>
-        <span className="barloader-bar" style={{ animationDelay: "0s" }} />
-        <span className="barloader-bar" style={{ animationDelay: "0.16s" }} />
-        <span className="barloader-bar" style={{ animationDelay: "0.32s" }} />
+      <span
+        className='flex items-center justify-center'
+        style={{ gap: centerGap }}
+      >
+        <span className='barloader-bar' style={{ animationDelay: '0s' }} />
+        <span className='barloader-bar' style={{ animationDelay: '0.16s' }} />
+        <span className='barloader-bar' style={{ animationDelay: '0.32s' }} />
       </span>
     </span>
-  );
-};
+  )
+}
 
-export default BarLoader;
+export default BarLoader

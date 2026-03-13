@@ -1,6 +1,6 @@
+import type React from 'react'
 import { Tabs as Base } from '@mantine/core'
 import Icon from '@/components/base/icon/Icon'
-import type React from 'react'
 
 interface Props {
   label: string | React.ReactNode

@@ -1,12 +1,15 @@
 import { NumberInput as Base } from '@mantine/core'
+import { type NumberInputProps } from '@mantine/core'
 import { forwardRef } from 'react'
 import type { InputProps } from './shared/types'
 import ClearButton from './ClearButton'
 import InputLabel from './InputLabel'
 import { classNames, inputWrapperOrder } from './shared/constants'
-import { type NumberInputProps } from '@mantine/core'
 
-interface Props extends InputProps, Omit<NumberInputProps, keyof InputProps | 'value' | 'onChange'> {
+interface Props
+  extends
+    InputProps,
+    Omit<NumberInputProps, keyof InputProps | 'value' | 'onChange'> {
   value: string | number
   allowDecimal?: boolean
   decimalScale?: number

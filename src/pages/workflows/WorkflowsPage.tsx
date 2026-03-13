@@ -7,7 +7,10 @@ const WorkflowsPage = () => {
 
   const handleCreate = () => {
     // TODO: Generate a real ID or handle 'new'
-    navigate({ to: '/workflow-builder/$workflowId', params: { workflowId: 'new' } })
+    navigate({
+      params: { workflowId: 'new' },
+      to: '/workflow-builder/$workflowId',
+    })
   }
 
   return (

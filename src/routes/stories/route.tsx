@@ -106,23 +106,23 @@ function RouteComponent() {
   return (
     <div className='flex h-screen overflow-hidden bg-gray-1 text-gray-12'>
       {/* Sidebar */}
-      <aside className='flex w-64 flex-col border-r bg-gray-2 border-gray-3 shadow-sm'>
-        <div className='border-b p-4 border-gray-3'>
+      <aside className='flex w-64 flex-col border-r border-gray-3 bg-gray-2 shadow-sm'>
+        <div className='border-b border-gray-3 p-4'>
           <div className='mb-4 flex items-center justify-between'>
             <span className='font-bold text-gray-12'>V6 UI Kit</span>
             <Link to='/stories'>
-              <ActionIcon size='sm' variant='subtle' color='gray'>
+              <ActionIcon color='gray' size='sm' variant='subtle'>
                 <Icon name='lucide:home' />
               </ActionIcon>
             </Link>
           </div>
           <TextInput
-            leftSection={<Icon name='lucide:search' className='size-4' />}
-            onChange={(e) => setSearch(e.target.value)}
+            className='bg-gray-1'
+            leftSection={<Icon className='size-4' name='lucide:search' />}
             placeholder='Search components...'
             size='xs'
             value={search}
-            className='bg-gray-1'
+            onChange={(e) => setSearch(e.target.value)}
           />
         </div>
 
@@ -130,18 +130,19 @@ function RouteComponent() {
           <div className='space-y-6 pb-10'>
             {filteredGroups.map((group) => (
               <div key={group.group}>
-                <h3 className='mb-2 px-3 text-11 font-bold uppercase tracking-wider text-gray-9'>
+                <h3 className='mb-2 px-3 text-11 font-bold tracking-wider text-gray-9 uppercase'>
                   {group.group}
                 </h3>
                 <div className='space-y-0.5'>
                   {group.items.map((item) => (
                     <Link
-                      activeProps={{
-                        className: 'bg-primary-3 text-primary-11 font-medium ring-1 ring-primary-5',
-                      }}
                       className='flex items-center rounded-md px-3 py-1.5 text-13 text-gray-11 transition-colors hover:bg-gray-4 hover:text-gray-12'
                       key={item.to}
                       to={item.to}
+                      activeProps={{
+                        className:
+                          'bg-primary-3 text-primary-11 font-medium ring-1 ring-primary-5',
+                      }}
                     >
                       {item.label}
                     </Link>
@@ -155,11 +156,11 @@ function RouteComponent() {
 
       {/* Main Content */}
       <main className='flex-1 overflow-y-auto bg-gray-1'>
-        <div className='sticky top-0 z-10 flex h-14 items-center justify-between border-b bg-gray-1/80 px-8 backdrop-blur border-gray-3'>
+        <div className='sticky top-0 z-10 flex h-14 items-center justify-between border-b border-gray-3 bg-gray-1/80 px-8 backdrop-blur'>
           <h1 className='text-16 font-semibold text-gray-12'>Components</h1>
           <ThemeSwitcher />
         </div>
-        <div className='mx-auto max-max-w-6xl p-8 pb-32'>
+        <div className='max-max-w-6xl mx-auto p-8 pb-32'>
           <Outlet />
         </div>
       </main>

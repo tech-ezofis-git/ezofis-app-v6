@@ -47,7 +47,7 @@ export const encrypt = async (
 
     return bytesToBase64(encryptedBuffer)
   } catch (error: unknown) {
-    // eslint-disable-next-line no-console
+     
     console.error('Encryption failed:', error)
     throw new Error('Encryption failed')
   }
@@ -71,7 +71,7 @@ export const decrypt = async (
 
     return new TextDecoder().decode(decryptedBuffer)
   } catch (error: unknown) {
-    // eslint-disable-next-line no-console
+     
     console.error('Decryption failed:', error)
     throw new Error('Decryption failed')
   }

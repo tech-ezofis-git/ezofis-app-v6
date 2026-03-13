@@ -14,7 +14,7 @@ export const useFormMetadata = (formJsonString: string | null) => {
       // Create a Map for O(1) lookup: FieldID -> FieldDefinition
       const fieldMap = new Map<
         string,
-        { label: string; type: string; settings: any }
+        { label: string; settings: any; type: string }
       >()
 
       allPanels.forEach((panel: any) => {

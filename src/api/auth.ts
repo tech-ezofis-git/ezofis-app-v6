@@ -1,14 +1,14 @@
-// src/api/authApi.ts
-import { _axios, axiosCrypto } from './axios'
-import { setToLocalStorage } from '../utils/local-storage'
 // import store from '../stores/authUserStore'
 import authUserStore from '../stores/authUserStore'
+import { setToLocalStorage } from '../utils/local-storage'
+// src/api/authApi.ts
+import { _axios, axiosCrypto } from './axios'
 
 // Vite-style env (adjust name to your setup)
 const API_URL = import.meta.env.VITE_API_URL || ''
 interface IdentityKeys {
-  key: string
   iv: string
+  key: string
   token: string
 }
 
@@ -26,13 +26,13 @@ const login = async (payload: any, tenantId?: number | string) => {
   }
 
   try {
-    const { status, data } = await _axios({
-      url: `${API_URL}/authentication/login`,
-      method: 'POST',
+    const { data, status } = await _axios({
       data: JSON.stringify(payload),
       headers: {
         Token: tenantId ? `tenantId ${tenantId}` : `email ${payload.email}`,
       },
+      method: 'POST',
+      url: `${API_URL}/authentication/login`,
     })
 
     if (status !== 200) {
@@ -88,8 +88,8 @@ const login = async (payload: any, tenantId?: number | string) => {
 
 // Define a type for the identity keys you need for authentication/crypto
 interface IdentityKeys {
-  key: string
   iv: string
+  key: string
   token: string
 }
 
@@ -104,7 +104,7 @@ const getSession = async (identityKeys?: IdentityKeys) => {
   }
 
   try {
-    let { status, data } = await axiosCrypto.get(
+    const { data, status } = await axiosCrypto.get(
       '/authentication/userSession',
       {
         // Optional: you could pass the token here for immediate use,
@@ -136,13 +136,13 @@ const authentication = async (payload: any) => {
   }
 
   try {
-    const { status, data } = await _axios({
-      url: `${API_URL}/portal/validateOTP`,
-      method: 'POST',
+    const { data, status } = await _axios({
       data: JSON.stringify(payload),
       headers: {
         Token: `tenantId ${payload.tenantId}`,
       },
+      method: 'POST',
+      url: `${API_URL}/portal/validateOTP`,
     })
 
     if (status !== 201 && status !== 200) {
@@ -181,13 +181,13 @@ const socialLogin = async (payload: any, tenantId?: number | string) => {
   }
 
   try {
-    const { status, data } = await _axios({
-      url: `${API_URL}/authentication/socialLogin`,
-      method: 'POST',
+    const { data, status } = await _axios({
+      data: JSON.stringify(payload),
       headers: {
         Token: tenantId ? `tenantId ${tenantId}` : `email ${payload.email}`,
       },
-      data: JSON.stringify(payload),
+      method: 'POST',
+      url: `${API_URL}/authentication/socialLogin`,
     })
 
     if (status !== 200) {
@@ -228,13 +228,13 @@ const portalLogin = async (payload: any) => {
   }
 
   try {
-    const { status, data } = await _axios({
-      url: `${API_URL}/portal/validateMaster`,
-      method: 'POST',
+    const { data, status } = await _axios({
       data: JSON.stringify(payload),
       headers: {
         Token: `tenantId ${payload.tenantId}`,
       },
+      method: 'POST',
+      url: `${API_URL}/portal/validateMaster`,
     })
 
     if (status === 200) {
@@ -337,10 +337,10 @@ const emailValidate = async (tenantId: number | string, payload: any) => {
   }
 
   try {
-    const { status, data } = await _axios({
-      url: `${API_URL}/activeDirectory/verifyUser/${tenantId}`,
-      method: 'POST',
+    const { data, status } = await _axios({
       data: JSON.stringify(payload),
+      method: 'POST',
+      url: `${API_URL}/activeDirectory/verifyUser/${tenantId}`,
     })
 
     if (status !== 200) {
@@ -367,10 +367,10 @@ const signUp = async (payload: any) => {
   }
 
   try {
-    const { status, data } = await _axios({
-      url: `${API_URL}/tenant/signup`,
-      method: 'POST',
+    const { data, status } = await _axios({
       data: JSON.stringify(payload),
+      method: 'POST',
+      url: `${API_URL}/tenant/signup`,
     })
 
     if (status !== 201 && status !== 200) {
@@ -407,10 +407,10 @@ const verifyMailOTP = async (payload: any) => {
   }
 
   try {
-    const { status, data } = await _axios({
-      url: `${API_URL}/tenant/validateOTP`,
-      method: 'POST',
+    const { data, status } = await _axios({
       data: JSON.stringify(payload),
+      method: 'POST',
+      url: `${API_URL}/tenant/validateOTP`,
     })
 
     if (status !== 201 && status !== 200) {
@@ -441,10 +441,10 @@ const sendMailOTP = async (payload: any) => {
   }
 
   try {
-    const { status, data } = await _axios({
-      url: `${API_URL}/tenant/checkAuthenticate`,
-      method: 'POST',
+    const { data, status } = await _axios({
       data: JSON.stringify(payload),
+      method: 'POST',
+      url: `${API_URL}/tenant/checkAuthenticate`,
     })
 
     if (status !== 201 && status !== 200 && status !== 400) {
@@ -474,9 +474,9 @@ const externalLogin = async (
   }
 
   try {
-    const { status, data } = await _axios({
-      url: `${API_URL}/authentication/loginById/${tenantId}/WEB/${userId}`,
+    const { data, status } = await _axios({
       method: 'GET',
+      url: `${API_URL}/authentication/loginById/${tenantId}/WEB/${userId}`,
     })
 
     if (status !== 200) {
@@ -501,18 +501,18 @@ const externalLogin = async (
 
 const auth0Login = async (payload: any, tenantId: number | string) => {
   const response: any = {
-    payload: '',
     error: '',
+    payload: '',
   }
 
   try {
-    const { status, data } = await _axios({
-      url: `${API_URL}/authentication/loginAuthO`,
-      method: 'POST',
+    const { data, status } = await _axios({
       data: JSON.stringify(payload),
       headers: {
         Token: `tenantId ${tenantId}`,
       },
+      method: 'POST',
+      url: `${API_URL}/authentication/loginAuthO`,
     })
 
     if (status === 200) {
@@ -540,20 +540,20 @@ const auth0Login = async (payload: any, tenantId: number | string) => {
 }
 
 export const authApi = {
-  login,
-  getSession,
+  auth0Login,
   authentication,
-  socialLogin,
+  emailValidate,
+  externalLogin,
+  login,
   portalLogin,
+  sendMailOTP,
+  signUp,
+  socialLogin,
   testDBConnection,
   updateDBConnection,
   validatePassword,
-  emailValidate,
-  signUp,
   verifyMailOTP,
-  sendMailOTP,
-  externalLogin,
-  auth0Login,
+  getSession,
 }
 
 export default authApi

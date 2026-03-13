@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import requestApi from '@/api/requests/requests'
+import type { InboxItem, TableGroup, WorkflowOption } from '../types'
 import { getActionsForActivity } from '../utils/workflow.utils'
-import type { WorkflowOption, InboxItem, TableGroup } from '../types'
 
 export const useInboxData = (
   selectedWorkflow: WorkflowOption | null,
@@ -11,6 +11,7 @@ export const useInboxData = (
   activeTab: string = 'Inbox',
 ) => {
   return useQuery({
+    enabled: !!selectedWorkflow?.id,
     queryKey: [
       'inbox',
       selectedWorkflow?.id,
@@ -19,23 +20,23 @@ export const useInboxData = (
       groupBy,
       activeTab,
     ],
-    enabled: !!selectedWorkflow?.id,
 
     queryFn: async () => {
       const config: any = {
-        itemsPerPage: pageSize,
         currentPage: page,
-        sortBy: { criteria: '', order: 'DESC' },
-
         filterBy: [],
+        itemsPerPage: pageSize,
+
+        sortBy: { criteria: '', order: 'DESC' },
       }
 
       // Only add groupBy for Inbox to avoid API errors
       if (activeTab === 'Inbox') {
-        config.groupBy = groupBy.length > 0 ? groupBy : ["RXwLGHILLrreMmRqlk9mj"]
+        config.groupBy =
+          groupBy.length > 0 ? groupBy : ['RXwLGHILLrreMmRqlk9mj']
       }
 
-      const workflowId = selectedWorkflow?.id as Number
+      const workflowId = selectedWorkflow?.id as number | string
       let response
 
       try {
@@ -81,9 +82,9 @@ export const useInboxData = (
         return {
           ...process,
           ...dynamicFields,
-          id: process.processId || process.id,
-          _groupKey: groupKey || activeTab,
           _actions: actions,
+          _groupKey: groupKey || activeTab,
+          id: process.processId || process.id,
         }
       }
 
@@ -100,17 +101,17 @@ export const useInboxData = (
 
                 if (groupItems.length > 0) {
                   groupedData.push({
+                    groupCount: inner.totalCount || groupItems.length,
                     groupId: inner.key || `group-${idx}`,
                     groupKey: inner.key,
                     groupValue: inner.key,
-                    groupCount: inner.totalCount || groupItems.length,
                     items: groupItems,
                   })
                 }
               }
               // Format 2: Flat (inner is the item itself)
               else if (inner && (inner.processId || inner.id)) {
-                let rootGroup = groupedData.find((g) => g.groupId === 'root')
+                const rootGroup = groupedData.find((g) => g.groupId === 'root')
                 const transformed = transformProcess(inner, activeTab)
 
                 if (rootGroup) {
@@ -118,8 +119,8 @@ export const useInboxData = (
                   rootGroup.groupCount = rootGroup.items.length
                 } else {
                   groupedData.push({
-                    groupId: 'root',
                     groupCount: 1,
+                    groupId: 'root',
                     items: [transformed],
                   })
                 }

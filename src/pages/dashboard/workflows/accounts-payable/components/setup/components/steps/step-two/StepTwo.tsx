@@ -2,12 +2,12 @@ import { motion } from 'motion/react'
 import Alert from '@/components/base/Alert'
 import Button from '@/components/base/button/Button'
 import Divider from '@/components/base/Divider'
+import Title from '@/components/base/Title'
 // import HeroText from '@/components/common/HeroText'
 import { AnimateFadeIn, AnimateSlideUp } from '@/components/common/animations'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import ErpSettings from './components/ErpSettings'
 import ErpSystem from './components/ErpSystem'
-import Title from '@/components/base/Title'
 
 const StepTwo = () => {
   const setStep = setupStore((state) => state.setStep)
@@ -45,14 +45,16 @@ const StepTwo = () => {
         <ErpSystem />
       </AnimateFadeIn>
 
-      {erpSettings.system && erpSettings.system !== 'FILE_BASED_IMPORT' && !erpSettings.wantsFileBasedImport && (
-        <AnimateFadeIn delay={0.4}>
-          <>
-            <Divider />
-            <ErpSettings />
-          </>
-        </AnimateFadeIn>
-      )}
+      {erpSettings.system &&
+        erpSettings.system !== 'FILE_BASED_IMPORT' &&
+        !erpSettings.wantsFileBasedImport && (
+          <AnimateFadeIn delay={0.4}>
+            <>
+              <Divider />
+              <ErpSettings />
+            </>
+          </AnimateFadeIn>
+        )}
 
       {erpSettings.templateUploaded && (
         <AnimateSlideUp delay={0.4}>
@@ -63,14 +65,16 @@ const StepTwo = () => {
         </AnimateSlideUp>
       )}
 
-      {erpSettings.isConnected && erpSettings.system && erpSettings.system !== 'FILE_BASED_IMPORT' && (
-        <AnimateSlideUp delay={0.4}>
-          <Alert
-            text={`Your ${erpSettings.system} account has been connected successfully.`}
-            variant='green'
-          />
-        </AnimateSlideUp>
-      )}
+      {erpSettings.isConnected &&
+        erpSettings.system &&
+        erpSettings.system !== 'FILE_BASED_IMPORT' && (
+          <AnimateSlideUp delay={0.4}>
+            <Alert
+              text={`Your ${erpSettings.system} account has been connected successfully.`}
+              variant='green'
+            />
+          </AnimateSlideUp>
+        )}
 
       <motion.div
         animate={{ opacity: 1, y: 0 }}
@@ -85,13 +89,15 @@ const StepTwo = () => {
           variant='outline'
           onClick={() => setStep(0)}
         />
-        {erpSettings.isConnected || erpSettings.templateUploaded || (erpSettings.system && erpSettings.system === "FILE_BASED_IMPORT") ? (
+        {erpSettings.isConnected ||
+        erpSettings.templateUploaded ||
+        (erpSettings.system && erpSettings.system === 'FILE_BASED_IMPORT') ? (
           <Button
             label='Continue'
             suffixIcon='tabler:arrow-right'
             onClick={() => setStep(2)}
           />
-        ) : erpSettings.system && erpSettings.system !== "FILE_BASED_IMPORT" ? (
+        ) : erpSettings.system && erpSettings.system !== 'FILE_BASED_IMPORT' ? (
           <Button
             icon='lucide:plug'
             label={`Connect ${erpSettings.system}`}

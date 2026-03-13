@@ -1,60 +1,60 @@
+import posthog from 'posthog-js'
 // src/stores/authUserStore.ts
 import { create } from 'zustand'
 import type { User } from '@/schemas/user'
 import { getFromLocalStorage } from '@/utils/local-storage'
-import posthog from "posthog-js";
 
+export type DefaultView = Record<string, unknown>
 export type Identity = {
-  token: string
   iv: string
   key: string
+  token: string
 }
+export type ProfileMenu = unknown
 export type Session = {
-  firstName: string
   email: string
-  tenantId: string
+  firstName: string
   id: string
+  tenantId: string
 }
 export type SignUpUserData = {
   email: string
-  password: string
-  loginType: string | number
-  organisation: string
-  licenseType: string
   firstName: string
   lastName: string
+  licenseType: string
+  loginType: string | number
+  organisation: string
+  password: string
 }
-export type ProfileMenu = unknown
-export type DefaultView = Record<string, unknown>
 
 type Store = {
-  user: User
+  defaultView: DefaultView
 
   identity: Identity | null
-  session: Session | null
-  profileMenus: ProfileMenu[]
-  defaultView: DefaultView
-  preferenceId: number
   isAuthenticated: boolean
+  preferenceId: number
+  profileMenus: ProfileMenu[]
+  session: Session | null
   signUpUserData: SignUpUserData
-  setUser: (user: User) => void
-  setIdentity: (identity: Identity | null) => void
-  setSession: (session: Session | null) => void
-  setProfileMenu: (menus: ProfileMenu[]) => void
-  setDefaultView: (view: DefaultView) => void
-  setPreferenceId: (id: number) => void
-  setSignUpUserData: (partial: Partial<SignUpUserData>) => void
-  resetSignUpUserData: () => void
+  user: User
   resetAuthState: () => void
+  resetSignUpUserData: () => void
+  setDefaultView: (view: DefaultView) => void
+  setIdentity: (identity: Identity | null) => void
+  setPreferenceId: (id: number) => void
+  setProfileMenu: (menus: ProfileMenu[]) => void
+  setSession: (session: Session | null) => void
+  setSignUpUserData: (partial: Partial<SignUpUserData>) => void
+  setUser: (user: User) => void
 }
 const emptySignUp: SignUpUserData = {
   email: '',
-  password: '',
-  loginType: '',
-  organisation: '',
-  licenseType: '3', // keep string to match your type
   firstName: '',
   lastName: '',
+  licenseType: '3', // keep string to match your type
+  loginType: '',
+  organisation: '',
+  password: '',
 }
 const authUserStore = create<Store>()((set) => {
   // Hydrate from localStorage on first load
@@ -67,6 +67,15 @@ const authUserStore = create<Store>()((set) => {
   }
 
   return {
+    defaultView: {},
+
+    identity,
+    isAuthenticated: !!identity,
+    preferenceId: 0,
+    profileMenus: [],
+    session,
+    signUpUserData: emptySignUp,
+
     user: {
       createdAt: '',
       createdBy: '',
@@ -90,20 +99,37 @@ const authUserStore = create<Store>()((set) => {
       onBoardingCompleted: true,
     },
 
-    identity,
-    session,
-    profileMenus: [],
-    defaultView: {},
-    preferenceId: 0,
-    isAuthenticated: !!identity,
+    resetAuthState: () => {
+      // Clear localStorage
+      if (typeof window !== 'undefined') {
+        window.localStorage.removeItem('identity')
+        window.localStorage.removeItem('session')
+      }
 
-    setUser: (user: User) => set(() => ({ user })),
+      // Clear in-memory state
+      set(() => ({
+        defaultView: {},
+        identity: null,
+        isAuthenticated: false,
+        preferenceId: 0,
+        profileMenus: [],
+        session: null,
+        signUpUserData: emptySignUp,
+      }))
+    },
 
+    resetSignUpUserData: () =>
+      set(() => ({
+        signUpUserData: emptySignUp,
+      })),
+    setDefaultView: (view) => set(() => ({ defaultView: view })),
     setIdentity: (identity) =>
       set(() => ({
         identity,
         isAuthenticated: !!identity,
       })),
+    setPreferenceId: (id) => set(() => ({ preferenceId: id })),
+    setProfileMenu: (menus) => set(() => ({ profileMenus: menus })),
 
     setSession: (session) => {
       if (session?.id) {
@@ -115,10 +141,6 @@ const authUserStore = create<Store>()((set) => {
       }
       set(() => ({ session }))
     },
-    setProfileMenu: (menus) => set(() => ({ profileMenus: menus })),
-    setDefaultView: (view) => set(() => ({ defaultView: view })),
-    setPreferenceId: (id) => set(() => ({ preferenceId: id })),
-    signUpUserData: emptySignUp,
 
     setSignUpUserData: (partial) =>
       set((state) => ({
@@ -128,29 +150,7 @@ const authUserStore = create<Store>()((set) => {
         },
       })),
 
-    resetSignUpUserData: () =>
-      set(() => ({
-        signUpUserData: emptySignUp,
-      })),
-
-    resetAuthState: () => {
-      // Clear localStorage
-      if (typeof window !== 'undefined') {
-        window.localStorage.removeItem('identity')
-        window.localStorage.removeItem('session')
-      }
-
-      // Clear in-memory state
-      set(() => ({
-        identity: null,
-        session: null,
-        profileMenus: [],
-        defaultView: {},
-        preferenceId: 0,
-        isAuthenticated: false,
-        signUpUserData: emptySignUp,
-      }))
-    },
+    setUser: (user: User) => set(() => ({ user })),
   }
 })
 

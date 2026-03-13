@@ -27,11 +27,15 @@ function RouteComponent() {
   return (
     <div className='max-w-4xl p-6'>
       <StoryTitle>Menu</StoryTitle>
-      <p className='text-15 text-gray-11 mb-10'>
-        The Menu component provides a versatile dropdown for listing actions, categories, or secondary navigation. It supports icons, dividers, labels for grouping, and nested submenus for complex hierarchies.
+      <p className='mb-10 text-15 text-gray-11'>
+        The Menu component provides a versatile dropdown for listing actions,
+        categories, or secondary navigation. It supports icons, dividers, labels
+        for grouping, and nested submenus for complex hierarchies.
       </p>
 
-      <p className='text-14 text-gray-11 mb-4'>Before using Menu, import the core component and its sub-components:</p>
+      <p className='mb-4 text-14 text-gray-11'>
+        Before using Menu, import the core component and its sub-components:
+      </p>
       <StoryCode>
         {`import Menu from '@/components/base/menu/Menu'
 import MenuItem from '@/components/base/menu/MenuItem'
@@ -44,7 +48,7 @@ import MenuSub from '@/components/base/menu/MenuSub'`}
         {/* Default Section */}
         <section>
           <StorySubTitle>Default Usage</StorySubTitle>
-          <p className='text-14 text-gray-11 mb-4'>
+          <p className='mb-4 text-14 text-gray-11'>
             A simple list of actions triggered by a button.
           </p>
           <StoryCode>
@@ -53,8 +57,8 @@ import MenuSub from '@/components/base/menu/MenuSub'`}
   <MenuItem icon='lucide:copy' label='Duplicate' />
 </Menu>`}
           </StoryCode>
-          <div className='flex ml-1 mt-4'>
-            <Menu position='bottom-start' width={160} target={targetBtn}>
+          <div className='mt-4 ml-1 flex'>
+            <Menu position='bottom-start' target={targetBtn} width={160}>
               <MenuItem icon='lucide:edit' label='Rename' />
               <MenuItem icon='lucide:copy' label='Duplicate' />
               <MenuItem icon='lucide:archive' label='Archive' />
@@ -66,8 +70,9 @@ import MenuSub from '@/components/base/menu/MenuSub'`}
         {/* Groups Section */}
         <section>
           <StorySubTitle>Grouping with Labels & Dividers</StorySubTitle>
-          <p className='text-14 text-gray-11 mb-4'>
-            Organize complex menus into logical sections using <code>MenuLabel</code> and <code>MenuDivider</code>.
+          <p className='mb-4 text-14 text-gray-11'>
+            Organize complex menus into logical sections using{' '}
+            <code>MenuLabel</code> and <code>MenuDivider</code>.
           </p>
           <StoryCode>
             {`<Menu target={...}>
@@ -77,8 +82,8 @@ import MenuSub from '@/components/base/menu/MenuSub'`}
   <MenuItem icon='lucide:log-out' label='Log out' />
 </Menu>`}
           </StoryCode>
-          <div className='flex ml-1 mt-4'>
-            <Menu position='bottom-start' width={180} target={targetBtn}>
+          <div className='mt-4 ml-1 flex'>
+            <Menu position='bottom-start' target={targetBtn} width={180}>
               <MenuLabel>Security</MenuLabel>
               <MenuItem icon='lucide:shield' label='Authentication' />
               <MenuItem icon='lucide:lock' label='Sessions' />
@@ -99,8 +104,9 @@ import MenuSub from '@/components/base/menu/MenuSub'`}
         {/* Submenu Section */}
         <section>
           <StorySubTitle>Nested Menus (Submenu)</StorySubTitle>
-          <p className='text-14 text-gray-11 mb-4'>
-            Use <code>MenuSub</code> to create hierarchical menus for deeper interaction layers.
+          <p className='mb-4 text-14 text-gray-11'>
+            Use <code>MenuSub</code> to create hierarchical menus for deeper
+            interaction layers.
           </p>
           <StoryCode>
             {`<Menu target={...}>
@@ -109,8 +115,8 @@ import MenuSub from '@/components/base/menu/MenuSub'`}
   </MenuSub>
 </Menu>`}
           </StoryCode>
-          <div className='flex ml-1 mt-4'>
-            <Menu position='bottom-start' width={160} target={targetBtn}>
+          <div className='mt-4 ml-1 flex'>
+            <Menu position='bottom-start' target={targetBtn} width={160}>
               <MenuItem icon='lucide:edit' label='Rename' />
               <MenuItem icon='lucide:copy' label='Duplicate' />
               <MenuSub icon='lucide:shapes' label='Advanced'>

@@ -4,8 +4,8 @@ import axios, {
   type AxiosResponse,
   type InternalAxiosRequestConfig,
 } from 'axios'
-import { decrypt, encrypt } from '../utils/crypto'
 import authUserStore from '../stores/authUserStore'
+import { decrypt, encrypt } from '../utils/crypto'
 
 // Environment variable handling (Vite uses import.meta.env, CRA uses process.env)
 const API_URL = import.meta.env?.VITE_BASE_URL || process.env.REACT_APP_API_URL

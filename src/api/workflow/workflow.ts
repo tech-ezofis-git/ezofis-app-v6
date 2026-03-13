@@ -3,7 +3,7 @@ import { axiosCrypto } from '../axios'
 const createProcessTransaction = async (payload: any) => {
   const response: any = { data: '', error: '' }
   try {
-    const { status, data } = await axiosCrypto.post(
+    const { data, status } = await axiosCrypto.post(
       `/workflow/transaction`,
       JSON.stringify(payload),
     )

@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
+import { useEffect, useRef } from 'react'
 import Stepper from '@/components/base/Stepper'
 import {
   AnimateBounce,
@@ -15,10 +15,30 @@ import StepTwo from './steps/step-two/StepTwo'
 // import StepZero from './steps/StepZero'
 
 const steps = [
-  { description: 'Invoice Capture', id: 1, icon: 'tabler:file-upload', label: 'Step 1' },
-  { description: 'ERP & Import', id: 2, icon: 'tabler:database', label: 'Step 2' },
-  { description: 'Connect Storage', id: 3, icon: 'tabler:cloud', label: 'Step 3' },
-  { description: 'Review & Complete', id: 4, icon: 'tabler:check', label: 'Step 4' },
+  {
+    description: 'Invoice Capture',
+    icon: 'tabler:file-upload',
+    id: 1,
+    label: 'Step 1',
+  },
+  {
+    description: 'ERP & Import',
+    icon: 'tabler:database',
+    id: 2,
+    label: 'Step 2',
+  },
+  {
+    description: 'Connect Storage',
+    icon: 'tabler:cloud',
+    id: 3,
+    label: 'Step 3',
+  },
+  {
+    description: 'Review & Complete',
+    icon: 'tabler:check',
+    id: 4,
+    label: 'Step 4',
+  },
 ]
 
 const Steps = () => {
@@ -39,13 +59,13 @@ const Steps = () => {
   return (
     <motion.div
       animate={{ opacity: 1, y: 0 }}
+      // Changed h-full to flex-1 to work well within flex container
+      className='flex min-h-0 w-full flex-1 flex-col overflow-hidden'
       exit={{ opacity: 0, y: 20 }}
       initial={{ opacity: 0, y: 20 }}
       transition={{ duration: 0.4, ease: 'easeOut' }}
-      // Changed h-full to flex-1 to work well within flex container
-      className='flex flex-1 min-h-0 w-full flex-col overflow-hidden'
     >
-      <div className='mb-4 flex items-center justify-between border-b border-gray-3 px-6 py-3 md:px-8 shrink-0'>
+      <div className='mb-4 flex shrink-0 items-center justify-between border-b border-gray-3 px-6 py-3 md:px-8'>
         <div className='flex flex-col gap-0.5'>
           <h2 className='text-18 font-semibold text-gray-13'>
             Accounts Payable Setup
@@ -57,9 +77,8 @@ const Steps = () => {
       </div>
       {/* Changed min-h-full to flex-1 to avoid overflow */}
       <div className='grid min-h-0 flex-1 grid-cols-1 gap-0 xl:grid-cols-[240px_1fr]'>
-
         <AnimateSlideUp delay={0.2}>
-          <div className='hidden border-r border-gray-3 bg-gray-1/30 px-4 py-3 xl:block h-full'>
+          <div className='hidden h-full border-r border-gray-3 bg-gray-1/30 px-4 py-3 xl:block'>
             <Stepper
               active={step}
               orientation='vertical'
@@ -69,26 +88,29 @@ const Steps = () => {
           </div>
         </AnimateSlideUp>
 
-        <div ref={scrollContainerRef} className='col-span-1 h-full w-full overflow-y-auto'>
-          <div className='ml-32 mr-auto max-w-3xl pb-10'>
+        <div
+          className='col-span-1 h-full w-full overflow-y-auto'
+          ref={scrollContainerRef}
+        >
+          <div className='mr-auto ml-32 max-w-3xl pb-10'>
             <AnimatePresence initial={false} mode='wait'>
               {step === 0 && (
-                <AnimateSlideUp key='step-0' delay={0.1}>
+                <AnimateSlideUp delay={0.1} key='step-0'>
                   <StepOne />
                 </AnimateSlideUp>
               )}
               {step === 1 && (
-                <AnimateScale key='step-1' delay={0.1}>
+                <AnimateScale delay={0.1} key='step-1'>
                   <StepTwo />
                 </AnimateScale>
               )}
               {step === 2 && (
-                <AnimateBounce key='step-2' delay={0.1}>
+                <AnimateBounce delay={0.1} key='step-2'>
                   <StepThree />
                 </AnimateBounce>
               )}
               {step === 3 && (
-                <AnimateFadeIn key='step-3' delay={0.1}>
+                <AnimateFadeIn delay={0.1} key='step-3'>
                   <StepFour />
                 </AnimateFadeIn>
               )}

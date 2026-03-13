@@ -44,14 +44,15 @@ const StepThree = () => {
         <StorageSystem />
       </AnimateFadeIn>
 
-      {storageSettings.system && storageSettings.system !== 'Included storage' && (
-        <AnimateFadeIn delay={0.4}>
-          <>
-            <Divider />
-            <StorageSettings />
-          </>
-        </AnimateFadeIn>
-      )}
+      {storageSettings.system &&
+        storageSettings.system !== 'Included storage' && (
+          <AnimateFadeIn delay={0.4}>
+            <>
+              <Divider />
+              <StorageSettings />
+            </>
+          </AnimateFadeIn>
+        )}
 
       {storageSettings.system === 'Included storage' && (
         <AnimateSlideUp delay={0.4}>
@@ -62,14 +63,16 @@ const StepThree = () => {
         </AnimateSlideUp>
       )}
 
-      {storageSettings.isConnected && storageSettings.system && storageSettings.system !== 'Included storage' && (
-        <AnimateSlideUp delay={0.4}>
-          <Alert
-            text={`Your ${storageSettings.system} account has been connected successfully.`}
-            variant='green'
-          />
-        </AnimateSlideUp>
-      )}
+      {storageSettings.isConnected &&
+        storageSettings.system &&
+        storageSettings.system !== 'Included storage' && (
+          <AnimateSlideUp delay={0.4}>
+            <Alert
+              text={`Your ${storageSettings.system} account has been connected successfully.`}
+              variant='green'
+            />
+          </AnimateSlideUp>
+        )}
 
       <motion.div
         animate={{ opacity: 1, y: 0 }}
@@ -84,7 +87,8 @@ const StepThree = () => {
           variant='outline'
           onClick={() => setStep(1)}
         />
-        {storageSettings.system === 'Included storage' || storageSettings.isConnected ? (
+        {storageSettings.system === 'Included storage' ||
+        storageSettings.isConnected ? (
           <Button
             label='Continue'
             suffixIcon='tabler:arrow-right'

@@ -44,15 +44,15 @@ export const normalizeTablePayload = (
 ) => {
   const parsed = typeof rawVal === 'string' ? safeParse(rawVal) : rawVal
 
-  if (Array.isArray(parsed)) return { rows: parsed, meta: null as any }
+  if (Array.isArray(parsed)) return { meta: null as any, rows: parsed }
 
   if (parsed && typeof parsed === 'object') {
     const rows =
       (parsed as any).rows || (parsed as any).data || (parsed as any).items
-    if (Array.isArray(rows)) return { rows, meta: parsed }
+    if (Array.isArray(rows)) return { meta: parsed, rows }
   }
 
-  return { rows: [] as any[], meta: parsed }
+  return { meta: parsed, rows: [] as any[] }
 }
 
 export const deriveRowKeys = (rows: any[]) => {

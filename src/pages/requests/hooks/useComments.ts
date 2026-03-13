@@ -3,14 +3,14 @@ import { useCallback, useEffect, useState } from 'react'
 import requestApi from '@/api/requests/requests'
 
 export type CommentItem = {
-  id?: string | number
   comments?: string
   createdAt?: string
   createdByEmail?: string
   createdByName?: string
-  showTo?: number // 1/2 etc in v5
   fileIds?: Array<string | number>
   hasNotifytoInitiated?: boolean
+  id?: string | number
+  showTo?: number // 1/2 etc in v5
 }
 
 export function useComments(
@@ -48,5 +48,5 @@ export function useComments(
     refetch()
   }, [enabled, refetch])
 
-  return { data, isLoading, error, refetch }
+  return { data, error, isLoading, refetch }
 }

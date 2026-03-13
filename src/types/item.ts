@@ -18,7 +18,7 @@ export const QueryParamsSchema = z.object({
 export type QueryParams = z.infer<typeof QueryParamsSchema>
 
 export const ItemSchema = z.object({
-  id: z.number(),
+  id: z.union([z.number(), z.string()]),
   name: z.string(),
 })
 

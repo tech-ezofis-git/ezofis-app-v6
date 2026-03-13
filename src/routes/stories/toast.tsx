@@ -22,11 +22,16 @@ function RouteComponent() {
   return (
     <div className='max-w-4xl p-6'>
       <StoryTitle>Toast</StoryTitle>
-      <p className='text-15 text-gray-11 mb-10'>
-        Toasts are brief, non-intrusive notifications that appear at the corner of the screen to provide feedback about an operation’s success, failure, or status. They stay visible for a few seconds before automatically disappearing.
+      <p className='mb-10 text-15 text-gray-11'>
+        Toasts are brief, non-intrusive notifications that appear at the corner
+        of the screen to provide feedback about an operation’s success, failure,
+        or status. They stay visible for a few seconds before automatically
+        disappearing.
       </p>
 
-      <p className='text-14 text-gray-11 mb-4'>Before using toasts, import the trigger function:</p>
+      <p className='mb-4 text-14 text-gray-11'>
+        Before using toasts, import the trigger function:
+      </p>
       <StoryCode>
         {`import showToast from '@/components/base/toast/showToast'`}
       </StoryCode>
@@ -35,14 +40,15 @@ function RouteComponent() {
         {/* Variants Section */}
         <section>
           <StorySubTitle>Notification Variants</StorySubTitle>
-          <p className='text-14 text-gray-11 mb-6'>
-            Choose a variant that matches the semantic meaning of the notification:
+          <p className='mb-6 text-14 text-gray-11'>
+            Choose a variant that matches the semantic meaning of the
+            notification:
           </p>
           <StoryCode>
             {`showToast({ message: 'Operation successful', variant: 'success' })
 showToast({ message: 'Action failed', variant: 'error' })`}
           </StoryCode>
-          <div className='flex flex-wrap items-center gap-3 mt-8 ml-1'>
+          <div className='mt-8 ml-1 flex flex-wrap items-center gap-3'>
             <Button
               color='gray'
               label='Default'
@@ -73,8 +79,9 @@ showToast({ message: 'Action failed', variant: 'error' })`}
         {/* Usage Section */}
         <section>
           <StorySubTitle>How to Trigger</StorySubTitle>
-          <p className='text-14 text-gray-11 mb-4'>
-            Trigger a toast from any part of your application without needing a local state or hook:
+          <p className='mb-4 text-14 text-gray-11'>
+            Trigger a toast from any part of your application without needing a
+            local state or hook:
           </p>
           <StoryCode>
             {`const handleSubmit = async () => {

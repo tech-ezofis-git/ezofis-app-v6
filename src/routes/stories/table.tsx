@@ -74,11 +74,17 @@ function TableStory() {
   return (
     <div className='max-w-6xl p-6'>
       <StoryTitle>Table</StoryTitle>
-      <p className='text-15 text-gray-11 mb-10'>
-        The Table component provides a foundation for displaying large datasets in a structured, readable format. It follows a standard HTML table architecture but includes custom styling for headers, rows, and cells to ensure alignment with the design system.
+      <p className='mb-10 text-15 text-gray-11'>
+        The Table component provides a foundation for displaying large datasets
+        in a structured, readable format. It follows a standard HTML table
+        architecture but includes custom styling for headers, rows, and cells to
+        ensure alignment with the design system.
       </p>
 
-      <p className='text-14 text-gray-11 mb-4'>Before using Table, import the core component and its structural helpers:</p>
+      <p className='mb-4 text-14 text-gray-11'>
+        Before using Table, import the core component and its structural
+        helpers:
+      </p>
       <StoryCode>
         {`import Table from '@/components/base/table/Table'
 import Thead from '@/components/base/table/Thead'
@@ -92,8 +98,9 @@ import Td from '@/components/base/table/Td'`}
         {/* Default Section */}
         <section>
           <StorySubTitle>Standard Table</StorySubTitle>
-          <p className='text-14 text-gray-11 mb-4'>
-            Assemble a table using the atomic sub-components for maximum flexibility.
+          <p className='mb-4 text-14 text-gray-11'>
+            Assemble a table using the atomic sub-components for maximum
+            flexibility.
           </p>
           <StoryCode>
             {`<Table>
@@ -111,7 +118,7 @@ import Td from '@/components/base/table/Td'`}
   </Tbody>
 </Table>`}
           </StoryCode>
-          <div className='mt-8 ml-1 border border-gray-3 rounded-lg overflow-hidden'>
+          <div className='mt-8 ml-1 overflow-hidden rounded-lg border border-gray-3'>
             <Table>
               <Thead>
                 <Tr>

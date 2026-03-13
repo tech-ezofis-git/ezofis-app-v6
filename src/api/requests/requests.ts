@@ -3,7 +3,7 @@ import { axiosCrypto } from '../axios'
 const getAllRequests = async (payload: any) => {
   const response: any = { data: '', error: '' }
   try {
-    let { status, data } = await axiosCrypto.post(
+    const { data, status } = await axiosCrypto.post(
       '/workflow/all',
       JSON.stringify(payload),
     )
@@ -16,10 +16,10 @@ const getAllRequests = async (payload: any) => {
   return response
 }
 
-const getMetaDataByRequest = async (requestId: Number) => {
+const getMetaDataByRequest = async (requestId: number | string) => {
   const response: any = { data: '', error: '' }
   try {
-    const { status, data } = await axiosCrypto(
+    const { data, status } = await axiosCrypto(
       `/workflow/listByUserId/${requestId}`,
     )
     if (status != 200) return
@@ -31,9 +31,9 @@ const getMetaDataByRequest = async (requestId: Number) => {
   return response
 }
 
-const getInboxListById = async (requestId: Number, payload: any) => {
+const getInboxListById = async (requestId: number | string, payload: any) => {
   try {
-    const { status, data } = await axiosCrypto.post(
+    const { data, status } = await axiosCrypto.post(
       `/workflow/inboxList/${requestId}`,
       JSON.stringify(payload),
     )
@@ -45,9 +45,9 @@ const getInboxListById = async (requestId: Number, payload: any) => {
   }
 }
 
-const getSentListById = async (requestId: Number, payload: any) => {
+const getSentListById = async (requestId: number | string, payload: any) => {
   try {
-    const { status, data } = await axiosCrypto.post(
+    const { data, status } = await axiosCrypto.post(
       `/workflow/processList/${requestId}`,
       JSON.stringify(payload),
     )
@@ -59,9 +59,12 @@ const getSentListById = async (requestId: Number, payload: any) => {
   }
 }
 
-const getCompletedRequestById = async (requestId: Number, payload: any) => {
+const getCompletedRequestById = async (
+  requestId: number | string,
+  payload: any,
+) => {
   try {
-    const { status, data } = await axiosCrypto.post(
+    const { data, status } = await axiosCrypto.post(
       `/workflow/completedList/${requestId}`,
       JSON.stringify(payload),
     )
@@ -77,7 +80,7 @@ const getCompletedRequestById = async (requestId: Number, payload: any) => {
 
 const getWorkflow = async (payload: any) => {
   try {
-    const { status, data } = await axiosCrypto.get(`/workflow/${payload}`)
+    const { data, status } = await axiosCrypto.get(`/workflow/${payload}`)
     if (status === 200) return data
     throw new Error('Failed to get workflow')
   } catch (e) {
@@ -88,7 +91,7 @@ const getWorkflow = async (payload: any) => {
 
 const createWorkflow = async (payload: any) => {
   try {
-    const { status, data } = await axiosCrypto.post(
+    const { data, status } = await axiosCrypto.post(
       '/workflow',
       JSON.stringify(payload),
     )
@@ -100,9 +103,9 @@ const createWorkflow = async (payload: any) => {
   }
 }
 
-const updateWorkflow = async (id: Number, payload: any) => {
+const updateWorkflow = async (id: number | string, payload: any) => {
   try {
-    const { status, data } = await axiosCrypto.put(
+    const { data, status } = await axiosCrypto.put(
       `/workflow/${id}`,
       JSON.stringify(payload),
     )
@@ -116,7 +119,7 @@ const updateWorkflow = async (id: Number, payload: any) => {
 
 const getWorkflowList = async (criteria = '', value = '') => {
   try {
-    const { status, data } = await axiosCrypto.post(
+    const { data, status } = await axiosCrypto.post(
       '/workflow/list',
       JSON.stringify({ criteria, value }),
     )
@@ -130,7 +133,7 @@ const getWorkflowList = async (criteria = '', value = '') => {
 
 const getUserMyInbox = async () => {
   try {
-    const { status, data } = await axiosCrypto.get(`/workflow/myInboxCount`)
+    const { data, status } = await axiosCrypto.get(`/workflow/myInboxCount`)
     if (status === 200) return data
     throw new Error('Error fetching inbox count')
   } catch (e) {
@@ -141,7 +144,7 @@ const getUserMyInbox = async () => {
 
 const getUserWorkflowTest = async () => {
   try {
-    const { status, data } = await axiosCrypto.get(`/workflowTest/listByUserId`)
+    const { data, status } = await axiosCrypto.get(`/workflowTest/listByUserId`)
     if (status === 200) return data
     throw new Error('Error fetching test workflows')
   } catch (e) {
@@ -152,7 +155,7 @@ const getUserWorkflowTest = async () => {
 
 const processTransaction = async (payload: any) => {
   try {
-    const { status, data } = await axiosCrypto.post(
+    const { data, status } = await axiosCrypto.post(
       '/workflow/transaction',
       JSON.stringify(payload),
     )
@@ -164,12 +167,12 @@ const processTransaction = async (payload: any) => {
   }
 }
 
-const getMyInboxList = async (payload: any, workflowId?: Number) => {
+const getMyInboxList = async (payload: any, workflowId?: number | string) => {
   try {
     const url = workflowId
       ? `/workflow/myInboxList/${workflowId}`
       : `/workflow/myInboxList`
-    const { status, data } = await axiosCrypto.post(
+    const { data, status } = await axiosCrypto.post(
       url,
       JSON.stringify(payload),
     )
@@ -181,9 +184,9 @@ const getMyInboxList = async (payload: any, workflowId?: Number) => {
   }
 }
 
-const getCommonList = async (workflowId: Number, payload: any) => {
+const getCommonList = async (workflowId: number | string, payload: any) => {
   try {
-    const { status, data } = await axiosCrypto.post(
+    const { data, status } = await axiosCrypto.post(
       `/workflow/runningList/${workflowId}`,
       JSON.stringify(payload),
     )
@@ -195,9 +198,9 @@ const getCommonList = async (workflowId: Number, payload: any) => {
   }
 }
 
-const getInboxListAgent = async (workflowId: Number, payload: any) => {
+const getInboxListAgent = async (workflowId: number | string, payload: any) => {
   try {
-    const { status, data } = await axiosCrypto.post(
+    const { data, status } = await axiosCrypto.post(
       `/workflow/inboxListAgent/${workflowId}`,
       JSON.stringify(payload),
     )
@@ -209,9 +212,9 @@ const getInboxListAgent = async (workflowId: Number, payload: any) => {
   }
 }
 
-const getInboxListTest = async (workflowId: Number, payload: any) => {
+const getInboxListTest = async (workflowId: number | string, payload: any) => {
   try {
-    const { status, data } = await axiosCrypto.post(
+    const { data, status } = await axiosCrypto.post(
       `/workflowTest/inboxList/${workflowId}`,
       JSON.stringify(payload),
     )
@@ -223,9 +226,9 @@ const getInboxListTest = async (workflowId: Number, payload: any) => {
   }
 }
 
-const getSentListTest = async (workflowId: Number, payload: any) => {
+const getSentListTest = async (workflowId: number | string, payload: any) => {
   try {
-    const { status, data } = await axiosCrypto.post(
+    const { data, status } = await axiosCrypto.post(
       `/workflowTest/processList/${workflowId}`,
       JSON.stringify(payload),
     )
@@ -237,9 +240,12 @@ const getSentListTest = async (workflowId: Number, payload: any) => {
   }
 }
 
-const getCompletedListTest = async (workflowId: Number, payload: any) => {
+const getCompletedListTest = async (
+  workflowId: number | string,
+  payload: any,
+) => {
   try {
-    const { status, data } = await axiosCrypto.post(
+    const { data, status } = await axiosCrypto.post(
       `/workflowTest/completedList/${workflowId}`,
       JSON.stringify(payload),
     )
@@ -251,9 +257,9 @@ const getCompletedListTest = async (workflowId: Number, payload: any) => {
   }
 }
 
-const getPaymentList = async (workflowId: Number, payload: any) => {
+const getPaymentList = async (workflowId: number | string, payload: any) => {
   try {
-    const { status, data } = await axiosCrypto.post(
+    const { data, status } = await axiosCrypto.post(
       `/workflow/paymentProcessList/${workflowId}`,
       JSON.stringify(payload),
     )
@@ -265,9 +271,12 @@ const getPaymentList = async (workflowId: Number, payload: any) => {
   }
 }
 
-const getProcessComments = async (workflowId: Number, processId: Number) => {
+const getProcessComments = async (
+  workflowId: number | string,
+  processId: number | string,
+) => {
   try {
-    const { status, data } = await axiosCrypto.get(
+    const { data, status } = await axiosCrypto.get(
       `/workflow/comments/${workflowId}/${processId}`,
     )
     if (status === 200) return data
@@ -279,13 +288,13 @@ const getProcessComments = async (workflowId: Number, processId: Number) => {
 }
 
 const insertProcessComment = async (
-  workflowId: Number,
-  processId: Number,
-  transactionId: Number,
+  workflowId: number | string,
+  processId: number | string,
+  transactionId: number | string,
   payload: any,
 ) => {
   try {
-    const { status, data } = await axiosCrypto.post(
+    const { data, status } = await axiosCrypto.post(
       `/workflow/comments/${workflowId}/${processId}/${transactionId}`,
       JSON.stringify(payload),
     )
@@ -299,7 +308,7 @@ const insertProcessComment = async (
 
 const groupRequestAction = async (payload: any) => {
   try {
-    const { status, data } = await axiosCrypto.post(
+    const { data, status } = await axiosCrypto.post(
       `/workflow/transactionBulk`,
       JSON.stringify(payload),
     )
@@ -312,9 +321,12 @@ const groupRequestAction = async (payload: any) => {
 }
 
 // CRITICAL FOR DRAWER (Detailed History)
-const processHistory = async (workflowId: Number, processId: Number) => {
+const processHistory = async (
+  workflowId: number | string,
+  processId: number | string,
+) => {
   try {
-    const { status, data } = await axiosCrypto.get(
+    const { data, status } = await axiosCrypto.get(
       `/workflow/processHistory/${workflowId}/${processId}`,
     )
     if (status === 200) return data
@@ -325,9 +337,9 @@ const processHistory = async (workflowId: Number, processId: Number) => {
   }
 }
 
-const overviewChart = async (workflowId: Number, payload: any) => {
+const overviewChart = async (workflowId: number | string, payload: any) => {
   try {
-    const { status, data } = await axiosCrypto.post(
+    const { data, status } = await axiosCrypto.post(
       `/overview/workflow/${workflowId}`,
       JSON.stringify(payload),
     )
@@ -340,9 +352,12 @@ const overviewChart = async (workflowId: Number, payload: any) => {
 }
 
 // CRITICAL FOR DRAWER (Attachments)
-const getAttachments = async (workflowId: Number, processId: Number) => {
+const getAttachments = async (
+  workflowId: number | string,
+  processId: number | string,
+) => {
   try {
-    const { status, data } = await axiosCrypto.get(
+    const { data, status } = await axiosCrypto.get(
       `/workflow/attachmentList/${workflowId}/${processId}`,
     )
     if (status === 200) return data
@@ -354,13 +369,13 @@ const getAttachments = async (workflowId: Number, processId: Number) => {
 }
 
 const saveProcessSignature = async (
-  workflowId: Number,
-  processId: Number,
-  transactionId: Number,
+  workflowId: number | string,
+  processId: number | string,
+  transactionId: number | string,
   payload: any,
 ) => {
   try {
-    const { status, data } = await axiosCrypto.post(
+    const { data, status } = await axiosCrypto.post(
       `/workflow/signWithProcessId/${workflowId}/${processId}/${transactionId}`,
       JSON.stringify(payload),
     )
@@ -372,9 +387,12 @@ const saveProcessSignature = async (
   }
 }
 
-const getProcessSignature = async (workflowId: Number, processId: Number) => {
+const getProcessSignature = async (
+  workflowId: number | string,
+  processId: number | string,
+) => {
   try {
-    const { status, data } = await axiosCrypto.get(
+    const { data, status } = await axiosCrypto.get(
       `/workflow/signWithProcessIdList/${workflowId}/${processId}`,
     )
     if (status === 200) return data
@@ -386,12 +404,12 @@ const getProcessSignature = async (workflowId: Number, processId: Number) => {
 }
 
 const getTaskEntries = async (
-  workflowId: Number,
-  processId: Number,
+  workflowId: number | string,
+  processId: number | string,
   payload: any,
 ) => {
   try {
-    const { status, data } = await axiosCrypto.post(
+    const { data, status } = await axiosCrypto.post(
       `/workflow/taskList/${workflowId}/${processId}`,
       JSON.stringify(payload),
     )
@@ -405,7 +423,7 @@ const getTaskEntries = async (
 
 const insertTaskEntry = async (payload: any) => {
   try {
-    const { status, data } = await axiosCrypto.post(
+    const { data, status } = await axiosCrypto.post(
       `/workflow/task`,
       JSON.stringify(payload),
     )
@@ -417,9 +435,12 @@ const insertTaskEntry = async (payload: any) => {
   }
 }
 
-const overviewTableReport = async (workflowId: Number, payload: any) => {
+const overviewTableReport = async (
+  workflowId: number | string,
+  payload: any,
+) => {
   try {
-    const { status, data } = await axiosCrypto.post(
+    const { data, status } = await axiosCrypto.post(
       `/overview/workflowSum/${workflowId}`,
       JSON.stringify(payload),
     )
@@ -432,12 +453,12 @@ const overviewTableReport = async (workflowId: Number, payload: any) => {
 }
 
 const getMailTransactions = async (
-  workflowId: Number,
-  processId: Number,
+  workflowId: number | string,
+  processId: number | string,
   payload: any,
 ) => {
   try {
-    const { status, data } = await axiosCrypto.post(
+    const { data, status } = await axiosCrypto.post(
       `/MailSettings/mailTransaction/${workflowId}/${processId}`,
       JSON.stringify(payload),
     )
@@ -449,7 +470,7 @@ const getMailTransactions = async (
   }
 }
 
-const resendMail = async (mailId: Number) => {
+const resendMail = async (mailId: number | string) => {
   try {
     const { status } = await axiosCrypto.post(
       `/MailSettings/reSendMail/${mailId}`,
@@ -463,10 +484,10 @@ const resendMail = async (mailId: Number) => {
 }
 
 const documentMerge = async (
-  workflowId: Number,
-  processId: Number,
-  transactionId: Number,
-  repositoryId: Number,
+  workflowId: number | string,
+  processId: number | string,
+  transactionId: number | string,
+  repositoryId: number | string,
   payload: any,
 ) => {
   try {
@@ -484,7 +505,7 @@ const documentMerge = async (
 
 const insertProcessComment_Jira = async (issueId: any, payload: any) => {
   try {
-    const { status, data } = await axiosCrypto.post(
+    const { data, status } = await axiosCrypto.post(
       `/workflow/commentsByissueId/${issueId}`,
       JSON.stringify(payload),
     )
@@ -496,9 +517,9 @@ const insertProcessComment_Jira = async (issueId: any, payload: any) => {
   }
 }
 
-const getKanbanViewSettings = async (workflowId: Number) => {
+const getKanbanViewSettings = async (workflowId: number | string) => {
   try {
-    const { status, data } = await axiosCrypto.get(
+    const { data, status } = await axiosCrypto.get(
       `/workflow/kanbanView/${workflowId}`,
     )
     if (status === 200) return data
@@ -510,15 +531,15 @@ const getKanbanViewSettings = async (workflowId: Number) => {
 }
 
 const reopenRequest = async (
-  workflowId: Number,
-  processId: Number | null,
+  workflowId: number | string,
+  processId: number | string | null,
   payload: any,
 ) => {
   try {
     const url = processId
       ? `/transaction/reOpenTicket/${workflowId}/${processId}`
       : `/transaction/reOpenTicket/${workflowId}`
-    const { status, data } = await axiosCrypto.post(
+    const { data, status } = await axiosCrypto.post(
       url,
       JSON.stringify(payload),
     )
@@ -530,9 +551,12 @@ const reopenRequest = async (
   }
 }
 
-const getSubWorkflow = async (workflowId: Number, processId: Number) => {
+const getSubWorkflow = async (
+  workflowId: number | string,
+  processId: number | string,
+) => {
   try {
-    const { status, data } = await axiosCrypto.get(
+    const { data, status } = await axiosCrypto.get(
       `/workflow/subWorkflow/${workflowId}/${processId}`,
     )
     if (status === 200) return data
@@ -545,7 +569,7 @@ const getSubWorkflow = async (workflowId: Number, processId: Number) => {
 
 const addSubWorkflow = async (payload: any) => {
   try {
-    const { status, data } = await axiosCrypto.post(
+    const { data, status } = await axiosCrypto.post(
       `/workflow/postSubWorkflow`,
       JSON.stringify(payload),
     )
@@ -558,13 +582,13 @@ const addSubWorkflow = async (payload: any) => {
 }
 
 const edtSubWorkflow = async (
-  id: Number,
-  workflowId: Number,
-  subWorkflowId: Number,
+  id: number | string,
+  workflowId: number | string,
+  subWorkflowId: number | string,
   payload: any,
 ) => {
   try {
-    const { status, data } = await axiosCrypto.put(
+    const { data, status } = await axiosCrypto.put(
       `/workflow/putSubWorkflow/${id}/${workflowId}/${subWorkflowId}`,
       JSON.stringify(payload),
     )
@@ -578,7 +602,7 @@ const edtSubWorkflow = async (
 
 const updateRequestReserved = async (payload: any) => {
   try {
-    const { status, data } = await axiosCrypto.put(
+    const { data, status } = await axiosCrypto.put(
       `/client/ticketLock`,
       JSON.stringify(payload),
     )
@@ -592,12 +616,12 @@ const updateRequestReserved = async (payload: any) => {
 
 // CRITICAL FOR DRAWER (Fetching specific row data + values)
 const getProcess = async (
-  workflowId: Number,
-  processId: Number,
-  transactionId: Number,
+  workflowId: number | string,
+  processId: number | string,
+  transactionId: number | string,
 ) => {
   try {
-    const { status, data } = await axiosCrypto.get(
+    const { data, status } = await axiosCrypto.get(
       `/transaction/rowInfo/${workflowId}/${processId}/${transactionId}`,
     )
     if (status === 200) return data
@@ -609,12 +633,12 @@ const getProcess = async (
 }
 
 const getWorkflowRecommendation = async (
-  workflowId: Number,
-  processId: Number,
-  transactionId: Number,
+  workflowId: number | string,
+  processId: number | string,
+  transactionId: number | string,
 ) => {
   try {
-    const { status, data } = await axiosCrypto.get(
+    const { data, status } = await axiosCrypto.get(
       `/workflow/workflowSummary/${workflowId}/${processId}/${transactionId}`,
     )
     if (status === 200) return data
@@ -625,9 +649,12 @@ const getWorkflowRecommendation = async (
   }
 }
 
-const calculateAge = async (workflowId: Number, processId: Number) => {
+const calculateAge = async (
+  workflowId: number | string,
+  processId: number | string,
+) => {
   try {
-    const { status, data } = await axiosCrypto.get(
+    const { data, status } = await axiosCrypto.get(
       `/client/calculateAge/${workflowId}/${processId}`,
     )
     if (status === 200) return data
@@ -640,7 +667,7 @@ const calculateAge = async (workflowId: Number, processId: Number) => {
 
 const getProductListFrank = async (fId: any, eId: any) => {
   try {
-    const { status, data } = await axiosCrypto.get(
+    const { data, status } = await axiosCrypto.get(
       `/client/fm/existProductList/${fId}/${eId}`,
     )
     if (status === 200) return data
@@ -653,7 +680,7 @@ const getProductListFrank = async (fId: any, eId: any) => {
 
 const uploadDocumentCheckList = async (payload: any) => {
   try {
-    const { status, data } = await axiosCrypto.post(
+    const { data, status } = await axiosCrypto.post(
       '/form/NewdocumentCheckList',
       JSON.stringify(payload),
     )
@@ -667,7 +694,7 @@ const uploadDocumentCheckList = async (payload: any) => {
 
 const workflowList = async (payload: any) => {
   try {
-    const { status, data } = await axiosCrypto.post(
+    const { data, status } = await axiosCrypto.post(
       '/ai/workflowList',
       JSON.stringify(payload),
     )
@@ -681,7 +708,7 @@ const workflowList = async (payload: any) => {
 
 const getDocumentListAll = async (payload: any) => {
   try {
-    const { status, data } = await axiosCrypto.post(
+    const { data, status } = await axiosCrypto.post(
       '/form/documentchecklist/all',
       JSON.stringify(payload),
     )
@@ -693,9 +720,12 @@ const getDocumentListAll = async (payload: any) => {
   }
 }
 
-const getDocumentList = async (workflowId: Number, processId: Number) => {
+const getDocumentList = async (
+  workflowId: number | string,
+  processId: number | string,
+) => {
   try {
-    const { status, data } = await axiosCrypto.get(
+    const { data, status } = await axiosCrypto.get(
       `/form/getdocumentchecklistById/${workflowId}/${processId}`,
     )
     if (status === 200) return data
@@ -706,9 +736,9 @@ const getDocumentList = async (workflowId: Number, processId: Number) => {
   }
 }
 
-const updateCheckList = async (id: Number, payload: any) => {
+const updateCheckList = async (id: number | string, payload: any) => {
   try {
-    const { status, data } = await axiosCrypto.put(
+    const { data, status } = await axiosCrypto.put(
       `/form/editdocumentchecklist/${id}`,
       JSON.stringify(payload),
     )
@@ -722,7 +752,7 @@ const updateCheckList = async (id: Number, payload: any) => {
 
 const getPrompt = async (payload: any) => {
   try {
-    const { status, data } = await axiosCrypto.post(
+    const { data, status } = await axiosCrypto.post(
       '/ai/getJsonbyPrompt',
       JSON.stringify(payload),
     )
@@ -734,9 +764,12 @@ const getPrompt = async (payload: any) => {
   }
 }
 
-const getMainProcessDetails = async (wId: Number, pId: Number) => {
+const getMainProcessDetails = async (
+  wId: number | string,
+  pId: number | string,
+) => {
   try {
-    const { status, data } = await axiosCrypto.get(
+    const { data, status } = await axiosCrypto.get(
       `workflow/getDetailsforMainworkflow/${wId}/${pId}`,
     )
     if (status === 200) return data
@@ -749,7 +782,7 @@ const getMainProcessDetails = async (wId: Number, pId: Number) => {
 
 const linkedRequestedTicket = async (payload: any) => {
   try {
-    const { status, data } = await axiosCrypto.post(
+    const { data, status } = await axiosCrypto.post(
       `workflow/linkedRequestedTicket`,
       JSON.stringify(payload),
     )
@@ -761,9 +794,12 @@ const linkedRequestedTicket = async (payload: any) => {
   }
 }
 
-const getLinkedRequestDetails = async (wId: Number, pId: Number) => {
+const getLinkedRequestDetails = async (
+  wId: number | string,
+  pId: number | string,
+) => {
   try {
-    const { status, data } = await axiosCrypto.get(
+    const { data, status } = await axiosCrypto.get(
       `workflow/getDetailoflinkedProcess/${wId}/${pId}`,
     )
     if (status === 200) return data
@@ -776,12 +812,12 @@ const getLinkedRequestDetails = async (wId: Number, pId: Number) => {
 }
 
 const deleteLinkedProcessId = async (
-  wId: Number,
-  pId: Number,
-  linkedProcessId: Number,
+  wId: number | string,
+  pId: number | string,
+  linkedProcessId: number | string,
 ) => {
   try {
-    const { status, data } = await axiosCrypto.delete(
+    const { data, status } = await axiosCrypto.delete(
       `workflow/removeLinkedProcess/${wId}/${pId}/${linkedProcessId}`,
     )
     if (status === 200) return data
@@ -792,9 +828,9 @@ const deleteLinkedProcessId = async (
   }
 }
 
-const getDocumentListPost = async (Wid: Number, payload: any) => {
+const getDocumentListPost = async (Wid: number | string, payload: any) => {
   try {
-    const { status, data } = await axiosCrypto.post(
+    const { data, status } = await axiosCrypto.post(
       `/form/getdocumentchecklist/all/${Wid}`,
       JSON.stringify(payload),
     )
@@ -808,7 +844,7 @@ const getDocumentListPost = async (Wid: Number, payload: any) => {
 
 const updateVerifyStatus = async (payload: any) => {
   try {
-    const { status, data } = await axiosCrypto.post(
+    const { data, status } = await axiosCrypto.post(
       `/workflow/updateAttachmentVerifyStatus`,
       JSON.stringify(payload),
     )
@@ -822,7 +858,7 @@ const updateVerifyStatus = async (payload: any) => {
 
 const getOcrTemplate = async (payload: any) => {
   try {
-    const { status, data } = await axiosCrypto.post(
+    const { data, status } = await axiosCrypto.post(
       `/OCR/getOCRTemplate`,
       JSON.stringify(payload),
     )
@@ -835,11 +871,11 @@ const getOcrTemplate = async (payload: any) => {
 }
 
 // Use this for getting Form Definitions (Logic inferred from useRequestDetail needs)
-const getForm = async (formId: Number) => {
+const getForm = async (formId: number | string) => {
   try {
     // Assuming a standard endpoint for fetching form json by ID based on your workflow patterns
     // If you don't have this exact endpoint, use the one that returns formJson
-    const { status, data } = await axiosCrypto.get(`/form/${formId}`)
+    const { data, status } = await axiosCrypto.get(`/form/${formId}`)
     if (status === 200) return data
     throw new Error('Error fetching form')
   } catch (e) {
@@ -851,66 +887,66 @@ const getForm = async (formId: Number) => {
 // --- EXPORT OBJECT ---
 
 export const requestApi = {
-  // Existing
-  getAllRequests,
-  getMetaDataByRequest,
-  getInboxListById,
-  getSentListById,
-  getCompletedRequestById,
-  // New
-  getWorkflow,
-  createWorkflow,
-  updateWorkflow,
-  getWorkflowList,
-  getUserMyInbox,
-  getUserWorkflowTest,
-  processTransaction,
-  getMyInboxList,
-  getCommonList,
-  getInboxListAgent,
-  getInboxListTest,
-  getSentListTest,
-  getCompletedListTest,
-  getPaymentList,
-  getProcessComments,
-  insertProcessComment,
-  groupRequestAction,
-  processHistory,
-  overviewChart,
-  getAttachments,
-  saveProcessSignature,
-  getProcessSignature,
-  getTaskEntries,
-  insertTaskEntry,
-  overviewTableReport,
-  getMailTransactions,
-  resendMail,
-  documentMerge,
-  insertProcessComment_Jira,
-  getKanbanViewSettings,
-  reopenRequest,
-  getSubWorkflow,
   addSubWorkflow,
-  edtSubWorkflow,
-  updateRequestReserved,
-  getProcess,
-  getWorkflowRecommendation,
   calculateAge,
-  getProductListFrank,
+  createWorkflow,
+  deleteLinkedProcessId,
+  documentMerge,
+  edtSubWorkflow,
+  groupRequestAction,
+  insertProcessComment,
+  insertProcessComment_Jira,
+  insertTaskEntry,
+  linkedRequestedTicket,
+  overviewChart,
+  overviewTableReport,
+  processHistory,
+  processTransaction,
+  reopenRequest,
+  resendMail,
+  saveProcessSignature,
+  updateCheckList,
+  updateRequestReserved,
+  updateVerifyStatus,
+  updateWorkflow,
   uploadDocumentCheckList,
   workflowList,
-  getDocumentListAll,
+  // Existing
+  getAllRequests,
+  getAttachments,
+  getCommonList,
+  getCompletedListTest,
+  getCompletedRequestById,
   getDocumentList,
-  updateCheckList,
-  getPrompt,
-  getMainProcessDetails,
-  linkedRequestedTicket,
-  getLinkedRequestDetails,
-  deleteLinkedProcessId,
+  getDocumentListAll,
   getDocumentListPost,
-  updateVerifyStatus,
-  getOcrTemplate,
   getForm, // Added helper
+  getInboxListAgent,
+  getInboxListById,
+  getInboxListTest,
+  getKanbanViewSettings,
+  getLinkedRequestDetails,
+  getMailTransactions,
+  getMainProcessDetails,
+  getMetaDataByRequest,
+  getMyInboxList,
+  getOcrTemplate,
+  getPaymentList,
+  getProcess,
+  getProcessComments,
+  getProcessSignature,
+  getProductListFrank,
+  getPrompt,
+  getSentListById,
+  getSentListTest,
+  getSubWorkflow,
+  getTaskEntries,
+  getUserMyInbox,
+  getUserWorkflowTest,
+  // New
+  getWorkflow,
+  getWorkflowList,
+  getWorkflowRecommendation,
 }
 
 export default requestApi

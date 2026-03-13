@@ -4,10 +4,13 @@ import type { Option } from '@/types/option'
 import Divider from '@/components/base/Divider'
 import Icon from '@/components/base/icon/Icon'
 import InputSelect from '@/components/base/inputs/InputSelect'
-import { AnimateSlideRight, AnimateStagger } from '@/components/common/animations'
+import Title from '@/components/base/Title'
+import {
+  AnimateSlideRight,
+  AnimateStagger,
+} from '@/components/common/animations'
 import authUserStore from '@/stores/authUserStore'
 import setupStore from '../../accounts-payable/stores/useSetupStore'
-import Title from '@/components/base/Title'
 const modules = [
   {
     disabled: false,
@@ -83,7 +86,9 @@ const dateRanges = [
 const Header = () => {
   const isSetupStarted = setupStore((state) => state.isSetupStarted)
   const isApSetUpCompleted = setupStore((state) => state.isApSetUpCompleted)
-  const isSetupCalloutDismissed = setupStore((state) => state.isSetupCalloutDismissed)
+  const isSetupCalloutDismissed = setupStore(
+    (state) => state.isSetupCalloutDismissed,
+  )
   const { t } = useLingui()
   // Hide Header when SetupCallout is visible (when setup is not started and callout is not dismissed)
   const shouldHideHeader = isSetupStarted || isSetupCalloutDismissed
@@ -105,7 +110,7 @@ const Header = () => {
     id: 1,
     name: 'Today',
   })
-  const store = authUserStore?.getState();
+  const store = authUserStore?.getState()
 
   const name = store?.session?.firstName
 
@@ -124,37 +129,43 @@ const Header = () => {
         />
       </AnimateSlideRight>
 
-      {showOverviewAndIntegrations && isApSetUpCompleted && !isSetupStarted && <AnimateStagger staggerDelay={0.05}>
-        <div className='flex flex-wrap items-center gap-2'>
-          <InputSelect
-            leftSection={<Icon className='text-gray-10' name='tabler:cube' />}
-            options={modules}
-            value={module}
-            width={160}
-            onChange={setModule}
-          />
-          <InputSelect
-            leftSection={<Icon className='text-gray-10' name='tabler:replace' />}
-            options={moduleItems}
-            value={moduleItem}
-            width={240}
-            searchable
-            onChange={setModuleItem}
-          />
-          <Divider
-            className='mx-2 my-auto hidden h-5 sm:block'
-            orientation='vertical'
-          />
-          <InputSelect
-            leftSection={<Icon className='text-gray-10' name='tabler:calendar' />}
-            options={dateRanges}
-            position='bottom-end'
-            value={dateRange}
-            width={160}
-            onChange={setDateRange}
-          />
-        </div>
-      </AnimateStagger>}
+      {showOverviewAndIntegrations && isApSetUpCompleted && !isSetupStarted && (
+        <AnimateStagger staggerDelay={0.05}>
+          <div className='flex flex-wrap items-center gap-2'>
+            <InputSelect
+              leftSection={<Icon className='text-gray-10' name='tabler:cube' />}
+              options={modules}
+              value={module}
+              width={160}
+              onChange={setModule}
+            />
+            <InputSelect
+              options={moduleItems}
+              value={moduleItem}
+              width={240}
+              searchable
+              leftSection={
+                <Icon className='text-gray-10' name='tabler:replace' />
+              }
+              onChange={setModuleItem}
+            />
+            <Divider
+              className='mx-2 my-auto hidden h-5 sm:block'
+              orientation='vertical'
+            />
+            <InputSelect
+              options={dateRanges}
+              position='bottom-end'
+              value={dateRange}
+              width={160}
+              leftSection={
+                <Icon className='text-gray-10' name='tabler:calendar' />
+              }
+              onChange={setDateRange}
+            />
+          </div>
+        </AnimateStagger>
+      )}
     </div>
   )
 }

@@ -10,8 +10,8 @@ async function testModels() {
     console.log(`Testing model: ${model}...`);
     try {
       const response = await ai.models.generateContent({
+        contents: [{ parts: [{ text: "Hello" }], role: "user" }],
         model: model,
-        contents: [{ role: "user", parts: [{ text: "Hello" }] }],
       });
       console.log(`SUCCESS: ${model}`);
       console.log(response.text().substring(0, 50) + "...");

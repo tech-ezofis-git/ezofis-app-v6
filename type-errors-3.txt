@@ -1,0 +1,9 @@
+
+> type-check
+> tsc -b
+
+src/pages/form-builder/components/build/components/form/Page.tsx(1,22): error TS6133: 'Button' is declared but its value is never read.
+src/pages/form-builder/components/build/components/form/Page.tsx(5,69): error TS6133: 'QuestionType' is declared but its value is never read.
+src/pages/form-builder/components/build/components/form/Page.tsx(155,39): error TS6133: 'isLastInRow' is declared but its value is never read.
+src/pages/form-builder/components/common/Header.tsx(1,18): error TS6133: 'Group' is declared but its value is never read.
+src/pages/workflows/components/settings/EmailSettingsPanel.tsx(42,31): error TS6133: 'setConnectionOptions' is declared but its value is never read.

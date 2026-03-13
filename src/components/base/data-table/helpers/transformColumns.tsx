@@ -42,10 +42,10 @@ export default function transformColumns(
 
     return column.isDisplayColumn
       ? columnHelper.display({
-        ...config,
-        enableGrouping: false,
-        enableSorting: false,
-      })
+          ...config,
+          enableGrouping: false,
+          enableSorting: false,
+        })
       : columnHelper.accessor(column.id, { ...config })
   })
 

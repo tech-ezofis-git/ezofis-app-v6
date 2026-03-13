@@ -1,10 +1,10 @@
 import Button from '@/components/base/button/Button'
 import Divider from '@/components/base/Divider'
+// import WhatHappensNext from './components/WhatHappensNext'
+import Title from '@/components/base/Title'
 // import HeroText from '@/components/common/HeroText'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import Integrations from './components/Integrations'
-// import WhatHappensNext from './components/WhatHappensNext'
-import Title from '@/components/base/Title'
 
 const StepFour = () => {
   const setStep = setupStore((state) => state.setStep)
@@ -38,8 +38,10 @@ const StepFour = () => {
           onClick={() => setStep(2)}
         />
         <Button
-          label={isApSetUpCompleted ? 'Save Configuration' : 'Activate Automation'}
           suffixIcon='tabler:arrow-right'
+          label={
+            isApSetUpCompleted ? 'Save Configuration' : 'Activate Automation'
+          }
           onClick={handleClose}
         />
       </div>

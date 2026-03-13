@@ -16,11 +16,16 @@ function RouteComponent() {
   return (
     <div className='max-w-4xl p-6'>
       <StoryTitle>Tabs</StoryTitle>
-      <p className='text-15 text-gray-11 mb-10'>
-        Tabs organize content into separate views that the user can navigate between. They are ideal for grouping related information while keeping the interface clean and focused. The component supports icons, disabled states, and primary/secondary color themes.
+      <p className='mb-10 text-15 text-gray-11'>
+        Tabs organize content into separate views that the user can navigate
+        between. They are ideal for grouping related information while keeping
+        the interface clean and focused. The component supports icons, disabled
+        states, and primary/secondary color themes.
       </p>
 
-      <p className='text-14 text-gray-11 mb-4'>Before using Tabs, import the core component and the Tab item:</p>
+      <p className='mb-4 text-14 text-gray-11'>
+        Before using Tabs, import the core component and the Tab item:
+      </p>
       <StoryCode>
         {`import Tabs from '@/components/base/tabs/Tabs'
 import Tab from '@/components/base/tabs/Tab'`}
@@ -30,8 +35,9 @@ import Tab from '@/components/base/tabs/Tab'`}
         {/* Default Section */}
         <section>
           <StorySubTitle>Default Usage</StorySubTitle>
-          <p className='text-14 text-gray-11 mb-4'>
-            A standard horizontal tab list using unique <code>value</code> keys for state management.
+          <p className='mb-4 text-14 text-gray-11'>
+            A standard horizontal tab list using unique <code>value</code> keys
+            for state management.
           </p>
           <StoryCode>
             {`<Tabs value={value} onChange={setValue}>
@@ -51,8 +57,9 @@ import Tab from '@/components/base/tabs/Tab'`}
         {/* Icons Section */}
         <section>
           <StorySubTitle>Tabs with Icons</StorySubTitle>
-          <p className='text-14 text-gray-11 mb-4'>
-            Enhance tab labels with meaningful icons for better visual recognition.
+          <p className='mb-4 text-14 text-gray-11'>
+            Enhance tab labels with meaningful icons for better visual
+            recognition.
           </p>
           <StoryCode>
             {`<Tab icon='lucide:home' label='Home' value='tab1' />`}
@@ -69,12 +76,14 @@ import Tab from '@/components/base/tabs/Tab'`}
         {/* State/Color Section */}
         <section>
           <StorySubTitle>Interaction States & Colors</StorySubTitle>
-          <p className='text-14 text-gray-11 mb-6'>
+          <p className='mb-6 text-14 text-gray-11'>
             Demonstrating disabled tabs and semantic color variants:
           </p>
-          <div className='space-y-12 ml-1'>
+          <div className='ml-1 space-y-12'>
             <div>
-              <p className='text-13 font-medium text-gray-11 mb-4'>Disabled Items</p>
+              <p className='mb-4 text-13 font-medium text-gray-11'>
+                Disabled Items
+              </p>
               <Tabs value={value} onChange={setValue}>
                 <Tab label='Visible' value='tab1' />
                 <Tab label='Unavailable' value='tab2' disabled />
@@ -82,14 +91,18 @@ import Tab from '@/components/base/tabs/Tab'`}
               </Tabs>
             </div>
             <div>
-              <p className='text-13 font-medium text-gray-11 mb-4'>Primary Theme</p>
+              <p className='mb-4 text-13 font-medium text-gray-11'>
+                Primary Theme
+              </p>
               <Tabs color='primary' value={value} onChange={setValue}>
                 <Tab label='Overview' value='tab1' />
                 <Tab label='Payments' value='tab2' />
               </Tabs>
             </div>
             <div>
-              <p className='text-13 font-medium text-gray-11 mb-4'>Secondary Theme</p>
+              <p className='mb-4 text-13 font-medium text-gray-11'>
+                Secondary Theme
+              </p>
               <Tabs color='secondary' value={value} onChange={setValue}>
                 <Tab label='System' value='tab1' />
                 <Tab label='Logs' value='tab2' />

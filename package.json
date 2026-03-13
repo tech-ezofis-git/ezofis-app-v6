@@ -11,7 +11,7 @@
     "lint": "eslint . --fix",
     "format": "prettier . --write",
     "scan": "npx react-scan@latest localhost:3000",
-    "start": "npm-run-all type-check lint format dev",
+    "start": "npm run dev",
     "pre-commit": "npm-run-all type-check lint format",
     "extract": "lingui extract",
     "compile": "lingui compile --typescript"

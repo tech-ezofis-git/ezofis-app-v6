@@ -9,7 +9,6 @@ const Fields = () => {
   const [search, setSearch] = useState('')
   const fieldGroups = [
     {
-      label: 'Templates',
       items: [
         {
           icon: 'lucide:contact',
@@ -22,9 +21,9 @@ const Fields = () => {
           type: 'ADDRESS_INFO',
         },
       ],
+      label: 'Templates',
     },
     {
-      label: 'Display',
       items: [
         {
           icon: 'lucide:heading',
@@ -52,9 +51,9 @@ const Fields = () => {
           type: 'DIVIDER',
         },
       ],
+      label: 'Display',
     },
     {
-      label: 'Basic',
       items: [
         {
           icon: 'mdi:form-textbox',
@@ -102,9 +101,9 @@ const Fields = () => {
           type: 'FULL_NAME',
         },
       ],
+      label: 'Basic',
     },
     {
-      label: 'Date & Time',
       items: [
         {
           icon: 'lucide:calendar',
@@ -122,9 +121,9 @@ const Fields = () => {
           type: 'DATE_TIME',
         },
       ],
+      label: 'Date & Time',
     },
     {
-      label: 'Selections',
       items: [
         {
           icon: 'lucide:list-todo',
@@ -147,9 +146,9 @@ const Fields = () => {
           type: 'MULTIPLE_CHOICE',
         },
       ],
+      label: 'Selections',
     },
     {
-      label: 'Rating',
       items: [
         {
           icon: 'lucide:star',
@@ -167,9 +166,9 @@ const Fields = () => {
           type: 'RATING',
         },
       ],
+      label: 'Rating',
     },
     {
-      label: 'Advanced',
       items: [
         {
           icon: 'lucide:file-up',
@@ -202,14 +201,17 @@ const Fields = () => {
           type: 'TABLE',
         },
       ],
+      label: 'Advanced',
     },
-  ];
-  const filteredGroups = fieldGroups.map(group => ({
-    ...group,
-    items: group.items.filter(item =>
-      item.label.toLowerCase().includes(search.toLowerCase())
-    )
-  })).filter(group => group.items.length > 0)
+  ]
+  const filteredGroups = fieldGroups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) =>
+        item.label.toLowerCase().includes(search.toLowerCase()),
+      ),
+    }))
+    .filter((group) => group.items.length > 0)
 
   return (
     <div className='space-y-6 p-4'>
@@ -228,10 +230,10 @@ const Fields = () => {
           chevron: 'text-gray-9',
           content: 'space-y-1.5 p-0 pb-6',
           control:
-            'focus rounded-lg p-2 transition-all hover:bg-gray-1 active:scale-95 mb-1',
+            'focus mb-1 rounded-lg p-2 transition-all hover:bg-gray-1 active:scale-95',
           item: 'border-none',
           label:
-            'p-0 text-12 font-bold text-gray-13 uppercase tracking-[0.1em]',
+            'p-0 text-12 font-bold tracking-[0.1em] text-gray-13 uppercase',
         }}
       >
         {filteredGroups.map((group) => (
@@ -248,7 +250,7 @@ const Fields = () => {
           </FieldGroup>
         ))}
         {filteredGroups.length === 0 && (
-          <div className="py-8 text-center text-gray-5 text-sm">
+          <div className='py-8 text-center text-sm text-gray-5'>
             No fields found matching "{search}"
           </div>
         )}

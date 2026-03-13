@@ -1,4 +1,3 @@
-
 import { useMemo } from 'react'
 import type { IDiscrepancy } from '@/pages/requests/types'
 import Title from '@/components/base/Title'
@@ -9,7 +8,6 @@ interface Props {
 }
 
 const Discrepancies = ({ data }: Props) => {
-
   const discrepancies: IDiscrepancy[] = useMemo(() => {
     const list: IDiscrepancy[] = []
 
@@ -17,9 +15,9 @@ const Discrepancies = ({ data }: Props) => {
     if (data?.invoice_errors?.errors) {
       data.invoice_errors.errors.forEach((err: any) => {
         list.push({
-          title: 'Invoice Error',
           description: `${err.field}: ${err.detail}`,
-          severity: 'high' // Assuming errors are always high
+          severity: 'high', // Assuming errors are always high
+          title: 'Invoice Error',
         })
       })
     }
@@ -28,9 +26,9 @@ const Discrepancies = ({ data }: Props) => {
     if (data?.back_order?.missing_qty_by_item) {
       data.back_order.missing_qty_by_item.forEach((item: any) => {
         list.push({
-          title: 'Back Order Detected',
           description: `Line ${item.po_line_id}: Invoice Qty ${item.invoice_qty} vs PO Qty ${item.po_qty}. Remaining: ${item.remaining}`,
-          severity: 'medium'
+          severity: 'medium',
+          title: 'Back Order Detected',
         })
       })
     }
@@ -39,9 +37,9 @@ const Discrepancies = ({ data }: Props) => {
     if (data?.supplier_validation?.mismatch) {
       data.supplier_validation.mismatch.forEach((mismatch: any) => {
         list.push({
-          title: 'Supplier Mismatch',
           description: `${mismatch.field}: ${mismatch.detail}`,
-          severity: 'high'
+          severity: 'high',
+          title: 'Supplier Mismatch',
         })
       })
     }

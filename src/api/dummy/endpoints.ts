@@ -1,5 +1,5 @@
-import { _axios } from '../axios'
 import type { User, UserList } from './types/user'
+import { _axios } from '../axios'
 import { type QueryParams } from './types/item'
 import { type OptionList, OptionListSchema } from './types/option'
 import { UserListSchema } from './types/user'

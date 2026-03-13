@@ -37,7 +37,7 @@ export const getActionsForActivity = (
           icon = 'tabler:arrow-back-up'
         }
 
-        actions.push({ label: action, value: action, color, icon })
+        actions.push({ color, icon, label: action, value: action })
       }
     })
 
@@ -45,10 +45,10 @@ export const getActionsForActivity = (
     const block = flow.blocks?.find((b: any) => b.id === activityId)
     if (block?.settings?.internalForward) {
       actions.push({
-        label: 'Assign',
-        value: 'Assign',
         color: 'orange',
         icon: 'tabler:user-share',
+        label: 'Assign',
+        value: 'Assign',
       })
     }
   } catch (e) {

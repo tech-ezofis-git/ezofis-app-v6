@@ -11,7 +11,6 @@ const SignUpPage = () => {
   const [view, setView] = useState<View>('sign-up-form')
   // const [loginType, setLoginType] = useState<'NORMAL' | 'GOOGLE' | 'MICROSOFT'>('NORMAL')
 
-
   return (
     <AnimatePresence initial={false} mode='wait'>
       <AnimateEntrancePop key={view}>

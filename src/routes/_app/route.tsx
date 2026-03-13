@@ -4,20 +4,20 @@ import AppLayout from '@/layouts/app/AppLayout'
 import authUserStore from '@/stores/authUserStore'
 
 export const Route = createFileRoute('/_app')({
+  component: RouteComponent,
+  staticData: {
+    pageTitle: 'App Layout',
+  },
   beforeLoad: () => {
     const { isAuthenticated } = authUserStore.getState()
 
     if (!isAuthenticated) {
       // adjust path to your actual sign-in route under _auth
       throw redirect({
-        to: '/sign-in',
         replace: true,
+        to: '/sign-in',
       })
     }
-  },
-  component: RouteComponent,
-  staticData: {
-    pageTitle: 'App Layout',
   },
 })
 

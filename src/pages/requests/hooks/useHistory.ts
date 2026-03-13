@@ -3,15 +3,15 @@ import { useCallback, useEffect, useState } from 'react'
 import requestApi from '@/api/requests/requests'
 
 export type HistoryRow = {
-  activityId?: string | number
-  stage?: string
-  status?: string
   action?: string
-  actionUserEmail?: string
-  actionUser?: string
   actionAt?: string
   actionStatus?: number
+  actionUser?: string
+  actionUserEmail?: string
+  activityId?: string | number
   requestNo?: string
+  stage?: string
+  status?: string
   subWorkflowHistory?: any
 }
 
@@ -50,5 +50,5 @@ export function useHistory(
     refetch()
   }, [enabled, refetch])
 
-  return { data, isLoading, error, refetch }
+  return { data, error, isLoading, refetch }
 }

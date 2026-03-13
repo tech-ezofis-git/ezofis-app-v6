@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 export const ItemSchema = z.object({
-  id: z.number(),
+  id: z.union([z.string(), z.number()]),
   name: z.string(),
 })
 

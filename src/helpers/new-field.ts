@@ -1,82 +1,88 @@
 export const generateId = () => {
-    try {
-        return crypto.randomUUID()
-    } catch (e) {
-        return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
-    }
+  try {
+    return crypto.randomUUID()
+  } catch (e) {
+    return (
+      Math.random().toString(36).substring(2, 15) +
+      Math.random().toString(36).substring(2, 15)
+    )
+  }
 }
 
 export const getField = (fieldType: string) => {
-    const id = generateId()
-    
-    const baseField = {
-        id,
-        label: fieldType.toLowerCase() === 'text_builder' ? 'Paragraph' : fieldType.replace(/_/g, ' ').toLowerCase(),
-        displayLabel: "",
-        type: fieldType.toUpperCase(),
-        settings: {
-            general: {
-                hideLabel: false,
-                size: "col-6",
-                visibility: "NORMAL",
-                placeholder: "",
-                tooltip: "",
-                dividerType: "SOLID",
-                url: ""
-            },
-            specific: {
-                defaultValue: "CUSTOM",
-                customDefaultValue: "",
-                optionsType: "CUSTOM",
-                customOptions: "Option 1,Option 2,Option 3",
-                separateOptionsUsing: "COMMA",
-                allowToAddNewOptions: false,
-                optionsPerLine: 0,
-                tableColumns: [] as any[],
-                tableRowsType: "ON_DEMAND",
-                matrixColumns: [] as any[],
-                matrixRows: [] as any[],
-                fibFields: [] as any[],
-                autoGenerateValue: { prefix: "", suffix: "" }
-            },
-            validation: {
-                fieldRule: "OPTIONAL",
-                contentRule: "",
-                minimum: "",
-                maximum: "",
-                allowedFileTypes: [],
-                maxFileSize: 10
-            },
-            aiSettings: {
-                validateTypeKeyword: "",
-                formControlValidate: { masterFormId: 0, masterFormColumn: [] }
-            },
-            lookupSettings: {
-                columnName: "",
-                connectionId: 0
-            }
-        }
-    }
+  const id = generateId()
 
-    // Specific tweaks based on type
-    switch (fieldType.toUpperCase()) {
-        case 'TABLE':
-        case 'DYNAMIC_TABLE':
-            baseField.settings.specific.tableColumns = [
-                { id: generateId(), name: 'Column 1', type: 'SHORT_TEXT', size: 'md' }
-            ]
-            break
-        case 'MATRIX':
-            baseField.settings.specific.matrixColumns = ['Col 1', 'Col 2']
-            baseField.settings.specific.matrixRows = ['Row 1', 'Row 2']
-            break
-        case 'SINGLE_SELECT':
-        case 'MULTI_SELECT':
-        case 'SINGLE_CHOICE':
-        case 'MULTIPLE_CHOICE':
-            // Defaults are already set in specific block
-            break
-    }
+  const baseField = {
+    displayLabel: '',
+    id,
+    label:
+      fieldType.toLowerCase() === 'text_builder'
+        ? 'Paragraph'
+        : fieldType.replace(/_/g, ' ').toLowerCase(),
+    type: fieldType.toUpperCase(),
+    settings: {
+      aiSettings: {
+        formControlValidate: { masterFormColumn: [], masterFormId: 0 },
+        validateTypeKeyword: '',
+      },
+      general: {
+        dividerType: 'SOLID',
+        hideLabel: false,
+        placeholder: '',
+        size: 'col-6',
+        tooltip: '',
+        url: '',
+        visibility: 'NORMAL',
+      },
+      lookupSettings: {
+        columnName: '',
+        connectionId: 0,
+      },
+      specific: {
+        allowToAddNewOptions: false,
+        autoGenerateValue: { prefix: '', suffix: '' },
+        customDefaultValue: '',
+        customOptions: 'Option 1,Option 2,Option 3',
+        defaultValue: 'CUSTOM',
+        fibFields: [] as any[],
+        matrixColumns: [] as any[],
+        matrixRows: [] as any[],
+        optionsPerLine: 0,
+        optionsType: 'CUSTOM',
+        separateOptionsUsing: 'COMMA',
+        tableColumns: [] as any[],
+        tableRowsType: 'ON_DEMAND',
+      },
+      validation: {
+        allowedFileTypes: [],
+        contentRule: '',
+        fieldRule: 'OPTIONAL',
+        maxFileSize: 10,
+        maximum: '',
+        minimum: '',
+      },
+    },
+  }
 
-    return baseField
+  // Specific tweaks based on type
+  switch (fieldType.toUpperCase()) {
+    case 'TABLE':
+    case 'DYNAMIC_TABLE':
+      baseField.settings.specific.tableColumns = [
+        { id: generateId(), name: 'Column 1', size: 'md', type: 'SHORT_TEXT' },
+      ]
+      break
+    case 'MATRIX':
+      baseField.settings.specific.matrixColumns = ['Col 1', 'Col 2']
+      baseField.settings.specific.matrixRows = ['Row 1', 'Row 2']
+      break
+    case 'SINGLE_SELECT':
+    case 'MULTI_SELECT':
+    case 'SINGLE_CHOICE':
+    case 'MULTIPLE_CHOICE':
+      // Defaults are already set in specific block
+      break
+  }
+
+  return baseField
 }

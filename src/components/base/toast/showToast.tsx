@@ -21,7 +21,7 @@ const variants = {
   },
 }
 
-const showToast = ({ message, variant = 'default', toastTitle }: Toast) => {
+const showToast = ({ message, toastTitle, variant = 'default' }: Toast) => {
   const { title } = toastTitle ? { title: toastTitle } : variants[variant]
 
   return notifications.show({

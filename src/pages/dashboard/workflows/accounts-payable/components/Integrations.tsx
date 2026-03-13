@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react'
 import { useViewportSize } from '@mantine/hooks'
+import { motion } from 'motion/react'
+import { useEffect, useState } from 'react'
 import Badge from '@/components/base/Badge'
 import Icon from '@/components/base/icon/Icon'
-import { motion } from 'motion/react'
 import {
   // AnimateBounce,
   AnimateFadeIn,
@@ -54,11 +54,7 @@ const Integrations = () => {
     return () => clearTimeout(timer)
   }, [])
 
-  const animationVariants = [
-    AnimateFadeIn,
-    AnimateSlideUp,
-    AnimateScale,
-  ]
+  const animationVariants = [AnimateFadeIn, AnimateSlideUp, AnimateScale]
 
   return (
     <Section title='Integrations'>
@@ -78,12 +74,10 @@ const Integrations = () => {
           </>
         ) : (
           items.map((item, index) => {
-            const AnimationComponent = animationVariants[index % animationVariants.length]
+            const AnimationComponent =
+              animationVariants[index % animationVariants.length]
             return (
-              <AnimationComponent
-                key={item.name}
-                delay={0.15 + index * 0.12}
-              >
+              <AnimationComponent delay={0.15 + index * 0.12} key={item.name}>
                 <div className='rounded border border-gray-3 p-4'>
                   <motion.div
                     animate={{ opacity: 1, y: 0 }}
@@ -92,10 +86,17 @@ const Integrations = () => {
                     transition={{ delay: 0.2 + index * 0.12, duration: 0.4 }}
                   >
                     <motion.div
-                      animate={{ opacity: 1, scale: 1, rotate: 0 }}
-                      className={cn('flex size-10 items-center justify-center rounded', item.iconColor)}
-                      initial={{ opacity: 0, scale: 0, rotate: -180 }}
-                      transition={{ delay: 0.25 + index * 0.12, duration: 0.5, type: 'spring' }}
+                      animate={{ opacity: 1, rotate: 0, scale: 1 }}
+                      initial={{ opacity: 0, rotate: -180, scale: 0 }}
+                      className={cn(
+                        'flex size-10 items-center justify-center rounded',
+                        item.iconColor,
+                      )}
+                      transition={{
+                        delay: 0.25 + index * 0.12,
+                        duration: 0.5,
+                        type: 'spring',
+                      }}
                     >
                       <Icon className='size-5' name={item.icon} />
                     </motion.div>

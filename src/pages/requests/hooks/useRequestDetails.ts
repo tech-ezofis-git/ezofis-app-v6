@@ -3,20 +3,20 @@ import requestApi from '@/api/requests/requests'
 import { getActionsForActivity } from '../utils/workflow.utils'
 
 export const useRequestDetail = (
-  workflowId: number | null,
-  processId: number | null,
-  transactionId: number | null,
+  workflowId: number | string | null,
+  processId: number | string | null,
+  transactionId: number | string | null,
 ) => {
   return useQuery({
-    queryKey: ['request-detail', workflowId, processId],
     enabled: !!workflowId && !!processId,
+    queryKey: ['request-detail', workflowId, processId],
 
     queryFn: async () => {
       // 1. Fetch Basic Process Data
       const processData = await requestApi.getProcess(
-        workflowId as Number,
-        processId as Number,
-        transactionId as Number,
+        workflowId as number | string,
+        processId as number | string,
+        transactionId as number | string,
       )
 
       // 2. Fetch Form Definition
@@ -28,14 +28,14 @@ export const useRequestDetail = (
       // 3. Fetch History (Critical for Agent Data)
       // This mimics Vue's 'showHistoryStepper' function
       const historyData = await requestApi.processHistory(
-        workflowId as Number,
-        processId as Number,
+        workflowId as number | string,
+        processId as number | string,
       )
 
       // 4. Extract Agent Data from History
       // Logic copied from Vue: showHistoryStepper()
       const agentData: any[] = []
-      let stageLevel: any[] = []
+      const stageLevel: any[] = []
 
       if (Array.isArray(historyData)) {
         historyData.forEach((row: any) => {
@@ -52,9 +52,9 @@ export const useRequestDetail = (
           if (row.agentResponse && Object.keys(row.agentResponse).length > 0) {
             agentData.push({
               ...row.agentResponse,
-              stage: row.agentType || 'No Agent',
               id: row.activityId || Math.random().toString(), // fallback ID
               reqNo: row.requestNo,
+              stage: row.agentType || 'No Agent',
             })
           }
         })
@@ -68,11 +68,11 @@ export const useRequestDetail = (
 
       return {
         ...processData,
+        _actions: actions,
+        _agentData: agentData, // <--- We will use this to switch views
         _formDefinition: formDefinition,
         _history: historyData,
-        _agentData: agentData, // <--- We will use this to switch views
         _stageLevel: stageLevel,
-        _actions: actions,
       }
     },
   })

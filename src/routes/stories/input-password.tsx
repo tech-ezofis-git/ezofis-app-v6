@@ -16,11 +16,15 @@ function RouteComponent() {
   return (
     <div className='max-w-4xl p-6'>
       <StoryTitle>Input Password</StoryTitle>
-      <p className='text-15 text-gray-11 mb-10'>
-        The Input Password component provides a secure way for users to enter passwords. It includes a built-in visibility toggle and supports labels, descriptions, and validation states.
+      <p className='mb-10 text-15 text-gray-11'>
+        The Input Password component provides a secure way for users to enter
+        passwords. It includes a built-in visibility toggle and supports labels,
+        descriptions, and validation states.
       </p>
 
-      <p className='text-14 text-gray-11 mb-4'>Before using InputPassword, import it from its location:</p>
+      <p className='mb-4 text-14 text-gray-11'>
+        Before using InputPassword, import it from its location:
+      </p>
       <StoryCode>
         {`import InputPassword from '@/components/base/inputs/password/InputPassword'`}
       </StoryCode>
@@ -29,28 +33,40 @@ function RouteComponent() {
         {/* Default Section */}
         <section>
           <StorySubTitle>Default Usage</StorySubTitle>
-          <p className='text-14 text-gray-11 mb-4'>
+          <p className='mb-4 text-14 text-gray-11'>
             A standard password input with a visibility toggle.
           </p>
           <StoryCode>
             {`<InputPassword value={value} onChange={setValue} />`}
           </StoryCode>
-          <div className='flex items-center gap-4 max-w-sm'>
-            <InputPassword className='w-full' value={value} onChange={setValue} />
+          <div className='flex max-w-sm items-center gap-4'>
+            <InputPassword
+              className='w-full'
+              value={value}
+              onChange={setValue}
+            />
           </div>
         </section>
 
         {/* Meta Section */}
         <section>
           <StorySubTitle>Metadata (Label, Description, Tooltip)</StorySubTitle>
-          <p className='text-14 text-gray-11 mb-4'>
+          <p className='mb-4 text-14 text-gray-11'>
             Guide users with contextual information and necessity indicators:
           </p>
-          <ul className='list-disc list-inside space-y-2 text-14 text-gray-11 mb-6 ml-2'>
-            <li><strong>Label:</strong> A title for the password field.</li>
-            <li><strong>Description:</strong> Security requirements or hints.</li>
-            <li><strong>Tooltip:</strong> Detailed help text.</li>
-            <li><strong>Required / Optional:</strong> Visual necessity indicators.</li>
+          <ul className='mb-6 ml-2 list-inside list-disc space-y-2 text-14 text-gray-11'>
+            <li>
+              <strong>Label:</strong> A title for the password field.
+            </li>
+            <li>
+              <strong>Description:</strong> Security requirements or hints.
+            </li>
+            <li>
+              <strong>Tooltip:</strong> Detailed help text.
+            </li>
+            <li>
+              <strong>Required / Optional:</strong> Visual necessity indicators.
+            </li>
           </ul>
           <StoryCode>
             {`<InputPassword
@@ -63,15 +79,15 @@ function RouteComponent() {
   onChange={setValue}
 />`}
           </StoryCode>
-          <div className='flex items-center gap-4 max-w-sm'>
+          <div className='flex max-w-sm items-center gap-4'>
             <InputPassword
               className='w-full'
-              label='Password'
               description='Must be at least 8 characters long'
-              showPlaceholder
+              label='Password'
               tooltip='Include uppercase and symbols'
-              required
               value={value}
+              required
+              showPlaceholder
               onChange={setValue}
             />
           </div>
@@ -80,19 +96,27 @@ function RouteComponent() {
         {/* States Section */}
         <section>
           <StorySubTitle>States</StorySubTitle>
-          <p className='text-14 text-gray-11 mb-6'>
+          <p className='mb-6 text-14 text-gray-11'>
             Visual indicators for different interaction levels:
           </p>
-          <div className='grid grid-cols-1 md:grid-cols-2 gap-8 max-w-2xl'>
+          <div className='grid max-w-2xl grid-cols-1 gap-8 md:grid-cols-2'>
             <div>
-              <p className='text-13 font-medium mb-3'>Disabled State</p>
-              <StoryCode>{"<InputPassword disabled value='password123' />"}</StoryCode>
-              <InputPassword disabled value='password123' onChange={() => { }} />
+              <p className='mb-3 text-13 font-medium'>Disabled State</p>
+              <StoryCode>
+                {"<InputPassword disabled value='password123' />"}
+              </StoryCode>
+              <InputPassword value='password123' disabled onChange={() => {}} />
             </div>
             <div>
-              <p className='text-13 font-medium mb-3'>Error State</p>
-              <StoryCode>{"<InputPassword error='Incorrect password' />"}</StoryCode>
-              <InputPassword error='Incorrect password' value={value} onChange={setValue} />
+              <p className='mb-3 text-13 font-medium'>Error State</p>
+              <StoryCode>
+                {"<InputPassword error='Incorrect password' />"}
+              </StoryCode>
+              <InputPassword
+                error='Incorrect password'
+                value={value}
+                onChange={setValue}
+              />
             </div>
           </div>
         </section>
@@ -100,13 +124,13 @@ function RouteComponent() {
         {/* Sections Section */}
         <section>
           <StorySubTitle>Left Section</StorySubTitle>
-          <p className='text-14 text-gray-11 mb-4'>
+          <p className='mb-4 text-14 text-gray-11'>
             Embed icons at the start of the input for better visual context:
           </p>
           <StoryCode>
             {`<InputPassword leftSection={<Icon name='lucide:lock' />} />`}
           </StoryCode>
-          <div className='flex items-center gap-4 max-w-sm'>
+          <div className='flex max-w-sm items-center gap-4'>
             <InputPassword
               className='w-full'
               leftSection={<Icon className='text-gray-9' name='lucide:lock' />}

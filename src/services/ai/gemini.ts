@@ -1,108 +1,113 @@
-import { GoogleGenAI, Type } from "@google/genai";
-import { type Question } from "@/pages/form-builder/store/formStore";
+import { GoogleGenAI, Type } from '@google/genai'
+import { type Question } from '@/pages/form-builder/store/formStore'
 
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY
 
 if (!API_KEY) {
-  console.warn("VITE_GEMINI_API_KEY is not set in environment variables.");
+  console.warn('VITE_GEMINI_API_KEY is not set in environment variables.')
 }
 
-const ai = new GoogleGenAI({ apiKey: API_KEY || "" });
+const ai = new GoogleGenAI({ apiKey: API_KEY || '' })
 
-export const generateFormFields = async (prompt: string): Promise<Question[]> => {
+export const generateFormFields = async (
+  prompt: string,
+): Promise<Question[]> => {
   if (!API_KEY) {
-    throw new Error("Gemini API Key is missing");
+    throw new Error('Gemini API Key is missing')
   }
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash-exp", // Fallback to flash-exp as 3-pro-preview might not be public yet, or use user's suggestion if available
+      config: {
+        responseMimeType: 'application/json',
+        responseSchema: {
+          properties: {
+            description: { type: Type.STRING },
+            fields: {
+              items: {
+                properties: {
+                  aiRiskScore: {
+                    description: 'Predicted drop-off risk (0-100)',
+                    type: Type.NUMBER,
+                  },
+                  id: { type: Type.STRING },
+                  label: { type: Type.STRING },
+                  options: { items: { type: Type.STRING }, type: Type.ARRAY },
+                  placeholder: { type: Type.STRING },
+                  required: { type: Type.BOOLEAN },
+                  type: {
+                    description:
+                      'One of: short_text, long_text, email, phone, number, choices, checkbox, dropdown, date, rating',
+                    type: Type.STRING,
+                  },
+                },
+                required: ['id', 'type', 'label', 'required'],
+                type: Type.OBJECT,
+              },
+              type: Type.ARRAY,
+            },
+            title: { type: Type.STRING },
+          },
+          required: ['title', 'description', 'fields'],
+          type: Type.OBJECT,
+        },
+      },
       contents: [
         {
-          role: "user",
           parts: [
             {
               text: `Generate a detailed form structure based on this prompt: "${prompt}". 
               Create a professional title, a helpful description, and a set of diverse, relevant fields.
-              Each field should have an aiRiskScore (0-100) representing how likely a user is to drop off at that question.`
-            }
-          ]
-        }
+              Each field should have an aiRiskScore (0-100) representing how likely a user is to drop off at that question.`,
+            },
+          ],
+          role: 'user',
+        },
       ],
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            title: { type: Type.STRING },
-            description: { type: Type.STRING },
-            fields: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  id: { type: Type.STRING },
-                  type: { 
-                    type: Type.STRING,
-                    description: "One of: short_text, long_text, email, phone, number, choices, checkbox, dropdown, date, rating"
-                  },
-                  label: { type: Type.STRING },
-                  placeholder: { type: Type.STRING },
-                  required: { type: Type.BOOLEAN },
-                  options: { type: Type.ARRAY, items: { type: Type.STRING } },
-                  aiRiskScore: { type: Type.NUMBER, description: "Predicted drop-off risk (0-100)" }
-                },
-                required: ["id", "type", "label", "required"]
-              }
-            }
-          },
-          required: ["title", "description", "fields"]
-        }
-      },
-    });
+      model: 'gemini-2.0-flash-exp', // Fallback to flash-exp as 3-pro-preview might not be public yet, or use user's suggestion if available
+    })
 
-    const result = JSON.parse(response.text || '{}');
-    
-    if (!result) return [];
+    const result = JSON.parse(response.text || '{}')
+
+    if (!result) return []
 
     // Map the result to our Question type
     // We might need to handle the title/description return if we want to use them
     // For now, returning just questions to match signature
     // TODO: Update store to accept form title/desc if needed
-    
+
     return result.fields.map((f: any) => ({
-        id: f.id || crypto.randomUUID(),
-        title: f.label,
-        description: "", // Schema doesn't have per-field desc, only form desc
-        type: mapType(f.type),
-        placeholder: f.placeholder,
-        options: f.options,
-        required: f.required,
-        aiRiskScore: f.aiRiskScore
-    }));
-
+      aiRiskScore: f.aiRiskScore,
+      description: '', // Schema doesn't have per-field desc, only form desc
+      id: f.id || crypto.randomUUID(),
+      options: f.options,
+      placeholder: f.placeholder,
+      required: f.required,
+      title: f.label,
+      type: mapType(f.type),
+    }))
   } catch (error) {
-    console.error("Error generating form fields:", error);
-    throw error;
+    console.error('Error generating form fields:', error)
+    throw error
   }
-};
-
-function mapType(apiType: string): string {
-    // Map API types to internal types if needed, or ensure they match
-    // internal: 'short_text' | 'email' | 'phone' | 'choices' | 'dropdown' | 'checkbox' | 'date' | 'rating' | 'long_text' | 'number'
-    const typeMap: Record<string, string> = {
-        'multiple_choice': 'choices',
-        'file_upload': 'short_text', // fallback
-        'url': 'short_text', // fallback
-        'yes_no': 'choices', // fallback
-        'slider': 'number', // fallback
-        'address': 'long_text', // fallback
-    };
-    return typeMap[apiType] || apiType;
 }
 
 export async function suggestImprovements(formJson: string) {
   console.log(formJson)
-    // Placeholder for improvement suggestion if we needed it later
-    return [];
+  // Placeholder for improvement suggestion if we needed it later
+  return []
+}
+
+function mapType(apiType: string): string {
+  // Map API types to internal types if needed, or ensure they match
+  // internal: 'short_text' | 'email' | 'phone' | 'choices' | 'dropdown' | 'checkbox' | 'date' | 'rating' | 'long_text' | 'number'
+  const typeMap: Record<string, string> = {
+    address: 'long_text', // fallback
+    file_upload: 'short_text', // fallback
+    multiple_choice: 'choices',
+    slider: 'number', // fallback
+    url: 'short_text', // fallback
+    yes_no: 'choices', // fallback
+  }
+  return typeMap[apiType] || apiType
 }

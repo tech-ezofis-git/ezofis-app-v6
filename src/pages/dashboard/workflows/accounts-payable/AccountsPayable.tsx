@@ -1,9 +1,9 @@
 import { AnimatePresence } from 'motion/react'
 import Integrations from './components/Integrations'
+import Steps from './components/setup/components/Steps'
 // import Overview from './components/Overview'
 import SetupCallout from './components/SetupCallout'
 import setupStore from './stores/useSetupStore'
-import Steps from './components/setup/components/Steps'
 
 const AccountsPayable = () => {
   const isSetupStarted = setupStore((state) => state.isSetupStarted)
@@ -17,9 +17,7 @@ const AccountsPayable = () => {
       <SetupCallout />
 
       <AnimatePresence mode='wait'>
-        {isSetupStarted ? (
-          <Steps key='steps' />
-        ) : null}
+        {isSetupStarted ? <Steps key='steps' /> : null}
       </AnimatePresence>
 
       {showOverviewAndIntegrations && isApSetUpCompleted && !isSetupStarted && (

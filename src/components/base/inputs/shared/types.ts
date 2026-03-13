@@ -5,7 +5,9 @@ import type { OptionsPerLineClass } from './constants'
 
 export interface InputProps {
   className?: string
-  classNames?: Partial<Record<'input' | 'label' | 'description' | 'error' | 'wrapper', string>>
+  classNames?: Partial<
+    Record<'input' | 'label' | 'description' | 'error' | 'wrapper', string>
+  >
   clearable?: boolean
   description?: string
   disabled?: boolean
@@ -45,13 +47,13 @@ export interface SelectionProps {
 export interface SelectProps extends InputProps {
   options: Option[]
   creatable?: boolean
+  dropdownFooter?: ReactNode
   leftSection?: ReactNode
   position?: ComboboxProps['position']
+  rightSectionIcon?: string
   searchable?: boolean
   searchPlaceholder?: string
   width?: ComboboxProps['width']
-  dropdownFooter?: ReactNode
-  rightSectionIcon?: string
 }
 
 export type SelectVariant = 'single' | 'multiple'

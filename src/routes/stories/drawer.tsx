@@ -19,11 +19,16 @@ function RouteComponent() {
   return (
     <div className='max-w-4xl p-6'>
       <StoryTitle>Drawer</StoryTitle>
-      <p className='text-15 text-gray-11 mb-10'>
-        The Drawer component is an off-canvas overlay that slides in from the side of the screen. It's often used for persistent navigation, filters, or complex side workflows that benefit from a vertically oriented content area.
+      <p className='mb-10 text-15 text-gray-11'>
+        The Drawer component is an off-canvas overlay that slides in from the
+        side of the screen. It's often used for persistent navigation, filters,
+        or complex side workflows that benefit from a vertically oriented
+        content area.
       </p>
 
-      <p className='text-14 text-gray-11 mb-4'>Before using Drawer, import the core component and its layout helpers:</p>
+      <p className='mb-4 text-14 text-gray-11'>
+        Before using Drawer, import the core component and its layout helpers:
+      </p>
       <StoryCode>
         {`import Drawer from '@/components/base/Drawer'
 import OverlayHeader from '@/components/base/overlay/OverlayHeader'
@@ -35,8 +40,9 @@ import OverlayFooter from '@/components/base/overlay/OverlayFooter'`}
         {/* Default Section */}
         <section>
           <StorySubTitle>Default Usage</StorySubTitle>
-          <p className='text-14 text-gray-11 mb-4'>
-            A standard drawer typically includes a header for the title, a scrollable content area, and a pinned footer for actions.
+          <p className='mb-4 text-14 text-gray-11'>
+            A standard drawer typically includes a header for the title, a
+            scrollable content area, and a pinned footer for actions.
           </p>
           <StoryCode>
             {`const [opened, setOpened] = useState(false)
@@ -59,10 +65,15 @@ import OverlayFooter from '@/components/base/overlay/OverlayFooter'`}
               onClick={() => setOpened(true)}
             />
             <Drawer opened={opened} onClose={() => setOpened(false)}>
-              <OverlayHeader title='Demo Drawer' onClose={() => setOpened(false)} />
+              <OverlayHeader
+                title='Demo Drawer'
+                onClose={() => setOpened(false)}
+              />
               <OverlayContent hasFooter hasHeader>
                 <div className='p-6 text-14 text-gray-11'>
-                  Drawers are excellent for deep-dive interactions where you want to keep the main view partially visible in the background.
+                  Drawers are excellent for deep-dive interactions where you
+                  want to keep the main view partially visible in the
+                  background.
                 </div>
               </OverlayContent>
               <OverlayFooter

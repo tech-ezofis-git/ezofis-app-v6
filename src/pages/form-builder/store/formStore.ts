@@ -1,17 +1,86 @@
+import { notifications } from '@mantine/notifications'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import formApi from '@/api/form/form'
-import { notifications } from '@mantine/notifications'
-
 
 export const generateId = () => {
   try {
     return crypto.randomUUID()
-  } catch (e) {
-    return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
+  } catch {
+    return (
+      Math.random().toString(36).substring(2, 15) +
+      Math.random().toString(36).substring(2, 15)
+    )
   }
 }
 
+export type FormLayout = 'typeform' | 'grid' | 'full'
+
+export type FormType = 'WORKFLOW' | 'FEEDBACK' | 'MASTER'
+
+export interface Panel {
+  fields: Question[]
+  id: string
+  settings: {
+    description: string
+    title: string
+  }
+}
+
+export type PublishStatus = 'DRAFT' | 'PUBLISHED'
+
+export interface Question {
+  id: string
+  label: string
+  type: QuestionType
+  displayLabel?: string
+  settings: {
+    aiSettings: {
+      formControlValidate?: { masterFormColumn: any[]; masterFormId: number }
+      validateTypeKeyword?: string
+    }
+    general: {
+      description?: string
+      dividerType?: string
+      hidden?: boolean
+      hideLabel: boolean
+      placeholder?: string
+      readOnly?: boolean
+      size: QuestionWidth
+      tooltip?: string
+      url?: string
+      visibility: 'NORMAL' | 'READ_ONLY' | 'HIDDEN'
+    }
+    lookupSettings: {
+      columnName?: string
+      connectionId?: number
+    }
+    specific: {
+      allowToAddNewOptions?: boolean
+      autoGenerateValue?: { prefix: string; suffix: string }
+      columns?: any[]
+      customDefaultValue?: any
+      customOptions?: string
+      defaultValue?: string
+      fibFields?: any[]
+      matrixColumns?: any[]
+      matrixRows?: any[]
+      optionsPerLine?: number
+      optionsType?: string
+      separateOptionsUsing?: string
+      tableColumns?: any[]
+      tableRowsType?: string
+    }
+    validation: {
+      allowedFileTypes?: string[]
+      contentRule?: string
+      fieldRule: 'OPTIONAL' | 'REQUIRED'
+      maxFileSize?: number
+      maximum?: string | number
+      minimum?: string | number
+    }
+  }
+}
 export type QuestionType =
   | 'SHORT_TEXT'
   | 'LONG_TEXT'
@@ -43,214 +112,157 @@ export type QuestionType =
   | 'EMAIL'
   | 'PASSWORD'
   | 'TEXT_BUILDER'
-
 export type QuestionWidth = 'col-3' | 'col-4' | 'col-6' | 'col-12'
 
-export interface Question {
-  id: string
-  label: string
-  displayLabel?: string
-  type: QuestionType
-  settings: {
-    general: {
-      hideLabel: boolean
-      size: QuestionWidth
-      visibility: 'NORMAL' | 'READ_ONLY' | 'HIDDEN'
-      placeholder?: string
-      description?: string
-      hidden?: boolean
-      readOnly?: boolean
-      tooltip?: string
-      dividerType?: string
-      url?: string
-    }
-    specific: {
-      defaultValue?: string
-      customDefaultValue?: any
-      optionsType?: string
-      customOptions?: string
-      separateOptionsUsing?: string
-      allowToAddNewOptions?: boolean
-      optionsPerLine?: number
-      tableColumns?: any[]
-      columns?: any[]
-      tableRowsType?: string
-      matrixColumns?: any[]
-      matrixRows?: any[]
-      fibFields?: any[]
-      autoGenerateValue?: { prefix: string, suffix: string }
-    }
-    validation: {
-      fieldRule: 'OPTIONAL' | 'REQUIRED'
-      contentRule?: string
-      minimum?: string | number
-      maximum?: string | number
-      allowedFileTypes?: string[]
-      maxFileSize?: number
-    }
-    aiSettings: {
-      validateTypeKeyword?: string
-      formControlValidate?: { masterFormId: number, masterFormColumn: any[] }
-    }
-    lookupSettings: {
-      columnName?: string
-      connectionId?: number
-    }
-  }
-}
-
-export interface Panel {
-  id: string
-  settings: {
-    title: string
-    description: string
-  }
-  fields: Question[]
-}
-
-export type FormLayout = 'typeform' | 'grid' | 'full'
-export type FormType = 'WORKFLOW' | 'FEEDBACK' | 'MASTER'
-export type PublishStatus = 'DRAFT' | 'PUBLISHED'
-
-interface WelcomePage {
-  enabled: boolean;
-  title: string;
-  description: string;
-  buttonText: string;
+export interface WelcomePage {
+  buttonText: string
+  description: string
+  enabled: boolean
+  title: string
 }
 
 interface FormStore {
-  uid: string
-  name: string
-  description: string
-  panels: Panel[]
-  secondaryPanels: Panel[]
   activeQuestionId: string | null
+  coordinator: string
+  copiedQuestion: Question | null
+  description: string
+  footerText: string
+  formType: FormType
+  headerText: string
+
+  hubLinkIds: any[]
   isBuilderMode: boolean
+  isPreviewOpen: boolean
+  isPublishOpen: boolean
 
   // UI State
   isSidebarOpen: boolean
-  isPublishOpen: boolean
-  isPreviewOpen: boolean
-  selectionType: 'general' | 'question' | 'welcome' | 'thank_you'
-
+  lastAddedPanelId: string | null
   // Settings
   layout: FormLayout
-  formType: FormType
-  publishStatus: PublishStatus
-  hubLinkIds: any[]
-  coordinator: string
+  name: string
+  panels: Panel[]
   previewMode: 'typeform' | 'grid' | 'full'
 
+  publishStatus: PublishStatus
+  secondaryPanels: Panel[]
+  selectionType: 'general' | 'question' | 'welcome' | 'thank_you'
+  showHeaderFooter: boolean
+
+  showThankYouPage: boolean
+  showWelcomePage: boolean
+  thankYouPage: WelcomePage
+
+  uid: string
   // Special Pages
   welcomePage: WelcomePage
-  thankYouPage: WelcomePage
-  showWelcomePage: boolean
-  showThankYouPage: boolean
-
-  copiedQuestion: Question | null
-  setCopiedQuestion: (question: Question | null) => void
-  pasteQuestion: (panelId: string, index: number) => void
-
-  setName: (name: string) => void
-  setDescription: (description: string) => void
-  setPanels: (panels: Panel[]) => void
-  setActiveQuestionId: (id: string | null) => void
-  setIsBuilderMode: (isBuilder: boolean) => void
-
-  setFormType: (type: FormType) => void
-  setLayout: (layout: FormLayout) => void
-  setCoordinator: (coordinator: string) => void
-  setPublishStatus: (status: PublishStatus) => void
-
-  // UI Actions
-  setSidebarOpen: (open: boolean) => void
-  setPublishOpen: (open: boolean) => void
-  setPreviewMode: (mode: 'typeform' | 'grid' | 'full') => void
-  setIsPreviewOpen: (open: boolean) => void
-  setSelectionType: (type: 'general' | 'question' | 'welcome' | 'thank_you') => void
-
-  // Special Page Actions
-  setWelcomePage: (updates: Partial<WelcomePage>) => void
-  setThankYouPage: (updates: Partial<WelcomePage>) => void
-  setShowWelcomePage: (show: boolean) => void
-  setShowThankYouPage: (show: boolean) => void
-
-  clearSelection: () => void
-
   // Panel Actions (formerly Page)
   addPanel: (index?: number) => void
-  deletePanel: (id: string) => void
-  updatePanel: (id: string, updates: Partial<Panel['settings']>) => void
-  movePanel: (id: string, direction: 'up' | 'down') => void
 
   // Question Actions (formerly Question)
   addQuestion: (panelId: string, question: Question, index?: number) => void
-  updateQuestion: (id: string, updates: any) => void
-  deleteQuestion: (id: string) => void
-  duplicateQuestion: (id: string) => void
-  moveQuestion: (id: string, toPanelId: string, index: number) => void
-
   // AI Actions
   appendAIResponse: (data: any) => void
-  lastAddedPanelId: string | null
   clearLastAddedPanelId: () => void
+  clearSelection: () => void
+  deletePanel: (id: string) => void
 
+  deleteQuestion: (id: string) => void
+  duplicateQuestion: (id: string) => void
   loadForm: (data: any) => void
+  movePanel: (id: string, direction: 'up' | 'down') => void
+
+  moveQuestion: (id: string, toPanelId: string, index: number) => void
+  pasteQuestion: (panelId: string, index: number) => void
   resetForm: () => void
   saveForm: (targetStatus?: PublishStatus) => Promise<boolean>
+  updatePanel: (id: string, updates: Partial<Panel['settings']>) => void
+
+  updateQuestion: (id: string, updates: any) => void
+  setActiveQuestionId: (id: string | null) => void
+  setCoordinator: (coordinator: string) => void
+  setCopiedQuestion: (question: Question | null) => void
+  setDescription: (description: string) => void
+
+  setFormType: (type: FormType) => void
+
+  setHeaderFooter: (updates: {
+    footer?: string
+    header?: string
+    show?: boolean
+  }) => void
+  setIsBuilderMode: (isBuilder: boolean) => void
+  setIsPreviewOpen: (open: boolean) => void
+  setLayout: (layout: FormLayout) => void
+
+  setName: (name: string) => void
+  setPanels: (panels: Panel[]) => void
+  setPreviewMode: (mode: 'typeform' | 'grid' | 'full') => void
+  setPublishOpen: (open: boolean) => void
+  setPublishStatus: (status: PublishStatus) => void
+
+  setSelectionType: (
+    type: 'general' | 'question' | 'welcome' | 'thank_you',
+  ) => void
+  setShowThankYouPage: (show: boolean) => void
+  setShowWelcomePage: (show: boolean) => void
+
+  // UI Actions
+  setSidebarOpen: (open: boolean) => void
+  setThankYouPage: (updates: Partial<WelcomePage>) => void
+  // Special Page Actions
+  setWelcomePage: (updates: Partial<WelcomePage>) => void
 }
-
-
-
 
 const initialState = {
-  uid: '',
-  name: 'Untitled Form',
-  description: '',
-  panels: [
-    {
-      id: 'panel-1',
-      settings: { title: 'Section 1', description: '' },
-      fields: []
-    }
-  ],
-  secondaryPanels: [],
   activeQuestionId: null,
+  coordinator: '',
+  copiedQuestion: null,
+  description: '',
+  footerText: '',
+  formType: 'WORKFLOW' as const,
+  headerText: '',
+
+  hubLinkIds: [],
   isBuilderMode: true,
+  isPreviewOpen: false,
+  isPublishOpen: false,
 
   isSidebarOpen: true,
-  isPublishOpen: false,
-  isPreviewOpen: false,
-  selectionType: 'general' as const,
-
+  lastAddedPanelId: null,
   layout: 'typeform' as const,
-  formType: 'WORKFLOW' as const,
-  publishStatus: 'DRAFT' as const,
-  hubLinkIds: [],
-  coordinator: '',
+  name: 'Untitled Form',
+  panels: [
+    {
+      fields: [],
+      id: 'panel-1',
+      settings: { description: '', title: 'Section 1' },
+    },
+  ],
   previewMode: 'typeform' as const,
 
-  welcomePage: {
-    enabled: false,
-    title: 'Welcome to our form',
-    description: 'Please take a moment to fill out this information.',
-    buttonText: 'Start'
-  },
+  publishStatus: 'DRAFT' as const,
+  secondaryPanels: [],
+  selectionType: 'general' as const,
+  showHeaderFooter: false,
+
+  showThankYouPage: false,
+  showWelcomePage: false,
   thankYouPage: {
+    buttonText: 'Submit',
+    description: 'Your submission has been received.',
     enabled: false,
     title: 'Thank you!',
-    description: 'Your submission has been received.',
-    buttonText: 'Submit'
   },
-  showWelcomePage: false,
-  showThankYouPage: false,
 
-  lastAddedPanelId: null,
-  copiedQuestion: null
+  uid: '',
+  welcomePage: {
+    buttonText: 'Start',
+    description: 'Please take a moment to fill out this information.',
+    enabled: false,
+    title: 'Welcome to our form',
+  },
 }
-
-
 
 export const useFormStore = create<FormStore>()(
   persist(
@@ -258,238 +270,209 @@ export const useFormStore = create<FormStore>()(
       ...initialState,
       uid: generateId(),
 
-      setName: (name) => set({ name }),
-      setCopiedQuestion: (copiedQuestion) => set({ copiedQuestion }),
-
-      pasteQuestion: (panelId, index) => set((state) => {
-        if (!state.copiedQuestion) return state
-
-        const newQuestion = {
-          ...state.copiedQuestion,
-          id: generateId(),
-          label: `${state.copiedQuestion.label} (Copy)`
-        }
-
-        const newPanels = state.panels.map(p => {
-          if (p.id !== panelId) return p
-          const newFields = [...p.fields]
-          newFields.splice(index, 0, newQuestion)
-          return { ...p, fields: newFields }
-        })
-
-        return { panels: newPanels, activeQuestionId: newQuestion.id }
-      }),
-
-      setDescription: (description) => set({ description }),
-      setPanels: (panels) => set({ panels }),
-      setActiveQuestionId: (activeQuestionId) => set({ activeQuestionId }),
-      setIsBuilderMode: (isBuilderMode) => set({ isBuilderMode }),
-
-      setFormType: (formType) => set({ formType }),
-      setLayout: (layout) => set({ layout }),
-      setCoordinator: (coordinator) => set({ coordinator }),
-      setPublishStatus: (publishStatus) => set({ publishStatus }),
-
-      setSidebarOpen: (open) => set({ isSidebarOpen: open }),
-      setPublishOpen: (open) => set({ isPublishOpen: open }),
-      setPreviewMode: (mode) => set({ previewMode: mode }),
-      setIsPreviewOpen: (open) => set({ isPreviewOpen: open }),
-      setSelectionType: (selectionType) => set({ selectionType }),
-
-      setWelcomePage: (updates) => set((state) => ({
-        welcomePage: { ...state.welcomePage, ...updates }
-      })),
-      setThankYouPage: (updates) => set((state) => ({
-        thankYouPage: { ...state.thankYouPage, ...updates }
-      })),
-      setShowWelcomePage: (showWelcomePage) => set({ showWelcomePage }),
-      setShowThankYouPage: (showThankYouPage) => set({ showThankYouPage }),
-
-      clearSelection: () => set({ activeQuestionId: null, selectionType: 'general' }),
-
-      addPanel: (index) => set((state) => {
-        const newPanel: Panel = {
-          id: generateId(),
-          settings: { title: `Section ${state.panels.length + 1}`, description: '' },
-          fields: []
-        }
-        const newPanels = [...state.panels]
-        if (typeof index === 'number') {
-          newPanels.splice(index, 0, newPanel)
-        } else {
-          newPanels.push(newPanel)
-        }
-        return { panels: newPanels }
-      }),
-
-      deletePanel: (id) => set((state) => ({
-        panels: state.panels.filter(p => p.id !== id)
-      })),
-
-      updatePanel: (id, updates) => set((state) => ({
-        panels: state.panels.map(p => p.id === id ? { ...p, settings: { ...p.settings, ...updates } } : p)
-      })),
-
-      movePanel: (id, direction) => set((state) => {
-        const index = state.panels.findIndex(p => p.id === id)
-        if (index === -1) return state
-        const newPanels = [...state.panels]
-        const newIndex = direction === 'up' ? index - 1 : index + 1
-        if (newIndex < 0 || newIndex >= newPanels.length) return state
-        const [moved] = newPanels.splice(index, 1)
-        newPanels.splice(newIndex, 0, moved)
-        return { panels: newPanels }
-      }),
-
-      addQuestion: (panelId, question, index) => set((state) => ({
-        panels: state.panels.map(p => {
-          if (p.id !== panelId) return p
-          const newFields = [...p.fields]
-          if (typeof index === 'number') {
-            newFields.splice(index, 0, question)
-          } else {
-            newFields.push(question)
-          }
-          return { ...p, fields: newFields }
-        }),
-        activeQuestionId: question.id
-      })),
-
-      updateQuestion: (id, updates) => set((state) => ({
-        panels: state.panels.map(p => ({
-          ...p,
-          fields: p.fields.map(f => {
-            if (f.id !== id) return f
-            if (typeof updates === 'function') return updates(f)
-            return { ...f, ...updates }
-          })
-        }))
-      })),
-
-      deleteQuestion: (id) => set((state) => ({
-        panels: state.panels.map(p => ({
-          ...p,
-          fields: p.fields.filter(f => f.id !== id)
-        })),
-        activeQuestionId: state.activeQuestionId === id ? null : state.activeQuestionId
-      })),
-
-      duplicateQuestion: (id) => set((state) => {
-        const newPanels = state.panels.map(p => {
-          const index = p.fields.findIndex(f => f.id === id)
-          if (index === -1) return p
-          const clone = { ...p.fields[index], id: generateId(), label: `${p.fields[index].label} (Copy)` }
-          const newFields = [...p.fields]
-          newFields.splice(index + 1, 0, clone)
-          return { ...p, fields: newFields }
-        })
-        return { panels: newPanels }
-      }),
-
-      moveQuestion: (id, toPanelId, index) => set((state) => {
-        let questionToMove: Question | undefined
-        const panelsWithout = state.panels.map(p => {
-          const q = p.fields.find(f => f.id === id)
-          if (q) {
-            questionToMove = q
-            return { ...p, fields: p.fields.filter(f => f.id !== id) }
-          }
-          return p
-        })
-        if (!questionToMove) return state
-        return {
-          panels: panelsWithout.map(p => {
-            if (p.id !== toPanelId) return p
-            const newFields = [...p.fields]
-            newFields.splice(index, 0, questionToMove!)
-            return { ...p, fields: newFields }
-          })
-        }
-      }),
-
-      appendAIResponse: (data) => set((state) => {
-        if (!data) return state
-
-        const panels = (data.panels || []).map((p: any) => ({
-          id: generateId(),
-          settings: {
-            title: p.settings?.title || p.title || 'Untitled Section',
-            description: p.settings?.description || p.description || ''
-          },
-          fields: (p.fields || []).map((f: any) => ({
-            ...f,
+      addPanel: (index) =>
+        set((state) => {
+          const newPanel: Panel = {
+            fields: [],
             id: generateId(),
-            label: f.label || f.title || 'Untitled Field',
-            type: (f.type || 'SHORT_TEXT').toUpperCase(),
             settings: {
-              general: {
-                hideLabel: f.settings?.general?.hideLabel ?? false,
-                size: f.settings?.general?.size || 'col-12',
-                visibility: f.settings?.general?.visibility || 'NORMAL',
-                placeholder: f.settings?.general?.placeholder || '',
-                tooltip: f.settings?.general?.tooltip || ''
-              },
-              specific: {
-                ...f.settings?.specific,
-                customOptions: Array.isArray(f.settings?.specific?.options)
-                  ? f.settings.specific.options.join('\n')
-                  : f.settings?.specific?.customOptions || '',
-                tableColumns: f.settings?.specific?.tableColumns || []
-              },
-              validation: {
-                fieldRule: f.settings?.validation?.fieldRule || 'OPTIONAL',
-                ...f.settings?.validation
-              },
-              aiSettings: f.settings?.aiSettings || {},
-              lookupSettings: f.settings?.lookupSettings || {}
+              description: '',
+              title: `Section ${state.panels.length + 1}`,
+            },
+          }
+          const newPanels = [...state.panels]
+          if (typeof index === 'number') {
+            newPanels.splice(index, 0, newPanel)
+          } else {
+            newPanels.push(newPanel)
+          }
+          return { panels: newPanels }
+        }),
+      addQuestion: (panelId, question, index) =>
+        set((state) => ({
+          activeQuestionId: question.id,
+          panels: state.panels.map((p) => {
+            if (p.id !== panelId) return p
+            const newFields = [...p.fields]
+            if (typeof index === 'number') {
+              newFields.splice(index, 0, question)
+            } else {
+              newFields.push(question)
             }
+            return { ...p, fields: newFields }
+          }),
+        })),
+
+      appendAIResponse: (data) =>
+        set((state) => {
+          if (!data) return state
+
+          const panels = (data.panels || []).map((p: any) => ({
+            fields: (p.fields || []).map((f: any) => ({
+              ...f,
+              id: generateId(),
+              label: f.label || f.title || 'Untitled Field',
+              type: (f.type || 'SHORT_TEXT').toUpperCase(),
+              settings: {
+                aiSettings: f.settings?.aiSettings || {},
+                general: {
+                  hideLabel: f.settings?.general?.hideLabel ?? false,
+                  placeholder: f.settings?.general?.placeholder || '',
+                  size: f.settings?.general?.size || 'col-12',
+                  tooltip: f.settings?.general?.tooltip || '',
+                  visibility: f.settings?.general?.visibility || 'NORMAL',
+                },
+                lookupSettings: f.settings?.lookupSettings || {},
+                specific: {
+                  ...f.settings?.specific,
+                  customOptions: Array.isArray(f.settings?.specific?.options)
+                    ? f.settings.specific.options.join('\n')
+                    : f.settings?.specific?.customOptions || '',
+                  tableColumns: f.settings?.specific?.tableColumns || [],
+                },
+                validation: {
+                  fieldRule: f.settings?.validation?.fieldRule || 'OPTIONAL',
+                  ...f.settings?.validation,
+                },
+              },
+            })),
+            id: generateId(),
+            settings: {
+              description: p.settings?.description || p.description || '',
+              title: p.settings?.title || p.title || 'Untitled Section',
+            },
           }))
-        }))
 
-        return {
-          ...state,
-          name: data.name || state.name,
-          description: data.description || state.description,
-          panels: panels.length > 0 ? panels : state.panels,
-          layout: data.layout || state.layout,
-          formType: data.formType || state.formType,
-          welcomePage: data.welcomePage ? { ...state.welcomePage, ...data.welcomePage } : state.welcomePage,
-          thankYouPage: data.thankYouPage ? { ...state.thankYouPage, ...data.thankYouPage } : state.thankYouPage,
-          showWelcomePage: data.welcomePage?.enabled ?? state.showWelcomePage,
-          showThankYouPage: data.thankYouPage?.enabled ?? state.showThankYouPage,
-          activeQuestionId: null,
-          selectionType: 'general'
-        }
-      }),
-
+          return {
+            ...state,
+            activeQuestionId: null,
+            description: data.description || state.description,
+            formType: data.formType || state.formType,
+            layout: data.layout || state.layout,
+            name: data.name || state.name,
+            panels: panels.length > 0 ? panels : state.panels,
+            selectionType: 'general',
+            showThankYouPage:
+              data.thankYouPage?.enabled ?? state.showThankYouPage,
+            showWelcomePage: data.welcomePage?.enabled ?? state.showWelcomePage,
+            thankYouPage: data.thankYouPage
+              ? { ...state.thankYouPage, ...data.thankYouPage }
+              : state.thankYouPage,
+            welcomePage: data.welcomePage
+              ? { ...state.welcomePage, ...data.welcomePage }
+              : state.welcomePage,
+          }
+        }),
 
       clearLastAddedPanelId: () => set({ lastAddedPanelId: null }),
+      clearSelection: () =>
+        set({ activeQuestionId: null, selectionType: 'general' }),
+      deletePanel: (id) =>
+        set((state) => ({
+          panels: state.panels.filter((p) => p.id !== id),
+        })),
+      deleteQuestion: (id) =>
+        set((state) => ({
+          activeQuestionId:
+            state.activeQuestionId === id ? null : state.activeQuestionId,
+          panels: state.panels.map((p) => ({
+            ...p,
+            fields: p.fields.filter((f) => f.id !== id),
+          })),
+        })),
 
+      duplicateQuestion: (id) =>
+        set((state) => {
+          const newPanels = state.panels.map((p) => {
+            const index = p.fields.findIndex((f) => f.id === id)
+            if (index === -1) return p
+            const clone = {
+              ...p.fields[index],
+              id: generateId(),
+              label: `${p.fields[index].label} (Copy)`,
+            }
+            const newFields = [...p.fields]
+            newFields.splice(index + 1, 0, clone)
+            return { ...p, fields: newFields }
+          })
+          return { panels: newPanels }
+        }),
       loadForm: (data: any) => {
         if (!data || !data.formJson) return
         const json = data.formJson
         const genSettings = json.settings?.general || {}
 
         set({
-          uid: data.uid || generateId(),
-          name: genSettings.name || 'Untitled Form',
-          description: genSettings.description || '',
-          panels: json.panels || [],
-          secondaryPanels: json.secondaryPanels || [],
           activeQuestionId: null,
-          layout: genSettings.layout || 'typeform',
-          formType: ['WORKFLOW', 'FEEDBACK', 'MASTER'].includes(genSettings.type)
+          coordinator: genSettings.coordinator || '',
+          description: genSettings.description || '',
+          formType: ['WORKFLOW', 'FEEDBACK', 'MASTER'].includes(
+            genSettings.type,
+          )
             ? genSettings.type
             : 'WORKFLOW',
-          coordinator: genSettings.coordinator || '',
-          publishStatus: json.settings?.publish?.publishOption || 'DRAFT',
           hubLinkIds: json.settings?.hubLinkIds || [],
+          layout: genSettings.layout || 'typeform',
+          name: genSettings.name || 'Untitled Form',
+          panels: json.panels || [],
+          publishStatus: json.settings?.publish?.publishOption || 'DRAFT',
+          secondaryPanels: json.secondaryPanels || [],
+          uid: data.uid || generateId(),
         })
       },
+      movePanel: (id, direction) =>
+        set((state) => {
+          const index = state.panels.findIndex((p) => p.id === id)
+          if (index === -1) return state
+          const newPanels = [...state.panels]
+          const newIndex = direction === 'up' ? index - 1 : index + 1
+          if (newIndex < 0 || newIndex >= newPanels.length) return state
+          const [moved] = newPanels.splice(index, 1)
+          newPanels.splice(newIndex, 0, moved)
+          return { panels: newPanels }
+        }),
+      moveQuestion: (id, toPanelId, index) =>
+        set((state) => {
+          let questionToMove: Question | undefined
+          const panelsWithout = state.panels.map((p) => {
+            const q = p.fields.find((f) => f.id === id)
+            if (q) {
+              questionToMove = q
+              return { ...p, fields: p.fields.filter((f) => f.id !== id) }
+            }
+            return p
+          })
+          if (!questionToMove) return state
+          return {
+            panels: panelsWithout.map((p) => {
+              if (p.id !== toPanelId) return p
+              const newFields = [...p.fields]
+              newFields.splice(index, 0, questionToMove!)
+              return { ...p, fields: newFields }
+            }),
+          }
+        }),
 
+      pasteQuestion: (panelId, index) =>
+        set((state) => {
+          if (!state.copiedQuestion) return state
 
+          const newQuestion = {
+            ...state.copiedQuestion,
+            id: generateId(),
+            label: `${state.copiedQuestion.label} (Copy)`,
+          }
+
+          const newPanels = state.panels.map((p) => {
+            if (p.id !== panelId) return p
+            const newFields = [...p.fields]
+            newFields.splice(index, 0, newQuestion)
+            return { ...p, fields: newFields }
+          })
+
+          return { activeQuestionId: newQuestion.id, panels: newPanels }
+        }),
       resetForm: () => set({ ...initialState, uid: generateId() }),
-
       saveForm: async (targetStatus) => {
         const state = get()
         const currentStatus = targetStatus || state.publishStatus
@@ -499,27 +482,43 @@ export const useFormStore = create<FormStore>()(
           set({ publishStatus: targetStatus })
         }
 
-        const payload = cleanFormPayload({ ...state, publishStatus: currentStatus })
+        const payload = cleanFormPayload({
+          ...state,
+          publishStatus: currentStatus,
+        })
 
         // Mandatory check: at least one field
-        const hasFields = state.panels.some(p => p.fields.length > 0)
+        const hasFields = state.panels.some((p) => p.fields.length > 0)
         if (!hasFields) {
           notifications.show({
+            color: 'orange',
+            message:
+              'Please add at least one field to your form before saving.',
             title: 'Empty Form',
-            message: 'Please add at least one field to your form before saving.',
-            color: 'orange'
           })
           return false
         }
 
         try {
-          console.log('[FormStore] Attempting to save form...', { uid: state.uid, name: state.name, status: currentStatus })
-          let response;
+          console.log('[FormStore] Attempting to save form...', {
+            name: state.name,
+            status: currentStatus,
+            uid: state.uid,
+          })
+          let response
 
           const path = window.location.pathname
-          const isCreation = path === '/form-builder' || path === '/form-builder/' || path.endsWith('/form-builder')
+          const isCreation =
+            path === '/form-builder' ||
+            path === '/form-builder/' ||
+            path.endsWith('/form-builder')
 
-          console.log('[FormStore] Mode:', isCreation ? 'CREATE' : 'UPDATE', 'Path:', path)
+          console.log(
+            '[FormStore] Mode:',
+            isCreation ? 'CREATE' : 'UPDATE',
+            'Path:',
+            path,
+          )
 
           if (!isCreation) {
             const parts = path.split('/')
@@ -537,75 +536,145 @@ export const useFormStore = create<FormStore>()(
             console.error('[FormStore] Save failed with error:', response.error)
 
             notifications.show({
-              title: 'Error Saving Form',
+              color: 'red',
               message: response.error,
-              color: 'red'
+              title: 'Error Saving Form',
             })
             return false
           }
 
           notifications.show({
-            title: 'Success!',
+            color: 'teal',
             message: `Your form has been ${currentStatus === 'PUBLISHED' ? 'published' : 'saved'} successfully.`,
-            color: 'teal'
+            title: 'Success!',
           })
           return true
         } catch (error) {
           console.error('Save failed:', error)
           notifications.show({
-            title: 'Unexpected Error',
+            color: 'red',
             message: 'An unexpected error occurred while saving.',
-            color: 'red'
+            title: 'Unexpected Error',
           })
           return false
         }
-      }
+      },
+      updatePanel: (id, updates) =>
+        set((state) => ({
+          panels: state.panels.map((p) =>
+            p.id === id ? { ...p, settings: { ...p.settings, ...updates } } : p,
+          ),
+        })),
+      updateQuestion: (id, updates) =>
+        set((state) => ({
+          panels: state.panels.map((p) => ({
+            ...p,
+            fields: p.fields.map((f) => {
+              if (f.id !== id) return f
+              if (typeof updates === 'function') return updates(f)
+              return { ...f, ...updates }
+            }),
+          })),
+        })),
+
+      setActiveQuestionId: (activeQuestionId) => set({ activeQuestionId }),
+      setCoordinator: (coordinator) => set({ coordinator }),
+      setCopiedQuestion: (copiedQuestion) => set({ copiedQuestion }),
+      setDescription: (description) => set({ description }),
+
+      setFormType: (formType) => set({ formType }),
+
+      setHeaderFooter: (updates) =>
+        set((state) => ({
+          footerText: updates.footer ?? state.footerText,
+          headerText: updates.header ?? state.headerText,
+          showHeaderFooter: updates.show ?? state.showHeaderFooter,
+        })),
+
+      setIsBuilderMode: (isBuilderMode) => set({ isBuilderMode }),
+
+      setIsPreviewOpen: (open) => set({ isPreviewOpen: open }),
+
+      setLayout: (layout) => set({ layout }),
+
+      setName: (name) => set({ name }),
+
+      setPanels: (panels) => set({ panels }),
+
+      setPreviewMode: (mode) => set({ previewMode: mode }),
+
+      setPublishOpen: (open) => set({ isPublishOpen: open }),
+
+      setPublishStatus: (publishStatus) => set({ publishStatus }),
+
+      setSelectionType: (selectionType) => set({ selectionType }),
+
+      setShowThankYouPage: (showThankYouPage) => set({ showThankYouPage }),
+
+      setShowWelcomePage: (showWelcomePage) => set({ showWelcomePage }),
+
+      setSidebarOpen: (open) => set({ isSidebarOpen: open }),
+
+      setThankYouPage: (updates) =>
+        set((state) => ({
+          thankYouPage: { ...state.thankYouPage, ...updates },
+        })),
+
+      setWelcomePage: (updates) =>
+        set((state) => ({
+          welcomePage: { ...state.welcomePage, ...updates },
+        })),
     }),
-
-
 
     {
       name: 'form-builder-storage-v3',
       version: 3,
-    }
-  )
+    },
+  ),
 )
 
 export const cleanField = (field: Question) => {
   const cleaned = JSON.parse(JSON.stringify(field))
-  const keysToRemove = ['filterBy', 'filter', 'filters', 'isManualChange', 'lookupFilterBy', 'lookupFilter']
-  keysToRemove.forEach(key => delete (cleaned as any)[key])
+  const keysToRemove = [
+    'filterBy',
+    'filter',
+    'filters',
+    'isManualChange',
+    'lookupFilterBy',
+    'lookupFilter',
+  ]
+  keysToRemove.forEach((key) => delete (cleaned as any)[key])
   return cleaned
 }
 
 export const cleanFormPayload = (state: any) => {
   return {
-    uid: state.uid,
+    isDeleted: false,
     panels: state.panels.map((p: any) => ({
       ...p,
-      fields: p.fields.map((f: any) => cleanField(f))
+      fields: p.fields.map((f: any) => cleanField(f)),
     })),
     secondaryPanels: state.secondaryPanels.map((p: any) => ({
       ...p,
-      fields: p.fields.map((f: any) => cleanField(f))
+      fields: p.fields.map((f: any) => cleanField(f)),
     })),
+    uid: state.uid,
     settings: {
       general: {
-        name: state.name,
+        coordinator: state.coordinator,
         description: state.description,
         layout: state.layout,
+        name: state.name,
         type: state.formType,
-        coordinator: state.coordinator
       },
 
-      rules: [],
+      hubLinkIds: state.hubLinkIds,
       publish: {
         publishOption: state.publishStatus,
-        publishSchedule: "",
-        unpublishSchedule: ""
+        publishSchedule: '',
+        unpublishSchedule: '',
       },
-      hubLinkIds: state.hubLinkIds
+      rules: [],
     },
-    isDeleted: false
   }
 }

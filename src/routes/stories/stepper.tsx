@@ -22,20 +22,23 @@ function RouteComponent() {
   return (
     <div className='max-w-4xl p-6'>
       <StoryTitle>Stepper</StoryTitle>
-      <p className='text-15 text-gray-11 mb-10'>
-        The Stepper component provides a visual progress indicator for multi-step workflows. It guides users through a sequence of tasks, showing completed, active, and upcoming steps, along with optional descriptions and state feedback.
+      <p className='mb-10 text-15 text-gray-11'>
+        The Stepper component provides a visual progress indicator for
+        multi-step workflows. It guides users through a sequence of tasks,
+        showing completed, active, and upcoming steps, along with optional
+        descriptions and state feedback.
       </p>
 
-      <p className='text-14 text-gray-11 mb-4'>Before using Stepper, import it from its location:</p>
-      <StoryCode>
-        {`import Stepper from '@/components/base/Stepper'`}
-      </StoryCode>
+      <p className='mb-4 text-14 text-gray-11'>
+        Before using Stepper, import it from its location:
+      </p>
+      <StoryCode>{`import Stepper from '@/components/base/Stepper'`}</StoryCode>
 
       <div className='space-y-16'>
         {/* Default Section */}
         <section>
           <StorySubTitle>Default Usage</StorySubTitle>
-          <p className='text-14 text-gray-11 mb-4'>
+          <p className='mb-4 text-14 text-gray-11'>
             A standard horizontal stepper with descriptions for each step.
           </p>
           <StoryCode>
@@ -46,7 +49,7 @@ function RouteComponent() {
 
 <Stepper active={active} steps={steps} setActive={setActive} />`}
           </StoryCode>
-          <div className='mt-8 p-6 bg-gray-1 border border-gray-3 rounded-xl'>
+          <div className='mt-8 rounded-xl border border-gray-3 bg-gray-1 p-6'>
             <Stepper active={active} steps={steps} setActive={setActive} />
           </div>
         </section>
@@ -54,23 +57,32 @@ function RouteComponent() {
         {/* States Section */}
         <section>
           <StorySubTitle>Step States (Disabled & Loading)</StorySubTitle>
-          <p className='text-14 text-gray-11 mb-4'>
-            Individual steps can be marked as <code>disabled</code> (cannot be selected) or <code>loading</code> (shows a spinner).
+          <p className='mb-4 text-14 text-gray-11'>
+            Individual steps can be marked as <code>disabled</code> (cannot be
+            selected) or <code>loading</code> (shows a spinner).
           </p>
-          <div className='space-y-8 mt-6 p-6 bg-gray-1 border border-gray-3 rounded-xl'>
+          <div className='mt-6 space-y-8 rounded-xl border border-gray-3 bg-gray-1 p-6'>
             <div className='space-y-3'>
-              <p className='text-13 font-medium text-gray-11'>Step 3 is Disabled</p>
+              <p className='text-13 font-medium text-gray-11'>
+                Step 3 is Disabled
+              </p>
               <Stepper
                 active={active}
-                steps={steps.map(s => s.id === 3 ? { ...s, disabled: true } : s)}
+                steps={steps.map((s) =>
+                  s.id === 3 ? { ...s, disabled: true } : s,
+                )}
                 setActive={setActive}
               />
             </div>
             <div className='space-y-3'>
-              <p className='text-13 font-medium text-gray-11'>Step 2 is Loading</p>
+              <p className='text-13 font-medium text-gray-11'>
+                Step 2 is Loading
+              </p>
               <Stepper
                 active={active}
-                steps={steps.map(s => s.id === 2 ? { ...s, loading: true } : s)}
+                steps={steps.map((s) =>
+                  s.id === 2 ? { ...s, loading: true } : s,
+                )}
                 setActive={setActive}
               />
             </div>
@@ -80,10 +92,11 @@ function RouteComponent() {
         {/* Orientation Section */}
         <section>
           <StorySubTitle>Vertical Orientation</StorySubTitle>
-          <p className='text-14 text-gray-11 mb-4'>
-            Change the <code>orientation</code> prop to 'vertical' for side-aligned workflows or mobile screens.
+          <p className='mb-4 text-14 text-gray-11'>
+            Change the <code>orientation</code> prop to 'vertical' for
+            side-aligned workflows or mobile screens.
           </p>
-          <div className='mt-8 p-6 bg-gray-1 border border-gray-3 rounded-xl w-fit min-w-80'>
+          <div className='mt-8 w-fit min-w-80 rounded-xl border border-gray-3 bg-gray-1 p-6'>
             <Stepper
               active={active}
               orientation='vertical'

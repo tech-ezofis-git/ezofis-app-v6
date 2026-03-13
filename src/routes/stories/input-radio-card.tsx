@@ -16,11 +16,15 @@ function RouteComponent() {
   return (
     <div className='max-w-4xl p-6'>
       <StoryTitle>Input Radio Card</StoryTitle>
-      <p className='text-15 text-gray-11 mb-10'>
-        The Radio Card component provides a large, accessible area for making mutually exclusive selections. Similar to the Checkbox Card, it supports labels, descriptions, and icons to guide user choice.
+      <p className='mb-10 text-15 text-gray-11'>
+        The Radio Card component provides a large, accessible area for making
+        mutually exclusive selections. Similar to the Checkbox Card, it supports
+        labels, descriptions, and icons to guide user choice.
       </p>
 
-      <p className='text-14 text-gray-11 mb-4'>Before using InputRadioCard, import it from its location:</p>
+      <p className='mb-4 text-14 text-gray-11'>
+        Before using InputRadioCard, import it from its location:
+      </p>
       <StoryCode>
         {`import InputRadioCard from '@/components/base/inputs/InputRadioCard'`}
       </StoryCode>
@@ -29,7 +33,7 @@ function RouteComponent() {
         {/* Default Section */}
         <section>
           <StorySubTitle>Default Usage</StorySubTitle>
-          <p className='text-14 text-gray-11 mb-4'>
+          <p className='mb-4 text-14 text-gray-11'>
             A simple card-styled radio selection.
           </p>
           <StoryCode>
@@ -39,7 +43,7 @@ function RouteComponent() {
   onClick={() => setSelected(!selected)}
 />`}
           </StoryCode>
-          <div className='flex items-center gap-4 max-w-sm ml-1'>
+          <div className='ml-1 flex max-w-sm items-center gap-4'>
             <InputRadioCard
               checked={selected1}
               className='w-full'
@@ -52,13 +56,19 @@ function RouteComponent() {
         {/* Rich Metadata Section */}
         <section>
           <StorySubTitle>Rich Metadata (Description & Icon)</StorySubTitle>
-          <p className='text-14 text-gray-11 mb-4'>
+          <p className='mb-4 text-14 text-gray-11'>
             Provide high-impact details for better clarity:
           </p>
-          <ul className='list-disc list-inside space-y-2 text-14 text-gray-11 mb-6 ml-2'>
-            <li><strong>Label:</strong> The primary name of the option.</li>
-            <li><strong>Description:</strong> Contextual help text.</li>
-            <li><strong>Icon:</strong> Visual context marker.</li>
+          <ul className='mb-6 ml-2 list-inside list-disc space-y-2 text-14 text-gray-11'>
+            <li>
+              <strong>Label:</strong> The primary name of the option.
+            </li>
+            <li>
+              <strong>Description:</strong> Contextual help text.
+            </li>
+            <li>
+              <strong>Icon:</strong> Visual context marker.
+            </li>
           </ul>
           <StoryCode>
             {`<InputRadioCard
@@ -69,7 +79,7 @@ function RouteComponent() {
   onClick={() => setSelected(!selected)}
 />`}
           </StoryCode>
-          <div className='flex items-center gap-4 max-w-sm ml-1'>
+          <div className='ml-1 flex max-w-sm items-center gap-4'>
             <InputRadioCard
               checked={selected2}
               className='w-full'

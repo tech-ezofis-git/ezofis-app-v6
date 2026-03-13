@@ -36,7 +36,7 @@ const InputRadioCard = ({
       radius='md'
       value={value}
       className={cn(
-        'rounded border-slate-100 p-4 outline-primary-8 disabled:pointer-events-none data-checked:border-primary-9 shadow-sm',
+        'border-slate-100 rounded p-4 shadow-sm outline-primary-8 disabled:pointer-events-none data-checked:border-primary-9',
         className,
       )}
       onClick={onClick}

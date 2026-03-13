@@ -2,24 +2,26 @@ import { create } from 'zustand'
 import { useFormStore } from '@/pages/form-builder/store/formStore'
 
 type Store = {
+  credits: number
+  isLoading: boolean
   isMaximized: boolean
   isOpen: boolean
-  isLoading: boolean
+  messages: { content: string; data?: any; role: 'user' | 'assistant' }[]
   suggestion: string
   suggestions: string[]
-  credits: number
-  messages: { role: 'user' | 'assistant', content: string, data?: any }[]
   close: () => void
   open: () => void
+  sendMessage: (prompt: string) => Promise<void>
   setSuggestion: (suggestion: string) => void
   toggleMaximize: () => void
-  sendMessage: (prompt: string) => Promise<void>
 }
 
 const useAskAIStore = create<Store>((set, get) => ({
+  credits: 15,
+  isLoading: false,
   isMaximized: false,
   isOpen: false,
-  isLoading: false,
+  messages: [],
   suggestion: '',
   suggestions: [
     'Create a customer feedback form.',
@@ -28,56 +30,69 @@ const useAskAIStore = create<Store>((set, get) => ({
     'Make a contact us form with email validation.',
     'Generate a product survey with rating fields.',
   ],
-  credits: 15,
-  messages: [],
   close: () => set({ isOpen: false }),
   open: () => set({ isOpen: true }),
-  toggleMaximize: () =>
-    set(({ isMaximized }) => ({ isMaximized: !isMaximized })),
-  setSuggestion: (suggestion: string) => set({ suggestion }),
   sendMessage: async (prompt: string) => {
     if (!prompt.trim()) return
 
     const currentMessages = get().messages
-    const newMessages = [...currentMessages, { role: 'user' as const, content: prompt }]
-    
-    set({ isLoading: true, messages: newMessages, credits: Math.max(0, get().credits - 1) })
-    
+    const newMessages = [
+      ...currentMessages,
+      { content: prompt, role: 'user' as const },
+    ]
+
+    set({
+      credits: Math.max(0, get().credits - 1),
+      isLoading: true,
+      messages: newMessages,
+    })
+
     try {
-      const response = await fetch('https://form-builder-ai-seven.vercel.app/api/generate-form', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt })
-      })
+      const response = await fetch(
+        'https://form-builder-ai-seven.vercel.app/api/generate-form',
+        {
+          body: JSON.stringify({ prompt }),
+          headers: { 'Content-Type': 'application/json' },
+          method: 'POST',
+        },
+      )
 
       if (!response.ok) throw new Error('Failed to generate form')
-      
+
       const data = await response.json()
       useFormStore.getState().appendAIResponse(data)
-      
-      set((state) => ({ 
+
+      set((state) => ({
         messages: [
-          ...state.messages, 
-          { 
-            role: 'assistant' as const, 
-            content: 'I have generated the form structure for you. You can see the details below:',
-            data 
-          }
+          ...state.messages,
+          {
+            content:
+              'I have generated the form structure for you. You can see the details below:',
+            data,
+            role: 'assistant' as const,
+          },
         ],
-        suggestion: '' 
-      })) 
+        suggestion: '',
+      }))
     } catch (error) {
       console.error('AI Form Generation Error:', error)
       set((state) => ({
         messages: [
           ...state.messages,
-          { role: 'assistant' as const, content: 'Sorry, I encountered an error while generating your form. Please try again.' }
-        ]
+          {
+            content:
+              'Sorry, I encountered an error while generating your form. Please try again.',
+            role: 'assistant' as const,
+          },
+        ],
       }))
     } finally {
       set({ isLoading: false })
     }
-  }
+  },
+  toggleMaximize: () =>
+    set(({ isMaximized }) => ({ isMaximized: !isMaximized })),
+  setSuggestion: (suggestion: string) => set({ suggestion }),
 }))
 
 export default useAskAIStore

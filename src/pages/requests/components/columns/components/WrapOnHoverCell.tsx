@@ -1,26 +1,25 @@
-
 import React from 'react'
 
 const CELL_TEXT = 'text-xs font-normal text-gray-12'
 
 export default function WrapOnHoverCell({
-    value,
-    className = '',
+  className = '',
+  value,
 }: {
-    value: React.ReactNode
-    className?: string
+  className?: string
+  value: React.ReactNode
 }) {
-    return (
-        <span
-            className={[
-                CELL_TEXT,
-                'block min-w-0',
-                'truncate whitespace-nowrap overflow-hidden text-ellipsis',
-                'hover:whitespace-normal hover:break-words hover:overflow-visible hover:text-clip',
-                className,
-            ].join(' ')}
-        >
-            {value}
-        </span>
-    )
+  return (
+    <span
+      className={[
+        CELL_TEXT,
+        'block min-w-0',
+        'truncate overflow-hidden text-ellipsis whitespace-nowrap',
+        'hover:overflow-visible hover:break-words hover:text-clip hover:whitespace-normal',
+        className,
+      ].join(' ')}
+    >
+      {value}
+    </span>
+  )
 }

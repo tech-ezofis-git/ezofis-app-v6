@@ -1,14 +1,13 @@
-import { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-
+import { useState } from 'react'
+import authApi from '@/api/auth'
 import Button from '@/components/base/button/Button'
 import IconIllustrated from '@/components/base/icon/IconIllustrated'
-import Title from '@/components/base/Title'
-import useResendTimer from '@/layouts/auth/hooks/useResendTimer'
 import InputPin from '@/components/base/inputs/InputPin'
-import authApi from '@/api/auth'
-import authUserStore from '@/stores/authUserStore'
+import Title from '@/components/base/Title'
 import showToast from '@/components/base/toast/showToast'
+import useResendTimer from '@/layouts/auth/hooks/useResendTimer'
+import authUserStore from '@/stores/authUserStore'
 
 const VerifyEmailForm = () => {
   const navigate = useNavigate()
@@ -73,14 +72,13 @@ const VerifyEmailForm = () => {
       // }
 
       console.log(data, error)
-      if (data == "Success") {
-        showToast({ message: "OTP verified successfully", variant: "success" })
+      if (data == 'Success') {
+        showToast({ message: 'OTP verified successfully', variant: 'success' })
         setSignUpUserData({ loginType: loginType || 'EZOFIS' })
 
         navigate({ to: '/reset-password' })
       }
       // upgrade the signup type (still NORMAL)
-
     } catch (e: any) {
       setError(e?.message ?? 'OTP verification failed')
     } finally {
@@ -93,21 +91,20 @@ const VerifyEmailForm = () => {
       <IconIllustrated icon='lucide:mail-check' />
       <Title
         className='text-center'
-        description="Enter the OTP to continue."
+        description='Enter the OTP to continue.'
         level={1}
         title='Verify Your Email'
       />
 
       <InputPin
-        value={otpValue as string}
+        // label={`Please enter the OTP sent to '${email}'`}
+        aria-label='One time code'
+        inputMode='numeric'
         // placeholder='enter your otp'
         length={6}
-
-        inputMode="numeric"
+        value={otpValue as string}
         // maxLength={6}
         onChange={(v) => setOtpValue(v)}
-        // label={`Please enter the OTP sent to '${email}'`}
-        aria-label="One time code"
         onKeyDown={(e) => {
           if (e.key === 'Enter') verifyOtp()
         }}
@@ -118,12 +115,10 @@ const VerifyEmailForm = () => {
         label='Verify'
         loading={verifyLoading}
         onClick={verifyOtp}
-
-
       />
 
       {error && (
-        <div className='mt-2 text-center text-sm text-red-500'>{error}</div>
+        <div className='text-red-500 mt-2 text-center text-sm'>{error}</div>
       )}
 
       <Button
@@ -131,8 +126,8 @@ const VerifyEmailForm = () => {
         disabled={elapsed !== 0}
         label={elapsed !== 0 ? resendLabel : 'Resend OTP'}
         loading={loading}
-        onClick={resendOtp}
         variant='ghost'
+        onClick={resendOtp}
       />
     </>
   )

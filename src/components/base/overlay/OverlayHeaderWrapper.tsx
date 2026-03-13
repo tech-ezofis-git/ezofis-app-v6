@@ -10,7 +10,7 @@ const OverlayHeaderWrapper = ({ children, className }: Props) => {
   return (
     <header
       className={cn(
-        'flex  flex-wrap items-center border-b border-gray-3  ',
+        'flex flex-wrap items-center border-b border-gray-3',
         className,
       )}
     >

@@ -1,14 +1,13 @@
+import { useParams } from '@tanstack/react-router'
+import { useEffect, useState } from 'react'
+import formApi from '@/api/form/form'
 import AskAI from '@/components/common/ask-ai/AskAI'
 import useAskAIStore from '@/components/common/ask-ai/stores/useAskAIStore'
 import Build from './components/build/Build'
-import Header from './components/common/Header'
 import LivePreview from './components/build/components/preview/LivePreview'
 import FormBuilderSkeleton from './components/common/FormBuilderSkeleton'
-
-import { useParams } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
+import Header from './components/common/Header'
 import { useFormStore } from './store/formStore'
-import formApi from '@/api/form/form'
 
 const FormBuilderPage = () => {
   const { formId } = useParams({ strict: false }) as any
@@ -43,7 +42,7 @@ const FormBuilderPage = () => {
   }
 
   return (
-    <div className='flex h-dvh flex-col overflow-hidden relative'>
+    <div className='relative flex h-dvh flex-col overflow-hidden'>
       <Header />
       <div className='flex flex-1 overflow-hidden'>
         <div className='flex-1 overflow-auto'>
@@ -51,7 +50,7 @@ const FormBuilderPage = () => {
         </div>
 
         {isOpen && (
-          <div className='w-[25%] min-w-[320px] border-l border-surface-secondary bg-surface-primary animate-in slide-in-from-right-4 duration-300'>
+          <div className='animate-in slide-in-from-right-4 w-[25%] min-w-[320px] border-l border-surface-secondary bg-surface-primary duration-300'>
             <AskAI />
           </div>
         )}

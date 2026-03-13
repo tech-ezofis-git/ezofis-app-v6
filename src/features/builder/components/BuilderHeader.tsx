@@ -1,83 +1,115 @@
-import { ActionIcon, Box, Group, SegmentedControl, Text, TextInput } from '@mantine/core'
 import { t } from '@lingui/macro'
-import { useFormStore } from '../store'
+import {
+  ActionIcon,
+  Box,
+  Group,
+  SegmentedControl,
+  Text,
+  TextInput,
+} from '@mantine/core'
 import Icon from '@/components/base/icon/Icon'
+import { useFormStore } from '../store'
 
 const BuilderHeader = () => {
-    const { title, setTitle, isPreviewMode, setIsPreviewMode, undo, redo } = useFormStore()
+  const { isPreviewMode, redo, title, undo, setIsPreviewMode, setTitle } =
+    useFormStore()
 
-    return (
-        <Box className="flex h-full items-center justify-between px-6 bg-white border-b border-slate-200">
-            <Group gap="md">
-                <ActionIcon variant="subtle" color="gray" onClick={() => window.history.back()}>
-                    <Icon name="tabler:arrow-left" className="size-[18px]" />
-                </ActionIcon>
+  return (
+    <Box className='border-slate-200 flex h-full items-center justify-between border-b bg-white px-6'>
+      <Group gap='md'>
+        <ActionIcon
+          color='gray'
+          variant='subtle'
+          onClick={() => window.history.back()}
+        >
+          <Icon className='size-[18px]' name='tabler:arrow-left' />
+        </ActionIcon>
 
-                <Box className="flex flex-col">
-                    <Box className="flex items-center gap-2 group">
-                        <TextInput
-                            variant="unstyled"
-                            value={title}
-                            onChange={(e) => setTitle(e.currentTarget.value)}
-                            className="font-black text-slate-950 h-6 leading-tight"
-                            classNames={{ input: 'p-0 text-base h-6 font-black leading-tight min-h-0' }}
-                        />
-                        <ActionIcon variant="subtle" color="gray" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Icon name="tabler:settings" className="size-3.5" />
-                        </ActionIcon>
-                    </Box>
-                    <Box className="flex items-center gap-1.5">
-                        <div className="relative flex h-1.5 w-1.5">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-500"></span>
-                        </div>
-                        <Text size="10px" className="text-slate-500 uppercase font-bold tracking-wider">
-                            {t`Draft · Last saved 2m ago`}
-                        </Text>
-                    </Box>
-                </Box>
-            </Group>
-
-            <Group gap="lg">
-                <Group gap="xs">
-                    <ActionIcon variant="subtle" color="gray" onClick={undo} title={t`Undo`}>
-                        <Icon name="tabler:arrow-back-up" className="size-4" />
-                    </ActionIcon>
-                    <ActionIcon variant="subtle" color="gray" onClick={redo} title={t`Redo`}>
-                        <Icon name="tabler:arrow-forward-up" className="size-4" />
-                    </ActionIcon>
-                </Group>
-
-                <SegmentedControl
-                    value={isPreviewMode ? 'preview' : 'edit'}
-                    onChange={(v) => setIsPreviewMode(v === 'preview')}
-                    data={[
-                        { label: t`Edit`, value: 'edit' },
-                        { label: t`Preview`, value: 'preview' }
-                    ]}
-                    size="xs"
-                    radius="md"
-                    className="bg-slate-100"
-                />
-
-                <Group gap="sm">
-                    <ActionIcon
-                        variant="gradient"
-                        gradient={{ from: 'indigo', to: 'violet' }}
-                        radius="md"
-                        size="md"
-                        onClick={() => { }}
-                    >
-                        <Icon name="tabler:sparkles" className="size-4" />
-                    </ActionIcon>
-
-                    <ActionIcon variant="outline" color="gray" radius="md" size="md">
-                        <Icon name="tabler:device-floppy" className="size-4" />
-                    </ActionIcon>
-                </Group>
-            </Group>
+        <Box className='flex flex-col'>
+          <Box className='group flex items-center gap-2'>
+            <TextInput
+              className='text-slate-950 h-6 leading-tight font-black'
+              value={title}
+              variant='unstyled'
+              classNames={{
+                input: 'h-6 min-h-0 p-0 text-base leading-tight font-black',
+              }}
+              onChange={(e) => setTitle(e.currentTarget.value)}
+            />
+            <ActionIcon
+              className='opacity-0 transition-opacity group-hover:opacity-100'
+              color='gray'
+              size='sm'
+              variant='subtle'
+            >
+              <Icon className='size-3.5' name='tabler:settings' />
+            </ActionIcon>
+          </Box>
+          <Box className='flex items-center gap-1.5'>
+            <div className='relative flex h-1.5 w-1.5'>
+              <span className='bg-green-400 absolute inline-flex h-full w-full animate-ping rounded-full opacity-75'></span>
+              <span className='bg-green-500 relative inline-flex h-1.5 w-1.5 rounded-full'></span>
+            </div>
+            <Text
+              className='text-slate-500 font-bold tracking-wider uppercase'
+              size='10px'
+            >
+              {t`Draft · Last saved 2m ago`}
+            </Text>
+          </Box>
         </Box>
-    )
+      </Group>
+
+      <Group gap='lg'>
+        <Group gap='xs'>
+          <ActionIcon
+            color='gray'
+            title={t`Undo`}
+            variant='subtle'
+            onClick={undo}
+          >
+            <Icon className='size-4' name='tabler:arrow-back-up' />
+          </ActionIcon>
+          <ActionIcon
+            color='gray'
+            title={t`Redo`}
+            variant='subtle'
+            onClick={redo}
+          >
+            <Icon className='size-4' name='tabler:arrow-forward-up' />
+          </ActionIcon>
+        </Group>
+
+        <SegmentedControl
+          className='bg-slate-100'
+          radius='md'
+          size='xs'
+          value={isPreviewMode ? 'preview' : 'edit'}
+          data={[
+            { label: t`Edit`, value: 'edit' },
+            { label: t`Preview`, value: 'preview' },
+          ]}
+          onChange={(v) => setIsPreviewMode(v === 'preview')}
+        />
+
+        <Group gap='sm'>
+          <ActionIcon
+            gradient={{ from: 'indigo', to: 'violet' }}
+            radius='md'
+            size='md'
+            variant='gradient'
+            onClick={() => {}}
+          >
+            <Icon className='size-4' name='tabler:sparkles' />
+          </ActionIcon>
+
+          <ActionIcon color='gray' radius='md' size='md' variant='outline'>
+            <Icon className='size-4' name='tabler:device-floppy' />
+          </ActionIcon>
+        </Group>
+      </Group>
+    </Box>
+  )
 }
 
 export default BuilderHeader

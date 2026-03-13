@@ -1,29 +1,22 @@
 // @/pages/requests/hooks/useAttachments.ts
-import { useEffect, useState, useCallback } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import requestApi from '@/api/requests/requests'
 
 export type AttachmentItem = {
-  id?: number | string
-  itemId?: number | string
-  fileId?: number | string
-
-  name?: string
-  fileName?: string
-
-  repositoryId?: number | string
   createdAt?: string
   createdByEmail?: string
-  stageName?: string
+  fileId?: number | string
+
+  fileName?: string
+  id?: number | string
 
   // Vue had "initiate" for upload-and-index initiated files
   initiate?: boolean
-}
+  itemId?: number | string
+  name?: string
+  repositoryId?: number | string
 
-function normalizeId(a: AttachmentItem) {
-  return a.id ?? a.itemId ?? a.fileId ?? ''
-}
-function normalizeName(a: AttachmentItem) {
-  return a.name ?? a.fileName ?? '-'
+  stageName?: string
 }
 
 export function useAttachments(
@@ -73,5 +66,12 @@ export function useAttachments(
     refetch()
   }, [enabled, refetch])
 
-  return { data, isLoading, error, refetch }
+  return { data, error, isLoading, refetch }
+}
+function normalizeId(a: AttachmentItem) {
+  return a.id ?? a.itemId ?? a.fileId ?? ''
+}
+
+function normalizeName(a: AttachmentItem) {
+  return a.name ?? a.fileName ?? '-'
 }

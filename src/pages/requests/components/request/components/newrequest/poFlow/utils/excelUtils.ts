@@ -1,7 +1,3 @@
-export function normalizeHeader(input: string): string {
-  return input.trim().replace(/\s+/g, ' ').toLowerCase()
-}
-
 export function autoMap(
   systemCols: { key: string; label: string }[],
   uploadedCols: string[],
@@ -17,4 +13,8 @@ export function autoMap(
   }
 
   return result
+}
+
+export function normalizeHeader(input: string): string {
+  return input.trim().replace(/\s+/g, ' ').toLowerCase()
 }

@@ -1,17 +1,18 @@
+export interface ActionButton {
+  color: 'green' | 'red' | 'blue' | 'orange' | 'gray'
+  icon: string
+  label: string
+  value: string
+}
+
 export interface IAuditTrailItem {
   action: string
   timestamp: string
 }
-
 export interface IDiscrepancy {
   description: string
   title: string
   severity?: 'low' | 'medium' | 'high'
-}
-export interface IRequestMeta {
-  inboxCount: string
-  sentCount: string
-  completedCount: string
 }
 export interface ILineItem {
   id: string
@@ -30,43 +31,42 @@ export interface ILineItem {
   variance: string
 }
 
-export interface WorkflowOption {
-  id: number
-  name: string
-  flowJson: string // The JSON string defining rules/actions
-  wFormId: number
-  formJson?: string // The JSON defining columns/fields
-}
-
 export interface InboxItem {
-  processId: number
-  requestId: string
-  requestNo: string
-  status: string
-  stage: string
-  raisedAt: string
-  raisedBy: string
   activityId: string
   formData: {
     fields: Record<string, any> // Dynamic fields e.g., { "field_123": "Value" }
   }
+  processId: number
+  raisedAt: string
+  raisedBy: string
+  requestId: string
+  requestNo: string
+  stage: string
+  status: string
+  _actions?: ActionButton[]
   // Properties calculated during flattening
   _groupKey?: string
   _subKey?: string
-  _actions?: ActionButton[]
 }
 
-export interface ActionButton {
-  label: string
-  value: string
-  color: 'green' | 'red' | 'blue' | 'orange' | 'gray'
-  icon: string
+export interface IRequestMeta {
+  completedCount: string
+  inboxCount: string
+  sentCount: string
 }
 
 export interface TableGroup {
+  groupCount: number
   groupId: string
+  items: InboxItem[]
   groupKey?: string
   groupValue?: string
-  groupCount: number
-  items: InboxItem[]
+}
+
+export interface WorkflowOption {
+  flowJson: string // The JSON string defining rules/actions
+  id: number | string
+  name: string
+  wFormId: number
+  formJson?: string // The JSON defining columns/fields
 }

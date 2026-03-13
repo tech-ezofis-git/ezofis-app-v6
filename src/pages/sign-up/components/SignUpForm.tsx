@@ -1,8 +1,8 @@
-import { useState } from 'react'
-import { useNavigate } from '@tanstack/react-router'
-import { useGoogleLogin } from '@react-oauth/google'
 import { useMsal } from '@azure/msal-react'
-
+import { useGoogleLogin } from '@react-oauth/google'
+import { useNavigate } from '@tanstack/react-router'
+import { useState } from 'react'
+import authApi from '@/api/auth'
 import Button from '@/components/base/button/Button'
 import GoogleButton from '@/components/base/button/GoogleButton'
 import MicrosoftButton from '@/components/base/button/MicrosoftButton'
@@ -11,10 +11,8 @@ import Icon from '@/components/base/icon/Icon'
 import IconIllustrated from '@/components/base/icon/IconIllustrated'
 import InputText from '@/components/base/inputs/InputText'
 import Title from '@/components/base/Title'
-
-import authApi from '@/api/auth'
-import authUserStore from '@/stores/authUserStore'
 import showToast from '@/components/base/toast/showToast'
+import authUserStore from '@/stores/authUserStore'
 
 interface Props {
   email: string
@@ -26,7 +24,7 @@ const SignUpForm = ({ email, setEmail, onChangeView }: Props) => {
   const navigate = useNavigate()
   const { instance: msalInstance } = useMsal()
 
-  const { setSignUpUserData, resetSignUpUserData } = authUserStore()
+  const { resetSignUpUserData, setSignUpUserData } = authUserStore()
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -45,12 +43,12 @@ const SignUpForm = ({ email, setEmail, onChangeView }: Props) => {
       // write to store
       setSignUpUserData({
         email,
-        loginType: 'EZOFIS',
-        licenseType: '3',
-        password: '',
-        organisation: '',
         firstName: '',
         lastName: '',
+        licenseType: '3',
+        loginType: 'EZOFIS',
+        organisation: '',
+        password: '',
       })
 
       setLoading(true)
@@ -67,7 +65,7 @@ const SignUpForm = ({ email, setEmail, onChangeView }: Props) => {
         setError('Unable to send OTP')
         return
       }
-      showToast({ message: "OTP sent successfully", variant: "default" })
+      showToast({ message: 'OTP sent successfully', variant: 'default' })
 
       onChangeView() // show OTP screen only for email signup
     } catch (e: any) {
@@ -80,14 +78,18 @@ const SignUpForm = ({ email, setEmail, onChangeView }: Props) => {
   // ✅ Google signup: no OTP view
   const googleLogin = useGoogleLogin({
     scope: 'openid profile email',
+    onError: () => setError('Google sign-up was cancelled or failed'),
     onSuccess: async (tokenResponse) => {
       try {
         setError(null)
         setLoading(true)
 
-        const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-          headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
-        })
+        const res = await fetch(
+          'https://www.googleapis.com/oauth2/v3/userinfo',
+          {
+            headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+          },
+        )
         const profile = await res.json()
 
         const gEmail: string = profile.email
@@ -100,17 +102,17 @@ const SignUpForm = ({ email, setEmail, onChangeView }: Props) => {
         // derive names smartly (future-proof)
         const firstName = givenName || fullName.split(' ')[0] || ''
         const lastName =
-          familyName || (fullName.split(' ').slice(1).join(' ') || '')
+          familyName || fullName.split(' ').slice(1).join(' ') || ''
 
         resetSignUpUserData()
         setSignUpUserData({
           email: gEmail,
-          loginType: 'GOOGLE',
           firstName,
           lastName,
           licenseType: '3',
-          password: '',
+          loginType: 'GOOGLE',
           organisation: '',
+          password: '',
         })
 
         // OPTIONAL: call sendMailOTP with requiredOTP false (you asked for it earlier)
@@ -124,7 +126,6 @@ const SignUpForm = ({ email, setEmail, onChangeView }: Props) => {
         setLoading(false)
       }
     },
-    onError: () => setError('Google sign-up was cancelled or failed'),
   })
 
   const handleGoogleSignUp = () => googleLogin()
@@ -136,8 +137,8 @@ const SignUpForm = ({ email, setEmail, onChangeView }: Props) => {
       setLoading(true)
 
       const loginResponse = await msalInstance.loginPopup({
-        scopes: ['user.read'],
         loginHint: email || undefined,
+        scopes: ['user.read'],
       })
 
       const account = loginResponse.account
@@ -152,12 +153,12 @@ const SignUpForm = ({ email, setEmail, onChangeView }: Props) => {
       resetSignUpUserData()
       setSignUpUserData({
         email: msEmail,
-        loginType: 'MICROSOFT',
         firstName,
         lastName,
         licenseType: '3',
-        password: '',
+        loginType: 'MICROSOFT',
         organisation: '',
+        password: '',
       })
 
       // OPTIONAL: call sendMailOTP with requiredOTP false
@@ -211,7 +212,7 @@ const SignUpForm = ({ email, setEmail, onChangeView }: Props) => {
         />
 
         {error && (
-          <div className='text-center text-sm text-red-500'>{error}</div>
+          <div className='text-red-500 text-center text-sm'>{error}</div>
         )}
       </div>
     </>

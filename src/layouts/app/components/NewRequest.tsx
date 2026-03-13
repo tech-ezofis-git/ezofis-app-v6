@@ -1,28 +1,26 @@
-
 // import Drawer from '@/components/base/Drawer'
 
+import NewRequestSheet from '../../../pages/requests/components/request/NewRequestSheet'
 // import { SCREEN_XL } from '@/constants'
-import requestStore from "../../../pages/requests/stores/useRequestStore"
-import NewRequestSheet from "../../../pages/requests/components/request/NewRequestSheet"
+import requestStore from '../../../pages/requests/stores/useRequestStore'
 const NewRequest = () => {
+  const newRequest = requestStore((state) => state.newRequest)
+  const closeNewRequest = requestStore((state) => state.closeNewRequest)
 
-    const newRequest = requestStore((state) => state.newRequest)
-    const closeNewRequest = requestStore((state) => state.closeNewRequest)
+  // if (width >= SCREEN_XL && newRequest) {
 
-    // if (width >= SCREEN_XL && newRequest) {
+  return (
+    <div className='h-full flex-1 border-l border-gray-3'>
+      {newRequest && <NewRequestSheet onClose={closeNewRequest} />}
+    </div>
+  )
+  // }
 
-    return (
-        <div className='h-full flex-1  border-l border-gray-3 '>
-            {newRequest && <NewRequestSheet onClose={closeNewRequest} />}
-        </div>
-    )
-    // }
-
-    // return (
-    //     <Drawer opened={newRequest} onClose={closeNewRequest}>
-    //         <NewRequestSheet onClose={closeNewRequest} />
-    //     </Drawer>
-    // )
+  // return (
+  //     <Drawer opened={newRequest} onClose={closeNewRequest}>
+  //         <NewRequestSheet onClose={closeNewRequest} />
+  //     </Drawer>
+  // )
 }
 
 NewRequest.displayName = 'NewRequest'
