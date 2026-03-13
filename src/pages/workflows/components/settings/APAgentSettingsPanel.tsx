@@ -83,11 +83,11 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
 
   const [invoiceType, setInvoiceType] = useState(
     invoiceTypeOptions.find((opt) => opt.name === nodeData.invoiceType) ||
-      invoiceTypeOptions[0],
+    invoiceTypeOptions[0],
   )
   const [poMatching, setPoMatching] = useState(
     poMatchingOptions.find((opt) => opt.name === nodeData.poMatching) ||
-      poMatchingOptions[0],
+    poMatchingOptions[0],
   )
 
   const [poMaster, setPoMaster] = useState<any>(
@@ -220,11 +220,11 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
     const newWeights = weights.map((w: any) =>
       w.rowId === rowId
         ? {
-            ...w,
-            fieldId: field.id,
-            icon: field.icon,
-            label: field.name,
-          }
+          ...w,
+          fieldId: field.id,
+          icon: field.icon,
+          label: field.name,
+        }
         : w,
     )
     setWeights(newWeights)
@@ -261,13 +261,13 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
     if (nodeData.invoiceType && nodeData.invoiceType !== invoiceType.name) {
       setInvoiceType(
         invoiceTypeOptions.find((opt) => opt.name === nodeData.invoiceType) ||
-          invoiceTypeOptions[0],
+        invoiceTypeOptions[0],
       )
     }
     if (nodeData.poMatching && nodeData.poMatching !== poMatching.name) {
       setPoMatching(
         poMatchingOptions.find((opt) => opt.name === nodeData.poMatching) ||
-          poMatchingOptions[0],
+        poMatchingOptions[0],
       )
     }
     if (

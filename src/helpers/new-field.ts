@@ -13,74 +13,100 @@ export const getField = (fieldType: string) => {
   const id = generateId()
 
   const baseField = {
-    displayLabel: '',
     id,
-    label:
-      fieldType.toLowerCase() === 'text_builder'
-        ? 'Paragraph'
-        : fieldType.replace(/_/g, ' ').toLowerCase(),
+    label: fieldType.toLowerCase() === 'text_builder' ? 'Paragraph' : fieldType.replace(/_/g, ' ').toLowerCase(),
+    displayLabel: "",
     type: fieldType.toUpperCase(),
     settings: {
-      aiSettings: {
-        formControlValidate: { masterFormColumn: [], masterFormId: 0 },
-        validateTypeKeyword: '',
-      },
       general: {
-        dividerType: 'SOLID',
         hideLabel: false,
-        placeholder: '',
-        size: 'col-6',
-        tooltip: '',
-        url: '',
-        visibility: 'NORMAL',
-      },
-      lookupSettings: {
-        columnName: '',
-        connectionId: 0,
+        size: "col-6",
+        visibility: "NORMAL",
+        placeholder: "",
+        tooltip: "",
+        url: ""
       },
       specific: {
+        defaultValue: "CUSTOM",
+        customDefaultValue: "",
+        optionsType: "CUSTOM",
+        optionsSource: "CUSTOM",
+        customOptions: "Option 1,Option 2,Option 3",
+        separateOptionsUsing: "COMMA",
         allowToAddNewOptions: false,
-        autoGenerateValue: { prefix: '', suffix: '' },
-        customDefaultValue: '',
-        customOptions: 'Option 1,Option 2,Option 3',
-        defaultValue: 'CUSTOM',
-        fibFields: [] as any[],
+        optionsPerLine: 0,
+        tableColumns: [] as any[],
+        tableRowsType: "ON_DEMAND",
         matrixColumns: [] as any[],
         matrixRows: [] as any[],
-        optionsPerLine: 0,
-        optionsType: 'CUSTOM',
-        separateOptionsUsing: 'COMMA',
-        tableColumns: [] as any[],
-        tableRowsType: 'ON_DEMAND',
+        fibFields: [] as any[],
+        dividerStyle: "SOLID",
+        autoGenerateValue: { enabled: false, prefix: "", suffix: "" }
       },
       validation: {
-        allowedFileTypes: [],
-        contentRule: '',
-        fieldRule: 'OPTIONAL',
-        maxFileSize: 10,
-        maximum: '',
-        minimum: '',
+        fieldRule: "OPTIONAL",
+        contentRule: "",
+        minimum: "",
+        maximum: "",
+        allowedFileTypes: [] as string[],
+        maxFileSize: 10
       },
-    },
+      aiSettings: {
+        validateTypeKeyword: "",
+        formControlValidate: { masterFormId: 0, masterFormColumn: [] }
+      },
+      lookupSettings: {
+        columnName: "",
+        connectionId: 0
+      }
+    }
   }
 
   // Specific tweaks based on type
+  const s = baseField.settings.specific as any
   switch (fieldType.toUpperCase()) {
     case 'TABLE':
     case 'DYNAMIC_TABLE':
-      baseField.settings.specific.tableColumns = [
-        { id: generateId(), name: 'Column 1', size: 'md', type: 'SHORT_TEXT' },
+      s.tableColumns = [
+        { id: generateId(), label: 'Column 1', type: 'SHORT_TEXT', size: 'col-6' }
       ]
       break
     case 'MATRIX':
-      baseField.settings.specific.matrixColumns = ['Col 1', 'Col 2']
-      baseField.settings.specific.matrixRows = ['Row 1', 'Row 2']
+      s.matrixRowLabels = ['Row 1', 'Row 2']
+      s.matrixColumnLabels = ['Col 1', 'Col 2', 'Col 3']
       break
-    case 'SINGLE_SELECT':
-    case 'MULTI_SELECT':
-    case 'SINGLE_CHOICE':
-    case 'MULTIPLE_CHOICE':
-      // Defaults are already set in specific block
+    case 'RATING':
+      s.iconType = 'STAR'
+      s.iconCount = 5
+      break
+    case 'OPINION_SCALE':
+      s.iconType = 'STAR'
+      s.iconCount = 10
+      break
+    case 'EMAIL':
+      baseField.settings.validation.contentRule = 'EMAIL'
+      break
+    case 'URL':
+      baseField.settings.validation.contentRule = 'URL'
+      break
+    case 'PHONE_NUMBER':
+      baseField.settings.validation.contentRule = 'PHONE'
+      break
+    case 'YES_NO_TOGGLE':
+      s.customOptions = 'Yes,No'
+      s.optionsType = 'CUSTOM'
+      break
+    case 'SCORE':
+      s.iconType = 'NUMBER'
+      s.iconCount = 10
+      break
+    case 'IMAGE_UPLOAD':
+      baseField.settings.validation.allowedFileTypes = ['IMAGE'] as string[]
+      break
+    case 'CONSENT':
+      baseField.label = 'Consent'
+      s.customOptions = 'I agree to the terms and conditions'
+      s.optionsType = 'CUSTOM'
       break
   }
 

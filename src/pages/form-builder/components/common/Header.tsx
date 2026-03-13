@@ -1,4 +1,6 @@
-import { Button } from '@mantine/core'
+import Button from '@/components/base/button/Button'
+import { useFormStore } from '@/pages/form-builder/store/formStore'
+import IconButton from '@/components/base/button/IconButton'
 import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import IconButton from '@/components/base/button/IconButton'
@@ -47,11 +49,10 @@ const Header = () => {
           <div className='flex items-center gap-2'>
             <h1 className='text-15/5 font-semibold text-gray-13'>{name}</h1>
             <span
-              className={`rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase ${
-                publishStatus === 'PUBLISHED'
+              className={`rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase ${publishStatus === 'PUBLISHED'
                   ? 'text-success-main bg-success-subtle'
                   : 'bg-gray-3 text-gray-11'
-              }`}
+                }`}
             >
               {publishStatus === 'PUBLISHED' ? 'Published' : 'Draft'}
             </span>
@@ -64,26 +65,6 @@ const Header = () => {
 
       {/* Right: Controls */}
       <div className='flex items-center gap-3'>
-        <Button
-          className='text-[10px] font-bold tracking-wider text-accent-primary uppercase hover:bg-accent-soft/10'
-          color='gray'
-          size='xs'
-          variant='subtle'
-          leftSection={
-            <Icon
-              className='text-accent-primary'
-              height={14}
-              name='lucide:sparkles'
-              width={14}
-            />
-          }
-          onClick={() => useAskAIStore.getState().open()}
-        >
-          Ask AI
-        </Button>
-
-        <div className='mx-1 h-4 w-px bg-gray-3' />
-
         <IconButton
           className='bg-gray-1 text-gray-10 hover:bg-gray-3'
           color='gray'
@@ -98,60 +79,35 @@ const Header = () => {
         />
 
         <Button
-          className='text-[10px] font-bold tracking-wider text-gray-11 uppercase'
-          color='gray'
-          size='xs'
-          variant='outline'
-          leftSection={
-            <Icon
-              className='text-gray-11'
-              height={14}
-              name='lucide:eye'
-              width={14}
-            />
-          }
+          variant="outline"
+          color="gray"
+          size="sm"
+          icon="lucide:eye"
+          label="Preview"
           onClick={() => setIsPreviewOpen(true)}
-        >
-          Preview
-        </Button>
+        />
 
         <Button
-          className='border-gray-3 text-[10px] font-bold tracking-wider text-gray-11 uppercase'
-          color='gray'
+          variant="outline"
+          color="gray"
+          size="sm"
           loading={isSaving}
-          size='xs'
-          variant='light'
-          leftSection={
-            <Icon
-              className='text-gray-11'
-              height={14}
-              name='lucide:save'
-              width={14}
-            />
-          }
+          icon="lucide:save"
+          label="Save"
           onClick={handleQuickSave}
-        >
-          Save
-        </Button>
+        />
 
         <Button
-          bg='accent-primary'
-          className='px-4 text-[10px] font-bold tracking-wider uppercase shadow-md shadow-accent-soft/20 transition-all hover:opacity-90'
-          size='xs'
-          variant='filled'
-          leftSection={
-            <Icon
-              className='text-white'
-              height={14}
-              name='lucide:rocket'
-              width={14}
-            />
-          }
+          variant="solid"
+          color="primary"
+          size="sm"
+          icon="lucide:rocket"
+          label="Publish"
           onClick={() => setPublishOpen(true)}
-        >
-          Publish
-        </Button>
+          className="px-4"
+        />
       </div>
+
     </header>
   )
 }

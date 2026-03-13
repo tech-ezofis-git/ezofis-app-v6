@@ -1,12 +1,14 @@
-import {
-  rectSortingStrategy,
-  SortableContext,
-  useSortable,
-} from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
-import { ActionIcon, Divider, Text } from '@mantine/core'
-import { useEffect, useRef, useState } from 'react'
+import { ActionIcon } from '@mantine/core'
 import Icon from '@/components/base/icon/Icon'
+import QuestionCard from './QuestionCard'
+import AddFieldInline from './AddFieldInline'
+import SectionHeader from './SectionHeader'
+import AddFieldButton from './AddFieldButton'
+import { useFormStore, type Question, type Panel as PanelType } from '@/pages/form-builder/store/formStore'
+import { useState, useRef, useEffect } from 'react'
+import cn from '@/utils/cn'
+import { useSortable, SortableContext, rectSortingStrategy } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { getField } from '@/helpers/new-field'
 import {
   type Panel as PanelType,
@@ -25,22 +27,29 @@ interface Props {
 const Page = ({ panel, panelIndex }: Props) => {
   const {
     activeQuestionId,
-    addQuestion,
-    clearLastAddedPanelId,
-    deletePanel,
+    setActiveQuestionId,
+    updateQuestion,
     deleteQuestion,
+    addQuestion,
     isBuilderMode,
     lastAddedPanelId,
-    movePanel,
-    panels,
-    updatePanel,
-    updateQuestion,
-    setActiveQuestionId,
+    clearLastAddedPanelId
   } = useFormStore()
 
   const pageRef = useRef<HTMLDivElement>(null)
   const [showAddFieldAt, setShowAddFieldAt] = useState<number | null>(null)
+  const [addFieldAnchorRect, setAddFieldAnchorRect] = useState<DOMRect | null>(null)
   const [isCollapsed, setIsCollapsed] = useState(false)
+
+  // Mapping for field widths to 12-column grid spans
+  const getColumnSpan = (size: string) => {
+    switch (size) {
+      case 'col-6': return 'col-span-12 md:col-span-6'
+      case 'col-4': return 'col-span-12 md:col-span-4'
+      case 'col-3': return 'col-span-12 md:col-span-3'
+      default: return 'col-span-12'
+    }
+  }
 
   // Handle auto-scroll when page is added via AI
   useEffect(() => {
@@ -51,217 +60,150 @@ const Page = ({ panel, panelIndex }: Props) => {
   }, [lastAddedPanelId, panel.id, clearLastAddedPanelId])
 
   const handleAddField = (type: string, index: number) => {
-    const newQuestion = getField(type)
-    addQuestion(panel.id, newQuestion as Question, index)
+    if (type === 'FULL_NAME') {
+      const firstName = getField('SHORT_TEXT')
+      firstName.label = 'First Name'
+      firstName.settings.general.size = 'col-6'
+
+      const lastName = getField('SHORT_TEXT')
+      lastName.label = 'Last Name'
+      lastName.settings.general.size = 'col-6'
+
+      addQuestion(panel.id, firstName as Question, index)
+      addQuestion(panel.id, lastName as Question, index + 1)
+    } else if (type === 'CONTACT_INFO') {
+      const name = getField('SHORT_TEXT')
+      name.label = 'Full Name'
+
+      const email = getField('EMAIL')
+      const phone = getField('PHONE_NUMBER')
+      const company = getField('SHORT_TEXT')
+      company.label = 'Company'
+
+      addQuestion(panel.id, name as Question, index)
+      addQuestion(panel.id, email as Question, index + 1)
+      addQuestion(panel.id, phone as Question, index + 2)
+      addQuestion(panel.id, company as Question, index + 3)
+    } else if (type === 'ADDRESS' || type === 'ADDRESS_INFO') {
+      const street = getField('SHORT_TEXT')
+      street.label = 'Street Address'
+      street.settings.general.size = 'col-12'
+
+      const city = getField('SHORT_TEXT')
+      city.label = 'City'
+      city.settings.general.size = 'col-6'
+
+      const state = getField('SHORT_TEXT')
+      state.label = 'State / Province'
+      state.settings.general.size = 'col-6'
+
+      const zip = getField('SHORT_TEXT')
+      zip.label = 'Zip / Postal Code'
+      zip.settings.general.size = 'col-6'
+
+      const country = getField('COUNTRY_CODE')
+      country.settings.general.size = 'col-6'
+
+      addQuestion(panel.id, street as Question, index)
+      addQuestion(panel.id, city as Question, index + 1)
+      addQuestion(panel.id, state as Question, index + 2)
+      addQuestion(panel.id, zip as Question, index + 3)
+      addQuestion(panel.id, country as Question, index + 4)
+    } else if (type === 'OPINION_SCALE') {
+      const rating = getField('RATING') as any
+      rating.label = 'How would you rate your experience?'
+      rating.settings.specific.iconCount = 10
+      addQuestion(panel.id, rating as Question, index)
+    } else {
+      const newQuestion = getField(type)
+      addQuestion(panel.id, newQuestion as Question, index)
+    }
     setShowAddFieldAt(null)
+    setAddFieldAnchorRect(null)
   }
 
   return (
     <div
-      className='group/page relative mb-6 rounded-2xl border border-gray-1 bg-white font-inter shadow-sm transition-all duration-300'
-      id={panel.id}
       ref={pageRef}
+      id={panel.id}
+      className="bg-white rounded-2xl border border-gray-3 shadow-md relative group/page transition-all duration-300 font-inter mb-8"
       onDragOver={(e) => e.preventDefault()}
     >
-      {/* Page Header - Cleaner Title/Desc only */}
-      <div className='flex items-start justify-between gap-4 px-6 pt-4 pb-2 font-inter'>
-        <div className='flex-1 space-y-1'>
-          <input
-            className='w-full bg-transparent text-2xl font-bold tracking-tight text-gray-13 placeholder:text-gray-3 focus:outline-none'
-            placeholder='Page Title'
-            type='text'
-            value={panel.settings.title}
-            onChange={(e) => updatePanel(panel.id, { title: e.target.value })}
-          />
+      {/* 1. Section Header */}
+      <SectionHeader
+        panel={panel}
+        panelIndex={panelIndex}
+        fieldCount={panel.fields.length}
+        isCollapsed={isCollapsed}
+        onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
+      />
 
-          <input
-            className='w-full bg-transparent text-sm text-gray-5 placeholder:text-gray-3 focus:outline-none'
-            placeholder='Add a description for this page...'
-            type='text'
-            value={panel.settings.description}
-            onChange={(e) =>
-              updatePanel(panel.id, { description: e.target.value })
-            }
-          />
-        </div>
-
-        <div className='flex items-center gap-1 opacity-100 transition-opacity duration-200 group-hover/page:opacity-100'>
-          {/* Move Up */}
-          {panelIndex > 0 && (
-            <ActionIcon
-              className='transition-all hover:bg-gray-1 active:scale-95'
-              color='gray'
-              size='sm'
-              title='Move Up'
-              variant='subtle'
-              onClick={() => movePanel(panel.id, 'up')}
-            >
-              <Icon height={15} name='lucide:arrow-up' width={15} />
-            </ActionIcon>
-          )}
-
-          {/* Move Down */}
-          {panelIndex < panels.length - 1 && (
-            <ActionIcon
-              className='transition-all hover:bg-gray-1 active:scale-95'
-              color='gray'
-              size='sm'
-              title='Move Down'
-              variant='subtle'
-              onClick={() => movePanel(panel.id, 'down')}
-            >
-              <Icon height={15} name='lucide:arrow-down' width={15} />
-            </ActionIcon>
-          )}
-
-          <Divider
-            className='h-4 border-gray-2'
-            mx={4}
-            orientation='vertical'
-          />
-
-          {/* Collapse/Expand Toggle */}
-          <ActionIcon
-            className='transition-all hover:bg-gray-1 active:scale-95'
-            color='gray'
-            size='sm'
-            title={isCollapsed ? 'Expand' : 'Collapse'}
-            variant='subtle'
-            onClick={() => setIsCollapsed(!isCollapsed)}
-          >
-            <Icon
-              height={15}
-              name={isCollapsed ? 'lucide:chevron-down' : 'lucide:chevron-up'}
-              width={15}
-            />
-          </ActionIcon>
-
-          <ActionIcon
-            className='hover:bg-red-50 transition-all focus:ring-0 active:scale-95'
-            color='red'
-            size='sm'
-            variant='subtle'
-            onClick={() => deletePanel(panel.id)}
-          >
-            <Icon height={15} name='lucide:trash' width={15} />
-          </ActionIcon>
-        </div>
-      </div>
-
-      {/* Page Canvas */}
+      {/* 2. Page Canvas / Field Grid */}
       {!isCollapsed && (
-        <div className='relative z-10 px-4 pb-4'>
-          <SortableContext
-            items={panel.fields.map((q) => q.id)}
-            strategy={rectSortingStrategy}
-          >
-            <div className='flex w-full flex-wrap gap-y-1'>
-              {panel.fields.length === 0 && (
-                <div className='w-full px-1'>
-                  <button
-                    className='group/empty flex w-full items-center justify-center rounded-xl border-2 border-dashed border-gray-2 bg-white py-8 text-gray-4 transition-all hover:border-accent-primary hover:bg-accent-soft/5 hover:text-accent-primary'
-                    onClick={() => setShowAddFieldAt(0)}
-                  >
-                    <div className='flex items-center gap-2'>
-                      <Icon height={18} name='lucide:plus' width={18} />
-                      <Text fw={700} size='sm'>
-                        Add your first field
-                      </Text>
-                    </div>
-                  </button>
-                </div>
-              )}
-
-              {panel.fields.map((q: Question, i: number) => {
-                const isHalfWidth = q.settings.general.size === 'col-6'
-
-                return (
-                  <div
-                    key={q.id}
-                    className={cn(
-                      'group-item group/field relative px-1 transition-all duration-500',
-                      q.settings.general.size === 'col-3'
-                        ? 'w-1/4'
-                        : q.settings.general.size === 'col-4'
-                          ? 'w-1/3'
-                          : q.settings.general.size === 'col-6'
-                            ? 'w-1/2'
-                            : 'w-full',
-                    )}
-                  >
-                    {/* Inline Add Button (Above this field) */}
-                    <div className='group/insert pointer-events-auto absolute top-[-10px] left-0 z-[20] flex h-[20px] w-full items-center justify-center opacity-0 transition-all hover:opacity-100'>
-                      <div className='mx-2 h-px w-[calc(100%-16px)] bg-accent-soft/50 group-hover/insert:bg-accent-primary/40' />
-                      <ActionIcon
-                        className='absolute scale-75 shadow-sm transition-all group-hover/insert:scale-105 hover:bg-accent-primary'
-                        color='violet'
-                        radius='xl'
-                        size='sm'
-                        variant='filled'
-                        onClick={() => setShowAddFieldAt(i)}
-                      >
-                        <Icon height={14} name='lucide:plus' width={14} />
-                      </ActionIcon>
-                    </div>
-                    <SortableQuestionItem
-                      activeQuestionId={activeQuestionId}
-                      deleteQuestion={deleteQuestion}
-                      isBuilderMode={isBuilderMode}
-                      question={q}
-                      updateQuestion={updateQuestion}
-                      setActiveQuestionId={setActiveQuestionId}
-                    />
-
-                    {/* If this is the last item and it's half width, and we have an empty slot next to it */}
-                    {i === panel.fields.length - 1 && isHalfWidth && (
-                      <div className='pointer-events-none absolute top-0 right-[-100%] z-10 h-full w-full px-1 opacity-0 transition-opacity group-hover/field:opacity-100'>
-                        <button
-                          className='pointer-events-auto flex h-full w-full items-center justify-center rounded-xl border-2 border-dashed border-gray-2 bg-white/50 text-gray-4 transition-all hover:border-accent-primary hover:bg-white hover:text-accent-primary'
-                          onClick={() => setShowAddFieldAt(i + 1)}
-                        >
-                          <Icon height={16} name='lucide:plus' width={16} />
-                          <Text fw={700} ml={4} size='xs'>
-                            Add field
-                          </Text>
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
-
-              {/* Standard Add Field at the bottom if no empty slots in grid */}
-              {panel.fields.length > 0 && (
+        <div className="relative z-10 p-6 pt-4">
+          <SortableContext items={panel.fields.map(q => q.id)} strategy={rectSortingStrategy}>
+            <div className="grid grid-cols-12 gap-x-4 gap-y-6 w-full">
+              {/* Render Fields */}
+              {panel.fields.map((q: Question, i: number) => (
                 <div
+                  key={q.id}
                   className={cn(
-                    'mt-1 px-1 transition-all',
-                    panel.fields[panel.fields.length - 1]?.settings.general
-                      .size === 'col-6'
-                      ? 'w-1/2'
-                      : 'w-full',
+                    "transition-all duration-500 relative group/field",
+                    getColumnSpan(q.settings.general.size)
                   )}
                 >
-                  <button
-                    className='flex w-full items-center justify-center rounded-xl border-2 border-dashed border-gray-2 bg-white/50 py-3 text-gray-4 transition-all hover:border-accent-primary hover:bg-white hover:text-accent-primary'
-                    onClick={() => setShowAddFieldAt(panel.fields.length)}
-                  >
-                    <Icon height={16} name='lucide:plus' width={16} />
-                    <Text fw={700} ml={4} size='xs'>
-                      Add field
-                    </Text>
-                  </button>
+                  {/* Drop Zone Above (Visual Indicator) */}
+                  <div className="absolute -top-3 left-0 w-full h-6 z-20 flex items-center justify-center opacity-0 hover:opacity-100 group/insert transition-all pointer-events-none">
+                    <div className="w-full h-[2px] bg-accent-soft shadow-[0_0_8px_rgba(124,92,255,0.4)] mx-4 rounded-full" />
+                    <ActionIcon
+                      size="sm"
+                      radius="xl"
+                      color="violet"
+                      variant="filled"
+                      className="absolute shadow-sm scale-75 group-hover/insert:scale-100 transition-all hover:bg-accent-primary pointer-events-auto"
+                      onClick={(e) => {
+                        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+                        setAddFieldAnchorRect(rect)
+                        setShowAddFieldAt(i)
+                      }}
+                    >
+                      <Icon name="lucide:plus" width={12} height={12} />
+                    </ActionIcon>
+                  </div>
+
+                  <SortableQuestionItem
+                    question={q}
+                    activeQuestionId={activeQuestionId}
+                    setActiveQuestionId={setActiveQuestionId}
+                    updateQuestion={updateQuestion}
+                    deleteQuestion={deleteQuestion}
+                    isBuilderMode={isBuilderMode}
+                  />
                 </div>
-              )}
+              ))}
             </div>
           </SortableContext>
 
+          {/* 3. Add Field Button (At the bottom) */}
+          <div className="mt-8">
+            <AddFieldButton
+              onClick={(e: any) => {
+                const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+                setAddFieldAnchorRect(rect)
+                setShowAddFieldAt(panel.fields.length)
+              }}
+            />
+          </div>
+
           {showAddFieldAt !== null && (
-            <div className='fixed inset-0 z-[100]'>
-              <AddFieldInline
-                onClose={() => setShowAddFieldAt(null)}
-                onSelect={(type) => handleAddField(type, showAddFieldAt)}
-              />
-            </div>
+            <AddFieldInline
+              onSelect={(type) => handleAddField(type, showAddFieldAt)}
+              onClose={() => {
+                setShowAddFieldAt(null)
+                setAddFieldAnchorRect(null)
+              }}
+              anchorRect={addFieldAnchorRect}
+            />
           )}
         </div>
       )}

@@ -5,6 +5,9 @@ import type { QuestionType } from '@/pages/form-builder/store/formStore'
 import Icon from '@/components/base/icon/Icon'
 import Input from '@/components/base/inputs/InputText'
 import cn from '@/utils/cn'
+import { Portal, Text } from '@mantine/core'
+
+type TabType = 'explore' | 'popular' | 'advanced' | 'templates' | 'all' | 'display' | 'date_time'
 
 interface FieldType {
   category: TabType
@@ -27,339 +30,223 @@ type TabType =
 
 const ALL_FIELDS: FieldType[] = [
   // Basic
-  {
-    bgColor: 'bg-blue-50',
-    category: 'popular',
-    description: 'Single line text input',
-    icon: 'mdi:form-textbox',
-    iconColor: '#3b82f6',
-    label: 'Short Text',
-    type: 'SHORT_TEXT',
-  },
-  {
-    bgColor: 'bg-emerald-50',
-    category: 'popular',
-    description: 'Multi-line text area',
-    icon: 'mdi:form-textarea',
-    iconColor: '#10b981',
-    label: 'Long Text',
-    type: 'LONG_TEXT',
-  },
-  {
-    bgColor: 'bg-amber-50',
-    category: 'popular',
-    description: 'Numeric only entry',
-    icon: 'tabler:number-123',
-    iconColor: '#f59e0b',
-    label: 'Number',
-    type: 'NUMBER',
-  },
-  {
-    bgColor: 'bg-red-50',
-    category: 'popular',
-    description: 'Validated email input',
-    icon: 'lucide:mail',
-    iconColor: '#ef4444',
-    label: 'Email',
-    type: 'EMAIL',
-  },
-  {
-    bgColor: 'bg-violet-50',
-    category: 'popular',
-    description: 'Phone number field',
-    icon: 'lucide:phone',
-    iconColor: '#8b5cf6',
-    label: 'Phone',
-    type: 'PHONE_NUMBER',
-  },
-  {
-    bgColor: 'bg-indigo-50',
-    category: 'popular',
-    description: 'Secure text entry',
-    icon: 'lucide:lock',
-    iconColor: '#6366f1',
-    label: 'Password',
-    type: 'PASSWORD',
-  },
+  { type: 'FULL_NAME', label: 'Full Name', icon: 'lucide:user', category: 'popular', description: 'Combined first & last name' },
+  { type: 'SHORT_TEXT', label: 'Short Text', icon: 'mdi:form-textbox', category: 'popular', description: 'Single line text input' },
+  { type: 'LONG_TEXT', label: 'Long Text', icon: 'mdi:form-textarea', category: 'popular', description: 'Multi-line text area' },
+  { type: 'NUMBER', label: 'Number', icon: 'tabler:number-123', category: 'popular', description: 'Numeric only entry' },
+  { type: 'EMAIL', label: 'Email', icon: 'lucide:mail', category: 'popular', description: 'Validated email input' },
+  { type: 'PHONE_NUMBER', label: 'Phone', icon: 'lucide:phone', category: 'popular', description: 'Phone number field' },
+  { type: 'PASSWORD', label: 'Password', icon: 'lucide:lock', category: 'popular', description: 'Secure text entry' },
+  { type: 'URL', label: 'URL', icon: 'lucide:link', category: 'popular', description: 'Website link input' },
 
   // Selections
-  {
-    bgColor: 'bg-pink-50',
-    category: 'popular',
-    description: 'Radio selection',
-    icon: 'mdi:radiobox-marked',
-    iconColor: '#ec4899',
-    label: 'Choice',
-    type: 'SINGLE_CHOICE',
-  },
-  {
-    bgColor: 'bg-orange-50',
-    category: 'popular',
-    description: 'Select from list',
-    icon: 'lucide:list-todo',
-    iconColor: '#f97316',
-    label: 'Dropdown',
-    type: 'SINGLE_SELECT',
-  },
-  {
-    bgColor: 'bg-teal-50',
-    category: 'popular',
-    description: 'Multi-select options',
-    icon: 'lucide:square-check',
-    iconColor: '#14b8a6',
-    label: 'Checkbox',
-    type: 'MULTI_SELECT',
-  },
+  { type: 'SINGLE_CHOICE', label: 'Choice', icon: 'mdi:radiobox-marked', category: 'popular', description: 'Radio selection' },
+  { type: 'SINGLE_SELECT', label: 'Dropdown', icon: 'lucide:list-todo', category: 'popular', description: 'Select from list' },
+  { type: 'MULTI_SELECT', label: 'Checkbox', icon: 'lucide:square-check', category: 'popular', description: 'Multi-select options' },
+  { type: 'YES_NO_TOGGLE', label: 'Yes/No', icon: 'lucide:toggle-left', category: 'popular', description: 'Binary toggle switch' },
 
   // Date/Time
-  {
-    bgColor: 'bg-blue-50',
-    category: 'date_time',
-    description: 'Date picker',
-    icon: 'lucide:calendar',
-    iconColor: '#3b82f6',
-    label: 'Date',
-    type: 'DATE',
-  },
-  {
-    bgColor: 'bg-emerald-50',
-    category: 'date_time',
-    description: 'Time picker',
-    icon: 'lucide:clock',
-    iconColor: '#10b981',
-    label: 'Time',
-    type: 'TIME',
-  },
+  { type: 'DATE', label: 'Date', icon: 'lucide:calendar', category: 'date_time', description: 'Date picker' },
+  { type: 'TIME', label: 'Time', icon: 'lucide:clock', category: 'date_time', description: 'Time picker' },
 
   // Templates
-  {
-    bgColor: 'bg-pink-50',
-    category: 'templates',
-    description: 'Name, Email, Phone block',
-    icon: 'lucide:contact',
-    iconColor: '#ec4899',
-    label: 'Contact Template',
-    type: 'CONTACT_INFO',
-  },
-  {
-    bgColor: 'bg-orange-50',
-    category: 'templates',
-    description: 'Complete address group',
-    icon: 'lucide:home',
-    iconColor: '#f97316',
-    label: 'Address Template',
-    type: 'ADDRESS_INFO',
-  },
+  { type: 'CONTACT_INFO', label: 'Contact Template', icon: 'lucide:contact', category: 'templates', description: 'Name, Email, Phone block' },
+  { type: 'ADDRESS_INFO', label: 'Address Template', icon: 'lucide:home', category: 'templates', description: 'Complete address group' },
+  { type: 'ADDRESS', label: 'Address', icon: 'lucide:map-pin', category: 'templates', description: 'Street, City, State, Zip' },
+  { type: 'CONSENT', label: 'Consent', icon: 'lucide:shield-check', category: 'templates', description: 'Agreement checkbox block' },
 
   // Advanced
-  {
-    bgColor: 'bg-indigo-100',
-    category: 'advanced',
-    description: 'Structured data table',
-    icon: 'lucide:table',
-    iconColor: '#4f46e5',
-    label: 'Table Grid',
-    type: 'TABLE',
-  },
-  {
-    bgColor: 'bg-indigo-50',
-    category: 'advanced',
-    description: 'Upload documents/images',
-    icon: 'lucide:file-up',
-    iconColor: '#6366f1',
-    label: 'File Upload',
-    type: 'FILE_UPLOAD',
-  },
-  {
-    bgColor: 'bg-amber-50',
-    category: 'advanced',
-    description: 'Star or scale rating',
-    icon: 'lucide:star',
-    iconColor: '#f59e0b',
-    label: 'Rating',
-    type: 'RATING',
-  },
-  {
-    bgColor: 'bg-blue-100',
-    category: 'advanced',
-    description: 'Location selector',
-    icon: 'lucide:globe',
-    iconColor: '#3b82f6',
-    label: 'Country',
-    type: 'COUNTRY_CODE',
-  },
+  { type: 'TABLE', label: 'Table Grid', icon: 'lucide:table', category: 'advanced', description: 'Structured data table' },
+  { type: 'FILE_UPLOAD', label: 'File Upload', icon: 'lucide:file-up', category: 'advanced', description: 'Upload documents/images' },
+  { type: 'IMAGE_UPLOAD', label: 'Image Upload', icon: 'lucide:image', category: 'advanced', description: 'Photos only upload' },
+  { type: 'RATING', label: 'Rating', icon: 'lucide:star', category: 'advanced', description: 'Star or scale rating' },
+  { type: 'SCORE', label: 'Score', icon: 'lucide:hash', category: 'advanced', description: '1-10 numeric scale' },
+  { type: 'SIGNATURE', label: 'Signature', icon: 'lucide:pen-tool', category: 'advanced', description: 'Digital signature pad' },
+  { type: 'OPINION_SCALE', label: 'Opinion Scale', icon: 'lucide:bar-chart', category: 'advanced', description: '1-10 rating scale' },
+  { type: 'COUNTRY_CODE', label: 'Country', icon: 'lucide:globe', category: 'advanced', description: 'Location selector' },
 
   // Display
-  {
-    bgColor: 'bg-slate-50',
-    category: 'display',
-    description: 'Static text or instructions',
-    icon: 'lucide:text',
-    iconColor: '#94a3b8',
-    label: 'Paragraph',
-    type: 'TEXT_BUILDER',
-  },
-  {
-    bgColor: 'bg-slate-50',
-    category: 'display',
-    description: 'Section title',
-    icon: 'lucide:heading',
-    iconColor: '#94a3b8',
-    label: 'Heading',
-    type: 'HEADING',
-  },
-  {
-    bgColor: 'bg-slate-50',
-    category: 'display',
-    description: 'Visual separator',
-    icon: 'lucide:minus',
-    iconColor: '#94a3b8',
-    label: 'Divider',
-    type: 'DIVIDER',
-  },
+  { type: 'TEXT_BUILDER', label: 'Paragraph', icon: 'lucide:text', category: 'display', description: 'Static text or instructions' },
+  { type: 'HEADING', label: 'Heading', icon: 'lucide:heading', category: 'display', description: 'Section title' },
+  { type: 'DIVIDER', label: 'Divider', icon: 'lucide:minus', category: 'display', description: 'Visual separator' },
 ]
 
 interface Props {
-  onClose: () => void
   onSelect: (type: QuestionType | 'ADDRESS_INFO' | 'CONTACT_INFO') => void
+  onClose: () => void
+  anchorRect: DOMRect | null
 }
 
-const AddFieldInline = ({ onClose, onSelect }: Props) => {
+const AddFieldInline = ({ onSelect, onClose, anchorRect }: Props) => {
   const [search, setSearch] = useState('')
-  const [activeTab, setActiveTab] = useState<TabType>('all')
+  const [position, setPosition] = useState<{ top: number, left: number }>({ top: 0, left: 0 })
+  const containerRef = useRef<HTMLDivElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (listRef.current) {
       listRef.current.scrollTop = 0
     }
-  }, [activeTab, search])
+  }, [search])
 
-  const filteredFields = ALL_FIELDS.filter((field) => {
-    const matchesSearch =
-      field.label.toLowerCase().includes(search.toLowerCase()) ||
-      field.description.toLowerCase().includes(search.toLowerCase())
-    const matchesTab = activeTab === 'all' || field.category === activeTab
-    return matchesSearch && matchesTab
-  })
+  useEffect(() => {
+    if (anchorRect && containerRef.current) {
+      const menuWidth = 500 // Max width
+      const menuHeight = containerRef.current.offsetHeight || 420
+      const windowWidth = window.innerWidth
+      const windowHeight = window.innerHeight
+
+      let left = anchorRect.left + (anchorRect.width / 2) - (menuWidth / 2)
+      let top = anchorRect.bottom + 12
+
+      // Keep within horizontal bounds
+      if (left < 20) left = 20
+      if (left + menuWidth > windowWidth - 20) left = windowWidth - menuWidth - 20
+
+      // If would go off bottom, show above instead
+      if (top + menuHeight > windowHeight - 20) {
+        top = anchorRect.top - menuHeight - 12
+      }
+
+      // Ensure top is not negative
+      if (top < 20) top = 20
+
+      setPosition({ top, left })
+    }
+  }, [anchorRect])
+
 
   const renderItem = (field: FieldType) => (
     <button
-      className='hover:bg-gray-50 group hover:border-gray-200 flex items-center gap-3 rounded-xl border border-transparent p-2.5 text-left transition-all duration-200'
       key={field.type}
       onClick={(e) => {
         e.preventDefault()
         e.stopPropagation()
         onSelect(field.type)
       }}
+      className="w-full" // Make the button take full width of its grid cell
     >
-      <div
-        className={cn(
-          'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg shadow-sm transition-colors',
-          field.bgColor || 'bg-gray-50',
-        )}
-      >
-        <Icon className='h-5 w-5 text-accent-primary' name={field.icon} />
-      </div>
-      <div className='flex min-w-0 flex-col'>
-        <span className='truncate text-xs leading-tight font-bold text-gray-13 group-hover:text-accent-primary'>
-          {field.label}
-        </span>
-        <span className='mt-0.5 truncate text-[10px] leading-none text-gray-5'>
-          {field.description}
-        </span>
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center justify-between gap-3 p-2 group hover:bg-gray-1 rounded-lg cursor-pointer transition-all active:scale-[0.98]">
+          <div className="flex items-center gap-3">
+            <div className={cn(
+              "flex items-center justify-center size-8 rounded-lg shadow-sm border",
+              "bg-white text-gray-11 border-gray-2 group-hover:bg-accent-soft group-hover:text-accent-primary group-hover:border-accent-soft transition-all"
+            )}>
+              <Icon name={field.icon} width={16} height={16} />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-13 font-medium text-gray-12 group-hover:text-accent-primary transition-colors">{field.label}</span>
+              <span className="text-11 text-gray-9 truncate max-w-[200px]">{field.description}</span>
+            </div>
+          </div>
+        </div>
       </div>
     </button>
   )
 
+  if (!anchorRect) return null
+
   return (
     <Portal>
-      <div className='pointer-events-none fixed inset-0 z-[9999] flex items-center justify-center'>
+      <div className="fixed inset-0 pointer-events-none z-[10001] flex items-start justify-start">
         {/* Click outside overlay - capture events */}
-        <div
-          className='pointer-events-auto absolute inset-0 z-0'
-          onClick={onClose}
-        />
+        <div className="absolute inset-0 z-0 pointer-events-auto bg-gray-900/5 backdrop-blur-[1px] animate-in fade-in duration-300" onClick={onClose} />
 
         <motion.div
-          animate={{ opacity: 1, y: 0 }}
-          className='pointer-events-auto z-10 flex w-full max-w-[500px] flex-col overflow-hidden rounded-xl border border-gray-2 bg-white font-inter shadow-2xl'
-          dragElastic={0}
-          dragMomentum={false}
-          initial={{ opacity: 0, y: 10 }}
-          drag
+          ref={containerRef}
+          style={{
+            top: position.top,
+            left: position.left,
+            position: 'absolute'
+          }}
+          className='w-full max-w-[500px] pointer-events-auto flex flex-col overflow-hidden rounded-xl bg-white border border-gray-2 shadow-[0_20px_50px_rgba(0,0,0,0.15)] font-inter z-10'
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
         >
+
+
           {/* Search */}
-          <div className='shrink-0 border-b border-gray-1 bg-white p-3'>
+          <div className='p-3 shrink-0 border-b border-gray-1 bg-white'>
             <div className='relative'>
               <Input
-                className='w-full'
                 placeholder='Search fields...'
                 value={search}
-                classNames={{
-                  input:
-                    'border-gray-2 bg-gray-1 py-1.5 text-xs focus:bg-white',
-                }}
-                leftSection={
-                  <Icon
-                    className='text-gray-4'
-                    height={14}
-                    name='lucide:search'
-                    width={14}
-                  />
-                }
                 onChange={(val: string) => setSearch(val)}
+                className='w-full'
+                classNames={{
+                  input: 'bg-gray-1 border-gray-2 focus:bg-white text-xs py-1.5'
+                }}
+                leftSection={<Icon name='lucide:search' width={14} height={14} className='text-gray-4' />}
+
               />
             </div>
           </div>
 
           {/* Main Content */}
-          <div className='flex min-h-0 flex-1 flex-col'>
-            {/* Tabs */}
-            <div className='no-scrollbar bg-gray-50/30 flex shrink-0 items-center gap-1 overflow-x-auto border-b border-gray-1 px-3 py-2'>
+          <div className="flex flex-col flex-1 min-h-0">
+            {/* Jump Nav (Mini) */}
+            <div className='px-3 py-1.5 flex items-center gap-2 overflow-x-auto no-scrollbar shrink-0 border-b border-gray-1 bg-gray-50/50 sticky top-0 z-20'>
               {[
-                { icon: 'lucide:layout-grid', id: 'all', label: 'All' },
-                { icon: 'lucide:star', id: 'popular', label: 'Basic' },
-                {
-                  icon: 'lucide:layout-template',
-                  id: 'templates',
-                  label: 'Templates',
-                },
-                { icon: 'lucide:zap', id: 'advanced', label: 'Advanced' },
-                { icon: 'lucide:type', id: 'display', label: 'Display' },
-              ].map((tab) => (
+                { id: 'popular', label: 'Basic', icon: 'lucide:star' },
+                { id: 'templates', label: 'Templates', icon: 'lucide:layout-template' },
+                { id: 'advanced', label: 'Advanced', icon: 'lucide:zap' },
+                { id: 'display', label: 'Display', icon: 'lucide:type' },
+              ].map((cat) => (
                 <button
-                  key={tab.id}
-                  className={cn(
-                    'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] font-bold tracking-wider whitespace-nowrap uppercase transition-all duration-200',
-                    activeTab === tab.id
-                      ? 'bg-accent-soft text-accent-primary'
-                      : 'hover:bg-gray-100 text-gray-11',
-                  )}
-                  onClick={() => setActiveTab(tab.id as any)}
+                  key={cat.id}
+                  type="button"
+                  onClick={() => {
+                    const el = document.getElementById(`cat-${cat.id}`)
+                    el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                  }}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-bold text-gray-5 hover:bg-white hover:text-accent-primary transition-all border border-transparent hover:border-gray-2 uppercase tracking-tight"
                 >
-                  <Icon height={12} name={tab.icon} width={12} />
-                  <span>{tab.label}</span>
+                  <Icon name={cat.icon} width={10} height={10} />
+                  {cat.label}
                 </button>
               ))}
             </div>
 
             <div
-              className='custom-scrollbar grid max-h-[360px] grid-cols-2 gap-1.5 overflow-y-auto p-3'
               ref={listRef}
+              className='p-3 overflow-y-auto max-h-[400px] custom-scrollbar flex flex-col gap-6'
             >
-              {filteredFields.map((f) => renderItem(f))}
-              {filteredFields.length === 0 && (
-                <div className='col-span-2 mt-2 py-10 text-center text-gray-4'>
-                  <Icon
-                    className='mx-auto mb-2 h-8 w-8 opacity-20'
-                    name='lucide:search-x'
-                  />
-                  <span className='text-xs font-medium'>
-                    No elements found matching "{search}"
-                  </span>
-                </div>
-              )}
+              {[
+                { id: 'popular', label: 'Basic Elements' },
+                { id: 'templates', label: 'Smart Templates' },
+                { id: 'advanced', label: 'Advanced Fields' },
+                { id: 'display', label: 'Presentation' },
+              ].map((cat) => {
+                const catFields = ALL_FIELDS.filter(f =>
+                  f.category === cat.id &&
+                  (f.label.toLowerCase().includes(search.toLowerCase()) ||
+                    f.description.toLowerCase().includes(search.toLowerCase()))
+                )
+                if (catFields.length === 0) return null
+
+                return (
+                  <div key={cat.id} id={`cat-${cat.id}`} className="space-y-3">
+                    <div className="flex items-center gap-2 sticky top-[0px] bg-white z-10 py-1">
+                      <Text size="10px" fw={800} className="text-gray-11 uppercase tracking-[0.1em]">{cat.label}</Text>
+                      <div className="flex-1 h-px bg-gray-1" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {catFields.map(f => renderItem(f))}
+                    </div>
+                  </div>
+                )
+              })}
+
+              {search && ALL_FIELDS.filter(f =>
+                f.label.toLowerCase().includes(search.toLowerCase()) ||
+                f.description.toLowerCase().includes(search.toLowerCase())
+              ).length === 0 && (
+                  <div className='py-10 text-center text-gray-4 mt-2'>
+                    <Icon name='lucide:search-x' className='mx-auto mb-2 h-8 w-8 opacity-20' />
+                    <span className='text-xs font-medium'>No elements found matching "{search}"</span>
+                  </div>
+                )}
             </div>
           </div>
 
