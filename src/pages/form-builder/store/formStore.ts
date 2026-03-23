@@ -75,6 +75,15 @@ export interface Question {
       maxLevel?: number
       childFieldType?: string
       lookupMaster?: string
+      // Short Text specific
+      prefixIcon?: string
+      suffixIcon?: string
+      inputMask?: string
+      dense?: boolean
+      variant?: 'default' | 'filled' | 'unstyled'
+      prefillFromUrl?: boolean
+      uniqueCheck?: boolean
+      showStatusIndicator?: boolean
     }
     validation: {
       fieldRule: 'OPTIONAL' | 'REQUIRED'
@@ -86,6 +95,8 @@ export interface Question {
       dateRange?: 'PAST' | 'FUTURE' | 'CUSTOM'
       timeRange?: string
       correctAnswer?: string
+      pattern?: string
+      errorMessage?: string
     }
     aiSettings: {
       validateTypeKeyword?: string
@@ -100,6 +111,9 @@ export interface Question {
     lookupSettings: {
       columnName?: string
       connectionId?: number
+      hubName?: string
+      valueMappings?: { source: string; target: string }[]
+      conditionMappings?: { fieldId: string; operator: string; value: any }[]
     }
     logic?: LogicRule[]
     pipingEnabled?: boolean
