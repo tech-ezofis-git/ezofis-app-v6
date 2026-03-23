@@ -84,10 +84,14 @@ export interface Question {
       prefillFromUrl?: boolean
       uniqueCheck?: boolean
       showStatusIndicator?: boolean
+      prefixLabel?: string
+      suffixLabel?: string
     }
     validation: {
       fieldRule: 'OPTIONAL' | 'REQUIRED'
       contentRule?: string
+      decimalDigits?: number
+      rangeType?: 'MIN_FIXED_MAX_FLEX' | 'MIN_FLEX_MAX_FIXED' | 'CUSTOM'
       minimum?: string | number
       maximum?: string | number
       allowedFileTypes?: string[]
