@@ -268,9 +268,9 @@ const Form = () => {
               ))
             ) : (
               <div className='animate-in fade-in zoom-in-95 flex flex-col items-center justify-center rounded-3xl border-2 border-dashed border-gray-2 bg-white/40 py-20 text-center duration-500'>
-                <div className='bg-gray-100 mb-6 flex size-20 items-center justify-center rounded-2xl'>
+                <div className='bg-gray-1 mb-6 flex size-20 items-center justify-center rounded-2xl'>
                   <Icon
-                    className='text-gray-300'
+                    className='text-gray-4'
                     height={40}
                     name='lucide:layout'
                     width={40}
@@ -451,7 +451,7 @@ const CanvasSlot = ({
               </Text>
 
               <Text
-                className='line-clamp-2 leading-relaxed text-gray-5'
+                className='line-clamp-2 leading-relaxed text-gray-10'
                 size='xs'
               >
                 {isWelcome

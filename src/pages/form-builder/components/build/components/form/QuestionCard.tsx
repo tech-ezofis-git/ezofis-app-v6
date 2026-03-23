@@ -1,11 +1,13 @@
-import { Card, TextInput, ActionIcon, Tooltip, Divider } from '@mantine/core'
+import { Card, Tooltip, Rating } from '@mantine/core'
 import Icon from '@/components/base/icon/Icon'
+import IconButton from '@/components/base/button/IconButton'
+import Button from '@/components/base/button/Button'
+import type React from 'react'
 import {
   type Question,
   useFormStore,
 } from '@/pages/form-builder/store/formStore'
 import cn from '@/utils/cn'
-import { useState, useRef, useLayoutEffect, useEffect } from 'react'
 
 interface Props {
   isActive: boolean
@@ -44,324 +46,214 @@ const QuestionCard = ({ question, isActive, onSelect, onUpdate, onDelete, dragLi
   }
 
   const isVisible = checkLogic()
+  const hasLogic = (question.settings.logic || []).length > 0
   const isRequired = question.settings.validation.fieldRule === 'REQUIRED'
-  const isNarrow = question.settings.general.size === 'col-4'
-
-  // Answer Piping Resolution
-  const resolvePiping = (text: string) => {
-    if (!text) return ''
-    return text.replace(/\{([^}]+)\}/g, (_match, fieldId) => {
-      const target = allQuestions.find(q => q.id === fieldId)
-      return target?.settings.specific.defaultValue || _match
-    })
-  }
-
-  const evaluateFormula = (formula: string) => {
-    if (!formula) return '0'
-    try {
-      const resolved = formula.replace(/\{([^}]+)\}/g, (_, fieldId) => {
-        const target = allQuestions.find(q => q.id === fieldId)
-        const val = Number(target?.settings.specific.defaultValue || 0)
-        return isNaN(val) ? '0' : String(val)
-      })
-      // Safe-ish eval for basic math
-      const cleaned = resolved.replace(/[^-()\d/*+.]/g, '')
-      return Function(`'use strict'; return (${cleaned})`)()
-    } catch (e) {
-      return '??'
-    }
-  }
-
-  const isCalculated = question.type === 'CALCULATED'
-  const displayLabel = isCalculated
-    ? `${question.label} = ${evaluateFormula(question.settings.specific.defaultValue || '')}`
-    : resolvePiping(question.label)
-
-  // Truncation detection
-  const [isTruncated, setIsTruncated] = useState(false)
-  const labelRef = useRef<HTMLInputElement>(null)
-
-  const checkTruncation = () => {
-    if (labelRef.current) {
-      const { scrollWidth, clientWidth } = labelRef.current
-      setIsTruncated(scrollWidth > clientWidth)
-    }
-  }
-
-  useLayoutEffect(() => {
-    checkTruncation()
-  }, [question.label, question.settings.general.size])
-
-  // Re-check on window resize
-  useEffect(() => {
-    window.addEventListener('resize', checkTruncation)
-    return () => window.removeEventListener('resize', checkTruncation)
-  }, [])
 
   return (
     <Card
       onClick={onSelect}
       className={cn(
-        "group relative border transition-all duration-300 cursor-pointer overflow-visible bg-white",
-        "animate-in fade-in slide-in-from-bottom-2 duration-500",
+        "group relative border transition-all duration-300 cursor-pointer overflow-visible rounded-xl font-inter",
         isActive
-          ? "border-accent-primary shadow-lg bg-white ring-1 ring-accent-primary scale-[1.01]"
-          : "border-gray-3 hover:border-accent-soft hover:shadow-md hover:-translate-y-1 active:scale-95"
+          ? "border-accent-primary bg-accent-soft/5 ring-1 ring-accent-primary shadow-sm"
+          : "border-gray-2 bg-transparent hover:border-gray-3 hover:bg-gray-50/50"
       )}
       style={{
-        padding: 0,
-        borderRadius: '12px'
+        padding: '0'
       }}
     >
-      <div className="flex items-center justify-between gap-3 py-3 px-4 h-14">
-        {/* Left Side: Drag, Icon, Label, Badge */}
-        <div className="flex items-center gap-3 flex-1 min-w-0">
-          {/* 1. Drag Handle */}
-          <div
-            className={cn(
-              "flex items-center justify-center h-7 rounded-lg hover:bg-gray-1 cursor-grab active:cursor-grabbing shrink-0 overflow-hidden transition-all duration-300 ease-in-out",
-              isActive
-                ? "w-7 opacity-100 text-accent-primary"
-                : "w-0 opacity-0 group-hover:w-7 group-hover:opacity-100 text-gray-4 hover:text-gray-8"
+      <div className="flex flex-col p-4 gap-3">
+        {/* Top Header: Label, Badges, Quick Actions, Drag Handle */}
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
+            <div className="text-13 font-medium text-gray-12 truncate">
+              {question.label || 'Untitled Field'}
+            </div>
+
+            {isRequired && (
+              <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-gray-2 text-gray-7 tracking-wider uppercase">
+                Required
+              </span>
             )}
-            {...dragListeners}
-          >
-            <div className="flex items-center justify-center w-7 shrink-0">
-              <Icon name="tabler:grip-vertical" width={18} height={18} />
-            </div>
-          </div>
 
-          {/* 2. Field Icon & Badge */}
-          <div className="flex items-center gap-2.5 min-w-0 flex-1">
-            <div className={cn(
-              "flex items-center justify-center size-8 rounded-xl shrink-0 transition-colors shadow-sm border",
-              isActive ? "bg-accent-soft text-accent-primary border-accent-soft" : "bg-gray-1 text-gray-8 border-gray-2"
-            )}>
-              <Icon
-                name={TYPE_ICONS[question.type] || 'tabler:circle-dot'}
-                width={16} height={16}
-              />
-            </div>
+            {hasLogic && (
+              <span className="px-1.5 py-0.5 rounded flex items-center gap-1 text-[9px] font-bold bg-accent-primary text-white tracking-wider uppercase">
+                <Icon name="lucide:split" width={10} height={10} />
+                Logic Active
+              </span>
+            )}
 
-            {/* 3. Label (Editable TextInput) */}
-            <div className="flex flex-col min-w-0 flex-1">
-              <Tooltip
-                label={question.label}
-                position="top-start"
-                withArrow
-                disabled={!isTruncated}
-                multiline
-                w={250}
-                transitionProps={{ transition: 'pop', duration: 200 }}
-              >
-                <div className="w-full">
-                  <TextInput
-                    ref={labelRef}
-                    value={isActive ? question.label : displayLabel}
-                    onChange={(e) => {
-                      if (isActive) onUpdate({ label: e.target.value })
-                    }}
-                    placeholder="Field label..."
-                    variant="unstyled"
-                    classNames={{
-                      input: cn(
-                        "text-15/5 font-semibold p-0 min-h-0 placeholder:text-gray-3 tracking-tight truncate h-auto transition-all",
-                        isActive ? "text-accent-primary" : "text-gray-13",
-                        !isVisible && "opacity-50 line-through decoration-gray-4"
-                      )
-                    }}
-                    rightSection={!isVisible && (
-                      <Tooltip label="Hidden by logic rules">
-                        <Icon name="lucide:eye-off" width={12} height={12} className="text-gray-4" />
-                      </Tooltip>
-                    )}
-                    onClick={(e) => e.stopPropagation()}
-                  />
+            {/* Visibility Warning */}
+            {!isVisible && (
+              <Tooltip label="Visible when Vendor Entity Type is International Entity" position="top" withArrow>
+                <div className="cursor-help flex items-center justify-center size-5 rounded-md bg-accent-soft/10 text-accent-primary border border-accent-soft/20 ml-1">
+                  <Icon name="lucide:info" width={12} height={12} />
                 </div>
               </Tooltip>
-            </div>
+            )}
           </div>
-        </div>
 
-        {/* Right Side Actions: Hover for Duplicate/Delete, Permanent for Required at far right */}
-        <div className="flex items-center transition-all shrink-0">
-          {/* Secondary Actions (Hover Only) */}
-          <div className={cn(
-            "flex items-center transition-all duration-500 ease-out",
-            "opacity-0 group-hover:opacity-100 translate-x-4 group-hover:translate-x-0 pointer-events-none group-hover:pointer-events-auto"
-          )}>
-            {isNarrow ? (
-              <div className="flex items-center group/more pointer-events-auto">
-                <div className="flex items-center gap-1 overflow-hidden transition-all duration-300 w-0 group-hover/more:w-[72px] opacity-0 group-hover/more:opacity-100 translate-x-2 group-hover/more:translate-x-0">
-                  {/* Duplicate */}
-                  <Tooltip label="Duplicate" position="top" withArrow transitionProps={{ transition: 'pop', duration: 200 }}>
-                    <ActionIcon
-                      variant="subtle"
-                      color="gray"
-                      size="md"
-                      className="hover:bg-gray-1 rounded-lg transition-all active:scale-95 shrink-0"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        const { setCopiedQuestion, duplicateQuestion } = useFormStore.getState()
-                        setCopiedQuestion(question)
-                        duplicateQuestion(question.id)
-                      }}
-                    >
-                      <Icon name="tabler:copy" width={14} height={14} className="text-gray-8" />
-                    </ActionIcon>
-                  </Tooltip>
-
-                  {/* Delete */}
-                  <Tooltip label="Delete" position="top" withArrow transitionProps={{ transition: 'pop', duration: 200 }}>
-                    <ActionIcon
-                      variant="subtle"
-                      color="red"
-                      size="md"
-                      className="hover:bg-red-50 rounded-lg transition-all active:scale-95 text-red-11 shrink-0"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        onDelete()
-                      }}
-                    >
-                      <Icon name="tabler:trash" width={14} height={14} />
-                    </ActionIcon>
-                  </Tooltip>
-                </div>
-                <ActionIcon
-                  variant="subtle"
-                  color="gray"
-                  size="md"
-                  className="hover:bg-gray-1 rounded-lg transition-all active:scale-95 shrink-0"
-                >
-                  <Icon name="tabler:dots-vertical" width={16} height={16} className="text-gray-8" />
-                </ActionIcon>
-              </div>
-            ) : (
-              <>
-                {/* Duplicate */}
-                <Tooltip label="Duplicate" position="top" withArrow transitionProps={{ transition: 'pop', duration: 200 }}>
-                  <ActionIcon
-                    variant="subtle"
-                    color="gray"
-                    size="md"
-                    className="hover:bg-gray-1 rounded-lg transition-all active:scale-95 shrink-0"
-                    onClick={(e) => {
+          {/* Quick Actions & Drag Handle */}
+          <div className="flex items-center gap-1 pl-2">
+             <div className={cn(
+                "flex items-center gap-0.5 transition-all duration-300 opacity-0 group-hover:opacity-100",
+                isActive && "opacity-100"
+             )}>
+                <Tooltip label="Duplicate" position="top" withArrow>
+                  <IconButton
+                    className="cursor-pointer size-6"
+                    color="primary"
+                    icon="lucide:copy"
+                    iconClass="size-[13px]"
+                    size="sm"
+                    variant="ghost"
+                    onClick={(e: React.MouseEvent) => {
                       e.stopPropagation()
                       const { setCopiedQuestion, duplicateQuestion } = useFormStore.getState()
                       setCopiedQuestion(question)
                       duplicateQuestion(question.id)
                     }}
-                  >
-                    <Icon name="tabler:copy" width={14} height={14} className="text-gray-8" />
-                  </ActionIcon>
+                  />
                 </Tooltip>
 
-                {/* Delete */}
-                <Tooltip label="Delete" position="top" withArrow transitionProps={{ transition: 'pop', duration: 200 }}>
-                  <ActionIcon
-                    variant="subtle"
+                <Tooltip label="Delete" position="top" withArrow>
+                  <IconButton
+                    className="cursor-pointer size-6 hover:bg-red-50"
                     color="red"
-                    size="md"
-                    className="hover:bg-red-50 rounded-lg transition-all active:scale-95 text-red-11 shrink-0"
-                    onClick={(e) => {
+                    icon="lucide:trash-2"
+                    iconClass="size-[13px]"
+                    size="sm"
+                    variant="ghost"
+                    onClick={(e: React.MouseEvent) => {
                       e.stopPropagation()
                       onDelete()
                     }}
-                  >
-                    <Icon name="tabler:trash" width={14} height={14} />
-                  </ActionIcon>
+                  />
                 </Tooltip>
-              </>
-            )}
+             </div>
 
-            <Divider orientation="vertical" className="h-4 border-gray-2" mx={2} />
+             <div
+              className="flex items-center justify-center h-6 w-4 rounded hover:bg-gray-2 cursor-grab active:cursor-grabbing text-gray-3 hover:text-gray-6 transition-colors ml-1"
+              {...dragListeners}
+            >
+              <Icon name="lucide:grip-vertical" width={14} height={14} />
+            </div>
           </div>
+        </div>
 
-          {/* Required Indicator/Toggle (Permanent if isRequired, at the very end) */}
-          <div className={cn(
-            "transition-all duration-300 z-10",
-            isRequired || isActive ? "opacity-100 scale-100" : "opacity-0 group-hover:opacity-100 scale-95"
-          )}>
-            <Tooltip label={isRequired ? "Required" : "Mark as Required"} position="top" withArrow transitionProps={{ transition: 'pop', duration: 200 }}>
-              <ActionIcon
-                variant="subtle"
-                color={isRequired ? "red" : "gray"}
-                size="md"
-                className={cn(
-                  "rounded-lg transition-all active:scale-95",
-                  isRequired ? "bg-red-50 text-red-500" : "hover:bg-gray-1"
-                )}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onUpdate({ settings: { ...question.settings, validation: { ...question.settings.validation, fieldRule: isRequired ? 'OPTIONAL' : 'REQUIRED' } } })
-                }}
-              >
-                <Icon name={isRequired ? "tabler:circle-check-filled" : "tabler:circle-dot"} width={16} height={16} />
-              </ActionIcon>
-            </Tooltip>
-          </div>
+        {/* Simulated Input Area */}
+        <div className="w-full mt-2">
+          {question.type === 'LONG_TEXT' ? (
+            <textarea
+              readOnly
+              rows={3}
+              placeholder={question.settings.general.placeholder || `Enter ${question.label || 'value'}...`}
+              className={cn(
+                "w-full resize-none outline-none border rounded-lg p-3 text-[13px] font-medium text-gray-12 placeholder:font-normal placeholder:text-gray-8 transition-colors",
+                isActive ? "border-accent-primary/50 bg-white" : "border-gray-2 bg-white group-hover:border-gray-3"
+              )}
+            />
+          ) : question.type === 'FILE_UPLOAD' || question.type === 'IMAGE_UPLOAD' ? (
+            <div className={cn(
+              "w-full border-2 rounded-xl flex flex-col items-center justify-center p-6 transition-colors group/upload gap-3",
+              isActive ? "border-accent-primary bg-accent-soft/5 border-dashed" : "border-gray-2 bg-gray-50/50 border-dashed group-hover:border-gray-3"
+            )}>
+              <div className="flex items-center gap-2 pointer-events-none">
+                <Button
+                  color='gray'
+                  icon='lucide:upload'
+                  variant='outline'
+                  size='sm'
+                  label="Upload"
+                  className="bg-white"
+                />
+                <Button
+                  color='red'
+                  icon='lucide:trash-2'
+                  variant='outline'
+                  size='sm'
+                  label="Remove"
+                  className="bg-white"
+                />
+              </div>
+              <span className="text-[13px] font-normal text-gray-8 group-hover/upload:text-gray-10 transition-colors">We support PNGs and JPEGs under 5MB</span>
+            </div>
+          ) : question.type === 'RATING' ? (
+            <div className={cn(
+              "h-11 w-full border rounded-lg flex items-center px-4 transition-colors",
+              isActive ? "border-accent-primary/50 bg-white" : "border-gray-2 bg-white group-hover:border-gray-3"
+            )}>
+              <Rating
+                defaultValue={0}
+                count={question.settings.specific.iconCount || 5}
+                readOnly
+                size="sm"
+                color="yellow"
+              />
+            </div>
+          ) : question.type === 'DATE' || question.type === 'TIME' || question.type === 'DATE_TIME' ? (
+            <div className={cn(
+              "h-11 w-full border rounded-lg flex items-center justify-between px-4 transition-colors",
+              isActive ? "border-accent-primary/50 bg-white" : "border-gray-2 bg-white group-hover:border-gray-3"
+            )}>
+              <span className="text-[13px] text-gray-8 font-medium">
+                {question.type === 'DATE' ? 'Select Date' : question.type === 'TIME' ? 'Select Time' : 'Select Date & Time'}
+              </span>
+              <Icon name={question.type === 'TIME' ? 'lucide:clock' : 'lucide:calendar'} width={16} height={16} className="text-gray-4" />
+            </div>
+           ) : question.type === 'SINGLE_CHOICE' || question.type === 'MULTIPLE_CHOICE' ? (
+            <div className="space-y-2">
+               {[1, 2].map(i => (
+                 <div key={i} className={cn(
+                   "h-9 w-full border rounded-lg flex items-center px-3 gap-3 transition-colors",
+                   isActive ? "border-accent-primary/50 bg-white" : "border-gray-2 bg-white group-hover:border-gray-3"
+                 )}>
+                   <div className={cn("size-4 border border-gray-3", question.type === 'SINGLE_CHOICE' ? 'rounded-full' : 'rounded-md')} />
+                   <span className="text-[12px] text-gray-8">Option {i}</span>
+                 </div>
+               ))}
+            </div>
+          ) : (
+            <div className={cn(
+              "h-11 w-full border rounded-lg flex items-center px-4 transition-colors",
+              isActive ? "border-accent-primary/50 bg-white" : "border-gray-2 bg-white group-hover:border-gray-3"
+            )}>
+              <span className="text-[13px] text-gray-8 font-medium truncate">
+                {question.settings.general.placeholder || `Enter ${question.label || 'value'}...`}
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Bottom Width Toolbar (Hover Only) */}
       <div className="absolute -bottom-[18px] left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 z-50 pointer-events-none group-hover:pointer-events-auto">
-        <div className="flex items-center gap-1 bg-white border border-gray-2 shadow-2xl rounded-full p-1 border-b-2 border-b-accent-primary animate-in slide-in-from-top-4">
+        <div className="flex items-center gap-1 bg-white border border-gray-2 shadow-sm rounded-full p-1 animate-in slide-in-from-top-4">
           {[
-            { label: '1/3', value: 'col-4' },
-            { label: '1/2', value: 'col-6' },
-            { label: 'Full', value: 'col-12' },
+             { label: '1/3', value: 'col-4' },
+             { label: '1/2', value: 'col-6' },
+             { label: 'Full', value: 'col-12' },
           ].map((w) => (
-            <button
-              key={w.value}
-              onClick={(e) => {
-                e.stopPropagation()
-                onUpdate({ settings: { ...question.settings, general: { ...question.settings.general, size: w.value as any } } })
-              }}
-              className={cn(
-                "px-3 py-1 rounded-full text-[10px] font-black transition-all uppercase tracking-tighter",
-                question.settings.general.size === w.value
-                  ? "bg-accent-primary text-white shadow-md shadow-accent-soft/20"
-                  : "text-gray-5 hover:bg-gray-1"
-              )}
-            >
-              {w.label}
-            </button>
+             <button
+                key={w.value}
+                onClick={(e) => {
+                   e.stopPropagation()
+                   onUpdate({ settings: { ...question.settings, general: { ...question.settings.general, size: w.value as any } } })
+                }}
+                className={cn(
+                   "px-2 py-0.5 rounded-full text-[9px] font-bold transition-all tracking-wide",
+                   question.settings.general.size === w.value
+                      ? "bg-accent-soft/20 text-accent-primary"
+                      : "text-gray-5 hover:bg-gray-1"
+                )}
+             >
+                {w.label}
+             </button>
           ))}
         </div>
       </div>
     </Card>
   )
-}
-
-const TYPE_ICONS: Record<string, string> = {
-  SHORT_TEXT: 'mdi:form-textbox',
-  LONG_TEXT: 'mdi:form-textarea',
-  EMAIL: 'lucide:mail',
-  PHONE_NUMBER: 'lucide:phone',
-  SINGLE_CHOICE: 'mdi:radiobox-marked',
-  MULTIPLE_CHOICE: 'lucide:square-check',
-  SINGLE_SELECT: 'lucide:list-todo',
-  MULTI_SELECT: 'lucide:list-todo',
-  PASSWORD: 'lucide:lock',
-  FILE_UPLOAD: 'lucide:file-up',
-  TEXT_BUILDER: 'lucide:text',
-  TABLE: 'lucide:table',
-  DIVIDER: 'lucide:minus',
-  HEADING: 'lucide:heading',
-  LABEL: 'lucide:heading',
-  DATE: 'lucide:calendar',
-  TIME: 'lucide:clock',
-  DATE_TIME: 'lucide:calendar-time',
-  RATING: 'lucide:star',
-  COUNTER: 'tabler:number-123',
-  CALCULATED: 'tabler:calculator',
-  COUNTRY_CODE: 'lucide:globe',
-  ADDRESS: 'lucide:home',
-  YES_NO_TOGGLE: 'lucide:toggle-left',
-  SCORE: 'lucide:hash',
-  IMAGE_UPLOAD: 'lucide:image',
-  CONSENT: 'lucide:shield-check',
-  SIGNATURE: 'lucide:pen-tool',
 }
 
 export default QuestionCard

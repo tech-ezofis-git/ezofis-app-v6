@@ -1,4 +1,4 @@
-import { Button, TextInput, SegmentedControl, Text, Divider, Tooltip, UnstyledButton } from '@mantine/core'
+import { Button, TextInput, SegmentedControl, Text, Divider, Tooltip, UnstyledButton, Rating } from '@mantine/core'
 import Icon from '@/components/base/icon/Icon'
 import {
   type Panel as PanelType,
@@ -648,16 +648,12 @@ const renderPreviewInput = (field: Question, size: 'lg' | 'sm' = 'lg') => {
       )
     case 'RATING':
       return (
-        <div className="flex gap-2 sm:gap-4">
-          {[1, 2, 3, 4, 5].map((s) => (
-            <button key={s} className={cn(
-              "rounded bg-gray-1 border border-gray-3 hover:border-accent-primary hover:bg-accent-primary hover:text-white transition-all font-bold text-gray-7 flex items-center justify-center",
-              isSmall ? "size-8 text-sm" : "size-12 text-lg"
-            )}>
-              {s}
-            </button>
-          ))}
-        </div>
+        <Rating
+          count={field.settings.specific.iconCount || 5}
+          size={isSmall ? "md" : "xl"}
+          color="yellow"
+          defaultValue={0}
+        />
       )
     case 'SINGLE_CHOICE':
     case 'MULTIPLE_CHOICE':
