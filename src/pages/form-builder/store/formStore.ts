@@ -57,14 +57,20 @@ export interface Question {
       separateOptionsUsing?: string
       allowToAddNewOptions?: boolean
       optionsPerLine?: number
-      tableColumns?: any[]
-      columns?: any[]
-      tableRowsType?: string
-      numRows?: number
+      tableColumns?: Array<{ id: string; name: string; type: QuestionType; size: 'SMALL' | 'MEDIUM' | 'LARGE' }>
+      rowsType?: 'ON_DEMAND' | 'FIXED'
+      fixedRowCount?: number
+      rowSelection?: 'NONE' | 'SINGLE' | 'MULTIPLE'
+      importExportEnabled?: boolean
+      showSummaryRow?: boolean
       matrixColumns?: any[]
       matrixRows?: any[]
       matrixRowLabels?: string[]
       matrixColumnLabels?: string[]
+      opinionLabels?: { min: string; mid: string; max: string }
+      addressFields?: string[]
+      yesNoLabels?: { yes: string; no: string }
+      signaturePenColor?: string
       fibFields?: any[]
       autoGenerateValue?: { enabled?: boolean, prefix: string, suffix: string }
       iconType?: 'STAR' | 'HEART'
@@ -86,6 +92,37 @@ export interface Question {
       showStatusIndicator?: boolean
       prefixLabel?: string
       suffixLabel?: string
+      // Date specific
+      dateDefaultValueType?: 'CUSTOM' | 'TODAY' | 'PARENT_FIELD'
+      parentDateFieldId?: string
+      parentDateOffset?: number
+      // Time specific
+      timeDefaultValueType?: 'CUSTOM' | 'NOW' | 'NONE'
+      // Cascading logic (Select)
+      parentFieldId?: string
+      parentFieldFilterValue?: any
+      defaultValueType?: 'STATIC' | 'DYNAMIC' | 'NONE'
+      allowCustomEntries?: boolean
+      bulkActionsEnabled?: boolean
+      // Currency Settings
+      currencyOptionsType?: 'ALL' | 'SPECIFIC'
+      specificCurrencies?: string[]
+      currencyParentFieldId?: string
+      decimalPrecision?: number
+      isInteger?: boolean
+      preventNegative?: boolean
+      showOptionsWrapper?: boolean
+      // Calculated Fields
+      formulaTokens?: { type: 'FIELD' | 'OPERATOR' | 'NUMBER' | 'FUNCTION', value: string }[]
+      isCalculationEnabled?: boolean
+      // Country Code
+      defaultCountryCode?: string
+      countryCodeSearchEnabled?: boolean
+      // Divider
+      dividerType?: 'SOLID' | 'DASHED' | 'DOTTED' | 'DOUBLE'
+      // File Upload
+      qrCodeEnabled?: boolean
+      fileInStageOnly?: boolean
     }
     validation: {
       fieldRule: 'OPTIONAL' | 'REQUIRED'
@@ -96,7 +133,23 @@ export interface Question {
       maximum?: string | number
       allowedFileTypes?: string[]
       maxFileSize?: number
+      expiryFieldId?: string
       dateRange?: 'PAST' | 'FUTURE' | 'CUSTOM'
+      // Date Limits
+      dateLimitType?: 'NONE' | 'MIN_DATE' | 'MAX_DATE' | 'RANGE'
+      minDateOffset?: number
+      maxDateOffset?: number
+      fixedStartDate?: string
+      fixedEndDate?: string
+      // Time specific
+      timeFormat?: '12' | '24'
+      requireCurrencyUnit?: boolean
+      isCalculationEnabled?: boolean
+      timeLimitType?: 'NONE' | 'MIN_TIME' | 'MAX_TIME' | 'RANGE'
+      minTimeOffset?: number
+      maxTimeOffset?: number
+      fixedStartTime?: string
+      fixedEndTime?: string
       timeRange?: string
       correctAnswer?: string
       pattern?: string
@@ -115,6 +168,7 @@ export interface Question {
     lookupSettings: {
       columnName?: string
       connectionId?: number
+      connectionType?: 'SQL' | 'API' | 'ORACLE' | 'GOOGLE_SHEETS'
       hubName?: string
       valueMappings?: { source: string; target: string }[]
       conditionMappings?: { fieldId: string; operator: string; value: any }[]
