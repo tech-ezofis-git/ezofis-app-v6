@@ -63,15 +63,23 @@ export interface Question {
       rowSelection?: 'NONE' | 'SINGLE' | 'MULTIPLE'
       importExportEnabled?: boolean
       showSummaryRow?: boolean
-      matrixColumns?: any[]
-      matrixRows?: any[]
+      matrixColumns?: string[]
+      matrixRows?: string[]
       matrixRowLabels?: string[]
       matrixColumnLabels?: string[]
+      matrixSelectionType?: 'SINGLE' | 'MULTIPLE'
       opinionLabels?: { min: string; mid: string; max: string }
       addressFields?: string[]
+      addressMode?: 'INTERNATIONAL' | 'SPECIFIC'
+      requireState?: boolean
+      requirePostalCode?: boolean
       yesNoLabels?: { yes: string; no: string }
+      yesLabel?: string
+      noLabel?: string
+      showYesNoIcons?: boolean
       signaturePenColor?: string
       fibFields?: any[]
+      fibMapping?: string
       autoGenerateValue?: { enabled?: boolean, prefix: string, suffix: string }
       iconType?: 'STAR' | 'HEART'
       iconCount?: number
@@ -92,6 +100,10 @@ export interface Question {
       showStatusIndicator?: boolean
       prefixLabel?: string
       suffixLabel?: string
+      // Full Name specific
+      requireFirst?: boolean
+      requireLast?: boolean
+      showMiddle?: boolean
       // Date specific
       dateDefaultValueType?: 'CUSTOM' | 'TODAY' | 'PARENT_FIELD'
       parentDateFieldId?: string
