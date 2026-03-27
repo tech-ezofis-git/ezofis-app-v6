@@ -217,7 +217,7 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
           )}
 
           <div className="flex items-center justify-between py-2 px-1 bg-gray-50/50 rounded-lg border border-gray-1">
-            <Text size="xs" fw={600} c="gray.11">Hide Label</Text>
+            <Text size="xs" fw={600} c="gray.7">Hide Label</Text>
             <InputSwitch
               checked={activeQuestion.settings.general.hideLabel || false}
               onChange={(checked: boolean) => updateNested('general', { hideLabel: checked })}

@@ -267,8 +267,8 @@ const LivePreview = () => {
                     </Button>
                   )}
                 <Button
-                  bg='accent-primary'
                   className='h-11 rounded-2xl px-8 font-black text-white shadow-lg shadow-accent-soft/50 transition-all hover:opacity-90 active:scale-95'
+                  color='primary'
                   size='md'
                   variant='filled'
                   rightSection={
@@ -330,9 +330,10 @@ const WelcomeScreen = ({
       {page.description}
     </p>
     <Button
-      bg='accent-primary'
       className='h-16 rounded-2xl px-12 text-xl font-black text-white shadow-xl shadow-accent-soft/60 transition-all hover:scale-[1.02] active:scale-95'
+      color='primary'
       size='xl'
+      variant='filled'
       onClick={onStart}
     >
       {page.buttonText}
