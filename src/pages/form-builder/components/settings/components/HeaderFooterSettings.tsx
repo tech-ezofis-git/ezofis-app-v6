@@ -1,4 +1,4 @@
-import { Box, Group, Stack, Switch, Text, TextInput } from '@mantine/core'
+import { Box, Group, Stack, Switch, TextInput } from '@mantine/core'
 import Icon from '@/components/base/icon/Icon'
 import { useFormStore } from '@/pages/form-builder/store/formStore'
 
@@ -98,12 +98,12 @@ const HeaderFooterSettings = () => {
               name='lucide:eye-off'
               width={32}
             />
-            <Text className='text-gray-500 text-sm font-semibold'>
+            <div className='text-gray-500 text-sm font-semibold'>
               Header & Footer are currently disabled
-            </Text>
-            <Text className='text-gray-400 mt-1 text-xs'>
+            </div>
+            <div className='text-gray-400 mt-1 text-xs'>
               Enable them using the toggle above to customize the content.
-            </Text>
+            </div>
           </Box>
         )}
       </Stack>

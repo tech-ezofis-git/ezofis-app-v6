@@ -6,6 +6,7 @@ import type { QuestionType } from '@/pages/form-builder/store/formStore'
 import Icon from '@/components/base/icon/Icon'
 import Input from '@/components/base/inputs/InputText'
 import cn from '@/utils/cn'
+// import { Text } from '@mantine/core'
 
 // type TabType = 'explore' | 'popular' | 'advanced' | 'templates' | 'all' | 'display' | 'date_time'
 
@@ -30,62 +31,24 @@ type TabType =
 
 const ALL_FIELDS: FieldType[] = [
   // Basic
-  {
-    category: 'popular',
-    description: 'Combined first & last name',
-    icon: 'lucide:user',
-    label: 'Full Name',
-    type: 'FULL_NAME',
-  },
-  {
-    category: 'popular',
-    description: 'Single line text input',
-    icon: 'mdi:form-textbox',
-    label: 'Short Text',
-    type: 'SHORT_TEXT',
-  },
-  {
-    category: 'popular',
-    description: 'Multi-line text area',
-    icon: 'mdi:form-textarea',
-    label: 'Long Text',
-    type: 'LONG_TEXT',
-  },
-  {
-    category: 'popular',
-    description: 'Numeric only entry',
-    icon: 'tabler:number-123',
-    label: 'Number',
-    type: 'NUMBER',
-  },
-  {
-    category: 'popular',
-    description: 'Validated email input',
-    icon: 'lucide:mail',
-    label: 'Email',
-    type: 'EMAIL',
-  },
-  {
-    category: 'popular',
-    description: 'Phone number field',
-    icon: 'lucide:phone',
-    label: 'Phone',
-    type: 'PHONE_NUMBER',
-  },
-  {
-    category: 'popular',
-    description: 'Secure text entry',
-    icon: 'lucide:lock',
-    label: 'Password',
-    type: 'PASSWORD',
-  },
-  {
-    category: 'popular',
-    description: 'Website link input',
-    icon: 'lucide:link',
-    label: 'URL',
-    type: 'URL',
-  },
+  { type: 'FULL_NAME', label: 'Full Name', icon: 'lucide:user', category: 'popular', description: 'Combined first & last name' },
+  { type: 'SHORT_TEXT', label: 'Short Text', icon: 'mdi:form-textbox', category: 'popular', description: 'Single line text input' },
+  { type: 'LONG_TEXT', label: 'Long Text', icon: 'mdi:form-textarea', category: 'popular', description: 'Multi-line text area' },
+  { type: 'NUMBER', label: 'Number', icon: 'tabler:number-123', category: 'popular', description: 'Numeric only entry' },
+  { type: 'COUNTER', label: 'Counter', icon: 'lucide:binary', category: 'popular', description: 'Increment/Decrement field' },
+  { type: 'CURRENCY_AMOUNT', label: 'Currency', icon: 'lucide:banknote', category: 'popular', description: 'Financial amount with unit' },
+  { type: 'DIVIDER', label: 'Divider', icon: 'lucide:separator-horizontal', category: 'popular', description: 'Visual section separator' },
+  { type: 'COUNTRY_CODE', label: 'Country', icon: 'lucide:globe', category: 'popular', description: 'Intl. dialing prefix' },
+  { type: 'EMAIL', label: 'Email', icon: 'lucide:mail', category: 'popular', description: 'Validated email input' },
+  { type: 'FILE_UPLOAD', label: 'File Upload', icon: 'lucide:upload-cloud', category: 'popular', description: 'Document & media capture' },
+  { type: 'PASSWORD', label: 'Password', icon: 'lucide:lock', category: 'popular', description: 'Secure text entry' },
+  { type: 'TEXT_BUILDER', label: 'Text Builder', icon: 'lucide:type', category: 'popular', description: 'Rich-text & dynamic content' },
+  { type: 'TABLE', label: 'Table', icon: 'lucide:layout-grid', category: 'popular', description: 'Spreadsheet-style data entry' },
+  { type: 'PHONE_NUMBER', label: 'Phone', icon: 'lucide:phone', category: 'popular', description: 'Phone number field' },
+  { type: 'RATING', label: 'Rating', icon: 'lucide:star', category: 'popular', description: 'Star or heart-based feedback' },
+  { type: 'OPINION_SCALE', label: 'Opinion Scale', icon: 'lucide:bar-chart-3', category: 'popular', description: 'Numbered 0-10 satisfaction scale' },
+  { type: 'SIGNATURE', label: 'Signature', icon: 'lucide:pen-tool', category: 'popular', description: 'Hand-drawn signature capture' },
+  { type: 'URL', label: 'URL', icon: 'lucide:link', category: 'popular', description: 'Website link input' },
 
   // Selections
   {
@@ -164,62 +127,15 @@ const ALL_FIELDS: FieldType[] = [
   },
 
   // Advanced
-  {
-    category: 'advanced',
-    description: 'Structured data table',
-    icon: 'lucide:table',
-    label: 'Table Grid',
-    type: 'TABLE',
-  },
-  {
-    category: 'advanced',
-    description: 'Upload documents/images',
-    icon: 'lucide:file-up',
-    label: 'File Upload',
-    type: 'FILE_UPLOAD',
-  },
-  {
-    category: 'advanced',
-    description: 'Photos only upload',
-    icon: 'lucide:image',
-    label: 'Image Upload',
-    type: 'IMAGE_UPLOAD',
-  },
-  {
-    category: 'advanced',
-    description: 'Star or scale rating',
-    icon: 'lucide:star',
-    label: 'Rating',
-    type: 'RATING',
-  },
-  {
-    category: 'advanced',
-    description: '1-10 numeric scale',
-    icon: 'lucide:hash',
-    label: 'Score',
-    type: 'SCORE',
-  },
-  {
-    category: 'advanced',
-    description: 'Digital signature pad',
-    icon: 'lucide:pen-tool',
-    label: 'Signature',
-    type: 'SIGNATURE',
-  },
-  {
-    category: 'advanced',
-    description: '1-10 rating scale',
-    icon: 'lucide:bar-chart',
-    label: 'Opinion Scale',
-    type: 'OPINION_SCALE',
-  },
-  {
-    category: 'advanced',
-    description: 'Location selector',
-    icon: 'lucide:globe',
-    label: 'Country',
-    type: 'COUNTRY_CODE',
-  },
+  { type: 'TABLE', label: 'Table Grid', icon: 'lucide:table', category: 'advanced', description: 'Structured data table' },
+  { type: 'FILE_UPLOAD', label: 'File Upload', icon: 'lucide:file-up', category: 'advanced', description: 'Upload documents/images' },
+  { type: 'SCORE', label: 'Score', icon: 'lucide:trophy', category: 'advanced', description: 'Total score calculation' },
+  { type: 'RATING', label: 'Rating', icon: 'lucide:star', category: 'advanced', description: 'Customer feedback stars' },
+  { type: 'CALCULATED', label: 'Calculated', icon: 'lucide:calculator', category: 'advanced', description: 'Dynamic formula-based result' },
+  { type: 'OPINION_SCALE', label: 'Scale', icon: 'lucide:sliders', category: 'advanced', description: 'Linear numeric scale' },
+  { type: 'SIGNATURE', label: 'Signature', icon: 'lucide:pen-tool', category: 'advanced', description: 'Digital signature pad' },
+  { type: 'OPINION_SCALE', label: 'Opinion Scale', icon: 'lucide:bar-chart', category: 'advanced', description: '1-10 rating scale' },
+  { type: 'COUNTRY_CODE', label: 'Country', icon: 'lucide:globe', category: 'advanced', description: 'Location selector' },
 
   // Display
   {
@@ -424,16 +340,10 @@ const AddFieldInline = ({ anchorRect, onClose, onSelect }: Props) => {
                 if (catFields.length === 0) return null
 
                 return (
-                  <div className='space-y-3' id={`cat-${cat.id}`} key={cat.id}>
-                    <div className='sticky top-[0px] z-10 flex items-center gap-2 bg-white py-1'>
-                      <Text
-                        className='tracking-[0.1em] text-gray-11 uppercase'
-                        fw={800}
-                        size='10px'
-                      >
-                        {cat.label}
-                      </Text>
-                      <div className='h-px flex-1 bg-gray-1' />
+                  <div key={cat.id} id={`cat-${cat.id}`} className="space-y-3">
+                    <div className="flex items-center gap-2 sticky top-[0px] bg-white z-10 py-1">
+                      <div className="text-[10px] font-extrabold text-gray-11 uppercase tracking-[0.1em]">{cat.label}</div>
+                      <div className="flex-1 h-px bg-gray-1" />
                     </div>
                     <div className='grid grid-cols-2 gap-2'>
                       {catFields.map((f) => renderItem(f))}

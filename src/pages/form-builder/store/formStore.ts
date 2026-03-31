@@ -105,14 +105,14 @@ export type FormType = 'WORKFLOW' | 'FEEDBACK' | 'MASTER'
 export interface LogicRule {
   action: 'SHOW' | 'HIDE'
   condition:
-    | 'IS'
-    | 'IS_NOT'
-    | 'CONTAINS'
-    | 'NOT_CONTAINS'
-    | 'EMPTY'
-    | 'NOT_EMPTY'
-    | 'GT'
-    | 'LT'
+  | 'IS'
+  | 'IS_NOT'
+  | 'CONTAINS'
+  | 'NOT_CONTAINS'
+  | 'EMPTY'
+  | 'NOT_EMPTY'
+  | 'GT'
+  | 'LT'
   fieldId: string // The field being checked
   id: string
   value: any
@@ -123,7 +123,7 @@ export interface Panel {
   id: string
   settings: {
     description: string
-    title: string
+    isLocked?: boolean
   }
 }
 export type PublishStatus = 'DRAFT' | 'PUBLISHED'
@@ -167,6 +167,41 @@ export interface Question {
     }
     pipingEnabled?: boolean
     specific: {
+      defaultValue?: string
+      customDefaultValue?: any
+      optionsType?: string
+      optionsSource?: string
+      dividerStyle?: 'SOLID' | 'DASHED' | 'DOTTED'
+      customOptions?: string
+      separateOptionsUsing?: string
+      allowToAddNewOptions?: boolean
+      optionsPerLine?: number
+      tableColumns?: Array<{ id: string; name: string; type: QuestionType; size: 'SMALL' | 'MEDIUM' | 'LARGE' }>
+      rowsType?: 'ON_DEMAND' | 'FIXED'
+      fixedRowCount?: number
+      rowSelection?: 'NONE' | 'SINGLE' | 'MULTIPLE'
+      importExportEnabled?: boolean
+      showSummaryRow?: boolean
+      matrixColumns?: string[]
+      matrixRows?: string[]
+      matrixRowLabels?: string[]
+      matrixColumnLabels?: string[]
+      matrixSelectionType?: 'SINGLE' | 'MULTIPLE'
+      opinionLabels?: { min: string; mid: string; max: string }
+      addressFields?: string[]
+      addressMode?: 'INTERNATIONAL' | 'SPECIFIC'
+      requireState?: boolean
+      requirePostalCode?: boolean
+      yesNoLabels?: { yes: string; no: string }
+      yesLabel?: string
+      noLabel?: string
+      showYesNoIcons?: boolean
+      signaturePenColor?: string
+      fibFields?: any[]
+      fibMapping?: string
+      autoGenerateValue?: { enabled?: boolean, prefix: string, suffix: string }
+      iconType?: 'STAR' | 'HEART'
+      iconCount?: number
       allowHalfRating?: boolean
       allowMultipleFiles?: boolean
       allowMultipleSignatures?: boolean
@@ -182,33 +217,106 @@ export interface Question {
       iconCount?: number
       iconType?: 'STAR' | 'HEART'
       lookupMaster?: string
-      matrixColumnLabels?: string[]
-      matrixColumns?: any[]
-      matrixRowLabels?: string[]
-      matrixRows?: any[]
-      maxLevel?: number
-      numRows?: number
-      optionsPerLine?: number
-      optionsSource?: string
-      optionsType?: string
-      separateOptionsUsing?: string
-      tableColumns?: any[]
-      tableRowsType?: string
+      // Short Text specific
+      prefixIcon?: string
+      suffixIcon?: string
+      inputMask?: string
+      dense?: boolean
+      variant?: 'default' | 'filled' | 'unstyled'
+      prefillFromUrl?: boolean
+      uniqueCheck?: boolean
+      showStatusIndicator?: boolean
+      prefixLabel?: string
+      suffixLabel?: string
+      // Full Name specific
+      requireFirst?: boolean
+      requireLast?: boolean
+      showMiddle?: boolean
+      // Date specific
+      dateDefaultValueType?: 'CUSTOM' | 'TODAY' | 'PARENT_FIELD'
+      parentDateFieldId?: string
+      parentDateOffset?: number
+      // Time specific
+      timeDefaultValueType?: 'CUSTOM' | 'NOW' | 'NONE'
+      // Cascading logic (Select)
+      parentFieldId?: string
+      parentFieldFilterValue?: any
+      defaultValueType?: 'STATIC' | 'DYNAMIC' | 'NONE'
+      allowCustomEntries?: boolean
+      bulkActionsEnabled?: boolean
+      // Currency Settings
+      currencyOptionsType?: 'ALL' | 'SPECIFIC'
+      specificCurrencies?: string[]
+      currencyParentFieldId?: string
+      decimalPrecision?: number
+      isInteger?: boolean
+      preventNegative?: boolean
+      showOptionsWrapper?: boolean
+      // Calculated Fields
+      formulaTokens?: { type: 'FIELD' | 'OPERATOR' | 'NUMBER' | 'FUNCTION', value: string }[]
+      isCalculationEnabled?: boolean
+      // Country Code
+      defaultCountryCode?: string
+      countryCodeSearchEnabled?: boolean
+      // Divider
+      dividerType?: 'SOLID' | 'DASHED' | 'DOTTED' | 'DOUBLE'
+      // File Upload
+      qrCodeEnabled?: boolean
+      fileInStageOnly?: boolean
     }
     validation: {
-      allowedFileTypes?: string[]
-      contentRule?: string
-      correctAnswer?: string
-      dateRange?: 'PAST' | 'FUTURE' | 'CUSTOM'
       fieldRule: 'OPTIONAL' | 'REQUIRED'
-      maxFileSize?: number
-      maximum?: string | number
+      contentRule?: string
+      decimalDigits?: number
+      rangeType?: 'MIN_FIXED_MAX_FLEX' | 'MIN_FLEX_MAX_FIXED' | 'CUSTOM'
       minimum?: string | number
+      maximum?: string | number
+      allowedFileTypes?: string[]
+      maxFileSize?: number
+      expiryFieldId?: string
+      dateRange?: 'PAST' | 'FUTURE' | 'CUSTOM'
+      // Date Limits
+      dateLimitType?: 'NONE' | 'MIN_DATE' | 'MAX_DATE' | 'RANGE'
+      minDateOffset?: number
+      maxDateOffset?: number
+      fixedStartDate?: string
+      fixedEndDate?: string
+      // Time specific
+      timeFormat?: '12' | '24'
+      requireCurrencyUnit?: boolean
+      isCalculationEnabled?: boolean
+      timeLimitType?: 'NONE' | 'MIN_TIME' | 'MAX_TIME' | 'RANGE'
+      minTimeOffset?: number
+      maxTimeOffset?: number
+      fixedStartTime?: string
+      fixedEndTime?: string
       timeRange?: string
+      correctAnswer?: string
+      pattern?: string
+      errorMessage?: string
     }
+    aiSettings: {
+      validateTypeKeyword?: string
+      formControlValidate?: { masterFormId: number, masterFormColumn: any[], conditionFields?: string[] }
+      fileValidation?: {
+        enableExtraction?: boolean
+        extractionRules?: string
+        enableClassification?: boolean
+        classificationRules?: string
+      }
+    }
+    lookupSettings: {
+      columnName?: string
+      connectionId?: number
+      connectionType?: 'SQL' | 'API' | 'ORACLE' | 'GOOGLE_SHEETS'
+      hubName?: string
+      valueMappings?: { source: string; target: string }[]
+      conditionMappings?: { fieldId: string; operator: string; value: any }[]
+    }
+    logic?: LogicRule[]
+    pipingEnabled?: boolean
   }
 }
-
 export type QuestionType =
   | 'SHORT_TEXT'
   | 'LONG_TEXT'
@@ -256,10 +364,84 @@ export type QuestionWidth = 'col-3' | 'col-4' | 'col-6' | 'col-12'
 export interface WelcomePage {
   buttonText: string
   description: string
-  enabled: boolean
-  title: string
-  imageUrl?: string
-  redirectUrl?: string // For custom completion redirect
+  footerText: string
+  formType: FormType
+  headerText: string
+  hubLinkIds: any[]
+  isBuilderMode: boolean
+  isPreviewOpen: boolean
+  isLeftSidebarCollapsed: boolean
+  isPublishOpen: boolean
+  isSidebarOpen: boolean
+  lastAddedPanelId: string | null
+  layout: FormLayout
+  name: string
+  panels: Panel[]
+  previewMode: 'typeform' | 'grid' | 'full'
+  publishStatus: PublishStatus
+  secondaryPanels: Panel[]
+  selectionType: 'general' | 'question' | 'welcome' | 'thank_you'
+  showHeaderFooter: boolean
+  welcomePage: WelcomePage
+  thankYouPage: WelcomePage
+  showWelcomePage: boolean
+  showThankYouPage: boolean
+  sidebarView: 'explorer' | 'fields'
+  addFieldPosition: { panelId: string, index: number } | null
+  uid: string
+
+  // Phase 4: Management
+  responseLimit?: number
+  scheduleStart?: string
+  scheduleEnd?: string
+  closedMessage?: string
+  conversationalMode: boolean
+
+  // Actions
+  setCopiedQuestion: (question: Question | null) => void
+  pasteQuestion: (panelId: string, index: number) => void
+  setName: (name: string) => void
+  setDescription: (description: string) => void
+  setPanels: (panels: Panel[]) => void
+  setActiveQuestionId: (id: string | null) => void
+  setIsBuilderMode: (isBuilder: boolean) => void
+  setFormType: (type: FormType) => void
+  setLayout: (layout: FormLayout) => void
+  setCoordinator: (coordinator: string) => void
+  setPublishStatus: (status: PublishStatus) => void
+  setSidebarOpen: (open: boolean) => void
+  setLeftSidebarCollapsed: (collapsed: boolean) => void
+  setPublishOpen: (open: boolean) => void
+  setPreviewMode: (mode: 'typeform' | 'grid' | 'full') => void
+  setIsPreviewOpen: (open: boolean) => void
+  setSelectionType: (type: 'general' | 'question' | 'welcome' | 'thank_you') => void
+  setWelcomePage: (updates: Partial<WelcomePage>) => void
+  setThankYouPage: (updates: Partial<WelcomePage>) => void
+  setShowWelcomePage: (show: boolean) => void
+  setShowThankYouPage: (show: boolean) => void
+  setResponseLimit: (limit: number | undefined) => void
+  setSchedule: (start?: string, end?: string) => void
+  setClosedMessage: (message: string) => void
+  setConversationalMode: (enabled: boolean) => void
+  setHeaderFooter: (updates: { show?: boolean, header?: string, footer?: string }) => void
+  setSidebarView: (view: 'explorer' | 'fields') => void
+  setAddFieldPosition: (pos: { panelId: string, index: number } | null) => void
+  clearSelection: () => void
+  addPanel: (index?: number) => void
+  addQuestion: (panelId: string, question: Question, index?: number) => void
+  appendAIResponse: (data: any) => void
+  clearLastAddedPanelId: () => void
+  deletePanel: (id: string) => void
+  deleteQuestion: (id: string) => void
+  duplicateQuestion: (id: string) => void
+  loadForm: (data: any) => void
+  movePanel: (id: string, direction: 'up' | 'down') => void
+  moveQuestion: (id: string, toPanelId: string, index: number) => void
+  duplicatePanel: (id: string) => void
+  resetForm: () => void
+  saveForm: (targetStatus?: PublishStatus) => Promise<boolean>
+  updatePanel: (id: string, updates: Partial<Panel['settings']>) => void
+  updateQuestion: (id: string, updates: any) => void
 }
 
 const initialState = {
@@ -276,17 +458,12 @@ const initialState = {
   isBuilderMode: true,
   isPreviewOpen: false,
   isPublishOpen: false,
-  isSidebarOpen: true,
+  isSidebarOpen: false,
+  isLeftSidebarCollapsed: false,
   lastAddedPanelId: null,
   layout: 'typeform' as const,
   name: 'Untitled Form',
-  panels: [
-    {
-      fields: [],
-      id: 'panel-1',
-      settings: { description: '', title: 'Section 1' },
-    },
-  ],
+  panels: [],
   previewMode: 'typeform' as const,
   publishStatus: 'DRAFT' as const,
   responseLimit: undefined,
@@ -304,19 +481,84 @@ const initialState = {
     title: 'Thank you!',
   },
   uid: '',
-  welcomePage: {
-    buttonText: 'Start',
-    description: 'Please take a moment to fill out this information.',
-    enabled: false,
-    title: 'Welcome to our form',
-  },
+  responseLimit: undefined,
+  scheduleStart: '',
+  scheduleEnd: '',
+  closedMessage: 'This form is currently closed.',
+  conversationalMode: false,
+  sidebarView: 'explorer' as const,
+  addFieldPosition: null,
 }
+
+
 
 export const useFormStore = create<FormStore>()(
   persist(
     (set, get) => ({
       ...initialState,
       uid: generateId(),
+
+      setCopiedQuestion: (copiedQuestion) => set({ copiedQuestion }),
+      pasteQuestion: (panelId, index) =>
+        set((state) => {
+          if (!state.copiedQuestion) return state
+
+          const newQuestion = {
+            ...state.copiedQuestion,
+            id: generateId(),
+            label: `${state.copiedQuestion.label} (Copy)`,
+          }
+
+          const newPanels = state.panels.map((p) => {
+            if (p.id !== panelId) return p
+            const newFields = [...p.fields]
+            newFields.splice(index, 0, newQuestion)
+            return { ...p, fields: newFields }
+          })
+
+          return { activeQuestionId: newQuestion.id, panels: newPanels }
+        }),
+
+      setName: (name) => set({ name }),
+      setDescription: (description) => set({ description }),
+      setPanels: (panels) => set({ panels }),
+      setActiveQuestionId: (activeQuestionId) => set({ activeQuestionId }),
+      setIsBuilderMode: (isBuilderMode) => set({ isBuilderMode }),
+      setFormType: (formType) => set({ formType }),
+      setLayout: (layout) => set({ layout }),
+      setCoordinator: (coordinator) => set({ coordinator }),
+      setPublishStatus: (publishStatus) => set({ publishStatus }),
+      setSidebarOpen: (isSidebarOpen) => set({ isSidebarOpen }),
+      setLeftSidebarCollapsed: (isLeftSidebarCollapsed) => set({ isLeftSidebarCollapsed }),
+      setPublishOpen: (isPublishOpen) => set({ isPublishOpen }),
+      setPreviewMode: (previewMode) => set({ previewMode }),
+      setIsPreviewOpen: (isPreviewOpen) => set({ isPreviewOpen }),
+      setSelectionType: (selectionType) => set({ selectionType }),
+      setWelcomePage: (updates) =>
+        set((state) => ({
+          welcomePage: { ...state.welcomePage, ...updates },
+        })),
+      setThankYouPage: (updates) =>
+        set((state) => ({
+          thankYouPage: { ...state.thankYouPage, ...updates },
+        })),
+      setShowWelcomePage: (showWelcomePage) => set({ showWelcomePage }),
+      setShowThankYouPage: (showThankYouPage) => set({ showThankYouPage }),
+      setResponseLimit: (responseLimit) => set({ responseLimit }),
+      setSchedule: (scheduleStart, scheduleEnd) =>
+        set({ scheduleEnd, scheduleStart }),
+      setClosedMessage: (closedMessage) => set({ closedMessage }),
+      setConversationalMode: (conversationalMode) => set({ conversationalMode }),
+      setHeaderFooter: (updates) =>
+        set((state) => ({
+          footerText: updates.footer ?? state.footerText,
+          headerText: updates.header ?? state.headerText,
+          showHeaderFooter: updates.show ?? state.showHeaderFooter,
+        })),
+      setSidebarView: (sidebarView) => set({ sidebarView }),
+      setAddFieldPosition: (addFieldPosition) => set({ addFieldPosition }),
+      clearSelection: () =>
+        set({ activeQuestionId: null, selectionType: 'general' }),
 
       addPanel: (index) =>
         set((state) => {
@@ -498,25 +740,26 @@ export const useFormStore = create<FormStore>()(
             }),
           }
         }),
-      pasteQuestion: (panelId, index) =>
+
+      duplicatePanel: (id: string) =>
         set((state) => {
-          if (!state.copiedQuestion) return state
-
-          const newQuestion = {
-            ...state.copiedQuestion,
+          const index = state.panels.findIndex((p) => p.id === id)
+          if (index === -1) return state
+          const original = state.panels[index]
+          const clone: Panel = {
+            ...JSON.parse(JSON.stringify(original)),
             id: generateId(),
-            label: `${state.copiedQuestion.label} (Copy)`,
+            fields: original.fields.map(f => ({
+              ...f,
+              id: generateId(),
+              label: `${f.label} (Copy)`
+            }))
           }
-
-          const newPanels = state.panels.map((p) => {
-            if (p.id !== panelId) return p
-            const newFields = [...p.fields]
-            newFields.splice(index, 0, newQuestion)
-            return { ...p, fields: newFields }
-          })
-
-          return { activeQuestionId: newQuestion.id, panels: newPanels }
+          const newPanels = [...state.panels]
+          newPanels.splice(index + 1, 0, clone)
+          return { panels: newPanels }
         }),
+
       resetForm: () => set({ ...initialState, uid: generateId() }),
       saveForm: async (targetStatus) => {
         const state = get()

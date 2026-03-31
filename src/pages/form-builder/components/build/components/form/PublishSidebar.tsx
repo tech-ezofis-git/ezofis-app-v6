@@ -3,7 +3,6 @@ import {
   Button,
   Group,
   Stack,
-  Text,
   Textarea,
   TextInput,
   UnstyledButton,
@@ -74,13 +73,9 @@ const PublishSidebar = () => {
             <div className='flex size-8 items-center justify-center rounded-lg bg-accent-soft/20 text-accent-primary'>
               <Icon height={16} name='tabler:rocket' width={16} />
             </div>
-            <Text
-              className='tracking-tight text-gray-13 uppercase'
-              fw={800}
-              size='sm'
-            >
+            <div className='text-sm font-extrabold tracking-tight text-gray-13 uppercase'>
               Deploy Settings
-            </Text>
+            </div>
           </div>
           <ActionIcon
             className='rounded-lg transition-colors hover:bg-gray-2'
@@ -92,24 +87,17 @@ const PublishSidebar = () => {
             <Icon height={16} name='tabler:x' width={16} />
           </ActionIcon>
         </Group>
-        <Text
-          className='mt-1 px-0.5 leading-tight font-medium text-gray-10'
-          size='xs'
-        >
+        <div className='mt-1 px-0.5 text-xs leading-tight font-medium text-gray-10'>
           Configure deployment properties and go live.
-        </Text>
+        </div>
       </div>
 
       <div className='custom-scrollbar flex-1 space-y-6 overflow-y-auto p-5'>
         {/* Basic Info */}
         <Stack gap='xs'>
-          <Text
-            className='tracking-widest text-gray-5 uppercase'
-            fw={800}
-            size='10px'
-          >
+          <div className='text-[10px] font-extrabold tracking-widest text-gray-5 uppercase'>
             Metadata
-          </Text>
+          </div>
           <TextInput
             placeholder='e.g. Q1 Customer Survey'
             size='sm'
@@ -118,9 +106,9 @@ const PublishSidebar = () => {
               input: 'bg-gray-50 h-10 border-gray-2 focus:bg-white',
             }}
             label={
-              <Text className='mb-1 text-gray-12' fw={700} size='xs'>
+              <div className='mb-1 text-xs font-bold text-gray-12'>
                 Form Name
-              </Text>
+              </div>
             }
             onChange={(e) => setName(e.target.value)}
           />
@@ -132,9 +120,9 @@ const PublishSidebar = () => {
             value={description}
             autosize
             label={
-              <Text className='mb-1 text-gray-12' fw={700} size='xs'>
+              <div className='mb-1 text-xs font-bold text-gray-12'>
                 Description
-              </Text>
+              </div>
             }
             onChange={(e) => setDescription(e.target.value)}
           />
@@ -142,13 +130,9 @@ const PublishSidebar = () => {
 
         {/* Layout Selector */}
         <div>
-          <Text
-            className='mb-3 tracking-widest text-gray-5 uppercase'
-            fw={800}
-            size='10px'
-          >
+          <div className='mb-3 text-[10px] font-extrabold tracking-widest text-gray-5 uppercase'>
             Display Layout
-          </Text>
+          </div>
           <div className='flex flex-col gap-2'>
             {layouts.map((l) => {
               const isActive = layout === l.id
@@ -174,16 +158,12 @@ const PublishSidebar = () => {
                     <Icon height={16} name={l.icon} width={16} />
                   </div>
                   <div className='min-w-0 flex-1'>
-                    <Text
-                      className={isActive ? 'text-gray-13' : 'text-gray-9'}
-                      fw={800}
-                      size='xs'
-                    >
+                    <div className={cn('text-xs font-extrabold', isActive ? 'text-gray-13' : 'text-gray-9')}>
                       {l.name}
-                    </Text>
-                    <Text className='truncate text-gray-5' size='10px'>
+                    </div>
+                    <div className='truncate text-[10px] text-gray-5'>
                       {l.description}
-                    </Text>
+                    </div>
                   </div>
                   {isActive && (
                     <Icon
@@ -201,13 +181,9 @@ const PublishSidebar = () => {
 
         {/* Status List */}
         <div className='space-y-2 border-t border-gray-2 pt-4'>
-          <Text
-            className='mb-2 tracking-widest text-gray-5 uppercase'
-            fw={800}
-            size='10px'
-          >
+          <div className='mb-2 text-[10px] font-extrabold tracking-widest text-gray-5 uppercase'>
             Checklist
-          </Text>
+          </div>
           <div className='flex items-center gap-2 text-[11px] font-medium text-gray-7'>
             <Icon
               className='text-green-500'
@@ -261,9 +237,9 @@ const PublishSidebar = () => {
         </Group>
         <div className='flex items-center justify-center gap-2 opacity-50'>
           <div className='bg-gray-400 size-1 rounded-full' />
-          <Text className='font-black text-gray-5 uppercase' size='9px'>
+          <div className='text-[9px] font-black text-gray-5 uppercase'>
             v1.0.4 Staging
-          </Text>
+          </div>
           <div className='bg-gray-400 size-1 rounded-full' />
         </div>
       </div>

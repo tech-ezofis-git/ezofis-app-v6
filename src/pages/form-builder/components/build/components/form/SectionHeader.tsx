@@ -1,145 +1,79 @@
-import { ActionIcon, Divider, Text, Tooltip } from '@mantine/core'
+import { ActionIcon, Tooltip } from '@mantine/core'
 import Icon from '@/components/base/icon/Icon'
 import { type Panel, useFormStore } from '@/pages/form-builder/store/formStore'
 
 interface Props {
+  panel: Panel
   fieldCount: number
   isCollapsed: boolean
-  panel: Panel
-  panelIndex: number
+  isLocked?: boolean
   onToggleCollapse: () => void
 }
 
-const SectionHeader = ({
-  fieldCount,
-  isCollapsed,
-  panel,
-  panelIndex,
-  onToggleCollapse,
-}: Props) => {
-  const { deletePanel, movePanel, panels, updatePanel } = useFormStore()
+const SectionHeader = ({ panel, fieldCount, isCollapsed, isLocked, onToggleCollapse }: Props) => {
+  const { updatePanel } = useFormStore()
 
   return (
-    <div className='group/header flex flex-col gap-2 rounded-t-2xl border-b border-gray-1 bg-gray-0 px-6 py-4 transition-all'>
-      {/* Top Row: Icon, Title, Actions */}
-      <div className='flex items-center justify-between gap-4'>
-        <div className='flex min-w-0 flex-1 items-center gap-3'>
-          <div className='flex size-9 items-center justify-center rounded-xl border border-accent-soft/30 bg-accent-soft/20 text-accent-primary shadow-sm'>
-            <Icon height={20} name='lucide:layout' width={20} />
-          </div>
+    <div className="px-8 pt-4 pb-3 flex flex-col gap-1 rounded-t-2xl group/header transition-all bg-white relative border-b border-gray-3/30">
 
-          <div className='flex min-w-0 flex-1 flex-col'>
-            <div className='flex items-center gap-3'>
-              <input
-                className='truncate bg-transparent py-0 text-[22px] font-semibold tracking-tight text-gray-13 placeholder:text-gray-3 focus:outline-none'
-                placeholder='Section Title'
-                type='text'
-                value={panel.settings.title}
-                onChange={(e) =>
-                  updatePanel(panel.id, { title: e.target.value })
-                }
-              />
-              <div className='shrink-0 rounded-full border border-gray-3 bg-gray-2 px-2 py-0.5'>
-                <Text
-                  className='whitespace-nowrap text-gray-9'
-                  fw={700}
-                  size='xs'
-                >
-                  {fieldCount} {fieldCount === 1 ? 'field' : 'fields'}
-                </Text>
-              </div>
-            </div>
-          </div>
-        </div>
+      {/* Visual Indicator Line (Optional based on design, matching purple branding) */}
+      <div className="absolute top-0 left-8 right-8 h-1 rounded-b-md bg-accent-soft/20" />
 
-        <div className='flex items-center gap-1 opacity-0 transition-opacity duration-200 group-hover/header:opacity-100'>
-          {/* Move Controls */}
-          <div className='flex items-center rounded-lg border border-gray-3 bg-gray-1 p-0.5'>
-            {panelIndex > 0 && (
-              <Tooltip label='Move Up' position='top' withArrow>
-                <ActionIcon
-                  className='rounded-md transition-all hover:bg-white active:scale-95'
-                  color='gray'
-                  size='sm'
-                  variant='subtle'
-                  onClick={() => movePanel(panel.id, 'up')}
-                >
-                  <Icon height={14} name='lucide:arrow-up' width={14} />
-                </ActionIcon>
-              </Tooltip>
-            )}
-            {panelIndex < panels.length - 1 && (
-              <Tooltip label='Move Down' position='top' withArrow>
-                <ActionIcon
-                  className='rounded-md transition-all hover:bg-white active:scale-95'
-                  color='gray'
-                  size='sm'
-                  variant='subtle'
-                  onClick={() => movePanel(panel.id, 'down')}
-                >
-                  <Icon height={14} name='lucide:arrow-down' width={14} />
-                </ActionIcon>
-              </Tooltip>
-            )}
-          </div>
-
-          <Divider
-            className='h-4 border-gray-3'
-            mx={4}
-            orientation='vertical'
-          />
-
-          {/* Section Actions */}
-          <div className='flex items-center gap-1'>
-            <Tooltip
-              label={isCollapsed ? 'Expand' : 'Collapse'}
-              position='top'
-              withArrow
-            >
+      {/* Compact Header: Title + Actions */}
+      <div className="flex items-center justify-between w-full h-10 group/desc -ml-2">
+        <div className="flex items-center flex-1 min-w-0">
+          {/* Hover Actions: Drag handles and collapse */}
+          <div className="flex items-center w-8 shrink-0 justify-center">
+            <Tooltip label={isCollapsed ? "Expand" : "Collapse"} position="top" withArrow>
               <ActionIcon
-                className='rounded-lg transition-all hover:bg-gray-2 active:scale-95'
-                color='gray'
-                size='md'
-                variant='subtle'
+                variant="subtle"
+                color="gray"
+                size="sm"
                 onClick={onToggleCollapse}
+                className="hover:bg-gray-1 rounded-md transition-all active:scale-95 text-gray-10 hover:text-gray-13"
               >
-                <Icon
-                  height={16}
-                  width={16}
-                  name={
-                    isCollapsed ? 'lucide:chevron-down' : 'lucide:chevron-up'
-                  }
-                />
-              </ActionIcon>
-            </Tooltip>
-
-            <Tooltip label='Delete Section' position='top' withArrow>
-              <ActionIcon
-                className='hover:bg-red-50 rounded-lg transition-all active:scale-95'
-                color='red'
-                size='md'
-                variant='subtle'
-                onClick={() => deletePanel(panel.id)}
-              >
-                <Icon height={16} name='lucide:trash' width={16} />
+                <Icon name={isCollapsed ? "lucide:chevron-down" : "lucide:chevron-up"} width={16} height={16} />
               </ActionIcon>
             </Tooltip>
           </div>
+
+          <input
+            type="text"
+            value={panel.settings.title}
+            onChange={(e) => updatePanel(panel.id, { title: e.target.value })}
+            placeholder="Section Title"
+            disabled={isLocked}
+            className="flex-1 bg-transparent text-lg font-semibold text-gray-13 placeholder:text-gray-4 focus:outline-none tracking-tight py-1 px-1 rounded-md hover:bg-gray-50 focus:bg-white transition-colors disabled:cursor-not-allowed disabled:hover:bg-transparent"
+          />
+        </div>
+
+        {/* Right Actions - Moved outside to floating bar */}
+        <div className="flex items-center gap-1 opacity-0 group-hover/header:opacity-100 transition-opacity duration-200 shrink-0">
+          {/* Only keeping things that might still be useful inside if any, but the user asked for them outside. Canva keeps nothing in header except title. */}
         </div>
       </div>
 
-      {/* Bottom Row: Description */}
-      <div className='flex-1'>
+      {/* Description Input (with mocked variable detection for visual) */}
+      <div className="relative flex items-center w-full group/desc mt-1">
         <input
-          className='w-full bg-transparent text-13/5 text-gray-11 placeholder:text-gray-3 focus:outline-none'
-          placeholder='Add a description for this section...'
-          type='text'
+          type="text"
           value={panel.settings.description}
-          onChange={(e) =>
-            updatePanel(panel.id, { description: e.target.value })
-          }
+          onChange={(e) => updatePanel(panel.id, { description: e.target.value })}
+          placeholder="Please provide details..."
+          disabled={isLocked}
+          className="w-full bg-transparent text-13 font-medium text-gray-12 placeholder:font-normal placeholder:text-gray-8 focus:outline-none px-1 disabled:cursor-not-allowed"
         />
+
+        {fieldCount > 0 && (
+          <div className="absolute right-0 top-1/2 -translate-y-1/2 px-2 py-0.5 rounded-md bg-gray-50 border border-gray-2 shrink-0 opacity-0 group-hover/desc:opacity-100 transition-opacity pointer-events-none">
+            <span className="text-[10px] font-bold text-gray-4 whitespace-nowrap uppercase tracking-widest leading-none">
+              {fieldCount} {fieldCount === 1 ? 'field' : 'fields'}
+            </span>
+          </div>
+        )}
       </div>
+
+      <div className="h-px w-full bg-gray-1 mt-4" />
     </div>
   )
 }
