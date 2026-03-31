@@ -1,41 +1,58 @@
-import { SegmentedControl, Switch, Text, TextInput, Select, Textarea, Button, Divider, ActionIcon, Group, Paper, Stack, Tooltip, Box, Badge, UnstyledButton } from '@mantine/core'
-import { useFormStore, generateId } from '@/pages/form-builder/store/formStore'
-import type { Question, FormType } from '@/pages/form-builder/store/formStore'
+import {
+  ActionIcon,
+  Badge,
+  Box,
+  Button,
+  Divider,
+  Group,
+  Paper,
+  SegmentedControl,
+  Select,
+  Stack,
+  Switch,
+  Text,
+  Textarea,
+  TextInput,
+  Tooltip,
+  UnstyledButton,
+} from '@mantine/core'
+import { useEffect, useRef, useState } from 'react'
+import type { FormType, Question } from '@/pages/form-builder/store/formStore'
 import Icon from '@/components/base/icon/Icon'
-import { useEffect, useState, useRef } from 'react'
+import { generateId, useFormStore } from '@/pages/form-builder/store/formStore'
 import cn from '@/utils/cn'
 
 const FIELD_ICONS: Record<string, string> = {
-  SHORT_TEXT: 'mdi:form-textbox',
-  LONG_TEXT: 'mdi:form-textarea',
-  NUMBER: 'tabler:number-123',
+  ADDRESS: 'lucide:map-pin',
+  ADDRESS_INFO: 'lucide:home',
+  CALCULATED: 'lucide:calculator',
+  CONTACT_INFO: 'lucide:contact',
+  COUNTER: 'tabler:circle-dot',
+  COUNTRY_CODE: 'lucide:globe',
+  CURRENCY_AMOUNT: 'lucide:dollar-sign',
   DATE: 'lucide:calendar',
-  TIME: 'lucide:clock',
   DATE_TIME: 'lucide:calendar-clock',
-  SINGLE_SELECT: 'lucide:list-todo',
-  MULTI_SELECT: 'lucide:list-checks',
-  SINGLE_CHOICE: 'mdi:radiobox-marked',
-  MULTIPLE_CHOICE: 'lucide:square-check',
+  DIVIDER: 'lucide:minus',
+  DYNAMIC_TABLE: 'lucide:table-2',
+  EMAIL: 'lucide:mail',
+  FILE_UPLOAD: 'lucide:file-up',
+  FULL_NAME: 'lucide:user',
   HEADING: 'lucide:heading',
   LABEL: 'lucide:type',
-  TEXT_BUILDER: 'lucide:pilcrow',
-  DIVIDER: 'lucide:minus',
-  RATING: 'lucide:star',
-  FILE_UPLOAD: 'lucide:file-up',
-  TABLE: 'lucide:table',
-  DYNAMIC_TABLE: 'lucide:table-2',
+  LONG_TEXT: 'mdi:form-textarea',
   MATRIX: 'lucide:grid-3x3',
-  EMAIL: 'lucide:mail',
+  MULTI_SELECT: 'lucide:list-checks',
+  MULTIPLE_CHOICE: 'lucide:square-check',
+  NUMBER: 'tabler:number-123',
   PASSWORD: 'lucide:lock',
-  ADDRESS: 'lucide:map-pin',
-  FULL_NAME: 'lucide:user',
   PHONE_NUMBER: 'lucide:phone',
-  CURRENCY_AMOUNT: 'lucide:dollar-sign',
-  COUNTER: 'tabler:circle-dot',
-  CALCULATED: 'lucide:calculator',
-  COUNTRY_CODE: 'lucide:globe',
-  CONTACT_INFO: 'lucide:contact',
-  ADDRESS_INFO: 'lucide:home',
+  RATING: 'lucide:star',
+  SHORT_TEXT: 'mdi:form-textbox',
+  SINGLE_CHOICE: 'mdi:radiobox-marked',
+  SINGLE_SELECT: 'lucide:list-todo',
+  TABLE: 'lucide:table',
+  TEXT_BUILDER: 'lucide:pilcrow',
+  TIME: 'lucide:clock',
 }
 
 const FieldSettings = () => {
@@ -116,14 +133,17 @@ const FieldSettings = () => {
   }
 
   // Deep update helper
-  const updateNested = (path: 'general' | 'validation' | 'specific', updates: any) => {
+  const updateNested = (
+    path: 'general' | 'validation' | 'specific',
+    updates: any,
+  ) => {
     if (!activeQuestion) return
     updateQuestion(activeQuestion.id, (q: Question) => ({
       ...q,
       settings: {
         ...q.settings,
-        [path]: { ...(q.settings[path] as any), ...updates }
-      }
+        [path]: { ...(q.settings[path] as any), ...updates },
+      },
     }))
   }
 
@@ -156,19 +176,19 @@ const FieldSettings = () => {
       label: string
       value: FormType
     }[] = [
-        {
-          desc: 'For business processes & automation',
-          icon: 'tabler:git-branch',
-          label: 'Workflow',
-          value: 'WORKFLOW',
-        },
-        {
-          desc: 'For surveys & reviews',
-          icon: 'tabler:message-star',
-          label: 'Master',
-          value: 'MASTER',
-        },
-      ]
+      {
+        desc: 'For business processes & automation',
+        icon: 'tabler:git-branch',
+        label: 'Workflow',
+        value: 'WORKFLOW',
+      },
+      {
+        desc: 'For surveys & reviews',
+        icon: 'tabler:message-star',
+        label: 'Master',
+        value: 'MASTER',
+      },
+    ]
 
     return (
       <div className='animate-in slide-in-from-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-white font-inter shadow-xl transition-all duration-300'>
@@ -230,32 +250,55 @@ const FieldSettings = () => {
 
           {/* Form Type Cards */}
           <div className='space-y-3'>
-            <Text size="xs" fw={800} className="text-gray-11 uppercase tracking-wider flex items-center gap-2">
-              <Icon name="lucide:layers" width={14} height={14} /> Form Type
+            <Text
+              className='flex items-center gap-2 tracking-wider text-gray-11 uppercase'
+              fw={800}
+              size='xs'
+            >
+              <Icon height={14} name='lucide:layers' width={14} /> Form Type
             </Text>
-            <div className="grid grid-cols-2 gap-3">
+            <div className='grid grid-cols-2 gap-3'>
               {FORM_TYPES.map((t) => {
                 const active = formType === t.value
                 return (
                   <UnstyledButton
                     key={t.value}
-                    onClick={() => setFormType(t.value)}
                     className={cn(
-                      "flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all group gap-2 text-center h-[120px]",
+                      'group flex h-[120px] flex-col items-center justify-center gap-2 rounded-2xl border-2 p-4 text-center transition-all',
                       active
-                        ? "border-accent-primary bg-accent-soft/5 shadow-sm ring-2 ring-accent-soft/10"
-                        : "border-gray-5 bg-transparent hover:bg-gray-1"
+                        ? 'border-accent-primary bg-accent-soft/5 shadow-sm ring-2 ring-accent-soft/10'
+                        : 'border-gray-5 bg-transparent hover:bg-gray-1',
                     )}
+                    onClick={() => setFormType(t.value)}
                   >
-                    <div className={cn(
-                      "size-9 rounded-lg flex items-center justify-center transition-transform group-hover:scale-11",
-                      active ? "bg-accent-primary text-white shadow-md shadow-accent-soft/3" : "bg-white text-gray-8 border border-gray-4"
-                    )}>
-                      <Icon name={t.icon} width={18} height={18} />
+                    <div
+                      className={cn(
+                        'flex size-9 items-center justify-center rounded-lg transition-transform group-hover:scale-11',
+                        active
+                          ? 'bg-accent-primary text-white shadow-md shadow-accent-soft/3'
+                          : 'border border-gray-4 bg-white text-gray-8',
+                      )}
+                    >
+                      <Icon height={18} name={t.icon} width={18} />
                     </div>
-                    <div className="px-1">
-                      <Text size="xs" fw={800} className={cn("uppercase tracking-tight leading-none mb-1", active ? "text-gray-9" : "text-gray-9")}>{t.label}</Text>
-                      <Text size="9px" fw={600} className="text-gray-5 leading-tight opacity-8 italic">{t.desc}</Text>
+                    <div className='px-1'>
+                      <Text
+                        fw={800}
+                        size='xs'
+                        className={cn(
+                          'mb-1 leading-none tracking-tight uppercase',
+                          active ? 'text-gray-9' : 'text-gray-9',
+                        )}
+                      >
+                        {t.label}
+                      </Text>
+                      <Text
+                        className='leading-tight text-gray-5 italic opacity-8'
+                        fw={600}
+                        size='9px'
+                      >
+                        {t.desc}
+                      </Text>
                     </div>
                   </UnstyledButton>
                 )
@@ -307,20 +350,34 @@ const FieldSettings = () => {
                         </div>
                     </div> */}
 
-          <Box className="p-4 bg-gray-50 rounded-2xl border border-gray-2">
-            <Group gap="xs" mb={8}>
-              <Icon name="lucide:sparkles" width={14} height={14} className="text-accent-primary" />
-              <Text size="11px" fw={800} className="text-gray-11 uppercase tracking-wider">Quick Note</Text>
+          <Box className='bg-gray-50 rounded-2xl border border-gray-2 p-4'>
+            <Group gap='xs' mb={8}>
+              <Icon
+                className='text-accent-primary'
+                height={14}
+                name='lucide:sparkles'
+                width={14}
+              />
+              <Text
+                className='tracking-wider text-gray-11 uppercase'
+                fw={800}
+                size='11px'
+              >
+                Quick Note
+              </Text>
             </Group>
-            <Text size="10px" className="text-gray-6 font-medium leading-relaxed">
-              These settings apply to the entire form experience. You can also customize Welcome and Thank You pages in their respective screens.
+            <Text
+              className='leading-relaxed font-medium text-gray-6'
+              size='10px'
+            >
+              These settings apply to the entire form experience. You can also
+              customize Welcome and Thank You pages in their respective screens.
             </Text>
           </Box>
         </div>
       </div>
     )
   }
-
 
   // 3. Welcome Page Settings
   if (selectionType === 'welcome') {
@@ -382,34 +439,46 @@ const FieldSettings = () => {
   // 4. Thank You Page Settings
   if (selectionType === 'thank_you') {
     return (
-      <div className="flex h-full w-[400px] flex-col border-l border-gray-3 bg-white shadow-xl transition-all animate-in slide-in-from-right duration-300 font-inter">
-        <SettingsHeader title="Completion Screen" icon="lucide:party-popper" headerProps={headerProps} />
-        <div className="flex-1 overflow-y-auto p-4 space-y-5">
-          <Stack gap="xl">
-            <div className="flex items-center justify-between py-1 px-1">
-              <Text size="sm" fw={700} className="text-gray-11 uppercase tracking-wider">Enable Thank You Page</Text>
+      <div className='animate-in slide-in-from-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-white font-inter shadow-xl transition-all duration-300'>
+        <SettingsHeader
+          headerProps={headerProps}
+          icon='lucide:party-popper'
+          title='Completion Screen'
+        />
+        <div className='flex-1 space-y-5 overflow-y-auto p-4'>
+          <Stack gap='xl'>
+            <div className='flex items-center justify-between px-1 py-1'>
+              <Text
+                className='tracking-wider text-gray-11 uppercase'
+                fw={700}
+                size='sm'
+              >
+                Enable Thank You Page
+              </Text>
               <Switch
                 checked={thankYouPage.enabled}
-                onChange={(e) => setThankYouPage({ enabled: e.currentTarget.checked })}
-                color="violet"
+                color='violet'
+                onChange={(e) =>
+                  setThankYouPage({ enabled: e.currentTarget.checked })
+                }
               />
             </div>
-            <Divider className="border-gray-2" />
+            <Divider className='border-gray-2' />
             <TextInput
-              label="Thank You Title"
+              label='Thank You Title'
+              placeholder='Thank you!'
+              size='sm'
               value={thankYouPage.title}
               onChange={(e) => setThankYouPage({ title: e.target.value })}
-              placeholder="Thank you!"
-              size="sm"
             />
             <Textarea
-              label="Completion Message"
-              value={thankYouPage.description}
-              onChange={(e) => setThankYouPage({ description: e.target.value })}
-              placeholder="Your submission has been received..."
-              autosize
+              label='Completion Message'
               minRows={2}
-              size="sm"
+              placeholder='Your submission has been received...'
+              size='sm'
+              value={thankYouPage.description}
+              autosize
+              onChange={(e) => setThankYouPage({ description: e.target.value })}
             />
           </Stack>
         </div>
@@ -421,12 +490,12 @@ const FieldSettings = () => {
   if (!activeQuestion) return null
 
   const sizeMap: Record<string, string> = {
-    'col-12': 'full',
-    'col-6': '1/2',
-    'col-4': '1/3',
-    'full': 'col-12',
     '1/2': 'col-6',
-    '1/3': 'col-4'
+    '1/3': 'col-4',
+    'col-4': '1/3',
+    'col-6': '1/2',
+    'col-12': 'full',
+    'full': 'col-12',
   }
 
   return (
@@ -437,155 +506,278 @@ const FieldSettings = () => {
         title='Field Settings'
       />
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-5 custom-scrollbar">
-        <div className="space-y-4">
+      <div className='custom-scrollbar flex-1 space-y-5 overflow-y-auto p-4'>
+        <div className='space-y-4'>
           <TextInput
-            label={<Text size="13px" fw={500} className="text-gray-11 mb-1">Field Label</Text>}
+            placeholder='e.g. What is your name?'
+            size='sm'
             value={localLabel}
+            classNames={{
+              input: 'border-gray-2 bg-gray-1 text-xs focus:bg-white',
+            }}
+            label={
+              <Text className='mb-1 text-gray-11' fw={500} size='13px'>
+                Field Label
+              </Text>
+            }
+            onBlur={() =>
+              updateQuestion(activeQuestion.id, { label: localLabel })
+            }
             onChange={(e) => setLocalLabel(e.target.value)}
-            onBlur={() => updateQuestion(activeQuestion.id, { label: localLabel })}
-            placeholder="e.g. What is your name?"
-            size="sm"
-            classNames={{ input: 'bg-gray-1 border-gray-2 focus:bg-white text-xs' }}
           />
 
           <Textarea
-            label={<Text size="13px" fw={500} className="text-gray-11 mb-1">Description</Text>}
-            value={localDesc}
-            onChange={(e) => setLocalDesc(e.target.value)}
-            onBlur={() => updateNested('general', { description: localDesc })}
-            placeholder="Add extra instructions..."
-            autosize
             minRows={2}
-            size="sm"
-            classNames={{ input: 'bg-gray-1 border-gray-2 focus:bg-white text-xs' }}
+            placeholder='Add extra instructions...'
+            size='sm'
+            value={localDesc}
+            autosize
+            classNames={{
+              input: 'border-gray-2 bg-gray-1 text-xs focus:bg-white',
+            }}
+            label={
+              <Text className='mb-1 text-gray-11' fw={500} size='13px'>
+                Description
+              </Text>
+            }
+            onBlur={() => updateNested('general', { description: localDesc })}
+            onChange={(e) => setLocalDesc(e.target.value)}
           />
 
           <TextInput
-            label={<Text size="13px" fw={500} className="text-gray-11 mb-1">Placeholder</Text>}
+            placeholder='e.g. Type here...'
+            size='sm'
             value={localPlaceholder}
+            classNames={{
+              input: 'border-gray-2 bg-gray-1 text-xs focus:bg-white',
+            }}
+            label={
+              <Text className='mb-1 text-gray-11' fw={500} size='13px'>
+                Placeholder
+              </Text>
+            }
+            onBlur={() =>
+              updateNested('general', { placeholder: localPlaceholder })
+            }
             onChange={(e) => setLocalPlaceholder(e.target.value)}
-            onBlur={() => updateNested('general', { placeholder: localPlaceholder })}
-            placeholder="e.g. Type here..."
-            size="sm"
-            classNames={{ input: 'bg-gray-1 border-gray-2 focus:bg-white text-xs' }}
           />
         </div>
 
-        <Divider className="border-gray-2" />
+        <Divider className='border-gray-2' />
 
-        <div className="space-y-4">
+        <div className='space-y-4'>
           <div>
-            <Text size="13px" fw={500} mb="xs" className="text-gray-11">Field Width</Text>
+            <Text className='text-gray-11' fw={500} mb='xs' size='13px'>
+              Field Width
+            </Text>
             <SegmentedControl
+              size='xs'
               value={sizeMap[activeQuestion.settings.general.size] || 'full'}
-              onChange={(value) => updateNested('general', { size: sizeMap[value] })}
               fullWidth
-              size="xs"
               data={[
                 { label: 'Full', value: 'full' },
                 { label: '1/2', value: '1/2' },
                 { label: '1/3', value: '1/3' },
               ]}
+              onChange={(value) =>
+                updateNested('general', { size: sizeMap[value] })
+              }
             />
           </div>
 
-          <div className="space-y-3">
-            <div className="flex items-center justify-between py-2 border-b border-gray-1">
-              <Text size="xs" fw={500} className="text-gray-11">Required</Text>
+          <div className='space-y-3'>
+            <div className='flex items-center justify-between border-b border-gray-1 py-2'>
+              <Text className='text-gray-11' fw={500} size='xs'>
+                Required
+              </Text>
               <Switch
-                checked={activeQuestion.settings.validation.fieldRule === 'REQUIRED'}
-                onChange={(e) => updateNested('validation', { fieldRule: e.currentTarget.checked ? 'REQUIRED' : 'OPTIONAL' })}
-                size="xs" color="violet" />
+                color='violet'
+                size='xs'
+                checked={
+                  activeQuestion.settings.validation.fieldRule === 'REQUIRED'
+                }
+                onChange={(e) =>
+                  updateNested('validation', {
+                    fieldRule: e.currentTarget.checked
+                      ? 'REQUIRED'
+                      : 'OPTIONAL',
+                  })
+                }
+              />
             </div>
 
-            <div className="flex items-center justify-between py-2 border-b border-gray-1">
-              <Text size="xs" fw={500} className="text-gray-11">Hidden Field</Text>
+            <div className='flex items-center justify-between border-b border-gray-1 py-2'>
+              <Text className='text-gray-11' fw={500} size='xs'>
+                Hidden Field
+              </Text>
               <Switch
                 checked={activeQuestion.settings.general.hidden || false}
-                onChange={(e) => updateNested('general', { hidden: e.currentTarget.checked })}
-                size="xs" color="violet" />
+                color='violet'
+                size='xs'
+                onChange={(e) =>
+                  updateNested('general', { hidden: e.currentTarget.checked })
+                }
+              />
             </div>
 
-            <div className="flex items-center justify-between py-2">
+            <div className='flex items-center justify-between py-2'>
               <div>
-                <Text size="xs" fw={500} className="text-gray-11">Read Only</Text>
-                <Text size="10px" className="text-gray-6">User cannot edit this field</Text>
+                <Text className='text-gray-11' fw={500} size='xs'>
+                  Read Only
+                </Text>
+                <Text className='text-gray-6' size='10px'>
+                  User cannot edit this field
+                </Text>
               </div>
               <Switch
                 checked={activeQuestion.settings.general.readOnly || false}
-                onChange={(e) => updateNested('general', { readOnly: e.currentTarget.checked })}
-                size="xs" color="violet" />
+                color='violet'
+                size='xs'
+                onChange={(e) =>
+                  updateNested('general', { readOnly: e.currentTarget.checked })
+                }
+              />
             </div>
           </div>
         </div>
 
         {activeQuestion.type === 'TABLE' && (
           <>
-            <Divider className="border-gray-2" />
-            <div className="space-y-4">
-              <Group justify="space-between">
-                <Text size="xs" fw={600} className="text-gray-11 uppercase tracking-wider">Columns</Text>
+            <Divider className='border-gray-2' />
+            <div className='space-y-4'>
+              <Group justify='space-between'>
+                <Text
+                  className='tracking-wider text-gray-11 uppercase'
+                  fw={600}
+                  size='xs'
+                >
+                  Columns
+                </Text>
                 <ActionIcon
-                  variant="subtle"
-                  size="sm"
-                  className="hover:bg-gray-2 transition-all"
+                  className='transition-all hover:bg-gray-2'
+                  size='sm'
+                  variant='subtle'
                   onClick={() => {
-                    const newColumn = { id: generateId(), label: `Column ${(activeQuestion.settings.specific.columns?.length || 0) + 1} `, type: 'SHORT_TEXT', size: 'col-6' }
-                    updateNested('specific', { columns: [...(activeQuestion.settings.specific.columns || []), newColumn] })
+                    const newColumn = {
+                      id: generateId(),
+                      label: `Column ${(activeQuestion.settings.specific.columns?.length || 0) + 1} `,
+                      size: 'col-6',
+                      type: 'SHORT_TEXT',
+                    }
+                    updateNested('specific', {
+                      columns: [
+                        ...(activeQuestion.settings.specific.columns || []),
+                        newColumn,
+                      ],
+                    })
                   }}
                 >
-                  <Icon name="tabler:plus" width={14} height={14} />
+                  <Icon height={14} name='tabler:plus' width={14} />
                 </ActionIcon>
               </Group>
 
-              <div className="space-y-2">
-                {(activeQuestion.settings.specific.columns || []).map((col: any, idx: number) => (
-                  <Paper key={col.id} p="xs" withBorder className="bg-gray-1/50 border-gray-3">
-                    <div className="space-y-2">
-                      <Group gap="xs" wrap="nowrap">
-                        <Icon name="tabler:grip-vertical" width={13} height={13} className="text-gray-5 cursor-grab" />
-                        <TextInput size="xs" placeholder="Column Name" value={col.label} className="flex-1" onChange={(e) => {
-                          const newCols = [...(activeQuestion.settings.specific.columns || [])]
-                          newCols[idx] = { ...col, label: e.target.value }
-                          updateNested('specific', { columns: newCols })
-                        }} />
-                        <ActionIcon variant="subtle" color="red" size="xs" className="hover:bg-red-50 transition-all" onClick={() => {
-                          const newCols = (activeQuestion.settings.specific.columns || []).filter((c: any) => c.id !== col.id)
-                          updateNested('specific', { columns: newCols })
-                        }}>
-                          <Icon name="tabler:x" width={12} height={12} />
-                        </ActionIcon>
-                      </Group>
-                      <Group gap="xs" grow>
-                        <Select size="xs" data={[{ label: 'Short Text', value: 'SHORT_TEXT' }, { label: 'Long Text', value: 'LONG_TEXT' }, { label: 'Number', value: 'NUMBER' }, { label: 'Date', value: 'DATE' }, { label: 'Choices', value: 'CHOICES' }]} value={col.type} onChange={(val) => {
-                          const newCols = [...(activeQuestion.settings.specific.columns || [])]
-                          newCols[idx] = { ...col, type: val as any }
-                          updateNested('specific', { columns: newCols })
-                        }} />
-                        <Select size="xs" data={[{ label: 'Small', value: 'col-3' }, { label: 'Medium', value: 'col-6' }, { label: 'Large', value: 'col-12' }]} value={col.size} onChange={(val) => {
-                          const newCols = [...(activeQuestion.settings.specific.columns || [])]
-                          newCols[idx] = { ...col, size: val as any }
-                          updateNested('specific', { columns: newCols })
-                        }} />
-                      </Group>
-                    </div>
-                  </Paper>
-                ))}
+              <div className='space-y-2'>
+                {(activeQuestion.settings.specific.columns || []).map(
+                  (col: any, idx: number) => (
+                    <Paper
+                      className='border-gray-3 bg-gray-1/50'
+                      key={col.id}
+                      p='xs'
+                      withBorder
+                    >
+                      <div className='space-y-2'>
+                        <Group gap='xs' wrap='nowrap'>
+                          <Icon
+                            className='cursor-grab text-gray-5'
+                            height={13}
+                            name='tabler:grip-vertical'
+                            width={13}
+                          />
+                          <TextInput
+                            className='flex-1'
+                            placeholder='Column Name'
+                            size='xs'
+                            value={col.label}
+                            onChange={(e) => {
+                              const newCols = [
+                                ...(activeQuestion.settings.specific.columns ||
+                                  []),
+                              ]
+                              newCols[idx] = { ...col, label: e.target.value }
+                              updateNested('specific', { columns: newCols })
+                            }}
+                          />
+                          <ActionIcon
+                            className='hover:bg-red-50 transition-all'
+                            color='red'
+                            size='xs'
+                            variant='subtle'
+                            onClick={() => {
+                              const newCols = (
+                                activeQuestion.settings.specific.columns || []
+                              ).filter((c: any) => c.id !== col.id)
+                              updateNested('specific', { columns: newCols })
+                            }}
+                          >
+                            <Icon height={12} name='tabler:x' width={12} />
+                          </ActionIcon>
+                        </Group>
+                        <Group gap='xs' grow>
+                          <Select
+                            size='xs'
+                            value={col.type}
+                            data={[
+                              { label: 'Short Text', value: 'SHORT_TEXT' },
+                              { label: 'Long Text', value: 'LONG_TEXT' },
+                              { label: 'Number', value: 'NUMBER' },
+                              { label: 'Date', value: 'DATE' },
+                              { label: 'Choices', value: 'CHOICES' },
+                            ]}
+                            onChange={(val) => {
+                              const newCols = [
+                                ...(activeQuestion.settings.specific.columns ||
+                                  []),
+                              ]
+                              newCols[idx] = { ...col, type: val as any }
+                              updateNested('specific', { columns: newCols })
+                            }}
+                          />
+                          <Select
+                            size='xs'
+                            value={col.size}
+                            data={[
+                              { label: 'Small', value: 'col-3' },
+                              { label: 'Medium', value: 'col-6' },
+                              { label: 'Large', value: 'col-12' },
+                            ]}
+                            onChange={(val) => {
+                              const newCols = [
+                                ...(activeQuestion.settings.specific.columns ||
+                                  []),
+                              ]
+                              newCols[idx] = { ...col, size: val as any }
+                              updateNested('specific', { columns: newCols })
+                            }}
+                          />
+                        </Group>
+                      </div>
+                    </Paper>
+                  ),
+                )}
               </div>
             </div>
           </>
         )}
       </div>
 
-      <div className="p-4 border-t border-gray-2 bg-white shrink-0">
+      <div className='shrink-0 border-t border-gray-2 bg-white p-4'>
         <Button
-          variant="outline"
-          color="red"
-          size="sm"
+          className='hover:bg-red-50 justify-start border-gray-3 px-3 text-red-9 transition-all active:scale-[0.98]'
+          color='red'
+          leftSection={<Icon height={14} name='lucide:trash-2' width={14} />}
+          size='sm'
+          variant='outline'
           fullWidth
-          leftSection={<Icon name="lucide:trash-2" width={14} height={14} />}
-          className="border-gray-3 text-red-9 hover:bg-red-50 active:scale-[0.98] transition-all justify-start px-3"
           onClick={() => deleteQuestion(activeQuestion.id)}
         >
           Delete Field
@@ -614,14 +806,33 @@ const FieldSettings = () => {
 //   )
 // }
 
-
-const SettingsHeader = ({ title, icon, headerProps }: { title: string, icon: string, headerProps: any }) => {
+const SettingsHeader = ({
+  headerProps,
+  icon,
+  title,
+}: {
+  headerProps: any
+  icon: string
+  title: string
+}) => {
   const {
-    activeQuestion, selectionType, isSomethingSelected,
-    isEditingLabel, headerLabel, setHeaderLabel,
-    setIsEditingLabel, handleLabelSave, handleKeyDown,
-    inputRef, hasPrev, hasNext, handlePrev, handleNext,
-    clearSelection, deleteQuestion, setSidebarOpen
+    activeQuestion,
+    clearSelection,
+    deleteQuestion,
+    handleKeyDown,
+    handleLabelSave,
+    handleNext,
+    handlePrev,
+    hasNext,
+    hasPrev,
+    headerLabel,
+    inputRef,
+    isEditingLabel,
+    isSomethingSelected,
+    selectionType,
+    setHeaderLabel,
+    setIsEditingLabel,
+    setSidebarOpen,
   } = headerProps
 
   const headerIcon =
@@ -662,33 +873,35 @@ const SettingsHeader = ({ title, icon, headerProps }: { title: string, icon: str
 
         {selectionType === 'question' && activeQuestion ? (
           isEditingLabel ? (
-            <div className="flex-1 flex items-center gap-1">
+            <div className='flex flex-1 items-center gap-1'>
               <input
+                className='min-w-0 flex-1 rounded border border-primary-5 bg-white px-1.5 py-1 text-xs font-semibold text-gray-13 focus:ring-1 focus:ring-primary-5 focus:outline-none'
                 ref={inputRef}
-                type="text"
+                type='text'
                 value={headerLabel}
-                onChange={(e) => setHeaderLabel(e.target.value)}
                 onBlur={handleLabelSave}
+                onChange={(e) => setHeaderLabel(e.target.value)}
                 onKeyDown={handleKeyDown}
-                className="flex-1 min-w-0 text-xs font-semibold text-gray-13 border border-primary-5 rounded px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-primary-5 bg-white"
               />
             </div>
           ) : (
-            <div className="flex items-center gap-2 min-w-0 flex-1 group/title overflow-hidden">
+            <div className='group/title flex min-w-0 flex-1 items-center gap-2 overflow-hidden'>
               <Tooltip
                 label={activeQuestion.label || 'Untitled Field'}
-                position="top-start"
-                withArrow
-                disabled={!activeQuestion.label || activeQuestion.label.length < 15}
                 openDelay={400}
+                position='top-start'
+                withArrow
                 withinPortal
+                disabled={
+                  !activeQuestion.label || activeQuestion.label.length < 15
+                }
               >
-                <div className="inline-grid items-center min-w-0 max-w-[140px]">
-                  <span className="invisible whitespace-pre text-[xs] font-bold tracking-tight h-0 overflow-hidden px-0">
+                <div className='inline-grid max-w-[140px] min-w-0 items-center'>
+                  <span className='invisible h-0 overflow-hidden px-0 font-bold tracking-tight whitespace-pre text-[xs]'>
                     {activeQuestion.label || 'Untitled Field'}
                   </span>
                   <h2
-                    className="text-15/5 font-semibold text-gray-13 truncate cursor-pointer hover:text-gray-11"
+                    className='cursor-pointer truncate text-15/5 font-semibold text-gray-13 hover:text-gray-11'
                     style={{ gridArea: '1/1/2/2' }}
                     onClick={() => setIsEditingLabel(true)}
                   >
@@ -698,82 +911,87 @@ const SettingsHeader = ({ title, icon, headerProps }: { title: string, icon: str
               </Tooltip>
 
               <Badge
-                size="xs"
-                variant="outline"
-                color="gray"
-                radius="xs"
-                className="border-gray-3 text-[9px] px-1 py-0 h-4 uppercase tracking-tighter shrink-0"
+                className='h-4 shrink-0 border-gray-3 px-1 py-0 text-[9px] tracking-tighter uppercase'
+                color='gray'
+                radius='xs'
+                size='xs'
+                variant='outline'
               >
                 {activeQuestion.type.replace(/_/g, ' ')}
               </Badge>
 
               <ActionIcon
-                variant="subtle"
-                color="gray"
-                size="xs"
-                className="text-gray-4 opacity-0 group-hover/title:opacity-100 cursor-pointer hover:text-gray-7 transition-opacity"
-                onClick={(e) => { e.stopPropagation(); setIsEditingLabel(true); }}
+                className='cursor-pointer text-gray-4 opacity-0 transition-opacity group-hover/title:opacity-100 hover:text-gray-7'
+                color='gray'
+                size='xs'
+                variant='subtle'
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setIsEditingLabel(true)
+                }}
               >
-                <Icon name="lucide:pencil" width={12} height={12} />
+                <Icon height={12} name='lucide:pencil' width={12} />
               </ActionIcon>
             </div>
           )
         ) : (
-          <h2 className='text-15/5 font-semibold text-gray-13 truncate capitalize'>{title}</h2>
+          <h2 className='truncate text-15/5 font-semibold text-gray-13 capitalize'>
+            {title}
+          </h2>
         )}
       </div>
 
-      <div className="flex items-center gap-0.5 shrink-0">
+      <div className='flex shrink-0 items-center gap-0.5'>
         {selectionType === 'question' && (
           <>
             <div className='flex items-center gap-0.5'>
               {hasPrev && (
                 <ActionIcon
-                  variant="subtle"
-                  color="gray"
-                  size="sm"
+                  className='hover:bg-gray-2'
+                  color='gray'
+                  size='sm'
+                  variant='subtle'
                   onClick={handlePrev}
-                  className="hover:bg-gray-2"
                 >
-                  <Icon name="lucide:chevron-left" width={16} height={16} />
+                  <Icon height={16} name='lucide:chevron-left' width={16} />
                 </ActionIcon>
               )}
               {hasNext && (
                 <ActionIcon
-                  variant="subtle"
-                  color="gray"
-                  size="sm"
+                  className='hover:bg-gray-2'
+                  color='gray'
+                  size='sm'
+                  variant='subtle'
                   onClick={handleNext}
-                  className="hover:bg-gray-2"
                 >
-                  <Icon name="lucide:chevron-right" width={16} height={16} />
+                  <Icon height={16} name='lucide:chevron-right' width={16} />
                 </ActionIcon>
               )}
             </div>
 
             <ActionIcon
-              variant="subtle"
-              color="gray"
-              size="sm"
-              className="hover:bg-red-50 hover:text-error-main transition-colors mx-0.5"
+              className='hover:bg-red-50 mx-0.5 transition-colors hover:text-error-main'
+              color='gray'
+              size='sm'
+              title='Delete Field'
+              variant='subtle'
               onClick={() => deleteQuestion(activeQuestion!.id)}
-              title="Delete Field"
             >
-              <Icon name="lucide:trash-2" width={15} height={15} />
+              <Icon height={15} name='lucide:trash-2' width={15} />
             </ActionIcon>
           </>
         )}
 
-        <div className="w-px h-4 bg-gray-2 mx-1" />
+        <div className='mx-1 h-4 w-px bg-gray-2' />
 
         <ActionIcon
-          variant="subtle"
-          color="gray"
-          size="sm"
+          className='rounded-lg transition-colors hover:bg-gray-2'
+          color='gray'
+          size='sm'
+          variant='subtle'
           onClick={() => setSidebarOpen(false)}
-          className="hover:bg-gray-2 rounded-lg transition-colors"
         >
-          <Icon name="lucide:x" width={16} height={16} />
+          <Icon height={16} name='lucide:x' width={16} />
         </ActionIcon>
       </div>
     </div>

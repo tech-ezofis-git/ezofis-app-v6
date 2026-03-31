@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import Icon from '@/components/base/icon/Icon'
 import Input from '@/components/base/inputs/InputText'
 import useWorkflowStore from '../stores/useWorkflowStore'
+import { generateId } from '../utils/generateId'
 
 interface IntegrationItem {
   bgColor: string
@@ -98,7 +99,7 @@ const AddNodeMenu = () => {
         if (sourceNode && targetNode) {
           const GAP = 250 // Vertical spacing matches initial nodes (50 -> 300)
 
-          const newNodeId = `node-${Date.now()}`
+          const newNodeId = generateId()
           const newNode = {
             data: {
               icon: item.icon,
@@ -157,7 +158,7 @@ const AddNodeMenu = () => {
 
           const newEdges = [
             {
-              id: `${edge.source}->${newNodeId}`,
+              id: generateId(),
               source: edge.source,
               sourceHandle: sourceHandle,
               target: newNodeId,
@@ -165,7 +166,7 @@ const AddNodeMenu = () => {
               type: 'custom',
             },
             {
-              id: `${newNodeId}->${edge.target}`,
+              id: generateId(),
               source: newNodeId,
               sourceHandle: sourceHandle,
               target: edge.target,
@@ -325,6 +326,15 @@ const AddNodeMenu = () => {
       label: 'Manual User',
       type: 'highlight',
     },
+    {
+      bgColor: 'bg-orange-50',
+      category: 'triggers',
+      description: 'Check logic conditions',
+      icon: 'lucide:split',
+      iconColor: '#f97316',
+      label: 'Condition',
+      type: 'highlight',
+    },
   ]
 
   const filteredIntegrations = integrations.filter((item) => {
@@ -386,19 +396,21 @@ const AddNodeMenu = () => {
         ].map((tab) => (
           <button
             key={tab.id}
-            className={`group flex items-center gap-2 rounded-full px-3.5 py-1.5 text-sm font-medium transition-all duration-200 ${activeTab === tab.id
+            className={`group flex items-center gap-2 rounded-full px-3.5 py-1.5 text-sm font-medium transition-all duration-200 ${
+              activeTab === tab.id
                 ? 'bg-[var(--primary-3)] text-[var(--primary-9)]'
                 : 'text-gray-600 hover:bg-[var(--primary-1)] hover:text-[var(--primary-9)]'
-              }`}
+            }`}
             onClick={() => setActiveTab(tab.id as TabType)}
           >
             {/* Icon - keeping it as requested "Mainly icon with text" */}
             <Icon
               name={tab.icon}
-              className={`h-4 w-4 transition-colors ${activeTab === tab.id
+              className={`h-4 w-4 transition-colors ${
+                activeTab === tab.id
                   ? 'text-[var(--primary-9)]'
                   : 'text-gray-500 group-hover:text-[var(--primary-9)]'
-                }`}
+              }`}
             />
             <span>{tab.label}</span>
           </button>

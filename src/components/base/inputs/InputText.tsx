@@ -12,6 +12,7 @@ interface Props extends InputProps {
   leftSectionPointerEvents?: 'auto' | 'none'
   rightSection?: ReactNode
   rightSectionPointerEvents?: 'auto' | 'none'
+  rightSectionWidth?: number | string
   type?: string
   onBlur?: () => void
   onChange: (value: string) => void
@@ -28,6 +29,7 @@ const InputText = forwardRef<HTMLInputElement, Props>(
       required,
       rightSection,
       rightSectionPointerEvents = 'none',
+      rightSectionWidth,
       tooltip,
       tooltipWidth,
       type = 'text',
@@ -65,6 +67,7 @@ const InputText = forwardRef<HTMLInputElement, Props>(
         label={_label}
         ref={ref}
         rightSection={_rightSection}
+        rightSectionWidth={rightSectionWidth}
         type={type}
         value={value}
         classNames={{

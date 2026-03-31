@@ -16,8 +16,35 @@ const createProcessTransaction = async (payload: any) => {
   return response
 }
 
+const getAllWorkflows = async (payload: any) => {
+  try {
+    const { data, status } = await axiosCrypto.post(
+      '/workflow/all',
+      JSON.stringify(payload),
+    )
+    if (status === 200) return data
+    throw new Error('Failed to fetch workflows')
+  } catch (e) {
+    console.error(e)
+    throw e
+  }
+}
+
+const getWorkflowById = async (id: string) => {
+  try {
+    const { data, status } = await axiosCrypto.get(`/workflow/${id}`)
+    if (status === 200) return data
+    throw new Error('Failed to fetch workflow')
+  } catch (e) {
+    console.error(e)
+    throw e
+  }
+}
+
 const workflowApi = {
   createProcessTransaction,
+  getAllWorkflows,
+  getWorkflowById,
 }
 
 export default workflowApi

@@ -207,9 +207,7 @@ const Form = () => {
     .find((f) => f.id === activeId)
 
   return (
-    <div className='w-full max-w-[1200px] mx-auto pb-40 px-4 font-inter'>
-
-
+    <div className='mx-auto w-full max-w-[1200px] px-4 pb-40 font-inter'>
       <div className='space-y-8'>
         {/* Welcome Page Slot (Only if enabled) */}
         {welcomePage.enabled && (
@@ -288,12 +286,14 @@ const Form = () => {
                   questions. Click the button below to add your first section.
                 </Text>
                 <UnstyledButton
+                  className='flex items-center gap-2 rounded-xl bg-accent-primary px-6 py-3 font-bold text-white shadow-lg shadow-accent-soft/20 transition-all hover:scale-[1.02] active:scale-95'
                   onClick={(e) => {
-                    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+                    const rect = (
+                      e.currentTarget as HTMLElement
+                    ).getBoundingClientRect()
                     setAddPageAnchorRect(rect)
                     setShowAddPageAt(0)
                   }}
-                  className="flex items-center gap-2 px-6 py-3 bg-accent-primary text-white rounded-xl font-bold hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-accent-soft/20"
                 >
                   <Icon height={18} name='lucide:plus-circle' width={18} />
                   <span>Add First Section</span>
@@ -308,9 +308,9 @@ const Form = () => {
                 <QuestionCard
                   isActive={true}
                   question={activeQuestion}
-                  onDelete={() => { }}
-                  onSelect={() => { }}
-                  onUpdate={() => { }}
+                  onDelete={() => {}}
+                  onSelect={() => {}}
+                  onUpdate={() => {}}
                 />
               </div>
             ) : null}
@@ -320,13 +320,15 @@ const Form = () => {
         {/* Global Add Page Button */}
         <div className='flex justify-center pt-8'>
           <Button
-            variant="outline"
-            color="gray"
-            size="md"
-            className="w-full flex items-center justify-center border border-dashed border-accent-primary rounded-xl bg-accent-soft/5 hover:bg-accent-soft/10 transition-all text-accent-primary group/add h-12 py-3 px-4 font-bold uppercase tracking-widest text-[11px]"
-            leftSection={<Icon name="lucide:plus" width={18} height={18} />}
+            className='group/add flex h-12 w-full items-center justify-center rounded-xl border border-dashed border-accent-primary bg-accent-soft/5 px-4 py-3 text-[11px] font-bold tracking-widest text-accent-primary uppercase transition-all hover:bg-accent-soft/10'
+            color='gray'
+            leftSection={<Icon height={18} name='lucide:plus' width={18} />}
+            size='md'
+            variant='outline'
             onClick={(e) => {
-              const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+              const rect = (
+                e.currentTarget as HTMLElement
+              ).getBoundingClientRect()
               setAddPageAnchorRect(rect)
               setShowAddPageAt(panels.length)
             }}

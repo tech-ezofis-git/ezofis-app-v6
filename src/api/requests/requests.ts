@@ -860,7 +860,7 @@ const getOcrTemplate = async (payload: any) => {
   try {
     const { data, status } = await axiosCrypto.post(
       `/OCR/getOCRTemplate`,
-      JSON.stringify(payload),
+      payload,
     )
     if (status === 200) return data
     throw new Error('Error fetching OCR template')

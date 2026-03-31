@@ -16,26 +16,27 @@ const WorkflowSettings = () => {
     initiateUsing,
     isSettingsOpen,
     workflowDescription,
-
     workflowName,
+    workflowStatus,
     setFolder,
     setForm,
     setInitiateUsing,
     setWorkflowDescription,
     setWorkflowName,
+    setWorkflowStatus,
   } = useWorkflowStore((state) => state)
 
   // Options
   const initiateOptions = [
     {
       description: 'Process document workflows',
-      id: 'document',
+      id: 'DOCUMENT',
       name: 'Document',
     },
-    { description: 'Use an input form to start', id: 'form', name: 'Form' },
+    { description: 'Use an input form to start', id: 'FORM', name: 'Form' },
     {
       description: 'Use document and form to start',
-      id: 'document-form',
+      id: 'DOCUMENT_FORM',
       name: 'Document & Form',
     },
   ]
@@ -97,11 +98,11 @@ const WorkflowSettings = () => {
           value={
             initiateUsing
               ? {
-                  id: initiateUsing as any,
-                  name:
-                    initiateOptions.find((o: any) => o.id === initiateUsing)
-                      ?.name || '',
-                }
+                id: initiateUsing as any,
+                name:
+                  initiateOptions.find((o: any) => o.id === initiateUsing)
+                    ?.name || '',
+              }
               : null
           }
           onChange={(val: any) => setInitiateUsing(val?.id || 'document-form')}
@@ -116,10 +117,10 @@ const WorkflowSettings = () => {
           value={
             folder
               ? {
-                  id: folder,
-                  name:
-                    folderOptions.find((f: any) => f.id == folder)?.name || '',
-                }
+                id: folder,
+                name:
+                  folderOptions.find((f: any) => f.id == folder)?.name || '',
+              }
               : null
           }
           onChange={(val: any) => setFolder(val?.id || null)}
@@ -134,14 +135,38 @@ const WorkflowSettings = () => {
           value={
             form
               ? {
-                  id: form,
-                  name:
-                    workflowForms.find((f: any) => f.id == form)?.name || '',
-                }
+                id: form,
+                name:
+                  workflowForms.find((f: any) => f.id == form)?.name || '',
+              }
               : null
           }
           onChange={(val: any) => setForm(val?.id || null)}
         />
+
+        {/* Status */}
+        <div className='flex flex-col gap-1.5 pt-2'>
+          <label className='text-13 font-medium text-gray-11'>
+            Status
+          </label>
+          <div className='flex rounded-lg border border-gray-3 bg-gray-50 p-1'>
+            {[
+              { id: 'draft', label: 'Draft' },
+              { id: 'published', label: 'Published' },
+            ].map((opt) => (
+              <button
+                key={opt.id}
+                className={`flex-1 rounded-md py-1.5 text-xs font-semibold transition-all duration-200 ${workflowStatus === opt.id
+                  ? 'bg-primary-9 text-white shadow-sm'
+                  : 'text-gray-9 hover:bg-white/50 hover:text-gray-12'
+                  }`}
+                onClick={() => setWorkflowStatus(opt.id as any)}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Footer */}

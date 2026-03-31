@@ -2,8 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
 import type { Column } from '@/components/base/data-table/types'
-import type { Workflow } from '@/types/workflow'
-import { getWorkflowGroupListQueryOptions } from '@/api/local/workflows/queries'
+import { getWorkflowListQueryOptions } from '@/api/workflow/queries'
 import IconButton from '@/components/base/button/IconButton'
 import DataTable from '@/components/base/data-table/DataTable'
 import useDataTable from '@/components/base/data-table/hooks/useDataTable'
@@ -21,7 +20,7 @@ const Table = () => {
     {
       id: 'name',
       label: 'Name',
-      size: 160,
+      size: 200,
       renderCell: (row) => (
         <span className='cursor-pointer font-medium underline transition-colors hover:text-gray-13'>
           {String(row.name)}
@@ -30,11 +29,11 @@ const Table = () => {
     },
     {
       enableGrouping: true,
-      id: 'status',
+      id: 'flowstatus',
       label: 'Status',
       size: 140,
       renderCell: (row) => (
-        <FormStatusBadge status={row.status as Workflow['status']} />
+        <FormStatusBadge status={String(row.flowstatus) as any} />
       ),
     },
     {
@@ -68,34 +67,34 @@ const Table = () => {
     },
     {
       enableGrouping: true,
-      id: 'type',
-      label: 'Type',
+      id: 'initiatedBy',
+      label: 'Initiate By',
       size: 140,
       renderCell: (row) => (
-        <FormTypeBadge type={row.type as Workflow['type']} />
+        <FormTypeBadge type={String(row.initiatedBy) as any} />
       ),
     },
     {
       id: 'createdBy',
       label: 'Created By',
-      size: 240,
+      size: 140,
     },
     {
       id: 'createdAt',
       label: 'Created At',
-      size: 200,
+      size: 180,
       renderCell: (row) => formatDatetime(row.createdAt as string, 'datetime'),
     },
     {
-      id: 'updatedBy',
-      label: 'Last Modified By',
-      size: 240,
+      id: 'modifiedBy',
+      label: 'Modified By',
+      size: 140,
     },
     {
-      id: 'updatedAt',
-      label: 'Last Modified At',
-      size: 200,
-      renderCell: (row) => formatDatetime(row.updatedAt as string, 'datetime'),
+      id: 'modifiedAt',
+      label: 'Modified At',
+      size: 180,
+      renderCell: (row) => formatDatetime(row.modifiedAt as string, 'datetime'),
     },
     {
       className: 'p-1',
@@ -121,7 +120,7 @@ const Table = () => {
               icon='lucide:edit'
               label='Edit'
               onClick={() => {
-                const workflow = row as unknown as Workflow
+                const workflow = row as unknown as any
                 navigate({
                   params: { workflowId: workflow.id.toString() },
                   to: '/workflow-builder/$workflowId',
@@ -133,7 +132,7 @@ const Table = () => {
               iconClass='text-red-11'
               label='Delete'
               onClick={() => {
-                const workflow = row as unknown as Workflow
+                const workflow = row as unknown as any
                 alert(workflow.id)
               }}
             />
@@ -153,21 +152,38 @@ const Table = () => {
     initialVisibilityState,
   })
   const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
+  const [pageSize, setPageSize] = useState(100)
+
+  const payload = useMemo(
+    () => ({
+      currentPage: page,
+      filterBy: [],
+      groupBy: 'flowstatus',
+      hasSecurity: true,
+      itemsPerPage: pageSize,
+      mode: 'BROWSE',
+      sortBy: {
+        criteria: sortState?.[0]?.id || 'name',
+        order: sortState?.[0]?.desc ? 'DESC' : 'ASC',
+      },
+    }),
+    [page, pageSize, sortState],
+  )
 
   const { data, isFetching, isPending, isRefetching, refetch } = useQuery(
-    getWorkflowGroupListQueryOptions({
-      expand: expandState,
-      group: groupState,
-      page,
-      pageSize,
-      sort: sortState,
-    }),
+    getWorkflowListQueryOptions(payload),
   )
 
   const workflows = useMemo(() => {
-    if (!data) return []
-    return data.data
+    if (!data?.data || !Array.isArray(data.data)) return []
+    // The DataTable expects an ItemGroup structure:
+    return data.data.map((cluster: any) => ({
+      groupCount: cluster.value?.length || 0,
+      groupId: cluster.key,
+      groupKey: 'flowstatus',
+      groupValue: cluster.key,
+      items: Array.isArray(cluster.value) ? cluster.value : [],
+    }))
   }, [data])
 
   const { table } = useDataTable({
@@ -192,7 +208,7 @@ const Table = () => {
         page={page}
         pageSize={pageSize}
         showPageNumbers={false}
-        totalItems={data?.totalCount || 0}
+        totalItems={data?.meta?.totalItems || 0}
         onPageChange={setPage}
         onPageSizeChange={setPageSize}
       />

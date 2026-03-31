@@ -1,20 +1,26 @@
 import { useNavigate } from '@tanstack/react-router'
+import { useReactFlow } from '@xyflow/react'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
 import useWorkflowStore from '../../stores/useWorkflowStore'
+import { exportWorkflow } from '../../utils/exportWorkflow'
 
 const BuilderHeader = () => {
   const navigate = useNavigate()
+  const { getEdges, getNodes } = useReactFlow()
   const {
     workflowDescription,
     workflowName,
     workflowStatus,
-    setWorkflowStatus,
   } = useWorkflowStore((state) => state)
 
-  const handlePublish = () => {
-    // Toggle for demo purposes, normally would be one-way or explicit actions
-    setWorkflowStatus(workflowStatus === 'draft' ? 'published' : 'draft')
+  const handleSave = () => {
+    // Save functionality
+    const exportedJson = exportWorkflow(getNodes(), getEdges())
+    console.log(
+      'Exported Workflow JSON:',
+      JSON.stringify(exportedJson, null, 2),
+    )
   }
 
   return (
@@ -63,9 +69,9 @@ const BuilderHeader = () => {
           onClick={useWorkflowStore((state) => state.startTestRun)}
         />
         <Button
-          icon={workflowStatus === 'draft' ? 'lucide:save' : 'lucide:pencil'}
-          label={workflowStatus === 'draft' ? 'Publish' : 'Edit'}
-          onClick={handlePublish}
+          icon='lucide:save'
+          label='Save'
+          onClick={handleSave}
         />
       </div>
     </header>

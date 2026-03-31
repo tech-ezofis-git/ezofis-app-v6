@@ -142,7 +142,7 @@ const DataTable = <TData,>({
                               />
                               <Icon
                                 className='size-4 text-[var(--primary-9)]'
-                                name='tabler:folders'
+                                name='tabler:stack-2'
                               />
                               <span className='text-14 font-bold text-[var(--gray-13)]'>
                                 {(row.original as any).group}

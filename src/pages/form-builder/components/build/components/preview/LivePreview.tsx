@@ -1,13 +1,21 @@
-import { Button, TextInput, SegmentedControl, Text, Divider, Tooltip, UnstyledButton } from '@mantine/core'
+import {
+  Button,
+  Divider,
+  SegmentedControl,
+  Text,
+  TextInput,
+  Tooltip,
+  UnstyledButton,
+} from '@mantine/core'
+import { useEffect, useState } from 'react'
 import Icon from '@/components/base/icon/Icon'
 import {
   type Panel as PanelType,
   type Question,
-  type WelcomePage,
   useFormStore,
+  type WelcomePage,
 } from '@/pages/form-builder/store/formStore'
 import cn from '@/utils/cn'
-import { useState, useEffect } from 'react'
 
 type ViewMode = 'typeform' | 'grid' | 'full'
 
@@ -23,7 +31,9 @@ const LivePreview = () => {
   } = useFormStore()
 
   const [viewMode, setViewMode] = useState<ViewMode>('typeform')
-  const [deviceType, setDeviceType] = useState<'desktop' | 'tablet' | 'mobile'>('desktop')
+  const [deviceType, setDeviceType] = useState<'desktop' | 'tablet' | 'mobile'>(
+    'desktop',
+  )
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isCompleted, setIsCompleted] = useState(false)
   const [showWelcome, setShowWelcome] = useState(false)
@@ -106,42 +116,64 @@ const LivePreview = () => {
   }
 
   return (
-    <div className="fixed inset-0 z-[200] bg-white flex flex-col animate-in fade-in duration-500 font-inter">
+    <div className='animate-in fade-in fixed inset-0 z-[200] flex flex-col bg-white font-inter duration-500'>
       {/* Header */}
-      <div className="h-16 border-b border-gray-2 flex items-center justify-between px-6 bg-white shrink-0 z-30">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-3">
-            <div className="bg-gray-1 border border-gray-2 text-gray-7 size-9 rounded-xl flex items-center justify-center">
-              <Icon name="tabler:eye" width={18} height={18} />
+      <div className='z-30 flex h-16 shrink-0 items-center justify-between border-b border-gray-2 bg-white px-6'>
+        <div className='flex items-center gap-4'>
+          <div className='flex items-center gap-3'>
+            <div className='flex size-9 items-center justify-center rounded-xl border border-gray-2 bg-gray-1 text-gray-7'>
+              <Icon height={18} name='tabler:eye' width={18} />
             </div>
-            <span className="font-bold text-gray-13 tracking-tight text-lg">Preview</span>
+            <span className='text-lg font-bold tracking-tight text-gray-13'>
+              Preview
+            </span>
           </div>
 
           <div className='mx-2 h-6 w-px bg-gray-2' />
 
-          <div className="flex bg-gray-1 p-1 rounded-xl border border-gray-2 gap-1 overflow-hidden">
+          <div className='flex gap-1 overflow-hidden rounded-xl border border-gray-2 bg-gray-1 p-1'>
             {[
-              { value: 'typeform', icon: 'lucide:layout-list', label: 'One at a time' },
-              { value: 'grid', icon: 'lucide:layout-grid', label: 'Section by Section' },
-              { value: 'full', icon: 'lucide:file-text', label: 'All Questions' },
+              {
+                icon: 'lucide:layout-list',
+                label: 'One at a time',
+                value: 'typeform',
+              },
+              {
+                icon: 'lucide:layout-grid',
+                label: 'Section by Section',
+                value: 'grid',
+              },
+              {
+                icon: 'lucide:file-text',
+                label: 'All Questions',
+                value: 'full',
+              },
             ].map((v) => {
               const active = viewMode === v.value
               return (
                 <Tooltip key={v.value} label={v.label} openDelay={500}>
                   <UnstyledButton
+                    className={cn(
+                      'flex items-center gap-2 rounded-lg px-3 py-1.5 transition-all',
+                      active
+                        ? 'bg-white text-accent-primary shadow-sm'
+                        : 'text-gray-5 hover:bg-gray-2',
+                    )}
                     onClick={() => {
                       setViewMode(v.value as ViewMode)
                       setCurrentIndex(0)
                       setIsCompleted(false)
                       setShowWelcome(showWelcomePage)
                     }}
-                    className={cn(
-                      "flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all",
-                      active ? "bg-white text-accent-primary shadow-sm" : "text-gray-5 hover:bg-gray-2"
-                    )}
                   >
-                    <Icon name={v.icon} width={14} height={14} />
-                    <Text size="10px" fw={800} className="uppercase tracking-wider">{active ? v.label : ''}</Text>
+                    <Icon height={14} name={v.icon} width={14} />
+                    <Text
+                      className='tracking-wider uppercase'
+                      fw={800}
+                      size='10px'
+                    >
+                      {active ? v.label : ''}
+                    </Text>
                   </UnstyledButton>
                 </Tooltip>
               )
@@ -149,30 +181,45 @@ const LivePreview = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className='flex items-center gap-4'>
           <SegmentedControl
+            radius='xl'
+            size='xs'
             value={deviceType}
-            onChange={(v) => setDeviceType(v as any)}
-            data={[
-              { label: <Icon name="tabler:device-desktop" width={14} height={14} />, value: 'desktop' },
-              { label: <Icon name="tabler:device-tablet" width={14} height={14} />, value: 'tablet' },
-              { label: <Icon name="tabler:device-mobile" width={14} height={14} />, value: 'mobile' },
-            ]}
-            size="xs"
-            radius="xl"
             classNames={{
-              root: 'bg-gray-1 p-1 border border-gray-2',
               indicator: 'bg-white shadow-sm',
+              root: 'border border-gray-2 bg-gray-1 p-1',
             }}
+            data={[
+              {
+                label: (
+                  <Icon height={14} name='tabler:device-desktop' width={14} />
+                ),
+                value: 'desktop',
+              },
+              {
+                label: (
+                  <Icon height={14} name='tabler:device-tablet' width={14} />
+                ),
+                value: 'tablet',
+              },
+              {
+                label: (
+                  <Icon height={14} name='tabler:device-mobile' width={14} />
+                ),
+                value: 'mobile',
+              },
+            ]}
+            onChange={(v) => setDeviceType(v as any)}
           />
-          <div className="h-6 w-px bg-gray-2 mx-1" />
+          <div className='mx-1 h-6 w-px bg-gray-2' />
           <Button
-            variant="subtle"
-            color="gray"
-            size="sm"
+            className='h-10 rounded-xl px-4 hover:bg-gray-1'
+            color='gray'
+            leftSection={<Icon height={18} name='tabler:x' width={18} />}
+            size='sm'
+            variant='subtle'
             onClick={() => setIsPreviewOpen(false)}
-            className="hover:bg-gray-1 rounded-xl h-10 px-4"
-            leftSection={<Icon name="tabler:x" width={18} height={18} />}
           >
             Exit
           </Button>
@@ -180,21 +227,20 @@ const LivePreview = () => {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-hidden relative bg-gray-50 flex flex-col items-center justify-center p-4 sm:p-8 transition-all duration-500">
+      <div className='bg-gray-50 relative flex flex-1 flex-col items-center justify-center overflow-hidden p-4 transition-all duration-500 sm:p-8'>
         <div
           className={cn(
-            "bg-white rounded-[2rem] overflow-hidden flex flex-col h-full max-h-[850px] transition-all duration-500 shadow-2xl border border-gray-2 relative",
-            deviceType === 'desktop' && "w-full max-w-4xl",
-            deviceType === 'tablet' && "w-[768px] max-w-full",
-            deviceType === 'mobile' && "w-[375px] max-w-full"
+            'relative flex h-full max-h-[850px] flex-col overflow-hidden rounded-[2rem] border border-gray-2 bg-white shadow-2xl transition-all duration-500',
+            deviceType === 'desktop' && 'w-full max-w-4xl',
+            deviceType === 'tablet' && 'w-[768px] max-w-full',
+            deviceType === 'mobile' && 'w-[375px] max-w-full',
           )}
         >
-
           {/* Progress Bar */}
           {!showWelcome && !isCompleted && viewMode !== 'full' && (
-            <div className="h-1.5 w-full bg-gray-1 absolute top-0 left-0 z-10">
+            <div className='absolute top-0 left-0 z-10 h-1.5 w-full bg-gray-1'>
               <div
-                className="h-full bg-accent-primary transition-all duration-700 ease-in-out shadow-[0_0_10px_rgba(var(--accent-primary-rgb),0.5)]"
+                className='h-full bg-accent-primary shadow-[0_0_10px_rgba(var(--accent-primary-rgb),0.5)] transition-all duration-700 ease-in-out'
                 style={{ width: `${progress}%` }}
               />
             </div>
@@ -255,17 +301,17 @@ const LivePreview = () => {
                 {(showWelcome ||
                   (viewMode !== 'full' && currentIndex > 0) ||
                   (!showWelcome && showWelcomePage)) && (
-                    <Button
-                      className='h-11 rounded-2xl px-6 font-bold'
-                      color='gray'
-                      disabled={showWelcome}
-                      size='md'
-                      variant='subtle'
-                      onClick={handlePrev}
-                    >
-                      {showWelcome ? '' : 'Back'}
-                    </Button>
-                  )}
+                  <Button
+                    className='h-11 rounded-2xl px-6 font-bold'
+                    color='gray'
+                    disabled={showWelcome}
+                    size='md'
+                    variant='subtle'
+                    onClick={handlePrev}
+                  >
+                    {showWelcome ? '' : 'Back'}
+                  </Button>
+                )}
                 <Button
                   bg='accent-primary'
                   className='h-11 rounded-2xl px-8 font-black text-white shadow-lg shadow-accent-soft/50 transition-all hover:opacity-90 active:scale-95'
@@ -289,8 +335,8 @@ const LivePreview = () => {
                     : viewMode === 'full'
                       ? 'Submit'
                       : currentIndex === totalFields - 1 ||
-                        (viewMode === 'grid' &&
-                          currentIndex === totalPanels - 1)
+                          (viewMode === 'grid' &&
+                            currentIndex === totalPanels - 1)
                         ? 'Submit'
                         : 'Next'}
                 </Button>
@@ -527,76 +573,124 @@ const renderPreviewInput = (field: Question, size: 'lg' | 'sm' = 'lg') => {
   switch (field.type) {
     case 'LABEL':
       return (
-        <div className={cn("text-gray-9 font-medium", isSmall ? "text-sm" : "text-xl")}>
-          {field.label || "Label Text"}
+        <div
+          className={cn(
+            'font-medium text-gray-9',
+            isSmall ? 'text-sm' : 'text-xl',
+          )}
+        >
+          {field.label || 'Label Text'}
         </div>
       )
     case 'DIVIDER':
-      return <Divider className="my-4" />
+      return <Divider className='my-4' />
     case 'TEXT_BUILDER':
       return (
-        <div className={cn(
-          "w-full border border-gray-2 rounded-lg bg-white overflow-hidden",
-          isSmall ? "min-h-[100px]" : "min-h-[200px]"
-        )}>
-          <div className="bg-gray-50 border-b border-gray-2 p-2 flex gap-2">
-            <Icon name="tabler:bold" width={16} height={16} className="text-gray-4" />
-            <Icon name="tabler:italic" width={16} height={16} className="text-gray-4" />
-            <Icon name="tabler:list" width={16} height={16} className="text-gray-4" />
+        <div
+          className={cn(
+            'w-full overflow-hidden rounded-lg border border-gray-2 bg-white',
+            isSmall ? 'min-h-[100px]' : 'min-h-[200px]',
+          )}
+        >
+          <div className='bg-gray-50 flex gap-2 border-b border-gray-2 p-2'>
+            <Icon
+              className='text-gray-4'
+              height={16}
+              name='tabler:bold'
+              width={16}
+            />
+            <Icon
+              className='text-gray-4'
+              height={16}
+              name='tabler:italic'
+              width={16}
+            />
+            <Icon
+              className='text-gray-4'
+              height={16}
+              name='tabler:list'
+              width={16}
+            />
           </div>
-          <div className="p-4 text-gray-4 italic">Rich text editor placeholder...</div>
+          <div className='p-4 text-gray-4 italic'>
+            Rich text editor placeholder...
+          </div>
         </div>
       )
     case 'FILE_UPLOAD':
       return (
-        <div className={cn(
-          "w-full border-2 border-dashed border-gray-2 rounded-xl flex flex-col items-center justify-center bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer",
-          isSmall ? "p-4" : "p-10"
-        )}>
-          <Icon name="tabler:upload" width={isSmall ? 24 : 40} height={isSmall ? 24 : 40} className="text-gray-4 mb-2" />
-          <Text size={isSmall ? "xs" : "sm"} fw={500} className="text-gray-6">Click to upload or drag and drop</Text>
-          <Text size="xs" className="text-gray-4 mt-1 text-center">Any file up to 10MB</Text>
+        <div
+          className={cn(
+            'bg-gray-50 hover:bg-gray-100 flex w-full cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-2 transition-colors',
+            isSmall ? 'p-4' : 'p-10',
+          )}
+        >
+          <Icon
+            className='mb-2 text-gray-4'
+            height={isSmall ? 24 : 40}
+            name='tabler:upload'
+            width={isSmall ? 24 : 40}
+          />
+          <Text className='text-gray-6' fw={500} size={isSmall ? 'xs' : 'sm'}>
+            Click to upload or drag and drop
+          </Text>
+          <Text className='mt-1 text-center text-gray-4' size='xs'>
+            Any file up to 10MB
+          </Text>
         </div>
       )
     case 'TIME':
       return (
-        <div className={cn(
-          "flex items-center gap-3 border border-gray-2 rounded-lg text-gray-5 bg-white",
-          isSmall ? "p-2 text-sm" : "p-3 text-lg"
-        )}>
-          <Icon name="tabler:clock" width={isSmall ? 16 : 20} height={isSmall ? 16 : 20} />
+        <div
+          className={cn(
+            'flex items-center gap-3 rounded-lg border border-gray-2 bg-white text-gray-5',
+            isSmall ? 'p-2 text-sm' : 'p-3 text-lg',
+          )}
+        >
+          <Icon
+            height={isSmall ? 16 : 20}
+            name='tabler:clock'
+            width={isSmall ? 16 : 20}
+          />
           <span>HH : MM AM/PM</span>
         </div>
       )
     case 'TABLE':
       const columns = field.settings.specific.columns || [
-        { id: '1', label: 'Column 1', type: 'SHORT_TEXT', size: 'col-4' },
-        { id: '2', label: 'Column 2', type: 'SHORT_TEXT', size: 'col-4' },
-        { id: '3', label: 'Column 3', type: 'SHORT_TEXT', size: 'col-4' }
+        { id: '1', label: 'Column 1', size: 'col-4', type: 'SHORT_TEXT' },
+        { id: '2', label: 'Column 2', size: 'col-4', type: 'SHORT_TEXT' },
+        { id: '3', label: 'Column 3', size: 'col-4', type: 'SHORT_TEXT' },
       ]
       return (
-        <div className="border border-gray-2 rounded-lg overflow-x-auto bg-white">
-          <table className="w-full text-left text-sm border-collapse">
-            <thead className="bg-gray-50 border-b border-gray-2">
+        <div className='overflow-x-auto rounded-lg border border-gray-2 bg-white'>
+          <table className='w-full border-collapse text-left text-sm'>
+            <thead className='bg-gray-50 border-b border-gray-2'>
               <tr>
                 {columns.map((col: any) => (
-                  <th key={col.id} className={cn(
-                    "p-3 font-bold text-gray-7 whitespace-nowrap",
-                    col.size === 'col-3' && "w-[100px]",
-                    col.size === 'col-6' && "w-[200px]",
-                    col.size === 'col-12' && "w-[300px]"
-                  )}>
+                  <th
+                    key={col.id}
+                    className={cn(
+                      'p-3 font-bold whitespace-nowrap text-gray-7',
+                      col.size === 'col-3' && 'w-[100px]',
+                      col.size === 'col-6' && 'w-[200px]',
+                      col.size === 'col-12' && 'w-[300px]',
+                    )}
+                  >
                     {col.label}
                   </th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {[1, 2].map(i => (
-                <tr key={i} className="border-b border-gray-1 last:border-0">
+              {[1, 2].map((i) => (
+                <tr className='border-b border-gray-1 last:border-0' key={i}>
                   {columns.map((col: any) => (
-                    <td key={col.id} className="p-3">
-                      <TextInput variant="unstyled" placeholder="..." size="xs" />
+                    <td className='p-3' key={col.id}>
+                      <TextInput
+                        placeholder='...'
+                        size='xs'
+                        variant='unstyled'
+                      />
                     </td>
                   ))}
                 </tr>
@@ -614,46 +708,59 @@ const renderPreviewInput = (field: Question, size: 'lg' | 'sm' = 'lg') => {
     case 'FULL_NAME':
       return (
         <TextInput
-          placeholder={field.settings.general.placeholder || "Type your answer here..."}
-          variant={isSmall ? "default" : "unstyled"}
-          size={isSmall ? "sm" : "xl"}
+          size={isSmall ? 'sm' : 'xl'}
+          variant={isSmall ? 'default' : 'unstyled'}
           classNames={{
             input: isSmall
               ? 'bg-white'
-              : 'border-b-2 border-gray-2 focus:border-accent-primary transition-colors px-0 rounded-none text-2xl font-light py-2'
+              : 'rounded-none border-b-2 border-gray-2 px-0 py-2 text-2xl font-light transition-colors focus:border-accent-primary',
           }}
+          placeholder={
+            field.settings.general.placeholder || 'Type your answer here...'
+          }
         />
       )
     case 'LONG_TEXT':
       return (
         <textarea
-          placeholder={field.settings.general.placeholder || "Type your answer here..."}
           className={cn(
-            "w-full outline-none transition-colors resize-none",
+            'w-full resize-none transition-colors outline-none',
             isSmall
-              ? "bg-white border border-gray-3 rounded-md p-2 text-sm min-h-[80px] focus:border-accent-primary focus:ring-1 focus:ring-accent-primary"
-              : "bg-transparent border-b-2 border-gray-2 focus:border-accent-primary text-xl font-light py-2 min-h-[100px]"
+              ? 'min-h-[80px] rounded-md border border-gray-3 bg-white p-2 text-sm focus:border-accent-primary focus:ring-1 focus:ring-accent-primary'
+              : 'min-h-[100px] border-b-2 border-gray-2 bg-transparent py-2 text-xl font-light focus:border-accent-primary',
           )}
+          placeholder={
+            field.settings.general.placeholder || 'Type your answer here...'
+          }
         />
       )
     case 'DATE':
       return (
-        <div className={cn(
-          "inline-flex items-center gap-3 border border-gray-2 rounded-lg text-gray-5 hover:border-accent-primary/50 transition-colors cursor-pointer bg-white",
-          isSmall ? "p-2 text-sm" : "p-3 text-lg"
-        )}>
-          <Icon name="tabler:calendar" width={isSmall ? 16 : 20} height={isSmall ? 16 : 20} />
+        <div
+          className={cn(
+            'inline-flex cursor-pointer items-center gap-3 rounded-lg border border-gray-2 bg-white text-gray-5 transition-colors hover:border-accent-primary/50',
+            isSmall ? 'p-2 text-sm' : 'p-3 text-lg',
+          )}
+        >
+          <Icon
+            height={isSmall ? 16 : 20}
+            name='tabler:calendar'
+            width={isSmall ? 16 : 20}
+          />
           <span>MM / DD / YYYY</span>
         </div>
       )
     case 'RATING':
       return (
-        <div className="flex gap-2 sm:gap-4">
+        <div className='flex gap-2 sm:gap-4'>
           {[1, 2, 3, 4, 5].map((s) => (
-            <button key={s} className={cn(
-              "rounded bg-gray-1 border border-gray-3 hover:border-accent-primary hover:bg-accent-primary hover:text-white transition-all font-bold text-gray-7 flex items-center justify-center",
-              isSmall ? "size-8 text-sm" : "size-12 text-lg"
-            )}>
+            <button
+              key={s}
+              className={cn(
+                'flex items-center justify-center rounded border border-gray-3 bg-gray-1 font-bold text-gray-7 transition-all hover:border-accent-primary hover:bg-accent-primary hover:text-white',
+                isSmall ? 'size-8 text-sm' : 'size-12 text-lg',
+              )}
+            >
               {s}
             </button>
           ))}
@@ -664,19 +771,29 @@ const renderPreviewInput = (field: Question, size: 'lg' | 'sm' = 'lg') => {
     case 'SINGLE_SELECT':
     case 'MULTI_SELECT':
       return (
-        <div className="space-y-2">
+        <div className='space-y-2'>
           {['Option A', 'Option B', 'Option C'].map((opt, i) => (
-            <div key={i} className={cn(
-              "flex items-center gap-3 border border-gray-2 rounded-lg hover:bg-accent-soft/5 hover:border-accent-primary/30 transition-all cursor-pointer bg-white",
-              isSmall ? "p-2 text-sm" : "p-3"
-            )}>
-              <div className={cn(
-                "border border-gray-3 flex items-center justify-center",
-                field.type === 'SINGLE_CHOICE' ? 'rounded-full' : 'rounded-md',
-                isSmall ? "size-4" : "size-5"
-              )}>
-              </div>
-              <span className={cn("text-gray-7", isSmall ? "text-sm" : "text-lg")}>{opt}</span>
+            <div
+              key={i}
+              className={cn(
+                'flex cursor-pointer items-center gap-3 rounded-lg border border-gray-2 bg-white transition-all hover:border-accent-primary/30 hover:bg-accent-soft/5',
+                isSmall ? 'p-2 text-sm' : 'p-3',
+              )}
+            >
+              <div
+                className={cn(
+                  'flex items-center justify-center border border-gray-3',
+                  field.type === 'SINGLE_CHOICE'
+                    ? 'rounded-full'
+                    : 'rounded-md',
+                  isSmall ? 'size-4' : 'size-5',
+                )}
+              ></div>
+              <span
+                className={cn('text-gray-7', isSmall ? 'text-sm' : 'text-lg')}
+              >
+                {opt}
+              </span>
             </div>
           ))}
         </div>
@@ -684,14 +801,16 @@ const renderPreviewInput = (field: Question, size: 'lg' | 'sm' = 'lg') => {
     default:
       return (
         <TextInput
-          placeholder={field.settings.general.placeholder || "Type your answer here..."}
-          variant={isSmall ? "default" : "unstyled"}
-          size={isSmall ? "sm" : "xl"}
+          size={isSmall ? 'sm' : 'xl'}
+          variant={isSmall ? 'default' : 'unstyled'}
           classNames={{
             input: isSmall
               ? 'bg-white'
-              : 'border-b-2 border-gray-2 focus:border-accent-primary transition-colors px-0 rounded-none text-2xl font-light py-2'
+              : 'rounded-none border-b-2 border-gray-2 px-0 py-2 text-2xl font-light transition-colors focus:border-accent-primary',
           }}
+          placeholder={
+            field.settings.general.placeholder || 'Type your answer here...'
+          }
         />
       )
   }

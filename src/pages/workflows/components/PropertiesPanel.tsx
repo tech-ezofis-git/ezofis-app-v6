@@ -24,6 +24,9 @@ const GoogleDriveNodeSettings = lazy<React.ComponentType<{ node: Node }>>(
 const OneDriveNodeSettings = lazy<React.ComponentType<{ node: Node }>>(
   () => import('./settings/OneDriveNodeSettings'),
 )
+const ConditionNodeSettings = lazy<React.ComponentType<{ node: Node }>>(
+  () => import('./settings/ConditionSettingsPanel'),
+)
 import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
 import cn from '@/utils/cn'
@@ -91,13 +94,13 @@ function PropertiesPanel({
             nodes.map((n) =>
               n.id === node.id
                 ? {
-                  ...n,
-                  data: {
-                    ...n.data,
-                    connection: newValue,
-                    connectionLabel: connector,
-                  },
-                }
+                    ...n,
+                    data: {
+                      ...n.data,
+                      connection: newValue,
+                      connectionLabel: connector,
+                    },
+                  }
                 : n,
             ),
           )
@@ -449,6 +452,25 @@ function PropertiesPanel({
             }
           >
             <OCRAgentNodeSettings node={node} />
+          </Suspense>
+        </div>
+        {CommonFooter}
+      </div>
+    )
+  }
+
+  // Render Condition node settings panel
+  if (toolType === 'condition') {
+    return (
+      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-white shadow-xl transition-all'>
+        {NodeHeader}
+        <div className='flex-1 overflow-hidden'>
+          <Suspense
+            fallback={
+              <div className='p-6 text-gray-10'>Loading settings...</div>
+            }
+          >
+            <ConditionNodeSettings node={node} />
           </Suspense>
         </div>
         {CommonFooter}

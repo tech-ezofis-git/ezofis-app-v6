@@ -1,7 +1,9 @@
 import type { Node } from '@xyflow/react'
+import { useQuery } from '@tanstack/react-query'
 import { useNodes, useReactFlow } from '@xyflow/react'
 import { useEffect, useState } from 'react'
 import type { Option } from '@/types/option'
+import { requestApi } from '@/api/requests/requests'
 import Icon from '@/components/base/icon/Icon'
 import InputLabel from '@/components/base/inputs/InputLabel'
 import InputRadioGroup from '@/components/base/inputs/InputRadioGroup'
@@ -11,20 +13,7 @@ import cn from '@/utils/cn'
 import ConnectionsRouting from './common/ConnectionsRouting'
 import SettingsSection from './common/SettingsSection'
 
-const regionOptions = ['East Asia', 'Middle East', 'US & Canada']
-
-const assistantInputOptions = [
-  { id: 1, name: 'Accounts Payable' },
-  { id: 2, name: 'Purchase Orders' },
-  { id: 3, name: 'Delivery Notes' },
-  { id: 4, name: 'Contracts and Agreements' },
-  { id: 5, name: 'Employee Records' },
-  { id: 6, name: 'Time sheet and attendance' },
-  { id: 7, name: 'Expense Report' },
-  { id: 8, name: 'Sales Order' },
-  { id: 9, name: 'Shipping Documents' },
-  { id: 10, name: 'Quality Control Reports' },
-]
+const regionOptions = ['EAST ASIA', 'MIDDLE EAST', 'US & CANADA']
 
 const initialJson = `{
   "header": {
@@ -58,11 +47,23 @@ export default function OCRAgentSettingsPanel({
     : null
   const nodeData = (currentNode?.data || {}) as any
 
-  const [region, setRegion] = useState(nodeData.region || 'US & Canada')
-  const [assistantInput, setAssistantInput] = useState<any>(
-    assistantInputOptions.find((opt) => opt.name === nodeData.assistantInput) ||
-      assistantInputOptions[0],
-  )
+  const formatJson = (data: any) => {
+    if (!data) return initialJson
+    if (typeof data === 'object') {
+      return JSON.stringify(data, null, 2)
+    }
+    if (typeof data === 'string') {
+      try {
+        return JSON.stringify(JSON.parse(data), null, 2)
+      } catch {
+        return data
+      }
+    }
+    return String(data)
+  }
+
+  const [region, setRegion] = useState(nodeData.region || 'US & CANADA')
+  const [assistantInput, setAssistantInput] = useState<any>(null)
   const [fieldExtraction, setFieldExtraction] = useState(
     nodeData.fieldExtraction || initialJson,
   )
@@ -77,6 +78,40 @@ export default function OCRAgentSettingsPanel({
 
   const [openBasic, setOpenBasic] = useState(false)
   const [openFields, setOpenFields] = useState(false)
+
+  const { data: assistantInputOptions = [] } = useQuery({
+    queryKey: ['ocrTemplates', region],
+    queryFn: async () => {
+      try {
+        const payload = await requestApi.getOcrTemplate({ region: region })
+
+        let list = payload
+        if (typeof list === 'string') {
+          try {
+            list = JSON.parse(list)
+          } catch (e) {
+            console.error('JSON parse failed:', e)
+            return []
+          }
+        }
+
+        // Safety check before mapping
+        if (!Array.isArray(list)) {
+          return []
+        }
+
+        return list.map((form: any) => ({
+          fieldMapping: form.fieldMapping || form.FieldMapping,
+          id: form.id || form.Id,
+          name: form.documentType || form.DocumentType,
+          prompt1: form.prompt1 || form.Prompt1,
+        }))
+      } catch (error) {
+        console.error('Failed to load OCR Templates', error)
+        return []
+      }
+    },
+  })
 
   const updateNodeData = (key: string, value: any) => {
     if (currentNode) {
@@ -98,6 +133,19 @@ export default function OCRAgentSettingsPanel({
   const handleAssistantInputChange = (option: any) => {
     setAssistantInput(option)
     updateNodeData('assistantInput', option?.name || '')
+
+    // Fill the Schema Definition when document type is chosen
+    if (option) {
+      const newSchema = formatJson(option.fieldMapping)
+      setFieldExtraction(newSchema)
+      updateNodeData('fieldExtraction', newSchema)
+      try {
+        JSON.parse(newSchema)
+        setJsonValid(true)
+      } catch {
+        setJsonValid(false)
+      }
+    }
   }
 
   const handleJsonChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -117,16 +165,6 @@ export default function OCRAgentSettingsPanel({
     if (nodeData.region && nodeData.region !== region)
       setRegion(nodeData.region)
 
-    const currentName = assistantInput?.name || ''
-    if (
-      nodeData.assistantInput !== undefined &&
-      nodeData.assistantInput !== currentName
-    ) {
-      const found = assistantInputOptions.find(
-        (opt) => opt.name === nodeData.assistantInput,
-      )
-      setAssistantInput(found || null)
-    }
     if (
       nodeData.fieldExtraction &&
       nodeData.fieldExtraction !== fieldExtraction
@@ -139,7 +177,36 @@ export default function OCRAgentSettingsPanel({
         setJsonValid(false)
       }
     }
-  }, [nodeData])
+  }, [nodeData.region, nodeData.fieldExtraction, region, fieldExtraction])
+
+  // Sync assistantInput specifically when template options load or nodeData changes
+  useEffect(() => {
+    if (assistantInputOptions.length > 0) {
+      const targetName = nodeData.assistantInput
+      const found = assistantInputOptions.find(
+        (opt: any) => opt.name === targetName,
+      )
+
+      if (found && found.name !== assistantInput?.name) {
+        setAssistantInput(found)
+      } else if (!targetName || (!found && !assistantInput)) {
+        // Automatically default to the first option if nothing is configured
+        const firstOpt = assistantInputOptions[0]
+        setAssistantInput(firstOpt)
+        updateNodeData('assistantInput', firstOpt.name)
+
+        const newSchema = formatJson(firstOpt.fieldMapping)
+        setFieldExtraction(newSchema)
+        updateNodeData('fieldExtraction', newSchema)
+        try {
+          JSON.parse(newSchema)
+          setJsonValid(true)
+        } catch {
+          setJsonValid(false)
+        }
+      }
+    }
+  }, [assistantInputOptions, nodeData.assistantInput, assistantInput?.name])
 
   return (
     <div className='flex h-full flex-col overflow-hidden bg-white font-inter text-gray-12'>

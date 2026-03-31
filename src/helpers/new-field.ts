@@ -13,53 +13,56 @@ export const getField = (fieldType: string) => {
   const id = generateId()
 
   const baseField = {
+    displayLabel: '',
     id,
-    label: fieldType.toLowerCase() === 'text_builder' ? 'Paragraph' : fieldType.replace(/_/g, ' ').toLowerCase(),
-    displayLabel: "",
+    label:
+      fieldType.toLowerCase() === 'text_builder'
+        ? 'Paragraph'
+        : fieldType.replace(/_/g, ' ').toLowerCase(),
     type: fieldType.toUpperCase(),
     settings: {
+      aiSettings: {
+        formControlValidate: { masterFormColumn: [], masterFormId: 0 },
+        validateTypeKeyword: '',
+      },
       general: {
         hideLabel: false,
-        size: "col-6",
-        visibility: "NORMAL",
-        placeholder: "",
-        tooltip: "",
-        url: ""
-      },
-      specific: {
-        defaultValue: "CUSTOM",
-        customDefaultValue: "",
-        optionsType: "CUSTOM",
-        optionsSource: "CUSTOM",
-        customOptions: "Option 1,Option 2,Option 3",
-        separateOptionsUsing: "COMMA",
-        allowToAddNewOptions: false,
-        optionsPerLine: 0,
-        tableColumns: [] as any[],
-        tableRowsType: "ON_DEMAND",
-        matrixColumns: [] as any[],
-        matrixRows: [] as any[],
-        fibFields: [] as any[],
-        dividerStyle: "SOLID",
-        autoGenerateValue: { enabled: false, prefix: "", suffix: "" }
-      },
-      validation: {
-        fieldRule: "OPTIONAL",
-        contentRule: "",
-        minimum: "",
-        maximum: "",
-        allowedFileTypes: [] as string[],
-        maxFileSize: 10
-      },
-      aiSettings: {
-        validateTypeKeyword: "",
-        formControlValidate: { masterFormId: 0, masterFormColumn: [] }
+        placeholder: '',
+        size: 'col-6',
+        tooltip: '',
+        url: '',
+        visibility: 'NORMAL',
       },
       lookupSettings: {
-        columnName: "",
-        connectionId: 0
-      }
-    }
+        columnName: '',
+        connectionId: 0,
+      },
+      specific: {
+        allowToAddNewOptions: false,
+        autoGenerateValue: { enabled: false, prefix: '', suffix: '' },
+        customDefaultValue: '',
+        customOptions: 'Option 1,Option 2,Option 3',
+        defaultValue: 'CUSTOM',
+        dividerStyle: 'SOLID',
+        fibFields: [] as any[],
+        matrixColumns: [] as any[],
+        matrixRows: [] as any[],
+        optionsPerLine: 0,
+        optionsSource: 'CUSTOM',
+        optionsType: 'CUSTOM',
+        separateOptionsUsing: 'COMMA',
+        tableColumns: [] as any[],
+        tableRowsType: 'ON_DEMAND',
+      },
+      validation: {
+        allowedFileTypes: [] as string[],
+        contentRule: '',
+        fieldRule: 'OPTIONAL',
+        maxFileSize: 10,
+        maximum: '',
+        minimum: '',
+      },
+    },
   }
 
   // Specific tweaks based on type
@@ -68,7 +71,12 @@ export const getField = (fieldType: string) => {
     case 'TABLE':
     case 'DYNAMIC_TABLE':
       s.tableColumns = [
-        { id: generateId(), label: 'Column 1', type: 'SHORT_TEXT', size: 'col-6' }
+        {
+          id: generateId(),
+          label: 'Column 1',
+          size: 'col-6',
+          type: 'SHORT_TEXT',
+        },
       ]
       break
     case 'MATRIX':

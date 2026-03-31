@@ -1,11 +1,11 @@
+import { useParams } from '@tanstack/react-router'
+import { useEffect, useState } from 'react'
+import formApi from '@/api/form/form'
 import Build from './components/build/Build'
 import LivePreview from './components/build/components/preview/LivePreview'
 import FormBuilderSkeleton from './components/common/FormBuilderSkeleton'
 import Header from './components/common/Header'
 import { useFormStore } from './store/formStore'
-import { useParams } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
-import formApi from '@/api/form/form'
 
 const FormBuilderPage = () => {
   const { formId } = useParams({ strict: false }) as any

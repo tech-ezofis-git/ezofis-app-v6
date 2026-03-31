@@ -11,7 +11,6 @@ import {
 import Icon from '@/components/base/icon/Icon'
 import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
 import InputSwitch from '@/components/base/inputs/InputSwitch'
-import { generateId } from '@/pages/form-builder/store/formStore'
 import ConnectionsRouting from './common/ConnectionsRouting'
 import SettingsSection from './common/SettingsSection'
 
@@ -31,7 +30,7 @@ export default function ManualUserSettingsPanel({
     const users = userData as any[]
     if (!users || !Array.isArray(users)) return []
     return users.map((u: any) => ({
-      id: generateId(),
+      id: String(u.id || u.value),
       name: String(u.value || u.loginName || 'Unknown User'),
     }))
   }, [userData])
@@ -40,8 +39,8 @@ export default function ManualUserSettingsPanel({
     const groups = groupData as any[]
     if (!groups || !Array.isArray(groups)) return []
     return groups.map((g: any) => ({
-      id: generateId(),
-      name: String(g.value || 'Unknown Group'),
+      id: String(g.id || g.value),
+      name: String(g.groupName || g.name || g.value || 'Unknown Group'),
     }))
   }, [groupData])
 
@@ -55,7 +54,7 @@ export default function ManualUserSettingsPanel({
     nodeData.isUserEnabled ?? true,
   )
   const [selectedUsers, setSelectedUsers] = useState<Option[]>(
-    nodeData.selectedUsers || (userOptions.length > 0 ? [userOptions[0]] : []),
+    nodeData.selectedUsers || [],
   )
   const [isGroupEnabled, setIsGroupEnabled] = useState(
     nodeData.isGroupEnabled ?? true,
@@ -78,6 +77,45 @@ export default function ManualUserSettingsPanel({
     }
   }
 
+  // Resolve placeholders (e.g., "User 7") to actual names/emails once options are loaded
+  useEffect(() => {
+    if (userOptions.length > 0 && Array.isArray(selectedUsers) && selectedUsers.length > 0) {
+      let needsUpdate = false
+      const updated = selectedUsers.map((u) => {
+        const found = userOptions.find((opt) => String(opt.id) === String(u.id))
+        if (found && found.name !== u.name) {
+          needsUpdate = true
+          return found
+        }
+        return u
+      })
+      if (needsUpdate) {
+        setSelectedUsers(updated)
+        updateNodeData('selectedUsers', updated)
+      }
+    }
+  }, [userOptions, selectedUsers])
+
+  useEffect(() => {
+    if (groupOptions.length > 0 && Array.isArray(selectedGroups) && selectedGroups.length > 0) {
+      let needsUpdate = false
+      const updated = selectedGroups.map((g) => {
+        const found = groupOptions.find(
+          (opt) => String(opt.id) === String(g.id),
+        )
+        if (found && found.name !== g.name) {
+          needsUpdate = true
+          return found
+        }
+        return g
+      })
+      if (needsUpdate) {
+        setSelectedGroups(updated)
+        updateNodeData('selectedGroups', updated)
+      }
+    }
+  }, [groupOptions, selectedGroups])
+
   // Keep state in sync with external changes
   useEffect(() => {
     if (
@@ -88,10 +126,14 @@ export default function ManualUserSettingsPanel({
     }
     if (
       nodeData.selectedUsers &&
+      Array.isArray(nodeData.selectedUsers) &&
       JSON.stringify(nodeData.selectedUsers) !== JSON.stringify(selectedUsers)
     ) {
       setSelectedUsers(nodeData.selectedUsers)
+    } else if (nodeData.selectedUsers && !Array.isArray(nodeData.selectedUsers)) {
+      setSelectedUsers([])
     }
+
     if (
       nodeData.isGroupEnabled !== undefined &&
       nodeData.isGroupEnabled !== isGroupEnabled
@@ -100,11 +142,19 @@ export default function ManualUserSettingsPanel({
     }
     if (
       nodeData.selectedGroups &&
+      Array.isArray(nodeData.selectedGroups) &&
       JSON.stringify(nodeData.selectedGroups) !== JSON.stringify(selectedGroups)
     ) {
       setSelectedGroups(nodeData.selectedGroups)
+    } else if (nodeData.selectedGroups && !Array.isArray(nodeData.selectedGroups)) {
+      setSelectedGroups([])
     }
-  }, [nodeData])
+  }, [
+    nodeData.isUserEnabled,
+    nodeData.selectedUsers,
+    nodeData.isGroupEnabled,
+    nodeData.selectedGroups,
+  ])
 
   return (
     <div className='flex h-full flex-col overflow-hidden bg-white font-inter text-gray-12'>

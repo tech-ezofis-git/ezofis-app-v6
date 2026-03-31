@@ -15,12 +15,17 @@ import { useCallback, useState } from 'react'
 import { useEffect } from 'react'
 import '@xyflow/react/dist/style.css'
 import useWorkflowStore from '../stores/useWorkflowStore'
+import { generateId } from '../utils/generateId'
 import AddNodeMenu from './AddNodeMenu'
 import CustomEdge from './edges/CustomEdge'
 import BuilderHeader from './header/BuilderHeader'
 import CustomNode from './nodes/CustomNode'
 import PropertiesPanel from './PropertiesPanel'
 import { WorkflowSettings } from './WorkflowSettings'
+
+import { useParams } from '@tanstack/react-router'
+import { useQuery } from '@tanstack/react-query'
+import { getWorkflowQueryOptions } from '@/api/workflow/queries'
 
 const nodeTypes = {
   custom: CustomNode,
@@ -30,7 +35,10 @@ const edgeTypes = {
   custom: CustomEdge,
 }
 
-const initialNodes = [
+const initialTriggerId = generateId()
+const initialEndId = generateId()
+
+const initialNodes: Node[] = [
   {
     data: {
       icon: 'logos:google-gmail',
@@ -40,7 +48,7 @@ const initialNodes = [
       type: 'trigger',
       warning: true,
     },
-    id: '1',
+    id: initialTriggerId,
     position: { x: 400, y: 50 },
     type: 'custom',
   },
@@ -52,18 +60,31 @@ const initialNodes = [
       subLabel: 'Automated Process End',
       warning: true,
     },
-    id: '2',
+    id: initialEndId,
     position: { x: 400, y: 300 },
     type: 'custom',
   },
 ]
 const initialEdges: Edge[] = [
-  { id: 'e1-2', source: '1', target: '2', type: 'custom' },
+  {
+    id: generateId(),
+    source: initialTriggerId,
+    target: initialEndId,
+    type: 'custom',
+  },
 ]
 
 const WorkflowBuilder = () => {
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes)
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges)
+  const { workflowId } = useParams({ from: '/workflow-builder/$workflowId' })
+  const isNew = workflowId === 'new'
+
+  const { data } = useQuery({
+    ...getWorkflowQueryOptions(workflowId),
+    enabled: !isNew,
+  })
+
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node>(initialNodes)
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(initialEdges)
   const [contextMenu, setContextMenu] = useState<{
     id: string
     left: number
@@ -73,11 +94,43 @@ const WorkflowBuilder = () => {
   const {
     closePanel,
     isPanelOpen,
+    loadLegacyWorkflow,
+    loadedEdges,
+    loadedNodes,
     selectedEdge,
     selectEdge,
     selectedNode,
     selectNode,
+    resetWorkflow,
   } = useWorkflowStore((state) => state)
+
+  // Reset if it's new
+  useEffect(() => {
+    if (isNew) {
+      resetWorkflow()
+      setNodes(initialNodes)
+      setEdges(initialEdges)
+    }
+  }, [isNew, resetWorkflow, setNodes, setEdges])
+
+  // Load from database
+  useEffect(() => {
+    if (data?.flowJson && !isNew) {
+      try {
+        const json = JSON.parse(data.flowJson)
+        loadLegacyWorkflow(json)
+      } catch (e) {
+        console.error('Failed to parse flowJson', e)
+      }
+    }
+  }, [data, loadLegacyWorkflow, isNew])
+
+  useEffect(() => {
+    if (loadedNodes && loadedEdges) {
+      setNodes(loadedNodes)
+      setEdges(loadedEdges)
+    }
+  }, [loadedNodes, loadedEdges, setNodes, setEdges])
 
   useEffect(() => {
     setNodes((nds) =>
@@ -188,7 +241,9 @@ const WorkflowBuilder = () => {
 
   const onConnect = useCallback(
     (params: Connection) =>
-      setEdges((eds) => addEdge({ ...params, type: 'custom' }, eds)),
+      setEdges((eds) =>
+        addEdge({ ...params, id: generateId(), type: 'custom' }, eds),
+      ),
     [setEdges],
   )
 
@@ -269,7 +324,6 @@ const WorkflowBuilder = () => {
               deleteKeyCode={['Backspace', 'Delete']}
               edges={edges}
               edgeTypes={edgeTypes}
-              fitViewOptions={{ maxZoom: 0.75, padding: 0.2 }}
               maxZoom={0.75}
               minZoom={0.25}
               nodes={nodes}
@@ -277,7 +331,6 @@ const WorkflowBuilder = () => {
               panOnScroll={true}
               proOptions={{ hideAttribution: true }}
               zoomOnScroll={false}
-              fitView
               defaultEdgeOptions={{
                 type: 'custom',
               }}
@@ -314,16 +367,16 @@ const WorkflowBuilder = () => {
                     (nodes.find((n) => n.id === contextMenu.id)?.data.type !==
                       'trigger' &&
                       nodes.find((n) => n.id === contextMenu.id)?.data.label !==
-                      'Workflow Success')) && (
-                      <button
-                        className='text-red-600 hover:bg-red-50 flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm'
-                        onClick={deleteItem}
-                      >
-                        {contextMenu.type === 'node'
-                          ? 'Delete Node'
-                          : 'Delete Connection'}
-                      </button>
-                    )}
+                        'Workflow Success')) && (
+                    <button
+                      className='text-red-600 hover:bg-red-50 flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm'
+                      onClick={deleteItem}
+                    >
+                      {contextMenu.type === 'node'
+                        ? 'Delete Node'
+                        : 'Delete Connection'}
+                    </button>
+                  )}
                 </div>
               )}
             </ReactFlow>

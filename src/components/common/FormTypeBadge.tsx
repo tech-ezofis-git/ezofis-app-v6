@@ -11,12 +11,12 @@ const FormTypeBadge = ({ type }: Props) => {
     switch (type?.toUpperCase()) {
       case 'WORKFLOW':
         return 'cyan'
-      case 'MASTER':
-        return 'purple'
-      case 'TASK':
+      case 'FORM':
+        return 'green'
+      case 'DOCUMENT':
         return 'blue'
-      case 'FEEDBACK':
-        return 'pink'
+      case 'DOCUMENT_FORM':
+        return 'indigo'
       default:
         return 'gray'
     }

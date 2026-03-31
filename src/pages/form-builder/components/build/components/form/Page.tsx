@@ -1,15 +1,23 @@
-import { ActionIcon } from '@mantine/core'
-import Icon from '@/components/base/icon/Icon'
-import QuestionCard from './QuestionCard'
-import AddFieldInline from './AddFieldInline'
-import SectionHeader from './SectionHeader'
-import AddFieldButton from './AddFieldButton'
-import { useFormStore, type Question, type Panel as PanelType } from '@/pages/form-builder/store/formStore'
-import { useState, useRef, useEffect } from 'react'
-import cn from '@/utils/cn'
-import { useSortable, SortableContext, rectSortingStrategy } from '@dnd-kit/sortable'
+import {
+  rectSortingStrategy,
+  SortableContext,
+  useSortable,
+} from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import { ActionIcon } from '@mantine/core'
+import { useEffect, useRef, useState } from 'react'
+import Icon from '@/components/base/icon/Icon'
 import { getField } from '@/helpers/new-field'
+import {
+  type Panel as PanelType,
+  type Question,
+  useFormStore,
+} from '@/pages/form-builder/store/formStore'
+import cn from '@/utils/cn'
+import AddFieldButton from './AddFieldButton'
+import AddFieldInline from './AddFieldInline'
+import QuestionCard from './QuestionCard'
+import SectionHeader from './SectionHeader'
 
 interface Props {
   panel: PanelType
@@ -19,27 +27,33 @@ interface Props {
 const Page = ({ panel, panelIndex }: Props) => {
   const {
     activeQuestionId,
-    setActiveQuestionId,
-    updateQuestion,
-    deleteQuestion,
     addQuestion,
+    clearLastAddedPanelId,
+    deleteQuestion,
     isBuilderMode,
     lastAddedPanelId,
-    clearLastAddedPanelId
+    updateQuestion,
+    setActiveQuestionId,
   } = useFormStore()
 
   const pageRef = useRef<HTMLDivElement>(null)
   const [showAddFieldAt, setShowAddFieldAt] = useState<number | null>(null)
-  const [addFieldAnchorRect, setAddFieldAnchorRect] = useState<DOMRect | null>(null)
+  const [addFieldAnchorRect, setAddFieldAnchorRect] = useState<DOMRect | null>(
+    null,
+  )
   const [isCollapsed, setIsCollapsed] = useState(false)
 
   // Mapping for field widths to 12-column grid spans
   const getColumnSpan = (size: string) => {
     switch (size) {
-      case 'col-6': return 'col-span-12 md:col-span-6'
-      case 'col-4': return 'col-span-12 md:col-span-4'
-      case 'col-3': return 'col-span-12 md:col-span-3'
-      default: return 'col-span-12'
+      case 'col-6':
+        return 'col-span-12 md:col-span-6'
+      case 'col-4':
+        return 'col-span-12 md:col-span-4'
+      case 'col-3':
+        return 'col-span-12 md:col-span-3'
+      default:
+        return 'col-span-12'
     }
   }
 
@@ -116,60 +130,65 @@ const Page = ({ panel, panelIndex }: Props) => {
 
   return (
     <div
-      ref={pageRef}
+      className='group/page relative mb-8 rounded-2xl border border-gray-3 bg-white font-inter shadow-md transition-all duration-300'
       id={panel.id}
-      className="bg-white rounded-2xl border border-gray-3 shadow-md relative group/page transition-all duration-300 font-inter mb-8"
+      ref={pageRef}
       onDragOver={(e) => e.preventDefault()}
     >
       {/* 1. Section Header */}
       <SectionHeader
-        panel={panel}
-        panelIndex={panelIndex}
         fieldCount={panel.fields.length}
         isCollapsed={isCollapsed}
+        panel={panel}
+        panelIndex={panelIndex}
         onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
       />
 
       {/* 2. Page Canvas / Field Grid */}
       {!isCollapsed && (
-        <div className="relative z-10 p-6 pt-4">
-          <SortableContext items={panel.fields.map(q => q.id)} strategy={rectSortingStrategy}>
-            <div className="grid grid-cols-12 gap-x-4 gap-y-6 w-full">
+        <div className='relative z-10 p-6 pt-4'>
+          <SortableContext
+            items={panel.fields.map((q) => q.id)}
+            strategy={rectSortingStrategy}
+          >
+            <div className='grid w-full grid-cols-12 gap-x-4 gap-y-6'>
               {/* Render Fields */}
               {panel.fields.map((q: Question, i: number) => (
                 <div
                   key={q.id}
                   className={cn(
-                    "transition-all duration-500 relative group/field",
-                    getColumnSpan(q.settings.general.size)
+                    'group/field relative transition-all duration-500',
+                    getColumnSpan(q.settings.general.size),
                   )}
                 >
                   {/* Drop Zone Above (Visual Indicator) */}
-                  <div className="absolute -top-3 left-0 w-full h-6 z-20 flex items-center justify-center opacity-0 hover:opacity-100 group/insert transition-all pointer-events-none">
-                    <div className="w-full h-[2px] bg-accent-soft shadow-[0_0_8px_rgba(124,92,255,0.4)] mx-4 rounded-full" />
+                  <div className='group/insert pointer-events-none absolute -top-3 left-0 z-20 flex h-6 w-full items-center justify-center opacity-0 transition-all hover:opacity-100'>
+                    <div className='mx-4 h-[2px] w-full rounded-full bg-accent-soft shadow-[0_0_8px_rgba(124,92,255,0.4)]' />
                     <ActionIcon
-                      size="sm"
-                      radius="xl"
-                      color="violet"
-                      variant="filled"
-                      className="absolute shadow-sm scale-75 group-hover/insert:scale-100 transition-all hover:bg-accent-primary pointer-events-auto"
+                      className='pointer-events-auto absolute scale-75 shadow-sm transition-all group-hover/insert:scale-100 hover:bg-accent-primary'
+                      color='violet'
+                      radius='xl'
+                      size='sm'
+                      variant='filled'
                       onClick={(e) => {
-                        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+                        const rect = (
+                          e.currentTarget as HTMLElement
+                        ).getBoundingClientRect()
                         setAddFieldAnchorRect(rect)
                         setShowAddFieldAt(i)
                       }}
                     >
-                      <Icon name="lucide:plus" width={12} height={12} />
+                      <Icon height={12} name='lucide:plus' width={12} />
                     </ActionIcon>
                   </div>
 
                   <SortableQuestionItem
-                    question={q}
                     activeQuestionId={activeQuestionId}
-                    setActiveQuestionId={setActiveQuestionId}
-                    updateQuestion={updateQuestion}
                     deleteQuestion={deleteQuestion}
                     isBuilderMode={isBuilderMode}
+                    question={q}
+                    updateQuestion={updateQuestion}
+                    setActiveQuestionId={setActiveQuestionId}
                   />
                 </div>
               ))}
@@ -177,10 +196,12 @@ const Page = ({ panel, panelIndex }: Props) => {
           </SortableContext>
 
           {/* 3. Add Field Button (At the bottom) */}
-          <div className="mt-8">
+          <div className='mt-8'>
             <AddFieldButton
               onClick={(e: any) => {
-                const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+                const rect = (
+                  e.currentTarget as HTMLElement
+                ).getBoundingClientRect()
                 setAddFieldAnchorRect(rect)
                 setShowAddFieldAt(panel.fields.length)
               }}
@@ -189,12 +210,12 @@ const Page = ({ panel, panelIndex }: Props) => {
 
           {showAddFieldAt !== null && (
             <AddFieldInline
-              onSelect={(type) => handleAddField(type, showAddFieldAt)}
+              anchorRect={addFieldAnchorRect}
               onClose={() => {
                 setShowAddFieldAt(null)
                 setAddFieldAnchorRect(null)
               }}
-              anchorRect={addFieldAnchorRect}
+              onSelect={(type) => handleAddField(type, showAddFieldAt)}
             />
           )}
         </div>

@@ -19,6 +19,8 @@ type Store = {
   isPanelOpen: boolean
   isRunningTest: boolean
   isSettingsOpen: boolean
+  loadedEdges: Edge[] | null
+  loadedNodes: Node[] | null
   prefixSegments: Array<{ id: string; type: string; value: string }>
   selectedEdge: Edge | null
   selectedNode: Node | null
@@ -29,6 +31,7 @@ type Store = {
   closeBuilder: () => void
   closePanel: () => void
   closeSettings: () => void
+  loadLegacyWorkflow: (legacyJson: any) => void
   openAddMenu: (position: { x: number; y: number }, edgeId: string) => void
   openChangeMenu: (position: { x: number; y: number }, nodeId: string) => void
   openSettings: () => void
@@ -47,6 +50,7 @@ type Store = {
   setWorkflowStatus: (status: 'draft' | 'published') => void
   startTestRun: () => void
   stopTestRun: () => void
+  resetWorkflow: () => void
 }
 
 const useWorkflowStore = create<Store>()((set) => ({
@@ -65,6 +69,8 @@ const useWorkflowStore = create<Store>()((set) => ({
   isPanelOpen: false,
   isRunningTest: false,
   isSettingsOpen: false,
+  loadedEdges: null,
+  loadedNodes: null,
   prefixSegments: [
     { id: '1', type: 'date', value: 'Year' },
     { id: '2', type: 'separator', value: '-' },
@@ -94,6 +100,43 @@ const useWorkflowStore = create<Store>()((set) => ({
   closePanel: () =>
     set({ isPanelOpen: false, selectedEdge: null, selectedNode: null }),
   closeSettings: () => set({ isSettingsOpen: false }),
+  loadLegacyWorkflow: (legacyJson: any) => {
+    import('../utils/importWorkflow').then(({ importWorkflow }) => {
+      const { edges, nodes } = importWorkflow(legacyJson)
+
+      let prefixSegments = [
+        { id: '1', type: 'date', value: 'Year' },
+        { id: '2', type: 'separator', value: '-' },
+        { id: '3', type: 'text', value: 'REQ' },
+        { id: '4', type: 'auto-increment', value: '1' },
+      ]
+
+      try {
+        if (legacyJson.settings?.general?.processNumberPrefix) {
+          prefixSegments = JSON.parse(
+            legacyJson.settings.general.processNumberPrefix,
+          )
+        }
+      } catch (e) {}
+
+      set({
+        folder:
+          legacyJson.settings?.general?.initiateUsing?.repositoryId || null,
+        form: legacyJson.settings?.general?.initiateUsing?.formId || null,
+        initiateUsing:
+          legacyJson.settings?.general?.initiateUsing?.type || 'document-form',
+        loadedEdges: edges,
+        loadedNodes: nodes,
+        prefixSegments,
+        workflowDescription: legacyJson.settings?.general?.description || '',
+        workflowName: legacyJson.settings?.general?.name || 'Imported Workflow',
+        workflowStatus:
+          legacyJson.settings?.publish?.publishOption === 'PUBLISHED'
+            ? 'published'
+            : 'draft',
+      })
+    })
+  },
   openAddMenu: (position, edgeId) =>
     set({ addMenu: { edgeId, isOpen: true, nodeId: null, position } }),
   openChangeMenu: (position, nodeId) =>
@@ -132,6 +175,35 @@ const useWorkflowStore = create<Store>()((set) => ({
     set({ workflowDescription: description }),
   setWorkflowName: (name) => set({ workflowName: name }),
   setWorkflowStatus: (status) => set({ workflowStatus: status }),
+  resetWorkflow: () =>
+    set({
+      folder: null,
+      form: null,
+      initiateUsing: 'document-form',
+      loadedEdges: null,
+      loadedNodes: null,
+      prefixSegments: [
+        { id: '1', type: 'date', value: 'Year' },
+        { id: '2', type: 'separator', value: '-' },
+        { id: '3', type: 'text', value: 'REQ' },
+        { id: '4', type: 'auto-increment', value: '1' },
+      ],
+      selectedEdge: null,
+      selectedNode: null,
+      workflowDescription: '',
+      workflowName: `Workflow - ${new Date()
+        .toLocaleString('en-US', {
+          day: '2-digit',
+          hour: '2-digit',
+          hour12: true,
+          minute: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+        })
+        .replace(',', '')
+        .replace(/\//g, '-')}`,
+      workflowStatus: 'draft',
+    }),
 }))
 
 export default useWorkflowStore

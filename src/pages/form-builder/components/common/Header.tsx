@@ -1,11 +1,11 @@
-import Button from '@/components/base/button/Button'
-import { useFormStore } from '@/pages/form-builder/store/formStore'
-import IconButton from '@/components/base/button/IconButton'
 import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
+import Button from '@/components/base/button/Button'
+import IconButton from '@/components/base/button/IconButton'
 // import IconButton from '@/components/base/button/IconButton'
 // import Icon from '@/components/base/icon/Icon'/
 import useAskAIStore from '@/components/common/ask-ai/stores/useAskAIStore'
+import { useFormStore } from '@/pages/form-builder/store/formStore'
 // import { useFormStore } from '@/pages/form-builder/store/formStore'/
 
 const Header = () => {
@@ -49,10 +49,11 @@ const Header = () => {
           <div className='flex items-center gap-2'>
             <h1 className='text-15/5 font-semibold text-gray-13'>{name}</h1>
             <span
-              className={`rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase ${publishStatus === 'PUBLISHED'
-                ? 'text-success-main bg-success-subtle'
-                : 'bg-gray-3 text-gray-11'
-                }`}
+              className={`rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase ${
+                publishStatus === 'PUBLISHED'
+                  ? 'text-success-main bg-success-subtle'
+                  : 'bg-gray-3 text-gray-11'
+              }`}
             >
               {publishStatus === 'PUBLISHED' ? 'Published' : 'Draft'}
             </span>
@@ -80,48 +81,47 @@ const Header = () => {
         />
 
         <Button
-          variant="solid"
-          color="primary"
-          size="sm"
-          icon="lucide:sparkles"
-          label="Ask AI"
+          className='from-violet-600 to-indigo-600 border-none bg-gradient-to-r shadow-md transition-all hover:shadow-lg'
+          color='primary'
+          icon='lucide:sparkles'
+          label='Ask AI'
+          size='sm'
+          variant='solid'
           onClick={() => {
             useFormStore.getState().setSidebarOpen(false) // Close settings if it's open
             useAskAIStore.getState().open()
           }}
-          className="bg-gradient-to-r from-violet-600 to-indigo-600 border-none shadow-md hover:shadow-lg transition-all"
         />
 
         <Button
-          variant="outline"
-          color="gray"
-          size="sm"
-          icon="lucide:eye"
-          label="Preview"
+          color='gray'
+          icon='lucide:eye'
+          label='Preview'
+          size='sm'
+          variant='outline'
           onClick={() => setIsPreviewOpen(true)}
         />
 
         <Button
-          variant="outline"
-          color="gray"
-          size="sm"
+          color='gray'
+          icon='lucide:save'
+          label='Save'
           loading={isSaving}
-          icon="lucide:save"
-          label="Save"
+          size='sm'
+          variant='outline'
           onClick={handleQuickSave}
         />
 
         <Button
-          variant="solid"
-          color="primary"
-          size="sm"
-          icon="lucide:rocket"
-          label="Publish"
+          className='px-4'
+          color='primary'
+          icon='lucide:rocket'
+          label='Publish'
+          size='sm'
+          variant='solid'
           onClick={() => setPublishOpen(true)}
-          className="px-4"
         />
       </div>
-
     </header>
   )
 }
