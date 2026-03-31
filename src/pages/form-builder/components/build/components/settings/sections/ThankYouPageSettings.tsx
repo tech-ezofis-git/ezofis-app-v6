@@ -1,4 +1,4 @@
-import { Switch, Text, Divider, Stack } from '@mantine/core'
+import { Switch, Divider, Stack } from '@mantine/core'
 import { useFormStore } from '@/pages/form-builder/store/formStore'
 import Input from '@/components/base/inputs/InputText'
 
@@ -9,7 +9,7 @@ const ThankYouPageSettings = () => {
     <div className="flex-1 overflow-y-auto p-4 space-y-5 animate-in fade-in duration-500">
       <Stack gap="xl">
         <div className="flex items-center justify-between py-1 px-1">
-          <Text size="sm" fw={700} className="text-gray-11">Enable Thank You Page</Text>
+          <div className="text-sm font-bold text-gray-11">Enable Thank You Page</div>
           <Switch
             checked={thankYouPage.enabled}
             onChange={(e) => setThankYouPage({ enabled: e.currentTarget.checked })}

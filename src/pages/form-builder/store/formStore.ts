@@ -23,6 +23,7 @@ export interface Panel {
   settings: {
     title: string
     description: string
+    isLocked?: boolean
   }
   fields: Question[]
 }
@@ -263,6 +264,7 @@ export interface FormStore {
   hubLinkIds: any[]
   isBuilderMode: boolean
   isPreviewOpen: boolean
+  isLeftSidebarCollapsed: boolean
   isPublishOpen: boolean
   isSidebarOpen: boolean
   lastAddedPanelId: string | null
@@ -278,6 +280,8 @@ export interface FormStore {
   thankYouPage: WelcomePage
   showWelcomePage: boolean
   showThankYouPage: boolean
+  sidebarView: 'explorer' | 'fields'
+  addFieldPosition: { panelId: string, index: number } | null
   uid: string
 
   // Phase 4: Management
@@ -300,6 +304,7 @@ export interface FormStore {
   setCoordinator: (coordinator: string) => void
   setPublishStatus: (status: PublishStatus) => void
   setSidebarOpen: (open: boolean) => void
+  setLeftSidebarCollapsed: (collapsed: boolean) => void
   setPublishOpen: (open: boolean) => void
   setPreviewMode: (mode: 'typeform' | 'grid' | 'full') => void
   setIsPreviewOpen: (open: boolean) => void
@@ -313,6 +318,8 @@ export interface FormStore {
   setClosedMessage: (message: string) => void
   setConversationalMode: (enabled: boolean) => void
   setHeaderFooter: (updates: { show?: boolean, header?: string, footer?: string }) => void
+  setSidebarView: (view: 'explorer' | 'fields') => void
+  setAddFieldPosition: (pos: { panelId: string, index: number } | null) => void
   clearSelection: () => void
   addPanel: (index?: number) => void
   addQuestion: (panelId: string, question: Question, index?: number) => void
@@ -324,6 +331,7 @@ export interface FormStore {
   loadForm: (data: any) => void
   movePanel: (id: string, direction: 'up' | 'down') => void
   moveQuestion: (id: string, toPanelId: string, index: number) => void
+  duplicatePanel: (id: string) => void
   resetForm: () => void
   saveForm: (targetStatus?: PublishStatus) => Promise<boolean>
   updatePanel: (id: string, updates: Partial<Panel['settings']>) => void
@@ -342,17 +350,12 @@ const initialState = {
   isBuilderMode: true,
   isPreviewOpen: false,
   isPublishOpen: false,
-  isSidebarOpen: true,
+  isSidebarOpen: false,
+  isLeftSidebarCollapsed: false,
   lastAddedPanelId: null,
   layout: 'typeform' as const,
   name: 'Untitled Form',
-  panels: [
-    {
-      fields: [],
-      id: 'panel-1',
-      settings: { description: '', title: 'Section 1' },
-    },
-  ],
+  panels: [],
   previewMode: 'typeform' as const,
   publishStatus: 'DRAFT' as const,
   secondaryPanels: [],
@@ -378,6 +381,8 @@ const initialState = {
   scheduleEnd: '',
   closedMessage: 'This form is currently closed.',
   conversationalMode: false,
+  sidebarView: 'explorer' as const,
+  addFieldPosition: null,
 }
 
 
@@ -419,6 +424,7 @@ export const useFormStore = create<FormStore>()(
       setCoordinator: (coordinator) => set({ coordinator }),
       setPublishStatus: (publishStatus) => set({ publishStatus }),
       setSidebarOpen: (isSidebarOpen) => set({ isSidebarOpen }),
+      setLeftSidebarCollapsed: (isLeftSidebarCollapsed) => set({ isLeftSidebarCollapsed }),
       setPublishOpen: (isPublishOpen) => set({ isPublishOpen }),
       setPreviewMode: (previewMode) => set({ previewMode }),
       setIsPreviewOpen: (isPreviewOpen) => set({ isPreviewOpen }),
@@ -444,6 +450,8 @@ export const useFormStore = create<FormStore>()(
           headerText: updates.header ?? state.headerText,
           showHeaderFooter: updates.show ?? state.showHeaderFooter,
         })),
+      setSidebarView: (sidebarView) => set({ sidebarView }),
+      setAddFieldPosition: (addFieldPosition) => set({ addFieldPosition }),
       clearSelection: () =>
         set({ activeQuestionId: null, selectionType: 'general' }),
 
@@ -632,6 +640,25 @@ export const useFormStore = create<FormStore>()(
               return { ...p, fields: newFields }
             }),
           }
+        }),
+
+      duplicatePanel: (id: string) =>
+        set((state) => {
+          const index = state.panels.findIndex((p) => p.id === id)
+          if (index === -1) return state
+          const original = state.panels[index]
+          const clone: Panel = {
+            ...JSON.parse(JSON.stringify(original)),
+            id: generateId(),
+            fields: original.fields.map(f => ({
+              ...f,
+              id: generateId(),
+              label: `${f.label} (Copy)`
+            }))
+          }
+          const newPanels = [...state.panels]
+          newPanels.splice(index + 1, 0, clone)
+          return { panels: newPanels }
         }),
 
       resetForm: () => set({ ...initialState, uid: generateId() }),

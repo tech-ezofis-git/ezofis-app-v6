@@ -6,17 +6,31 @@ import AskAI from '@/components/common/ask-ai/AskAI'
 import useAskAIStore from '@/components/common/ask-ai/stores/useAskAIStore'
 
 import LeftSidebar from './components/left-sidebar/LeftSidebar'
+import WelcomeScreen from './components/welcome/WelcomeScreen'
 
 const Build = () => {
   const isPublishOpen = useFormStore((state) => state.isPublishOpen)
   const isSidebarOpen = useFormStore((state) => state.isSidebarOpen)
   const isAskAIOpen = useAskAIStore((state) => state.isOpen)
+  const panels = useFormStore((state) => state.panels)
+
+  const hasPanels = panels.length > 0
+
+  if (!hasPanels) {
+    return (
+      <div className='flex h-full w-full overflow-hidden bg-white'>
+        <div className='flex-1 overflow-auto bg-gray-50/20'>
+          <WelcomeScreen />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className='flex h-full w-full overflow-hidden bg-white'>
       <LeftSidebar />
-      <div className='flex-1 overflow-auto bg-gray-50/50 shadow-inner px-8 py-10'>
-        <div className='animate-in fade-in slide-in-from-left-4 mx-auto max-w-[800px] duration-500'>
+      <div className='flex-1 overflow-auto bg-gray-50/50 shadow-inner px-4 pt-14 pb-12'>
+        <div className='animate-in fade-in slide-in-from-left-4 mx-auto w-full max-w-[1200px] duration-500'>
           <Form />
         </div>
       </div>

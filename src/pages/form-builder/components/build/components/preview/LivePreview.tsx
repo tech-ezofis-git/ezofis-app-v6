@@ -1,4 +1,4 @@
-import { Button, TextInput, SegmentedControl, Text, Divider, Tooltip, UnstyledButton, Rating } from '@mantine/core'
+import { Button, TextInput, SegmentedControl, Divider, Tooltip, UnstyledButton, Rating } from '@mantine/core'
 import Icon from '@/components/base/icon/Icon'
 import {
   type Panel as PanelType,
@@ -141,7 +141,7 @@ const LivePreview = () => {
                     )}
                   >
                     <Icon name={v.icon} width={14} height={14} />
-                    <Text size="10px" fw={800} className="uppercase tracking-wider">{active ? v.label : ''}</Text>
+                    <div className="text-[10px] font-extrabold uppercase tracking-wider">{active ? v.label : ''}</div>
                   </UnstyledButton>
                 </Tooltip>
               )
@@ -238,16 +238,12 @@ const LivePreview = () => {
                   width={14}
                 />
               </div>
-              <Text
-                className='tracking-[0.2em] text-gray-11 uppercase'
-                fw={800}
-                size='10px'
-              >
+              <div className='text-[10px] font-extrabold uppercase tracking-[0.2em] text-gray-11'>
                 Powered By{' '}
                 <span className='border-b border-gray-3 pb-0.5 text-gray-13'>
                   EZOFIS
                 </span>
-              </Text>
+              </div>
             </div>
 
             {!isCompleted && (
@@ -419,13 +415,9 @@ const PanelPreview = ({
       key={panel.id}
     >
       <div className='mb-4 border-b border-gray-1 pb-4'>
-        <Text
-          className='tracking-wider text-gray-4 uppercase'
-          fw={700}
-          size='sm'
-        >
+        <div className='text-sm font-bold tracking-wider text-gray-4 uppercase'>
           Section {panelIndex + 1}
-        </Text>
+        </div>
       </div>
 
       <div className='grid grid-cols-12 gap-6'>
@@ -469,13 +461,9 @@ const FullFormView = ({ panels }: { panels: PanelType[] }) => {
         <div className='space-y-6' key={panel.id}>
           {panels.length > 1 && (
             <div className='border-b border-gray-1 pb-2'>
-              <Text
-                className='tracking-wider text-gray-4 uppercase'
-                fw={700}
-                size='sm'
-              >
+              <div className='text-sm font-bold tracking-wider text-gray-4 uppercase'>
                 Section {i + 1}
-              </Text>
+              </div>
             </div>
           )}
           <div className='grid grid-cols-12 gap-6'>
@@ -519,7 +507,7 @@ const EmptyState = () => (
       name='tabler:clipboard-x'
       width={48}
     />
-    <Text>No questions to display.</Text>
+    <div>No questions to display.</div>
   </div>
 )
 
@@ -555,8 +543,8 @@ const renderPreviewInput = (field: Question, size: 'lg' | 'sm' = 'lg') => {
           isSmall ? "p-4" : "p-10"
         )}>
           <Icon name="tabler:upload" width={isSmall ? 24 : 40} height={isSmall ? 24 : 40} className="text-gray-4 mb-2" />
-          <Text size={isSmall ? "xs" : "sm"} fw={500} className="text-gray-6">Click to upload or drag and drop</Text>
-          <Text size="xs" className="text-gray-4 mt-1 text-center">Any file up to 10MB</Text>
+          <div className={cn("font-medium text-gray-6", isSmall ? "text-xs" : "text-sm")}>Click to upload or drag and drop</div>
+          <div className="text-xs text-gray-4 mt-1 text-center">Any file up to 10MB</div>
         </div>
       )
     case 'TIME':

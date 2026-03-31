@@ -3,7 +3,6 @@ import {
   Group,
   Modal,
   Stack,
-  Text,
   Textarea,
   TextInput,
   UnstyledButton,
@@ -94,12 +93,12 @@ const PublishModal = () => {
                 <Icon height={16} name='tabler:x' width={16} />
               </UnstyledButton>
             </Group>
-            <Text className='tracking-tight' fw={800} size='xl'>
+            <div className='text-xl font-extrabold tracking-tight'>
               Publish Your Form
-            </Text>
-            <Text className='mt-1 opacity-80' size='sm'>
+            </div>
+            <div className='mt-1 text-sm opacity-80'>
               Review your settings before going live.
-            </Text>
+            </div>
           </div>
         </div>
 
@@ -115,13 +114,9 @@ const PublishModal = () => {
                   'bg-gray-50 h-11 border-gray-2 transition-colors focus:border-accent-primary',
               }}
               label={
-                <Text
-                  className='mb-1 tracking-wider text-gray-11 uppercase'
-                  fw={700}
-                  size='xs'
-                >
+                <div className='mb-1 text-xs font-bold tracking-wider text-gray-11 uppercase'>
                   Deployment Name
-                </Text>
+                </div>
               }
               onChange={(e) => setName(e.target.value)}
             />
@@ -136,13 +131,9 @@ const PublishModal = () => {
                   'bg-gray-50 border-gray-2 transition-colors focus:border-accent-primary',
               }}
               label={
-                <Text
-                  className='mb-1 tracking-wider text-gray-11 uppercase'
-                  fw={700}
-                  size='xs'
-                >
+                <div className='mb-1 text-xs font-bold tracking-wider text-gray-11 uppercase'>
                   Form Description
-                </Text>
+                </div>
               }
               onChange={(e) => setDescription(e.target.value)}
             />
@@ -150,13 +141,9 @@ const PublishModal = () => {
 
           {/* Layout Selector */}
           <div>
-            <Text
-              className='mb-3 tracking-wider text-gray-11 uppercase'
-              fw={700}
-              size='xs'
-            >
+            <div className='mb-3 text-xs font-bold tracking-wider text-gray-11 uppercase'>
               Choose Display Layout
-            </Text>
+            </div>
             <div className='grid grid-cols-1 gap-2'>
               {layouts.map((layout) => {
                 const isActive = previewMode === layout.id
@@ -182,16 +169,12 @@ const PublishModal = () => {
                       <Icon height={18} name={layout.icon} width={18} />
                     </div>
                     <div className='flex-1 text-left'>
-                      <Text
-                        className={isActive ? 'text-gray-13' : 'text-gray-11'}
-                        fw={isActive ? 800 : 600}
-                        size='sm'
-                      >
+                      <div className={cn('text-sm', isActive ? 'text-gray-13 font-extrabold' : 'text-gray-11 font-semibold')}>
                         {layout.name}
-                      </Text>
-                      <Text className='text-gray-5' size='11px'>
+                      </div>
+                      <div className='text-[11px] text-gray-5'>
                         {layout.description}
-                      </Text>
+                      </div>
                     </div>
                     {isActive && (
                       <Icon
@@ -234,12 +217,9 @@ const PublishModal = () => {
                 Publish
               </Button>
             </Group>
-            <Text
-              className='mt-1 text-center font-black tracking-widest text-gray-4 uppercase'
-              size='10px'
-            >
+            <div className='mt-1 text-center text-[10px] font-black tracking-widest text-gray-4 uppercase'>
               Deployment version 1.0.4
-            </Text>
+            </div>
           </div>
         </div>
       </div>

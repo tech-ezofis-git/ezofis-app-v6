@@ -1,4 +1,4 @@
-import { Text, Divider, SegmentedControl, NumberInput, Button } from '@mantine/core'
+import { Divider, SegmentedControl, NumberInput, Button } from '@mantine/core'
 import Icon from '@/components/base/icon/Icon'
 import cn from '@/utils/cn'
 import { useFormStore } from '@/pages/form-builder/store/formStore'
@@ -19,12 +19,12 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
   const panels = useFormStore((state) => state.panels)
   const allQuestions = panels.flatMap(p => p.fields)
 
-  const [openSetup, setOpenSetup] = useState(true)
+  const [openSetup, setOpenSetup] = useState(false)
   const [openValidation, setOpenValidation] = useState(false)
   const [openAppearance, setOpenAppearance] = useState(false)
   const [openAdvanced, setOpenAdvanced] = useState(false)
   const [openLogic, setOpenLogic] = useState(false)
-  const [openLookup, setOpenLookup] = useState(true)
+  const [openLookup, setOpenLookup] = useState(false)
   const [openSpecific, setOpenSpecific] = useState(false)
 
   const [localLabel, setLocalLabel] = useState(activeQuestion.label || '')
@@ -201,7 +201,7 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
           />
 
           <div className="flex flex-col gap-1">
-            <Text size="11px" fw={700} c="gray.9" className="uppercase tracking-tighter px-1">System Field ID</Text>
+            <div className="text-[11px] font-bold text-gray-9 uppercase tracking-tighter px-1">System Field ID</div>
             <div className="py-2 px-3 bg-gray-50 rounded-lg border border-gray-1 font-mono text-[11px] text-gray-12 select-all cursor-help" title="Click to select">
               {activeQuestion.id}
             </div>
@@ -217,7 +217,7 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
           )}
 
           <div className="flex items-center justify-between py-2 px-1 bg-gray-50/50 rounded-lg border border-gray-1">
-            <Text size="xs" fw={600} c="gray.7">Hide Label</Text>
+            <div className="text-xs font-semibold text-gray-7">Hide Label</div>
             <InputSwitch
               checked={activeQuestion.settings.general.hideLabel || false}
               onChange={(checked: boolean) => updateNested('general', { hideLabel: checked })}
@@ -269,8 +269,8 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
           {(isShortText || isLongText || isNumber || isDate || isTime || isSelect) && (
             <div className="flex items-center justify-between py-2 px-3 bg-primary-subtle/20 rounded-lg border border-primary-subtle/30">
               <div>
-                <Text size="xs" fw={700} className="text-primary-9">Answer Status Indicator</Text>
-                <Text size="10px" className="text-gray-9">Track progress for this field</Text>
+                <div className="text-xs font-bold text-primary-9">Answer Status Indicator</div>
+                <div className="text-[10px] text-gray-9">Track progress for this field</div>
               </div>
               <InputSwitch
                 checked={activeQuestion.settings.specific.showStatusIndicator || false}
@@ -314,14 +314,14 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
             {!isLongText && !isNumber && !isDate && !isTime && !isSelect && (
               <div className="grid grid-cols-2 gap-2">
                 <div className="flex flex-col gap-2 p-3 rounded-xl border border-gray-1 bg-gray-50/30">
-                  <Text size="xs" fw={700} className="text-gray-13">Read Only</Text>
+                  <div className="text-xs font-bold text-gray-13">Read Only</div>
                   <InputSwitch
                     checked={activeQuestion.settings.general.readOnly || false}
                     onChange={(checked) => updateNested('general', { readOnly: checked })}
                   />
                 </div>
                 <div className="flex flex-col gap-2 p-3 rounded-xl border border-gray-1 bg-gray-50/30">
-                  <Text size="xs" fw={700} className="text-gray-13">Hidden Field</Text>
+                  <div className="text-xs font-bold text-gray-13">Hidden Field</div>
                   <InputSwitch
                     checked={activeQuestion.settings.general.hidden || false}
                     onChange={(checked) => updateNested('general', { hidden: checked })}
@@ -353,8 +353,8 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
                   />
                   <div className="flex items-center justify-between py-2 px-1">
                     <div>
-                      <Text size="xs" fw={700} className="text-gray-13">Enable Search</Text>
-                      <Text size="10px" className="text-gray-6">Allow users to search by name/code</Text>
+                      <div className="text-xs font-bold text-gray-13">Enable Search</div>
+                      <div className="text-[10px] text-gray-6">Allow users to search by name/code</div>
                     </div>
                     <InputSwitch
                       checked={activeQuestion.settings.specific.countryCodeSearchEnabled ?? true}
@@ -456,7 +456,7 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
                       value={null}
                       onChange={(val) => val && updateNested('specific', { currencyParentFieldId: val.id })}
                     />
-                    <Text size="10px" className="mt-1 text-gray-6 italic">Automatically match units with the parent field.</Text>
+                    <div className="text-[10px] mt-1 text-gray-6 italic">Automatically match units with the parent field.</div>
                   </div>
                </div>
              )}
@@ -523,8 +523,8 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
                     <div className="p-3 bg-gray-50/50 rounded-xl border border-gray-1 space-y-4">
                       <div className="flex items-center justify-between">
                         <div>
-                          <Text size="xs" fw={700} c="gray.8">Bulk Actions</Text>
-                          <Text size="10px" c="gray.6">Select All / Unselect All</Text>
+                          <div className="text-xs font-bold text-gray-8">Bulk Actions</div>
+                          <div className="text-[10px] text-gray-6">Select All / Unselect All</div>
                         </div>
                         <InputSwitch
                           checked={activeQuestion.settings.specific.bulkActionsEnabled || false}
@@ -539,8 +539,8 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
                           <div className="space-y-3">
                             <div className="flex items-center justify-between">
                               <div>
-                                <Text size="xs" fw={700} className="text-gray-13">Allow Custom Entries</Text>
-                                <Text size="10px" className="text-gray-6">Users can type in new options</Text>
+                                <div className="text-xs font-bold text-gray-13">Allow Custom Entries</div>
+                                <div className="text-[10px] text-gray-6">Users can type in new options</div>
                               </div>
                               <InputSwitch
                                 checked={activeQuestion.settings.specific.allowCustomEntries || false}
@@ -569,8 +569,8 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
                     <div className="p-3 bg-secondary-subtle/10 rounded-xl border border-secondary-subtle/20 space-y-4">
                       <div className="flex items-center justify-between">
                         <div>
-                          <Text size="xs" fw={700} className="text-gray-13">Show Options Wrapper</Text>
-                          <Text size="10px" className="text-gray-6">Add border and padding to group</Text>
+                          <div className="text-xs font-bold text-gray-13">Show Options Wrapper</div>
+                          <div className="text-[10px] text-gray-6">Add border and padding to group</div>
                         </div>
                         <InputSwitch
                           checked={activeQuestion.settings.specific.showOptionsWrapper || false}
@@ -588,7 +588,7 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
                           value={optionsPerLineOptions.find(o => Number(o.id) === activeQuestion.settings.specific.optionsPerLine) || optionsPerLineOptions[0]}
                           onChange={(val) => val && updateNested('specific', { optionsPerLine: Number(val.id) })}
                         />
-                        <Text size="10px" className="text-gray-6 italic">Control grid columns (1 = Vertical List).</Text>
+                        <div className="text-[10px] text-gray-6 italic">Control grid columns (1 = Vertical List).</div>
                       </div>
                     </div>
                   )}
@@ -605,7 +605,7 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
                       value={null}
                       onChange={(val) => val && updateNested('specific', { parentFieldId: val.id })}
                     />
-                    <Text size="10px" className="mt-1 text-gray-6 italic">Options will change based on parent selection.</Text>
+                    <div className="text-[10px] mt-1 text-gray-6 italic">Options will change based on parent selection.</div>
                   </div>
 
                   <div>
@@ -660,8 +660,8 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
                   <div className="p-3 bg-gray-50/50 rounded-xl border border-gray-1 space-y-3">
                     <div className="flex items-center justify-between">
                       <div>
-                        <Text size="xs" fw={700} className="text-gray-13">Enforce Integer</Text>
-                        <Text size="10px" className="text-gray-6">Discard decimals</Text>
+                        <div className="text-xs font-bold text-gray-13">Enforce Integer</div>
+                        <div className="text-[10px] text-gray-6">Discard decimals</div>
                       </div>
                       <InputSwitch
                         checked={activeQuestion.settings.specific.isInteger || (isCounter ? true : false)}
@@ -674,8 +674,8 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
                         <Divider className="border-gray-1 border-dashed" />
                         <div className="flex items-center justify-between">
                           <div>
-                            <Text size="xs" fw={700} className="text-gray-13">Prevent Negative</Text>
-                            <Text size="10px" className="text-gray-6">Safety check for 0</Text>
+                            <div className="text-xs font-bold text-gray-13">Prevent Negative</div>
+                            <div className="text-[10px] text-gray-6">Safety check for 0</div>
                           </div>
                           <InputSwitch
                             checked={activeQuestion.settings.specific.preventNegative || true}
@@ -688,7 +688,7 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
 
                   <div className="p-3 bg-primary-subtle/10 rounded-lg border border-primary-subtle/20 space-y-3">
                     <div className="flex items-center justify-between">
-                      <Text size="xs" fw={700} className="text-primary-9">Auto-Generate Number</Text>
+                      <div className="text-xs font-bold text-primary-9">Auto-Generate Number</div>
                       <InputSwitch
                         checked={activeQuestion.settings.specific.autoGenerateValue?.enabled || false}
                         onChange={(checked) => updateNested('specific', { 
@@ -791,7 +791,7 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
                           value={activeQuestion.settings.specific.parentDateOffset || 0}
                           onChange={(v) => updateNested('specific', { parentDateOffset: v })}
                         />
-                        <Text size="xs" className="mt-5 text-gray-6 italic">(+ For Future, - For Past)</Text>
+                        <div className="text-xs mt-5 text-gray-6 italic">(+ For Future, - For Past)</div>
                       </div>
                     </div>
                   )}
@@ -1142,7 +1142,7 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
               {isFullName && (
                 <div className="space-y-4">
                   <div className="p-3 bg-gray-50 rounded-xl border border-gray-1 space-y-3">
-                    <Text size="xs" fw={700} c="gray.8" className="uppercase tracking-wider">Field Options</Text>
+                    <div className="text-xs font-bold text-gray-8 uppercase tracking-wider">Field Options</div>
                     <div className="grid grid-cols-2 gap-2">
                        <InputSwitch 
                         label="First Name Required" 
@@ -1174,7 +1174,7 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
                       value={activeQuestion.settings.specific.fibMapping || ''}
                       onChange={(e) => updateNested('specific', { fibMapping: e.target.value })}
                     />
-                    <Text size="10px" c="gray.6">Map bracketed numbers to other form fields for dynamic substitution.</Text>
+                    <div className="text-[10px] text-gray-6">Map bracketed numbers to other form fields for dynamic substitution.</div>
                   </div>
                 </div>
               )}
@@ -1196,7 +1196,7 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
                     />
                   </div>
                   <div className="p-3 bg-gray-50 rounded-xl border border-gray-1 space-y-3">
-                    <Text size="xs" fw={700} c="gray.8" className="uppercase tracking-wider">Required Fields</Text>
+                    <div className="text-xs font-bold text-gray-8 uppercase tracking-wider">Required Fields</div>
                     <div className="grid grid-cols-2 gap-2">
                        <InputSwitch label="Street" checked={true} disabled />
                        <InputSwitch label="City" checked={true} disabled />
@@ -1231,8 +1231,8 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
             <div className="p-2 bg-accent-soft/5 rounded-lg border border-accent-soft/10 space-y-3">
             <div className="flex items-center justify-between">
               <div>
-                <Text size="xs" fw={700} c="gray.8">Mandatory</Text>
-                <Text size="10px" c="gray.6">Field cannot be empty</Text>
+                <div className="text-xs font-bold text-gray-8">Mandatory</div>
+                <div className="text-[10px] text-gray-6">Field cannot be empty</div>
               </div>
               <InputSwitch
                 checked={activeQuestion.settings.validation.fieldRule === 'REQUIRED'}
@@ -1245,8 +1245,8 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
                 <Divider className="border-gray-1 border-dashed" />
                 <div className="flex items-center justify-between">
                   <div>
-                    <Text size="xs" fw={700} c="gray.8">Require Currency Unit</Text>
-                    <Text size="10px" c="gray.6">Both currency and amount are needed</Text>
+                    <div className="text-xs font-bold text-gray-8">Require Currency Unit</div>
+                    <div className="text-[10px] text-gray-6">Both currency and amount are needed</div>
                   </div>
                   <InputSwitch
                     checked={activeQuestion.settings.validation.requireCurrencyUnit || false}
@@ -1261,8 +1261,8 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
                 <Divider className="border-gray-1 border-dashed" />
                 <div className="flex items-center justify-between">
                   <div>
-                    <Text size="xs" fw={700} c="gray.8">Set Calculated Field</Text>
-                    <Text size="10px" c="gray.6">Enable automatic formula engine</Text>
+                    <div className="text-xs font-bold text-gray-8">Set Calculated Field</div>
+                    <div className="text-[10px] text-gray-6">Enable automatic formula engine</div>
                   </div>
                   <InputSwitch
                     checked={activeQuestion.settings.validation.isCalculationEnabled || false}
@@ -1324,7 +1324,7 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
                       value={activeQuestion.settings.validation.minDateOffset || 0}
                       onChange={(v) => updateNested('validation', { minDateOffset: v })}
                     />
-                    <Text size="10px" className="pb-2 text-gray-6 italic">Current date is default min.</Text>
+                    <div className="pb-2 text-[10px] text-gray-6 italic">Current date is default min.</div>
                   </div>
                 )}
 
@@ -1337,7 +1337,7 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
                       value={activeQuestion.settings.validation.maxDateOffset || 0}
                       onChange={(v) => updateNested('validation', { maxDateOffset: v })}
                     />
-                    <Text size="10px" className="pb-2 text-gray-6 italic">Current date is default max.</Text>
+                    <div className="pb-2 text-[10px] text-gray-6 italic">Current date is default max.</div>
                   </div>
                 )}
 
@@ -1388,7 +1388,7 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
                       value={activeQuestion.settings.validation.maxTimeOffset || 0}
                       onChange={(v) => updateNested('validation', { maxTimeOffset: v })}
                     />
-                    <Text size="10px" className="pb-2 text-gray-6 italic">Current time is default min.</Text>
+                    <div className="pb-2 text-[10px] text-gray-6 italic">Current time is default min.</div>
                   </div>
                 )}
 
@@ -1401,7 +1401,7 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
                       value={activeQuestion.settings.validation.minTimeOffset || 0}
                       onChange={(v) => updateNested('validation', { minTimeOffset: v })}
                     />
-                    <Text size="10px" className="pb-2 text-gray-6 italic">Current time is default max.</Text>
+                    <div className="pb-2 text-[10px] text-gray-6 italic">Current time is default max.</div>
                   </div>
                 )}
 
@@ -1514,7 +1514,7 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
           {isFileUpload && (
             <div className="space-y-4">
               <div className="space-y-1.5">
-                <Text size="xs" fw={500} c="gray.7">Allowed File Types</Text>
+                <div className="text-xs font-medium text-gray-7">Allowed File Types</div>
                 <div className="flex flex-wrap gap-2">
                   {['pdf', 'jpg', 'png', 'docx', 'xlsx'].map(ext => (
                     <div 
@@ -1559,10 +1559,10 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
 
               <div className="p-3 rounded-lg bg-gray-50 border border-gray-1 border-dashed space-y-2">
                 <div className="flex items-center justify-between">
-                  <Text size="xs" fw={600} c="gray.8">Auto-Fill Mapping</Text>
+                  <div className="text-xs font-semibold text-gray-8">Auto-Fill Mapping</div>
                   <IconButton icon="lucide:settings-2" size="xs" variant="ghost" />
                 </div>
-                <Text size="11px" c="gray.5">Map document data to form fields via AI OCR.</Text>
+                <div className="text-[11px] text-gray-5">Map document data to form fields via AI OCR.</div>
               </div>
             </div>
           )}
@@ -1597,7 +1597,7 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
                   { id: 'SQL', name: 'Internal SQL Database' },
                   { id: 'API', name: 'RESTful API' },
                   { id: 'ORACLE', name: 'Oracle DB' }
-                ].find(o => o.id === activeQuestion.settings.lookupSettings.connectionType) || null}
+                ].find(o => o.id === activeQuestion.settings.lookupSettings?.connectionType) || null}
                 onChange={(val) => val && updateNested('lookupSettings', { connectionType: val.id })}
               />
             </div>
@@ -1609,14 +1609,14 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
               <InputSelect
                 options={[{ id: '1', name: 'Main Prod Cluster' }, { id: '2', name: 'Staging Sheet v2' }]}
                 placeholder="Select source connection"
-                value={[{ id: '1', name: 'Main Prod Cluster' }, { id: '2', name: 'Staging Sheet v2' }].find(o => o.id === String(activeQuestion.settings.lookupSettings.connectionId)) || null}
+                value={[{ id: '1', name: 'Main Prod Cluster' }, { id: '2', name: 'Staging Sheet v2' }].find(o => o.id === String(activeQuestion.settings.lookupSettings?.connectionId)) || null}
                 onChange={(val) => val && updateNested('lookupSettings', { connectionId: Number(val.id) })}
               />
             </div>
 
             <InputText
               label='Hub Name / Collection'
-              value={activeQuestion.settings.lookupSettings.hubName || ''}
+              value={activeQuestion.settings.lookupSettings?.hubName || ''}
               onChange={(val: string) => updateNested('lookupSettings', { hubName: val })}
               placeholder="e.g. users_collection"
             />
@@ -1624,18 +1624,18 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
             {(isNumber || isDate || isTime || isSelect) && (
               <InputText
                 label={isDate ? 'Target Column (Date)' : isTime ? 'Target Column (Time)' : isSelect ? 'Selector Data Source' : 'Target Column (Number)'}
-                value={activeQuestion.settings.lookupSettings.columnName || ''}
+                value={activeQuestion.settings.lookupSettings?.columnName || ''}
                 onChange={(val: string) => updateNested('lookupSettings', { columnName: val })}
                 placeholder={isDate ? "e.g. birth_date" : isTime ? "e.g. checkin_time" : isSelect ? "e.g. items_list" : "e.g. age, quantity..."}
               />
             )}
 
             <div className="space-y-2">
-              <Text size="xs" fw={700} className="text-gray-11 uppercase tracking-wider">Mapping Configuration</Text>
+              <div className="text-xs font-bold text-gray-11 uppercase tracking-wider">Mapping Configuration</div>
               <div className="p-3 bg-gray-50 rounded-lg border border-gray-1 border-dashed space-y-2">
                 <div className="grid grid-cols-2 gap-2">
-                  <Text size="10px" fw={600} className="text-gray-8">External Field</Text>
-                  <Text size="10px" fw={600} className="text-gray-8">Local Prop</Text>
+                   <div className="text-[10px] font-semibold text-gray-8">External Field</div>
+                  <div className="text-[10px] font-semibold text-gray-8">Local Prop</div>
                 </div>
                 <div className="flex items-center gap-2">
                   <InputText value="" onChange={(v: any) => { console.log(v) }} placeholder="Source Column" readOnly />
@@ -1653,9 +1653,9 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
             </div>
 
             <div className="space-y-2">
-              <Text size="xs" fw={700} className="text-gray-11 uppercase tracking-wider">Condition Mapping</Text>
+              <div className="text-xs font-bold text-gray-11 uppercase tracking-wider">Condition Mapping</div>
               <div className="p-3 bg-gray-50 rounded-lg border border-gray-1 border-dashed">
-                <Text size="11px" className="text-gray-6 italic">Define when this lookup should be triggered based on other field values.</Text>
+                <div className="text-[11px] text-gray-6 italic">Define when this lookup should be triggered based on other field values.</div>
                 <Button variant="subtle" size="compact-xs" color="gray" fullWidth className="mt-3 border border-gray-1 bg-white">
                   + Add Condition Rule
                 </Button>
@@ -1743,8 +1743,8 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
             {!isDivider && (
               <div className="flex items-center justify-between py-2 px-1">
                 <div>
-                  <Text size="xs" fw={700} className="text-gray-13">Read Only</Text>
-                  <Text size="10px" className="text-gray-6">User cannot edit this field</Text>
+                  <div className="text-xs font-bold text-gray-13">Read Only</div>
+                  <div className="text-[10px] text-gray-6">User cannot edit this field</div>
                 </div>
                 <InputSwitch
                   checked={activeQuestion.settings.general.readOnly || false}
@@ -1766,13 +1766,13 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
       >
         <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
           <div className="p-3 bg-gray-50 rounded-lg border border-gray-1">
-            <Text size="xs" fw={700} className="text-gray-11 mb-1 uppercase tracking-wider">Field ID / Key</Text>
-            <Text size="xs" className="text-gray-6 font-mono break-all">{activeQuestion.id}</Text>
+            <div className="text-xs font-bold text-gray-11 mb-1 uppercase tracking-wider">Field ID / Key</div>
+            <div className="text-xs text-gray-6 font-mono break-all">{activeQuestion.id}</div>
           </div>
 
           <div className="space-y-2">
             <div className="flex items-center justify-between py-1">
-              <Text size="xs" fw={600} className="text-gray-11">Pre-fill from URL</Text>
+              <div className="text-xs font-semibold text-gray-11">Pre-fill from URL</div>
               <InputSwitch
                 checked={activeQuestion.settings.specific.prefillFromUrl || false}
                 onChange={(checked) => updateNested('specific', { prefillFromUrl: checked })}
@@ -1780,7 +1780,7 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
             </div>
 
             <div className="flex items-center justify-between py-1">
-              <Text size="xs" fw={600} className="text-gray-11">Unique Value Check</Text>
+              <div className="text-xs font-semibold text-gray-11">Unique Value Check</div>
               <InputSwitch
                 checked={activeQuestion.settings.specific.uniqueCheck || false}
                 onChange={(checked) => updateNested('specific', { uniqueCheck: checked })}
@@ -1801,10 +1801,10 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
         >
           <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
             <div className="p-4 bg-gray-50/50 rounded-xl border border-gray-2 text-center">
-              <Text size="sm" fw={600} className="text-gray-9 mb-1">Visibility Logic</Text>
-              <Text size="11px" className="text-gray-5 mb-3">
+              <div className="text-sm font-semibold text-gray-9 mb-1">Visibility Logic</div>
+              <div className="text-[11px] text-gray-5 mb-3">
                 Set rules to show or hide this field based on other responses.
-              </Text>
+              </div>
               <Button variant="subtle" color="primary" size="xs">
                 + Add Rule
               </Button>

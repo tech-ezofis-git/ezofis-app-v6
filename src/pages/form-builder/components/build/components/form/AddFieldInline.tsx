@@ -5,7 +5,7 @@ import type { QuestionType } from '@/pages/form-builder/store/formStore'
 import Icon from '@/components/base/icon/Icon'
 import Input from '@/components/base/inputs/InputText'
 import cn from '@/utils/cn'
-import { Text } from '@mantine/core'
+// import { Text } from '@mantine/core'
 
 // type TabType = 'explore' | 'popular' | 'advanced' | 'templates' | 'all' | 'display' | 'date_time'
 
@@ -239,7 +239,7 @@ const AddFieldInline = ({ onSelect, onClose, anchorRect }: Props) => {
                 return (
                   <div key={cat.id} id={`cat-${cat.id}`} className="space-y-3">
                     <div className="flex items-center gap-2 sticky top-[0px] bg-white z-10 py-1">
-                      <Text size="10px" fw={800} className="text-gray-11 uppercase tracking-[0.1em]">{cat.label}</Text>
+                      <div className="text-[10px] font-extrabold text-gray-11 uppercase tracking-[0.1em]">{cat.label}</div>
                       <div className="flex-1 h-px bg-gray-1" />
                     </div>
                     <div className="grid grid-cols-2 gap-2">

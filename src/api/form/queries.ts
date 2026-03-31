@@ -4,17 +4,19 @@ import formApi from './form'
 export const formQueries = {
   all: () => ['forms'] as const,
   detail: (id: string) => [...formQueries.all(), 'detail', id] as const,
-  list: (page: number, size: number) =>
-    [...formQueries.all(), 'list', { page, size }] as const,
+  list: (page: number, size: number, groupBy: string = 'type', filterBy: any[] = []) =>
+    [...formQueries.all(), 'list', { page, size, groupBy, filterBy }] as const,
 }
 
 export const getFormsListQueryOptions = (
   page: number = 1,
   size: number = 100,
+  groupBy: string = 'type',
+  filterBy: any[] = [],
 ) => {
   return queryOptions({
-    queryKey: formQueries.list(page, size),
-    queryFn: () => formApi.listAllForms(page, size),
+    queryKey: formQueries.list(page, size, groupBy, filterBy),
+    queryFn: () => formApi.listAllForms(page, size, groupBy, filterBy),
   })
 }
 

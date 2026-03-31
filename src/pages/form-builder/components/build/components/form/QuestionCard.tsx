@@ -16,9 +16,10 @@ interface Props {
   onDelete: () => void
   onSelect: () => void
   onUpdate: (updates: Partial<Question>) => void
+  isLocked?: boolean
 }
 
-const QuestionCard = ({ question, isActive, onSelect, onUpdate, onDelete, dragListeners }: Props) => {
+const QuestionCard = ({ question, isActive, onSelect, onUpdate, onDelete, dragListeners, isLocked }: Props) => {
   const { panels } = useFormStore()
   const allQuestions = panels.flatMap(p => p.fields)
 
@@ -52,16 +53,17 @@ const QuestionCard = ({ question, isActive, onSelect, onUpdate, onDelete, dragLi
     <Card
       onClick={onSelect}
       className={cn(
-        "group relative border transition-all duration-300 cursor-pointer overflow-visible rounded-xl font-inter",
+        "group relative border transition-all duration-300 overflow-visible rounded-xl font-inter",
+        isLocked ? "cursor-not-allowed opacity-90 border-gray-2 bg-gray-50/30" : "cursor-pointer hover:bg-gray-50/50",
         isActive
           ? "border-accent-primary bg-accent-soft/5 ring-1 ring-accent-primary shadow-sm"
-          : "border-gray-2 bg-transparent hover:border-gray-3 hover:bg-gray-50/50"
+          : "border-gray-2 bg-transparent hover:border-gray-3"
       )}
       style={{
         padding: '0'
       }}
     >
-      <div className="flex flex-col p-4 gap-3">
+      <div className="flex flex-col p-3 gap-2">
         {/* Top Header: Label, Badges, Quick Actions, Drag Handle */}
         <div className="flex items-start justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
@@ -82,6 +84,15 @@ const QuestionCard = ({ question, isActive, onSelect, onUpdate, onDelete, dragLi
               </span>
             )}
 
+            {isLocked && (
+               <Tooltip label="This section is locked" position="top" withArrow>
+                  <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-gray-100 text-[9px] font-black text-gray-5 tracking-widest uppercase border border-gray-2">
+                    <Icon name="lucide:lock" width={10} height={10} />
+                    <span>Locked</span>
+                  </div>
+               </Tooltip>
+            )}
+
             {/* Visibility Warning */}
             {!isVisible && (
               <Tooltip label="Visible when Vendor Entity Type is International Entity" position="top" withArrow>
@@ -94,54 +105,62 @@ const QuestionCard = ({ question, isActive, onSelect, onUpdate, onDelete, dragLi
 
           {/* Quick Actions & Drag Handle */}
           <div className="flex items-center gap-1 pl-2">
-             <div className={cn(
-                "flex items-center gap-0.5 transition-all duration-300 opacity-0 group-hover:opacity-100",
-                isActive && "opacity-100"
-             )}>
-                <Tooltip label="Duplicate" position="top" withArrow>
-                  <IconButton
-                    className="cursor-pointer size-6"
-                    color="primary"
-                    icon="lucide:copy"
-                    iconClass="size-[13px]"
-                    size="sm"
-                    variant="ghost"
-                    onClick={(e: React.MouseEvent) => {
-                      e.stopPropagation()
-                      const { setCopiedQuestion, duplicateQuestion } = useFormStore.getState()
-                      setCopiedQuestion(question)
-                      duplicateQuestion(question.id)
-                    }}
-                  />
-                </Tooltip>
+             {!isLocked ? (
+               <>
+                 <div className={cn(
+                    "flex items-center gap-0.5 transition-all duration-300 opacity-0 group-hover:opacity-100",
+                    isActive && "opacity-100"
+                 )}>
+                    <Tooltip label="Duplicate" position="top" withArrow>
+                      <IconButton
+                        className="cursor-pointer size-6"
+                        color="primary"
+                        icon="lucide:copy"
+                        iconClass="size-[13px]"
+                        size="sm"
+                        variant="ghost"
+                        onClick={(e: React.MouseEvent) => {
+                          e.stopPropagation()
+                          const { setCopiedQuestion, duplicateQuestion } = useFormStore.getState()
+                          setCopiedQuestion(question)
+                          duplicateQuestion(question.id)
+                        }}
+                      />
+                    </Tooltip>
 
-                <Tooltip label="Delete" position="top" withArrow>
-                  <IconButton
-                    className="cursor-pointer size-6 hover:bg-red-50"
-                    color="red"
-                    icon="lucide:trash-2"
-                    iconClass="size-[13px]"
-                    size="sm"
-                    variant="ghost"
-                    onClick={(e: React.MouseEvent) => {
-                      e.stopPropagation()
-                      onDelete()
-                    }}
-                  />
-                </Tooltip>
-             </div>
+                    <Tooltip label="Delete" position="top" withArrow>
+                      <IconButton
+                        className="cursor-pointer size-6 hover:bg-red-50"
+                        color="red"
+                        icon="lucide:trash-2"
+                        iconClass="size-[13px]"
+                        size="sm"
+                        variant="ghost"
+                        onClick={(e: React.MouseEvent) => {
+                          e.stopPropagation()
+                          onDelete()
+                        }}
+                      />
+                    </Tooltip>
+                 </div>
 
-             <div
-              className="flex items-center justify-center h-6 w-4 rounded hover:bg-gray-2 cursor-grab active:cursor-grabbing text-gray-3 hover:text-gray-6 transition-colors ml-1"
-              {...dragListeners}
-            >
-              <Icon name="lucide:grip-vertical" width={14} height={14} />
-            </div>
+                 <div
+                  className="flex items-center justify-center h-6 w-4 rounded hover:bg-gray-2 cursor-grab active:cursor-grabbing text-gray-3 hover:text-gray-6 transition-colors ml-1"
+                  {...dragListeners}
+                >
+                  <Icon name="lucide:grip-vertical" width={14} height={14} />
+                </div>
+               </>
+             ) : (
+                <div className="flex items-center justify-center h-6 w-6 rounded-lg text-gray-3 opacity-50">
+                   <Icon name="lucide:lock" width={14} height={14} />
+                </div>
+             )}
           </div>
         </div>
 
         {/* Simulated Input Area */}
-        <div className="w-full mt-2">
+        <div className="w-full mt-1.5">
           {question.type === 'TEXT_BUILDER' ? (
             <div className={cn(
               "w-full border rounded-xl overflow-hidden transition-all duration-300 bg-white",
@@ -166,7 +185,7 @@ const QuestionCard = ({ question, isActive, onSelect, onUpdate, onDelete, dragLi
               </div>
 
               {/* Content Area Simulation */}
-              <div className="p-3 min-h-[100px] flex flex-col gap-2">
+              <div className="p-2.5 min-h-[80px] flex flex-col gap-1.5">
                 <div className="flex items-center gap-1.5 text-[13px] text-gray-12">
                   <span>Hello</span>
                   <div className="px-1.5 py-0.5 rounded border border-blue-200 bg-blue-50 text-[11px] font-bold text-blue-700 flex items-center gap-1 shadow-xs">

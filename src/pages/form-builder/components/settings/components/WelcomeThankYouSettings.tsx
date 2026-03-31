@@ -3,7 +3,6 @@ import {
   Group,
   Stack,
   Switch,
-  Text,
   Textarea,
   TextInput,
 } from '@mantine/core'
@@ -126,12 +125,12 @@ const WelcomeThankYouSettings = ({ type }: Props) => {
               name='lucide:eye-off'
               width={32}
             />
-            <Text className='text-gray-500 text-sm font-semibold'>
+            <div className='text-gray-500 text-sm font-semibold'>
               Page is currently disabled
-            </Text>
-            <Text className='text-gray-400 mt-1 text-xs'>
+            </div>
+            <div className='text-gray-400 mt-1 text-xs'>
               Enable it using the toggle above to customize the content.
-            </Text>
+            </div>
           </Box>
         )}
       </Stack>

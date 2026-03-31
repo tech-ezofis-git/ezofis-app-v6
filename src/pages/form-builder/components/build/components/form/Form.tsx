@@ -11,7 +11,7 @@ import {
   useSensors,
 } from '@dnd-kit/core'
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable'
-import { ActionIcon, Button, Text, UnstyledButton } from '@mantine/core'
+import { ActionIcon } from '@mantine/core'
 import { useEffect, useState } from 'react'
 import Icon from '@/components/base/icon/Icon'
 import {
@@ -19,7 +19,7 @@ import {
   useFormStore,
 } from '@/pages/form-builder/store/formStore'
 import cn from '@/utils/cn'
-import AddPageInline from './AddPageInline'
+import AddSectionButton from './AddSectionButton'
 import Page from './Page'
 import QuestionCard from './QuestionCard'
 // import PublishModal from './PublishModal'
@@ -38,10 +38,6 @@ const Form = () => {
   } = useFormStore()
 
   const [activeId, setActiveId] = useState<string | null>(null)
-  const [showAddPageAt, setShowAddPageAt] = useState<number | null>(null)
-  const [addPageAnchorRect, setAddPageAnchorRect] = useState<DOMRect | null>(
-    null,
-  )
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -53,12 +49,6 @@ const Form = () => {
       coordinateGetter: sortableKeyboardCoordinates,
     }),
   )
-
-  useEffect(() => {
-    if (panels.length === 0) {
-      addPanel()
-    }
-  }, [panels.length, addPanel])
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string)
@@ -159,8 +149,6 @@ const Form = () => {
       setSelectionType('thank_you')
       setActiveQuestionId(null)
     }
-    setShowAddPageAt(null)
-    setAddPageAnchorRect(null)
   }
 
   // Handle Ctrl+V Paste
@@ -207,10 +195,8 @@ const Form = () => {
     .find((f) => f.id === activeId)
 
   return (
-    <div className='w-full max-w-[1200px] mx-auto pb-40 px-4 font-inter'>
-
-
-      <div className='space-y-8'>
+    <div className='w-full max-w-[1200px] mx-auto pb-40 px-0 font-inter'>
+      <div className='flex flex-col gap-10'>
         {/* Welcome Page Slot (Only if enabled) */}
         {welcomePage.enabled && (
           <CanvasSlot enabled={true} title={welcomePage.title} type='welcome' />
@@ -223,83 +209,10 @@ const Form = () => {
           onDragOver={handleDragOver}
           onDragStart={handleDragStart}
         >
-          <div className='relative space-y-6'>
-            {panels.length > 0 ? (
-              panels.map((panel: PanelType, i: number) => (
-                <div className='group/page-wrapper relative' key={panel.id}>
-                  {/* Insertion trigger before each panel */}
-                  <div className='group/add-page pointer-events-none absolute top-[-20px] right-0 left-0 z-[50] flex h-10 items-center justify-center opacity-0 transition-opacity duration-200 group-hover/page-wrapper:opacity-100'>
-                    <div className='pointer-events-none absolute h-[1px] w-full bg-accent-primary/40 group-hover/add-page:bg-accent-primary/60' />
-                    <button
-                      className='pointer-events-auto flex size-8 items-center justify-center rounded-full bg-accent-primary text-white shadow-lg transition-all hover:scale-125'
-                      onClick={(e) => {
-                        const rect = (
-                          e.currentTarget as HTMLElement
-                        ).getBoundingClientRect()
-                        setAddPageAnchorRect(rect)
-                        setShowAddPageAt(i)
-                      }}
-                    >
-                      <Icon height={18} name='lucide:plus' width={18} />
-                    </button>
-                  </div>
-
-                  <Page panel={panel} panelIndex={i} />
-
-                  {/* Final insertion trigger (Only after last panel) */}
-                  {i === panels.length - 1 && (
-                    <div className='group/add-page pointer-events-none absolute right-0 bottom-[-24px] left-0 z-[50] flex h-10 items-center justify-center opacity-0 transition-opacity duration-200 group-hover/page-wrapper:opacity-100'>
-                      <div className='pointer-events-none absolute h-[1px] w-full bg-accent-primary/40 group-hover/add-page:bg-accent-primary/60' />
-                      <button
-                        className='pointer-events-auto flex size-8 items-center justify-center rounded-full bg-accent-primary text-white shadow-lg transition-all hover:scale-125'
-                        onClick={(e) => {
-                          const rect = (
-                            e.currentTarget as HTMLElement
-                          ).getBoundingClientRect()
-                          setAddPageAnchorRect(rect)
-                          setShowAddPageAt(i + 1)
-                        }}
-                      >
-                        <Icon height={18} name='lucide:plus' width={18} />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ))
-            ) : (
-              <div className='animate-in fade-in zoom-in-95 flex flex-col items-center justify-center rounded-3xl border-2 border-dashed border-gray-2 bg-white/40 py-20 text-center duration-500'>
-                <div className='bg-gray-1 mb-6 flex size-20 items-center justify-center rounded-2xl'>
-                  <Icon
-                    className='text-gray-4'
-                    height={40}
-                    name='lucide:layout'
-                    width={40}
-                  />
-                </div>
-                <Text
-                  className='mb-2 tracking-tight text-gray-13'
-                  fw={800}
-                  size='xl'
-                >
-                  No sections yet
-                </Text>
-                <Text className='text-gray-500 mx-auto mb-8 max-w-xs' size='sm'>
-                  Your form needs at least one section to start adding
-                  questions. Click the button below to add your first section.
-                </Text>
-                <UnstyledButton
-                  onClick={(e) => {
-                    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
-                    setAddPageAnchorRect(rect)
-                    setShowAddPageAt(0)
-                  }}
-                  className="flex items-center gap-2 px-6 py-3 bg-accent-primary text-white rounded-xl font-bold hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-accent-soft/20"
-                >
-                  <Icon height={18} name='lucide:plus-circle' width={18} />
-                  <span>Add First Section</span>
-                </UnstyledButton>
-              </div>
-            )}
+          <div className='flex flex-col gap-10'>
+            {panels.map((panel: PanelType, i: number) => (
+              <Page key={panel.id} panel={panel} panelIndex={i} />
+            ))}
           </div>
 
           <DragOverlay>
@@ -307,32 +220,22 @@ const Form = () => {
               <div className='z-[1000] scale-[1.02] rotate-[2deg] cursor-grabbing rounded-2xl shadow-2xl ring-2 ring-accent-primary/20'>
                 <QuestionCard
                   isActive={true}
-                  question={activeQuestion}
                   onDelete={() => { }}
                   onSelect={() => { }}
                   onUpdate={() => { }}
+                  question={activeQuestion}
                 />
               </div>
             ) : null}
           </DragOverlay>
         </DndContext>
 
-        {/* Global Add Page Button */}
-        <div className='flex justify-center pt-8'>
-          <Button
-            variant="outline"
-            color="gray"
-            size="md"
-            className="w-full flex items-center justify-center border border-dashed border-accent-primary rounded-xl bg-accent-soft/5 hover:bg-accent-soft/10 transition-all text-accent-primary group/add h-12 py-3 px-4 font-bold uppercase tracking-widest text-[11px]"
-            leftSection={<Icon name="lucide:plus" width={18} height={18} />}
-            onClick={(e) => {
-              const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
-              setAddPageAnchorRect(rect)
-              setShowAddPageAt(panels.length)
-            }}
-          >
-            Add New Section
-          </Button>
+        {/* Canva-style Add Section Button */}
+        <div className="flex justify-center pt-8">
+          <AddSectionButton 
+            onClick={() => handleAddPanel('blank', panels.length)}
+            onSelectTemplate={(type) => handleAddPanel(type, panels.length)}
+          />
         </div>
 
         {/* Thank You Page Slot (Only if enabled) */}
@@ -344,19 +247,6 @@ const Form = () => {
           />
         )}
       </div>
-
-      {showAddPageAt !== null && (
-        <AddPageInline
-          anchorRect={addPageAnchorRect}
-          onClose={() => {
-            setShowAddPageAt(null)
-            setAddPageAnchorRect(null)
-          }}
-          onSelect={(type) => handleAddPanel(type, showAddPageAt)}
-        />
-      )}
-
-      {/* <PublishModal /> */}
     </div>
   )
 }
@@ -420,16 +310,14 @@ const CanvasSlot = ({
             <div className='min-w-0 flex-1'>
               <div className='mb-1 flex items-center gap-2'>
                 <div className='flex items-center gap-1.5'>
-                  <Text
-                    fw={800}
-                    size='10px'
+                  <div
                     className={cn(
-                      'tracking-tight uppercase',
+                      'text-[10px] font-extrabold tracking-tight uppercase',
                       isActive ? 'text-accent-primary' : 'text-gray-5',
                     )}
                   >
                     {isWelcome ? 'Welcome Screen' : 'Completion Screen'}
-                  </Text>
+                  </div>
                   {isActive && (
                     <div className='size-1 rounded-full bg-accent-primary' />
                   )}
@@ -439,25 +327,22 @@ const CanvasSlot = ({
                 </div>
               </div>
 
-              <Text
-                fw={800}
-                size='lg'
+              <div
                 className={cn(
-                  'mb-1 truncate tracking-tight',
+                  'mb-1 truncate text-lg font-extrabold tracking-tight',
                   isActive ? 'text-gray-13' : 'text-gray-11',
                 )}
               >
                 {title || (isWelcome ? 'Welcome to our form' : 'Thank you!')}
-              </Text>
+              </div>
 
-              <Text
-                className='line-clamp-2 leading-relaxed text-gray-10'
-                size='xs'
+              <div
+                className='line-clamp-2 text-xs leading-relaxed text-gray-10'
               >
                 {isWelcome
                   ? 'This is the first screen your users will see. Customize the title, description, and start button in the settings.'
                   : 'Final screen shown after submission. You can add a custom message or redirect users from the completion settings.'}
-              </Text>
+              </div>
             </div>
           </div>
 
@@ -500,13 +385,11 @@ const CanvasSlot = ({
           isActive ? 'border-accent-primary/20' : 'border-gray-1',
         )}
       >
-        <Text
-          className='tracking-widest text-gray-4 uppercase'
-          fw={700}
-          size='9px'
+        <div
+          className='text-[9px] font-bold tracking-widest text-gray-4 uppercase'
         >
           {isWelcome ? 'Form Entry Point' : 'Form Completion Handler'}
-        </Text>
+        </div>
         <Icon
           className='text-gray-3'
           height={10}

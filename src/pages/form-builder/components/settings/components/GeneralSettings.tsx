@@ -3,7 +3,6 @@ import {
   Group,
   Select,
   Stack,
-  Text,
   Textarea,
   TextInput,
   UnstyledButton,
@@ -206,17 +205,17 @@ const GeneralSettings = () => {
                       <Icon height={24} name={type.icon} width={24} />
                     </div>
                     <div>
-                      <Text
+                      <div
                         className={cn(
                           'text-sm font-extrabold tracking-tight uppercase',
                           isActive ? 'text-gray-13' : 'text-gray-9',
                         )}
                       >
                         {type.label}
-                      </Text>
-                      <Text className='mt-1 text-[10px] font-bold tracking-wide text-gray-5 italic opacity-70'>
+                      </div>
+                      <div className='mt-1 text-[10px] font-bold tracking-wide text-gray-5 italic opacity-70'>
                         {type.description}
-                      </Text>
+                      </div>
                     </div>
                   </UnstyledButton>
                 )
@@ -305,17 +304,17 @@ const GeneralSettings = () => {
                   <LayoutSkeleton type={l.id} />
                 </Box>
                 <Box className='px-1 text-center'>
-                  <Text
+                  <div
                     className={cn(
                       'text-sm font-bold transition-colors',
                       layout === l.id ? 'text-accent-primary' : 'text-gray-900',
                     )}
                   >
                     {l.label}
-                  </Text>
-                  <Text className='text-gray-500 mt-1 text-[10px] font-bold tracking-wider uppercase opacity-70'>
+                  </div>
+                  <div className='text-gray-500 mt-1 text-[10px] font-bold tracking-wider uppercase opacity-70'>
                     {l.description}
-                  </Text>
+                  </div>
                 </Box>
               </UnstyledButton>
             ))}

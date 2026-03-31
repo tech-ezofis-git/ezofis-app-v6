@@ -29,7 +29,7 @@ const Header = () => {
   }
 
   return (
-    <header className='flex h-16 shrink-0 items-center justify-between border-b border-gray-3 bg-white px-4 font-inter relative z-10'>
+    <header className='flex h-16 shrink-0 items-center justify-between border-b border-gray-3 bg-white px-6 md:px-8 font-inter relative z-10'>
       {/* Left: Branding & Name */}
       <div className='flex items-center gap-3 min-w-0 flex-1'>
         <IconButton
@@ -47,28 +47,37 @@ const Header = () => {
         
         <div className="h-4 w-px bg-[var(--gray-3)] shrink-0 mx-1" />
 
-        <div className='flex items-center gap-2 group px-1 py-0.5 min-w-0'>
-          <div className="relative flex items-center gap-2 min-w-0">
-            {/* Auto-growing input container with Headless style */}
-            <div className="inline-grid items-center min-w-0">
-              <span className="invisible whitespace-pre px-2 py-1 text-15/5 font-semibold pointer-events-none row-start-1 col-start-1">
-                {name || "Untitled Form"}
+        <div className='flex items-center gap-1 group px-1 py-0.5 min-w-0 max-w-[500px]'>
+          <div className="relative flex items-center min-w-0">
+            <div className="flex items-center gap-1.5 min-w-0 overflow-x-auto no-scrollbar py-1">
+              {/* Name Input/Text */}
+              <div className="inline-grid items-center min-w-0 shrink-0">
+                <span className="invisible whitespace-pre px-1 py-1 text-15/5 font-semibold pointer-events-none row-start-1 col-start-1">
+                  {name || "Untitled Form"}
+                </span>
+                <input
+                  type="text"
+                  className='row-start-1 col-start-1 w-full text-15/5 font-semibold text-gray-13 bg-transparent border-transparent hover:bg-gray-1 focus:bg-white focus:outline-none transition-all px-1 py-1 rounded-md placeholder:text-gray-5 cursor-text focus:shadow-sm focus:border-gray-2 border shrink-0'
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Untitled Form"
+                  onFocus={(e) => e.target.select()}
+                  onBlur={() => {
+                    if (!name.trim()) setName('Untitled Form')
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') e.currentTarget.blur()
+                  }}
+                />
+              </div>
+
+              <span className={cn(
+                "rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase shrink-0 transition-colors flex-none",
+                publishStatus === 'PUBLISHED' ? "text-success-main bg-success-subtle" : "bg-gray-3 text-gray-11"
+              )}>
+                {publishStatus === 'PUBLISHED' ? 'Published' : 'Draft'}
               </span>
-              <input
-                type="text"
-                className='row-start-1 col-start-1 w-full text-15/5 font-semibold text-gray-13 bg-transparent border-transparent hover:bg-gray-1 focus:bg-white focus:outline-none transition-all px-2 py-1 rounded-md max-w-sm truncate placeholder:text-gray-5 cursor-text'
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Untitled Form"
-                onClick={() => setSelectionType('general')}
-              />
             </div>
-            <span className={cn(
-              "rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase shrink-0 transition-colors",
-              publishStatus === 'PUBLISHED' ? "text-success-main bg-success-subtle" : "bg-gray-3 text-gray-11"
-            )}>
-              {publishStatus === 'PUBLISHED' ? 'Published' : 'Draft'}
-            </span>
           </div>
         </div>
       </div>

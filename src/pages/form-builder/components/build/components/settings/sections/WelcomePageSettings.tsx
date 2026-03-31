@@ -1,4 +1,4 @@
-import { Switch, Text, Divider, Stack } from '@mantine/core'
+import { Switch, Divider, Stack } from '@mantine/core'
 import { useFormStore } from '@/pages/form-builder/store/formStore'
 import Input from '@/components/base/inputs/InputText'
 
@@ -9,13 +9,9 @@ const WelcomePageSettings = () => {
     <div className='flex-1 space-y-5 overflow-y-auto p-4 animate-in fade-in duration-500'>
       <Stack gap='xl'>
         <div className='flex items-center justify-between px-1 py-1'>
-          <Text
-            className='text-gray-11'
-            fw={700}
-            size='sm'
-          >
+          <div className='text-sm font-bold text-gray-11'>
             Enable Welcome Page
-          </Text>
+          </div>
           <Switch
             checked={welcomePage.enabled}
             color='violet'

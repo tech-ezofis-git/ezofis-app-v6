@@ -57,13 +57,18 @@ const updateForm = async (id: string, payload: any) => {
   return response
 }
 
-const listAllForms = async (page: number = 1, size: number = 100) => {
+const listAllForms = async (
+  page: number = 1,
+  size: number = 100,
+  groupBy: string = 'type',
+  filterBy: any[] = [],
+) => {
   const response: any = { data: null, error: '' }
   try {
     const payload = {
       currentPage: page,
-      filterBy: [],
-      groupBy: 'type',
+      filterBy: filterBy,
+      groupBy: groupBy,
       hasSecurity: true,
       itemsPerPage: size,
       mode: 'BROWSE',

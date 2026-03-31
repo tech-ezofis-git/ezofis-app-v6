@@ -1,4 +1,4 @@
-import { Divider, Text, UnstyledButton, Box, Group } from '@mantine/core'
+import { Divider, UnstyledButton, Box, Group } from '@mantine/core'
 import { useFormStore } from '@/pages/form-builder/store/formStore'
 import type { FormType } from '@/pages/form-builder/store/formStore'
 import Icon from '@/components/base/icon/Icon'
@@ -57,9 +57,9 @@ const GeneralSettings = () => {
 
       {/* Form Type Cards */}
       <div className='space-y-3'>
-        <Text size="xs" fw={700} className="text-gray-11 flex items-center gap-2">
+        <div className="text-xs font-bold text-gray-11 flex items-center gap-2">
           <Icon name="lucide:layers" width={14} height={14} /> Form Type
-        </Text>
+        </div>
         <div className="grid grid-cols-2 gap-3">
           {FORM_TYPES.map((t) => {
             const active = formType === t.value
@@ -81,8 +81,8 @@ const GeneralSettings = () => {
                   <Icon name={t.icon} width={18} height={18} />
                 </div>
                 <div className="px-1">
-                  <Text size="xs" fw={800} className={cn("uppercase tracking-tight leading-none mb-1", active ? "text-gray-9" : "text-gray-9")}>{t.name}</Text>
-                  <Text size="9px" fw={600} className="text-gray-5 leading-tight opacity-8 italic text-gray-10">{t.desc}</Text>
+                  <div className={cn("text-xs font-extra-bold uppercase tracking-tight leading-none mb-1", active ? "text-gray-13" : "text-gray-12")}>{t.name}</div>
+                  <div className="text-[9px] font-semibold text-gray-5 leading-tight opacity-8 italic text-gray-10">{t.desc}</div>
                 </div>
               </UnstyledButton>
             )
@@ -95,11 +95,11 @@ const GeneralSettings = () => {
       <Box className="p-4 bg-gray-50 rounded-2xl border border-gray-2">
         <Group gap="xs" mb={8}>
           <Icon name="lucide:sparkles" width={14} height={14} className="text-accent-primary" />
-          <Text size="11px" fw={700} className="text-gray-11">Quick Note</Text>
+          <div className="text-[11px] font-bold text-gray-11">Quick Note</div>
         </Group>
-        <Text size="10px" className="text-gray-6 font-medium leading-relaxed">
+        <div className="text-[10px] text-gray-6 font-medium leading-relaxed">
           These settings apply to the entire form experience. You can also customize Welcome and Thank You pages in their respective screens.
-        </Text>
+        </div>
       </Box>
     </div>
   )
