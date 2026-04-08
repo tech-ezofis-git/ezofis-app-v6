@@ -15,22 +15,21 @@ interface Props {
   panelIndex: number
 }
 
-const Page = ({ panel, panelIndex }: Props) => {
+const Page = ({ panel }: Props) => {
   const {
     activeQuestionId,
-    addQuestion,
-    clearLastAddedPanelId,
     deleteQuestion,
     isBuilderMode,
     lastAddedPanelId,
-    clearLastAddedPanelId,
     updatePanel,
     duplicatePanel,
-    addPanel,
     deletePanel,
     setSidebarView,
     setAddFieldPosition,
-    setLeftSidebarCollapsed
+    setLeftSidebarCollapsed,
+    clearLastAddedPanelId,
+    updateQuestion,
+    setActiveQuestionId,
   } = useFormStore()
 
   const pageRef = useRef<HTMLDivElement>(null)
@@ -67,11 +66,9 @@ const Page = ({ panel, panelIndex }: Props) => {
 
   return (
     <div
-      className='group/page relative mb-8 rounded-2xl border border-gray-3 bg-white font-inter shadow-md transition-all duration-300'
+      className='group/page relative mb-6 rounded-2xl border border-gray-3 bg-white font-inter shadow-md transition-all duration-300'
       id={panel.id}
       ref={pageRef}
-      id={panel.id}
-      className="relative group/page font-inter mb-6"
       onDragOver={(e) => e.preventDefault()}
     >
       {/* 0. Floating Canva Actions */}

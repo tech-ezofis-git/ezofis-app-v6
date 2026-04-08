@@ -211,11 +211,11 @@ const LeftSidebar = () => {
     const filteredPanels = useMemo(() => {
         if (!searchQuery.trim()) return panels
         return panels.filter(p => 
-            p.settings.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            p.settings.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (p.settings.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (p.settings.description || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
             p.fields.some(f => 
-                f.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                f.type.toLowerCase().includes(searchQuery.toLowerCase())
+                (f.label || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                (f.type || '').toLowerCase().includes(searchQuery.toLowerCase())
             )
         )
     }, [panels, searchQuery])

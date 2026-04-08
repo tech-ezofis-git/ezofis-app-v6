@@ -1,5 +1,3 @@
-import AskAI from '@/components/common/ask-ai/AskAI'
-import useAskAIStore from '@/components/common/ask-ai/stores/useAskAIStore'
 import { useFormStore } from '@/pages/form-builder/store/formStore'
 import Form from './components/form/Form'
 import PublishSidebar from './components/form/PublishSidebar'

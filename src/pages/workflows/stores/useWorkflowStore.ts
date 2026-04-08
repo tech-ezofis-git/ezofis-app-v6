@@ -26,6 +26,7 @@ type Store = {
   selectedNode: Node | null
   workflowDescription: string
   workflowName: string
+  workflowId: number | null
   workflowStatus: 'draft' | 'published'
   closeAddMenu: () => void
   closeBuilder: () => void
@@ -46,6 +47,7 @@ type Store = {
     segments: Array<{ id: string; type: string; value: string }>,
   ) => void
   setWorkflowDescription: (description: string) => void
+  setWorkflowId: (id: number | null) => void
   setWorkflowName: (name: string) => void
   setWorkflowStatus: (status: 'draft' | 'published') => void
   startTestRun: () => void
@@ -80,6 +82,7 @@ const useWorkflowStore = create<Store>()((set) => ({
   selectedEdge: null,
   selectedNode: null,
   workflowDescription: '',
+  workflowId: null,
   workflowName: `Workflow - ${new Date()
     .toLocaleString('en-US', {
       day: '2-digit',
@@ -100,6 +103,7 @@ const useWorkflowStore = create<Store>()((set) => ({
   closePanel: () =>
     set({ isPanelOpen: false, selectedEdge: null, selectedNode: null }),
   closeSettings: () => set({ isSettingsOpen: false }),
+  // ... rest of the functions (will be updated below in TargetContent range)
   loadLegacyWorkflow: (legacyJson: any) => {
     import('../utils/importWorkflow').then(({ importWorkflow }) => {
       const { edges, nodes } = importWorkflow(legacyJson)
@@ -129,6 +133,7 @@ const useWorkflowStore = create<Store>()((set) => ({
         loadedNodes: nodes,
         prefixSegments,
         workflowDescription: legacyJson.settings?.general?.description || '',
+        workflowId: legacyJson.id || null,
         workflowName: legacyJson.settings?.general?.name || 'Imported Workflow',
         workflowStatus:
           legacyJson.settings?.publish?.publishOption === 'PUBLISHED'
@@ -173,6 +178,7 @@ const useWorkflowStore = create<Store>()((set) => ({
   setPrefixSegments: (segments) => set({ prefixSegments: segments }),
   setWorkflowDescription: (description) =>
     set({ workflowDescription: description }),
+  setWorkflowId: (workflowId) => set({ workflowId }),
   setWorkflowName: (name) => set({ workflowName: name }),
   setWorkflowStatus: (status) => set({ workflowStatus: status }),
   resetWorkflow: () =>
@@ -191,6 +197,7 @@ const useWorkflowStore = create<Store>()((set) => ({
       selectedEdge: null,
       selectedNode: null,
       workflowDescription: '',
+      workflowId: null,
       workflowName: `Workflow - ${new Date()
         .toLocaleString('en-US', {
           day: '2-digit',

@@ -41,10 +41,67 @@ const getWorkflowById = async (id: string) => {
   }
 }
 
+const createWorkflow = async (payload: any) => {
+  const response: any = { payload: '', error: '' }
+
+  try {
+    const { status, data } = await axiosCrypto.post(
+      '/workflow',
+      JSON.stringify(payload),
+    )
+
+    if (status !== 201) {
+      throw new Error('Failed to create workflow')
+    }
+
+    response.payload = data
+  } catch (e: any) {
+    console.error(e)
+
+    if (e.response?.status === 406) {
+      response.error = 'workflow with the given name already exists'
+    } else {
+      response.error = 'error creating workflow'
+    }
+  }
+
+  return response
+}
+
+const updateWorkflow = async (id: number, payload: any) => {
+  const response: any = { payload: '', error: '' }
+
+  try {
+    const { status, data } = await axiosCrypto.put(
+      `/workflow/${id}`,
+      JSON.stringify(payload),
+    )
+
+    if (status !== 202) {
+      throw new Error('Failed to update workflow')
+    }
+
+    response.payload = typeof data === 'string' ? JSON.parse(data) : data
+  } catch (e: any) {
+    console.error(e)
+    if (e.response?.status === 404) {
+      response.error = 'workflow with the given id is not found'
+    } else if (e.response?.status === 406) {
+      response.error = 'workflow with the given name already exists'
+    } else {
+      response.error = 'error updating workflow'
+    }
+  }
+
+  return response
+}
+
 const workflowApi = {
   createProcessTransaction,
+  createWorkflow,
   getAllWorkflows,
   getWorkflowById,
+  updateWorkflow,
 }
 
 export default workflowApi

@@ -45,6 +45,7 @@ const GridRowSkeleton = ({ index }: { index: number }) => (
 
 const GridView = ({
   isLoading,
+  isRefetching,
   page,
   pageSize,
   table,
@@ -52,7 +53,7 @@ const GridView = ({
   onPageChange,
   onPageSizeChange,
   onReload,
-}: Omit<GridViewProps, 'isRefetching'>) => {
+}: GridViewProps) => {
   const navigate = useNavigate()
   const [rowSize, setRowSize] = useState<RowSize>('default')
   
@@ -78,7 +79,7 @@ const GridView = ({
   return (
     <div className='flex flex-col py-6'>
       <TableActionBar 
-        isReloading={isLoading}
+        isReloading={isLoading || isRefetching}
         rowSize={rowSize}
         table={table}
         onReload={onReload}

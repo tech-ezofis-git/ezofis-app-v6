@@ -1,10 +1,19 @@
-import { Button, TextInput, SegmentedControl, Divider, Tooltip, UnstyledButton, Rating } from '@mantine/core'
+import {
+  Button,
+  TextInput,
+  SegmentedControl,
+  Divider,
+  Tooltip,
+  UnstyledButton,
+  Rating,
+} from '@mantine/core'
 import Icon from '@/components/base/icon/Icon'
+import { useEffect, useState } from 'react'
 import {
   type Panel as PanelType,
   type Question,
   useFormStore,
-  type WelcomePage,
+  type WelcomePageSettings as WelcomePage,
 } from '@/pages/form-builder/store/formStore'
 import cn from '@/utils/cn'
 
@@ -156,10 +165,6 @@ const LivePreview = () => {
                       setIsCompleted(false)
                       setShowWelcome(showWelcomePage)
                     }}
-                    className={cn(
-                      "flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all",
-                      active ? "bg-white text-accent-primary shadow-sm" : "text-gray-5 hover:bg-gray-2"
-                    )}
                   >
                     <Icon name={v.icon} width={14} height={14} />
                     <div className="text-[10px] font-extrabold uppercase tracking-wider">{active ? v.label : ''}</div>

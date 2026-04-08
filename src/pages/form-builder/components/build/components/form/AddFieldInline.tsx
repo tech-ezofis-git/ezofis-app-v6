@@ -1,5 +1,4 @@
 import { Portal } from '@mantine/core'
-import { Text } from '@mantine/core'
 import { motion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import type { QuestionType } from '@/pages/form-builder/store/formStore'

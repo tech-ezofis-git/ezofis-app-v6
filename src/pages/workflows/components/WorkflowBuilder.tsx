@@ -74,8 +74,11 @@ const initialEdges: Edge[] = [
   },
 ]
 
-const WorkflowBuilder = () => {
-  const { workflowId } = useParams({ from: '/workflow-builder/$workflowId' })
+const WorkflowBuilderCanvas = ({
+  workflowId,
+}: {
+  workflowId: string
+}) => {
   const isNew = workflowId === 'new'
 
   const { data } = useQuery({
@@ -83,14 +86,19 @@ const WorkflowBuilder = () => {
     enabled: !isNew,
   })
 
-  const [nodes, setNodes, onNodesChange] = useNodesState<Node>(initialNodes)
-  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(initialEdges)
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node>(
+    isNew ? initialNodes : [],
+  )
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(
+    isNew ? initialEdges : [],
+  )
   const [contextMenu, setContextMenu] = useState<{
     id: string
     left: number
     top: number
     type: 'node' | 'edge'
   } | null>(null)
+
   const {
     closePanel,
     isPanelOpen,
@@ -104,12 +112,15 @@ const WorkflowBuilder = () => {
     resetWorkflow,
   } = useWorkflowStore((state) => state)
 
-  // Reset if it's new
+  // Reset store when workflowId changes (handled by key reset but good for global store)
   useEffect(() => {
+    resetWorkflow()
     if (isNew) {
-      resetWorkflow()
       setNodes(initialNodes)
       setEdges(initialEdges)
+    }
+    return () => {
+      resetWorkflow()
     }
   }, [isNew, resetWorkflow, setNodes, setEdges])
 
@@ -189,40 +200,33 @@ const WorkflowBuilder = () => {
 
     let mounted = true
     const sequence = async () => {
-      // Simple linear traversal from top to bottom for MVP
-      // Find start node (trigger or top-most)
       const startNode = nodes.find((n) => n.data.type === 'trigger') || nodes[0]
       if (!startNode) return
 
       let currentNodeId = startNode.id
 
       while (mounted && currentNodeId) {
-        // Highlight current node
         setActiveNode(currentNodeId)
-        await new Promise((r) => setTimeout(r, 800)) // Pause on node
+        await new Promise((r) => setTimeout(r, 800))
         if (!mounted) break
 
-        // Find outgoing edge
         const outgoingEdge = edges.find((e) => e.source === currentNodeId)
 
         if (outgoingEdge) {
-          setActiveNode(null) // Un-highlight node
+          setActiveNode(null)
           setActiveEdge(outgoingEdge.id)
-          await new Promise((r) => setTimeout(r, 1000)) // Animate edge
+          await new Promise((r) => setTimeout(r, 1000))
           if (!mounted) break
           setActiveEdge(null)
           currentNodeId = outgoingEdge.target
         } else {
-          // Start of end node highlight (final node)
           setActiveNode(currentNodeId)
           await new Promise((r) => setTimeout(r, 800))
           setActiveNode(null)
-          currentNodeId = '' // Stop
+          currentNodeId = ''
         }
 
-        // If we reached the end node or no more edges
         if (!outgoingEdge) {
-          // Ensure the last node gets un-highlighted if loop breaks here
           setActiveNode(null)
           break
         }
@@ -235,7 +239,7 @@ const WorkflowBuilder = () => {
 
     return () => {
       mounted = false
-      stopTestRun() // Cleanup on unmount or re-run
+      stopTestRun()
     }
   }, [isRunningTest, nodes, edges, stopTestRun, setActiveEdge, setActiveNode])
 
@@ -303,7 +307,6 @@ const WorkflowBuilder = () => {
           return
         }
         setNodes((nodes) => nodes.filter((node) => node.id !== contextMenu.id))
-        // Also close panel if deleted node was selected
         if (selectedNode?.id === contextMenu.id) {
           selectNode(null)
         }
@@ -313,93 +316,99 @@ const WorkflowBuilder = () => {
   }, [contextMenu, setEdges, setNodes, selectedNode, selectNode, nodes])
 
   return (
-    <ReactFlowProvider>
-      <div className='flex h-screen w-full flex-col overflow-hidden bg-gray-1'>
-        <BuilderHeader />
-        <div className='flex flex-1 overflow-hidden'>
-          {/* Canvas Area */}
-          <div className='relative h-full min-w-0 flex-1'>
-            <ReactFlow
-              className='bg-transparent'
-              deleteKeyCode={['Backspace', 'Delete']}
-              edges={edges}
-              edgeTypes={edgeTypes}
-              maxZoom={0.75}
-              minZoom={0.25}
-              nodes={nodes}
-              nodeTypes={nodeTypes}
-              panOnScroll={true}
-              proOptions={{ hideAttribution: true }}
-              zoomOnScroll={false}
-              defaultEdgeOptions={{
-                type: 'custom',
-              }}
-              onConnect={onConnect}
-              onEdgeClick={onEdgeClick}
-              onEdgeContextMenu={onEdgeContextMenu}
-              onEdgesChange={onEdgesChange}
-              onNodeClick={onNodeClick}
-              onNodeContextMenu={onNodeContextMenu}
-              onNodesChange={onNodesChange}
-              onPaneClick={onPaneClick}
-            >
-              <Background
-                color='var(--color-primary-2)'
-                gap={40}
-                size={1}
-                style={{ opacity: 0.5 }}
-                variant={BackgroundVariant.Lines}
-              />
-              <Controls
-                className='overflow-hidden !rounded-xl !border-2 !border-gray-2 !bg-white !shadow-xl'
-                position='bottom-right'
-              />
-              <AddNodeMenu />
-              {contextMenu && (
-                <div
-                  className='border-gray-200 fixed z-[1000] min-w-[150px] overflow-hidden rounded-lg border bg-white p-1 shadow-lg'
-                  style={{
-                    left: contextMenu.left,
-                    top: contextMenu.top,
-                  }}
-                >
-                  {(contextMenu.type !== 'node' ||
-                    (nodes.find((n) => n.id === contextMenu.id)?.data.type !==
-                      'trigger' &&
-                      nodes.find((n) => n.id === contextMenu.id)?.data.label !==
-                        'Workflow Success')) && (
-                    <button
-                      className='text-red-600 hover:bg-red-50 flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm'
-                      onClick={deleteItem}
-                    >
-                      {contextMenu.type === 'node'
-                        ? 'Delete Node'
-                        : 'Delete Connection'}
-                    </button>
-                  )}
-                </div>
-              )}
-            </ReactFlow>
-          </div>
-
-          {/* Properties Panel (Right Sidebar) */}
-          {isPanelOpen && (
-            <div className='animate-in slide-in-from-right h-full duration-300'>
-              <PropertiesPanel
-                edge={selectedEdge}
-                node={selectedNode}
-                onClose={closePanel}
-              />
-            </div>
-          )}
-
-          {/* Settings Panel (Right Sidebar) */}
-          <WorkflowSettings />
+    <div className='flex h-screen w-full flex-col overflow-hidden bg-gray-1'>
+      <BuilderHeader />
+      <div className='flex flex-1 overflow-hidden'>
+        <div className='relative h-full min-w-0 flex-1'>
+          <ReactFlow
+            className='bg-transparent'
+            deleteKeyCode={['Backspace', 'Delete']}
+            edges={edges}
+            edgeTypes={edgeTypes}
+            maxZoom={0.75}
+            minZoom={0.25}
+            nodes={nodes}
+            nodeTypes={nodeTypes}
+            panOnScroll={true}
+            proOptions={{ hideAttribution: true }}
+            zoomOnScroll={false}
+            defaultEdgeOptions={{
+              type: 'custom',
+            }}
+            onConnect={onConnect}
+            onEdgeClick={onEdgeClick}
+            onEdgeContextMenu={onEdgeContextMenu}
+            onEdgesChange={onEdgesChange}
+            onNodeClick={onNodeClick}
+            onNodeContextMenu={onNodeContextMenu}
+            onNodesChange={onNodesChange}
+            onPaneClick={onPaneClick}
+          >
+            <Background
+              color='var(--color-primary-2)'
+              gap={40}
+              size={1}
+              style={{ opacity: 0.5 }}
+              variant={BackgroundVariant.Lines}
+            />
+            <Controls
+              className='overflow-hidden !rounded-xl !border-2 !border-gray-2 !bg-white !shadow-xl'
+              position='bottom-right'
+            />
+            <AddNodeMenu />
+            {contextMenu && (
+              <div
+                className='border-gray-200 fixed z-[1000] min-w-[150px] overflow-hidden rounded-lg border bg-white p-1 shadow-lg'
+                style={{
+                  left: contextMenu.left,
+                  top: contextMenu.top,
+                }}
+              >
+                {(contextMenu.type !== 'node' ||
+                  (nodes.find((n) => n.id === contextMenu.id)?.data.type !==
+                    'trigger' &&
+                    nodes.find((n) => n.id === contextMenu.id)?.data.label !==
+                      'Workflow Success')) && (
+                  <button
+                    className='text-red-600 hover:bg-red-50 flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm'
+                    onClick={deleteItem}
+                  >
+                    {contextMenu.type === 'node'
+                      ? 'Delete Node'
+                      : 'Delete Connection'}
+                  </button>
+                )}
+              </div>
+            )}
+          </ReactFlow>
         </div>
+
+        {isPanelOpen && (
+          <div className='animate-in slide-in-from-right h-full duration-300'>
+            <PropertiesPanel
+              edge={selectedEdge}
+              node={selectedNode}
+              onClose={closePanel}
+            />
+          </div>
+        )}
+
+        <WorkflowSettings />
       </div>
+    </div>
+  )
+}
+
+const WorkflowBuilder = () => {
+  const { workflowId } = useParams({ from: '/workflow-builder/$workflowId' })
+
+  return (
+    <ReactFlowProvider>
+      <WorkflowBuilderCanvas key={workflowId} workflowId={workflowId} />
     </ReactFlowProvider>
   )
 }
 
 WorkflowBuilder.displayName = 'WorkflowBuilder'
 export default WorkflowBuilder
+

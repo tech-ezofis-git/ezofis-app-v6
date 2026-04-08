@@ -14,13 +14,36 @@ const BuilderHeader = () => {
     workflowStatus,
   } = useWorkflowStore((state) => state)
 
-  const handleSave = () => {
-    // Save functionality
-    const exportedJson = exportWorkflow(getNodes(), getEdges())
-    console.log(
-      'Exported Workflow JSON:',
-      JSON.stringify(exportedJson, null, 2),
-    )
+  const handleDownload = () => {
+    try {
+      const exportedJson = exportWorkflow(getNodes(), getEdges())
+      const blob = new Blob([JSON.stringify(exportedJson, null, 2)], {
+        type: 'application/json',
+      })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `${workflowName || 'workflow'}.json`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+
+      import('@/components/base/toast/showToast').then(({ default: showToast }) => {
+        showToast({
+          message: 'Workflow settings exported successfully',
+          variant: 'success',
+        })
+      })
+    } catch (error) {
+      console.error('Export failed:', error)
+      import('@/components/base/toast/showToast').then(({ default: showToast }) => {
+        showToast({
+          message: 'Failed to export workflow settings',
+          variant: 'error',
+        })
+      })
+    }
   }
 
   return (
@@ -71,7 +94,7 @@ const BuilderHeader = () => {
         <Button
           icon='lucide:save'
           label='Save'
-          onClick={handleSave}
+          onClick={handleDownload}
         />
       </div>
     </header>
