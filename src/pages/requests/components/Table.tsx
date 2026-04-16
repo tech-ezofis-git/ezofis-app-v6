@@ -155,14 +155,16 @@ const Table = () => {
   })
 
   return (
-    <div className='p-6 xl:p-8'>
-      <DataTable
-        isLoading={isPending}
-        isReLoading={isFetching || isRefetching}
-        pageSize={pageSize}
-        table={table}
-        onReload={refetch}
-      />
+    <div className='flex h-full flex-col p-6 xl:p-8'>
+      <div className='flex-1 min-h-0'>
+        <DataTable
+          isLoading={isPending}
+          isReLoading={isFetching || isRefetching}
+          pageSize={pageSize}
+          table={table}
+          onReload={refetch}
+        />
+      </div>
       <Pagination
         className='mt-4'
         itemLabel='Requests'

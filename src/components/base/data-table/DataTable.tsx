@@ -53,7 +53,7 @@ const DataTable = <TData,>({
     <div
       className={cn(
         `flex ${!component ? 'w-full' : 'w-full'} flex-col`,
-        stickyHeader && 'h-full min-h-0',
+        stickyHeader && 'max-h-full min-h-0',
       )}
     >
       <TableActionBar
@@ -71,14 +71,14 @@ const DataTable = <TData,>({
       <div
         className={cn(
           'flex w-full rounded-xl border border-[var(--gray-3)] bg-white shadow-sm',
-          stickyHeader ? 'min-h-0 flex-1 flex-col' : 'overflow-hidden',
+          stickyHeader ? 'min-h-0 flex-col' : 'overflow-hidden',
         )}
       >
         <div
           className={cn(
             'flex w-full items-start',
             stickyHeader
-              ? 'minimal-scrollbar flex-1 overflow-auto'
+              ? 'minimal-scrollbar overflow-auto'
               : 'scrollbar overflow-x-auto',
           )}
         >
