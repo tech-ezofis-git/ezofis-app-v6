@@ -58,6 +58,16 @@ export const ALL_FIELDS: FieldType[] = [
   { type: 'CALCULATED', label: 'Calculated', icon: 'lucide:calculator', category: 'advanced', description: 'Dynamic formula-based result' },
 ]
 
+import { motion } from 'framer-motion'
+
+const FIELD_THEMES: Record<CategoryType, { bg: string, icon: string, accent: string }> = {
+    popular: { bg: 'bg-blue-50', icon: 'text-blue-600', accent: 'group-hover:bg-blue-600' },
+    templates: { bg: 'bg-purple-50', icon: 'text-purple-600', accent: 'group-hover:bg-purple-600' },
+    advanced: { bg: 'bg-amber-50', icon: 'text-amber-600', accent: 'group-hover:bg-amber-600' },
+    display: { bg: 'bg-emerald-50', icon: 'text-emerald-600', accent: 'group-hover:bg-emerald-600' },
+    date_time: { bg: 'bg-cyan-50', icon: 'text-cyan-600', accent: 'group-hover:bg-cyan-600' },
+}
+
 const FieldLibrary = () => {
     const { addFieldPosition, addQuestion, setSidebarView, setAddFieldPosition } = useFormStore()
     const [search, setSearch] = useState('')
@@ -130,29 +140,46 @@ const FieldLibrary = () => {
             </div>
 
             {/* List */}
-            <div className="flex-1 overflow-y-auto p-3 space-y-6 custom-scrollbar">
-                {categories.map((cat) => {
+            <div className="flex-1 overflow-y-auto p-3 space-y-8 custom-scrollbar pb-10">
+                {categories.map((cat, catIdx) => {
                     const catFields = filteredFields.filter(f => f.category === cat.id)
                     if (catFields.length === 0) return null
+                    const theme = FIELD_THEMES[cat.id as CategoryType]
 
                     return (
-                        <div key={cat.id} className="space-y-2">
-                            <div className="text-[9px] font-extrabold text-gray-4 uppercase tracking-[0.2em] px-1">{cat.label}</div>
-                            <div className="grid grid-cols-1 gap-1">
-                                {catFields.map((field) => (
-                                    <button
+                        <div key={cat.id} className="space-y-3.5">
+                            <div className="flex items-center justify-between px-1">
+                                <div className="flex items-center gap-2">
+                                    <div className={cn("size-2 rounded-full shadow-sm", theme.icon.replace('text', 'bg'))} />
+                                    <div className="text-[11px] font-black text-gray-12 uppercase tracking-[0.2em]">{cat.label}</div>
+                                </div>
+                                <div className="h-px flex-1 bg-gradient-to-r from-gray-2 to-transparent ml-4" />
+                            </div>
+                            <div className="grid grid-cols-1 gap-2">
+                                {catFields.map((field, idx) => (
+                                    <motion.button
                                         key={field.type + field.label}
+                                        initial={{ opacity: 0, x: -10 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ delay: (catIdx * 0.08) + (idx * 0.04) }}
                                         onClick={() => handleSelect(field.type)}
-                                        className="group flex items-center gap-3 p-2 rounded-lg hover:bg-white hover:shadow-sm border border-transparent hover:border-gray-2 transition-all text-left"
+                                        className="group relative flex items-center gap-4 p-3 rounded-2xl bg-white/40 hover:bg-white border border-transparent hover:border-gray-2 shadow-[0_2px_10px_rgba(0,0,0,0.02)] hover:shadow-[0_8px_25px_rgba(0,0,0,0.05)] transition-all duration-300 text-left active:scale-[0.97]"
                                     >
-                                        <div className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-gray-2 bg-gray-1 text-gray-5 group-hover:bg-accent-soft group-hover:text-accent-primary group-hover:border-accent-soft/30 transition-all">
-                                            <Icon name={field.icon} width={14} height={14} />
+                                        <div className={cn(
+                                            "flex size-11 shrink-0 items-center justify-center rounded-[14px] border border-transparent transition-all duration-500",
+                                            theme.bg, theme.icon,
+                                            "group-hover:rotate-6 group-hover:scale-110 group-hover:shadow-lg group-hover:shadow-current/10"
+                                        )}>
+                                            <Icon name={field.icon} width={20} height={20} />
                                         </div>
                                         <div className="flex flex-col min-w-0">
-                                            <div className="text-[12px] font-semibold text-gray-12 group-hover:text-accent-primary transition-colors truncate">{field.label}</div>
-                                            <div className="text-[10px] text-gray-5 truncate">{field.description}</div>
+                                            <div className="text-[14px] font-bold text-gray-13 group-hover:text-accent-primary transition-colors truncate tracking-tight">{field.label}</div>
+                                            <div className="text-[11px] text-gray-5 font-medium truncate opacity-70 group-hover:opacity-100 transition-opacity leading-tight">{field.description}</div>
                                         </div>
-                                    </button>
+                                        <div className="ml-auto flex items-center justify-center size-8 rounded-full bg-gray-50 opacity-0 group-hover:opacity-100 transition-all duration-300 group-hover:bg-accent-soft text-accent-primary translate-x-2 group-hover:translate-x-0">
+                                            <Icon name="lucide:plus" width={16} height={16} />
+                                        </div>
+                                    </motion.button>
                                 ))}
                             </div>
                         </div>

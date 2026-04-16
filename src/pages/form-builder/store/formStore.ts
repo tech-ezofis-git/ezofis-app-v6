@@ -104,6 +104,8 @@ export interface FormStore {
   setSidebarView: (view: 'explorer' | 'fields') => void
   setAddFieldPosition: (pos: { panelId: string, index: number } | null) => void
   duplicatePanel: (id: string) => void
+  activePanelId: string | null
+  setActivePanelId: (id: string | null) => void
 }
 
 export type FormType = 'WORKFLOW' | 'FEEDBACK' | 'MASTER'
@@ -131,6 +133,7 @@ export interface Panel {
     description: string
     isLocked?: boolean
     title?: string
+    isCollapsed?: boolean
   }
 }
 export type PublishStatus = 'DRAFT' | 'PUBLISHED'
@@ -381,6 +384,7 @@ const initialState = {
   uid: '',
   sidebarView: 'explorer' as const,
   addFieldPosition: null,
+  activePanelId: null,
 }
 
 
@@ -564,6 +568,7 @@ export const useFormStore = create<FormStore>()(
       setLeftSidebarCollapsed: (isLeftSidebarCollapsed) => set({ isLeftSidebarCollapsed }),
       setSidebarView: (sidebarView) => set({ sidebarView }),
       setAddFieldPosition: (addFieldPosition) => set({ addFieldPosition }),
+      setActivePanelId: (activePanelId) => set({ activePanelId }),
 
       // Form Metadata Actions
       setName: (name) => set({ name }),

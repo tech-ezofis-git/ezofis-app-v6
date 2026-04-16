@@ -15,7 +15,7 @@ interface Props {
   panelIndex: number
 }
 
-const Page = ({ panel }: Props) => {
+const Page = ({ panel, panelIndex }: Props) => {
   const {
     activeQuestionId,
     deleteQuestion,
@@ -30,11 +30,14 @@ const Page = ({ panel }: Props) => {
     clearLastAddedPanelId,
     updateQuestion,
     setActiveQuestionId,
+    addPanel,
+    movePanel,
+    panels,
   } = useFormStore()
 
   const pageRef = useRef<HTMLDivElement>(null)
   const isLocked = panel.settings.isLocked || false
-  const isCollapsed = false // Force expanded or get from store if needed
+  const isCollapsed = panel.settings.isCollapsed || false
 
   // Mapping for field widths to 12-column grid spans
   const getColumnSpan = (size: string) => {
@@ -74,6 +77,36 @@ const Page = ({ panel }: Props) => {
       {/* 0. Floating Canva Actions */}
       <div className="absolute -top-10 right-0 flex items-center gap-2 z-20 transition-all">
         <div className="flex items-center gap-1.5 px-2 py-1.5 bg-white/70 backdrop-blur-md rounded-xl border border-gray-2/20 shadow-[0_8px_30px_rgb(0,0,0,0.08)] group-hover/page:opacity-100 opacity-0 md:opacity-100 transition-all duration-300">
+          {/* Section Reordering */}
+          <div className="flex items-center gap-0.5">
+            <Tooltip label="Move Section Up" position="top" withArrow>
+              <ActionIcon
+                variant="subtle"
+                color="gray"
+                size="md"
+                disabled={panelIndex === 0}
+                onClick={() => movePanel(panel.id, 'up')}
+                className="text-gray-12 hover:bg-gray-1 rounded-lg active:scale-95 transition-all w-8 h-8 disabled:opacity-30"
+              >
+                <Icon name="lucide:arrow-up" width={16} height={16} />
+              </ActionIcon>
+            </Tooltip>
+            <Tooltip label="Move Section Down" position="top" withArrow>
+              <ActionIcon
+                variant="subtle"
+                color="gray"
+                size="md"
+                disabled={panelIndex === panels.length - 1}
+                onClick={() => movePanel(panel.id, 'down')}
+                className="text-gray-12 hover:bg-gray-1 rounded-lg active:scale-95 transition-all w-8 h-8 disabled:opacity-30"
+              >
+                <Icon name="lucide:arrow-down" width={16} height={16} />
+              </ActionIcon>
+            </Tooltip>
+          </div>
+
+          <div className="w-px h-4 bg-gray-2/50 mx-0.5" />
+
           <Tooltip label={isLocked ? "Unlock Page" : "Lock Page"} position="top" withArrow>
             <ActionIcon
               variant="subtle"
@@ -102,14 +135,15 @@ const Page = ({ panel }: Props) => {
             </ActionIcon>
           </Tooltip>
 
-          <Tooltip label="Page Actions" position="top" withArrow>
+          <Tooltip label="Add Section Below" position="top" withArrow>
             <ActionIcon
               variant="subtle"
               color="gray"
               size="md"
+              onClick={() => addPanel(panelIndex + 1)}
               className="text-gray-12 hover:bg-gray-1 rounded-lg active:scale-95 transition-all w-8 h-8"
             >
-              <Icon name="lucide:upload" width={16} height={16} />
+              <Icon name="lucide:plus-square" width={16} height={16} />
             </ActionIcon>
           </Tooltip>
 
@@ -137,7 +171,7 @@ const Page = ({ panel }: Props) => {
           fieldCount={panel.fields.length}
           isCollapsed={isCollapsed}
           isLocked={isLocked}
-          onToggleCollapse={() => { }} // User can't toggle yet if I force isCollapsed false, but prop is required
+          onToggleCollapse={() => updatePanel(panel.id, { isCollapsed: !isCollapsed })}
         />
 
         {/* 2. Page Canvas / Field Grid */}

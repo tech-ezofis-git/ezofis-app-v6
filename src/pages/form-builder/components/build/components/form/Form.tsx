@@ -190,6 +190,34 @@ const Form = () => {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
 
+  // Scrollspy: Highlighting sidebar based on canvas scroll
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        // Find the entry that is currently most prominent
+        const visibleEntry = entries.find(entry => entry.isIntersecting)
+        if (visibleEntry) {
+          useFormStore.getState().setActivePanelId(visibleEntry.target.id)
+        }
+      },
+      {
+        rootMargin: '-10% 0px -70% 0px', // Trigger when section is in the upper part of the screen
+        threshold: 0
+      }
+    )
+
+    // Wait for panels to be rendered
+    const sections = document.querySelectorAll('[id^="panel-"]') // Assuming panel IDs start with panel-
+    // Actually, Page.tsx uses id={panel.id}. 
+    // I should check what panel.id looks like. If they are UUIDs, I'll need a way to select them.
+    // I'll add a data-section attribute in Page.tsx if needed, but for now I'll use a class or observe all children.
+    
+    const panelElements = document.querySelectorAll('.group\\/page')
+    panelElements.forEach(el => observer.observe(el))
+
+    return () => observer.disconnect()
+  }, [panels]) // Re-run when sections are added/removed
+
   const activeQuestion = panels
     .flatMap((p) => p.fields)
     .find((f) => f.id === activeId)
