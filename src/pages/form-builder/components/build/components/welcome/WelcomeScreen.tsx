@@ -4,6 +4,7 @@ import Icon from '@/components/base/icon/Icon'
 import { useFormStore } from '@/pages/form-builder/store/formStore'
 import useAskAIStore from '@/components/common/ask-ai/stores/useAskAIStore'
 import { motion } from 'framer-motion'
+import Logo from '@/components/common/Logo'
 
 const WelcomeScreen = () => {
   const { addPanel, appendAIResponse } = useFormStore()
@@ -122,24 +123,18 @@ const WelcomeScreen = () => {
   }
 
   return (
-    <div className='relative flex h-[calc(100vh-160px)] flex-col items-center justify-center overflow-hidden px-10 font-inter bg-primary-1'>
-      {/* Decorative Background Elements - Workspace Primary 3 & 4 */}
-      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-primary-3 rounded-full blur-[120px] opacity-40 pointer-events-none" />
-      <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-secondary-3 rounded-full blur-[120px] opacity-30 pointer-events-none" />
-
+    <div className='relative flex h-full flex-col items-center justify-center overflow-hidden px-10 font-inter bg-gray-50/50'>
       <div className='relative w-full max-w-6xl text-center z-10'>
         <motion.div 
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className='mb-4'
+          className='mb-6'
         >
-          <div className='mb-3 flex justify-center'>
+          <div className='mb-6 flex justify-center'>
             <div className='relative group'>
-              <div className='absolute -inset-1 bg-primary-9/10 rounded-xl blur-md group-hover:bg-primary-9/20 transition-all duration-500 opacity-0 group-hover:opacity-100' />
-              <div className='relative flex size-12 items-center justify-center rounded-xl bg-white shadow-[0_4px_20px_rgba(0,0,0,0.03)] text-primary-9'>
-                <Icon height={28} name='lucide:layout-template' width={28} />
-              </div>
+              <div className='absolute -inset-2 bg-gray-9/5 rounded-2xl blur-lg opacity-0 group-hover:opacity-100 transition-all duration-500' />
+              <Logo className="relative scale-150 transition-transform duration-500 group-hover:scale-[1.6]" />
             </div>
           </div>
           <Title className='mb-1 text-3xl font-black tracking-tight text-gray-13 md:text-4xl' order={1}>
@@ -150,15 +145,14 @@ const WelcomeScreen = () => {
           </p>
         </motion.div>
 
-        {/* AI Prompt Area: Workspace Aligned Glassmorphism */}
+        {/* AI Prompt Area: Clean & Professional */}
         <motion.div 
           initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5, delay: 0.1 }}
           className='mb-8 relative mx-auto max-w-lg'
         >
-          <div className='absolute -inset-0.5 rounded-[1.25rem] bg-gradient-to-r from-primary-9 via-secondary-8 to-primary-9 opacity-20 blur-md' />
-          <div className='relative overflow-hidden rounded-[1rem] border border-white bg-white/70 shadow-[0_10px_30px_rgba(0,0,0,0.04)] backdrop-blur-xl p-1.5'>
+          <div className='relative overflow-hidden rounded-[1rem] border border-gray-2 bg-white shadow-[0_10px_30px_rgba(0,0,0,0.04)] p-1.5'>
             <div className='flex items-center gap-2 pr-1'>
               <TextInput
                 className='flex-1'
