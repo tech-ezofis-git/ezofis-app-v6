@@ -28,7 +28,7 @@ const Table = ({
   // Component body simplified as columns and state are managed by parent
 
   return (
-    <div className='p-6'>
+    <div className='py-1 px-2'>
       <DataTable
         isLoading={isLoading}
         isReLoading={isRefetching}

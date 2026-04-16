@@ -56,7 +56,7 @@ const GridView = ({
 }: GridViewProps) => {
   const navigate = useNavigate()
   const [rowSize, setRowSize] = useState<RowSize>('default')
-  
+
   const rows = table.getRowModel().rows
 
   const toggleGroup = (groupId: string) => {
@@ -77,8 +77,8 @@ const GridView = ({
   }
 
   return (
-    <div className='flex flex-col py-6'>
-      <TableActionBar 
+    <div className='flex flex-col py-1 px-2'>
+      <TableActionBar
         isReloading={isLoading || isRefetching}
         rowSize={rowSize}
         table={table}
@@ -97,6 +97,7 @@ const GridView = ({
       ) : (
         <div className='flex flex-col gap-4'>
           {rows.map((groupRow: any) => {
+            if (groupRow.depth > 0) return null
             const group = groupRow.original
             const subRows = group.subRows || []
             const groupValue = group.groupValue || 'Untitled Group'
@@ -112,7 +113,7 @@ const GridView = ({
                   >
                     <div className='flex items-center gap-3'>
                       <div className='rounded-lg bg-accent-soft p-1.5'>
-                        <Icon className='size-5 text-accent-primary' name='tabler:folder-open' />
+                        <Icon className='size-5 text-accent-primary' name='tabler:stack-2' />
                       </div>
                       <h2 className='text-sm font-bold text-gray-13 uppercase tracking-wider'>
                         {groupValue} <span className='ml-1 text-xs font-medium text-gray-5'>({group.groupCount})</span>
@@ -120,7 +121,7 @@ const GridView = ({
                     </div>
 
                     <div className='flex items-center gap-4'>
-                       <button className='rounded-full bg-transparent p-1.5 text-gray-4 transition-colors hover:bg-accent-soft hover:text-accent-primary'>
+                      <button className='rounded-full bg-transparent p-1.5 text-gray-4 transition-colors hover:bg-accent-soft hover:text-accent-primary'>
                         <Icon
                           name='tabler:chevron-down'
                           className={cn(
@@ -132,7 +133,7 @@ const GridView = ({
                     </div>
                   </motion.div>
                 )}
-                
+
                 <AnimatePresence initial={false}>
                   {!isCollapsed && (
                     <motion.div
@@ -148,7 +149,7 @@ const GridView = ({
                             key={form.id}
                             whileHover={{ scale: 1.002, x: 4 }}
                             className='group relative flex w-full items-center justify-between gap-4 rounded-xl border border-gray-2 bg-white p-3 transition-all hover:border-accent-primary hover:shadow-md'
-                            onClick={() => navigate({ 
+                            onClick={() => navigate({
                               to: '/form-builder/$formId',
                               params: { formId: form.uid || form.id }
                             })}
