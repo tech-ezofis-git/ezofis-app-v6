@@ -24,21 +24,36 @@ interface GridViewProps {
 
 const GridRowSkeleton = ({ index }: { index: number }) => (
   <motion.div
+    initial={{ opacity: 0, y: 10 }}
     animate={{ opacity: 1, y: 0 }}
-    className='relative flex w-full items-center justify-between gap-4 overflow-hidden rounded-xl border border-gray-2 bg-white p-4'
-    initial={{ opacity: 0, y: 6 }}
     transition={{ delay: index * 0.05 }}
+    className="relative flex w-full items-center justify-between gap-4 overflow-hidden rounded-xl border border-[var(--gray-3)] bg-[var(--surface)] p-4"
   >
+    {/* shimmer */}
+    <motion.div
+      className="pointer-events-none absolute inset-0 bg-[linear-gradient(110deg,transparent,rgba(255,255,255,0.6),transparent)]"
+      style={{ mixBlendMode: 'overlay' }}
+      animate={{ x: ['-60%', '160%'] }}
+      transition={{
+        duration: 1.2,
+        repeat: Infinity,
+        ease: [0, 0, 1, 1],
+        delay: index * 0.1,
+      }}
+    />
+
     <div className='flex min-w-0 items-center gap-4'>
-      <div className='size-10 rounded-lg bg-gray-1 animate-pulse' />
+      <div className='size-12 rounded-lg bg-[var(--gray-3)]/80' />
       <div className='flex min-w-0 flex-col gap-2'>
-        <div className='h-4 w-48 rounded bg-gray-1 animate-pulse' />
-        <div className='h-3 w-32 rounded bg-gray-1 animate-pulse' />
+        <div className='h-4 w-44 rounded bg-[var(--gray-3)]/80' />
+        <div className='h-3 w-32 rounded bg-[var(--gray-3)]/60' />
       </div>
     </div>
-    <div className='flex shrink-0 items-center gap-4'>
-      <div className='h-6 w-20 rounded-full bg-gray-1 animate-pulse' />
-      <div className='h-6 w-16 rounded-full bg-gray-1 animate-pulse' />
+
+    <div className='hidden md:flex items-center gap-3 shrink-0'>
+      <div className='h-7 w-20 rounded-full bg-[var(--gray-3)]/70' />
+      <div className='h-7 w-24 rounded-full bg-[var(--gray-3)]/70' />
+      <div className='w-5' />
     </div>
   </motion.div>
 )
@@ -66,16 +81,6 @@ const GridView = ({
     }
   }
 
-  if (isLoading) {
-    return (
-      <div className='flex flex-col gap-3 py-6'>
-        {[1, 2, 3, 4, 5].map((i) => (
-          <GridRowSkeleton index={i} key={i} />
-        ))}
-      </div>
-    )
-  }
-
   return (
     <div className='flex h-full flex-col py-1 px-2'>
       <div className='flex-1 min-h-0 overflow-hidden'>
@@ -87,7 +92,13 @@ const GridView = ({
           onRowSizeChange={setRowSize}
         />
 
-        {rows.length === 0 ? (
+        {isLoading ? (
+          <div className='flex flex-col gap-3 pt-3 pb-6'>
+            {[1, 2, 3, 4, 5].map((i) => (
+              <GridRowSkeleton index={i} key={i} />
+            ))}
+          </div>
+        ) : rows.length === 0 ? (
           <div className='flex flex-col items-center justify-center py-20 text-center'>
             <div className='mb-4 flex size-16 items-center justify-center rounded-full bg-gray-1 text-gray-4'>
               <Icon name='lucide:form-input' height={32} width={32} />
