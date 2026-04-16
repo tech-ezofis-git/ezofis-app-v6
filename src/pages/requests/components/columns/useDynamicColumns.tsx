@@ -6,8 +6,8 @@ import IconButton from '@/components/base/button/IconButton'
 import Menu from '@/components/base/menu/Menu'
 import MenuItem from '@/components/base/menu/MenuItem'
 import RequestStatusBadge from '@/components/common/RequestStatusBadge'
-import SummaryBadge from '@/components/common/SummaryBadge'
-import { generateDummySummary } from '@/pages/requests/utils/dummyData'
+// import SummaryBadge from '@/components/common/SummaryBadge'
+// import { generateDummySummary } from '@/pages/requests/utils/dummyData'
 // import { motion, AnimatePresence } from 'framer-motion'
 // import Icon from '@/components/base/icon/Icon'
 // import cn from '@/utils/cn'
@@ -190,112 +190,112 @@ export const useDynamicColumns = (
         // sortingFn: 'alphanumeric',
       },
       // 2) Dummy Data Columns
-      {
-        id: 'score',
-        label: 'Match Score',
-        size: 220,
-        renderCell: (row: any) => {
-          const summary = generateDummySummary(row.id || row.requestNo)
-          return (
-            <SummaryBadge
-              icon={summary.score.icon}
-              label={summary.score.shortText}
-              theme={summary.score.theme as any}
-              variant='outline'
-            />
-          )
-        },
-      },
-      {
-        id: 'decision',
-        label: 'Decision',
-        size: 220,
-        renderCell: (row: any) => {
-          const summary = generateDummySummary(row.id || row.requestNo)
-          return (
-            <SummaryBadge
-              icon={summary.decision.icon}
-              label={summary.decision.badgeText}
-              theme={summary.decision.theme as any}
-              variant='outline'
-            />
-          )
-        },
-      },
-      {
-        id: 'extraction',
-        label: 'Line Items Matched',
-        size: 220,
-        renderCell: (row: any) => {
-          const summary = generateDummySummary(row.id || row.requestNo)
-          return (
-            <SummaryBadge
-              icon={summary.extraction.icon}
-              label={summary.extraction.shortText}
-              theme={summary.extraction.theme as any}
-              variant='outline'
-            />
-          )
-        },
-      },
-      {
-        id: 'dueDate',
-        label: 'Due Date',
-        size: 220,
-        renderCell: (row: any) => {
-          const summary = generateDummySummary(row.id || row.requestNo)
-          return (
-            <SummaryBadge
-              icon={summary.dueDate.icon}
-              label={summary.dueDate.shortText}
-              theme={summary.dueDate.theme as any}
-              variant='outline'
-            />
-          )
-        },
-      },
+      // {
+      //   id: 'score',
+      //   label: 'Match Score',
+      //   size: 220,
+      //   renderCell: (row: any) => {
+      //     const summary = generateDummySummary(row.id || row.requestNo)
+      //     return (
+      //       <SummaryBadge
+      //         icon={summary.score.icon}
+      //         label={summary.score.shortText}
+      //         theme={summary.score.theme as any}
+      //         variant='outline'
+      //       />
+      //     )
+      //   },
+      // },
+      // {
+      //   id: 'decision',
+      //   label: 'Decision',
+      //   size: 220,
+      //   renderCell: (row: any) => {
+      //     const summary = generateDummySummary(row.id || row.requestNo)
+      //     return (
+      //       <SummaryBadge
+      //         icon={summary.decision.icon}
+      //         label={summary.decision.badgeText}
+      //         theme={summary.decision.theme as any}
+      //         variant='outline'
+      //       />
+      //     )
+      //   },
+      // },
+      // {
+      //   id: 'extraction',
+      //   label: 'Line Items Matched',
+      //   size: 220,
+      //   renderCell: (row: any) => {
+      //     const summary = generateDummySummary(row.id || row.requestNo)
+      //     return (
+      //       <SummaryBadge
+      //         icon={summary.extraction.icon}
+      //         label={summary.extraction.shortText}
+      //         theme={summary.extraction.theme as any}
+      //         variant='outline'
+      //       />
+      //     )
+      //   },
+      // },
+      // {
+      //   id: 'dueDate',
+      //   label: 'Due Date',
+      //   size: 220,
+      //   renderCell: (row: any) => {
+      //     const summary = generateDummySummary(row.id || row.requestNo)
+      //     return (
+      //       <SummaryBadge
+      //         icon={summary.dueDate.icon}
+      //         label={summary.dueDate.shortText}
+      //         theme={summary.dueDate.theme as any}
+      //         variant='outline'
+      //       />
+      //     )
+      //   },
+      // },
       ...(selectedItem
         ? [] // If a request is selected, hide all other columns
         : [
-            {
-              id: 'raisedBy',
-              label: 'Raised By',
+          {
+            id: 'raisedBy',
+            label: 'Raised By',
 
-              size: 200,
-              renderCell: (row: any) => (
-                <WrapOnHoverCell
-                  className='text-gray-700 text-sm'
-                  value={row.raisedBy ?? '-'}
-                />
-              ),
-            },
-            {
-              id: 'raisedAt',
-              label: 'Raised On',
+            size: 200,
+            renderCell: (row: any) => (
+              <WrapOnHoverCell
+                className='text-gray-700 text-sm'
+                value={row.raisedBy ?? '-'}
+              />
+            ),
+          },
+          {
+            id: 'raisedAt',
+            label: 'Raised On',
 
-              size: 160,
-              renderCell: (row: any) => (
-                <WrapOnHoverCell
-                  value={
-                    row.raisedAt
-                      ? formatDatetime(row.raisedAt as string, 'datetime')
-                      : '-'
-                  }
-                />
-              ),
-            },
-            {
-              // moved stage here
-              id: 'stage',
-              label: 'Stage',
-              size: 140,
-              renderCell: (row: any) => (
-                <div className='min-w-0'>
-                  <RequestStatusBadge status={row.stage as Request['status']} />
-                </div>
-              ),
-            },
-          ]),
+            size: 160,
+            renderCell: (row: any) => (
+              <WrapOnHoverCell
+                value={
+                  row.raisedAt
+                    ? formatDatetime(row.raisedAt as string, 'datetime')
+                    : '-'
+                }
+              />
+            ),
+          },
+          {
+            // moved stage here
+            id: 'stage',
+            label: 'Stage',
+            size: 140,
+            renderCell: (row: any) => (
+              <div className='min-w-0'>
+                <RequestStatusBadge status={row.stage as Request['status']} />
+              </div>
+            ),
+          },
+        ]),
     ]
 
     const form = resolveFormJson(workflow)

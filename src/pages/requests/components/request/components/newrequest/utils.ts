@@ -37,12 +37,12 @@ function downloadTemplate(tenantId: string) {
 }
 
 export {
-  downloadTemplate,
-  isCsv,
-  isPdf,
-  isXlsx,
   makeId,
+  isPdf,
+  isCsv,
+  isXlsx,
   MAX_SIZE,
   PDF_ACCEPT,
   PO_ACCEPT,
+  downloadTemplate,
 }

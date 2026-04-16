@@ -134,14 +134,15 @@ function buildPreviewUrl(args: {
   const repositoryId = file.repositoryId ?? ''
   const wId = workflowId ?? ''
   const pId = processId ?? ''
-  // console.log(`${domainURL}?tId=${tenantId}&uId=${userId}&rId=${repositoryId}&itemId=${file.id}&wId=${wId}&pId=${pId}&type=${2}&filename=${encodeURIComponent(
-  //     file.name,
-  // )}${actionSuffix}`, "this is file url")
+  console.log(`${domainURL}?tId=${tenantId}&uId=${userId}&rId=${repositoryId}&itemId=${file.id}&wId=${wId}&pId=${pId}&type=${2}&filename=${encodeURIComponent(
+    file.name,
+  )}${actionSuffix}`, "this is file url")
   // This matches your Vue query style:
   // viewer.html? tId/uId/rId/itemId/wId/pId/type/filename + optional action
-  return `${domainURL}?tId=${tenantId}&uId=${userId}&rId=${repositoryId}&itemId=${file.id}&wId=${wId}&pId=${pId}&type=${2}&filename=${encodeURIComponent(
-    file.name,
-  )}${actionSuffix}`
+  // return `${domainURL}?tId=${tenantId}&uId=${userId}&rId=${repositoryId}&itemId=${file.id}&wId=${wId}&pId=${pId}&type=${2}&filename=${encodeURIComponent(
+  //   file.name,
+  // )}${actionSuffix}`
+  return `${apiBaseUrl}/file/view/${tenantId}/${userId}/${repositoryId}/${file.id}/${type}`
 }
 
 function resolveApiBaseUrl(explicit?: string) {

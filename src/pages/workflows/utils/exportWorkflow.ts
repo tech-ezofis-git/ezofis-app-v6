@@ -27,7 +27,7 @@ export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
   const storeState = useWorkflowStore.getState()
 
   const blocks = nodes.map((node) => {
-    const data = node.data || {}
+    const data = (node.data || {}) as any
     const toolType = data.toolType
 
     // Base settings to be included in the legacy 'settings' object

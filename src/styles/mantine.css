@@ -32,11 +32,20 @@
 }
 
 .sparkline-chart {
-  @mixin light {
+  @media (prefers-color-scheme: light) {
     --chart-color: var(--mantine-color-orange-8);
   }
 
-  @mixin dark {
+  @media (prefers-color-scheme: dark) {
+    --chart-color: var(--mantine-color-lime-4);
+  }
+
+  /* Support for Mantine's manual theme switching */
+  [data-mantine-color-scheme='light'] & {
+    --chart-color: var(--mantine-color-orange-8);
+  }
+
+  [data-mantine-color-scheme='dark'] & {
     --chart-color: var(--mantine-color-lime-4);
   }
 }

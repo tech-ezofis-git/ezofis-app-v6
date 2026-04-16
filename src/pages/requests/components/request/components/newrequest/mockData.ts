@@ -1,40 +1,40 @@
 import type { InvoiceData } from './types'
 
 export const MOCK_INVOICE_DATA: InvoiceData = {
-  billTo: {
-    address: ['100 Business Park Drive', 'Toronto, ON'],
-    name: 'ABC Company',
-  },
-  currency: 'CAD',
   id: 'INV-2007',
-  invoiceDate: '2025-09-02',
+  supplier: {
+    name: 'Atlas Power Tools',
+    address: ['321 Oak Blvd, Montreal, BC', 'Canada']
+  },
   invoiceNumber: 'INV-2007',
+  invoiceDate: '2025-09-02',
+  poNumber: 'PO-1007',
+  billTo: {
+    name: 'ABC Company',
+    address: ['100 Business Park Drive', 'Toronto, ON']
+  },
   lineItems: [
     {
-      amount: 720.0,
       description: 'Industrial Router 5000',
-      qty: 1,
-      rate: 720.0,
-      status: 'matched',
       type: 'Goods',
+      qty: 1,
+      rate: 720.00,
+      amount: 720.00,
+      status: 'matched'
     },
     {
-      amount: 93.6,
       description: 'Standard Shipping',
-      qty: 1,
-      rate: 93.6,
-      status: 'matched',
       type: 'Service',
-    },
+      qty: 1,
+      rate: 93.60,
+      amount: 93.60,
+      status: 'matched'
+    }
   ],
-  matchingScore: 94.0,
-  poNumber: 'PO-1007',
+  subtotal: 720.00,
+  tax: 93.60,
+  total: 813.60,
+  currency: 'CAD',
   status: 'approved',
-  subtotal: 720.0,
-  supplier: {
-    address: ['321 Oak Blvd, Montreal, BC', 'Canada'],
-    name: 'Atlas Power Tools',
-  },
-  tax: 93.6,
-  total: 813.6,
+  matchingScore: 94.0
 }

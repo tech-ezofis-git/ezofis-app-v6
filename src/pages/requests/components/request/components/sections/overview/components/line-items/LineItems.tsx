@@ -63,26 +63,16 @@ const LineItems = ({ data }: Props) => {
         Note (GRN)'
       />
 
-      <div className='overflow-x-auto'>
+      <div className="overflow-x-auto">
         <Table>
           <Thead>
             <Tr>
               <Th rowSpan={2}>#</Th>
-              <Th className='min-w-[200px]' rowSpan={2}>
-                Item Description
-              </Th>
-              <Th className='text-center' colSpan={2}>
-                Quantity
-              </Th>
-              <Th className='text-center' colSpan={2}>
-                Unit Price
-              </Th>
-              <Th className='text-right' rowSpan={2}>
-                Match Score
-              </Th>
-              <Th className='text-center' rowSpan={2}>
-                Status
-              </Th>
+              <Th rowSpan={2} className="min-w-[200px]">Item Description</Th>
+              <Th colSpan={2} className="text-center">Quantity</Th>
+              <Th colSpan={2} className="text-center">Unit Price</Th>
+              <Th rowSpan={2} className="text-right">Match Score</Th>
+              <Th rowSpan={2} className="text-center">Status</Th>
             </Tr>
 
             <Tr>
@@ -117,52 +107,40 @@ const LineItems = ({ data }: Props) => {
                 </Td>
 
                 {/* Quantity */}
-                <Td
-                  className={cn('text-center font-medium', {
-                    'bg-red-1 text-red-11':
-                      item.quantity.invoice !== item.quantity.po &&
-                      item.quantity.po !== '-',
-                  })}
-                >
+                <Td className={cn('text-center font-medium', {
+                  'bg-red-1 text-red-11': item.quantity.invoice !== item.quantity.po && item.quantity.po !== '-'
+                })}>
                   {item.quantity.invoice}
                 </Td>
-                <Td className='text-center text-gray-11'>{item.quantity.po}</Td>
+                <Td className='text-center text-gray-11'>
+                  {item.quantity.po}
+                </Td>
 
                 {/* Price */}
-                <Td
-                  className={cn('text-center font-medium', {
-                    'bg-red-1 text-red-11':
-                      item.price.invoice !== item.price.po &&
-                      item.price.po !== '-',
-                  })}
-                >
+                <Td className={cn('text-center font-medium', {
+                  'bg-red-1 text-red-11': item.price.invoice !== item.price.po && item.price.po !== '-'
+                })}>
                   {item.price.invoice}
                 </Td>
-                <Td className='text-center text-gray-11'>{item.price.po}</Td>
+                <Td className='text-center text-gray-11'>
+                  {item.price.po}
+                </Td>
 
                 <Td className='text-right'>
-                  <span
-                    className={cn('font-bold', {
-                      'text-green-11': item.score >= 90,
-                      'text-orange-11': item.score >= 70 && item.score < 90,
-                      'text-red-11': item.score < 70,
-                    })}
-                  >
+                  <span className={cn('font-bold', {
+                    'text-green-11': item.score >= 90,
+                    'text-orange-11': item.score >= 70 && item.score < 90,
+                    'text-red-11': item.score < 70
+                  })}>
                     {Number(item.score).toFixed(2)}%
                   </span>
                 </Td>
 
-                <Td className='text-center'>
+                <Td className="text-center">
                   <Badge
                     className='capitalize'
+                    color={item.status === 'match' ? 'green' : item.status === 'mismatch' ? 'orange' : 'red'}
                     label={item.status === 'match' ? 'Match' : 'Review'}
-                    color={
-                      item.status === 'match'
-                        ? 'green'
-                        : item.status === 'mismatch'
-                          ? 'orange'
-                          : 'red'
-                    }
                   />
                 </Td>
               </Tr>
