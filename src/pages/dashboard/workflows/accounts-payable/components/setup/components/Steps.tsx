@@ -65,16 +65,7 @@ const Steps = () => {
       initial={{ opacity: 0, y: 20 }}
       transition={{ duration: 0.4, ease: 'easeOut' }}
     >
-      <div className='mb-4 flex shrink-0 items-center justify-between border-b border-gray-3 px-6 py-3 md:px-8'>
-        <div className='flex flex-col gap-0.5'>
-          <h2 className='text-18 font-semibold text-gray-13'>
-            Accounts Payable Setup
-          </h2>
-          <p className='text-13 text-gray-11'>
-            Configure your integrations and settings
-          </p>
-        </div>
-      </div>
+
       {/* Changed min-h-full to flex-1 to avoid overflow */}
       <div className='grid min-h-0 flex-1 grid-cols-1 gap-0 xl:grid-cols-[240px_1fr]'>
         <AnimateSlideUp delay={0.2}>

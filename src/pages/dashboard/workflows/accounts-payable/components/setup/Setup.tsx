@@ -13,7 +13,10 @@ const Setup = () => {
   return (
     <Modal opened={isSetupOpen} fullScreen onClose={closeSetup}>
       <FocusTrap.InitialFocus />
-      <OverlayHeader title='Accounts Payable Setup' onClose={closeSetup} />
+      <OverlayHeader
+        title='Accounts Payable Setup'
+        onClose={closeSetup}
+      />
 
       <OverlayContent hasHeader>
         <WelcomeMessage />

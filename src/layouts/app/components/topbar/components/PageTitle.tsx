@@ -2,6 +2,7 @@ import { useMatches } from '@tanstack/react-router'
 import Badge from '@/components/base/Badge'
 import Icon from '@/components/base/icon/Icon'
 import Title from '@/components/base/Title'
+import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import requestStore from '@/pages/requests/stores/useRequestStore'
 import useWorkflowStore from '@/pages/workflows/stores/useWorkflowStore'
 
@@ -10,8 +11,14 @@ const PageTitle = () => {
   const { closeRequest, isRequestOpen, requestListTab, selectedWorkflow } =
     requestStore((state) => state)
   const { closeBuilder, isBuilderOpen } = useWorkflowStore((state) => state)
+  const { isSetupStarted, isApSetUpCompleted } = setupStore((state) => state)
+
   const current = matches[matches.length - 1]
   const pageTitle = current?.staticData?.pageTitle ?? 'Untitled'
+
+  if (isSetupStarted && !isApSetUpCompleted) {
+    return <Title level={3} title='Accounts Payable Setup' />
+  }
 
   if (isBuilderOpen) {
     return (

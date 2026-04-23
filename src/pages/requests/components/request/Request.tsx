@@ -201,6 +201,7 @@ const Request = ({
           processId={Number(selectedItem?.processId)}
           transactionId={Number(selectedItem?.transactionId)}
           repositoryId={Number(rawWorkflowData?.repositoryId)}
+          selectedItem={selectedItem}
           formModel={formModel}
           setFormModel={setFormModel} />
       </AnimateFadeIn>

@@ -114,7 +114,7 @@ const StepOne = () => {
         transition={{ delay: 0.5, duration: 0.4 }}
       >
         {emailSettings.provider === 'DIRECT_UPLOAD' ||
-        emailSettings.isConnected ? (
+          emailSettings.isConnected ? (
           <Button
             label='Continue'
             suffixIcon='tabler:arrow-right'

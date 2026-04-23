@@ -110,38 +110,52 @@ const Overview = ({
       const { data: data1 } = useComments(workflowId, processId, true)
           const commentsData = (data1 || []) as any[]
 
-  const defaultAgentData: any = {
-    decision: 'APPROVED',
-    score: 94,
-    reason:
-      'The invoice from Silverline Auto Parts matches the PO exactly. All line items and totals are verified against the master record.',
-    debug: {
-      'Side-by-side Field Matching': [
-        { Field: 'Supplier Name', 'Invoice Value': 'Silverline Auto Parts', 'PO Value': 'Silverline Auto Parts', Score: 100 },
-        { Field: 'PO Number', 'Invoice Value': 'PO-1007', 'PO Value': 'PO-1007', Score: 100 },
-        { Field: 'Total Due', 'Invoice Value': 813.6, 'PO Value': 813.6, Score: 100 },
-      ],
-      'Side-by-side Line Item matching': [
-        { Description: { 'Invoice Value': 'Mouse', 'PO Value': 'Logitech Mouse', Score: 40 }, Quantity: { 'Invoice Value': 1, 'PO Value': 1, Score: 100 }, Price: { 'Invoice Value': 106.0, 'PO Value': 106.0, Score: 100 }, Amount: { 'Invoice Value': 106.0, 'PO Value': 106.0, Score: 100 }, 'Line Score': 60 },
-        { Description: { 'Invoice Value': 'Keyboard', 'PO Value': 'Keyboard Mech', Score: 85 }, Quantity: { 'Invoice Value': 6, 'PO Value': 6, Score: 100 }, Price: { 'Invoice Value': 102.0, 'PO Value': 102.0, Score: 100 }, Amount: { 'Invoice Value': 612.0, 'PO Value': 612.0, Score: 100 }, 'Line Score': 90 },
-        { Description: { 'Invoice Value': 'Printer', 'PO Value': 'Printer', Score: 100 }, Quantity: { 'Invoice Value': 4, 'PO Value': 4, Score: 100 }, Price: { 'Invoice Value': 97.0, 'PO Value': 97.0, Score: 100 }, Amount: { 'Invoice Value': 388.0, 'PO Value': 388.0, Score: 100 }, 'Line Score': 100 },
-      ],
-    },
-    'Extracted Invoice JSON': {
-      invoice_header: {
-        'Supplier Name': 'Silverline Auto Parts',
-        'PO Number': 'PO-1007',
-        Currency: 'USD',
-        'Total Due': '1106.00',
-      },
-      line_items: [],
-    },
-    reqNo: 'REQ-75',
-  };
-
-  const data = agentData || defaultAgentData;
+  const data = agentData || {};
   const invoiceHeader = data['Extracted Invoice JSON']?.invoice_header as any;
   const lineItemMatching = data.debug?.['Side-by-side Line Item matching'] || [];
+
+  const SummarySkeleton = () => (
+    <div className="flex-1 overflow-y-auto px-4 pb-8 space-y-6 animate-pulse">
+      {/* Status Card Skeleton */}
+      <div className="bg-white p-6 rounded-2xl shadow-sm space-y-5 border border-[var(--gray-3)]/10">
+        <div className="flex justify-between items-start">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-[var(--gray-2)]" />
+            <div className="space-y-2">
+              <div className="h-3 w-24 bg-[var(--gray-2)] rounded" />
+              <div className="h-5 w-40 bg-[var(--gray-2)] rounded" />
+            </div>
+          </div>
+          <div className="w-20 h-7 bg-[var(--gray-2)] rounded-full" />
+        </div>
+        <div className="h-20 w-full bg-[var(--gray-1)] rounded-xl" />
+      </div>
+      
+      {/* Data Grid Skeleton */}
+      <div className="grid grid-cols-2 gap-4">
+        {[1, 2, 3, 4].map(i => (
+          <div key={i} className="bg-white p-4 rounded-xl border border-[var(--gray-3)]/10 space-y-3">
+            <div className="h-3 w-16 bg-[var(--gray-2)] rounded" />
+            <div className="h-5 w-28 bg-[var(--gray-2)] rounded" />
+          </div>
+        ))}
+      </div>
+
+      {/* Table Skeleton */}
+      <div className="bg-white rounded-2xl border border-[var(--gray-3)]/10 overflow-hidden">
+        <div className="p-4 bg-[var(--gray-2)] h-10 w-full" />
+        <div className="p-4 space-y-5">
+          {[1, 2, 3, 4, 5].map(i => (
+            <div key={i} className="flex justify-between items-center px-1">
+              <div className="h-4 w-1/2 bg-[var(--gray-2)] rounded" />
+              <div className="h-4 w-12 bg-[var(--gray-2)] rounded" />
+              <div className="h-4 w-12 bg-[var(--gray-2)] rounded" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="h-full w-full flex flex-col overflow-hidden font-sans">
@@ -221,44 +235,43 @@ const Overview = ({
           </div>
 
           {/* Sidebar Content */}
-          {activeTab === 'summary' && (
+          {activeTab === 'summary' && (!agentData || Object.keys(agentData).length === 0) && (
+            <SummarySkeleton />
+          )}
+
+          {activeTab === 'summary' && agentData && Object.keys(agentData).length > 0 && (
             <div className="flex-1 overflow-y-auto px-4 pb-8 space-y-6 custom-scrollbar">
               {/* Approval Status Card */}
               <div className="bg-white p-6 rounded-2xl shadow-sm space-y-5">
                 <div className="flex justify-between items-start">
                   <div className="flex items-center gap-4">
-                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${data.decision === 'APPROVED' ? 'bg-[var(--green-9)]/10' : data.decision === 'PARTIAL' ? 'bg-[var(--yellow-9)]/10' : 'bg-[var(--red-9)]/10'}`}>
-                    <AlertCircle className={`w-6 h-6 ${data.decision === 'APPROVED' ? 'text-[var(--green-9)]' : data.decision === 'PARTIAL' ? 'text-[var(--yellow-9)]' : 'text-[var(--red-9)]'}`} />
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${!data.decision ? 'bg-[var(--gray-3)]' : data.decision === 'APPROVED' ? 'bg-[var(--green-9)]/10' : data.decision === 'PARTIAL' ? 'bg-[var(--yellow-9)]/10' : 'bg-[var(--red-9)]/10'}`}>
+                    <AlertCircle className={`w-6 h-6 ${!data.decision ? 'text-[var(--gray-8)]' : data.decision === 'APPROVED' ? 'text-[var(--green-9)]' : data.decision === 'PARTIAL' ? 'text-[var(--yellow-9)]' : 'text-[var(--red-9)]'}`} />
                   </div>
                   <div>
                     <p className="text-[12px] text-[var(--gray-11)] font-bold mb-0.5">Approval Status</p>
-                    <p className={`text-lg font-bold ${data.decision === 'APPROVED' ? 'text-[var(--green-9)]' : data.decision === 'PARTIAL' ? 'text-[var(--yellow-9)]' : 'text-[var(--red-9)]'}`}>Status: {data.decision || 'Rejected'}</p>
+                    <p className={`text-lg font-bold ${!data.decision ? 'text-[var(--gray-8)]' : data.decision === 'APPROVED' ? 'text-[var(--green-9)]' : data.decision === 'PARTIAL' ? 'text-[var(--yellow-9)]' : 'text-[var(--red-9)]'}`}>Status: {data.decision || 'Analysis in Progress...'}</p>
                   </div>
                 </div>
-                <div className="bg-[var(--orange-9)]/10 text-[var(--orange-9)] px-4 py-1.5 rounded-full flex items-center gap-2 text-xs font-bold border border-[var(--orange-9)]/20">
-                  <AlertTriangle className="w-3.5 h-3.5" />
-                  High Risk
-                </div>
+                {data.decision && (
+                  <div className="bg-[var(--orange-9)]/10 text-[var(--orange-9)] px-4 py-1.5 rounded-full flex items-center gap-2 text-xs font-bold border border-[var(--orange-9)]/20">
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                    High Risk
+                  </div>
+                )}
               </div>
 
-              {/* AI Duplicate Detection Alert */}
-              <div className="bg-[var(--primary-3)] rounded-2xl p-5 border border-[var(--primary-9)]/10">
-                <div className="flex items-center gap-2 mb-3">
-                  <Brain className="text-[var(--primary-9)] w-4 h-4" />
-                  <span className="text-[11px] font-bold text-[var(--primary-9)] uppercase tracking-widest">AI Duplicate Detection</span>
+              {data.reason && (
+                <div className="bg-[var(--primary-3)] rounded-2xl p-5 border border-[var(--primary-9)]/10">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Brain className="text-[var(--primary-9)] w-4 h-4" />
+                    <span className="text-[11px] font-bold text-[var(--primary-9)] uppercase tracking-widest">AI Analysis</span>
+                  </div>
+                  <p className="text-[13px] text-[var(--gray-13)] font-medium leading-relaxed">
+                    {data.reason}
+                  </p>
                 </div>
-                <p className="text-[13px] text-[var(--gray-13)] font-medium leading-relaxed">
-                  This invoice matches a previously processed document (INV-2007) from 2025-08-15. Potential double-payment risk identified.
-                </p>
-                {/* <div className="mt-4 flex gap-2">
-                  <button className="bg-[var(--primary-9)] text-white px-5 py-2 rounded-full text-xs font-bold hover:opacity-90 transition-all shadow-md shadow-purple-200">
-                    Review Conflict
-                  </button>
-                  <button className="bg-white text-[var(--gray-11)] px-5 py-2 rounded-full text-xs font-bold hover:bg-[var(--gray-2)] border border-[var(--gray-3)] transition-colors">
-                    Dismiss
-                  </button>
-                </div> */}
-              </div>
+              )}
             </div>
 
             {/* Extracted Data Grid */}
@@ -272,10 +285,10 @@ const Overview = ({
                 </button>
                 </div>
               <div className="grid grid-cols-2 gap-4">
-                <DataCard icon={Store} label="Supplier" value={invoiceHeader?.['Supplier Name'] || 'Atlas Power Tools'} />
-                <DataCard icon={ListFilter} label="PO Number" value={invoiceHeader?.['PO Number'] || 'PO-1007'} />
-                <DataCard icon={CreditCard} label="Currency" value={invoiceHeader?.['Currency'] || 'CAD ($)'} />
-                <DataCard icon={Wallet} label="Total Value" value={invoiceHeader?.['Total Due'] || '813.60'} highlight />
+                <DataCard icon={Store} label="Supplier" value={invoiceHeader?.['Supplier Name'] || 'Pending Analysis...'} />
+                <DataCard icon={ListFilter} label="PO Number" value={invoiceHeader?.['PO Number'] || selectedItem?.requestNo || 'N/A'} />
+                <DataCard icon={CreditCard} label="Currency" value={invoiceHeader?.['Currency'] || 'Pending Analysis...'} />
+                <DataCard icon={Wallet} label="Total Value" value={invoiceHeader?.['Total Due'] || 'Pending Analysis...'} highlight />
               </div>
             </div>
 
@@ -306,10 +319,10 @@ const Overview = ({
                         <tr key={index} className="hover:bg-[var(--gray-1)] transition-colors cursor-pointer group">
                           <td className="px-5 py-4 font-semibold text-[var(--gray-13)]">
                             <div className="flex flex-col">
-                              {item.Description['Invoice Value'] || '-'}
-                              {(!isMatch && item.Description['PO Value']) && (
+                              {item.Description?.['Invoice Value'] || '-'}
+                              {(!isMatch && item.Description?.['PO Value']) && (
                                 <span className="text-[9px] font-bold text-[var(--orange-9)] mt-0.5 truncate bg-[var(--orange-1)] px-1 py-px rounded w-fit">
-                                  Exp: {item.Description['PO Value']}
+                                  Exp: {item.Description?.['PO Value']}
                                 </span>
                               )}
                             </div>
@@ -317,9 +330,9 @@ const Overview = ({
                           <td className="px-5 py-4 text-center font-medium border-l border-[var(--gray-3)]">
                             <div className="flex flex-col items-center">
                               {item.Quantity?.['Invoice Value'] || '-'}
-                              {(!isMatch && item.Quantity['PO Value']) && (
+                              {(!isMatch && item.Quantity?.['PO Value']) && (
                                 <span className="text-[9px] font-bold text-[var(--orange-9)] mt-0.5 truncate bg-[var(--orange-1)] px-1 py-px rounded w-fit">
-                                  Exp: {item.Quantity['PO Value']}
+                                  Exp: {item.Quantity?.['PO Value']}
                                 </span>
                               )}
                             </div>
@@ -327,19 +340,19 @@ const Overview = ({
                           <td className="px-5 py-4 text-right font-medium border-l border-[var(--gray-3)]">
                             <div className="flex flex-col items-end">
                               {item?.Price?.['Invoice Value'] || '-'}
-                              {(!isMatch && item.Price['PO Value']) && (
+                              {(!isMatch && item.Price?.['PO Value']) && (
                                 <span className="text-[9px] font-bold text-[var(--orange-9)] mt-0.5 truncate bg-[var(--orange-1)] px-1 py-px rounded w-fit">
-                                  Exp: {item.Price['PO Value']}
+                                  Exp: {item.Price?.['PO Value']}
                                 </span>
                               )}
                             </div>
                           </td>
                           <td className="px-5 py-4 font-bold text-right text-[var(--gray-13)] group-hover:text-[var(--primary-9)] transition-colors border-l border-[var(--gray-3)]">
                             <div className="flex flex-col items-end">
-                              {item.Amount['Invoice Value'] || '-'}
-                              {(!isMatch && item.Amount['PO Value']) && (
+                              {item.Amount?.['Invoice Value'] || '-'}
+                              {(!isMatch && item.Amount?.['PO Value']) && (
                                 <span className="text-[9px] font-bold text-[var(--orange-9)] mt-0.5 truncate bg-[var(--orange-1)] px-1 py-px rounded w-fit">
-                                  Exp: {item.Amount['PO Value']}
+                                  Exp: {item.Amount?.['PO Value']}
                                 </span>
                               )}
                             </div>
