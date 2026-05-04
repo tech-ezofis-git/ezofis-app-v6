@@ -16,6 +16,7 @@ export default defineConfig({
     tailwindcss(),
     lingui(),
   ],
+  assetsInclude: ['**/*.zip'],
   resolve: {
     alias: {
       '@': resolve(__dirname, './src'),

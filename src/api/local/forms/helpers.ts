@@ -106,7 +106,7 @@ export function getGroupedForms(
 
     items.forEach((item) => {
       const value = item[currentColumn as keyof Form]
-      const stringValue = value?.toString() || 'null'
+      const stringValue = value?.toString() || 'NA'
 
       if (!grouped.has(stringValue)) {
         grouped.set(stringValue, [])

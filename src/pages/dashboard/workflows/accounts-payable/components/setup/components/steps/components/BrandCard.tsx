@@ -23,17 +23,22 @@ const BrandCard = ({
   onClick,
 }: Props) => {
   return (
-    <InputRadioCard
-      checked={checked}
-      value={value}
-      className={cn(
-        'group relative flex h-full min-h-[72px] cursor-pointer flex-row items-center justify-between gap-3 rounded-lg border bg-surface px-4 py-3 transition-all duration-200',
-        checked
-          ? 'border-green-9 bg-green-1 shadow-sm'
-          : 'border-gray-4 bg-surface hover:border-gray-5 hover:bg-gray-2',
-      )}
-      onClick={onClick}
+    <motion.div
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      className='h-full'
     >
+      <InputRadioCard
+        checked={checked}
+        value={value}
+        className={cn(
+          'group relative flex h-full min-h-[72px] cursor-pointer flex-row items-center justify-between gap-3 rounded-lg border bg-surface px-4 py-3 transition-all duration-200',
+          checked
+            ? 'border-green-9 bg-green-1 shadow-sm'
+            : 'border-gray-4 bg-surface hover:border-gray-5 hover:bg-gray-2',
+        )}
+        onClick={onClick}
+      >
       <div className='flex flex-1 items-center gap-3'>
         <div
           className={cn(
@@ -77,7 +82,8 @@ const BrandCard = ({
           <Icon className='size-3 text-white' name='tabler:check' />
         </motion.div>
       )}
-    </InputRadioCard>
+      </InputRadioCard>
+    </motion.div>
   )
 }
 

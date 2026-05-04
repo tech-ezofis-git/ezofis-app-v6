@@ -1,7 +1,10 @@
-const MAX_SIZE = 5 * 1024 * 1024 // 5MB
+const MAX_SIZE = 4 * 1024 * 1024 // 4MB
 
 // Invoice (PDF)
 const PDF_ACCEPT = 'application/pdf'
+
+// Images (PNG, JPG, TIFF)
+const IMAGE_ACCEPT = 'image/png,image/jpeg,image/tiff,image/tif'
 
 // PO Import (CSV/XLSX)
 const PO_ACCEPT =
@@ -21,6 +24,10 @@ const makeId = (): string =>
 const isPdf = (file: File) =>
   file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
 
+const isImage = (file: File) =>
+  ['image/png', 'image/jpeg', 'image/tiff'].includes(file.type) || 
+  /\.(png|jpe?g|tiff?)$/i.test(file.name)
+
 const isCsv = (file: File) =>
   file.type === 'text/csv' || file.name.toLowerCase().endsWith('.csv')
 
@@ -39,10 +46,12 @@ function downloadTemplate(tenantId: string) {
 export {
   makeId,
   isPdf,
+  isImage,
   isCsv,
   isXlsx,
   MAX_SIZE,
   PDF_ACCEPT,
+  IMAGE_ACCEPT,
   PO_ACCEPT,
   downloadTemplate,
 }

@@ -60,7 +60,7 @@ export function getGroupedUsers(
 
     items.forEach((item) => {
       const value = item[currentColumn as keyof User]
-      const stringValue = value?.toString() || 'null'
+      const stringValue = value?.toString() || 'NA'
 
       if (!grouped.has(stringValue)) {
         grouped.set(stringValue, [])

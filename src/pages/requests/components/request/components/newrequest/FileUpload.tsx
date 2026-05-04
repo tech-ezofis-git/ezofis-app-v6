@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Icon from '../../../../../../components/base/icon/Icon'
-import { AnimateFadeIn, AnimateSlideUp, AnimateStagger } from '../../../../../../components/common/animations'
-import { PDF_ACCEPT, isPdf, MAX_SIZE } from './utils'
+import { AnimateFadeIn, AnimateSlideUp, AnimateStagger, AnimateEntrancePop } from '../../../../../../components/common/animations'
+import { PDF_ACCEPT, IMAGE_ACCEPT, isPdf, isImage, MAX_SIZE } from './utils'
 import ProcessingScreen from './ProcessingScreen'
 // import SummaryScreen from './SummaryScreen' // Replaced by Request
 import Request from '../../Request'
@@ -149,7 +149,7 @@ const FileUpload = ({ onRequestCreated, onClose }: { onRequestCreated?: () => vo
 
     const handleInvoiceFiles = async (fileList: FileList | null) => {
         const files = Array.from(fileList ?? []);
-        const validFiles = files.filter((f) => isPdf(f) && f.size <= MAX_SIZE);
+        const validFiles = files.filter((f) => (isPdf(f) || isImage(f)) && f.size <= MAX_SIZE);
 
         if (validFiles.length) {
             if (!rawWorkflow?.repositoryId) {
@@ -318,19 +318,35 @@ const FileUpload = ({ onRequestCreated, onClose }: { onRequestCreated?: () => vo
         )
     }
 
-    // Step 1: Upload (Existing UI)
+    // Step 1: Upload (Premium Centered UI)
     return (
-        <AnimateFadeIn className="min-h-[calc(100vh-150px)] overflow-y-auto flex flex-col items-center justify-center bg-surface-muted px-4 py-4 lg:py-6 sm:px-6 lg:px-10">
-            <div className="w-full max-w-6xl grid grid-cols-1 xl:grid-cols-2 gap-6 xl:gap-8 2xl:gap-12 items-center">
+        <AnimateFadeIn className="h-full overflow-y-auto flex flex-col items-center justify-center bg-surface-muted px-4 py-4 sm:px-6 lg:px-8">
+            <div className="w-full max-w-4xl flex flex-col gap-6 items-center">
 
-                {/* Left Column: Upload Hub */}
-                <AnimateSlideUp className="w-full relative">
-                    <div className="group relative bg-white rounded-[2.5rem] border border-[var(--gray-3)] p-2 transition-all duration-500 overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1">
+                {/* Header Section */}
+                <AnimateSlideUp className="text-center space-y-1">
+                    <h1 className="text-2xl font-bold text-[var(--gray-13)] tracking-tight">
+                        Intelligent <span className="text-[var(--primary-9)]">AP Agent</span>
+                    </h1>
+                    <p className="text-[var(--gray-10)] text-sm max-w-xl mx-auto font-medium">
+                        Streamline your Accounts Payable. Automatically process invoices, match Purchase Orders, and gain complete visibility.
+                    </p>
+                </AnimateSlideUp>
+
+                {/* Main Upload Hub */}
+                <AnimateSlideUp delay={0.1} className="w-full max-w-3xl">
+                    <div className="group relative bg-white rounded-2xl border border-[var(--gray-3)] p-2 transition-all duration-700 overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1">
+                        
+                        {/* Interactive "Loading/Scanning" Hover Effect */}
+                        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none">
+                            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[var(--primary-2)]/20 to-transparent h-1/2 w-full animate-[scan_3s_linear_infinite]" />
+                        </div>
+
                         <div
                             className={[
-                                "border-2 border-dashed border-[var(--primary-4)] rounded-[2.2rem] p-6 lg:p-8 xl:p-10 2xl:p-14",
-                                "flex flex-col items-center text-center cursor-pointer transition-all duration-300 ease-out",
-                                isDragOver ? "bg-[var(--primary-1)]/80 border-[var(--primary-6)] scale-[0.99]" : "hover:bg-[var(--primary-1)]/60 hover:border-[var(--primary-5)]"
+                                "border-[2px] border-dashed border-[var(--primary-4)] rounded-xl p-6 lg:p-8",
+                                "flex flex-col items-center text-center cursor-pointer transition-all duration-500 ease-out relative z-10",
+                                isDragOver ? "bg-[var(--primary-1)] border-[var(--primary-6)] scale-[0.99]" : "bg-white hover:bg-[var(--primary-1)]/30 hover:border-[var(--primary-5)]"
                             ].join(" ")}
                             onClick={() => invoiceInputRef.current?.click()}
                             onDragOver={(e) => {
@@ -344,110 +360,85 @@ const FileUpload = ({ onRequestCreated, onClose }: { onRequestCreated?: () => vo
                                 handleInvoiceFiles(e.dataTransfer.files);
                             }}
                         >
-                            <AnimateStagger className="flex flex-col items-center z-10 w-full">
+                            <AnimateStagger className="flex flex-col items-center w-full">
                                 {/* Icon Container */}
-                                <div className="size-16 2xl:size-20 bg-[var(--primary-1)] rounded-2xl flex items-center justify-center mb-6 2xl:mb-8 group-hover:scale-110 group-hover:bg-[var(--primary-2)] transition-all duration-300">
-                                    <Icon name="tabler:cloud-upload" className="size-8 2xl:size-9 text-[var(--primary-9)] transition-colors duration-300" />
+                                <div className="size-16 bg-[var(--primary-1)] rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-all duration-500 shadow-sm">
+                                    <Icon name="tabler:cloud-upload" className="size-8 text-[var(--primary-9)]" />
                                 </div>
 
                                 {/* Headline */}
-                                <h2 className="text-2xl 2xl:text-3xl font-bold text-[var(--gray-13)] mb-3 tracking-tight transition-colors duration-300 group-hover:text-[var(--primary-10)]">
-                                    Drop your file here, or <span className="text-[var(--primary-9)] underline decoration-transparent group-hover:decoration-[var(--primary-9)] transition-all duration-300">browse</span>
+                                <h2 className="text-xl font-medium text-[var(--gray-13)] mb-2 tracking-tight">
+                                    Drop your file here, or <span className="text-[var(--primary-9)]">browse</span>
                                 </h2>
 
                                 {/* Subtext */}
-                                <p className="text-[var(--gray-9)] mb-6 2xl:mb-10 text-sm 2xl:text-base font-medium">
-                                    Supports PDF Files · Max 4 MB
+                                <p className="text-[var(--gray-9)] mb-5 text-xs font-medium">
+                                    Supports PDF and Images · Max 4 MB
                                 </p>
 
-                                {/* File Format Pills */}
-                                <div className="flex items-center gap-3 flex-wrap justify-center">
-                                    <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--gray-1)] border border-[var(--gray-3)]">
-                                        <Icon name="tabler:file-type-pdf" className="size-5 text-[var(--red-9)]" />
-                                        <span className="text-xs font-bold text-[var(--gray-11)] uppercase tracking-wider">PDF</span>
-                                    </div>
-                                </div>
                             </AnimateStagger>
+
+
 
                             <input
                                 ref={invoiceInputRef}
                                 type="file"
                                 multiple
                                 className="hidden"
-                                accept={PDF_ACCEPT}
+                                accept={`${PDF_ACCEPT},${IMAGE_ACCEPT}`}
                                 onChange={(e) => handleInvoiceFiles(e.target.files)}
                             />
-
-                            {/* Upload State Overlay */}
-                            {/* {isInvoiceUploading && (
-                                <AnimateFadeIn className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-white/95 backdrop-blur-sm rounded-[2.2rem]">
-                                    <div className="size-16 rounded-full border-[4px] border-[var(--gray-2)] border-t-[var(--primary-9)] animate-spin mb-4" />
-                                    <h3 className="text-xl font-bold text-[var(--gray-12)]">Uploading Invoice...</h3>
-                                    <p className="text-[var(--gray-9)] mt-2">Processing your document</p>
-                                </AnimateFadeIn>
-                            )} */}
                         </div>
                     </div>
                 </AnimateSlideUp>
 
-                {/* Right Column: Info & Features */}
-                <div className="flex flex-col relative gap-6 2xl:gap-8 lg:pl-4">
-                    <AnimateSlideUp delay={0.1}>
-                        <h1 className="text-2xl 2xl:text-3xl font-bold text-[var(--gray-13)] mb-4 2xl:mb-6">
-                            Intelligent <span className="text-[var(--primary-9)]">AP Agent</span>
-                        </h1>
-                        <div className="bg-[var(--gray-3)] border border-[var(--gray-4)] rounded-3xl p-5 2xl:p-6">
-                            <p className="text-[var(--gray-11)] text-sm leading-relaxed font-medium">
-                                Streamline your Accounts Payable. Automatically process invoices, match Purchase Orders, and gain complete visibility into all your payables from a single dashboard.
-                            </p>
-                        </div>
-                    </AnimateSlideUp>
-
-                    <div className="space-y-3 2xl:space-y-4">
-                        <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1 mb-1 2xl:mb-2">
-                            POST-UPLOAD CAPABILITIES
-                        </div>
-
-                        {[
-                            {
-                                title: "Instant Invoice Processing",
-                                sub: "Extract and validate invoice data instantly.",
-                                icon: "tabler:bolt",
-                                color: "text-[var(--indigo-9)] bg-[var(--indigo-2)]"
-                            },
-                            {
-                                title: "Smart PO Matching",
-                                sub: "Link invoices to POs with high precision.",
-                                icon: "tabler:arrows-join",
-                                color: "text-[var(--indigo-9)] bg-[var(--indigo-2)]"
-                            },
-                            {
-                                title: "Payables Overview",
-                                sub: "Comprehensive insights into your financial liabilities.",
-                                icon: "tabler:chart-pie",
-                                color: "text-[var(--indigo-9)] bg-[var(--indigo-2)]"
-                            }
-                        ].map((item, idx) => (
-                            <AnimateSlideUp key={idx} delay={0.2 + (idx * 0.1)} className="group">
-                                <div className="flex items-start gap-4 p-3 2xl:p-4 rounded-2xl bg-white border border-[var(--gray-3)] shadow-sm hover:shadow-md transition-all duration-300">
-                                    <div className={`shrink-0 size-9 2xl:size-10 rounded-lg flex items-center justify-center ${item.color} mt-1`}>
-                                        <Icon name={item.icon} className="size-5" />
-                                    </div>
-                                    <div>
-                                        <h4 className="text-sm font-bold text-[var(--gray-13)]">
-                                            {item.title}
-                                        </h4>
-                                        <p className="text-xs text-[var(--gray-10)] mt-1 leading-snug">
-                                            {item.sub}
-                                        </p>
-                                    </div>
+                {/* Bottom Capabilities - Kept from original but repositioned */}
+                <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {[
+                        {
+                            title: "Instant Processing",
+                            sub: "AI-powered extraction in seconds",
+                            icon: "tabler:bolt",
+                            color: "text-[var(--orange-9)] bg-[var(--orange-2)]"
+                        },
+                        {
+                            title: "Smart PO Matching",
+                            sub: "Link invoices to POs with precision.",
+                            icon: "tabler:sparkles",
+                            color: "text-[var(--indigo-9)] bg-[var(--indigo-2)]"
+                        },
+                        {
+                            title: "Payables Overview",
+                            sub: "Insights into your liabilities.",
+                            icon: "tabler:clock",
+                            color: "text-emerald-600 bg-[#ecfdf5]"
+                        }
+                    ].map((item, idx) => (
+                        <AnimateEntrancePop key={idx} delay={0.4 + (idx * 0.1)}>
+                            <div className="group p-6 rounded-xl bg-white border border-[var(--gray-3)] shadow-sm hover:shadow-md transition-all duration-300 flex flex-col items-start text-left h-full">
+                                <div className={`shrink-0 size-9 2xl:size-10 rounded-lg flex items-center justify-center ${item.color} mt-1 mb-4 group-hover:scale-110 transition-transform duration-300`}>
+                                    <Icon name={item.icon} className="size-5 group-hover:rotate-6 transition-transform duration-300" />
                                 </div>
-                            </AnimateSlideUp>
-                        ))}
-                    </div>
+                                <h4 className="text-sm font-medium text-[var(--gray-13)] tracking-tight">
+                                    {item.title}
+                                </h4>
+                                <p className="text-xs text-[var(--gray-10)] mt-2 leading-relaxed font-medium">
+                                    {item.sub}
+                                </p>
+                            </div>
+                        </AnimateEntrancePop>
+                    ))}
                 </div>
 
             </div>
+
+            {/* Custom Scan Animation Style */}
+            <style>{`
+                @keyframes scan {
+                    0% { transform: translateY(-100%); }
+                    100% { transform: translateY(200%); }
+                }
+            `}</style>
         </AnimateFadeIn >
     )
 }

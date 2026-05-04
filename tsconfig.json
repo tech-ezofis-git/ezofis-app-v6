@@ -7,6 +7,9 @@
     "vite.config.js",
     "lingui.config.js"
   ],
+  "exclude": [
+    "src/pages/dashboard - Copy"
+  ],
 
   "compilerOptions": {
     "target": "ES2022",

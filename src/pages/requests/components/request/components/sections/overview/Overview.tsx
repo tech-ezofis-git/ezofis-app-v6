@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   // ArrowLeft, 
   // CheckCircle, 
@@ -29,11 +29,15 @@ import Attachments from '../attachment/Attachments';
 import History from "../history/History";
 import Comments from "../comment/Comments";
 import Forms from "../form/Form";
-import FileSheet from '@/components/common/file-sheet/FileSheet';
 import { useAttachments } from '@/pages/requests/hooks/useAttachments';
 import authUserStore from '@/stores/authUserStore';
 import Icon from '@/components/base/icon/Icon';
 import { useComments } from '@/pages/requests/hooks/useComments'
+
+import { Worker, Viewer, SpecialZoomLevel } from '@react-pdf-viewer/core';
+import '@react-pdf-viewer/core/lib/styles/index.css';
+import fileApi from '@/api/file/file';
+import BarLoader from '@/components/base/BarLoader';
 
 // --- Components ---
 
@@ -92,7 +96,6 @@ const Overview = ({
   const [activeTab, setActiveTab] = useState('summary');
 
   const [selectedFile, setSelectedFile] = useState<any>(null); // Use appropriate type
-    const [isFileLoading, setIsFileLoading] = useState(false);
   
     // Fetch attachments to set default
     const { data: attachmentData } = useAttachments(workflowId, processId, true);
@@ -101,11 +104,65 @@ const Overview = ({
     const tenantId = session?.tenantId;
     const userId = session?.id;
 
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const [fileType, setFileType] = useState<string | null>(null);
+    const [isViewerLoading, setIsViewerLoading] = useState(false);
+    const [refreshCounter, setRefreshCounter] = useState(0);
+    const [scale, setScale] = useState(1);
+    const viewerRef = useRef<any>(null);
+
+    const toolbarPluginInstance = useMemo(() => ({
+        install: (pluginFunctions: any) => {
+            viewerRef.current = pluginFunctions;
+        },
+        onZoom: (e: any) => {
+            setScale(e.scale);
+        }
+    }), []);
+
     useEffect(() => {
         if (attachmentData && attachmentData.length > 0 && !selectedFile) {
           setSelectedFile(attachmentData[0]);
         }
       }, [attachmentData]);
+
+    // Fetch File Binary for Preview
+    useEffect(() => {
+        const fetchFile = async () => {
+            const rId = Number(repositoryId);
+            if (selectedFile?.id && !isNaN(rId) && rId > 0) {
+                setIsViewerLoading(true);
+                const tId = tenantId ? Number(tenantId) : 2;
+                const uId = userId ? String(userId) : "2";
+                const type = 2; // Original file
+
+                try {
+                    const response = await fileApi.viewBinary(tId, uId, rId, selectedFile.id, type);
+
+                    if (response?.data) {
+                        const base64 = response.data.file || response.data;
+                        if (typeof base64 !== 'string') return;
+
+                        let mimeType = 'application/pdf';
+
+                        if (base64.startsWith('/9j/')) mimeType = 'image/jpeg';
+                        else if (base64.startsWith('iVBORw0KGgo')) mimeType = 'image/png';
+                        else if (base64.startsWith('JVBERi0')) mimeType = 'application/pdf';
+
+                        const url = base64.startsWith('data:') ? base64 : `data:${mimeType};base64,${base64}`;
+                        setPreviewUrl(url);
+                        setFileType(mimeType);
+                    }
+                } catch (error) {
+                    console.error("Error fetching file:", error);
+                } finally {
+                    setIsViewerLoading(false);
+                }
+            }
+        };
+
+        fetchFile();
+    }, [selectedFile, repositoryId, tenantId, userId, refreshCounter]);
 
       const { data: data1 } = useComments(workflowId, processId, true)
           const commentsData = (data1 || []) as any[]
@@ -164,24 +221,107 @@ const Overview = ({
 
       <main className="flex-1 flex overflow-hidden">
         {/* Left Section: Document Preview */}
-        <section className="w-[60%] border-r border-[var(--gray-3)] flex flex-col bg-[var(--gray-2)] relative">
+        <section className="w-[60%] border-r border-[var(--gray-3)] flex flex-col bg-white overflow-hidden">
           {selectedFile ? (
-                            <div className="absolute inset-0">
-                              <FileSheet
-                                opened={true}
-                                onClose={() => { }} // Viewer is always open in this layout
-                                file={selectedFile}
-                                tenantId={tenantId}
-                                userId={userId}
-                                workflowId={workflowId}
-                                processId={processId}
-                                type={2}
-                                actions=""
-                                customLoading={isFileLoading}
-                              // Adjusting FileSheet style to fit container if needed, assuming it fits parent
-                              />
+            <>
+              {/* Document Header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--gray-2)] bg-white shrink-0">
+                <div className="flex items-center gap-4 min-w-0">
+                  <div className="w-10 h-10 2xl:w-11 2xl:h-11 rounded-xl bg-[var(--indigo-2)] flex items-center justify-center text-[var(--indigo-9)] shrink-0">
+                    <Icon name="lucide:file-text" className="w-5 h-5 2xl:w-6 2xl:h-6" />
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <h3 className="text-[14px] 2xl:text-[15px] font-bold text-[var(--gray-13)] leading-none mb-1">Document Preview</h3>
+                    <p className="text-[11px] 2xl:text-[12px] text-[var(--gray-10)] font-medium truncate">
+                      {selectedFile?.name || 'Loading document...'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-6">
+                  <div className="flex items-center gap-4 bg-[var(--gray-2)] px-3 py-1.5 rounded-lg border border-[var(--gray-3)]">
+                    <button 
+                      onClick={() => viewerRef.current?.zoom(scale - 0.1)}
+                      className="text-[var(--gray-11)] hover:text-[var(--primary-9)] transition-colors active:scale-90"
+                      title="Zoom Out"
+                    >
+                      <Icon name="lucide:zoom-out" className="w-4 h-4 2xl:w-5 2xl:h-5" />
+                    </button>
+                    <span className="text-[11px] 2xl:text-[12px] font-bold text-[var(--gray-13)] min-w-[36px] text-center">
+                      {Math.round(scale * 100)}%
+                    </span>
+                    <button 
+                      onClick={() => viewerRef.current?.zoom(scale + 0.1)}
+                      className="text-[var(--gray-11)] hover:text-[var(--primary-9)] transition-colors active:scale-90"
+                      title="Zoom In"
+                    >
+                      <Icon name="lucide:zoom-in" className="w-4 h-4 2xl:w-5 2xl:h-5" />
+                    </button>
+                  </div>
+                  
+                  <div className="w-px h-6 bg-[var(--gray-3)]" />
+                  
+                  <button 
+                    onClick={() => {
+                      setPreviewUrl(null);
+                      setRefreshCounter(prev => prev + 1);
+                    }}
+                    className="w-9 h-9 2xl:w-10 2xl:h-10 rounded-lg flex items-center justify-center text-[var(--gray-11)] hover:text-[var(--primary-9)] hover:bg-[var(--primary-2)] transition-all active:rotate-180 duration-500"
+                    title="Refresh Preview"
+                  >
+                    <Icon name="lucide:refresh-cw" className="w-4 h-4 2xl:w-5 2xl:h-5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Viewer Area */}
+              <div className="flex-1 relative bg-[var(--gray-1)] overflow-hidden">
+                {isViewerLoading ? (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-[var(--gray-1)] z-10">
+                        <BarLoader />
+                        <p className="text-xs font-bold text-[var(--gray-10)] tracking-widest uppercase">Loading Preview...</p>
+                    </div>
+                ) : null}
+
+                {previewUrl ? (
+                    fileType === 'application/pdf' ? (
+                        <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js">
+                            <div className="h-full w-full overflow-hidden relative">
+                                <Viewer
+                                    fileUrl={previewUrl}
+                                    defaultScale={SpecialZoomLevel.PageFit}
+                                    plugins={[toolbarPluginInstance]}
+                                />
                             </div>
-                          ) : (
+                        </Worker>
+                    ) : (
+                        <div className="h-full w-full flex items-center justify-center p-8">
+                            <img
+                                src={previewUrl}
+                                alt="Document Preview"
+                                className="max-w-full max-h-full object-contain shadow-2xl rounded-sm"
+                            />
+                        </div>
+                    )
+                ) : (
+                    !isViewerLoading && (
+                        <div className="flex h-full flex-col items-center justify-center p-6 text-center">
+                            <div className="mb-6 rounded-3xl bg-red-2 p-5 text-red-9 shadow-sm ring-1 ring-red-4">
+                                <Icon className="size-12" name="tabler:file-off" />
+                            </div>
+                            <h3 className="text-xl font-bold text-gray-13">Unable to display file</h3>
+                            <p className="mt-2 max-w-sm text-sm leading-relaxed text-gray-10">
+                                We couldn't generate a preview for this document. Please try refreshing the page.
+                            </p>
+                        </div>
+                    )
+                )}
+              </div>
+            </>
+          ) : (
+
+
+
                             <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
                               <div className="flex size-12 items-center justify-center rounded-full bg-[var(--gray-2)]">
                                 <Icon name="tabler:file-off" className="size-6 text-[var(--gray-8)]" />
@@ -391,8 +531,8 @@ const Overview = ({
                                         enabled={true}
                                         onSelect={(file) => {
                                           if (selectedFile?.id === file.id) {
-                                            setIsFileLoading(true);
-                                            setTimeout(() => setIsFileLoading(false), 500);
+                                            setIsViewerLoading(true);
+                                            setTimeout(() => setIsViewerLoading(false), 500);
                                           } else {
                                             setSelectedFile(file);
                                           }

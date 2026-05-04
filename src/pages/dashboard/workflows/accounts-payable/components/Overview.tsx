@@ -102,7 +102,7 @@ const Overview = ({ agentData }: Props) => {
   }, [])
 
   // Mock data structure for demonstration - replace with actual agentData prop
-  const data = agentData || {}
+  const data: AgentData = agentData || {} as AgentData
   const fieldMatching = data.debug?.['Side-by-side Field Matching'] || []
   const lineItemMatching = data.debug?.['Side-by-side Line Item matching'] || []
   const invoiceHeader = data['Extracted Invoice JSON']?.invoice_header
@@ -271,7 +271,7 @@ const Overview = ({ agentData }: Props) => {
                 <div className='p-3'>
                   <div className='space-y-2'>
                     {fieldMatching.length > 0 ? (
-                      fieldMatching.map((field, index) => (
+                      fieldMatching.map((field: any, index: number) => (
                         <div
                           className='rounded border border-gray-3 bg-gray-1 p-3'
                           key={index}
@@ -405,7 +405,7 @@ const Overview = ({ agentData }: Props) => {
                         <div className='overflow-x-auto'>
                           <Table>
                             <Tbody>
-                              {lineItems.map((item, index) => {
+                              {lineItems.map((item: any, index: number) => {
                                 // #region agent log
                                 const logData2 = {
                                   data: {
@@ -507,7 +507,7 @@ const Overview = ({ agentData }: Props) => {
                 <div className='p-3'>
                   <div className='space-y-2'>
                     {lineItemMatching.length > 0 ? (
-                      lineItemMatching.map((lineItem, index) => (
+                      lineItemMatching.map((lineItem: any, index: number) => (
                         <div
                           className='rounded border border-gray-3 bg-gray-1 p-3'
                           key={index}

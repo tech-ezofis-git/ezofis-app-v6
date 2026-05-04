@@ -1,4 +1,4 @@
-# ezofis v6
+# EZOFIS v6
 
 A modern web application built with the latest tools in the JavaScript ecosystem.
 

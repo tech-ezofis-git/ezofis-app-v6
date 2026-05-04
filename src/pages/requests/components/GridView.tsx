@@ -278,11 +278,12 @@ const GridView = <TData,>({
                   {hasHeader && (
                     <motion.div
                       layout
+                      whileHover={{ backgroundColor: 'var(--gray-2)', scale: 1.002 }}
+                      transition={{ duration: 0.2 }}
                       onClick={() => toggleGroup(groupId)}
-                      className="sticky top-0 z-20 -mx-2 px-3 py-3 bg-[var(--surface)] border-b border-[var(--gray-3)] flex items-center justify-between gap-4 cursor-pointer group/header"
+                      className="sticky top-0 z-20 -mx-2 px-3 py-3 bg-[var(--surface)] border-b border-[var(--gray-3)] flex items-center justify-between gap-4 cursor-pointer group/header shadow-sm hover:shadow-md transition-all"
                       initial={{ opacity: 0, y: -20, scale: 0.98 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
-                      transition={{ duration: 0.4, type: "spring", stiffness: 300, damping: 25 }}
                     >
                       {/* Left Side: Icon + Title */}
                       <div className="flex items-center gap-3">
@@ -292,7 +293,7 @@ const GridView = <TData,>({
                         </div>
                         <div>
                           <h2 className="text-14 font-bold text-[var(--gray-13)] leading-tight">
-                            {group.groupValue || 'No Group'}
+                            {group.groupValue || 'NA'}
                           </h2>
                           {group.groupValue && (
                             <span className="text-12 pt-4 text-[var(--gray-10)]">{group.items[0]['UtfgJy6Z0qyfRC5Bclf-c']}</span>
@@ -304,48 +305,50 @@ const GridView = <TData,>({
                         {/* Right Side: Stats + Chevron */}
                         <div className="flex items-center gap-4">
                           {/* Stats Pills (Hidden on mobile and if no group value) */}
-                          {group.groupValue && (
+                          {hasHeader && (
                             <motion.div
                               initial={{ opacity: 0, x: 20 }}
                               animate={{ opacity: 1, x: 0 }}
                               transition={{ delay: 0.1, duration: 0.4 }}
                               className="hidden md:flex items-center gap-3 2xl:gap-6 px-3 py-1 2xl:px-5 2xl:py-1.5 bg-[var(--surface-raised)] transition-shadow"
                             >
+                              {group.groupValue && group.groupValue !== 'NA' && (
+                                <motion.div 
+                                  whileHover={{ scale: 1.02 }}
+                                  className='flex items-center gap-2 border border-[var(--gray-2)] rounded-sm p-2 bg-[var(--gray-2)] hover:bg-[var(--gray-3)] transition-colors cursor-default'
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <div className="text-[10px] uppercase font-bold text-[var(--secondary-9)] tracking-wider">PO Amount</div>
+                                    <div className="text-xs 2xl:text-13 font-bold text-[var(--secondary-12)]">$ {groupItems.reduce((total: any, item: any) => total + Number(item["WksH1Mrs42X4J9AHgoBtw"]), 0)}</div>
+                                  </div>
+                                  <div className="w-px h-3 bg-[var(--gray-4)]" />
+                                  <div className="flex items-center gap-2">
+                                    <div className="text-[10px] uppercase font-bold text-[var(--primary-9)] tracking-wider">Invoice Amount</div>
+                                    <div className="text-xs 2xl:text-13 font-bold text-[var(--primary-12)]">$ {groupItems.reduce((total: any, item: any) => total + Number(item["suyqsm0SYii_8vsj4p0c_"]), 0)}</div>
+                                  </div>
+                                </motion.div>
+                              )}
 
-                              <div className='flex items-center gap-2 border border-[var(--gray-2)] rounded-sm p-2 bg-[var(--gray-2)]'>
-                                <div className="flex items-center gap-2">
-                                  <div className="text-[10px] uppercase font-bold text-[var(--secondary-9)] tracking-wider">PO Amount</div>
-                                  <div className="text-xs 2xl:text-13 font-bold text-[var(--secondary-12)]">$ {groupItems.reduce((total: any, item: any) => total + Number(item["WksH1Mrs42X4J9AHgoBtw"]), 0)}</div>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <div className="text-[10px] uppercase font-bold text-[var(--primary-9)] tracking-wider">Invoice Amount</div>
-                                  <div className="text-xs 2xl:text-13 font-bold text-[var(--primary-12)]">$ {groupItems.reduce((total: any, item: any) => total + Number(item["suyqsm0SYii_8vsj4p0c_"]), 0)}</div>
-                                </div>
-                              </div>
-                              <div className="flex items-center  bg-[var(--green-2)] rounded-sm p-1 gap-2">
+                              <motion.div 
+                                whileHover={{ scale: 1.05, backgroundColor: 'var(--green-3)' }}
+                                className="flex items-center bg-[var(--green-2)] rounded-sm p-1.5 gap-2 transition-colors cursor-default"
+                              >
                                 <Icon name="tabler:circle-check" className="size-4 text-[var(--green-8)]" />
                                 <span className="text-xs 2xl:text-12 font-bold text-[var(--green-8)]">{groupItems.length}</span>
                                 <div className="text-[10px] uppercase font-bold text-[var(--green-8)] tracking-wider">Invoice Received</div>
-                              </div>
-                              {/* <div className="w-px h-3 bg-[var(--gray-3)]"></div> */}
+                              </motion.div>
 
-                              {/* Duplicate Alert */}
                               {groupItems.filter((i: any) => i.isDuplicateInvoice).length > 0 && (
-                                <div className="flex items-center gap-2 bg-[var(--red-2)] rounded-sm p-1">
-
-                                  <span className=" 2xl:inline text-[10px] uppercase font-bold text-[var(--red-9)]">
-
+                                <motion.div 
+                                  whileHover={{ scale: 1.05, backgroundColor: 'var(--red-3)' }}
+                                  className="flex items-center gap-2 bg-[var(--red-2)] rounded-sm p-1.5 transition-colors cursor-default"
+                                >
+                                  <span className="2xl:inline text-[10px] uppercase font-bold text-[var(--red-9)]">
                                     <Icon name="tabler:alert-triangle" className="text-[var(--red-9)] size-3.5 ml-1" />
                                     <span className="ml-1">{groupItems.filter((i: any) => i.isDuplicateInvoice).length}</span>
                                     <span className="ml-1">Duplicate Found</span>
                                   </span>
-                                  {/* <span className=" 2xl:inline text-[10px] uppercase font-bold text-[var(--red-9)]">Duplicates : {groupItems.filter((i: any) => i.isDuplicateInvoice).length}</span> */}
-
-                                  <div className="hidden flex items-center gap-1">
-                                    <Icon name="tabler:alert-triangle" className="text-[var(--red-9)] size-3.5" />
-                                    <span className="text-xs 2xl:text-14 font-bold text-[var(--red-9)]">$1,200.00</span>
-                                  </div>
-                                </div>
+                                </motion.div>
                               )}
                             </motion.div>
                           )}

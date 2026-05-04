@@ -67,7 +67,7 @@ const HeaderFooterSettings = () => {
             <Stack className='flex-1' gap='lg'>
               <TextInput
                 label='Header Text'
-                placeholder='e.g., Ezofis Survey 2024'
+                placeholder='e.g., EZOFIS Survey 2024'
                 value={headerText}
                 classNames={{
                   input:
@@ -79,7 +79,7 @@ const HeaderFooterSettings = () => {
 
               <TextInput
                 label='Footer Text'
-                placeholder='e.g., © 2024 Ezofis. All rights reserved.'
+                placeholder='e.g., © 2024 EZOFIS. All rights reserved.'
                 value={footerText}
                 classNames={{
                   input:
