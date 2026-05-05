@@ -1,10 +1,11 @@
-import { type ComponentProps, forwardRef, type ReactNode } from 'react'
+import { type HTMLMotionProps, motion } from 'motion/react'
+import { forwardRef, type ReactNode } from 'react'
 import Icon from '@/components/base/icon/Icon'
 import cn from '@/utils/cn'
 import type { ButtonColor, ButtonSize, ButtonVariant } from './types'
 import { getVariantClassName } from './helpers'
 
-interface Props extends ComponentProps<'button'> {
+interface Props extends HTMLMotionProps<'button'> {
   children?: ReactNode
   className?: string
   color?: ButtonColor
@@ -53,7 +54,9 @@ const Button = forwardRef<HTMLButtonElement, Props>(
     const _className = cn(variantClassName, sizeClassName[size], className)
 
     return (
-      <button
+      <motion.button
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
         className={_className}
         data-loading={loading || undefined}
         disabled={disabled}
@@ -78,7 +81,7 @@ const Button = forwardRef<HTMLButtonElement, Props>(
             {rightSection && <span className='-mr-1'>{rightSection}</span>}
           </>
         )}
-      </button>
+      </motion.button>
     )
   },
 )

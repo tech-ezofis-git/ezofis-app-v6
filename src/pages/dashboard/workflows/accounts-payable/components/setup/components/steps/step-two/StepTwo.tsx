@@ -33,8 +33,8 @@ const StepTwo = () => {
       <AnimateSlideUp delay={0.1}>
         <Title
           className='items-start text-left'
-          description='Choose how to import purchase orders. Upload a CSV template or connect an ERP system to sync data automatically.'
-          title='Configure ERP'
+          description='Import your PO Master Data to ensure accurate matching. Upload a spreadsheet or connect your ERP system to synchronize records automatically.'
+          title='Configure PO Master Data'
         />
       </AnimateSlideUp>
 
@@ -90,8 +90,8 @@ const StepTwo = () => {
           onClick={() => setStep(0)}
         />
         {erpSettings.isConnected ||
-        erpSettings.templateUploaded ||
-        (erpSettings.system && erpSettings.system === 'FILE_BASED_IMPORT') ? (
+          erpSettings.templateUploaded ||
+          (erpSettings.system && erpSettings.system === 'FILE_BASED_IMPORT') ? (
           <Button
             label='Continue'
             suffixIcon='tabler:arrow-right'

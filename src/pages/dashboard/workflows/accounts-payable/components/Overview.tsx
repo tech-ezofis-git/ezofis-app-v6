@@ -102,102 +102,7 @@ const Overview = ({ agentData }: Props) => {
   }, [])
 
   // Mock data structure for demonstration - replace with actual agentData prop
-  const defaultAgentData: AgentData = {
-    'debug': {
-      'Side-by-side Field Matching': [
-        {
-          'Field': 'Supplier Name',
-          'Invoice Value': 'Atlas Power Tools',
-          'PO Value': 'Atlas Power Tools',
-          'Score': 100,
-        },
-        {
-          'Field': 'PO Number',
-          'Invoice Value': 'PO-1007',
-          'PO Value': 'PO-1007',
-          'Score': 100,
-        },
-        {
-          'Field': 'Currency',
-          'Invoice Value': 'CAD',
-          'PO Value': 'CAD',
-          'Score': 100,
-        },
-        {
-          'Field': 'Total Due',
-          'Invoice Value': 813.6,
-          'PO Value': 813.6,
-          'Score': 100,
-        },
-      ],
-      'Side-by-side Line Item matching': [
-        {
-          'Amount': {
-            'Invoice Value': 90,
-            'PO Value': 90,
-            'Score': 100,
-          },
-          'Description': {
-            'Invoice Value': 'Router',
-            'PO Value': 'Router',
-            'Score': 100,
-          },
-          'Line Score': 100,
-          'Price': {
-            'Invoice Value': 90,
-            'PO Value': 90,
-            'Score': 100,
-          },
-          'Quantity': {
-            'Invoice Value': 1,
-            'PO Value': 1,
-            'Score': 100,
-          },
-        },
-      ],
-    },
-    'decision': 'APPROVED',
-    'Extracted Invoice JSON': {
-      invoice_header: {
-        'Currency': 'CAD',
-        'PO Number': 'PO-1007',
-        'Supplier Name': 'Atlas Power Tools',
-        'Total Due': '813.6',
-      },
-      line_items: [
-        {
-          amount: 90,
-          description: 'Router',
-          line_no: 1,
-          price: 90,
-          quantity: '1',
-        },
-        {
-          amount: 630,
-          description: 'Monitor',
-          line_no: 2,
-          price: 70,
-          quantity: '9',
-        },
-      ],
-    },
-    'invoice_errors': {
-      errors: [],
-      severity: 'NONE',
-    },
-    'po_row': {
-      'Currency': 'CAD',
-      'PO Amount': '813.6',
-      'PO Number': 'PO-1007',
-      'Vendor Name': 'Atlas Power Tools',
-    },
-    'reason':
-      'The invoice is approved because the overall matching score is 94.0%, which exceeds the required threshold.',
-    'reqNo': 'REQ-75',
-    'score': 94,
-  }
-
-  const data = agentData || defaultAgentData
+  const data: AgentData = agentData || {} as AgentData
   const fieldMatching = data.debug?.['Side-by-side Field Matching'] || []
   const lineItemMatching = data.debug?.['Side-by-side Line Item matching'] || []
   const invoiceHeader = data['Extracted Invoice JSON']?.invoice_header
@@ -245,16 +150,19 @@ const Overview = ({ agentData }: Props) => {
   }
 
   const getDecisionColor = (decision: string) => {
+    if (!decision) return 'text-gray-11 bg-gray-2 border-gray-3'
     if (decision === 'APPROVED') return 'text-green-11 bg-green-2 border-gray-4'
     return 'text-red-11 bg-red-2 border-gray-4'
   }
 
   const getDecisionIcon = (decision: string) => {
+    if (!decision) return 'tabler:loader'
     if (decision === 'APPROVED') return 'tabler:check'
     return 'tabler:x'
   }
 
   const getDecisionIconColor = (decision: string) => {
+    if (!decision) return 'text-gray-8'
     if (decision === 'APPROVED') return 'text-green-11'
     return 'text-red-11'
   }
@@ -363,7 +271,7 @@ const Overview = ({ agentData }: Props) => {
                 <div className='p-3'>
                   <div className='space-y-2'>
                     {fieldMatching.length > 0 ? (
-                      fieldMatching.map((field, index) => (
+                      fieldMatching.map((field: any, index: number) => (
                         <div
                           className='rounded border border-gray-3 bg-gray-1 p-3'
                           key={index}
@@ -497,7 +405,7 @@ const Overview = ({ agentData }: Props) => {
                         <div className='overflow-x-auto'>
                           <Table>
                             <Tbody>
-                              {lineItems.map((item, index) => {
+                              {lineItems.map((item: any, index: number) => {
                                 // #region agent log
                                 const logData2 = {
                                   data: {
@@ -599,7 +507,7 @@ const Overview = ({ agentData }: Props) => {
                 <div className='p-3'>
                   <div className='space-y-2'>
                     {lineItemMatching.length > 0 ? (
-                      lineItemMatching.map((lineItem, index) => (
+                      lineItemMatching.map((lineItem: any, index: number) => (
                         <div
                           className='rounded border border-gray-3 bg-gray-1 p-3'
                           key={index}
@@ -611,7 +519,7 @@ const Overview = ({ agentData }: Props) => {
                               </div>
                               <div>
                                 <div className='text-13 font-medium text-gray-13'>
-                                  {lineItem.Description['Invoice Value']}
+                                  {lineItem.Description?.['Invoice Value'] || 'N/A'}
                                 </div>
                                 <div className='text-11 text-gray-10'>
                                   Line Item
@@ -632,31 +540,31 @@ const Overview = ({ agentData }: Props) => {
                             {[
                               {
                                 icon: 'tabler:file-text',
-                                invoice: lineItem.Description['Invoice Value'],
+                                invoice: lineItem.Description?.['Invoice Value'],
                                 label: 'Description',
-                                po: lineItem.Description['PO Value'],
-                                score: lineItem.Description.Score,
+                                po: lineItem.Description?.['PO Value'],
+                                score: lineItem.Description?.Score,
                               },
                               {
                                 icon: 'tabler:hash',
-                                invoice: lineItem.Quantity['Invoice Value'],
+                                invoice: lineItem.Quantity?.['Invoice Value'],
                                 label: 'Quantity',
-                                po: lineItem.Quantity['PO Value'],
-                                score: lineItem.Quantity.Score,
+                                po: lineItem.Quantity?.['PO Value'],
+                                score: lineItem.Quantity?.Score,
                               },
                               {
                                 icon: 'tabler:currency-dollar',
-                                invoice: lineItem.Price['Invoice Value'],
+                                invoice: lineItem.Price?.['Invoice Value'],
                                 label: 'Price',
-                                po: lineItem.Price['PO Value'],
-                                score: lineItem.Price.Score,
+                                po: lineItem.Price?.['PO Value'],
+                                score: lineItem.Price?.Score,
                               },
                               {
                                 icon: 'tabler:calculator',
-                                invoice: lineItem.Amount['Invoice Value'],
+                                invoice: lineItem.Amount?.['Invoice Value'],
                                 label: 'Amount',
-                                po: lineItem.Amount['PO Value'],
-                                score: lineItem.Amount.Score,
+                                po: lineItem.Amount?.['PO Value'],
+                                score: lineItem.Amount?.Score,
                               },
                             ].map((field, fieldIndex) => (
                               <div

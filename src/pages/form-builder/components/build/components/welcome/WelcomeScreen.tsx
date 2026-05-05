@@ -125,7 +125,7 @@ const WelcomeScreen = () => {
   return (
     <div className='relative flex h-full flex-col items-center justify-center overflow-hidden px-10 font-inter bg-gray-50/50'>
       <div className='relative w-full max-w-6xl text-center z-10'>
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
@@ -207,10 +207,10 @@ const WelcomeScreen = () => {
               </div>
               <div className='aspect-video rounded-xl bg-gray-1 flex items-center justify-center group-hover:bg-primary-3 transition-colors overflow-hidden'>
                 <div className="relative">
-                   <Icon className='text-gray-3 group-hover:text-primary-9/10 transition-all' height={70} name='lucide:layout' width={70} />
-                   <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-8 h-8 rounded bg-white shadow-sm scale-0 group-hover:scale-100 transition-transform" />
-                   </div>
+                  <Icon className='text-gray-3 group-hover:text-primary-9/10 transition-all' height={70} name='lucide:layout' width={70} />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-8 h-8 rounded bg-white shadow-sm scale-0 group-hover:scale-100 transition-transform" />
+                  </div>
                 </div>
               </div>
             </Card>
@@ -277,10 +277,10 @@ const WelcomeScreen = () => {
               </div>
               <div className='relative aspect-video rounded-xl bg-teal-2 p-3 flex flex-col gap-2 group-hover:bg-teal-3/50 transition-colors'>
                 <div className='flex items-center gap-2'>
-                   <div className='size-6 rounded-full bg-teal-9 flex items-center justify-center shadow-sm'>
-                      <Icon name="lucide:check" width={12} className="text-white" />
-                   </div>
-                   <div className='h-2.5 w-1/2 rounded-full bg-teal-5/50' />
+                  <div className='size-6 rounded-full bg-teal-9 flex items-center justify-center shadow-sm'>
+                    <Icon name="lucide:check" width={12} className="text-white" />
+                  </div>
+                  <div className='h-2.5 w-1/2 rounded-full bg-teal-5/50' />
                 </div>
                 <div className='mt-auto h-8 w-full rounded-lg bg-surface shadow-sm' />
               </div>
@@ -313,10 +313,10 @@ const WelcomeScreen = () => {
               </div>
               <div className='relative aspect-video rounded-xl bg-orange-2 p-3 flex flex-col gap-2 group-hover:bg-orange-3/50 transition-colors'>
                 <div className='flex items-end gap-1 h-10 mt-1'>
-                    <div className='flex-1 bg-orange-7 h-[40%] rounded-t-sm' />
-                    <div className='flex-1 bg-orange-9 h-[90%] rounded-t-sm' />
-                    <div className='flex-1 bg-orange-8 h-[60%] rounded-t-sm' />
-                    <div className='flex-1 bg-orange-10 h-[75%] rounded-t-sm' />
+                  <div className='flex-1 bg-orange-7 h-[40%] rounded-t-sm' />
+                  <div className='flex-1 bg-orange-9 h-[90%] rounded-t-sm' />
+                  <div className='flex-1 bg-orange-8 h-[60%] rounded-t-sm' />
+                  <div className='flex-1 bg-orange-10 h-[75%] rounded-t-sm' />
                 </div>
                 <div className='mt-auto h-2.5 w-full rounded-full bg-orange-4/30' />
               </div>

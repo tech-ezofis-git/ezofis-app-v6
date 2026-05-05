@@ -60,7 +60,7 @@ export function getGroupedRequests(
 
     items.forEach((item) => {
       const value = item[currentColumn as keyof Request]
-      const stringValue = value?.toString() || 'null'
+      const stringValue = value?.toString() || 'NA'
 
       if (!grouped.has(stringValue)) {
         grouped.set(stringValue, [])

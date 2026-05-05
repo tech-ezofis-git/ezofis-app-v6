@@ -122,37 +122,6 @@ const Overview = ({
     return () => clearTimeout(timer);
   }, []);
 
-  const defaultAgentData: AgentData = {
-    decision: 'APPROVED',
-    score: 94,
-    reason:
-      'The invoice from Silverline Auto Parts matches the PO exactly. All line items and totals are verified against the master record.',
-    debug: {
-      'Side-by-side Field Matching': [
-        { Field: 'Supplier Name', 'Invoice Value': 'Silverline Auto Parts', 'PO Value': 'Silverline Auto Parts', Score: 100 },
-        { Field: 'PO Number', 'Invoice Value': 'PO-1007', 'PO Value': 'PO-1007', Score: 100 },
-        { Field: 'Total Due', 'Invoice Value': 813.6, 'PO Value': 813.6, Score: 100 },
-      ],
-      'Side-by-side Line Item matching': [
-        { Description: { 'Invoice Value': 'Mouse', 'PO Value': 'Logitech Mouse', Score: 40 }, Quantity: { 'Invoice Value': 1, 'PO Value': 1, Score: 100 }, Price: { 'Invoice Value': 106.0, 'PO Value': 106.0, Score: 100 }, Amount: { 'Invoice Value': 106.0, 'PO Value': 106.0, Score: 100 }, 'Line Score': 60 },
-        { Description: { 'Invoice Value': 'Keyboard', 'PO Value': 'Keyboard Mech', Score: 85 }, Quantity: { 'Invoice Value': 6, 'PO Value': 6, Score: 100 }, Price: { 'Invoice Value': 102.0, 'PO Value': 102.0, Score: 100 }, Amount: { 'Invoice Value': 612.0, 'PO Value': 612.0, Score: 100 }, 'Line Score': 90 },
-        { Description: { 'Invoice Value': 'Printer', 'PO Value': 'Printer', Score: 100 }, Quantity: { 'Invoice Value': 4, 'PO Value': 4, Score: 100 }, Price: { 'Invoice Value': 97.0, 'PO Value': 97.0, Score: 100 }, Amount: { 'Invoice Value': 388.0, 'PO Value': 388.0, Score: 100 }, 'Line Score': 100 },
-      ],
-    },
-    'Extracted Invoice JSON': {
-      invoice_header: {
-        'Supplier Name': 'Silverline Auto Parts',
-        'PO Number': 'PO-1007',
-        Currency: 'USD',
-        'Total Due': '1106.00',
-      },
-      line_items: [],
-    },
-    reqNo: 'REQ-75',
-  };
-
-  // State for Right View Mode and Selected File
-  // const [rightView, setRightView] = useState<RightViewMode>('analysis'); // Now props
   const [selectedFile, setSelectedFile] = useState<any>(null); // Use appropriate type
   const [isFileLoading, setIsFileLoading] = useState(false);
 
@@ -170,7 +139,7 @@ const Overview = ({
     }
   }, [attachmentData]);
 
-  const data: AgentData = agentData || defaultAgentData;
+  const data: AgentData = agentData || {};
 
   const fieldMatching = data.debug?.['Side-by-side Field Matching'] || [];
   const lineItemMatching = data.debug?.['Side-by-side Line Item matching'] || [];
@@ -761,19 +730,19 @@ const Overview = ({
                                   return (
                                     <div key={index} className="grid grid-cols-[2fr_0.8fr_0.8fr_1fr_1fr] items-center px-4 py-2.5 hover:bg-[var(--gray-1)] transition-colors group">
                                       <div className="text-[var(--gray-12)] pr-4">
-                                        {renderCell(item.Description['Invoice Value'], item.Description['PO Value'])}
+                                        {renderCell(item.Description?.['Invoice Value'], item.Description?.['PO Value'])}
                                       </div>
 
                                       <div className="text-[var(--gray-11)]">
-                                        {renderCell(item.Quantity['Invoice Value'], item.Quantity['PO Value'])}
+                                        {renderCell(item.Quantity?.['Invoice Value'], item.Quantity?.['PO Value'])}
                                       </div>
 
                                       <div className="text-[var(--gray-11)]">
-                                        {renderCell(item.Price['Invoice Value'], item.Price['PO Value'])}
+                                        {renderCell(item.Price?.['Invoice Value'], item.Price?.['PO Value'])}
                                       </div>
 
                                       <div className="font-bold text-[var(--teal-9)]">
-                                        {renderCell(item.Amount['Invoice Value'], item.Amount['PO Value'])}
+                                        {renderCell(item.Amount?.['Invoice Value'], item.Amount?.['PO Value'])}
                                       </div>
 
                                       <div className="text-right">

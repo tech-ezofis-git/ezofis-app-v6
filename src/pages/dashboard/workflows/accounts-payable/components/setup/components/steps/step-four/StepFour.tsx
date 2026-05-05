@@ -4,7 +4,7 @@ import Divider from '@/components/base/Divider'
 import Title from '@/components/base/Title'
 // import HeroText from '@/components/common/HeroText'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
-import Integrations from './components/Integrations'
+import WorkflowPreview from './components/WorkflowPreview'
 
 const StepFour = () => {
   const setStep = setupStore((state) => state.setStep)
@@ -25,8 +25,7 @@ const StepFour = () => {
       />
 
       <Divider />
-      <Integrations />
-      <Divider />
+      <WorkflowPreview />
       {/* <WhatHappensNext /> */}
 
       <div className='flex flex-wrap items-center justify-between gap-2 border-t border-gray-3 pt-4'>

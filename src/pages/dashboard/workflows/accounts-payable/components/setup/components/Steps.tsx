@@ -5,6 +5,7 @@ import {
   AnimateBounce,
   AnimateFadeIn,
   AnimateScale,
+  AnimateSlideRight,
   AnimateSlideUp,
 } from '@/components/common/animations'
 import setupStore from '../../../stores/useSetupStore'
@@ -65,17 +66,35 @@ const Steps = () => {
       initial={{ opacity: 0, y: 20 }}
       transition={{ duration: 0.4, ease: 'easeOut' }}
     >
-      <div className='mb-4 flex shrink-0 items-center justify-between border-b border-gray-3 px-6 py-3 md:px-8'>
-        <div className='flex flex-col gap-0.5'>
-          <h2 className='text-18 font-semibold text-gray-13'>
-            Accounts Payable Setup
-          </h2>
-          <p className='text-13 text-gray-11'>
-            Configure your integrations and settings
-          </p>
+
+      <AnimateSlideRight delay={0.1}>
+        <div className='mb-4 flex items-center justify-between border-b border-gray-3 px-6 py-3 md:px-8'>
+          <div className='flex flex-col gap-0.5'>
+            <h2 className='text-18 font-semibold text-gray-13'>
+              Accounts Payable Setup
+            </h2>
+            <p className='text-13 text-gray-11'>
+              Configure your integrations and settings
+            </p>
+          </div>
+
+          <div className='flex items-center gap-4'>
+            <div className='flex flex-col items-end gap-1'>
+              <span className='text-13 font-semibold text-accent-primary'>
+                {Math.round(((step + 1) / steps.length) * 100)}% Complete
+              </span>
+              <div className='h-1.5 w-32 overflow-hidden rounded-full bg-gray-3'>
+                <motion.div
+                  animate={{ width: `${((step + 1) / steps.length) * 100}%` }}
+                  className='h-full bg-accent-primary'
+                  initial={{ width: 0 }}
+                  transition={{ duration: 0.5, ease: 'easeOut' }}
+                />
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
-      {/* Changed min-h-full to flex-1 to avoid overflow */}
+      </AnimateSlideRight>
       <div className='grid min-h-0 flex-1 grid-cols-1 gap-0 xl:grid-cols-[240px_1fr]'>
         <AnimateSlideUp delay={0.2}>
           <div className='hidden h-full border-r border-gray-3 bg-gray-1/30 px-4 py-3 xl:block'>
