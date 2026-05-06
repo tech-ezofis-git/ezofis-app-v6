@@ -171,6 +171,13 @@ const Overview = ({
   const invoiceHeader = data['Extracted Invoice JSON']?.invoice_header as any;
   const lineItemMatching = data.debug?.['Side-by-side Line Item matching'] || [];
 
+  const formatAmount = (val: any) => {
+    if (val === undefined || val === null || val === '') return '-';
+    const num = typeof val === 'string' ? parseFloat(val.replace(/[^0-9.-]+/g, "")) : val;
+    if (isNaN(num)) return val;
+    return num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+
   const SummarySkeleton = () => (
     <div className="flex-1 overflow-y-auto px-4 pb-8 space-y-6 animate-pulse">
       {/* Status Card Skeleton */}
@@ -428,7 +435,7 @@ const Overview = ({
                 <DataCard icon={Store} label="Supplier" value={invoiceHeader?.['Supplier Name'] || 'Pending Analysis...'} />
                 <DataCard icon={ListFilter} label="PO Number" value={invoiceHeader?.['PO Number'] || selectedItem?.requestNo || 'N/A'} />
                 <DataCard icon={CreditCard} label="Currency" value={invoiceHeader?.['Currency'] || 'Pending Analysis...'} />
-                <DataCard icon={Wallet} label="Total Value" value={invoiceHeader?.['Total Due'] || 'Pending Analysis...'} highlight />
+                <DataCard icon={Wallet} label="Total Value" value={formatAmount(invoiceHeader?.['Total Due']) || 'Pending Analysis...'} highlight />
               </div>
             </div>
 
@@ -479,20 +486,20 @@ const Overview = ({
                           </td>
                           <td className="px-5 py-4 text-right font-medium border-l border-[var(--gray-3)]">
                             <div className="flex flex-col items-end">
-                              {item?.Price?.['Invoice Value'] || '-'}
+                              {formatAmount(item?.Price?.['Invoice Value'])}
                               {(!isMatch && item.Price?.['PO Value']) && (
                                 <span className="text-[9px] font-bold text-[var(--orange-9)] mt-0.5 truncate bg-[var(--orange-1)] px-1 py-px rounded w-fit">
-                                  Exp: {item.Price?.['PO Value']}
+                                  Exp: {formatAmount(item.Price?.['PO Value'])}
                                 </span>
                               )}
                             </div>
                           </td>
                           <td className="px-5 py-4 font-bold text-right text-[var(--gray-13)] group-hover:text-[var(--primary-9)] transition-colors border-l border-[var(--gray-3)]">
                             <div className="flex flex-col items-end">
-                              {item.Amount?.['Invoice Value'] || '-'}
+                              {formatAmount(item.Amount?.['Invoice Value'])}
                               {(!isMatch && item.Amount?.['PO Value']) && (
                                 <span className="text-[9px] font-bold text-[var(--orange-9)] mt-0.5 truncate bg-[var(--orange-1)] px-1 py-px rounded w-fit">
-                                  Exp: {item.Amount?.['PO Value']}
+                                  Exp: {formatAmount(item.Amount?.['PO Value'])}
                                 </span>
                               )}
                             </div>

@@ -1,15 +1,12 @@
-import { motion } from 'motion/react'
 import React, { useMemo } from 'react'
 import DataTable from '@/components/base/data-table/DataTable'
 import useDataTable from '@/components/base/data-table/hooks/useDataTable'
 import useDataTableState from '@/components/base/data-table/hooks/useDataTableState'
 import Pagination from '@/components/base/pagination/Pagination'
-import { AnimateFadeIn } from '@/components/common/animations'
 import type { TableGroup, WorkflowOption } from '../types'
 import requestStore from '../stores/useRequestStore'
 import { useDynamicColumns } from './columns/useDynamicColumns'
 import GridView from './GridView'
-import Request from './request/Request'
 // import TableActionBar, { type TableActionButton } from '@/components/base/data-table/TableActionBar'
 // import { getGroupedRowModel } from '@tanstack/react-table'
 
@@ -61,7 +58,7 @@ function flattenRows(groups: any[]): any[] {
     }
   }
 
-  ;(groups || []).forEach(walk)
+    ; (groups || []).forEach(walk)
   return out
 }
 
@@ -78,7 +75,6 @@ const InboxList: React.FC<InboxListProps> = ({
   workflow,
   setPage,
   setPageSize,
-  setSelectedItem,
   onGroupByChange,
   onRefresh,
   onRowClick,
@@ -197,56 +193,6 @@ const InboxList: React.FC<InboxListProps> = ({
     },
   })
 
-  // ✅ index of currently opened item in the flattened list
-  const selectedIndex = useMemo(() => {
-    if (!selectedItem) return -1
-
-    const selTid =
-      selectedItem?.transactionId != null
-        ? String(selectedItem.transactionId)
-        : ''
-    const selPid =
-      selectedItem?.processId != null ? String(selectedItem.processId) : ''
-    const selId = selectedItem?.id != null ? String(selectedItem.id) : ''
-
-    return filteredFlatRows.findIndex((r: any) => {
-      const rTid = r?.transactionId != null ? String(r.transactionId) : ''
-      const rPid = r?.processId != null ? String(r.processId) : ''
-      const rId = r?.id != null ? String(r.id) : ''
-
-      // strongest match first
-      if (selTid && rTid) return selTid === rTid
-      if (selPid && rPid) return selPid === rPid
-      if (selId && rId) return selId === rId
-
-      // extra fallback (optional)
-      if (selectedItem?.requestNo && r?.requestNo)
-        return String(selectedItem.requestNo) === String(r.requestNo)
-
-      return false
-    })
-  }, [filteredFlatRows, selectedItem])
-
-  const hasPrev = selectedIndex > 0
-  const hasNext =
-    selectedIndex >= 0 && selectedIndex < filteredFlatRows.length - 1
-
-  const goToRow = (row: any) => {
-    if (!row) return
-    setSelectedItem(row) // keep RequestsPage selectedItem in sync
-    onRowClick(row, 'Overview') // triggers openRequest(row, workflow, tab)
-  }
-
-  const onPrev = () => {
-    if (!hasPrev) return
-    goToRow(filteredFlatRows[selectedIndex - 1])
-  }
-
-  const onNext = () => {
-    if (!hasNext) return
-    goToRow(filteredFlatRows[selectedIndex + 1])
-  }
-
   // Debug (keep for a bit until stable)
   // console.log({ selectedIndex, hasPrev, hasNext, flatRowsLen: flatRows.length, selectedItem }, 'nav-debug')
   const handlePoSheet = () => {
@@ -255,7 +201,7 @@ const InboxList: React.FC<InboxListProps> = ({
   }
   return (
     <>
-      <div className='bg-primary flex h-full flex-col overflow-hidden px-6 py-2 md:px-6'>
+      <div className='bg-primary flex flex-1 min-h-0 flex-col overflow-hidden px-6 py-2 md:px-6'>
         <div className='relative flex min-h-0 w-full flex-1 flex-col'>
           <div className='flex h-full w-full gap-3'>
             {/* Left */}
@@ -285,7 +231,7 @@ const InboxList: React.FC<InboxListProps> = ({
             )}
 
             {!selectedItem && viewMode === 'grid' && (
-              <div className='h-full min-w-0 flex-1 overflow-y-auto'>
+              <div className='h-full min-w-0 flex-1 overflow-hidden'>
                 <GridView
                   data={filteredData} // ✅ Use filtered data
                   hideGrouping={activeTab !== 'Inbox'}
@@ -306,23 +252,6 @@ const InboxList: React.FC<InboxListProps> = ({
                   onRowClick={onRowClick}
                 />
               </div>
-            )}
-
-            {/* Right */}
-            {selectedItem && (
-              <motion.div
-                animate={{ opacity: 1, y: 0 }}
-                className='h-full min-w-0 basis-5/5 overflow-hidden'
-                initial={{ opacity: 0, y: 10 }}
-                transition={{ delay: 0.3, duration: 0.5 }}
-              >
-                <AnimateFadeIn>
-                  <Request
-                    onNext={hasNext ? onNext : undefined}
-                    onPrev={hasPrev ? onPrev : undefined}
-                  />
-                </AnimateFadeIn>
-              </motion.div>
             )}
           </div>
         </div>

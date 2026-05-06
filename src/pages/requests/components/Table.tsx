@@ -45,7 +45,7 @@ const Table = () => {
       id: 'amount',
       label: 'Amount',
       size: 140,
-      renderCell: (row) => `$${row.amount}.00`,
+      renderCell: (row) => `$${Number(row.amount).toFixed(2)}`,
     },
     {
       enableGrouping: true,

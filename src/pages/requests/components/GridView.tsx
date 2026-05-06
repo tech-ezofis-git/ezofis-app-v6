@@ -164,6 +164,7 @@ const GridView = <TData,>({
 
   return (
     <>
+      <div className="flex h-full flex-col overflow-hidden">
       <div className="flex flex-col gap-3">
         <div className="px-2 pt-1">
           <TableActionBar
@@ -175,9 +176,12 @@ const GridView = <TData,>({
             onRowSizeChange={onRowSizeChange}
             hideTableActions={true}
             hideGrouping={hideGrouping}
-            className="!mb-1"
+            className="mb-4"
           />
         </div>
+      </div>
+
+      <div className="flex-1 min-h-0 overflow-y-auto">
 
         {allItems.length === 0 ? (
           <motion.div
@@ -210,6 +214,10 @@ const GridView = <TData,>({
                   groupError = true
                 }
               }
+
+              const poTotal = groupItems.reduce((total: any, item: any) => total + Number(item["WksH1Mrs42X4J9AHgoBtw"] || 0), 0);
+              const invoiceTotal = groupItems.reduce((total: any, item: any) => total + Number(item["suyqsm0SYii_8vsj4p0c_"] || 0), 0);
+              const isMatch = Math.abs(poTotal - invoiceTotal) < 0.01 && poTotal > 0;
 
               if (groupItems.length === 0) return null
 
@@ -281,7 +289,7 @@ const GridView = <TData,>({
                       whileHover={{ backgroundColor: 'var(--gray-2)', scale: 1.002 }}
                       transition={{ duration: 0.2 }}
                       onClick={() => toggleGroup(groupId)}
-                      className="sticky top-0 z-20 -mx-2 px-3 py-3 bg-[var(--surface)] border-b border-[var(--gray-3)] flex items-center justify-between gap-4 cursor-pointer group/header shadow-sm hover:shadow-md transition-all"
+                      className="sticky top-0 z-20 px-3 py-3 bg-[var(--surface)] border-b border-[var(--gray-3)] hover:border-b-[var(--primary-9)] flex items-center justify-between gap-4 cursor-pointer group/header shadow-sm hover:shadow-md transition-all overflow-hidden"
                       initial={{ opacity: 0, y: -20, scale: 0.98 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                     >
@@ -310,28 +318,33 @@ const GridView = <TData,>({
                               initial={{ opacity: 0, x: 20 }}
                               animate={{ opacity: 1, x: 0 }}
                               transition={{ delay: 0.1, duration: 0.4 }}
-                              className="hidden md:flex items-center gap-3 2xl:gap-6 px-3 py-1 2xl:px-5 2xl:py-1.5 bg-[var(--surface-raised)] transition-shadow"
+                              className="hidden md:flex items-center gap-3 2xl:gap-6 px-3 py-1 2xl:px-5 2xl:py-1.5 bg-[var(--surface-raised)] group-hover/header:bg-transparent group-hover/header:scale-[1.02] transition-all"
                             >
                               {group.groupValue && group.groupValue !== 'NA' && (
                                 <motion.div 
                                   whileHover={{ scale: 1.02 }}
-                                  className='flex items-center gap-2 border border-[var(--gray-2)] rounded-sm p-2 bg-[var(--gray-2)] hover:bg-[var(--gray-3)] transition-colors cursor-default'
+                                  className={cn(
+                                    'flex items-center gap-2 border rounded-sm px-3 py-1.5 transition-all cursor-default',
+                                    isMatch 
+                                      ? 'bg-[var(--green-2)] border-[var(--green-3)] group-hover/header:bg-[var(--green-3)] group-hover/header:border-[var(--green-5)]' 
+                                      : 'bg-[var(--gray-2)] border-[var(--gray-2)] hover:bg-[var(--gray-3)] group-hover/header:bg-[var(--primary-2)] group-hover/header:border-[var(--primary-4)]'
+                                  )}
                                 >
                                   <div className="flex items-center gap-2">
                                     <div className="text-[10px] uppercase font-bold text-[var(--secondary-9)] tracking-wider">PO Amount</div>
-                                    <div className="text-xs 2xl:text-13 font-bold text-[var(--secondary-12)]">$ {groupItems.reduce((total: any, item: any) => total + Number(item["WksH1Mrs42X4J9AHgoBtw"]), 0)}</div>
+                                    <div className={cn("text-xs 2xl:text-13 font-bold", isMatch ? "text-[var(--green-11)]" : "text-[var(--secondary-12)]")}>$ {poTotal.toFixed(2)}</div>
                                   </div>
-                                  <div className="w-px h-3 bg-[var(--gray-4)]" />
+                                  <div className={cn("w-px h-3", isMatch ? "bg-[var(--green-4)]" : "bg-[var(--gray-4)]")} />
                                   <div className="flex items-center gap-2">
                                     <div className="text-[10px] uppercase font-bold text-[var(--primary-9)] tracking-wider">Invoice Amount</div>
-                                    <div className="text-xs 2xl:text-13 font-bold text-[var(--primary-12)]">$ {groupItems.reduce((total: any, item: any) => total + Number(item["suyqsm0SYii_8vsj4p0c_"]), 0)}</div>
+                                    <div className={cn("text-xs 2xl:text-13 font-bold", isMatch ? "text-[var(--green-11)]" : "text-[var(--primary-12)]")}>$ {invoiceTotal.toFixed(2)}</div>
                                   </div>
                                 </motion.div>
                               )}
 
                               <motion.div 
                                 whileHover={{ scale: 1.05, backgroundColor: 'var(--green-3)' }}
-                                className="flex items-center bg-[var(--green-2)] rounded-sm p-1.5 gap-2 transition-colors cursor-default"
+                                className="flex items-center bg-[var(--green-2)] group-hover/header:bg-[var(--green-3)] group-hover/header:border-[var(--green-5)] border border-transparent rounded-sm px-3 py-1.5 gap-2 transition-all cursor-default"
                               >
                                 <Icon name="tabler:circle-check" className="size-4 text-[var(--green-8)]" />
                                 <span className="text-xs 2xl:text-12 font-bold text-[var(--green-8)]">{groupItems.length}</span>
@@ -483,6 +496,7 @@ const GridView = <TData,>({
           </div>
         )}
       </div>
+    </div>
 
       {/* File Preview Sheet */}
       <FileSheet

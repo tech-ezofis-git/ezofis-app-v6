@@ -58,7 +58,7 @@ const DataTable = <TData,>({
     >
       <TableActionBar
         actions={actions} // ✅ pass through
-        className={cn('mb-4', stickyHeader && 'mb-2')}
+        className={cn('mb-4')}
         component={component}
         hideGrouping={hideGrouping}
         isReloading={isReLoading}
@@ -122,14 +122,19 @@ const DataTable = <TData,>({
                   const isExpanded = row.getIsExpanded()
 
                   if (isGroup) {
+                    const groupItems = (row.original as any).items || []
+                    const poTotal = groupItems.reduce((acc: number, item: any) => acc + Number(item["WksH1Mrs42X4J9AHgoBtw"] || 0), 0)
+                    const invoiceTotal = groupItems.reduce((acc: number, item: any) => acc + Number(item["suyqsm0SYii_8vsj4p0c_"] || 0), 0)
+                    const isMatch = Math.abs(poTotal - invoiceTotal) < 0.01 && poTotal > 0
+
                     return (
                       <Fragment key={row.id}>
                         <Tr
-                          className='cursor-pointer bg-[var(--gray-2)] transition-colors hover:bg-[var(--gray-3)]'
+                          className='cursor-pointer group/header bg-[var(--gray-2)] transition-colors hover:bg-[var(--gray-3)]'
                           onClick={() => row.toggleExpanded()}
                         >
                           <Td
-                            className='px-4 py-2.5'
+                            className='px-4 py-2.5 border-b border-transparent group-hover/header:border-b-[var(--primary-9)] transition-colors'
                             colSpan={table.getVisibleFlatColumns().length}
                           >
                             <div className='flex items-center gap-2'>
@@ -147,6 +152,36 @@ const DataTable = <TData,>({
                               <span className='text-14 font-bold text-[var(--gray-13)]'>
                                 {(row.original as any).group}
                               </span>
+                              {groupItems.length > 0 && (
+                                <div className='ml-auto flex items-center gap-4 pr-4'>
+                                  {(groupItems[0]["WksH1Mrs42X4J9AHgoBtw"] !== undefined || groupItems[0]["suyqsm0SYii_8vsj4p0c_"] !== undefined) && (
+                                    <div className={cn(
+                                      'flex items-center gap-3 px-3 py-1.5 rounded border shadow-sm transition-all',
+                                      isMatch 
+                                        ? 'bg-[var(--green-2)] border-[var(--green-3)] group-hover/header:bg-[var(--green-3)] group-hover/header:border-[var(--green-5)]' 
+                                        : 'bg-white border-[var(--gray-3)] group-hover/header:bg-[var(--primary-2)] group-hover/header:border-[var(--primary-4)]'
+                                    )}>
+                                      <div className='flex items-center gap-2'>
+                                        <span className={cn('text-[10px] font-bold uppercase', isMatch ? 'text-[var(--green-9)]' : 'text-[var(--gray-9)]')}>PO</span>
+                                        <span className={cn('text-xs font-bold', isMatch ? 'text(--green-11)' : 'text-[var(--secondary-9)]')}>
+                                          ${poTotal.toFixed(2)}
+                                        </span>
+                                      </div>
+                                      <div className={cn('w-px h-3', isMatch ? 'bg-[var(--green-4)]' : 'bg-[var(--gray-3)]')} />
+                                      <div className='flex items-center gap-2'>
+                                        <span className={cn('text-[10px] font-bold uppercase', isMatch ? 'text-[var(--green-9)]' : 'text-[var(--gray-9)]')}>Inv</span>
+                                        <span className={cn('text-xs font-bold', isMatch ? 'text(--green-11)' : 'text-[var(--primary-9)]')}>
+                                          ${invoiceTotal.toFixed(2)}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  )}
+                                  <div className='flex items-center gap-1.5 px-3 py-1.5 bg-[var(--green-2)] group-hover/header:bg-[var(--green-3)] group-hover/header:border-[var(--green-5)] border border-transparent text-[var(--green-11)] rounded text-[11px] font-bold transition-all'>
+                                    <Icon name='tabler:check' className='size-3' />
+                                    {groupItems.length} Items
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           </Td>
                         </Tr>

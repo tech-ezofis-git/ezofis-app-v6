@@ -1,9 +1,11 @@
+import { useNavigate } from '@tanstack/react-router'
 import Button from '@/components/base/button/Button'
 import Divider from '@/components/base/Divider'
 // import WhatHappensNext from './components/WhatHappensNext'
 import Title from '@/components/base/Title'
 // import HeroText from '@/components/common/HeroText'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
+import requestStore from '@/pages/requests/stores/useRequestStore'
 import WorkflowPreview from './components/WorkflowPreview'
 
 const StepFour = () => {
@@ -11,9 +13,23 @@ const StepFour = () => {
   const setIsSetupStarted = setupStore((state) => state.setIsSetupStarted)
   const isApSetUpCompleted = setupStore((state) => state.isApSetUpCompleted)
   const apComplete = setupStore((state) => state.setisApSetUpCompleted)
+  const navigate = useNavigate()
+  const openNewRequest = requestStore((state) => state.openNewRequest)
+
   const handleClose = () => {
     apComplete(true)
     setIsSetupStarted(false)
+
+    // Sequence: Workflows -> Wait -> Requests -> Open New Request
+    navigate({ to: '/workflows' })
+
+    setTimeout(() => {
+      navigate({ to: '/requests' })
+      // Brief delay to ensure Requests page is mounted before opening the sheet
+      setTimeout(() => {
+        openNewRequest('request')
+      }, 500)
+    }, 2000)
   }
   return (
     <div className='flex min-h-full w-full flex-col gap-4 px-6 py-4 md:px-8'>

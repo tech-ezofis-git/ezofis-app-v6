@@ -291,7 +291,10 @@ const FileUpload = ({ onRequestCreated, onClose }: { onRequestCreated?: () => vo
                     uploadStatus={uploadStatus}
                     fileId={fileId ? Number(fileId) : null}
                     repositoryId={rawWorkflow?.repositoryId ? Number(rawWorkflow.repositoryId) : null}
-                    onComplete={() => setStep('summary')}
+                    onComplete={() => {
+                        requestStore.getState().openRequest(fetchedRequestData, rawWorkflow, 'Inbox');
+                        if (onClose) onClose();
+                    }}
                     onRedirect={() => {
                         requestStore.getState().setRequestListTab('Sent');
                         if (onClose) onClose();

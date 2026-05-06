@@ -9,7 +9,7 @@ interface Props {
 
 const SidebarSmall = ({ menus }: Props) => {
   return (
-    <aside className='fixed top-0 left-0 z-5 hidden h-svh border-r border-gray-3 bg-surface-muted xl:block'>
+    <aside className='fixed top-0 left-0 z-[60] hidden h-svh border-r border-gray-3 bg-surface-muted xl:block'>
       <div className='w-14'>
         <div className='mb-2 flex size-14 items-center justify-center'>
           <Logo markClassName='size-8' hideText />

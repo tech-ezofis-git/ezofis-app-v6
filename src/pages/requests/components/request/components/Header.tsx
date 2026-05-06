@@ -53,10 +53,10 @@ const Header: React.FC<HeaderProps> = ({
   // const toggleMaximize = requestStore((state) => state.toggleMaximize)
 
   return (
-    <OverlayHeaderWrapper className='justify-between gap-4'>
+    <OverlayHeaderWrapper className='h-14 justify-between gap-4 px-6 bg-white'>
 
       {/* Left Side Group: Request Number + Navigation Buttons */}
-      <div className='flex items-center gap-2 bg-white p-0 '>
+      <div className='flex items-center gap-2'>
         <IconButton
           color='gray'
           icon='tabler:arrow-left'
@@ -103,7 +103,7 @@ const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* Right Side Group: Comments/Attachments + Approve */}
-      <div className='flex items-center pt-2 gap-3 mb-2'>
+      <div className='flex items-center gap-3'>
 
         {/* Comments & Attachments Toggles */}
         {/* <div className="flex items-center gap-2">

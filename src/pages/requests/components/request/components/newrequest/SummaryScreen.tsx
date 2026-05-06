@@ -161,7 +161,7 @@ const SummaryScreen = ({ data }: SummaryScreenProps) => {
                                     </div>
                                     <div>
                                         <span className="text-[10px] text-[var(--gray-9)] font-bold block uppercase">Total Due</span>
-                                        <span className="font-bold text-[var(--green-11)]">{data.total}</span>
+                                        <span className="font-bold text-[var(--green-11)]">{data.total.toFixed(2)}</span>
                                     </div>
                                 </div>
                             </div>
@@ -175,7 +175,7 @@ const SummaryScreen = ({ data }: SummaryScreenProps) => {
                                     { label: 'Supplier Name', val: data.supplier.name },
                                     { label: 'PO Number', val: data.poNumber },
                                     { label: 'Currency', val: data.currency },
-                                    { label: 'Total Due', val: data.total.toString() }
+                                    { label: 'Total Due', val: data.total.toFixed(2) }
                                 ].map((field, i) => (
                                     <div key={i} className="bg-white border border-[var(--gray-3)] rounded-xl p-5">
                                         <div className="flex items-center justify-between mb-4">
