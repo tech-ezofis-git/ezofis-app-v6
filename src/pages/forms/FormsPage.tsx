@@ -315,7 +315,7 @@ const FormsPage = () => {
     <div className='flex h-full flex-col'>
       <Header viewMode={viewMode} setViewMode={setViewMode} />
       
-      <div className='flex-1 overflow-auto bg-gray-50/50 px-6 py-2'>
+      <div className='flex-1 overflow-hidden bg-gray-50/50 px-6 py-2'>
         {viewMode === 'table' ? (
           <Table 
             isLoading={isPending} 

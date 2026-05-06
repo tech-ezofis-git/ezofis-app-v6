@@ -24,21 +24,36 @@ interface GridViewProps {
 
 const GridRowSkeleton = ({ index }: { index: number }) => (
   <motion.div
+    initial={{ opacity: 0, y: 10 }}
     animate={{ opacity: 1, y: 0 }}
-    className='relative flex w-full items-center justify-between gap-4 overflow-hidden rounded-xl border border-gray-2 bg-white p-4'
-    initial={{ opacity: 0, y: 6 }}
     transition={{ delay: index * 0.05 }}
+    className="relative flex w-full items-center justify-between gap-4 overflow-hidden rounded-xl border border-[var(--gray-3)] bg-[var(--surface)] p-4"
   >
+    {/* shimmer */}
+    <motion.div
+      className="pointer-events-none absolute inset-0 bg-[linear-gradient(110deg,transparent,rgba(255,255,255,0.6),transparent)]"
+      style={{ mixBlendMode: 'overlay' }}
+      animate={{ x: ['-60%', '160%'] }}
+      transition={{
+        duration: 1.2,
+        repeat: Infinity,
+        ease: [0, 0, 1, 1],
+        delay: index * 0.1,
+      }}
+    />
+
     <div className='flex min-w-0 items-center gap-4'>
-      <div className='size-10 rounded-lg bg-gray-1 animate-pulse' />
+      <div className='size-12 rounded-lg bg-[var(--gray-3)]/80' />
       <div className='flex min-w-0 flex-col gap-2'>
-        <div className='h-4 w-48 rounded bg-gray-1 animate-pulse' />
-        <div className='h-3 w-32 rounded bg-gray-1 animate-pulse' />
+        <div className='h-4 w-44 rounded bg-[var(--gray-3)]/80' />
+        <div className='h-3 w-32 rounded bg-[var(--gray-3)]/60' />
       </div>
     </div>
-    <div className='flex shrink-0 items-center gap-4'>
-      <div className='h-6 w-20 rounded-full bg-gray-1 animate-pulse' />
-      <div className='h-6 w-16 rounded-full bg-gray-1 animate-pulse' />
+
+    <div className='hidden md:flex items-center gap-3 shrink-0'>
+      <div className='h-7 w-20 rounded-full bg-[var(--gray-3)]/70' />
+      <div className='h-7 w-24 rounded-full bg-[var(--gray-3)]/70' />
+      <div className='w-5' />
     </div>
   </motion.div>
 )
@@ -56,7 +71,7 @@ const GridView = ({
 }: GridViewProps) => {
   const navigate = useNavigate()
   const [rowSize, setRowSize] = useState<RowSize>('default')
-  
+
   const rows = table.getRowModel().rows
 
   const toggleGroup = (groupId: string) => {
@@ -66,132 +81,131 @@ const GridView = ({
     }
   }
 
-  if (isLoading) {
-    return (
-      <div className='flex flex-col gap-3 py-6'>
-        {[1, 2, 3, 4, 5].map((i) => (
-          <GridRowSkeleton index={i} key={i} />
-        ))}
-      </div>
-    )
-  }
-
   return (
-    <div className='flex flex-col py-6'>
-      <TableActionBar 
-        isReloading={isLoading || isRefetching}
-        rowSize={rowSize}
-        table={table}
-        onReload={onReload}
-        onRowSizeChange={setRowSize}
-      />
+    <div className='flex h-full flex-col py-1 px-2'>
+      <div className='flex-1 min-h-0 overflow-hidden'>
+        <TableActionBar
+          isReloading={isLoading || isRefetching}
+          rowSize={rowSize}
+          table={table}
+          onReload={onReload}
+          onRowSizeChange={setRowSize}
+        />
 
-      {rows.length === 0 ? (
-        <div className='flex flex-col items-center justify-center py-20 text-center'>
-          <div className='mb-4 flex size-16 items-center justify-center rounded-full bg-gray-1 text-gray-4'>
-            <Icon name='lucide:form-input' height={32} width={32} />
+        {isLoading ? (
+          <div className='flex flex-col gap-3 pt-3 pb-6'>
+            {[1, 2, 3, 4, 5].map((i) => (
+              <GridRowSkeleton index={i} key={i} />
+            ))}
           </div>
-          <h3 className='text-lg font-bold text-gray-13'>No forms yet</h3>
-          <p className='text-sm text-gray-5'>Create your first form to get started.</p>
-        </div>
-      ) : (
-        <div className='flex flex-col gap-4'>
-          {rows.map((groupRow: any) => {
-            const group = groupRow.original
-            const subRows = group.subRows || []
-            const groupValue = group.groupValue || 'Untitled Group'
-            const isDefaultGroup = group.groupId === 'all'
-            const isCollapsed = !groupRow.getIsExpanded()
+        ) : rows.length === 0 ? (
+          <div className='flex flex-col items-center justify-center py-20 text-center'>
+            <div className='mb-4 flex size-16 items-center justify-center rounded-full bg-gray-1 text-gray-4'>
+              <Icon name='lucide:form-input' height={32} width={32} />
+            </div>
+            <h3 className='text-lg font-bold text-gray-13'>No forms yet</h3>
+            <p className='text-sm text-gray-5'>Create your first form to get started.</p>
+          </div>
+        ) : (
+          <div className='flex flex-col gap-4'>
+            {rows.map((groupRow: any) => {
+              if (groupRow.depth > 0) return null
+              const group = groupRow.original
+              const subRows = group.subRows || []
+              const groupValue = group.groupValue || 'Untitled Group'
+              const isDefaultGroup = group.groupId === 'all'
+              const isCollapsed = !groupRow.getIsExpanded()
 
-            return (
-              <div key={group.groupId || groupValue} className='flex flex-col'>
-                {!isDefaultGroup && (
-                  <motion.div
-                    className='group/header sticky top-0 z-20 -mx-2 flex cursor-pointer items-center justify-between gap-4 border-b border-gray-2 bg-white px-3 py-3'
-                    onClick={() => toggleGroup(groupRow.id)}
-                  >
-                    <div className='flex items-center gap-3'>
-                      <div className='rounded-lg bg-accent-soft p-1.5'>
-                        <Icon className='size-5 text-accent-primary' name='tabler:folder-open' />
-                      </div>
-                      <h2 className='text-sm font-bold text-gray-13 uppercase tracking-wider'>
-                        {groupValue} <span className='ml-1 text-xs font-medium text-gray-5'>({group.groupCount})</span>
-                      </h2>
-                    </div>
-
-                    <div className='flex items-center gap-4'>
-                       <button className='rounded-full bg-transparent p-1.5 text-gray-4 transition-colors hover:bg-accent-soft hover:text-accent-primary'>
-                        <Icon
-                          name='tabler:chevron-down'
-                          className={cn(
-                            'size-5 transition-transform duration-300',
-                            isCollapsed ? '-rotate-90' : 'rotate-0',
-                          )}
-                        />
-                      </button>
-                    </div>
-                  </motion.div>
-                )}
-                
-                <AnimatePresence initial={false}>
-                  {!isCollapsed && (
+              return (
+                <div key={group.groupId || groupValue} className='flex flex-col'>
+                  {!isDefaultGroup && (
                     <motion.div
-                      animate={{ height: 'auto', opacity: 1 }}
-                      className='overflow-hidden'
-                      exit={{ height: 0, opacity: 0 }}
-                      initial={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.3, ease: 'easeInOut' }}
+                      className='group/header sticky top-0 z-20 -mx-2 flex cursor-pointer items-center justify-between gap-4 border-b border-gray-2 bg-white px-3 py-3'
+                      onClick={() => toggleGroup(groupRow.id)}
                     >
-                      <div className='flex flex-col gap-2 pt-3 pb-6'>
-                        {subRows.map((form: any) => (
-                          <motion.div
-                            key={form.id}
-                            whileHover={{ scale: 1.002, x: 4 }}
-                            className='group relative flex w-full items-center justify-between gap-4 rounded-xl border border-gray-2 bg-white p-3 transition-all hover:border-accent-primary hover:shadow-md'
-                            onClick={() => navigate({ 
-                              to: '/form-builder/$formId',
-                              params: { formId: form.uid || form.id }
-                            })}
-                          >
-                            <div className='flex min-w-0 items-center gap-4'>
-                              <div className='flex size-10 shrink-0 items-center justify-center rounded-lg border border-accent-soft bg-accent-soft/30 text-accent-primary transition-colors group-hover:bg-accent-primary group-hover:text-white'>
-                                <Icon name='lucide:file-text' height={20} width={20} />
-                              </div>
-                              <div className='flex min-w-0 flex-col gap-0.5 text-left'>
-                                <h3 className='truncate text-sm font-bold text-gray-13 group-hover:text-accent-primary transition-colors'>
-                                  {form._json?.settings?.general?.name || form.name || 'Untitled Form'}
-                                </h3>
-                                <div className='flex items-center gap-2 text-[11px] text-gray-5'>
-                                  <span className='line-clamp-1 max-w-[400px]'>
-                                    {form._json?.settings?.general?.description || form.description || 'No description provided.'}
-                                  </span>
-                                  <span className='h-1 w-1 rounded-full bg-gray-3' />
-                                  <div className='flex items-center gap-1 shrink-0'>
-                                    <Icon name='lucide:calendar' height={10} width={10} />
-                                    <span>{new Date(form.createdAt).toLocaleDateString()}</span>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
+                      <div className='flex items-center gap-3'>
+                        <div className='rounded-lg bg-accent-soft p-1.5'>
+                          <Icon className='size-5 text-accent-primary' name='tabler:stack-2' />
+                        </div>
+                        <h2 className='text-sm font-bold text-gray-13 uppercase tracking-wider'>
+                          {groupValue} <span className='ml-1 text-xs font-medium text-gray-5'>({group.groupCount})</span>
+                        </h2>
+                      </div>
 
-                            <div className='flex shrink-0 items-center gap-3'>
-                              <FormTypeBadge type={form._json?.settings?.general?.type || form.type} />
-                              <FormStatusBadge status={form._json?.settings?.publish?.publishOption || form.publishOption} />
-                              <div className='pl-2 text-gray-3 transition-transform group-hover:translate-x-1 group-hover:text-accent-primary'>
-                                <Icon name='tabler:chevron-right' className='size-5' />
-                              </div>
-                            </div>
-                          </motion.div>
-                        ))}
+                      <div className='flex items-center gap-4'>
+                        <button className='rounded-full bg-transparent p-1.5 text-gray-4 transition-colors hover:bg-accent-soft hover:text-accent-primary'>
+                          <Icon
+                            name='tabler:chevron-down'
+                            className={cn(
+                              'size-5 transition-transform duration-300',
+                              isCollapsed ? '-rotate-90' : 'rotate-0',
+                            )}
+                          />
+                        </button>
                       </div>
                     </motion.div>
                   )}
-                </AnimatePresence>
-              </div>
-            )
-          })}
-        </div>
-      )}
+
+                  <AnimatePresence initial={false}>
+                    {!isCollapsed && (
+                      <motion.div
+                        animate={{ height: 'auto', opacity: 1 }}
+                        className='overflow-hidden'
+                        exit={{ height: 0, opacity: 0 }}
+                        initial={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3, ease: 'easeInOut' }}
+                      >
+                        <div className='flex flex-col gap-2 pt-3 pb-6'>
+                          {subRows.map((form: any) => (
+                            <motion.div
+                              key={form.id}
+                              whileHover={{ scale: 1.002, x: 4 }}
+                              className='group relative flex w-full items-center justify-between gap-4 rounded-xl border border-gray-2 bg-white p-3 transition-all hover:border-accent-primary hover:shadow-md'
+                              onClick={() => navigate({
+                                to: '/form-builder/$formId',
+                                params: { formId: form.uid || form.id }
+                              })}
+                            >
+                              <div className='flex min-w-0 items-center gap-4'>
+                                <div className='flex size-10 shrink-0 items-center justify-center rounded-lg border border-accent-soft bg-accent-soft/30 text-accent-primary transition-colors group-hover:bg-accent-primary group-hover:text-white'>
+                                  <Icon name='lucide:file-text' height={20} width={20} />
+                                </div>
+                                <div className='flex min-w-0 flex-col gap-0.5 text-left'>
+                                  <h3 className='truncate text-sm font-bold text-gray-13 group-hover:text-accent-primary transition-colors'>
+                                    {form._json?.settings?.general?.name || form.name || 'Untitled Form'}
+                                  </h3>
+                                  <div className='flex items-center gap-2 text-[11px] text-gray-5'>
+                                    <span className='line-clamp-1 max-w-[400px]'>
+                                      {form._json?.settings?.general?.description || form.description || 'No description provided.'}
+                                    </span>
+                                    <span className='h-1 w-1 rounded-full bg-gray-3' />
+                                    <div className='flex items-center gap-1 shrink-0'>
+                                      <Icon name='lucide:calendar' height={10} width={10} />
+                                      <span>{new Date(form.createdAt).toLocaleDateString()}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className='flex shrink-0 items-center gap-3'>
+                                <FormTypeBadge type={form._json?.settings?.general?.type || form.type} />
+                                <FormStatusBadge status={form._json?.settings?.publish?.publishOption || form.publishOption} />
+                                <div className='pl-2 text-gray-3 transition-transform group-hover:translate-x-1 group-hover:text-accent-primary'>
+                                  <Icon name='tabler:chevron-right' className='size-5' />
+                                </div>
+                              </div>
+                            </motion.div>
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
 
       <Pagination
         className='mt-4'

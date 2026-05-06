@@ -3,8 +3,8 @@ import Icon from '@/components/base/icon/Icon'
 import { ActionIcon } from '@mantine/core'
 import cn from '@/utils/cn'
 import { useState, useMemo } from 'react'
-import { 
-    DndContext, 
+import {
+    DndContext,
     closestCenter,
     KeyboardSensor,
     PointerSensor,
@@ -21,6 +21,7 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import FieldLibrary from './FieldLibrary'
+import { motion } from 'framer-motion'
 
 interface SortableSectionProps {
     p: any;
@@ -33,7 +34,7 @@ interface SortableSectionProps {
     isSearchActive: boolean;
 }
 
-const SortableSectionItem = ({ p, isCollapsed, onScroll, movePanel, index, totalPanels, isSearchActive }: SortableSectionProps) => {
+const SortableSectionItem = ({ p, isCollapsed, onScroll, movePanel, index, totalPanels, isSearchActive, isActive }: SortableSectionProps) => {
     const { deletePanel } = useFormStore()
     const [isConfirmingDelete, setIsConfirmingDelete] = useState(false)
     const {
@@ -55,8 +56,8 @@ const SortableSectionItem = ({ p, isCollapsed, onScroll, movePanel, index, total
     const handleMouseLeave = () => setIsConfirmingDelete(false)
 
     return (
-        <div 
-            ref={setNodeRef} 
+        <div
+            ref={setNodeRef}
             style={style}
             {...(isConfirmingDelete ? {} : attributes)}
             {...(isConfirmingDelete ? {} : listeners)}
@@ -69,74 +70,84 @@ const SortableSectionItem = ({ p, isCollapsed, onScroll, movePanel, index, total
             <div
                 className={cn(
                     "w-full flex items-center transition-all border border-transparent relative rounded-lg",
-                    isCollapsed 
-                        ? "justify-center p-2 size-9" 
+                    isCollapsed
+                        ? "justify-center p-2 size-9"
                         : "gap-2 px-2 py-1.5 text-left",
                     "hover:bg-accent-soft/5 hover:border-accent-soft/20 text-gray-10",
-                    isDragging && "bg-accent-soft/10 text-accent-primary",
+                    isActive && "bg-accent-soft/10 text-accent-primary border-accent-soft/30 shadow-sm",
+                    isDragging && "bg-accent-soft/15 text-accent-primary shadow-md scale-[1.02]",
                     isConfirmingDelete && "bg-red-50 border-red-200"
                 )}
             >
                 {isConfirmingDelete ? (
-                    <div className="flex items-center justify-between w-full animate-in fade-in zoom-in-95 duration-200">
-                        <div className="text-[11px] font-bold text-red-600 uppercase tracking-tighter">Delete?</div>
-                        <div className="flex items-center gap-1">
-                            <ActionIcon 
-                                size="xs" 
-                                color="red" 
-                                variant="filled" 
-                                className="rounded-md"
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="w-full flex flex-col gap-2.5 p-3.5 bg-red-5/5 border border-red-2 rounded-xl"
+                    >
+                        <div className="flex items-center gap-2 text-red-6">
+                            <Icon name="lucide:alert-triangle" width={14} height={14} />
+                            <span className="text-[10px] font-extrabold uppercase tracking-widest">Action Needed</span>
+                        </div>
+                        <p className="text-[11px] text-red-7/0.8 leading-relaxed font-medium">
+                            Delete this section and <span className="font-bold text-red-7">{p.fields?.length || 0} fields</span>? This cannot be undone.
+                        </p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                            <button
                                 onClick={(e) => {
                                     e.stopPropagation()
                                     deletePanel(p.id)
                                 }}
+                                className="flex-1 bg-red-6 text-white text-[10px] font-bold py-2 rounded-lg hover:bg-red-9 active:scale-95 transition-all shadow-sm shadow-red-2"
                             >
-                                <Icon name="lucide:check" width={12} height={12} className="text-white" />
-                            </ActionIcon>
-                            <ActionIcon 
-                                size="xs" 
-                                color="gray" 
-                                variant="light" 
-                                className="rounded-md bg-white border border-gray-200"
+                                Confirm
+                            </button>
+                            <button
                                 onClick={(e) => {
                                     e.stopPropagation()
                                     setIsConfirmingDelete(false)
                                 }}
+                                className="flex-1 bg-white border border-gray-2 text-gray-6 text-[10px] font-bold py-2 rounded-lg hover:bg-gray-1 active:scale-95 transition-all"
                             >
-                                <Icon name="lucide:x" width={12} height={12} className="text-gray-6" />
-                            </ActionIcon>
+                                Cancel
+                            </button>
                         </div>
-                    </div>
+                    </motion.div>
                 ) : (
                     <>
-                        <button 
-                            className="flex-1 flex items-center gap-2 min-w-0" 
+                        <button
+                            className="flex-1 flex items-center gap-2 min-w-0"
                             onClick={() => onScroll(p.id)}
                         >
-                            {/* Drag Handle */}
+                            {/* Drag Handle - Improved Arrorws */}
                             {!isCollapsed && !isSearchActive && (
-                                <div className="opacity-30 group-hover:opacity-100 transition-opacity p-1 -ml-1 mr-1">
-                                    <Icon name="lucide:grip-vertical" width={12} height={12} className="text-gray-4" />
+                                <div className="opacity-30 group-hover:opacity-100 transition-opacity p-1 -ml-1 mr-1 text-gray-4 group-hover:text-accent-primary">
+                                    <Icon name="lucide:grip-vertical" width={14} height={14} />
                                 </div>
                             )}
 
-                            <Icon 
-                                name={index === 0 ? "lucide:shield-check" : "lucide:layout"} 
-                                width={isCollapsed ? 18 : 14} 
-                                height={isCollapsed ? 18 : 14} 
-                                className="shrink-0 group-hover:text-accent-primary opacity-60 group-hover:opacity-100 transition-all" 
+                            <Icon
+                                name={index === 0 ? "lucide:shield-check" : "lucide:layout"}
+                                width={isCollapsed ? 18 : 14}
+                                className={cn(
+                                    "shrink-0 transition-all",
+                                    isActive ? "text-accent-primary opacity-100 scale-110" : "opacity-60 group-hover:opacity-100 group-hover:text-accent-primary"
+                                )}
                             />
-                            
+
                             {!isCollapsed && (
-                                <div className="text-[13px] font-medium truncate tracking-tight animate-in fade-in duration-300 flex-1">{p.settings.title}</div>
+                                <div className={cn(
+                                    "text-[13px] font-medium truncate tracking-tight animate-in fade-in duration-300 flex-1",
+                                    isActive ? "text-accent-primary font-bold" : "text-gray-13 group-hover:text-gray-13"
+                                )}>{p.settings.title}</div>
                             )}
                         </button>
 
                         {!isCollapsed && (
                             <div className="hidden group-hover:flex items-center gap-0.5 animate-in fade-in slide-in-from-right-2 duration-200">
-                                <ActionIcon 
-                                    size="xs" 
-                                    variant="subtle" 
+                                <ActionIcon
+                                    size="xs"
+                                    variant="subtle"
                                     color="gray"
                                     disabled={index === 0}
                                     onClick={(e) => {
@@ -145,11 +156,11 @@ const SortableSectionItem = ({ p, isCollapsed, onScroll, movePanel, index, total
                                     }}
                                     className="hover:bg-accent-soft/10 hover:text-accent-primary disabled:opacity-30"
                                 >
-                                    <Icon name="lucide:chevron-up" width={12} height={12} />
+                                    <Icon name="lucide:arrow-up" width={12} height={12} />
                                 </ActionIcon>
-                                <ActionIcon 
-                                    size="xs" 
-                                    variant="subtle" 
+                                <ActionIcon
+                                    size="xs"
+                                    variant="subtle"
                                     color="gray"
                                     disabled={index === totalPanels - 1}
                                     onClick={(e) => {
@@ -158,12 +169,12 @@ const SortableSectionItem = ({ p, isCollapsed, onScroll, movePanel, index, total
                                     }}
                                     className="hover:bg-accent-soft/10 hover:text-accent-primary disabled:opacity-30"
                                 >
-                                    <Icon name="lucide:chevron-down" width={12} height={12} />
+                                    <Icon name="lucide:arrow-down" width={12} height={12} />
                                 </ActionIcon>
                                 <div className="w-px h-3 bg-gray-2 mx-0.5" />
-                                <ActionIcon 
-                                    size="xs" 
-                                    variant="subtle" 
+                                <ActionIcon
+                                    size="xs"
+                                    variant="subtle"
                                     color="red"
                                     onClick={(e) => {
                                         e.stopPropagation()
@@ -183,16 +194,17 @@ const SortableSectionItem = ({ p, isCollapsed, onScroll, movePanel, index, total
 }
 
 const LeftSidebar = () => {
-    const { 
-        panels, 
-        setPanels, 
-        activeQuestionId, 
-        setActiveQuestionId, 
-        name, 
-        isLeftSidebarCollapsed, 
-        setLeftSidebarCollapsed, 
+    const {
+        panels,
+        setPanels,
+        activeQuestionId,
+        setActiveQuestionId,
+        name,
+        isLeftSidebarCollapsed,
+        setLeftSidebarCollapsed,
         movePanel,
-        sidebarView
+        sidebarView,
+        activePanelId
     } = useFormStore()
     const [searchQuery, setSearchQuery] = useState('')
     const [isFormExpanded, setIsFormExpanded] = useState(true)
@@ -210,10 +222,10 @@ const LeftSidebar = () => {
 
     const filteredPanels = useMemo(() => {
         if (!searchQuery.trim()) return panels
-        return panels.filter(p => 
+        return panels.filter(p =>
             (p.settings.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
             (p.settings.description || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-            p.fields.some(f => 
+            p.fields.some(f =>
                 (f.label || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
                 (f.type || '').toLowerCase().includes(searchQuery.toLowerCase())
             )
@@ -222,7 +234,7 @@ const LeftSidebar = () => {
 
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event
-        
+
         if (over && active.id !== over.id) {
             const oldIndex = panels.findIndex((p) => p.id === active.id)
             const newIndex = panels.findIndex((p) => p.id === over.id)
@@ -259,10 +271,10 @@ const LeftSidebar = () => {
                         )}
                         title={isLeftSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
                     >
-                        <Icon 
-                            name={isLeftSidebarCollapsed ? "lucide:chevron-right" : "lucide:chevron-left"} 
-                            width={14} 
-                            height={14} 
+                        <Icon
+                            name={isLeftSidebarCollapsed ? "lucide:chevron-right" : "lucide:chevron-left"}
+                            width={14}
+                            height={14}
                             className="transition-transform duration-300 group-hover:scale-110"
                         />
                     </button>
@@ -274,14 +286,14 @@ const LeftSidebar = () => {
                         {!isLeftSidebarCollapsed && (
                             <div className="text-[11px] font-extrabold text-gray-10 tracking-[0.1em] uppercase animate-in fade-in duration-300">Explorer</div>
                         )}
-                        
+
                         <div className={cn("flex items-center", isLeftSidebarCollapsed ? "flex-col gap-2" : "gap-1")}>
                             {!isLeftSidebarCollapsed && (
-                                <ActionIcon 
-                                    variant="subtle" 
-                                    color="gray" 
-                                    size="sm" 
-                                    className="hover:bg-gray-2" 
+                                <ActionIcon
+                                    variant="subtle"
+                                    color="gray"
+                                    size="sm"
+                                    className="hover:bg-gray-2"
                                     onClick={() => useFormStore.getState().addPanel()}
                                     title="Add Section"
                                 >
@@ -296,10 +308,10 @@ const LeftSidebar = () => {
                         isLeftSidebarCollapsed ? "px-2 py-3 flex justify-center" : "px-4 py-2.5"
                     )}>
                         {isLeftSidebarCollapsed ? (
-                            <ActionIcon 
-                                variant="subtle" 
-                                color="gray" 
-                                size="sm" 
+                            <ActionIcon
+                                variant="subtle"
+                                color="gray"
+                                size="sm"
                                 onClick={() => setLeftSidebarCollapsed(false)}
                                 title="Search Sections"
                             >
@@ -307,14 +319,14 @@ const LeftSidebar = () => {
                             </ActionIcon>
                         ) : (
                             <div className="relative group animate-in slide-in-from-top-1 duration-300">
-                                <Icon 
-                                    name="lucide:search" 
+                                <Icon
+                                    name="lucide:search"
                                     className={cn(
                                         "absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-4 transition-colors",
                                         searchQuery && "text-accent-primary"
-                                    )} 
-                                    width={13} 
-                                    height={13} 
+                                    )}
+                                    width={13}
+                                    height={13}
                                 />
                                 <input
                                     type="text"
@@ -324,7 +336,7 @@ const LeftSidebar = () => {
                                     className="w-full bg-gray-50 border border-gray-2 rounded-lg pl-8 pr-8 py-1.5 text-xs outline-none focus:bg-white focus:border-accent-primary focus:ring-2 focus:ring-accent-soft/20 transition-all placeholder:text-gray-4 font-medium"
                                 />
                                 {searchQuery && (
-                                    <button 
+                                    <button
                                         onClick={() => setSearchQuery('')}
                                         className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded-full hover:bg-gray-2 text-gray-4 hover:text-gray-6 transition-colors"
                                     >
@@ -341,17 +353,17 @@ const LeftSidebar = () => {
                     )}>
                         <div className="space-y-1">
                             {!isLeftSidebarCollapsed && (
-                                <div 
+                                <div
                                     className={cn(
                                         "flex items-center gap-2 mb-1 group cursor-pointer hover:bg-gray-2 rounded-lg transition-colors px-2 py-1.5"
                                     )}
                                     onClick={() => setIsFormExpanded(!isFormExpanded)}
                                 >
-                                    <Icon 
-                                        name={isFormExpanded ? "lucide:chevron-down" : "lucide:chevron-right"} 
-                                        width={14} 
-                                        height={14} 
-                                        className="text-gray-5 group-hover:text-gray-9 transition-colors" 
+                                    <Icon
+                                        name={isFormExpanded ? "lucide:chevron-down" : "lucide:chevron-right"}
+                                        width={14}
+                                        height={14}
+                                        className="text-gray-5 group-hover:text-gray-9 transition-colors"
                                     />
                                     <Icon name="lucide:file-text" width={14} height={14} className="text-gray-4 group-hover:text-accent-primary transition-colors" />
                                     <div className="text-[11px] font-extrabold text-gray-10 group-hover:text-gray-12 tracking-widest transition-colors truncate">{(name as string) || 'Untitled Form'}</div>
@@ -373,13 +385,13 @@ const LeftSidebar = () => {
                                             strategy={verticalListSortingStrategy}
                                         >
                                             {filteredPanels.map((p, index) => (
-                                                <SortableSectionItem 
+                                                <SortableSectionItem
                                                     key={p.id}
                                                     p={p}
                                                     index={index}
                                                     totalPanels={panels.length}
                                                     isCollapsed={isLeftSidebarCollapsed}
-                                                    isActive={activeQuestionId === p.id}
+                                                    isActive={activePanelId === p.id}
                                                     onScroll={scrollToPanel}
                                                     movePanel={movePanel}
                                                     isSearchActive={!!searchQuery.trim()}

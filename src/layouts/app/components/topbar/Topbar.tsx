@@ -3,6 +3,7 @@ import Notifications from './components/notifications/Notifications'
 import PageTitle from './components/PageTitle'
 import SidebarToggle from './components/SidebarToggle'
 import UserMenu from './components/user-menu/UserMenu'
+import QuickHelp from './components/quick-help/QuickHelp'
 
 const Topbar = () => {
   return (
@@ -14,6 +15,7 @@ const Topbar = () => {
 
       <div className='flex items-center'>
         <GlobalSearch />
+        <QuickHelp />
         <Notifications />
         <UserMenu />
       </div>

@@ -28,14 +28,17 @@ const Table = ({
   // Component body simplified as columns and state are managed by parent
 
   return (
-    <div className='p-6'>
-      <DataTable
-        isLoading={isLoading}
-        isReLoading={isRefetching}
-        pageSize={pageSize}
-        table={table}
-        onReload={onReload}
-      />
+    <div className='flex h-full flex-col py-1 px-2'>
+      <div className='flex-1 min-h-0'>
+        <DataTable
+          isLoading={isLoading}
+          isReLoading={isRefetching}
+          pageSize={pageSize}
+          stickyHeader={true}
+          table={table}
+          onReload={onReload}
+        />
+      </div>
       <Pagination
         className='mt-4'
         itemLabel='Forms'

@@ -9,6 +9,8 @@ interface Props {
   position?: BaseProps['position']
   width?: BaseProps['width']
   withArrow?: boolean
+  opened?: boolean
+  onChange?: (opened: boolean) => void
 }
 
 const classNames = {
@@ -23,9 +25,13 @@ const Popover = ({
   target,
   width,
   withArrow = false,
+  opened,
+  onChange,
 }: Props) => {
   return (
     <Base
+      opened={opened}
+      onChange={onChange}
       arrowOffset={20}
       arrowRadius={1}
       arrowSize={10}
