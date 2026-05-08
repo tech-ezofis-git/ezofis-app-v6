@@ -2,6 +2,7 @@ import { useMsal } from '@azure/msal-react'
 import { useGoogleLogin } from '@react-oauth/google'
 import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
+import { apiRouter } from '@/api/apiRouter'
 import authApi from '@/api/auth'
 import Button from '@/components/base/button/Button'
 import GoogleButton from '@/components/base/button/GoogleButton'
@@ -52,7 +53,7 @@ const SignUpForm = ({ email, setEmail, onChangeView }: Props) => {
       })
 
       setLoading(true)
-      const { error, status } = await authApi.sendMailOTP({
+      const { error, status } = await apiRouter.sendMailOTP({
         email,
         requiredOTP: true,
       })
@@ -116,7 +117,7 @@ const SignUpForm = ({ email, setEmail, onChangeView }: Props) => {
         })
 
         // OPTIONAL: call sendMailOTP with requiredOTP false (you asked for it earlier)
-        await authApi.sendMailOTP({ email: gEmail, requiredOTP: false })
+        await apiRouter.sendMailOTP({ email: gEmail, requiredOTP: false })
 
         // skip verify screen
         navigate({ to: '/reset-password' })
@@ -162,7 +163,7 @@ const SignUpForm = ({ email, setEmail, onChangeView }: Props) => {
       })
 
       // OPTIONAL: call sendMailOTP with requiredOTP false
-      await authApi.sendMailOTP({ email: msEmail, requiredOTP: false })
+      await apiRouter.sendMailOTP({ email: msEmail, requiredOTP: false })
 
       navigate({ to: '/reset-password' })
     } catch (e: any) {

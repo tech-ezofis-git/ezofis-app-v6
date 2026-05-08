@@ -9,6 +9,8 @@ import { decrypt, encrypt } from '../utils/crypto'
 
 // Environment variable handling (Vite uses import.meta.env, CRA uses process.env)
 const API_URL = import.meta.env?.VITE_BASE_URL || process.env.REACT_APP_API_URL
+const V6_API_URL = import.meta.env?.VITE_V6_BASE_URL || 'http://localhost/v6api/api'
+
 // --- 1. Standard Axios Instance (No Crypto) ---
 export const _axios = axios.create({
   baseURL: API_URL,
@@ -18,6 +20,12 @@ export const _axios = axios.create({
 // --- 2. Secure Axios Instance (With Crypto) ---
 export const axiosCrypto = axios.create({
   baseURL: API_URL,
+  headers: { 'Content-Type': 'application/json' },
+})
+
+// --- 3. V6 Axios Instance (Unencrypted) ---
+export const axiosV6 = axios.create({
+  baseURL: V6_API_URL,
   headers: { 'Content-Type': 'application/json' },
 })
 
@@ -95,3 +103,18 @@ axiosCrypto.interceptors.response.use(
     return Promise.reject(error)
   },
 )
+
+// --- V6 Request Interceptor (Auth Token) ---
+axiosV6.interceptors.request.use(
+  (config: InternalAxiosRequestConfig) => {
+    const store = authUserStore.getState()
+    const accessToken = store?.identity?.accessToken
+
+    if (accessToken) {
+      config.headers.set('Authorization', `Bearer ${accessToken}`)
+    }
+    return config
+  },
+  (error) => Promise.reject(error),
+)
+

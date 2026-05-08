@@ -17,7 +17,7 @@ import Title from '@/components/base/Title'
 import showToast from '@/components/base/toast/showToast'
 import { AnimateSlideLeft } from '@/components/common/animations'
 import authUserStore from '@/stores/authUserStore'
-
+import apiRouter from '@/api/apiRouter'
 interface Props {
   onChangeView: () => void
 }
@@ -168,7 +168,7 @@ const SignInForm = ({ onChangeView }: Props) => {
         password,
       }
 
-      const { data, error, status } = await authApi.login(payload, tenantId)
+      const { data, error, status } = await apiRouter.login(payload, tenantId)
 
       if (error) {
         setLoading(false)

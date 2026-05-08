@@ -1,6 +1,7 @@
 import { useNavigate } from '@tanstack/react-router'
 import { useEffect, useMemo, useState } from 'react'
 import authApi from '@/api/auth'
+import { apiRouter } from '@/api/apiRouter'
 import Button from '@/components/base/button/Button'
 import IconIllustrated from '@/components/base/icon/IconIllustrated'
 import InputText from '@/components/base/inputs/InputText'
@@ -80,7 +81,8 @@ const ResetPasswordPage = () => {
 
       console.log(payload)
 
-      const { data, status } = await authApi.signUp(payload)
+      // We use the new apiRouter here. It will automatically decide if it's v5 or v6!
+      const { data, status } = await apiRouter.signUp(payload)
 
       if (status === 200 || status === 201 || data === 'Success') {
         showToast({

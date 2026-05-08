@@ -1,5 +1,6 @@
 import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
+import { apiRouter } from '@/api/apiRouter'
 import authApi from '@/api/auth'
 import Button from '@/components/base/button/Button'
 import IconIllustrated from '@/components/base/icon/IconIllustrated'
@@ -32,7 +33,7 @@ const VerifyEmailForm = () => {
       }
 
       setLoading(true)
-      const { error } = await authApi.sendMailOTP({
+      const { error } = await apiRouter.sendMailOTP({
         email,
         requiredOTP: true,
       })
@@ -63,7 +64,7 @@ const VerifyEmailForm = () => {
       }
 
       setVerifyLoading(true)
-      const { data, error } = await authApi.verifyMailOTP({ email, otp })
+      const { data, error } = await apiRouter.verifyMailOTP({ email, otp })
       // console.log(data)
 
       // if (error) {
