@@ -8,6 +8,7 @@ import OverlayHeaderWrapper from '@/components/base/overlay/OverlayHeaderWrapper
 import Tooltip from '@/components/base/Tooltip'
 import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
+import cn from '@/utils/cn';
 // import { 300 } from '@/constants'
 // import requestStore from '../../../stores/useRequestStore' // Adjust path if needed
 
@@ -29,6 +30,12 @@ interface HeaderProps {
   attachmentCount?: number
   commentsCount?: number
   actions?: any[]
+  isEditing?: boolean
+  onManualCorrection?: () => void
+  supplierName?: string
+  totalAmount?: string
+  currency?: string
+  status?: string
 }
 
 const Header: React.FC<HeaderProps> = ({
@@ -39,13 +46,15 @@ const Header: React.FC<HeaderProps> = ({
   onBack,
   onApprove,
   approveLoading,
-  // rightView,
-  // setRightView,
   hideActions,
   showApprove = true,
-  // attachmentCount = 0,
-  // commentsCount = 0,
-  actions
+  actions,
+  isEditing = false,
+  onManualCorrection,
+  supplierName,
+  totalAmount,
+  currency,
+  status = 'Pending Review'
 }) => {
   // Store UI state
   // const isMaximized = requestStore((state) => state.isMaximized)
@@ -56,54 +65,86 @@ const Header: React.FC<HeaderProps> = ({
     <OverlayHeaderWrapper className='justify-between gap-4'>
 
       {/* Left Side Group: Request Number + Navigation Buttons */}
-      <div className='flex items-center gap-2 bg-white p-0 '>
+      <div className='flex items-center gap-4 bg-white p-0 '>
         <IconButton
           color='gray'
           icon='tabler:arrow-left'
           variant='ghost'
           onClick={onBack}
-          className="cursor-pointer"
+          className="cursor-pointer hover:bg-[var(--gray-2)]"
           size="sm"
         />
 
-        {/* Navigation & Title Group */}
-        <div className="flex items-center gap-0.5">
-          <Tooltip content='Previous' openDelay={300}>
+        <div className="flex flex-col pb-1">
+
+          <div className="flex items-center gap-3">
             <IconButton
               color='gray'
               icon='tabler:chevron-left'
               variant='ghost'
               disabled={!onPrev || isLoading}
               onClick={onPrev}
-              className="cursor-pointer"
+              className="cursor-pointer hover:bg-white size-7"
               size="sm"
             />
-          </Tooltip>
-
-          {/* Dynamic Request Number */}
-          <div className='text-15/9 font-semibold text-gray-13 px-1 text-center min-w-[80px]'>
-            {isLoading ? (
-              <span className="animate-pulse rounded bg-gray-200 px-2 text-transparent">REQ-Loading</span>
-            ) : (
-              requestNo || 'REQ - ...'
-            )}
-          </div>
-
-          <Tooltip content='Next' openDelay={500}>
+            <h1 className='text-[15px] font-bold text-[var(--gray-13)] tracking-tight'>
+              {isLoading ? (
+                <span className="animate-pulse rounded bg-gray-200 px-2 text-transparent">INV-0000-000</span>
+              ) : (
+                requestNo
+              )}
+            </h1>
             <IconButton
               color='gray'
-              icon='lucide:chevron-right'
+              icon='tabler:chevron-right'
               variant='ghost'
               disabled={!onNext || isLoading}
               onClick={onNext}
+              className="cursor-pointer hover:bg-white size-7"
               size="sm"
             />
-          </Tooltip>
+            {/* <div className="flex items-center gap-0.5 bg-[var(--gray-2)] rounded-lg p-0.5 border border-[var(--gray-3)]">
+              <IconButton
+                color='gray'
+                icon='tabler:chevron-left'
+                variant='ghost'
+                disabled={!onPrev || isLoading}
+                onClick={onPrev}
+                className="cursor-pointer hover:bg-white size-7"
+                size="sm"
+              />
+              <IconButton
+                color='gray'
+                icon='tabler:chevron-right'
+                variant='ghost'
+                disabled={!onNext || isLoading}
+                onClick={onNext}
+                className="cursor-pointer hover:bg-white size-7"
+                size="sm"
+              />
+            </div> */}
+            {!isLoading && (
+              <span className="bg-[var(--orange-1)] text-[var(--orange-9)] px-3 py-1 rounded-full text-[11px] font-bold border border-[var(--orange-3)]">
+                {status}
+              </span>
+            )}
+          </div>
+          {!isLoading && supplierName && (
+            <p className="text-[13px] text-[var(--gray-11)] font-medium mt-0.5">{supplierName}</p>
+          )}
         </div>
       </div>
 
-      {/* Right Side Group: Comments/Attachments + Approve */}
-      <div className='flex items-center pt-2 gap-3 mb-2'>
+      {/* Right Side Group: Total Amount + Actions */}
+      <div className='flex items-center gap-8'>
+        {totalAmount && (
+          <div className="text-right">
+            <div className="flex items-baseline justify-end gap-1.5">
+              <span className="text-[24px] font-bold text-[var(--gray-13)]">{totalAmount}</span>
+              {currency && <span className="text-[12px] font-bold text-[var(--gray-11)] uppercase">{currency}</span>}
+            </div>
+          </div>
+        )}
 
         {/* Comments & Attachments Toggles */}
         {/* <div className="flex items-center gap-2">
@@ -155,18 +196,46 @@ const Header: React.FC<HeaderProps> = ({
           </Tooltip>
         </div> */}
 
-        {/* Divider */}
-        {!hideActions && showApprove && (actions?.length ?? 0) > 0 && <div className="h-6 w-px bg-[var(--gray-3)] mx-1" />}
-
-        {!hideActions && showApprove && (actions?.length ?? 0) > 0 && (
-          <div className="flex items-center gap-2">
-            <Button onClick={() => onApprove?.("Save")} loading={approveLoading} className='cursor-pointer bg-secondary-10'>
-              {/* <Icon name="tabler:save" className="size-5" /> */}
-              <span>Save</span>
+        {/* Action Buttons */}
+        {!hideActions && (
+          <div className="flex items-center gap-2 pb-2">
+            <Button
+              onClick={onManualCorrection}
+              variant="outline"
+              className={cn(
+                "cursor-pointer bg-white border-[var(--gray-3)] text-[var(--gray-11)] hover:bg-[var(--gray-1)] hover:text-[var(--gray-12)] px-4 py-2 rounded-xl font-bold transition-all flex items-center gap-2",
+                isEditing && "border-[var(--primary-6)] text-[var(--primary-9)] bg-[var(--primary-1)]"
+              )}
+            >
+              <Icon name="tabler:edit" className="size-4" />
+              <span>Manual Correction</span>
             </Button>
+
+            <div className="h-6 w-px bg-[var(--gray-3)] mx-1" />
+
+            {isEditing && (
+              <Button
+                onClick={() => onApprove?.("Save")}
+                loading={approveLoading}
+                className='cursor-pointer bg-[var(--primary-9)] hover:bg-[var(--primary-10)] text-white border-none shadow-md shadow-primary-9/10 px-6 py-2 rounded-xl font-bold'
+              >
+                <span>Save</span>
+              </Button>
+            )}
+
             {actions?.map((action: any) => (
-              <Button onClick={() => onApprove?.(action?.value)} loading={approveLoading} className='cursor-pointer'>
-                <Icon name={action?.icon} className="size-5" />
+              <Button
+                key={action?.value}
+                onClick={() => onApprove?.(action?.value)}
+                loading={approveLoading}
+                className={cn(
+                  'cursor-pointer px-6 py-2 rounded-xl font-bold transition-all flex items-center gap-2',
+                  action?.label === 'Verified' || action?.label === 'Approve'
+                    ? 'bg-[var(--indigo-9)] hover:bg-[var(--indigo-10)] text-white shadow-md shadow-indigo-9/10'
+                    : 'bg-[var(--gray-2)] hover:bg-[var(--gray-3)] text-[var(--gray-12)] border border-[var(--gray-3)]'
+                )}
+              >
+                {action?.icon && <Icon name={action?.icon} className="size-5" />}
                 <span>{action?.label}</span>
               </Button>
             ))}

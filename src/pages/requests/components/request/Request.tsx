@@ -24,6 +24,9 @@ import {
 // import Icon from '@/components/base/icon/Icon';
 import workflowApi from "../../../../api/workflow/workflow"
 import Header from './components/Header'
+import Button from '@/components/base/button/Button';
+import Icon from '@/components/base/icon/Icon';
+import cn from '@/utils/cn';
 
 const Request = ({
   onPrev,
@@ -57,6 +60,7 @@ const Request = ({
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [rightView, setRightView] = useState<'analysis' | 'comments' | 'attachments' | 'forms'>('analysis');
+  const [isEditing, setIsEditing] = useState<boolean>(false);
 
   const actions = storeSelectedItem?._actions || [];
   const { data: request, isLoading } = useRequestDetail(
@@ -140,15 +144,21 @@ const Request = ({
     }
   }
 
+  const invoiceHeader = currentAgentData?.['Extracted Invoice JSON']?.invoice_header as any;
+  const supplierName = invoiceHeader?.['Supplier Name'] || selectedItem?.vendorName || selectedItem?.supplier;
+  const totalAmount = invoiceHeader?.['Total Due'] || selectedItem?.totalAmount;
+  const currency = invoiceHeader?.['Currency'] || selectedItem?.currency;
+  const statusBadge = currentAgentData?.decision === 'APPROVED' ? 'Verified' : currentAgentData?.decision === 'REJECTED' ? 'Rejected' : 'Pending Review';
+
   return (
     <div className={`flex flex-col p-0 w-full ${hideActions ? 'h-full p-4 bg-grey-2' : 'h-[calc(100vh-85px)]'}`}>
-      {/* Combined Sticky Wrapper: 
-        Keeps both Header and Tabs pinned to the top.
-        Added z-20 and bg-white (or bg-surface) to ensure content scrolls behind it.
-      */}
-      <div className="sticky top-0 z-20 bg-white ">
+      <div className="sticky top-0 z-20 bg-white border-b border-[var(--gray-3)] px-2">
         <Header
-          requestNo={currentAgentData?.reqNo ? currentAgentData.reqNo : selectedItem?.requestNo}
+          requestNo={currentAgentData?.['kvcYuknkDumkTenjvrVLj'] || selectedItem?.reqNo || selectedItem?.['kvcYuknkDumkTenjvrVLj'] || selectedItem?.invoiceNumber || selectedItem?.requestNo || 'REQ - ...'}
+          supplierName={supplierName}
+          totalAmount={totalAmount}
+          currency={currency}
+          status={statusBadge}
           raisedAt={request?.createdAt}
           isLoading={isLoading}
           onPrev={onPrev}
@@ -163,6 +173,8 @@ const Request = ({
           attachmentCount={selectedItem?.attachmentCount || 0}
           commentsCount={selectedItem?.commentsCount || 0}
           actions={actions}
+          isEditing={isEditing}
+          onManualCorrection={() => setIsEditing(!isEditing)}
         />
 
         {/* <div className="border-b border-gray-3 bg-surface">
@@ -192,7 +204,7 @@ const Request = ({
 
       {/* Tab Content */}
 
-      <AnimateFadeIn delay={0.6} className=" h-full overflow-hidden">
+      <AnimateFadeIn delay={0.6} className="flex-1 min-h-0 flex flex-col overflow-hidden mt-6 px-6 pb-6">
         <Overview
           agentData={currentAgentData}
           rightView={rightView}
@@ -207,12 +219,6 @@ const Request = ({
       </AnimateFadeIn>
 
 
-
-      {/* Sticky Footer */}
-
-      {/* <div className="fixed bottom-0 right-0 z-50 w-full border-t border-gray-3 bg-white">
-        <Footer onSubmit={handleVerifier} submitting={submitting} />
-      </div> */}
 
     </div>
   );
