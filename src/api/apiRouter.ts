@@ -10,7 +10,7 @@ export const getApiVersion = (): 'v5' | 'v6' => {
     const origin = window.location.origin;
     // Example logic: if the origin contains 'localhost:3000', use the V6 API
     // Adjust this to your actual condition
-    if (origin.includes('localhost:3000')) {
+    if (origin.includes('localhost:3001')) {
       return 'v6';
     }
   }

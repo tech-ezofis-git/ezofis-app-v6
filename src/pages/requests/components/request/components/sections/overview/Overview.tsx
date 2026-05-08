@@ -289,7 +289,7 @@ const Overview = ({
                             <div className="h-full w-full overflow-hidden relative">
                                 <Viewer
                                     fileUrl={previewUrl}
-                                    defaultScale={SpecialZoomLevel.PageFit}
+                                    defaultScale={SpecialZoomLevel.PageWidth}
                                     plugins={[toolbarPluginInstance]}
                                 />
                             </div>

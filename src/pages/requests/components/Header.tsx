@@ -65,41 +65,42 @@ const Header = ({
       </Tabs>
 
       <div className='flex items-center gap-2'>
-        <div className='flex cursor-pointer items-center gap-1 rounded-md border border-gray-3 p-0.5'>
+        <div className='flex cursor-pointer items-center gap-1 rounded-lg border border-[var(--gray-3)] p-1 bg-[var(--gray-1)]'>
           <button
-            className={`cursor-pointer rounded px-3 py-1.5 text-sm font-medium transition-colors ${
+            className={`cursor-pointer rounded-md px-3 py-1.5 transition-all duration-200 ${
               viewMode === 'grid'
-                ? 'bg-primary-9 text-white'
-                : 'text-gray-11 hover:bg-gray-2'
+                ? 'bg-white text-[var(--primary-9)] shadow-sm'
+                : 'text-[var(--gray-10)] hover:text-[var(--gray-12)]'
             }`}
             onClick={() => setViewMode('grid')}
           >
-            <Icon className='size-4' name='tabler:layout-grid' />
+            <Icon className='size-4.5' name='tabler:layout-grid' />
           </button>
           <button
-            className={`cursor-pointer rounded px-3 py-1.5 text-sm font-medium transition-colors ${
+            className={`cursor-pointer rounded-md px-3 py-1.5 transition-all duration-200 ${
               viewMode === 'table'
-                ? 'bg-primary-9 text-white'
-                : 'text-gray-11 hover:bg-gray-2'
+                ? 'bg-white text-[var(--primary-9)] shadow-sm'
+                : 'text-[var(--gray-10)] hover:text-[var(--gray-12)]'
             }`}
             onClick={() => setViewMode('table')}
           >
-            <Icon className='size-4' name='tabler:table' />
+            <Icon className='size-4.5' name='tabler:table' />
           </button>
         </div>
         <InputSelect
-          leftSection={<Icon className='text-gray-10' name='tabler:replace' />}
+          leftSection={<Icon className='text-[var(--gray-10)]' name='tabler:replace' />}
           options={allWorkflows && allWorkflows?.length > 0 ? allWorkflows : []}
-          // size='sm'
           value={workflow}
-          width={240}
+          width={220}
           searchable
           onChange={setWorkflow}
+          className="border-[var(--gray-3)] hover:border-[var(--primary-3)] transition-colors"
         />
         <Button
           icon='tabler:plus'
           label='New Request'
           onClick={handleOpenRequest}
+          className="bg-[var(--primary-9)] hover:bg-[var(--primary-10)] text-white border-none shadow-md shadow-primary-9/10 px-6 py-2 rounded-xl font-bold tracking-tight"
         />
       </div>
     </div>
