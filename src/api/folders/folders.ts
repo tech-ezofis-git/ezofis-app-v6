@@ -32,7 +32,7 @@ const uploadFileWithIndex = async (formData: FormData) => {
     )
 
     if (status != 200) return
-    response.data = JSON.parse(data)
+    response.data = typeof data === 'string' ? JSON.parse(data) : data
   } catch (error) {
     console.error(error)
     response.error = 'Error in uploading file'

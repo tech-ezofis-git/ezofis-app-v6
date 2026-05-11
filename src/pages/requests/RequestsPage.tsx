@@ -9,6 +9,7 @@ import InboxList from './components/InboxList'
 // import InboxList from './components/InboxList'
 import { useInboxData } from './hooks/useInboxData'
 import requestStore from './stores/useRequestStore'
+import { ProcessingBackgroundManager } from './components/ProcessingBackgroundManager'
 
 const RequestsPage = () => {
   const [activeTab, setActiveTab] = useState<string>('Inbox')
@@ -207,6 +208,7 @@ const RequestsPage = () => {
         onRefresh={refetch}
         onRowClick={handleRowClick}
       />
+      <ProcessingBackgroundManager />
     </>
   )
 }

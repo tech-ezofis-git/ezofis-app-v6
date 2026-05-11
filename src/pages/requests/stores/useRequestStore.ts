@@ -30,6 +30,11 @@ type Store = {
   setPendingNav: (v: any) => void
   setRawWorkflowData: (data: any) => void
 
+  processingProcesses: any[]
+  addProcessingProcess: (process: any) => void
+  removeProcessingProcess: (id: string | number) => void
+  updateProcessingProcess: (id: string | number, updates: any) => void
+
   setRequestListTab: (tab: string) => void
   stopRefresh: () => void
   toggleMaximize: () => void
@@ -43,6 +48,23 @@ const requestStore = create<Store>()((set) => ({
   isRequestOpen: false,
   newRequest: false,
   newRequestMeta: null,
+  processingProcesses: [],
+  addProcessingProcess: (process) =>
+    set((state) => ({
+      processingProcesses: [...state.processingProcesses, process],
+    })),
+  removeProcessingProcess: (id) =>
+    set((state) => ({
+      processingProcesses: state.processingProcesses.filter(
+        (p) => (p.processId || p.id) !== id,
+      ),
+    })),
+  updateProcessingProcess: (id, updates) =>
+    set((state) => ({
+      processingProcesses: state.processingProcesses.map((p) =>
+        (p.processId || p.id) === id ? { ...p, ...updates } : p,
+      ),
+    })),
   // in useRequestStore
   pendingNav: null as null | { direction: 'NEXT' | 'PREV' },
   rawWorkflowData: null,

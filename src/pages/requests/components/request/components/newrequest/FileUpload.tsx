@@ -2,10 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import Icon from '../../../../../../components/base/icon/Icon'
 import { AnimateFadeIn, AnimateSlideUp, AnimateStagger, AnimateEntrancePop } from '../../../../../../components/common/animations'
 import { PDF_ACCEPT, IMAGE_ACCEPT, isPdf, isImage, MAX_SIZE } from './utils'
-import ProcessingScreen from './ProcessingScreen'
-// import SummaryScreen from './SummaryScreen' // Replaced by Request
-import Request from '../../Request'
-// import { MOCK_INVOICE_DATA } from './mockData'
 import showToast from '@/components/base/toast/showToast'
 import folderApi from "@/api/folders/folders"
 import workflowApi from "@/api/workflow/workflow"
@@ -23,114 +19,25 @@ const FileUpload = ({ onRequestCreated, onClose }: { onRequestCreated?: () => vo
     // const [uploadedInvoiceName, setUploadedInvoiceName] = useState<string | null>(null)
 
     // Flow State
-    const [step, setStep] = useState<'upload' | 'processing' | 'summary'>('upload')
-    const [uploadedFile, setUploadedFile] = useState<File | null>(null)
+    const [fileData, setFileData] = useState<File | null>(null)
     const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
 
     // API State
     const [repoData, setRepoData] = useState<any>(null);
     const [fileId, setFileId] = useState<string | null>(null)
-    const [fileData, setFileData] = useState<File | null>(null)
     const [isSubmitting, setIsSubmitting] = useState(false)
-
-    // Polling State
-    const [pollingActive, setPollingActive] = useState(false);
-    const [pollingProcessId, setPollingProcessId] = useState<Number | null>(null);
-    const [currentStage, setCurrentStage] = useState<string>('Start');
-    const [fetchedRequestData, setFetchedRequestData] = useState<any>(null);
-
-    // Trigger creation when entering processing step and upload is complete
-    useEffect(() => {
-        if (step === 'processing' && uploadStatus === 'success' && !pollingActive && !pollingProcessId && !isSubmitting) {
-            handleCreateRequest();
-        }
-    }, [step, uploadStatus]);
 
     useEffect(() => {
         handleFolderFetch();
     }, []);
 
-    // ... (Polling Effect remains the same) ...
-    // Polling Effect
+    // Trigger creation automatically when upload is complete
     useEffect(() => {
-        let intervalId: NodeJS.Timeout;
-
-        if (pollingActive && pollingProcessId && rawWorkflow?.id) {
-            const pollData = async () => {
-                try {
-                    console.log("Polling Process ID:", pollingProcessId);
-                    const payload = {
-                        itemsPerPage: 5,
-                        currentPage: 1,
-                        sortBy: { criteria: '', order: 'DESC' },
-                        filterBy: []
-                    };
-
-                    console.log("Polling Payload:", payload);
-
-                    const findItemInResponse = (data: any) => {
-                        if (Array.isArray(data)) {
-                            for (const group of data) {
-                                if (group.items && Array.isArray(group.items)) {
-                                    const found = group.items.find((i: any) => String(i.processId) === String(pollingProcessId));
-                                    if (found) return found;
-                                }
-                                if (group.value && Array.isArray(group.value)) {
-                                    const found = group.value.find((i: any) => String(i.processId) === String(pollingProcessId));
-                                    if (found) return found;
-                                }
-                            }
-                        } else if (data?.data && Array.isArray(data.data)) {
-                            return data.data[0];
-                        }
-                        return null;
-                    };
-
-                    // Check Sent List
-                    let response = await requestApi.getSentListById(rawWorkflow.id, payload);
-                    console.log("Polling Response (SentList):", response);
-                    let item = response?.data ? findItemInResponse(response.data) : null;
-
-                    // Fallback to Inbox List if not found
-                    if (!item) {
-                        console.log("Item not found in SentList, checking InboxList...");
-                        response = await requestApi.getInboxListById(rawWorkflow.id, payload);
-                        console.log("Polling Response (InboxList):", response);
-                        item = response?.data ? findItemInResponse(response.data) : null;
-                    }
-
-                    if (item) {
-                        console.log("Polling Item Found:", item);
-                        const stage = item.stage || item.activityName || 'Start';
-                        console.log("Current Stage:", stage);
-                        setCurrentStage(stage);
-
-                        if (stage === 'Verifier' || stage === 'Approved' || stage === 'Completed') {
-                            console.log("Target Stage Reached. ProcessingScreen will handle transition.");
-                            setPollingActive(false);
-                            setFetchedRequestData(item);
-                            // Do NOT setStep('summary') here; wait for ProcessingScreen animation completion
-                        }
-                    } else {
-                        console.log("Item NOT found in SentList or InboxList.");
-                    }
-
-                } catch (error) {
-                    console.error("Polling error:", error);
-                }
-            };
-
-            // Poll every 10 seconds as requested (kept at 10s per recent request)
-            intervalId = setInterval(pollData, 10000);
-
-            // Initial call
-            pollData();
+        if (uploadStatus === 'success' && fileId && fileData && !isSubmitting) {
+            handleCreateRequest();
         }
+    }, [uploadStatus, fileId, fileData]);
 
-        return () => {
-            if (intervalId) clearInterval(intervalId);
-        };
-    }, [pollingActive, pollingProcessId, rawWorkflow?.id]);
 
 
     const handleFolderFetch = async () => {
@@ -151,25 +58,46 @@ const FileUpload = ({ onRequestCreated, onClose }: { onRequestCreated?: () => vo
         const files = Array.from(fileList ?? []);
         const validFiles = files.filter((f) => (isPdf(f) || isImage(f)) && f.size <= MAX_SIZE);
 
+        console.log("Files selected:", files);
+        console.log("Valid files:", validFiles);
+        console.log("Raw Workflow:", rawWorkflow);
+        console.log("Repo Data:", repoData);
+
+        if (!validFiles.length && files.length > 0) {
+            const tooLarge = files.some(f => f.size > MAX_SIZE);
+            const invalidType = files.some(f => !isPdf(f) && !isImage(f));
+            
+            if (tooLarge) showToast({ message: "File is too large. Max size is 4MB.", variant: "error" });
+            else if (invalidType) showToast({ message: "Invalid file type. Please upload a PDF or Image.", variant: "error" });
+            else showToast({ message: "No valid files selected.", variant: "error" });
+            
+            resetInput(invoiceInputRef);
+            return;
+        }
+
         if (validFiles.length) {
             if (!rawWorkflow?.repositoryId) {
+                console.error("Missing repositoryId in rawWorkflow:", rawWorkflow);
                 showToast({ message: "Repository ID is missing. Cannot upload.", variant: "error" });
                 return;
             }
+            if (!repoData?.data?.id) {
+                console.error("Missing repoData.data.id:", repoData);
+                // Attempt to fetch again if missing
+                handleFolderFetch();
+                showToast({ message: "Repository folder data is missing. Please try again in a moment.", variant: "error" });
+                return;
+            }
 
-            setUploadedFile(validFiles[0]);
-            // setUploadedInvoiceName(validFiles[0].name);
+            setFileData(validFiles[0]);
             setUploadStatus('uploading');
-            setStep('processing'); // Immediate Transition
 
             try {
-                // setIsInvoiceUploading(true); // No longer needed
                 let fieldData: any = [];
 
-                // Logic from snippet
                 if (repoData?.data?.fields) {
                     const highestLevelObject = repoData?.data?.fields.reduce((acc: any, curr: any) => {
-                        return curr.level > acc.level ? curr : acc;
+                        return (curr.level || 0) > (acc.level || 0) ? curr : acc;
                     });
 
                     repoData?.data?.fields.forEach((item: any) => {
@@ -184,26 +112,32 @@ const FileUpload = ({ onRequestCreated, onClose }: { onRequestCreated?: () => vo
 
                 const formData = new FormData();
                 formData.append("file", validFiles[0]);
-                formData.append("repositoryId", repoData?.data?.id);
+                formData.append("repositoryId", String(repoData?.data?.id));
                 formData.append("fields", JSON.stringify(fieldData));
                 formData.append("fileName", validFiles[0].name);
 
+                console.log("Uploading file with formData:", {
+                    repositoryId: repoData?.data?.id,
+                    fileName: validFiles[0].name,
+                    fieldCount: fieldData.length
+                });
+
                 const { data, error } = await folderApi.uploadFileWithIndex(formData);
                 if (data) {
-                    setFileId(data?.fileId);
-                    setFileData(validFiles[0]);
+                    console.log("Upload success:", data);
+                    const parsedData = typeof data === 'string' ? JSON.parse(data) : data;
+                    setFileId(parsedData?.fileId || data?.fileId);
                     setUploadStatus('success');
-                    // showToast({ message: "File uploaded successfully", variant: "success" });
-                    // No timeout needed here, logic above handles next step
                 }
                 if (error) {
+                    console.error("Upload error:", error);
                     setUploadStatus('error');
-                    showToast({ message: "Error uploading file", variant: "error" });
+                    showToast({ message: `Error uploading file: ${error}`, variant: "error" });
                 }
-            } catch (error) {
-                console.error(error);
+            } catch (error: any) {
+                console.error("Upload exception:", error);
                 setUploadStatus('error');
-                showToast({ message: "Exception uploading file", variant: "error" });
+                showToast({ message: `Exception uploading file: ${error.message || error}`, variant: "error" });
             }
         }
         resetInput(invoiceInputRef);
@@ -211,7 +145,14 @@ const FileUpload = ({ onRequestCreated, onClose }: { onRequestCreated?: () => vo
 
     // ... (handleCreateRequest remains the same) ...
     const handleCreateRequest = async () => {
-        if (!fileId || !fileData || isSubmitting) return;
+        if (!fileId || !fileData) {
+            console.error("Cannot create request: missing fileId or fileData", { fileId, fileData });
+            if (uploadStatus === 'success') {
+                showToast({ message: "Request creation failed: missing file reference. Please try again.", variant: "error" });
+            }
+            return;
+        }
+        if (isSubmitting) return;
 
         try {
             setIsSubmitting(true);
@@ -248,23 +189,34 @@ const FileUpload = ({ onRequestCreated, onClose }: { onRequestCreated?: () => vo
             console.log("Process Transaction Created Response:", response);
 
             if (!response?.error) {
+                const processId = response?.data?.processId;
+                const requestNo = response?.data?.requestNo;
+
+                // Add to background processing
+                if (processId) {
+                    requestStore.getState().addProcessingProcess({
+                        processId,
+                        id: processId,
+                        requestNo,
+                        name: fileData?.name,
+                        stage: 'Start',
+                        workflowId: rawWorkflow?.id,
+                        fileId,
+                        repositoryId: rawWorkflow?.repositoryId
+                    });
+                }
+
                 showToast({
-                    message: "New Request created successfully",
+                    message: "Request created. AI is analyzing in the background.",
                     variant: "success",
-                    toastTitle: response?.data?.requestNo
+                    toastTitle: requestNo
                 });
 
-                // Start Polling instead of finishing immediately
-                if (response?.data?.processId) {
-                    setPollingProcessId(response.data.processId);
-                    setPollingActive(true);
-                    setCurrentStage('Start');
-                } else {
-                    // Fallback if no processId
-                    workflowRefresh();
-                    setStep('summary');
-                    if (onRequestCreated) onRequestCreated();
-                }
+                // Trigger list refresh
+                workflowRefresh();
+                
+                // Close the upload sheet immediately
+                if (onClose) onClose();
             }
         } catch (e) {
             console.error(e);
@@ -280,43 +232,6 @@ const FileUpload = ({ onRequestCreated, onClose }: { onRequestCreated?: () => vo
     //     setUploadedFile(null)
     //     setStep('upload')
     // }
-
-    // Step 2: Processing Screen
-    if (step === 'processing') {
-        return (
-            <AnimateFadeIn className="w-full h-full">
-                <ProcessingScreen
-                    file={uploadedFile}
-                    stage={currentStage}
-                    uploadStatus={uploadStatus}
-                    fileId={fileId ? Number(fileId) : null}
-                    repositoryId={rawWorkflow?.repositoryId ? Number(rawWorkflow.repositoryId) : null}
-                    onComplete={() => setStep('summary')}
-                    onRedirect={() => {
-                        requestStore.getState().setRequestListTab('Sent');
-                        if (onClose) onClose();
-                    }}
-                />
-            </AnimateFadeIn>
-        )
-    }
-
-    // Step 3: Summary Screen (Replaced with Request Overview)
-    if (step === 'summary') {
-        return (
-            <AnimateFadeIn className="fixed inset-0 z-[100] bg-white">
-                {/* Pass the live fetched data to Request */}
-                <Request
-                    item={fetchedRequestData}
-                    workflowId={rawWorkflow?.id}
-                    onPrev={undefined}
-                    onNext={undefined}
-                    onBack={() => onClose?.()}
-                    hideActions={true}
-                />
-            </AnimateFadeIn>
-        )
-    }
 
     // Step 1: Upload (Premium Centered UI)
     return (
@@ -346,7 +261,8 @@ const FileUpload = ({ onRequestCreated, onClose }: { onRequestCreated?: () => vo
                             className={[
                                 "border-[2px] border-dashed border-[var(--primary-4)] rounded-xl p-6 lg:p-8",
                                 "flex flex-col items-center text-center cursor-pointer transition-all duration-500 ease-out relative z-10",
-                                isDragOver ? "bg-[var(--primary-1)] border-[var(--primary-6)] scale-[0.99]" : "bg-white hover:bg-[var(--primary-1)]/30 hover:border-[var(--primary-5)]"
+                                isDragOver ? "bg-[var(--primary-1)] border-[var(--primary-6)] scale-[0.99]" : "bg-white hover:bg-[var(--primary-1)]/30 hover:border-[var(--primary-5)]",
+                                (uploadStatus === 'uploading' || isSubmitting) ? "pointer-events-none opacity-60" : ""
                             ].join(" ")}
                             onClick={() => invoiceInputRef.current?.click()}
                             onDragOver={(e) => {
@@ -360,23 +276,37 @@ const FileUpload = ({ onRequestCreated, onClose }: { onRequestCreated?: () => vo
                                 handleInvoiceFiles(e.dataTransfer.files);
                             }}
                         >
-                            <AnimateStagger className="flex flex-col items-center w-full">
-                                {/* Icon Container */}
-                                <div className="size-16 bg-[var(--primary-1)] rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-all duration-500 shadow-sm">
-                                    <Icon name="tabler:cloud-upload" className="size-8 text-[var(--primary-9)]" />
+                            {(uploadStatus === 'uploading' || isSubmitting) ? (
+                                <div className="flex flex-col items-center py-8">
+                                    <div className="size-16 bg-[var(--primary-1)] rounded-full flex items-center justify-center mb-6 animate-pulse">
+                                        <Icon name="tabler:loader-2" className="size-8 text-[var(--primary-9)] animate-spin" />
+                                    </div>
+                                    <h2 className="text-xl font-bold text-[var(--gray-13)] mb-2 animate-pulse">
+                                        {uploadStatus === 'uploading' ? 'Uploading Invoice...' : 'Creating Request...'}
+                                    </h2>
+                                    <p className="text-[var(--gray-10)] text-sm font-medium">
+                                        Please wait while we process your document
+                                    </p>
                                 </div>
+                            ) : (
+                                <AnimateStagger className="flex flex-col items-center w-full">
+                                    {/* Icon Container */}
+                                    <div className="size-16 bg-[var(--primary-1)] rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-all duration-500 shadow-sm">
+                                        <Icon name="tabler:cloud-upload" className="size-8 text-[var(--primary-9)]" />
+                                    </div>
 
-                                {/* Headline */}
-                                <h2 className="text-xl font-medium text-[var(--gray-13)] mb-2 tracking-tight">
-                                    Drop your file here, or <span className="text-[var(--primary-9)]">browse</span>
-                                </h2>
+                                    {/* Headline */}
+                                    <h2 className="text-xl font-medium text-[var(--gray-13)] mb-2 tracking-tight">
+                                        Drop your file here, or <span className="text-[var(--primary-9)]">browse</span>
+                                    </h2>
 
-                                {/* Subtext */}
-                                <p className="text-[var(--gray-9)] mb-5 text-xs font-medium">
-                                    Supports PDF and Images · Max 4 MB
-                                </p>
+                                    {/* Subtext */}
+                                    <p className="text-[var(--gray-9)] mb-5 text-xs font-medium">
+                                        Supports PDF and Images · Max 4 MB
+                                    </p>
 
-                            </AnimateStagger>
+                                </AnimateStagger>
+                            )}
 
 
 

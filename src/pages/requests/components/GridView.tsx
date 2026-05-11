@@ -425,10 +425,11 @@ const GridView = <TData extends unknown>({
                                     </div>
 
                                     <div className="flex flex-col min-w-0">
-                                      <div className="flex items-center gap-1.5">
+                                      <div className="flex items-center gap-1.5 flex-wrap">
                                         <h3 className="truncate text-14 font-bold text-[var(--gray-12)] tracking-tight">
                                           {invoiceNo}
                                         </h3>
+                                        <RequestStatusBadge status={row.stage} />
                                         {(index === 4 || row?.isDuplicateInvoice) && (
                                           <span className="bg-purple-1 text-purple-9 text-[9px] font-bold px-1.5 py-0.5 rounded border border-purple-2 uppercase tracking-widest scale-90">
                                             DUP
