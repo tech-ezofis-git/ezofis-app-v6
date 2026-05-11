@@ -62,7 +62,7 @@ const Header: React.FC<HeaderProps> = ({
   // const toggleMaximize = requestStore((state) => state.toggleMaximize)
 
   return (
-    <OverlayHeaderWrapper className='justify-between gap-4'>
+    <OverlayHeaderWrapper className='h-14 justify-between gap-4 px-6 bg-white'>
 
       {/* Left Side Group: Request Number + Navigation Buttons */}
       <div className='flex items-center gap-4 bg-white p-0 '>

@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useRef } from 'react'
 import Stepper from '@/components/base/Stepper'
+import cn from '@/utils/cn'
 import {
   AnimateBounce,
   AnimateFadeIn,
@@ -45,6 +46,7 @@ const steps = [
 const Steps = () => {
   const step = setupStore((state) => state.step)
   const setStep = setupStore((state) => state.setStep)
+  const isConnected = setupStore((state) => state.emailSettings.isConnected)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -56,6 +58,29 @@ const Steps = () => {
       })
     }
   }, [step])
+
+  const progress = Math.round(((step + 1) / steps.length) * 100)
+
+  // Color mapping based on progress percentage
+  const getProgressStyles = () => {
+    if (progress <= 25)
+      return { bg: 'bg-orange-9', text: 'text-orange-11', label: 'Orange' }
+    if (progress <= 50)
+      return { bg: 'bg-blue-9', text: 'text-blue-11', label: 'Blue' }
+    if (progress <= 75)
+      return { bg: 'bg-purple-9', text: 'text-purple-11', label: 'Purple' }
+    return { bg: 'bg-green-9', text: 'text-green-11', label: 'Green' }
+  }
+
+  const { bg, text } = getProgressStyles()
+
+  const formattedSteps = steps.map((s, idx) => ({
+    ...s,
+    // Disable steps beyond Step 1 (index 0) if not connected
+    disabled: idx > 0 && !isConnected,
+    // Allow clicking only if connected or it's the current step
+    clickable: idx === 0 || isConnected,
+  }))
 
   return (
     <motion.div
@@ -80,13 +105,13 @@ const Steps = () => {
 
           <div className='flex items-center gap-4'>
             <div className='flex flex-col items-end gap-1'>
-              <span className='text-13 font-semibold text-accent-primary'>
-                {Math.round(((step + 1) / steps.length) * 100)}% Complete
+              <span className={cn('text-13 font-semibold transition-colors duration-500', text)}>
+                {progress}% Complete
               </span>
               <div className='h-1.5 w-32 overflow-hidden rounded-full bg-gray-3'>
                 <motion.div
-                  animate={{ width: `${((step + 1) / steps.length) * 100}%` }}
-                  className='h-full bg-accent-primary'
+                  animate={{ width: `${progress}%` }}
+                  className={cn('h-full transition-colors duration-500', bg)}
                   initial={{ width: 0 }}
                   transition={{ duration: 0.5, ease: 'easeOut' }}
                 />
@@ -101,7 +126,7 @@ const Steps = () => {
             <Stepper
               active={step}
               orientation='vertical'
-              steps={steps}
+              steps={formattedSteps}
               setActive={setStep}
             />
           </div>

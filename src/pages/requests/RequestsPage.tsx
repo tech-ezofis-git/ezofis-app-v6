@@ -1,12 +1,11 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, useMemo } from 'react'
 import type { Option } from '@/types/option'
 import formApi from '@/api/form/form'
 import requestApi from '@/api/requests/requests'
 import type { InboxItem, IRequestMeta, WorkflowOption } from './types'
 import Header from './components/Header'
 import InboxList from './components/InboxList'
-// import Request from './components/request/Request'
-// import InboxList from './components/InboxList'
+import Request from './components/request/Request'
 import { useInboxData } from './hooks/useInboxData'
 import requestStore from './stores/useRequestStore'
 import { ProcessingBackgroundManager } from './components/ProcessingBackgroundManager'
@@ -21,7 +20,7 @@ const RequestsPage = () => {
   const [metaData, setMetaData] = useState<IRequestMeta>()
   const [selectedWorkflow, setSelectedWorkflow] =
     useState<WorkflowOption | null>(null)
-  const [selectedItem, setSelectedItem] = useState<InboxItem | null>(null)
+  const selectedItem = requestStore((state) => state.selectedItem)
 
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
@@ -43,7 +42,6 @@ const RequestsPage = () => {
   } = useInboxData(selectedWorkflow, page, pageSize, groupBy, activeTab)
 
   const handleRowClick = (row: InboxItem, tab: string) => {
-    setSelectedItem(row)
     // Only open if we have a valid workflow ID
     if (selectedWorkflow?.id) {
       openRequest(row, selectedWorkflow, tab)
@@ -155,13 +153,13 @@ const RequestsPage = () => {
     refetch,
   ])
   useEffect(() => {
-    setSelectedItem(null)
+    // No longer need to manually clear local state
   }, [isClosed])
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab)
     setRequestListTab(tab) // Sync to store
-    setSelectedItem(null)
+    // setSelectedItem(null) // Handled by store/actions if needed
 
     // Only grouping for Inbox
     if (tab !== 'Inbox') {
@@ -173,6 +171,52 @@ const RequestsPage = () => {
   useEffect(() => {
     setRequestListTab(activeTab)
   }, [])
+
+  // --- 4. NAVIGATION & FLATTENING ---
+  function flattenRows(groups: any[]): any[] {
+    const out: any[] = []
+    const walk = (node: any) => {
+      if (!node) return
+      if (Array.isArray(node.items)) out.push(...node.items)
+      if (Array.isArray(node.value)) out.push(...node.value)
+      if (Array.isArray(node.rows)) out.push(...node.rows)
+      if (Array.isArray(node.children)) node.children.forEach(walk)
+      if (Array.isArray(node.groups)) node.groups.forEach(walk)
+    }
+      ; (groups || []).forEach(walk)
+    return out
+  }
+
+  const flatRows = useMemo(
+    () => flattenRows(inboxResult?.data || []),
+    [inboxResult?.data],
+  )
+
+  const selectedIndex = useMemo(() => {
+    if (!selectedItem) return -1
+    const selId = selectedItem?.processId || selectedItem?.transactionId || selectedItem?.id
+    return flatRows.findIndex((r: any) => {
+      const rId = r?.processId || r?.transactionId || r?.id
+      return String(selId) === String(rId)
+    })
+  }, [flatRows, selectedItem])
+
+  const hasPrev = selectedIndex > 0
+  const hasNext = selectedIndex >= 0 && selectedIndex < flatRows.length - 1
+
+  const onPrev = () => {
+    if (hasPrev) {
+      const prevItem = flatRows[selectedIndex - 1]
+      if (selectedWorkflow) openRequest(prevItem, selectedWorkflow, activeTab)
+    }
+  }
+
+  const onNext = () => {
+    if (hasNext) {
+      const nextItem = flatRows[selectedIndex + 1]
+      if (selectedWorkflow) openRequest(nextItem, selectedWorkflow, activeTab)
+    }
+  }
   return (
     <>
       {!selectedItem && (

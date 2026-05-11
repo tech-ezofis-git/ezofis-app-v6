@@ -113,17 +113,23 @@ const StepOne = () => {
         initial={{ opacity: 0, y: 10 }}
         transition={{ delay: 0.5, duration: 0.4 }}
       >
-        {emailSettings.provider === 'DIRECT_UPLOAD' ||
-          emailSettings.isConnected ? (
+        {emailSettings.isConnected ? (
           <Button
+            key='continue-button'
             label='Continue'
             suffixIcon='tabler:arrow-right'
             onClick={() => setStep(1)}
           />
         ) : (
           <Button
+            key='connect-button'
+            disabled={!emailSettings.provider}
             icon='lucide:plug'
-            label={`Connect ${emailSettings.provider.charAt(0).toUpperCase() + emailSettings.provider.slice(1)}`}
+            label={
+              emailSettings.provider
+                ? `Connect ${emailSettings.provider.charAt(0).toUpperCase() + emailSettings.provider.slice(1)}`
+                : 'Select an integration'
+            }
             loading={emailSettings.isConnecting}
             onClick={handleConnect}
           />

@@ -82,7 +82,7 @@ const initialStorageSettings: StorageSettings = {
   system: 'Included storage',
 }
 
-const useSetupStore = create<Store>()((set) => ({
+const useSetupStore = create<Store>()((set, get) => ({
   emailSettings: initialEmailSettings,
   erpSettings: initialErpSettings,
   isApSetUpCompleted: false,
@@ -122,7 +122,14 @@ const useSetupStore = create<Store>()((set) => ({
     set({ isSetupCalloutDismissed: value }),
 
   setIsSetupStarted: (value: boolean) => set({ isSetupStarted: value }),
-  setStep: (value: number) => set({ step: value }),
+  setStep: (value: number) => {
+    const { emailSettings } = get()
+    // Block moving past Step 1 if not connected
+    if (value > 0 && !emailSettings.isConnected) {
+      return
+    }
+    set({ step: value })
+  },
   setStorageSettings: (storageSettings: StorageSettings) =>
     set({
       storageSettings: {
