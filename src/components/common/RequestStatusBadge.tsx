@@ -8,7 +8,7 @@ interface Props {
 
 const RequestStatusBadge = ({ status }: Props) => {
   const color = useMemo(() => {
-    switch (status) {
+    switch (status as any) {
       case 'Rejected':
       case 'Duplicated':
         return 'red'
@@ -22,13 +22,13 @@ const RequestStatusBadge = ({ status }: Props) => {
       case 'AI Agent':
       case 'Extracting':
       case 'Processing':
-        return 'primary'
+        return 'blue'
       default:
         return 'gray'
     }
   }, [status])
 
-  const isProcessing = ['Start', 'AI Agent', 'Extracting', 'Processing'].includes(status || '')
+  const isProcessing = ['Start', 'AI Agent', 'Extracting', 'Processing'].includes((status as string) || '')
 
   return (
     <Badge

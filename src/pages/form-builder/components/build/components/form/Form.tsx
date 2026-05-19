@@ -207,7 +207,7 @@ const Form = () => {
     )
 
     // Wait for panels to be rendered
-    const sections = document.querySelectorAll('[id^="panel-"]') // Assuming panel IDs start with panel-
+    document.querySelectorAll('[id^="panel-"]') // Assuming panel IDs start with panel-
     // Actually, Page.tsx uses id={panel.id}. 
     // I should check what panel.id looks like. If they are UUIDs, I'll need a way to select them.
     // I'll add a data-section attribute in Page.tsx if needed, but for now I'll use a class or observe all children.

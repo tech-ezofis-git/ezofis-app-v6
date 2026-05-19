@@ -5,11 +5,10 @@ import { PDF_ACCEPT, IMAGE_ACCEPT, isPdf, isImage, MAX_SIZE } from './utils'
 import showToast from '@/components/base/toast/showToast'
 import folderApi from "@/api/folders/folders"
 import workflowApi from "@/api/workflow/workflow"
-import requestApi from "@/api/requests/requests"
 import authUserStore from "@/stores/authUserStore"
 import requestStore from "@/pages/requests/stores/useRequestStore"
 
-const FileUpload = ({ onRequestCreated, onClose }: { onRequestCreated?: () => void, onClose?: () => void }) => {
+const FileUpload = ({ onClose }: { onClose?: () => void }) => {
     const rawWorkflow = requestStore((state) => state.rawWorkflowData);
     const workflowRefresh = requestStore((state) => state.workflowRefresh);
 
@@ -232,43 +231,6 @@ const FileUpload = ({ onRequestCreated, onClose }: { onRequestCreated?: () => vo
     //     setUploadedFile(null)
     //     setStep('upload')
     // }
-
-    // Step 2: Processing Screen
-    if (step === 'processing') {
-        return (
-            <AnimateFadeIn className="w-full h-full">
-                <ProcessingScreen
-                    file={uploadedFile}
-                    stage={currentStage}
-                    uploadStatus={uploadStatus}
-                    fileId={fileId ? Number(fileId) : null}
-                    repositoryId={rawWorkflow?.repositoryId ? Number(rawWorkflow.repositoryId) : null}
-                    onComplete={() => setStep('summary')}
-                    onRedirect={() => {
-                        requestStore.getState().setRequestListTab('Sent');
-                        if (onClose) onClose();
-                    }}
-                />
-            </AnimateFadeIn>
-        )
-    }
-
-    // Step 3: Summary Screen (Replaced with Request Overview)
-    if (step === 'summary') {
-        return (
-            <AnimateFadeIn className="fixed inset-0 z-[100] bg-white">
-                {/* Pass the live fetched data to Request */}
-                <Request
-                    item={fetchedRequestData}
-                    workflowId={rawWorkflow?.id}
-                    onPrev={undefined}
-                    onNext={undefined}
-                    onBack={() => onClose?.()}
-                    hideActions={true}
-                />
-            </AnimateFadeIn>
-        )
-    }
 
     // Step 1: Upload (Premium Centered UI)
     return (

@@ -19,7 +19,7 @@ export type BadgeColor =
 interface Props {
   className?: string
   color?: BadgeColor
-  label?: string
+  label?: React.ReactNode
 }
 
 const colorClassName: Record<BadgeColor, string> = {

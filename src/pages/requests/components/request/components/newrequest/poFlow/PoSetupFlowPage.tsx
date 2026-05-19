@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import Icon from "@/components/base/icon/Icon";
 import cn from "@/utils/cn";
+import Button from "@/components/base/button/Button";
 
 import Step1TemplateUpload from "./steps/Step1TemplateUpload";
 import Step2ColumnMapping from "./steps/Step2ColumnMapping";
@@ -250,29 +251,25 @@ export default function PoSetupFlowPage({ }: Props) {
 
                 {/* Footer Section */}
                 <footer className="px-6 py-4 bg-surface-primary border-t border-gray-3 flex justify-between items-center shrink-0">
-                    {/* <button
+                    <Button
                         onClick={() => closeNewRequest()}
-                        className="px-6 py-2.5 text-xs font-bold text-gray-11 hover:text-gray-13 transition-colors uppercase tracking-widest"
-                    >
-                        Cancel
-                    </button> */}
-                    <button
-                        onClick={() => closeNewRequest()}
-                        className="group cursor-pointer inline-flex items-center gap-2 rounded-xl border border-[var(--gray-4)] bg-[var(--gray-0)] px-2 py-2 text-12 font-semibold text-[var(--gray-12)] hover:bg-[var(--gray-1)] transition-colors"
-                    >
-                        <Icon name="tabler:chevron-left" className="size-5 transition-transform group-hover:-translate-x-1" />
-                        Cancel
-                    </button>
+                        color="gray"
+                        variant="outline"
+                        icon="tabler:chevron-left"
+                        label="Cancel"
+                        size="lg"
+                    />
                     <div className="flex items-center gap-3">
                         {activeStep > 0 && (
-                            <button
+                            <Button
                                 onClick={() => setActiveStep((prev) => (prev - 1) as any)}
-                                className="px-5 py-2.5 border border-gray-3 rounded-full text-xs font-bold text-gray-11 hover:bg-surface-secondary transition-all active:scale-95"
-                            >
-                                Back
-                            </button>
+                                color="gray"
+                                variant="outline"
+                                label="Back"
+                                size="lg"
+                            />
                         )}
-                        <button
+                        <Button
                             disabled={!canGoToStep(activeStep + 1) && activeStep < 2 || (activeStep === 2 && isSubmitting)}
                             onClick={() => {
                                 if (activeStep < 2) {
@@ -281,22 +278,13 @@ export default function PoSetupFlowPage({ }: Props) {
                                     handlePoUpload();
                                 }
                             }}
-                            className={cn(
-                                "flex items-center gap-2 px-8 py-2.5 rounded-full text-xs font-bold shadow-lg transition-all active:scale-95",
-                                (!canGoToStep(activeStep + 1) && activeStep < 2) || (activeStep === 2 && isSubmitting)
-                                    ? "bg-gray-3 text-gray-10 cursor-not-allowed shadow-none"
-                                    : "bg-primary-9 hover:bg-primary-10 text-white shadow-primary-9/20"
-                            )}
-                        >
-                            {activeStep === 2 ? (
-                                isSubmitting ? "Processing..." : "Confirm & Finish"
-                            ) : (
-                                <>
-                                    Continue
-                                    <Icon name="tabler:arrow-right" className="text-base" />
-                                </>
-                            )}
-                        </button>
+                            color="primary"
+                            variant="solid"
+                            size="lg"
+                            loading={isSubmitting}
+                            suffixIcon={activeStep < 2 ? "tabler:arrow-right" : undefined}
+                            label={activeStep === 2 ? (isSubmitting ? "Processing..." : "Confirm & Finish") : "Continue"}
+                        />
                     </div>
                 </footer>
             </div>

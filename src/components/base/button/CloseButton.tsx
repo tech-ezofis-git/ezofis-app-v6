@@ -1,11 +1,13 @@
+import type { ButtonSize } from './types'
 import IconButton from './IconButton'
 
 interface Props {
   className?: string
   onClick: () => void
+  size?: ButtonSize
 }
 
-const CloseButton = ({ className, onClick }: Props) => {
+const CloseButton = ({ className, onClick, size = 'md' }: Props) => {
   return (
     <IconButton
       ariaLabel='Close'
@@ -14,6 +16,7 @@ const CloseButton = ({ className, onClick }: Props) => {
       icon='lucide:x'
       variant='ghost'
       onClick={onClick}
+      size={size}
     />
   )
 }

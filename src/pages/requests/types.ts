@@ -47,6 +47,7 @@ export interface InboxItem {
   // Properties calculated during flattening
   _groupKey?: string
   _subKey?: string
+  _originalIndex?: number
 }
 
 export interface IRequestMeta {

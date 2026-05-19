@@ -29,11 +29,11 @@ const AppLayout = ({ children }: Props) => {
       {/* <AskAI /> */}
       <Sidebar />
 
-      <div className='flex h-svh flex-col bg-[var(--gray-1)] xl:ml-[56px]'>
+      <div className='flex h-svh flex-col xl:ml-[56px]'>
         {/* 1. Topbar is now outside the content logic, so it stays visible */}
         <Topbar />
 
-        <div className='flex min-h-0 flex-1'>
+        <div className='flex min-h-0 flex-1 bg-[var(--gray-1)]'>
           {/* 2. Hide children only when NewRequest is open */}
           {!isNewRequestOpen && (
             <div className='relative flex min-w-0 flex-1 flex-col overflow-hidden'>

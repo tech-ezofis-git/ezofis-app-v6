@@ -1,6 +1,5 @@
 import { useNavigate } from '@tanstack/react-router'
 import { useEffect, useMemo, useState } from 'react'
-import authApi from '@/api/auth'
 import { apiRouter } from '@/api/apiRouter'
 import Button from '@/components/base/button/Button'
 import IconIllustrated from '@/components/base/icon/IconIllustrated'

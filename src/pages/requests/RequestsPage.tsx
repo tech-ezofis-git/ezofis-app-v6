@@ -20,18 +20,21 @@ const RequestsPage = () => {
   const [metaData, setMetaData] = useState<IRequestMeta>()
   const [selectedWorkflow, setSelectedWorkflow] =
     useState<WorkflowOption | null>(null)
-  const selectedItem = requestStore((state) => state.selectedItem)
+  const {
+    selectedItem,
+    openRequest,
+    closeRequest,
+    isClosed,
+    setRawWorkflowData: setRawWorflow,
+    reloadMeta,
+    stopRefresh,
+    setRequestListTab,
+  } = requestStore()
 
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [groupBy, setGroupBy] = useState<string[]>([])
 
-  const openRequest = requestStore((state) => state.openRequest)
-  const isClosed = requestStore((state) => state.isClosed)
-  const setRawWorflow = requestStore((state) => state.setRawWorkflowData)
-  const reloadMeta = requestStore((state) => state.reloadMeta)
-  const stopRefresh = requestStore((state) => state.stopRefresh)
-  const setRequestListTab = requestStore((state) => state.setRequestListTab)
   // --- 2. DATA FETCHING ---
   // Pass 'activeTab' to the hook so it knows which API to call
   const {
@@ -159,7 +162,6 @@ const RequestsPage = () => {
   const handleTabChange = (tab: string) => {
     setActiveTab(tab)
     setRequestListTab(tab) // Sync to store
-    // setSelectedItem(null) // Handled by store/actions if needed
 
     // Only grouping for Inbox
     if (tab !== 'Inbox') {
@@ -233,6 +235,15 @@ const RequestsPage = () => {
           setWorkflow={setWorkflow}
         />
       )}
+      {selectedItem && (
+        <Request
+          item={selectedItem}
+          workflowId={selectedWorkflow?.id}
+          onPrev={onPrev}
+          onNext={onNext}
+          onBack={closeRequest}
+        />
+      )}
       {/* <Table /> */}
       <InboxList
         activeTab={activeTab}
@@ -247,7 +258,6 @@ const RequestsPage = () => {
         workflow={selectedWorkflow}
         setPage={setPage}
         setPageSize={setPageSize}
-        setSelectedItem={setSelectedItem}
         onGroupByChange={setGroupBy}
         onRefresh={refetch}
         onRowClick={handleRowClick}

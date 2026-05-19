@@ -1,7 +1,6 @@
 import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { apiRouter } from '@/api/apiRouter'
-import authApi from '@/api/auth'
 import Button from '@/components/base/button/Button'
 import IconIllustrated from '@/components/base/icon/IconIllustrated'
 import InputPin from '@/components/base/inputs/InputPin'

@@ -20,8 +20,8 @@ const MenuItem = ({ icon, iconClassName, label, route }: Props) => {
         <Link
           to={route}
           className={cn(
-            'group flex size-8 items-center justify-center rounded outline-0 transition-colors hover:bg-gray-4 focus-visible:bg-gray-4',
-            isActive && 'bg-gray-4',
+            'group flex size-8 items-center justify-center rounded outline-0 transition-colors hover:bg-gray-2 focus-visible:bg-gray-2',
+            isActive && 'bg-gray-3',
           )}
         >
           <Icon

@@ -50,6 +50,32 @@ export const useInboxData = (
               config,
             )
             break
+          case 'Exceptions':
+            response = await requestApi.getInboxListById(workflowId, config)
+            break
+          case 'Processed': {
+            const [sentResponse, completedResponse] = await Promise.all([
+              requestApi.getSentListById(workflowId, config),
+              requestApi.getCompletedRequestById(workflowId, config)
+            ])
+
+            const sentData = sentResponse?.data?.data || sentResponse?.data || []
+            const completedData = completedResponse?.data?.data || completedResponse?.data || []
+
+            const combinedData = [...sentData, ...completedData]
+            const totalItems = (sentResponse?.meta?.totalItems || sentResponse?.data?.meta?.totalItems || 0) +
+                               (completedResponse?.meta?.totalItems || completedResponse?.data?.meta?.totalItems || 0)
+
+            response = {
+              data: {
+                data: combinedData,
+                meta: {
+                  totalItems
+                }
+              }
+            }
+            break
+          }
           case 'Inbox':
           default:
             response = await requestApi.getInboxListById(workflowId, config)
@@ -70,10 +96,10 @@ export const useInboxData = (
       const groupedData: TableGroup[] = []
 
       // Helper to transform process into InboxItem
-      const transformProcess = (process: any, groupKey: string): InboxItem => {
+      const transformProcess = (process: any, groupKey: string, originalIndex: number): InboxItem => {
         const dynamicFields = process.formData?.fields || {}
         let actions: any[] = []
-        if (activeTab === 'Inbox') {
+        if (activeTab === 'Inbox' || activeTab === 'Exceptions') {
           actions = getActionsForActivity(
             process.activityId,
             selectedWorkflow?.flowJson,
@@ -85,9 +111,11 @@ export const useInboxData = (
           _actions: actions,
           _groupKey: groupKey || activeTab,
           id: process.processId || process.id,
+          _originalIndex: originalIndex,
         }
       }
 
+      let globalIndex = 0
       if (Array.isArray(apiData)) {
         apiData.forEach((outer: any) => {
           // outer is usually { key: "", totalCount: X, value: [...] }
@@ -95,13 +123,21 @@ export const useInboxData = (
             outer.value.forEach((inner: any, idx: number) => {
               // Format 1: Grouped (inner has 'value' array of items)
               if (inner && Array.isArray(inner.value)) {
-                const groupItems = inner.value
+                let groupItems = inner.value
                   .filter((p: any) => p && (p.processId || p.id))
-                  .map((p: any) => transformProcess(p, inner.key))
+                  .map((p: any) => {
+                    const item = transformProcess(p, inner.key, globalIndex)
+                    globalIndex++
+                    return item
+                  })
+
+                if (activeTab === 'Exceptions') {
+                  groupItems = groupItems.filter((item: any) => (item as any)._originalIndex % 12 !== 0)
+                }
 
                 if (groupItems.length > 0) {
                   groupedData.push({
-                    groupCount: inner.totalCount || groupItems.length,
+                    groupCount: groupItems.length,
                     groupId: inner.key || `group-${idx}`,
                     groupKey: inner.key,
                     groupValue: inner.key,
@@ -111,9 +147,14 @@ export const useInboxData = (
               }
               // Format 2: Flat (inner is the item itself)
               else if (inner && (inner.processId || inner.id)) {
-                const rootGroup = groupedData.find((g) => g.groupId === 'root')
-                const transformed = transformProcess(inner, activeTab)
+                const transformed = transformProcess(inner, activeTab, globalIndex)
+                globalIndex++
 
+                if (activeTab === 'Exceptions' && (transformed as any)._originalIndex % 12 === 0) {
+                  return
+                }
+
+                const rootGroup = groupedData.find((g) => g.groupId === 'root')
                 if (rootGroup) {
                   rootGroup.items.push(transformed)
                   rootGroup.groupCount = rootGroup.items.length

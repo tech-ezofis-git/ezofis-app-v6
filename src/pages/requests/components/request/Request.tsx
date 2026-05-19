@@ -24,9 +24,6 @@ import {
 // import Icon from '@/components/base/icon/Icon';
 import workflowApi from "../../../../api/workflow/workflow"
 import Header from './components/Header'
-import Button from '@/components/base/button/Button';
-import Icon from '@/components/base/icon/Icon';
-import cn from '@/utils/cn';
 
 const Request = ({
   onPrev,
@@ -145,18 +142,171 @@ const Request = ({
   }
 
   const invoiceHeader = currentAgentData?.['Extracted Invoice JSON']?.invoice_header as any;
-  const supplierName = invoiceHeader?.['Supplier Name'] || selectedItem?.vendorName || selectedItem?.supplier;
-  const totalAmount = invoiceHeader?.['Total Due'] || selectedItem?.totalAmount;
+  const totalAmount = invoiceHeader?.['Invoice Amount'] ||
+    invoiceHeader?.['Total Due'] ||
+    invoiceHeader?.['Total'] ||
+    invoiceHeader?.['invoice_amount'] ||
+    invoiceHeader?.['total_amount'] ||
+    selectedItem?.totalAmount;
+  // Robust check for PO Value
+  const poValueFromMatching = (() => {
+    const fieldMatching = currentAgentData?.debug?.['Side-by-side Field Matching'] || [];
+    const totalField = fieldMatching.find((f: any) =>
+      f && f.Field && (
+        f.Field.toLowerCase().includes('total') ||
+        f.Field.toLowerCase().includes('amount')
+      )
+    );
+    return totalField ? totalField['PO Value'] : undefined;
+  })();
+
+  const poValue = currentAgentData?.po_matching?.total ||
+    currentAgentData?.po_matching?.amount ||
+    currentAgentData?.po_matching?.po_amount ||
+    currentAgentData?.po_matching?.total_amount ||
+    poValueFromMatching ||
+    invoiceHeader?.['PO Value'] ||
+    invoiceHeader?.['PO Amount'] ||
+    invoiceHeader?.['po_value'] ||
+    invoiceHeader?.['po_amount'] ||
+    invoiceHeader?.['PO Total'] ||
+    invoiceHeader?.['po_total'] ||
+    formModel?.['PO Value'] ||
+    formModel?.['PO Amount'] ||
+    formModel?.['po_value'] ||
+    formModel?.['po_amount'] ||
+    formModel?.['PO Total'] ||
+    formModel?.['po_total'] ||
+    selectedItem?.poAmount ||
+    selectedItem?.poValue ||
+    '0.00';
   const currency = invoiceHeader?.['Currency'] || selectedItem?.currency;
   const statusBadge = currentAgentData?.decision === 'APPROVED' ? 'Verified' : currentAgentData?.decision === 'REJECTED' ? 'Rejected' : 'Pending Review';
+
+  const findPONumberInObject = (obj: any): string | null => {
+    if (!obj || typeof obj !== 'object') return null;
+
+    const extractStringValue = (val: any): string | null => {
+      if (val == null) return null;
+      if (typeof val === 'object') {
+        const inner = val['Invoice Value'] ?? val.value ?? val['PO Value'] ?? val.val ?? val.text;
+        if (inner && typeof inner !== 'object') {
+          const str = String(inner).trim();
+          return (str !== '' && str !== '-' && str.toUpperCase() !== 'N/A') ? str : null;
+        }
+        for (const k of Object.keys(val)) {
+          if (val[k] && typeof val[k] !== 'object') {
+            const str = String(val[k]).trim();
+            if (str !== '' && str !== '-' && str.toUpperCase() !== 'N/A') {
+              return str;
+            }
+          }
+        }
+        return null;
+      }
+      const str = String(val).trim();
+      return (str !== '' && str !== '-' && str.toUpperCase() !== 'N/A') ? str : null;
+    };
+
+    // 1. Direct exact matches first
+    const exactKeys = [
+      'PO Number', 'po_number', 'poNumber', 'PO #', 'PO No', 'PO No.',
+      'Purchase Order', 'Purchase Order Number', 'purchase_order_number', 'purchaseOrderNumber',
+      'RXwLGHILLrreMmRqlk9mj'
+    ];
+    for (const key of exactKeys) {
+      const extracted = extractStringValue(obj[key]);
+      if (extracted && extracted !== '-' && extracted !== '') {
+        return extracted;
+      }
+    }
+
+    // 2. Case-insensitive strict matching
+    for (const key of Object.keys(obj)) {
+      const lowerKey = key.toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (lowerKey === 'ponumber' || lowerKey === 'pono' || lowerKey === 'ponum' || lowerKey === 'purchaseordernumber' || lowerKey === 'purchaseorder' || lowerKey === 'rxwlghillrremmrqlk9mj') {
+        const extracted = extractStringValue(obj[key]);
+        if (extracted && extracted !== '-' && extracted !== '') {
+          return extracted;
+        }
+      }
+    }
+
+    // 3. Extremely strict substring/contains matching (to avoid matching positions/postal codes/port/etc)
+    for (const key of Object.keys(obj)) {
+      const lowerKey = key.toLowerCase();
+      const isFalsePositive =
+        lowerKey.includes('position') ||
+        lowerKey.includes('postal') ||
+        lowerKey.includes('postcode') ||
+        lowerKey.includes('port') ||
+        lowerKey.includes('sponsor') ||
+        lowerKey.includes('component') ||
+        lowerKey.includes('policy') ||
+        lowerKey.includes('process');
+
+      if (isFalsePositive) continue;
+
+      const isStrictPOKey =
+        lowerKey === 'po' ||
+        lowerKey === 'purchase order' ||
+        lowerKey.startsWith('po ') ||
+        lowerKey.startsWith('po_') ||
+        lowerKey.startsWith('po-') ||
+        lowerKey.includes('po number') ||
+        lowerKey.includes('po ref') ||
+        lowerKey.includes('purchase order');
+
+      if (isStrictPOKey) {
+        // Exclude po value or amount keys to avoid wrong match
+        if (!lowerKey.includes('value') && !lowerKey.includes('amount') && !lowerKey.includes('total') && !lowerKey.includes('date') && !lowerKey.includes('price')) {
+          const extracted = extractStringValue(obj[key]);
+          if (extracted && extracted !== '-' && extracted !== '') {
+            return extracted;
+          }
+        }
+      }
+    }
+
+    return null;
+  };
+
+  const poNumber = (() => {
+    // 1. Check formModel first (highest priority: holds corrected and active tab state values)
+    const fromForm = findPONumberInObject(formModel);
+    if (fromForm) return fromForm;
+
+    // 2. Check Extracted Invoice JSON header
+    const fromAgentHeader = findPONumberInObject(currentAgentData?.['Extracted Invoice JSON']?.invoice_header);
+    if (fromAgentHeader) return fromAgentHeader;
+
+    // 3. Check PO matching structure
+    const fromPOMatching = findPONumberInObject(currentAgentData?.po_matching);
+    if (fromPOMatching) return fromPOMatching;
+
+    // 4. Check general currentAgentData
+    const fromAgent = findPONumberInObject(currentAgentData);
+    if (fromAgent) return fromAgent;
+
+    // 5. Check selectedItem and request fields
+    const fromSelected = findPONumberInObject(selectedItem) ||
+      findPONumberInObject(selectedItem?.formData?.fields);
+    if (fromSelected) return fromSelected;
+
+    const fromRequest = findPONumberInObject(request) ||
+      findPONumberInObject(request?.formData?.fields);
+    if (fromRequest) return fromRequest;
+
+    return 'N/A';
+  })();
 
   return (
     <div className={`flex flex-col p-0 w-full ${hideActions ? 'h-full p-4 bg-grey-2' : 'h-[calc(100vh-85px)]'}`}>
       <div className="sticky top-0 z-20 bg-white border-b border-[var(--gray-3)] px-2">
         <Header
           requestNo={currentAgentData?.['kvcYuknkDumkTenjvrVLj'] || selectedItem?.reqNo || selectedItem?.['kvcYuknkDumkTenjvrVLj'] || selectedItem?.invoiceNumber || selectedItem?.requestNo || 'REQ - ...'}
-          supplierName={supplierName}
           totalAmount={totalAmount}
+          poValue={poValue}
           currency={currency}
           status={statusBadge}
           raisedAt={request?.createdAt}
@@ -175,6 +325,8 @@ const Request = ({
           actions={actions}
           isEditing={isEditing}
           onManualCorrection={() => setIsEditing(!isEditing)}
+          agentData={currentAgentData}
+          poNumber={poNumber}
         />
 
         {/* <div className="border-b border-gray-3 bg-surface">
@@ -204,7 +356,7 @@ const Request = ({
 
       {/* Tab Content */}
 
-      <AnimateFadeIn delay={0.6} className="flex-1 min-h-0 flex flex-col overflow-hidden mt-6 px-6 pb-6">
+      <AnimateFadeIn delay={0.6} className="flex-1 min-h-0 flex flex-col overflow-hidden mt-0 px-0 pb-0">
         <Overview
           agentData={currentAgentData}
           rightView={rightView}

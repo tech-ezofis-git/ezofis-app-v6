@@ -1,114 +1,142 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import {
-  // ArrowLeft, 
-  // CheckCircle, 
-  // ChevronLeft, 
-  // ChevronRight, 
-  // Minus, 
-  // Plus, 
   FileText,
   Layers,
-  // PenTool, 
-  // MessageSquare, 
-  // Printer, 
-  // Construction,
-  AlertCircle,
-  AlertTriangle,
-  Brain,
   Store,
   ListFilter,
   CreditCard,
   Wallet,
-  Edit3,
   Paperclip,
   MessageCircle,
   HistoryIcon
 } from 'lucide-react';
-import { motion } from 'motion/react';
 import Attachments from '../attachment/Attachments';
 import History from "../history/History";
 import Comments from "../comment/Comments";
-import Forms from "../form/Form";
 import { useAttachments } from '@/pages/requests/hooks/useAttachments';
 import authUserStore from '@/stores/authUserStore';
 import Icon from '@/components/base/icon/Icon';
-import { useComments } from '@/pages/requests/hooks/useComments'
 import cn from '@/utils/cn';
 
 import { Worker, Viewer, SpecialZoomLevel } from '@react-pdf-viewer/core';
 import '@react-pdf-viewer/core/lib/styles/index.css';
 import fileApi from '@/api/file/file';
 import BarLoader from '@/components/base/BarLoader';
+import InputDate from '@/components/base/inputs/InputDate';
+import InputSelect from '@/components/base/inputs/InputSelect';
 
 // --- Components ---
 
 const AnalysisCard = ({ icon: Icon, title, value, status, statusType = 'success' }: any) => (
-  <div className="bg-white p-4 rounded-2xl border border-[var(--gray-3)] flex flex-col gap-3 hover:shadow-sm transition-all">
+  <div className="flex flex-col gap-1.5 p-2.5 rounded-xl border border-[var(--gray-3)] bg-white hover:bg-[var(--gray-1)] transition-colors min-w-0 flex-1">
     <div className="flex items-center justify-between">
-      <div className="flex items-center gap-2 text-[var(--gray-11)]">
-        <Icon className="w-4 h-4" />
-        <span className="text-[12px] font-bold">{title}</span>
+      <div className={cn(
+        "p-1.5 rounded transition-colors shrink-0",
+        statusType === 'success' ? "bg-[var(--green-1)] text-[var(--green-9)]" :
+          statusType === 'warning' ? "bg-[var(--orange-1)] text-[var(--orange-9)]" :
+            "bg-[var(--gray-1)] text-[var(--gray-11)]"
+      )}>
+        <Icon className="w-3.5 h-3.5" />
       </div>
-      <span className={cn(
-        "px-2.5 py-0.5 rounded-full text-[10px] font-bold border",
+      <div className={cn(
+        "px-2 py-0.5 rounded-md text-[9px] font-semibold border shrink-0",
         statusType === 'success' ? "bg-[var(--green-1)] text-[var(--green-9)] border-[var(--green-3)]" :
           statusType === 'warning' ? "bg-[var(--orange-1)] text-[var(--orange-9)] border-[var(--orange-3)]" :
             "bg-[var(--gray-1)] text-[var(--gray-11)] border-[var(--gray-3)]"
       )}>
         {status}
-      </span>
-    </div>
-    <div className="text-[13px] font-medium text-[var(--gray-13)]">
-      {value || '---'}
-    </div>
-  </div>
-);
-
-const SmartCard = ({ icon: Icon, title, status, active = false, onClick }: any) => (
-  <motion.div
-    whileHover={{ y: -2 }}
-    onClick={onClick}
-    className={`p-4 rounded-2xl border cursor-pointer transition-all ${active
-      ? `bg-white border-[var(--primary-9)]/20 shadow-lg shadow-[var(--primary-9)]/5 border-l-4 border-l-[var(--primary-9)]`
-      : 'bg-white/40 border-[var(--gray-3)] hover:border-[var(--gray-11)] opacity-60'
-      }`}
-  >
-    <div className="flex flex-col gap-1.5">
-      <Icon className={`w-5 h-5 ${active ? 'text-[var(--primary-9)]' : 'text-[var(--gray-11)]'}`} />
-      <span className="text-[13px] font-bold text-[var(--gray-13)]">{title}</span>
-      <div className="flex items-center gap-1">
-        {status.type === 'verified' && <div className="w-1.5 h-1.5 rounded-full bg-[var(--green-9)]" />}
-        <span className={`text-[9px] font-bold ${status.type === 'missing' ? 'text-[var(--primary-9)]' : 'text-[var(--gray-10)]'
-          }`}>
-          {status.count} {status.label}
-        </span>
       </div>
     </div>
-  </motion.div>
-);
-
-const DataCard = ({ icon: Icon, label, value, highlight = false, isEditing = false, onChange }: any) => (
-  <div className="bg-white/50 p-4 rounded-xl border border-transparent flex items-center gap-4 hover:bg-white hover:border-[var(--gray-3)] transition-all cursor-pointer group shadow-sm">
-    <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${highlight ? 'bg-[var(--green-9)]/10 text-[var(--green-9)]' : 'bg-[var(--gray-2)] text-[var(--gray-11)] group-hover:bg-[var(--primary-3)] group-hover:text-[var(--primary-9)]'
-      }`}>
-      <Icon className="w-4 h-4" />
-    </div>
-    <div className="min-w-0 flex-1">
-      <p className="text-[10px] text-[var(--gray-11)] font-bold uppercase tracking-wider mb-0.5">{label}</p>
-      {isEditing ? (
-        <input
-          type="text"
-          value={value === 'Pending Analysis...' || value === 'N/A' ? '' : value}
-          onChange={(e) => onChange?.(e.target.value)}
-          placeholder={`Enter ${label}...`}
-          className="w-full bg-white border border-[var(--gray-3)] rounded-md px-2 py-1 text-[13px] font-bold text-[var(--gray-13)] focus:outline-none focus:border-[var(--primary-9)] focus:ring-1 focus:ring-[var(--primary-9)] transition-all"
-        />
-      ) : (
-        <p className={`text-[13px] font-bold truncate ${highlight ? 'text-[var(--green-9)]' : 'text-[var(--gray-13)]'}`}>{value}</p>
-      )}
+    <div className="flex flex-col min-w-0 gap-0.5 mt-0.5">
+      <span className="text-[11px] font-semibold text-[var(--gray-11)] tracking-tight  leading-none">{title}</span>
+      <span className="text-[13px] font-semibold text-[var(--gray-13)]  leading-tight" title={value}>{value || '---'}</span>
     </div>
   </div>
 );
+
+const FormCard = ({ icon: Icon, label, value, type = 'text', options = [], highlight = false, onChange }: any) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [localValue, setLocalValue] = useState(value);
+
+  useEffect(() => {
+    setLocalValue(value);
+  }, [value]);
+
+  const handleBlur = () => {
+    setIsEditing(false);
+    if (localValue !== value) {
+      onChange?.(localValue);
+    }
+  };
+
+  const handleKeyDown = (e: any) => {
+    if (e.key === 'Enter') handleBlur();
+    if (e.key === 'Escape') {
+      setLocalValue(value);
+      setIsEditing(false);
+    }
+  };
+
+  return (
+    <div
+      className={cn(
+        "group flex items-start gap-3 p-3 rounded-lg transition-all border border-transparent hover:border-[var(--gray-3)] hover:bg-white hover:shadow-sm cursor-pointer",
+        isEditing && "border-[var(--primary-3)] bg-white shadow-sm ring-1 ring-[var(--primary-3)]/20"
+      )}
+      onClick={() => !isEditing && setIsEditing(true)}
+    >
+      <div className={cn(
+        "shrink-0 mt-1 w-7 h-7 rounded-lg flex items-center justify-center transition-colors",
+        highlight ? "bg-[var(--green-9)]/10 text-[var(--green-9)]" : "bg-[var(--gray-2)] text-[var(--gray-11)] group-hover:bg-[var(--primary-3)] group-hover:text-[var(--primary-9)]"
+      )}>
+        <Icon className="w-3.5 h-3.5" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-[10px] text-[var(--gray-11)] font-semibold mb-0.5">{label}</p>
+        {isEditing ? (
+          <div className="animate-in fade-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
+            {type === 'date' ? (
+              <InputDate
+                value={localValue}
+                onChange={(val: any) => setLocalValue(val)}
+                className="w-full font-semibold"
+              />
+            ) : type === 'dropdown' ? (
+              <InputSelect
+                value={localValue}
+                options={options}
+                onChange={(val: any) => {
+                  setLocalValue(val);
+                  setTimeout(handleBlur, 0);
+                }}
+                className="w-full font-semibold"
+              />
+            ) : (
+              <input
+                autoFocus
+                type="text"
+                value={localValue === '-' ? '' : localValue}
+                onChange={(e) => setLocalValue(e.target.value)}
+                onBlur={handleBlur}
+                onKeyDown={handleKeyDown}
+                className="w-full bg-transparent border-none p-0 text-[13px] font-semibold text-[var(--gray-13)] focus:outline-none focus:ring-0 placeholder:font-normal"
+                placeholder={`Enter ${label}...`}
+              />
+            )}
+          </div>
+        ) : (
+          <p className={cn(
+            "text-[13px] font-semibold leading-tight transition-colors",
+            highlight ? "text-[var(--green-9)]" : "text-[var(--gray-13)] group-hover:text-[var(--primary-9)]",
+            value === '-' && "text-[var(--gray-9)] font-medium"
+          )}>
+            {value}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+};
 
 // --- Main App ---
 
@@ -121,19 +149,11 @@ const Overview = (props: any) => {
     repositoryId,
     selectedItem,
     formModel,
-    setFormModel,
-    isEditing = false,
-    rightView,
-    setRightView
+    setFormModel
   } = props;
-  console.log('Overview isEditing:', isEditing);
 
-  const [isInsightsExpanded, setIsInsightsExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState('summary');
-
-  const [selectedFile, setSelectedFile] = useState<any>(null); // Use appropriate type
-
-  // Fetch attachments to set default
+  const [selectedFile, setSelectedFile] = useState<any>(null);
   const { data: attachmentData } = useAttachments(workflowId, processId, true);
 
   const { session } = authUserStore.getState();
@@ -143,23 +163,8 @@ const Overview = (props: any) => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [fileType, setFileType] = useState<string | null>(null);
   const [isViewerLoading, setIsViewerLoading] = useState(false);
-  const [refreshCounter, setRefreshCounter] = useState(0);
   const [scale, setScale] = useState(1);
   const viewerRef = useRef<any>(null);
-
-  // Local state for editable header data
-  const invoiceHeader = agentData?.['Extracted Invoice JSON']?.invoice_header as any;
-  const [headerData, setHeaderData] = useState<any>({});
-
-  useEffect(() => {
-    if (invoiceHeader) {
-      setHeaderData(invoiceHeader);
-    }
-  }, [invoiceHeader]);
-
-  const handleHeaderChange = (key: string, value: string) => {
-    setHeaderData((prev: any) => ({ ...prev, [key]: value }));
-  };
 
   const toolbarPluginInstance = useMemo(() => ({
     install: (pluginFunctions: any) => {
@@ -170,31 +175,41 @@ const Overview = (props: any) => {
     }
   }), []);
 
+  const invoiceHeader = agentData?.['Extracted Invoice JSON']?.invoice_header as any;
+
+  useEffect(() => {
+    if (invoiceHeader && Object.keys(formModel || {}).length === 0) {
+      setFormModel?.(invoiceHeader);
+    }
+  }, [invoiceHeader, formModel, setFormModel]);
+
+  useEffect(() => {
+    // Reset viewer state when request changes
+    setSelectedFile(null);
+    setPreviewUrl(null);
+  }, [processId, transactionId]);
+
   useEffect(() => {
     if (attachmentData && attachmentData.length > 0 && !selectedFile) {
       setSelectedFile(attachmentData[0]);
     }
-  }, [attachmentData]);
+  }, [attachmentData, selectedFile]);
 
-  // Fetch File Binary for Preview
   useEffect(() => {
     const fetchFile = async () => {
       const rId = Number(repositoryId);
       if (selectedFile?.id && !isNaN(rId) && rId > 0) {
         setIsViewerLoading(true);
-        const tId = tenantId ? Number(tenantId) : 2;
-        const uId = userId ? String(userId) : "2";
-        const type = 2; // Original file
-
         try {
-          const response = await fileApi.viewBinary(tId, uId, rId, selectedFile.id, type);
+          const tId = tenantId ? Number(tenantId) : 2;
+          const uId = userId ? String(userId) : "2";
+          const response = await fileApi.viewBinary(tId, uId, rId, selectedFile.id, 2);
 
           if (response?.data) {
             const base64 = response.data.file || response.data;
             if (typeof base64 !== 'string') return;
 
             let mimeType = 'application/pdf';
-
             if (base64.startsWith('/9j/')) mimeType = 'image/jpeg';
             else if (base64.startsWith('iVBORw0KGgo')) mimeType = 'image/png';
             else if (base64.startsWith('JVBERi0')) mimeType = 'application/pdf';
@@ -210,22 +225,48 @@ const Overview = (props: any) => {
         }
       }
     };
-
     fetchFile();
-  }, [selectedFile, repositoryId, tenantId, userId, refreshCounter]);
+  }, [selectedFile, repositoryId, tenantId, userId]);
 
-  const { data: data1 } = useComments(workflowId, processId, true)
-  const commentsData = (data1 || []) as any[]
+  const handleFieldChange = (key: string, value: string) => {
+    setFormModel?.((prev: any) => ({ ...prev, [key]: value }));
+  };
 
-  const lineItemMatching = agentData?.debug?.['Side-by-side Line Item matching'] || [];
+  const getFieldType = (label: string) => {
+    const l = label.toLowerCase();
+    if (l.includes('date')) return 'date';
+    if (l.includes('currency') || l.includes('status')) return 'dropdown';
+    return 'text';
+  };
+
+  const getOptions = (label: string) => {
+    const l = label.toLowerCase();
+    if (l.includes('currency')) return [
+      { label: 'USD', value: 'USD' },
+      { label: 'EUR', value: 'EUR' },
+      { label: 'GBP', value: 'GBP' },
+      { label: 'INR', value: 'INR' },
+      { label: 'AED', value: 'AED' }
+    ];
+    return [];
+  };
+
+  const getFieldIcon = (label: string) => {
+    const l = label.toLowerCase();
+    if (l.includes('supplier') || l.includes('vendor')) return Store;
+    if (l.includes('invoice') || l.includes('number')) return ListFilter;
+    if (l.includes('date')) return HistoryIcon;
+    if (l.includes('total') || l.includes('amount') || l.includes('value')) return Wallet;
+    if (l.includes('currency')) return CreditCard;
+    return FileText;
+  };
 
   const SummarySkeleton = () => (
     <div className="flex-1 overflow-y-auto px-4 pb-8 space-y-6 animate-pulse">
-      {/* Status Card Skeleton */}
-      <div className="bg-white p-6 rounded-2xl shadow-sm space-y-5 border border-[var(--gray-3)]/10">
+      <div className="bg-white p-6 rounded-xl shadow-sm space-y-5 border border-[var(--gray-3)]/10">
         <div className="flex justify-between items-start">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-[var(--gray-2)]" />
+            <div className="w-12 h-12 rounded-xl bg-[var(--gray-2)]" />
             <div className="space-y-2">
               <div className="h-3 w-24 bg-[var(--gray-2)] rounded" />
               <div className="h-5 w-40 bg-[var(--gray-2)] rounded" />
@@ -235,8 +276,6 @@ const Overview = (props: any) => {
         </div>
         <div className="h-20 w-full bg-[var(--gray-1)] rounded-xl" />
       </div>
-
-      {/* Data Grid Skeleton */}
       <div className="grid grid-cols-2 gap-4">
         {[1, 2, 3, 4].map(i => (
           <div key={i} className="bg-white p-4 rounded-xl border border-[var(--gray-3)]/10 space-y-3">
@@ -245,194 +284,99 @@ const Overview = (props: any) => {
           </div>
         ))}
       </div>
-
-      {/* Table Skeleton */}
-      <div className="bg-white rounded-2xl border border-[var(--gray-3)]/10 overflow-hidden">
-        <div className="p-4 bg-[var(--gray-2)] h-10 w-full" />
-        <div className="p-4 space-y-5">
-          {[1, 2, 3, 4, 5].map(i => (
-            <div key={i} className="flex justify-between items-center px-1">
-              <div className="h-4 w-1/2 bg-[var(--gray-2)] rounded" />
-              <div className="h-4 w-12 bg-[var(--gray-2)] rounded" />
-              <div className="h-4 w-12 bg-[var(--gray-2)] rounded" />
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   );
 
   return (
     <div className="h-full w-full flex-1 min-h-0 flex flex-col overflow-hidden font-sans">
-      {/* Header */}
-
-      <main className="flex-1 min-h-0 flex overflow-hidden">
-        {/* Left Section: Document Preview */}
-        <section className="flex-1 min-h-0 border-r border-[var(--gray-3)] flex flex-col bg-white overflow-hidden">
-          {selectedFile ? (
-            <>
-              {/* Viewer Area */}
-              <div className="flex-1 relative bg-white overflow-hidden">
-                {isViewerLoading ? (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-[var(--gray-1)] z-10">
-                    <BarLoader />
-                    <p className="text-xs font-bold text-[var(--gray-10)] tracking-widest uppercase">Loading Preview...</p>
-                  </div>
-                ) : null}
-
-                {previewUrl ? (
-                  fileType === 'application/pdf' ? (
-                    <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js">
-                      <div className="h-full w-full overflow-hidden relative group">
-                        <Viewer
-                          fileUrl={previewUrl}
-                          defaultScale={SpecialZoomLevel.PageWidth}
-                          plugins={[toolbarPluginInstance]}
-                        />
-
-                        {/* Floating Zoom Controls at Bottom Center */}
-                        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-4 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-2xl border border-[var(--gray-3)] shadow-2xl opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
-                          <button
-                            onClick={() => viewerRef.current?.zoom(scale - 0.1)}
-                            className="text-[var(--gray-11)] hover:text-[var(--primary-9)] transition-colors active:scale-90 p-1"
-                            title="Zoom Out"
-                          >
-                            <Icon name="lucide:zoom-out" className="size-5" />
-                          </button>
-                          <div className="w-px h-4 bg-[var(--gray-3)]" />
-                          <span className="text-[12px] font-bold text-[var(--gray-13)] min-w-[40px] text-center">
-                            {Math.round(scale * 100)}%
-                          </span>
-                          <div className="w-px h-4 bg-[var(--gray-3)]" />
-                          <button
-                            onClick={() => viewerRef.current?.zoom(scale + 0.1)}
-                            className="text-[var(--gray-11)] hover:text-[var(--primary-9)] transition-colors active:scale-90 p-1"
-                            title="Zoom In"
-                          >
-                            <Icon name="lucide:zoom-in" className="size-5" />
-                          </button>
-                        </div>
-                      </div>
-                    </Worker>
-                  ) : (
-                    <div className="h-full w-full flex items-center justify-center p-8">
-                      <img
-                        src={previewUrl}
-                        alt="Document Preview"
-                        className="max-w-full max-h-full object-contain shadow-2xl rounded-sm"
-                      />
-                    </div>
-                  )
-                ) : (
-                  !isViewerLoading && (
-                    <div className="flex h-full flex-col items-center justify-center p-6 text-center">
-                      <div className="mb-6 rounded-3xl bg-red-2 p-5 text-red-9 shadow-sm ring-1 ring-red-4">
-                        <Icon className="size-12" name="tabler:file-off" />
-                      </div>
-                      <h3 className="text-xl font-bold text-gray-13">Unable to display file</h3>
-                      <p className="mt-2 max-w-sm text-sm leading-relaxed text-gray-10">
-                        We couldn't generate a preview for this document. Please try refreshing the page.
-                      </p>
-                    </div>
-                  )
-                )}
-              </div>
-            </>
-          ) : (
-
-
-
-            <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
-              <div className="flex size-12 items-center justify-center rounded-full bg-[var(--gray-2)]">
-                <Icon name="tabler:file-off" className="size-6 text-[var(--gray-8)]" />
-              </div>
-              <p className="text-13 font-medium text-[var(--gray-10)]">
-                No document selected
-              </p>
+      <div className="flex-1 min-h-0 flex overflow-hidden">
+        {/* Left Side - Document Viewer (40% Width) */}
+        <div className="w-[40%] border-r border-[var(--gray-3)] flex flex-col bg-white overflow-hidden relative">
+          {isViewerLoading && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-[var(--gray-1)] z-10">
+              <BarLoader />
+              <p className="text-xs font-bold text-[var(--gray-10)] tracking-widest uppercase">Loading Preview...</p>
             </div>
           )}
-        </section>
 
-        {/* Right Section: Sidebar */}
-        <section className="flex-1 min-h-0 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent bg-white border-l border-[var(--gray-3)]">
-          {/* Sidebar Content */}
-          <div className="flex flex-col min-h-0 bg-white">
+          {previewUrl ? (
+            fileType === 'application/pdf' ? (
+              <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js">
+                <div className="h-full w-full overflow-hidden relative group">
+                  <Viewer
+                    fileUrl={previewUrl}
+                    defaultScale={SpecialZoomLevel.PageWidth}
+                    plugins={[toolbarPluginInstance]}
+                  />
+                  <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-4 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-xl border border-[var(--gray-3)] shadow-2xl opacity-0 group-hover:opacity-100 transition-all duration-300">
+                    <button onClick={() => viewerRef.current?.zoom(scale - 0.1)} className="p-1 hover:text-[var(--primary-9)]"><Icon name="lucide:zoom-out" className="size-5" /></button>
+                    <span className="text-[12px] font-semibold min-w-[40px] text-center">{Math.round(scale * 100)}%</span>
+                    <button onClick={() => viewerRef.current?.zoom(scale + 0.1)} className="p-1 hover:text-[var(--primary-9)]"><Icon name="lucide:zoom-in" className="size-5" /></button>
+                  </div>
+                </div>
+              </Worker>
+            ) : (
+              <div className="h-full w-full flex items-center justify-center p-4">
+                <img src={previewUrl} alt="Preview" className="max-w-full max-h-full object-contain shadow-2xl rounded-xl border" />
+              </div>
+            )
+          ) : !isViewerLoading && (
+            <div className="flex h-full flex-col items-center justify-center text-center p-6">
+              <Icon className="size-12 text-[var(--gray-4)] mb-4" name="tabler:file-off" />
+              <p className="text-[15px] font-semibold text-[var(--gray-11)]">No document preview available</p>
+            </div>
+          )}
+        </div>
+
+        {/* Right Side - Analysis & Data (60% Width) */}
+        <div className="flex-1 flex flex-col bg-[var(--gray-1)]">
+          <div className="flex flex-col min-h-0 bg-white flex-1 overflow-hidden">
             {(!agentData || Object.keys(agentData).length === 0) ? (
               <SummarySkeleton />
             ) : (
-              <div className="flex flex-col">
-                {/* Content (Analysis Grid & AI Insights) */}
-                <div className="p-6 pb-2 space-y-6">
-                  {/* Analysis Grid */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <AnalysisCard
-                      icon={Paperclip}
-                      title="PO Matching"
-                      value={headerData?.['PO Number'] ? `PO: ${headerData['PO Number']}` : 'No PO Found'}
-                      status={headerData?.['PO Number'] ? "Matched" : "Not Matched"}
-                      statusType={headerData?.['PO Number'] ? "success" : "warning"}
-                    />
+              <div className="flex flex-col h-full overflow-hidden">
+                <div className="p-4 space-y-4 shrink-0">
+                  <div className="grid grid-cols-4 gap-3">
+                    {(() => {
+                      const poVal = formModel?.['PO Number'] || 
+                                    formModel?.['po_number'] || 
+                                    formModel?.['RXwLGHILLrreMmRqlk9mj'] || 
+                                    formModel?.['poNumber'];
+                      return (
+                        <AnalysisCard
+                          icon={Paperclip}
+                          title="PO Matching"
+                          value={poVal && poVal !== '-' && poVal !== 'N/A' ? `PO: ${poVal}` : 'No PO Found'}
+                          status={poVal && poVal !== '-' && poVal !== 'N/A' ? "Matched" : "Not Matched"}
+                          statusType={poVal && poVal !== '-' && poVal !== 'N/A' ? "success" : "warning"}
+                        />
+                      );
+                    })()}
                     <AnalysisCard
                       icon={Layers}
                       title="Duplicate Detection"
-                      value="No duplicates detected"
-                      status="No Duplicate"
-                      statusType="success"
+                      value={agentData?.duplicate_check?.message || "No duplicates detected"}
+                      status={agentData?.duplicate_check?.status || "No Duplicate"}
+                      statusType={agentData?.duplicate_check?.status === 'Duplicate' ? "warning" : "success"}
                     />
                     <AnalysisCard
                       icon={ListFilter}
                       title="GL Account Matching"
-                      value="GL: 5100-001"
-                      status="Matched"
+                      value={agentData?.gl_matching?.account || "GL: 5100-001"}
+                      status={agentData?.gl_matching?.status || "Matched"}
                       statusType="success"
                     />
                     <AnalysisCard
                       icon={Store}
                       title="Supplier Verification"
-                      value={headerData?.['Supplier ID'] ? `ID: ${headerData['Supplier ID']}` : 'SUP-001'}
-                      status="Verified"
+                      value={formModel?.['Supplier ID'] || formModel?.['supplier_id'] ? `ID: ${formModel?.['Supplier ID'] || formModel?.['supplier_id']}` : 'SUP-001'}
+                      status={formModel?.['Supplier ID'] || formModel?.['supplier_id'] ? "Verified" : "Verified"}
                       statusType="success"
                     />
                   </div>
-
-                  {/* AI Analysis Collapsible Section */}
-                  {agentData?.reason && (
-                    <div className="bg-[var(--primary-1)] rounded-2xl border border-[var(--primary-3)] overflow-hidden transition-all duration-300">
-                      <div 
-                        onClick={() => setIsInsightsExpanded(!isInsightsExpanded)}
-                        className="p-4 flex items-center justify-between cursor-pointer hover:bg-[var(--primary-2)] transition-colors"
-                      >
-                        <div className="flex items-center gap-3">
-                          <Brain className="text-[var(--primary-9)] w-5 h-5" />
-                          <span className="text-[13px] font-bold text-[var(--gray-13)]">AI Insights</span>
-                          <span className="text-[10px] bg-[var(--gray-2)] text-[var(--gray-11)] px-2 py-0.5 rounded uppercase font-bold">Optional</span>
-                        </div>
-                        <Icon 
-                          name="lucide:chevron-down" 
-                          className={cn(
-                            "w-4 h-4 text-[var(--gray-11)] transition-transform duration-300",
-                            isInsightsExpanded ? "rotate-180" : ""
-                          )} 
-                        />
-                      </div>
-                      {isInsightsExpanded && (
-                        <motion.div 
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: 'auto', opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          className="px-5 pb-5 pt-1"
-                        >
-                          <p className="text-[13px] text-[var(--gray-12)] font-medium leading-relaxed">
-                            {agentData.reason}
-                          </p>
-                        </motion.div>
-                      )}
-                    </div>
-                  )}
                 </div>
 
-                {/* Main Navigation Tabs */}
-                <div className="px-6 pt-2 border-b border-[var(--gray-3)] bg-white sticky top-0 z-10">
+                <div className="px-6 pt-2 border-b border-[var(--gray-3)] bg-white sticky top-0 z-10 shrink-0">
                   <div className="flex items-center gap-8">
                     {[
                       { id: 'summary', label: 'Extracted Data', icon: FileText },
@@ -445,131 +389,123 @@ const Overview = (props: any) => {
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
                         className={cn(
-                          "flex items-center gap-2 pb-4 text-[13px] font-bold transition-all border-b-2 -mb-[2px]",
-                          activeTab === tab.id
-                            ? "text-[var(--primary-9)] border-[var(--primary-9)]"
-                            : "text-[var(--gray-11)] border-transparent hover:text-[var(--gray-13)]"
+                          "flex items-center gap-2 pb-4 text-[11px] font-semibold transition-all border-b-2 -mb-[2px]",
+                          activeTab === tab.id ? "text-[var(--primary-9)] border-[var(--primary-9)]" : "text-[var(--gray-11)] border-transparent"
                         )}
                       >
                         <tab.icon className="w-4 h-4" />
                         {tab.label}
-                        {tab.id === 'attachments' && attachmentData.length > 0 && (
-                          <span className="bg-[var(--gray-2)] text-[var(--gray-11)] px-1.5 py-0.5 rounded text-[10px]">
-                            {attachmentData.length}
-                          </span>
-                        )}
+                        {tab.id === 'attachments' && attachmentData?.length > 0 && <span className="bg-[var(--gray-2)] text-[var(--gray-11)] px-1.5 py-0.5 rounded text-[10px]">{attachmentData.length}</span>}
+                        {tab.id === 'line_items' && (agentData?.debug?.['Side-by-side Line Item matching']?.length > 0 || agentData?.line_items?.length > 0 || agentData?.['Extracted Invoice JSON']?.invoice_items?.length > 0) && <span className="bg-[var(--gray-2)] text-[var(--gray-11)] px-1.5 py-0.5 rounded text-[10px]">{agentData?.debug?.['Side-by-side Line Item matching']?.length || agentData?.line_items?.length || agentData?.['Extracted Invoice JSON']?.invoice_items?.length}</span>}
                       </button>
                     ))}
                   </div>
                 </div>
 
-                {/* Content Area */}
-                <div className="min-h-0">
+                <div className="flex-1 overflow-y-auto">
                   {activeTab === 'summary' && (
-                    <div className="p-6 space-y-6">
-                      <div className="grid grid-cols-2 gap-4">
-                        <DataCard
-                          icon={Store}
-                          label="Supplier"
-                          value={headerData?.['Supplier Name'] || 'Pending Analysis...'}
-                          isEditing={isEditing}
-                          onChange={(val: string) => handleHeaderChange('Supplier Name', val)}
+                    <div className="p-4 grid grid-cols-2 gap-x-4 gap-y-2">
+                      {Object.entries(formModel || {}).filter(([_, val]) => typeof val !== 'object').map(([key, val]) => (
+                        <FormCard
+                          key={key}
+                          icon={getFieldIcon(key)}
+                          label={key}
+                          value={val || '-'}
+                          type={getFieldType(key)}
+                          options={getOptions(key)}
+                          highlight={key.toLowerCase().includes('total') || key.toLowerCase().includes('due')}
+                          onChange={(newVal: string) => handleFieldChange(key, newVal)}
                         />
-                        <DataCard
-                          icon={ListFilter}
-                          label="Invoice Number"
-                          value={headerData?.['Invoice Number'] || selectedItem?.['kvcYuknkDumkTenjvrVLj'] || selectedItem?.documentNumber || selectedItem?.requestNo || 'N/A'}
-                          isEditing={isEditing}
-                          onChange={(val: string) => handleHeaderChange('Invoice Number', val)}
-                        />
-                        <DataCard
-                          icon={CreditCard}
-                          label="Currency"
-                          value={headerData?.['Currency'] || 'Pending Analysis...'}
-                          isEditing={isEditing}
-                          onChange={(val: string) => handleHeaderChange('Currency', val)}
-                        />
-                        <DataCard
-                          icon={Wallet}
-                          label="Total Value"
-                          value={headerData?.['Total Due'] || 'Pending Analysis...'}
-                          highlight
-                          isEditing={isEditing}
-                          onChange={(val: string) => handleHeaderChange('Total Due', val)}
-                        />
-                      </div>
+                      ))}
                     </div>
                   )}
 
                   {activeTab === 'line_items' && (
-                    <div className="p-6">
-                      <div className="flex items-center justify-between mb-4 px-1">
-                        <h3 className="text-[13px] font-bold text-[var(--gray-13)]">Line Items ({lineItemMatching?.length || 0})</h3>
-                      </div>
-                      <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-[var(--gray-3)]/10">
-                        <table className="w-full text-left text-xs">
-                          <thead className="bg-[var(--gray-2)] border-b border-[var(--gray-3)] text-[var(--gray-10)]">
+                    <div className="p-4">
+                      <div className="bg-white rounded-xl overflow-hidden border border-[var(--gray-3)] shadow-sm">
+                        <table className="w-full text-left text-xs border-collapse">
+                          <thead className="bg-[var(--gray-1)] border-b border-[var(--gray-3)]">
                             <tr>
-                              <th className="px-5 py-4 font-bold uppercase tracking-widest text-[10px]">Description</th>
-                              <th className="px-5 py-4 font-bold uppercase tracking-widest text-[10px] text-center">Qty</th>
-                              <th className="px-5 py-4 font-bold uppercase tracking-widest text-[10px] text-right">Rate</th>
-                              <th className="px-5 py-4 font-bold uppercase tracking-widest text-[10px] text-right">Total</th>
-                              <th className="px-5 py-4 font-bold uppercase tracking-widest text-[10px] text-right">Match</th>
+                              <th className="px-5 py-3 font-semibold text-[var(--gray-11)] text-[11px]">Description</th>
+                              <th className="px-5 py-3 font-semibold text-[var(--gray-11)] text-[11px] text-right">Qty</th>
+                              <th className="px-5 py-3 font-semibold text-[var(--gray-11)] text-[11px] text-right">Rate</th>
+                              <th className="px-5 py-3 font-semibold text-[var(--gray-11)] text-[11px] text-right">Total Amount</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-[var(--gray-3)]">
-                            {lineItemMatching.map((item: any, index: number) => {
-                              const isMatch = item['Line Score'] >= 90;
+                          <tbody className="divide-y divide-[var(--gray-2)]">
+                            {(agentData?.debug?.['Side-by-side Line Item matching'] || agentData?.line_items || agentData?.['Extracted Invoice JSON']?.invoice_items || []).map((item: any, index: number) => {
+                              const isMatch = (item['Line Score'] || item?.score) >= 90 || item?.status === 'MATCH';
+                              const currencyCode = formModel?.['Currency'] || agentData?.['Extracted Invoice JSON']?.invoice_header?.['Currency'] || '';
+
+                              const formatVal = (val: any) => {
+                                if (!val || val === '-') return '-';
+                                const num = parseFloat(String(val).replace(/[^0-9.-]+/g, ""));
+                                const formatted = isNaN(num) ? val : num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                                return currencyCode ? `${currencyCode} ${formatted}` : formatted;
+                              };
+
                               return (
-                                <tr key={index} className="hover:bg-[var(--gray-1)] transition-colors cursor-pointer group">
-                                  <td className="px-5 py-4 font-semibold text-[var(--gray-13)]">
-                                    {item.Description?.['Invoice Value'] || '-'}
+                                <tr
+                                  key={index}
+                                  className={cn(
+                                    "transition-colors group",
+                                    isMatch
+                                      ? "hover:bg-[var(--gray-1)]"
+                                      : "bg-[var(--red-1)]/30 hover:bg-[var(--red-1)]/50"
+                                  )}
+                                >
+                                  <td className="px-5 py-3 font-semibold text-[var(--gray-13)] max-w-[200px]">
+                                    {item.Description?.['Invoice Value'] || item.description || '-'}
                                   </td>
-                                  <td className="px-5 py-4 text-center font-medium">
-                                    {item.Quantity?.['Invoice Value'] || '-'}
+                                  <td className="px-5 py-3 text-right text-[var(--gray-11)] font-semibold">
+                                    {item.Quantity?.['Invoice Value'] || item.quantity || '-'}
                                   </td>
-                                  <td className="px-5 py-4 text-right font-medium">
-                                    {item?.Price?.['Invoice Value'] || '-'}
+                                  <td className="px-5 py-3 text-right text-[var(--gray-11)] font-semibold">
+                                    {formatVal(item?.Price?.['Invoice Value'] || item.rate || item.unit_price)}
                                   </td>
-                                  <td className="px-5 py-4 font-bold text-right text-[var(--gray-13)]">
-                                    {item.Amount?.['Invoice Value'] || '-'}
-                                  </td>
-                                  <td className="px-5 py-4 text-right">
-                                    <span className={cn(
-                                      "inline-flex items-center px-2 py-0.5 rounded-md text-[9px] font-bold border",
-                                      isMatch ? 'border-[var(--green-4)] bg-[var(--green-2)] text-[var(--green-11)]' : 'border-[var(--red-4)] bg-[var(--red-2)] text-[var(--red-11)]'
-                                    )}>
-                                      {isMatch ? "MATCH" : "DIFF"}
-                                    </span>
+                                  <td className="px-5 py-3 text-right text-[var(--gray-13)] font-semibold">
+                                    {formatVal(item.Amount?.['Invoice Value'] || item.total || item.amount)}
                                   </td>
                                 </tr>
                               );
                             })}
                           </tbody>
+                          <tfoot className="bg-[var(--gray-1)] border-t border-[var(--gray-3)]">
+                            <tr className="font-bold">
+                              <td colSpan={3} className="px-5 py-3 text-right text-[var(--gray-11)] text-[11px]">Grand Total</td>
+                              <td className="px-5 py-3 text-right text-[var(--gray-13)] text-[13px]">
+                                {(() => {
+                                  const currencyCode = formModel?.['Currency'] || agentData?.['Extracted Invoice JSON']?.invoice_header?.['Currency'] || '';
+                                  const items = (agentData?.debug?.['Side-by-side Line Item matching'] || agentData?.line_items || agentData?.['Extracted Invoice JSON']?.invoice_items || []);
+                                  const total = items.reduce((sum: number, item: any) => {
+                                    const val = item.Amount?.['Invoice Value'] || item.total || item.amount || 0;
+                                    const num = parseFloat(String(val).replace(/[^0-9.-]+/g, ""));
+                                    return sum + (isNaN(num) ? 0 : num);
+                                  }, 0);
+                                  const formattedTotal = total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                                  return currencyCode ? `${currencyCode} ${formattedTotal}` : formattedTotal;
+                                })()}
+                              </td>
+                            </tr>
+                          </tfoot>
                         </table>
                       </div>
                     </div>
                   )}
+
                   {activeTab === "attachments" && (
-                    <div className="p-6">
+                    <div className="p-4">
                       <Attachments
                         workflowId={workflowId}
                         processId={processId}
                         enabled={true}
-                        onSelect={(file) => {
-                          if (selectedFile?.id === file.id) {
-                            setIsViewerLoading(true);
-                            setTimeout(() => setIsViewerLoading(false), 500);
-                          } else {
-                            setSelectedFile(file);
-                          }
-                        }}
+                        onSelect={(file) => selectedFile?.id === file.id ? (setIsViewerLoading(true), setTimeout(() => setIsViewerLoading(false), 500)) : setSelectedFile(file)}
                       />
                     </div>
                   )}
 
                   {activeTab === "comments" && (
-                    <div className="p-6">
+                    <div className="p-4">
                       <Comments
                         workflowId={workflowId}
                         processId={processId}
@@ -582,7 +518,7 @@ const Overview = (props: any) => {
                   )}
 
                   {activeTab === "history" && (
-                    <div className="p-6">
+                    <div className="p-4">
                       <History
                         workflowId={workflowId}
                         processId={processId}
@@ -594,10 +530,10 @@ const Overview = (props: any) => {
               </div>
             )}
           </div>
-        </section>
-      </main>
+        </div>
+      </div>
     </div>
   );
-}
+};
 
 export default Overview;

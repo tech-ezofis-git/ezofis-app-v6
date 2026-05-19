@@ -41,7 +41,7 @@ type Store = {
   workflowRefresh: () => void
 }
 
-const requestStore = create<Store>()((set) => ({
+const requestStore = create<Store>((set) => ({
   activeTabValue: null,
   isClosed: false,
   isMaximized: false,

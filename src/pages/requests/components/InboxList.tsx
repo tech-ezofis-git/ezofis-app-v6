@@ -23,7 +23,6 @@ interface InboxListProps {
   activeTab?: string
   setPage: (p: number) => void
   setPageSize: (s: number) => void
-  setSelectedItem: (item: any) => void
   onGroupByChange?: (groups: string[]) => void
   onRefresh: () => void
   onRowClick: (item: any, tab: string) => void
@@ -79,7 +78,7 @@ const InboxList: React.FC<InboxListProps> = ({
   onRefresh,
   onRowClick,
 }) => {
-  const { openNewRequest } = requestStore((state) => state)
+  const openNewRequest = requestStore((state) => state.openNewRequest)
   const columns = useDynamicColumns(workflow, onRowClick, selectedItem) || []
 
   console.log(data, 'this is from inbox list')
