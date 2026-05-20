@@ -1,31 +1,39 @@
+import { Accordion } from '@mantine/core'
 import { useEffect } from 'react'
 import InputDate from '@/components/base/inputs/InputDate'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import InputText from '@/components/base/inputs/InputText'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
-import requestStore from '@/pages/requests/stores/useRequestStore'
 import ScrollArea from '@/components/base/scroll-area/ScrollArea'
-import { Accordion } from '@mantine/core'
-
+import requestStore from '@/pages/requests/stores/useRequestStore'
 
 const Form = (props: any) => {
   const { formModel, setFormModel } = props
 
   const selectedWorkflow = requestStore((state) => state.selectedWorkflow)
   const selectedRequest = requestStore((state) => state.selectedItem)
-  console.log(selectedWorkflow);
+  console.log(selectedWorkflow)
   //const formJsonList = JSON.parse(selectedWorkflow?.formJson?.formJson || '{}')
   const formJsonList = selectedWorkflow?.formJson?.formJson || {}
-  let panels = formJsonList?.panels || []
-  let fields = selectedWorkflow?.formJson?.controllist || []
+  const panels = formJsonList?.panels || []
+  const fields = selectedWorkflow?.formJson?.controllist || []
 
   // const [formModel, setFormModel] = useState<any>({})
 
   useEffect(() => {
     if (fields && selectedRequest) {
       const initialForm = fields.reduce((acc: any, field: any) => {
-        if (field.type !== 'PARAGRAPH' && field.type !== 'DIVIDER' && field.type !== 'LABEL') {
-          if (field.type === "TABLE" || field.type === "MULTI_SELECT" || field.type === "FILE_UPLOAD" || field.type === "DYNAMIC_TABLE") {
+        if (
+          field.type !== 'PARAGRAPH' &&
+          field.type !== 'DIVIDER' &&
+          field.type !== 'LABEL'
+        ) {
+          if (
+            field.type === 'TABLE' ||
+            field.type === 'MULTI_SELECT' ||
+            field.type === 'FILE_UPLOAD' ||
+            field.type === 'DYNAMIC_TABLE'
+          ) {
             try {
               acc[field.jsonId] = JSON.parse(selectedRequest[field.jsonId])
             } catch (e) {
@@ -47,21 +55,29 @@ const Form = (props: any) => {
 
   const getColumnSize = (size: string) => {
     switch (size) {
-      case "col-12": return "w-full"
-      case "col-6": return "w-1/2"
-      case "col-3": return "w-1/3"
-      default: return "w-1/2"
+      case 'col-12':
+        return 'w-full'
+      case 'col-6':
+        return 'w-1/2'
+      case 'col-3':
+        return 'w-1/3'
+      default:
+        return 'w-1/2'
     }
   }
 
   const getOptions = (control: any) => {
-    let optionType = control.settings?.specific?.optionsType
+    const optionType = control.settings?.specific?.optionsType
     if (optionType === 'CUSTOM') {
-      let splitType = control.settings.specific.separateOptionsUsing
+      const splitType = control.settings.specific.separateOptionsUsing
       if (splitType === 'COMMA') {
-        return control.settings.specific.customOptions.split(',').map((option: any) => ({ id: option, name: option }))
+        return control.settings.specific.customOptions
+          .split(',')
+          .map((option: any) => ({ id: option, name: option }))
       } else if (splitType === 'NEWLINE') {
-        return control.settings.specific.customOptions.split('\n').map((option: any) => ({ id: option, name: option }))
+        return control.settings.specific.customOptions
+          .split('\n')
+          .map((option: any) => ({ id: option, name: option }))
       }
       return []
     } else if (optionType === 'DYNAMIC') {
@@ -70,18 +86,24 @@ const Form = (props: any) => {
     return []
   }
 
-  console.log(formModel, "formModel")
+  console.log(formModel, 'formModel')
 
   const renderField = (control: any) => {
-    const isMatchedStatus = control.label?.toLowerCase().includes('matched status')
+    const isMatchedStatus = control.label
+      ?.toLowerCase()
+      .includes('matched status')
 
     if (control.type === 'SHORT_TEXT' && isMatchedStatus) {
       return (
-        <div className="space-y-1.5 flex flex-col w-full pr-4 pb-4">
-          <label className="text-[10px] font-bold text-[var(--gray-9)] ">{control.label}</label>
-          <div className="h-[38px] px-3 flex items-center gap-2 bg-[var(--green-1)] border border-[var(--green-4)] rounded-lg w-full">
-            <div className="w-2 h-2 rounded-full bg-[var(--green-9)]"></div>
-            <span className="text-[13px] font-medium text-[var(--green-11)]">{formModel[control.id] || 'Fully Matched'}</span>
+        <div className='flex w-full flex-col space-y-1.5 pr-4 pb-4'>
+          <label className='text-[10px] font-bold text-[var(--gray-9)]'>
+            {control.label}
+          </label>
+          <div className='flex h-[38px] w-full items-center gap-2 rounded-lg border border-[var(--green-4)] bg-[var(--green-1)] px-3'>
+            <div className='h-2 w-2 rounded-full bg-[var(--green-9)]'></div>
+            <span className='text-[13px] font-medium text-[var(--green-11)]'>
+              {formModel[control.id] || 'Fully Matched'}
+            </span>
           </div>
         </div>
       )
@@ -89,13 +111,23 @@ const Form = (props: any) => {
 
     if (control.type === 'SHORT_TEXT') {
       return (
-        <div className="space-y-1.5 flex flex-col w-full pr-4 pb-4">
-          <label className="text-[10px] font-bold text-[var(--gray-9)] ">{control.label}</label>
+        <div className='flex w-full flex-col space-y-1.5 pr-4 pb-4'>
+          <label className='text-[10px] font-bold text-[var(--gray-9)]'>
+            {control.label}
+          </label>
           <InputText
+            className='w-full'
             value={formModel[control.id] || ''}
+            styles={{
+              input: {
+                backgroundColor: 'white',
+                borderColor: 'var(--gray-4)',
+                borderRadius: '0.5rem',
+                color: 'var(--gray-13)',
+                height: '38px',
+              },
+            }}
             onChange={(value) => handleFieldChange(control.id, value)}
-            className="w-full"
-            styles={{ input: { height: '38px', borderRadius: '0.5rem', borderColor: 'var(--gray-4)', backgroundColor: 'white', color: 'var(--gray-13)' } }}
           />
         </div>
       )
@@ -103,14 +135,30 @@ const Form = (props: any) => {
 
     if (control.type === 'SINGLE_SELECT') {
       return (
-        <div className="space-y-1.5 flex flex-col w-full pr-4 pb-4">
-          <label className="text-[10px] font-bold text-[var(--gray-9)] ">{control.label}</label>
+        <div className='flex w-full flex-col space-y-1.5 pr-4 pb-4'>
+          <label className='text-[10px] font-bold text-[var(--gray-9)]'>
+            {control.label}
+          </label>
           <InputSelect
-            value={getOptions(control)?.find((opt: any) => opt.id === formModel[control.id]) || null}
+            className='w-full'
             options={getOptions(control)}
-            onChange={(opt) => handleFieldChange(control.id, opt ? opt.id : null)}
-            className="w-full"
-            styles={{ input: { height: '38px', borderRadius: '0.5rem', borderColor: 'var(--gray-4)', backgroundColor: 'white', color: 'var(--gray-13)' } }}
+            styles={{
+              input: {
+                backgroundColor: 'white',
+                borderColor: 'var(--gray-4)',
+                borderRadius: '0.5rem',
+                color: 'var(--gray-13)',
+                height: '38px',
+              },
+            }}
+            value={
+              getOptions(control)?.find(
+                (opt: any) => opt.id === formModel[control.id],
+              ) || null
+            }
+            onChange={(opt) =>
+              handleFieldChange(control.id, opt ? opt.id : null)
+            }
           />
         </div>
       )
@@ -118,13 +166,25 @@ const Form = (props: any) => {
 
     if (control.type === 'DATE') {
       return (
-        <div className="space-y-1.5 flex flex-col w-full pr-4 pb-4">
-          <label className="text-[10px] font-bold text-[var(--gray-9)] ">{control.label}</label>
+        <div className='flex w-full flex-col space-y-1.5 pr-4 pb-4'>
+          <label className='text-[10px] font-bold text-[var(--gray-9)]'>
+            {control.label}
+          </label>
           <InputDate
+            className='w-full'
             value={formModel[control.id] || null}
-            onChange={(value: string | null) => handleFieldChange(control.id, value)}
-            className="w-full"
-            styles={{ input: { height: '38px', borderRadius: '0.5rem', borderColor: 'var(--gray-4)', backgroundColor: 'white', color: 'var(--gray-13)' } }}
+            styles={{
+              input: {
+                backgroundColor: 'white',
+                borderColor: 'var(--gray-4)',
+                borderRadius: '0.5rem',
+                color: 'var(--gray-13)',
+                height: '38px',
+              },
+            }}
+            onChange={(value: string | null) =>
+              handleFieldChange(control.id, value)
+            }
           />
         </div>
       )
@@ -132,14 +192,23 @@ const Form = (props: any) => {
 
     if (control.type === 'LONG_TEXT') {
       return (
-        <div className="space-y-1.5 flex flex-col w-full pr-4 pb-4">
-          <label className="text-[10px] font-bold text-[var(--gray-9)] ">{control.label}</label>
+        <div className='flex w-full flex-col space-y-1.5 pr-4 pb-4'>
+          <label className='text-[10px] font-bold text-[var(--gray-9)]'>
+            {control.label}
+          </label>
           <InputTextarea
-            value={formModel[control.id] || ''}
-            onChange={(value) => handleFieldChange(control.id, value)}
-            className="w-full"
+            className='w-full'
             rows={3}
-            styles={{ input: { borderRadius: '0.5rem', borderColor: 'var(--gray-4)', backgroundColor: 'white', color: 'var(--gray-13)' } }}
+            value={formModel[control.id] || ''}
+            styles={{
+              input: {
+                backgroundColor: 'white',
+                borderColor: 'var(--gray-4)',
+                borderRadius: '0.5rem',
+                color: 'var(--gray-13)',
+              },
+            }}
+            onChange={(value) => handleFieldChange(control.id, value)}
           />
         </div>
       )
@@ -147,29 +216,46 @@ const Form = (props: any) => {
 
     if (control.type === 'TABLE') {
       return (
-        <div className="w-full pr-4 pb-4 mt-2">
-          <div className='mb-3 text-[13px] font-bold text-[var(--gray-13)]'>{control.label}</div>
+        <div className='mt-2 w-full pr-4 pb-4'>
+          <div className='mb-3 text-[13px] font-bold text-[var(--gray-13)]'>
+            {control.label}
+          </div>
           <div className='overflow-x-auto rounded-lg border border-[var(--gray-3)] bg-white'>
-            <table className="w-full text-left text-xs">
-              <thead className='bg-[var(--gray-0)] border-b border-[var(--gray-3)]'>
+            <table className='w-full text-left text-xs'>
+              <thead className='border-b border-[var(--gray-3)] bg-[var(--gray-0)]'>
                 <tr>
-                  {control.settings?.specific?.tableColumns?.map((column: any, index: number) => (
-                    <th key={index} className="px-5 py-4 font-bold uppercase tracking-widest text-[10px] text-[var(--gray-10)] whitespace-nowrap">
-                      {column.label}
-                    </th>
-                  ))}
+                  {control.settings?.specific?.tableColumns?.map(
+                    (column: any, index: number) => (
+                      <th
+                        className='px-5 py-4 text-[10px] font-bold tracking-widest whitespace-nowrap text-[var(--gray-10)] uppercase'
+                        key={index}
+                      >
+                        {column.label}
+                      </th>
+                    ),
+                  )}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[var(--gray-3)]">
-                {(formModel[control.id] || []).map((row: any, rowIndex: number) => (
-                  <tr key={rowIndex} className="hover:bg-[var(--gray-1)] transition-colors">
-                    {control.settings?.specific?.tableColumns?.map((column: any, colIndex: number) => (
-                      <td key={colIndex} className="px-5 py-4 font-semibold text-[var(--gray-13)] whitespace-nowrap text-[12px]">
-                        {row[column.id]}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
+              <tbody className='divide-y divide-[var(--gray-3)]'>
+                {(formModel[control.id] || []).map(
+                  (row: any, rowIndex: number) => (
+                    <tr
+                      className='transition-colors hover:bg-[var(--gray-1)]'
+                      key={rowIndex}
+                    >
+                      {control.settings?.specific?.tableColumns?.map(
+                        (column: any, colIndex: number) => (
+                          <td
+                            className='px-5 py-4 text-[12px] font-semibold whitespace-nowrap text-[var(--gray-13)]'
+                            key={colIndex}
+                          >
+                            {row[column.id]}
+                          </td>
+                        ),
+                      )}
+                    </tr>
+                  ),
+                )}
               </tbody>
             </table>
           </div>
@@ -178,7 +264,7 @@ const Form = (props: any) => {
     }
 
     if (control.type === 'DYNAMIC_TABLE') {
-      const data = formModel[control.id] ? (formModel[control.id]) : []
+      const data = formModel[control.id] ? formModel[control.id] : []
 
       let columns: any[] = []
       if (data.length > 0) {
@@ -187,32 +273,50 @@ const Form = (props: any) => {
 
       if (columns.length === 0) return null
       return (
-        <div className="w-full pr-4 pb-4 mt-2">
-          <div className='mb-3 text-[13px] font-bold text-[var(--gray-13)]'>{control.label}</div>
+        <div className='mt-2 w-full pr-4 pb-4'>
+          <div className='mb-3 text-[13px] font-bold text-[var(--gray-13)]'>
+            {control.label}
+          </div>
           <div className='overflow-x-auto rounded-lg border border-[var(--gray-3)] bg-white'>
-            <table className="w-full text-left text-xs">
-              <thead className='bg-[var(--gray-0)] border-b border-[var(--gray-3)]'>
+            <table className='w-full text-left text-xs'>
+              <thead className='border-b border-[var(--gray-3)] bg-[var(--gray-0)]'>
                 <tr>
                   {columns?.map((column: any, index: number) => (
-                    <th key={index} className="px-5 py-4 font-bold uppercase tracking-widest text-[10px] text-[var(--gray-10)] whitespace-nowrap">
+                    <th
+                      className='px-5 py-4 text-[10px] font-bold tracking-widest whitespace-nowrap text-[var(--gray-10)] uppercase'
+                      key={index}
+                    >
                       {column}
                     </th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[var(--gray-3)]">
+              <tbody className='divide-y divide-[var(--gray-3)]'>
                 {(data || []).map((row: any, rowIndex: number) => (
-                  <tr key={rowIndex} className="hover:bg-[var(--gray-1)] transition-colors">
+                  <tr
+                    className='transition-colors hover:bg-[var(--gray-1)]'
+                    key={rowIndex}
+                  >
                     {columns?.map((column: any, colIndex: number) => (
                       // <td key={colIndex} className="px-5 py-4 font-semibold text-[var(--gray-13)] whitespace-nowrap text-[12px]">
                       //   {row[column]}
                       // </td>
-                      <td key={colIndex} className='px-2 py-2'>
+                      <td className='px-2 py-2' key={colIndex}>
                         <InputText
+                          className='w-full'
                           value={row[column] || ''}
-                          onChange={(value: string) => formModel[control.id][rowIndex][column] = value}
-                          className="w-full"
-                          styles={{ input: { height: '38px', borderRadius: '0.5rem', borderColor: 'var(--gray-4)', backgroundColor: 'white', color: 'var(--gray-13)' } }}
+                          styles={{
+                            input: {
+                              backgroundColor: 'white',
+                              borderColor: 'var(--gray-4)',
+                              borderRadius: '0.5rem',
+                              color: 'var(--gray-13)',
+                              height: '38px',
+                            },
+                          }}
+                          onChange={(value: string) =>
+                            (formModel[control.id][rowIndex][column] = value)
+                          }
                         />
                       </td>
                     ))}
@@ -227,18 +331,25 @@ const Form = (props: any) => {
 
     if (control.type === 'PARAGRAPH') {
       return (
-        <div className='w-full pr-4 pb-4 text-[13px] text-[var(--gray-13)]' dangerouslySetInnerHTML={{ __html: control.settings?.specific?.textContent }} />
+        <div
+          className='w-full pr-4 pb-4 text-[13px] text-[var(--gray-13)]'
+          dangerouslySetInnerHTML={{
+            __html: control.settings?.specific?.textContent,
+          }}
+        />
       )
     }
 
     if (control.type === 'LABEL') {
       return (
-        <div className='w-full pr-4 pb-4 text-[13px] font-bold text-[var(--gray-13)]'>{control.label}</div>
+        <div className='w-full pr-4 pb-4 text-[13px] font-bold text-[var(--gray-13)]'>
+          {control.label}
+        </div>
       )
     }
 
     if (control.type === 'DIVIDER') {
-      return <div className='w-full h-px bg-[var(--gray-3)] my-2 mr-4'></div>
+      return <div className='my-2 mr-4 h-px w-full bg-[var(--gray-3)]'></div>
     }
 
     return null
@@ -248,16 +359,17 @@ const Form = (props: any) => {
     <ScrollArea height='calc(100dvh - 278px)'>
       <div className='max-w-2xl'>
         <Accordion
-          defaultValue="panel-0"
-          variant="separated"
-          radius="md"
+          defaultValue='panel-0'
+          radius='md'
+          variant='separated'
           classNames={{
-            item: 'bg-[var(--gray-0)] border border-[var(--gray-3)] rounded-[12px] mb-3 shadow-sm',
-            control: 'px-4 py-2 hover:bg-[var(--gray-1)] transition-colors rounded-[12px]',
-            label: 'font-bold text-[14px] text-[var(--gray-13)] tracking-tight',
-            panel: 'px-6 pb-6 pt-2',
+            chevron: 'text-[var(--gray-10)]',
             content: 'p-0',
-            chevron: 'text-[var(--gray-10)]'
+            control:
+              'rounded-[12px] px-4 py-2 transition-colors hover:bg-[var(--gray-1)]',
+            item: 'mb-3 rounded-[12px] border border-[var(--gray-3)] bg-[var(--gray-0)] shadow-sm',
+            label: 'text-[14px] font-bold tracking-tight text-[var(--gray-13)]',
+            panel: 'px-6 pt-2 pb-6',
           }}
         >
           {/* shadow-[0_1px_2px_rgba(0,0,0,0.02)] */}
@@ -267,9 +379,12 @@ const Form = (props: any) => {
                 {panel.settings?.title || `Section ${panelIndex + 1}`}
               </Accordion.Control>
               <Accordion.Panel>
-                <div className='flex flex-wrap -mx-2'>
+                <div className='-mx-2 flex flex-wrap'>
                   {panel.fields?.map((control: any, controlIndex: number) => (
-                    <div key={controlIndex} className={`${getColumnSize(control.settings?.general?.size)} pl-2`}>
+                    <div
+                      className={`${getColumnSize(control.settings?.general?.size)} pl-2`}
+                      key={controlIndex}
+                    >
                       {renderField(control)}
                     </div>
                   ))}

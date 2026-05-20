@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query'
 import type { Node } from '@xyflow/react'
+import { useQuery } from '@tanstack/react-query'
 import { useNodes, useReactFlow } from '@xyflow/react'
 import { useEffect, useState } from 'react'
 import { getWorkflowFormsQueryOptions } from '@/api/form/queries'
@@ -11,13 +11,13 @@ import InputSwitch from '@/components/base/inputs/InputSwitch'
 import Input from '@/components/base/inputs/InputText'
 import cn from '@/utils/cn'
 import useWorkflowStore from '../../stores/useWorkflowStore'
+import { generateId } from '../../utils/generateId'
 import ConnectionsRouting from './common/ConnectionsRouting'
 import SettingsSection from './common/SettingsSection'
-import { generateId } from '../../utils/generateId'
 
 interface ConditionRow {
-  id: string
   field: string
+  id: string
   logic: string
   value: string
   isAction?: boolean
@@ -34,7 +34,9 @@ export default function ConditionSettingsPanel({
   const currentNode = initialNode
     ? liveNodes.find((n: Node) => n.id === initialNode.id) || initialNode
     : null
-  const nodeData = (currentNode?.data?.settings || currentNode?.data || {}) as any
+  const nodeData = (currentNode?.data?.settings ||
+    currentNode?.data ||
+    {}) as any
 
   const safeParse = (data: any) => {
     if (!data) return null
@@ -62,30 +64,30 @@ export default function ConditionSettingsPanel({
     const raw = initialConditions?.condition
     if (Array.isArray(raw) && raw.length > 0) {
       return raw.map((c: any) => ({
-        id: c.id || generateId(),
         field: c.name || '',
+        id: c.id || generateId(),
+        isAction: !!c.fieldValue,
         logic: c.logic || 'IS_EQUALS_TO',
         value: c.value || '',
-        isAction: !!c.fieldValue,
       }))
     }
-    return [{ id: generateId(), field: '', logic: 'IS_EQUALS_TO', value: '' }]
+    return [{ field: '', id: generateId(), logic: 'IS_EQUALS_TO', value: '' }]
   })
   const [masterFormId, setMasterFormId] = useState(
     initialMasterConditions?.masterFormId || '',
   )
   const [masterMappings, setMasterMappings] = useState<
-    { id: string; field: string; masterColumn: string }[]
+    { field: string; id: string; masterColumn: string }[]
   >(() => {
     const raw = initialMasterConditions?.condition
     if (Array.isArray(raw) && raw.length > 0) {
       return raw.map((m: any) => ({
-        id: m.id || generateId(),
         field: m.field || '',
+        id: m.id || generateId(),
         masterColumn: m.masterColumn || '',
       }))
     }
-    return [{ id: generateId(), field: '', masterColumn: '' }]
+    return [{ field: '', id: generateId(), masterColumn: '' }]
   })
 
   const { data: workflowForms = [] } = useQuery(getWorkflowFormsQueryOptions())
@@ -121,19 +123,18 @@ export default function ConditionSettingsPanel({
     const currentConditions = safeParse(nodeData.conditions)
     const currentMasterConditions = safeParse(nodeData.masterConditions)
 
-    const targetLogic =
-      currentConditions?.groupLogic === 'ANY' ? 'ANY' : 'ALL'
+    const targetLogic = currentConditions?.groupLogic === 'ANY' ? 'ANY' : 'ALL'
     if (targetLogic !== logicCombine) setLogicCombine(targetLogic)
 
     const rawConditions = currentConditions?.condition
     if (Array.isArray(rawConditions)) {
       setConditions(
         rawConditions.map((c: any) => ({
-          id: c.id || generateId(),
           field: c.name || '',
+          id: c.id || generateId(),
+          isAction: !!c.fieldValue,
           logic: c.logic || 'IS_EQUALS_TO',
           value: c.value || '',
-          isAction: !!c.fieldValue,
         })),
       )
     }
@@ -146,8 +147,8 @@ export default function ConditionSettingsPanel({
     if (Array.isArray(rawMappings)) {
       setMasterMappings(
         rawMappings.map((m: any) => ({
-          id: m.id || generateId(),
           field: m.field || '',
+          id: m.id || generateId(),
           masterColumn: m.masterColumn || '',
         })),
       )
@@ -157,18 +158,18 @@ export default function ConditionSettingsPanel({
   const addCondition = () => {
     const newConditions = [
       ...conditions,
-      { id: generateId(), field: '', logic: 'EQUALS', value: '' },
+      { field: '', id: generateId(), logic: 'EQUALS', value: '' },
     ]
     setConditions(newConditions)
     updateNodeData('conditions', {
-      groupLogic: logicCombine.toUpperCase(),
       condition: newConditions.map((c) => ({
-        id: c.id,
-        name: c.field,
-        logic: c.logic,
-        value: c.value,
         fieldValue: !!c.isAction,
+        id: c.id,
+        logic: c.logic,
+        name: c.field,
+        value: c.value,
       })),
+      groupLogic: logicCombine.toUpperCase(),
     })
   }
 
@@ -176,43 +177,47 @@ export default function ConditionSettingsPanel({
     const newConditions = conditions.filter((c: any) => c.id !== id)
     setConditions(newConditions)
     updateNodeData('conditions', {
-      groupLogic: logicCombine.toUpperCase(),
       condition: newConditions.map((c) => ({
-        id: c.id,
-        name: c.field,
-        logic: c.logic,
-        value: c.value,
         fieldValue: !!c.isAction,
+        id: c.id,
+        logic: c.logic,
+        name: c.field,
+        value: c.value,
       })),
+      groupLogic: logicCombine.toUpperCase(),
     })
   }
 
-  const updateConditionRow = (id: string, key: keyof ConditionRow, val: any) => {
+  const updateConditionRow = (
+    id: string,
+    key: keyof ConditionRow,
+    val: any,
+  ) => {
     const newConditions = conditions.map((c: any) =>
       c.id === id ? { ...c, [key]: val } : c,
     )
     setConditions(newConditions)
     updateNodeData('conditions', {
-      groupLogic: logicCombine.toUpperCase(),
       condition: newConditions.map((c) => ({
-        id: c.id,
-        name: c.field,
-        logic: c.logic,
-        value: c.value,
         fieldValue: !!c.isAction,
+        id: c.id,
+        logic: c.logic,
+        name: c.field,
+        value: c.value,
       })),
+      groupLogic: logicCombine.toUpperCase(),
     })
   }
 
   const addMapping = () => {
     const newMappings = [
       ...masterMappings,
-      { id: generateId(), field: '', masterColumn: '' },
+      { field: '', id: generateId(), masterColumn: '' },
     ]
     setMasterMappings(newMappings)
     updateNodeData('masterConditions', {
-      masterFormId: masterFormId,
       condition: newMappings,
+      masterFormId: masterFormId,
     })
   }
 
@@ -220,8 +225,8 @@ export default function ConditionSettingsPanel({
     const newMappings = masterMappings.filter((m: any) => m.id !== id)
     setMasterMappings(newMappings)
     updateNodeData('masterConditions', {
-      masterFormId: masterFormId,
       condition: newMappings,
+      masterFormId: masterFormId,
     })
   }
 
@@ -235,14 +240,13 @@ export default function ConditionSettingsPanel({
     )
     setMasterMappings(newMappings)
     updateNodeData('masterConditions', {
-      masterFormId: masterFormId,
       condition: newMappings,
+      masterFormId: masterFormId,
     })
   }
 
   const formId = useWorkflowStore((state) => state.form)
-  const [fieldOptions, setFieldOptions] = useState<any[]>([
-  ])
+  const [fieldOptions, setFieldOptions] = useState<any[]>([])
 
   useEffect(() => {
     if (!formId) return
@@ -253,7 +257,10 @@ export default function ConditionSettingsPanel({
         if (response && response.formJson) {
           const form = JSON.parse(response.formJson)
           const allOptions: any[] = []
-          const panels = [...(form.panels || []), ...(form.secondaryPanels || [])]
+          const panels = [
+            ...(form.panels || []),
+            ...(form.secondaryPanels || []),
+          ]
 
           panels.forEach((panel: any) => {
             if (panel.fields && panel.fields.length) {
@@ -336,13 +343,13 @@ export default function ConditionSettingsPanel({
             {/* Mode Switcher */}
             <div className='flex flex-col gap-2'>
               <InputLabel label='Condition Type' />
-              <div className='flex gap-2 p-1 bg-gray-1 rounded-lg border border-gray-3'>
+              <div className='flex gap-2 rounded-lg border border-gray-3 bg-gray-1 p-1'>
                 <button
                   className={cn(
-                    'flex-1 py-1.5 text-12 font-semibold rounded-md transition-all',
+                    'flex-1 rounded-md py-1.5 text-12 font-semibold transition-all',
                     mode === 'standard'
-                      ? 'bg-white shadow-sm text-primary-9 ring-1 ring-gray-200'
-                      : 'text-gray-9 hover:bg-gray-100',
+                      ? 'ring-gray-200 bg-white text-primary-9 shadow-sm ring-1'
+                      : 'hover:bg-gray-100 text-gray-9',
                   )}
                   onClick={() => {
                     setMode('standard')
@@ -353,10 +360,10 @@ export default function ConditionSettingsPanel({
                 </button>
                 <button
                   className={cn(
-                    'flex-1 py-1.5 text-12 font-semibold rounded-md transition-all',
+                    'flex-1 rounded-md py-1.5 text-12 font-semibold transition-all',
                     mode === 'advanced'
-                      ? 'bg-white shadow-sm text-primary-9 ring-1 ring-gray-200'
-                      : 'text-gray-9 hover:bg-gray-100',
+                      ? 'ring-gray-200 bg-white text-primary-9 shadow-sm ring-1'
+                      : 'hover:bg-gray-100 text-gray-9',
                   )}
                   onClick={() => {
                     setMode('advanced')
@@ -398,7 +405,7 @@ export default function ConditionSettingsPanel({
                   </span>
                 </div>
 
-                <div className='flex flex-col gap-2 mt-4 animate-in fade-in slide-in-from-top-2 duration-400'>
+                <div className='animate-in fade-in slide-in-from-top-2 mt-4 flex flex-col gap-2 duration-400'>
                   <InputLabel label='Condition Rules' />
 
                   <div className='space-y-4 py-0.5'>
@@ -407,24 +414,25 @@ export default function ConditionSettingsPanel({
                         <div key={row.id}>
                           {/* Logic Divider */}
                           {index > 0 && (
-                            <div className='relative flex items-center justify-center my-4'>
-                              <div className='absolute h-px w-full bg-slate-100' />
-                              <span className='relative bg-slate-50 px-3 py-1 text-[10px] font-bold uppercase text-slate-400 rounded-full shadow-sm'>
+                            <div className='relative my-4 flex items-center justify-center'>
+                              <div className='bg-slate-100 absolute h-px w-full' />
+                              <span className='bg-slate-50 text-slate-400 relative rounded-full px-3 py-1 text-[10px] font-bold uppercase shadow-sm'>
                                 {logicCombine === 'ALL' ? 'AND' : 'OR'}
                               </span>
                             </div>
                           )}
 
                           {/* Individual Rule Card */}
-                          <div className='group relative flex items-center justify-between gap-4 bg-white rounded-xl p-4 shadow-sm border border-transparent transition-all hover:border-slate-100/60 hover:shadow-md'>
-                            <div className='flex-1 flex flex-col gap-3'>
+                          <div className='group hover:border-slate-100/60 relative flex items-center justify-between gap-4 rounded-xl border border-transparent bg-white p-4 shadow-sm transition-all hover:shadow-md'>
+                            <div className='flex flex-1 flex-col gap-3'>
                               {/* Field Selection */}
                               <InputSelect
-                                placeholder='Select Field'
                                 options={fieldOptions}
+                                placeholder='Select Field'
                                 value={
                                   fieldOptions.find(
-                                    (o: any) => String(o.id) === String(row.field),
+                                    (o: any) =>
+                                      String(o.id) === String(row.field),
                                   ) || null
                                 }
                                 onChange={(val: any) =>
@@ -434,8 +442,8 @@ export default function ConditionSettingsPanel({
 
                               {/* Operator Selection */}
                               <InputSelect
-                                placeholder='Select Operator'
                                 options={logicOptions}
+                                placeholder='Select Operator'
                                 value={
                                   logicOptions.find(
                                     (o: any) => o.id === row.logic,
@@ -449,35 +457,42 @@ export default function ConditionSettingsPanel({
                               {/* Value Input */}
                               <Input
                                 placeholder='Value'
+                                rightSectionPointerEvents='auto'
+                                rightSectionWidth={60}
                                 value={row.value || ''}
-                                onChange={(val: string) =>
-                                  updateConditionRow(row.id, 'value', val)
-                                }
+                                classNames={{
+                                  input: 'h-10 bg-white px-3 text-13',
+                                }}
                                 rightSection={
-                                  <div className='flex items-center h-full border-l border-slate-100 px-2.5'>
+                                  <div className='border-slate-100 flex h-full items-center border-l px-2.5'>
                                     <InputSwitch
                                       checked={!!row.isAction}
                                       onChange={(v: boolean) =>
-                                        updateConditionRow(row.id, 'isAction', v)
+                                        updateConditionRow(
+                                          row.id,
+                                          'isAction',
+                                          v,
+                                        )
                                       }
                                     />
                                   </div>
                                 }
-                                rightSectionPointerEvents='auto'
-                                rightSectionWidth={60}
-                                classNames={{
-                                  input: 'bg-white h-10 px-3 text-13',
-                                }}
+                                onChange={(val: string) =>
+                                  updateConditionRow(row.id, 'value', val)
+                                }
                               />
                             </div>
 
                             {/* Removal Action */}
                             <button
-                              onClick={() => removeCondition(row.id)}
-                              className='p-2 text-slate-300 transition-colors hover:text-red-500 hover:bg-red-50 rounded-lg shrink-0'
+                              className='text-slate-300 hover:text-red-500 hover:bg-red-50 shrink-0 rounded-lg p-2 transition-colors'
                               title='Remove Condition'
+                              onClick={() => removeCondition(row.id)}
                             >
-                              <Icon name='lucide:trash-2' className='h-4.5 w-4.5' />
+                              <Icon
+                                className='h-4.5 w-4.5'
+                                name='lucide:trash-2'
+                              />
                             </button>
                           </div>
                         </div>
@@ -497,7 +512,7 @@ export default function ConditionSettingsPanel({
                 </div>
               </div>
             ) : (
-              <div className='space-y-6 animate-in fade-in slide-in-from-top-2 duration-300'>
+              <div className='animate-in fade-in slide-in-from-top-2 space-y-6 duration-300'>
                 {/* Master Form Selection */}
                 <div className='flex flex-col gap-2'>
                   <InputLabel label='Master Form' required />
@@ -520,34 +535,39 @@ export default function ConditionSettingsPanel({
                 </div>
 
                 {/* Mappings Table */}
-                <div className='flex flex-col gap-2 mt-8'>
+                <div className='mt-8 flex flex-col gap-2'>
                   <div className='flex items-center justify-between px-0.5'>
                     <InputLabel label='Master Mappings' />
                     <button
-                      onClick={addMapping}
-                      className='text-primary-9 hover:bg-primary-50 rounded p-1 transition-colors'
+                      className='hover:bg-primary-50 rounded p-1 text-primary-9 transition-colors'
                       title='Add Mapping'
+                      onClick={addMapping}
                     >
-                      <Icon name='lucide:plus' className='h-5 w-5' />
+                      <Icon className='h-5 w-5' name='lucide:plus' />
                     </button>
                   </div>
 
                   <div className='space-y-4 py-0.5'>
                     <div className='grid grid-cols-2 gap-4 px-1 pr-10'>
-                      <span className='text-11 font-medium text-gray-9'>Field</span>
-                      <span className='text-11 font-medium text-gray-9'>Master Column</span>
+                      <span className='text-11 font-medium text-gray-9'>
+                        Field
+                      </span>
+                      <span className='text-11 font-medium text-gray-9'>
+                        Master Column
+                      </span>
                     </div>
 
                     <div className='space-y-2'>
                       {masterMappings.map((row) => (
-                        <div key={row.id} className='flex items-center gap-2'>
+                        <div className='flex items-center gap-2' key={row.id}>
                           <div className='grid flex-1 grid-cols-2 gap-2'>
                             <InputSelect
-                              placeholder='Select'
                               options={fieldOptions}
+                              placeholder='Select'
                               value={
                                 fieldOptions.find(
-                                  (o: any) => String(o.id) === String(row.field),
+                                  (o: any) =>
+                                    String(o.id) === String(row.field),
                                 ) || null
                               }
                               onChange={(val: any) =>
@@ -566,7 +586,8 @@ export default function ConditionSettingsPanel({
                                   { id: 'col1', name: 'Column 1' },
                                   { id: 'col2', name: 'Column 2' },
                                   { id: 'col3', name: 'Column 3' },
-                                ].find((o: any) => o.id === row.masterColumn) || null
+                                ].find((o: any) => o.id === row.masterColumn) ||
+                                null
                               }
                               onChange={(val: any) =>
                                 updateMappingRow(row.id, 'masterColumn', val.id)
@@ -574,11 +595,11 @@ export default function ConditionSettingsPanel({
                             />
                           </div>
                           <button
-                            onClick={() => removeMapping(row.id)}
-                            className='p-1.5 text-gray-400 transition-colors hover:text-red-500'
+                            className='text-gray-400 hover:text-red-500 p-1.5 transition-colors'
                             title='Remove Mapping'
+                            onClick={() => removeMapping(row.id)}
                           >
-                            <Icon name='lucide:x' className='h-4.5 w-4.5' />
+                            <Icon className='h-4.5 w-4.5' name='lucide:x' />
                           </button>
                         </div>
                       ))}

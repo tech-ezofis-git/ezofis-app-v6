@@ -122,15 +122,15 @@ const StepOne = () => {
           />
         ) : (
           <Button
-            key='connect-button'
             disabled={!emailSettings.provider}
             icon='lucide:plug'
+            key='connect-button'
+            loading={emailSettings.isConnecting}
             label={
               emailSettings.provider
                 ? `Connect ${emailSettings.provider.charAt(0).toUpperCase() + emailSettings.provider.slice(1)}`
                 : 'Select an integration'
             }
-            loading={emailSettings.isConnecting}
             onClick={handleConnect}
           />
         )}

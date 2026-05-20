@@ -1,28 +1,28 @@
 export interface InvoiceData {
-  id: string
-  supplier: {
-    name: string
-    address: string[]
-  }
-  invoiceNumber: string
-  invoiceDate: string
-  poNumber: string
   billTo: {
-    name: string
     address: string[]
+    name: string
   }
+  currency: string
+  id: string
+  invoiceDate: string
+  invoiceNumber: string
   lineItems: {
+    amount: number
     description: string
-    type?: string
     qty: number
     rate: number
-    amount: number
     status?: 'matched' | 'unmatched'
+    type?: string
   }[]
+  matchingScore: number
+  poNumber: string
+  status: 'processing' | 'approved' | 'rejected'
   subtotal: number
+  supplier: {
+    address: string[]
+    name: string
+  }
   tax: number
   total: number
-  currency: string
-  status: 'processing' | 'approved' | 'rejected'
-  matchingScore: number
 }

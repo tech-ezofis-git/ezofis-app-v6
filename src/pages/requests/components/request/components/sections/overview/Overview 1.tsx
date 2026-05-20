@@ -1,190 +1,198 @@
-import { useState, useEffect } from 'react';
-import Icon from '@/components/base/icon/Icon';
-import { AnimateSlideUp } from '@/components/common/animations';
-import { SkeletonCard } from '@/components/common/skeletons';
-import cn from '@/utils/cn';
-import Attachments from '../attachment/Attachments';
-import History from "../history/History";
-import Comments from "../comment/Comments";
-import FileSheet from '@/components/common/file-sheet/FileSheet';
-import { useAttachments } from '@/pages/requests/hooks/useAttachments';
-import authUserStore from '@/stores/authUserStore';
+import { useEffect, useState } from 'react'
+import Icon from '@/components/base/icon/Icon'
+import { AnimateSlideUp } from '@/components/common/animations'
+import FileSheet from '@/components/common/file-sheet/FileSheet'
+import { SkeletonCard } from '@/components/common/skeletons'
+import { useAttachments } from '@/pages/requests/hooks/useAttachments'
+import authUserStore from '@/stores/authUserStore'
+import cn from '@/utils/cn'
+import Attachments from '../attachment/Attachments'
+import Comments from '../comment/Comments'
+import History from '../history/History'
 
 // --- Types ---
 // type RightViewMode = 'analysis' | 'comments' | 'attachments';
 
-interface FieldMatch {
-  Field: string;
-  'Invoice Value': string | number;
-  'PO Value': string | number;
-  Score: number;
+interface AgentData {
+  'decision': string
+  'reason': string
+  'score': number
+  'backorder'?: BackorderData
+  'debug'?: DebugData
+  'Extracted Invoice JSON'?: ExtractedInvoice
+  'invoice_errors'?: InvoiceErrors
+  'po_row'?: {
+    'Currency'?: string
+    'PO Amount': string
+    'PO Number': string
+    'Vendor Name': string
+  }
+  'reqNo'?: string
 }
 
-interface LineItemMatch {
-  Description: { 'Invoice Value': string; 'PO Value': string; Score: number };
-  Quantity: { 'Invoice Value': number; 'PO Value': number; Score: number };
-  Price: { 'Invoice Value': number; 'PO Value': number; Score: number };
-  Amount: { 'Invoice Value': number; 'PO Value': number; Score: number };
-  'Line Score': number;
+interface BackorderData {
+  detected: boolean
+  missing_qty_by_item?: BackorderItem[]
+  recommendation?: BackorderRecommendation
 }
 
-interface InvoiceHeader {
-  'Supplier Name'?: string;
-  'PO Number'?: string;
-  'Currency'?: string;
-  'Total Due'?: string | number;
+interface BackorderItem {
+  invoice_qty: number | null
+  po_qty: number
+  remaining: number
+  amount?: number
+  description?: string
+  po_line_id?: string
+  price?: number
+  reason?: BackorderReason
+}
+
+type BackorderReason = string
+
+type BackorderRecommendation = string
+
+interface DebugData {
+  'Side-by-side Field Matching'?: FieldMatch[]
+  'Side-by-side Line Item matching'?: LineItemMatch[]
 }
 
 interface ExtractedInvoice {
-  invoice_header?: InvoiceHeader;
+  invoice_header?: InvoiceHeader
   line_items?: Array<{
-    line_no: number;
-    description: string;
-    quantity: string;
-    price: number;
-    amount: number;
-  }>;
+    amount: number
+    description: string
+    line_no: number
+    price: number
+    quantity: string
+  }>
 }
 
-interface DebugData {
-  'Side-by-side Field Matching'?: FieldMatch[];
-  'Side-by-side Line Item matching'?: LineItemMatch[];
+interface FieldMatch {
+  'Field': string
+  'Invoice Value': string | number
+  'PO Value': string | number
+  'Score': number
 }
-
 /** invoice_errors can come as strings OR objects (your runtime error shows objects). */
 type InvoiceErrorItem =
   | string
   | {
-    code?: string;
-    field?: string;
-    detail?: any;
-    message?: string;
-  }
-  | Record<string, any>;
+      code?: string
+      detail?: any
+      field?: string
+      message?: string
+    }
+  | Record<string, any>
 
 interface InvoiceErrors {
-  severity?: string;
-  errors: InvoiceErrorItem[];
+  errors: InvoiceErrorItem[]
+  severity?: string
 }
 
-type BackorderReason = string;
-type BackorderRecommendation = string;
-
-interface BackorderItem {
-  po_line_id?: string;
-  po_qty: number;
-  invoice_qty: number | null;
-  remaining: number;
-  description?: string;
-  price?: number;
-  amount?: number;
-  reason?: BackorderReason;
+interface InvoiceHeader {
+  'Currency'?: string
+  'PO Number'?: string
+  'Supplier Name'?: string
+  'Total Due'?: string | number
 }
 
-interface BackorderData {
-  detected: boolean;
-  missing_qty_by_item?: BackorderItem[];
-  recommendation?: BackorderRecommendation;
-}
-
-interface AgentData {
-  decision: string;
-  score: number;
-  reason: string;
-  debug?: DebugData;
-  po_row?: {
-    'PO Number': string;
-    'Vendor Name': string;
-    'PO Amount': string;
-    Currency?: string;
-  };
-  'Extracted Invoice JSON'?: ExtractedInvoice;
-  invoice_errors?: InvoiceErrors;
-  backorder?: BackorderData;
-  reqNo?: string;
+interface LineItemMatch {
+  'Amount': { 'Invoice Value': number; 'PO Value': number; 'Score': number }
+  'Description': {
+    'Invoice Value': string
+    'PO Value': string
+    'Score': number
+  }
+  'Line Score': number
+  'Price': { 'Invoice Value': number; 'PO Value': number; 'Score': number }
+  'Quantity': { 'Invoice Value': number; 'PO Value': number; 'Score': number }
 }
 
 const Overview = ({
   agentData,
-  workflowId,
   processId,
-  transactionId,
   repositoryId,
-  selectedItem,
   // rawWorkflowData,
   rightView,
+  selectedItem,
+  transactionId,
+  workflowId,
   setRightView,
 }: any) => {
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(true)
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 800);
-    return () => clearTimeout(timer);
-  }, []);
+    const timer = setTimeout(() => setIsLoading(false), 800)
+    return () => clearTimeout(timer)
+  }, [])
 
-  const [selectedFile, setSelectedFile] = useState<any>(null); // Use appropriate type
-  const [isFileLoading, setIsFileLoading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<any>(null) // Use appropriate type
+  const [isFileLoading, setIsFileLoading] = useState(false)
 
   // Fetch attachments to set default
-  const { data: attachmentData } = useAttachments(workflowId, processId, true);
+  const { data: attachmentData } = useAttachments(workflowId, processId, true)
 
-  const { session } = authUserStore.getState();
-  const tenantId = session?.tenantId;
-  const userId = session?.id;
+  const { session } = authUserStore.getState()
+  const tenantId = session?.tenantId
+  const userId = session?.id
 
   // Set default file when attachments load
   useEffect(() => {
     if (attachmentData && attachmentData.length > 0 && !selectedFile) {
-      setSelectedFile(attachmentData[0]);
+      setSelectedFile(attachmentData[0])
     }
-  }, [attachmentData]);
+  }, [attachmentData])
 
-  const data: AgentData = agentData || {};
+  const data: AgentData = agentData || {}
 
-  const fieldMatching = data.debug?.['Side-by-side Field Matching'] || [];
-  const lineItemMatching = data.debug?.['Side-by-side Line Item matching'] || [];
-  const invoiceHeader = data['Extracted Invoice JSON']?.invoice_header as any;
+  const fieldMatching = data.debug?.['Side-by-side Field Matching'] || []
+  const lineItemMatching = data.debug?.['Side-by-side Line Item matching'] || []
+  const invoiceHeader = data['Extracted Invoice JSON']?.invoice_header as any
 
   // -----------------------------
   // NEW: Invoice Errors + Backorder
   // -----------------------------
-  const invoiceErrors = data.invoice_errors;
-  const backorder = data.backorder;
+  const invoiceErrors = data.invoice_errors
+  const backorder = data.backorder
 
   const hasInvoiceErrors =
     !!invoiceErrors &&
     Array.isArray(invoiceErrors.errors) &&
-    invoiceErrors.errors.length > 0;
+    invoiceErrors.errors.length > 0
 
   const hasBackorder =
     !!backorder &&
     backorder.detected === true &&
     Array.isArray(backorder.missing_qty_by_item) &&
-    backorder.missing_qty_by_item.length > 0;
+    backorder.missing_qty_by_item.length > 0
 
   /** Prevent "Objects are not valid as a React child" by normalizing to displayable strings. */
-  const formatInvoiceError = (err: InvoiceErrorItem): { title: string; subtitle?: string } => {
-    if (typeof err === 'string') return { title: err };
+  const formatInvoiceError = (
+    err: InvoiceErrorItem,
+  ): { subtitle?: string; title: string } => {
+    if (typeof err === 'string') return { title: err }
 
     // If it's an object, pick meaningful fields.
-    const e: any = err || {};
-    const code = e.code ? String(e.code) : '';
-    const field = e.field ? String(e.field) : '';
-    const message = e.message ? String(e.message) : '';
-    const detail = e.detail;
+    const e: any = err || {}
+    const code = e.code ? String(e.code) : ''
+    const field = e.field ? String(e.field) : ''
+    const message = e.message ? String(e.message) : ''
+    const detail = e.detail
 
     // Try to build a clean, human readable line.
-    const titleParts = [code && `(${code})`, field && field, message].filter(Boolean);
-    const title = titleParts.length ? titleParts.join(' ') : 'Validation issue';
+    const titleParts = [code && `(${code})`, field && field, message].filter(
+      Boolean,
+    )
+    const title = titleParts.length ? titleParts.join(' ') : 'Validation issue'
 
-    let subtitle: string | undefined;
+    let subtitle: string | undefined
     if (detail != null) {
-      if (typeof detail === 'string') subtitle = detail;
+      if (typeof detail === 'string') subtitle = detail
       else {
         try {
-          subtitle = JSON.stringify(detail);
+          subtitle = JSON.stringify(detail)
         } catch {
-          subtitle = String(detail);
+          subtitle = String(detail)
         }
       }
     }
@@ -192,187 +200,187 @@ const Overview = ({
     // fallback: stringify whole object if still empty
     if (!titleParts.length && !subtitle) {
       try {
-        subtitle = JSON.stringify(e);
+        subtitle = JSON.stringify(e)
       } catch {
-        subtitle = String(e);
+        subtitle = String(e)
       }
     }
 
-    return { title, subtitle };
-  };
+    return { subtitle, title }
+  }
 
   const getSeverityMeta = (severity?: string) => {
-    const s = (severity || '').toUpperCase();
+    const s = (severity || '').toUpperCase()
     if (s.includes('HIGH') || s.includes('CRITICAL')) {
       return {
         chip: 'border-[var(--red-4)] bg-[var(--red-1)] text-[var(--red-11)]',
+        icon: 'tabler:alert-octagon-filled',
         iconWrap: 'bg-[var(--red-2)] text-[var(--red-9)]',
         label: 'High severity',
-        icon: 'tabler:alert-octagon-filled',
-      };
+      }
     }
     if (s.includes('MED')) {
       return {
         chip: 'border-[var(--yellow-4)] bg-[var(--yellow-1)] text-[var(--yellow-11)]',
+        icon: 'tabler:alert-circle-filled',
         iconWrap: 'bg-[var(--yellow-2)] text-[var(--yellow-9)]',
         label: 'Medium severity',
-        icon: 'tabler:alert-circle-filled',
-      };
+      }
     }
     return {
       chip: 'border-[var(--gray-4)] bg-[var(--gray-1)] text-[var(--gray-11)]',
+      icon: 'tabler:info-circle',
       iconWrap: 'bg-[var(--gray-2)] text-[var(--gray-9)]',
       label: 'Low severity',
-      icon: 'tabler:info-circle',
-    };
-  };
+    }
+  }
 
   const getRecommendationMeta = (rec?: string) => {
-    const r = (rec || '').toUpperCase();
+    const r = (rec || '').toUpperCase()
     if (r.includes('WAIT')) {
       return {
         chip: 'border-[var(--blue-4)] bg-[var(--blue-1)] text-[var(--blue-11)]',
         icon: 'tabler:hourglass',
         label: 'Wait for balance',
-      };
+      }
     }
     if (r.includes('CONTACT')) {
       return {
         chip: 'border-[var(--purple-4)] bg-[var(--purple-1)] text-[var(--purple-11)]',
         icon: 'tabler:message-circle-2',
         label: 'Contact vendor',
-      };
+      }
     }
     if (r.includes('CANCEL')) {
       return {
         chip: 'border-[var(--red-4)] bg-[var(--red-1)] text-[var(--red-11)]',
         icon: 'tabler:ban',
         label: 'Cancel remaining',
-      };
+      }
     }
     return {
       chip: 'border-[var(--gray-4)] bg-[var(--gray-1)] text-[var(--gray-11)]',
       icon: 'tabler:settings',
       label: rec || 'Recommendation',
-    };
-  };
+    }
+  }
 
   // -----------------------------
   // Existing banner helpers
   // -----------------------------
   const getStatusAttr = (decision: string) => {
-    const d = decision?.toUpperCase() || '';
-    if (d.includes('PARTIAL')) return 'PARTIAL';
-    if (d === 'APPROVED') return 'APPROVED';
-    if (d === 'REJECTED' || d === 'DECLINED') return 'REJECTED';
-    return 'DEFAULT';
-  };
+    const d = decision?.toUpperCase() || ''
+    if (d.includes('PARTIAL')) return 'PARTIAL'
+    if (d === 'APPROVED') return 'APPROVED'
+    if (d === 'REJECTED' || d === 'DECLINED') return 'REJECTED'
+    return 'DEFAULT'
+  }
 
-  const statusAttr = getStatusAttr(data.decision);
+  const statusAttr = getStatusAttr(data.decision)
 
   const getDecisionThemeClasses = (status: string) => {
     switch (status) {
       case 'APPROVED':
         return {
+          badge: 'bg-[var(--green-3)] text-[var(--green-11)]',
           bannerBorder: 'border-l-[var(--green-9)]',
+          box: 'bg-[var(--green-2)] border-[var(--green-4)]',
           iconColor: 'text-[var(--green-9)]',
           titleColor: 'text-[var(--green-11)]',
-          badge: 'bg-[var(--green-3)] text-[var(--green-11)]',
-          box: 'bg-[var(--green-2)] border-[var(--green-4)]',
-        };
+        }
       case 'REJECTED':
         return {
+          badge: 'bg-[var(--red-3)] text-[var(--red-11)]',
           bannerBorder: 'border-l-[var(--red-9)]',
+          box: 'bg-[var(--red-2)] border-[var(--red-4)]',
           iconColor: 'text-[var(--red-9)]',
           titleColor: 'text-[var(--red-11)]',
-          badge: 'bg-[var(--red-3)] text-[var(--red-11)]',
-          box: 'bg-[var(--red-2)] border-[var(--red-4)]',
-        };
+        }
       case 'PARTIAL':
         return {
+          badge: 'bg-[var(--yellow-3)] text-[var(--yellow-11)]',
           bannerBorder: 'border-l-[var(--yellow-9)]',
+          box: 'bg-[var(--yellow-2)] border-[var(--yellow-4)]',
           iconColor: 'text-[var(--yellow-9)]',
           titleColor: 'text-[var(--yellow-11)]',
-          badge: 'bg-[var(--yellow-3)] text-[var(--yellow-11)]',
-          box: 'bg-[var(--yellow-2)] border-[var(--yellow-4)]',
-        };
+        }
       default:
         return {
+          badge: 'bg-[var(--gray-3)] text-[var(--gray-11)]',
           bannerBorder: 'border-l-[var(--gray-9)]',
+          box: 'bg-[var(--gray-1)] border-[var(--gray-3)]',
           iconColor: 'text-[var(--gray-9)]',
           titleColor: 'text-[var(--gray-11)]',
-          badge: 'bg-[var(--gray-3)] text-[var(--gray-11)]',
-          box: 'bg-[var(--gray-1)] border-[var(--gray-3)]',
-        };
+        }
     }
-  };
+  }
 
-  const decisionTheme = getDecisionThemeClasses(statusAttr);
+  const decisionTheme = getDecisionThemeClasses(statusAttr)
 
   const getBannerConfig = (status: string) => {
     switch (status) {
       case 'APPROVED':
         return {
-          statusTitle: 'Ready for Approval',
-          colorVar: 'green',
-          icon: 'tabler:circle-check',
-          progressColor: 'bg-[var(--green-9)]',
-          badgeText: 'Auto-verified',
           badgeBg: 'bg-[var(--purple-3)]',
           badgeColor: 'text-[var(--purple-11)]',
+          badgeText: 'Auto-verified',
+          colorVar: 'green',
+          icon: 'tabler:circle-check',
           nextAction: 'Schedule Payment',
           nextActionDate: 'Feb 12',
           nextActionIcon: 'tabler:calendar-dollar',
-        };
+          progressColor: 'bg-[var(--green-9)]',
+          statusTitle: 'Ready for Approval',
+        }
       case 'REJECTED':
         return {
-          statusTitle: 'Rejected',
-          colorVar: 'red',
-          icon: 'tabler:alert-octagon',
-          progressColor: 'bg-[var(--red-9)]',
-          badgeText: 'Flagged',
           badgeBg: 'bg-[var(--red-3)]',
           badgeColor: 'text-[var(--red-11)]',
+          badgeText: 'Flagged',
+          colorVar: 'red',
+          icon: 'tabler:alert-octagon',
           nextAction: 'Review Invoice',
           nextActionDate: 'Urgent',
           nextActionIcon: 'tabler:alert-triangle',
-        };
+          progressColor: 'bg-[var(--red-9)]',
+          statusTitle: 'Rejected',
+        }
       case 'PARTIAL':
         return {
-          statusTitle: 'Partial Match',
-          colorVar: 'yellow',
-          icon: 'tabler:alert-circle',
-          progressColor: 'bg-[var(--yellow-9)]',
-          badgeText: 'Manual Check',
           badgeBg: 'bg-[var(--yellow-3)]',
           badgeColor: 'text-[var(--yellow-11)]',
+          badgeText: 'Manual Check',
+          colorVar: 'yellow',
+          icon: 'tabler:alert-circle',
           nextAction: 'Verify Line Items',
           nextActionDate: 'Net 30',
           nextActionIcon: 'tabler:list-search',
-        };
+          progressColor: 'bg-[var(--yellow-9)]',
+          statusTitle: 'Partial Match',
+        }
       default:
         return {
-          statusTitle: 'Processing',
-          colorVar: 'gray',
-          icon: 'tabler:loader',
-          progressColor: 'bg-[var(--gray-9)]',
-          badgeText: 'Analyzing',
           badgeBg: 'bg-[var(--gray-3)]',
           badgeColor: 'text-[var(--gray-11)]',
+          badgeText: 'Analyzing',
+          colorVar: 'gray',
+          icon: 'tabler:loader',
           nextAction: 'Wait for Agent',
           nextActionDate: '-',
           nextActionIcon: 'tabler:clock',
-        };
+          progressColor: 'bg-[var(--gray-9)]',
+          statusTitle: 'Processing',
+        }
     }
-  };
+  }
 
-  const banner = getBannerConfig(statusAttr);
+  const banner = getBannerConfig(statusAttr)
 
   return (
     <>
-      <div className="flex flex-col gap-3 h-full overflow-hidden p-0">
+      <div className='flex h-full flex-col gap-3 overflow-hidden p-0'>
         {isLoading ? (
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-4">
+          <div className='grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-4'>
             {[1, 2, 3, 4].map((i) => (
               <SkeletonCard key={i} />
             ))}
@@ -380,22 +388,22 @@ const Overview = ({
         ) : (
           <>
             {/* TOP STAT / DECISION BANNER */}
-            <div className="w-full  mt-2">
+            <div className='mt-2 w-full'>
               <AnimateSlideUp delay={0.25}>
-                <div className="w-full bg-white border border-[var(--gray-3)] rounded-xl shadow-sm p-5 transition-all duration-300 hover:shadow-md">
-                  <div className="flex w-full items-center gap-6">
+                <div className='w-full rounded-xl border border-[var(--gray-3)] bg-white p-5 shadow-sm transition-all duration-300 hover:shadow-md'>
+                  <div className='flex w-full items-center gap-6'>
                     {/* LEFT: Status & Score */}
-                    <div className="flex items-center gap-4 shrink-0 min-w-[180px]">
+                    <div className='flex min-w-[180px] shrink-0 items-center gap-4'>
                       <div
                         className={cn(
-                          'size-10 rounded-full flex items-center justify-center shrink-0',
+                          'flex size-10 shrink-0 items-center justify-center rounded-full',
                           statusAttr === 'APPROVED'
                             ? 'bg-[var(--green-3)]'
                             : statusAttr === 'REJECTED'
                               ? 'bg-[var(--red-3)]'
                               : statusAttr === 'PARTIAL'
                                 ? 'bg-[var(--yellow-3)]'
-                                : 'bg-[var(--gray-3)] animate-spin'
+                                : 'animate-spin bg-[var(--gray-3)]',
                         )}
                       >
                         <Icon
@@ -412,13 +420,18 @@ const Overview = ({
                         />
                       </div>
 
-                      <div className="flex flex-col justify-center w-full">
-                        <div className={cn('text-[15px] font-bold leading-tight', decisionTheme.titleColor)}>
+                      <div className='flex w-full flex-col justify-center'>
+                        <div
+                          className={cn(
+                            'text-[15px] leading-tight font-bold',
+                            decisionTheme.titleColor,
+                          )}
+                        >
                           {banner.statusTitle}
                         </div>
 
-                        <div className="flex items-center gap-3 mt-1.5">
-                          <div className="h-2 w-full max-w-[100px] bg-[var(--gray-2)] rounded-full overflow-hidden relative">
+                        <div className='mt-1.5 flex items-center gap-3'>
+                          <div className='relative h-2 w-full max-w-[100px] overflow-hidden rounded-full bg-[var(--gray-2)]'>
                             <div
                               className={cn(
                                 'h-full rounded-full transition-all duration-500 ease-out',
@@ -428,12 +441,14 @@ const Overview = ({
                                     ? 'bg-[var(--red-9)]'
                                     : statusAttr === 'PARTIAL'
                                       ? 'bg-[var(--yellow-9)]'
-                                      : 'bg-[var(--gray-9)]'
+                                      : 'bg-[var(--gray-9)]',
                               )}
-                              style={{ width: `${Math.min(100, Math.max(0, Number(data.score) || 0))}%` }}
+                              style={{
+                                width: `${Math.min(100, Math.max(0, Number(data.score) || 0))}%`,
+                              }}
                             />
                           </div>
-                          <span className="text-[12px] font-bold text-[var(--gray-11)] whitespace-nowrap">
+                          <span className='text-[12px] font-bold whitespace-nowrap text-[var(--gray-11)]'>
                             {data.score}%
                           </span>
                         </div>
@@ -441,23 +456,26 @@ const Overview = ({
                     </div>
 
                     {/* MIDDLE: AI Analysis */}
-                    <div className="flex-1 min-w-0 py-1">
-                      <div className="flex items-start gap-3 h-full">
-                        <div className="w-2 self-stretch rounded-full bg-[#8B5CF6] opacity-30" />
-                        <div className="flex flex-col gap-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <Icon name="tabler:sparkles" className="size-3.5 text-[#8B5CF6]" />
-                            <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--gray-10)]">
+                    <div className='min-w-0 flex-1 py-1'>
+                      <div className='flex h-full items-start gap-3'>
+                        <div className='w-2 self-stretch rounded-full bg-[#8B5CF6] opacity-30' />
+                        <div className='flex min-w-0 flex-col gap-1'>
+                          <div className='flex items-center gap-2'>
+                            <Icon
+                              className='size-3.5 text-[#8B5CF6]'
+                              name='tabler:sparkles'
+                            />
+                            <span className='text-[11px] font-bold tracking-wider text-[var(--gray-10)] uppercase'>
                               Analysis
                             </span>
                             {banner.badgeText && (
-                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#8B5CF6]/10 text-[#7C3AED] border border-[#8B5CF6]/20">
+                              <span className='rounded-full border border-[#8B5CF6]/20 bg-[#8B5CF6]/10 px-2 py-0.5 text-[10px] font-bold text-[#7C3AED]'>
                                 {banner.badgeText}
                               </span>
                             )}
                           </div>
 
-                          <p className="text-[13px] leading-relaxed text-[var(--gray-11)] line-clamp-3 hover:line-clamp-none transition-all">
+                          <p className='line-clamp-3 text-[13px] leading-relaxed text-[var(--gray-11)] transition-all hover:line-clamp-none'>
                             {data.reason}
                           </p>
                         </div>
@@ -465,78 +483,83 @@ const Overview = ({
                     </div>
 
                     {/* DIVIDER */}
-                    <div className="h-12 w-px bg-[var(--gray-3)] shrink-0" />
+                    <div className='h-12 w-px shrink-0 bg-[var(--gray-3)]' />
 
                     {/* RIGHT: Next Action */}
-                    <div className="flex items-center gap-5 shrink-0 justify-end">
-                      <div className="flex flex-col items-end text-right">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--gray-9)] mb-0.5">
+                    <div className='flex shrink-0 items-center justify-end gap-5'>
+                      <div className='flex flex-col items-end text-right'>
+                        <span className='mb-0.5 text-[10px] font-bold tracking-wider text-[var(--gray-9)] uppercase'>
                           Next Action
                         </span>
-                        <span className="text-[14px] font-bold text-[var(--gray-12)]">
+                        <span className='text-[14px] font-bold text-[var(--gray-12)]'>
                           {banner.nextAction}
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-3 px-3 py-2 rounded-lg border border-[var(--gray-3)] bg-white shadow-sm min-w-[160px]">
-                        <div className="size-9 rounded-md flex items-center justify-center bg-[#FFEDD5]/50 text-[#F97316] shrink-0">
-                          <Icon name="tabler:calendar" className="size-5" />
+                      <div className='flex min-w-[160px] items-center gap-3 rounded-lg border border-[var(--gray-3)] bg-white px-3 py-2 shadow-sm'>
+                        <div className='flex size-9 shrink-0 items-center justify-center rounded-md bg-[#FFEDD5]/50 text-[#F97316]'>
+                          <Icon className='size-5' name='tabler:calendar' />
                         </div>
 
-                        <div className="flex flex-col justify-center">
-                          <div className="flex items-center gap-1.5 leading-none mb-1">
-                            <span className="text-[13px] font-bold text-[var(--gray-12)] whitespace-nowrap">
+                        <div className='flex flex-col justify-center'>
+                          <div className='mb-1 flex items-center gap-1.5 leading-none'>
+                            <span className='text-[13px] font-bold whitespace-nowrap text-[var(--gray-12)]'>
                               Due {banner.nextActionDate}
                             </span>
-                            <div className="size-1.5 rounded-full bg-[#F97316]" />
+                            <div className='size-1.5 rounded-full bg-[#F97316]' />
                           </div>
 
-                          <div className="flex items-center gap-1 leading-none">
-                            <Icon name="tabler:clock" className="size-3 text-[var(--gray-8)]" />
-                            <span className="text-[11px] font-medium text-[var(--gray-9)] whitespace-nowrap">
+                          <div className='flex items-center gap-1 leading-none'>
+                            <Icon
+                              className='size-3 text-[var(--gray-8)]'
+                              name='tabler:clock'
+                            />
+                            <span className='text-[11px] font-medium whitespace-nowrap text-[var(--gray-9)]'>
                               Net 30 Days
                             </span>
                           </div>
                         </div>
                       </div>
                     </div>
-
                   </div>
                 </div>
               </AnimateSlideUp>
             </div>
 
             {/* SPLIT VIEW */}
-            <div className="flex flex-1 gap-4 overflow-hidden h-full">
+            <div className='flex h-full flex-1 gap-4 overflow-hidden'>
               {/* Left Column: File Viewer (replaces Attachments) */}
               <div
                 className={cn(
-                  "h-full overflow-hidden rounded-lg border border-[var(--gray-3)] bg-[var(--gray-1)] relative group/viewer transition-all duration-300",
-                  rightView === 'analysis' ? "w-1/2" : "w-[40%]"
+                  'group/viewer relative h-full overflow-hidden rounded-lg border border-[var(--gray-3)] bg-[var(--gray-1)] transition-all duration-300',
+                  rightView === 'analysis' ? 'w-1/2' : 'w-[40%]',
                 )}
               >
                 {selectedFile ? (
-                  <div className="absolute inset-0">
+                  <div className='absolute inset-0'>
                     <FileSheet
-                      opened={true}
-                      onClose={() => { }} // Viewer is always open in this layout
+                      actions=''
+                      customLoading={isFileLoading}
                       file={selectedFile}
+                      opened={true}
+                      processId={processId}
                       tenantId={tenantId}
+                      type={2}
                       userId={userId}
                       workflowId={workflowId}
-                      processId={processId}
-                      type={2}
-                      actions=""
-                      customLoading={isFileLoading}
-                    // Adjusting FileSheet style to fit container if needed, assuming it fits parent
+                      onClose={() => {}} // Viewer is always open in this layout
+                      // Adjusting FileSheet style to fit container if needed, assuming it fits parent
                     />
                   </div>
                 ) : (
-                  <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
-                    <div className="flex size-12 items-center justify-center rounded-full bg-[var(--gray-2)]">
-                      <Icon name="tabler:file-off" className="size-6 text-[var(--gray-8)]" />
+                  <div className='flex h-full flex-col items-center justify-center gap-3 text-center'>
+                    <div className='flex size-12 items-center justify-center rounded-full bg-[var(--gray-2)]'>
+                      <Icon
+                        className='size-6 text-[var(--gray-8)]'
+                        name='tabler:file-off'
+                      />
                     </div>
-                    <p className="text-13 font-medium text-[var(--gray-10)]">
+                    <p className='text-13 font-medium text-[var(--gray-10)]'>
                       No document selected
                     </p>
                   </div>
@@ -546,68 +569,87 @@ const Overview = ({
               {/* Middle Column: Analysis Data (Always Visible, resizeable) */}
               <div
                 className={cn(
-                  "h-full overflow-hidden rounded-lg relative transition-all duration-300",
-                  rightView === 'analysis' ? "w-1/2" : "w-[30%]"
+                  'relative h-full overflow-hidden rounded-lg transition-all duration-300',
+                  rightView === 'analysis' ? 'w-1/2' : 'w-[30%]',
                 )}
               >
                 {/* Floating Action Buttons (Overlay) - Removed as moved to Header */}
 
                 {/* --- ANALYSIS CONTENT --- */}
-                <div className="h-full overflow-y-auto space-y-3 pr-1 pb-10 scrollbar-thin">
-
+                <div className='scrollbar-thin h-full space-y-3 overflow-y-auto pr-1 pb-10'>
                   {/* Invoice Summary */}
                   <AnimateSlideUp delay={0.4}>
-                    <div className="flex flex-col gap-2 ">
-                      <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--gray-9)] pl-1">
+                    <div className='flex flex-col gap-2'>
+                      <div className='pl-1 text-[11px] font-bold tracking-wider text-[var(--gray-9)] uppercase'>
                         Invoice Summary
                       </div>
 
-                      <div id="section-summary" className="rounded-xl border border-[var(--gray-4)] bg-white p-4 shadow-sm">
+                      <div
+                        className='rounded-xl border border-[var(--gray-4)] bg-white p-4 shadow-sm'
+                        id='section-summary'
+                      >
                         {invoiceHeader && (
-                          <div className="grid grid-cols-2 gap-y-5 gap-x-4">
-                            <div className="flex items-center gap-3">
-                              <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[var(--purple-1)] text-[var(--purple-9)]">
-                                <Icon name="tabler:building-skyscraper" className="size-5" />
+                          <div className='grid grid-cols-2 gap-x-4 gap-y-5'>
+                            <div className='flex items-center gap-3'>
+                              <div className='flex size-10 shrink-0 items-center justify-center rounded-lg bg-[var(--purple-1)] text-[var(--purple-9)]'>
+                                <Icon
+                                  className='size-5'
+                                  name='tabler:building-skyscraper'
+                                />
                               </div>
-                              <div className="flex flex-col overflow-hidden">
-                                <span className="text-[11px] font-medium text-[var(--gray-9)]">Supplier</span>
-                                <span className="line-clamp-1 hover:line-clamp-none transition-all text-13 font-bold text-[var(--gray-12)]">
+                              <div className='flex flex-col overflow-hidden'>
+                                <span className='text-[11px] font-medium text-[var(--gray-9)]'>
+                                  Supplier
+                                </span>
+                                <span className='line-clamp-1 text-13 font-bold text-[var(--gray-12)] transition-all hover:line-clamp-none'>
                                   {invoiceHeader['Supplier Name'] || '-'}
                                 </span>
                               </div>
                             </div>
 
-                            <div className="flex items-center gap-3">
-                              <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[var(--blue-1)] text-[var(--blue-9)]">
-                                <Icon name="tabler:file-text" className="size-5" />
+                            <div className='flex items-center gap-3'>
+                              <div className='flex size-10 shrink-0 items-center justify-center rounded-lg bg-[var(--blue-1)] text-[var(--blue-9)]'>
+                                <Icon
+                                  className='size-5'
+                                  name='tabler:file-text'
+                                />
                               </div>
-                              <div className="flex flex-col overflow-hidden">
-                                <span className="text-[11px] font-medium text-[var(--gray-9)]">PO Number</span>
-                                <span className="line-clamp-1 hover:line-clamp-none transition-all text-13 font-bold text-[var(--gray-12)]">
+                              <div className='flex flex-col overflow-hidden'>
+                                <span className='text-[11px] font-medium text-[var(--gray-9)]'>
+                                  PO Number
+                                </span>
+                                <span className='line-clamp-1 text-13 font-bold text-[var(--gray-12)] transition-all hover:line-clamp-none'>
                                   {invoiceHeader['PO Number'] || '-'}
                                 </span>
                               </div>
                             </div>
 
-                            <div className="flex items-center gap-3">
-                              <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[var(--orange-1)] text-[var(--orange-9)]">
-                                <Icon name="tabler:coins" className="size-5" />
+                            <div className='flex items-center gap-3'>
+                              <div className='flex size-10 shrink-0 items-center justify-center rounded-lg bg-[var(--orange-1)] text-[var(--orange-9)]'>
+                                <Icon className='size-5' name='tabler:coins' />
                               </div>
-                              <div className="flex flex-col overflow-hidden">
-                                <span className="text-[11px] font-medium text-[var(--gray-9)]">Currency</span>
-                                <span className="line-clamp-1 hover:line-clamp-none transition-all text-13 font-bold text-[var(--gray-12)]">
+                              <div className='flex flex-col overflow-hidden'>
+                                <span className='text-[11px] font-medium text-[var(--gray-9)]'>
+                                  Currency
+                                </span>
+                                <span className='line-clamp-1 text-13 font-bold text-[var(--gray-12)] transition-all hover:line-clamp-none'>
                                   {invoiceHeader['Currency'] || 'USD'}
                                 </span>
                               </div>
                             </div>
 
-                            <div className="flex items-center gap-3">
-                              <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[var(--green-1)] text-[var(--green-9)]">
-                                <Icon name="tabler:currency-dollar" className="size-5" />
+                            <div className='flex items-center gap-3'>
+                              <div className='flex size-10 shrink-0 items-center justify-center rounded-lg bg-[var(--green-1)] text-[var(--green-9)]'>
+                                <Icon
+                                  className='size-5'
+                                  name='tabler:currency-dollar'
+                                />
                               </div>
-                              <div className="flex flex-col overflow-hidden">
-                                <span className="text-[11px] font-medium text-[var(--gray-9)]">Total Due</span>
-                                <span className="line-clamp-1 hover:line-clamp-none transition-all text-13 font-bold text-[var(--green-10)]">
+                              <div className='flex flex-col overflow-hidden'>
+                                <span className='text-[11px] font-medium text-[var(--gray-9)]'>
+                                  Total Due
+                                </span>
+                                <span className='line-clamp-1 text-13 font-bold text-[var(--green-10)] transition-all hover:line-clamp-none'>
                                   {invoiceHeader['Total Due'] ?? '-'}
                                 </span>
                               </div>
@@ -620,65 +662,86 @@ const Overview = ({
 
                   {/* Field Matching */}
                   <AnimateSlideUp delay={0.3}>
-                    <div className="flex flex-col gap-2 mt-6">
-                      <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--gray-9)] pl-1">
+                    <div className='mt-6 flex flex-col gap-2'>
+                      <div className='pl-1 text-[11px] font-bold tracking-wider text-[var(--gray-9)] uppercase'>
                         Field Matching
                       </div>
 
-                      <div className={cn(
-                        "grid gap-3 transition-all",
-                        rightView === 'analysis' ? "grid-cols-1 md:grid-cols-2 xl:grid-cols-2" : "grid-cols-1"
-                      )}>
+                      <div
+                        className={cn(
+                          'grid gap-3 transition-all',
+                          rightView === 'analysis'
+                            ? 'grid-cols-1 md:grid-cols-2 xl:grid-cols-2'
+                            : 'grid-cols-1',
+                        )}
+                      >
                         {fieldMatching.length > 0 ? (
                           fieldMatching.map((field, index) => {
-                            const displayInvoice = field['Invoice Value'] || '-';
-                            const displayPO = field['PO Value'] || '-';
-                            const isPerfect = field.Score === 100;
+                            const displayInvoice = field['Invoice Value'] || '-'
+                            const displayPO = field['PO Value'] || '-'
+                            const isPerfect = field.Score === 100
 
                             return (
-                              <div key={index} className="flex flex-col gap-3 rounded-xl border border-[var(--gray-3)] bg-white p-3 shadow-sm">
-                                <div className="flex items-center justify-between">
-                                  <span className="text-13 font-bold text-[var(--gray-12)] line-clamp-1 hover:line-clamp-none transition-all" title={field.Field}>
+                              <div
+                                className='flex flex-col gap-3 rounded-xl border border-[var(--gray-3)] bg-white p-3 shadow-sm'
+                                key={index}
+                              >
+                                <div className='flex items-center justify-between'>
+                                  <span
+                                    className='line-clamp-1 text-13 font-bold text-[var(--gray-12)] transition-all hover:line-clamp-none'
+                                    title={field.Field}
+                                  >
                                     {field.Field}
                                   </span>
 
                                   <div
                                     className={cn(
-                                      "flex shrink-0 items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-bold",
+                                      'flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold',
                                       isPerfect
-                                        ? "border-[var(--green-4)] bg-[var(--green-1)] text-[var(--green-9)]"
-                                        : "border-[var(--orange-4)] bg-[var(--orange-1)] text-[var(--orange-9)]"
+                                        ? 'border-[var(--green-4)] bg-[var(--green-1)] text-[var(--green-9)]'
+                                        : 'border-[var(--orange-4)] bg-[var(--orange-1)] text-[var(--orange-9)]',
                                     )}
                                   >
-                                    {isPerfect && <Icon name="tabler:check" className="size-3" />}
+                                    {isPerfect && (
+                                      <Icon
+                                        className='size-3'
+                                        name='tabler:check'
+                                      />
+                                    )}
                                     {field.Score}%
                                   </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-2 h-full">
-                                  <div className="flex flex-col justify-center rounded-lg bg-[var(--gray-1)] px-2.5 py-2 border border-transparent">
-                                    <div className="text-[9px] font-medium text-[var(--gray-8)] uppercase tracking-wide mb-0.5">
+                                <div className='grid h-full grid-cols-2 gap-2'>
+                                  <div className='flex flex-col justify-center rounded-lg border border-transparent bg-[var(--gray-1)] px-2.5 py-2'>
+                                    <div className='mb-0.5 text-[9px] font-medium tracking-wide text-[var(--gray-8)] uppercase'>
                                       Extracted
                                     </div>
-                                    <div className="text-12 font-semibold text-[var(--gray-12)] break-all leading-tight line-clamp-2 hover:line-clamp-none transition-all" title={String(displayInvoice)}>
+                                    <div
+                                      className='line-clamp-2 text-12 leading-tight font-semibold break-all text-[var(--gray-12)] transition-all hover:line-clamp-none'
+                                      title={String(displayInvoice)}
+                                    >
                                       {displayInvoice}
                                     </div>
                                   </div>
 
-                                  <div className="flex flex-col justify-center rounded-lg bg-[var(--gray-1)] px-2.5 py-2 border border-transparent">
-                                    <div className="text-[9px] font-medium text-[var(--gray-8)] uppercase tracking-wide mb-0.5">
+                                  <div className='flex flex-col justify-center rounded-lg border border-transparent bg-[var(--gray-1)] px-2.5 py-2'>
+                                    <div className='mb-0.5 text-[9px] font-medium tracking-wide text-[var(--gray-8)] uppercase'>
                                       PO Value
                                     </div>
-                                    <div className="text-12 font-semibold text-[var(--gray-12)] break-all leading-tight line-clamp-2 hover:line-clamp-none transition-all" title={String(displayPO)}>
+                                    <div
+                                      className='line-clamp-2 text-12 leading-tight font-semibold break-all text-[var(--gray-12)] transition-all hover:line-clamp-none'
+                                      title={String(displayPO)}
+                                    >
                                       {displayPO}
                                     </div>
                                   </div>
                                 </div>
                               </div>
-                            );
+                            )
                           })
                         ) : (
-                          <div className="col-span-full rounded-xl border border-[var(--gray-3)] bg-white p-4 text-center text-12 text-[var(--gray-8)] italic">
+                          <div className='col-span-full rounded-xl border border-[var(--gray-3)] bg-white p-4 text-center text-12 text-[var(--gray-8)] italic'>
                             No fields matched.
                           </div>
                         )}
@@ -688,83 +751,112 @@ const Overview = ({
 
                   {/* Line Items */}
                   <AnimateSlideUp delay={0.35}>
-                    <div className="flex flex-col gap-2 mt-6">
-                      <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--gray-9)] pl-1">
+                    <div className='mt-6 flex flex-col gap-2'>
+                      <div className='pl-1 text-[11px] font-bold tracking-wider text-[var(--gray-9)] uppercase'>
                         Line Items
                       </div>
 
-                      <div id="section-line-items" className="rounded-xl border border-[var(--gray-4)] bg-white shadow-sm overflow-hidden">
-                        <div className="overflow-x-auto">
+                      <div
+                        className='overflow-hidden rounded-xl border border-[var(--gray-4)] bg-white shadow-sm'
+                        id='section-line-items'
+                      >
+                        <div className='overflow-x-auto'>
                           {lineItemMatching.length > 0 ? (
-                            <div className="min-w-[600px]">
-                              <div className="grid grid-cols-[2fr_0.8fr_0.8fr_1fr_1fr] border-b border-[var(--gray-3)] bg-[var(--gray-1)] px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-[var(--gray-9)]">
+                            <div className='min-w-[600px]'>
+                              <div className='grid grid-cols-[2fr_0.8fr_0.8fr_1fr_1fr] border-b border-[var(--gray-3)] bg-[var(--gray-1)] px-4 py-2 text-[10px] font-bold tracking-wider text-[var(--gray-9)] uppercase'>
                                 <div>Description</div>
                                 <div>Qty</div>
                                 <div>Price</div>
                                 <div>Total</div>
-                                <div className="text-right">Match Status</div>
+                                <div className='text-right'>Match Status</div>
                               </div>
 
-                              <div className="divide-y divide-[var(--gray-2)]">
+                              <div className='divide-y divide-[var(--gray-2)]'>
                                 {lineItemMatching.map((item, index) => {
-                                  const isMatch = item['Line Score'] >= 90;
+                                  const isMatch = item['Line Score'] >= 90
 
-                                  const renderCell = (actual: any, expected: any) => {
-                                    const displayActual = actual || "-";
-                                    const showExpected = !isMatch && expected;
+                                  const renderCell = (
+                                    actual: any,
+                                    expected: any,
+                                  ) => {
+                                    const displayActual = actual || '-'
+                                    const showExpected = !isMatch && expected
 
                                     return (
-                                      <div className="flex flex-col leading-tight">
-                                        <span className={cn('line-clamp-1 hover:line-clamp-none transition-all text-11 font-medium', !actual && 'text-[var(--gray-8)] italic')}>
+                                      <div className='flex flex-col leading-tight'>
+                                        <span
+                                          className={cn(
+                                            'line-clamp-1 text-11 font-medium transition-all hover:line-clamp-none',
+                                            !actual &&
+                                              'text-[var(--gray-8)] italic',
+                                          )}
+                                        >
                                           {displayActual}
                                         </span>
                                         {showExpected && (
-                                          <span className="text-[9px] font-bold text-[var(--orange-9)] mt-0.5 truncate bg-[var(--orange-1)] px-1 py-px rounded w-fit">
+                                          <span className='mt-0.5 w-fit truncate rounded bg-[var(--orange-1)] px-1 py-px text-[9px] font-bold text-[var(--orange-9)]'>
                                             Exp: {expected}
                                           </span>
                                         )}
                                       </div>
-                                    );
-                                  };
+                                    )
+                                  }
 
                                   return (
-                                    <div key={index} className="grid grid-cols-[2fr_0.8fr_0.8fr_1fr_1fr] items-center px-4 py-2.5 hover:bg-[var(--gray-1)] transition-colors group">
-                                      <div className="text-[var(--gray-12)] pr-4">
-                                        {renderCell(item.Description?.['Invoice Value'], item.Description?.['PO Value'])}
+                                    <div
+                                      className='group grid grid-cols-[2fr_0.8fr_0.8fr_1fr_1fr] items-center px-4 py-2.5 transition-colors hover:bg-[var(--gray-1)]'
+                                      key={index}
+                                    >
+                                      <div className='pr-4 text-[var(--gray-12)]'>
+                                        {renderCell(
+                                          item.Description?.['Invoice Value'],
+                                          item.Description?.['PO Value'],
+                                        )}
                                       </div>
 
-                                      <div className="text-[var(--gray-11)]">
-                                        {renderCell(item.Quantity?.['Invoice Value'], item.Quantity?.['PO Value'])}
+                                      <div className='text-[var(--gray-11)]'>
+                                        {renderCell(
+                                          item.Quantity?.['Invoice Value'],
+                                          item.Quantity?.['PO Value'],
+                                        )}
                                       </div>
 
-                                      <div className="text-[var(--gray-11)]">
-                                        {renderCell(item.Price?.['Invoice Value'], item.Price?.['PO Value'])}
+                                      <div className='text-[var(--gray-11)]'>
+                                        {renderCell(
+                                          item.Price?.['Invoice Value'],
+                                          item.Price?.['PO Value'],
+                                        )}
                                       </div>
 
-                                      <div className="font-bold text-[var(--teal-9)]">
-                                        {renderCell(item.Amount?.['Invoice Value'], item.Amount?.['PO Value'])}
+                                      <div className='font-bold text-[var(--teal-9)]'>
+                                        {renderCell(
+                                          item.Amount?.['Invoice Value'],
+                                          item.Amount?.['PO Value'],
+                                        )}
                                       </div>
 
-                                      <div className="text-right">
+                                      <div className='text-right'>
                                         <span
                                           className={cn(
-                                            'inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-bold border',
+                                            'inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[9px] font-bold',
                                             isMatch
                                               ? 'border-[var(--green-2)] bg-[var(--green-1)] text-[var(--green-9)]'
-                                              : 'border-[var(--red-2)] bg-[var(--red-1)] text-[var(--red-9)]'
+                                              : 'border-[var(--red-2)] bg-[var(--red-1)] text-[var(--red-9)]',
                                           )}
                                         >
-                                          {isMatch ? "MATCH" : "DIFF"}
+                                          {isMatch ? 'MATCH' : 'DIFF'}
                                         </span>
                                       </div>
                                     </div>
-                                  );
+                                  )
                                 })}
                               </div>
                             </div>
                           ) : (
-                            <div className="p-6 flex flex-col items-center justify-center text-[var(--gray-8)]">
-                              <span className="text-11 font-medium opacity-70">No line items found.</span>
+                            <div className='flex flex-col items-center justify-center p-6 text-[var(--gray-8)]'>
+                              <span className='text-11 font-medium opacity-70'>
+                                No line items found.
+                              </span>
                             </div>
                           )}
                         </div>
@@ -773,18 +865,18 @@ const Overview = ({
                   </AnimateSlideUp>
 
                   {/* NEW: Invoice Errors + Backorder (Must be above History & Comments) */}
-                  <div className="grid grid-cols-1 gap-2">
+                  <div className='grid grid-cols-1 gap-2'>
                     {hasInvoiceErrors && (
                       <AnimateSlideUp delay={0.36}>
-                        <div className="flex flex-col gap-3 mt-3 ml-1">
+                        <div className='mt-3 ml-1 flex flex-col gap-3'>
                           {/* Header with severity badge */}
-                          <div className="flex items-center justify-between pl-1">
-                            <div className="flex items-center gap-2">
+                          <div className='flex items-center justify-between pl-1'>
+                            <div className='flex items-center gap-2'>
                               {/* <Icon
                                 name="tabler:alert-triangle-filled"
                                 className="size-4 text-[var(--red-9)]"
                               /> */}
-                              <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--gray-9)]">
+                              <div className='text-[11px] font-bold tracking-wider text-[var(--gray-9)] uppercase'>
                                 Invoice Errors
                               </div>
                             </div>
@@ -806,91 +898,112 @@ const Overview = ({
                           </div>
 
                           {/* Main error card with gradient */}
-                          <div className="relative rounded-xl   to-white p-5 shadow-sm overflow-hidden">
+                          <div className='relative overflow-hidden rounded-xl to-white p-5 shadow-sm'>
                             {/* Decorative background pattern */}
-                            <div className="absolute inset-0 opacity-5">
-                              <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--red-9)] rounded-full blur-3xl" />
-                              <div className="absolute bottom-0 left-0 w-24 h-24 bg-[var(--red-9)] rounded-full blur-2xl" />
+                            <div className='absolute inset-0 opacity-5'>
+                              <div className='absolute top-0 right-0 h-32 w-32 rounded-full bg-[var(--red-9)] blur-3xl' />
+                              <div className='absolute bottom-0 left-0 h-24 w-24 rounded-full bg-[var(--red-9)] blur-2xl' />
                             </div>
 
-                            <div className="relative flex items-start gap-4">
+                            <div className='relative flex items-start gap-4'>
                               {/* Icon section */}
 
-
                               {/* Content section */}
-                              <div className="min-w-0 flex-1">
+                              <div className='min-w-0 flex-1'>
                                 {/* Title and count */}
-                                <div className="flex items-center justify-between gap-3 mb-3">
-
-                                  <div className="flex flex-row gap-4 items-center">
+                                <div className='mb-3 flex items-center justify-between gap-3'>
+                                  <div className='flex flex-row items-center gap-4'>
                                     {(() => {
-                                      const meta = getSeverityMeta(invoiceErrors?.severity);
+                                      const meta = getSeverityMeta(
+                                        invoiceErrors?.severity,
+                                      )
                                       return (
-                                        <div className={cn(
-                                          'flex size-9 shrink-0 items-center justify-center rounded-xl shadow-sm border',
-                                          meta.iconWrap,
-                                          'border-[var(--red-4)]'
-                                        )}>
-                                          <Icon name={meta.icon} className="size-5" />
+                                        <div
+                                          className={cn(
+                                            'flex size-9 shrink-0 items-center justify-center rounded-xl border shadow-sm',
+                                            meta.iconWrap,
+                                            'border-[var(--red-4)]',
+                                          )}
+                                        >
+                                          <Icon
+                                            className='size-5'
+                                            name={meta.icon}
+                                          />
                                         </div>
-                                      );
+                                      )
                                     })()}
-                                    <h4 className="text-14 font-bold text-[var(--red-11)] mb-0.5">
+                                    <h4 className='mb-0.5 text-14 font-bold text-[var(--red-11)]'>
                                       Validation Issues Detected
-                                      <p className="text-11 text-[var(--gray-10)] font-medium">
-                                        The following issues require attention before processing
+                                      <p className='text-11 font-medium text-[var(--gray-10)]'>
+                                        The following issues require attention
+                                        before processing
                                       </p>
                                     </h4>
-
                                   </div>
-                                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-[var(--red-3)] shadow-sm shrink-0">
-                                    <Icon name="tabler:alert-circle" className="size-4 text-[var(--red-9)]" />
-                                    <span className="text-12 font-bold text-[var(--red-11)]">
-                                      {invoiceErrors?.errors?.length} {invoiceErrors?.errors?.length === 1 ? 'Issue' : 'Issues'}
+                                  <div className='flex shrink-0 items-center gap-1.5 rounded-lg border border-[var(--red-3)] bg-white px-3 py-1.5 shadow-sm'>
+                                    <Icon
+                                      className='size-4 text-[var(--red-9)]'
+                                      name='tabler:alert-circle'
+                                    />
+                                    <span className='text-12 font-bold text-[var(--red-11)]'>
+                                      {invoiceErrors?.errors?.length}{' '}
+                                      {invoiceErrors?.errors?.length === 1
+                                        ? 'Issue'
+                                        : 'Issues'}
                                     </span>
                                   </div>
                                 </div>
 
                                 {/* Error list */}
-                                <div className="mt-3 grid grid-cols-1 gap-2.5">
-                                  {invoiceErrors!.errors.slice(0, 6).map((err, idx) => {
-                                    const formatted = formatInvoiceError(err);
-                                    return (
-                                      <div
-                                        key={idx}
-                                        className="group flex items-start gap-3 rounded-lg border border-[var(--red-3)] bg-white px-4 py-3 shadow-sm transition-all duration-200 hover:shadow-md hover:border-[var(--red-5)] hover:-translate-y-0.5"
-                                      >
-                                        {/* Error number badge */}
-                                        <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-[var(--red-2)] text-[10px] font-bold text-[var(--red-10)] ring-2 ring-white">
-                                          {idx + 1}
-                                        </div>
+                                <div className='mt-3 grid grid-cols-1 gap-2.5'>
+                                  {invoiceErrors!.errors
+                                    .slice(0, 6)
+                                    .map((err, idx) => {
+                                      const formatted = formatInvoiceError(err)
+                                      return (
+                                        <div
+                                          className='group flex items-start gap-3 rounded-lg border border-[var(--red-3)] bg-white px-4 py-3 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--red-5)] hover:shadow-md'
+                                          key={idx}
+                                        >
+                                          {/* Error number badge */}
+                                          <div className='flex size-6 shrink-0 items-center justify-center rounded-full bg-[var(--red-2)] text-[10px] font-bold text-[var(--red-10)] ring-2 ring-white'>
+                                            {idx + 1}
+                                          </div>
 
-                                        {/* Error content */}
-                                        <div className="min-w-0 flex-1">
-                                          <p className="text-12 font-semibold text-[var(--gray-13)] leading-relaxed break-words">
-                                            {formatted.title}
-                                          </p>
-                                          {formatted.subtitle && (
-                                            <p className="mt-1 text-[11px] font-medium text-[var(--gray-9)] break-words line-clamp-2 group-hover:line-clamp-none transition-all">
-                                              {formatted.subtitle}
+                                          {/* Error content */}
+                                          <div className='min-w-0 flex-1'>
+                                            <p className='text-12 leading-relaxed font-semibold break-words text-[var(--gray-13)]'>
+                                              {formatted.title}
                                             </p>
-                                          )}
-                                        </div>
+                                            {formatted.subtitle && (
+                                              <p className='mt-1 line-clamp-2 text-[11px] font-medium break-words text-[var(--gray-9)] transition-all group-hover:line-clamp-none'>
+                                                {formatted.subtitle}
+                                              </p>
+                                            )}
+                                          </div>
 
-                                        {/* Status indicator */}
-                                        <div className="flex items-center shrink-0">
-                                          <div className="size-2 rounded-full bg-[var(--red-9)] animate-pulse" />
+                                          {/* Status indicator */}
+                                          <div className='flex shrink-0 items-center'>
+                                            <div className='size-2 animate-pulse rounded-full bg-[var(--red-9)]' />
+                                          </div>
                                         </div>
-                                      </div>
-                                    );
-                                  })}
+                                      )
+                                    })}
 
                                   {/* Show more indicator */}
                                   {invoiceErrors!.errors.length > 6 && (
-                                    <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--red-1)] border border-[var(--red-3)]">
-                                      <Icon name="tabler:dots" className="size-4 text-[var(--red-9)]" />
-                                      <span className="text-11 font-semibold text-[var(--red-10)]">
-                                        +{invoiceErrors!.errors.length - 6} more issue{invoiceErrors!.errors.length - 6 !== 1 ? 's' : ''} detected
+                                    <div className='flex items-center gap-2 rounded-lg border border-[var(--red-3)] bg-[var(--red-1)] px-4 py-2'>
+                                      <Icon
+                                        className='size-4 text-[var(--red-9)]'
+                                        name='tabler:dots'
+                                      />
+                                      <span className='text-11 font-semibold text-[var(--red-10)]'>
+                                        +{invoiceErrors!.errors.length - 6} more
+                                        issue
+                                        {invoiceErrors!.errors.length - 6 !== 1
+                                          ? 's'
+                                          : ''}{' '}
+                                        detected
                                       </span>
                                     </div>
                                   )}
@@ -912,118 +1025,159 @@ const Overview = ({
 
                     {hasBackorder && (
                       <AnimateSlideUp delay={0.38}>
-                        <div className="flex flex-col gap-2 mt-3">
-                          <div className="flex items-center justify-between pl-1">
-                            <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--gray-9)]">
+                        <div className='mt-3 flex flex-col gap-2'>
+                          <div className='flex items-center justify-between pl-1'>
+                            <div className='text-[11px] font-bold tracking-wider text-[var(--gray-9)] uppercase'>
                               Backorder
                             </div>
 
                             {(() => {
-                              const meta = getRecommendationMeta(backorder?.recommendation);
+                              const meta = getRecommendationMeta(
+                                backorder?.recommendation,
+                              )
                               return (
                                 <span
                                   className={cn(
-                                    'inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-bold',
-                                    meta.chip
+                                    'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold',
+                                    meta.chip,
                                   )}
                                 >
-                                  <Icon name={meta.icon} className="size-3" />
+                                  <Icon className='size-3' name={meta.icon} />
                                   {meta.label}
                                 </span>
-                              );
+                              )
                             })()}
                           </div>
 
-                          <div className="rounded-xl border border-[var(--gray-4)] bg-white shadow-sm overflow-hidden">
-                            <div className="flex items-center justify-between gap-4 px-4 py-3 border-b border-[var(--gray-3)] bg-[var(--gray-1)]">
-                              <div className="flex items-center gap-3">
-                                <div className="flex size-9 items-center justify-center rounded-lg bg-[var(--orange-1)] text-[var(--orange-9)]">
-                                  <Icon name="tabler:truck-delivery" className="size-5" />
+                          <div className='overflow-hidden rounded-xl border border-[var(--gray-4)] bg-white shadow-sm'>
+                            <div className='flex items-center justify-between gap-4 border-b border-[var(--gray-3)] bg-[var(--gray-1)] px-4 py-3'>
+                              <div className='flex items-center gap-3'>
+                                <div className='flex size-9 items-center justify-center rounded-lg bg-[var(--orange-1)] text-[var(--orange-9)]'>
+                                  <Icon
+                                    className='size-5'
+                                    name='tabler:truck-delivery'
+                                  />
                                 </div>
-                                <div className="flex flex-col">
-                                  <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--gray-9)]">
+                                <div className='flex flex-col'>
+                                  <span className='text-[10px] font-bold tracking-wider text-[var(--gray-9)] uppercase'>
                                     Detected missing quantities
                                   </span>
-                                  <span className="text-13 font-bold text-[var(--gray-12)]">
-                                    {backorder!.missing_qty_by_item!.length} impacted line(s)
+                                  <span className='text-13 font-bold text-[var(--gray-12)]'>
+                                    {backorder!.missing_qty_by_item!.length}{' '}
+                                    impacted line(s)
                                   </span>
                                 </div>
                               </div>
 
-                              <span className="inline-flex items-center gap-1 rounded-md border border-[var(--orange-3)] bg-[var(--orange-1)] px-2 py-1 text-[10px] font-bold text-[var(--orange-10)]">
-                                <Icon name="tabler:alert-triangle" className="size-3" />
+                              <span className='inline-flex items-center gap-1 rounded-md border border-[var(--orange-3)] bg-[var(--orange-1)] px-2 py-1 text-[10px] font-bold text-[var(--orange-10)]'>
+                                <Icon
+                                  className='size-3'
+                                  name='tabler:alert-triangle'
+                                />
                                 Short ship risk
                               </span>
                             </div>
 
-                            <div className="overflow-x-auto">
-                              <div className="min-w-[720px]">
-                                <div className="grid grid-cols-[2fr_0.8fr_0.8fr_0.8fr_1fr_1fr] border-b border-[var(--gray-3)] bg-white px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-[var(--gray-9)]">
+                            <div className='overflow-x-auto'>
+                              <div className='min-w-[720px]'>
+                                <div className='grid grid-cols-[2fr_0.8fr_0.8fr_0.8fr_1fr_1fr] border-b border-[var(--gray-3)] bg-white px-4 py-2 text-[10px] font-bold tracking-wider text-[var(--gray-9)] uppercase'>
                                   <div>Description</div>
                                   <div>PO Qty</div>
                                   <div>Inv Qty</div>
                                   <div>Remaining</div>
                                   <div>Value</div>
-                                  <div className="text-right">Reason</div>
+                                  <div className='text-right'>Reason</div>
                                 </div>
 
-                                <div className="divide-y divide-[var(--gray-2)]">
-                                  {backorder!.missing_qty_by_item!.map((row, idx) => {
-                                    const desc = row.description?.trim() || 'Unmapped item';
-                                    const invQty = row.invoice_qty ?? '-';
-                                    const value =
-                                      typeof row.amount === 'number'
-                                        ? row.amount
-                                        : typeof row.price === 'number' && typeof row.remaining === 'number'
-                                          ? row.price * row.remaining
-                                          : '-';
-                                    const reason = row.reason || 'BACKORDER';
+                                <div className='divide-y divide-[var(--gray-2)]'>
+                                  {backorder!.missing_qty_by_item!.map(
+                                    (row, idx) => {
+                                      const desc =
+                                        row.description?.trim() ||
+                                        'Unmapped item'
+                                      const invQty = row.invoice_qty ?? '-'
+                                      const value =
+                                        typeof row.amount === 'number'
+                                          ? row.amount
+                                          : typeof row.price === 'number' &&
+                                              typeof row.remaining === 'number'
+                                            ? row.price * row.remaining
+                                            : '-'
+                                      const reason = row.reason || 'BACKORDER'
 
-                                    return (
-                                      <div
-                                        key={idx}
-                                        className="grid grid-cols-[2fr_0.8fr_0.8fr_0.8fr_1fr_1fr] items-center px-4 py-2.5 hover:bg-[var(--gray-1)] transition-colors"
-                                      >
-                                        <div className="text-[var(--gray-12)] pr-4">
-                                          <div className="text-12 font-semibold line-clamp-1 hover:line-clamp-none transition-all" title={desc}>
-                                            {desc}
-                                          </div>
-                                          {row.po_line_id && (
-                                            <div className="text-[10px] font-medium text-[var(--gray-9)] line-clamp-1 hover:line-clamp-none transition-all">
-                                              PO Line: {row.po_line_id}
+                                      return (
+                                        <div
+                                          className='grid grid-cols-[2fr_0.8fr_0.8fr_0.8fr_1fr_1fr] items-center px-4 py-2.5 transition-colors hover:bg-[var(--gray-1)]'
+                                          key={idx}
+                                        >
+                                          <div className='pr-4 text-[var(--gray-12)]'>
+                                            <div
+                                              className='line-clamp-1 text-12 font-semibold transition-all hover:line-clamp-none'
+                                              title={desc}
+                                            >
+                                              {desc}
                                             </div>
-                                          )}
-                                        </div>
+                                            {row.po_line_id && (
+                                              <div className='line-clamp-1 text-[10px] font-medium text-[var(--gray-9)] transition-all hover:line-clamp-none'>
+                                                PO Line: {row.po_line_id}
+                                              </div>
+                                            )}
+                                          </div>
 
-                                        <div className="text-12 font-medium text-[var(--gray-11)]">{row.po_qty}</div>
-                                        <div className="text-12 font-medium text-[var(--gray-11)]">{invQty as any}</div>
-                                        <div className="text-12 font-bold text-[var(--orange-10)]">{row.remaining}</div>
-                                        <div className="text-12 font-bold text-[var(--teal-9)]">{value as any}</div>
+                                          <div className='text-12 font-medium text-[var(--gray-11)]'>
+                                            {row.po_qty}
+                                          </div>
+                                          <div className='text-12 font-medium text-[var(--gray-11)]'>
+                                            {invQty as any}
+                                          </div>
+                                          <div className='text-12 font-bold text-[var(--orange-10)]'>
+                                            {row.remaining}
+                                          </div>
+                                          <div className='text-12 font-bold text-[var(--teal-9)]'>
+                                            {value as any}
+                                          </div>
 
-                                        <div className="text-right">
-                                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-bold border border-[var(--orange-3)] bg-[var(--orange-1)] text-[var(--orange-10)]">
-                                            {reason}
-                                          </span>
+                                          <div className='text-right'>
+                                            <span className='inline-flex items-center gap-1 rounded-md border border-[var(--orange-3)] bg-[var(--orange-1)] px-2 py-0.5 text-[9px] font-bold text-[var(--orange-10)]'>
+                                              {reason}
+                                            </span>
+                                          </div>
                                         </div>
-                                      </div>
-                                    );
-                                  })}
+                                      )
+                                    },
+                                  )}
                                 </div>
 
                                 {backorder?.recommendation && (
-                                  <div className="px-4 py-3 border-t border-[var(--gray-3)] bg-white flex items-center justify-between">
-                                    <div className="flex items-center gap-2 text-[11px] font-bold text-[var(--gray-10)]">
-                                      <Icon name="tabler:route" className="size-4" />
+                                  <div className='flex items-center justify-between border-t border-[var(--gray-3)] bg-white px-4 py-3'>
+                                    <div className='flex items-center gap-2 text-[11px] font-bold text-[var(--gray-10)]'>
+                                      <Icon
+                                        className='size-4'
+                                        name='tabler:route'
+                                      />
                                       Orchestration recommendation
                                     </div>
                                     <span
                                       className={cn(
-                                        'inline-flex items-center gap-1 px-2 py-1 rounded-md border text-[10px] font-bold',
-                                        getRecommendationMeta(backorder.recommendation).chip
+                                        'inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[10px] font-bold',
+                                        getRecommendationMeta(
+                                          backorder.recommendation,
+                                        ).chip,
                                       )}
                                     >
-                                      <Icon name={getRecommendationMeta(backorder.recommendation).icon} className="size-3" />
-                                      {getRecommendationMeta(backorder.recommendation).label}
+                                      <Icon
+                                        className='size-3'
+                                        name={
+                                          getRecommendationMeta(
+                                            backorder.recommendation,
+                                          ).icon
+                                        }
+                                      />
+                                      {
+                                        getRecommendationMeta(
+                                          backorder.recommendation,
+                                        ).label
+                                      }
                                     </span>
                                   </div>
                                 )}
@@ -1035,87 +1189,99 @@ const Overview = ({
                     )}
 
                     {/* History */}
-                    <div className="flex flex-col gap-2 mt-3">
-                      <div className="flex items-center gap-2 pl-1">
-                        <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--gray-9)]">
+                    <div className='mt-3 flex flex-col gap-2'>
+                      <div className='flex items-center gap-2 pl-1'>
+                        <div className='text-[11px] font-bold tracking-wider text-[var(--gray-9)] uppercase'>
                           History
                         </div>
                       </div>
-                      <div className="rounded-xl border border-[var(--gray-4)] bg-white p-4 shadow-sm">
-                        <History workflowId={workflowId} processId={processId} enabled={true} />
+                      <div className='rounded-xl border border-[var(--gray-4)] bg-white p-4 shadow-sm'>
+                        <History
+                          enabled={true}
+                          processId={processId}
+                          workflowId={workflowId}
+                        />
                       </div>
                     </div>
 
                     {/* Comments (Moved to Overlay View) */}
                     {/* <div className="flex flex-col gap-2 mt-4"> ... </div> */}
-
-
                   </div>
                 </div>
               </div>
 
               {/* Right Column: Third Layout (Comments or Attachments) */}
               {rightView !== 'analysis' && (
-                <div className="w-[30%] h-full overflow-hidden rounded-lg animate-in slide-in-from-right-10 duration-300">
+                <div className='animate-in slide-in-from-right-10 h-full w-[30%] overflow-hidden rounded-lg duration-300'>
                   {rightView === 'comments' ? (
                     /* --- COMMENTS VIEW --- */
-                    <div className="h-full flex flex-col bg-white rounded-lg border border-[var(--gray-3)] overflow-hidden">
+                    <div className='flex h-full flex-col overflow-hidden rounded-lg border border-[var(--gray-3)] bg-white'>
                       {/* Header */}
-                      <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-[var(--gray-3)] shrink-0 bg-[var(--gray-1)]">
-                        <div className="flex items-center gap-2">
-                          <Icon name="tabler:message-circle" className="size-5 text-[var(--blue-9)]" />
-                          <span className="font-bold text-[var(--gray-12)]">Comments</span>
+                      <div className='flex shrink-0 items-center justify-between gap-3 border-b border-[var(--gray-3)] bg-[var(--gray-1)] px-4 py-3'>
+                        <div className='flex items-center gap-2'>
+                          <Icon
+                            className='size-5 text-[var(--blue-9)]'
+                            name='tabler:message-circle'
+                          />
+                          <span className='font-bold text-[var(--gray-12)]'>
+                            Comments
+                          </span>
                         </div>
                         <button
+                          className='flex size-8 cursor-pointer items-center justify-center rounded-lg border border-transparent text-[var(--gray-9)] transition-all hover:border-[var(--gray-3)] hover:bg-white hover:shadow-sm'
                           onClick={() => setRightView('analysis')}
-                          className="flex items-center justify-center size-8 rounded-lg hover:bg-white text-[var(--gray-9)] transition-all border border-transparent hover:border-[var(--gray-3)] hover:shadow-sm cursor-pointer"
                         >
-                          <Icon name="tabler:x" className="size-5" />
+                          <Icon className='size-5' name='tabler:x' />
                         </button>
                       </div>
                       {/* Content */}
-                      <div className="flex-1 overflow-hidden p-0">
+                      <div className='flex-1 overflow-hidden p-0'>
                         <Comments
-                          workflowId={workflowId}
-                          processId={processId}
-                          transactionId={transactionId}
-                          enabled={true}
                           attachments={selectedItem?.attachments || []}
+                          enabled={true}
+                          processId={processId}
                           repositoryId={repositoryId}
+                          transactionId={transactionId}
+                          workflowId={workflowId}
                         />
                       </div>
                     </div>
                   ) : (
                     /* --- ATTACHMENTS VIEW --- */
-                    <div className="h-full flex flex-col bg-white rounded-lg border border-[var(--gray-3)] overflow-hidden">
+                    <div className='flex h-full flex-col overflow-hidden rounded-lg border border-[var(--gray-3)] bg-white'>
                       {/* Header */}
-                      <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-[var(--gray-3)] shrink-0 bg-[var(--gray-1)]">
-                        <div className="flex items-center gap-2">
-                          <Icon name="tabler:paperclip" className="size-5 text-[var(--blue-9)]" />
-                          <span className="font-bold text-[var(--gray-12)]">Attachments</span>
+                      <div className='flex shrink-0 items-center justify-between gap-3 border-b border-[var(--gray-3)] bg-[var(--gray-1)] px-4 py-3'>
+                        <div className='flex items-center gap-2'>
+                          <Icon
+                            className='size-5 text-[var(--blue-9)]'
+                            name='tabler:paperclip'
+                          />
+                          <span className='font-bold text-[var(--gray-12)]'>
+                            Attachments
+                          </span>
                         </div>
                         <button
+                          className='flex size-8 cursor-pointer items-center justify-center rounded-lg border border-transparent text-[var(--gray-9)] transition-all hover:border-[var(--gray-3)] hover:bg-white hover:shadow-sm'
                           onClick={() => setRightView('analysis')}
-                          className="flex items-center justify-center size-8 rounded-lg hover:bg-white text-[var(--gray-9)] transition-all border border-transparent hover:border-[var(--gray-3)] hover:shadow-sm cursor-pointer"
                         >
-                          <Icon name="tabler:x" className="size-5" />
+                          <Icon className='size-5' name='tabler:x' />
                         </button>
                       </div>
                       {/* Content */}
-                      <div className="flex-1 overflow-hidden">
+                      <div className='flex-1 overflow-hidden'>
                         <Attachments
-                          workflowId={workflowId}
-                          processId={processId}
                           enabled={true}
+                          processId={processId}
+                          workflowId={workflowId}
+                          onClose={() => setRightView('analysis')}
                           onSelect={(file) => {
                             if (selectedFile?.id === file.id) {
-                              setIsFileLoading(true);
-                              setTimeout(() => setIsFileLoading(false), 500);
+                              setIsFileLoading(true)
+                              setTimeout(() => setIsFileLoading(false), 500)
                             } else {
-                              setSelectedFile(file);
+                              setSelectedFile(file)
                             }
                           }}
-                          onClose={() => setRightView('analysis')}
                         />
                       </div>
                     </div>
@@ -1127,8 +1293,8 @@ const Overview = ({
         )}
       </div>
     </>
-  );
-};
+  )
+}
 
-Overview.displayName = 'Overview';
-export default Overview;
+Overview.displayName = 'Overview'
+export default Overview

@@ -56,23 +56,30 @@ export const useInboxData = (
           case 'Processed': {
             const [sentResponse, completedResponse] = await Promise.all([
               requestApi.getSentListById(workflowId, config),
-              requestApi.getCompletedRequestById(workflowId, config)
+              requestApi.getCompletedRequestById(workflowId, config),
             ])
 
-            const sentData = sentResponse?.data?.data || sentResponse?.data || []
-            const completedData = completedResponse?.data?.data || completedResponse?.data || []
+            const sentData =
+              sentResponse?.data?.data || sentResponse?.data || []
+            const completedData =
+              completedResponse?.data?.data || completedResponse?.data || []
 
             const combinedData = [...sentData, ...completedData]
-            const totalItems = (sentResponse?.meta?.totalItems || sentResponse?.data?.meta?.totalItems || 0) +
-                               (completedResponse?.meta?.totalItems || completedResponse?.data?.meta?.totalItems || 0)
+            const totalItems =
+              (sentResponse?.meta?.totalItems ||
+                sentResponse?.data?.meta?.totalItems ||
+                0) +
+              (completedResponse?.meta?.totalItems ||
+                completedResponse?.data?.meta?.totalItems ||
+                0)
 
             response = {
               data: {
                 data: combinedData,
                 meta: {
-                  totalItems
-                }
-              }
+                  totalItems,
+                },
+              },
             }
             break
           }
@@ -96,7 +103,11 @@ export const useInboxData = (
       const groupedData: TableGroup[] = []
 
       // Helper to transform process into InboxItem
-      const transformProcess = (process: any, groupKey: string, originalIndex: number): InboxItem => {
+      const transformProcess = (
+        process: any,
+        groupKey: string,
+        originalIndex: number,
+      ): InboxItem => {
         const dynamicFields = process.formData?.fields || {}
         let actions: any[] = []
         if (activeTab === 'Inbox' || activeTab === 'Exceptions') {
@@ -110,8 +121,8 @@ export const useInboxData = (
           ...dynamicFields,
           _actions: actions,
           _groupKey: groupKey || activeTab,
-          id: process.processId || process.id,
           _originalIndex: originalIndex,
+          id: process.processId || process.id,
         }
       }
 
@@ -132,7 +143,9 @@ export const useInboxData = (
                   })
 
                 if (activeTab === 'Exceptions') {
-                  groupItems = groupItems.filter((item: any) => (item as any)._originalIndex % 12 !== 0)
+                  groupItems = groupItems.filter(
+                    (item: any) => (item as any)._originalIndex % 12 !== 0,
+                  )
                 }
 
                 if (groupItems.length > 0) {
@@ -147,10 +160,17 @@ export const useInboxData = (
               }
               // Format 2: Flat (inner is the item itself)
               else if (inner && (inner.processId || inner.id)) {
-                const transformed = transformProcess(inner, activeTab, globalIndex)
+                const transformed = transformProcess(
+                  inner,
+                  activeTab,
+                  globalIndex,
+                )
                 globalIndex++
 
-                if (activeTab === 'Exceptions' && (transformed as any)._originalIndex % 12 === 0) {
+                if (
+                  activeTab === 'Exceptions' &&
+                  (transformed as any)._originalIndex % 12 === 0
+                ) {
                   return
                 }
 

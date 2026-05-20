@@ -1,11 +1,10 @@
+import AskAI from '@/components/common/ask-ai/AskAI'
+import useAskAIStore from '@/components/common/ask-ai/stores/useAskAIStore'
 import { useFormStore } from '@/pages/form-builder/store/formStore'
 import Form from './components/form/Form'
 import PublishSidebar from './components/form/PublishSidebar'
-import FieldSettings from './components/settings/FieldSettings'
-import AskAI from '@/components/common/ask-ai/AskAI'
-import useAskAIStore from '@/components/common/ask-ai/stores/useAskAIStore'
-
 import LeftSidebar from './components/left-sidebar/LeftSidebar'
+import FieldSettings from './components/settings/FieldSettings'
 import WelcomeScreen from './components/welcome/WelcomeScreen'
 
 const Build = () => {
@@ -19,7 +18,7 @@ const Build = () => {
   if (!hasPanels) {
     return (
       <div className='flex h-full w-full overflow-hidden bg-white'>
-        <div className='flex-1 overflow-auto bg-gray-50/20'>
+        <div className='bg-gray-50/20 flex-1 overflow-auto'>
           <WelcomeScreen />
         </div>
       </div>
@@ -29,14 +28,14 @@ const Build = () => {
   return (
     <div className='flex h-full w-full overflow-hidden bg-white'>
       <LeftSidebar />
-      <div className='flex-1 overflow-auto bg-gray-50/50 shadow-inner px-4 pt-14 pb-12'>
+      <div className='bg-gray-50/50 flex-1 overflow-auto px-4 pt-14 pb-12 shadow-inner'>
         <div className='animate-in fade-in slide-in-from-left-4 mx-auto w-full max-w-[1200px] duration-500'>
           <Form />
         </div>
       </div>
 
       {(isSidebarOpen || isPublishOpen || isAskAIOpen) && (
-        <div className='animate-in slide-in-from-right h-full w-[400px] shrink-0 border-l border-gray-2 bg-white duration-300 shadow-xl relative z-20'>
+        <div className='animate-in slide-in-from-right relative z-20 h-full w-[400px] shrink-0 border-l border-gray-2 bg-white shadow-xl duration-300'>
           {isPublishOpen ? (
             <div
               className='animate-in fade-in slide-in-from-right-4 h-full duration-500'
@@ -61,8 +60,6 @@ const Build = () => {
           )}
         </div>
       )}
-
-
     </div>
   )
 }

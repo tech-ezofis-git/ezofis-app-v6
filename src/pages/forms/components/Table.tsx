@@ -1,6 +1,6 @@
+import { type Table as TanstackTable } from '@tanstack/react-table'
 import DataTable from '@/components/base/data-table/DataTable'
 import Pagination from '@/components/base/pagination/Pagination'
-import { type Table as TanstackTable } from '@tanstack/react-table'
 
 interface TableProps {
   isLoading: boolean
@@ -28,8 +28,8 @@ const Table = ({
   // Component body simplified as columns and state are managed by parent
 
   return (
-    <div className='flex h-full flex-col py-1 px-2'>
-      <div className='flex-1 min-h-0'>
+    <div className='flex h-full flex-col px-2 py-1'>
+      <div className='min-h-0 flex-1'>
         <DataTable
           isLoading={isLoading}
           isReLoading={isRefetching}

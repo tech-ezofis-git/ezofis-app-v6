@@ -195,25 +195,25 @@ const Form = () => {
     const observer = new IntersectionObserver(
       (entries) => {
         // Find the entry that is currently most prominent
-        const visibleEntry = entries.find(entry => entry.isIntersecting)
+        const visibleEntry = entries.find((entry) => entry.isIntersecting)
         if (visibleEntry) {
           useFormStore.getState().setActivePanelId(visibleEntry.target.id)
         }
       },
       {
         rootMargin: '-10% 0px -70% 0px', // Trigger when section is in the upper part of the screen
-        threshold: 0
-      }
+        threshold: 0,
+      },
     )
 
     // Wait for panels to be rendered
     document.querySelectorAll('[id^="panel-"]') // Assuming panel IDs start with panel-
-    // Actually, Page.tsx uses id={panel.id}. 
+    // Actually, Page.tsx uses id={panel.id}.
     // I should check what panel.id looks like. If they are UUIDs, I'll need a way to select them.
     // I'll add a data-section attribute in Page.tsx if needed, but for now I'll use a class or observe all children.
-    
+
     const panelElements = document.querySelectorAll('.group\\/page')
-    panelElements.forEach(el => observer.observe(el))
+    panelElements.forEach((el) => observer.observe(el))
 
     return () => observer.disconnect()
   }, [panels]) // Re-run when sections are added/removed
@@ -223,7 +223,7 @@ const Form = () => {
     .find((f) => f.id === activeId)
 
   return (
-    <div className='w-full max-w-[1200px] mx-auto pb-40 px-0 font-inter'>
+    <div className='mx-auto w-full max-w-[1200px] px-0 pb-40 font-inter'>
       <div className='flex flex-col gap-10'>
         {/* Welcome Page Slot (Only if enabled) */}
         {welcomePage.enabled && (
@@ -248,10 +248,10 @@ const Form = () => {
               <div className='z-[1000] scale-[1.02] rotate-[2deg] cursor-grabbing rounded-2xl shadow-2xl ring-2 ring-accent-primary/20'>
                 <QuestionCard
                   isActive={true}
-                  onDelete={() => { }}
-                  onSelect={() => { }}
-                  onUpdate={() => { }}
                   question={activeQuestion}
+                  onDelete={() => {}}
+                  onSelect={() => {}}
+                  onUpdate={() => {}}
                 />
               </div>
             ) : null}
@@ -259,7 +259,7 @@ const Form = () => {
         </DndContext>
 
         {/* Canva-style Add Section Button */}
-        <div className="flex justify-center pt-8">
+        <div className='flex justify-center pt-8'>
           <AddSectionButton
             onClick={() => handleAddPanel('blank', panels.length)}
             onSelectTemplate={(type) => handleAddPanel(type, panels.length)}
@@ -364,9 +364,7 @@ const CanvasSlot = ({
                 {title || (isWelcome ? 'Welcome to our form' : 'Thank you!')}
               </div>
 
-              <div
-                className='line-clamp-2 text-xs leading-relaxed text-gray-10'
-              >
+              <div className='line-clamp-2 text-xs leading-relaxed text-gray-10'>
                 {isWelcome
                   ? 'This is the first screen your users will see. Customize the title, description, and start button in the settings.'
                   : 'Final screen shown after submission. You can add a custom message or redirect users from the completion settings.'}
@@ -413,9 +411,7 @@ const CanvasSlot = ({
           isActive ? 'border-accent-primary/20' : 'border-gray-1',
         )}
       >
-        <div
-          className='text-[9px] font-bold tracking-widest text-gray-4 uppercase'
-        >
+        <div className='text-[9px] font-bold tracking-widest text-gray-4 uppercase'>
           {isWelcome ? 'Form Entry Point' : 'Form Completion Handler'}
         </div>
         <Icon

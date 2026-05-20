@@ -152,162 +152,210 @@ const resolveFormJson = (workflow: WorkflowOption | null): any | null => {
 // }
 
 const findPONumberInObject = (obj: any): string | null => {
-  if (!obj || typeof obj !== 'object') return null;
+  if (!obj || typeof obj !== 'object') return null
 
   const extractStringValue = (val: any): string | null => {
-    if (val == null) return null;
+    if (val == null) return null
     if (typeof val === 'object') {
-      const innerVal = val['Invoice Value'] || val['InvoiceValue'] || val['PO Value'] || val['POValue'] || val['value'] || val['val'];
-      if (innerVal !== undefined) return extractStringValue(innerVal);
-      return null;
+      const innerVal =
+        val['Invoice Value'] ||
+        val['InvoiceValue'] ||
+        val['PO Value'] ||
+        val['POValue'] ||
+        val['value'] ||
+        val['val']
+      if (innerVal !== undefined) return extractStringValue(innerVal)
+      return null
     }
-    const str = String(val).trim();
-    return (str !== '' && str !== '-' && str.toUpperCase() !== 'N/A') ? str : null;
-  };
+    const str = String(val).trim()
+    return str !== '' && str !== '-' && str.toUpperCase() !== 'N/A' ? str : null
+  }
 
   for (const key of Object.keys(obj)) {
-    const lowerKey = key.toLowerCase();
-    const isStrictPOKey = 
-      lowerKey === 'po' || 
-      lowerKey === 'po_number' || 
-      lowerKey === 'ponumber' || 
-      lowerKey === 'po number' || 
-      lowerKey === 'purchase_order_number' || 
-      lowerKey === 'purchaseorder_number' || 
-      lowerKey === 'purchase order number' || 
+    const lowerKey = key.toLowerCase()
+    const isStrictPOKey =
+      lowerKey === 'po' ||
+      lowerKey === 'po_number' ||
+      lowerKey === 'ponumber' ||
+      lowerKey === 'po number' ||
+      lowerKey === 'purchase_order_number' ||
+      lowerKey === 'purchaseorder_number' ||
+      lowerKey === 'purchase order number' ||
       lowerKey === 'rxwlghillrremmrqlk9mj' ||
-      lowerKey.includes('purchase order');
+      lowerKey.includes('purchase order')
 
     if (isStrictPOKey) {
-      if (!lowerKey.includes('value') && !lowerKey.includes('amount') && !lowerKey.includes('total') && !lowerKey.includes('date') && !lowerKey.includes('price')) {
-        const extracted = extractStringValue(obj[key]);
+      if (
+        !lowerKey.includes('value') &&
+        !lowerKey.includes('amount') &&
+        !lowerKey.includes('total') &&
+        !lowerKey.includes('date') &&
+        !lowerKey.includes('price')
+      ) {
+        const extracted = extractStringValue(obj[key])
         if (extracted && extracted !== '-' && extracted !== '') {
-          return extracted;
+          return extracted
         }
       }
     }
   }
 
-  return null;
-};
+  return null
+}
 
 const extractPONumber = (row: any): string => {
-  if (!row) return 'N/A';
-  const agentData = row._agentData?.[0] || row._agentData || {};
-  
-  const fromForm = findPONumberInObject(row.formData?.fields) || findPONumberInObject(row.formData);
-  if (fromForm) return fromForm;
+  if (!row) return 'N/A'
+  const agentData = row._agentData?.[0] || row._agentData || {}
 
-  const fromAgentHeader = findPONumberInObject(agentData?.['Extracted Invoice JSON']?.invoice_header);
-  if (fromAgentHeader) return fromAgentHeader;
+  const fromForm =
+    findPONumberInObject(row.formData?.fields) ||
+    findPONumberInObject(row.formData)
+  if (fromForm) return fromForm
 
-  const fromPOMatching = findPONumberInObject(agentData?.po_matching);
-  if (fromPOMatching) return fromPOMatching;
+  const fromAgentHeader = findPONumberInObject(
+    agentData?.['Extracted Invoice JSON']?.invoice_header,
+  )
+  if (fromAgentHeader) return fromAgentHeader
 
-  const fromAgent = findPONumberInObject(agentData);
-  if (fromAgent) return fromAgent;
+  const fromPOMatching = findPONumberInObject(agentData?.po_matching)
+  if (fromPOMatching) return fromPOMatching
 
-  const fromSelected = findPONumberInObject(row);
-  if (fromSelected) return fromSelected;
+  const fromAgent = findPONumberInObject(agentData)
+  if (fromAgent) return fromAgent
 
-  return 'N/A';
-};
+  const fromSelected = findPONumberInObject(row)
+  if (fromSelected) return fromSelected
+
+  return 'N/A'
+}
 
 const extractDueDate = (row: any): string => {
-  if (!row) return '-';
-  const agentData = row._agentData?.[0] || row._agentData || {};
-  const val = row.dueDate || 
-              row.due_date || 
-              row.payment_terms?.due_date ||
-              row.paymentTerms?.due_date ||
-              row.paymentTerms?.dueDate ||
-              row.formData?.fields?.['Due Date'] ||
-              row.formData?.fields?.['due_date'] ||
-              row.formData?.fields?.['Due_Date'] ||
-              row.formData?.['Due Date'] ||
-              row.formData?.['due_date'] ||
-              row.formData?.['Due_Date'] ||
-              agentData?.payment_terms?.due_date ||
-              agentData?.['Extracted Invoice JSON']?.invoice_header?.['Due Date'] ||
-              agentData?.['Extracted Invoice JSON']?.invoice_header?.['due_date'] ||
-              agentData?.po_matching?.due_date;
-  if (!val || val === '-') return '-';
+  if (!row) return '-'
+  const agentData = row._agentData?.[0] || row._agentData || {}
+  const val =
+    row.dueDate ||
+    row.due_date ||
+    row.payment_terms?.due_date ||
+    row.paymentTerms?.due_date ||
+    row.paymentTerms?.dueDate ||
+    row.formData?.fields?.['Due Date'] ||
+    row.formData?.fields?.['due_date'] ||
+    row.formData?.fields?.['Due_Date'] ||
+    row.formData?.['Due Date'] ||
+    row.formData?.['due_date'] ||
+    row.formData?.['Due_Date'] ||
+    agentData?.payment_terms?.due_date ||
+    agentData?.['Extracted Invoice JSON']?.invoice_header?.['Due Date'] ||
+    agentData?.['Extracted Invoice JSON']?.invoice_header?.['due_date'] ||
+    agentData?.po_matching?.due_date
+  if (!val || val === '-') return '-'
   try {
-    return formatDatetime(val as string, 'date');
+    return formatDatetime(val as string, 'date')
   } catch {
-    return String(val);
+    return String(val)
   }
-};
+}
 
 const extractPaymentTerms = (row: any): string => {
-  if (!row) return '-';
-  const agentData = row._agentData?.[0] || row._agentData || {};
-  
-  let termObj = row.payment_terms || row.paymentTerms || {};
-  let val = typeof termObj === 'object' ? (termObj.payment_terms || termObj.terms || termObj.payment_term || termObj.term) : termObj;
-  if (val && val !== '-') return String(val);
+  if (!row) return '-'
+  const agentData = row._agentData?.[0] || row._agentData || {}
 
-  val = row.terms || row.payment_term || row.paymentTerms;
-  if (val && typeof val !== 'object' && val !== '-') return String(val);
+  const termObj = row.payment_terms || row.paymentTerms || {}
+  let val =
+    typeof termObj === 'object'
+      ? termObj.payment_terms ||
+        termObj.terms ||
+        termObj.payment_term ||
+        termObj.term
+      : termObj
+  if (val && val !== '-') return String(val)
 
-  val = row.formData?.fields?.['Payment Terms'] || row.formData?.fields?.['payment_terms'] || row.formData?.fields?.['Terms'] || row.formData?.fields?.['terms'] ||
-        row.formData?.['Payment Terms'] || row.formData?.['payment_terms'] || row.formData?.['Terms'] || row.formData?.['terms'];
-  if (val && val !== '-') return String(val);
+  val = row.terms || row.payment_term || row.paymentTerms
+  if (val && typeof val !== 'object' && val !== '-') return String(val)
+
+  val =
+    row.formData?.fields?.['Payment Terms'] ||
+    row.formData?.fields?.['payment_terms'] ||
+    row.formData?.fields?.['Terms'] ||
+    row.formData?.fields?.['terms'] ||
+    row.formData?.['Payment Terms'] ||
+    row.formData?.['payment_terms'] ||
+    row.formData?.['Terms'] ||
+    row.formData?.['terms']
+  if (val && val !== '-') return String(val)
 
   if (agentData) {
-    let agentTermObj = agentData.payment_terms || {};
-    val = typeof agentTermObj === 'object' ? (agentTermObj.payment_terms || agentTermObj.terms || agentTermObj.payment_term || agentTermObj.term) : agentTermObj;
-    if (val && val !== '-') return String(val);
+    const agentTermObj = agentData.payment_terms || {}
+    val =
+      typeof agentTermObj === 'object'
+        ? agentTermObj.payment_terms ||
+          agentTermObj.terms ||
+          agentTermObj.payment_term ||
+          agentTermObj.term
+        : agentTermObj
+    if (val && val !== '-') return String(val)
 
-    const header = agentData['Extracted Invoice JSON']?.invoice_header || {};
-    val = header['Payment Terms'] || header['payment_terms'] || header['Terms'] || header['terms'];
-    if (val && val !== '-') return String(val);
+    const header = agentData['Extracted Invoice JSON']?.invoice_header || {}
+    val =
+      header['Payment Terms'] ||
+      header['payment_terms'] ||
+      header['Terms'] ||
+      header['terms']
+    if (val && val !== '-') return String(val)
   }
 
-  return '-';
-};
+  return '-'
+}
 const extractInvoiceDate = (row: any): string => {
-  if (!row) return '-';
-  const agentData = row._agentData?.[0] || row._agentData || {};
-  
+  if (!row) return '-'
+  const agentData = row._agentData?.[0] || row._agentData || {}
+
   // 1. Check dynamic field key 9F6tPVHoRnmONGx3kYJu2 in fields and row
-  const fromForm9F = row.formData?.fields?.['9F6tPVHoRnmONGx3kYJu2'] || row['9F6tPVHoRnmONGx3kYJu2'];
-  if (fromForm9F && fromForm9F !== '-') return String(fromForm9F).trim();
+  const fromForm9F =
+    row.formData?.fields?.['9F6tPVHoRnmONGx3kYJu2'] ||
+    row['9F6tPVHoRnmONGx3kYJu2']
+  if (fromForm9F && fromForm9F !== '-') return String(fromForm9F).trim()
 
   // 2. Check general Invoice Date keys
   const exactKeys = [
-    'Invoice Date', 'invoice_date', 'invoiceDate', 'Date', 'date', '9F6tPVHoRnmONGx3kYJu2'
-  ];
-  
-  const extractVal = (val: any): string | null => {
-    if (val == null) return null;
-    if (typeof val === 'object') {
-      const inner = val['Invoice Value'] || val['value'] || val['val'] || val['text'];
-      return inner !== undefined ? String(inner).trim() : null;
-    }
-    return String(val).trim();
-  };
+    'Invoice Date',
+    'invoice_date',
+    'invoiceDate',
+    'Date',
+    'date',
+    '9F6tPVHoRnmONGx3kYJu2',
+  ]
 
-  const fields = row.formData?.fields || {};
+  const extractVal = (val: any): string | null => {
+    if (val == null) return null
+    if (typeof val === 'object') {
+      const inner =
+        val['Invoice Value'] || val['value'] || val['val'] || val['text']
+      return inner !== undefined ? String(inner).trim() : null
+    }
+    return String(val).trim()
+  }
+
+  const fields = row.formData?.fields || {}
   for (const key of exactKeys) {
-    const v = extractVal(fields[key]) || extractVal(row[key]);
-    if (v && v !== '-' && v !== '') return v;
+    const v = extractVal(fields[key]) || extractVal(row[key])
+    if (v && v !== '-' && v !== '') return v
   }
 
   // 3. Check agentData Extracted Invoice JSON
-  const agentHeader = agentData?.['Extracted Invoice JSON']?.invoice_header || {};
+  const agentHeader =
+    agentData?.['Extracted Invoice JSON']?.invoice_header || {}
   for (const key of exactKeys) {
-    const v = extractVal(agentHeader[key]);
-    if (v && v !== '-' && v !== '') return v;
+    const v = extractVal(agentHeader[key])
+    if (v && v !== '-' && v !== '') return v
   }
 
   // 4. Fallback to row.raisedAt or row.transaction_createdAt
-  const raisedAt = row.raisedAt || row.transaction_createdAt || row.createdAt;
-  if (raisedAt) return String(raisedAt);
+  const raisedAt = row.raisedAt || row.transaction_createdAt || row.createdAt
+  if (raisedAt) return String(raisedAt)
 
-  return '-';
-};
-
+  return '-'
+}
 
 export const useDynamicColumns = (
   workflow: WorkflowOption | null,
@@ -415,46 +463,46 @@ export const useDynamicColumns = (
       ...(selectedItem
         ? [] // If a request is selected, hide all other columns
         : [
-          {
-            id: 'raisedBy',
-            label: 'Raised By',
+            {
+              id: 'raisedBy',
+              label: 'Raised By',
 
-            size: 200,
-            renderCell: (row: any) => (
-              <WrapOnHoverCell
-                className='text-gray-600 text-xs'
-                value={row.raisedBy ?? '-'}
-              />
-            ),
-          },
-          {
-            id: 'raisedAt',
-            label: 'Raised On',
+              size: 200,
+              renderCell: (row: any) => (
+                <WrapOnHoverCell
+                  className='text-gray-600 text-xs'
+                  value={row.raisedBy ?? '-'}
+                />
+              ),
+            },
+            {
+              id: 'raisedAt',
+              label: 'Raised On',
 
-            size: 160,
-            renderCell: (row: any) => (
-              <WrapOnHoverCell
-                className='text-gray-600 text-xs'
-                value={
-                  row.raisedAt
-                    ? formatDatetime(row.raisedAt as string, 'datetime')
-                    : '-'
-                }
-              />
-            ),
-          },
-          {
-            // moved stage here
-            id: 'stage',
-            label: 'Stage',
-            size: 140,
-            renderCell: (row: any) => (
-              <div className='min-w-0'>
-                <RequestStatusBadge status={row.stage as Request['status']} />
-              </div>
-            ),
-          },
-        ]),
+              size: 160,
+              renderCell: (row: any) => (
+                <WrapOnHoverCell
+                  className='text-gray-600 text-xs'
+                  value={
+                    row.raisedAt
+                      ? formatDatetime(row.raisedAt as string, 'datetime')
+                      : '-'
+                  }
+                />
+              ),
+            },
+            {
+              // moved stage here
+              id: 'stage',
+              label: 'Stage',
+              size: 140,
+              renderCell: (row: any) => (
+                <div className='min-w-0'>
+                  <RequestStatusBadge status={row.stage as Request['status']} />
+                </div>
+              ),
+            },
+          ]),
     ]
 
     const form = resolveFormJson(workflow)
@@ -498,33 +546,47 @@ export const useDynamicColumns = (
             label,
             size: 200,
             renderCell: (row: any) => {
-              let rawVal = row[fieldKey] ?? row.formData?.fields?.[fieldKey] ?? row.formData?.[fieldKey]
+              let rawVal =
+                row[fieldKey] ??
+                row.formData?.fields?.[fieldKey] ??
+                row.formData?.[fieldKey]
 
-              const lowerLabel = String(label || '').toLowerCase();
-              const isPOField = lowerLabel.includes('po number') || lowerLabel === 'po' || lowerLabel === 'po_number';
-              const isDueDateField = lowerLabel.includes('due date') || lowerLabel === 'due_date';
-              const isTermsField = lowerLabel === 'terms' || lowerLabel.includes('payment terms') || lowerLabel === 'payment_term' || lowerLabel === 'payment_terms';
-              const isInvoiceDateField = lowerLabel.includes('invoice date') || lowerLabel === 'invoice_date' || fieldKey === '9F6tPVHoRnmONGx3kYJu2';
+              const lowerLabel = String(label || '').toLowerCase()
+              const isPOField =
+                lowerLabel.includes('po number') ||
+                lowerLabel === 'po' ||
+                lowerLabel === 'po_number'
+              const isDueDateField =
+                lowerLabel.includes('due date') || lowerLabel === 'due_date'
+              const isTermsField =
+                lowerLabel === 'terms' ||
+                lowerLabel.includes('payment terms') ||
+                lowerLabel === 'payment_term' ||
+                lowerLabel === 'payment_terms'
+              const isInvoiceDateField =
+                lowerLabel.includes('invoice date') ||
+                lowerLabel === 'invoice_date' ||
+                fieldKey === '9F6tPVHoRnmONGx3kYJu2'
 
               if (isPOField) {
-                const extracted = extractPONumber(row);
+                const extracted = extractPONumber(row)
                 if (extracted && extracted !== 'N/A') {
-                  rawVal = extracted;
+                  rawVal = extracted
                 }
               } else if (isDueDateField) {
-                const extracted = extractDueDate(row);
+                const extracted = extractDueDate(row)
                 if (extracted && extracted !== '-') {
-                  rawVal = extracted;
+                  rawVal = extracted
                 }
               } else if (isTermsField) {
-                const extracted = extractPaymentTerms(row);
+                const extracted = extractPaymentTerms(row)
                 if (extracted && extracted !== '-') {
-                  rawVal = extracted;
+                  rawVal = extracted
                 }
               } else if (isInvoiceDateField) {
-                const extracted = extractInvoiceDate(row);
+                const extracted = extractInvoiceDate(row)
                 if (extracted && extracted !== '-') {
-                  rawVal = extracted;
+                  rawVal = extracted
                 }
               }
 

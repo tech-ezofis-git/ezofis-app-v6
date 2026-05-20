@@ -1,7 +1,6 @@
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useRef } from 'react'
 import Stepper from '@/components/base/Stepper'
-import cn from '@/utils/cn'
 import {
   AnimateBounce,
   AnimateFadeIn,
@@ -9,6 +8,7 @@ import {
   AnimateSlideRight,
   AnimateSlideUp,
 } from '@/components/common/animations'
+import cn from '@/utils/cn'
 import setupStore from '../../../stores/useSetupStore'
 import StepFour from './steps/step-four/StepFour'
 import StepOne from './steps/step-one/StepOne'
@@ -64,22 +64,22 @@ const Steps = () => {
   // Color mapping based on progress percentage
   const getProgressStyles = () => {
     if (progress <= 25)
-      return { bg: 'bg-orange-9', text: 'text-orange-11', label: 'Orange' }
+      return { bg: 'bg-orange-9', label: 'Orange', text: 'text-orange-11' }
     if (progress <= 50)
-      return { bg: 'bg-blue-9', text: 'text-blue-11', label: 'Blue' }
+      return { bg: 'bg-blue-9', label: 'Blue', text: 'text-blue-11' }
     if (progress <= 75)
-      return { bg: 'bg-purple-9', text: 'text-purple-11', label: 'Purple' }
-    return { bg: 'bg-green-9', text: 'text-green-11', label: 'Green' }
+      return { bg: 'bg-purple-9', label: 'Purple', text: 'text-purple-11' }
+    return { bg: 'bg-green-9', label: 'Green', text: 'text-green-11' }
   }
 
   const { bg, text } = getProgressStyles()
 
   const formattedSteps = steps.map((s, idx) => ({
     ...s,
-    // Disable steps beyond Step 1 (index 0) if not connected
-    disabled: idx > 0 && !isConnected,
     // Allow clicking only if connected or it's the current step
     clickable: idx === 0 || isConnected,
+    // Disable steps beyond Step 1 (index 0) if not connected
+    disabled: idx > 0 && !isConnected,
   }))
 
   return (
@@ -91,7 +91,6 @@ const Steps = () => {
       initial={{ opacity: 0, y: 20 }}
       transition={{ duration: 0.4, ease: 'easeOut' }}
     >
-
       <AnimateSlideRight delay={0.1}>
         <div className='mb-4 flex items-center justify-between border-b border-gray-3 px-6 py-3 md:px-8'>
           <div className='flex flex-col gap-0.5'>
@@ -105,7 +104,12 @@ const Steps = () => {
 
           <div className='flex items-center gap-4'>
             <div className='flex flex-col items-end gap-1'>
-              <span className={cn('text-13 font-semibold transition-colors duration-500', text)}>
+              <span
+                className={cn(
+                  'text-13 font-semibold transition-colors duration-500',
+                  text,
+                )}
+              >
                 {progress}% Complete
               </span>
               <div className='h-1.5 w-32 overflow-hidden rounded-full bg-gray-3'>

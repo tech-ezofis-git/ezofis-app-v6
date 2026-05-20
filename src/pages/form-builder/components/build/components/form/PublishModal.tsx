@@ -169,7 +169,14 @@ const PublishModal = () => {
                       <Icon height={18} name={layout.icon} width={18} />
                     </div>
                     <div className='flex-1 text-left'>
-                      <div className={cn('text-sm', isActive ? 'text-gray-13 font-extrabold' : 'text-gray-11 font-semibold')}>
+                      <div
+                        className={cn(
+                          'text-sm',
+                          isActive
+                            ? 'font-extrabold text-gray-13'
+                            : 'font-semibold text-gray-11',
+                        )}
+                      >
                         {layout.name}
                       </div>
                       <div className='text-[11px] text-gray-5'>

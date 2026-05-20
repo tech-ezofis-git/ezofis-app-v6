@@ -3,6 +3,7 @@ import { useGoogleLogin } from '@react-oauth/google'
 import { useNavigate } from '@tanstack/react-router'
 import { AnimatePresence, motion } from 'motion/react'
 import { useMemo, useState } from 'react'
+import apiRouter from '@/api/apiRouter'
 import authApi from '@/api/auth'
 import Button from '@/components/base/button/Button'
 import GoogleButton from '@/components/base/button/GoogleButton'
@@ -17,7 +18,6 @@ import Title from '@/components/base/Title'
 import showToast from '@/components/base/toast/showToast'
 import { AnimateSlideLeft } from '@/components/common/animations'
 import authUserStore from '@/stores/authUserStore'
-import apiRouter from '@/api/apiRouter'
 interface Props {
   onChangeView: () => void
 }

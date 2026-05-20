@@ -1,14 +1,14 @@
 import {
   Button,
-  TextInput,
-  SegmentedControl,
   Divider,
+  Rating,
+  SegmentedControl,
+  TextInput,
   Tooltip,
   UnstyledButton,
-  Rating,
 } from '@mantine/core'
-import Icon from '@/components/base/icon/Icon'
 import { useEffect, useState } from 'react'
+import Icon from '@/components/base/icon/Icon'
 import {
   type Panel as PanelType,
   type Question,
@@ -166,8 +166,10 @@ const LivePreview = () => {
                       setShowWelcome(showWelcomePage)
                     }}
                   >
-                    <Icon name={v.icon} width={14} height={14} />
-                    <div className="text-[10px] font-extrabold uppercase tracking-wider">{active ? v.label : ''}</div>
+                    <Icon height={14} name={v.icon} width={14} />
+                    <div className='text-[10px] font-extrabold tracking-wider uppercase'>
+                      {active ? v.label : ''}
+                    </div>
                   </UnstyledButton>
                 </Tooltip>
               )
@@ -278,7 +280,7 @@ const LivePreview = () => {
                   width={14}
                 />
               </div>
-              <div className='text-[10px] font-extrabold uppercase tracking-[0.2em] text-gray-11'>
+              <div className='text-[10px] font-extrabold tracking-[0.2em] text-gray-11 uppercase'>
                 Powered By{' '}
                 <span className='border-b border-gray-3 pb-0.5 text-gray-13'>
                   EZOFIS
@@ -291,17 +293,17 @@ const LivePreview = () => {
                 {(showWelcome ||
                   (viewMode !== 'full' && currentIndex > 0) ||
                   (!showWelcome && showWelcomePage)) && (
-                    <Button
-                      className='h-11 rounded-2xl px-6 font-bold'
-                      color='gray'
-                      disabled={showWelcome}
-                      size='md'
-                      variant='subtle'
-                      onClick={handlePrev}
-                    >
-                      {showWelcome ? '' : 'Back'}
-                    </Button>
-                  )}
+                  <Button
+                    className='h-11 rounded-2xl px-6 font-bold'
+                    color='gray'
+                    disabled={showWelcome}
+                    size='md'
+                    variant='subtle'
+                    onClick={handlePrev}
+                  >
+                    {showWelcome ? '' : 'Back'}
+                  </Button>
+                )}
                 <Button
                   className='h-11 rounded-2xl px-8 font-black text-white shadow-lg shadow-accent-soft/50 transition-all hover:opacity-90 active:scale-95'
                   color='primary'
@@ -325,8 +327,8 @@ const LivePreview = () => {
                     : viewMode === 'full'
                       ? 'Submit'
                       : currentIndex === totalFields - 1 ||
-                        (viewMode === 'grid' &&
-                          currentIndex === totalPanels - 1)
+                          (viewMode === 'grid' &&
+                            currentIndex === totalPanels - 1)
                         ? 'Submit'
                         : 'Next'}
                 </Button>
@@ -602,13 +604,29 @@ const renderPreviewInput = (field: Question, size: 'lg' | 'sm' = 'lg') => {
       )
     case 'FILE_UPLOAD':
       return (
-        <div className={cn(
-          "w-full border-2 border-dashed border-gray-2 rounded-xl flex flex-col items-center justify-center bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer",
-          isSmall ? "p-4" : "p-10"
-        )}>
-          <Icon name="tabler:upload" width={isSmall ? 24 : 40} height={isSmall ? 24 : 40} className="text-gray-4 mb-2" />
-          <div className={cn("font-medium text-gray-6", isSmall ? "text-xs" : "text-sm")}>Click to upload or drag and drop</div>
-          <div className="text-xs text-gray-4 mt-1 text-center">Any file up to 10MB</div>
+        <div
+          className={cn(
+            'bg-gray-50 hover:bg-gray-100 flex w-full cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-2 transition-colors',
+            isSmall ? 'p-4' : 'p-10',
+          )}
+        >
+          <Icon
+            className='mb-2 text-gray-4'
+            height={isSmall ? 24 : 40}
+            name='tabler:upload'
+            width={isSmall ? 24 : 40}
+          />
+          <div
+            className={cn(
+              'font-medium text-gray-6',
+              isSmall ? 'text-xs' : 'text-sm',
+            )}
+          >
+            Click to upload or drag and drop
+          </div>
+          <div className='mt-1 text-center text-xs text-gray-4'>
+            Any file up to 10MB
+          </div>
         </div>
       )
     case 'TIME':
@@ -725,10 +743,10 @@ const renderPreviewInput = (field: Question, size: 'lg' | 'sm' = 'lg') => {
     case 'RATING':
       return (
         <Rating
+          color='yellow'
           count={field.settings.specific.iconCount || 5}
-          size={isSmall ? "md" : "xl"}
-          color="yellow"
           defaultValue={0}
+          size={isSmall ? 'md' : 'xl'}
         />
       )
     case 'SINGLE_CHOICE':

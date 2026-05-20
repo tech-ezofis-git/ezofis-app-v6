@@ -123,25 +123,34 @@ const DataTable = <TData,>({
 
                   if (isGroup) {
                     const groupItems = (row.original as any).items || []
-                    const poTotal = groupItems.reduce((acc: number, item: any) => acc + Number(item["WksH1Mrs42X4J9AHgoBtw"] || 0), 0)
-                    const invoiceTotal = groupItems.reduce((acc: number, item: any) => acc + Number(item["suyqsm0SYii_8vsj4p0c_"] || 0), 0)
-                    const isMatch = Math.abs(poTotal - invoiceTotal) < 0.01 && poTotal > 0
+                    const poTotal = groupItems.reduce(
+                      (acc: number, item: any) =>
+                        acc + Number(item['WksH1Mrs42X4J9AHgoBtw'] || 0),
+                      0,
+                    )
+                    const invoiceTotal = groupItems.reduce(
+                      (acc: number, item: any) =>
+                        acc + Number(item['suyqsm0SYii_8vsj4p0c_'] || 0),
+                      0,
+                    )
+                    const isMatch =
+                      Math.abs(poTotal - invoiceTotal) < 0.01 && poTotal > 0
 
                     return (
                       <Fragment key={row.id}>
                         <Tr
-                          className='cursor-pointer group/header bg-[var(--gray-2)] transition-all hover:bg-[var(--gray-3)] hover:shadow-sm'
+                          className='group/header cursor-pointer bg-[var(--gray-2)] transition-all hover:bg-[var(--gray-3)] hover:shadow-sm'
                           onClick={() => row.toggleExpanded()}
                         >
                           <Td
-                            className='px-4 py-1.5 border-b border-transparent group-hover/header:border-b-[var(--primary-9)] transition-colors'
+                            className='border-b border-transparent px-4 py-1.5 transition-colors group-hover/header:border-b-[var(--primary-9)]'
                             colSpan={table.getVisibleFlatColumns().length}
                           >
                             <div className='flex items-center gap-2'>
                               <Icon
                                 name='tabler:chevron-right'
                                 className={cn(
-                                  'size-4 text-[var(--gray-8)] transition-all duration-200 opacity-0 group-hover/header:opacity-100',
+                                  'size-4 text-[var(--gray-8)] opacity-0 transition-all duration-200 group-hover/header:opacity-100',
                                   isExpanded && 'rotate-90',
                                 )}
                               />
@@ -153,30 +162,70 @@ const DataTable = <TData,>({
                                 {(row.original as any).group}
                               </span>
                               {groupItems.length > 0 && (
-                                <div className='ml-auto flex items-center gap-4 pr-4 opacity-0 group-hover/header:opacity-100 transition-all duration-300 translate-x-2 group-hover/header:translate-x-0'>
-                                  {(groupItems[0]["WksH1Mrs42X4J9AHgoBtw"] !== undefined || groupItems[0]["suyqsm0SYii_8vsj4p0c_"] !== undefined) && (
-                                     <div className={cn(
-                                      'flex flex-col gap-2 px-3 py-1.5 rounded border shadow-sm transition-all',
-                                      isMatch 
-                                        ? 'bg-[var(--green-2)] border-[var(--green-3)] group-hover/header:bg-[var(--green-3)] group-hover/header:border-[var(--green-5)]' 
-                                        : 'bg-white border-[var(--gray-3)] group-hover/header:bg-[var(--primary-2)] group-hover/header:border-[var(--primary-4)]'
-                                    )}>
+                                <div className='ml-auto flex translate-x-2 items-center gap-4 pr-4 opacity-0 transition-all duration-300 group-hover/header:translate-x-0 group-hover/header:opacity-100'>
+                                  {(groupItems[0]['WksH1Mrs42X4J9AHgoBtw'] !==
+                                    undefined ||
+                                    groupItems[0]['suyqsm0SYii_8vsj4p0c_'] !==
+                                      undefined) && (
+                                    <div
+                                      className={cn(
+                                        'flex flex-col gap-2 rounded border px-3 py-1.5 shadow-sm transition-all',
+                                        isMatch
+                                          ? 'border-[var(--green-3)] bg-[var(--green-2)] group-hover/header:border-[var(--green-5)] group-hover/header:bg-[var(--green-3)]'
+                                          : 'border-[var(--gray-3)] bg-white group-hover/header:border-[var(--primary-4)] group-hover/header:bg-[var(--primary-2)]',
+                                      )}
+                                    >
                                       <div className='flex items-center gap-2'>
-                                        <span className={cn('text-[10px] font-normal uppercase', isMatch ? 'text-[var(--green-9)]' : 'text-[var(--gray-9)]')}>PO</span>
-                                        <span className={cn('text-xs font-normal', isMatch ? 'text(--green-11)' : 'text-[var(--secondary-9)]')}>
+                                        <span
+                                          className={cn(
+                                            'text-[10px] font-normal uppercase',
+                                            isMatch
+                                              ? 'text-[var(--green-9)]'
+                                              : 'text-[var(--gray-9)]',
+                                          )}
+                                        >
+                                          PO
+                                        </span>
+                                        <span
+                                          className={cn(
+                                            'text-xs font-normal',
+                                            isMatch
+                                              ? 'text(--green-11)'
+                                              : 'text-[var(--secondary-9)]',
+                                          )}
+                                        >
                                           ${poTotal.toFixed(2)}
                                         </span>
                                       </div>
                                       <div className='flex items-center gap-2'>
-                                        <span className={cn('text-[10px] font-normal uppercase', isMatch ? 'text-[var(--green-9)]' : 'text-[var(--gray-9)]')}>Inv</span>
-                                        <span className={cn('text-xs font-normal', isMatch ? 'text(--green-11)' : 'text-[var(--primary-9)]')}>
+                                        <span
+                                          className={cn(
+                                            'text-[10px] font-normal uppercase',
+                                            isMatch
+                                              ? 'text-[var(--green-9)]'
+                                              : 'text-[var(--gray-9)]',
+                                          )}
+                                        >
+                                          Inv
+                                        </span>
+                                        <span
+                                          className={cn(
+                                            'text-xs font-normal',
+                                            isMatch
+                                              ? 'text(--green-11)'
+                                              : 'text-[var(--primary-9)]',
+                                          )}
+                                        >
                                           ${invoiceTotal.toFixed(2)}
                                         </span>
                                       </div>
                                     </div>
                                   )}
-                                  <div className='flex items-center gap-1.5 px-3 py-1.5 bg-[var(--green-2)] group-hover/header:bg-[var(--green-3)] group-hover/header:border-[var(--green-5)] border border-transparent text-[var(--green-11)] rounded text-[11px] font-normal transition-all'>
-                                    <Icon name='tabler:check' className='size-3' />
+                                  <div className='flex items-center gap-1.5 rounded border border-transparent bg-[var(--green-2)] px-3 py-1.5 text-[11px] font-normal text-[var(--green-11)] transition-all group-hover/header:border-[var(--green-5)] group-hover/header:bg-[var(--green-3)]'>
+                                    <Icon
+                                      className='size-3'
+                                      name='tabler:check'
+                                    />
                                     {groupItems.length} Items
                                   </div>
                                 </div>
@@ -190,7 +239,7 @@ const DataTable = <TData,>({
 
                   return (
                     <Tr
-                      className='relative hover:z-10 hover:bg-[var(--gray-1)] transition-all hover:shadow-sm border-b border-[var(--gray-2)]'
+                      className='relative border-b border-[var(--gray-2)] transition-all hover:z-10 hover:bg-[var(--gray-1)] hover:shadow-sm'
                       key={row.id}
                     >
                       {row.getVisibleCells().map((cell) => (

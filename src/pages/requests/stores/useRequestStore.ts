@@ -10,6 +10,7 @@ type Store = {
   newRequest: boolean
   newRequestMeta: string | null
   pendingNav: any
+  processingProcesses: any[]
   rawWorkflowData: any | null
   reloadMeta: boolean
   repoData: any
@@ -20,6 +21,7 @@ type Store = {
   selectedWorkflow: any
   selectedWorkflowId: number | null
   summaryCache: Record<string, any>
+  addProcessingProcess: (process: any) => void
   cacheSummaryData: (reqNo: string, data: any) => void
   clearPendingNav: () => void
   closeNewRequest: () => void
@@ -27,17 +29,15 @@ type Store = {
   handleSetRepoData: (data: any) => void
   openNewRequest: (title: string) => void
   openRequest: (item: any, workflowId: any, tab: string) => void // Updated signature
+
+  removeProcessingProcess: (id: string | number) => void
   setPendingNav: (v: any) => void
   setRawWorkflowData: (data: any) => void
-
-  processingProcesses: any[]
-  addProcessingProcess: (process: any) => void
-  removeProcessingProcess: (id: string | number) => void
-  updateProcessingProcess: (id: string | number, updates: any) => void
-
   setRequestListTab: (tab: string) => void
+
   stopRefresh: () => void
   toggleMaximize: () => void
+  updateProcessingProcess: (id: string | number, updates: any) => void
   workflowRefresh: () => void
 }
 
@@ -48,25 +48,9 @@ const requestStore = create<Store>((set) => ({
   isRequestOpen: false,
   newRequest: false,
   newRequestMeta: null,
-  processingProcesses: [],
-  addProcessingProcess: (process) =>
-    set((state) => ({
-      processingProcesses: [...state.processingProcesses, process],
-    })),
-  removeProcessingProcess: (id) =>
-    set((state) => ({
-      processingProcesses: state.processingProcesses.filter(
-        (p) => (p.processId || p.id) !== id,
-      ),
-    })),
-  updateProcessingProcess: (id, updates) =>
-    set((state) => ({
-      processingProcesses: state.processingProcesses.map((p) =>
-        (p.processId || p.id) === id ? { ...p, ...updates } : p,
-      ),
-    })),
   // in useRequestStore
   pendingNav: null as null | { direction: 'NEXT' | 'PREV' },
+  processingProcesses: [],
   rawWorkflowData: null,
   reloadMeta: false,
   repoData: null,
@@ -75,12 +59,15 @@ const requestStore = create<Store>((set) => ({
   selectedWorkflow: null,
   selectedWorkflowId: null,
   summaryCache: {},
+  addProcessingProcess: (process) =>
+    set((state) => ({
+      processingProcesses: [...state.processingProcesses, process],
+    })),
   cacheSummaryData: (reqNo, data) =>
     set((state) => ({
       summaryCache: { ...state.summaryCache, [reqNo]: data },
     })),
   clearPendingNav: () => set({ pendingNav: null }),
-
   closeNewRequest: () => set({ newRequest: false, newRequestMeta: null }),
   closeRequest: () =>
     set((state) => ({
@@ -89,6 +76,7 @@ const requestStore = create<Store>((set) => ({
       isRequestOpen: false,
       selectedItem: null, // Optional: clear data on close
     })),
+
   handleSetRepoData: (data) => set({ repoData: data }),
   openNewRequest: (title: string) =>
     set({ newRequest: true, newRequestMeta: title }),
@@ -101,9 +89,21 @@ const requestStore = create<Store>((set) => ({
       selectedWorkflow: workflow,
       selectedWorkflowId: workflow.id as number,
     }),
+  removeProcessingProcess: (id) =>
+    set((state) => ({
+      processingProcesses: state.processingProcesses.filter(
+        (p) => (p.processId || p.id) !== id,
+      ),
+    })),
   stopRefresh: () => set({ reloadMeta: false }),
   toggleMaximize: () =>
     set(({ isMaximized }) => ({ isMaximized: !isMaximized })),
+  updateProcessingProcess: (id, updates) =>
+    set((state) => ({
+      processingProcesses: state.processingProcesses.map((p) =>
+        (p.processId || p.id) === id ? { ...p, ...updates } : p,
+      ),
+    })),
   workflowRefresh: () => set({ reloadMeta: true }),
   setPendingNav: (v) => set({ pendingNav: v }),
   setRawWorkflowData: (data) => set({ rawWorkflowData: data }),

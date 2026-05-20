@@ -13,22 +13,28 @@ const AddFieldButton = ({ className, size = 'md', onClick }: Props) => {
 
   return (
     <button
-      onClick={(e) => onClick(e)}
       className={cn(
-        "w-full flex items-center justify-center border border-dashed border-accent-primary/40 rounded-xl bg-accent-soft/5 transition-all text-accent-primary group/add",
-        isSmall ? "h-8 py-1 px-3" : "h-10 py-2 px-4",
-        "hover:bg-accent-soft/20 hover:border-accent-primary/60 hover:shadow-sm active:scale-[0.98]",
-        className
+        'group/add flex w-full items-center justify-center rounded-xl border border-dashed border-accent-primary/40 bg-accent-soft/5 text-accent-primary transition-all',
+        isSmall ? 'h-8 px-3 py-1' : 'h-10 px-4 py-2',
+        'hover:border-accent-primary/60 hover:bg-accent-soft/20 hover:shadow-sm active:scale-[0.98]',
+        className,
       )}
+      onClick={(e) => onClick(e)}
     >
-      <div className="flex items-center gap-2 transition-transform group-hover/add:scale-105">
-        <div className={cn(
-          "flex items-center justify-center rounded-full bg-accent-primary text-white shadow-sm",
-          isSmall ? "size-5" : "size-6"
-        )}>
-          <Icon name="lucide:plus" width={isSmall ? 12 : 14} height={isSmall ? 12 : 14} />
+      <div className='flex items-center gap-2 transition-transform group-hover/add:scale-105'>
+        <div
+          className={cn(
+            'flex items-center justify-center rounded-full bg-accent-primary text-white shadow-sm',
+            isSmall ? 'size-5' : 'size-6',
+          )}
+        >
+          <Icon
+            height={isSmall ? 12 : 14}
+            name='lucide:plus'
+            width={isSmall ? 12 : 14}
+          />
         </div>
-        <span className="text-[12px] font-semibold tracking-tight uppercase">
+        <span className='text-[12px] font-semibold tracking-tight uppercase'>
           Add Field
         </span>
       </div>

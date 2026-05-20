@@ -1,134 +1,163 @@
+import { AnimatePresence, motion } from 'motion/react'
 import React from 'react'
-import IconButton from '@/components/base/button/IconButton'
-import OverlayHeaderWrapper from '@/components/base/overlay/OverlayHeaderWrapper'
 import Button from '@/components/base/button/Button'
+import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
-import cn from '@/utils/cn';
-import { motion, AnimatePresence } from 'motion/react';
-import { Brain } from 'lucide-react';
+import OverlayHeaderWrapper from '@/components/base/overlay/OverlayHeaderWrapper'
+import cn from '@/utils/cn'
 
 interface HeaderProps {
-  requestNo: string
   isLoading: boolean
-  stage?: any
-  raisedBy?: any
   raisedAt: any
-  onNext?: () => void
-  onPrev?: () => void
-  onBack?: () => void
-  onApprove?: (action: string) => void
-  approveLoading?: boolean
+  requestNo: string
   rightView: 'analysis' | 'comments' | 'attachments' | 'forms'
-  setRightView: (view: 'analysis' | 'comments' | 'attachments' | 'forms') => void
-  hideActions?: boolean
-  showApprove?: boolean
+  actions?: any[]
+  agentData?: any
+  approveLoading?: boolean
   attachmentCount?: number
   commentsCount?: number
-  actions?: any[]
-  isEditing?: boolean
-  totalAmount?: string
   currency?: string
-  status?: string
-  agentData?: any
+  hideActions?: boolean
+  isEditing?: boolean
   poValue?: string | number
-  poNumber?: string
+  raisedBy?: any
+  showApprove?: boolean
+  stage?: any
+  status?: string
+  totalAmount?: string
+  setRightView: (
+    view: 'analysis' | 'comments' | 'attachments' | 'forms',
+  ) => void
+  onApprove?: (action: string) => void
+  onBack?: () => void
   onManualCorrection?: () => void
+  onNext?: () => void
+  onPrev?: () => void
 }
 
 const Header: React.FC<HeaderProps> = ({
-  requestNo,
+  actions,
+  agentData,
+  approveLoading,
+  currency,
+  hideActions,
+  isEditing = false,
   isLoading,
+  poValue,
+  requestNo,
+  status = 'Pending Review',
+  totalAmount,
+  onApprove,
+  onBack,
+  onManualCorrection: _onManualCorrection,
   onNext,
   onPrev,
-  onBack,
-  onApprove,
-  approveLoading,
-  hideActions,
-  actions,
-  isEditing = false,
-  totalAmount,
-  currency,
-  status = 'Pending Review',
-  agentData,
-  poValue,
-  poNumber,
-  onManualCorrection: _onManualCorrection
 }) => {
-  const [showAIInsights, setShowAIInsights] = React.useState(false);
-  const containerRef = React.useRef<HTMLDivElement>(null);
+  const [showAIInsights, setShowAIInsights] = React.useState(false)
+  const containerRef = React.useRef<HTMLDivElement>(null)
 
   // Close on outside click
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setShowAIInsights(false);
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
+        setShowAIInsights(false)
       }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
-  const insightContent = agentData?.reason || agentData?.summary || agentData?.['Extracted Invoice JSON']?.reason || '';
+  const insightContent =
+    agentData?.reason ||
+    agentData?.summary ||
+    agentData?.['Extracted Invoice JSON']?.reason ||
+    ''
 
   // Simple highlighting logic for common terms
   const renderHighlightedContent = (text: string) => {
-    if (!text) return null;
+    if (!text) return null
 
     // Highlight percentages, scores, and statuses
-    const parts = text.split(/(\d+%|Approved|Partially Approved|Matched|Discrepancy|Aligned|Threshold)/gi);
+    const parts = text.split(
+      /(\d+%|Approved|Partially Approved|Matched|Discrepancy|Aligned|Threshold)/gi,
+    )
     return parts.map((part, i) => {
-      const lower = part.toLowerCase();
-      if (/\d+%/.test(part)) return <span key={i} className="text-[var(--primary-9)] font-bold">{part}</span>;
-      if (lower === 'approved' || lower === 'matched' || lower === 'aligned') return <span key={i} className="text-[var(--green-9)] font-bold">{part}</span>;
-      if (lower === 'partially approved' || lower === 'threshold') return <span key={i} className="text-[var(--orange-9)] font-bold">{part}</span>;
-      if (lower === 'discrepancy') return <span key={i} className="text-[var(--red-9)] font-bold">{part}</span>;
-      return part;
-    });
-  };
+      const lower = part.toLowerCase()
+      if (/\d+%/.test(part))
+        return (
+          <span className='font-bold text-[var(--primary-9)]' key={i}>
+            {part}
+          </span>
+        )
+      if (lower === 'approved' || lower === 'matched' || lower === 'aligned')
+        return (
+          <span className='font-bold text-[var(--green-9)]' key={i}>
+            {part}
+          </span>
+        )
+      if (lower === 'partially approved' || lower === 'threshold')
+        return (
+          <span className='font-bold text-[var(--orange-9)]' key={i}>
+            {part}
+          </span>
+        )
+      if (lower === 'discrepancy')
+        return (
+          <span className='font-bold text-[var(--red-9)]' key={i}>
+            {part}
+          </span>
+        )
+      return part
+    })
+  }
 
   return (
-    <OverlayHeaderWrapper className='h-14 justify-between gap-4 px-4 bg-white'>
-
+    <OverlayHeaderWrapper className='h-14 justify-between gap-4 bg-white px-4'>
       {/* Left Side Group: Request Number + Navigation Buttons */}
-      <div className='flex items-center gap-4 bg-white p-0 '>
+      <div className='flex items-center gap-4 bg-white p-0'>
         <IconButton
+          className='cursor-pointer hover:bg-[var(--gray-2)]'
           color='gray'
           icon='tabler:arrow-left'
+          size='sm'
           variant='ghost'
           onClick={onBack}
-          className="cursor-pointer hover:bg-[var(--gray-2)]"
-          size="sm"
         />
 
-        <div className="flex flex-col pb-1">
-          <div className="flex items-center gap-3">
+        <div className='flex flex-col pb-1'>
+          <div className='flex items-center gap-3'>
             <IconButton
+              className='size-7 cursor-pointer hover:bg-white'
               color='gray'
-              icon='tabler:chevron-left'
-              variant='ghost'
               disabled={!onPrev || isLoading}
+              icon='tabler:chevron-left'
+              size='sm'
+              variant='ghost'
               onClick={onPrev}
-              className="cursor-pointer hover:bg-white size-7"
-              size="sm"
             />
-            <h1 className='text-[15px] font-semibold text-[var(--gray-13)] tracking-tight'>
+            <h1 className='text-[15px] font-semibold tracking-tight text-[var(--gray-13)]'>
               {isLoading ? (
-                <span className="animate-pulse rounded bg-gray-200 px-2 text-transparent">INV-0000-000</span>
+                <span className='bg-gray-200 animate-pulse rounded px-2 text-transparent'>
+                  INV-0000-000
+                </span>
               ) : (
                 requestNo
               )}
             </h1>
             <IconButton
+              className='size-7 cursor-pointer hover:bg-white'
               color='gray'
-              icon='tabler:chevron-right'
-              variant='ghost'
               disabled={!onNext || isLoading}
+              icon='tabler:chevron-right'
+              size='sm'
+              variant='ghost'
               onClick={onNext}
-              className="cursor-pointer hover:bg-white size-7"
-              size="sm"
             />
             {!isLoading && (
-              <span className="bg-[var(--orange-1)] text-[var(--orange-9)] px-3 py-1 rounded-full text-[11px] font-semibold border border-[var(--orange-3)]">
+              <span className='rounded-full border border-[var(--orange-3)] bg-[var(--orange-1)] px-3 py-1 text-[11px] font-semibold text-[var(--orange-9)]'>
                 {status}
               </span>
             )}
@@ -140,106 +169,87 @@ const Header: React.FC<HeaderProps> = ({
       <div className='flex items-center gap-6'>
         {(() => {
           const getCurrencyDisplay = (curr: string) => {
-            if (!curr) return '$';
+            if (!curr) return '$'
             const symbols: { [key: string]: string } = {
-              'USD': '$', 'CAD': '$', 'EUR': '€', 'GBP': '£', 'INR': '₹', 'AED': 'د.إ', 'AUD': '$', 'SGD': '$'
-            };
-            const code = curr.length === 3 ? curr.toUpperCase() : null;
-            const symbol = symbols[code || ''] || (curr.length === 1 ? curr : '$');
-            if (code && code !== symbol) return `${code} - ${symbol}`;
-            return symbol;
-          };
+              AED: 'د.إ',
+              AUD: '$',
+              CAD: '$',
+              EUR: '€',
+              GBP: '£',
+              INR: '₹',
+              SGD: '$',
+              USD: '$',
+            }
+            const code = curr.length === 3 ? curr.toUpperCase() : null
+            const symbol =
+              symbols[code || ''] || (curr.length === 1 ? curr : '$')
+            if (code && code !== symbol) return `${code} - ${symbol}`
+            return symbol
+          }
 
           const formatAmount = (val: any) => {
-            if (!val || val === '0.00') return '0.00';
-            const num = typeof val === 'number' ? val : parseFloat(String(val).replace(/[^0-9.-]+/g, ""));
-            return isNaN(num) ? '0.00' : num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-          };
+            if (!val || val === '0.00') return '0.00'
+            const num =
+              typeof val === 'number'
+                ? val
+                : parseFloat(String(val).replace(/[^0-9.-]+/g, ''))
+            return isNaN(num)
+              ? '0.00'
+              : num.toLocaleString(undefined, {
+                maximumFractionDigits: 2,
+                minimumFractionDigits: 2,
+              })
+          }
 
-          const currDisplay = getCurrencyDisplay(currency || '');
-
-          const rawPoVal = (poNumber && poNumber !== 'N/A') ? poNumber : (
-            agentData?.['Extracted Invoice JSON']?.invoice_header?.['PO Number'] ||
-            agentData?.['Extracted Invoice JSON']?.invoice_header?.['po_number'] ||
-            agentData?.po_matching?.po_number ||
-            agentData?.po_matching?.poNumber ||
-            agentData?.po_matching?.po ||
-            ''
-          );
-
-          const extractStringOnly = (val: any): string => {
-            if (!val) return '';
-            if (typeof val === 'object') {
-              const inner = val['Invoice Value'] ?? val.value ?? val['PO Value'] ?? val.val ?? val.text;
-              if (inner && typeof inner !== 'object') return String(inner).trim();
-              for (const k of Object.keys(val)) {
-                if (val[k] && typeof val[k] !== 'object' && String(val[k]).trim() !== '-' && String(val[k]).trim() !== '') {
-                  return String(val[k]).trim();
-                }
-              }
-              return '';
-            }
-            return String(val).trim();
-          };
-
-          const resolvedPoVal = extractStringOnly(rawPoVal);
-          const poValToDisplay = (resolvedPoVal && resolvedPoVal !== '-' && resolvedPoVal.toUpperCase() !== 'N/A') ? resolvedPoVal : 'N/A';
-
-          const matchingStatus = agentData?.po_matching?.status ||
-            (agentData?.decision === 'APPROVED' ? 'Matched' : 'Pending');
+          const currDisplay = getCurrencyDisplay(currency || '')
 
           return (
-            <div className="flex items-center gap-3 pr-3">
-              <div className="flex flex-col text-right">
-                <span className="text-[10px] font-semibold text-[var(--gray-11)] leading-none mb-1">PO Number</span>
-                <span className="text-[13px] font-semibold text-[var(--gray-13)] leading-none">
-                  {poValToDisplay}
+            <div className='flex items-center gap-3 pr-3'>
+              <div className='flex flex-col border-[var(--gray-3)] pl-3 text-right'>
+                <span className='mb-1 text-[10px] leading-none font-semibold text-[var(--gray-11)]'>
+                  Invoice Value
                 </span>
-              </div>
-              <div className="flex flex-col border-l border-[var(--gray-3)] pl-3 text-right">
-                <span className="text-[10px] font-semibold text-[var(--gray-11)] leading-none mb-1">Matching Status</span>
-                <span className={cn(
-                  "text-[13px] font-semibold leading-none",
-                  matchingStatus === 'Matched' || matchingStatus === 'APPROVED' ? "text-[var(--green-9)]" : "text-[var(--orange-9)]"
-                )}>
-                  {matchingStatus}
-                </span>
-              </div>
-              <div className="flex flex-col border-l border-[var(--gray-3)] pl-3 text-right">
-                <span className="text-[10px] font-semibold text-[var(--gray-11)] leading-none mb-1">Invoice Value</span>
-                <span className="text-[13px] font-semibold text-[var(--gray-13)] leading-none">
+                <span className='text-[13px] leading-none font-semibold text-[var(--gray-13)]'>
                   {currDisplay} {formatAmount(totalAmount)}
                 </span>
               </div>
-              <div className="flex flex-col border-l border-[var(--gray-3)] pl-3 text-right">
-                <span className="text-[10px] font-semibold text-[var(--gray-11)] leading-none mb-1">PO Value</span>
-                <span className="text-[13px] font-semibold text-[var(--primary-9)] leading-none">
+              <div className='flex flex-col border-l border-[var(--gray-3)] pl-3 text-right'>
+                <span className='mb-1 text-[10px] leading-none font-semibold text-[var(--gray-11)]'>
+                  PO Value
+                </span>
+                <span className='text-[13px] leading-none font-semibold text-[var(--primary-9)]'>
                   {currDisplay} {formatAmount(poValue)}
                 </span>
               </div>
             </div>
-          );
+          )
         })()}
 
         {/* AI Insights Toggle & Overlay */}
-        <div className="flex items-center gap-3 relative" ref={containerRef}>
+        <div className='relative flex items-center gap-3' ref={containerRef}>
           <Button
-            onClick={() => setShowAIInsights(!showAIInsights)}
-            variant="outline"
+            variant='outline'
             className={cn(
-              "cursor-pointer px-4 py-2 rounded-lg font-semibold transition-all flex items-center gap-2",
-              showAIInsights ? "bg-[var(--primary-1)] border-[var(--primary-6)] text-[var(--primary-9)]" : "bg-white border-[var(--gray-3)] text-[var(--gray-11)]"
+              'flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2 font-semibold transition-all',
+              showAIInsights
+                ? 'border-[var(--primary-6)] bg-[var(--primary-1)] text-[var(--primary-9)]'
+                : 'border-[var(--gray-3)] bg-white text-[var(--gray-11)]',
             )}
+            onClick={() => setShowAIInsights(!showAIInsights)}
           >
-            <Icon name="tabler:sparkles" className="size-4.5" />
+            <Icon className='size-4.5' name='tabler:sparkles' />
             <span>AI Insights</span>
             {agentData?.score !== undefined && (
-              <span className={cn(
-                "px-1.5 py-0.5 rounded text-[10px] font-bold shrink-0 ml-1 transition-colors border",
-                Number(agentData.score) >= 90 ? "bg-[var(--green-1)] text-[var(--green-9)] border-[var(--green-3)]" :
-                  Number(agentData.score) >= 60 ? "bg-[var(--orange-1)] text-[var(--orange-9)] border-[var(--orange-3)]" :
-                    "bg-[var(--red-1)] text-[var(--red-9)] border-[var(--red-3)]"
-              )}>
+              <span
+                className={cn(
+                  'ml-1 shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-bold transition-colors',
+                  Number(agentData.score) >= 90
+                    ? 'border-[var(--green-3)] bg-[var(--green-1)] text-[var(--green-9)]'
+                    : Number(agentData.score) >= 60
+                      ? 'border-[var(--orange-3)] bg-[var(--orange-1)] text-[var(--orange-9)]'
+                      : 'border-[var(--red-3)] bg-[var(--red-1)] text-[var(--red-9)]',
+                )}
+              >
                 {Math.round(Number(agentData.score))}%
               </span>
             )}
@@ -248,29 +258,31 @@ const Header: React.FC<HeaderProps> = ({
           <AnimatePresence>
             {showAIInsights && (
               <motion.div
-                initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                className="absolute top-full right-0 mt-3 p-4 bg-white/95 backdrop-blur-md rounded-xl border border-[var(--gray-3)] shadow-2xl z-[100] min-w-[500px]"
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                className='absolute top-full right-0 z-[100] mt-3 min-w-[500px] rounded-xl border border-[var(--gray-3)] bg-white/95 p-4 shadow-2xl backdrop-blur-md'
+                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                initial={{ opacity: 0, scale: 0.95, y: 10 }}
               >
-                <div className="flex flex-col gap-4">
+                <div className='flex flex-col gap-4'>
                   {/* AI Insights Section */}
                   {insightContent && (
-                    <div className="bg-[var(--primary-1)] rounded-lg border border-[var(--primary-3)] p-6">
-                      <div className="flex items-center justify-between gap-3 mb-4">
-                        <div className="flex items-center gap-3">
-                          <Brain className="text-[var(--primary-9)] w-6 h-6" />
-                          <span className="text-[15px] font-semibold text-[var(--gray-13)]">Invoice Decision Details</span>
+                    <div className='rounded-lg border border-[var(--primary-3)] bg-[var(--primary-1)] p-6'>
+                      <div className='mb-4 flex items-center justify-between gap-3'>
+                        <div className='flex items-center gap-3'>
+                          <Icon className='h-6 w-6 text-[var(--primary-9)]' name='tabler:sparkles' />
+                          <span className='text-[15px] font-semibold text-[var(--gray-13)]'>
+                            Invoice Decision Details
+                          </span>
                         </div>
                         <button
+                          aria-label='Close AI Insights'
+                          className='flex shrink-0 cursor-pointer items-center justify-center rounded-lg p-1 text-[var(--gray-8)] transition-all hover:bg-[var(--gray-2)] hover:text-[var(--gray-12)] active:scale-95'
                           onClick={() => setShowAIInsights(false)}
-                          className="p-1 rounded-lg text-[var(--gray-8)] hover:text-[var(--gray-12)] hover:bg-[var(--gray-2)] active:scale-95 transition-all cursor-pointer flex items-center justify-center shrink-0"
-                          aria-label="Close AI Insights"
                         >
-                          <Icon name="lucide:x" className="size-4" />
+                          <Icon className='size-4' name='lucide:x' />
                         </button>
                       </div>
-                      <p className="text-[14px] text-[var(--gray-12)] font-medium leading-relaxed">
+                      <p className='text-[14px] leading-relaxed font-medium text-[var(--gray-12)]'>
                         {renderHighlightedContent(insightContent)}
                       </p>
                     </div>
@@ -282,37 +294,40 @@ const Header: React.FC<HeaderProps> = ({
         </div>
 
         {!hideActions && (
-          <div className="flex items-center gap-2">
+          <div className='flex items-center gap-2'>
             {isEditing && (
               <Button
-                onClick={() => onApprove?.("Save")}
-                loading={approveLoading}
                 color='primary'
-                variant='solid'
+                label='Save'
+                loading={approveLoading}
                 size='lg'
-                label="Save"
+                variant='solid'
+                onClick={() => onApprove?.('Save')}
               />
             )}
 
             {actions?.map((action: any) => {
-              const isPrimary = action?.label === 'Verified' || action?.label === 'Approve' || action?.label?.includes('Verify');
+              const isPrimary =
+                action?.label === 'Verified' ||
+                action?.label === 'Approve' ||
+                action?.label?.includes('Verify')
               return (
                 <Button
-                  key={action?.value}
-                  onClick={() => onApprove?.(action?.value)}
-                  loading={approveLoading}
                   color={isPrimary ? 'primary' : 'gray'}
-                  variant={isPrimary ? 'solid' : 'subtle'}
-                  size='lg'
                   icon={action?.icon}
+                  key={action?.value}
                   label={action?.label}
+                  loading={approveLoading}
+                  size='lg'
+                  variant={isPrimary ? 'solid' : 'subtle'}
+                  onClick={() => onApprove?.(action?.value)}
                 />
-              );
+              )
             })}
           </div>
         )}
       </div>
-    </OverlayHeaderWrapper >
+    </OverlayHeaderWrapper>
   )
 }
 

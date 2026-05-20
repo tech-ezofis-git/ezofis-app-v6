@@ -8,11 +8,8 @@ import { exportWorkflow } from '../../utils/exportWorkflow'
 const BuilderHeader = () => {
   const navigate = useNavigate()
   const { getEdges, getNodes } = useReactFlow()
-  const {
-    workflowDescription,
-    workflowName,
-    workflowStatus,
-  } = useWorkflowStore((state) => state)
+  const { workflowDescription, workflowName, workflowStatus } =
+    useWorkflowStore((state) => state)
 
   const handleDownload = () => {
     try {
@@ -29,20 +26,24 @@ const BuilderHeader = () => {
       document.body.removeChild(link)
       URL.revokeObjectURL(url)
 
-      import('@/components/base/toast/showToast').then(({ default: showToast }) => {
-        showToast({
-          message: 'Workflow settings exported successfully',
-          variant: 'success',
-        })
-      })
+      import('@/components/base/toast/showToast').then(
+        ({ default: showToast }) => {
+          showToast({
+            message: 'Workflow settings exported successfully',
+            variant: 'success',
+          })
+        },
+      )
     } catch (error) {
       console.error('Export failed:', error)
-      import('@/components/base/toast/showToast').then(({ default: showToast }) => {
-        showToast({
-          message: 'Failed to export workflow settings',
-          variant: 'error',
-        })
-      })
+      import('@/components/base/toast/showToast').then(
+        ({ default: showToast }) => {
+          showToast({
+            message: 'Failed to export workflow settings',
+            variant: 'error',
+          })
+        },
+      )
     }
   }
 
@@ -91,11 +92,7 @@ const BuilderHeader = () => {
           variant='outline'
           onClick={useWorkflowStore((state) => state.startTestRun)}
         />
-        <Button
-          icon='lucide:save'
-          label='Save'
-          onClick={handleDownload}
-        />
+        <Button icon='lucide:save' label='Save' onClick={handleDownload} />
       </div>
     </header>
   )

@@ -55,12 +55,12 @@ const Button = forwardRef<HTMLButtonElement, Props>(
 
     return (
       <motion.button
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
         className={_className}
         data-loading={loading || undefined}
         disabled={disabled}
         ref={ref}
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
         {...props}
       >
         {children ?? (

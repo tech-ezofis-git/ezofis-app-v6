@@ -13,10 +13,7 @@ const Setup = () => {
   return (
     <Modal opened={isSetupOpen} fullScreen onClose={closeSetup}>
       <FocusTrap.InitialFocus />
-      <OverlayHeader
-        title='AP Enterprise'
-        onClose={closeSetup}
-      />
+      <OverlayHeader title='AP Enterprise' onClose={closeSetup} />
 
       <OverlayContent hasHeader>
         <WelcomeMessage />

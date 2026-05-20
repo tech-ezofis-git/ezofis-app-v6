@@ -1,20 +1,20 @@
-import { useState, useMemo, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { useNavigate } from '@tanstack/react-router'
+import { useEffect, useMemo, useState } from 'react'
+import type { Column } from '@/components/base/data-table/types'
+import type { Form } from '@/types/form'
 import { getFormsListQueryOptions } from '@/api/form/queries'
+import IconButton from '@/components/base/button/IconButton'
 import useDataTable from '@/components/base/data-table/hooks/useDataTable'
 import useDataTableState from '@/components/base/data-table/hooks/useDataTableState'
+import Menu from '@/components/base/menu/Menu'
+import MenuItem from '@/components/base/menu/MenuItem'
 import FormStatusBadge from '@/components/common/FormStatusBadge'
 import FormTypeBadge from '@/components/common/FormTypeBadge'
 import { formatDatetime } from '@/utils/dayjs'
-import IconButton from '@/components/base/button/IconButton'
-import Menu from '@/components/base/menu/Menu'
-import MenuItem from '@/components/base/menu/MenuItem'
+import GridView from './components/GridView'
 import Header from './components/header/Header'
 import Table from './components/Table'
-import GridView from './components/GridView'
-import type { Column } from '@/components/base/data-table/types'
-import type { Form } from '@/types/form'
-import { useNavigate } from '@tanstack/react-router'
 
 const FormsPage = () => {
   const navigate = useNavigate()
@@ -45,154 +45,158 @@ const FormsPage = () => {
     getFormsListQueryOptions(page, pageSize, groupBy, []),
   )
 
-  const columns: Column[] = useMemo(() => [
-    {
-      id: 'name',
-      label: 'Name',
-      size: 200,
-      renderCell: (row: any) => (
-        <span
-          className='cursor-pointer font-medium underline transition-colors hover:text-gray-13'
-          onClick={() =>
-            navigate({
-              params: { formId: row.uid || row.id },
-              to: '/form-builder/$formId',
-            })
-          }
-        >
-          {String(
-            row._json?.settings?.general?.name || row.name || 'Untitled Form',
-          )}
-        </span>
-      ),
-    },
-    {
-      enableGrouping: true,
-      id: 'status',
-      label: 'Status',
-      size: 140,
-      renderCell: (row: any) => (
-        <FormStatusBadge
-          status={
-            (row._json?.settings?.publish?.publishOption ||
-              row.publishOption) as Form['status']
-          }
-        />
-      ),
-    },
-    {
-      className: 'p-1',
-      enableGrouping: true,
-      hideHeader: true,
-      id: 'isFavourite',
-      isDisplayColumn: true,
-      label: 'Favourite',
-      size: 40,
-      renderCell: (row: any) => (
-        <div className='flex items-center justify-center'>
-          <IconButton
-            className='group'
-            color='gray'
-            icon={row.isFavourite ? 'tabler:star-filled' : 'tabler:star'}
-            variant='ghost'
-            iconClass={
-              row.isFavourite
-                ? 'text-yellow-10'
-                : 'text-gray-8 group-hover:text-gray-9'
-            }
-          />
-        </div>
-      ),
-    },
-    {
-      id: 'description',
-      label: 'Description',
-      size: 240,
-      renderCell: (row: any) => (
-        <span className='line-clamp-1 text-gray-10'>
-          {row._json?.settings?.general?.description || row.description || '-'}
-        </span>
-      ),
-    },
-    {
-      enableGrouping: true,
-      id: 'type',
-      label: 'Type',
-      size: 140,
-      renderCell: (row: any) => (
-        <FormTypeBadge
-          type={
-            (row._json?.settings?.general?.type || row.type) as Form['type']
-          }
-        />
-      ),
-    },
-    {
-      id: 'createdBy',
-      label: 'Created By',
-      size: 240,
-    },
-    {
-      id: 'createdAt',
-      label: 'Created At',
-      size: 200,
-      renderCell: (row: any) =>
-        formatDatetime(row.createdAt as string, 'datetime'),
-    },
-    {
-      id: 'updatedBy',
-      label: 'Last Modified By',
-      size: 240,
-    },
-    {
-      id: 'updatedAt',
-      label: 'Last Modified At',
-      size: 200,
-      renderCell: (row: any) =>
-        formatDatetime(row.updatedAt as string, 'datetime'),
-    },
-    {
-      className: 'p-1',
-      hideHeader: true,
-      id: 'actions',
-      isDisplayColumn: true,
-      label: 'Actions',
-      size: 40,
-      renderCell: (row: any) => (
-        <div className='flex items-center justify-center'>
-          <Menu
-            position='bottom-end'
-            width={160}
-            target={
-              <IconButton
-                color='gray'
-                icon='lucide:more-vertical'
-                variant='ghost'
-              />
+  const columns: Column[] = useMemo(
+    () => [
+      {
+        id: 'name',
+        label: 'Name',
+        size: 200,
+        renderCell: (row: any) => (
+          <span
+            className='cursor-pointer font-medium underline transition-colors hover:text-gray-13'
+            onClick={() =>
+              navigate({
+                params: { formId: row.uid || row.id },
+                to: '/form-builder/$formId',
+              })
             }
           >
-            <MenuItem
-              icon='lucide:edit'
-              label='Edit'
-              onClick={() =>
-                navigate({
-                  params: { formId: row.uid || row.id },
-                  to: '/form-builder/$formId',
-                })
+            {String(
+              row._json?.settings?.general?.name || row.name || 'Untitled Form',
+            )}
+          </span>
+        ),
+      },
+      {
+        enableGrouping: true,
+        id: 'status',
+        label: 'Status',
+        size: 140,
+        renderCell: (row: any) => (
+          <FormStatusBadge
+            status={
+              (row._json?.settings?.publish?.publishOption ||
+                row.publishOption) as Form['status']
+            }
+          />
+        ),
+      },
+      {
+        className: 'p-1',
+        enableGrouping: true,
+        hideHeader: true,
+        id: 'isFavourite',
+        isDisplayColumn: true,
+        label: 'Favourite',
+        size: 40,
+        renderCell: (row: any) => (
+          <div className='flex items-center justify-center'>
+            <IconButton
+              className='group'
+              color='gray'
+              icon={row.isFavourite ? 'tabler:star-filled' : 'tabler:star'}
+              variant='ghost'
+              iconClass={
+                row.isFavourite
+                  ? 'text-yellow-10'
+                  : 'text-gray-8 group-hover:text-gray-9'
               }
             />
-            <MenuItem
-              icon='lucide:trash-2'
-              iconClass='text-red-11'
-              label='Delete'
-              onClick={() => alert(row.uid || row.id)}
-            />
-          </Menu>
-        </div>
-      ),
-    },
-  ], [navigate])
-
+          </div>
+        ),
+      },
+      {
+        id: 'description',
+        label: 'Description',
+        size: 240,
+        renderCell: (row: any) => (
+          <span className='line-clamp-1 text-gray-10'>
+            {row._json?.settings?.general?.description ||
+              row.description ||
+              '-'}
+          </span>
+        ),
+      },
+      {
+        enableGrouping: true,
+        id: 'type',
+        label: 'Type',
+        size: 140,
+        renderCell: (row: any) => (
+          <FormTypeBadge
+            type={
+              (row._json?.settings?.general?.type || row.type) as Form['type']
+            }
+          />
+        ),
+      },
+      {
+        id: 'createdBy',
+        label: 'Created By',
+        size: 240,
+      },
+      {
+        id: 'createdAt',
+        label: 'Created At',
+        size: 200,
+        renderCell: (row: any) =>
+          formatDatetime(row.createdAt as string, 'datetime'),
+      },
+      {
+        id: 'updatedBy',
+        label: 'Last Modified By',
+        size: 240,
+      },
+      {
+        id: 'updatedAt',
+        label: 'Last Modified At',
+        size: 200,
+        renderCell: (row: any) =>
+          formatDatetime(row.updatedAt as string, 'datetime'),
+      },
+      {
+        className: 'p-1',
+        hideHeader: true,
+        id: 'actions',
+        isDisplayColumn: true,
+        label: 'Actions',
+        size: 40,
+        renderCell: (row: any) => (
+          <div className='flex items-center justify-center'>
+            <Menu
+              position='bottom-end'
+              width={160}
+              target={
+                <IconButton
+                  color='gray'
+                  icon='lucide:more-vertical'
+                  variant='ghost'
+                />
+              }
+            >
+              <MenuItem
+                icon='lucide:edit'
+                label='Edit'
+                onClick={() =>
+                  navigate({
+                    params: { formId: row.uid || row.id },
+                    to: '/form-builder/$formId',
+                  })
+                }
+              />
+              <MenuItem
+                icon='lucide:trash-2'
+                iconClass='text-red-11'
+                label='Delete'
+                onClick={() => alert(row.uid || row.id)}
+              />
+            </Menu>
+          </div>
+        ),
+      },
+    ],
+    [navigate],
+  )
 
   const forms = useMemo(() => {
     if (!data) return []
@@ -314,11 +318,11 @@ const FormsPage = () => {
   return (
     <div className='flex h-full flex-col'>
       <Header viewMode={viewMode} setViewMode={setViewMode} />
-      
-      <div className='flex-1 overflow-hidden bg-gray-50/50 px-6 py-2'>
+
+      <div className='bg-gray-50/50 flex-1 overflow-hidden px-6 py-2'>
         {viewMode === 'table' ? (
-          <Table 
-            isLoading={isPending} 
+          <Table
+            isLoading={isPending}
             isRefetching={isFetching || isRefetching}
             page={page}
             pageSize={pageSize}
@@ -329,8 +333,8 @@ const FormsPage = () => {
             onReload={refetch}
           />
         ) : (
-          <GridView 
-            isLoading={isPending} 
+          <GridView
+            isLoading={isPending}
             isRefetching={isFetching || isRefetching}
             page={page}
             pageSize={pageSize}

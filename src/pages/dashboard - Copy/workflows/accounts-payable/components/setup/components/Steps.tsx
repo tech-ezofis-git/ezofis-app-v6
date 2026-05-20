@@ -65,7 +65,6 @@ const Steps = () => {
       initial={{ opacity: 0, y: 20 }}
       transition={{ duration: 0.4, ease: 'easeOut' }}
     >
-
       {/* Changed min-h-full to flex-1 to avoid overflow */}
       <div className='grid min-h-0 flex-1 grid-cols-1 gap-0 xl:grid-cols-[240px_1fr]'>
         <AnimateSlideUp delay={0.2}>

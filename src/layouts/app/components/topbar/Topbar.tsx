@@ -1,9 +1,9 @@
 import GlobalSearch from './components/GlobalSearch'
 import Notifications from './components/notifications/Notifications'
 import PageTitle from './components/PageTitle'
+import QuickHelp from './components/quick-help/QuickHelp'
 import SidebarToggle from './components/SidebarToggle'
 import UserMenu from './components/user-menu/UserMenu'
-import QuickHelp from './components/quick-help/QuickHelp'
 
 const Topbar = () => {
   return (

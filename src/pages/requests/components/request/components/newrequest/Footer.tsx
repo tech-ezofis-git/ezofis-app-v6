@@ -1,50 +1,47 @@
-
-import Button from "@/components/base/button/Button";
+import Button from '@/components/base/button/Button'
 
 interface Props {
-    onClose?: () => void;
-    onPrimaryClick?: () => void;
-    primaryLabel?: string;
-    secondaryLabel?: string;
-    isPrimaryLoading?: boolean;
-    isPrimaryDisabled?: boolean;
-    isSecondaryDisabled?: boolean;
+  isPrimaryDisabled?: boolean
+  isPrimaryLoading?: boolean
+  isSecondaryDisabled?: boolean
+  primaryLabel?: string
+  secondaryLabel?: string
+  onClose?: () => void
+  onPrimaryClick?: () => void
 }
 
 const Footer = ({
-    onClose,
-    onPrimaryClick,
-    primaryLabel = "Submit",
-    // secondaryLabel = "Back",
-    isPrimaryLoading = false,
-    isPrimaryDisabled = false,
-    // isSecondaryDisabled = false,
+  isPrimaryDisabled = false,
+  // secondaryLabel = "Back",
+  isPrimaryLoading = false,
+  primaryLabel = 'Submit',
+  onClose,
+  onPrimaryClick,
+  // isSecondaryDisabled = false,
 }: Props) => {
-    return (
-        <div className="flex items-center justify-between border-t border-gray-3 bg-slate-50 px-4 py-3">
-
-
-            {/* Right: actions */}
-            <div className="ml-auto flex items-center gap-2">
-                {/* <Button
+  return (
+    <div className='bg-slate-50 flex items-center justify-between border-t border-gray-3 px-4 py-3'>
+      {/* Right: actions */}
+      <div className='ml-auto flex items-center gap-2'>
+        {/* <Button
                     label={secondaryLabel}
                     variant="outline"
                     size="md"
                     onClick={onClose}
                     disabled={isSecondaryDisabled || isPrimaryLoading}
                 /> */}
-                <Button
-                    label={primaryLabel}
-                    variant="solid"
-                    size="md"
-                    onClick={onPrimaryClick ?? onClose}
-                    disabled={isPrimaryDisabled || isPrimaryLoading}
-                    loading={isPrimaryLoading}
-                />
-            </div>
-        </div>
-    );
-};
+        <Button
+          disabled={isPrimaryDisabled || isPrimaryLoading}
+          label={primaryLabel}
+          loading={isPrimaryLoading}
+          size='md'
+          variant='solid'
+          onClick={onPrimaryClick ?? onClose}
+        />
+      </div>
+    </div>
+  )
+}
 
-Footer.displayName = "Footer";
-export default Footer;
+Footer.displayName = 'Footer'
+export default Footer

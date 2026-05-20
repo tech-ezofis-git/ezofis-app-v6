@@ -43,16 +43,19 @@ const Header = ({
     console.log('am running')
     openNewRequest('request')
   }
-  const processedCount = Number(metaData?.completedCount ?? 0) + Number(metaData?.sentCount ?? 0)
-  const exceptionsCount = metaData?.inboxCount ? Number(metaData.inboxCount) - Math.ceil(Number(metaData.inboxCount) / 12) : 0
+  const processedCount =
+    Number(metaData?.completedCount ?? 0) + Number(metaData?.sentCount ?? 0)
+  const exceptionsCount = metaData?.inboxCount
+    ? Number(metaData.inboxCount) - Math.ceil(Number(metaData.inboxCount) / 12)
+    : 0
 
   return (
     <div className='flex flex-wrap items-center justify-between gap-6 border-b border-gray-3 px-6 md:px-8'>
       <Tabs
         color='primary'
+        tabClassName='py-3.5'
         value={activeTab}
         onChange={(val) => setActiveTab(val as string)}
-        tabClassName="py-3.5"
       >
         <Tab
           label={`Invoices ${isLoading ? '' : `(${metaData?.inboxCount ?? 0})`}`}
@@ -69,42 +72,46 @@ const Header = ({
       </Tabs>
 
       <div className='flex items-center gap-2'>
-        <div className='flex cursor-pointer items-center gap-1 rounded-lg border border-[var(--gray-3)] p-1 bg-[var(--gray-1)]'>
+        <div className='flex cursor-pointer items-center gap-1 rounded-lg border border-[var(--gray-3)] bg-[var(--gray-1)] p-1'>
           <button
-            className={`cursor-pointer rounded-md px-3 py-1.5 transition-all duration-200 ${viewMode === 'grid'
+            className={`cursor-pointer rounded-md px-3 py-1.5 transition-all duration-200 ${
+              viewMode === 'grid'
                 ? 'bg-white text-[var(--primary-9)] shadow-sm'
                 : 'text-[var(--gray-10)] hover:text-[var(--gray-12)]'
-              }`}
+            }`}
             onClick={() => setViewMode('grid')}
           >
             <Icon className='size-4.5' name='tabler:layout-grid' />
           </button>
           <button
-            className={`cursor-pointer rounded-md px-3 py-1.5 transition-all duration-200 ${viewMode === 'table'
+            className={`cursor-pointer rounded-md px-3 py-1.5 transition-all duration-200 ${
+              viewMode === 'table'
                 ? 'bg-white text-[var(--primary-9)] shadow-sm'
                 : 'text-[var(--gray-10)] hover:text-[var(--gray-12)]'
-              }`}
+            }`}
             onClick={() => setViewMode('table')}
           >
             <Icon className='size-4.5' name='tabler:table' />
           </button>
         </div>
         <InputSelect
-          leftSection={<Icon className='text-[var(--gray-10)]' name='tabler:replace' />}
+          className='border-[var(--gray-3)] transition-colors hover:border-[var(--primary-3)]'
           options={allWorkflows && allWorkflows?.length > 0 ? allWorkflows : []}
           value={workflow}
           width={220}
           searchable
+          leftSection={
+            <Icon className='text-[var(--gray-10)]' name='tabler:replace' />
+          }
           onChange={setWorkflow}
-          className="border-[var(--gray-3)] hover:border-[var(--primary-3)] transition-colors"
         />
         <Button
+          color='primary'
           icon='tabler:plus'
           label='New Request'
-          onClick={handleOpenRequest}
-          color='primary'
-          variant='solid'
           size='lg'
+          variant='solid'
+          onClick={handleOpenRequest}
         />
       </div>
     </div>

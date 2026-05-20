@@ -1,13 +1,13 @@
 import { useNavigate } from '@tanstack/react-router'
+import { type Table as TanstackTable } from '@tanstack/react-table'
 import { AnimatePresence, motion } from 'framer-motion'
+import { useState } from 'react'
+import type { RowSize } from '@/components/base/data-table/types'
+import TableActionBar from '@/components/base/data-table/TableActionBar'
 import Icon from '@/components/base/icon/Icon'
 import Pagination from '@/components/base/pagination/Pagination'
 import FormStatusBadge from '@/components/common/FormStatusBadge'
 import FormTypeBadge from '@/components/common/FormTypeBadge'
-import { type Table as TanstackTable } from '@tanstack/react-table'
-import TableActionBar from '@/components/base/data-table/TableActionBar'
-import { useState } from 'react'
-import type { RowSize } from '@/components/base/data-table/types'
 import cn from '@/utils/cn'
 
 interface GridViewProps {
@@ -24,21 +24,21 @@ interface GridViewProps {
 
 const GridRowSkeleton = ({ index }: { index: number }) => (
   <motion.div
-    initial={{ opacity: 0, y: 10 }}
     animate={{ opacity: 1, y: 0 }}
+    className='relative flex w-full items-center justify-between gap-4 overflow-hidden rounded-xl border border-[var(--gray-3)] bg-[var(--surface)] p-4'
+    initial={{ opacity: 0, y: 10 }}
     transition={{ delay: index * 0.05 }}
-    className="relative flex w-full items-center justify-between gap-4 overflow-hidden rounded-xl border border-[var(--gray-3)] bg-[var(--surface)] p-4"
   >
     {/* shimmer */}
     <motion.div
-      className="pointer-events-none absolute inset-0 bg-[linear-gradient(110deg,transparent,rgba(255,255,255,0.6),transparent)]"
-      style={{ mixBlendMode: 'overlay' }}
       animate={{ x: ['-60%', '160%'] }}
+      className='pointer-events-none absolute inset-0 bg-[linear-gradient(110deg,transparent,rgba(255,255,255,0.6),transparent)]'
+      style={{ mixBlendMode: 'overlay' }}
       transition={{
-        duration: 1.2,
-        repeat: Infinity,
-        ease: [0, 0, 1, 1],
         delay: index * 0.1,
+        duration: 1.2,
+        ease: [0, 0, 1, 1],
+        repeat: Infinity,
       }}
     />
 
@@ -50,7 +50,7 @@ const GridRowSkeleton = ({ index }: { index: number }) => (
       </div>
     </div>
 
-    <div className='hidden md:flex items-center gap-3 shrink-0'>
+    <div className='hidden shrink-0 items-center gap-3 md:flex'>
       <div className='h-7 w-20 rounded-full bg-[var(--gray-3)]/70' />
       <div className='h-7 w-24 rounded-full bg-[var(--gray-3)]/70' />
       <div className='w-5' />
@@ -82,8 +82,8 @@ const GridView = ({
   }
 
   return (
-    <div className='flex h-full flex-col py-1 px-2'>
-      <div className='flex-1 min-h-0 overflow-hidden'>
+    <div className='flex h-full flex-col px-2 py-1'>
+      <div className='min-h-0 flex-1 overflow-hidden'>
         <TableActionBar
           isReloading={isLoading || isRefetching}
           rowSize={rowSize}
@@ -101,10 +101,12 @@ const GridView = ({
         ) : rows.length === 0 ? (
           <div className='flex flex-col items-center justify-center py-20 text-center'>
             <div className='mb-4 flex size-16 items-center justify-center rounded-full bg-gray-1 text-gray-4'>
-              <Icon name='lucide:form-input' height={32} width={32} />
+              <Icon height={32} name='lucide:form-input' width={32} />
             </div>
             <h3 className='text-lg font-bold text-gray-13'>No forms yet</h3>
-            <p className='text-sm text-gray-5'>Create your first form to get started.</p>
+            <p className='text-sm text-gray-5'>
+              Create your first form to get started.
+            </p>
           </div>
         ) : (
           <div className='flex flex-col gap-4'>
@@ -117,7 +119,10 @@ const GridView = ({
               const isCollapsed = !groupRow.getIsExpanded()
 
               return (
-                <div key={group.groupId || groupValue} className='flex flex-col'>
+                <div
+                  className='flex flex-col'
+                  key={group.groupId || groupValue}
+                >
                   {!isDefaultGroup && (
                     <motion.div
                       className='group/header sticky top-0 z-20 -mx-2 flex cursor-pointer items-center justify-between gap-4 border-b border-gray-2 bg-white px-3 py-3'
@@ -125,10 +130,16 @@ const GridView = ({
                     >
                       <div className='flex items-center gap-3'>
                         <div className='rounded-lg bg-accent-soft p-1.5'>
-                          <Icon className='size-5 text-accent-primary' name='tabler:stack-2' />
+                          <Icon
+                            className='size-5 text-accent-primary'
+                            name='tabler:stack-2'
+                          />
                         </div>
-                        <h2 className='text-sm font-bold text-gray-13 uppercase tracking-wider'>
-                          {groupValue} <span className='ml-1 text-xs font-medium text-gray-5'>({group.groupCount})</span>
+                        <h2 className='text-sm font-bold tracking-wider text-gray-13 uppercase'>
+                          {groupValue}{' '}
+                          <span className='ml-1 text-xs font-medium text-gray-5'>
+                            ({group.groupCount})
+                          </span>
                         </h2>
                       </div>
 
@@ -158,40 +169,72 @@ const GridView = ({
                         <div className='flex flex-col gap-2 pt-3 pb-6'>
                           {subRows.map((form: any) => (
                             <motion.div
+                              className='group relative flex w-full items-center justify-between gap-4 rounded-xl border border-gray-2 bg-white p-3 transition-all hover:border-accent-primary hover:shadow-md'
                               key={form.id}
                               whileHover={{ scale: 1.002, x: 4 }}
-                              className='group relative flex w-full items-center justify-between gap-4 rounded-xl border border-gray-2 bg-white p-3 transition-all hover:border-accent-primary hover:shadow-md'
-                              onClick={() => navigate({
-                                to: '/form-builder/$formId',
-                                params: { formId: form.uid || form.id }
-                              })}
+                              onClick={() =>
+                                navigate({
+                                  params: { formId: form.uid || form.id },
+                                  to: '/form-builder/$formId',
+                                })
+                              }
                             >
                               <div className='flex min-w-0 items-center gap-4'>
                                 <div className='flex size-10 shrink-0 items-center justify-center rounded-lg border border-accent-soft bg-accent-soft/30 text-accent-primary transition-colors group-hover:bg-accent-primary group-hover:text-white'>
-                                  <Icon name='lucide:file-text' height={20} width={20} />
+                                  <Icon
+                                    height={20}
+                                    name='lucide:file-text'
+                                    width={20}
+                                  />
                                 </div>
                                 <div className='flex min-w-0 flex-col gap-0.5 text-left'>
-                                  <h3 className='truncate text-sm font-bold text-gray-13 group-hover:text-accent-primary transition-colors'>
-                                    {form._json?.settings?.general?.name || form.name || 'Untitled Form'}
+                                  <h3 className='truncate text-sm font-bold text-gray-13 transition-colors group-hover:text-accent-primary'>
+                                    {form._json?.settings?.general?.name ||
+                                      form.name ||
+                                      'Untitled Form'}
                                   </h3>
                                   <div className='flex items-center gap-2 text-[11px] text-gray-5'>
                                     <span className='line-clamp-1 max-w-[400px]'>
-                                      {form._json?.settings?.general?.description || form.description || 'No description provided.'}
+                                      {form._json?.settings?.general
+                                        ?.description ||
+                                        form.description ||
+                                        'No description provided.'}
                                     </span>
                                     <span className='h-1 w-1 rounded-full bg-gray-3' />
-                                    <div className='flex items-center gap-1 shrink-0'>
-                                      <Icon name='lucide:calendar' height={10} width={10} />
-                                      <span>{new Date(form.createdAt).toLocaleDateString()}</span>
+                                    <div className='flex shrink-0 items-center gap-1'>
+                                      <Icon
+                                        height={10}
+                                        name='lucide:calendar'
+                                        width={10}
+                                      />
+                                      <span>
+                                        {new Date(
+                                          form.createdAt,
+                                        ).toLocaleDateString()}
+                                      </span>
                                     </div>
                                   </div>
                                 </div>
                               </div>
 
                               <div className='flex shrink-0 items-center gap-3'>
-                                <FormTypeBadge type={form._json?.settings?.general?.type || form.type} />
-                                <FormStatusBadge status={form._json?.settings?.publish?.publishOption || form.publishOption} />
+                                <FormTypeBadge
+                                  type={
+                                    form._json?.settings?.general?.type ||
+                                    form.type
+                                  }
+                                />
+                                <FormStatusBadge
+                                  status={
+                                    form._json?.settings?.publish
+                                      ?.publishOption || form.publishOption
+                                  }
+                                />
                                 <div className='pl-2 text-gray-3 transition-transform group-hover:translate-x-1 group-hover:text-accent-primary'>
-                                  <Icon name='tabler:chevron-right' className='size-5' />
+                                  <Icon
+                                    className='size-5'
+                                    name='tabler:chevron-right'
+                                  />
                                 </div>
                               </div>
                             </motion.div>

@@ -6,6 +6,7 @@ import { resolve } from 'node:path'
 import { defineConfig } from 'vite'
 
 export default defineConfig({
+  assetsInclude: ['**/*.zip'],
   plugins: [
     tanstackRouter({ autoCodeSplitting: true, target: 'react' }),
     viteReact({
@@ -16,7 +17,6 @@ export default defineConfig({
     tailwindcss(),
     lingui(),
   ],
-  assetsInclude: ['**/*.zip'],
   resolve: {
     alias: {
       '@': resolve(__dirname, './src'),

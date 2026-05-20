@@ -423,8 +423,13 @@ const AddNodeMenu = () => {
           <div className='grid grid-cols-2 gap-8'>
             {/* Integrations Column */}
             <div className='flex flex-col gap-2'>
-              <h3 className='text-gray-400 mb-2 pl-2 text-xs font-semibold tracking-wider uppercase flex items-center gap-1.5'>
-                <Icon name="lucide:layout-grid" width={12} height={12} className="text-gray-400/70" />
+              <h3 className='text-gray-400 mb-2 flex items-center gap-1.5 pl-2 text-xs font-semibold tracking-wider uppercase'>
+                <Icon
+                  className='text-gray-400/70'
+                  height={12}
+                  name='lucide:layout-grid'
+                  width={12}
+                />
                 Integrations
               </h3>
               {appsAndAgents.map((item, i) => (
@@ -455,8 +460,13 @@ const AddNodeMenu = () => {
 
             {/* Triggers Column */}
             <div className='flex flex-col gap-2'>
-              <h3 className='text-gray-400 mb-2 pl-2 text-xs font-semibold tracking-wider uppercase flex items-center gap-1.5'>
-                <Icon name="lucide:zap" width={12} height={12} className="text-gray-400/70" />
+              <h3 className='text-gray-400 mb-2 flex items-center gap-1.5 pl-2 text-xs font-semibold tracking-wider uppercase'>
+                <Icon
+                  className='text-gray-400/70'
+                  height={12}
+                  name='lucide:zap'
+                  width={12}
+                />
                 Triggers
               </h3>
               {triggerItems.map((item, i) => (

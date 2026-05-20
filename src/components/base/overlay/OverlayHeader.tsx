@@ -5,8 +5,8 @@ import OverlayHeaderWrapper from './OverlayHeaderWrapper'
 
 interface Props {
   title: string
-  description?: string
   className?: string
+  description?: string
   onClose: () => void
 }
 

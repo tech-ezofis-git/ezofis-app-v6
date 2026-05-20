@@ -1,14 +1,14 @@
-import { useCallback, useEffect, useState, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Option } from '@/types/option'
 import formApi from '@/api/form/form'
 import requestApi from '@/api/requests/requests'
 import type { InboxItem, IRequestMeta, WorkflowOption } from './types'
 import Header from './components/Header'
 import InboxList from './components/InboxList'
+import { ProcessingBackgroundManager } from './components/ProcessingBackgroundManager'
 import Request from './components/request/Request'
 import { useInboxData } from './hooks/useInboxData'
 import requestStore from './stores/useRequestStore'
-import { ProcessingBackgroundManager } from './components/ProcessingBackgroundManager'
 
 const RequestsPage = () => {
   const [activeTab, setActiveTab] = useState<string>('Inbox')
@@ -21,13 +21,13 @@ const RequestsPage = () => {
   const [selectedWorkflow, setSelectedWorkflow] =
     useState<WorkflowOption | null>(null)
   const {
-    selectedItem,
-    openRequest,
     closeRequest,
     isClosed,
-    setRawWorkflowData: setRawWorflow,
+    openRequest,
     reloadMeta,
+    selectedItem,
     stopRefresh,
+    setRawWorkflowData: setRawWorflow,
     setRequestListTab,
   } = requestStore()
 
@@ -185,7 +185,7 @@ const RequestsPage = () => {
       if (Array.isArray(node.children)) node.children.forEach(walk)
       if (Array.isArray(node.groups)) node.groups.forEach(walk)
     }
-      ; (groups || []).forEach(walk)
+    ;(groups || []).forEach(walk)
     return out
   }
 
@@ -196,7 +196,8 @@ const RequestsPage = () => {
 
   const selectedIndex = useMemo(() => {
     if (!selectedItem) return -1
-    const selId = selectedItem?.processId || selectedItem?.transactionId || selectedItem?.id
+    const selId =
+      selectedItem?.processId || selectedItem?.transactionId || selectedItem?.id
     return flatRows.findIndex((r: any) => {
       const rId = r?.processId || r?.transactionId || r?.id
       return String(selId) === String(rId)
@@ -239,9 +240,9 @@ const RequestsPage = () => {
         <Request
           item={selectedItem}
           workflowId={selectedWorkflow?.id}
-          onPrev={onPrev}
-          onNext={onNext}
           onBack={closeRequest}
+          onNext={onNext}
+          onPrev={onPrev}
         />
       )}
       {/* <Table /> */}

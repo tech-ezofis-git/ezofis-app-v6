@@ -242,6 +242,8 @@ export const importWorkflow = (
 
     return {
       data: {
+        // Map condition-specific settings for legacy import
+        conditions: block.settings?.conditions,
         connection: connectorId ? String(connectorId) : undefined,
         connectorId: connectorId,
         fromDomainName,
@@ -262,6 +264,7 @@ export const importWorkflow = (
         mailContentToMonitor,
         mailSubjectEnabled,
         mailSubjectToMonitor,
+        masterConditions: block.settings?.masterConditions,
         selectedGroups: Array.isArray(block.settings?.groups)
           ? block.settings.groups.map((g: string) => ({
               id: g,
@@ -274,14 +277,11 @@ export const importWorkflow = (
               name: `User ${u}`,
             }))
           : undefined,
+        standardCondition: block.settings?.standardCondition ?? true,
         subLabel: defaults.subLabel,
         toolType: toolType,
         type: nodeType,
         warning: false,
-        // Map condition-specific settings for legacy import
-        conditions: block.settings?.conditions,
-        masterConditions: block.settings?.masterConditions,
-        standardCondition: block.settings?.standardCondition ?? true,
         // specifically map the legacy block properties we might need for rendering
         // but avoid polluting the new structure with unmapped settings
       },

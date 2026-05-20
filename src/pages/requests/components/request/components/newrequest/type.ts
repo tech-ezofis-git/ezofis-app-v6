@@ -4,8 +4,8 @@ type Props = {
 }
 
 type UploadItem = {
-  id: string
   file: File
+  id: string
   name: string
   size: number
   type: string

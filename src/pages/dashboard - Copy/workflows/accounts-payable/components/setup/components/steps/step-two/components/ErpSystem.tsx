@@ -119,10 +119,11 @@ const ErpSystem = () => {
           <AnimateSlideUp delay={0.15}>
             <button
               type='button'
-              className={`flex w-full items-center gap-3 rounded-lg border-2 p-4 text-left transition-all ${selectedOption === 'upload' && isFileBasedImportSelected
+              className={`flex w-full items-center gap-3 rounded-lg border-2 p-4 text-left transition-all ${
+                selectedOption === 'upload' && isFileBasedImportSelected
                   ? 'border-green-9 bg-green-1'
                   : 'border-gray-4 bg-white hover:border-gray-5'
-                }`}
+              }`}
               onClick={() => {
                 setErpSettings({
                   ...erpSettings,
@@ -155,10 +156,11 @@ const ErpSystem = () => {
           <AnimateSlideUp delay={0.18}>
             <button
               type='button'
-              className={`flex w-full items-center gap-3 rounded-lg border-2 p-4 text-left transition-all ${selectedOption === 'import' && isFileBasedImportSelected
+              className={`flex w-full items-center gap-3 rounded-lg border-2 p-4 text-left transition-all ${
+                selectedOption === 'import' && isFileBasedImportSelected
                   ? 'border-green-9 bg-green-1'
                   : 'border-gray-4 bg-white hover:border-gray-5'
-                }`}
+              }`}
               onClick={() => {
                 setErpSettings({
                   ...erpSettings,
@@ -285,8 +287,8 @@ const ErpSystem = () => {
                         value={
                           erpSettings.selectedFormName
                             ? formOptions.find(
-                              (f) => f.name === erpSettings.selectedFormName,
-                            ) || null
+                                (f) => f.name === erpSettings.selectedFormName,
+                              ) || null
                             : null
                         }
                         onChange={handleFormSelect}

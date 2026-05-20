@@ -1,14 +1,19 @@
-import { useEffect } from 'react'
-import requestStore from '../stores/useRequestStore'
-import requestApi from '@/api/requests/requests'
 import { useQueryClient } from '@tanstack/react-query'
+import { AnimatePresence, motion } from 'framer-motion'
+import { useEffect } from 'react'
+import requestApi from '@/api/requests/requests'
 import Icon from '@/components/base/icon/Icon'
-import { motion, AnimatePresence } from 'framer-motion'
+import requestStore from '../stores/useRequestStore'
 
 const POLLING_INTERVAL = 10000 // 10 seconds
 
 export const ProcessingBackgroundManager = () => {
-  const { processingProcesses, updateProcessingProcess, removeProcessingProcess, rawWorkflowData } = requestStore()
+  const {
+    processingProcesses,
+    rawWorkflowData,
+    removeProcessingProcess,
+    updateProcessingProcess,
+  } = requestStore()
   const queryClient = useQueryClient()
 
   useEffect(() => {
@@ -23,21 +28,25 @@ export const ProcessingBackgroundManager = () => {
       const poll = async () => {
         try {
           const payload = {
-            itemsPerPage: 5,
             currentPage: 1,
+            filterBy: [],
+            itemsPerPage: 5,
             sortBy: { criteria: '', order: 'DESC' },
-            filterBy: []
           }
 
           const findItemInResponse = (data: any) => {
             if (Array.isArray(data)) {
               for (const group of data) {
                 if (group.items && Array.isArray(group.items)) {
-                  const found = group.items.find((i: any) => String(i.processId) === String(processId))
+                  const found = group.items.find(
+                    (i: any) => String(i.processId) === String(processId),
+                  )
                   if (found) return found
                 }
                 if (group.value && Array.isArray(group.value)) {
-                  const found = group.value.find((i: any) => String(i.processId) === String(processId))
+                  const found = group.value.find(
+                    (i: any) => String(i.processId) === String(processId),
+                  )
                   if (found) return found
                 }
               }
@@ -59,7 +68,10 @@ export const ProcessingBackgroundManager = () => {
 
           if (item) {
             const stage = item.stage || item.activityName || 'Start'
-            updateProcessingProcess(processId, { stage, lastUpdated: new Date() })
+            updateProcessingProcess(processId, {
+              lastUpdated: new Date(),
+              stage,
+            })
 
             // If finished, remove from background tracker and refresh list
             if (['Verifier', 'Approved', 'Completed'].includes(stage)) {
@@ -87,61 +99,77 @@ export const ProcessingBackgroundManager = () => {
   if (processingProcesses.length === 0) return null
 
   return (
-    <div className="fixed bottom-6 right-6 z-[9999] flex flex-col gap-3 pointer-events-none">
+    <div className='pointer-events-none fixed right-6 bottom-6 z-[9999] flex flex-col gap-3'>
       <AnimatePresence>
         <motion.div
-          initial={{ opacity: 0, y: 20, scale: 0.95 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          className='pointer-events-auto w-80 rounded-2xl border border-[var(--gray-3)] bg-white p-4 shadow-2xl'
           exit={{ opacity: 0, scale: 0.95 }}
-          className="bg-white rounded-2xl border border-[var(--gray-3)] shadow-2xl p-4 w-80 pointer-events-auto"
+          initial={{ opacity: 0, scale: 0.95, y: 20 }}
         >
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 rounded-lg bg-[var(--primary-2)] text-[var(--primary-9)]">
-                <Icon name="tabler:loader-2" className="size-5 animate-spin" />
+          <div className='mb-4 flex items-center justify-between'>
+            <div className='flex items-center gap-2'>
+              <div className='rounded-lg bg-[var(--primary-2)] p-1.5 text-[var(--primary-9)]'>
+                <Icon className='size-5 animate-spin' name='tabler:loader-2' />
               </div>
-              <h3 className="font-bold text-sm text-[var(--gray-13)]">
-                Processing {processingProcesses.length} {processingProcesses.length === 1 ? 'invoice' : 'invoices'}
+              <h3 className='text-sm font-bold text-[var(--gray-13)]'>
+                Processing {processingProcesses.length}{' '}
+                {processingProcesses.length === 1 ? 'invoice' : 'invoices'}
               </h3>
             </div>
-            <button 
-              onClick={() => processingProcesses.forEach(p => removeProcessingProcess(p.processId || p.id))}
-              className="text-[var(--gray-9)] hover:text-[var(--gray-12)] transition-colors"
+            <button
+              className='text-[var(--gray-9)] transition-colors hover:text-[var(--gray-12)]'
+              onClick={() =>
+                processingProcesses.forEach((p) =>
+                  removeProcessingProcess(p.processId || p.id),
+                )
+              }
             >
-              <Icon name="tabler:x" className="size-4" />
+              <Icon className='size-4' name='tabler:x' />
             </button>
           </div>
 
-          <div className="flex flex-col gap-3 max-h-[300px] overflow-y-auto pr-2">
+          <div className='flex max-h-[300px] flex-col gap-3 overflow-y-auto pr-2'>
             {processingProcesses.map((p) => (
-              <div key={p.processId || p.id} className="flex flex-col gap-1.5 p-2 rounded-xl bg-[var(--gray-1)] border border-[var(--gray-2)]">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <Icon name="tabler:file-text" className="size-4 text-[var(--gray-10)] shrink-0" />
-                    <span className="text-xs font-semibold text-[var(--gray-12)] truncate">
+              <div
+                className='flex flex-col gap-1.5 rounded-xl border border-[var(--gray-2)] bg-[var(--gray-1)] p-2'
+                key={p.processId || p.id}
+              >
+                <div className='flex items-center justify-between'>
+                  <div className='flex min-w-0 items-center gap-2'>
+                    <Icon
+                      className='size-4 shrink-0 text-[var(--gray-10)]'
+                      name='tabler:file-text'
+                    />
+                    <span className='truncate text-xs font-semibold text-[var(--gray-12)]'>
                       {p.name || p.requestNo || 'New Request'}
                     </span>
                   </div>
-                  <span className="text-[10px] font-bold text-[var(--primary-9)] bg-[var(--primary-1)] px-1.5 py-0.5 rounded-md animate-pulse">
+                  <span className='animate-pulse rounded-md bg-[var(--primary-1)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--primary-9)]'>
                     {p.stage || 'Uploading...'}
                   </span>
                 </div>
-                
+
                 {/* Mini Progress Bar */}
-                <div className="h-1 w-full bg-[var(--gray-3)] rounded-full overflow-hidden">
+                <div className='h-1 w-full overflow-hidden rounded-full bg-[var(--gray-3)]'>
                   <motion.div
-                    className="h-full bg-[var(--primary-9)]"
-                    animate={{ 
-                      width: p.stage === 'Start' ? '25%' : p.stage === 'AI Agent' ? '60%' : '90%' 
-                    }}
+                    className='h-full bg-[var(--primary-9)]'
                     transition={{ duration: 1 }}
+                    animate={{
+                      width:
+                        p.stage === 'Start'
+                          ? '25%'
+                          : p.stage === 'AI Agent'
+                            ? '60%'
+                            : '90%',
+                    }}
                   />
                 </div>
               </div>
             ))}
           </div>
-          
-          <p className="mt-4 text-[10px] text-[var(--gray-9)] text-center font-medium">
+
+          <p className='mt-4 text-center text-[10px] font-medium text-[var(--gray-9)]'>
             AI is extracting data. We'll notify you when it's ready.
           </p>
         </motion.div>

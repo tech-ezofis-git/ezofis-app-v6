@@ -1,7 +1,7 @@
-import { Card, Tooltip, Rating } from '@mantine/core'
-import Icon from '@/components/base/icon/Icon'
-import IconButton from '@/components/base/button/IconButton'
 import type React from 'react'
+import { Card, Rating, Tooltip } from '@mantine/core'
+import IconButton from '@/components/base/button/IconButton'
+import Icon from '@/components/base/icon/Icon'
 import {
   type Question,
   useFormStore,
@@ -13,13 +13,21 @@ interface Props {
   question: Question
   dragListeners?: any
   isBuilderMode?: boolean
+  isLocked?: boolean
   onDelete: () => void
   onSelect: () => void
   onUpdate: (updates: Partial<Question>) => void
-  isLocked?: boolean
 }
 
-const QuestionCard = ({ question, isActive, onSelect, onUpdate, onDelete, dragListeners, isLocked }: Props) => {
+const QuestionCard = ({
+  dragListeners,
+  isActive,
+  isLocked,
+  question,
+  onDelete,
+  onSelect,
+  onUpdate,
+}: Props) => {
   const { panels } = useFormStore()
   const allQuestions = panels.flatMap((p) => p.fields)
 
@@ -58,42 +66,44 @@ const QuestionCard = ({ question, isActive, onSelect, onUpdate, onDelete, dragLi
   return (
     <Card
       className={cn(
-        "group relative border transition-all duration-300 overflow-visible rounded-xl font-inter",
-        isLocked ? "cursor-not-allowed opacity-90 border-gray-2 bg-gray-50/30" : "cursor-pointer hover:bg-gray-50/50",
+        'group relative overflow-visible rounded-xl border font-inter transition-all duration-300',
+        isLocked
+          ? 'bg-gray-50/30 cursor-not-allowed border-gray-2 opacity-90'
+          : 'hover:bg-gray-50/50 cursor-pointer',
         isActive
-          ? "border-accent-primary bg-accent-soft/5 ring-1 ring-accent-primary shadow-sm"
-          : "border-gray-2 bg-transparent hover:border-gray-3"
+          ? 'border-accent-primary bg-accent-soft/5 shadow-sm ring-1 ring-accent-primary'
+          : 'border-gray-2 bg-transparent hover:border-gray-3',
       )}
       style={{
-        padding: '0'
+        padding: '0',
       }}
       onClick={onSelect}
     >
-      <div className="flex flex-col p-3 gap-2">
+      <div className='flex flex-col gap-2 p-3'>
         {/* Top Header: Label, Badges, Quick Actions, Drag Handle */}
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
-            <div className="text-13 font-medium text-gray-12 truncate">
+        <div className='flex items-start justify-between gap-3'>
+          <div className='flex min-w-0 flex-1 flex-wrap items-center gap-2'>
+            <div className='truncate text-13 font-medium text-gray-12'>
               {question.label || 'Untitled Field'}
             </div>
 
             {isRequired && (
-              <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-gray-2 text-gray-7 tracking-wider uppercase">
+              <span className='rounded bg-gray-2 px-1.5 py-0.5 text-[9px] font-bold tracking-wider text-gray-7 uppercase'>
                 Required
               </span>
             )}
 
             {hasLogic && (
-              <span className="px-1.5 py-0.5 rounded flex items-center gap-1 text-[9px] font-bold bg-accent-primary text-white tracking-wider uppercase">
-                <Icon name="lucide:split" width={10} height={10} />
+              <span className='flex items-center gap-1 rounded bg-accent-primary px-1.5 py-0.5 text-[9px] font-bold tracking-wider text-white uppercase'>
+                <Icon height={10} name='lucide:split' width={10} />
                 Logic Active
               </span>
             )}
 
             {isLocked && (
-              <Tooltip label="This section is locked" position="top" withArrow>
-                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-gray-100 text-[9px] font-black text-gray-5 tracking-widest uppercase border border-gray-2">
-                  <Icon name="lucide:lock" width={10} height={10} />
+              <Tooltip label='This section is locked' position='top' withArrow>
+                <div className='bg-gray-100 flex items-center gap-1.5 rounded border border-gray-2 px-2 py-0.5 text-[9px] font-black tracking-widest text-gray-5 uppercase'>
+                  <Icon height={10} name='lucide:lock' width={10} />
                   <span>Locked</span>
                 </div>
               </Tooltip>
@@ -101,47 +111,54 @@ const QuestionCard = ({ question, isActive, onSelect, onUpdate, onDelete, dragLi
 
             {/* Visibility Warning */}
             {!isVisible && (
-              <Tooltip label="Visible when Vendor Entity Type is International Entity" position="top" withArrow>
-                <div className="cursor-help flex items-center justify-center size-5 rounded-md bg-accent-soft/10 text-accent-primary border border-accent-soft/20 ml-1">
-                  <Icon name="lucide:info" width={12} height={12} />
+              <Tooltip
+                label='Visible when Vendor Entity Type is International Entity'
+                position='top'
+                withArrow
+              >
+                <div className='ml-1 flex size-5 cursor-help items-center justify-center rounded-md border border-accent-soft/20 bg-accent-soft/10 text-accent-primary'>
+                  <Icon height={12} name='lucide:info' width={12} />
                 </div>
               </Tooltip>
             )}
           </div>
 
           {/* Quick Actions & Drag Handle */}
-          <div className="flex items-center gap-1 pl-2">
+          <div className='flex items-center gap-1 pl-2'>
             {!isLocked ? (
               <>
-                <div className={cn(
-                  "flex items-center gap-0.5 transition-all duration-300 opacity-0 group-hover:opacity-100",
-                  isActive && "opacity-100"
-                )}>
-                  <Tooltip label="Duplicate" position="top" withArrow>
+                <div
+                  className={cn(
+                    'flex items-center gap-0.5 opacity-0 transition-all duration-300 group-hover:opacity-100',
+                    isActive && 'opacity-100',
+                  )}
+                >
+                  <Tooltip label='Duplicate' position='top' withArrow>
                     <IconButton
-                      className="cursor-pointer size-6"
-                      color="primary"
-                      icon="lucide:copy"
-                      iconClass="size-[13px]"
-                      size="sm"
-                      variant="ghost"
+                      className='size-6 cursor-pointer'
+                      color='primary'
+                      icon='lucide:copy'
+                      iconClass='size-[13px]'
+                      size='sm'
+                      variant='ghost'
                       onClick={(e: React.MouseEvent) => {
                         e.stopPropagation()
-                        const { setCopiedQuestion, duplicateQuestion } = useFormStore.getState()
+                        const { duplicateQuestion, setCopiedQuestion } =
+                          useFormStore.getState()
                         setCopiedQuestion(question)
                         duplicateQuestion(question.id)
                       }}
                     />
                   </Tooltip>
 
-                  <Tooltip label="Delete" position="top" withArrow>
+                  <Tooltip label='Delete' position='top' withArrow>
                     <IconButton
-                      className="cursor-pointer size-6 hover:bg-red-50"
-                      color="red"
-                      icon="lucide:trash-2"
-                      iconClass="size-[13px]"
-                      size="sm"
-                      variant="ghost"
+                      className='hover:bg-red-50 size-6 cursor-pointer'
+                      color='red'
+                      icon='lucide:trash-2'
+                      iconClass='size-[13px]'
+                      size='sm'
+                      variant='ghost'
                       onClick={(e: React.MouseEvent) => {
                         e.stopPropagation()
                         onDelete()
@@ -151,339 +168,602 @@ const QuestionCard = ({ question, isActive, onSelect, onUpdate, onDelete, dragLi
                 </div>
 
                 <div
-                  className="flex items-center justify-center h-6 w-4 rounded hover:bg-gray-2 cursor-grab active:cursor-grabbing text-gray-3 hover:text-gray-6 transition-colors ml-1"
+                  className='ml-1 flex h-6 w-4 cursor-grab items-center justify-center rounded text-gray-3 transition-colors hover:bg-gray-2 hover:text-gray-6 active:cursor-grabbing'
                   {...dragListeners}
                 >
-                  <Icon name="lucide:grip-vertical" width={14} height={14} />
+                  <Icon height={14} name='lucide:grip-vertical' width={14} />
                 </div>
               </>
             ) : (
-              <div className="flex items-center justify-center h-6 w-6 rounded-lg text-gray-3 opacity-50">
-                <Icon name="lucide:lock" width={14} height={14} />
+              <div className='flex h-6 w-6 items-center justify-center rounded-lg text-gray-3 opacity-50'>
+                <Icon height={14} name='lucide:lock' width={14} />
               </div>
             )}
           </div>
         </div>
 
         {/* Simulated Input Area */}
-        <div className="w-full mt-1.5">
+        <div className='mt-1.5 w-full'>
           {question.type === 'TEXT_BUILDER' ? (
-            <div className={cn(
-              "w-full border rounded-xl overflow-hidden transition-all duration-300 bg-white",
-              isActive ? "border-accent-primary/60 shadow-sm" : "border-gray-2 group-hover:border-gray-3"
-            )}>
+            <div
+              className={cn(
+                'w-full overflow-hidden rounded-xl border bg-white transition-all duration-300',
+                isActive
+                  ? 'border-accent-primary/60 shadow-sm'
+                  : 'border-gray-2 group-hover:border-gray-3',
+              )}
+            >
               {/* Toolbar Simulation */}
-              <div className="flex items-center gap-1 p-1.5 border-b border-gray-1 bg-gray-50/50">
-                <div className="flex items-center gap-0.5 pr-1 border-r border-gray-2 mr-1">
-                  <Icon name="lucide:bold" width={14} height={14} className="text-gray-4 p-0.5 rounded hover:bg-white transition-colors" />
-                  <Icon name="lucide:italic" width={14} height={14} className="text-gray-4 p-0.5 rounded hover:bg-white transition-colors" />
-                  <Icon name="lucide:underline" width={14} height={14} className="text-gray-4 p-0.5 rounded hover:bg-white transition-colors" />
+              <div className='bg-gray-50/50 flex items-center gap-1 border-b border-gray-1 p-1.5'>
+                <div className='mr-1 flex items-center gap-0.5 border-r border-gray-2 pr-1'>
+                  <Icon
+                    className='rounded p-0.5 text-gray-4 transition-colors hover:bg-white'
+                    height={14}
+                    name='lucide:bold'
+                    width={14}
+                  />
+                  <Icon
+                    className='rounded p-0.5 text-gray-4 transition-colors hover:bg-white'
+                    height={14}
+                    name='lucide:italic'
+                    width={14}
+                  />
+                  <Icon
+                    className='rounded p-0.5 text-gray-4 transition-colors hover:bg-white'
+                    height={14}
+                    name='lucide:underline'
+                    width={14}
+                  />
                 </div>
-                <div className="flex items-center gap-0.5 pr-1 border-r border-gray-2 mr-1">
-                  <Icon name="lucide:align-left" width={14} height={14} className="text-gray-8 p-0.5 rounded bg-white shadow-xs" />
-                  <Icon name="lucide:align-center" width={14} height={14} className="text-gray-4 p-0.5 rounded hover:bg-white transition-colors" />
-                  <Icon name="lucide:list" width={14} height={14} className="text-gray-4 p-0.5 rounded hover:bg-white transition-colors" />
+                <div className='mr-1 flex items-center gap-0.5 border-r border-gray-2 pr-1'>
+                  <Icon
+                    className='rounded bg-white p-0.5 text-gray-8 shadow-xs'
+                    height={14}
+                    name='lucide:align-left'
+                    width={14}
+                  />
+                  <Icon
+                    className='rounded p-0.5 text-gray-4 transition-colors hover:bg-white'
+                    height={14}
+                    name='lucide:align-center'
+                    width={14}
+                  />
+                  <Icon
+                    className='rounded p-0.5 text-gray-4 transition-colors hover:bg-white'
+                    height={14}
+                    name='lucide:list'
+                    width={14}
+                  />
                 </div>
-                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-accent-soft/10 text-accent-primary border border-accent-soft/20 ml-auto cursor-pointer hover:bg-accent-soft/20 transition-all">
-                  <Icon name="lucide:plus" width={12} height={12} />
-                  <span className="text-[10px] font-bold uppercase tracking-tight">Insert Field</span>
+                <div className='ml-auto flex cursor-pointer items-center gap-1.5 rounded-lg border border-accent-soft/20 bg-accent-soft/10 px-2 py-0.5 text-accent-primary transition-all hover:bg-accent-soft/20'>
+                  <Icon height={12} name='lucide:plus' width={12} />
+                  <span className='text-[10px] font-bold tracking-tight uppercase'>
+                    Insert Field
+                  </span>
                 </div>
               </div>
 
               {/* Content Area Simulation */}
-              <div className="p-2.5 min-h-[80px] flex flex-col gap-1.5">
-                <div className="flex items-center gap-1.5 text-[13px] text-gray-12">
+              <div className='flex min-h-[80px] flex-col gap-1.5 p-2.5'>
+                <div className='flex items-center gap-1.5 text-[13px] text-gray-12'>
                   <span>Hello</span>
-                  <div className="px-1.5 py-0.5 rounded border border-blue-200 bg-blue-50 text-[11px] font-bold text-blue-700 flex items-center gap-1 shadow-xs">
-                    <Icon name="lucide:user" width={10} height={10} />
+                  <div className='border-blue-200 bg-blue-50 text-blue-700 flex items-center gap-1 rounded border px-1.5 py-0.5 text-[11px] font-bold shadow-xs'>
+                    <Icon height={10} name='lucide:user' width={10} />
                     FULL_NAME
                   </div>
                   <span>, your request is ready for review.</span>
                 </div>
-                <span className="text-[13px] text-gray-4 italic">Start typing your rich-text content here...</span>
+                <span className='text-[13px] text-gray-4 italic'>
+                  Start typing your rich-text content here...
+                </span>
               </div>
             </div>
           ) : question.type === 'LONG_TEXT' ? (
             <textarea
-              readOnly
               rows={3}
-              placeholder={question.settings.general.placeholder || `Enter ${question.label || 'value'}...`}
+              readOnly
               className={cn(
-                "w-full resize-none outline-none border rounded-lg p-3 text-[13px] font-medium text-gray-12 placeholder:font-normal placeholder:text-gray-8 transition-colors",
-                isActive ? "border-accent-primary/50 bg-white" : "border-gray-2 bg-white group-hover:border-gray-3"
+                'w-full resize-none rounded-lg border p-3 text-[13px] font-medium text-gray-12 transition-colors outline-none placeholder:font-normal placeholder:text-gray-8',
+                isActive
+                  ? 'border-accent-primary/50 bg-white'
+                  : 'border-gray-2 bg-white group-hover:border-gray-3',
               )}
+              placeholder={
+                question.settings.general.placeholder ||
+                `Enter ${question.label || 'value'}...`
+              }
             />
           ) : (question.type as string) === 'RATING' ? (
-            <div className="flex flex-col gap-3 py-2">
-              <div className="flex items-center gap-1.5">
+            <div className='flex flex-col gap-3 py-2'>
+              <div className='flex items-center gap-1.5'>
                 {[1, 2, 3, 4, 5].map((i) => (
                   <Icon
-                    key={i}
-                    name={question.settings.specific.iconType === 'HEART' ? "lucide:heart" : "lucide:star"}
-                    width={28}
                     height={28}
+                    key={i}
+                    width={28}
                     className={cn(
-                      "transition-all duration-300 cursor-pointer",
-                      i <= 3 ? "text-yellow-400 fill-yellow-400" : "text-gray-2"
+                      'cursor-pointer transition-all duration-300',
+                      i <= 3
+                        ? 'text-yellow-400 fill-yellow-400'
+                        : 'text-gray-2',
                     )}
+                    name={
+                      question.settings.specific.iconType === 'HEART'
+                        ? 'lucide:heart'
+                        : 'lucide:star'
+                    }
                   />
                 ))}
               </div>
-              <span className="text-[10px] font-bold text-gray-4 uppercase tracking-widest pl-1">3.0 / 5.0 Average</span>
+              <span className='pl-1 text-[10px] font-bold tracking-widest text-gray-4 uppercase'>
+                3.0 / 5.0 Average
+              </span>
             </div>
           ) : question.type === 'OPINION_SCALE' ? (
-            <div className="flex flex-col gap-4 py-2">
-              <div className="flex items-center gap-1 w-full max-w-lg">
+            <div className='flex flex-col gap-4 py-2'>
+              <div className='flex w-full max-w-lg items-center gap-1'>
                 {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => (
                   <div
                     key={i}
                     className={cn(
-                      "flex-1 aspect-square max-w-[40px] flex items-center justify-center rounded-lg border text-[12px] font-bold transition-all duration-300 cursor-pointer shadow-xs",
-                      i === 8 ? "bg-accent-primary border-accent-primary text-white scale-110 shadow-lg z-10" : "bg-white border-gray-2 text-gray-6 hover:border-gray-3"
+                      'flex aspect-square max-w-[40px] flex-1 cursor-pointer items-center justify-center rounded-lg border text-[12px] font-bold shadow-xs transition-all duration-300',
+                      i === 8
+                        ? 'z-10 scale-110 border-accent-primary bg-accent-primary text-white shadow-lg'
+                        : 'border-gray-2 bg-white text-gray-6 hover:border-gray-3',
                     )}
                   >
                     {i}
                   </div>
                 ))}
               </div>
-              <div className="flex items-center justify-between w-full max-w-lg px-0.5">
-                <span className="text-[10px] font-bold text-gray-5 uppercase tabular-nums">Not Likely</span>
-                <span className="text-[10px] font-bold text-gray-5 uppercase tabular-nums text-right">Extremely Likely</span>
+              <div className='flex w-full max-w-lg items-center justify-between px-0.5'>
+                <span className='text-[10px] font-bold text-gray-5 uppercase tabular-nums'>
+                  Not Likely
+                </span>
+                <span className='text-right text-[10px] font-bold text-gray-5 uppercase tabular-nums'>
+                  Extremely Likely
+                </span>
               </div>
             </div>
           ) : (question.type as string) === 'SIGNATURE' ? (
-            <div className="w-full max-w-md border-2 border-dashed border-gray-2 rounded-xl p-6 bg-gray-50/30 flex flex-col items-center justify-center gap-4 group/sig transition-all hover:bg-white hover:border-accent-soft">
-              <div className="relative w-full flex flex-col items-center">
-                <span className="text-[32px] font-cursive text-gray-8 opacity-60 select-none pointer-events-none transform -rotate-2">
+            <div className='bg-gray-50/30 group/sig flex w-full max-w-md flex-col items-center justify-center gap-4 rounded-xl border-2 border-dashed border-gray-2 p-6 transition-all hover:border-accent-soft hover:bg-white'>
+              <div className='relative flex w-full flex-col items-center'>
+                <span className='font-cursive pointer-events-none -rotate-2 transform text-[32px] text-gray-8 opacity-60 select-none'>
                   Johnathon Doe
                 </span>
-                <div className="w-full h-px bg-gray-2 mt-2" />
+                <div className='mt-2 h-px w-full bg-gray-2' />
               </div>
-              <div className="flex items-center gap-2 group-hover/sig:opacity-100 opacity-40 transition-opacity">
-                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-gray-1 shadow-xs cursor-pointer hover:bg-gray-50 text-[11px] font-bold text-gray-6">
-                  <Icon name="lucide:rotate-ccw" width={14} height={14} />
+              <div className='flex items-center gap-2 opacity-40 transition-opacity group-hover/sig:opacity-100'>
+                <div className='hover:bg-gray-50 flex cursor-pointer items-center gap-1.5 rounded-lg border border-gray-1 bg-white px-3 py-1.5 text-[11px] font-bold text-gray-6 shadow-xs'>
+                  <Icon height={14} name='lucide:rotate-ccw' width={14} />
                   Clear
                 </div>
               </div>
             </div>
           ) : question.type === 'TABLE' ? (
-            <div className={cn(
-              "w-full border rounded-xl overflow-hidden transition-all duration-300 bg-white shadow-sm",
-              isActive ? "border-accent-primary/60" : "border-gray-2 group-hover:border-gray-3"
-            )}>
+            <div
+              className={cn(
+                'w-full overflow-hidden rounded-xl border bg-white shadow-sm transition-all duration-300',
+                isActive
+                  ? 'border-accent-primary/60'
+                  : 'border-gray-2 group-hover:border-gray-3',
+              )}
+            >
               {/* Table Toolbar */}
-              <div className="flex items-center justify-between px-3 py-2 border-b border-gray-1 bg-gray-50/50">
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-white border border-gray-1 shadow-xs cursor-pointer hover:bg-gray-50 transition-colors">
-                    <Icon name="lucide:qr-code" width={14} height={14} className="text-gray-6" />
-                    <span className="text-[11px] font-bold text-gray-8">Scan Row</span>
+              <div className='bg-gray-50/50 flex items-center justify-between border-b border-gray-1 px-3 py-2'>
+                <div className='flex items-center gap-2'>
+                  <div className='hover:bg-gray-50 flex cursor-pointer items-center gap-1.5 rounded-lg border border-gray-1 bg-white px-2 py-1 shadow-xs transition-colors'>
+                    <Icon
+                      className='text-gray-6'
+                      height={14}
+                      name='lucide:qr-code'
+                      width={14}
+                    />
+                    <span className='text-[11px] font-bold text-gray-8'>
+                      Scan Row
+                    </span>
                   </div>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <IconButton icon="lucide:download" size="xs" variant="ghost" color="gray" />
-                  <IconButton icon="lucide:upload" size="xs" variant="ghost" color="gray" />
+                <div className='flex items-center gap-1.5'>
+                  <IconButton
+                    color='gray'
+                    icon='lucide:download'
+                    size='xs'
+                    variant='ghost'
+                  />
+                  <IconButton
+                    color='gray'
+                    icon='lucide:upload'
+                    size='xs'
+                    variant='ghost'
+                  />
                 </div>
               </div>
 
               {/* Grid Header */}
-              <div className="grid grid-cols-[30px_1fr_80px_100px_100px] bg-gray-50/80 border-b border-gray-1 px-3 py-2">
-                <div className="flex items-center justify-center"><div className="w-3 h-3 rounded border border-gray-3" /></div>
-                <div className="text-[10px] font-bold text-gray-5 uppercase tracking-wider">Item Description</div>
-                <div className="text-[10px] font-bold text-gray-5 uppercase tracking-wider text-center">Qty</div>
-                <div className="text-[10px] font-bold text-gray-5 uppercase tracking-wider text-right">Unit Price</div>
-                <div className="text-[10px] font-bold text-gray-5 uppercase tracking-wider text-right pr-2">Total</div>
+              <div className='bg-gray-50/80 grid grid-cols-[30px_1fr_80px_100px_100px] border-b border-gray-1 px-3 py-2'>
+                <div className='flex items-center justify-center'>
+                  <div className='h-3 w-3 rounded border border-gray-3' />
+                </div>
+                <div className='text-[10px] font-bold tracking-wider text-gray-5 uppercase'>
+                  Item Description
+                </div>
+                <div className='text-center text-[10px] font-bold tracking-wider text-gray-5 uppercase'>
+                  Qty
+                </div>
+                <div className='text-right text-[10px] font-bold tracking-wider text-gray-5 uppercase'>
+                  Unit Price
+                </div>
+                <div className='pr-2 text-right text-[10px] font-bold tracking-wider text-gray-5 uppercase'>
+                  Total
+                </div>
               </div>
 
               {/* Grid Rows */}
-              <div className="divide-y divide-gray-1">
+              <div className='divide-y divide-gray-1'>
                 {[
-                  { item: 'Professional Services', qty: '12', price: '150.00', total: '1,800.00' },
-                  { item: 'Software Licensing', qty: '1', price: '450.00', total: '450.00' }
+                  {
+                    item: 'Professional Services',
+                    price: '150.00',
+                    qty: '12',
+                    total: '1,800.00',
+                  },
+                  {
+                    item: 'Software Licensing',
+                    price: '450.00',
+                    qty: '1',
+                    total: '450.00',
+                  },
                 ].map((row, i) => (
-                  <div key={i} className="grid grid-cols-[30px_1fr_80px_100px_100px] px-3 py-2.5 items-center hover:bg-gray-50/30 transition-colors">
-                    <div className="flex items-center justify-center"><div className="w-3 h-3 rounded border border-gray-2" /></div>
-                    <div className="text-[12px] font-medium text-gray-12">{row.item}</div>
-                    <div className="text-[12px] font-bold text-gray-8 text-center">{row.qty}</div>
-                    <div className="text-[12px] font-medium text-gray-12 text-right">{row.price}</div>
-                    <div className="text-[12px] font-bold text-accent-primary text-right pr-2">{row.total}</div>
+                  <div
+                    className='hover:bg-gray-50/30 grid grid-cols-[30px_1fr_80px_100px_100px] items-center px-3 py-2.5 transition-colors'
+                    key={i}
+                  >
+                    <div className='flex items-center justify-center'>
+                      <div className='h-3 w-3 rounded border border-gray-2' />
+                    </div>
+                    <div className='text-[12px] font-medium text-gray-12'>
+                      {row.item}
+                    </div>
+                    <div className='text-center text-[12px] font-bold text-gray-8'>
+                      {row.qty}
+                    </div>
+                    <div className='text-right text-[12px] font-medium text-gray-12'>
+                      {row.price}
+                    </div>
+                    <div className='pr-2 text-right text-[12px] font-bold text-accent-primary'>
+                      {row.total}
+                    </div>
                   </div>
                 ))}
               </div>
 
               {/* Grid Summary */}
-              <div className="grid grid-cols-[30px_1fr_80px_100px_100px] bg-accent-soft/5 border-t border-gray-1 px-3 py-2.5">
+              <div className='grid grid-cols-[30px_1fr_80px_100px_100px] border-t border-gray-1 bg-accent-soft/5 px-3 py-2.5'>
                 <div />
-                <div className="text-[11px] font-bold text-gray-8 uppercase">Grand Total</div>
-                <div className="text-[11px] font-bold text-gray-10 text-center">13</div>
+                <div className='text-[11px] font-bold text-gray-8 uppercase'>
+                  Grand Total
+                </div>
+                <div className='text-center text-[11px] font-bold text-gray-10'>
+                  13
+                </div>
                 <div />
-                <div className="text-[12px] font-bold text-accent-primary text-right pr-2 underline decoration-accent-soft underline-offset-4">2,250.00</div>
+                <div className='pr-2 text-right text-[12px] font-bold text-accent-primary underline decoration-accent-soft underline-offset-4'>
+                  2,250.00
+                </div>
               </div>
 
               {/* Grid Footer */}
-              <div className="px-3 py-2 bg-gray-50/50 border-t border-gray-1 flex items-center justify-between">
-                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-dashed border-accent-primary/50 text-accent-primary bg-white cursor-pointer hover:bg-accent-soft/10 transition-all shadow-xs">
-                  <Icon name="lucide:plus" width={14} height={14} />
-                  <span className="text-[11px] font-bold uppercase tracking-tight">Add New Row</span>
+              <div className='bg-gray-50/50 flex items-center justify-between border-t border-gray-1 px-3 py-2'>
+                <div className='flex cursor-pointer items-center gap-1.5 rounded-lg border border-dashed border-accent-primary/50 bg-white px-3 py-1.5 text-accent-primary shadow-xs transition-all hover:bg-accent-soft/10'>
+                  <Icon height={14} name='lucide:plus' width={14} />
+                  <span className='text-[11px] font-bold tracking-tight uppercase'>
+                    Add New Row
+                  </span>
                 </div>
-                <span className="text-[10px] text-gray-4 italic">Auto-save enabled for table rows</span>
+                <span className='text-[10px] text-gray-4 italic'>
+                  Auto-save enabled for table rows
+                </span>
               </div>
             </div>
-          ) : question.type === 'FILE_UPLOAD' || question.type === 'IMAGE_UPLOAD' ? (
-            <div className="space-y-3">
-              <div className={cn(
-                "h-[80px] w-full border border-dashed rounded-xl flex flex-col items-center justify-center gap-2 transition-all duration-300 bg-white group-hover:bg-gray-50/30",
-                isActive ? "border-accent-primary/60 bg-accent-soft/5" : "border-gray-2 bg-gray-50/50 border-dashed group-hover:border-gray-3"
-              )}>
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-50 border border-gray-1 shadow-sm group-hover:bg-white transition-colors">
-                    <Icon name="lucide:file-plus" width={16} height={16} className="text-accent-primary" />
-                    <span className="text-[12px] font-bold text-gray-8">Browse Files</span>
+          ) : question.type === 'FILE_UPLOAD' ||
+            question.type === 'IMAGE_UPLOAD' ? (
+            <div className='space-y-3'>
+              <div
+                className={cn(
+                  'group-hover:bg-gray-50/30 flex h-[80px] w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed bg-white transition-all duration-300',
+                  isActive
+                    ? 'border-accent-primary/60 bg-accent-soft/5'
+                    : 'bg-gray-50/50 border-dashed border-gray-2 group-hover:border-gray-3',
+                )}
+              >
+                <div className='flex items-center gap-3'>
+                  <div className='bg-gray-50 flex items-center gap-2 rounded-lg border border-gray-1 px-3 py-1.5 shadow-sm transition-colors group-hover:bg-white'>
+                    <Icon
+                      className='text-accent-primary'
+                      height={16}
+                      name='lucide:file-plus'
+                      width={16}
+                    />
+                    <span className='text-[12px] font-bold text-gray-8'>
+                      Browse Files
+                    </span>
                   </div>
                   {question.settings.specific.qrCodeEnabled !== false && (
-                    <div className="p-2 rounded-lg bg-gray-50 border border-gray-1 hover:bg-white transition-colors cursor-pointer">
-                      <Icon name="lucide:qr-code" width={16} height={16} className="text-gray-6" />
+                    <div className='bg-gray-50 cursor-pointer rounded-lg border border-gray-1 p-2 transition-colors hover:bg-white'>
+                      <Icon
+                        className='text-gray-6'
+                        height={16}
+                        name='lucide:qr-code'
+                        width={16}
+                      />
                     </div>
                   )}
                 </div>
-                <span className="text-[10px] text-gray-4">Drag and drop or scan to upload</span>
+                <span className='text-[10px] text-gray-4'>
+                  Drag and drop or scan to upload
+                </span>
               </div>
 
-              <div className="space-y-1.5 px-1">
-                <div className="flex items-center justify-between p-2 rounded-lg bg-gray-50/50 border border-gray-1/50 group/file">
-                  <div className="flex items-center gap-2.5 overflow-hidden">
-                    <div className="w-8 h-8 rounded bg-white border border-gray-1 flex items-center justify-center flex-shrink-0">
-                      <Icon name="lucide:file-text" width={14} height={14} className="text-blue-500" />
+              <div className='space-y-1.5 px-1'>
+                <div className='bg-gray-50/50 group/file flex items-center justify-between rounded-lg border border-gray-1/50 p-2'>
+                  <div className='flex items-center gap-2.5 overflow-hidden'>
+                    <div className='flex h-8 w-8 flex-shrink-0 items-center justify-center rounded border border-gray-1 bg-white'>
+                      <Icon
+                        className='text-blue-500'
+                        height={14}
+                        name='lucide:file-text'
+                        width={14}
+                      />
                     </div>
-                    <div className="flex flex-col min-w-0">
-                      <span className="text-[11px] font-bold text-gray-12 truncate uppercase tracking-tight">Invoice_March_2024.pdf</span>
-                      <span className="text-[9px] text-gray-5">2.4 MB • Uploaded</span>
+                    <div className='flex min-w-0 flex-col'>
+                      <span className='truncate text-[11px] font-bold tracking-tight text-gray-12 uppercase'>
+                        Invoice_March_2024.pdf
+                      </span>
+                      <span className='text-[9px] text-gray-5'>
+                        2.4 MB • Uploaded
+                      </span>
                     </div>
                   </div>
-                  <Icon name="lucide:x" width={14} height={14} className="text-gray-3 hover:text-error-main cursor-pointer opacity-0 group-hover/file:opacity-100 transition-opacity" />
+                  <Icon
+                    className='cursor-pointer text-gray-3 opacity-0 transition-opacity group-hover/file:opacity-100 hover:text-error-main'
+                    height={14}
+                    name='lucide:x'
+                    width={14}
+                  />
                 </div>
               </div>
             </div>
           ) : question.type === 'RATING' ? (
-            <div className={cn(
-              "h-11 w-full border rounded-lg flex items-center px-4 transition-colors",
-              isActive ? "border-accent-primary/50 bg-white" : "border-gray-2 bg-white group-hover:border-gray-3"
-            )}>
+            <div
+              className={cn(
+                'flex h-11 w-full items-center rounded-lg border px-4 transition-colors',
+                isActive
+                  ? 'border-accent-primary/50 bg-white'
+                  : 'border-gray-2 bg-white group-hover:border-gray-3',
+              )}
+            >
               <Rating
-                defaultValue={0}
+                color='yellow'
                 count={question.settings.specific.iconCount || 5}
+                defaultValue={0}
+                size='sm'
                 readOnly
-                size="sm"
-                color="yellow"
               />
             </div>
-          ) : question.type === 'DATE' || question.type === 'TIME' || question.type === 'DATE_TIME' ? (
-            <div className={cn(
-              "h-11 w-full border rounded-lg flex items-center justify-between px-4 transition-colors",
-              isActive ? "border-accent-primary/50 bg-white" : "border-gray-2 bg-white group-hover:border-gray-3"
-            )}>
-              <span className="text-[13px] text-gray-8 font-medium">
-                {question.type === 'DATE' ? 'Select Date' : question.type === 'TIME' ? 'Select Time' : 'Select Date & Time'}
+          ) : question.type === 'DATE' ||
+            question.type === 'TIME' ||
+            question.type === 'DATE_TIME' ? (
+            <div
+              className={cn(
+                'flex h-11 w-full items-center justify-between rounded-lg border px-4 transition-colors',
+                isActive
+                  ? 'border-accent-primary/50 bg-white'
+                  : 'border-gray-2 bg-white group-hover:border-gray-3',
+              )}
+            >
+              <span className='text-[13px] font-medium text-gray-8'>
+                {question.type === 'DATE'
+                  ? 'Select Date'
+                  : question.type === 'TIME'
+                    ? 'Select Time'
+                    : 'Select Date & Time'}
               </span>
-              <Icon name={question.type === 'TIME' ? 'lucide:clock' : 'lucide:calendar'} width={16} height={16} className="text-gray-4" />
+              <Icon
+                className='text-gray-4'
+                height={16}
+                width={16}
+                name={
+                  question.type === 'TIME' ? 'lucide:clock' : 'lucide:calendar'
+                }
+              />
             </div>
           ) : question.type === 'DIVIDER' ? (
-            <div className="py-2">
-              <div className={cn(
-                "w-full transition-all duration-300",
-                (question.settings.specific.dividerType === 'DASHED' || !question.settings.specific.dividerType) ? "border-t border-dashed border-gray-3" :
-                  question.settings.specific.dividerType === 'DOTTED' ? "border-t border-dotted border-gray-4" :
-                    question.settings.specific.dividerType === 'DOUBLE' ? "border-t-4 border-double border-gray-3 h-1" :
-                      "border-t border-solid border-gray-3"
-              )} />
+            <div className='py-2'>
+              <div
+                className={cn(
+                  'w-full transition-all duration-300',
+                  question.settings.specific.dividerType === 'DASHED' ||
+                    !question.settings.specific.dividerType
+                    ? 'border-t border-dashed border-gray-3'
+                    : question.settings.specific.dividerType === 'DOTTED'
+                      ? 'border-t border-dotted border-gray-4'
+                      : question.settings.specific.dividerType === 'DOUBLE'
+                        ? 'h-1 border-t-4 border-double border-gray-3'
+                        : 'border-t border-solid border-gray-3',
+                )}
+              />
             </div>
           ) : question.type === 'CURRENCY_AMOUNT' ? (
-            <div className={cn(
-              "h-[46px] w-full border rounded-lg flex overflow-hidden transition-colors font-inter",
-              isActive ? "border-accent-primary/50 bg-white" : "border-gray-2 bg-white group-hover:border-gray-3"
-            )}>
-              <div className="w-[80px] bg-[#f0f8ff] border-r border-gray-1 flex items-center justify-between px-3 cursor-pointer hover:bg-blue-50/50 transition-colors">
-                <span className="text-[13px] font-bold text-gray-12 uppercase">{(question.settings.specific.defaultValue as any)?.currency || 'USD'}</span>
-                <Icon name="lucide:chevron-down" width={12} height={12} className="text-gray-4" />
+            <div
+              className={cn(
+                'flex h-[46px] w-full overflow-hidden rounded-lg border font-inter transition-colors',
+                isActive
+                  ? 'border-accent-primary/50 bg-white'
+                  : 'border-gray-2 bg-white group-hover:border-gray-3',
+              )}
+            >
+              <div className='hover:bg-blue-50/50 flex w-[80px] cursor-pointer items-center justify-between border-r border-gray-1 bg-[#f0f8ff] px-3 transition-colors'>
+                <span className='text-[13px] font-bold text-gray-12 uppercase'>
+                  {(question.settings.specific.defaultValue as any)?.currency ||
+                    'USD'}
+                </span>
+                <Icon
+                  className='text-gray-4'
+                  height={12}
+                  name='lucide:chevron-down'
+                  width={12}
+                />
               </div>
-              <div className="flex-1 px-4 flex items-center text-[13px] text-gray-12 font-medium">
-                {(question.settings.specific.defaultValue as any)?.amount || '0.00'}
+              <div className='flex flex-1 items-center px-4 text-[13px] font-medium text-gray-12'>
+                {(question.settings.specific.defaultValue as any)?.amount ||
+                  '0.00'}
               </div>
             </div>
           ) : question.type === 'COUNTRY_CODE' ? (
-            <div className={cn(
-              "h-11 w-full border rounded-lg flex items-center transition-colors font-inter overflow-hidden bg-white",
-              isActive ? "border-accent-primary/50" : "border-gray-2 group-hover:border-gray-3"
-            )}>
-              <div className="flex items-center gap-2 px-3 py-2 bg-gray-50/50 border-r border-gray-1">
-                <div className="w-5 h-3.5 rounded-sm bg-gray-2 border border-gray-3 flex-shrink-0" />
-                <span className="text-[13px] font-bold text-gray-8">+1</span>
-                <Icon name="lucide:chevron-down" width={12} height={12} className="text-gray-4 ml-1" />
+            <div
+              className={cn(
+                'flex h-11 w-full items-center overflow-hidden rounded-lg border bg-white font-inter transition-colors',
+                isActive
+                  ? 'border-accent-primary/50'
+                  : 'border-gray-2 group-hover:border-gray-3',
+              )}
+            >
+              <div className='bg-gray-50/50 flex items-center gap-2 border-r border-gray-1 px-3 py-2'>
+                <div className='h-3.5 w-5 flex-shrink-0 rounded-sm border border-gray-3 bg-gray-2' />
+                <span className='text-[13px] font-bold text-gray-8'>+1</span>
+                <Icon
+                  className='ml-1 text-gray-4'
+                  height={12}
+                  name='lucide:chevron-down'
+                  width={12}
+                />
               </div>
-              <span className="px-3 text-[13px] text-gray-4 italic">Search country...</span>
+              <span className='px-3 text-[13px] text-gray-4 italic'>
+                Search country...
+              </span>
             </div>
           ) : question.type === 'CALCULATED' ? (
-            <div className={cn(
-              "h-11 w-full border rounded-lg flex items-center justify-between px-4 transition-colors font-inter bg-gray-50/50",
-              isActive ? "border-accent-primary/50" : "border-gray-2 group-hover:border-gray-3"
-            )}>
-              <span className="text-[13px] text-gray-8 font-medium italic">Auto-calculated result</span>
-              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-amber-50 border border-amber-200/50">
-                <Icon name="lucide:calculator" width={12} height={12} className="text-amber-600" />
-                <span className="text-[10px] font-bold text-amber-700 uppercase tracking-tight">fx</span>
+            <div
+              className={cn(
+                'bg-gray-50/50 flex h-11 w-full items-center justify-between rounded-lg border px-4 font-inter transition-colors',
+                isActive
+                  ? 'border-accent-primary/50'
+                  : 'border-gray-2 group-hover:border-gray-3',
+              )}
+            >
+              <span className='text-[13px] font-medium text-gray-8 italic'>
+                Auto-calculated result
+              </span>
+              <div className='bg-amber-50 border-amber-200/50 flex items-center gap-1.5 rounded border px-2 py-0.5'>
+                <Icon
+                  className='text-amber-600'
+                  height={12}
+                  name='lucide:calculator'
+                  width={12}
+                />
+                <span className='text-amber-700 text-[10px] font-bold tracking-tight uppercase'>
+                  fx
+                </span>
               </div>
             </div>
           ) : question.type === 'COUNTER' ? (
-            <div className={cn(
-              "h-11 w-full border rounded-lg flex overflow-hidden transition-colors",
-              isActive ? "border-accent-primary/50 bg-white" : "border-gray-2 bg-white group-hover:border-gray-3"
-            )}>
-              <div className="flex-1 px-4 flex items-center text-[13px] text-gray-12 font-medium">
+            <div
+              className={cn(
+                'flex h-11 w-full overflow-hidden rounded-lg border transition-colors',
+                isActive
+                  ? 'border-accent-primary/50 bg-white'
+                  : 'border-gray-2 bg-white group-hover:border-gray-3',
+              )}
+            >
+              <div className='flex flex-1 items-center px-4 text-[13px] font-medium text-gray-12'>
                 {question.settings.specific.defaultValue || '0'}
               </div>
-              <div className="w-10 border-l border-gray-1 flex flex-col bg-gray-50/30">
-                <div className="flex-1 flex items-center justify-center hover:bg-gray-1 transition-colors cursor-pointer">
-                  <Icon name="lucide:chevron-up" width={14} height={14} className="text-gray-5" />
+              <div className='bg-gray-50/30 flex w-10 flex-col border-l border-gray-1'>
+                <div className='flex flex-1 cursor-pointer items-center justify-center transition-colors hover:bg-gray-1'>
+                  <Icon
+                    className='text-gray-5'
+                    height={14}
+                    name='lucide:chevron-up'
+                    width={14}
+                  />
                 </div>
-                <div className="h-px w-full bg-gray-1" />
-                <div className="flex-1 flex items-center justify-center hover:bg-gray-1 transition-colors cursor-pointer">
-                  <Icon name="lucide:chevron-down" width={14} height={14} className="text-gray-5" />
+                <div className='h-px w-full bg-gray-1' />
+                <div className='flex flex-1 cursor-pointer items-center justify-center transition-colors hover:bg-gray-1'>
+                  <Icon
+                    className='text-gray-5'
+                    height={14}
+                    name='lucide:chevron-down'
+                    width={14}
+                  />
                 </div>
               </div>
             </div>
-          ) : question.type === 'SINGLE_CHOICE' || question.type === 'MULTIPLE_CHOICE' ? (
-            <div className="space-y-2">
-              {[1, 2].map(i => (
-                <div key={i} className={cn(
-                  "h-9 w-full border rounded-lg flex items-center px-3 gap-3 transition-colors",
-                  isActive ? "border-accent-primary/50 bg-white" : "border-gray-2 bg-white group-hover:border-gray-3"
-                )}>
-                  <div className={cn("size-4 border border-gray-3", question.type === 'SINGLE_CHOICE' ? 'rounded-full' : 'rounded-md')} />
-                  <span className="text-[12px] text-gray-8">Option {i}</span>
+          ) : question.type === 'SINGLE_CHOICE' ||
+            question.type === 'MULTIPLE_CHOICE' ? (
+            <div className='space-y-2'>
+              {[1, 2].map((i) => (
+                <div
+                  key={i}
+                  className={cn(
+                    'flex h-9 w-full items-center gap-3 rounded-lg border px-3 transition-colors',
+                    isActive
+                      ? 'border-accent-primary/50 bg-white'
+                      : 'border-gray-2 bg-white group-hover:border-gray-3',
+                  )}
+                >
+                  <div
+                    className={cn(
+                      'size-4 border border-gray-3',
+                      question.type === 'SINGLE_CHOICE'
+                        ? 'rounded-full'
+                        : 'rounded-md',
+                    )}
+                  />
+                  <span className='text-[12px] text-gray-8'>Option {i}</span>
                 </div>
               ))}
             </div>
           ) : (question.type as string) === 'MATRIX' ? (
-            <div className="w-full overflow-x-auto rounded-xl border border-gray-1 bg-white/50 backdrop-blur-sm shadow-sm">
-              <table className="w-full text-left border-collapse min-w-[400px]">
+            <div className='w-full overflow-x-auto rounded-xl border border-gray-1 bg-white/50 shadow-sm backdrop-blur-sm'>
+              <table className='w-full min-w-[400px] border-collapse text-left'>
                 <thead>
-                  <tr className="bg-gray-50/50 border-b border-gray-1">
-                    <th className="p-3 text-[10px] font-bold text-gray-4 uppercase tracking-wider w-[30%]">Rows</th>
+                  <tr className='bg-gray-50/50 border-b border-gray-1'>
+                    <th className='w-[30%] p-3 text-[10px] font-bold tracking-wider text-gray-4 uppercase'>
+                      Rows
+                    </th>
                     {['Option A', 'Option B', 'Option C'].map((col) => (
-                      <th key={col} className="p-3 text-[10px] font-bold text-gray-11 uppercase text-center tracking-wider">{col}</th>
+                      <th
+                        className='p-3 text-center text-[10px] font-bold tracking-wider text-gray-11 uppercase'
+                        key={col}
+                      >
+                        {col}
+                      </th>
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-1">
+                <tbody className='divide-y divide-gray-1'>
                   {['Row 1', 'Row 2', 'Row 3'].map((row) => (
-                    <tr key={row} className="hover:bg-accent-soft/5 transition-colors group/row">
-                      <td className="p-3 text-[12px] font-semibold text-gray-13">{row}</td>
+                    <tr
+                      className='group/row transition-colors hover:bg-accent-soft/5'
+                      key={row}
+                    >
+                      <td className='p-3 text-[12px] font-semibold text-gray-13'>
+                        {row}
+                      </td>
                       {[1, 2, 3].map((col) => (
-                        <td key={col} className="p-3 text-center">
-                          <div className={cn(
-                            "mx-auto w-4 h-4 rounded-full border-2 transition-all duration-300 flex items-center justify-center",
-                            col === 2 ? "bg-accent-primary border-accent-primary scale-110 shadow-sm" : "border-gray-2 group-hover/row:border-gray-3 bg-white"
-                          )}>
-                            {col === 2 && <div className="w-1.5 h-1.5 rounded-full bg-white animate-in zoom-in-50" />}
+                        <td className='p-3 text-center' key={col}>
+                          <div
+                            className={cn(
+                              'mx-auto flex h-4 w-4 items-center justify-center rounded-full border-2 transition-all duration-300',
+                              col === 2
+                                ? 'scale-110 border-accent-primary bg-accent-primary shadow-sm'
+                                : 'border-gray-2 bg-white group-hover/row:border-gray-3',
+                            )}
+                          >
+                            {col === 2 && (
+                              <div className='animate-in zoom-in-50 h-1.5 w-1.5 rounded-full bg-white' />
+                            )}
                           </div>
                         </td>
                       ))}
@@ -493,83 +773,156 @@ const QuestionCard = ({ question, isActive, onSelect, onUpdate, onDelete, dragLi
               </table>
             </div>
           ) : (question.type as string) === 'YES_NO_TOGGLE' ? (
-            <div className="w-full max-w-[280px] p-1 bg-gray-50 rounded-xl border border-gray-1 flex gap-1 shadow-inner">
-              <div className="flex-1 py-1.5 px-3 bg-white rounded-lg shadow-sm border border-gray-2 flex items-center justify-center gap-2 group/yes cursor-pointer transition-all hover:border-accent-soft/50 active:scale-[0.98]">
-                <div className="w-3.5 h-3.5 rounded-full border-2 border-accent-primary flex items-center justify-center">
-                  <div className="w-1.5 h-1.5 rounded-full bg-accent-primary animate-pulse" />
+            <div className='bg-gray-50 flex w-full max-w-[280px] gap-1 rounded-xl border border-gray-1 p-1 shadow-inner'>
+              <div className='group/yes flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg border border-gray-2 bg-white px-3 py-1.5 shadow-sm transition-all hover:border-accent-soft/50 active:scale-[0.98]'>
+                <div className='flex h-3.5 w-3.5 items-center justify-center rounded-full border-2 border-accent-primary'>
+                  <div className='h-1.5 w-1.5 animate-pulse rounded-full bg-accent-primary' />
                 </div>
-                <span className="text-[12px] font-bold text-accent-primary">Yes</span>
+                <span className='text-[12px] font-bold text-accent-primary'>
+                  Yes
+                </span>
               </div>
-              <div className="flex-1 py-1.5 px-3 text-gray-4 font-bold text-[12px] rounded-lg flex items-center justify-center gap-2 hover:bg-gray-100 transition-all cursor-pointer">
-                <div className="w-3.5 h-3.5 rounded-full border-2 border-gray-3" />
+              <div className='hover:bg-gray-100 flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg px-3 py-1.5 text-[12px] font-bold text-gray-4 transition-all'>
+                <div className='h-3.5 w-3.5 rounded-full border-2 border-gray-3' />
                 <span>No</span>
               </div>
             </div>
           ) : (question.type as string) === 'FULL_NAME' ? (
-            <div className="grid grid-cols-2 gap-3 w-full">
-              <div className="flex flex-col gap-1.5">
-                <span className="text-[10px] font-bold text-gray-4 uppercase px-1">First Name</span>
-                <div className="h-10 px-3 bg-white border border-gray-2 rounded-lg flex items-center text-[13px] text-gray-4">e.g. John</div>
+            <div className='grid w-full grid-cols-2 gap-3'>
+              <div className='flex flex-col gap-1.5'>
+                <span className='px-1 text-[10px] font-bold text-gray-4 uppercase'>
+                  First Name
+                </span>
+                <div className='flex h-10 items-center rounded-lg border border-gray-2 bg-white px-3 text-[13px] text-gray-4'>
+                  e.g. John
+                </div>
               </div>
-              <div className="flex flex-col gap-1.5">
-                <span className="text-[10px] font-bold text-gray-4 uppercase px-1">Last Name</span>
-                <div className="h-10 px-3 bg-white border border-gray-2 rounded-lg flex items-center text-[13px] text-gray-4">e.g. Doe</div>
+              <div className='flex flex-col gap-1.5'>
+                <span className='px-1 text-[10px] font-bold text-gray-4 uppercase'>
+                  Last Name
+                </span>
+                <div className='flex h-10 items-center rounded-lg border border-gray-2 bg-white px-3 text-[13px] text-gray-4'>
+                  e.g. Doe
+                </div>
               </div>
             </div>
           ) : (question.type as string) === 'EMAIL' ? (
-            <div className={cn(
-              "h-11 w-full border rounded-lg flex items-center px-4 gap-3 transition-colors",
-              isActive ? "border-accent-primary/50 bg-white" : "border-gray-2 bg-white group-hover:border-gray-3"
-            )}>
-              <Icon name="lucide:mail" width={16} height={16} className="text-gray-4" />
-              <span className="text-[13px] text-gray-4 italic">john.doe@example.com</span>
+            <div
+              className={cn(
+                'flex h-11 w-full items-center gap-3 rounded-lg border px-4 transition-colors',
+                isActive
+                  ? 'border-accent-primary/50 bg-white'
+                  : 'border-gray-2 bg-white group-hover:border-gray-3',
+              )}
+            >
+              <Icon
+                className='text-gray-4'
+                height={16}
+                name='lucide:mail'
+                width={16}
+              />
+              <span className='text-[13px] text-gray-4 italic'>
+                john.doe@example.com
+              </span>
             </div>
           ) : (question.type as string) === 'PHONE_NUMBER' ? (
-            <div className={cn(
-              "h-11 w-full border rounded-lg flex items-center px-4 gap-3 transition-colors",
-              isActive ? "border-accent-primary/50 bg-white" : "border-gray-2 bg-white group-hover:border-gray-3"
-            )}>
-              <Icon name="lucide:phone" width={16} height={16} className="text-gray-4" />
-              <span className="text-[13px] text-gray-4 italic">+1 (555) 000-0000</span>
+            <div
+              className={cn(
+                'flex h-11 w-full items-center gap-3 rounded-lg border px-4 transition-colors',
+                isActive
+                  ? 'border-accent-primary/50 bg-white'
+                  : 'border-gray-2 bg-white group-hover:border-gray-3',
+              )}
+            >
+              <Icon
+                className='text-gray-4'
+                height={16}
+                name='lucide:phone'
+                width={16}
+              />
+              <span className='text-[13px] text-gray-4 italic'>
+                +1 (555) 000-0000
+              </span>
             </div>
           ) : (question.type as string) === 'URL' ? (
-            <div className={cn(
-              "h-11 w-full border rounded-lg flex items-center px-4 gap-3 transition-colors",
-              isActive ? "border-accent-primary/50 bg-white" : "border-gray-2 bg-white group-hover:border-gray-3"
-            )}>
-              <Icon name="lucide:link" width={16} height={16} className="text-gray-4" />
-              <span className="text-[13px] text-gray-4 italic">https://example.com</span>
+            <div
+              className={cn(
+                'flex h-11 w-full items-center gap-3 rounded-lg border px-4 transition-colors',
+                isActive
+                  ? 'border-accent-primary/50 bg-white'
+                  : 'border-gray-2 bg-white group-hover:border-gray-3',
+              )}
+            >
+              <Icon
+                className='text-gray-4'
+                height={16}
+                name='lucide:link'
+                width={16}
+              />
+              <span className='text-[13px] text-gray-4 italic'>
+                https://example.com
+              </span>
             </div>
           ) : (question.type as string) === 'SCORE' ? (
-            <div className="w-full h-16 bg-accent-soft/5 rounded-2xl border border-dashed border-accent-soft/30 flex items-center px-6 justify-between overflow-hidden relative">
-              <div className="flex flex-col">
-                <span className="text-[10px] font-bold text-accent-primary uppercase tracking-wider">Current Score</span>
-                <span className="text-2xl font-black text-accent-primary tracking-tight">85<span className="text-sm font-medium opacity-50 ml-0.5">/100</span></span>
+            <div className='relative flex h-16 w-full items-center justify-between overflow-hidden rounded-2xl border border-dashed border-accent-soft/30 bg-accent-soft/5 px-6'>
+              <div className='flex flex-col'>
+                <span className='text-[10px] font-bold tracking-wider text-accent-primary uppercase'>
+                  Current Score
+                </span>
+                <span className='text-2xl font-black tracking-tight text-accent-primary'>
+                  85
+                  <span className='ml-0.5 text-sm font-medium opacity-50'>
+                    /100
+                  </span>
+                </span>
               </div>
-              <div className="w-12 h-12 rounded-full border-4 border-accent-primary/20 border-t-accent-primary animate-spin" />
+              <div className='h-12 w-12 animate-spin rounded-full border-4 border-accent-primary/20 border-t-accent-primary' />
             </div>
           ) : (question.type as string) === 'FILL_IN_THE_BLANKS' ? (
-            <div className="w-full p-4 bg-gray-50/50 rounded-xl border border-gray-1 text-[13px] leading-relaxed text-gray-12 font-medium">
-              The quick brown <span className="inline-block px-3 py-1 bg-white border border-gray-2 rounded-md mx-1 shadow-sm text-accent-primary font-bold">fox</span> jumps over the <span className="inline-block px-3 py-1 bg-white border border-gray-2 rounded-md mx-1 shadow-sm text-gray-4 italic font-normal">lazy dog</span>.
+            <div className='bg-gray-50/50 w-full rounded-xl border border-gray-1 p-4 text-[13px] leading-relaxed font-medium text-gray-12'>
+              The quick brown{' '}
+              <span className='mx-1 inline-block rounded-md border border-gray-2 bg-white px-3 py-1 font-bold text-accent-primary shadow-sm'>
+                fox
+              </span>{' '}
+              jumps over the{' '}
+              <span className='mx-1 inline-block rounded-md border border-gray-2 bg-white px-3 py-1 font-normal text-gray-4 italic shadow-sm'>
+                lazy dog
+              </span>
+              .
             </div>
           ) : (question.type as string) === 'HEADING' ? (
-            <div className="w-full pt-2 pb-1">
-              <h2 className="text-xl font-black text-gray-12 tracking-tight border-b-2 border-gray-1 pb-1 inline-block pr-4">Section Heading</h2>
+            <div className='w-full pt-2 pb-1'>
+              <h2 className='inline-block border-b-2 border-gray-1 pr-4 pb-1 text-xl font-black tracking-tight text-gray-12'>
+                Section Heading
+              </h2>
             </div>
           ) : (question.type as string) === 'LABEL' ? (
-            <div className="w-full py-1">
-              <div className="flex items-start gap-2 text-gray-11 text-[12px] leading-relaxed bg-blue-50/30 p-3 rounded-lg border border-blue-50">
-                <Icon name="lucide:info" width={14} height={14} className="mt-0.5 text-blue-500 shrink-0" />
-                <p>This is an informational label or instruction block that provides guidance without requiring input.</p>
+            <div className='w-full py-1'>
+              <div className='bg-blue-50/30 border-blue-50 flex items-start gap-2 rounded-lg border p-3 text-[12px] leading-relaxed text-gray-11'>
+                <Icon
+                  className='text-blue-500 mt-0.5 shrink-0'
+                  height={14}
+                  name='lucide:info'
+                  width={14}
+                />
+                <p>
+                  This is an informational label or instruction block that
+                  provides guidance without requiring input.
+                </p>
               </div>
             </div>
           ) : (
-            <div className={cn(
-              "h-11 w-full border rounded-lg flex items-center px-4 transition-colors",
-              isActive ? "border-accent-primary/50 bg-white" : "border-gray-2 bg-white group-hover:border-gray-3"
-            )}>
-              <span className="text-[13px] text-gray-8 font-medium truncate">
-                {question.settings.general.placeholder || `Enter ${question.label || 'value'}...`}
+            <div
+              className={cn(
+                'flex h-11 w-full items-center rounded-lg border px-4 transition-colors',
+                isActive
+                  ? 'border-accent-primary/50 bg-white'
+                  : 'border-gray-2 bg-white group-hover:border-gray-3',
+              )}
+            >
+              <span className='truncate text-[13px] font-medium text-gray-8'>
+                {question.settings.general.placeholder ||
+                  `Enter ${question.label || 'value'}...`}
               </span>
             </div>
           )}
@@ -577,8 +930,8 @@ const QuestionCard = ({ question, isActive, onSelect, onUpdate, onDelete, dragLi
       </div>
 
       {/* Bottom Width Toolbar (Hover Only) */}
-      <div className="absolute -bottom-[18px] left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 z-50 pointer-events-none group-hover:pointer-events-auto">
-        <div className="flex items-center gap-1 bg-white border border-gray-2 shadow-sm rounded-full p-1 animate-in slide-in-from-top-4">
+      <div className='pointer-events-none absolute -bottom-[18px] left-1/2 z-50 -translate-x-1/2 opacity-0 transition-all duration-300 group-hover:pointer-events-auto group-hover:opacity-100'>
+        <div className='animate-in slide-in-from-top-4 flex items-center gap-1 rounded-full border border-gray-2 bg-white p-1 shadow-sm'>
           {[
             { label: '1/3', value: 'col-4' },
             { label: '1/2', value: 'col-6' },
@@ -586,16 +939,24 @@ const QuestionCard = ({ question, isActive, onSelect, onUpdate, onDelete, dragLi
           ].map((w) => (
             <button
               key={w.value}
+              className={cn(
+                'rounded-full px-2 py-0.5 text-[9px] font-bold tracking-wide transition-all',
+                question.settings.general.size === w.value
+                  ? 'bg-accent-soft/20 text-accent-primary'
+                  : 'text-gray-5 hover:bg-gray-1',
+              )}
               onClick={(e) => {
                 e.stopPropagation()
-                onUpdate({ settings: { ...question.settings, general: { ...question.settings.general, size: w.value as any } } })
+                onUpdate({
+                  settings: {
+                    ...question.settings,
+                    general: {
+                      ...question.settings.general,
+                      size: w.value as any,
+                    },
+                  },
+                })
               }}
-              className={cn(
-                "px-2 py-0.5 rounded-full text-[9px] font-bold transition-all tracking-wide",
-                question.settings.general.size === w.value
-                  ? "bg-accent-soft/20 text-accent-primary"
-                  : "text-gray-5 hover:bg-gray-1"
-              )}
             >
               {w.label}
             </button>

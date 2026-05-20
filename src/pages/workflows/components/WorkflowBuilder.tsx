@@ -1,3 +1,5 @@
+import { useQuery } from '@tanstack/react-query'
+import { useParams } from '@tanstack/react-router'
 import {
   addEdge,
   Background,
@@ -11,9 +13,10 @@ import {
   useEdgesState,
   useNodesState,
 } from '@xyflow/react'
+import '@xyflow/react/dist/style.css'
 import { useCallback, useState } from 'react'
 import { useEffect } from 'react'
-import '@xyflow/react/dist/style.css'
+import { getWorkflowQueryOptions } from '@/api/workflow/queries'
 import useWorkflowStore from '../stores/useWorkflowStore'
 import { generateId } from '../utils/generateId'
 import AddNodeMenu from './AddNodeMenu'
@@ -22,10 +25,6 @@ import BuilderHeader from './header/BuilderHeader'
 import CustomNode from './nodes/CustomNode'
 import PropertiesPanel from './PropertiesPanel'
 import { WorkflowSettings } from './WorkflowSettings'
-
-import { useParams } from '@tanstack/react-router'
-import { useQuery } from '@tanstack/react-query'
-import { getWorkflowQueryOptions } from '@/api/workflow/queries'
 
 const nodeTypes = {
   custom: CustomNode,
@@ -74,11 +73,7 @@ const initialEdges: Edge[] = [
   },
 ]
 
-const WorkflowBuilderCanvas = ({
-  workflowId,
-}: {
-  workflowId: string
-}) => {
+const WorkflowBuilderCanvas = ({ workflowId }: { workflowId: string }) => {
   const isNew = workflowId === 'new'
 
   const { data } = useQuery({
@@ -102,14 +97,14 @@ const WorkflowBuilderCanvas = ({
   const {
     closePanel,
     isPanelOpen,
-    loadLegacyWorkflow,
     loadedEdges,
     loadedNodes,
+    loadLegacyWorkflow,
+    resetWorkflow,
     selectedEdge,
     selectEdge,
     selectedNode,
     selectNode,
-    resetWorkflow,
   } = useWorkflowStore((state) => state)
 
   // Reset store when workflowId changes (handled by key reset but good for global store)
@@ -411,4 +406,3 @@ const WorkflowBuilder = () => {
 
 WorkflowBuilder.displayName = 'WorkflowBuilder'
 export default WorkflowBuilder
-

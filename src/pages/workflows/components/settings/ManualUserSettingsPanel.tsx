@@ -79,7 +79,11 @@ export default function ManualUserSettingsPanel({
 
   // Resolve placeholders (e.g., "User 7") to actual names/emails once options are loaded
   useEffect(() => {
-    if (userOptions.length > 0 && Array.isArray(selectedUsers) && selectedUsers.length > 0) {
+    if (
+      userOptions.length > 0 &&
+      Array.isArray(selectedUsers) &&
+      selectedUsers.length > 0
+    ) {
       let needsUpdate = false
       const updated = selectedUsers.map((u) => {
         const found = userOptions.find((opt) => String(opt.id) === String(u.id))
@@ -97,7 +101,11 @@ export default function ManualUserSettingsPanel({
   }, [userOptions, selectedUsers])
 
   useEffect(() => {
-    if (groupOptions.length > 0 && Array.isArray(selectedGroups) && selectedGroups.length > 0) {
+    if (
+      groupOptions.length > 0 &&
+      Array.isArray(selectedGroups) &&
+      selectedGroups.length > 0
+    ) {
       let needsUpdate = false
       const updated = selectedGroups.map((g) => {
         const found = groupOptions.find(
@@ -130,7 +138,10 @@ export default function ManualUserSettingsPanel({
       JSON.stringify(nodeData.selectedUsers) !== JSON.stringify(selectedUsers)
     ) {
       setSelectedUsers(nodeData.selectedUsers)
-    } else if (nodeData.selectedUsers && !Array.isArray(nodeData.selectedUsers)) {
+    } else if (
+      nodeData.selectedUsers &&
+      !Array.isArray(nodeData.selectedUsers)
+    ) {
       setSelectedUsers([])
     }
 
@@ -146,7 +157,10 @@ export default function ManualUserSettingsPanel({
       JSON.stringify(nodeData.selectedGroups) !== JSON.stringify(selectedGroups)
     ) {
       setSelectedGroups(nodeData.selectedGroups)
-    } else if (nodeData.selectedGroups && !Array.isArray(nodeData.selectedGroups)) {
+    } else if (
+      nodeData.selectedGroups &&
+      !Array.isArray(nodeData.selectedGroups)
+    ) {
       setSelectedGroups([])
     }
   }, [

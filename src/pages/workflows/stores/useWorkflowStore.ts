@@ -25,8 +25,8 @@ type Store = {
   selectedEdge: Edge | null
   selectedNode: Node | null
   workflowDescription: string
-  workflowName: string
   workflowId: number | null
+  workflowName: string
   workflowStatus: 'draft' | 'published'
   closeAddMenu: () => void
   closeBuilder: () => void
@@ -36,6 +36,7 @@ type Store = {
   openAddMenu: (position: { x: number; y: number }, edgeId: string) => void
   openChangeMenu: (position: { x: number; y: number }, nodeId: string) => void
   openSettings: () => void
+  resetWorkflow: () => void
   selectEdge: (edge: Edge | null) => void
   selectNode: (node: Node | null) => void
   setActiveEdge: (edgeId: string | null) => void
@@ -52,7 +53,6 @@ type Store = {
   setWorkflowStatus: (status: 'draft' | 'published') => void
   startTestRun: () => void
   stopTestRun: () => void
-  resetWorkflow: () => void
 }
 
 const useWorkflowStore = create<Store>()((set) => ({
@@ -153,34 +153,6 @@ const useWorkflowStore = create<Store>()((set) => ({
       selectedEdge: null,
       selectedNode: null,
     }),
-  selectEdge: (edge) =>
-    set({
-      isPanelOpen: !!edge,
-      isSettingsOpen: false,
-      selectedEdge: edge,
-      selectedNode: null,
-    }),
-  selectNode: (node) =>
-    set({
-      isPanelOpen: !!node,
-      isSettingsOpen: false,
-      selectedEdge: null,
-      selectedNode: node,
-    }),
-  startTestRun: () => set({ isRunningTest: true }),
-  stopTestRun: () =>
-    set({ activeEdgeId: null, activeNodeId: null, isRunningTest: false }),
-  setActiveEdge: (edgeId) => set({ activeEdgeId: edgeId }),
-  setActiveNode: (nodeId) => set({ activeNodeId: nodeId }),
-  setFolder: (value) => set({ folder: value }),
-  setForm: (value) => set({ form: value }),
-  setInitiateUsing: (value) => set({ initiateUsing: value }),
-  setPrefixSegments: (segments) => set({ prefixSegments: segments }),
-  setWorkflowDescription: (description) =>
-    set({ workflowDescription: description }),
-  setWorkflowId: (workflowId) => set({ workflowId }),
-  setWorkflowName: (name) => set({ workflowName: name }),
-  setWorkflowStatus: (status) => set({ workflowStatus: status }),
   resetWorkflow: () =>
     set({
       folder: null,
@@ -211,6 +183,34 @@ const useWorkflowStore = create<Store>()((set) => ({
         .replace(/\//g, '-')}`,
       workflowStatus: 'draft',
     }),
+  selectEdge: (edge) =>
+    set({
+      isPanelOpen: !!edge,
+      isSettingsOpen: false,
+      selectedEdge: edge,
+      selectedNode: null,
+    }),
+  selectNode: (node) =>
+    set({
+      isPanelOpen: !!node,
+      isSettingsOpen: false,
+      selectedEdge: null,
+      selectedNode: node,
+    }),
+  startTestRun: () => set({ isRunningTest: true }),
+  stopTestRun: () =>
+    set({ activeEdgeId: null, activeNodeId: null, isRunningTest: false }),
+  setActiveEdge: (edgeId) => set({ activeEdgeId: edgeId }),
+  setActiveNode: (nodeId) => set({ activeNodeId: nodeId }),
+  setFolder: (value) => set({ folder: value }),
+  setForm: (value) => set({ form: value }),
+  setInitiateUsing: (value) => set({ initiateUsing: value }),
+  setPrefixSegments: (segments) => set({ prefixSegments: segments }),
+  setWorkflowDescription: (description) =>
+    set({ workflowDescription: description }),
+  setWorkflowId: (workflowId) => set({ workflowId }),
+  setWorkflowName: (name) => set({ workflowName: name }),
+  setWorkflowStatus: (status) => set({ workflowStatus: status }),
 }))
 
 export default useWorkflowStore

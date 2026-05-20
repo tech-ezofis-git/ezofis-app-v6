@@ -3,20 +3,20 @@ import IconButton from './IconButton'
 
 interface Props {
   className?: string
-  onClick: () => void
   size?: ButtonSize
+  onClick: () => void
 }
 
-const CloseButton = ({ className, onClick, size = 'md' }: Props) => {
+const CloseButton = ({ className, size = 'md', onClick }: Props) => {
   return (
     <IconButton
       ariaLabel='Close'
       className={className}
       color='gray'
       icon='lucide:x'
+      size={size}
       variant='ghost'
       onClick={onClick}
-      size={size}
     />
   )
 }

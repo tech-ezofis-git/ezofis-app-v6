@@ -57,7 +57,7 @@ function flattenRows(groups: any[]): any[] {
     }
   }
 
-    ; (groups || []).forEach(walk)
+  ;(groups || []).forEach(walk)
   return out
 }
 
@@ -169,6 +169,56 @@ const InboxList: React.FC<InboxListProps> = ({
       .filter((group: any) => !group.items || group.items.length > 0)
   }, [data, searchState, filteredFlatRows])
 
+  // Inject processing processes from store
+  const processingProcesses = requestStore((state) => state.processingProcesses)
+
+  const finalData = useMemo(() => {
+    if (
+      activeTab !== 'Inbox' ||
+      !processingProcesses ||
+      processingProcesses.length === 0
+    ) {
+      return filteredData
+    }
+
+    const existingIds = new Set()
+    const outData = (filteredData || []).map((g) => {
+      g.items?.forEach((i: any) => existingIds.add(String(i.processId || i.id)))
+      return { ...g, items: [...(g.items || [])] }
+    })
+
+    const newProcessingItems = processingProcesses
+      .filter((p) => !existingIds.has(String(p.processId || p.id)))
+      .map((p) => ({
+        _groupKey: 'root',
+        documentNumber: p.requestNo || p.name || 'Processing...',
+        id: p.processId || p.id,
+        isProcessing: true,
+        processId: p.processId || p.id,
+        raisedAt: new Date().toISOString(),
+        stage: p.stage || 'Start',
+        status: 'Progressing',
+      }))
+
+    if (newProcessingItems.length > 0) {
+      const rootGroup = outData.find((g) => g.groupId === 'root')
+      if (rootGroup) {
+        rootGroup.items.unshift(...newProcessingItems)
+        rootGroup.groupCount = rootGroup.items.length
+      } else {
+        outData.unshift({
+          groupCount: newProcessingItems.length,
+          groupId: 'root',
+          groupKey: 'root',
+          groupValue: 'root',
+          items: newProcessingItems,
+        })
+      }
+    }
+
+    return outData
+  }, [filteredData, processingProcesses, activeTab])
+
   // ✅ Handle default expansion: Expand ALL groups when data or grouping changes
   // ✅ Handle default expansion: Default to COLLAPSED
   React.useEffect(() => {
@@ -180,7 +230,7 @@ const InboxList: React.FC<InboxListProps> = ({
   const { table } = useDataTable({
     columns,
     enableRowSelection: false,
-    rows: (filteredData || []) as any,
+    rows: (finalData || []) as any,
 
     state: {
       expandState,
@@ -200,7 +250,7 @@ const InboxList: React.FC<InboxListProps> = ({
   }
   return (
     <>
-      <div className='bg-primary flex flex-1 min-h-0 flex-col overflow-hidden px-6 py-2 md:px-6'>
+      <div className='bg-primary flex min-h-0 flex-1 flex-col overflow-hidden px-6 py-2 md:px-6'>
         <div className='relative flex min-h-0 w-full flex-1 flex-col'>
           <div className='flex h-full w-full gap-3'>
             {/* Left */}
@@ -232,7 +282,7 @@ const InboxList: React.FC<InboxListProps> = ({
             {!selectedItem && viewMode === 'grid' && (
               <div className='h-full min-w-0 flex-1 overflow-hidden'>
                 <GridView
-                  data={filteredData} // ✅ Use filtered data
+                  data={finalData} // ✅ Use final data
                   hideGrouping={activeTab !== 'Inbox'}
                   isLoading={isLoading}
                   isReloading={isRefetching}

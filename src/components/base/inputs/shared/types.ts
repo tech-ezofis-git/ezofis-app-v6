@@ -8,7 +8,6 @@ export interface InputProps {
   classNames?: Partial<
     Record<'input' | 'label' | 'description' | 'error' | 'wrapper', string>
   >
-  styles?: any
   clearable?: boolean
   description?: string
   disabled?: boolean
@@ -18,6 +17,7 @@ export interface InputProps {
   placeholder?: string
   readOnly?: boolean
   required?: boolean
+  styles?: any
   tooltip?: string
   tooltipWidth?: number
 }

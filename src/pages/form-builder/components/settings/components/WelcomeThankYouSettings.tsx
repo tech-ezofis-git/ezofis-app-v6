@@ -1,11 +1,4 @@
-import {
-  Box,
-  Group,
-  Stack,
-  Switch,
-  Textarea,
-  TextInput,
-} from '@mantine/core'
+import { Box, Group, Stack, Switch, Textarea, TextInput } from '@mantine/core'
 import Icon from '@/components/base/icon/Icon'
 import { useFormStore } from '@/pages/form-builder/store/formStore'
 

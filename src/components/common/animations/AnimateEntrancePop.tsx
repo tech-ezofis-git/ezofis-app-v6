@@ -1,5 +1,4 @@
 import { type HTMLMotionProps, motion } from 'motion/react'
-
 import cn from '@/utils/cn'
 
 interface Props extends HTMLMotionProps<'div'> {

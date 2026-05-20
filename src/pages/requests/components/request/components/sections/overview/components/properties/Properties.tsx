@@ -1,21 +1,21 @@
 import Badge from '@/components/base/Badge'
 import Title from '@/components/base/Title'
+import { formatDatetime } from '@/utils/dayjs' // Assuming you have this
 // import RequestStatusBadge from '@/components/common/RequestStatusBadge'
 import Property from './Property'
-import { formatDatetime } from '@/utils/dayjs' // Assuming you have this
 
 interface Props {
   data: any
 }
 
 const Properties = ({ data }: Props) => {
-
-  console.log(data, "this is overview")
+  console.log(data, 'this is overview')
   const score = Number(data?.score || 0)
   const paymentTerms = data?.payment_terms || {}
 
   const scoreColor = score >= 90 ? 'green' : score >= 70 ? 'orange' : 'red'
-  const decision = data?.decision || (score >= 90 ? 'APPROVED' : 'REVIEW REQUIRED')
+  const decision =
+    data?.decision || (score >= 90 ? 'APPROVED' : 'REVIEW REQUIRED')
 
   return (
     <div>
@@ -27,14 +27,14 @@ const Properties = ({ data }: Props) => {
 
         {/* Payment Terms Section */}
         <Property title='Invoice Date'>
-          {paymentTerms.invoice_date ? formatDatetime(paymentTerms.invoice_date) : '-'}
+          {paymentTerms.invoice_date
+            ? formatDatetime(paymentTerms.invoice_date)
+            : '-'}
         </Property>
         <Property title='Due Date'>
           {paymentTerms.due_date ? formatDatetime(paymentTerms.due_date) : '-'}
         </Property>
-        <Property title='Payment Terms'>
-          {paymentTerms.raw || '-'}
-        </Property>
+        <Property title='Payment Terms'>{paymentTerms.raw || '-'}</Property>
 
         {/* AI Stats */}
         <Property title='AI Confidence Score'>
@@ -42,11 +42,7 @@ const Properties = ({ data }: Props) => {
         </Property>
 
         <Property className='border-b-0' title='AI Recommendation'>
-          <Badge
-            color={scoreColor}
-            label={decision}
-            className="uppercase"
-          />
+          <Badge className='uppercase' color={scoreColor} label={decision} />
         </Property>
       </div>
     </div>

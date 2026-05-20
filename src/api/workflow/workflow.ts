@@ -42,10 +42,10 @@ const getWorkflowById = async (id: string) => {
 }
 
 const createWorkflow = async (payload: any) => {
-  const response: any = { payload: '', error: '' }
+  const response: any = { error: '', payload: '' }
 
   try {
-    const { status, data } = await axiosCrypto.post(
+    const { data, status } = await axiosCrypto.post(
       '/workflow',
       JSON.stringify(payload),
     )
@@ -69,10 +69,10 @@ const createWorkflow = async (payload: any) => {
 }
 
 const updateWorkflow = async (id: number, payload: any) => {
-  const response: any = { payload: '', error: '' }
+  const response: any = { error: '', payload: '' }
 
   try {
-    const { status, data } = await axiosCrypto.put(
+    const { data, status } = await axiosCrypto.put(
       `/workflow/${id}`,
       JSON.stringify(payload),
     )
@@ -99,9 +99,9 @@ const updateWorkflow = async (id: number, payload: any) => {
 const workflowApi = {
   createProcessTransaction,
   createWorkflow,
+  updateWorkflow,
   getAllWorkflows,
   getWorkflowById,
-  updateWorkflow,
 }
 
 export default workflowApi

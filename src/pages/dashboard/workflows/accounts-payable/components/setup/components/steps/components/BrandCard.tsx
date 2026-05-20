@@ -24,9 +24,9 @@ const BrandCard = ({
 }: Props) => {
   return (
     <motion.div
+      className='h-full'
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
-      className='h-full'
     >
       <InputRadioCard
         checked={checked}
@@ -39,49 +39,51 @@ const BrandCard = ({
         )}
         onClick={onClick}
       >
-      <div className='flex flex-1 items-center gap-3'>
-        <div
-          className={cn(
-            'relative flex size-9 shrink-0 items-center justify-center rounded-md p-1.5 transition-all duration-200',
-            checked ? 'bg-white shadow-sm' : 'bg-gray-2 group-hover:bg-gray-3',
-          )}
-        >
-          {icon ? (
-            <Icon
-              name={icon}
-              className={cn(
-                'size-5',
-                checked ? 'text-green-11' : 'text-primary-11',
-              )}
-            />
-          ) : logo ? (
-            <img alt={name} className='size-full object-contain' src={logo} />
-          ) : null}
-        </div>
-        <div className='min-w-0 flex-1'>
+        <div className='flex flex-1 items-center gap-3'>
           <div
             className={cn(
-              'truncate text-14 font-medium transition-colors',
-              checked ? 'text-green-11' : 'text-gray-13',
+              'relative flex size-9 shrink-0 items-center justify-center rounded-md p-1.5 transition-all duration-200',
+              checked
+                ? 'bg-white shadow-sm'
+                : 'bg-gray-2 group-hover:bg-gray-3',
             )}
           >
-            {name}
+            {icon ? (
+              <Icon
+                name={icon}
+                className={cn(
+                  'size-5',
+                  checked ? 'text-green-11' : 'text-primary-11',
+                )}
+              />
+            ) : logo ? (
+              <img alt={name} className='size-full object-contain' src={logo} />
+            ) : null}
           </div>
-          {description && (
-            <div className='mt-0.5 text-12 text-gray-10'>{description}</div>
-          )}
+          <div className='min-w-0 flex-1'>
+            <div
+              className={cn(
+                'truncate text-14 font-medium transition-colors',
+                checked ? 'text-green-11' : 'text-gray-13',
+              )}
+            >
+              {name}
+            </div>
+            {description && (
+              <div className='mt-0.5 text-12 text-gray-10'>{description}</div>
+            )}
+          </div>
         </div>
-      </div>
-      {checked && (
-        <motion.div
-          animate={{ opacity: 1, scale: 1 }}
-          className='flex size-5 shrink-0 items-center justify-center rounded-full bg-green-9'
-          initial={{ opacity: 0, scale: 0.5 }}
-          transition={{ duration: 0.2, type: 'spring' }}
-        >
-          <Icon className='size-3 text-white' name='tabler:check' />
-        </motion.div>
-      )}
+        {checked && (
+          <motion.div
+            animate={{ opacity: 1, scale: 1 }}
+            className='flex size-5 shrink-0 items-center justify-center rounded-full bg-green-9'
+            initial={{ opacity: 0, scale: 0.5 }}
+            transition={{ duration: 0.2, type: 'spring' }}
+          >
+            <Icon className='size-3 text-white' name='tabler:check' />
+          </motion.div>
+        )}
       </InputRadioCard>
     </motion.div>
   )

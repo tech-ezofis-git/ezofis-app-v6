@@ -1,14 +1,22 @@
+import {
+  rectSortingStrategy,
+  SortableContext,
+  useSortable,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { ActionIcon, Tooltip } from '@mantine/core'
+import { useEffect, useRef } from 'react'
 import Icon from '@/components/base/icon/Icon'
+import {
+  type Panel as PanelType,
+  type Question,
+  useFormStore,
+} from '@/pages/form-builder/store/formStore'
+import cn from '@/utils/cn'
+import AddFieldButton from './AddFieldButton'
 import QuestionCard from './QuestionCard'
 import SectionHeader from './SectionHeader'
-import AddFieldButton from './AddFieldButton'
-import { useFormStore, type Question, type Panel as PanelType } from '@/pages/form-builder/store/formStore'
 import SlashCommand from './SlashCommand'
-import { useRef, useEffect } from 'react'
-import cn from '@/utils/cn'
-import { useSortable, SortableContext, rectSortingStrategy } from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
 
 interface Props {
   panel: PanelType
@@ -18,21 +26,21 @@ interface Props {
 const Page = ({ panel, panelIndex }: Props) => {
   const {
     activeQuestionId,
+    addPanel,
+    clearLastAddedPanelId,
+    deletePanel,
     deleteQuestion,
+    duplicatePanel,
     isBuilderMode,
     lastAddedPanelId,
-    updatePanel,
-    duplicatePanel,
-    deletePanel,
-    setSidebarView,
-    setAddFieldPosition,
-    setLeftSidebarCollapsed,
-    clearLastAddedPanelId,
-    updateQuestion,
-    setActiveQuestionId,
-    addPanel,
     movePanel,
     panels,
+    updatePanel,
+    updateQuestion,
+    setActiveQuestionId,
+    setAddFieldPosition,
+    setLeftSidebarCollapsed,
+    setSidebarView,
   } = useFormStore()
 
   const pageRef = useRef<HTMLDivElement>(null)
@@ -63,7 +71,7 @@ const Page = ({ panel, panelIndex }: Props) => {
 
   const triggerAddFieldSidebar = (index: number) => {
     setSidebarView('fields')
-    setAddFieldPosition({ panelId: panel.id, index })
+    setAddFieldPosition({ index, panelId: panel.id })
     setLeftSidebarCollapsed(false)
   }
 
@@ -75,143 +83,159 @@ const Page = ({ panel, panelIndex }: Props) => {
       onDragOver={(e) => e.preventDefault()}
     >
       {/* 0. Floating Canva Actions */}
-      <div className="absolute -top-10 right-0 flex items-center gap-2 z-20 transition-all">
-        <div className="flex items-center gap-1.5 px-2 py-1.5 bg-white/70 backdrop-blur-md rounded-xl border border-gray-2/20 shadow-[0_8px_30px_rgb(0,0,0,0.08)] group-hover/page:opacity-100 opacity-0 md:opacity-100 transition-all duration-300">
+      <div className='absolute -top-10 right-0 z-20 flex items-center gap-2 transition-all'>
+        <div className='flex items-center gap-1.5 rounded-xl border border-gray-2/20 bg-white/70 px-2 py-1.5 opacity-0 shadow-[0_8px_30px_rgb(0,0,0,0.08)] backdrop-blur-md transition-all duration-300 group-hover/page:opacity-100 md:opacity-100'>
           {/* Section Reordering */}
-          <div className="flex items-center gap-0.5">
-            <Tooltip label="Move Section Up" position="top" withArrow>
+          <div className='flex items-center gap-0.5'>
+            <Tooltip label='Move Section Up' position='top' withArrow>
               <ActionIcon
-                variant="subtle"
-                color="gray"
-                size="md"
+                className='h-8 w-8 rounded-lg text-gray-12 transition-all hover:bg-gray-1 active:scale-95 disabled:opacity-30'
+                color='gray'
                 disabled={panelIndex === 0}
+                size='md'
+                variant='subtle'
                 onClick={() => movePanel(panel.id, 'up')}
-                className="text-gray-12 hover:bg-gray-1 rounded-lg active:scale-95 transition-all w-8 h-8 disabled:opacity-30"
               >
-                <Icon name="lucide:arrow-up" width={16} height={16} />
+                <Icon height={16} name='lucide:arrow-up' width={16} />
               </ActionIcon>
             </Tooltip>
-            <Tooltip label="Move Section Down" position="top" withArrow>
+            <Tooltip label='Move Section Down' position='top' withArrow>
               <ActionIcon
-                variant="subtle"
-                color="gray"
-                size="md"
+                className='h-8 w-8 rounded-lg text-gray-12 transition-all hover:bg-gray-1 active:scale-95 disabled:opacity-30'
+                color='gray'
                 disabled={panelIndex === panels.length - 1}
+                size='md'
+                variant='subtle'
                 onClick={() => movePanel(panel.id, 'down')}
-                className="text-gray-12 hover:bg-gray-1 rounded-lg active:scale-95 transition-all w-8 h-8 disabled:opacity-30"
               >
-                <Icon name="lucide:arrow-down" width={16} height={16} />
+                <Icon height={16} name='lucide:arrow-down' width={16} />
               </ActionIcon>
             </Tooltip>
           </div>
 
-          <div className="w-px h-4 bg-gray-2/50 mx-0.5" />
+          <div className='mx-0.5 h-4 w-px bg-gray-2/50' />
 
-          <Tooltip label={isLocked ? "Unlock Page" : "Lock Page"} position="top" withArrow>
+          <Tooltip
+            label={isLocked ? 'Unlock Page' : 'Lock Page'}
+            position='top'
+            withArrow
+          >
             <ActionIcon
-              variant="subtle"
-              color={isLocked ? "violet" : "gray"}
-              size="md"
-              onClick={() => updatePanel(panel.id, { isLocked: !isLocked })}
+              color={isLocked ? 'violet' : 'gray'}
+              size='md'
+              variant='subtle'
               className={cn(
-                "rounded-lg active:scale-95 transition-all w-8 h-8",
-                isLocked ? "text-accent-primary bg-accent-soft/30 font-bold" : "text-gray-12 hover:bg-gray-1"
+                'h-8 w-8 rounded-lg transition-all active:scale-95',
+                isLocked
+                  ? 'bg-accent-soft/30 font-bold text-accent-primary'
+                  : 'text-gray-12 hover:bg-gray-1',
               )}
+              onClick={() => updatePanel(panel.id, { isLocked: !isLocked })}
             >
-              <Icon name={isLocked ? "lucide:lock" : "lucide:lock-open"} width={16} height={16} className={isLocked ? "animate-in zoom-in-75" : ""} />
+              <Icon
+                className={isLocked ? 'animate-in zoom-in-75' : ''}
+                height={16}
+                name={isLocked ? 'lucide:lock' : 'lucide:lock-open'}
+                width={16}
+              />
             </ActionIcon>
           </Tooltip>
 
-          <Tooltip label="Duplicate Page" position="top" withArrow>
+          <Tooltip label='Duplicate Page' position='top' withArrow>
             <ActionIcon
-              variant="subtle"
-              color="gray"
-              size="md"
+              className='h-8 w-8 rounded-lg text-gray-12 transition-all hover:bg-gray-1 active:scale-95 disabled:opacity-30'
+              color='gray'
+              disabled={isLocked}
+              size='md'
+              variant='subtle'
               onClick={() => duplicatePanel(panel.id)}
-              disabled={isLocked}
-              className="text-gray-12 hover:bg-gray-1 rounded-lg active:scale-95 transition-all w-8 h-8 disabled:opacity-30"
             >
-              <Icon name="lucide:copy" width={16} height={16} />
+              <Icon height={16} name='lucide:copy' width={16} />
             </ActionIcon>
           </Tooltip>
 
-          <Tooltip label="Add Section Below" position="top" withArrow>
+          <Tooltip label='Add Section Below' position='top' withArrow>
             <ActionIcon
-              variant="subtle"
-              color="gray"
-              size="md"
+              className='h-8 w-8 rounded-lg text-gray-12 transition-all hover:bg-gray-1 active:scale-95'
+              color='gray'
+              size='md'
+              variant='subtle'
               onClick={() => addPanel(panelIndex + 1)}
-              className="text-gray-12 hover:bg-gray-1 rounded-lg active:scale-95 transition-all w-8 h-8"
             >
-              <Icon name="lucide:plus-square" width={16} height={16} />
+              <Icon height={16} name='lucide:plus-square' width={16} />
             </ActionIcon>
           </Tooltip>
 
-          <div className="w-px h-4 bg-gray-2/50 mx-0.5" />
+          <div className='mx-0.5 h-4 w-px bg-gray-2/50' />
 
-          <Tooltip label="Delete Section" position="top" withArrow>
+          <Tooltip label='Delete Section' position='top' withArrow>
             <ActionIcon
-              variant="subtle"
-              color="red"
-              size="md"
-              onClick={() => deletePanel(panel.id)}
+              className='text-red-500 hover:bg-red-50 h-8 w-8 rounded-lg transition-all active:scale-95 disabled:opacity-30'
+              color='red'
               disabled={isLocked}
-              className="text-red-500 hover:bg-red-50 rounded-lg active:scale-95 transition-all w-8 h-8 disabled:opacity-30"
+              size='md'
+              variant='subtle'
+              onClick={() => deletePanel(panel.id)}
             >
-              <Icon name="lucide:trash-2" width={16} height={16} />
+              <Icon height={16} name='lucide:trash-2' width={16} />
             </ActionIcon>
           </Tooltip>
         </div>
       </div>
 
-      <div className="bg-white mt-2 rounded-2xl border border-gray-2 shadow-sm relative transition-all duration-300">
+      <div className='relative mt-2 rounded-2xl border border-gray-2 bg-white shadow-sm transition-all duration-300'>
         {/* 1. Section Header */}
         <SectionHeader
-          panel={panel}
           fieldCount={panel.fields.length}
           isCollapsed={isCollapsed}
           isLocked={isLocked}
-          onToggleCollapse={() => updatePanel(panel.id, { isCollapsed: !isCollapsed })}
+          panel={panel}
+          onToggleCollapse={() =>
+            updatePanel(panel.id, { isCollapsed: !isCollapsed })
+          }
         />
 
         {/* 2. Page Canvas / Field Grid */}
         {!isCollapsed && (
-          <div className="relative z-10 p-5 pt-2">
-            <SortableContext items={panel.fields.map(q => q.id)} strategy={rectSortingStrategy}>
-              <div className="grid grid-cols-12 gap-x-4 gap-y-5 w-full">
+          <div className='relative z-10 p-5 pt-2'>
+            <SortableContext
+              items={panel.fields.map((q) => q.id)}
+              strategy={rectSortingStrategy}
+            >
+              <div className='grid w-full grid-cols-12 gap-x-4 gap-y-5'>
                 {/* Render Fields */}
                 {panel.fields.map((q: Question, i: number) => (
                   <div
                     key={q.id}
                     className={cn(
-                      "transition-all duration-500 relative group/field",
-                      getColumnSpan(q.settings.general.size)
+                      'group/field relative transition-all duration-500',
+                      getColumnSpan(q.settings.general.size),
                     )}
                   >
                     {/* Drop Zone Above */}
-                    <div className="absolute -top-2.5 left-0 w-full h-5 z-20 flex items-center justify-center opacity-0 hover:opacity-100 group/insert transition-all pointer-events-none">
-                      <div className="w-full h-[1.5px] bg-accent-soft shadow-[0_0_8px_rgba(124,92,255,0.4)] mx-4 rounded-full" />
+                    <div className='group/insert pointer-events-none absolute -top-2.5 left-0 z-20 flex h-5 w-full items-center justify-center opacity-0 transition-all hover:opacity-100'>
+                      <div className='mx-4 h-[1.5px] w-full rounded-full bg-accent-soft shadow-[0_0_8px_rgba(124,92,255,0.4)]' />
                       <ActionIcon
-                        size="xs"
-                        radius="xl"
-                        color="violet"
-                        variant="filled"
-                        className="absolute shadow-sm scale-75 group-hover/insert:scale-100 transition-all hover:bg-accent-primary pointer-events-auto"
+                        className='pointer-events-auto absolute scale-75 shadow-sm transition-all group-hover/insert:scale-100 hover:bg-accent-primary'
+                        color='violet'
+                        radius='xl'
+                        size='xs'
+                        title='Insert Field Here'
+                        variant='filled'
                         onClick={() => triggerAddFieldSidebar(i)}
-                        title="Insert Field Here"
                       >
-                        <Icon name="lucide:plus" width={10} height={10} />
+                        <Icon height={10} name='lucide:plus' width={10} />
                       </ActionIcon>
                     </div>
 
                     <SortableQuestionItem
-                      question={q}
                       activeQuestionId={activeQuestionId}
-                      setActiveQuestionId={setActiveQuestionId}
-                      updateQuestion={updateQuestion}
                       deleteQuestion={deleteQuestion}
                       isBuilderMode={isBuilderMode}
                       isLocked={isLocked}
+                      question={q}
+                      updateQuestion={updateQuestion}
+                      setActiveQuestionId={setActiveQuestionId}
                     />
                   </div>
                 ))}
@@ -220,11 +244,8 @@ const Page = ({ panel, panelIndex }: Props) => {
 
             {/* 3. Slash Command & Add Field Button */}
             {!isLocked && (
-              <div className="mt-6 flex flex-col gap-4">
-                <SlashCommand
-                  panelId={panel.id}
-                  index={panel.fields.length}
-                />
+              <div className='mt-6 flex flex-col gap-4'>
+                <SlashCommand index={panel.fields.length} panelId={panel.id} />
 
                 <AddFieldButton
                   onClick={() => triggerAddFieldSidebar(panel.fields.length)}
@@ -233,9 +254,9 @@ const Page = ({ panel, panelIndex }: Props) => {
             )}
 
             {isLocked && (
-              <div className="mt-6 flex items-center justify-center py-4 border border-dashed border-gray-2 rounded-xl bg-gray-50/50">
-                <div className="flex items-center gap-2 text-gray-4 font-medium text-13">
-                  <Icon name="lucide:lock" width={14} height={14} />
+              <div className='bg-gray-50/50 mt-6 flex items-center justify-center rounded-xl border border-dashed border-gray-2 py-4'>
+                <div className='flex items-center gap-2 text-13 font-medium text-gray-4'>
+                  <Icon height={14} name='lucide:lock' width={14} />
                   <span>Section is locked</span>
                 </div>
               </div>
@@ -251,10 +272,10 @@ const SortableQuestionItem = ({
   activeQuestionId,
   deleteQuestion,
   isBuilderMode,
+  isLocked,
   question,
   updateQuestion,
   setActiveQuestionId,
-  isLocked,
 }: any) => {
   const {
     attributes,

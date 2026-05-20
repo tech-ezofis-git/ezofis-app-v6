@@ -6,13 +6,13 @@ import { getFromLocalStorage } from '@/utils/local-storage'
 
 export type DefaultView = Record<string, unknown>
 export type Identity = {
+  // V6 fields
+  accessToken?: string
+  expiresIn?: number
   iv?: string
   key?: string
   token?: string
-  // V6 fields
-  accessToken?: string
   tokenType?: string
-  expiresIn?: number
 }
 export type ProfileMenu = unknown
 export type Session = {

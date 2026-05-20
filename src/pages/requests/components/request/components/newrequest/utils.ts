@@ -25,7 +25,7 @@ const isPdf = (file: File) =>
   file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
 
 const isImage = (file: File) =>
-  ['image/png', 'image/jpeg', 'image/tiff'].includes(file.type) || 
+  ['image/png', 'image/jpeg', 'image/tiff'].includes(file.type) ||
   /\.(png|jpe?g|tiff?)$/i.test(file.name)
 
 const isCsv = (file: File) =>
@@ -44,14 +44,14 @@ function downloadTemplate(tenantId: string) {
 }
 
 export {
-  makeId,
-  isPdf,
-  isImage,
+  downloadTemplate,
+  IMAGE_ACCEPT,
   isCsv,
+  isImage,
+  isPdf,
   isXlsx,
+  makeId,
   MAX_SIZE,
   PDF_ACCEPT,
-  IMAGE_ACCEPT,
   PO_ACCEPT,
-  downloadTemplate,
 }

@@ -102,7 +102,7 @@ const Overview = ({ agentData }: Props) => {
   }, [])
 
   // Mock data structure for demonstration - replace with actual agentData prop
-  const data: AgentData = agentData || {} as AgentData
+  const data: AgentData = agentData || ({} as AgentData)
   const fieldMatching = data.debug?.['Side-by-side Field Matching'] || []
   const lineItemMatching = data.debug?.['Side-by-side Line Item matching'] || []
   const invoiceHeader = data['Extracted Invoice JSON']?.invoice_header
@@ -519,7 +519,8 @@ const Overview = ({ agentData }: Props) => {
                               </div>
                               <div>
                                 <div className='text-13 font-medium text-gray-13'>
-                                  {lineItem.Description?.['Invoice Value'] || 'N/A'}
+                                  {lineItem.Description?.['Invoice Value'] ||
+                                    'N/A'}
                                 </div>
                                 <div className='text-11 text-gray-10'>
                                   Line Item
@@ -540,7 +541,8 @@ const Overview = ({ agentData }: Props) => {
                             {[
                               {
                                 icon: 'tabler:file-text',
-                                invoice: lineItem.Description?.['Invoice Value'],
+                                invoice:
+                                  lineItem.Description?.['Invoice Value'],
                                 label: 'Description',
                                 po: lineItem.Description?.['PO Value'],
                                 score: lineItem.Description?.Score,

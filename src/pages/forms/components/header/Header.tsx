@@ -52,9 +52,9 @@ const Header = ({ viewMode, setViewMode }: Props) => {
         <Tab label='Favourites' value='Favourites' />
         <Tab label='Drafts' value='Drafts' />
       </Tabs>
-      
+
       <div className='flex items-center gap-2'>
-        <div className='flex items-center gap-1 rounded-lg border border-gray-3 bg-gray-50/50 p-1'>
+        <div className='bg-gray-50/50 flex items-center gap-1 rounded-lg border border-gray-3 p-1'>
           <button
             type='button'
             className={cn(

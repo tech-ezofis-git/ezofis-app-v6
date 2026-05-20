@@ -8,8 +8,8 @@ export const useRequestDetail = (
   transactionId: number | null,
 ) => {
   return useQuery({
-    queryKey: ['request-detail', workflowId, processId],
     enabled: !!workflowId && !!processId,
+    queryKey: ['request-detail', workflowId, processId, transactionId],
 
     queryFn: async () => {
       // 1. Fetch Basic Process Data
@@ -35,7 +35,7 @@ export const useRequestDetail = (
       // 4. Extract Agent Data from History
       // Logic copied from Vue: showHistoryStepper()
       const agentData: any[] = []
-      let stageLevel: any[] = []
+      const stageLevel: any[] = []
 
       if (Array.isArray(historyData)) {
         historyData.forEach((row: any) => {
@@ -52,9 +52,9 @@ export const useRequestDetail = (
           if (row.agentResponse && Object.keys(row.agentResponse).length > 0) {
             agentData.push({
               ...row.agentResponse,
-              stage: row.agentType || 'No Agent',
               id: row.activityId || Math.random().toString(), // fallback ID
               reqNo: row.requestNo,
+              stage: row.agentType || 'No Agent',
             })
           }
         })
@@ -68,11 +68,11 @@ export const useRequestDetail = (
 
       return {
         ...processData,
+        _actions: actions,
+        _agentData: agentData, // <--- We will use this to switch views
         _formDefinition: formDefinition,
         _history: historyData,
-        _agentData: agentData, // <--- We will use this to switch views
         _stageLevel: stageLevel,
-        _actions: actions,
       }
     },
   })

@@ -90,8 +90,8 @@ const StepTwo = () => {
           onClick={() => setStep(0)}
         />
         {erpSettings.isConnected ||
-          erpSettings.templateUploaded ||
-          (erpSettings.system && erpSettings.system === 'FILE_BASED_IMPORT') ? (
+        erpSettings.templateUploaded ||
+        (erpSettings.system && erpSettings.system === 'FILE_BASED_IMPORT') ? (
           <Button
             label='Continue'
             suffixIcon='tabler:arrow-right'

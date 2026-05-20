@@ -158,7 +158,12 @@ const PublishSidebar = () => {
                     <Icon height={16} name={l.icon} width={16} />
                   </div>
                   <div className='min-w-0 flex-1'>
-                    <div className={cn('text-xs font-extrabold', isActive ? 'text-gray-13' : 'text-gray-9')}>
+                    <div
+                      className={cn(
+                        'text-xs font-extrabold',
+                        isActive ? 'text-gray-13' : 'text-gray-9',
+                      )}
+                    >
                       {l.name}
                     </div>
                     <div className='truncate text-[10px] text-gray-5'>

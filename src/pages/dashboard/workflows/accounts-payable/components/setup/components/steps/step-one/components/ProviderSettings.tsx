@@ -1,9 +1,9 @@
-import { motion } from 'motion/react'
+// import { motion } from 'motion/react'
 // import CustomLogo from '@/assets/brands/email.svg'
 // import MsExchangeLogo from '@/assets/brands/exchange.svg'
 import GmailLogo from '@/assets/brands/gmail.svg'
-import SampleInvoicesZip from '@/assets/Sample Invoices.zip'
 import OutlookLogo from '@/assets/brands/outlook.svg'
+// import Icon from '@/components/base/icon/Icon'
 import {
   AnimateBounce,
   AnimateFadeIn,
@@ -11,7 +11,6 @@ import {
   AnimateScale,
   AnimateSlideUp,
 } from '@/components/common/animations'
-import Icon from '@/components/base/icon/Icon'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import BrandCard from '../../components/BrandCard'
 import SectionHeader from '../../components/SectionHeader'
@@ -52,28 +51,6 @@ const ProviderSettings = () => {
       <div>
         <AnimateSlideUp delay={0.1}>
           <SectionHeader
-            action={
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className='group flex items-center gap-2 rounded-md border border-gray-3 bg-surface px-3 py-1.5 text-12 font-medium text-gray-11 transition-all hover:border-accent-primary hover:bg-accent-soft hover:text-accent-primary'
-                title='Download sample document'
-                onClick={() => {
-                  const link = document.createElement('a')
-                  link.href = SampleInvoicesZip
-                  link.download = 'Sample Invoices.zip'
-                  document.body.appendChild(link)
-                  link.click()
-                  document.body.removeChild(link)
-                }}
-              >
-                <Icon
-                  className='size-4 text-gray-10 group-hover:text-accent-primary'
-                  name='tabler:download'
-                />
-                Sample Document
-              </motion.button>
-            }
             description='Upload your documents manually from your device.'
             title='Direct Upload'
           />

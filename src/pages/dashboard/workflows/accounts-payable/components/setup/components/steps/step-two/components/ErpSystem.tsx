@@ -30,7 +30,6 @@ const items = [
   // { logo: XeroLogo, name: 'Xero', value: 'Xero' },
 ]
 
-
 const ErpSystem = () => {
   // /  const emailSettings = setupStore((state) => state.emailSettings)
   const erpSettings = setupStore((state) => state.erpSettings)
@@ -75,7 +74,6 @@ const ErpSystem = () => {
     fileInputRef.current?.click()
   }
 
-
   const animationVariants = [
     AnimateSlideUp,
     AnimateScale,
@@ -90,12 +88,14 @@ const ErpSystem = () => {
       <div>
         <AnimateSlideUp delay={0.1}>
           <SectionHeader
+            description='Import your existing PO Master record to ensure accurate matching during processing. This allows the system to validate invoices against your pre-approved purchase orders.'
+            title='PO Master Data'
             action={
               <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
                 className='group flex items-center gap-2 rounded-md border border-gray-3 bg-surface px-3 py-1.5 text-12 font-medium text-gray-11 transition-all hover:border-accent-primary hover:bg-accent-soft hover:text-accent-primary'
                 title='Download PO Master template'
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={handleTemplateDownload}
               >
                 <Icon
@@ -105,8 +105,6 @@ const ErpSystem = () => {
                 Master Template
               </motion.button>
             }
-            description='Import your existing PO Master record to ensure accurate matching during processing. This allows the system to validate invoices against your pre-approved purchase orders.'
-            title='PO Master Data'
           />
         </AnimateSlideUp>
 
@@ -145,7 +143,6 @@ const ErpSystem = () => {
         {isFileBasedImportSelected && (
           <AnimateFadeIn delay={0.2}>
             <div className='mt-4 rounded-xl border border-gray-3 bg-surface p-6 shadow-sm'>
-
               {/* Heading */}
               <h3 className='mb-3 text-16 font-semibold text-gray-13'>
                 {erpSettings.templateUploaded
@@ -183,7 +180,7 @@ const ErpSystem = () => {
               {erpSettings.templateUploaded && (
                 <div className='mt-4'>
                   <Alert
-                    text="Master Data received — we are now processing the records to build your validation index."
+                    text='Master Data received — we are now processing the records to build your validation index.'
                     variant='green'
                   />
                 </div>

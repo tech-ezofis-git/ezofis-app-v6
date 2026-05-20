@@ -1,13 +1,13 @@
+import { ActionIcon, Badge, Tooltip } from '@mantine/core'
+import { useEffect, useRef, useState } from 'react'
 import Button from '@/components/base/button/Button'
-import { Badge, Tooltip, ActionIcon } from '@mantine/core'
-import { useFormStore } from '@/pages/form-builder/store/formStore'
-import Icon from '@/components/base/icon/Icon'
 import IconButton from '@/components/base/button/IconButton'
-import { useEffect, useState, useRef } from 'react'
+import Icon from '@/components/base/icon/Icon'
+import { useFormStore } from '@/pages/form-builder/store/formStore'
 import GeneralSettings from './sections/GeneralSettings'
-import WelcomePageSettings from './sections/WelcomePageSettings'
-import ThankYouPageSettings from './sections/ThankYouPageSettings'
 import QuestionSettings from './sections/QuestionSettings'
+import ThankYouPageSettings from './sections/ThankYouPageSettings'
+import WelcomePageSettings from './sections/WelcomePageSettings'
 
 const FIELD_ICONS: Record<string, string> = {
   ADDRESS: 'lucide:map-pin',
@@ -19,24 +19,24 @@ const FIELD_ICONS: Record<string, string> = {
   CURRENCY_AMOUNT: 'lucide:dollar-sign',
   DATE: 'lucide:calendar',
   DATE_TIME: 'lucide:calendar-clock',
-  SINGLE_SELECT: 'lucide:list-todo',
-  MULTI_SELECT: 'lucide:list-checks',
-  SINGLE_CHOICE: 'mdi:radiobox-marked',
-  MULTIPLE_CHOICE: 'lucide:square-check',
+  DIVIDER: 'lucide:minus',
+  DYNAMIC_TABLE: 'lucide:table-2',
+  EMAIL: 'lucide:mail',
+  FILE_UPLOAD: 'lucide:file-up',
+  FULL_NAME: 'lucide:user',
   HEADING: 'lucide:heading',
   LABEL: 'lucide:type',
-  TEXT_BUILDER: 'lucide:pilcrow',
-  DIVIDER: 'lucide:minus',
-  FILE_UPLOAD: 'lucide:file-up',
-  DYNAMIC_TABLE: 'lucide:table-2',
   MATRIX: 'lucide:grid-3x3',
-  EMAIL: 'lucide:mail',
+  MULTI_SELECT: 'lucide:list-checks',
+  MULTIPLE_CHOICE: 'lucide:square-check',
   PASSWORD: 'lucide:lock',
-  FULL_NAME: 'lucide:user',
   PHONE_NUMBER: 'lucide:phone',
   RATING: 'lucide:star',
   SHORT_TEXT: 'mdi:form-textbox',
+  SINGLE_CHOICE: 'mdi:radiobox-marked',
+  SINGLE_SELECT: 'lucide:list-todo',
   TABLE: 'lucide:table',
+  TEXT_BUILDER: 'lucide:pilcrow',
   TIME: 'lucide:clock',
 }
 
@@ -84,7 +84,9 @@ const FieldSettings = () => {
       case 'thank_you':
         return <ThankYouPageSettings />
       case 'question':
-        return activeQuestion ? <QuestionSettings activeQuestion={activeQuestion} /> : null
+        return activeQuestion ? (
+          <QuestionSettings activeQuestion={activeQuestion} />
+        ) : null
       default:
         return null
     }
@@ -92,19 +94,27 @@ const FieldSettings = () => {
 
   const getTitle = () => {
     switch (selectionType) {
-      case 'general': return 'General Settings'
-      case 'welcome': return 'Welcome Screen'
-      case 'thank_you': return 'Completion Screen'
-      default: return 'Field Settings'
+      case 'general':
+        return 'General Settings'
+      case 'welcome':
+        return 'Welcome Screen'
+      case 'thank_you':
+        return 'Completion Screen'
+      default:
+        return 'Field Settings'
     }
   }
 
   const getIcon = () => {
     switch (selectionType) {
-      case 'general': return 'tabler:settings'
-      case 'welcome': return 'lucide:megaphone'
-      case 'thank_you': return 'lucide:party-popper'
-      default: return 'tabler:adjustments-horizontal'
+      case 'general':
+        return 'tabler:settings'
+      case 'welcome':
+        return 'lucide:megaphone'
+      case 'thank_you':
+        return 'lucide:party-popper'
+      default:
+        return 'tabler:adjustments-horizontal'
     }
   }
 
@@ -113,40 +123,43 @@ const FieldSettings = () => {
   return (
     <div className='animate-in slide-in-from-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-white font-inter shadow-xl transition-all duration-300'>
       <SettingsHeader
-        title={getTitle()}
-        icon={getIcon()}
         activeQuestion={activeQuestion}
-        selectionType={selectionType}
-        isEditingLabel={isEditingLabel}
+        clearSelection={clearSelection}
+        handleLabelSave={handleLabelSave}
         headerLabel={headerLabel}
+        icon={getIcon()}
+        inputRef={inputRef}
+        isEditingLabel={isEditingLabel}
+        selectionType={selectionType}
+        title={getTitle()}
         setHeaderLabel={setHeaderLabel}
         setIsEditingLabel={setIsEditingLabel}
-        handleLabelSave={handleLabelSave}
-        inputRef={inputRef}
-        clearSelection={clearSelection}
         setSidebarOpen={setSidebarOpen}
       />
 
       {renderContent()}
 
-      <SettingsFooter onCancel={() => setSidebarOpen(false)} onSave={() => setSidebarOpen(false)} />
+      <SettingsFooter
+        onCancel={() => setSidebarOpen(false)}
+        onSave={() => setSidebarOpen(false)}
+      />
     </div>
   )
 }
 
 const SettingsHeader = ({
-  title,
-  icon,
   activeQuestion,
-  selectionType,
-  isEditingLabel,
+  clearSelection,
+  handleLabelSave,
   headerLabel,
+  icon,
+  inputRef,
+  isEditingLabel,
+  selectionType,
+  title,
   setHeaderLabel,
   setIsEditingLabel,
-  handleLabelSave,
-  inputRef,
-  clearSelection,
-  setSidebarOpen
+  setSidebarOpen,
 }: any) => {
   const headerIcon =
     selectionType === 'question' && activeQuestion
@@ -159,7 +172,7 @@ const SettingsHeader = ({
         {selectionType !== 'general' && selectionType !== 'question' && (
           <Tooltip label='Back to General'>
             <ActionIcon
-              className='mr-1 shrink-0 hover:bg-gray-2 text-gray-8'
+              className='mr-1 shrink-0 text-gray-8 hover:bg-gray-2'
               size='md'
               variant='subtle'
               onClick={() => clearSelection()}
@@ -176,55 +189,80 @@ const SettingsHeader = ({
         {selectionType === 'question' && activeQuestion ? (
           isEditingLabel ? (
             <input
+              className='min-w-0 flex-1 border-b-2 border-accent-primary bg-white px-1 py-1 text-sm font-bold text-gray-13 focus:outline-none'
               ref={inputRef}
-              type="text"
+              type='text'
               value={headerLabel}
-              onChange={(e) => setHeaderLabel(e.target.value)}
               onBlur={handleLabelSave}
+              onChange={(e) => setHeaderLabel(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleLabelSave()}
-              className="flex-1 min-w-0 text-sm font-bold text-gray-13 border-b-2 border-accent-primary px-1 py-1 focus:outline-none bg-white"
             />
           ) : (
-            <div className="flex items-center gap-2 min-w-0 flex-1 group/title cursor-pointer" onClick={() => setIsEditingLabel(true)}>
-              <div className="flex flex-col min-w-0 flex-1">
-                <h2 className="text-15/5 font-bold text-gray-13 truncate group-hover/title:text-accent-primary transition-colors">
+            <div
+              className='group/title flex min-w-0 flex-1 cursor-pointer items-center gap-2'
+              onClick={() => setIsEditingLabel(true)}
+            >
+              <div className='flex min-w-0 flex-1 flex-col'>
+                <h2 className='truncate text-15/5 font-bold text-gray-13 transition-colors group-hover/title:text-accent-primary'>
                   {activeQuestion.label || 'Untitled Field'}
                 </h2>
                 <Badge
-                  size="xs"
-                  variant="filled"
-                  radius="sm"
-                  className="bg-gray-2 text-gray-7 text-[9px] uppercase tracking-wider self-start h-auto py-0.5 px-1.5"
+                  className='h-auto self-start bg-gray-2 px-1.5 py-0.5 text-[9px] tracking-wider text-gray-7 uppercase'
+                  radius='sm'
+                  size='xs'
+                  variant='filled'
                 >
                   {activeQuestion.type.replace(/_/g, ' ')}
                 </Badge>
               </div>
-              <Icon name="lucide:pencil" width={14} height={14} className="text-gray-4 opacity-0 group-hover/title:opacity-100 transition-opacity" />
+              <Icon
+                className='text-gray-4 opacity-0 transition-opacity group-hover/title:opacity-100'
+                height={14}
+                name='lucide:pencil'
+                width={14}
+              />
             </div>
           )
         ) : (
-          <h2 className='text-15/5 font-semibold text-gray-13 truncate'>{title}</h2>
+          <h2 className='truncate text-15/5 font-semibold text-gray-13'>
+            {title}
+          </h2>
         )}
       </div>
 
       <IconButton
-        variant="ghost"
-        color="gray"
-        size="md"
+        className='rounded-xl text-gray-6 transition-colors hover:bg-gray-2 hover:text-gray-9'
+        color='gray'
+        icon='lucide:x'
+        size='md'
+        variant='ghost'
         onClick={() => setSidebarOpen(false)}
-        className="hover:bg-gray-2 rounded-xl transition-colors text-gray-6 hover:text-gray-9"
-        icon="lucide:x"
       />
     </div>
   )
 }
 
-const SettingsFooter = ({ onCancel, onSave }: { onCancel: () => void, onSave: () => void }) => (
-  <div className='flex items-center justify-end gap-3 border-t border-gray-2 bg-gray-50/50 px-6 py-4'>
-    <Button color='gray' variant='outline' onClick={onCancel} className="bg-white">
+const SettingsFooter = ({
+  onCancel,
+  onSave,
+}: {
+  onCancel: () => void
+  onSave: () => void
+}) => (
+  <div className='bg-gray-50/50 flex items-center justify-end gap-3 border-t border-gray-2 px-6 py-4'>
+    <Button
+      className='bg-white'
+      color='gray'
+      variant='outline'
+      onClick={onCancel}
+    >
       Cancel
     </Button>
-    <Button className='font-semibold' icon='lucide:check-circle' onClick={onSave}>
+    <Button
+      className='font-semibold'
+      icon='lucide:check-circle'
+      onClick={onSave}
+    >
       Save
     </Button>
   </div>

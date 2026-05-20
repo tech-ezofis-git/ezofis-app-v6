@@ -6,10 +6,10 @@ interface Props {
   children: ReactNode
   target: ReactNode
   offset?: BaseProps['offset']
+  opened?: boolean
   position?: BaseProps['position']
   width?: BaseProps['width']
   withArrow?: boolean
-  opened?: boolean
   onChange?: (opened: boolean) => void
 }
 
@@ -21,26 +21,26 @@ const classNames = {
 const Popover = ({
   children,
   offset,
+  opened,
   position,
   target,
   width,
   withArrow = false,
-  opened,
   onChange,
 }: Props) => {
   return (
     <Base
-      opened={opened}
-      onChange={onChange}
       arrowOffset={20}
       arrowRadius={1}
       arrowSize={10}
       classNames={classNames}
       offset={offset}
+      opened={opened}
       position={position}
       transitionProps={{ duration: 150 }}
       width={width}
       withArrow={withArrow}
+      onChange={onChange}
     >
       <Base.Target>{target}</Base.Target>
       <Base.Dropdown>{children}</Base.Dropdown>

@@ -54,8 +54,6 @@ export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
     // Reconstruct nested settings for specific types
     if (toolType === 'gmail' || toolType === 'outlook') {
       settings.mailInitiate = {
-        connectorId: data.connectorId || Number(data.connection) || 0,
-        connectorType: toolType.toUpperCase(),
         conditions: {
           fromAddress: data.fromMailAddresses?.map((a: any) => a.id) || [],
           fromDomain: data.fromDomainName ? [data.fromDomainName.id] : [],
@@ -67,6 +65,8 @@ export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
             ? data.mailSubjectToMonitor.split(',').map((s: string) => s.trim())
             : [],
         },
+        connectorId: data.connectorId || Number(data.connection) || 0,
+        connectorType: toolType.toUpperCase(),
       }
       // Clean up flat fields used in UI
       delete settings.fromMailAddresses
@@ -100,15 +100,16 @@ export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
     delete settings.connection
 
     return {
-      color: data.iconColor || (node.type === 'trigger' ? '#2BCCBA' : '#A65EEA'),
+      color:
+        data.iconColor || (node.type === 'trigger' ? '#2BCCBA' : '#A65EEA'),
       height: node.measured?.height ?? 90,
       icon: data.icon || 'mdi-cog',
       id: node.id,
       left: Math.round(node.position.x),
-      settings,
       top: Math.round(node.position.y),
       type: mapToolTypeToLegacyType(toolType, data),
       width: node.measured?.width ?? 175,
+      settings,
     }
   })
 

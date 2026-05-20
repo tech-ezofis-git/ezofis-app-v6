@@ -1,7 +1,7 @@
 import { motion } from 'motion/react'
 import Icon from '@/components/base/icon/Icon'
-import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import { AnimateFadeIn } from '@/components/common/animations'
+import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 
 const WorkflowPreview = () => {
   const { emailSettings } = setupStore()
@@ -36,20 +36,21 @@ const WorkflowPreview = () => {
   // Node 1 Right (130, 40) -> Node 2 Left (213, 110)
   // Node 2 Right (343, 110) -> Node 3 Left (426, 40)
   // Node 3 Right (556, 40) -> Node 4 Left (640, 110)
-  const flowPath = 'M 130 40 C 170 40, 170 110, 213 110 M 343 110 C 385 110, 385 40, 426 40 M 556 40 C 600 40, 600 110, 640 110'
+  const flowPath =
+    'M 130 40 C 170 40, 170 110, 213 110 M 343 110 C 385 110, 385 40, 426 40 M 556 40 C 600 40, 600 110, 640 110'
 
   // Connection Points (Left and Right of each node)
   const points = [
-    { x: 130, y: 40 },   // Node 1 Right
-    { x: 213, y: 110 },  // Node 2 Left
-    { x: 343, y: 110 },  // Node 2 Right
-    { x: 426, y: 40 },   // Node 3 Left
-    { x: 556, y: 40 },   // Node 3 Right
-    { x: 640, y: 110 }   // Node 4 Left
+    { x: 130, y: 40 }, // Node 1 Right
+    { x: 213, y: 110 }, // Node 2 Left
+    { x: 343, y: 110 }, // Node 2 Right
+    { x: 426, y: 40 }, // Node 3 Left
+    { x: 556, y: 40 }, // Node 3 Right
+    { x: 640, y: 110 }, // Node 4 Left
   ]
 
   return (
-    <div className='relative w-full overflow-hidden rounded-xl border border-gray-3 bg-gray-1 py-10 dark:bg-gray-950'>
+    <div className='dark:bg-gray-950 relative w-full overflow-hidden rounded-xl border border-gray-3 bg-gray-1 py-10'>
       {/* Grid Background */}
       <div
         className='absolute inset-0 opacity-[0.02] dark:opacity-[0.05]'
@@ -62,7 +63,10 @@ const WorkflowPreview = () => {
 
       {/* SVG Canvas for Connections */}
       <div className='absolute inset-0 mx-auto w-full max-w-[850px] px-10'>
-        <svg className='pointer-events-none h-full w-full' viewBox='0 0 770 150'>
+        <svg
+          className='pointer-events-none h-full w-full'
+          viewBox='0 0 770 150'
+        >
           <g>
             {/* Base Line - Edge to Edge */}
             <path
@@ -72,47 +76,56 @@ const WorkflowPreview = () => {
 
             {/* Animated "Marching Ants" Wave */}
             <motion.path
-              initial={{ pathLength: 0, opacity: 0 }}
-              animate={{
-                pathLength: 1,
-                opacity: 1,
-                strokeDashoffset: [0, -20]
-              }}
-              transition={{
-                pathLength: { duration: 1.5, ease: 'easeInOut', delay: 0.5 },
-                opacity: { duration: 0.5, delay: 0.5 },
-                strokeDashoffset: { duration: 1, repeat: Infinity, ease: 'linear' }
-              }}
               className='fill-none stroke-purple-5 stroke-[1.5]'
               d={flowPath}
+              initial={{ opacity: 0, pathLength: 0 }}
+              animate={{
+                opacity: 1,
+                pathLength: 1,
+                strokeDashoffset: [0, -20],
+              }}
               style={{
                 strokeDasharray: '6 4',
+              }}
+              transition={{
+                opacity: { delay: 0.5, duration: 0.5 },
+                pathLength: { delay: 0.5, duration: 1.5, ease: 'easeInOut' },
+                strokeDashoffset: {
+                  duration: 1,
+                  ease: 'linear',
+                  repeat: Infinity,
+                },
               }}
             />
 
             {/* Traveling Data Pulse */}
             <motion.circle
-              r='3'
-              fill='var(--purple-5)'
               animate={{ offsetDistance: ['0%', '100%'] }}
-              transition={{ duration: 4, repeat: Infinity, ease: 'linear', delay: 2 }}
+              fill='var(--purple-5)'
+              r='3'
               style={{
+                filter: 'drop-shadow(0 0 4px var(--purple-4))',
                 offsetPath: `path("${flowPath}")`,
-                filter: 'drop-shadow(0 0 4px var(--purple-4))'
+              }}
+              transition={{
+                delay: 2,
+                duration: 4,
+                ease: 'linear',
+                repeat: Infinity,
               }}
             />
 
             {/* Edge Connection Points */}
             {points.map((p, i) => (
               <motion.circle
-                key={i}
+                animate={{ opacity: 1, scale: 1 }}
+                className='dark:stroke-gray-900 fill-purple-5 stroke-white stroke-1'
                 cx={p.x}
                 cy={p.y}
+                initial={{ opacity: 0, scale: 0 }}
+                key={i}
                 r='2.5'
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
                 transition={{ delay: 1 + i * 0.2, type: 'spring' }}
-                className='fill-purple-5 stroke-white stroke-1 dark:stroke-gray-900'
               />
             ))}
           </g>
@@ -125,9 +138,9 @@ const WorkflowPreview = () => {
           <AnimateFadeIn delay={0.1}>
             <NodeCard
               icon={startNode.icon}
-              isTrigger
               subtitle={startNode.subtitle}
               title={startNode.title}
+              isTrigger
             />
           </AnimateFadeIn>
         </div>
@@ -171,45 +184,50 @@ const WorkflowPreview = () => {
 
 const NodeCard = ({
   icon,
-  title,
-  subtitle,
   isTrigger = false,
+  subtitle,
+  title,
 }: {
   icon: string
-  title: string
-  subtitle: string
   isTrigger?: boolean
+  subtitle: string
+  title: string
 }) => (
   <div className='group relative'>
     {isTrigger && (
-      <div className='absolute -top-4 left-0 flex items-center gap-1 rounded-[2px] border border-purple-3 bg-purple-1 px-1 py-0 text-[6px] font-bold uppercase tracking-wider text-purple-9'>
+      <div className='absolute -top-4 left-0 flex items-center gap-1 rounded-[2px] border border-purple-3 bg-purple-1 px-1 py-0 text-[6px] font-bold tracking-wider text-purple-9 uppercase'>
         <Icon className='size-1.5' name='tabler:bolt-filled' />
         Trigger
       </div>
     )}
     <motion.div
+      className='dark:bg-gray-900 relative z-10 flex w-[130px] flex-col rounded-md border border-gray-3 bg-white p-2 shadow-[0_2px_6px_rgba(0,0,0,0.02)] transition-colors'
+      transition={{ damping: 25, stiffness: 400, type: 'spring' }}
       whileHover={{
-        y: -4,
-        scale: 1.02,
         borderColor: 'var(--purple-4)',
-        boxShadow: '0 10px 25px -5px rgba(168, 85, 247, 0.1), 0 8px 10px -6px rgba(168, 85, 247, 0.1)'
+        boxShadow:
+          '0 10px 25px -5px rgba(168, 85, 247, 0.1), 0 8px 10px -6px rgba(168, 85, 247, 0.1)',
+        scale: 1.02,
+        y: -4,
       }}
-      transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-      className='relative z-10 flex w-[130px] flex-col rounded-md border border-gray-3 bg-white p-2 shadow-[0_2px_6px_rgba(0,0,0,0.02)] transition-colors dark:bg-gray-900'
     >
       <div className='flex items-center gap-1.5'>
         <motion.div
-          whileHover={{ scale: 1.1, rotate: 5 }}
-          className='flex h-6 w-6 shrink-0 items-center justify-center rounded bg-gray-1 border border-gray-2 transition-colors group-hover:border-purple-2 group-hover:bg-purple-50 dark:bg-gray-800 dark:border-gray-7'
+          className='group-hover:bg-purple-50 dark:bg-gray-800 flex h-6 w-6 shrink-0 items-center justify-center rounded border border-gray-2 bg-gray-1 transition-colors group-hover:border-purple-2 dark:border-gray-7'
+          whileHover={{ rotate: 5, scale: 1.1 }}
         >
           <Icon className='size-3.5' name={icon} />
         </motion.div>
         <div className='flex-1 overflow-hidden'>
           <div className='flex items-center justify-between'>
-            <h4 className='truncate text-[10px] font-bold leading-none text-gray-12 group-hover:text-purple-7 transition-colors'>{title}</h4>
+            <h4 className='truncate text-[10px] leading-none font-bold text-gray-12 transition-colors group-hover:text-purple-7'>
+              {title}
+            </h4>
             <Icon className='size-2 text-gray-8' name='tabler:chevron-down' />
           </div>
-          <p className='mt-0.5 truncate text-[9px] font-medium leading-none text-gray-10'>{subtitle}</p>
+          <p className='mt-0.5 truncate text-[9px] leading-none font-medium text-gray-10'>
+            {subtitle}
+          </p>
         </div>
       </div>
     </motion.div>
