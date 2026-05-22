@@ -23,7 +23,7 @@ export interface Column {
   isDisplayColumn?: boolean
   showMenu?: boolean
   size?: number
-  renderCell?: (row: Record<string, unknown>) => React.ReactNode
+  renderCell?: (row: any, index?: number) => React.ReactNode
 }
 
 export interface Row extends Record<string, unknown> {

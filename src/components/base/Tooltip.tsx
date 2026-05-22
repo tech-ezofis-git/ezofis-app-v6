@@ -14,6 +14,7 @@ interface Props {
   opened?: boolean
   position?: BaseProps['position']
   width?: number
+  zIndex?: number
 }
 
 type TooltipColor = 'gray' | 'primary' | 'secondary' | 'red'
@@ -36,6 +37,7 @@ const Tooltip = ({
   opened,
   position,
   width,
+  zIndex = 1000000,
 }: Props) => {
   const _className = cn(
     'rounded px-2 py-1 text-xs text-white',
@@ -56,6 +58,7 @@ const Tooltip = ({
       openDelay={openDelay}
       position={position}
       w={width}
+      zIndex={zIndex}
       withArrow
       classNames={{
         tooltip: _className,

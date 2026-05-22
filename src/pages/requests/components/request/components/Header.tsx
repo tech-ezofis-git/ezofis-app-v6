@@ -19,6 +19,7 @@ interface HeaderProps {
   currency?: string
   hideActions?: boolean
   isEditing?: boolean
+  poNumber?: string
   poValue?: string | number
   raisedBy?: any
   showApprove?: boolean
@@ -42,7 +43,8 @@ const Header: React.FC<HeaderProps> = ({
   currency,
   hideActions,
   isEditing = false,
-  isLoading,
+  isLoading: _isLoading,
+  poNumber,
   poValue,
   requestNo,
   status = 'Pending Review',
@@ -132,35 +134,45 @@ const Header: React.FC<HeaderProps> = ({
             <IconButton
               className='size-7 cursor-pointer hover:bg-white'
               color='gray'
-              disabled={!onPrev || isLoading}
+              disabled={!onPrev}
               icon='tabler:chevron-left'
               size='sm'
               variant='ghost'
               onClick={onPrev}
             />
             <h1 className='text-[15px] font-semibold tracking-tight text-[var(--gray-13)]'>
-              {isLoading ? (
-                <span className='bg-gray-200 animate-pulse rounded px-2 text-transparent'>
-                  INV-0000-000
-                </span>
-              ) : (
-                requestNo
-              )}
+              {requestNo}
             </h1>
             <IconButton
               className='size-7 cursor-pointer hover:bg-white'
               color='gray'
-              disabled={!onNext || isLoading}
+              disabled={!onNext}
               icon='tabler:chevron-right'
               size='sm'
               variant='ghost'
               onClick={onNext}
             />
-            {!isLoading && (
-              <span className='rounded-full border border-[var(--orange-3)] bg-[var(--orange-1)] px-3 py-1 text-[11px] font-semibold text-[var(--orange-9)]'>
-                {status}
-              </span>
-            )}
+            <div className='flex items-center gap-2'>
+              {poNumber && poNumber !== '-' && poNumber !== 'N/A' && (
+                <span className='animate-in fade-in slide-in-from-left-2 rounded-full border border-[var(--gray-3)] bg-[var(--gray-1)] px-3 py-1 text-[11px] font-semibold text-[var(--gray-11)] duration-300'>
+                  {poNumber}
+                </span>
+              )}
+              {status && (
+                <span
+                  className={cn(
+                    'animate-in fade-in zoom-in-95 rounded-full border px-3 py-1 text-[11px] font-semibold transition-all duration-300',
+                    status === 'Matched' || status === 'Verified'
+                      ? 'border-[var(--green-3)] bg-[var(--green-1)] text-[var(--green-9)]'
+                      : status === 'Not Matched' || status === 'Rejected'
+                        ? 'border-[var(--red-3)] bg-[var(--red-1)] text-[var(--red-9)]'
+                        : 'border-[var(--orange-3)] bg-[var(--orange-1)] text-[var(--orange-9)]',
+                  )}
+                >
+                  {status}
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -196,9 +208,9 @@ const Header: React.FC<HeaderProps> = ({
             return isNaN(num)
               ? '0.00'
               : num.toLocaleString(undefined, {
-                maximumFractionDigits: 2,
-                minimumFractionDigits: 2,
-              })
+                  maximumFractionDigits: 2,
+                  minimumFractionDigits: 2,
+                })
           }
 
           const currDisplay = getCurrencyDisplay(currency || '')
@@ -266,11 +278,14 @@ const Header: React.FC<HeaderProps> = ({
                 <div className='flex flex-col gap-4'>
                   {/* AI Insights Section */}
                   {insightContent && (
-                    <div className='rounded-lg border border-[var(--primary-3)] bg-[var(--primary-1)] p-6'>
-                      <div className='mb-4 flex items-center justify-between gap-3'>
-                        <div className='flex items-center gap-3'>
-                          <Icon className='h-6 w-6 text-[var(--primary-9)]' name='tabler:sparkles' />
-                          <span className='text-[15px] font-semibold text-[var(--gray-13)]'>
+                    <div className='flex flex-col'>
+                      <div className='mb-3 flex items-center justify-between gap-3 border-b border-[var(--gray-2)] pb-2.5'>
+                        <div className='flex items-center gap-2'>
+                          <Icon
+                            className='h-5 w-5 text-[var(--primary-9)]'
+                            name='tabler:sparkles'
+                          />
+                          <span className='text-[14px] font-semibold text-[var(--gray-13)]'>
                             Invoice Decision Details
                           </span>
                         </div>
@@ -282,7 +297,7 @@ const Header: React.FC<HeaderProps> = ({
                           <Icon className='size-4' name='lucide:x' />
                         </button>
                       </div>
-                      <p className='text-[14px] leading-relaxed font-medium text-[var(--gray-12)]'>
+                      <p className='text-[13px] leading-relaxed font-medium text-[var(--gray-12)]'>
                         {renderHighlightedContent(insightContent)}
                       </p>
                     </div>

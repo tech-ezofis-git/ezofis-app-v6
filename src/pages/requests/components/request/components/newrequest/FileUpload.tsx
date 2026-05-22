@@ -23,68 +23,332 @@ import {
 } from '../../../../../../components/common/animations'
 import { IMAGE_ACCEPT, isImage, isPdf, MAX_SIZE, PDF_ACCEPT } from './utils'
 
-const SAMPLE_DOCUMENTS = [
+type SampleDocument = {
+  description: string
+  fileName: string
+  icon: string
+  label: string
+  tag: string
+  tagColor: SampleTagColor
+  thumbnail?: string
+  url: string
+}
+
+type SampleTagColor = 'green' | 'orange' | 'red' | 'blue'
+
+const TAG_COLOR_STYLES: Record<
+  SampleTagColor,
+  { badge: string; bar: string; tableLine: string; thumbBg: string }
+> = {
+  blue: {
+    badge: 'bg-blue-2 text-blue-11 ring-1 ring-blue-4 border border-blue-3',
+    bar: 'bg-blue-9',
+    tableLine: 'bg-blue-4',
+    thumbBg: 'bg-blue-2/30',
+  },
+  green: {
+    badge: 'bg-green-2 text-green-11 ring-1 ring-green-4 border border-green-3',
+    bar: 'bg-green-9',
+    tableLine: 'bg-green-4',
+    thumbBg: 'bg-green-2/30',
+  },
+  orange: {
+    badge:
+      'bg-orange-2 text-orange-11 ring-1 ring-orange-4 border border-orange-3',
+    bar: 'bg-orange-9',
+    tableLine: 'bg-orange-4',
+    thumbBg: 'bg-orange-2/30',
+  },
+  red: {
+    badge: 'bg-red-2 text-red-11 ring-1 ring-red-4 border border-red-3',
+    bar: 'bg-red-9',
+    tableLine: 'bg-red-4',
+    thumbBg: 'bg-red-2/30',
+  },
+}
+
+const SAMPLE_DOCUMENTS: SampleDocument[] = [
   {
+    description: 'Perfect PO match.',
+    fileName: 'Sample Invoices-1.pdf',
     icon: 'tabler:file-invoice',
-    name: 'Sample Invoices-1.pdf',
-    size: '321 KB',
+    label: 'invoice1',
+    tag: 'PO Match',
+    tagColor: 'green',
     url: sample1,
   },
   {
+    description: 'Partial line match.',
+    fileName: 'Sample Invoices-2.pdf',
     icon: 'tabler:file-invoice',
-    name: 'Sample Invoices-2.pdf',
-    size: '321 KB',
+    label: 'invoice2',
+    tag: 'Partial PO',
+    tagColor: 'orange',
     url: sample2,
   },
   {
+    description: 'Duplicate detection.',
+    fileName: 'Sample Invoices-3.pdf',
     icon: 'tabler:file-invoice',
-    name: 'Sample Invoices-3.pdf',
-    size: '321 KB',
+    label: 'invoice3',
+    tag: 'Duplicate',
+    tagColor: 'red',
     url: sample3,
   },
   {
+    description: 'Missing PO reference.',
+    fileName: 'Sample Invoices-4.pdf',
     icon: 'tabler:file-invoice',
-    name: 'Sample Invoices-4.pdf',
-    size: '321 KB',
+    label: 'invoice4',
+    tag: 'Missing PO',
+    tagColor: 'red',
     url: sample4,
   },
   {
+    description: 'PO total mismatch.',
+    fileName: 'Sample Invoices-5.pdf',
     icon: 'tabler:file-invoice',
-    name: 'Sample Invoices-5.pdf',
-    size: '321 KB',
+    label: 'invoice5',
+    tag: 'Mismatch',
+    tagColor: 'orange',
     url: sample5,
   },
   {
+    description: 'Multi-currency VAT.',
+    fileName: 'Sample Invoices-6.pdf',
     icon: 'tabler:file-invoice',
-    name: 'Sample Invoices-6.pdf',
-    size: '321 KB',
+    label: 'invoice6',
+    tag: 'International',
+    tagColor: 'blue',
     url: sample6,
   },
   {
+    description: 'Credit note case.',
+    fileName: 'Sample Invoices-7.pdf',
     icon: 'tabler:file-invoice',
-    name: 'Sample Invoices-7.pdf',
-    size: '321 KB',
+    label: 'invoice7',
+    tag: 'Credit Note',
+    tagColor: 'blue',
     url: sample7,
   },
   {
+    description: 'Mixed tax lines.',
+    fileName: 'Sample Invoices-8.pdf',
     icon: 'tabler:file-invoice',
-    name: 'Sample Invoices-8.pdf',
-    size: '321 KB',
+    label: 'invoice8',
+    tag: 'Multi-tax',
+    tagColor: 'orange',
     url: sample8,
   },
   {
+    description: 'Vendor validation.',
+    fileName: 'Sample Invoices-9.pdf',
     icon: 'tabler:file-invoice',
-    name: 'Sample Invoices-9.pdf',
-    size: '321 KB',
+    label: 'invoice9',
+    tag: 'Vendor Check',
+    tagColor: 'green',
     url: sample9,
   },
   {
+    description: 'Low OCR scan.',
+    fileName: 'Sample Invoices-10.pdf',
     icon: 'tabler:file-invoice',
-    name: 'Sample Invoices-10.pdf',
-    size: '321 KB',
+    label: 'invoice10',
+    tag: 'Low OCR',
+    tagColor: 'red',
     url: sample10,
   },
 ]
+
+const SampleThumbnailPreview = ({
+  doc,
+  variant,
+}: {
+  doc: SampleDocument
+  variant: 'compact' | 'expanded'
+}) => {
+  const colors = TAG_COLOR_STYLES[doc.tagColor]
+  const isExpanded = variant === 'expanded'
+
+  if (doc.thumbnail) {
+    return (
+      <img
+        alt={isExpanded ? `${doc.label} preview` : doc.label}
+        className='size-full object-cover object-top'
+        src={doc.thumbnail}
+      />
+    )
+  }
+
+  const displayLabel = doc.label.replace('invoice', 'inv-') + '.pdf'
+
+  return (
+    <div
+      className={`flex size-full flex-col bg-white transition-colors duration-300 select-none ${isExpanded ? 'p-3' : 'p-1.5'}`}
+    >
+      {/* Invoice Top Header */}
+      <div
+        className={`flex items-start justify-between border-b border-[var(--gray-3)] pb-1 ${isExpanded ? 'mb-2 pb-1.5' : 'mb-1'}`}
+      >
+        <div className='flex flex-col gap-0.5'>
+          <div
+            className={`font-poppins leading-none font-black text-[var(--gray-12)] ${isExpanded ? 'text-[11px]' : 'text-[7px]'}`}
+          >
+            INVOICE
+          </div>
+          <div
+            className={`font-mono leading-none text-[var(--gray-9)] ${isExpanded ? 'text-[7px]' : 'text-[5px]'}`}
+          >
+            #{displayLabel.toUpperCase().replace('.PDF', '')}
+          </div>
+        </div>
+        {/* Vendor/Status Colored Accent Shape */}
+        <div
+          className={`flex items-center justify-center rounded ${colors.bar} ${isExpanded ? 'h-3.5 px-1.5' : 'h-2 w-3.5'}`}
+        >
+          {isExpanded && (
+            <span className='text-[5px] font-bold tracking-wider text-white uppercase'>
+              {doc.tag}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Billing Address Mock Section */}
+      <div
+        className={`flex items-start justify-between gap-2 ${isExpanded ? 'mb-2' : 'mb-1'}`}
+      >
+        <div className='flex-1 space-y-0.5'>
+          <div className='h-[3px] w-2/3 rounded bg-[var(--gray-5)]' />
+          <div className='h-[2px] w-5/6 rounded bg-[var(--gray-3)]' />
+          <div className='h-[2px] w-1/2 rounded bg-[var(--gray-3)]' />
+        </div>
+        <div className='flex flex-1 flex-col items-end space-y-0.5 text-right'>
+          <div className='h-[3px] w-1/2 rounded bg-[var(--gray-4)]' />
+          <div className='h-[2px] w-3/4 rounded bg-[var(--gray-3)]' />
+        </div>
+      </div>
+
+      {/* Table Section */}
+      <div className='flex flex-1 flex-col overflow-hidden rounded border border-[var(--gray-3)]'>
+        {/* Table Header */}
+        <div
+          className={`flex items-center gap-1 border-b border-[var(--gray-3)] ${colors.thumbBg} px-1 py-0.5`}
+        >
+          <div className='h-[2px] flex-1 rounded-sm bg-[var(--gray-8)]' />
+          <div className='h-[2px] w-2 rounded-sm bg-[var(--gray-8)]' />
+          <div className='h-[2px] w-4 rounded-sm bg-[var(--gray-8)]' />
+        </div>
+
+        {/* Table Body Rows */}
+        <div
+          className={`flex-1 p-1 ${isExpanded ? 'space-y-1.5' : 'space-y-0.5'}`}
+        >
+          {/* Row 1 */}
+          <div className='flex items-center gap-1'>
+            <div className={`flex-1 rounded-sm ${colors.tableLine} h-[2px]`} />
+            <div className='h-[2px] w-2 rounded-sm bg-[var(--gray-4)]' />
+            <div className={`w-3 rounded-sm ${colors.tableLine} h-[2px]`} />
+          </div>
+          {/* Row 2 */}
+          <div className='flex items-center gap-1'>
+            <div
+              className={`flex-1 rounded-sm ${colors.tableLine} h-[2px] opacity-80`}
+            />
+            <div className='h-[2px] w-2 rounded-sm bg-[var(--gray-3)]' />
+            <div
+              className={`w-3 rounded-sm ${colors.tableLine} h-[2px] opacity-80`}
+            />
+          </div>
+          {/* Row 3 */}
+          <div className='flex items-center gap-1'>
+            <div className='h-[2px] flex-1 rounded-sm bg-[var(--gray-3)]' />
+            <div className='h-[2px] w-2 rounded-sm bg-[var(--gray-3)]' />
+            <div className='h-[2px] w-3 rounded-sm bg-[var(--gray-3)]' />
+          </div>
+          {/* Row 4 (Expanded only) */}
+          {isExpanded && (
+            <div className='flex items-center gap-1'>
+              <div
+                className={`flex-1 rounded-sm ${colors.tableLine} h-[2px] opacity-50`}
+              />
+              <div className='h-[2px] w-2 rounded-sm bg-[var(--gray-3)]' />
+              <div
+                className={`w-3 rounded-sm ${colors.tableLine} h-[2px] opacity-50`}
+              />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Summary / Total Block */}
+      <div className='mt-1 flex items-center justify-between border-t border-[var(--gray-3)] pt-1'>
+        {/* Stamp / Status indicator */}
+        <div className='flex items-center gap-0.5'>
+          <span
+            className={`inline-block rounded-full ${isExpanded ? 'h-2 w-2' : 'h-1.5 w-1.5'} ${colors.bar}`}
+          />
+          {isExpanded && (
+            <span
+              className={`text-[5px] font-bold ${colors.badge.split(' ')[1]}`}
+            >
+              {doc.tag.toUpperCase()}
+            </span>
+          )}
+        </div>
+
+        {/* Grand Total */}
+        <div className='flex items-center gap-1'>
+          <div className='h-[2px] w-3 rounded-sm bg-[var(--gray-6)]' />
+          <div
+            className={`rounded-sm ${colors.bar} ${isExpanded ? 'h-2 w-6' : 'h-[3px] w-4'}`}
+          />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const SampleThumbnail = ({
+  colors,
+  doc,
+  isSelected,
+}: {
+  colors: (typeof TAG_COLOR_STYLES)[SampleTagColor]
+  doc: SampleDocument
+  isSelected?: boolean
+}) => {
+  return (
+    <div className='group/thumb relative z-10 w-full hover:z-30'>
+      {/* Thumbnail image in card */}
+      <div
+        className={`relative flex h-[92px] w-full items-center justify-center rounded-t-lg border-b border-dashed border-[var(--gray-4)] px-2 py-2 ${colors.thumbBg} transition-colors duration-300`}
+      >
+        <div className='relative h-full w-[94%] overflow-hidden rounded border border-[var(--gray-3)] bg-white shadow-sm transition-transform duration-300 group-hover/thumb:scale-[1.02]'>
+          <SampleThumbnailPreview doc={doc} variant='compact' />
+        </div>
+
+        {/* Selected Tick Mark Overlay */}
+        {isSelected && (
+          <div className='absolute inset-0 z-20 flex items-center justify-center rounded-t-lg bg-green-9/10 backdrop-blur-[0.5px] transition-all duration-300'>
+            <div className='animate-in fade-in zoom-in-75 flex size-6 items-center justify-center rounded-full bg-green-9 text-white shadow-lg duration-300'>
+              <Icon className='size-4' name='tabler:check' />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Mouseover: expanded clear view */}
+      <div className='pointer-events-none absolute bottom-[90%] left-1/2 z-50 h-[282px] w-[200px] -translate-x-1/2 translate-y-2 scale-95 opacity-0 shadow-2xl transition-all duration-300 ease-out group-hover/thumb:translate-y-[-12px] group-hover/thumb:scale-100 group-hover/thumb:opacity-100'>
+        <div className='size-full overflow-hidden rounded-xl border border-[var(--gray-4)] bg-white/95 p-2 shadow-2xl backdrop-blur-md'>
+          <div className='size-full overflow-hidden rounded-lg border border-[var(--gray-3)] bg-white shadow-inner'>
+            <SampleThumbnailPreview doc={doc} variant='expanded' />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 const FileUpload = ({ onClose }: { onClose?: () => void }) => {
   const rawWorkflow = requestStore((state) => state.rawWorkflowData)
@@ -100,6 +364,9 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
   const [uploadStatus, setUploadStatus] = useState<
     'idle' | 'uploading' | 'success' | 'error'
   >('idle')
+  const [selectedSampleName, setSelectedSampleName] = useState<string | null>(
+    null,
+  )
 
   // API State
   const [repoData, setRepoData] = useState<any>(null)
@@ -133,7 +400,10 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
     if (ref.current) ref.current.value = ''
   }
 
-  const handleInvoiceFiles = async (fileList: FileList | File[] | null) => {
+  const handleInvoiceFiles = async (
+    fileList: FileList | File[] | null,
+    isSample = false,
+  ) => {
     const files = Array.from(fileList ?? [])
     const validFiles = files.filter(
       (f) => (isPdf(f) || isImage(f)) && f.size <= MAX_SIZE,
@@ -185,6 +455,10 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
         return
       }
 
+      if (!isSample) {
+        setSelectedSampleName(null)
+      }
+
       setFileData(validFiles[0])
       setUploadStatus('uploading')
 
@@ -231,6 +505,7 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
         if (error) {
           console.error('Upload error:', error)
           setUploadStatus('error')
+          setSelectedSampleName(null)
           showToast({
             message: `Error uploading file: ${error}`,
             variant: 'error',
@@ -239,6 +514,7 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
       } catch (error: any) {
         console.error('Upload exception:', error)
         setUploadStatus('error')
+        setSelectedSampleName(null)
         showToast({
           message: `Exception uploading file: ${error.message || error}`,
           variant: 'error',
@@ -248,17 +524,19 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
     resetInput(invoiceInputRef)
   }
 
-  const handleSampleSelect = async (doc: (typeof SAMPLE_DOCUMENTS)[0]) => {
+  const handleSampleSelect = async (doc: SampleDocument) => {
     try {
+      setSelectedSampleName(doc.fileName)
       setUploadStatus('uploading')
       const response = await fetch(doc.url)
       const blob = await response.blob()
-      const file = new File([blob], doc.name, { type: 'application/pdf' })
+      const file = new File([blob], doc.fileName, { type: 'application/pdf' })
 
       setUploadStatus('idle')
-      handleInvoiceFiles([file])
+      handleInvoiceFiles([file], true)
     } catch (error) {
       console.error('Failed to load sample document', error)
+      setSelectedSampleName(null)
       setUploadStatus('idle')
       showToast({
         message: 'Failed to load sample document.',
@@ -367,7 +645,7 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
   // Step 1: Upload (Premium Centered UI)
   return (
     <AnimateFadeIn className='flex h-full flex-col items-center justify-center overflow-y-auto bg-surface-muted px-4 py-4 sm:px-6 lg:px-8'>
-      <div className='flex w-full max-w-4xl flex-col items-center gap-6'>
+      <div className='flex w-full max-w-5xl flex-col items-center gap-5'>
         {/* Header Section */}
         <AnimateSlideUp className='space-y-1 text-center'>
           <h1 className='text-2xl font-bold tracking-tight text-[var(--gray-13)]'>
@@ -380,19 +658,16 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
           </p>
         </AnimateSlideUp>
 
-        {/* Main Upload Hub */}
-        <AnimateSlideUp className='w-full max-w-4xl' delay={0.1}>
-          <div className='group relative flex h-auto flex-col gap-2 rounded-2xl border border-[var(--gray-3)] bg-white p-2 shadow-sm transition-all duration-700 hover:-translate-y-1 hover:shadow-xl md:h-[280px] md:flex-row'>
-            {/* Interactive "Loading/Scanning" Hover Effect */}
-            <div className='pointer-events-none absolute inset-0 z-0 overflow-hidden rounded-2xl opacity-0 transition-opacity duration-700 group-hover:opacity-100'>
+        {/* Upload Zone */}
+        <AnimateSlideUp className='relative z-10 w-full max-w-3xl' delay={0.1}>
+          <div className='group relative overflow-hidden rounded-xl border border-[var(--gray-3)] bg-white p-2 shadow-sm transition-all duration-500 hover:shadow-md'>
+            <div className='pointer-events-none absolute inset-0 z-0 overflow-hidden rounded-xl opacity-0 transition-opacity duration-700 group-hover:opacity-100'>
               <div className='absolute inset-0 h-1/2 w-full animate-[scan_3s_linear_infinite] bg-gradient-to-b from-transparent via-[var(--primary-2)]/20 to-transparent' />
             </div>
 
-            {/* Left: Drag & Drop Zone */}
             <div
               className={[
-                'h-full flex-1 rounded-xl border-[2px] border-dashed border-[var(--primary-4)] p-4 lg:p-6',
-                'relative z-10 flex cursor-pointer flex-col items-center justify-center text-center transition-all duration-500 ease-out',
+                'relative z-10 flex min-h-[140px] cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed border-[var(--primary-4)] px-8 py-6 text-center transition-all duration-500 ease-out sm:min-h-[128px]',
                 isDragOver
                   ? 'scale-[0.99] border-[var(--primary-6)] bg-[var(--primary-1)]'
                   : 'bg-white hover:border-[var(--primary-5)] hover:bg-[var(--primary-1)]/30',
@@ -413,37 +688,41 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
               }}
             >
               {uploadStatus === 'uploading' || isSubmitting ? (
-                <div className='flex flex-col items-center py-8'>
-                  <div className='mb-6 flex size-16 animate-pulse items-center justify-center rounded-full bg-[var(--primary-1)]'>
+                <div className='flex flex-col items-center gap-3 py-2'>
+                  <div className='flex size-14 items-center justify-center rounded-full bg-[var(--primary-1)]'>
                     <Icon
-                      className='size-8 animate-spin text-[var(--primary-9)]'
+                      className='size-7 animate-spin text-[var(--primary-9)]'
                       name='tabler:loader-2'
                     />
                   </div>
-                  <h2 className='mb-2 animate-pulse text-xl font-bold text-[var(--gray-13)]'>
-                    {uploadStatus === 'uploading'
-                      ? 'Uploading Invoice...'
-                      : 'Creating Request...'}
-                  </h2>
-                  <p className='text-sm font-medium text-[var(--gray-10)]'>
-                    Please wait while we process your document
-                  </p>
+                  <div className='text-center'>
+                    <h2 className='text-base font-bold text-[var(--gray-13)]'>
+                      {uploadStatus === 'uploading'
+                        ? 'Uploading Invoice...'
+                        : 'Creating Request...'}
+                    </h2>
+                    <p className='text-sm font-medium text-[var(--gray-10)]'>
+                      Please wait while we process your document
+                    </p>
+                  </div>
                 </div>
               ) : (
-                <AnimateStagger className='flex w-full flex-col items-center'>
-                  <div className='mb-3 flex size-12 items-center justify-center rounded-2xl bg-[var(--primary-1)] shadow-sm transition-all duration-500 group-hover:scale-110'>
+                <AnimateStagger className='flex flex-col items-center gap-3'>
+                  <div className='flex size-14 items-center justify-center rounded-2xl bg-[var(--primary-1)] shadow-sm transition-all duration-500 group-hover:scale-105'>
                     <Icon
-                      className='size-6 text-[var(--primary-9)]'
+                      className='size-7 text-[var(--primary-9)]'
                       name='tabler:cloud-upload'
                     />
                   </div>
-                  <h2 className='mb-1.5 text-lg font-medium tracking-tight text-[var(--gray-13)]'>
-                    Drop your file here, or{' '}
-                    <span className='text-[var(--primary-9)]'>browse</span>
-                  </h2>
-                  <p className='mb-0 text-[11px] font-medium text-[var(--gray-9)]'>
-                    Supports PDF and Images · Max 4 MB
-                  </p>
+                  <div className='text-center'>
+                    <h2 className='text-base font-medium tracking-tight text-[var(--gray-13)]'>
+                      Drop your file here, or{' '}
+                      <span className='text-[var(--primary-9)]'>browse</span>
+                    </h2>
+                    <p className='text-xs font-medium text-[var(--gray-9)]'>
+                      Supports PDF and Images · Max 4 MB
+                    </p>
+                  </div>
                 </AnimateStagger>
               )}
 
@@ -456,42 +735,69 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
                 onChange={(e) => handleInvoiceFiles(e.target.files)}
               />
             </div>
+          </div>
+        </AnimateSlideUp>
 
-            {/* Right: Sample Documents Panel */}
-            <div className='relative z-10 flex h-full w-full flex-shrink-0 flex-col overflow-hidden rounded-xl border border-[var(--gray-3)] bg-[var(--gray-1)] md:w-72'>
-              <div className='shrink-0 border-b border-[var(--gray-3)] bg-white/50 p-3 backdrop-blur-sm'>
-                <p className='text-xs font-bold tracking-widest text-[var(--gray-11)] uppercase'>
-                  Quick Try
-                </p>
-                <p className='mt-0.5 text-[10px] font-medium text-[var(--gray-9)]'>
-                  Select a sample to process
-                </p>
-              </div>
-              <div className='custom-scrollbar flex-1 space-y-1.5 overflow-y-auto p-2'>
-                {SAMPLE_DOCUMENTS.map((doc, idx) => (
+        {/* Quick Try — narrow sample cards */}
+        <AnimateSlideUp className='relative z-20 w-full max-w-4xl' delay={0.15}>
+          <div className='space-y-3'>
+            <div className='flex items-center gap-3 px-2'>
+              <div className='flex-1 border-t border-dashed border-[var(--gray-5)]' />
+              <p className='shrink-0 text-center text-[10px] tracking-wide text-[var(--gray-9)]'>
+                <span className='font-bold uppercase'>Quick Try</span>
+                <span className='mx-1.5 text-[var(--gray-6)]'>·</span>
+                <span className='font-medium text-[var(--gray-10)]'>
+                  Click any preview to process
+                </span>
+              </p>
+              <div className='flex-1 border-t border-dashed border-[var(--gray-5)]' />
+            </div>
+
+            <div className='custom-scrollbar flex flex-wrap justify-center gap-2.5 overflow-visible pt-4 pb-1'>
+              {SAMPLE_DOCUMENTS.map((doc, idx) => {
+                const colors = TAG_COLOR_STYLES[doc.tagColor]
+                const displayLabel =
+                  doc.label.replace('invoice', 'inv-') + '.pdf'
+                const isSelected = selectedSampleName === doc.fileName
+                return (
                   <button
-                    className='group/btn flex w-full items-center gap-3 rounded-lg border border-[var(--gray-3)] bg-white p-2 text-left transition-all duration-300 hover:border-[var(--primary-5)] hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-50'
                     disabled={uploadStatus === 'uploading' || isSubmitting}
                     key={idx}
+                    type='button'
+                    className={`group/card flex w-[156px] shrink-0 flex-col overflow-visible rounded-lg border bg-white text-left shadow-sm transition-all duration-300 ${
+                      isSelected
+                        ? 'scale-[1.02] border-green-8 ring-2 ring-green-3 ring-offset-0'
+                        : 'border-[var(--gray-3)] hover:-translate-y-1.5 hover:scale-[1.02] hover:border-[var(--primary-6)] hover:shadow-md active:translate-y-0 active:scale-98'
+                    } disabled:cursor-not-allowed disabled:opacity-50`}
                     onClick={() => handleSampleSelect(doc)}
                   >
-                    <div className='flex size-8 shrink-0 items-center justify-center rounded bg-[var(--gray-2)] transition-colors duration-300 group-hover/btn:bg-[var(--primary-1)]'>
-                      <Icon
-                        className='size-4 text-[var(--gray-11)] transition-colors duration-300 group-hover/btn:text-[var(--primary-9)]'
-                        name={doc.icon}
-                      />
-                    </div>
-                    <div className='flex min-w-0 flex-col'>
-                      <span className='truncate text-[11px] font-semibold text-[var(--gray-13)] transition-colors duration-300 group-hover/btn:text-[var(--primary-9)]'>
-                        {doc.name.replace('.pdf', '')}
-                      </span>
-                      <span className='text-[9px] font-medium text-[var(--gray-9)]'>
-                        {doc.size}
-                      </span>
+                    <SampleThumbnail
+                      colors={colors}
+                      doc={doc}
+                      isSelected={isSelected}
+                    />
+
+                    <div className='flex flex-col gap-0.5 border-t border-[var(--gray-3)] px-2 py-1.5'>
+                      <div className='flex items-center justify-between gap-1'>
+                        <span
+                          className='truncate text-[10px] font-bold tracking-tight text-[var(--gray-13)]'
+                          title={doc.fileName}
+                        >
+                          {displayLabel}
+                        </span>
+                        <span
+                          className={`shrink-0 rounded-full px-1.5 py-0.5 text-[8px] leading-tight font-semibold ring-1 ring-inset ${colors.badge}`}
+                        >
+                          {doc.tag}
+                        </span>
+                      </div>
+                      <p className='mt-0.5 line-clamp-1 text-[9px] leading-snug font-medium text-[var(--gray-10)]'>
+                        {doc.description}
+                      </p>
                     </div>
                   </button>
-                ))}
-              </div>
+                )
+              })}
             </div>
           </div>
         </AnimateSlideUp>

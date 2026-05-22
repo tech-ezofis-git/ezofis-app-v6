@@ -190,6 +190,7 @@ const InboxList: React.FC<InboxListProps> = ({
     const newProcessingItems = processingProcesses
       .filter((p) => !existingIds.has(String(p.processId || p.id)))
       .map((p) => ({
+        ...p,
         _groupKey: 'root',
         documentNumber: p.requestNo || p.name || 'Processing...',
         id: p.processId || p.id,
@@ -219,6 +220,17 @@ const InboxList: React.FC<InboxListProps> = ({
     return outData
   }, [filteredData, processingProcesses, activeTab])
 
+  // ✅ Flatten final data to render flat table rows when viewMode is 'table'
+  const flatFinalRows = useMemo(() => {
+    const items: any[] = []
+    finalData.forEach((group: any) => {
+      if (Array.isArray(group.items)) {
+        items.push(...group.items)
+      }
+    })
+    return items
+  }, [finalData])
+
   // ✅ Handle default expansion: Expand ALL groups when data or grouping changes
   // ✅ Handle default expansion: Default to COLLAPSED
   React.useEffect(() => {
@@ -230,7 +242,9 @@ const InboxList: React.FC<InboxListProps> = ({
   const { table } = useDataTable({
     columns,
     enableRowSelection: false,
-    rows: (finalData || []) as any,
+    rows: (viewMode === 'table'
+      ? [{ items: flatFinalRows }]
+      : finalData) as any,
 
     state: {
       expandState,
@@ -258,7 +272,7 @@ const InboxList: React.FC<InboxListProps> = ({
               <div className='flex h-full min-w-0 flex-1 flex-col'>
                 <DataTable
                   component={selectedItem}
-                  hideGrouping={activeTab !== 'Inbox'}
+                  hideGrouping={true}
                   isLoading={isLoading}
                   isReLoading={isRefetching}
                   pageSize={pageSize}

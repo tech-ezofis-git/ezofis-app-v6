@@ -17,8 +17,184 @@ import { useRequestDetail } from '../../hooks/useRequestDetails'
 // import History from './components/sections/history/History';
 import requestStore from '../../stores/useRequestStore'
 import Header from './components/Header'
-// import Footer from './components/Footer';
 import Overview from './components/sections/overview/Overview'
+
+const findPONumberInObject = (obj: any): string | null => {
+  if (!obj || typeof obj !== 'object') return null
+
+  const extractStringValue = (val: any): string | null => {
+    if (val == null) return null
+    if (typeof val === 'object') {
+      const innerVal =
+        val['Invoice Value'] ||
+        val['InvoiceValue'] ||
+        val['PO Value'] ||
+        val['POValue'] ||
+        val['value'] ||
+        val['val']
+      if (innerVal !== undefined) return extractStringValue(innerVal)
+      return null
+    }
+    const str = String(val).trim()
+    return str !== '' && str !== '-' && str.toUpperCase() !== 'N/A' ? str : null
+  }
+
+  for (const key of Object.keys(obj)) {
+    const lowerKey = key.toLowerCase()
+    const isStrictPOKey =
+      lowerKey === 'po' ||
+      lowerKey === 'po_number' ||
+      lowerKey === 'ponumber' ||
+      lowerKey === 'po number' ||
+      lowerKey === 'po_no' ||
+      lowerKey === 'pono' ||
+      lowerKey === 'po no' ||
+      lowerKey === 'purchase_order' ||
+      lowerKey === 'purchaseorder' ||
+      lowerKey === 'purchase_order_number' ||
+      lowerKey === 'purchaseorder_number' ||
+      lowerKey === 'purchase order number' ||
+      lowerKey === 'purchase_order_no' ||
+      lowerKey === 'purchaseorder_no' ||
+      lowerKey === 'purchase order no' ||
+      lowerKey === 'rxwlghillrremmrqlk9mj' ||
+      lowerKey.includes('purchase order') ||
+      lowerKey.includes('purchase_order') ||
+      lowerKey.includes('purchaseorder')
+
+    if (isStrictPOKey) {
+      if (
+        !lowerKey.includes('value') &&
+        !lowerKey.includes('amount') &&
+        !lowerKey.includes('total') &&
+        !lowerKey.includes('date') &&
+        !lowerKey.includes('price')
+      ) {
+        const extracted = extractStringValue(obj[key])
+        if (extracted && extracted !== '-' && extracted !== '') {
+          return extracted
+        }
+      }
+    }
+  }
+
+  return null
+}
+
+const extractPONumber = (
+  row: any,
+  formModel: any,
+  invoiceHeader: any,
+  currentAgentData: any,
+): string => {
+  if (!row) return ''
+
+  const fromForm =
+    findPONumberInObject(formModel) ||
+    findPONumberInObject(row.formData?.fields) ||
+    findPONumberInObject(row.formData)
+  if (fromForm) return fromForm
+
+  const fromAgentHeader = findPONumberInObject(invoiceHeader)
+  if (fromAgentHeader) return fromAgentHeader
+
+  const fromPOMatching = findPONumberInObject(currentAgentData?.po_matching)
+  if (fromPOMatching) return fromPOMatching
+
+  const fromAgent = findPONumberInObject(currentAgentData)
+  if (fromAgent) return fromAgent
+
+  const fromSelected = findPONumberInObject(row)
+  if (fromSelected) return fromSelected
+
+  return ''
+}
+
+export const buildFieldMetaMap = (
+  workflow: any,
+): Map<string, { label: string; type: string }> => {
+  const metaMap = new Map<string, { label: string; type: string }>()
+  if (!workflow?.formJson) return metaMap
+
+  let form = workflow.formJson
+  if (typeof form === 'string' && form !== '') {
+    try {
+      form = JSON.parse(form)
+    } catch {
+      return metaMap
+    }
+  }
+
+  const addControl = (c: any) => {
+    if (c) {
+      const key = c.jsonId || c.id || c.name
+      const label = c.label || c.name || key
+      const type = c.type || c.control || c.controlType || ''
+      if (key) {
+        metaMap.set(key, { label, type })
+      }
+    }
+  }
+
+  // 1. Check controllist if present
+  const controllist = form.controllist
+  if (Array.isArray(controllist)) {
+    controllist.forEach(addControl)
+  }
+
+  // 2. Also check panels / secondaryPanels / fields
+  const panels = Array.isArray(form?.panels) ? form.panels : []
+  const secondaryPanels = Array.isArray(form?.secondaryPanels)
+    ? form.secondaryPanels
+    : []
+  const formJsonList = form?.formJson || {}
+  const innerPanels = Array.isArray(formJsonList?.panels)
+    ? formJsonList.panels
+    : []
+
+  const allPanels = [...panels, ...secondaryPanels, ...innerPanels]
+
+  allPanels.forEach((panel: any) => {
+    if (!panel) return
+    const controls =
+      panel.controlList || panel.controllist || panel.fields || []
+    if (Array.isArray(controls)) {
+      controls.forEach(addControl)
+    }
+  })
+
+  return metaMap
+}
+
+export const buildFieldLabelMap = (workflow: any): Map<string, string> => {
+  const labelMap = new Map<string, string>()
+  const metaMap = buildFieldMetaMap(workflow)
+  metaMap.forEach((val, key) => {
+    labelMap.set(key, val.label)
+  })
+  return labelMap
+}
+
+const mapFormModelToPayloadFields = (formModel: any, workflow: any) => {
+  const fieldsPayload: any = {}
+  const labelMap = buildFieldLabelMap(workflow)
+
+  const inverseMap = new Map<string, string>()
+  labelMap.forEach((label, jsonId) => {
+    inverseMap.set(label, jsonId)
+  })
+
+  Object.keys(formModel).forEach((key) => {
+    const val = formModel[key]
+    fieldsPayload[key] = val
+    const jsonId = inverseMap.get(key)
+    if (jsonId) {
+      fieldsPayload[jsonId] = val
+    }
+  })
+
+  return fieldsPayload
+}
 
 const Request = ({
   hideActions,
@@ -41,6 +217,7 @@ const Request = ({
     rawWorkflowData,
     requestListTab,
     selectedItem: storeSelectedItem,
+    selectedWorkflow,
     selectedWorkflowId,
     workflowRefresh,
   } = requestStore((state) => state)
@@ -72,9 +249,43 @@ const Request = ({
 
   const [formModel, setFormModel] = useState<any>({})
 
+  const allowedLabels = useMemo(() => {
+    if (!selectedItem) return new Set<string>()
+    const metaMap = buildFieldMetaMap(selectedWorkflow)
+    const fieldsSource = selectedItem.formData?.fields || {}
+    const labels = new Set<string>()
+    Object.keys(fieldsSource).forEach((key) => {
+      const meta = metaMap.get(key)
+      const fieldType = String(meta?.type || '').toUpperCase()
+      const isTable = fieldType === 'TABLE' || fieldType === 'DYNAMIC_TABLE'
+      const isFileUpload =
+        fieldType === 'FILE_UPLOAD' || fieldType === 'FILEUPLOAD'
+
+      if (!isTable && !isFileUpload) {
+        const label = meta?.label || key
+        labels.add(label)
+      }
+    })
+    return labels
+  }, [selectedItem, selectedWorkflow])
+
   useEffect(() => {
-    setFormModel({})
-  }, [selectedItem?.transactionId])
+    if (selectedItem) {
+      const metaMap = buildFieldMetaMap(selectedWorkflow)
+      const cleanFields: any = {}
+      const fieldsSource = selectedItem.formData?.fields || {}
+
+      Object.keys(fieldsSource).forEach((key) => {
+        const val = fieldsSource[key]
+        const meta = metaMap.get(key)
+        const label = meta?.label || key
+        cleanFields[label] = val
+      })
+      setFormModel(cleanFields)
+    } else {
+      setFormModel({})
+    }
+  }, [selectedItem?.transactionId, selectedWorkflow])
 
   console.log('=== REQUEST COMPONENT DEBUG LOGS ===')
   console.log('Prop item:', item)
@@ -126,7 +337,7 @@ const Request = ({
         formData: {
           fields:
             Object.keys(formModel).length > 0
-              ? formModel
+              ? mapFormModelToPayloadFields(formModel, selectedWorkflow)
               : selectedItem?.formData?.fields || {},
           formEntryId: selectedItem?.formData?.formEntryId,
           formId: rawWorkflowData?.wFormId,
@@ -151,6 +362,11 @@ const Request = ({
   const invoiceHeader = currentAgentData?.['Extracted Invoice JSON']
     ?.invoice_header as any
   const totalAmount =
+    formModel?.['Invoice Amount'] ||
+    formModel?.['Total Due'] ||
+    formModel?.['Total'] ||
+    formModel?.['invoice_amount'] ||
+    formModel?.['total_amount'] ||
     invoiceHeader?.['Invoice Amount'] ||
     invoiceHeader?.['Total Due'] ||
     invoiceHeader?.['Total'] ||
@@ -192,14 +408,40 @@ const Request = ({
     selectedItem?.poAmount ||
     selectedItem?.poValue ||
     '0.00'
+  const poVal = extractPONumber(
+    selectedItem,
+    formModel,
+    invoiceHeader,
+    currentAgentData,
+  )
+
+  const hasValidPO =
+    poVal &&
+    poVal !== '-' &&
+    poVal.toUpperCase() !== 'N/A' &&
+    poVal.trim() !== ''
+  const matchingStatus = hasValidPO ? 'Matched' : 'Not Matched'
   const currency = invoiceHeader?.['Currency'] || selectedItem?.currency
+
+  const rawStatus =
+    currentAgentData?.decision ||
+    selectedItem?.decision ||
+    selectedItem?.status ||
+    selectedItem?.stage ||
+    'Pending Review'
+
+  const normalizedStatus = String(rawStatus).toUpperCase()
+
   const statusBadge =
-    currentAgentData?.decision === 'APPROVED'
-      ? 'Verified'
-      : currentAgentData?.decision === 'REJECTED'
+    normalizedStatus === 'APPROVED' ||
+    normalizedStatus === 'COMPLETED' ||
+    normalizedStatus === 'VERIFIER' ||
+    normalizedStatus === 'MATCHED' ||
+    normalizedStatus === 'VERIFIED'
+      ? matchingStatus
+      : normalizedStatus === 'REJECTED'
         ? 'Rejected'
         : 'Pending Review'
-
 
   return (
     <div
@@ -216,6 +458,7 @@ const Request = ({
           hideActions={hideActions}
           isEditing={isEditing}
           isLoading={isLoading}
+          poNumber={poVal}
           poValue={poValue}
           raisedAt={request?.createdAt}
           rightView={rightView}
@@ -270,11 +513,13 @@ const Request = ({
       >
         <Overview
           agentData={currentAgentData}
+          allowedLabels={allowedLabels}
           formModel={formModel}
           processId={Number(selectedItem?.processId)}
           repositoryId={Number(rawWorkflowData?.repositoryId)}
           rightView={rightView}
           selectedItem={selectedItem}
+          selectedWorkflow={selectedWorkflow}
           transactionId={Number(selectedItem?.transactionId)}
           workflowId={Number(resolvedWorkflowId)}
           setFormModel={setFormModel}

@@ -18,6 +18,7 @@ import Icon from '@/components/base/icon/Icon'
 import FileSheet from '@/components/common/file-sheet/FileSheet'
 import cn from '@/utils/cn'
 import { formatDatetime } from '@/utils/dayjs'
+import HoverExpandableText from './HoverExpandableText'
 
 const GridRowSkeleton = ({ index }: { index: number }) => {
   const prefersReducedMotion = useReducedMotion()
@@ -100,11 +101,21 @@ const findPONumberInObject = (obj: any): string | null => {
       lowerKey === 'po_number' ||
       lowerKey === 'ponumber' ||
       lowerKey === 'po number' ||
+      lowerKey === 'po_no' ||
+      lowerKey === 'pono' ||
+      lowerKey === 'po no' ||
+      lowerKey === 'purchase_order' ||
+      lowerKey === 'purchaseorder' ||
       lowerKey === 'purchase_order_number' ||
       lowerKey === 'purchaseorder_number' ||
       lowerKey === 'purchase order number' ||
+      lowerKey === 'purchase_order_no' ||
+      lowerKey === 'purchaseorder_no' ||
+      lowerKey === 'purchase order no' ||
       lowerKey === 'rxwlghillrremmrqlk9mj' ||
-      lowerKey.includes('purchase order')
+      lowerKey.includes('purchase order') ||
+      lowerKey.includes('purchase_order') ||
+      lowerKey.includes('purchaseorder')
 
     if (isStrictPOKey) {
       if (
@@ -186,9 +197,9 @@ const extractPaymentTerms = (row: any): string => {
   let val =
     typeof termObj === 'object'
       ? termObj.payment_terms ||
-      termObj.terms ||
-      termObj.payment_term ||
-      termObj.term
+        termObj.terms ||
+        termObj.payment_term ||
+        termObj.term
       : termObj
   if (val && val !== '-') return String(val)
 
@@ -211,9 +222,9 @@ const extractPaymentTerms = (row: any): string => {
     val =
       typeof agentTermObj === 'object'
         ? agentTermObj.payment_terms ||
-        agentTermObj.terms ||
-        agentTermObj.payment_term ||
-        agentTermObj.term
+          agentTermObj.terms ||
+          agentTermObj.payment_term ||
+          agentTermObj.term
         : agentTermObj
     if (val && val !== '-') return String(val)
 
@@ -319,7 +330,6 @@ interface GridViewProps<TData> {
   onViewModeChange?: (mode: 'table' | 'grid') => void
 }
 
-
 const GridView = <TData extends unknown>({
   actions,
   data,
@@ -337,7 +347,13 @@ const GridView = <TData extends unknown>({
   const [selectedIds, setSelectedIds] = useState<Set<string | number>>(
     new Set(),
   )
+  const [isSelectionMode, setIsSelectionMode] = useState(false)
   const [hoveredRowId, setHoveredRowId] = useState<string | number | null>(null)
+
+  const exitSelectionMode = () => {
+    setSelectedIds(new Set())
+    setIsSelectionMode(false)
+  }
 
   const allItems = useMemo(() => {
     const items: any[] = []
@@ -393,35 +409,56 @@ const GridView = <TData extends unknown>({
       <div className='flex h-full flex-col overflow-hidden'>
         <div className='sticky top-0 z-20 flex items-center justify-between border-b border-[var(--gray-2)] bg-white/50 py-1 pr-4 pl-7 backdrop-blur-sm'>
           <div className='flex items-center gap-4'>
-            <div
-              className={cn(
-                'flex size-5 cursor-pointer items-center justify-center rounded-md border-2 transition-all',
-                isAllSelected
-                  ? 'border-[var(--primary-9)] bg-white'
-                  : isPartiallySelected
+            {isSelectionMode ? (
+              <div
+                className={cn(
+                  'flex size-5 cursor-pointer items-center justify-center rounded-md border-2 transition-all',
+                  isAllSelected
                     ? 'border-[var(--primary-9)] bg-white'
-                    : 'border-[var(--gray-3)] bg-white hover:border-[var(--primary-9)]',
-              )}
-              onClick={toggleAllSelection}
-            >
-              {isAllSelected && (
-                <Icon
-                  className='size-3.5 stroke-[3px] text-[var(--primary-9)]'
-                  name='tabler:check'
-                />
-              )}
-              {isPartiallySelected && (
-                <div className='size-2 rounded-sm bg-[var(--primary-9)]' />
-              )}
-            </div>
+                    : isPartiallySelected
+                      ? 'border-[var(--primary-9)] bg-white'
+                      : 'border-[var(--gray-3)] bg-white hover:border-[var(--primary-9)]',
+                )}
+                onClick={toggleAllSelection}
+              >
+                {isAllSelected && (
+                  <Icon
+                    className='size-3.5 stroke-[3px] text-[var(--primary-9)]'
+                    name='tabler:check'
+                  />
+                )}
+                {isPartiallySelected && (
+                  <div className='size-2 rounded-sm bg-[var(--primary-9)]' />
+                )}
+              </div>
+            ) : null}
             <span className='text-[14px] font-medium text-[#0F172A]'>
               Invoices{' '}
-              {selectedIds.size > 0 && (
+              {isSelectionMode && selectedIds.size > 0 && (
                 <span className='ml-1 text-[var(--gray-10)]'>
                   ({selectedIds.size})
                 </span>
               )}
             </span>
+            {!isSelectionMode && allItems.length > 0 && (
+              <button
+                className='inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[var(--gray-3)] bg-white px-2.5 py-1 text-[12px] font-medium text-[var(--gray-11)] transition-all hover:border-[var(--primary-4)] hover:bg-[var(--primary-1)] hover:text-[var(--primary-11)]'
+                type='button'
+                onClick={() => setIsSelectionMode(true)}
+              >
+                <Icon className='size-3.5' name='tabler:checkbox' />
+                Select
+              </button>
+            )}
+            {isSelectionMode && selectedIds.size === 0 && (
+              <button
+                className='inline-flex cursor-pointer items-center gap-1 rounded-lg px-2 py-1 text-[12px] font-medium text-[var(--gray-10)] transition-all hover:bg-[var(--gray-1)] hover:text-[var(--gray-12)]'
+                type='button'
+                onClick={exitSelectionMode}
+              >
+                Cancel
+              </button>
+            )}
           </div>
 
           <div className='flex items-center gap-2'>
@@ -442,7 +479,7 @@ const GridView = <TData extends unknown>({
                     alert(
                       `Bulk approved ${selectedIds.size} requests successfully!`,
                     )
-                    setSelectedIds(new Set())
+                    exitSelectionMode()
                   }}
                 >
                   <Icon className='size-4' name='tabler:circle-check' />
@@ -456,7 +493,7 @@ const GridView = <TData extends unknown>({
                     alert(
                       `Bulk rejected ${selectedIds.size} requests successfully!`,
                     )
-                    setSelectedIds(new Set())
+                    exitSelectionMode()
                   }}
                 >
                   <Icon
@@ -469,7 +506,7 @@ const GridView = <TData extends unknown>({
                 <button
                   className='inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[var(--gray-3)] bg-white px-2.5 py-1.5 text-12 font-medium text-[var(--gray-11)] transition-all hover:bg-[var(--gray-1)] hover:text-[var(--gray-13)]'
                   type='button'
-                  onClick={() => setSelectedIds(new Set())}
+                  onClick={exitSelectionMode}
                 >
                   <Icon className='size-3.5' name='tabler:x' />
                   Clear
@@ -482,7 +519,7 @@ const GridView = <TData extends unknown>({
                 <TableExport table={table} />
                 <TableReload
                   isReloading={isReloading || false}
-                  onReload={onReload || (() => { })}
+                  onReload={onReload || (() => {})}
                 />
 
                 {/* Custom Actions */}
@@ -496,7 +533,7 @@ const GridView = <TData extends unknown>({
                       className={cn(
                         'inline-flex cursor-pointer items-center gap-2 rounded-lg bg-[var(--secondary-9)] px-3 py-1.5 text-12 font-semibold text-white shadow-sm transition-all hover:bg-[var(--secondary-10)] hover:shadow-md active:scale-95',
                         a.disabled &&
-                        'cursor-not-allowed opacity-60 hover:bg-[var(--secondary-9)]',
+                          'cursor-not-allowed opacity-60 hover:bg-[var(--secondary-9)]',
                         a.className,
                       )}
                       onClick={a.onClick}
@@ -553,8 +590,8 @@ const GridView = <TData extends unknown>({
                 const raisedAt = row?.raisedAt || row?.transaction_createdAt
                 const amount = Number(
                   row['suyqsm0SYii_8vsj4p0c_'] ||
-                  row['WksH1Mrs42X4J9AHgoBtw'] ||
-                  0,
+                    row['WksH1Mrs42X4J9AHgoBtw'] ||
+                    0,
                 )
                 const status = row?.status || 'Pending'
 
@@ -571,16 +608,20 @@ const GridView = <TData extends unknown>({
 
                 if (row.isProcessing) {
                   iconName = 'tabler:loader-2'
-                  iconColorClass = 'bg-[var(--orange-2)] border-[var(--orange-2)] text-[var(--orange-9)]'
+                  iconColorClass =
+                    'bg-[var(--orange-2)] border-[var(--orange-2)] text-[var(--orange-9)]'
                 } else if (status === 'Approved' || originalIndex % 5 === 0) {
                   iconName = 'tabler:circle-check'
-                  iconColorClass = 'bg-[var(--green-2)] border-[var(--green-2)] text-[var(--green-9)]'
+                  iconColorClass =
+                    'bg-[var(--green-2)] border-[var(--green-2)] text-[var(--green-9)]'
                 } else if (row?.isDuplicateInvoice || originalIndex % 7 === 0) {
                   iconName = 'tabler:stack-2'
-                  iconColorClass = 'bg-[var(--purple-2)] border-[var(--purple-2)] text-[var(--purple-9)]'
+                  iconColorClass =
+                    'bg-[var(--purple-2)] border-[var(--purple-2)] text-[var(--purple-9)]'
                 } else if (originalIndex % 4 === 0) {
                   iconName = 'tabler:circle-check'
-                  iconColorClass = 'bg-[var(--blue-2)] border-[var(--blue-2)] text-[var(--blue-9)]'
+                  iconColorClass =
+                    'bg-[var(--blue-2)] border-[var(--blue-2)] text-[var(--blue-9)]'
                 }
 
                 return (
@@ -611,28 +652,30 @@ const GridView = <TData extends unknown>({
                   >
                     {/* Checkbox & Status Icon */}
                     <div className='flex shrink-0 items-center gap-4'>
-                      <div
-                        className={cn(
-                          'flex size-5 items-center justify-center rounded-md border-2 transition-all',
-                          isSelected
-                            ? 'border-[var(--primary-9)] bg-white'
-                            : 'border-[var(--gray-3)] bg-white group-hover:border-[var(--primary-9)]',
-                        )}
-                        onClick={(e) => {
-                          if (row.isProcessing) {
-                            e.stopPropagation()
-                            return
-                          }
-                          toggleRowSelection(rowId, e)
-                        }}
-                      >
-                        {isSelected && (
-                          <Icon
-                            className='size-3.5 stroke-[3px] text-[var(--primary-9)]'
-                            name='tabler:check'
-                          />
-                        )}
-                      </div>
+                      {isSelectionMode && (
+                        <div
+                          className={cn(
+                            'flex size-5 items-center justify-center rounded-md border-2 transition-all',
+                            isSelected
+                              ? 'border-[var(--primary-9)] bg-white'
+                              : 'border-[var(--gray-3)] bg-white group-hover:border-[var(--primary-9)]',
+                          )}
+                          onClick={(e) => {
+                            if (row.isProcessing) {
+                              e.stopPropagation()
+                              return
+                            }
+                            toggleRowSelection(rowId, e)
+                          }}
+                        >
+                          {isSelected && (
+                            <Icon
+                              className='size-3.5 stroke-[3px] text-[var(--primary-9)]'
+                              name='tabler:check'
+                            />
+                          )}
+                        </div>
+                      )}
                       <div
                         className={cn(
                           'flex size-9 shrink-0 items-center justify-center rounded-lg border transition-all duration-300',
@@ -640,8 +683,11 @@ const GridView = <TData extends unknown>({
                         )}
                       >
                         <Icon
-                          className={cn('size-5', row.isProcessing && 'animate-spin')}
                           name={iconName}
+                          className={cn(
+                            'size-5',
+                            row.isProcessing && 'animate-spin',
+                          )}
                         />
                       </div>
                     </div>
@@ -656,24 +702,36 @@ const GridView = <TData extends unknown>({
                           {invoiceNo}
                         </h3>
                         {!row.isProcessing && (
-                          <span className='text-[12px] text-[var(--gray-10)]'>
-                            {supplierName === 'Unknown Supplier' ? 'N/A' : supplierName}
-                          </span>
+                          <HoverExpandableText
+                            className='align-bottom text-[12px] font-medium text-[var(--gray-10)]'
+                            fallbackText='Unknown Supplier'
+                            normalMaxWidthClass='max-w-[120px] sm:max-w-[160px] md:max-w-[200px] lg:max-w-[260px]'
+                            text={supplierName}
+                          />
                         )}
                         <div className='flex shrink-0 justify-start'>
                           {row.isProcessing ? null : originalIndex % 3 === 0 ? (
                             <span className='flex items-center gap-1 rounded-md border border-[var(--green-4)] bg-[var(--green-2)] px-2 py-0.5 text-[11px] font-semibold text-[var(--green-11)]'>
-                              <Icon className='size-3.5' name='tabler:circle-check' />
+                              <Icon
+                                className='size-3.5'
+                                name='tabler:circle-check'
+                              />
                               Matched
                             </span>
                           ) : originalIndex % 3 === 1 ? (
                             <span className='flex items-center gap-1 rounded-md border border-[var(--red-4)] bg-[var(--red-2)] px-2 py-0.5 text-[11px] font-semibold text-[var(--red-11)]'>
-                              <Icon className='size-3.5' name='tabler:alert-circle' />
+                              <Icon
+                                className='size-3.5'
+                                name='tabler:alert-circle'
+                              />
                               No Match
                             </span>
                           ) : (
                             <span className='flex items-center gap-1 rounded-md border border-[var(--orange-4)] bg-[var(--orange-2)] px-2 py-0.5 text-[11px] font-semibold text-[var(--orange-11)]'>
-                              <Icon className='size-3.5' name='tabler:alert-triangle' />
+                              <Icon
+                                className='size-3.5'
+                                name='tabler:alert-triangle'
+                              />
                               Partial Match
                             </span>
                           )}
@@ -709,7 +767,9 @@ const GridView = <TData extends unknown>({
                         <div className='flex items-center gap-1.5'>
                           <Icon className='size-3.5' name='tabler:hash' />
                           <span>
-                            {row.isProcessing ? 'Fetching...' : extractPONumber(row)}
+                            {row.isProcessing
+                              ? 'Fetching...'
+                              : extractPONumber(row)}
                           </span>
                         </div>
                         {!row.isProcessing && (
@@ -733,15 +793,21 @@ const GridView = <TData extends unknown>({
                           </>
                         )}
                       </div>
-
                     </div>
 
                     {/* AI Insight Line - Centered in middle of row */}
                     {!row.isProcessing && (
-                      <div className='flex flex-1 items-center justify-center px-4'>
-                        <div className='flex items-center gap-1.5 '>
-                          <Icon className='size-3.5' name='tabler:sparkles' />
-                          <span>{aiInsight}</span>
+                      <div className='flex min-w-0 flex-1 items-center justify-center px-4'>
+                        <div className='flex min-w-0 items-center gap-1.5'>
+                          <Icon
+                            className='size-3.5 shrink-0 text-[var(--primary-9)]'
+                            name='tabler:sparkles'
+                          />
+                          <HoverExpandableText
+                            className='text-[13px] font-medium text-[var(--gray-11)]'
+                            normalMaxWidthClass='max-w-[180px] sm:max-w-[240px] md:max-w-[320px] lg:max-w-[450px]'
+                            text={aiInsight}
+                          />
                         </div>
                       </div>
                     )}
@@ -835,10 +901,236 @@ const GridView = <TData extends unknown>({
                       )} */}
 
                       {row.isProcessing ? (
-                        <div className='flex w-[249px] justify-end pr-4 items-center'>
+                        <div className='relative flex w-[249px] items-center justify-end pr-4'>
                           <span className='text-[12px] font-medium text-[var(--gray-10)]'>
                             Analyzing...
                           </span>
+
+                          {/* Hover Status Overlay Card */}
+                          {hoveredRowId === rowId && (
+                            <div
+                              style={{ zIndex: 999999 }}
+                              className={cn(
+                                'pointer-events-none absolute right-0 w-[360px] text-left transition-all duration-300',
+                                originalIndex < 2
+                                  ? 'top-full mt-2 translate-y-0'
+                                  : 'bottom-full mb-2 translate-y-0',
+                              )}
+                            >
+                              <div
+                                className='animate-in fade-in zoom-in-95 relative overflow-hidden rounded-xl border border-[var(--gray-3)] p-5 shadow-2xl duration-200'
+                                style={{
+                                  backgroundColor: '#ffffff',
+                                  opacity: 1,
+                                }}
+                              >
+                                <div className='pointer-events-none absolute top-0 right-0 -mt-10 -mr-10 h-20 w-20 rounded-full bg-[var(--orange-9)] opacity-10 blur-2xl' />
+
+                                {/* Title / Header */}
+                                <div className='relative z-10 mb-4 flex items-center justify-between border-b border-[var(--gray-2)] pb-2'>
+                                  <div className='flex items-center gap-2'>
+                                    <div className='rounded-lg bg-[var(--orange-2)] p-1.5 text-[var(--orange-9)]'>
+                                      <Icon
+                                        className='size-4 animate-spin'
+                                        name='tabler:loader-2'
+                                      />
+                                    </div>
+                                    <div>
+                                      <h4 className='text-[13px] font-bold text-[var(--gray-12)]'>
+                                        Extraction Progress
+                                      </h4>
+                                      <p className='text-[10px] text-[var(--gray-9)]'>
+                                        ID: {rowId}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <span className='rounded bg-[var(--primary-2)] px-2 py-0.5 text-[10px] font-bold text-[var(--primary-11)]'>
+                                    {row.stage || 'Start'}
+                                  </span>
+                                </div>
+
+                                {/* Stepper Content */}
+                                {(() => {
+                                  const stage = row.stage || 'Start'
+                                  let step2Status = 'pending'
+                                  let step3Status = 'pending'
+                                  let step4Status = 'pending'
+
+                                  if (stage === 'Start') {
+                                    step2Status = 'active'
+                                  } else if (stage === 'AI Agent') {
+                                    step2Status = 'completed'
+                                    step3Status = 'active'
+                                  } else if (stage === 'Verifier') {
+                                    step2Status = 'completed'
+                                    step3Status = 'completed'
+                                    step4Status = 'active'
+                                  } else if (
+                                    ['Approved', 'Completed'].includes(stage)
+                                  ) {
+                                    step2Status = 'completed'
+                                    step3Status = 'completed'
+                                    step4Status = 'completed'
+                                  }
+
+                                  return (
+                                    <div className='relative z-10 flex flex-col pl-2'>
+                                      {/* Step 1: Upload */}
+                                      <div className='relative flex gap-3 pb-5'>
+                                        {/* Line */}
+                                        <div className='absolute top-5 bottom-0 left-[9px] w-0.5 bg-[var(--green-9)]' />
+                                        {/* Circle */}
+                                        <div className='relative z-10 flex size-5 shrink-0 items-center justify-center rounded-full bg-[var(--green-9)] text-white ring-4 ring-[var(--green-2)]'>
+                                          <Icon
+                                            className='size-3 stroke-[3px]'
+                                            name='tabler:check'
+                                          />
+                                        </div>
+                                        <div className='flex flex-col gap-0.5'>
+                                          <span className='text-[12px] font-bold text-[var(--gray-12)]'>
+                                            Upload & Ingestion
+                                          </span>
+                                          <span className='text-[10px] leading-normal text-[var(--gray-10)]'>
+                                            Invoice document successfully
+                                            received and parsed.
+                                          </span>
+                                        </div>
+                                      </div>
+
+                                      {/* Step 2: Extraction */}
+                                      <div className='relative flex gap-3 pb-5'>
+                                        {/* Line */}
+                                        <div
+                                          className={cn(
+                                            'absolute top-5 bottom-0 left-[9px] w-0.5',
+                                            step2Status === 'completed'
+                                              ? 'bg-[var(--green-9)]'
+                                              : 'bg-[var(--gray-3)]',
+                                          )}
+                                        />
+                                        {/* Circle */}
+                                        {step2Status === 'completed' ? (
+                                          <div className='relative z-10 flex size-5 shrink-0 items-center justify-center rounded-full bg-[var(--green-9)] text-white ring-4 ring-[var(--green-2)]'>
+                                            <Icon
+                                              className='size-3 stroke-[3px]'
+                                              name='tabler:check'
+                                            />
+                                          </div>
+                                        ) : step2Status === 'active' ? (
+                                          <div className='relative z-10 flex size-5 shrink-0 items-center justify-center rounded-full border border-[var(--primary-9)] bg-white ring-4 ring-[var(--primary-2)]'>
+                                            <div className='size-1.5 animate-pulse rounded-full bg-[var(--primary-9)]' />
+                                          </div>
+                                        ) : (
+                                          <div className='relative z-10 flex size-5 shrink-0 items-center justify-center rounded-full border border-[var(--gray-4)] bg-white text-[var(--gray-8)]'>
+                                            <div className='size-1.5 rounded-full bg-[var(--gray-4)]' />
+                                          </div>
+                                        )}
+                                        <div className='flex flex-col gap-0.5'>
+                                          <span
+                                            className={cn(
+                                              'text-[12px] font-bold',
+                                              step2Status === 'active'
+                                                ? 'text-[var(--primary-9)]'
+                                                : 'text-[var(--gray-12)]',
+                                            )}
+                                          >
+                                            Data Extraction (OCR)
+                                          </span>
+                                          <span className='text-[10px] leading-normal text-[var(--gray-10)]'>
+                                            AI Agent is reading metadata,
+                                            headers, line items & amounts.
+                                          </span>
+                                        </div>
+                                      </div>
+
+                                      {/* Step 3: PO Matching */}
+                                      <div className='relative flex gap-3 pb-5'>
+                                        {/* Line */}
+                                        <div
+                                          className={cn(
+                                            'absolute top-5 bottom-0 left-[9px] w-0.5',
+                                            step3Status === 'completed'
+                                              ? 'bg-[var(--green-9)]'
+                                              : 'bg-[var(--gray-3)]',
+                                          )}
+                                        />
+                                        {/* Circle */}
+                                        {step3Status === 'completed' ? (
+                                          <div className='relative z-10 flex size-5 shrink-0 items-center justify-center rounded-full bg-[var(--green-9)] text-white ring-4 ring-[var(--green-2)]'>
+                                            <Icon
+                                              className='size-3 stroke-[3px]'
+                                              name='tabler:check'
+                                            />
+                                          </div>
+                                        ) : step3Status === 'active' ? (
+                                          <div className='relative z-10 flex size-5 shrink-0 items-center justify-center rounded-full border border-[var(--primary-9)] bg-white ring-4 ring-[var(--primary-2)]'>
+                                            <div className='size-1.5 animate-pulse rounded-full bg-[var(--primary-9)]' />
+                                          </div>
+                                        ) : (
+                                          <div className='relative z-10 flex size-5 shrink-0 items-center justify-center rounded-full border border-[var(--gray-4)] bg-white text-[var(--gray-8)]'>
+                                            <div className='size-1.5 rounded-full bg-[var(--gray-4)]' />
+                                          </div>
+                                        )}
+                                        <div className='flex flex-col gap-0.5'>
+                                          <span
+                                            className={cn(
+                                              'text-[12px] font-bold',
+                                              step3Status === 'active'
+                                                ? 'text-[var(--primary-9)]'
+                                                : 'text-[var(--gray-12)]',
+                                            )}
+                                          >
+                                            PO Matching & Verification
+                                          </span>
+                                          <span className='text-[10px] leading-normal text-[var(--gray-10)]'>
+                                            Matching invoice items with PO and
+                                            checking policy compliance.
+                                          </span>
+                                        </div>
+                                      </div>
+
+                                      {/* Step 4: Final Review */}
+                                      <div className='relative flex gap-3'>
+                                        {/* Circle */}
+                                        {step4Status === 'completed' ? (
+                                          <div className='relative z-10 flex size-5 shrink-0 items-center justify-center rounded-full bg-[var(--green-9)] text-white ring-4 ring-[var(--green-2)]'>
+                                            <Icon
+                                              className='size-3 stroke-[3px]'
+                                              name='tabler:check'
+                                            />
+                                          </div>
+                                        ) : step4Status === 'active' ? (
+                                          <div className='relative z-10 flex size-5 shrink-0 items-center justify-center rounded-full border border-[var(--primary-9)] bg-white ring-4 ring-[var(--primary-2)]'>
+                                            <div className='size-1.5 animate-pulse rounded-full bg-[var(--primary-9)]' />
+                                          </div>
+                                        ) : (
+                                          <div className='relative z-10 flex size-5 shrink-0 items-center justify-center rounded-full border border-[var(--gray-4)] bg-white text-[var(--gray-8)]'>
+                                            <div className='size-1.5 rounded-full bg-[var(--gray-4)]' />
+                                          </div>
+                                        )}
+                                        <div className='flex flex-col gap-0.5'>
+                                          <span
+                                            className={cn(
+                                              'text-[12px] font-bold',
+                                              step4Status === 'active'
+                                                ? 'text-[var(--primary-9)]'
+                                                : 'text-[var(--gray-12)]',
+                                            )}
+                                          >
+                                            Final Verification Review
+                                          </span>
+                                          <span className='text-[10px] leading-normal text-[var(--gray-10)]'>
+                                            Routing the verified invoice to the
+                                            final approval queue.
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )
+                                })()}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       ) : (
                         <>
@@ -853,7 +1145,8 @@ const GridView = <TData extends unknown>({
                               )
 
                               // Format terms in days (e.g. Net 30 -> 30 Days)
-                              let termsDisplay = terms !== '-' ? terms : 'Immediate'
+                              let termsDisplay =
+                                terms !== '-' ? terms : 'Immediate'
                               if (termsDisplay.toLowerCase() === 'immediate') {
                                 termsDisplay = '0 Days'
                               } else {
@@ -931,11 +1224,14 @@ const GridView = <TData extends unknown>({
                               {(() => {
                                 const rawDate = extractInvoiceDate(row)
                                 if (rawDate && rawDate !== '-') {
-                                  return new Date(rawDate).toLocaleDateString('en-US', {
-                                    day: 'numeric',
-                                    month: 'short',
-                                    year: 'numeric',
-                                  })
+                                  return new Date(rawDate).toLocaleDateString(
+                                    'en-US',
+                                    {
+                                      day: 'numeric',
+                                      month: 'short',
+                                      year: 'numeric',
+                                    },
+                                  )
                                 }
                                 return 'May 19, 2026'
                               })()}

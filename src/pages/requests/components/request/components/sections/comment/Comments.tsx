@@ -19,17 +19,23 @@ type Props = {
     itemId?: any
     name?: string
   }>
+  comments?: any[]
   enabled?: boolean
+  isLoading?: boolean
   processId?: number
   repositoryId?: string | number
   transactionId?: number | string
   workflowId?: number
+  refetch?: () => Promise<void>
 }
 
 export default function Comments({
   attachments = [],
+  comments: propComments,
   enabled = true,
+  isLoading: propIsLoading,
   processId,
+  refetch: propRefetch,
   repositoryId,
   transactionId,
   workflowId,
@@ -37,12 +43,14 @@ export default function Comments({
   const { session } = authUserStore.getState()
   const currentUserEmail = session?.email ?? 'me@app.com'
 
-  const { data, isLoading, refetch } = useComments(
-    workflowId,
-    processId,
-    enabled,
-  )
-  const comments = (data || []) as any[]
+  const {
+    data,
+    isLoading: hookIsLoading,
+    refetch: hookRefetch,
+  } = useComments(workflowId, processId, enabled && !propComments)
+  const comments = (propComments ?? data ?? []) as any[]
+  const isLoading = propComments ? (propIsLoading ?? false) : hookIsLoading
+  const refetch = propRefetch ?? hookRefetch
 
   const [posting, setPosting] = useState(false)
   const [notifyInitiator, setNotifyInitiator] = useState(false)
@@ -120,12 +128,7 @@ export default function Comments({
     draft.trim().length > 0
 
   return (
-    <div
-      className='relative mx-auto mt-0 flex h-full w-full flex-col overflow-hidden rounded-[12px] border bg-[var(--purple-2)] bg-white font-sans shadow-sm transition-all duration-300'
-      style={{
-        borderColor: 'var(--gray-4)',
-      }}
-    >
+    <div className='relative mx-auto mt-0 flex h-full w-full flex-col overflow-hidden font-sans transition-all duration-300'>
       {/* Header - Compact */}
       {/* <div className="flex items-center justify-between px-3 py-2 bg-white sticky top-0 z-20 border-b border-gray-4">
                 <div className="flex items-center gap-2">
@@ -145,7 +148,7 @@ export default function Comments({
 
       {/* Chat Feed */}
       <div
-        className='flex-1 space-y-4 overflow-y-auto scroll-smooth bg-[var(--purple-1)] px-4 py-3'
+        className='flex-1 space-y-4 overflow-y-auto scroll-smooth bg-transparent px-4 py-3'
         ref={listRef}
         style={{ minHeight: 0 }}
       >
@@ -155,7 +158,7 @@ export default function Comments({
               className='mb-2 size-8 opacity-50'
               name='tabler:messages-off'
             />
-            <span className='text-xs'>No comments yet</span>
+            <span className='text-13'>No comments yet</span>
           </div>
         )}
 
@@ -165,68 +168,62 @@ export default function Comments({
             ? 'You'
             : (c?.createdByName ?? c?.createdByEmail ?? 'User')
           const fileIds = extractFileIds(c)
-          const timeDisplay = getDisplayTime(c?.createdAt)
+          const timeDisplay = c?.createdAt
+            ? formatDatetime(c.createdAt, 'YYYY-MM-DD HH:mm')
+            : ''
+          const initial = (c?.createdByName ?? c?.createdByEmail ?? 'U')
+            .charAt(0)
+            .toUpperCase()
 
           return (
             <div
-              className={`flex w-full ${isMe ? 'justify-end' : 'justify-start'}`}
+              className='flex items-start gap-3 py-1'
               key={`${c?.id ?? idx}`}
             >
-              <div
-                className={`flex max-w-[90%] flex-col ${isMe ? 'items-end' : 'items-start'}`}
-              >
-                {/* 1. Message Bubble (Top) */}
-                <div
-                  className={`relative rounded-2xl px-3 py-2 text-xs leading-relaxed shadow-sm ${
-                    isMe
-                      ? 'rounded-br-none bg-primary-9 text-white' // Point bubble to metadata
-                      : 'rounded-bl-none border border-gray-4 bg-white text-gray-12'
-                  }`}
-                >
-                  <div className='font-medium whitespace-pre-wrap'>
-                    {c?.comments}
+              {/* Avatar */}
+              <div className='flex size-8 shrink-0 items-center justify-center rounded-full bg-blue-2 text-13 font-bold text-blue-9'>
+                {initial}
+              </div>
+
+              {/* Comment Body */}
+              <div className='flex min-w-0 flex-1 flex-col gap-0.5'>
+                {/* Header (Name & Time) */}
+                <div className='flex items-baseline gap-2'>
+                  <span className='text-13 font-bold text-gray-13'>{name}</span>
+                  <span className='text-11 font-medium text-gray-9'>
+                    {timeDisplay}
+                  </span>
+                </div>
+
+                {/* Text */}
+                <div className='text-13 leading-relaxed font-medium whitespace-pre-wrap text-gray-11'>
+                  {c?.comments}
+                </div>
+
+                {/* File Attachments */}
+                {!!fileIds.length && (
+                  <div className='mt-1 flex flex-wrap gap-1.5'>
+                    {fileIds.map((fid: any) => {
+                      const fileRef = attachments.find(
+                        (a) => String(pickFileId(a)) === String(fid),
+                      )
+                      const fileName = fileRef
+                        ? pickFileName(fileRef)
+                        : `Doc-${fid}`
+                      return (
+                        <div
+                          className='flex items-center gap-1 rounded-md border border-gray-4 bg-gray-2 px-1.5 py-0.5 text-11 font-semibold text-gray-11'
+                          key={String(fid)}
+                        >
+                          <Icon className='size-3' name='tabler:file' />
+                          <span className='max-w-[120px] truncate'>
+                            {fileName}
+                          </span>
+                        </div>
+                      )
+                    })}
                   </div>
-
-                  {!!fileIds.length && (
-                    <div
-                      className={`mt-1.5 flex flex-wrap gap-1.5 border-t pt-1.5 ${isMe ? 'border-white/20' : 'border-gray-3'}`}
-                    >
-                      {fileIds.map((fid: any) => {
-                        const fileRef = attachments.find(
-                          (a) => String(pickFileId(a)) === String(fid),
-                        )
-                        const fileName = fileRef
-                          ? pickFileName(fileRef)
-                          : `Doc-${fid}`
-                        return (
-                          <div
-                            key={String(fid)}
-                            className={`flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${
-                              isMe
-                                ? 'bg-white/10 text-white'
-                                : 'border border-gray-4 bg-gray-2 text-gray-11'
-                            }`}
-                          >
-                            <Icon className='size-3' name='tabler:file' />
-                            <span className='max-w-[120px] truncate'>
-                              {fileName}
-                            </span>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  )}
-                </div>
-
-                {/* 2. Metadata Row (Bottom: Name • Time) */}
-                <div
-                  className={`mt-1 flex items-center gap-1.5 px-1 text-[10px] text-gray-9 ${isMe ? 'flex-row' : 'flex-row'}`}
-                >
-                  <span className='font-bold text-gray-11'>{name}</span>
-                  <span className='text-slate-400 text-[8px]'>•</span>
-
-                  <span>{timeDisplay}</span>
-                </div>
+                )}
               </div>
             </div>
           )
@@ -234,13 +231,13 @@ export default function Comments({
       </div>
 
       {/* Input Area */}
-      <div className='border-t border-[var(--purple-2)] bg-[var(--purple-1)] bg-white p-2'>
+      <div className='border-t border-gray-3 bg-transparent px-4 py-3'>
         <div className='flex flex-col gap-2'>
           {/* File Picker (Conditional) */}
           {!!fileOptions.length && (
             <div className='relative w-full'>
               <select
-                className='w-full cursor-pointer appearance-none rounded border-none bg-gray-1 py-1 pr-4 pl-6 text-[10px] font-semibold text-gray-11 transition-colors outline-none hover:bg-gray-2'
+                className='w-full cursor-pointer appearance-none rounded border-none bg-gray-1 py-1 pr-4 pl-6 text-11 font-semibold text-gray-11 transition-colors outline-none hover:bg-gray-2'
                 value={String(attachFileId)}
                 onChange={(e) => setAttachFileId(e.target.value)}
               >
@@ -258,12 +255,18 @@ export default function Comments({
             </div>
           )}
 
-          {/* Textarea & Send */}
-          <div className='flex items-end gap-2'>
-            <div className='flex-1 overflow-hidden rounded-lg border border-gray-3 bg-gray-1 transition-all focus-within:border-primary-7 focus-within:ring-1 focus-within:ring-primary-4'>
+          {/* Textarea & Send Button */}
+          <div className='flex items-center gap-3'>
+            {/* Current User Avatar */}
+            <div className='flex size-8 shrink-0 items-center justify-center rounded-full bg-blue-2 text-13 font-bold text-blue-9'>
+              {currentUserEmail.charAt(0).toUpperCase()}
+            </div>
+
+            {/* Input Box */}
+            <div className='flex-1 overflow-hidden rounded-xl border border-gray-3 bg-gray-1 transition-all focus-within:border-primary-7 focus-within:bg-white focus-within:ring-1 focus-within:ring-primary-4'>
               <textarea
-                className='w-full resize-none bg-transparent px-3 py-2 text-xs font-medium text-gray-12 placeholder:text-gray-8 focus:outline-none'
-                placeholder='Type a comment...'
+                className='w-full resize-none bg-transparent px-3 py-2 text-13 font-medium text-gray-12 placeholder:text-gray-8 focus:outline-none'
+                placeholder='Add a comment...'
                 ref={textareaRef}
                 rows={1}
                 style={{ lineHeight: '1.4', minHeight: '36px' }}
@@ -278,8 +281,9 @@ export default function Comments({
               />
             </div>
 
+            {/* Post Button */}
             <button
-              className='mb-0.5 flex size-8 flex-shrink-0 items-center justify-center rounded-lg shadow-sm transition-all active:scale-95'
+              className='flex h-[36px] items-center justify-center rounded-xl px-5 text-13 font-bold text-white transition-all active:scale-95'
               disabled={!canSend}
               style={{
                 background: canSend ? 'var(--primary-9)' : 'var(--gray-3)',
@@ -291,7 +295,7 @@ export default function Comments({
               {posting ? (
                 <div className='size-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white' />
               ) : (
-                <Icon className='size-4' name='tabler:send' />
+                'Post'
               )}
             </button>
           </div>
@@ -312,14 +316,6 @@ function extractFileIds(comment: any): Array<string | number> {
   } catch {
     return []
   }
-}
-
-function getDisplayTime(dateString: string) {
-  if (!dateString) return ''
-  const date = dayjs(dateString)
-  const diffInHours = dayjs().diff(date, 'hour')
-  if (diffInHours < 24) return date.fromNow()
-  return formatDatetime(dateString, 'datetime')
 }
 
 function pickFileId(x: any) {

@@ -99,7 +99,7 @@ export const ProcessingBackgroundManager = () => {
   if (processingProcesses.length === 0) return null
 
   return (
-    <div className='pointer-events-none fixed right-6 bottom-6 z-[9999] flex flex-col gap-3'>
+    <div className='pointer-events-none fixed right-6 bottom-6 z-[999999] flex flex-col gap-3'>
       <AnimatePresence>
         <motion.div
           animate={{ opacity: 1, scale: 1, y: 0 }}

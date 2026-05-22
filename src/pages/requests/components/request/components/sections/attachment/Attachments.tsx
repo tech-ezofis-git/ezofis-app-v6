@@ -193,13 +193,7 @@ export default function Attachments({
   }
 
   return (
-    // <div className="flex flex-col h-full bg-white">
-    <div
-      className='relative mx-auto mt-0 flex h-full w-full flex-col overflow-hidden rounded-[12px] border bg-[var(--purple-2)] bg-white font-sans shadow-sm transition-all duration-300'
-      style={{
-        borderColor: 'var(--gray-4)',
-      }}
-    >
+    <div className='relative mx-auto mt-0 flex h-full w-full flex-col font-sans transition-all duration-300'>
       {/* Header */}
       {/* <div className="flex items-center gap-3 px-4 py-3 border-b border-[var(--gray-3)] shrink-0">
                 <button 
@@ -220,8 +214,7 @@ export default function Attachments({
             </div> */}
 
       {/* List */}
-      {/* scrollbar-thin flex-1 space-y-2 overflow-y-auto p-3 */}
-      <div className=''>
+      <div className='flex flex-col gap-2'>
         {isLoading ? (
           <div className='flex flex-col items-center justify-center py-10 text-[var(--gray-8)]'>
             <Icon className='mb-2 size-6 animate-spin' name='tabler:loader' />

@@ -19,6 +19,11 @@ const Sidebar = () => {
           label: t`Requests`,
           route: '/requests',
         },
+        {
+          icon: 'lucide:folder',
+          label: t`Folders`,
+          route: '/folders',
+        },
         // {
         //   icon: 'lucide:chart-pie',
         //   label: 'Reports',

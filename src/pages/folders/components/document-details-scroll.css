@@ -1,0 +1,22 @@
+.ez-detail-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--gray-6) transparent;
+}
+
+.ez-detail-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.ez-detail-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ez-detail-scroll::-webkit-scrollbar-thumb {
+  background: var(--gray-6);
+  border-radius: 999px;
+}
+
+.ez-detail-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--gray-8);
+}
