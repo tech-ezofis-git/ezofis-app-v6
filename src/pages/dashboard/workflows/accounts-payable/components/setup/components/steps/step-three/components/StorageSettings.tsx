@@ -1,6 +1,6 @@
 import InputText from '@/components/base/inputs/InputText'
-import Title from '@/components/base/Title'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
+import SectionHeader from '../../components/SectionHeader'
 
 const StorageSettings = () => {
   const storageSettings = setupStore((state) => state.storageSettings)
@@ -8,14 +8,12 @@ const StorageSettings = () => {
 
   return (
     <div>
-      <Title
-        className='mb-6'
+      <SectionHeader
         description='Configure authentication and connection details to enable secure document access and syncing.'
-        level={3}
         title='Storage Settings'
       />
 
-      <div className='grid grid-cols-1 gap-2 md:grid-cols-2'>
+      <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
         <InputText
           label='API URL'
           value={storageSettings.apiUrl}

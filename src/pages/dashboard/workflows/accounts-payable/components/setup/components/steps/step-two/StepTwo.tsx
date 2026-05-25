@@ -1,60 +1,146 @@
-import { motion } from 'motion/react'
+import { useEffect } from 'react'
 import Alert from '@/components/base/Alert'
 import Button from '@/components/base/button/Button'
-import Divider from '@/components/base/Divider'
-import Title from '@/components/base/Title'
-// import HeroText from '@/components/common/HeroText'
 import { AnimateFadeIn, AnimateSlideUp } from '@/components/common/animations'
+import authUserStore from '@/stores/authUserStore'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
-import ErpSettings from './components/ErpSettings'
+import { StepFooter, StepLayout } from '../components/StepLayout'
 import ErpSystem from './components/ErpSystem'
+
+const OAUTH_ERP_SYSTEMS = ['QuickBooks'] as const
+
+const getErpProvider = (system: string) => {
+  if (system === 'QuickBooks') return 'quickbooks'
+  return system.toLowerCase()
+}
 
 const StepTwo = () => {
   const setStep = setupStore((state) => state.setStep)
   const erpSettings = setupStore((state) => state.erpSettings)
   const setErpSettings = setupStore((state) => state.setErpSettings)
+  const session = authUserStore((state) => state.session)
+
+  const isOAuthErp =
+    erpSettings.system &&
+    OAUTH_ERP_SYSTEMS.includes(
+      erpSettings.system as (typeof OAUTH_ERP_SYSTEMS)[number],
+    )
+
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return
+      if (event.data.type === 'CONNECTION_SUCCESS') {
+        setErpSettings({
+          ...erpSettings,
+          isConnected: true,
+          isConnecting: false,
+        })
+      }
+    }
+
+    window.addEventListener('message', handleMessage)
+    return () => window.removeEventListener('message', handleMessage)
+  }, [erpSettings, setErpSettings])
 
   const handleConnect = () => {
+    if (!session?.tenantId) {
+      console.error('Tenant ID missing')
+      return
+    }
+
     setErpSettings({
       ...erpSettings,
       isConnecting: true,
     })
-    setTimeout(() => {
-      setErpSettings({
-        ...erpSettings,
-        isConnected: true,
-        isConnecting: false,
-      })
-    }, 1000)
+
+    const now = new Date()
+    const day = now.getDate().toString().padStart(2, '0')
+    const month = now.toLocaleString('default', { month: 'short' })
+    const year = now.getFullYear()
+    const hours = now.getHours().toString().padStart(2, '0')
+    const minutes = now.getMinutes().toString().padStart(2, '0')
+
+    const tenantId = session.tenantId
+    const provider = getErpProvider(erpSettings.system)
+    const connectionName = `${provider}-${day}${month}${year}-${hours}${minutes}`
+    const url = `https://ezcloudauth.azurewebsites.net/api/authorize?tenantid=${tenantId}&envtype=trial&connectorname=${encodeURIComponent(connectionName)}&provider=${provider}&resulturl=${window.location.origin}/auth/`
+
+    window.open(url, '_blank')
   }
 
-  return (
-    <div className='flex min-h-full w-full flex-col gap-4 px-6 py-4 md:px-8'>
-      <AnimateSlideUp delay={0.1}>
-        <Title
-          className='items-start text-left'
-          description='Import your PO Master Data to ensure accurate matching. Upload a spreadsheet or connect your ERP system to synchronize records automatically.'
-          title='Configure PO Master Data'
-        />
-      </AnimateSlideUp>
+  const canContinue =
+    erpSettings.system === 'PREDEFINED' ||
+    erpSettings.templateUploaded ||
+    (erpSettings.isConnected &&
+      erpSettings.system !== 'FILE_BASED_IMPORT' &&
+      erpSettings.system !== 'PREDEFINED')
 
-      <AnimateFadeIn delay={0.2}>
-        <Divider />
-      </AnimateFadeIn>
+  const showConnect = Boolean(isOAuthErp && !erpSettings.isConnected)
+
+  const selectionAlert = (() => {
+    if (erpSettings.system === 'PREDEFINED') {
+      return {
+        text: 'Predefined Master Data selected. You can proceed to the next step.',
+        variant: 'green' as const,
+      }
+    }
+    if (
+      erpSettings.system === 'FILE_BASED_IMPORT' &&
+      !erpSettings.templateUploaded
+    ) {
+      return {
+        text: 'Upload Master File selected. Upload your PO master file below to continue.',
+        variant: 'primary' as const,
+      }
+    }
+    if (isOAuthErp && !erpSettings.isConnected) {
+      return {
+        text: `${erpSettings.system} selected. Click Connect ${erpSettings.system} to link your account.`,
+        variant: 'primary' as const,
+      }
+    }
+    return null
+  })()
+
+  return (
+    <StepLayout
+      description='Import your PO Master Data to ensure accurate matching. Upload a spreadsheet or connect your ERP system to synchronize records automatically.'
+      title='Configure PO Master Data'
+      footer={
+        <StepFooter>
+          <Button
+            color='gray'
+            icon='lucide:arrow-left'
+            label='Back'
+            variant='outline'
+            onClick={() => setStep(0)}
+          />
+          {canContinue ? (
+            <Button
+              label='Continue'
+              suffixIcon='tabler:arrow-right'
+              onClick={() => setStep(2)}
+            />
+          ) : showConnect ? (
+            <Button
+              icon='lucide:plug'
+              label={`Connect ${erpSettings.system}`}
+              loading={erpSettings.isConnecting}
+              onClick={handleConnect}
+            />
+          ) : null}
+        </StepFooter>
+      }
+    >
       <AnimateFadeIn delay={0.3}>
         <ErpSystem />
       </AnimateFadeIn>
 
-      {erpSettings.system &&
-        erpSettings.system !== 'FILE_BASED_IMPORT' &&
-        !erpSettings.wantsFileBasedImport && (
-          <AnimateFadeIn delay={0.4}>
-            <>
-              <Divider />
-              <ErpSettings />
-            </>
-          </AnimateFadeIn>
-        )}
+      {selectionAlert && (
+        <AnimateSlideUp delay={0.35}>
+          <Alert text={selectionAlert.text} variant={selectionAlert.variant} />
+        </AnimateSlideUp>
+      )}
 
       {erpSettings.templateUploaded && (
         <AnimateSlideUp delay={0.4}>
@@ -66,7 +152,7 @@ const StepTwo = () => {
       )}
 
       {erpSettings.isConnected &&
-        erpSettings.system &&
+        isOAuthErp &&
         erpSettings.system !== 'FILE_BASED_IMPORT' && (
           <AnimateSlideUp delay={0.4}>
             <Alert
@@ -75,38 +161,7 @@ const StepTwo = () => {
             />
           </AnimateSlideUp>
         )}
-
-      <motion.div
-        animate={{ opacity: 1, y: 0 }}
-        className='flex flex-wrap items-center justify-between gap-2 border-t border-gray-3 pt-4'
-        initial={{ opacity: 0, y: 10 }}
-        transition={{ delay: 0.5, duration: 0.4 }}
-      >
-        <Button
-          color='gray'
-          icon='lucide:arrow-left'
-          label='Back'
-          variant='outline'
-          onClick={() => setStep(0)}
-        />
-        {erpSettings.isConnected ||
-        erpSettings.templateUploaded ||
-        (erpSettings.system && erpSettings.system === 'FILE_BASED_IMPORT') ? (
-          <Button
-            label='Continue'
-            suffixIcon='tabler:arrow-right'
-            onClick={() => setStep(2)}
-          />
-        ) : erpSettings.system && erpSettings.system !== 'FILE_BASED_IMPORT' ? (
-          <Button
-            icon='lucide:plug'
-            label={`Connect ${erpSettings.system}`}
-            loading={erpSettings.isConnecting}
-            onClick={handleConnect}
-          />
-        ) : null}
-      </motion.div>
-    </div>
+    </StepLayout>
   )
 }
 

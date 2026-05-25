@@ -57,6 +57,14 @@ const Steps = () => {
         top: 0,
       })
     }
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+    const scrollables = document.querySelectorAll('.overflow-y-auto, [class*="overflow-y-auto"]')
+    scrollables.forEach((el) => {
+      el.scrollTo({
+        behavior: 'smooth',
+        top: 0,
+      })
+    })
   }, [step])
 
   const progress = Math.round(((step + 1) / steps.length) * 100)
@@ -92,12 +100,12 @@ const Steps = () => {
       transition={{ duration: 0.4, ease: 'easeOut' }}
     >
       <AnimateSlideRight delay={0.1}>
-        <div className='mb-4 flex items-center justify-between border-b border-gray-3 px-6 py-3 md:px-8'>
-          <div className='flex flex-col gap-0.5'>
-            <h2 className='text-18 font-semibold text-gray-13'>
+        <div className='mb-4 flex items-center justify-between border-b border-gray-3 px-6 py-4 md:px-8'>
+          <div className='flex flex-col gap-1'>
+            <h2 className='text-18/6 font-semibold tracking-tight text-gray-13'>
               Accounts Payable Setup
             </h2>
-            <p className='text-13 text-gray-11'>
+            <p className='text-13/5 text-gray-11'>
               Configure your integrations and settings
             </p>
           </div>
@@ -106,7 +114,7 @@ const Steps = () => {
             <div className='flex flex-col items-end gap-1'>
               <span
                 className={cn(
-                  'text-13 font-semibold transition-colors duration-500',
+                  'text-13/5 font-semibold transition-colors duration-500',
                   text,
                 )}
               >
@@ -140,7 +148,7 @@ const Steps = () => {
           className='col-span-1 h-full w-full overflow-y-auto'
           ref={scrollContainerRef}
         >
-          <div className='mr-auto ml-32 max-w-3xl pb-10'>
+          <div className='mx-auto w-full max-w-3xl px-6 pb-12 md:px-8 lg:px-10'>
             <AnimatePresence initial={false} mode='wait'>
               {step === 0 && (
                 <AnimateSlideUp delay={0.1} key='step-0'>

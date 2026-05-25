@@ -5,7 +5,7 @@ interface Props {
   password: string
 }
 
-const requirementsConfig = [
+export const requirementsConfig = [
   { id: 1, label: 'Minimum 8 characters', regex: /.{8,}/ },
   { id: 2, label: 'At least 1 uppercase (A-Z)', regex: /[A-Z]/ },
   { id: 3, label: 'At least 1 lowercase (a-z)', regex: /[a-z]/ },
@@ -33,10 +33,16 @@ const PasswordRequirements = ({ password }: Props) => {
 
       <ul className='space-y-2' role='list'>
         {requirements.map(({ id, isValid, label }) => (
-          <li className='flex items-center gap-x-2' key={id} role='listitem'>
+          <li
+            className={`flex items-center gap-x-2 transition-all duration-200 ${
+              isValid ? 'text-success-main font-semibold' : 'text-gray-9'
+            }`}
+            key={id}
+            role='listitem'
+          >
             <Icon
-              className={isValid ? 'text-primary-11' : 'text-gray-8'}
-              name='lucide:check'
+              className={isValid ? 'text-success-main' : 'text-gray-6'}
+              name={isValid ? 'lucide:check' : 'lucide:dot'}
             />
             <span>{label}</span>
           </li>

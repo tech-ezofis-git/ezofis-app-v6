@@ -2,13 +2,14 @@
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router'
 import AppLayout from '@/layouts/app/AppLayout'
 import authUserStore from '@/stores/authUserStore'
+import { shouldLockAppNavigation } from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 
 export const Route = createFileRoute('/_app')({
   component: RouteComponent,
   staticData: {
     pageTitle: 'App Layout',
   },
-  beforeLoad: () => {
+  beforeLoad: ({ location }) => {
     const { isAuthenticated } = authUserStore.getState()
 
     if (!isAuthenticated) {
@@ -16,6 +17,13 @@ export const Route = createFileRoute('/_app')({
       throw redirect({
         replace: true,
         to: '/sign-in',
+      })
+    }
+
+    if (shouldLockAppNavigation() && location.pathname !== '/') {
+      throw redirect({
+        replace: true,
+        to: '/',
       })
     }
   },

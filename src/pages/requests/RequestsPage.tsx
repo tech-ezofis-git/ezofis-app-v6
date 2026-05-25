@@ -2,19 +2,25 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Option } from '@/types/option'
 import formApi from '@/api/form/form'
 import requestApi from '@/api/requests/requests'
+import PageEmptyState from '@/components/common/PageEmptyState'
 import type { InboxItem, IRequestMeta, WorkflowOption } from './types'
 import Header from './components/Header'
 import InboxList from './components/InboxList'
 import { ProcessingBackgroundManager } from './components/ProcessingBackgroundManager'
 import Request from './components/request/Request'
 import { useInboxData } from './hooks/useInboxData'
+import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import requestStore from './stores/useRequestStore'
+
+type WorkflowLoadStatus = 'loading' | 'ready' | 'empty'
 
 const RequestsPage = () => {
   const [activeTab, setActiveTab] = useState<string>('Inbox')
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('grid')
 
   const [isLoading, setIsLoading] = useState<boolean>(false)
+  const [workflowLoadStatus, setWorkflowLoadStatus] =
+    useState<WorkflowLoadStatus>('loading')
   const [allWorkflow, setAllWorkflow] = useState<Option[] | null>(null)
   const [workflow, setWorkflow] = useState<Option | null>(null)
   const [metaData, setMetaData] = useState<IRequestMeta>()
@@ -23,9 +29,12 @@ const RequestsPage = () => {
   const {
     closeRequest,
     isClosed,
+    openNewRequest,
     openRequest,
+    pendingOpenNewRequest,
     reloadMeta,
     selectedItem,
+    setPendingOpenNewRequest,
     stopRefresh,
     setRawWorkflowData: setRawWorflow,
     setRequestListTab,
@@ -53,6 +62,7 @@ const RequestsPage = () => {
 
   // --- 3. HANDLERS ---
   const handleSelectAllRequests = useCallback(async () => {
+    setWorkflowLoadStatus('loading')
     try {
       const browseConfig = {
         currentPage: 1,
@@ -76,15 +86,25 @@ const RequestsPage = () => {
       if (data && data.length > 0) {
         setAllWorkflow(data)
         setWorkflow(data[0]) // This triggers the useEffect below
+      } else {
+        setAllWorkflow([])
+        setWorkflow(null)
+        setSelectedWorkflow(null)
+        setWorkflowLoadStatus('empty')
       }
       setIsLoading(false)
     } catch {
+      setAllWorkflow([])
+      setWorkflow(null)
+      setSelectedWorkflow(null)
+      setWorkflowLoadStatus('empty')
       setIsLoading(false)
     }
   }, [requestApi])
 
   const handleGetAllRequestMetaById = useCallback(
     async (id: string | number) => {
+      setWorkflowLoadStatus('loading')
       try {
         const response = await requestApi?.getMetaDataByRequest(id)
         if (response?.data?.length) {
@@ -113,9 +133,15 @@ const RequestsPage = () => {
             name: wf.name,
             wFormId: wf.wFormId ?? '',
           })
+          setWorkflowLoadStatus('ready')
+        } else {
+          setSelectedWorkflow(null)
+          setWorkflowLoadStatus('empty')
         }
         setIsLoading(false)
       } catch {
+        setSelectedWorkflow(null)
+        setWorkflowLoadStatus('empty')
         setIsLoading(false)
       }
     },
@@ -174,6 +200,31 @@ const RequestsPage = () => {
     setRequestListTab(activeTab)
   }, [])
 
+  useEffect(() => {
+    setupStore.getState().setIsActivatingAutomation(false)
+  }, [])
+
+  // Open new request after AP setup activation, once workflow data is loaded
+  useEffect(() => {
+    if (!pendingOpenNewRequest) return
+
+    if (workflowLoadStatus === 'empty') {
+      setPendingOpenNewRequest(false)
+      return
+    }
+
+    if (selectedWorkflow?.id) {
+      openNewRequest('request')
+      setPendingOpenNewRequest(false)
+    }
+  }, [
+    pendingOpenNewRequest,
+    selectedWorkflow?.id,
+    workflowLoadStatus,
+    openNewRequest,
+    setPendingOpenNewRequest,
+  ])
+
   // --- 4. NAVIGATION & FLATTENING ---
   function flattenRows(groups: any[]): any[] {
     const out: any[] = []
@@ -220,6 +271,13 @@ const RequestsPage = () => {
       if (selectedWorkflow) openRequest(nextItem, selectedWorkflow, activeTab)
     }
   }
+
+  const isWorkflowReady = workflowLoadStatus === 'ready' && !!selectedWorkflow?.id
+  const showWorkflowEmpty = workflowLoadStatus === 'empty'
+  const inboxIsLoading =
+    workflowLoadStatus === 'loading' ||
+    (isWorkflowReady && (isPending || isFetching))
+
   return (
     <>
       {!selectedItem && (
@@ -245,24 +303,27 @@ const RequestsPage = () => {
           onPrev={onPrev}
         />
       )}
-      {/* <Table /> */}
-      <InboxList
-        activeTab={activeTab}
-        data={inboxResult?.data || []}
-        isLoading={isPending}
-        isRefetching={isFetching}
-        page={page}
-        pageSize={pageSize}
-        selectedItem={selectedItem}
-        totalItems={inboxResult?.totalItems || 0}
-        viewMode={viewMode}
-        workflow={selectedWorkflow}
-        setPage={setPage}
-        setPageSize={setPageSize}
-        onGroupByChange={setGroupBy}
-        onRefresh={refetch}
-        onRowClick={handleRowClick}
-      />
+      {showWorkflowEmpty && !selectedItem ? (
+        <PageEmptyState page='requests' variant='unavailable' />
+      ) : (
+        <InboxList
+          activeTab={activeTab}
+          data={inboxResult?.data || []}
+          isLoading={inboxIsLoading}
+          isRefetching={isWorkflowReady && isFetching}
+          page={page}
+          pageSize={pageSize}
+          selectedItem={selectedItem}
+          totalItems={inboxResult?.totalItems || 0}
+          viewMode={viewMode}
+          workflow={selectedWorkflow}
+          setPage={setPage}
+          setPageSize={setPageSize}
+          onGroupByChange={setGroupBy}
+          onRefresh={refetch}
+          onRowClick={handleRowClick}
+        />
+      )}
       <ProcessingBackgroundManager />
     </>
   )

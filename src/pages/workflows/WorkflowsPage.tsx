@@ -14,10 +14,12 @@ const WorkflowsPage = () => {
   }
 
   return (
-    <>
+    <div className='flex h-full flex-col'>
       <Header onCreate={handleCreate} />
-      <Table />
-    </>
+      <div className='bg-gray-50/50 flex-1 overflow-hidden px-6 py-2'>
+        <Table onCreate={handleCreate} />
+      </div>
+    </div>
   )
 }
 

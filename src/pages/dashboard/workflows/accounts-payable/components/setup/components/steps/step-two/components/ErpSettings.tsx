@@ -1,6 +1,6 @@
 import InputText from '@/components/base/inputs/InputText'
-import Title from '@/components/base/Title'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
+import SectionHeader from '../../components/SectionHeader'
 
 const ErpSettings = () => {
   const erpSettings = setupStore((state) => state.erpSettings)
@@ -8,14 +8,12 @@ const ErpSettings = () => {
 
   return (
     <div>
-      <Title
-        className='mb-6'
+      <SectionHeader
         description='Configure authentication and connection details to enable secure data exchange with your ERP.'
-        level={3}
         title='ERP Settings'
       />
 
-      <div className='grid grid-cols-1 gap-2 md:grid-cols-2'>
+      <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
         <InputText
           label='API URL'
           value={erpSettings.apiUrl}

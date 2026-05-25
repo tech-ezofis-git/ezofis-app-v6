@@ -19,11 +19,14 @@ const Integrations = () => {
   }
 
   const getErpDisplayName = () => {
+    if (erpSettings.system === 'PREDEFINED') {
+      return 'Predefined Master Data'
+    }
     if (
       erpSettings.wantsFileBasedImport ||
       erpSettings.system === 'FILE_BASED_IMPORT'
     ) {
-      return 'Manual PO Import  '
+      return 'Manual PO Import'
     }
     return erpSettings.system || 'Not selected'
   }
@@ -43,13 +46,16 @@ const Integrations = () => {
   }
 
   const getErpIcon = () => {
+    if (erpSettings.system === 'PREDEFINED') {
+      return 'tabler:database-search'
+    }
     if (
       erpSettings.wantsFileBasedImport ||
       erpSettings.system === 'FILE_BASED_IMPORT'
     ) {
       return 'tabler:file-spreadsheet'
     }
-    return 'tabler:file-spreadsheet'
+    return 'tabler:database'
   }
 
   const getEmailIconBg = () => {
@@ -82,22 +88,24 @@ const Integrations = () => {
         emailSettings.provider === 'DIRECT_UPLOAD'
           ? 'N/A'
           : emailSettings.email || 'Not configured',
-      icon: getErpIcon(),
-      iconBgColor: getErpIconBg(),
-      iconColor: getErpIconColor(),
+      icon: getEmailIcon(),
+      iconBgColor: getEmailIconBg(),
+      iconColor: getEmailIconColor(),
       name: 'Capture',
       platform: getEmailDisplayName(),
       status: emailSettings.isConnected ? 'connected' : 'pending',
     },
     {
       account:
-        erpSettings.importMethod === 'import'
-          ? erpSettings.selectedFormName || 'Not configured'
-          : erpSettings.uploadedTemplate?.name ||
-            (erpSettings.wantsFileBasedImport ? 'N/A' : 'Not configured'),
-      icon: getEmailIcon(),
-      iconBgColor: getEmailIconBg(),
-      iconColor: getEmailIconColor(),
+        erpSettings.system === 'PREDEFINED'
+          ? 'System Default'
+          : erpSettings.importMethod === 'import'
+            ? erpSettings.selectedFormName || 'Not configured'
+            : erpSettings.uploadedTemplate?.name ||
+              (erpSettings.wantsFileBasedImport ? 'N/A' : 'Not configured'),
+      icon: getErpIcon(),
+      iconBgColor: getErpIconBg(),
+      iconColor: getErpIconColor(),
       name: 'File Upload',
       platform: getErpDisplayName(),
       status:
@@ -115,7 +123,7 @@ const Integrations = () => {
       icon: 'tabler:cloud-filled',
       iconBgColor: getStorageIconBg(),
       iconColor: getStorageIconColor(),
-      name: ' Storage',
+      name: 'Storage',
       platform: getStorageDisplayName(),
       status: storageSettings.isConnected ? 'connected' : 'pending',
     },
@@ -124,11 +132,13 @@ const Integrations = () => {
   return (
     <div>
       <Title
+        className='items-start text-left'
         description='Review your connections and confirm your setup before activation.'
+        descriptionClassName='max-w-2xl text-pretty'
         level={3}
         title='Configuration Summary'
       />
-      <div className='mt-6'>
+      <div className='mt-5'>
         {/* Horizontal flow with visual connection */}
         <div className='mx-auto flex w-full max-w-6xl flex-col items-stretch gap-6 px-4 lg:flex-row'>
           {integrations.map((integration, index) => (

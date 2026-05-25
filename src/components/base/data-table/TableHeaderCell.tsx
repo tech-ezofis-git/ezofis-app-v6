@@ -27,6 +27,7 @@ const TableHeaderCell = <TData,>({ header, table }: Props<TData>) => {
   const showMenu = column.columnDef.meta?.showMenu
   const columns = table.getAllLeafColumns()
   const isAccessorColumn = !!column.accessorFn
+  const canSort = isAccessorColumn && column.getCanSort()
   const isSorted = column.getIsSorted()
   const isPinned = column.getIsPinned()
   const columnOrder = table.getState().columnOrder
@@ -85,8 +86,8 @@ const TableHeaderCell = <TData,>({ header, table }: Props<TData>) => {
         {!isAccessorColumn &&
           flexRender(column.columnDef.header, header.getContext())}
 
-        {/* sort button */}
-        {isAccessorColumn && (
+        {/* sortable accessor column */}
+        {canSort && (
           <Button
             className='flex-1 px-3.5'
             color='gray'
@@ -109,6 +110,13 @@ const TableHeaderCell = <TData,>({ header, table }: Props<TData>) => {
               </div>
             </div>
           </Button>
+        )}
+
+        {/* non-sortable accessor column (e.g. display-only headers) */}
+        {isAccessorColumn && !canSort && (
+          <div className='flex flex-1 items-center px-3.5'>
+            {flexRender(column.columnDef.header, header.getContext())}
+          </div>
         )}
 
         {/* menu button */}

@@ -17,6 +17,7 @@ import InputPassword from '@/components/base/inputs/password/InputPassword'
 import Title from '@/components/base/Title'
 import showToast from '@/components/base/toast/showToast'
 import { AnimateSlideLeft } from '@/components/common/animations'
+import useSetupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import authUserStore from '@/stores/authUserStore'
 interface Props {
   onChangeView: () => void
@@ -103,6 +104,11 @@ const SignInForm = ({ onChangeView }: Props) => {
 
   // === navigation after successful login (simplified Vue logged()) ===
   const handleLoggedNavigation = () => {
+    const { setRestrictNavigationUntilApSetup, setisApSetUpCompleted } =
+      useSetupStore.getState()
+    setRestrictNavigationUntilApSetup(false)
+    setisApSetUpCompleted(true)
+
     // In Vue this used profileMenus + workspace access logic.
     // For now, replicate the basic behavior: honor 2FA, then go home.
     if (user.profile.twoStepVerification.enabled) {

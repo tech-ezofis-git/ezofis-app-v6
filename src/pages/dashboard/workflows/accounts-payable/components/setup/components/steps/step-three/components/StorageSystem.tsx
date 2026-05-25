@@ -14,6 +14,7 @@ import {
 // import Icon from '@/components/base/icon/Icon'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import BrandCard from '../../components/BrandCard'
+import { OrDivider } from '../../components/StepLayout'
 import SectionHeader from '../../components/SectionHeader'
 
 const includedStorageItem = {
@@ -62,7 +63,7 @@ const StorageSystem = () => {
   ]
 
   return (
-    <div className='space-y-4'>
+    <div className='space-y-6'>
       {/* Default Storage Section */}
       <div>
         <AnimateSlideUp delay={0.1}>
@@ -88,12 +89,7 @@ const StorageSystem = () => {
         </AnimateSlideUp>
       </div>
 
-      {/* Divider with (OR) */}
-      <div className='flex items-center gap-4'>
-        <div className='flex-1 border-t border-gray-3'></div>
-        <span className='text-13 font-medium text-gray-10'>(OR)</span>
-        <div className='flex-1 border-t border-gray-3'></div>
-      </div>
+      <OrDivider />
 
       {/* Cloud Storage Section */}
       <div>
@@ -103,7 +99,7 @@ const StorageSystem = () => {
             title='Cloud Storage'
           />
         </AnimateSlideUp>
-        <div className='grid grid-cols-1 gap-2.5 sm:grid-cols-1'>
+        <div className='grid grid-cols-1 gap-3'>
           {cloudStorageProviders.map((item, index) => {
             const AnimationComponent =
               animationVariants[index % animationVariants.length]

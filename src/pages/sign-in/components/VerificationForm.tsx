@@ -50,7 +50,7 @@ const VerificationForm = () => {
         title='Two-Step Verification'
       />
 
-      <InputPin length={6} placeholder='0' value={code} onChange={setCode} />
+      <InputPin autoFocus length={6} placeholder='0' value={code} onChange={setCode} />
 
       <div className='space-y-2'>
         <Button

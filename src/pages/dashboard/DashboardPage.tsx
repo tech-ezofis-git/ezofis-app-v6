@@ -1,23 +1,29 @@
-import { AnimateFadeIn, AnimateSlideUp } from '@/components/common/animations'
+import { AnimateSlideUp } from '@/components/common/animations'
 import AccountsPayable from './workflows/accounts-payable/AccountsPayable'
-import Header from './workflows/shared/components/Header'
+import DashboardCharts from './workflows/shared/components/Header'
 import setupStore from './workflows/accounts-payable/stores/useSetupStore'
 
 const DashboardPage = () => {
-  const isSetupStarted = setupStore((state) => state.isSetupStarted)
+  const isActivatingAutomation = setupStore(
+    (state) => state.isActivatingAutomation,
+  )
   const isApSetUpCompleted = setupStore((state) => state.isApSetUpCompleted)
+
+  if (isActivatingAutomation) {
+    return (
+      <div className='flex h-full min-h-[50vh] flex-col items-center justify-center bg-gray-50/50' />
+    )
+  }
 
   return (
     <div className='flex h-full flex-col overflow-y-auto bg-gray-50/50'>
-      <AnimateSlideUp delay={0.1}>
-        <Header />
-      </AnimateSlideUp>
-      <AnimateFadeIn
-        className='relative flex flex-col'
-        delay={0.2}
-      >
-        {!isSetupStarted && !isApSetUpCompleted ? <AccountsPayable /> : null}
-      </AnimateFadeIn>
+      {isApSetUpCompleted ? (
+        <AnimateSlideUp delay={0.1}>
+          <DashboardCharts />
+        </AnimateSlideUp>
+      ) : (
+        <AccountsPayable />
+      )}
     </div>
   )
 }

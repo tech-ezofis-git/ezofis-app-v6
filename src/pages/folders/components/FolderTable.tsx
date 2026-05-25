@@ -63,15 +63,17 @@ export function FolderTable({
           {folders.map((folder) => (
             <div
               key={folder.id}
-              className="group relative grid w-full cursor-pointer grid-cols-[48px_1.4fr_1fr_1fr_0.8fr_48px] items-center border-b border-gray-3 px-4 py-2 text-left text-sm transition-all hover:bg-gray-4"
+              className="group relative grid w-full cursor-pointer grid-cols-[48px_1.4fr_1fr_1fr_0.8fr_48px] items-center border-b border-gray-3 px-4 py-2 text-left text-sm transition-all  hover:z-10 hover:bg-[var(--gray-1)] hover:shadow-sm text-[15px]"
               onClick={() => onOpenFolder(folder.id)}
+              style={{ fontWeight: '500' }}
+
             >
               <DynamicIcon name={folder.iconKey} className="h-5 w-5 text-gray-11 group-hover:text-primary-10" />
 
               <button
                 type="button"
                 onClick={() => onOpenFolder(folder.id)}
-                className="truncate text-left font-semibold text-gray-13 hover:text-blue-11 hover:underline"
+                className="truncate text-left font-bold text-gray-13 "
               >
                 {folder.title}
               </button>
@@ -127,7 +129,7 @@ export function FolderTable({
       {folders.length ? (<div className="relative flex items-center justify-center bg-surface  py-3">
         <div className="absolute left-0 right-0 top-1/2 h-px -translate-y-1/2 bg-gray-4" />
 
-        <div className="relative z-10 flex items-center gap-2 rounded-full border border-gray-3 bg-white px-4 py-1.5 text-xs font-bold text-gray-10 shadow-sm">
+        <div className="relative z-10 flex items-center gap-2 rounded-full border border-gray-3 bg-surface px-4 py-1.5 text-xs font-bold text-gray-10 shadow-sm">
           <DynamicIcon name="fileText" className="h-4 w-4 text-gray-8" />
 
           <span className="rounded text-gray-8 px-1.5 py-0.5 ">
@@ -138,7 +140,7 @@ export function FolderTable({
 
           <span className='text-gray-8'>{files.length || 0}</span>
         </div>
-      </div>):null}
+      </div>) : null}
       {files.length ? (
         <section className="bg-surface">
 
@@ -157,7 +159,7 @@ export function FolderTable({
           {files.map((file) => (
             <div
               key={file.id}
-              className="group cursor-pointer relative grid w-full grid-cols-[48px_1.6fr_1fr_1fr_0.7fr_1fr_0.6fr_48px] items-center border-b border-gray-3 px-4 py-2 text-left text-sm transition-all hover:bg-gray-4"
+              className="group cursor-pointer relative grid w-full grid-cols-[48px_1.6fr_1fr_1fr_0.7fr_1fr_0.6fr_48px] items-center border-b border-gray-3 px-4 py-2 text-left text-sm transition-all  hover:z-10 hover:bg-[var(--gray-1)] hover:shadow-sm"
               onClick={() => onOpenFile(file.id)}
             >
               <DynamicIcon name="fileText" className="h-5 w-5 text-gray-11 group-hover:text-secondary-10" />
@@ -165,7 +167,8 @@ export function FolderTable({
               <button
                 type="button"
                 onClick={() => onOpenFile(file.id)}
-                className="truncate text-left font-semibold text-gray-13 hover:text-blue-11 hover:underline"
+                className="truncate text-left font-bold text-gray-13 text-[15px]"
+                style={{ fontWeight: '500' }}
               >
                 {file.name}
               </button>

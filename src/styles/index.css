@@ -959,3 +959,13 @@
     animation: slideInRight 0.3s ease-out forwards;
   }
 }
+
+tbody tr {
+  --pinned-bg: var(--surface);
+}
+tbody tr:hover {
+  --pinned-bg: var(--gray-1);
+}
+tbody tr:last-child td {
+  border-bottom-width: 0 !important;
+}

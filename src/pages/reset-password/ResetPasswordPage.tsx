@@ -8,7 +8,8 @@ import InputPassword from '@/components/base/inputs/password/InputPassword'
 import Title from '@/components/base/Title'
 import showToast from '@/components/base/toast/showToast'
 // import HeroText from '@/components/common/HeroText'
-import PasswordRequirements from '@/layouts/auth/components/PasswordRequirements'
+import PasswordRequirements, { requirementsConfig } from '@/layouts/auth/components/PasswordRequirements'
+import useSetupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import authUserStore from '@/stores/authUserStore'
 
 const ResetPasswordPage = () => {
@@ -61,6 +62,13 @@ const ResetPasswordPage = () => {
 
       if (!isSocial) {
         if (!password) return setError('Password is required')
+
+        // Validate password against all requirements
+        const unmetRequirement = requirementsConfig.find((req) => !req.regex.test(password))
+        if (unmetRequirement) {
+          return setError(`Password must meet all requirements: ${unmetRequirement.label}`)
+        }
+
         if (password !== confirmPassword)
           return setError('Passwords do not match')
       }
@@ -84,20 +92,38 @@ const ResetPasswordPage = () => {
       const { data, status } = await apiRouter.signUp(payload)
 
       if (status === 200 || status === 201 || data === 'Success') {
+        const { setRestrictNavigationUntilApSetup, setisApSetUpCompleted, setIsSetupStarted } =
+          useSetupStore.getState()
+        setRestrictNavigationUntilApSetup(true)
+        setisApSetUpCompleted(false)
+        setIsSetupStarted(true)
+
         showToast({
           message: 'Account Setup Completed Successfully',
           variant: 'success',
         })
         setLoading(false)
-        navigate({ to: '/sign-in' })
+        navigate({ to: '/' })
+      } else {
+        setError('Failed to complete account setup. Please contact the EZOFIS team.')
+        setLoading(false)
       }
 
       console.log(data)
-    } catch (error) {}
+    } catch (err: any) {
+      console.error(err)
+      setError('Failed to complete account setup. Please contact the EZOFIS team.')
+      setLoading(false)
+    }
+  }
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    handleSignUp()
   }
 
   return (
-    <div className='flex flex-col gap-6'>
+    <form onSubmit={handleSubmit} className='flex flex-col gap-6'>
       <IconIllustrated icon='lucide:lock' />
       <Title
         className='text-center'
@@ -108,6 +134,7 @@ const ResetPasswordPage = () => {
 
       <div className='space-y-4'>
         <InputText
+          required
           label='First name'
           value={firstName}
           onChange={(v) => {
@@ -117,6 +144,7 @@ const ResetPasswordPage = () => {
         />
 
         <InputText
+          required
           label='Last name'
           value={lastName}
           onChange={(v) => {
@@ -126,6 +154,7 @@ const ResetPasswordPage = () => {
         />
 
         <InputText
+          required
           label='Organisation'
           value={organisation}
           onChange={(v) => {
@@ -137,6 +166,7 @@ const ResetPasswordPage = () => {
         {!isSocial && (
           <>
             <InputPassword
+              required
               label='Password'
               value={password}
               onChange={(v) => {
@@ -146,6 +176,7 @@ const ResetPasswordPage = () => {
             />
             <PasswordRequirements password={password} />
             <InputPassword
+              required
               label='Confirm password'
               value={confirmPassword}
               onChange={(v) => {
@@ -160,12 +191,12 @@ const ResetPasswordPage = () => {
       {error && <div className='text-red-500 text-center text-sm'>{error}</div>}
 
       <Button
+        type='submit'
         className='w-full justify-center'
-        label='Finish'
+        label='Create Account'
         loading={loading}
-        onClick={handleSignUp}
       />
-    </div>
+    </form>
   )
 }
 

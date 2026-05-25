@@ -1,25 +1,26 @@
-import EmptyState from '@/components/base/EmptyState'
+import { useNavigate } from '@tanstack/react-router'
+import PageEmptyState from '@/components/common/PageEmptyState'
 import Logo from '@/components/common/Logo'
 import AuthFooter from '@/layouts/auth/components/AuthFooter'
 
 const InvalidUrlPage = () => {
+  const navigate = useNavigate()
+
   return (
     <div className='p-6'>
       <div className='flex h-9 items-center'>
         <Logo />
       </div>
 
-      <div
-        className='flex items-center justify-center py-10 xl:py-24'
-        style={{ minHeight: 'calc(100dvh - 120px)' }}
-      >
-        <EmptyState
-          description='The link you followed may be broken or the page may have been removed. Please double-check the URL for errors and try again.'
-          icon='lucide:plug-connected-x'
-          primaryActionLabel='Go Home'
-          title='The link is not valid'
-        />
-      </div>
+      <PageEmptyState
+        containerClassName='min-h-[calc(100dvh-120px)] py-10 xl:py-24'
+        description='This link is invalid or has expired. Please request a new invitation.'
+        fill={false}
+        icon='lucide:link-2-off'
+        primaryActionLabel='Go Home'
+        title='Invalid link'
+        onPrimaryAction={() => navigate({ to: '/' })}
+      />
 
       <AuthFooter />
     </div>

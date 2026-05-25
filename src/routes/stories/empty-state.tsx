@@ -1,5 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router'
 import EmptyState from '@/components/base/EmptyState'
+import PageEmptyState, {
+  MENU_PAGE_EMPTY_STATES,
+} from '@/components/common/PageEmptyState'
 import StoryCode from './-components/StoryCode'
 import StorySubTitle from './-components/StorySubTitle'
 import StoryTitle from './-components/StoryTitle'
@@ -27,7 +30,6 @@ function RouteComponent() {
       </StoryCode>
 
       <div className='space-y-16'>
-        {/* Default Section */}
         <section>
           <StorySubTitle>Default Usage</StorySubTitle>
           <p className='mb-4 text-14 text-gray-11'>
@@ -52,6 +54,37 @@ function RouteComponent() {
               title='No results found'
             />
           </div>
+        </section>
+
+        <section>
+          <StorySubTitle>Page Empty State (menu pages)</StorySubTitle>
+          <p className='mb-4 text-14 text-gray-11'>
+            Use PageEmptyState with page and variant for workflows, forms, and
+            requests. Use initial when nothing exists yet; use filtered when
+            search or filters return no matches.
+          </p>
+          <StoryCode>
+            {`import PageEmptyState from '@/components/common/PageEmptyState'
+
+<PageEmptyState page="requests" variant="initial" onPrimaryAction={...} />
+<PageEmptyState page="requests" variant="filtered" />`}
+          </StoryCode>
+          <div className='mt-8 grid gap-6 rounded-xl border border-dashed border-gray-4 bg-gray-1 p-6 md:grid-cols-2'>
+            <PageEmptyState
+              containerClassName='min-h-[280px]'
+              page='requests'
+              variant='initial'
+            />
+            <PageEmptyState
+              containerClassName='min-h-[280px]'
+              page='requests'
+              variant='filtered'
+            />
+          </div>
+          <p className='mt-4 text-12 text-gray-10'>
+            Menu pages: {Object.keys(MENU_PAGE_EMPTY_STATES).join(', ')}.
+            Variants: initial, filtered, unavailable.
+          </p>
         </section>
       </div>
     </div>

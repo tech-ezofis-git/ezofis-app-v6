@@ -1,4 +1,5 @@
 import {
+  ArrowRight,
   Bot,
   Building2,
   Calendar,
@@ -35,6 +36,7 @@ import { AnimateFadeIn, AnimateSlideUp } from '@/components/common/animations'
 // import { Trans } from '@lingui/react/macro'
 // import { useViewportSize } from '@mantine/hooks'
 import Overview from '../../accounts-payable/components/Overview'
+import setupStore from '../../accounts-payable/stores/useSetupStore'
 // import AccountsPayable from './workflows/accounts-payable/AccountsPayable'
 // import Header from './workflows/shared/components/Header'
 
@@ -1284,6 +1286,35 @@ const DashboardPage = () => {
         className='bg-gray-50/50 relative flex min-h-0 flex-1 flex-col overflow-y-auto p-6 scrollbar'
         delay={0.2}
       >
+        {/* AP Setup Callout Banner */}
+        <div className='mb-6 flex flex-wrap items-center justify-between gap-4 border border-[var(--gray-3)] bg-white px-6 py-4 rounded-xl shadow-sm animate-in fade-in slide-in-from-top-4 duration-300'>
+          <div className='flex items-center gap-3'>
+            <div className='flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--primary-2)] text-[var(--primary-9)]'>
+              <Bot className='h-4.5 w-4.5' />
+            </div>
+            <div>
+              <h5 className='text-14 font-semibold text-[var(--gray-13)]'>
+                Accounts Payable Automation
+              </h5>
+              <p className='text-12 text-[var(--gray-9)]'>
+                Complete setup to start your AP automation.
+              </p>
+            </div>
+          </div>
+          <button
+            className='inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-[var(--primary-9)] px-4 py-2 text-13 font-semibold text-white shadow-sm transition-all hover:bg-[var(--primary-10)] hover:shadow-md active:scale-95'
+            type='button'
+            onClick={() => {
+              setupStore.getState().setisApSetUpCompleted(false)
+              setupStore.getState().setIsSetupStarted(true)
+              setupStore.getState().setStep(0)
+            }}
+          >
+            Get Started
+            <ArrowRight className='h-4 w-4' />
+          </button>
+        </div>
+
         {/* Filters Row */}
         <div className='animate-in fade-in slide-in-from-left-4 mb-4 flex flex-wrap items-center justify-between gap-4 duration-300'>
           <div className='flex flex-wrap items-center gap-2'>

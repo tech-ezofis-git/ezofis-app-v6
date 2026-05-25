@@ -2,8 +2,15 @@ import type { Item, ItemGroup } from '@/types/item'
 import type { Row } from '../types'
 
 export default function transformRows(rows: ItemGroup[]): Row[] {
-  if (rows.length === 1 && (!rows[0].groupKey || !rows[0].groupValue)) {
-    return transformItemsToRows(rows[0].items)
+  const singleGroup = rows.length === 1 ? rows[0] : null
+  const isFlatList =
+    singleGroup &&
+    (!singleGroup.groupKey ||
+      !singleGroup.groupValue ||
+      singleGroup.groupId === 'all')
+
+  if (isFlatList) {
+    return transformItemsToRows(singleGroup.items)
   }
 
   return rows.map(({ groupCount, groupId, groupKey, groupValue, items }) => ({
@@ -38,6 +45,7 @@ function transformItemsToRows(items: (ItemGroup | Item)[]): Row[] {
     } else {
       const { id, ...rest } = item
       return {
+        ...rest,
         group: '',
         groupCount: 0,
         groupId: '',
@@ -47,7 +55,6 @@ function transformItemsToRows(items: (ItemGroup | Item)[]): Row[] {
         itemId: id,
         subRows: [],
         type: 'item' as const,
-        ...rest,
       }
     }
   })

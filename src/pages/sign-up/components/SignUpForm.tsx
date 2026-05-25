@@ -57,6 +57,10 @@ const SignUpForm = ({ email, setEmail, onChangeView }: Props) => {
         requiredOTP: true,
       })
 
+      if (status === 409) {
+        setError('Tenant is already exists, Please change the Email for signup')
+        return
+      }
       if (error) {
         setError(error)
         return
@@ -116,7 +120,16 @@ const SignUpForm = ({ email, setEmail, onChangeView }: Props) => {
         })
 
         // OPTIONAL: call sendMailOTP with requiredOTP false (you asked for it earlier)
-        await apiRouter.sendMailOTP({ email: gEmail, requiredOTP: false })
+        const { error: otpError, status: otpStatus } = await apiRouter.sendMailOTP({ email: gEmail, requiredOTP: false })
+
+        if (otpStatus === 409) {
+          setError('Tenant is already exists, Please change the Email for signup')
+          return
+        }
+        if (otpError) {
+          setError(otpError)
+          return
+        }
 
         // skip verify screen
         navigate({ to: '/reset-password' })
@@ -162,7 +175,16 @@ const SignUpForm = ({ email, setEmail, onChangeView }: Props) => {
       })
 
       // OPTIONAL: call sendMailOTP with requiredOTP false
-      await apiRouter.sendMailOTP({ email: msEmail, requiredOTP: false })
+      const { error: otpError, status: otpStatus } = await apiRouter.sendMailOTP({ email: msEmail, requiredOTP: false })
+
+      if (otpStatus === 409) {
+        setError('Tenant is already exists, Please change the Email for signup')
+        return
+      }
+      if (otpError) {
+        setError(otpError)
+        return
+      }
 
       navigate({ to: '/reset-password' })
     } catch (e: any) {
@@ -206,7 +228,7 @@ const SignUpForm = ({ email, setEmail, onChangeView }: Props) => {
       <div className='space-y-3'>
         <Button
           className='w-full justify-center'
-          label='Send OTP'
+          label='Continue'
           loading={loading}
           onClick={handleEmailSendOtp}
         />

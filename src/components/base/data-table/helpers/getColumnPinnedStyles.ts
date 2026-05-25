@@ -8,11 +8,11 @@ export default function getColumnPinnedStyles<TData>(
   const isPinned = column.getIsPinned()
   const isLastCenterColumn = column.getIsLastColumn('center')
   const isFirstRightPinnedColumn =
-    isPinned === 'right' && column.getIsFirstColumn('right')
+    isPinned === 'right' && column.getIsFirstColumn('right') && column.id !== 'actions'
   const hasRightPinnedColumns = table.getRightLeafColumns().length > 0
 
   return {
-    backgroundColor: isPinned ? 'var(--surface-muted)' : undefined,
+    backgroundColor: isPinned ? 'var(--pinned-bg, var(--surface-muted))' : undefined,
     borderLeftWidth: isFirstRightPinnedColumn ? '1px' : undefined,
     borderRightWidth:
       hasRightPinnedColumns && isLastCenterColumn ? '0px' : undefined,

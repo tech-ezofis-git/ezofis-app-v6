@@ -1,4 +1,3 @@
-import { motion } from 'motion/react'
 import { useRef } from 'react'
 // import MondayLogo from '@/assets/brands/monday.svg'
 // import OracleLogo from '@/assets/brands/oracle.svg'
@@ -17,11 +16,14 @@ import {
 } from '@/components/common/animations'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import BrandCard from '../../components/BrandCard'
+import { OrDivider } from '../../components/StepLayout'
 import SectionHeader from '../../components/SectionHeader'
 const items = [
   // { logo: SapLogo, name: 'SAP', value: 'SAP' },
   // { logo: OracleLogo, name: 'Oracle NetSuite', value: 'Oracle NetSuite' },
   {
+    description:
+      'Connect your QuickBooks account to sync PO and invoice data automatically.',
     logo: QuickBooksLogo,
     name: 'QuickBooks',
     value: 'QuickBooks',
@@ -36,24 +38,7 @@ const ErpSystem = () => {
   const setErpSettings = setupStore((state) => state.setErpSettings)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const isFileBasedImportSelected =
-    erpSettings.wantsFileBasedImport ||
-    erpSettings.system === 'FILE_BASED_IMPORT'
-
-  const handleTemplateDownload = () => {
-    // Create a simple CSV template
-    const csvContent =
-      'Purchase Order Number,Vendor,Amount,Date,Status\nPO-001,Example Vendor,1000.00,2024-01-01,Pending'
-    const blob = new Blob([csvContent], { type: 'text/csv' })
-    const url = window.URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'PO_Master_Template.csv'
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    window.URL.revokeObjectURL(url)
-  }
+  const isFileBasedImportSelected = erpSettings.system === 'FILE_BASED_IMPORT'
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -83,39 +68,42 @@ const ErpSystem = () => {
   ]
 
   return (
-    <div className='space-y-4'>
+    <div className='space-y-6'>
       {/* PO Master Data Section */}
       <div>
         <AnimateSlideUp delay={0.1}>
           <SectionHeader
-            description='Import your existing PO Master record to ensure accurate matching during processing. This allows the system to validate invoices against your pre-approved purchase orders.'
+            description='Import PO master records to validate invoices against approved purchase orders'
             title='PO Master Data'
-            action={
-              <motion.button
-                className='group flex items-center gap-2 rounded-md border border-gray-3 bg-surface px-3 py-1.5 text-12 font-medium text-gray-11 transition-all hover:border-accent-primary hover:bg-accent-soft hover:text-accent-primary'
-                title='Download PO Master template'
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={handleTemplateDownload}
-              >
-                <Icon
-                  className='size-4 text-gray-10 group-hover:text-accent-primary'
-                  name='tabler:download'
-                />
-                Master Template
-              </motion.button>
-            }
           />
         </AnimateSlideUp>
 
-        {/* Quick Drop option */}
-        <div className='mt-4'>
+        {/* Master Data Options */}
+        <div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
           <AnimateSlideUp delay={0.15}>
             <BrandCard
-              checked={isFileBasedImportSelected}
-              description='Quickly upload your PO Master Data file (Excel/CSV) from your device.'
+              checked={erpSettings.system === 'PREDEFINED'}
+              description='Use the system’s predefined master records to validate invoices.'
+              icon='tabler:database-search'
+              name='Predefined Master Data'
+              value='PREDEFINED'
+              onClick={() => {
+                setErpSettings({
+                  ...erpSettings,
+                  importMethod: 'upload',
+                  isConnected: true,
+                  system: 'PREDEFINED',
+                  wantsFileBasedImport: false,
+                })
+              }}
+            />
+          </AnimateSlideUp>
+          <AnimateSlideUp delay={0.2}>
+            <BrandCard
+              checked={erpSettings.system === 'FILE_BASED_IMPORT'}
+              description='Upload your custom PO Master Data file (Excel/CSV) from your device.'
               icon='tabler:table-import'
-              name='Master Data Import'
+              name='Upload Master File'
               value='FILE_BASED_IMPORT'
               onClick={() => {
                 setErpSettings({
@@ -142,19 +130,17 @@ const ErpSystem = () => {
 
         {isFileBasedImportSelected && (
           <AnimateFadeIn delay={0.2}>
-            <div className='mt-4 rounded-xl border border-gray-3 bg-surface p-6 shadow-sm'>
-              {/* Heading */}
-              <h3 className='mb-3 text-16 font-semibold text-gray-13'>
+            <div className='mt-4 rounded-xl border border-gray-3 bg-surface p-5 shadow-sm md:p-6'>
+              <h3 className='text-15/5 font-semibold text-gray-13'>
                 {erpSettings.templateUploaded
                   ? 'PO Master file received'
                   : 'Upload Master Data'}
               </h3>
 
-              {/* Description */}
-              <p className='mb-4 text-14 leading-relaxed text-gray-11'>
+              <p className='mt-1.5 mb-4 text-13/5.5 text-pretty text-gray-11'>
                 {erpSettings.templateUploaded
                   ? 'Your PO Master records have been successfully uploaded. We will use this data to validate and match incoming invoices.'
-                  : 'Upload your PO Master Data spreadsheet here. Ensure your columns match the Master Template available in the section header.'}
+                  : 'Upload your PO Master Data spreadsheet here.'}
               </p>
 
               {/* Upload button */}
@@ -172,8 +158,11 @@ const ErpSystem = () => {
               </div>
 
               {/* Visual cue for accepted file types */}
-              <p className='text-12 text-gray-8'>
-                <strong>Accepted file types:</strong> Excel (.xlsx, .xls), CSV
+              <p className='text-12/4.5 text-gray-9'>
+                <span className='font-medium text-gray-11'>
+                  Accepted file types:
+                </span>{' '}
+                Excel (.xlsx, .xls), CSV
               </p>
 
               {/* Success message */}
@@ -188,7 +177,7 @@ const ErpSystem = () => {
 
               {/* Uploaded file name */}
               {erpSettings.uploadedTemplate && (
-                <div className='mt-3 flex items-center gap-2 text-14 text-gray-11'>
+                <div className='mt-3 flex items-center gap-2 text-13/5 text-gray-11'>
                   <Icon className='size-4' name='tabler:file-check' />
                   <span className='font-medium'>
                     {erpSettings.uploadedTemplate.name}
@@ -200,12 +189,7 @@ const ErpSystem = () => {
         )}
       </div>
 
-      {/* Divider with (OR) */}
-      <div className='flex items-center gap-4'>
-        <div className='flex-1 border-t border-gray-3'></div>
-        <span className='text-13 font-medium text-gray-10'>(OR)</span>
-        <div className='flex-1 border-t border-gray-3'></div>
-      </div>
+      <OrDivider />
 
       {/* ERP Integration Section */}
       <div>
@@ -215,13 +199,14 @@ const ErpSystem = () => {
             title='ERP Integration'
           />
         </AnimateSlideUp>
-        <div className='grid grid-cols-1 gap-2.5 sm:grid-cols-1'>
+        <div className='grid grid-cols-1 gap-3'>
           {items.map((item, index) => {
             const AnimationComponent =
               animationVariants[index % animationVariants.length]
             return (
               <AnimationComponent delay={0.25 + index * 0.08} key={item.value}>
                 <BrandCard
+                  description={item.description}
                   logo={item.logo}
                   name={item.name}
                   value={item.value}

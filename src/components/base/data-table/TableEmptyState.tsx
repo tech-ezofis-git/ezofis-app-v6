@@ -1,35 +1,57 @@
 import { type Table as TanstackTable } from '@tanstack/react-table'
-import Button from '@/components/base/button/Button'
-import IconIllustrated from '@/components/base/icon/IconIllustrated'
+import ListEmptyState, {
+  MENU_LIST_EMPTY_CONTAINER_CLASS,
+  resolveEmptyVariant,
+} from '@/components/common/ListEmptyState'
+import PageEmptyState from '@/components/common/PageEmptyState'
+import type { MenuPage } from '@/components/common/menuPageEmptyStates'
 import Tbody from '@/components/base/table/Tbody'
 import Td from '@/components/base/table/Td'
 import Tr from '@/components/base/table/Tr'
 
 interface Props<TData> {
+  page?: MenuPage
   table: TanstackTable<TData>
+  onPrimaryAction?: () => void
 }
 
-const TableEmptyState = <TData,>({ table }: Props<TData>) => {
+const TableEmptyState = <TData,>({
+  page,
+  table,
+  onPrimaryAction,
+}: Props<TData>) => {
+  const variant = resolveEmptyVariant(table as TanstackTable<any>)
+
   return (
     <Tbody>
       <Tr>
         <Td colSpan={table.getVisibleLeafColumns().length}>
-          <div className='flex flex-col items-center justify-center pt-12 pb-24'>
-            <IconIllustrated className='mb-4' icon='lucide:file-search' />
-
-            <div className='mb-1 text-15 font-semibold text-gray-13'>
-              No results found
-            </div>
-
-            <div className='text-13 text-balance text-gray-11'>
-              We couldn't find anything matching your search. Try changing
-              filters or keywords.
-            </div>
-
-            <div className='mt-6 flex justify-center gap-3'>
-              <Button color='gray' label='Clear filters' variant='outline' />
-            </div>
-          </div>
+          {page ? (
+            <ListEmptyState
+              containerClassName={MENU_LIST_EMPTY_CONTAINER_CLASS}
+              page={page}
+              table={table}
+              variant={variant}
+              onPrimaryAction={onPrimaryAction}
+            />
+          ) : (
+            <PageEmptyState
+              containerClassName={MENU_LIST_EMPTY_CONTAINER_CLASS}
+              fill={false}
+              description={
+                variant === 'filtered'
+                  ? 'No rows match your current search or filters. Try different keywords or clear filters.'
+                  : 'There is no data to display yet.'
+              }
+              icon='lucide:folder-search'
+              title={
+                variant === 'filtered'
+                  ? 'No matching results'
+                  : 'No data yet'
+              }
+              variant={variant}
+            />
+          )}
         </Td>
       </Tr>
     </Tbody>

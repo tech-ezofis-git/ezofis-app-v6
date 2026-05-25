@@ -9,13 +9,15 @@ const WelcomeMessage = () => {
 
   if (!isSetupStarted) {
     return (
-      <div className='mx-auto flex h-full max-w-xl flex-col items-center justify-center gap-6 p-10'>
+      <div className='mx-auto flex h-full max-w-lg flex-col items-center justify-center gap-8 p-10 text-center'>
         <IconIllustrated icon='lucide:cog' />
         <Title
-          className='text-center'
+          className='items-center text-center'
           description='Connect your email, ERP, and document storage to enable AI-powered invoice processing—streamline approvals, reduce errors, and save time.'
+          descriptionClassName='max-w-md text-pretty'
           level={1}
           title='Set Up Your AP Automation'
+          titleClassName='tracking-tight'
         />
         <div className='flex justify-center'>
           <Button

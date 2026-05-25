@@ -12,13 +12,11 @@ import MenuItem from '@/components/base/menu/MenuItem'
 import FormStatusBadge from '@/components/common/FormStatusBadge'
 import FormTypeBadge from '@/components/common/FormTypeBadge'
 import { formatDatetime } from '@/utils/dayjs'
-import GridView from './components/GridView'
 import Header from './components/header/Header'
 import Table from './components/Table'
 
 const FormsPage = () => {
   const navigate = useNavigate()
-  const [viewMode, setViewMode] = useState<'table' | 'grid'>('grid')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
 
@@ -82,30 +80,6 @@ const FormsPage = () => {
         ),
       },
       {
-        className: 'p-1',
-        enableGrouping: true,
-        hideHeader: true,
-        id: 'isFavourite',
-        isDisplayColumn: true,
-        label: 'Favourite',
-        size: 40,
-        renderCell: (row: any) => (
-          <div className='flex items-center justify-center'>
-            <IconButton
-              className='group'
-              color='gray'
-              icon={row.isFavourite ? 'tabler:star-filled' : 'tabler:star'}
-              variant='ghost'
-              iconClass={
-                row.isFavourite
-                  ? 'text-yellow-10'
-                  : 'text-gray-8 group-hover:text-gray-9'
-              }
-            />
-          </div>
-        ),
-      },
-      {
         id: 'description',
         label: 'Description',
         size: 240,
@@ -143,23 +117,25 @@ const FormsPage = () => {
           formatDatetime(row.createdAt as string, 'datetime'),
       },
       {
-        id: 'updatedBy',
-        label: 'Last Modified By',
+        id: 'modifiedBy',
+        label: 'Modified By',
         size: 240,
       },
       {
-        id: 'updatedAt',
-        label: 'Last Modified At',
+        id: 'modifiedAt',
+        label: 'Modified At',
         size: 200,
         renderCell: (row: any) =>
-          formatDatetime(row.updatedAt as string, 'datetime'),
+          formatDatetime(row.modifiedAt as string, 'datetime'),
       },
       {
         className: 'p-1',
+        enableSorting: false,
         hideHeader: true,
         id: 'actions',
         isDisplayColumn: true,
         label: 'Actions',
+        showMenu: false,
         size: 40,
         renderCell: (row: any) => (
           <div className='flex items-center justify-center'>
@@ -315,36 +291,27 @@ const FormsPage = () => {
     }
   }, [groupState, setExpandState])
 
+  const openFormBuilder = () => {
+    navigate({ to: '/form-builder' })
+  }
+
   return (
     <div className='flex h-full flex-col'>
-      <Header viewMode={viewMode} setViewMode={setViewMode} />
+      <Header />
 
       <div className='bg-gray-50/50 flex-1 overflow-hidden px-6 py-2'>
-        {viewMode === 'table' ? (
-          <Table
-            isLoading={isPending}
-            isRefetching={isFetching || isRefetching}
-            page={page}
-            pageSize={pageSize}
-            table={table}
-            totalItems={totalItems}
-            onPageChange={setPage}
-            onPageSizeChange={setPageSize}
-            onReload={refetch}
-          />
-        ) : (
-          <GridView
-            isLoading={isPending}
-            isRefetching={isFetching || isRefetching}
-            page={page}
-            pageSize={pageSize}
-            table={table}
-            totalItems={totalItems}
-            onPageChange={setPage}
-            onPageSizeChange={setPageSize}
-            onReload={refetch}
-          />
-        )}
+        <Table
+          isLoading={isPending}
+          isRefetching={isFetching || isRefetching}
+          page={page}
+          pageSize={pageSize}
+          table={table}
+          totalItems={totalItems}
+          onCreate={openFormBuilder}
+          onPageChange={setPage}
+          onPageSizeChange={setPageSize}
+          onReload={refetch}
+        />
       </div>
     </div>
   )

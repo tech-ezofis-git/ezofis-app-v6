@@ -1,6 +1,5 @@
 // import SummaryMetric from './SummaryMetric'
 import { type Table as TanstackTable } from '@tanstack/react-table'
-import { createPortal } from 'react-dom'
 // ✅ Motion
 import { motion, useReducedMotion } from 'framer-motion'
 import { useEffect, useMemo, useState } from 'react'
@@ -19,6 +18,7 @@ import Icon from '@/components/base/icon/Icon'
 import FileSheet from '@/components/common/file-sheet/FileSheet'
 import cn from '@/utils/cn'
 import { formatDatetime } from '@/utils/dayjs'
+import ListEmptyState from '@/components/common/ListEmptyState'
 import HoverExpandableText from './HoverExpandableText'
 
 const GridRowSkeleton = ({ index }: { index: number }) => {
@@ -327,6 +327,7 @@ interface GridViewProps<TData> {
   setWorkflow?: (workflow: Option | null) => void
   onReload?: () => void
   onRoleChange?: (role: string) => void
+  onNewRequest?: () => void
   onRowClick: (item: any, tab: string) => void
   onRowSizeChange?: (size: RowSize) => void
   onViewModeChange?: (mode: 'table' | 'grid') => void
@@ -341,17 +342,16 @@ const GridView = <TData extends unknown>({
   isReloading,
   rowSize: _rowSize,
   table,
+  onNewRequest,
   onReload,
   onRowClick,
   onRowSizeChange: _onRowSizeChange,
 }: GridViewProps<TData>) => {
-  const prefersReducedMotion = useReducedMotion()
   const [selectedFile, setSelectedFile] = useState<any>(null)
   const [selectedIds, setSelectedIds] = useState<Set<string | number>>(
     new Set(),
   )
   const [isSelectionMode, setIsSelectionMode] = useState(false)
-  const [hoveredRowId, setHoveredRowId] = useState<string | number | null>(null)
 
   useEffect(() => {
     setIsSelectionMode(false)
@@ -577,21 +577,12 @@ const GridView = <TData extends unknown>({
 
         <div className='min-h-0 flex-1 overflow-y-auto'>
           {allItems.length === 0 ? (
-            <motion.div
-              animate={{ opacity: 1, y: 0 }}
-              className='flex flex-col items-center justify-center p-12'
-              initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
-            >
-              <div className='flex size-16 items-center justify-center rounded-full bg-[var(--gray-2)]'>
-                <Icon
-                  className='size-8 text-[var(--gray-8)]'
-                  name='tabler:inbox'
-                />
-              </div>
-              <p className='mt-4 font-medium text-[var(--gray-11)]'>
-                No requests found
-              </p>
-            </motion.div>
+            <ListEmptyState
+              containerClassName='py-12'
+              page='requests'
+              table={table as TanstackTable<any>}
+              onPrimaryAction={onNewRequest}
+            />
           ) : (
             <div className='flex flex-col gap-2.5 px-2 pt-3 pb-4'>
               {allItems.map((row: any, index: number) => {
@@ -656,25 +647,24 @@ const GridView = <TData extends unknown>({
                     exit='exit'
                     initial='hidden'
                     key={rowId}
-                    style={{ zIndex: hoveredRowId === rowId ? 99999 : 1 }}
                     transition={{ damping: 30, stiffness: 400, type: 'spring' }}
                     variants={itemVariantSet() as any}
-                    layout
                     className={cn(
-                      'group relative flex w-full items-center gap-4 rounded-xl border px-5 py-3 transition-all',
+                      'group relative flex w-full items-center gap-4 rounded-xl border-0 border-b border-b-[var(--gray-2)] px-5 py-3 transition-colors transition-shadow duration-200',
                       row.isProcessing ? 'cursor-default' : 'cursor-pointer',
                       isSelected
-                        ? 'border-[var(--primary-3)] bg-[var(--primary-1)]'
-                        : 'border-[var(--gray-2)] bg-[var(--surface)]',
+                        ? 'border-b-[var(--primary-3)] border-l border-l-[var(--primary-3)] border-r border-r-[var(--primary-3)] bg-[var(--primary-1)] shadow-sm'
+                        : 'bg-[var(--surface)]',
+                      !isSelected &&
+                        !row.isProcessing &&
+                        'hover:z-10 hover:border-b-[var(--primary-4)] hover:border-l hover:border-l-[var(--primary-4)] hover:border-r hover:border-r-[var(--primary-4)] hover:bg-[var(--gray-1)] hover:shadow-sm',
+                      !isSelected &&
+                        row.isProcessing &&
+                        'hover:border-b-[var(--orange-4)] hover:border-l hover:border-l-[var(--orange-4)] hover:border-r hover:border-r-[var(--orange-4)] hover:bg-[var(--orange-1)]/40 hover:shadow-sm',
                     )}
-                    whileHover={{
-                      boxShadow: '0 6px 12px -4px rgba(0,0,0,0.08)',
-                    }}
                     onClick={() => {
                       if (!row.isProcessing) onRowClick(row, 'Overview')
                     }}
-                    onMouseEnter={() => setHoveredRowId(rowId)}
-                    onMouseLeave={() => setHoveredRowId(null)}
                   >
                     {/* Checkbox & Status Icon */}
                     <div className='flex shrink-0 items-center gap-4'>
@@ -722,7 +712,7 @@ const GridView = <TData extends unknown>({
                     <div className='flex min-w-0 flex-1 flex-col gap-1.5'>
                       <div className='flex items-center gap-3'>
                         <h3
-                          className='truncate text-[15px] tracking-tight text-[#0F172A]'
+                          className='truncate text-[15px] tracking-tight text-[#0F172A] transition-colors group-hover:text-[var(--primary-9)]'
                           style={{ fontWeight: 500 }}
                         >
                           {invoiceNo}
@@ -945,232 +935,15 @@ const GridView = <TData extends unknown>({
                       )} */}
 
                       {row.isProcessing ? (
-                        <div className='relative flex w-[249px] items-center justify-end pr-4'>
+                        <div className='relative flex w-[249px] items-center justify-end gap-2 pr-4'>
                           <span className='text-[12px] font-medium text-[var(--gray-10)]'>
                             Analyzing...
                           </span>
-
-                          {/* Hover Status Overlay Card */}
-                          {hoveredRowId === rowId && typeof document !== 'undefined' && createPortal(
-                            <div
-                              style={{ zIndex: 999999 }}
-                              className='pointer-events-none fixed top-1/2 left-1/2 w-[360px] -translate-x-1/2 -translate-y-1/2 text-left transition-all duration-300'
-                            >
-                              <div
-                                className='animate-in fade-in zoom-in-95 relative overflow-hidden rounded-xl border border-[var(--gray-3)] p-5 shadow-2xl duration-200'
-                                style={{
-                                  backgroundColor: '#ffffff',
-                                  opacity: 1,
-                                }}
-                              >
-                                <div className='pointer-events-none absolute top-0 right-0 -mt-10 -mr-10 h-20 w-20 rounded-full bg-[var(--orange-9)] opacity-10 blur-2xl' />
-
-                                {/* Title / Header */}
-                                <div className='relative z-10 mb-4 flex items-center justify-between border-b border-[var(--gray-2)] pb-2'>
-                                  <div className='flex items-center gap-2'>
-                                    <div className='rounded-lg bg-[var(--orange-2)] p-1.5 text-[var(--orange-9)]'>
-                                      <Icon
-                                        className='size-4 animate-spin'
-                                        name='tabler:loader-2'
-                                      />
-                                    </div>
-                                    <div>
-                                      <h4 className='text-[13px] font-bold text-[var(--gray-12)]'>
-                                        Extraction Progress
-                                      </h4>
-                                      <p className='text-[10px] text-[var(--gray-9)]'>
-                                        ID: {rowId}
-                                      </p>
-                                    </div>
-                                  </div>
-                                  <span className='rounded bg-[var(--primary-2)] px-2 py-0.5 text-[10px] font-bold text-[var(--primary-11)]'>
-                                    {row.stage || 'Start'}
-                                  </span>
-                                </div>
-
-                                {/* Stepper Content */}
-                                {(() => {
-                                  const stage = row.stage || 'Start'
-                                  let step2Status = 'pending'
-                                  let step3Status = 'pending'
-                                  let step4Status = 'pending'
-
-                                  if (stage === 'Start') {
-                                    step2Status = 'active'
-                                  } else if (stage === 'AI Agent') {
-                                    step2Status = 'completed'
-                                    step3Status = 'active'
-                                  } else if (stage === 'Verifier') {
-                                    step2Status = 'completed'
-                                    step3Status = 'completed'
-                                    step4Status = 'active'
-                                  } else if (
-                                    ['Approved', 'Completed'].includes(stage)
-                                  ) {
-                                    step2Status = 'completed'
-                                    step3Status = 'completed'
-                                    step4Status = 'completed'
-                                  }
-
-                                  return (
-                                    <div className='relative z-10 flex flex-col pl-2'>
-                                      {/* Step 1: Upload */}
-                                      <div className='relative flex gap-3 pb-5'>
-                                        {/* Line */}
-                                        <div className='absolute top-5 bottom-0 left-[9px] w-0.5 bg-[var(--green-9)]' />
-                                        {/* Circle */}
-                                        <div className='relative z-10 flex size-5 shrink-0 items-center justify-center rounded-full bg-[var(--green-9)] text-white ring-4 ring-[var(--green-2)]'>
-                                          <Icon
-                                            className='size-3 stroke-[3px]'
-                                            name='tabler:check'
-                                          />
-                                        </div>
-                                        <div className='flex flex-col gap-0.5'>
-                                          <span className='text-[12px] font-bold text-[var(--gray-12)]'>
-                                            Upload & Ingestion
-                                          </span>
-                                          <span className='text-[10px] leading-normal text-[var(--gray-10)]'>
-                                            Invoice document successfully
-                                            received and parsed.
-                                          </span>
-                                        </div>
-                                      </div>
-
-                                      {/* Step 2: Extraction */}
-                                      <div className='relative flex gap-3 pb-5'>
-                                        {/* Line */}
-                                        <div
-                                          className={cn(
-                                            'absolute top-5 bottom-0 left-[9px] w-0.5',
-                                            step2Status === 'completed'
-                                              ? 'bg-[var(--green-9)]'
-                                              : 'bg-[var(--gray-3)]',
-                                          )}
-                                        />
-                                        {/* Circle */}
-                                        {step2Status === 'completed' ? (
-                                          <div className='relative z-10 flex size-5 shrink-0 items-center justify-center rounded-full bg-[var(--green-9)] text-white ring-4 ring-[var(--green-2)]'>
-                                            <Icon
-                                              className='size-3 stroke-[3px]'
-                                              name='tabler:check'
-                                            />
-                                          </div>
-                                        ) : step2Status === 'active' ? (
-                                          <div className='relative z-10 flex size-5 shrink-0 items-center justify-center rounded-full border border-[var(--primary-9)] bg-white ring-4 ring-[var(--primary-2)]'>
-                                            <div className='size-1.5 animate-pulse rounded-full bg-[var(--primary-9)]' />
-                                          </div>
-                                        ) : (
-                                          <div className='relative z-10 flex size-5 shrink-0 items-center justify-center rounded-full border border-[var(--gray-4)] bg-white text-[var(--gray-8)]'>
-                                            <div className='size-1.5 rounded-full bg-[var(--gray-4)]' />
-                                          </div>
-                                        )}
-                                        <div className='flex flex-col gap-0.5'>
-                                          <span
-                                            className={cn(
-                                              'text-[12px] font-bold',
-                                              step2Status === 'active'
-                                                ? 'text-[var(--primary-9)]'
-                                                : 'text-[var(--gray-12)]',
-                                            )}
-                                          >
-                                            Data Extraction (OCR)
-                                          </span>
-                                          <span className='text-[10px] leading-normal text-[var(--gray-10)]'>
-                                            AI Agent is reading metadata,
-                                            headers, line items & amounts.
-                                          </span>
-                                        </div>
-                                      </div>
-
-                                      {/* Step 3: PO Matching */}
-                                      <div className='relative flex gap-3 pb-5'>
-                                        {/* Line */}
-                                        <div
-                                          className={cn(
-                                            'absolute top-5 bottom-0 left-[9px] w-0.5',
-                                            step3Status === 'completed'
-                                              ? 'bg-[var(--green-9)]'
-                                              : 'bg-[var(--gray-3)]',
-                                          )}
-                                        />
-                                        {/* Circle */}
-                                        {step3Status === 'completed' ? (
-                                          <div className='relative z-10 flex size-5 shrink-0 items-center justify-center rounded-full bg-[var(--green-9)] text-white ring-4 ring-[var(--green-2)]'>
-                                            <Icon
-                                              className='size-3 stroke-[3px]'
-                                              name='tabler:check'
-                                            />
-                                          </div>
-                                        ) : step3Status === 'active' ? (
-                                          <div className='relative z-10 flex size-5 shrink-0 items-center justify-center rounded-full border border-[var(--primary-9)] bg-white ring-4 ring-[var(--primary-2)]'>
-                                            <div className='size-1.5 animate-pulse rounded-full bg-[var(--primary-9)]' />
-                                          </div>
-                                        ) : (
-                                          <div className='relative z-10 flex size-5 shrink-0 items-center justify-center rounded-full border border-[var(--gray-4)] bg-white text-[var(--gray-8)]'>
-                                            <div className='size-1.5 rounded-full bg-[var(--gray-4)]' />
-                                          </div>
-                                        )}
-                                        <div className='flex flex-col gap-0.5'>
-                                          <span
-                                            className={cn(
-                                              'text-[12px] font-bold',
-                                              step3Status === 'active'
-                                                ? 'text-[var(--primary-9)]'
-                                                : 'text-[var(--gray-12)]',
-                                            )}
-                                          >
-                                            PO Matching & Verification
-                                          </span>
-                                          <span className='text-[10px] leading-normal text-[var(--gray-10)]'>
-                                            Matching invoice items with PO and
-                                            checking policy compliance.
-                                          </span>
-                                        </div>
-                                      </div>
-
-                                      {/* Step 4: Final Review */}
-                                      <div className='relative flex gap-3'>
-                                        {/* Circle */}
-                                        {step4Status === 'completed' ? (
-                                          <div className='relative z-10 flex size-5 shrink-0 items-center justify-center rounded-full bg-[var(--green-9)] text-white ring-4 ring-[var(--green-2)]'>
-                                            <Icon
-                                              className='size-3 stroke-[3px]'
-                                              name='tabler:check'
-                                            />
-                                          </div>
-                                        ) : step4Status === 'active' ? (
-                                          <div className='relative z-10 flex size-5 shrink-0 items-center justify-center rounded-full border border-[var(--primary-9)] bg-white ring-4 ring-[var(--primary-2)]'>
-                                            <div className='size-1.5 animate-pulse rounded-full bg-[var(--primary-9)]' />
-                                          </div>
-                                        ) : (
-                                          <div className='relative z-10 flex size-5 shrink-0 items-center justify-center rounded-full border border-[var(--gray-4)] bg-white text-[var(--gray-8)]'>
-                                            <div className='size-1.5 rounded-full bg-[var(--gray-4)]' />
-                                          </div>
-                                        )}
-                                        <div className='flex flex-col gap-0.5'>
-                                          <span
-                                            className={cn(
-                                              'text-[12px] font-bold',
-                                              step4Status === 'active'
-                                                ? 'text-[var(--primary-9)]'
-                                                : 'text-[var(--gray-12)]',
-                                            )}
-                                          >
-                                            Final Verification Review
-                                          </span>
-                                          <span className='text-[10px] leading-normal text-[var(--gray-10)]'>
-                                            Routing the verified invoice to the
-                                            final approval queue.
-                                          </span>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  )
-                                })()}
-                              </div>
-                            </div>,
-                            document.body
-                          )}
+                          {row.stage ? (
+                            <span className='rounded-md border border-[var(--primary-3)] bg-[var(--primary-1)] px-2 py-0.5 text-[11px] font-semibold text-[var(--primary-11)]'>
+                              {row.stage}
+                            </span>
+                          ) : null}
                         </div>
                       ) : (
                         <>
@@ -1285,7 +1058,7 @@ const GridView = <TData extends unknown>({
                     <div className='flex w-6 shrink-0 items-center justify-end select-none'>
                       {!row.isProcessing && (
                         <Icon
-                          className='size-5 translate-x-[-4px] text-[var(--gray-8)] opacity-0 transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100'
+                          className='size-5 translate-x-[-4px] text-[var(--gray-8)] opacity-0 transition-all duration-200 group-hover:translate-x-0 group-hover:text-[var(--gray-8)] group-hover:opacity-100'
                           name='tabler:arrow-right'
                         />
                       )}

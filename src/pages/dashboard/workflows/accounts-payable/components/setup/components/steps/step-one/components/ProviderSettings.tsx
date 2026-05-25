@@ -13,6 +13,7 @@ import {
 } from '@/components/common/animations'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import BrandCard from '../../components/BrandCard'
+import { OrDivider } from '../../components/StepLayout'
 import SectionHeader from '../../components/SectionHeader'
 
 const directUploadItem = {
@@ -46,7 +47,7 @@ const ProviderSettings = () => {
   ]
 
   return (
-    <div className='space-y-4'>
+    <div className='space-y-6'>
       {/* File Upload Section */}
       <div>
         <AnimateSlideUp delay={0.1}>
@@ -73,12 +74,7 @@ const ProviderSettings = () => {
         </AnimateSlideUp>
       </div>
 
-      {/* Divider with (OR) */}
-      <div className='flex items-center gap-4'>
-        <div className='flex-1 border-t border-gray-3'></div>
-        <span className='text-13 font-medium text-gray-10'>(OR)</span>
-        <div className='flex-1 border-t border-gray-3'></div>
-      </div>
+      <OrDivider />
 
       {/* Email Integrations Section */}
       <div>
@@ -88,7 +84,7 @@ const ProviderSettings = () => {
             title='Email Integration'
           />
         </AnimateSlideUp>
-        <div className='grid grid-cols-1 gap-2.5 sm:grid-cols-2'>
+        <div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
           {emailProviders.map((item, index) => {
             const AnimationComponent =
               animationVariants[index % animationVariants.length]

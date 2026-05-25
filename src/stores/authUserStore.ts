@@ -3,6 +3,7 @@ import posthog from 'posthog-js'
 import { create } from 'zustand'
 import type { User } from '@/schemas/user'
 import { getFromLocalStorage } from '@/utils/local-storage'
+import useSetupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 
 export type DefaultView = Record<string, unknown>
 export type Identity = {
@@ -108,6 +109,18 @@ const authUserStore = create<Store>()((set) => {
       if (typeof window !== 'undefined') {
         window.localStorage.removeItem('identity')
         window.localStorage.removeItem('session')
+        window.localStorage.removeItem('isApSetUpCompleted')
+        window.localStorage.removeItem('restrictNavigationUntilApSetup')
+      }
+
+      // Reset setup store state
+      try {
+        useSetupStore.getState().setisApSetUpCompleted(false)
+        useSetupStore.getState().setRestrictNavigationUntilApSetup(false)
+        useSetupStore.getState().setIsSetupStarted(true)
+        useSetupStore.getState().setStep(0)
+      } catch (err) {
+        console.error('Failed to reset setup store state:', err)
       }
 
       // Clear in-memory state

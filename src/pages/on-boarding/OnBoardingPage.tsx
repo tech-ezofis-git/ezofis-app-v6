@@ -1,7 +1,7 @@
-import { useParams } from '@tanstack/react-router'
+import { useNavigate, useParams } from '@tanstack/react-router'
 import { AnimatePresence } from 'motion/react'
 import { useEffect, useState } from 'react'
-import EmptyState from '@/components/base/EmptyState'
+import PageEmptyState from '@/components/common/PageEmptyState'
 import IconSpinner from '@/components/base/icon/IconSpinner'
 import AnimateEntrancePop from '@/components/common/animations/AnimateEntrancePop'
 import AuthFooter from '@/layouts/auth/components/AuthFooter'
@@ -18,6 +18,7 @@ import StepZero from './components/StepZero'
 import onBoardingStore from './stores/onBoardingStore'
 
 const OnBoardingPage = () => {
+  const navigate = useNavigate()
   const { token } = useParams({ strict: false })
   console.log(token)
 
@@ -49,11 +50,13 @@ const OnBoardingPage = () => {
         {!isLoading && (
           <>
             {!isTokenValid && (
-              <EmptyState
-                description='The link you followed may be broken or the page may have been removed. Please double-check the URL for errors and try again.'
-                icon='lucide:plug-connected-x'
+              <PageEmptyState
+                description='This link is invalid or has expired. Please request a new invitation.'
+                fill={false}
+                icon='lucide:link-2-off'
                 primaryActionLabel='Go Home'
-                title='The link is not valid'
+                title='Invalid link'
+                onPrimaryAction={() => navigate({ to: '/' })}
               />
             )}
 

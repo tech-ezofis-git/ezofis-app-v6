@@ -97,6 +97,7 @@ const VerifyEmailForm = () => {
       />
 
       <InputPin
+        autoFocus
         // label={`Please enter the OTP sent to '${email}'`}
         aria-label='One time code'
         inputMode='numeric'

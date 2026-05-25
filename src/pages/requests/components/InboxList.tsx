@@ -272,12 +272,14 @@ const InboxList: React.FC<InboxListProps> = ({
               <div className='flex h-full min-w-0 flex-1 flex-col'>
                 <DataTable
                   component={selectedItem}
+                  emptyPage='requests'
                   hideGrouping={true}
                   isLoading={isLoading}
                   isReLoading={isRefetching}
                   pageSize={pageSize}
                   stickyHeader={true}
                   table={table}
+                  onEmptyPrimaryAction={() => openNewRequest('request')}
                   actions={[
                     {
                       align: 'right', // or 'left'
@@ -302,6 +304,7 @@ const InboxList: React.FC<InboxListProps> = ({
                   isLoading={isLoading}
                   isReloading={isRefetching}
                   table={table} // Pass the instance
+                  onNewRequest={() => openNewRequest('request')}
                   actions={[
                     {
                       align: 'right',

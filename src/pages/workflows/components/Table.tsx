@@ -14,7 +14,11 @@ import FormStatusBadge from '@/components/common/FormStatusBadge'
 import FormTypeBadge from '@/components/common/FormTypeBadge'
 import { formatDatetime } from '@/utils/dayjs'
 
-const Table = () => {
+interface TableProps {
+  onCreate?: () => void
+}
+
+const Table = ({ onCreate }: TableProps) => {
   const navigate = useNavigate()
   const columns: Column[] = [
     {
@@ -34,30 +38,6 @@ const Table = () => {
       size: 140,
       renderCell: (row) => (
         <FormStatusBadge status={String(row.flowstatus) as any} />
-      ),
-    },
-    {
-      className: 'p-1',
-      enableGrouping: true,
-      hideHeader: true,
-      id: 'isFavourite',
-      isDisplayColumn: true,
-      label: 'Favourite',
-      size: 40,
-      renderCell: (row) => (
-        <div className='flex items-center justify-center'>
-          <IconButton
-            className='group'
-            color='gray'
-            icon={row.isFavourite ? 'tabler:star-filled' : 'tabler:star'}
-            variant='ghost'
-            iconClass={
-              row.isFavourite
-                ? 'text-yellow-10'
-                : 'text-gray-8 group-hover:text-gray-9'
-            }
-          />
-        </div>
       ),
     },
     {
@@ -98,10 +78,12 @@ const Table = () => {
     },
     {
       className: 'p-1',
+      enableSorting: false,
       hideHeader: true,
       id: 'actions',
       isDisplayColumn: true,
       label: 'Actions',
+      showMenu: false,
       size: 40,
       renderCell: (row) => (
         <div className='flex items-center justify-center'>
@@ -176,14 +158,21 @@ const Table = () => {
 
   const workflows = useMemo(() => {
     if (!data?.data || !Array.isArray(data.data)) return []
-    // The DataTable expects an ItemGroup structure:
-    return data.data.map((cluster: any) => ({
+
+    const groups = data.data.map((cluster: any) => ({
       groupCount: cluster.value?.length || 0,
       groupId: cluster.key,
       groupKey: 'flowstatus',
       groupValue: cluster.key,
       items: Array.isArray(cluster.value) ? cluster.value : [],
     }))
+
+    const totalItems = data?.meta?.totalItems ?? 0
+    const hasItems = groups.some((group: any) => group.items.length > 0)
+
+    if (totalItems === 0 || !hasItems) return []
+
+    return groups
   }, [data])
 
   const { table } = useDataTable({
@@ -194,14 +183,19 @@ const Table = () => {
   })
 
   return (
-    <div className='p-6'>
-      <DataTable
-        isLoading={isPending}
-        isReLoading={isFetching || isRefetching}
-        pageSize={pageSize}
-        table={table}
-        onReload={refetch}
-      />
+    <div className='flex h-full flex-col px-2 py-1'>
+      <div className='min-h-0 flex-1'>
+        <DataTable
+          emptyPage='workflows'
+          isLoading={isPending}
+          isReLoading={isFetching || isRefetching}
+          pageSize={pageSize}
+          stickyHeader={true}
+          table={table}
+          onEmptyPrimaryAction={onCreate}
+          onReload={refetch}
+        />
+      </div>
       <Pagination
         className='mt-4'
         itemLabel='Workflows'

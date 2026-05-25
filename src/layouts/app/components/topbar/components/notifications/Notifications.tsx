@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import EmptyState from '@/components/base/EmptyState'
+import PageEmptyState from '@/components/common/PageEmptyState'
 import Menu from '@/components/base/menu/Menu'
 import Header from './components/header/Header'
 import NotificationsTrigger from './components/NotificationsTrigger'
@@ -22,13 +22,13 @@ const Notifications = () => {
       onChange={handleOnChange}
     >
       <Header />
-      <div className='flex h-96 items-center justify-center px-10'>
-        <EmptyState
-          description="We'll let you know when we've got something new for you."
-          icon='lucide:bell'
-          title='No Notifications Yet'
-        />
-      </div>
+      <PageEmptyState
+        containerClassName='h-96 px-10'
+        description="You're all caught up. New notifications will appear here."
+        fill={false}
+        icon='lucide:bell-off'
+        title='No notifications'
+      />
     </Menu>
   )
 }

@@ -9,6 +9,7 @@ interface TableProps {
   pageSize: number
   table: TanstackTable<any>
   totalItems: number
+  onCreate?: () => void
   onPageChange: (page: number) => void
   onPageSizeChange: (pageSize: number) => void
   onReload: () => void
@@ -17,6 +18,7 @@ interface TableProps {
 const Table = ({
   isLoading,
   isRefetching,
+  onCreate,
   page,
   pageSize,
   table,
@@ -31,11 +33,13 @@ const Table = ({
     <div className='flex h-full flex-col px-2 py-1'>
       <div className='min-h-0 flex-1'>
         <DataTable
+          emptyPage='forms'
           isLoading={isLoading}
           isReLoading={isRefetching}
           pageSize={pageSize}
           stickyHeader={true}
           table={table}
+          onEmptyPrimaryAction={onCreate}
           onReload={onReload}
         />
       </div>

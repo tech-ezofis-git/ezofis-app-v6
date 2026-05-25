@@ -75,6 +75,7 @@ export const sendMailOTP = async (payload: {
   } catch (e: any) {
     console.error(e)
     response.error = e?.response?.data || 'error in verify mail'
+    response.status = e?.response?.status
   }
   return response
 }

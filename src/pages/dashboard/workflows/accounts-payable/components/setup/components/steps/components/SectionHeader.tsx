@@ -6,10 +6,10 @@ interface Props {
 
 const SectionHeader = ({ action, description, title }: Props) => {
   return (
-    <div className='mb-6 flex items-start justify-between gap-4'>
-      <div className='min-w-0 flex-1'>
-        <h3 className='mb-1 text-15 font-medium text-gray-12'>{title}</h3>
-        <div className='text-13/6 text-gray-10'>{description}</div>
+    <div className='mb-4 flex items-start justify-between gap-4'>
+      <div className='min-w-0 flex-1 space-y-1'>
+        <h3 className='text-14/5 font-semibold text-gray-12'>{title}</h3>
+        <p className='text-13/5.5 text-pretty text-gray-10'>{description}</p>
       </div>
       {action && <div className='shrink-0'>{action}</div>}
     </div>

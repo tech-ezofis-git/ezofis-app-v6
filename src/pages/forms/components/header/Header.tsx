@@ -6,7 +6,6 @@ import Icon from '@/components/base/icon/Icon'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import Tab from '@/components/base/tabs/Tab'
 import Tabs from '@/components/base/tabs/Tabs'
-import cn from '@/utils/cn'
 
 const forms = [
   {
@@ -26,13 +25,7 @@ const forms = [
   },
 ]
 
-interface Props {
-  viewMode: 'table' | 'grid'
-  setViewMode: (mode: 'table' | 'grid') => void
-}
-
-const Header = ({ viewMode, setViewMode }: Props) => {
-  console.log('Header Render - viewMode:', viewMode)
+const Header = () => {
   const navigate = useNavigate()
   const [value, setValue] = useState<string | null>('All')
   const [form, setForm] = useState<Option | null>({
@@ -49,43 +42,11 @@ const Header = ({ viewMode, setViewMode }: Props) => {
     <div className='flex flex-wrap items-center justify-between gap-6 border-b border-gray-3 px-6 md:px-8'>
       <Tabs color='primary' value={value} onChange={setValue}>
         <Tab label='All' value='All' />
-        <Tab label='Favourites' value='Favourites' />
+        <Tab label='Published' value='Published' />
         <Tab label='Drafts' value='Drafts' />
       </Tabs>
 
       <div className='flex items-center gap-2'>
-        <div className='bg-gray-50/50 flex items-center gap-1 rounded-lg border border-gray-3 p-1'>
-          <button
-            type='button'
-            className={cn(
-              'flex cursor-pointer items-center justify-center rounded-md px-3 py-1.5 transition-all duration-200',
-              viewMode === 'grid'
-                ? 'bg-accent-primary text-white shadow-sm'
-                : 'text-gray-10 hover:bg-gray-2 hover:text-gray-12',
-            )}
-            onClick={() => {
-              console.log('Toggle Clicked: grid')
-              setViewMode('grid')
-            }}
-          >
-            <Icon className='size-4' name='tabler:layout-grid' />
-          </button>
-          <button
-            type='button'
-            className={cn(
-              'flex cursor-pointer items-center justify-center rounded-md px-3 py-1.5 transition-all duration-200',
-              viewMode === 'table'
-                ? 'bg-accent-primary text-white shadow-sm'
-                : 'text-gray-10 hover:bg-gray-2 hover:text-gray-12',
-            )}
-            onClick={() => {
-              console.log('Toggle Clicked: table')
-              setViewMode('table')
-            }}
-          >
-            <Icon className='size-4' name='tabler:table' />
-          </button>
-        </div>
         <InputSelect
           options={forms}
           value={form}

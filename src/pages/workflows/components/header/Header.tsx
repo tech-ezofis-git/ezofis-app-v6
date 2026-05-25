@@ -40,7 +40,7 @@ const Header = ({ onCreate }: HeaderProps) => {
     <div className='flex flex-wrap items-center justify-between gap-6 border-b border-gray-3 px-6'>
       <Tabs color='primary' value={value} onChange={setValue}>
         <Tab label='All' value='All' />
-        <Tab label='Favourites' value='Favourites' />
+        <Tab label='Published' value='Published' />
         <Tab label='Drafts' value='Drafts' />
       </Tabs>
 

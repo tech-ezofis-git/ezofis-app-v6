@@ -9,6 +9,7 @@ type Store = {
   isRequestOpen: boolean
   newRequest: boolean
   newRequestMeta: string | null
+  pendingOpenNewRequest: boolean
   pendingNav: any
   processingProcesses: any[]
   rawWorkflowData: any | null
@@ -29,6 +30,7 @@ type Store = {
   handleSetRepoData: (data: any) => void
   openNewRequest: (title: string) => void
   openRequest: (item: any, workflowId: any, tab: string) => void // Updated signature
+  setPendingOpenNewRequest: (value: boolean) => void
 
   removeProcessingProcess: (id: string | number) => void
   setPendingNav: (v: any) => void
@@ -48,7 +50,7 @@ const requestStore = create<Store>((set) => ({
   isRequestOpen: false,
   newRequest: false,
   newRequestMeta: null,
-  // in useRequestStore
+  pendingOpenNewRequest: false,
   pendingNav: null as null | { direction: 'NEXT' | 'PREV' },
   processingProcesses: [],
   rawWorkflowData: null,
@@ -79,7 +81,9 @@ const requestStore = create<Store>((set) => ({
 
   handleSetRepoData: (data) => set({ repoData: data }),
   openNewRequest: (title: string) =>
-    set({ newRequest: true, newRequestMeta: title }),
+    set({ newRequest: true, newRequestMeta: title, pendingOpenNewRequest: false }),
+  setPendingOpenNewRequest: (value: boolean) =>
+    set({ pendingOpenNewRequest: value }),
   // FIX: Accept data when opening
   openRequest: (item, workflow, tab) =>
     set({
