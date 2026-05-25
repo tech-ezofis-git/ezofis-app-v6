@@ -1,8 +1,9 @@
 // import SummaryMetric from './SummaryMetric'
 import { type Table as TanstackTable } from '@tanstack/react-table'
+import { createPortal } from 'react-dom'
 // ✅ Motion
 import { motion, useReducedMotion } from 'framer-motion'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { TableActionButton } from '@/components/base/data-table/TableActionBar'
 import type { RowSize } from '@/components/base/data-table/types'
 import type { Option } from '@/types/option'
@@ -309,6 +310,7 @@ const extractInvoiceDate = (row: any): string => {
 }
 
 interface GridViewProps<TData> {
+  activeTab?: string
   data: any[]
   isLoading: boolean
   table: TanstackTable<TData>
@@ -331,6 +333,7 @@ interface GridViewProps<TData> {
 }
 
 const GridView = <TData extends unknown>({
+  activeTab,
   actions,
   data,
   hideGrouping: _hideGrouping,
@@ -349,6 +352,11 @@ const GridView = <TData extends unknown>({
   )
   const [isSelectionMode, setIsSelectionMode] = useState(false)
   const [hoveredRowId, setHoveredRowId] = useState<string | number | null>(null)
+
+  useEffect(() => {
+    setIsSelectionMode(false)
+    setSelectedIds(new Set())
+  }, [activeTab])
 
   const exitSelectionMode = () => {
     setSelectedIds(new Set())
@@ -472,36 +480,54 @@ const GridView = <TData extends unknown>({
                   {selectedIds.size} Selected
                 </span>
 
-                <button
-                  className='inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-[var(--green-9)] px-3 py-1.5 text-12 font-semibold text-white shadow-sm transition-all hover:bg-[var(--green-10)] hover:shadow-md active:scale-95'
-                  type='button'
-                  onClick={() => {
-                    alert(
-                      `Bulk approved ${selectedIds.size} requests successfully!`,
-                    )
-                    exitSelectionMode()
-                  }}
-                >
-                  <Icon className='size-4' name='tabler:circle-check' />
-                  Approve
-                </button>
+                {activeTab === 'Processed' ? (
+                  <button
+                    className='inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-[var(--green-9)] px-3 py-1.5 text-12 font-semibold text-white shadow-sm transition-all hover:bg-[var(--green-10)] hover:shadow-md active:scale-95'
+                    type='button'
+                    onClick={() => {
+                      alert(
+                        `Bulk marked ${selectedIds.size} requests as Paid successfully!`,
+                      )
+                      exitSelectionMode()
+                    }}
+                  >
+                    <Icon className='size-4' name='tabler:circle-check' />
+                    Mark as Paid
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      className='inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-[var(--green-9)] px-3 py-1.5 text-12 font-semibold text-white shadow-sm transition-all hover:bg-[var(--green-10)] hover:shadow-md active:scale-95'
+                      type='button'
+                      onClick={() => {
+                        alert(
+                          `Bulk approved ${selectedIds.size} requests successfully!`,
+                        )
+                        exitSelectionMode()
+                      }}
+                    >
+                      <Icon className='size-4' name='tabler:circle-check' />
+                      Approve
+                    </button>
 
-                <button
-                  className='inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[var(--red-3)] bg-[var(--red-2)] px-3 py-1.5 text-12 font-semibold text-[var(--red-11)] shadow-sm transition-all hover:bg-[var(--red-3)] hover:shadow-md active:scale-95'
-                  type='button'
-                  onClick={() => {
-                    alert(
-                      `Bulk rejected ${selectedIds.size} requests successfully!`,
-                    )
-                    exitSelectionMode()
-                  }}
-                >
-                  <Icon
-                    className='size-4 text-[var(--red-9)]'
-                    name='tabler:trash-2'
-                  />
-                  Reject
-                </button>
+                    <button
+                      className='inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[var(--red-3)] bg-[var(--red-2)] px-3 py-1.5 text-12 font-semibold text-[var(--red-11)] shadow-sm transition-all hover:bg-[var(--red-3)] hover:shadow-md active:scale-95'
+                      type='button'
+                      onClick={() => {
+                        alert(
+                          `Bulk rejected ${selectedIds.size} requests successfully!`,
+                        )
+                        exitSelectionMode()
+                      }}
+                    >
+                      <Icon
+                        className='size-4 text-[var(--red-9)]'
+                        name='tabler:trash-2'
+                      />
+                      Reject
+                    </button>
+                  </>
+                )}
 
                 <button
                   className='inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[var(--gray-3)] bg-white px-2.5 py-1.5 text-12 font-medium text-[var(--gray-11)] transition-all hover:bg-[var(--gray-1)] hover:text-[var(--gray-13)]'
@@ -710,7 +736,25 @@ const GridView = <TData extends unknown>({
                           />
                         )}
                         <div className='flex shrink-0 justify-start'>
-                          {row.isProcessing ? null : originalIndex % 3 === 0 ? (
+                          {row.isProcessing ? null : activeTab === 'Processed' ? (
+                            originalIndex % 2 === 0 ? (
+                              <span className='flex items-center gap-1 rounded-md border border-[var(--green-4)] bg-[var(--green-2)] px-2 py-0.5 text-[11px] font-semibold text-[var(--green-11)]'>
+                                <Icon
+                                  className='size-3.5'
+                                  name='tabler:circle-check'
+                                />
+                                Paid
+                              </span>
+                            ) : (
+                              <span className='flex items-center gap-1 rounded-md border border-[var(--orange-4)] bg-[var(--orange-2)] px-2 py-0.5 text-[11px] font-semibold text-[var(--orange-11)]'>
+                                <Icon
+                                  className='size-3.5'
+                                  name='tabler:clock'
+                                />
+                                Pending for Payment
+                              </span>
+                            )
+                          ) : originalIndex % 3 === 0 ? (
                             <span className='flex items-center gap-1 rounded-md border border-[var(--green-4)] bg-[var(--green-2)] px-2 py-0.5 text-[11px] font-semibold text-[var(--green-11)]'>
                               <Icon
                                 className='size-3.5'
@@ -796,7 +840,7 @@ const GridView = <TData extends unknown>({
                     </div>
 
                     {/* AI Insight Line - Centered in middle of row */}
-                    {!row.isProcessing && (
+                    {!row.isProcessing && activeTab !== 'Processed' && (
                       <div className='flex min-w-0 flex-1 items-center justify-center px-4'>
                         <div className='flex min-w-0 items-center gap-1.5'>
                           <Icon
@@ -907,15 +951,10 @@ const GridView = <TData extends unknown>({
                           </span>
 
                           {/* Hover Status Overlay Card */}
-                          {hoveredRowId === rowId && (
+                          {hoveredRowId === rowId && typeof document !== 'undefined' && createPortal(
                             <div
                               style={{ zIndex: 999999 }}
-                              className={cn(
-                                'pointer-events-none absolute right-0 w-[360px] text-left transition-all duration-300',
-                                originalIndex < 2
-                                  ? 'top-full mt-2 translate-y-0'
-                                  : 'bottom-full mb-2 translate-y-0',
-                              )}
+                              className='pointer-events-none fixed top-1/2 left-1/2 w-[360px] -translate-x-1/2 -translate-y-1/2 text-left transition-all duration-300'
                             >
                               <div
                                 className='animate-in fade-in zoom-in-95 relative overflow-hidden rounded-xl border border-[var(--gray-3)] p-5 shadow-2xl duration-200'
@@ -1129,7 +1168,8 @@ const GridView = <TData extends unknown>({
                                   )
                                 })()}
                               </div>
-                            </div>
+                            </div>,
+                            document.body
                           )}
                         </div>
                       ) : (

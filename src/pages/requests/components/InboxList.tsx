@@ -79,7 +79,7 @@ const InboxList: React.FC<InboxListProps> = ({
   onRowClick,
 }) => {
   const openNewRequest = requestStore((state) => state.openNewRequest)
-  const columns = useDynamicColumns(workflow, onRowClick, selectedItem) || []
+  const columns = useDynamicColumns(workflow, onRowClick, selectedItem, activeTab) || []
 
   console.log(data, 'this is from inbox list')
   const initialVisibilityState = {
@@ -296,6 +296,7 @@ const InboxList: React.FC<InboxListProps> = ({
             {!selectedItem && viewMode === 'grid' && (
               <div className='h-full min-w-0 flex-1 overflow-hidden'>
                 <GridView
+                  activeTab={activeTab}
                   data={finalData} // ✅ Use final data
                   hideGrouping={activeTab !== 'Inbox'}
                   isLoading={isLoading}

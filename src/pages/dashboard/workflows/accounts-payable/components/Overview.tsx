@@ -1,627 +1,463 @@
-import { useEffect, useState } from 'react'
+import { useState, useMemo } from 'react'
+import { Trans } from '@lingui/react/macro'
+import { useViewportSize } from '@mantine/hooks'
 import Icon from '@/components/base/icon/Icon'
-import Table from '@/components/base/table/Table'
-import Tbody from '@/components/base/table/Tbody'
-import Td from '@/components/base/table/Td'
-import Tr from '@/components/base/table/Tr'
 import { AnimateSlideUp } from '@/components/common/animations'
-import { SkeletonCard } from '@/components/common/skeletons'
 import { SCREEN_XL } from '@/constants'
 import cn from '@/utils/cn'
 import Section from '../../shared/components/Section'
 
-// Custom hook to replace @mantine/hooks useViewportSize
-const useViewportSize = () => {
-  const [size, setSize] = useState({ height: 0, width: 0 })
+interface Invoice {
+  id: string
+  supplier: string
+  poRef: string
+  amount: number
+  ccy: string
+  dueDate: string
+  status: 'Matched & Posted' | 'Pending Approval' | 'Exception' | 'Duplicate'
+  aging: string
+  owner: string
+  statusColor: string
+}
 
-  useEffect(() => {
-    const updateSize = () => {
-      setSize({
-        height: window.innerHeight,
-        width: window.innerWidth,
-      })
+const INVOICES_DATA: Invoice[] = [
+  {
+    id: 'INV-2026-001',
+    supplier: 'Acme Corporation',
+    poRef: 'PO-90812',
+    amount: 15240.00,
+    ccy: 'USD',
+    dueDate: '2026-06-01',
+    status: 'Matched & Posted',
+    aging: 'Current',
+    owner: 'Sarah Jenkins',
+    statusColor: 'text-green-9 bg-green-9/10 border-green-9/20 border',
+  },
+  {
+    id: 'INV-2026-002',
+    supplier: 'Globex Laboratories',
+    poRef: 'PO-88291',
+    amount: 24500.00,
+    ccy: 'USD',
+    dueDate: '2026-05-18',
+    status: 'Pending Approval',
+    aging: '3 days overdue',
+    owner: 'David Miller',
+    statusColor: 'text-orange-9 bg-orange-9/10 border-orange-9/20 border',
+  },
+  {
+    id: 'INV-2026-003',
+    supplier: 'Initech Systems',
+    poRef: 'PO-44210',
+    amount: 8920.00,
+    ccy: 'EUR',
+    dueDate: '2026-05-10',
+    status: 'Exception',
+    aging: '11 days overdue',
+    owner: 'Emily Rose',
+    statusColor: 'text-red-9 bg-red-9/10 border-red-9/20 border',
+  },
+  {
+    id: 'INV-2026-004',
+    supplier: 'Umbrella Corp',
+    poRef: 'PO-77382',
+    amount: 125000.00,
+    ccy: 'USD',
+    dueDate: '2026-06-15',
+    status: 'Matched & Posted',
+    aging: 'Current',
+    owner: 'James Stark',
+    statusColor: 'text-green-9 bg-green-9/10 border-green-9/20 border',
+  },
+  {
+    id: 'INV-2026-005',
+    supplier: 'Veer Industries',
+    poRef: 'PO-90812',
+    amount: 15240.00,
+    ccy: 'USD',
+    dueDate: '2026-05-20',
+    status: 'Duplicate',
+    aging: '1 day overdue',
+    owner: 'Sarah Jenkins',
+    statusColor: 'text-gray-10 bg-gray-2 border-gray-3 border',
+  },
+  {
+    id: 'INV-2026-006',
+    supplier: 'Hooli Inc',
+    poRef: 'PO-55190',
+    amount: 450000.00,
+    ccy: 'USD',
+    dueDate: '2026-06-30',
+    status: 'Pending Approval',
+    aging: 'Current',
+    owner: 'David Miller',
+    statusColor: 'text-orange-9 bg-orange-9/10 border-orange-9/20 border',
+  },
+  {
+    id: 'INV-2026-007',
+    supplier: 'Soylent Green Co',
+    poRef: 'PO-33829',
+    amount: 3150.00,
+    ccy: 'GBP',
+    dueDate: '2026-05-02',
+    status: 'Exception',
+    aging: '19 days overdue',
+    owner: 'Emily Rose',
+    statusColor: 'text-red-9 bg-red-9/10 border-red-9/20 border',
+  },
+  {
+    id: 'INV-2026-008',
+    supplier: 'Stark Industries',
+    poRef: 'PO-10928',
+    amount: 360000.00,
+    ccy: 'USD',
+    dueDate: '2026-07-05',
+    status: 'Matched & Posted',
+    aging: 'Current',
+    owner: 'James Stark',
+    statusColor: 'text-green-9 bg-green-9/10 border-green-9/20 border',
+  },
+  {
+    id: 'INV-2026-009',
+    supplier: 'Wayne Enterprises',
+    poRef: 'PO-45612',
+    amount: 9000.00,
+    ccy: 'USD',
+    dueDate: '2026-05-20',
+    status: 'Duplicate',
+    aging: '1 day overdue',
+    owner: 'Sarah Jenkins',
+    statusColor: 'text-gray-10 bg-gray-2 border-gray-3 border',
+  }
+]
+
+const getInitials = (name: string) => {
+  return name
+    .split(' ')
+    .map(n => n[0])
+    .join('')
+}
+
+interface InvoiceTablePanelProps {
+  activeCard: string
+  onClose: () => void
+}
+
+const InvoiceTablePanel = ({ activeCard, onClose }: InvoiceTablePanelProps) => {
+  const [searchQuery, setSearchQuery] = useState('')
+  
+  const filteredInvoices = useMemo(() => {
+    let result = [...INVOICES_DATA]
+    const cardLower = activeCard.toLowerCase()
+    
+    if (cardLower.includes('matched')) {
+      result = result.filter(inv => inv.status === 'Matched & Posted')
+    } else if (cardLower.includes('pending')) {
+      result = result.filter(inv => inv.status === 'Pending Approval')
+    } else if (cardLower.includes('exception')) {
+      result = result.filter(inv => inv.status === 'Exception')
+    } else if (cardLower.includes('duplicate')) {
+      result = result.filter(inv => inv.status === 'Duplicate')
+    } else if (cardLower.includes('value')) {
+      result.sort((a, b) => b.amount - a.amount)
     }
-
-    updateSize()
-    window.addEventListener('resize', updateSize)
-    return () => window.removeEventListener('resize', updateSize)
-  }, [])
-
-  return size
-}
-
-interface AgentData {
-  'decision': string
-  'reason': string
-  'score': number
-  'debug'?: {
-    'Side-by-side Field Matching'?: Array<{
-      'Field': string
-      'Invoice Value': string | number
-      'PO Value': string | number
-      'Score': number
-    }>
-    'Side-by-side Line Item matching'?: Array<{
-      'Amount': { 'Invoice Value': number; 'PO Value': number; 'Score': number }
-      'Description': {
-        'Invoice Value': string
-        'PO Value': string
-        'Score': number
-      }
-      'Line Score': number
-      'Price': { 'Invoice Value': number; 'PO Value': number; 'Score': number }
-      'Quantity': {
-        'Invoice Value': number
-        'PO Value': number
-        'Score': number
-      }
-    }>
-  }
-  'Extracted Invoice JSON'?: {
-    invoice_header?: {
-      'Currency'?: string
-      'PO Number'?: string
-      'Supplier Name'?: string
-      'Total Due'?: string
+    
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase()
+      result = result.filter(inv =>
+        inv.id.toLowerCase().includes(q) ||
+        inv.supplier.toLowerCase().includes(q) ||
+        inv.poRef.toLowerCase().includes(q) ||
+        inv.owner.toLowerCase().includes(q)
+      )
     }
-    line_items?: Array<{
-      amount: number
-      description: string
-      line_no: number
-      price: number
-      quantity: string
-    }>
-  }
-  'invoice_errors'?: {
-    errors: Array<string>
-    severity: string
-  }
-  'po_row'?: {
-    'Currency'?: string
-    'PO Amount': string
-    'PO Number': string
-    'Vendor Name': string
-  }
-  'reqNo'?: string
+    
+    return result
+  }, [activeCard, searchQuery])
+
+  return (
+    <div className='mt-6 overflow-hidden rounded-xl border border-gray-3 bg-surface p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)] animate-in fade-in slide-in-from-top-4 duration-300'>
+      {/* Header */}
+      <div className='flex items-center justify-between border-b border-gray-2 pb-4 mb-4'>
+        <div className='flex items-center gap-3'>
+          <h3 className='text-14 font-semibold text-gray-13 capitalize flex items-center gap-2'>
+            <span><Trans>invoices</Trans></span>
+            <span className='text-gray-10 font-normal'>·</span>
+            <span className='text-accent-primary font-semibold text-13'>
+              <Trans>{activeCard}</Trans>
+            </span>
+          </h3>
+          <span className='rounded-full bg-accent-soft px-2.5 py-0.5 text-11 font-medium text-accent-primary'>
+            {filteredInvoices.length} <Trans>{filteredInvoices.length === 1 ? 'record' : 'records'}</Trans>
+          </span>
+        </div>
+        <button
+          onClick={onClose}
+          className='flex size-7 items-center justify-center rounded-lg text-gray-10 hover:bg-gray-3 hover:text-gray-13 active:scale-95 transition-all'
+          title='Close panel'
+        >
+          <Icon className='size-4' name='lucide:x' />
+        </button>
+      </div>
+
+      {/* Search & Actions Bar */}
+      <div className='mb-4 flex flex-wrap items-center justify-between gap-3'>
+        <div className='relative w-full max-w-xs'>
+          <Icon className='absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-gray-10' name='lucide:search' />
+          <input
+            type='text'
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder='Search invoice, supplier, PO...'
+            className='w-full rounded-lg border border-gray-3 bg-surface py-1.5 pr-4 pl-9 text-12 shadow-sm transition-all outline-none focus:border-accent-primary focus:ring-1 focus:ring-accent-primary'
+          />
+        </div>
+        
+        <div className='flex items-center gap-2'>
+          <button className='hover:bg-opacity-80 flex items-center gap-1.5 rounded-lg border border-gray-3 bg-white px-2.5 py-1.5 text-12 font-medium text-gray-11 shadow-sm transition-all active:scale-95 hover:bg-gray-2'>
+            <Icon className='size-3.5 text-gray-10' name='lucide:download' />
+            <span><Trans>Export CSV</Trans></span>
+          </button>
+          <button className='hover:bg-opacity-80 flex items-center gap-1.5 rounded-lg border border-gray-3 bg-white px-2.5 py-1.5 text-12 font-medium text-gray-11 shadow-sm transition-all active:scale-95 hover:bg-gray-2'>
+            <Icon className='size-3.5 text-gray-10' name='lucide:filter' />
+            <span><Trans>Filters</Trans></span>
+          </button>
+        </div>
+      </div>
+
+      {/* Table */}
+      {filteredInvoices.length > 0 ? (
+        <div className='scrollbar w-full overflow-x-auto rounded-lg border border-gray-3'>
+          <table className='w-full border-separate border-spacing-0 text-left text-13'>
+            <thead>
+              <tr className='bg-gray-2'>
+                <th className='border-b border-gray-3 px-4 py-3 text-xs font-semibold whitespace-nowrap text-gray-11'><Trans>invoice #</Trans></th>
+                <th className='border-b border-gray-3 px-4 py-3 text-xs font-semibold whitespace-nowrap text-gray-11'><Trans>supplier</Trans></th>
+                <th className='border-b border-gray-3 px-4 py-3 text-xs font-semibold whitespace-nowrap text-gray-11'><Trans>po ref</Trans></th>
+                <th className='border-b border-gray-3 px-4 py-3 text-xs font-semibold whitespace-nowrap text-gray-11 text-right'><Trans>amount</Trans></th>
+                <th className='border-b border-gray-3 px-4 py-3 text-xs font-semibold whitespace-nowrap text-gray-11 text-center'><Trans>ccy</Trans></th>
+                <th className='border-b border-gray-3 px-4 py-3 text-xs font-semibold whitespace-nowrap text-gray-11'><Trans>due date</Trans></th>
+                <th className='border-b border-gray-3 px-4 py-3 text-xs font-semibold whitespace-nowrap text-gray-11 text-center'><Trans>status</Trans></th>
+                <th className='border-b border-gray-3 px-4 py-3 text-xs font-semibold whitespace-nowrap text-gray-11'><Trans>aging</Trans></th>
+                <th className='border-b border-gray-3 px-4 py-3 text-xs font-semibold whitespace-nowrap text-gray-11'><Trans>owner</Trans></th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredInvoices.map((inv) => (
+                <tr
+                  key={inv.id}
+                  className='hover:bg-gray-2/45 transition-colors border-b border-gray-3 last:border-b-0 group'
+                >
+                  <td className='border-b border-gray-3 last:border-b-0 px-4 py-3 align-middle font-mono text-12 font-semibold text-gray-13 group-last:border-0'>
+                    {inv.id}
+                  </td>
+                  
+                  <td className='border-b border-gray-3 last:border-b-0 px-4 py-3 align-middle font-medium text-gray-13 group-last:border-0'>
+                    {inv.supplier}
+                  </td>
+                  
+                  <td className='border-b border-gray-3 last:border-b-0 px-4 py-3 align-middle group-last:border-0'>
+                    <span className='font-mono text-11 text-gray-10 bg-gray-3/50 px-1.5 py-0.5 rounded border border-gray-3/30'>
+                      {inv.poRef}
+                    </span>
+                  </td>
+                  
+                  <td className='border-b border-gray-3 last:border-b-0 px-4 py-3 align-middle text-right font-mono font-bold text-gray-13 group-last:border-0'>
+                    {inv.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </td>
+                  
+                  <td className='border-b border-gray-3 last:border-b-0 px-4 py-3 align-middle text-center text-xs font-medium text-gray-10 group-last:border-0'>
+                    {inv.ccy}
+                  </td>
+                  
+                  <td className='border-b border-gray-3 last:border-b-0 px-4 py-3 align-middle text-12 text-gray-11 group-last:border-0 whitespace-nowrap'>
+                    {inv.dueDate}
+                  </td>
+                  
+                  <td className='border-b border-gray-3 last:border-b-0 px-4 py-3 align-middle text-center group-last:border-0'>
+                    <span className={cn('inline-block rounded-full px-2 py-0.5 text-10 font-semibold border capitalize whitespace-nowrap', inv.statusColor)}>
+                      <Trans>{inv.status}</Trans>
+                    </span>
+                  </td>
+                  
+                  <td className='border-b border-gray-3 last:border-b-0 px-4 py-3 align-middle group-last:border-0 whitespace-nowrap'>
+                    <div className='flex items-center gap-1.5'>
+                      <span className={cn('size-1.5 rounded-full shrink-0', inv.aging === 'Current' ? 'bg-green-9 animate-pulse' : 'bg-orange-9')} />
+                      <span className={cn('text-11 font-medium', inv.aging === 'Current' ? 'text-green-9' : 'text-orange-9')}>
+                        <Trans>{inv.aging}</Trans>
+                      </span>
+                    </div>
+                  </td>
+                  
+                  <td className='border-b border-gray-3 last:border-b-0 px-4 py-3 align-middle group-last:border-0'>
+                    <div className='flex items-center gap-2'>
+                      <div className='w-5 h-5 flex items-center justify-center rounded-full bg-accent-soft text-accent-primary text-[9px] font-bold font-poppins shadow-sm uppercase shrink-0'>
+                        {getInitials(inv.owner)}
+                      </div>
+                      <span className='text-12 text-gray-11 truncate max-w-[100px]' title={inv.owner}>
+                        {inv.owner}
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className='flex flex-col items-center justify-center border border-dashed border-gray-3 rounded-lg py-10 px-4 text-center'>
+          <Icon className='size-8 text-gray-8 mb-2' name='lucide:info' />
+          <p className='text-13 font-medium text-gray-11'><Trans>No matching invoices found</Trans></p>
+          <p className='text-11 text-gray-10 mt-0.5'><Trans>Try widening your search or choosing another status card.</Trans></p>
+        </div>
+      )}
+    </div>
+  )
 }
 
-interface Props {
-  agentData?: AgentData
-}
-
-const Overview = ({ agentData }: Props) => {
+const Overview = () => {
   const { width } = useViewportSize()
-  const [isLoading, setIsLoading] = useState(true)
+  const [activeCard, setActiveCard] = useState<string | null>(null)
 
-  useEffect(() => {
-    // Simulate loading
-    const timer = setTimeout(() => {
-      setIsLoading(false)
-    }, 800)
-    return () => clearTimeout(timer)
-  }, [])
+  const items = [
+    {
+      barColor: 'bg-accent-primary opacity-[0.18]',
+      change: '+23%',
+      deltaColor: 'text-green-9',
+      icon: 'lucide:file-text',
+      isUp: true,
+      name: `total invoices`,
+      value: '2,240',
+    },
+    {
+      barColor: 'bg-green-9 opacity-[0.20]',
+      change: '-67%',
+      deltaColor: 'text-red-9',
+      icon: 'lucide:check-circle',
+      isUp: false,
+      name: `matched & posted`,
+      value: '1,240',
+    },
+    {
+      barColor: 'bg-orange-9 opacity-[0.20]',
+      change: '+156%',
+      deltaColor: 'text-orange-9',
+      icon: 'lucide:clock',
+      isUp: true,
+      name: `pending approval`,
+      value: '$24.5k',
+    },
+    {
+      barColor: 'bg-red-9 opacity-[0.18]',
+      change: '+0.5%',
+      deltaColor: 'text-green-9',
+      icon: 'lucide:alert-triangle',
+      isUp: true,
+      name: `exception rate`,
+      value: '99.9%',
+    },
+    {
+      barColor: 'bg-gray-8 opacity-[0.30]',
+      change: '-10.5%',
+      deltaColor: 'text-red-9',
+      icon: 'heroicons-outline:document-duplicate',
+      isUp: false,
+      name: `duplicates`,
+      value: '9',
+    },
+    {
+      barColor: 'bg-accent-primary opacity-[0.18]',
+      change: '+25%',
+      deltaColor: 'text-green-9',
+      icon: 'lucide:dollar-sign',
+      isUp: true,
+      name: `total value`,
+      value: '$985k',
+    },
+  ]
 
-  // Mock data structure for demonstration - replace with actual agentData prop
-  const data: AgentData = agentData || ({} as AgentData)
-  const fieldMatching = data.debug?.['Side-by-side Field Matching'] || []
-  const lineItemMatching = data.debug?.['Side-by-side Line Item matching'] || []
-  const invoiceHeader = data['Extracted Invoice JSON']?.invoice_header
-  const lineItems = data['Extracted Invoice JSON']?.line_items || []
-
-  // #region agent log
-  useEffect(() => {
-    const logData = {
-      data: {
-        hasIndex0: !!lineItems[0],
-        index0Value: lineItems[0],
-        items: lineItems.map((item, idx) => ({
-          description: item?.description,
-          index: idx,
-          isTruthy: !!item,
-          line_no: item?.line_no,
-        })),
-        length: lineItems.length,
-      },
-      hypothesisId: 'A,B,C,D',
-      location: 'Overview.tsx:194',
-      message: 'lineItems array data',
-      runId: 'run1',
-      sessionId: 'debug-session',
-      timestamp: Date.now(),
+  const handleCardClick = (name: string) => {
+    if (activeCard === name) {
+      setActiveCard(null)
+    } else {
+      setActiveCard(name)
     }
-    fetch('http://127.0.0.1:7242/ingest/55a364bd-11ea-4589-affc-f06939d0aec8', {
-      body: JSON.stringify(logData),
-      headers: { 'Content-Type': 'application/json' },
-      method: 'POST',
-    }).catch(() => {})
-  }, [lineItems])
-  // #endregion
-
-  const getScoreColor = (score: number) => {
-    if (score >= 90) return 'text-green-11'
-    if (score >= 70) return 'text-orange-11'
-    return 'text-red-11'
-  }
-
-  const getScoreBgColor = (score: number) => {
-    if (score >= 90) return 'bg-gray-2'
-    if (score >= 70) return 'bg-gray-2'
-    return 'bg-gray-2'
-  }
-
-  const getDecisionColor = (decision: string) => {
-    if (!decision) return 'text-gray-11 bg-gray-2 border-gray-3'
-    if (decision === 'APPROVED') return 'text-green-11 bg-green-2 border-gray-4'
-    return 'text-red-11 bg-red-2 border-gray-4'
-  }
-
-  const getDecisionIcon = (decision: string) => {
-    if (!decision) return 'tabler:loader'
-    if (decision === 'APPROVED') return 'tabler:check'
-    return 'tabler:x'
-  }
-
-  const getDecisionIconColor = (decision: string) => {
-    if (!decision) return 'text-gray-8'
-    if (decision === 'APPROVED') return 'text-green-11'
-    return 'text-red-11'
   }
 
   return (
-    <Section title='Overview'>
+    <Section title=''>
       <div
         className={cn(
-          'grid grid-cols-1 gap-4',
-          width >= SCREEN_XL ? '@xl:grid-cols-2' : 'md:grid-cols-2',
+          'grid grid-cols-1 gap-[10px]',
+          width >= SCREEN_XL
+            ? '@xl:grid-cols-2 @5xl:grid-cols-6'
+            : 'md:grid-cols-2 xl:grid-cols-6',
         )}
       >
-        {isLoading ? (
-          <>
-            {[1, 2, 3, 4].map((index) => (
-              <SkeletonCard key={`skeleton-${index}`} />
-            ))}
-          </>
-        ) : (
-          <>
-            {/* Decision & Score Card */}
-            <AnimateSlideUp delay={0.1}>
-              <div className='rounded-lg border border-gray-3 bg-surface'>
-                <div className='border-b border-gray-3 px-4 py-2.5'>
-                  <div className='text-14 font-semibold text-gray-13'>
-                    AI DECISION
-                  </div>
+        {items.map((item, index) => {
+          const isSelected = activeCard === item.name
+          return (
+            <AnimateSlideUp delay={0.1 + index * 0.06} key={item.name}>
+              <div
+                onClick={() => handleCardClick(item.name)}
+                className={cn(
+                  'relative overflow-hidden rounded-xl border bg-surface p-4 transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.98] cursor-pointer',
+                  isSelected
+                    ? 'border-accent-primary ring-2 ring-accent-primary/12 shadow-[0_4px_12px_rgba(147,51,234,0.06)]'
+                    : 'border-gray-3 hover:border-[#e0dde8] hover:shadow-[0_3px_8px_rgba(0,0,0,0.07)]',
+                )}
+              >
+                {/* monochrome icon box */}
+                <div className={cn(
+                  'mb-3.5 flex size-7 items-center justify-center rounded text-12 transition-colors',
+                  isSelected ? 'bg-accent-soft text-accent-primary' : 'bg-gray-3 text-gray-11'
+                )}>
+                  <Icon className='size-3.5' name={item.icon} />
                 </div>
-                <div className='p-4'>
-                  <div className='mb-3 flex items-start justify-between'>
-                    <div className='flex items-center gap-2.5'>
-                      <Icon
-                        name={getDecisionIcon(data.decision)}
-                        className={cn(
-                          'size-5',
-                          getDecisionIconColor(data.decision),
-                        )}
-                      />
-                      <div
-                        className={cn(
-                          'inline-flex items-center gap-1.5 rounded border px-2.5 py-1 text-12 font-medium',
-                          getDecisionColor(data.decision),
-                        )}
-                      >
-                        <Icon
-                          name={getDecisionIcon(data.decision)}
-                          className={cn(
-                            'size-3.5',
-                            getDecisionIconColor(data.decision),
-                          )}
-                        />
-                        {data.decision}
-                      </div>
-                    </div>
-                    <div className='text-right'>
-                      <div className='mb-0.5 text-11 text-gray-10'>
-                        Confidence
-                      </div>
-                      <div
-                        className={cn(
-                          'text-20 font-semibold',
-                          getScoreColor(data.score),
-                        )}
-                      >
-                        {data.score}%
-                      </div>
-                    </div>
-                  </div>
-                  <div className='mb-3 rounded border border-gray-3 bg-gray-1 p-3'>
-                    <div className='flex items-start gap-2'>
-                      <Icon
-                        className='mt-0.5 size-4 shrink-0 text-purple-9'
-                        name='tabler:info-circle'
-                      />
-                      <div className='text-12 leading-relaxed text-gray-12'>
-                        {data.reason}
-                      </div>
-                    </div>
-                  </div>
-                  {data.reqNo && (
-                    <div className='text-12 text-gray-11'>
-                      # Request:{' '}
-                      <span className='font-medium text-purple-11'>
-                        {data.reqNo}
-                      </span>
-                    </div>
+
+                {/* Poppins Value */}
+                <div className='mb-1 font-poppins text-20 leading-none font-bold tracking-tight text-gray-13'>
+                  {item.value}
+                </div>
+
+                {/* Label */}
+                <div className='mb-2.5 text-11 font-medium text-gray-10 capitalize'>
+                  <Trans>{item.name}</Trans>
+                </div>
+
+                {/* Delta change text */}
+                <div
+                  className={cn(
+                    'flex items-center gap-1 text-11 leading-none font-semibold',
+                    item.deltaColor,
                   )}
+                >
+                  <span>{item.isUp ? '↑' : '↓'}</span>
+                  <span>{item.change}</span>
+                  <span className='ml-0.5 font-normal text-gray-10'>
+                    vs <Trans>last month</Trans>
+                  </span>
                 </div>
-              </div>
-            </AnimateSlideUp>
 
-            {/* Field Matching Card */}
-            <AnimateSlideUp delay={0.2}>
-              <div className='rounded-lg border border-gray-3 bg-surface'>
-                <div className='border-b border-gray-3 px-4 py-2.5'>
-                  <div className='flex items-center gap-2'>
-                    <Icon
-                      className='size-4 text-gray-11'
-                      name='tabler:file-check'
-                    />
-                    <div className='text-14 font-semibold text-gray-13'>
-                      Field Matching
-                    </div>
-                  </div>
-                </div>
-                <div className='p-3'>
-                  <div className='space-y-2'>
-                    {fieldMatching.length > 0 ? (
-                      fieldMatching.map((field: any, index: number) => (
-                        <div
-                          className='rounded border border-gray-3 bg-gray-1 p-3'
-                          key={index}
-                        >
-                          <div className='mb-2 flex items-center justify-between'>
-                            <div className='flex items-center gap-1.5'>
-                              <Icon
-                                className='size-3.5 text-green-11'
-                                name='tabler:check'
-                              />
-                              <div className='text-13 font-medium text-gray-12'>
-                                {field.Field}
-                              </div>
-                            </div>
-                            <div
-                              className={cn(
-                                'rounded-full px-2 py-0.5 text-11 font-medium',
-                                getScoreBgColor(field.Score),
-                                getScoreColor(field.Score),
-                              )}
-                            >
-                              {field.Score}%
-                            </div>
-                          </div>
-                          <div className='grid grid-cols-2 gap-2'>
-                            <div>
-                              <div className='mb-0.5 text-11 text-gray-10'>
-                                Invoice
-                              </div>
-                              <div className='text-12 font-medium text-gray-13'>
-                                {String(field['Invoice Value'])}
-                              </div>
-                            </div>
-                            <div>
-                              <div className='mb-0.5 text-11 text-gray-10'>
-                                PO
-                              </div>
-                              <div className='text-12 font-medium text-gray-13'>
-                                {String(field['PO Value'])}
-                              </div>
-                            </div>
-                          </div>
-                          {field.Score === 100 && (
-                            <div className='mt-2 text-11 text-gray-10'>
-                              Perfect Match
-                            </div>
-                          )}
-                        </div>
-                      ))
-                    ) : (
-                      <div className='rounded border border-gray-3 bg-gray-1 p-3 text-center text-12 text-gray-10'>
-                        No field matching data available
-                      </div>
-                    )}
-                  </div>
-                </div>
+                {/* thin bottom accent bar */}
+                <div
+                  className={cn(
+                    'absolute right-0 bottom-0 left-0 h-[2px]',
+                    isSelected ? 'bg-accent-primary' : item.barColor,
+                  )}
+                />
               </div>
             </AnimateSlideUp>
-
-            {/* Invoice Summary Card */}
-            <AnimateSlideUp delay={0.3}>
-              <div className='rounded-lg border border-gray-3 bg-surface'>
-                <div className='border-b border-gray-3 px-4 py-2.5'>
-                  <div className='flex items-center gap-2'>
-                    <Icon
-                      className='size-4 text-purple-9'
-                      name='tabler:receipt'
-                    />
-                    <div className='text-14 font-semibold text-gray-13'>
-                      Invoice Summary
-                    </div>
-                  </div>
-                </div>
-                <div className='p-3'>
-                  <div className='space-y-3'>
-                    {invoiceHeader && (
-                      <div className='grid grid-cols-2 gap-2'>
-                        <div>
-                          <div className='mb-1 flex items-center gap-1 text-11 text-gray-10'>
-                            <Icon
-                              className='size-3 text-gray-10'
-                              name='tabler:building-store'
-                            />
-                            Supplier
-                          </div>
-                          <div className='text-13 font-medium text-gray-13'>
-                            {invoiceHeader['Supplier Name'] || 'N/A'}
-                          </div>
-                        </div>
-                        <div>
-                          <div className='mb-1 flex items-center gap-1 text-11 text-gray-10'>
-                            <Icon
-                              className='size-3 text-gray-10'
-                              name='tabler:file-check'
-                            />
-                            PO Number
-                          </div>
-                          <div className='text-13 font-medium text-gray-13'>
-                            {invoiceHeader['PO Number'] || 'N/A'}
-                          </div>
-                        </div>
-                        <div>
-                          <div className='mb-1 text-11 text-gray-10'>
-                            Currency
-                          </div>
-                          <div className='text-13 font-medium text-gray-13'>
-                            {invoiceHeader.Currency || 'N/A'}
-                          </div>
-                        </div>
-                        <div>
-                          <div className='mb-1 text-11 text-gray-10'>
-                            Total Amount
-                          </div>
-                          <div className='text-15 font-semibold text-gray-13'>
-                            {invoiceHeader['Total Due']
-                              ? `${invoiceHeader.Currency || ''} ${invoiceHeader['Total Due']}`
-                              : 'N/A'}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                    {lineItems.length > 0 && (
-                      <div className='space-y-2'>
-                        <div className='flex items-center gap-1.5 text-13 font-medium text-gray-12'>
-                          <Icon
-                            className='size-3.5 text-gray-11'
-                            name='tabler:list'
-                          />
-                          Line Items
-                        </div>
-                        <div className='overflow-x-auto'>
-                          <Table>
-                            <Tbody>
-                              {lineItems.map((item: any, index: number) => {
-                                // #region agent log
-                                const logData2 = {
-                                  data: {
-                                    index,
-                                    isIndex0: index === 0,
-                                    item: item
-                                      ? {
-                                          amount: item.amount,
-                                          description: item.description,
-                                          line_no: item.line_no,
-                                          price: item.price,
-                                          quantity: item.quantity,
-                                        }
-                                      : null,
-                                    itemIsTruthy: !!item,
-                                    keyValue: item?.line_no
-                                      ? `line-${item.line_no}`
-                                      : `line-item-${index}`,
-                                    willRender: !!item,
-                                  },
-                                  hypothesisId: 'A,B,C,D,E',
-                                  location: 'Overview.tsx:470',
-                                  message: 'map iteration',
-                                  runId: 'run1',
-                                  sessionId: 'debug-session',
-                                  timestamp: Date.now(),
-                                }
-                                fetch(
-                                  'http://127.0.0.1:7242/ingest/55a364bd-11ea-4589-affc-f06939d0aec8',
-                                  {
-                                    body: JSON.stringify(logData2),
-                                    headers: {
-                                      'Content-Type': 'application/json',
-                                    },
-                                    method: 'POST',
-                                  },
-                                ).catch(() => {})
-                                console.log('[DEBUG] Line item map:', {
-                                  index,
-                                  isIndex0: index === 0,
-                                  item,
-                                  key: item?.line_no
-                                    ? `line-${item.line_no}`
-                                    : `line-item-${index}`,
-                                })
-                                // #endregion
-                                const rowKey = item?.line_no
-                                  ? `line-${item.line_no}`
-                                  : `line-item-${index}`
-                                return (
-                                  <Tr key={rowKey}>
-                                    <Td>
-                                      <div className='flex size-5 items-center justify-center rounded bg-purple-2 text-11 font-medium text-purple-11'>
-                                        {index + 1}
-                                      </div>
-                                    </Td>
-                                    <Td>
-                                      <div className='text-13 font-medium text-gray-13'>
-                                        {item.description}
-                                      </div>
-                                    </Td>
-                                    <Td>
-                                      <div className='text-12 text-gray-11'>
-                                        {item.quantity} × {item.price}
-                                      </div>
-                                    </Td>
-                                    <Td>
-                                      <div className='rounded bg-purple-2 px-2 py-0.5 text-12 font-medium text-purple-11'>
-                                        {item.amount}
-                                      </div>
-                                    </Td>
-                                  </Tr>
-                                )
-                              })}
-                            </Tbody>
-                          </Table>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </AnimateSlideUp>
-
-            {/* Line Item Matching Card */}
-            <AnimateSlideUp delay={0.4}>
-              <div className='rounded-lg border border-gray-3 bg-surface'>
-                <div className='border-b border-gray-3 px-4 py-2.5'>
-                  <div className='flex items-center gap-2'>
-                    <Icon
-                      className='size-4 text-teal-9'
-                      name='tabler:list-check'
-                    />
-                    <div className='text-14 font-semibold text-gray-13'>
-                      Line Item Matching
-                    </div>
-                  </div>
-                </div>
-                <div className='p-3'>
-                  <div className='space-y-2'>
-                    {lineItemMatching.length > 0 ? (
-                      lineItemMatching.map((lineItem: any, index: number) => (
-                        <div
-                          className='rounded border border-gray-3 bg-gray-1 p-3'
-                          key={index}
-                        >
-                          <div className='mb-2 flex items-center justify-between'>
-                            <div className='flex items-center gap-2'>
-                              <div className='flex size-6 items-center justify-center rounded bg-teal-2 text-12 font-medium text-teal-11'>
-                                {index + 1}
-                              </div>
-                              <div>
-                                <div className='text-13 font-medium text-gray-13'>
-                                  {lineItem.Description?.['Invoice Value'] ||
-                                    'N/A'}
-                                </div>
-                                <div className='text-11 text-gray-10'>
-                                  Line Item
-                                </div>
-                              </div>
-                            </div>
-                            <div
-                              className={cn(
-                                'rounded-full border px-2 py-0.5 text-11 font-medium',
-                                getScoreBgColor(lineItem['Line Score']),
-                                getScoreColor(lineItem['Line Score']),
-                              )}
-                            >
-                              {lineItem['Line Score']}%
-                            </div>
-                          </div>
-                          <div className='grid grid-cols-2 gap-2'>
-                            {[
-                              {
-                                icon: 'tabler:file-text',
-                                invoice:
-                                  lineItem.Description?.['Invoice Value'],
-                                label: 'Description',
-                                po: lineItem.Description?.['PO Value'],
-                                score: lineItem.Description?.Score,
-                              },
-                              {
-                                icon: 'tabler:hash',
-                                invoice: lineItem.Quantity?.['Invoice Value'],
-                                label: 'Quantity',
-                                po: lineItem.Quantity?.['PO Value'],
-                                score: lineItem.Quantity?.Score,
-                              },
-                              {
-                                icon: 'tabler:currency-dollar',
-                                invoice: lineItem.Price?.['Invoice Value'],
-                                label: 'Price',
-                                po: lineItem.Price?.['PO Value'],
-                                score: lineItem.Price?.Score,
-                              },
-                              {
-                                icon: 'tabler:calculator',
-                                invoice: lineItem.Amount?.['Invoice Value'],
-                                label: 'Amount',
-                                po: lineItem.Amount?.['PO Value'],
-                                score: lineItem.Amount?.Score,
-                              },
-                            ].map((field, fieldIndex) => (
-                              <div
-                                className='rounded border border-gray-3 bg-surface p-2'
-                                key={fieldIndex}
-                              >
-                                <div className='mb-1.5 flex items-center justify-between'>
-                                  <div className='flex items-center gap-1 text-11 text-gray-10'>
-                                    <Icon
-                                      className='size-3 text-gray-10'
-                                      name={field.icon}
-                                    />
-                                    {field.label}
-                                  </div>
-                                  <div
-                                    className={cn(
-                                      'text-10 rounded-full px-1.5 py-0.5 font-medium',
-                                      getScoreBgColor(field.score),
-                                      getScoreColor(field.score),
-                                    )}
-                                  >
-                                    {field.score}%
-                                  </div>
-                                </div>
-                                <div className='space-y-0.5'>
-                                  <div className='text-11 text-gray-11'>
-                                    Invoice:{' '}
-                                    <span className='font-medium text-gray-13'>
-                                      {field.invoice}
-                                    </span>
-                                  </div>
-                                  <div className='text-11 text-gray-11'>
-                                    PO:{' '}
-                                    <span className='font-medium text-gray-13'>
-                                      {field.po}
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className='rounded border border-gray-3 bg-gray-1 p-3 text-center text-12 text-gray-10'>
-                        No line item matching data available
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </AnimateSlideUp>
-          </>
-        )}
+          )
+        })}
       </div>
+
+      {activeCard && (
+        <InvoiceTablePanel
+          activeCard={activeCard}
+          onClose={() => setActiveCard(null)}
+        />
+      )}
     </Section>
   )
 }

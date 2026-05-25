@@ -462,6 +462,7 @@ const Request = ({
           poValue={poValue}
           raisedAt={request?.createdAt}
           rightView={rightView}
+          enableAIInsights={requestListTab !== 'Processed'}
           showApprove={requestListTab === 'Inbox'}
           status={statusBadge}
           totalAmount={totalAmount}

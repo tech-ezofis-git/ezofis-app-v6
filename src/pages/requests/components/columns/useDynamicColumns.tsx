@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import type { Column } from '@/components/base/data-table/types'
 // ✅ Menu UI
 import IconButton from '@/components/base/button/IconButton'
@@ -502,9 +503,9 @@ const StatusCell = ({
         />
       </div>
 
-      {row.isProcessing && isHovered && (
+      {row.isProcessing && isHovered && typeof document !== 'undefined' && createPortal(
         <div
-          className='pointer-events-none absolute top-1/2 left-full ml-2 w-[360px] -translate-y-1/2 text-left transition-all duration-300'
+          className='pointer-events-none fixed top-1/2 left-1/2 w-[360px] -translate-x-1/2 -translate-y-1/2 text-left transition-all duration-300'
           style={{ zIndex: 999999 }}
         >
           <div
@@ -713,7 +714,8 @@ const StatusCell = ({
               )
             })()}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )
@@ -723,6 +725,7 @@ export const useDynamicColumns = (
   workflow: WorkflowOption | null,
   onRowClick: (item: any, tab: string) => void,
   selectedItem: any,
+  activeTab?: string,
   /**
    * ✅ Optional: provide a real preview URL builder for your backend
    * Example: (file) => `/api/workflow/files/preview/${file.repositoryId}/${file.id}`
@@ -764,9 +767,27 @@ export const useDynamicColumns = (
         : [
             {
               id: 'matchStatus',
-              label: 'Match Status',
+              label: activeTab === 'Processed' ? 'Payment Status' : 'Match Status',
               size: 140,
               renderCell: (_row: any, index = 0) => {
+                if (activeTab === 'Processed') {
+                  const isPaid = index % 2 === 0
+                  if (isPaid) {
+                    return (
+                      <span className='flex items-center gap-1 rounded-md border border-[var(--green-4)] bg-[var(--green-2)] px-2 py-0.5 text-[11px] font-semibold text-[var(--green-11)]'>
+                        <Icon className='size-3.5' name='tabler:circle-check' />
+                        Paid
+                      </span>
+                    )
+                  } else {
+                    return (
+                      <span className='flex items-center gap-1 rounded-md border border-[var(--orange-4)] bg-[var(--orange-2)] px-2 py-0.5 text-[11px] font-semibold text-[var(--orange-11)]'>
+                        <Icon className='size-3.5' name='tabler:clock' />
+                        Pending for Payment
+                      </span>
+                    )
+                  }
+                }
                 const matchType = index % 3
                 if (matchType === 0) {
                   return (
@@ -839,32 +860,36 @@ export const useDynamicColumns = (
                 )
               },
             },
-            {
-              id: 'aiInsight',
-              label: 'AI Insight',
-              size: 260,
-              renderCell: (_row: any, index = 0) => {
-                const aiInsight =
-                  index % 3 === 0
-                    ? 'Ready for auto-approval'
-                    : index % 3 === 1
-                      ? 'No PO linked — request PO or code to GL'
-                      : 'Partial match — review unmatched lines'
-                return (
-                  <div className='flex min-w-0 items-center gap-1.5'>
-                    <Icon
-                      className='size-3.5 shrink-0 text-[var(--primary-9)]'
-                      name='tabler:sparkles'
-                    />
-                    <HoverExpandableText
-                      className='text-[13px] font-medium text-[var(--gray-11)]'
-                      normalMaxWidthClass='max-w-[220px]'
-                      text={aiInsight}
-                    />
-                  </div>
-                )
-              },
-            },
+            ...(activeTab === 'Processed'
+              ? []
+              : [
+                  {
+                    id: 'aiInsight',
+                    label: 'AI Insight',
+                    size: 260,
+                    renderCell: (_row: any, index = 0) => {
+                      const aiInsight =
+                        index % 3 === 0
+                          ? 'Ready for auto-approval'
+                          : index % 3 === 1
+                            ? 'No PO linked — request PO or code to GL'
+                            : 'Partial match — review unmatched lines'
+                      return (
+                        <div className='flex min-w-0 items-center gap-1.5'>
+                          <Icon
+                            className='size-3.5 shrink-0 text-[var(--primary-9)]'
+                            name='tabler:sparkles'
+                          />
+                          <HoverExpandableText
+                            className='text-[13px] font-medium text-[var(--gray-11)]'
+                            normalMaxWidthClass='max-w-[220px]'
+                            text={aiInsight}
+                          />
+                        </div>
+                      )
+                    },
+                  },
+                ]),
             {
               id: 'poNumber',
               label: 'PO Number',
@@ -1152,7 +1177,7 @@ export const useDynamicColumns = (
       columns.push(makeActionsColumn(onRowClick))
     }
     return columns
-  }, [workflow, onRowClick, selectedItem])
+  }, [workflow, onRowClick, selectedItem, activeTab])
 }
 
 function makeActionsColumn(

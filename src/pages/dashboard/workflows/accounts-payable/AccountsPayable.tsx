@@ -17,7 +17,7 @@ const AccountsPayable = () => {
       <SetupCallout />
 
       <AnimatePresence mode='wait'>
-        {isSetupStarted ? <Steps key='steps' /> : null}
+        {isSetupStarted && !isApSetUpCompleted ? <Steps key='steps' /> : null}
       </AnimatePresence>
 
       {showOverviewAndIntegrations && isApSetUpCompleted && !isSetupStarted && (

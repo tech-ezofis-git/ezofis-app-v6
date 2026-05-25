@@ -8,198 +8,616 @@ import type {
   TreeNode,
   WorkflowData,
 } from '../types/folderTypes'
-const wait = () => new Promise((r) => setTimeout(r, 100))
+import type { BreadcrumbItem } from '../components/Breadcrumbs'
+
+const wait = () => new Promise((resolve) => setTimeout(resolve, 100))
+
 const files = (): FileItem[] => [
   {
-    amount: '₹245K',
-    date: '2024-11-15',
-    fileUrl: 'https://www.aeee.in/wp-content/uploads/2020/08/Sample-pdf.pdf',
     id: 'INV-2024-0891',
-    invoiceNo: 'INV-2024-0891',
     name: 'INV-2024-0891.pdf',
-    ocr: 98,
+    type: 'Invoice',
+    supplier: 'Acme Corp',
+    invoiceNo: 'INV-2024-0891',
     poNo: 'PO-4589',
+    date: '2024-11-15',
+    amount: '₹245K',
+    status: 'Pending',
+    ocr: 98,
     risk: 'low',
     source: 'Email',
-    status: 'Pending Approval',
-    supplier: 'Acme Corp',
-    type: 'Invoice',
+    fileUrl: 'https://www.aeee.in/wp-content/uploads/2020/08/Sample-pdf.pdf',
   },
   {
-    amount: '₹189K',
-    date: '2024-11-14',
     id: 'INV-2024-0892',
-    invoiceNo: 'INV-2024-0892',
     name: 'INV-2024-0892.pdf',
-    ocr: 96,
+    type: 'Invoice',
+    supplier: 'TechPro Ltd',
+    invoiceNo: 'INV-2024-0892',
     poNo: 'PO-4590',
+    date: '2024-11-14',
+    amount: '₹189K',
+    status: 'Approved',
+    ocr: 96,
     risk: 'low',
     source: 'Upload',
-    status: 'Approved',
-    supplier: 'TechPro Ltd',
-    type: 'Invoice',
   },
   {
-    amount: '₹420K',
-    date: '2024-11-13',
     id: 'INV-2024-0893',
-    invoiceNo: 'INV-2024-0893',
     name: 'INV-2024-0893.pdf',
-    ocr: 72,
+    type: 'Invoice',
+    supplier: 'Acme Corp',
+    invoiceNo: 'INV-2024-0893',
     poNo: '-',
+    date: '2024-11-13',
+    amount: '₹420K',
+    status: 'Flagged',
+    ocr: 72,
     risk: 'high',
     source: 'Email',
-    status: 'Flagged',
-    supplier: 'Acme Corp',
-    type: 'Invoice',
   },
   {
-    amount: '₹156K',
-    date: '2024-11-12',
     id: 'PO-4591',
-    invoiceNo: '-',
     name: 'PO-4591.pdf',
-    ocr: 99,
+    type: 'Purchase Order',
+    supplier: 'GlobalSup Inc',
+    invoiceNo: '-',
     poNo: 'PO-4591',
+    date: '2024-11-12',
+    amount: '₹156K',
+    status: 'Active',
+    ocr: 99,
     risk: 'low',
     source: 'ERP',
-    status: 'Active',
-    supplier: 'GlobalSup Inc',
-    type: 'Purchase Order',
   },
   {
-    amount: '₹87K',
-    date: '2024-11-11',
     id: 'INV-2024-0894',
-    invoiceNo: 'INV-2024-0894',
     name: 'INV-2024-0894.pdf',
-    ocr: 91,
+    type: 'Invoice',
+    supplier: 'FastShip Co',
+    invoiceNo: 'INV-2024-0894',
     poNo: 'PO-4588',
+    date: '2024-11-11',
+    amount: '₹87K',
+    status: 'Pending',
+    ocr: 91,
     risk: 'medium',
     source: 'Email',
-    status: 'Pending Approval',
-    supplier: 'FastShip Co',
-    type: 'Invoice',
   },
   {
-    amount: '₹1200K',
-    date: '2024-11-10',
     id: 'CNT-2024-045',
-    invoiceNo: '-',
     name: 'CNT-2024-045.pdf',
-    ocr: 97,
+    type: 'Contract',
+    supplier: 'MetalWorks',
+    invoiceNo: '-',
     poNo: '-',
+    date: '2024-11-10',
+    amount: '₹1200K',
+    status: 'Active',
+    ocr: 97,
     risk: 'low',
     source: 'Upload',
-    status: 'Active',
-    supplier: 'MetalWorks',
-    type: 'Contract',
   },
   {
-    amount: '₹63.5K',
-    date: '2024-11-09',
     id: 'INV-2024-0895',
-    invoiceNo: 'INV-2024-0895',
     name: 'INV-2024-0895.pdf',
-    ocr: 65,
+    type: 'Invoice',
+    supplier: 'PrimeParts',
+    invoiceNo: 'INV-2024-0895',
     poNo: 'PO-4585',
+    date: '2024-11-09',
+    amount: '₹63.5K',
+    status: 'Rejected',
+    ocr: 65,
     risk: 'high',
     source: 'Scanner',
-    status: 'Rejected',
-    supplier: 'PrimeParts',
-    type: 'Invoice',
   },
   {
-    amount: '-',
-    date: '2024-10-31',
     id: 'STM-2024-Q3',
-    invoiceNo: '-',
     name: 'STM-2024-Q3.pdf',
-    ocr: 95,
+    type: 'Statement',
+    supplier: 'Acme Corp',
+    invoiceNo: '-',
     poNo: '-',
+    date: '2024-10-31',
+    amount: '-',
+    status: 'Processed',
+    ocr: 95,
     risk: 'low',
     source: 'Email',
-    status: 'Processed',
-    supplier: 'Acme Corp',
-    type: 'Statement',
   },
 ]
+
+const allSupplierFolders: FolderItem[] = [
+  {
+    id: 'acme',
+    title: 'Acme Corp',
+    iconKey: 'building',
+    itemsText: '1,420 items',
+    modifiedText: 'Nov 15, 2024',
+    sizeText: '1.1 GB',
+  },
+  {
+    id: 'techpro',
+    title: 'TechPro Ltd',
+    iconKey: 'building',
+    itemsText: '1,180 items',
+    modifiedText: 'Nov 14, 2024',
+    sizeText: '980 MB',
+  },
+  {
+    id: 'globalsup',
+    title: 'GlobalSup Inc',
+    iconKey: 'building',
+    itemsText: '980 items',
+    modifiedText: 'Nov 13, 2024',
+    sizeText: '820 MB',
+  },
+  {
+    id: 'indialogistics',
+    title: 'IndiaLogistics',
+    iconKey: 'building',
+    itemsText: '860 items',
+    modifiedText: 'Nov 10, 2024',
+    sizeText: '720 MB',
+  },
+  {
+    id: 'fastship',
+    title: 'FastShip Co',
+    iconKey: 'building',
+    itemsText: '640 items',
+    modifiedText: 'Nov 8, 2024',
+    sizeText: '510 MB',
+  },
+  {
+    id: 'metalworks',
+    title: 'MetalWorks',
+    iconKey: 'building',
+    itemsText: '340 items',
+    modifiedText: 'Nov 5, 2024',
+    sizeText: '290 MB',
+  },
+  {
+    id: 'primeparts',
+    title: 'PrimeParts',
+    iconKey: 'building',
+    itemsText: '280 items',
+    modifiedText: 'Oct 30, 2024',
+    sizeText: '240 MB',
+  },
+]
+
+const acmeFolders: FolderItem[] = [
+  {
+    id: 'invoices',
+    title: 'Invoices',
+    iconKey: 'folder',
+    itemsText: '8 files',
+    modifiedText: 'Nov 15, 2024',
+    sizeText: '245 MB',
+  },
+  {
+    id: 'purchase-orders',
+    title: 'Purchase Orders',
+    iconKey: 'folder',
+    itemsText: '4 files',
+    modifiedText: 'Nov 10, 2024',
+    sizeText: '84 MB',
+  },
+  {
+    id: 'contracts',
+    title: 'Contracts',
+    iconKey: 'folder',
+    itemsText: '2 files',
+    modifiedText: 'Oct 01, 2024',
+    sizeText: '42 MB',
+  },
+  {
+    id: 'kyc',
+    title: 'KYC Documents',
+    iconKey: 'folder',
+    itemsText: '3 files',
+    modifiedText: 'Oct 18, 2024',
+    sizeText: '35 MB',
+  },
+  {
+    id: 'statements',
+    title: 'Statements',
+    iconKey: 'folder',
+    itemsText: '6 files',
+    modifiedText: 'Oct 31, 2024',
+    sizeText: '64 MB',
+  },
+]
+
+const folderResponse = (
+  breadcrumbs: BreadcrumbItem[],
+  folders: FolderItem[] = [],
+  folderFiles: FileItem[] = []
+) => ({
+  breadcrumbs,
+  folders,
+  files: folderFiles,
+})
+
 export const folderApi = {
-  async getAiSummary(): Promise<AiSummaryData> {
+  async getTree(): Promise<TreeNode[]> {
     await wait()
-    return {
-      checks: [
-        { iconKey: 'check', label: 'GST Compliance', status: 'PASS' },
-        { iconKey: 'check', label: 'Duplicate Check', status: 'PASS' },
-        { iconKey: 'check', label: 'PO Matching', status: 'PASS' },
-        { iconKey: 'shield', label: 'Fraud Detection', status: 'PASS' },
-      ],
-      confidence: 98,
-      documentId: 'INV-2024-0891',
-      engineSubtitle:
-        'Analysed 4 related documents · Checked 486 supplier records · Validated against 5,240 invoices',
-      engineTitle: 'EZOFIS AI Engine',
-      facts: [
-        {
-          label: 'Invoice Total',
-          value: '₹2,45,000 + ₹44,100 GST = ₹2,89,100',
-        },
-        {
-          label: 'Payment Due',
-          value: 'December 15, 2024 (28 days remaining)',
-        },
-        { label: 'PO Match', value: 'PO-4589 — Full match, ₹0 variance' },
-        {
-          label: 'Supplier Risk',
-          value: 'Trusted — 4 years, 145 prior invoices',
-        },
-        { label: 'GST Compliance', value: 'Valid GSTIN, B2B 18% applicable' },
-        {
-          label: 'Duplicate Status',
-          value: 'No duplicate found — unique invoice number',
-        },
-      ],
-      insight:
-        'Acme Corp invoice volume has increased 28% this quarter. Consider negotiating volume discount.',
-      recommendations: [
-        'Schedule payment before Dec 10 to avoid late fees.',
-        'This supplier offers 2% discount for payment within 10 days.',
-        'Cross-check ERP license count against IT asset register.',
-      ],
-      summary:
-        'Software license invoice from Acme Corp for Q4 2024 ERP subscription — ₹2.45L pending L2 approval.',
+
+    return [
+      {
+        id: 'ap',
+        title: 'Accounts Payable',
+        iconKey: 'folder',
+        children: [
+          {
+            id: 'by-supplier',
+            title: 'By Supplier',
+            iconKey: 'folder',
+            children: [
+              {
+                id: 'acme',
+                title: 'Acme Corp',
+                iconKey: 'building',
+                children: [
+                  { id: 'invoices', title: 'Invoices', iconKey: 'folder' },
+                  {
+                    id: 'purchase-orders',
+                    title: 'Purchase Orders',
+                    iconKey: 'folder',
+                  },
+                  { id: 'contracts', title: 'Contracts', iconKey: 'folder' },
+                  { id: 'kyc', title: 'KYC Documents', iconKey: 'folder' },
+                  { id: 'statements', title: 'Statements', iconKey: 'folder' },
+                ],
+              },
+              { id: 'techpro', title: 'TechPro Ltd', iconKey: 'building' },
+              { id: 'globalsup', title: 'GlobalSup Inc', iconKey: 'building' },
+              { id: 'indialogistics', title: 'IndiaLogistics', iconKey: 'building' },
+              { id: 'fastship', title: 'FastShip Co', iconKey: 'building' },
+              { id: 'metalworks', title: 'MetalWorks', iconKey: 'building' },
+              { id: 'primeparts', title: 'PrimeParts', iconKey: 'building' },
+            ],
+          },
+          {
+            id: 'by-type',
+            title: 'By Document Type',
+            iconKey: 'fileStack',
+            children: [
+              { id: 'type-invoice', title: 'Invoices', iconKey: 'fileText' },
+              { id: 'type-po', title: 'Purchase Orders', iconKey: 'fileText' },
+              { id: 'type-contract', title: 'Contracts', iconKey: 'fileText' },
+            ],
+          },
+          {
+            id: 'email-attachments',
+            title: 'Email Attachments',
+            iconKey: 'mail',
+            children: [
+              { id: 'email-today', title: 'Today', iconKey: 'folder' },
+              { id: 'email-last7', title: 'Last 7 Days', iconKey: 'folder' },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'ar',
+        title: 'Accounts Receivable',
+        iconKey: 'folder',
+        children: [{ id: 'by-customer', title: 'By Customer', iconKey: 'users' }],
+      },
+      { id: 'recent', title: 'Recent', iconKey: 'clock' },
+      { id: 'favorites', title: 'Favorites', iconKey: 'sparkles' },
+    //   { id: 'archived', title: 'Archived', iconKey: 'archive' },
+    ]
+  },
+
+  async getFolderContent(folderId: string): Promise<{
+    breadcrumbs: BreadcrumbItem[]
+    folders: FolderItem[]
+    files: FileItem[]
+  }> {
+    await wait()
+
+    switch (folderId) {
+      case 'ap':
+        return folderResponse(
+          [
+            { id: 'ap', label: 'EZOFIS' },
+            { id: 'ap', label: 'Accounts Payable' },
+          ],
+          [
+            {
+              id: 'by-supplier',
+              title: 'By Supplier',
+              iconKey: 'folder',
+              itemsText: '7 suppliers',
+              modifiedText: 'Nov 15, 2024',
+              sizeText: '4.6 GB',
+            },
+            {
+              id: 'by-type',
+              title: 'By Document Type',
+              iconKey: 'fileStack',
+              itemsText: '3 document groups',
+              modifiedText: 'Nov 15, 2024',
+              sizeText: '2.4 GB',
+            },
+            {
+              id: 'email-attachments',
+              title: 'Email Attachments',
+              iconKey: 'mail',
+              itemsText: '2 folders',
+              modifiedText: 'Today',
+              sizeText: '680 MB',
+            },
+          ],
+          files()
+        )
+
+      case 'by-supplier':
+        return folderResponse(
+          [
+            { id: 'ap', label: 'EZOFIS' },
+            { id: 'ap', label: 'Accounts Payable' },
+            { id: 'by-supplier', label: 'By Supplier' },
+          ],
+          allSupplierFolders,
+          files()
+        )
+
+      case 'acme':
+        return folderResponse(
+          [
+            { id: 'ap', label: 'EZOFIS' },
+            { id: 'ap', label: 'Accounts Payable' },
+            { id: 'by-supplier', label: 'By Supplier' },
+            { id: 'acme', label: 'Acme Corp' },
+          ],
+          acmeFolders,
+          files().filter((file) => file.supplier === 'Acme Corp')
+        )
+
+      case 'invoices':
+        return folderResponse(
+          [
+            { id: 'ap', label: 'EZOFIS' },
+            { id: 'ap', label: 'Accounts Payable' },
+            { id: 'by-supplier', label: 'By Supplier' },
+            { id: 'acme', label: 'Acme Corp' },
+            { id: 'invoices', label: 'Invoices' },
+          ],
+          [],
+          files().filter((file) => file.type === 'Invoice')
+        )
+
+      case 'purchase-orders':
+      case 'type-po':
+        return folderResponse(
+          [
+            { id: 'ap', label: 'EZOFIS' },
+            { id: 'ap', label: 'Accounts Payable' },
+            { id: 'by-supplier', label: 'By Supplier' },
+            { id: 'acme', label: 'Acme Corp' },
+            { id: 'purchase-orders', label: 'Purchase Orders' },
+          ],
+          [],
+          files().filter((file) => file.type === 'Purchase Order')
+        )
+
+      case 'contracts':
+      case 'type-contract':
+        return folderResponse(
+          [
+            { id: 'ap', label: 'EZOFIS' },
+            { id: 'ap', label: 'Accounts Payable' },
+            { id: 'by-supplier', label: 'By Supplier' },
+            { id: 'acme', label: 'Acme Corp' },
+            { id: 'contracts', label: 'Contracts' },
+          ],
+          [],
+          files().filter((file) => file.type === 'Contract')
+        )
+
+      case 'statements':
+        return folderResponse(
+          [
+            { id: 'ap', label: 'EZOFIS' },
+            { id: 'ap', label: 'Accounts Payable' },
+            { id: 'by-supplier', label: 'By Supplier' },
+            { id: 'acme', label: 'Acme Corp' },
+            { id: 'statements', label: 'Statements' },
+          ],
+          [],
+          files().filter((file) => file.type === 'Statement')
+        )
+
+      case 'kyc':
+        return folderResponse(
+          [
+            { id: 'ap', label: 'EZOFIS' },
+            { id: 'ap', label: 'Accounts Payable' },
+            { id: 'by-supplier', label: 'By Supplier' },
+            { id: 'acme', label: 'Acme Corp' },
+            { id: 'kyc', label: 'KYC Documents' },
+          ],
+          [],
+          []
+        )
+
+      case 'by-type':
+        return folderResponse(
+          [
+            { id: 'ap', label: 'EZOFIS' },
+            { id: 'ap', label: 'Accounts Payable' },
+            { id: 'by-type', label: 'By Document Type' },
+          ],
+          [
+            {
+              id: 'type-invoice',
+              title: 'Invoices',
+              iconKey: 'fileText',
+              itemsText: '5 files',
+              modifiedText: 'Nov 15, 2024',
+              sizeText: '420 MB',
+            },
+            {
+              id: 'type-po',
+              title: 'Purchase Orders',
+              iconKey: 'fileText',
+              itemsText: '1 file',
+              modifiedText: 'Nov 12, 2024',
+              sizeText: '56 MB',
+            },
+            {
+              id: 'type-contract',
+              title: 'Contracts',
+              iconKey: 'fileText',
+              itemsText: '1 file',
+              modifiedText: 'Nov 10, 2024',
+              sizeText: '120 MB',
+            },
+          ],
+          files()
+        )
+
+      case 'type-invoice':
+        return folderResponse(
+          [
+            { id: 'ap', label: 'EZOFIS' },
+            { id: 'ap', label: 'Accounts Payable' },
+            { id: 'by-type', label: 'By Document Type' },
+            { id: 'type-invoice', label: 'Invoices' },
+          ],
+          [],
+          files().filter((file) => file.type === 'Invoice')
+        )
+
+      case 'email-attachments':
+        return folderResponse(
+          [
+            { id: 'ap', label: 'EZOFIS' },
+            { id: 'ap', label: 'Accounts Payable' },
+            { id: 'email-attachments', label: 'Email Attachments' },
+          ],
+          [
+            {
+              id: 'email-today',
+              title: 'Today',
+              iconKey: 'folder',
+              itemsText: '4 files',
+              modifiedText: 'Today',
+              sizeText: '180 MB',
+            },
+            {
+              id: 'email-last7',
+              title: 'Last 7 Days',
+              iconKey: 'folder',
+              itemsText: '14 files',
+              modifiedText: 'This week',
+              sizeText: '500 MB',
+            },
+          ],
+          files().filter((file) => file.source === 'Email')
+        )
+
+      case 'email-today':
+      case 'email-last7':
+        return folderResponse(
+          [
+            { id: 'ap', label: 'EZOFIS' },
+            { id: 'ap', label: 'Accounts Payable' },
+            { id: 'email-attachments', label: 'Email Attachments' },
+            { id: folderId, label: folderId === 'email-today' ? 'Today' : 'Last 7 Days' },
+          ],
+          [],
+          files().filter((file) => file.source === 'Email')
+        )
+
+      case 'ar':
+        return folderResponse(
+          [
+            { id: 'ar', label: 'EZOFIS' },
+            { id: 'ar', label: 'Accounts Receivable' },
+          ],
+          [
+            {
+              id: 'by-customer',
+              title: 'By Customer',
+              iconKey: 'users',
+              itemsText: '12 customers',
+              modifiedText: 'Nov 15, 2024',
+              sizeText: '760 MB',
+            },
+          ],
+          []
+        )
+
+      case 'recent':
+        return folderResponse(
+          [{ id: 'recent', label: 'Recent' }],
+          [],
+          files()
+        )
+
+      case 'favorites':
+        return folderResponse(
+          [{ id: 'favorites', label: 'Favorites' }],
+          [],
+          files().slice(0, 3)
+        )
+
+      case 'archived':
+        return folderResponse(
+          [{ id: 'archived', label: 'Archived' }],
+          [],
+          []
+        )
+
+      default:
+        return folderResponse(
+          [
+            { id: 'ap', label: 'EZOFIS' },
+            { id: folderId, label: folderId },
+          ],
+          [],
+          files()
+        )
     }
   },
+
   async getDocumentDetail(id: string): Promise<DocumentDetail> {
     await wait()
+
     return {
-      alert: {
-        badge: 'L2',
-        subtitle: 'Awaiting approval since Nov 15, 2024 (2 days)',
-        title: 'Pending L2 Approval — Assigned to Priya M.',
-      },
       documentId: id,
       fileName: 'INV-2024-0891.pdf',
       fileType: 'PDF',
       fileUrl: 'https://www.aeee.in/wp-content/uploads/2020/08/Sample-pdf.pdf',
+      alert: {
+        title: 'Pending L2 Approval — Assigned to Priya M.',
+        subtitle: 'Awaiting approval since Nov 15, 2024 (2 days)',
+        badge: 'L2',
+      },
       infoCards: [
         {
-          iconKey: 'fileText',
           id: 'doc',
+          title: 'Document Info',
+          iconKey: 'fileText',
           rows: [
             { label: 'Invoice Number', value: 'INV-2024-0891' },
             { label: 'Document Type', value: 'Invoice' },
             { label: 'Invoice Date', value: '2024-11-15' },
             { label: 'Due Date', value: '2024-12-15' },
             { label: 'Amount', value: '₹245,000' },
-            { label: 'Status', value: 'Pending Approval' },
+            { label: 'Status', value: 'Pending' },
             { label: 'Approval Stage', value: 'L2' },
           ],
-          title: 'Document Info',
         },
         {
-          iconKey: 'building',
           id: 'supplier',
+          title: 'Supplier Details',
+          iconKey: 'building',
           rows: [
             { label: 'Supplier Name', value: 'Acme Corp' },
             { label: 'GSTIN', value: '22AAAAA0000A1Z5' },
@@ -208,22 +626,22 @@ export const folderApi = {
             { label: 'Payment Terms', value: 'Net 30' },
             { label: 'IFSC Code', value: 'HDFC0001234' },
           ],
-          title: 'Supplier Details',
         },
         {
-          iconKey: 'bot',
           id: 'ai',
+          title: 'AI Analysis',
+          iconKey: 'bot',
           rows: [
             { label: 'OCR Confidence', value: '98%' },
             { label: 'AI Validation', value: 'Passed' },
             { label: 'Duplicate Check', value: 'Clean' },
             { label: 'Risk Level', value: 'Low Risk' },
           ],
-          title: 'AI Analysis',
         },
         {
-          iconKey: 'shield',
           id: 'system',
+          title: 'System Info',
+          iconKey: 'shield',
           rows: [
             { label: 'Uploaded By', value: 'System (Email)' },
             { label: 'Upload Date', value: '2024-11-15' },
@@ -231,26 +649,52 @@ export const folderApi = {
             { label: 'Source Channel', value: 'Email' },
             { label: 'Document ID', value: 'DOC-000001' },
           ],
-          title: 'System Info',
         },
       ],
       lineItems: [
         {
-          'Description': 'ERP Software License Q4',
-          'GST': '₹44,100',
-          'Qty': '1',
-          'Total': '₹245,000',
+          Description: 'ERP Software License Q4',
+          Qty: '1',
           'Unit Price': '₹245,000',
+          GST: '₹44,100',
+          Total: '₹245,000',
         },
         {
-          'Description': 'Grand Total',
-          'GST': '',
-          'Qty': '',
-          'Total': '₹289,100',
+          Description: 'Grand Total',
+          Qty: '',
           'Unit Price': '',
+          GST: '',
+          Total: '₹289,100',
         },
       ],
       tabs: {
+        timeline: [
+          {
+            title: 'Document ingested via email',
+            subtitle: 'System (Email) · 2024-11-15 09:14',
+            iconKey: 'fileText',
+          },
+          {
+            title: 'OCR extraction complete — 98% confidence',
+            subtitle: 'AI Engine · 2024-11-15 09:15',
+            iconKey: 'bot',
+          },
+          {
+            title: 'Metadata validated, no duplicates found',
+            subtitle: 'AI Engine · 2024-11-15 09:16',
+            iconKey: 'check',
+          },
+          {
+            title: 'L1 Approval granted',
+            subtitle: 'Rahul K. · 2024-11-15 09:20',
+            iconKey: 'check',
+          },
+          {
+            title: 'Escalated to L2 Approval — Priya M.',
+            subtitle: 'System · 2024-11-15 11:42',
+            iconKey: 'clock',
+          },
+        ],
         comments: [
           {
             author: 'Rahul K.',
@@ -266,235 +710,88 @@ export const folderApi = {
           },
         ],
         relatedDocs: [
-          { name: 'PO-4589.pdf', status: 'Active', type: 'Purchase Order' },
-          { name: 'GRN-2024-0721.pdf', status: 'Approved', type: 'GRN' },
-          { name: 'CNT-2024-012.pdf', status: 'Active', type: 'Contract' },
-        ],
-        timeline: [
-          {
-            iconKey: 'fileText',
-            subtitle: 'System (Email) · 2024-11-15 09:14',
-            title: 'Document ingested via email',
-          },
-          {
-            iconKey: 'bot',
-            subtitle: 'AI Engine · 2024-11-15 09:15',
-            title: 'OCR extraction complete — 98% confidence',
-          },
-          {
-            iconKey: 'check',
-            subtitle: 'AI Engine · 2024-11-15 09:16',
-            title: 'Metadata validated, no duplicates found',
-          },
-          {
-            iconKey: 'check',
-            subtitle: 'Rahul K. · 2024-11-15 09:20',
-            title: 'L1 Approval granted',
-          },
-          {
-            iconKey: 'clock',
-            subtitle: 'System · 2024-11-15 11:42',
-            title: 'Escalated to L2 Approval — Priya M.',
-          },
+          { name: 'PO-4589.pdf', type: 'Purchase Order', status: 'Active' },
+          { name: 'GRN-2024-0721.pdf', type: 'GRN', status: 'Approved' },
+          { name: 'CNT-2024-012.pdf', type: 'Contract', status: 'Active' },
         ],
       },
     }
   },
-  async getFolderContent(folderId: string): Promise<{
-    breadcrumbs: string[]
-    files: FileItem[]
-    folders: FolderItem[]
-  }> {
-    await wait()
-    if (folderId === 'acme') {
-      return {
-        breadcrumbs: ['EZOFIS', 'Accounts Payable', 'By Supplier', 'Acme Corp'],
-        files: [],
-        folders: [
-          {
-            iconKey: 'folder',
-            id: 'invoices',
-            itemsText: '8 files',
-            modifiedText: 'Nov 15, 2024',
-            sizeText: '245 MB',
-            title: 'Invoices',
-          },
-          {
-            iconKey: 'folder',
-            id: 'purchase-orders',
-            itemsText: '4 files',
-            modifiedText: 'Nov 10, 2024',
-            sizeText: '84 MB',
-            title: 'Purchase Orders',
-          },
-          {
-            iconKey: 'folder',
-            id: 'contracts',
-            itemsText: '2 files',
-            modifiedText: 'Oct 01, 2024',
-            sizeText: '42 MB',
-            title: 'Contracts',
-          },
-        ],
-      }
-    }
-    if (folderId === 'by-supplier') {
-      return {
-        breadcrumbs: ['EZOFIS', 'Accounts Payable', 'By Supplier'],
-        files: files(),
-        folders: [
-          {
-            iconKey: 'building',
-            id: 'acme',
-            itemsText: '1,420 items',
-            modifiedText: 'Nov 15, 2024',
-            sizeText: '1.1 GB',
-            title: 'Acme Corp',
-          },
-          {
-            iconKey: 'building',
-            id: 'techpro',
-            itemsText: '1,180 items',
-            modifiedText: 'Nov 14, 2024',
-            sizeText: '980 MB',
-            title: 'TechPro Ltd',
-          },
-          {
-            iconKey: 'building',
-            id: 'globalsup',
-            itemsText: '980 items',
-            modifiedText: 'Nov 13, 2024',
-            sizeText: '820 MB',
-            title: 'GlobalSup Inc',
-          },
-          {
-            iconKey: 'building',
-            id: 'indialogistics',
-            itemsText: '860 items',
-            modifiedText: 'Nov 10, 2024',
-            sizeText: '720 MB',
-            title: 'IndiaLogistics',
-          },
-          {
-            iconKey: 'building',
-            id: 'fastship',
-            itemsText: '640 items',
-            modifiedText: 'Nov 8, 2024',
-            sizeText: '510 MB',
-            title: 'FastShip Co',
-          },
-          {
-            iconKey: 'building',
-            id: 'metalworks',
-            itemsText: '340 items',
-            modifiedText: 'Nov 5, 2024',
-            sizeText: '290 MB',
-            title: 'MetalWorks',
-          },
-          {
-            iconKey: 'building',
-            id: 'primeparts',
-            itemsText: '280 items',
-            modifiedText: 'Oct 30, 2024',
-            sizeText: '240 MB',
-            title: 'PrimeParts',
-          },
-        ],
-      }
-    }
-    return {
-      breadcrumbs: [
-        'EZOFIS',
-        'Accounts Payable',
-        'By Supplier',
-        'Acme Corp',
-        'Invoices',
-      ],
-      files: files(),
-      folders: [],
-    }
-  },
+
   async getMetadataSections(): Promise<MetadataSection[]> {
     await wait()
+
     return [
       {
+        id: 'invoice',
+        title: 'Invoice Information',
         fields: [
           {
             key: 'invoiceNo',
             label: 'Invoice Number',
-            required: true,
             type: 'text',
             value: 'INV-2024-0891',
+            required: true,
           },
           {
             key: 'docType',
             label: 'Document Type',
-            options: ['Invoice', 'Purchase Order', 'Contract'],
-            required: true,
             type: 'select',
             value: 'Invoice',
+            required: true,
+            options: ['Invoice', 'Purchase Order', 'Contract'],
           },
           {
             key: 'invoiceDate',
             label: 'Invoice Date',
-            required: true,
             type: 'date',
             value: '15-11-2024',
+            required: true,
           },
-          {
-            key: 'dueDate',
-            label: 'Due Date',
-            type: 'date',
-            value: '15-12-2024',
-          },
+          { key: 'dueDate', label: 'Due Date', type: 'date', value: '15-12-2024' },
           {
             key: 'amount',
             label: 'Amount',
-            required: true,
             type: 'text',
             value: '245000',
+            required: true,
           },
           {
             key: 'currency',
             label: 'Currency',
-            options: ['INR', 'USD', 'AED'],
             type: 'select',
             value: 'INR',
+            options: ['INR', 'USD', 'AED'],
           },
           { key: 'poNo', label: 'PO Number', type: 'text', value: 'PO-4589' },
           {
             key: 'terms',
             label: 'Payment Terms',
-            options: ['Net 15', 'Net 30', 'Net 45'],
             type: 'select',
             value: 'Net 30',
+            options: ['Net 15', 'Net 30', 'Net 45'],
           },
           {
             key: 'dept',
             label: 'Department',
-            options: ['Finance', 'Operations', 'IT'],
             type: 'select',
             value: 'Finance',
+            options: ['Finance', 'Operations', 'IT'],
           },
         ],
-        id: 'invoice',
-        title: 'Invoice Information',
       },
       {
+        id: 'supplier',
+        title: 'Supplier / Vendor Information',
         fields: [
           {
             key: 'supplier',
             label: 'Supplier Name',
-            required: true,
             type: 'text',
             value: 'Acme Corp',
+            required: true,
           },
-          {
-            key: 'gstin',
-            label: 'GSTIN',
-            type: 'text',
-            value: '22AAAAA0000A1Z5',
-          },
+          { key: 'gstin', label: 'GSTIN', type: 'text', value: '22AAAAA0000A1Z5' },
           { key: 'pan', label: 'PAN', type: 'text', value: 'AAAAA0000A' },
           {
             key: 'bank',
@@ -502,17 +799,12 @@ export const folderApi = {
             type: 'text',
             value: 'XXXX-XXXX-4521',
           },
-          {
-            key: 'ifsc',
-            label: 'IFSC Code',
-            type: 'text',
-            value: 'HDFC0001234',
-          },
+          { key: 'ifsc', label: 'IFSC Code', type: 'text', value: 'HDFC0001234' },
         ],
-        id: 'supplier',
-        title: 'Supplier / Vendor Information',
       },
       {
+        id: 'tags',
+        title: 'Tags & Labels',
         fields: [
           {
             key: 'tags',
@@ -521,155 +813,124 @@ export const folderApi = {
             value: 'urgent, high-value',
           },
         ],
-        id: 'tags',
-        title: 'Tags & Labels',
       },
     ]
   },
+
+  async getAiSummary(): Promise<AiSummaryData> {
+    await wait()
+
+    return {
+      documentId: 'INV-2024-0891',
+      engineTitle: 'EZOFIS AI Engine',
+      engineSubtitle:
+        'Analysed 4 related documents · Checked 486 supplier records · Validated against 5,240 invoices',
+      confidence: 98,
+      summary:
+        'Software license invoice from Acme Corp for Q4 2024 ERP subscription — ₹2.45L pending L2 approval.',
+      facts: [
+        { label: 'Invoice Total', value: '₹2,45,000 + ₹44,100 GST = ₹2,89,100' },
+        { label: 'Payment Due', value: 'December 15, 2024 (28 days remaining)' },
+        { label: 'PO Match', value: 'PO-4589 — Full match, ₹0 variance' },
+        { label: 'Supplier Risk', value: 'Trusted — 4 years, 145 prior invoices' },
+        { label: 'GST Compliance', value: 'Valid GSTIN, B2B 18% applicable' },
+        { label: 'Duplicate Status', value: 'No duplicate found — unique invoice number' },
+      ],
+      checks: [
+        { label: 'GST Compliance', status: 'PASS', iconKey: 'check' },
+        { label: 'Duplicate Check', status: 'PASS', iconKey: 'check' },
+        { label: 'PO Matching', status: 'PASS', iconKey: 'check' },
+        { label: 'Fraud Detection', status: 'PASS', iconKey: 'shield' },
+      ],
+      recommendations: [
+        'Schedule payment before Dec 10 to avoid late fees.',
+        'This supplier offers 2% discount for payment within 10 days.',
+        'Cross-check ERP license count against IT asset register.',
+      ],
+      insight:
+        'Acme Corp invoice volume has increased 28% this quarter. Consider negotiating volume discount.',
+    }
+  },
+
   async getShareData(): Promise<ShareData> {
     await wait()
+
     return {
       documentId: 'INV-2024-0891',
       invitePermissions: ['Can View', 'Can Edit'],
-      link: 'https://ezofis.app/doc/INV-2024-0891?token=tk_abc123xyz',
-      permissions: [
-        { iconKey: 'eye', label: 'View', text: 'Read-only access' },
-        { iconKey: 'edit', label: 'Edit', text: 'Can edit metadata' },
-        { iconKey: 'shield', label: 'Approve', text: 'Full approval rights' },
-      ],
       sharedWith: [
         {
-          date: '2024-11-15',
-          email: 'priya.m@company.com',
           initials: 'PM',
           name: 'Priya Mehta',
+          email: 'priya.m@company.com',
           permission: 'Can View',
+          date: '2024-11-15',
         },
         {
-          date: '2024-11-15',
-          email: 'amit.s@company.com',
           initials: 'AS',
           name: 'Amit Shah',
+          email: 'amit.s@company.com',
           permission: 'Can Edit',
+          date: '2024-11-15',
         },
+      ],
+      link: 'https://ezofis.app/doc/INV-2024-0891?token=tk_abc123xyz',
+      permissions: [
+        { label: 'View', text: 'Read-only access', iconKey: 'eye' },
+        { label: 'Edit', text: 'Can edit metadata', iconKey: 'edit' },
+        // { label: 'Approve', text: 'Full approval rights', iconKey: 'shield' },
       ],
     }
   },
-  async getTree(): Promise<TreeNode[]> {
-    await wait()
-    return [
-      {
-        children: [
-          {
-            children: [
-              {
-                children: [
-                  { iconKey: 'folder', id: 'invoices', title: 'Invoices' },
-                  {
-                    iconKey: 'folder',
-                    id: 'purchase-orders',
-                    title: 'Purchase Orders',
-                  },
-                  { iconKey: 'folder', id: 'contracts', title: 'Contracts' },
-                  { iconKey: 'folder', id: 'kyc', title: 'KYC Documents' },
-                  { iconKey: 'folder', id: 'statements', title: 'Statements' },
-                ],
-                iconKey: 'building',
-                id: 'acme',
-                title: 'Acme Corp',
-              },
-              { iconKey: 'building', id: 'techpro', title: 'TechPro Ltd' },
-              { iconKey: 'building', id: 'globalsup', title: 'GlobalSup Inc' },
-              {
-                iconKey: 'building',
-                id: 'indialogistics',
-                title: 'IndiaLogistics',
-              },
-              { iconKey: 'building', id: 'fastship', title: 'FastShip Co' },
-              { iconKey: 'building', id: 'metalworks', title: 'MetalWorks' },
-              { iconKey: 'building', id: 'primeparts', title: 'PrimeParts' },
-            ],
-            iconKey: 'folder',
-            id: 'by-supplier',
-            title: 'By Supplier',
-          },
-          {
-            children: [
-              { iconKey: 'fileText', id: 'type-invoice', title: 'Invoices' },
-              { iconKey: 'fileText', id: 'type-po', title: 'Purchase Orders' },
-              { iconKey: 'fileText', id: 'type-contract', title: 'Contracts' },
-            ],
-            iconKey: 'fileStack',
-            id: 'by-type',
-            title: 'By Document Type',
-          },
-          {
-            children: [
-              { iconKey: 'folder', id: 'email-today', title: 'Today' },
-              { iconKey: 'folder', id: 'email-last7', title: 'Last 7 Days' },
-            ],
-            iconKey: 'mail',
-            id: 'email-attachments',
-            title: 'Email Attachments',
-          },
-        ],
-        iconKey: 'folder',
-        id: 'ap',
-        title: 'Accounts Payable',
-      },
-      { iconKey: 'clock', id: 'recent', title: 'Recent' },
-      { iconKey: 'sparkles', id: 'favorites', title: 'Favorites' },
-      { iconKey: 'archive', id: 'archived', title: 'Archived' },
-    ]
-  },
+
   async getWorkflowData(): Promise<WorkflowData> {
     await wait()
+
     return {
+      documentId: 'INV-2024-0891',
+      document: {
+        name: 'INV-2024-0891.pdf',
+        supplier: 'Acme Corp',
+        amount: '₹2,45,000',
+        date: 'Nov 15, 2024',
+        status: 'Pending',
+      },
+      templates: [
+        {
+          id: 'ap2',
+          title: '2-Level AP Approval',
+          description: 'Standard invoice approval: L1 Manager → L2 Finance Head',
+          levels: '2 levels',
+          eta: '~4h',
+          recommended: true,
+        },
+        {
+          id: 'fast',
+          title: 'Fast Track Approval',
+          description: 'Single approver for invoices below ₹50K',
+          levels: '1 levels',
+          eta: '~1h',
+        },
+        {
+          id: 'kyc',
+          title: 'Vendor KYC Review',
+          description: 'Compliance check for new suppliers',
+          levels: '3 levels',
+          eta: '~24h',
+        },
+        {
+          id: 'dispute',
+          title: 'Dispute Resolution',
+          description: 'Escalation workflow for flagged/disputed invoices',
+          levels: '4 levels',
+          eta: '~48h',
+        },
+      ],
       approvers: [
         { id: 'rahul', name: 'Rahul Kumar — Finance Manager' },
         { id: 'priya', name: 'Priya Mehta — Finance Head' },
       ],
-      document: {
-        amount: '₹2,45,000',
-        date: 'Nov 15, 2024',
-        name: 'INV-2024-0891.pdf',
-        status: 'Pending Approval',
-        supplier: 'Acme Corp',
-      },
-      documentId: 'INV-2024-0891',
       priorities: ['Low', 'Medium', 'High'],
-      templates: [
-        {
-          description:
-            'Standard invoice approval: L1 Manager → L2 Finance Head',
-          eta: '~4h',
-          id: 'ap2',
-          levels: '2 levels',
-          recommended: true,
-          title: '2-Level AP Approval',
-        },
-        {
-          description: 'Single approver for invoices below ₹50K',
-          eta: '~1h',
-          id: 'fast',
-          levels: '1 levels',
-          title: 'Fast Track Approval',
-        },
-        {
-          description: 'Compliance check for new suppliers',
-          eta: '~24h',
-          id: 'kyc',
-          levels: '3 levels',
-          title: 'Vendor KYC Review',
-        },
-        {
-          description: 'Escalation workflow for flagged/disputed invoices',
-          eta: '~48h',
-          id: 'dispute',
-          levels: '4 levels',
-          title: 'Dispute Resolution',
-        },
-      ],
     }
   },
 }

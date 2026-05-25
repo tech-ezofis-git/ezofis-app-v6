@@ -11,6 +11,7 @@ interface HeaderProps {
   raisedAt: any
   requestNo: string
   rightView: 'analysis' | 'comments' | 'attachments' | 'forms'
+  enableAIInsights?: boolean
   actions?: any[]
   agentData?: any
   approveLoading?: boolean
@@ -41,6 +42,7 @@ const Header: React.FC<HeaderProps> = ({
   agentData,
   approveLoading,
   currency,
+  enableAIInsights = true,
   hideActions,
   isEditing = false,
   isLoading: _isLoading,
@@ -238,75 +240,77 @@ const Header: React.FC<HeaderProps> = ({
         })()}
 
         {/* AI Insights Toggle & Overlay */}
-        <div className='relative flex items-center gap-3' ref={containerRef}>
-          <Button
-            variant='outline'
-            className={cn(
-              'flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2 font-semibold transition-all',
-              showAIInsights
-                ? 'border-[var(--primary-6)] bg-[var(--primary-1)] text-[var(--primary-9)]'
-                : 'border-[var(--gray-3)] bg-white text-[var(--gray-11)]',
-            )}
-            onClick={() => setShowAIInsights(!showAIInsights)}
-          >
-            <Icon className='size-4.5' name='tabler:sparkles' />
-            <span>AI Insights</span>
-            {agentData?.score !== undefined && (
-              <span
-                className={cn(
-                  'ml-1 shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-bold transition-colors',
-                  Number(agentData.score) >= 90
-                    ? 'border-[var(--green-3)] bg-[var(--green-1)] text-[var(--green-9)]'
-                    : Number(agentData.score) >= 60
-                      ? 'border-[var(--orange-3)] bg-[var(--orange-1)] text-[var(--orange-9)]'
-                      : 'border-[var(--red-3)] bg-[var(--red-1)] text-[var(--red-9)]',
-                )}
-              >
-                {Math.round(Number(agentData.score))}%
-              </span>
-            )}
-          </Button>
-
-          <AnimatePresence>
-            {showAIInsights && (
-              <motion.div
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                className='absolute top-full right-0 z-[100] mt-3 min-w-[500px] rounded-xl border border-[var(--gray-3)] bg-white/95 p-4 shadow-2xl backdrop-blur-md'
-                exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                initial={{ opacity: 0, scale: 0.95, y: 10 }}
-              >
-                <div className='flex flex-col gap-4'>
-                  {/* AI Insights Section */}
-                  {insightContent && (
-                    <div className='flex flex-col'>
-                      <div className='mb-3 flex items-center justify-between gap-3 border-b border-[var(--gray-2)] pb-2.5'>
-                        <div className='flex items-center gap-2'>
-                          <Icon
-                            className='h-5 w-5 text-[var(--primary-9)]'
-                            name='tabler:sparkles'
-                          />
-                          <span className='text-[14px] font-semibold text-[var(--gray-13)]'>
-                            Invoice Decision Details
-                          </span>
-                        </div>
-                        <button
-                          aria-label='Close AI Insights'
-                          className='flex shrink-0 cursor-pointer items-center justify-center rounded-lg p-1 text-[var(--gray-8)] transition-all hover:bg-[var(--gray-2)] hover:text-[var(--gray-12)] active:scale-95'
-                          onClick={() => setShowAIInsights(false)}
-                        >
-                          <Icon className='size-4' name='lucide:x' />
-                        </button>
-                      </div>
-                      <p className='text-[13px] leading-relaxed font-medium text-[var(--gray-12)]'>
-                        {renderHighlightedContent(insightContent)}
-                      </p>
-                    </div>
+        {enableAIInsights && (
+          <div className='relative flex items-center gap-3' ref={containerRef}>
+            <Button
+              variant='outline'
+              className={cn(
+                'flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2 font-semibold transition-all',
+                showAIInsights
+                  ? 'border-[var(--primary-6)] bg-[var(--primary-1)] text-[var(--primary-9)]'
+                  : 'border-[var(--gray-3)] bg-white text-[var(--gray-11)]',
+              )}
+              onClick={() => setShowAIInsights(!showAIInsights)}
+            >
+              <Icon className='size-4.5' name='tabler:sparkles' />
+              <span>AI Insights</span>
+              {agentData?.score !== undefined && (
+                <span
+                  className={cn(
+                    'ml-1 shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-bold transition-colors',
+                    Number(agentData.score) >= 90
+                      ? 'border-[var(--green-3)] bg-[var(--green-1)] text-[var(--green-9)]'
+                      : Number(agentData.score) >= 60
+                        ? 'border-[var(--orange-3)] bg-[var(--orange-1)] text-[var(--orange-9)]'
+                        : 'border-[var(--red-3)] bg-[var(--red-1)] text-[var(--red-9)]',
                   )}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+                >
+                  {Math.round(Number(agentData.score))}%
+                </span>
+              )}
+            </Button>
+
+            <AnimatePresence>
+              {showAIInsights && (
+                <motion.div
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  className='absolute top-full right-0 z-[100] mt-3 min-w-[500px] rounded-xl border border-[var(--gray-3)] bg-white/95 p-4 shadow-2xl backdrop-blur-md'
+                  exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                  initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                >
+                  <div className='flex flex-col gap-4'>
+                    {/* AI Insights Section */}
+                    {insightContent && (
+                      <div className='flex flex-col'>
+                        <div className='mb-3 flex items-center justify-between gap-3 border-b border-[var(--gray-2)] pb-2.5'>
+                          <div className='flex items-center gap-2'>
+                            <Icon
+                              className='h-5 w-5 text-[var(--primary-9)]'
+                              name='tabler:sparkles'
+                            />
+                            <span className='text-[14px] font-semibold text-[var(--gray-13)]'>
+                              Invoice Decision Details
+                            </span>
+                          </div>
+                          <button
+                            aria-label='Close AI Insights'
+                            className='flex shrink-0 cursor-pointer items-center justify-center rounded-lg p-1 text-[var(--gray-8)] transition-all hover:bg-[var(--gray-2)] hover:text-[var(--gray-12)] active:scale-95'
+                            onClick={() => setShowAIInsights(false)}
+                          >
+                            <Icon className='size-4' name='lucide:x' />
+                          </button>
+                        </div>
+                        <p className='text-[13px] leading-relaxed font-medium text-[var(--gray-12)]'>
+                          {renderHighlightedContent(insightContent)}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
 
         {!hideActions && (
           <div className='flex items-center gap-2'>

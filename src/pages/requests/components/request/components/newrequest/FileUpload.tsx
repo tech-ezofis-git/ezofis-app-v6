@@ -1,16 +1,28 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import folderApi from '@/api/folders/folders'
 import workflowApi from '@/api/workflow/workflow'
-import sample1 from '@/assets/Sample Invoices/Sample Invoices-1.pdf'
-import sample10 from '@/assets/Sample Invoices/Sample Invoices-10.pdf'
-import sample2 from '@/assets/Sample Invoices/Sample Invoices-2.pdf'
-import sample3 from '@/assets/Sample Invoices/Sample Invoices-3.pdf'
-import sample4 from '@/assets/Sample Invoices/Sample Invoices-4.pdf'
-import sample5 from '@/assets/Sample Invoices/Sample Invoices-5.pdf'
-import sample6 from '@/assets/Sample Invoices/Sample Invoices-6.pdf'
-import sample7 from '@/assets/Sample Invoices/Sample Invoices-7.pdf'
-import sample8 from '@/assets/Sample Invoices/Sample Invoices-8.pdf'
-import sample9 from '@/assets/Sample Invoices/Sample Invoices-9.pdf'
+import sample1 from '@/assets/Sample Invoices/inv-1.pdf'
+import sample2 from '@/assets/Sample Invoices/inv-2.pdf'
+import sample3 from '@/assets/Sample Invoices/inv-3.pdf'
+import sample4 from '@/assets/Sample Invoices/inv-4.pdf'
+import sample5 from '@/assets/Sample Invoices/inv-5.pdf'
+import sample6 from '@/assets/Sample Invoices/inv-6.pdf'
+import sample7 from '@/assets/Sample Invoices/inv-7.pdf'
+import sample8 from '@/assets/Sample Invoices/inv-8.pdf'
+import sample9 from '@/assets/Sample Invoices/inv-9.pdf'
+import sample10 from '@/assets/Sample Invoices/inv-10.pdf'
+
+import sample1Img from '@/assets/Sample Invoices/inv-1.png'
+import sample2Img from '@/assets/Sample Invoices/inv-2.png'
+import sample3Img from '@/assets/Sample Invoices/inv-3.png'
+import sample4Img from '@/assets/Sample Invoices/inv-4.png'
+import sample5Img from '@/assets/Sample Invoices/inv-5.png'
+import sample6Img from '@/assets/Sample Invoices/inv-6.png'
+import sample7Img from '@/assets/Sample Invoices/inv-7.png'
+import sample8Img from '@/assets/Sample Invoices/inv-8.png'
+import sample9Img from '@/assets/Sample Invoices/inv-9.png'
+import sample10Img from '@/assets/Sample Invoices/inv-10.png'
 import showToast from '@/components/base/toast/showToast'
 import requestStore from '@/pages/requests/stores/useRequestStore'
 import authUserStore from '@/stores/authUserStore'
@@ -70,92 +82,102 @@ const TAG_COLOR_STYLES: Record<
 const SAMPLE_DOCUMENTS: SampleDocument[] = [
   {
     description: 'Perfect PO match.',
-    fileName: 'Sample Invoices-1.pdf',
+    fileName: 'inv-1.pdf',
     icon: 'tabler:file-invoice',
     label: 'invoice1',
     tag: 'PO Match',
     tagColor: 'green',
+    thumbnail: sample1Img,
     url: sample1,
   },
   {
     description: 'Partial line match.',
-    fileName: 'Sample Invoices-2.pdf',
+    fileName: 'inv-2.pdf',
     icon: 'tabler:file-invoice',
     label: 'invoice2',
     tag: 'Partial PO',
     tagColor: 'orange',
+    thumbnail: sample2Img,
     url: sample2,
   },
   {
     description: 'Duplicate detection.',
-    fileName: 'Sample Invoices-3.pdf',
+    fileName: 'inv-3.pdf',
     icon: 'tabler:file-invoice',
     label: 'invoice3',
     tag: 'Duplicate',
     tagColor: 'red',
+    thumbnail: sample3Img,
     url: sample3,
   },
   {
     description: 'Missing PO reference.',
-    fileName: 'Sample Invoices-4.pdf',
+    fileName: 'inv-4.pdf',
     icon: 'tabler:file-invoice',
     label: 'invoice4',
     tag: 'Missing PO',
     tagColor: 'red',
+    thumbnail: sample4Img,
     url: sample4,
   },
   {
     description: 'PO total mismatch.',
-    fileName: 'Sample Invoices-5.pdf',
+    fileName: 'inv-5.pdf',
     icon: 'tabler:file-invoice',
     label: 'invoice5',
     tag: 'Mismatch',
     tagColor: 'orange',
+    thumbnail: sample5Img,
     url: sample5,
   },
   {
     description: 'Multi-currency VAT.',
-    fileName: 'Sample Invoices-6.pdf',
+    fileName: 'inv-6.pdf',
     icon: 'tabler:file-invoice',
     label: 'invoice6',
     tag: 'International',
     tagColor: 'blue',
+    thumbnail: sample6Img,
     url: sample6,
   },
   {
     description: 'Credit note case.',
-    fileName: 'Sample Invoices-7.pdf',
+    fileName: 'inv-7.pdf',
     icon: 'tabler:file-invoice',
     label: 'invoice7',
     tag: 'Credit Note',
     tagColor: 'blue',
+    thumbnail: sample7Img,
     url: sample7,
   },
   {
     description: 'Mixed tax lines.',
-    fileName: 'Sample Invoices-8.pdf',
+    fileName: 'inv-8.pdf',
     icon: 'tabler:file-invoice',
     label: 'invoice8',
     tag: 'Multi-tax',
     tagColor: 'orange',
+    thumbnail: sample8Img,
     url: sample8,
   },
   {
     description: 'Vendor validation.',
-    fileName: 'Sample Invoices-9.pdf',
+    fileName: 'inv-9.pdf',
     icon: 'tabler:file-invoice',
     label: 'invoice9',
     tag: 'Vendor Check',
     tagColor: 'green',
+    thumbnail: sample9Img,
     url: sample9,
   },
   {
     description: 'Low OCR scan.',
-    fileName: 'Sample Invoices-10.pdf',
+    fileName: 'inv-10.pdf',
     icon: 'tabler:file-invoice',
     label: 'invoice10',
     tag: 'Low OCR',
     tagColor: 'red',
+    thumbnail: sample10Img,
     url: sample10,
   },
 ]
@@ -174,7 +196,8 @@ const SampleThumbnailPreview = ({
     return (
       <img
         alt={isExpanded ? `${doc.label} preview` : doc.label}
-        className='size-full object-cover object-top'
+        className='size-full object-contain object-center bg-white'
+        style={{ imageRendering: 'auto' }}
         src={doc.thumbnail}
       />
     )
@@ -318,8 +341,48 @@ const SampleThumbnail = ({
   doc: SampleDocument
   isSelected?: boolean
 }) => {
+  const wrapperRef = useRef<HTMLDivElement | null>(null)
+  const [showPortal, setShowPortal] = useState(false)
+  const [portalPos, setPortalPos] = useState({ left: 0, top: 0 })
+
+  const previewW = 320
+  const previewH = 420
+
+  const handleMouseEnter = () => {
+    const el = wrapperRef.current
+    if (!el) return
+    const rect = el.getBoundingClientRect()
+    const vw = window.innerWidth
+    const vh = window.innerHeight
+
+    // Prefer showing to the right of the thumbnail so it doesn't block the cursor;
+    // fall back to the left, then below/above centered if space is constrained.
+    const rightLeft = rect.right + 12
+    const leftLeft = rect.left - previewW - 12
+    const centeredLeft = rect.left + rect.width / 2 - previewW / 2
+
+    const topCentered = rect.top + rect.height / 2 - previewH / 2
+    const top = Math.min(Math.max(8, topCentered), vh - previewH - 8)
+
+    let left = rightLeft
+    if (rightLeft + previewW > vw - 8) {
+      if (leftLeft >= 8) left = leftLeft
+      else left = Math.min(Math.max(8, centeredLeft), vw - previewW - 8)
+    }
+
+    setPortalPos({ left, top })
+    setShowPortal(true)
+  }
+
+  const handleMouseLeave = () => setShowPortal(false)
+
   return (
-    <div className='group/thumb relative z-10 w-full hover:z-30'>
+    <div
+      ref={wrapperRef}
+      className='group/thumb relative z-10 w-full hover:z-30'
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
       {/* Thumbnail image in card */}
       <div
         className={`relative flex h-[92px] w-full items-center justify-center rounded-t-lg border-b border-dashed border-[var(--gray-4)] px-2 py-2 ${colors.thumbBg} transition-colors duration-300`}
@@ -339,13 +402,28 @@ const SampleThumbnail = ({
       </div>
 
       {/* Mouseover: expanded clear view */}
-      <div className='pointer-events-none absolute bottom-[90%] left-1/2 z-50 h-[282px] w-[200px] -translate-x-1/2 translate-y-2 scale-95 opacity-0 shadow-2xl transition-all duration-300 ease-out group-hover/thumb:translate-y-[-12px] group-hover/thumb:scale-100 group-hover/thumb:opacity-100'>
-        <div className='size-full overflow-hidden rounded-xl border border-[var(--gray-4)] bg-white/95 p-2 shadow-2xl backdrop-blur-md'>
-          <div className='size-full overflow-hidden rounded-lg border border-[var(--gray-3)] bg-white shadow-inner'>
-            <SampleThumbnailPreview doc={doc} variant='expanded' />
-          </div>
-        </div>
-      </div>
+      {/* Hover preview rendered in portal to escape parent stacking/overflow contexts */}
+      {showPortal &&
+        createPortal(
+          <div
+            style={{
+              position: 'fixed',
+              left: portalPos.left,
+              top: portalPos.top,
+              width: previewW,
+              height: previewH,
+              zIndex: 99999,
+            }}
+            className='pointer-events-none scale-100 shadow-2xl'
+          >
+            <div className='size-full overflow-hidden rounded-xl border border-[var(--gray-4)] bg-white/95 p-2 shadow-2xl backdrop-blur-md'>
+              <div className='size-full overflow-hidden rounded-lg border border-[var(--gray-3)] bg-white shadow-inner'>
+                <SampleThumbnailPreview doc={doc} variant='expanded' />
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )}
     </div>
   )
 }
@@ -764,7 +842,7 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
                     disabled={uploadStatus === 'uploading' || isSubmitting}
                     key={idx}
                     type='button'
-                    className={`group/card flex w-[156px] shrink-0 flex-col overflow-visible rounded-lg border bg-white text-left shadow-sm transition-all duration-300 ${
+                    className={`group/card relative z-10 flex w-[156px] shrink-0 flex-col overflow-visible rounded-lg border bg-white text-left shadow-sm transition-all duration-300 hover:z-50 ${
                       isSelected
                         ? 'scale-[1.02] border-green-8 ring-2 ring-green-3 ring-offset-0'
                         : 'border-[var(--gray-3)] hover:-translate-y-1.5 hover:scale-[1.02] hover:border-[var(--primary-6)] hover:shadow-md active:translate-y-0 active:scale-98'
