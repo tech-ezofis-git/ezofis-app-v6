@@ -17,9 +17,12 @@ const animation1 = { scale: [1, 0.6, 1, 0.6, 1] }
 const animation2 = { scale: [1, 1.6, 0.6, 1.6, 1] }
 
 const IconAI = ({ animate, className, color = 'default' }: Props) => {
-  const primaryColor = color === 'white' ? '#fff' : '#9333ea'
-  const secondaryColor = color === 'white' ? '#fff' : '#00bcd4'
-  const tertiaryColor = color === 'white' ? '#fff' : '#4a78df'
+  const primaryColor =
+    color === 'white' ? 'var(--text-on-accent)' : 'var(--primary-9)'
+  const secondaryColor =
+    color === 'white' ? 'var(--text-on-accent)' : 'var(--secondary-9)'
+  const tertiaryColor =
+    color === 'white' ? 'var(--text-on-accent)' : 'var(--blue-9)'
 
   return (
     <motion.svg

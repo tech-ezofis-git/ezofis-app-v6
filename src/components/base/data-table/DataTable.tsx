@@ -87,7 +87,7 @@ const DataTable = <TData,>({
 
       <div
         className={cn(
-          'flex w-full rounded-xl border border-[var(--gray-3)] bg-white shadow-sm overflow-hidden',
+          'flex w-full rounded-xl border border-[var(--gray-3)] bg-surface shadow-sm overflow-hidden',
           stickyHeader ? 'min-h-0 flex-1 flex-col' : '',
         )}
       >
@@ -223,7 +223,7 @@ const DataTable = <TData,>({
                                           'flex flex-col gap-2 rounded border px-3 py-1.5 shadow-sm transition-all',
                                           isMatch
                                             ? 'border-[var(--green-3)] bg-[var(--green-2)] group-hover/header:border-[var(--green-5)] group-hover/header:bg-[var(--green-3)]'
-                                            : 'border-[var(--gray-3)] bg-white group-hover/header:border-[var(--primary-4)] group-hover/header:bg-[var(--primary-2)]',
+                                            : 'border-[var(--gray-3)] bg-surface group-hover/header:border-[var(--primary-4)] group-hover/header:bg-[var(--primary-2)]',
                                         )}
                                       >
                                         <div className='flex items-center gap-2'>

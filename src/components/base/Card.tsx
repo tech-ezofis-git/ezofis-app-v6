@@ -13,7 +13,7 @@ export default function Card({ children, className, right, title }: Props) {
   return (
     <div
       className={cn(
-        'rounded-xl border border-gray-3 bg-white shadow-sm',
+        'rounded-xl border border-gray-3 bg-surface shadow-sm',
         className,
       )}
     >

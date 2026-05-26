@@ -31,7 +31,7 @@ export default function InputSegmentedControl({
       <div className='bg-gray-100/80 border-gray-200/50 relative flex h-10 items-center rounded-xl border p-1'>
         {/* Animated Background Pill */}
         <motion.div
-          className='absolute z-0 h-8 rounded-lg bg-white shadow-sm'
+          className='absolute z-0 h-8 rounded-lg bg-surface-raised shadow-sm'
           initial={false}
           layoutId='activePill'
           transition={{ damping: 35, stiffness: 500, type: 'spring' }}

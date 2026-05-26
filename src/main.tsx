@@ -9,7 +9,8 @@ import { StrictMode } from 'react'
 import '@/lib/web-vitals/report'
 import ReactDOM from 'react-dom/client'
 import Toasts from '@/components/base/toast/Toasts'
-import cssVariablesResolver from '@/lib/mantine/cssVariablesResolver'
+import cssVariablesResolver from '@/lib/theme/cssVariablesResolver'
+import { ThemeSync } from '@/lib/theme'
 import theme from '@/lib/mantine/theme'
 import TanstackQueryProvider from '@/lib/tanstack-query/Provider.tsx'
 import TanstackRouterProvider from '@/lib/tanstack-router/Provider.tsx'
@@ -40,6 +41,7 @@ if (rootElement && !rootElement.innerHTML) {
               defaultColorScheme='auto'
               theme={theme}
             >
+              <ThemeSync />
               <Toasts />
               <TanstackQueryProvider>
                 <TanstackRouterProvider />

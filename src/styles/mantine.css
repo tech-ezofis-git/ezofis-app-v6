@@ -1,4 +1,26 @@
 @layer mantine {
+  /* Mantine overlays & popovers inherit app surface tokens */
+  .mantine-Modal-overlay,
+  .mantine-Drawer-overlay {
+    background-color: var(--overlay-backdrop) !important;
+  }
+
+  .mantine-Popover-dropdown,
+  .mantine-Menu-dropdown,
+  .mantine-Select-dropdown,
+  .mantine-Combobox-dropdown,
+  .mantine-DatePicker-dropdown,
+  .mantine-TimeInput-dropdown {
+    background-color: var(--surface-raised) !important;
+    border-color: var(--border-default) !important;
+    color: var(--text-secondary) !important;
+  }
+
+  .mantine-Notification-root {
+    background-color: var(--surface-raised) !important;
+    border-color: var(--border-default) !important;
+  }
+
   .mantine-Notification-title {
     color: var(--gray-13);
     font-weight: 600;

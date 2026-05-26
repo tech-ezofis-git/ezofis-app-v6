@@ -27,6 +27,21 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: geometricPrecision;
+    color-scheme: light dark;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    html.theme-transitions,
+    html.theme-transitions *,
+    html.theme-transitions *::before,
+    html.theme-transitions *::after {
+      transition: var(--transition-theme) !important;
+    }
+  }
+
+  body {
+    background-color: var(--surface);
+    color: var(--text-secondary);
   }
 }
 
@@ -53,9 +68,35 @@
 }
 
 .minimal-scrollbar::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  /* gray-300 */
+  background: var(--scrollbar-thumb);
   border-radius: 4px;
+}
+
+.minimal-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+/* Global themed scrollbar (body.scrollbar class) */
+.scrollbar {
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+.scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.scrollbar::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+.scrollbar::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 4px;
+}
+
+.scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
 }
 
 .bg-primary-1 {
@@ -930,8 +971,15 @@
   }
 
   .scanning-bar {
-    background: linear-gradient(to bottom, transparent, rgba(124, 58, 237, 0.3), rgba(124, 58, 237, 0.6), rgba(124, 58, 237, 0.3), transparent);
-    box-shadow: 0 0 15px rgba(124, 58, 237, 0.4);
+    background: linear-gradient(
+      to bottom,
+      transparent,
+      color-mix(in srgb, var(--primary-9) 30%, transparent),
+      color-mix(in srgb, var(--primary-9) 60%, transparent),
+      color-mix(in srgb, var(--primary-9) 30%, transparent),
+      transparent
+    );
+    box-shadow: 0 0 15px color-mix(in srgb, var(--primary-9) 40%, transparent);
   }
 
   .no-scrollbar {
@@ -968,4 +1016,30 @@ tbody tr:hover {
 }
 tbody tr:last-child td {
   border-bottom-width: 0 !important;
+}
+
+/* React Flow – workflow builder canvas */
+.react-flow__background {
+  background-color: var(--surface-muted) !important;
+}
+
+.react-flow__controls {
+  background-color: var(--surface-raised) !important;
+  border-color: var(--border-default) !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+
+.react-flow__controls-button {
+  background-color: var(--surface-raised) !important;
+  border-color: var(--border-default) !important;
+  color: var(--text-secondary) !important;
+  fill: var(--text-secondary) !important;
+}
+
+.react-flow__controls-button:hover {
+  background-color: var(--surface-hover) !important;
+}
+
+.react-flow__minimap {
+  background-color: var(--surface-raised) !important;
 }

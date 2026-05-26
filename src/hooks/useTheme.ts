@@ -1,5 +1,11 @@
 import { useLingui } from '@lingui/react/macro'
 import { type MantineColorScheme, useMantineColorScheme } from '@mantine/core'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  resolveTheme,
+  type ResolvedTheme,
+  type ThemeMode,
+} from '@/lib/theme'
 
 interface ColorSchemeOption {
   icon: string
@@ -9,38 +15,79 @@ interface ColorSchemeOption {
 
 export default function useTheme() {
   const { t } = useLingui()
+  const { colorScheme, setColorScheme, clearColorScheme } =
+    useMantineColorScheme()
 
-  const ColorSchemeOptions: ColorSchemeOption[] = [
-    {
-      icon: 'lucide:monitor',
-      label: t`System`,
-      value: 'auto',
-    },
-    {
-      icon: 'lucide:sun',
-      label: t`Light`,
-      value: 'light',
-    },
-    {
-      icon: 'lucide:moon',
-      label: t`Dark`,
-      value: 'dark',
-    },
-  ]
+  const [resolvedColorScheme, setResolvedColorScheme] = useState<ResolvedTheme>(
+    () => resolveTheme(colorScheme as ThemeMode),
+  )
 
-  const { colorScheme, setColorScheme } = useMantineColorScheme()
+  const ColorSchemeOptions: ColorSchemeOption[] = useMemo(
+    () => [
+      {
+        icon: 'lucide:monitor',
+        label: t`System`,
+        value: 'auto',
+      },
+      {
+        icon: 'lucide:sun',
+        label: t`Light`,
+        value: 'light',
+      },
+      {
+        icon: 'lucide:moon',
+        label: t`Dark`,
+        value: 'dark',
+      },
+    ],
+    [t],
+  )
 
-  const handleColorSchemeChange = (value: MantineColorScheme) => () =>
+  const syncResolvedScheme = useCallback(() => {
+    setResolvedColorScheme(resolveTheme(colorScheme as ThemeMode))
+  }, [colorScheme])
+
+  useEffect(() => {
+    syncResolvedScheme()
+  }, [syncResolvedScheme])
+
+  useEffect(() => {
+    if (colorScheme !== 'auto') return
+
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+    const onChange = () => syncResolvedScheme()
+
+    mediaQuery.addEventListener('change', onChange)
+    return () => mediaQuery.removeEventListener('change', onChange)
+  }, [colorScheme, syncResolvedScheme])
+
+  const handleColorSchemeChange = (value: MantineColorScheme) => () => {
+    document.documentElement.classList.add('theme-transitions')
     setColorScheme(value)
+
+    window.setTimeout(() => {
+      document.documentElement.classList.remove('theme-transitions')
+    }, 300)
+  }
 
   const selectedColorScheme = ColorSchemeOptions.find(
     ({ value }) => value === colorScheme,
   )!
 
+  const isDark = resolvedColorScheme === 'dark'
+  const isLight = resolvedColorScheme === 'light'
+  const isSystem = colorScheme === 'auto'
+
   return {
+    clearColorScheme,
     colorScheme,
     ColorSchemeOptions,
     handleColorSchemeChange,
+    isDark,
+    isLight,
+    isSystem,
+    resolvedColorScheme,
     selectedColorScheme,
+    setColorScheme,
   }
 }

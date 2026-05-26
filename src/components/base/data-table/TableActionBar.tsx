@@ -69,9 +69,9 @@ const TableActionBar = <TData,>({
                   title={a.title ?? a.label}
                   type='button'
                   className={cn(
-                    'inline-flex items-center gap-2 rounded-lg border border-[var(--gray-4)] bg-white px-3 py-2 text-12 font-semibold text-[var(--gray-12)] hover:bg-[var(--gray-1)]',
+                    'inline-flex items-center gap-2 rounded-lg border border-[var(--gray-4)] bg-surface px-3 py-2 text-12 font-semibold text-[var(--gray-12)] hover:bg-[var(--gray-1)]',
                     a.disabled &&
-                      'cursor-not-allowed opacity-60 hover:bg-white',
+                      'cursor-not-allowed opacity-60 hover:bg-surface',
                     a.className,
                   )}
                   onClick={a.onClick}

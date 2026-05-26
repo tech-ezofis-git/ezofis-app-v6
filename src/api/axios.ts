@@ -9,7 +9,7 @@ import { decrypt, encrypt } from '../utils/crypto'
 
 // Environment variable handling (Vite uses import.meta.env, CRA uses process.env)
 const API_URL = import.meta.env?.VITE_BASE_URL || process.env.REACT_APP_API_URL
-const V6_API_URL = import.meta.env?.VITE_V6_BASE_URL || 'http://localhost/V6API/api'
+const V6_API_URL = import.meta.env?.VITE_V6_BASE_URL || 'https://demo.ezofis.com/v6api/api'
 
 // --- 1. Standard Axios Instance (No Crypto) ---
 export const _axios = axios.create({

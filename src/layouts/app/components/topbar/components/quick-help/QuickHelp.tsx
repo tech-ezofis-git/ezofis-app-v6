@@ -252,7 +252,7 @@ const QuickHelp = () => {
                         'max-w-[280px] rounded-xl px-4 py-2.5 text-sm leading-relaxed shadow-sm',
                         m.sender === 'user'
                           ? 'bg-[#F3F4F6] text-gray-13'
-                          : 'border border-gray-2 bg-white text-gray-12',
+                          : 'border border-gray-2 bg-surface text-gray-12',
                       )}
                     >
                       {m.text.split('\n').map((line, idx) => (
@@ -269,7 +269,7 @@ const QuickHelp = () => {
                   <div className='flex size-7 shrink-0 items-center justify-center rounded-full bg-primary-3 text-primary-9 shadow-sm'>
                     <Icon className='size-4' name='lucide:bot' />
                   </div>
-                  <div className='rounded-xl border border-gray-2 bg-white px-4 py-2 shadow-sm'>
+                  <div className='rounded-xl border border-gray-2 bg-surface px-4 py-2 shadow-sm'>
                     <TypingDots />
                   </div>
                 </div>
