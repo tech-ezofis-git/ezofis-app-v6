@@ -3,26 +3,25 @@ import { createPortal } from 'react-dom'
 import folderApi from '@/api/folders/folders'
 import workflowApi from '@/api/workflow/workflow'
 import sample1 from '@/assets/Sample Invoices/inv-1.pdf'
-import sample2 from '@/assets/Sample Invoices/inv-2.pdf'
-import sample3 from '@/assets/Sample Invoices/inv-3.pdf'
-import sample4 from '@/assets/Sample Invoices/inv-4.pdf'
-import sample5 from '@/assets/Sample Invoices/inv-5.pdf'
-import sample6 from '@/assets/Sample Invoices/inv-6.pdf'
-import sample7 from '@/assets/Sample Invoices/inv-7.pdf'
-import sample8 from '@/assets/Sample Invoices/inv-8.pdf'
-import sample9 from '@/assets/Sample Invoices/inv-9.pdf'
-import sample10 from '@/assets/Sample Invoices/inv-10.pdf'
-
 import sample1Img from '@/assets/Sample Invoices/inv-1.png'
-import sample2Img from '@/assets/Sample Invoices/inv-2.png'
-import sample3Img from '@/assets/Sample Invoices/inv-3.png'
-import sample4Img from '@/assets/Sample Invoices/inv-4.png'
-import sample5Img from '@/assets/Sample Invoices/inv-5.png'
-import sample6Img from '@/assets/Sample Invoices/inv-6.png'
-import sample7Img from '@/assets/Sample Invoices/inv-7.png'
-import sample8Img from '@/assets/Sample Invoices/inv-8.png'
-import sample9Img from '@/assets/Sample Invoices/inv-9.png'
+import sample10 from '@/assets/Sample Invoices/inv-10.pdf'
 import sample10Img from '@/assets/Sample Invoices/inv-10.png'
+import sample2 from '@/assets/Sample Invoices/inv-2.pdf'
+import sample2Img from '@/assets/Sample Invoices/inv-2.png'
+import sample3 from '@/assets/Sample Invoices/inv-3.pdf'
+import sample3Img from '@/assets/Sample Invoices/inv-3.png'
+import sample4 from '@/assets/Sample Invoices/inv-4.pdf'
+import sample4Img from '@/assets/Sample Invoices/inv-4.png'
+import sample5 from '@/assets/Sample Invoices/inv-5.pdf'
+import sample5Img from '@/assets/Sample Invoices/inv-5.png'
+import sample6 from '@/assets/Sample Invoices/inv-6.pdf'
+import sample6Img from '@/assets/Sample Invoices/inv-6.png'
+import sample7 from '@/assets/Sample Invoices/inv-7.pdf'
+import sample7Img from '@/assets/Sample Invoices/inv-7.png'
+import sample8 from '@/assets/Sample Invoices/inv-8.pdf'
+import sample8Img from '@/assets/Sample Invoices/inv-8.png'
+import sample9 from '@/assets/Sample Invoices/inv-9.pdf'
+import sample9Img from '@/assets/Sample Invoices/inv-9.png'
 import showToast from '@/components/base/toast/showToast'
 import requestStore from '@/pages/requests/stores/useRequestStore'
 import authUserStore from '@/stores/authUserStore'
@@ -196,9 +195,9 @@ const SampleThumbnailPreview = ({
     return (
       <img
         alt={isExpanded ? `${doc.label} preview` : doc.label}
-        className='size-full object-contain object-center bg-white'
-        style={{ imageRendering: 'auto' }}
+        className='size-full bg-surface object-contain object-center'
         src={doc.thumbnail}
+        style={{ imageRendering: 'auto' }}
       />
     )
   }
@@ -207,7 +206,7 @@ const SampleThumbnailPreview = ({
 
   return (
     <div
-      className={`flex size-full flex-col bg-white transition-colors duration-300 select-none ${isExpanded ? 'p-3' : 'p-1.5'}`}
+      className={`flex size-full flex-col bg-surface transition-colors duration-300 select-none ${isExpanded ? 'p-3' : 'p-1.5'}`}
     >
       {/* Invoice Top Header */}
       <div
@@ -378,8 +377,8 @@ const SampleThumbnail = ({
 
   return (
     <div
-      ref={wrapperRef}
       className='group/thumb relative z-10 w-full hover:z-30'
+      ref={wrapperRef}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
@@ -387,7 +386,7 @@ const SampleThumbnail = ({
       <div
         className={`relative flex h-[92px] w-full items-center justify-center rounded-t-lg border-b border-dashed border-[var(--gray-4)] px-2 py-2 ${colors.thumbBg} transition-colors duration-300`}
       >
-        <div className='relative h-full w-[94%] overflow-hidden rounded border border-[var(--gray-3)] bg-white shadow-sm transition-transform duration-300 group-hover/thumb:scale-[1.02]'>
+        <div className='relative h-full w-[94%] overflow-hidden rounded border border-[var(--gray-3)] bg-surface shadow-sm transition-transform duration-300 group-hover/thumb:scale-[1.02]'>
           <SampleThumbnailPreview doc={doc} variant='compact' />
         </div>
 
@@ -406,18 +405,18 @@ const SampleThumbnail = ({
       {showPortal &&
         createPortal(
           <div
+            className='pointer-events-none scale-100 shadow-2xl'
             style={{
-              position: 'fixed',
+              height: previewH,
               left: portalPos.left,
+              position: 'fixed',
               top: portalPos.top,
               width: previewW,
-              height: previewH,
               zIndex: 99999,
             }}
-            className='pointer-events-none scale-100 shadow-2xl'
           >
-            <div className='size-full overflow-hidden rounded-xl border border-[var(--gray-4)] bg-white/95 p-2 shadow-2xl backdrop-blur-md'>
-              <div className='size-full overflow-hidden rounded-lg border border-[var(--gray-3)] bg-white shadow-inner'>
+            <div className='size-full overflow-hidden rounded-xl border border-[var(--gray-4)] bg-surface/95 p-2 shadow-2xl backdrop-blur-md'>
+              <div className='size-full overflow-hidden rounded-lg border border-[var(--gray-3)] bg-surface shadow-inner'>
                 <SampleThumbnailPreview doc={doc} variant='expanded' />
               </div>
             </div>
@@ -738,7 +737,7 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
 
         {/* Upload Zone */}
         <AnimateSlideUp className='relative z-10 w-full max-w-3xl' delay={0.1}>
-          <div className='group relative overflow-hidden rounded-xl border border-[var(--gray-3)] bg-white p-2 shadow-sm transition-all duration-500 hover:shadow-md'>
+          <div className='group relative overflow-hidden rounded-xl border border-[var(--gray-3)] bg-surface p-2 shadow-sm transition-all duration-500 hover:shadow-md'>
             <div className='pointer-events-none absolute inset-0 z-0 overflow-hidden rounded-xl opacity-0 transition-opacity duration-700 group-hover:opacity-100'>
               <div className='absolute inset-0 h-1/2 w-full animate-[scan_3s_linear_infinite] bg-gradient-to-b from-transparent via-[var(--primary-2)]/20 to-transparent' />
             </div>
@@ -748,7 +747,7 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
                 'relative z-10 flex min-h-[140px] cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed border-[var(--primary-4)] px-8 py-6 text-center transition-all duration-500 ease-out sm:min-h-[128px]',
                 isDragOver
                   ? 'scale-[0.99] border-[var(--primary-6)] bg-[var(--primary-1)]'
-                  : 'bg-white hover:border-[var(--primary-5)] hover:bg-[var(--primary-1)]/30',
+                  : 'bg-surface hover:border-[var(--primary-5)] hover:bg-[var(--primary-1)]/30',
                 uploadStatus === 'uploading' || isSubmitting
                   ? 'pointer-events-none opacity-60'
                   : '',
@@ -842,7 +841,7 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
                     disabled={uploadStatus === 'uploading' || isSubmitting}
                     key={idx}
                     type='button'
-                    className={`group/card relative z-10 flex w-[156px] shrink-0 flex-col overflow-visible rounded-lg border bg-white text-left shadow-sm transition-all duration-300 hover:z-50 ${
+                    className={`group/card relative z-10 flex w-[156px] shrink-0 flex-col overflow-visible rounded-lg border bg-surface text-left shadow-sm transition-all duration-300 hover:z-50 ${
                       isSelected
                         ? 'scale-[1.02] border-green-8 ring-2 ring-green-3 ring-offset-0'
                         : 'border-[var(--gray-3)] hover:-translate-y-1.5 hover:scale-[1.02] hover:border-[var(--primary-6)] hover:shadow-md active:translate-y-0 active:scale-98'
@@ -896,14 +895,14 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
               title: 'Smart PO Matching',
             },
             {
-              color: 'text-emerald-600 bg-[#ecfdf5]',
+              color: 'text-[var(--green-11)] bg-[var(--green-2)]',
               icon: 'tabler:clock',
               sub: 'Insights into your liabilities.',
               title: 'Payables Overview',
             },
           ].map((item, idx) => (
             <AnimateEntrancePop delay={0.4 + idx * 0.1} key={idx}>
-              <div className='group flex h-full flex-col items-start rounded-xl border border-[var(--gray-3)] bg-white p-6 text-left shadow-sm transition-all duration-300 hover:shadow-md'>
+              <div className='group flex h-full flex-col items-start rounded-xl border border-[var(--gray-3)] bg-surface p-6 text-left shadow-sm transition-all duration-300 hover:shadow-md'>
                 <div
                   className={`flex size-9 shrink-0 items-center justify-center rounded-lg 2xl:size-10 ${item.color} mt-1 mb-4 transition-transform duration-300 group-hover:scale-110`}
                 >

@@ -2,8 +2,8 @@ import posthog from 'posthog-js'
 // src/stores/authUserStore.ts
 import { create } from 'zustand'
 import type { User } from '@/schemas/user'
-import { getFromLocalStorage } from '@/utils/local-storage'
 import useSetupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
+import { getFromLocalStorage } from '@/utils/local-storage'
 
 export type DefaultView = Record<string, unknown>
 export type Identity = {
@@ -20,6 +20,8 @@ export type Session = {
   email: string
   firstName: string
   id: string
+  lastName?: string
+  name?: string
   tenantId: string
 }
 export type SignUpUserData = {

@@ -9,8 +9,8 @@ type Store = {
   isRequestOpen: boolean
   newRequest: boolean
   newRequestMeta: string | null
-  pendingOpenNewRequest: boolean
   pendingNav: any
+  pendingOpenNewRequest: boolean
   processingProcesses: any[]
   rawWorkflowData: any | null
   reloadMeta: boolean
@@ -30,10 +30,10 @@ type Store = {
   handleSetRepoData: (data: any) => void
   openNewRequest: (title: string) => void
   openRequest: (item: any, workflowId: any, tab: string) => void // Updated signature
-  setPendingOpenNewRequest: (value: boolean) => void
-
   removeProcessingProcess: (id: string | number) => void
+
   setPendingNav: (v: any) => void
+  setPendingOpenNewRequest: (value: boolean) => void
   setRawWorkflowData: (data: any) => void
   setRequestListTab: (tab: string) => void
 
@@ -50,8 +50,8 @@ const requestStore = create<Store>((set) => ({
   isRequestOpen: false,
   newRequest: false,
   newRequestMeta: null,
-  pendingOpenNewRequest: false,
   pendingNav: null as null | { direction: 'NEXT' | 'PREV' },
+  pendingOpenNewRequest: false,
   processingProcesses: [],
   rawWorkflowData: null,
   reloadMeta: false,
@@ -81,9 +81,11 @@ const requestStore = create<Store>((set) => ({
 
   handleSetRepoData: (data) => set({ repoData: data }),
   openNewRequest: (title: string) =>
-    set({ newRequest: true, newRequestMeta: title, pendingOpenNewRequest: false }),
-  setPendingOpenNewRequest: (value: boolean) =>
-    set({ pendingOpenNewRequest: value }),
+    set({
+      newRequest: true,
+      newRequestMeta: title,
+      pendingOpenNewRequest: false,
+    }),
   // FIX: Accept data when opening
   openRequest: (item, workflow, tab) =>
     set({
@@ -110,6 +112,8 @@ const requestStore = create<Store>((set) => ({
     })),
   workflowRefresh: () => set({ reloadMeta: true }),
   setPendingNav: (v) => set({ pendingNav: v }),
+  setPendingOpenNewRequest: (value: boolean) =>
+    set({ pendingOpenNewRequest: value }),
   setRawWorkflowData: (data) => set({ rawWorkflowData: data }),
   setRequestListTab: (tab) => set({ requestListTab: tab }),
 }))

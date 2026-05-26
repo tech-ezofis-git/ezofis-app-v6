@@ -1,38 +1,15 @@
 import { useNavigate } from '@tanstack/react-router'
-import { useState } from 'react'
-import type { Option } from '@/types/option'
 import Button from '@/components/base/button/Button'
-import Icon from '@/components/base/icon/Icon'
-import InputSelect from '@/components/base/inputs/InputSelect'
 import Tab from '@/components/base/tabs/Tab'
 import Tabs from '@/components/base/tabs/Tabs'
 
-const forms = [
-  {
-    disabled: false,
-    id: 3,
-    name: 'All Forms',
-  },
-  {
-    disabled: false,
-    id: 1,
-    name: 'Workflow Forms',
-  },
-  {
-    disabled: false,
-    id: 2,
-    name: 'Master Forms',
-  },
-]
+interface HeaderProps {
+  onTabChange: (value: string) => void
+  tabValue: string
+}
 
-const Header = () => {
+const Header = ({ onTabChange, tabValue }: HeaderProps) => {
   const navigate = useNavigate()
-  const [value, setValue] = useState<string | null>('All')
-  const [form, setForm] = useState<Option | null>({
-    disabled: false,
-    id: 3,
-    name: 'All Forms',
-  })
 
   const openFormBuilder = () => {
     navigate({ to: '/form-builder' })
@@ -40,26 +17,13 @@ const Header = () => {
 
   return (
     <div className='flex flex-wrap items-center justify-between gap-6 border-b border-gray-3 px-6 md:px-8'>
-      <Tabs color='primary' value={value} onChange={setValue}>
+      <Tabs color='primary' value={tabValue} onChange={(val) => onTabChange(val || 'All')}>
         <Tab label='All' value='All' />
         <Tab label='Published' value='Published' />
         <Tab label='Drafts' value='Drafts' />
       </Tabs>
 
       <div className='flex items-center gap-2'>
-        <InputSelect
-          options={forms}
-          value={form}
-          width={240}
-          searchable
-          leftSection={
-            <Icon
-              className='text-gray-10'
-              name='material-symbols:assignment-outline-rounded'
-            />
-          }
-          onChange={setForm}
-        />
         <Button icon='lucide:plus' label='New Form' onClick={openFormBuilder} />
       </div>
     </div>
@@ -68,3 +32,4 @@ const Header = () => {
 
 Header.displayName = 'Header'
 export default Header
+

@@ -1,4 +1,5 @@
-import { axiosCrypto } from '../axios'
+import authUserStore from '../../stores/authUserStore'
+import { axiosCrypto, axiosV6 } from '../axios'
 
 const getFormDataById = async (id: string) => {
   const response: any = { data: null, error: '' }
@@ -7,7 +8,7 @@ const getFormDataById = async (id: string) => {
     if (status !== 200) throw new Error('Invalid status code')
 
     // Parse formJson if it exists
-    if (data && data.formJson) {
+    if (data?.formJson) {
       data.formJson = JSON.parse(data.formJson)
       // Safety check for hubLinkIds as per technical reference
       if (!data.formJson.hubLinkIds) {
@@ -26,7 +27,13 @@ const getFormDataById = async (id: string) => {
 const createForm = async (payload: any) => {
   const response: any = { data: null, error: '' }
   try {
-    const { data, status } = await axiosCrypto.post('/form', payload)
+    const store = authUserStore.getState()
+    const tenantId = store.session?.tenantId || ''
+    const { data, status } = await axiosV6.post('/form', payload, {
+      headers: {
+        'X-Tenant-Id': tenantId,
+      },
+    })
     if (![200, 201, 202].includes(status))
       throw new Error(`Invalid status code ${status}`)
     response.data = data // Should be Form ID (String)
@@ -77,7 +84,13 @@ const listAllForms = async (
         order: 'ASC',
       },
     }
-    const { data, status } = await axiosCrypto.post('/form/all', payload)
+    const store = authUserStore.getState()
+    const tenantId = store.session?.tenantId || ''
+    const { data, status } = await axiosV6.post('/form/all', payload, {
+      headers: {
+        'X-Tenant-Id': tenantId,
+      },
+    })
     if (status !== 200) throw new Error('Invalid status code')
     response.data = data
   } catch (e) {
@@ -105,7 +118,13 @@ const deleteFormEntry = async (fId: string, eId: string) => {
 const getForms = async (payload: any) => {
   const response: any = { data: null, error: '' }
   try {
-    const { data, status } = await axiosCrypto.post('/form/all', payload)
+    const store = authUserStore.getState()
+    const tenantId = store.session?.tenantId || ''
+    const { data, status } = await axiosV6.post('/form/all', payload, {
+      headers: {
+        'X-Tenant-Id': tenantId,
+      },
+    })
     if (status !== 200) throw new Error('Invalid status code')
 
     // The payload usually comes back as a JSON string from backend in some cases

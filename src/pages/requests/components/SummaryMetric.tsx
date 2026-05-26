@@ -66,7 +66,7 @@ const SummaryMetric: React.FC<SummaryMetricProps> = ({
           )}
         >
           <motion.div
-            className='pointer-events-auto relative min-w-[260px] overflow-hidden rounded-xl border border-[var(--gray-3)] bg-white p-4 shadow-xl'
+            className='pointer-events-auto relative min-w-[260px] overflow-hidden rounded-xl border border-[var(--gray-3)] bg-surface p-4 shadow-xl'
             transition={{ damping: 25, stiffness: 400, type: 'spring' }}
             whileInView={{ opacity: 1, scale: 1, y: 0 }}
             layout

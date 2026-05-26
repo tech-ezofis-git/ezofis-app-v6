@@ -25,7 +25,7 @@ const Modal = ({
       'bg-surface shadow-md',
       fullScreen ? 'rounded-none' : 'rounded-lg',
     ),
-    overlay: 'bg-overlay/60',
+    overlay: 'bg-[var(--overlay-backdrop)]',
   }
 
   return (

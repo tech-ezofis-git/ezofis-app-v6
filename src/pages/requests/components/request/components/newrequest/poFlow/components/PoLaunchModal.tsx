@@ -33,7 +33,7 @@ export default function PoLaunchModal({ opened, onClose, onProceed }: Props) {
             </div>
 
             <button
-              className='cursor-pointerrounded-lg bg-white/10 px-2 py-1 text-12 font-semibold text-white hover:bg-white/15'
+              className='cursor-pointerrounded-lg bg-surface/10 px-2 py-1 text-12 font-semibold text-[var(--text-on-accent)] hover:bg-surface/15'
               onClick={onClose}
             >
               <Icon className='size-5' name='tabler:x' />

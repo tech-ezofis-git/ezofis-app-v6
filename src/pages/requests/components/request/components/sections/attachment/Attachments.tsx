@@ -51,12 +51,12 @@ function cn(...inputs: ClassValue[]) {
 //             disabled={disabled}
 //             title={label}
 //             className={cn(
-//                 "group relative rounded-xl p-2 transition-all hover:bg-white/20 disabled:opacity-40 disabled:hover:bg-transparent",
-//                 active && "bg-white/20"
+//                 "group relative rounded-xl p-2 transition-all hover:bg-surface/20 disabled:opacity-40 disabled:hover:bg-transparent",
+//                 active && "bg-surface/20"
 //             )}
 //         >
 //             <Icon name={icon} className="size-5" />
-//             <span className="absolute -top-10 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-black px-2 py-1 text-[10px] font-bold text-white opacity-0 transition-opacity group-hover:opacity-100 Pointer-events-none">
+//             <span className="absolute -top-10 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-[var(--gray-13)] px-2 py-1 text-[10px] font-bold text-[var(--text-on-accent)] opacity-0 transition-opacity group-hover:opacity-100 Pointer-events-none">
 //                 {label}
 //             </span>
 //         </button>
@@ -240,7 +240,7 @@ export default function Attachments({
 
             return (
               <div
-                className='group flex cursor-pointer items-start gap-3 rounded-xl border border-[var(--gray-1)] bg-white p-3 transition-all hover:border-[var(--blue-4)] hover:shadow-sm'
+                className='group flex cursor-pointer items-start gap-3 rounded-xl border border-[var(--gray-1)] bg-surface p-3 transition-all hover:border-[var(--blue-4)] hover:shadow-sm'
                 key={file.id}
                 onClick={() => onSelect?.(file)}
               >

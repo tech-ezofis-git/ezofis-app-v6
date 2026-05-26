@@ -18,7 +18,6 @@ import Title from '@/components/base/Title'
 import showToast from '@/components/base/toast/showToast'
 import { AnimateSlideLeft } from '@/components/common/animations'
 import useSetupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
-import authUserStore from '@/stores/authUserStore'
 interface Props {
   onChangeView: () => void
 }
@@ -32,7 +31,6 @@ type TenantOption = {
 
 const SignInForm = ({ onChangeView }: Props) => {
   const navigate = useNavigate()
-  const { user } = authUserStore()
   const { instance: msalInstance } = useMsal()
   console.log(onChangeView)
   // === form / ui state ===
@@ -54,7 +52,8 @@ const SignInForm = ({ onChangeView }: Props) => {
   >(null)
 
   // === environment-based flags (computed in Vue) ===
-  const origin = typeof window !== 'undefined' ? window.location.origin : ''
+  const origin =
+    globalThis.window === undefined ? '' : globalThis.location.origin
 
   const {
     checkAdLogin,
@@ -103,24 +102,60 @@ const SignInForm = ({ onChangeView }: Props) => {
   }, [origin])
 
   // === navigation after successful login (simplified Vue logged()) ===
-  const handleLoggedNavigation = () => {
-    const { setRestrictNavigationUntilApSetup, setisApSetUpCompleted } =
+  const handleLoggedNavigation = async () => {
+    const { setisApSetUpCompleted, setRestrictNavigationUntilApSetup } =
       useSetupStore.getState()
     setRestrictNavigationUntilApSetup(false)
     setisApSetUpCompleted(true)
 
+    try {
+      await authApi.getSession()
+    } catch (err) {
+      console.error('Failed to load session details:', err)
+    }
+
     // In Vue this used profileMenus + workspace access logic.
     // For now, replicate the basic behavior: honor 2FA, then go home.
-    if (user.profile.twoStepVerification.enabled) {
-      // onChangeView()
-      navigate({ replace: true, to: '/requests' })
-    } else {
-      navigate({ replace: true, to: '/requests' })
-    }
+    navigate({ replace: true, to: '/requests' })
     setLoading(false)
   }
 
   // === EMAIL + PASSWORD LOGIN (with tenant + social support) ===
+  const signInSocial = async (tenantId?: number | string) => {
+    const payload = {
+      email: socialEmail,
+      loggedFrom: 'WEB',
+      loginType,
+    }
+
+    const { data, error, status } = await authApi.socialLogin(payload, tenantId)
+
+    if (error) {
+      setError(error)
+      setLoading(false)
+      setShowTenantListModal(false)
+      return
+    }
+
+    if (status === 300 && Array.isArray(data)) {
+      const mapped: TenantOption[] = data.map((tenant: any) => ({
+        email: tenant.email,
+        id: tenant.id,
+        label: tenant.name,
+        value: tenant.id,
+      }))
+      setTenantList(mapped)
+      setShowTenantListModal(true)
+    } else {
+      setShowTenantListModal(false)
+      setTenantList([])
+
+      setTimeout(() => {
+        handleLoggedNavigation()
+      }, 100)
+    }
+  }
+
   const signIn = async (tenantId?: number | string) => {
     try {
       setError(null)
@@ -128,42 +163,7 @@ const SignInForm = ({ onChangeView }: Props) => {
 
       // SOCIAL BRANCH (Google / Microsoft)
       if (socialLogged) {
-        const payload = {
-          email: socialEmail,
-          loggedFrom: 'WEB',
-          loginType,
-        }
-
-        const { data, error, status } = await authApi.socialLogin(
-          payload,
-          tenantId,
-        )
-
-        if (error) {
-          setError(error)
-          setLoading(false)
-          setShowTenantListModal(false)
-          return
-        }
-
-        if (status === 300 && Array.isArray(data)) {
-          const mapped: TenantOption[] = data.map((tenant: any) => ({
-            email: tenant.email,
-            id: tenant.id,
-            label: tenant.name,
-            value: tenant.id,
-          }))
-          setTenantList(mapped)
-          setShowTenantListModal(true)
-        } else {
-          setShowTenantListModal(false)
-          setTenantList([])
-
-          setTimeout(() => {
-            handleLoggedNavigation()
-          }, 100)
-        }
-
+        await signInSocial(tenantId)
         return
       }
 
@@ -367,9 +367,11 @@ const SignInForm = ({ onChangeView }: Props) => {
   const forgotPassword = () => navigate({ to: '/forgot-password' })
 
   // === derived welcome texts (matches Vue copy) ===
-  const welcomeDescription = checkTenant
-    ? 'Hi, Welcome!'
-    : `Hi, Welcome back to ${isOnpremiseTenant ? 'APP' : 'EZOFIS'}`
+  let welcomeDescription = 'Hi, Welcome!'
+  if (!checkTenant) {
+    const appName = isOnpremiseTenant ? 'APP' : 'EZOFIS'
+    welcomeDescription = `Hi, Welcome back to ${appName}`
+  }
 
   // Show tenant selection UI instead of sign-in form when tenant list is available
   if (showTenantListModal && tenantList.length > 0) {
@@ -525,41 +527,7 @@ const SignInForm = ({ onChangeView }: Props) => {
       {checkTenantLogin ? (
         // === Tenant login flow (Sobha domains) ===
         <>
-          {!normalLogin ? (
-            <>
-              {/* Step 1: email only + continue */}
-              <div className='space-y-4'>
-                <InputText
-                  label='Email'
-                  placeholder='hello@ezofis.com'
-                  // size='lg'
-                  value={email}
-                  leftSection={
-                    <Icon className='text-gray-8' name='tabler:mail' />
-                  }
-                  onChange={(v) => {
-                    setEmail(v)
-                    setError(null)
-                  }}
-                  onKeyDown={(e: any) => {
-                    if (e.key === 'Enter') validateEmail()
-                  }}
-                />
-                <Button
-                  className='w-full justify-center'
-                  label='Continue'
-                  loading={loading}
-                  size='lg'
-                  onClick={validateEmail}
-                />
-              </div>
-              {error && (
-                <div className='text-red-500 mt-2 text-center text-sm'>
-                  {error}
-                </div>
-              )}
-            </>
-          ) : (
+          {normalLogin ? (
             <>
               {/* Step 2: normal email/password login */}
               <div className='space-y-4'>
@@ -601,6 +569,40 @@ const SignInForm = ({ onChangeView }: Props) => {
                   loading={loading}
                   size='lg'
                   onClick={validate}
+                />
+              </div>
+              {error && (
+                <div className='text-red-500 mt-2 text-center text-sm'>
+                  {error}
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              {/* Step 1: email only + continue */}
+              <div className='space-y-4'>
+                <InputText
+                  label='Email'
+                  placeholder='hello@ezofis.com'
+                  // size='lg'
+                  value={email}
+                  leftSection={
+                    <Icon className='text-gray-8' name='tabler:mail' />
+                  }
+                  onChange={(v) => {
+                    setEmail(v)
+                    setError(null)
+                  }}
+                  onKeyDown={(e: any) => {
+                    if (e.key === 'Enter') validateEmail()
+                  }}
+                />
+                <Button
+                  className='w-full justify-center'
+                  label='Continue'
+                  loading={loading}
+                  size='lg'
+                  onClick={validateEmail}
                 />
               </div>
               {error && (
@@ -700,12 +702,13 @@ const SignInForm = ({ onChangeView }: Props) => {
                 onChange={(v) => setRememberMe(Boolean(v))}
               />
 
-              <div
-                className='cursor-pointer text-gray-11 underline hover:text-gray-12'
+              <button
+                className='font-inherit cursor-pointer border-0 bg-transparent p-0 text-gray-11 underline outline-none hover:text-gray-12'
+                type='button'
                 onClick={forgotPassword}
               >
                 Forgot password?
-              </div>
+              </button>
             </div>
           )}
 

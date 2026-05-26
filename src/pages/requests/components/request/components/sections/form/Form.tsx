@@ -202,10 +202,10 @@ const Form = (props: any) => {
             value={formModel[control.id] || ''}
             styles={{
               input: {
-                backgroundColor: 'white',
-                borderColor: 'var(--gray-4)',
+                backgroundColor: 'var(--surface)',
+                borderColor: 'var(--border-default)',
                 borderRadius: '0.5rem',
-                color: 'var(--gray-13)',
+                color: 'var(--text-primary)',
               },
             }}
             onChange={(value) => handleFieldChange(control.id, value)}
@@ -220,7 +220,7 @@ const Form = (props: any) => {
           <div className='mb-3 text-[13px] font-bold text-[var(--gray-13)]'>
             {control.label}
           </div>
-          <div className='overflow-x-auto rounded-lg border border-[var(--gray-3)] bg-white'>
+          <div className='overflow-x-auto rounded-lg border border-[var(--gray-3)] bg-surface'>
             <table className='w-full text-left text-xs'>
               <thead className='border-b border-[var(--gray-3)] bg-[var(--gray-0)]'>
                 <tr>
@@ -277,7 +277,7 @@ const Form = (props: any) => {
           <div className='mb-3 text-[13px] font-bold text-[var(--gray-13)]'>
             {control.label}
           </div>
-          <div className='overflow-x-auto rounded-lg border border-[var(--gray-3)] bg-white'>
+          <div className='overflow-x-auto rounded-lg border border-[var(--gray-3)] bg-surface'>
             <table className='w-full text-left text-xs'>
               <thead className='border-b border-[var(--gray-3)] bg-[var(--gray-0)]'>
                 <tr>
@@ -307,10 +307,10 @@ const Form = (props: any) => {
                           value={row[column] || ''}
                           styles={{
                             input: {
-                              backgroundColor: 'white',
-                              borderColor: 'var(--gray-4)',
+                              backgroundColor: 'var(--surface)',
+                              borderColor: 'var(--border-default)',
                               borderRadius: '0.5rem',
-                              color: 'var(--gray-13)',
+                              color: 'var(--text-primary)',
                               height: '38px',
                             },
                           }}

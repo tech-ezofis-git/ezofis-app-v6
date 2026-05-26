@@ -2,6 +2,10 @@ import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
 import type { Column } from '@/components/base/data-table/types'
+import {
+  mapWorkflowBrowseItem,
+  type WorkflowBrowsePayload,
+} from '@/api/v6/workflows'
 import { getWorkflowListQueryOptions } from '@/api/workflow/queries'
 import IconButton from '@/components/base/button/IconButton'
 import DataTable from '@/components/base/data-table/DataTable'
@@ -10,15 +14,16 @@ import useDataTableState from '@/components/base/data-table/hooks/useDataTableSt
 import Menu from '@/components/base/menu/Menu'
 import MenuItem from '@/components/base/menu/MenuItem'
 import Pagination from '@/components/base/pagination/Pagination'
+import showToast from '@/components/base/toast/showToast'
 import FormStatusBadge from '@/components/common/FormStatusBadge'
-import FormTypeBadge from '@/components/common/FormTypeBadge'
 import { formatDatetime } from '@/utils/dayjs'
 
 interface TableProps {
   onCreate?: () => void
+  tabValue: string
 }
 
-const Table = ({ onCreate }: TableProps) => {
+const Table = ({ onCreate, tabValue }: TableProps) => {
   const navigate = useNavigate()
   const columns: Column[] = [
     {
@@ -37,22 +42,18 @@ const Table = ({ onCreate }: TableProps) => {
       label: 'Status',
       size: 140,
       renderCell: (row) => (
-        <FormStatusBadge status={String(row.flowstatus) as any} />
+        <FormStatusBadge
+          status={
+            String(row.flowstatus || row.flowStatus) as 'Draft' | 'Published'
+          }
+        />
       ),
     },
     {
       id: 'description',
       label: 'Description',
       size: 240,
-    },
-    {
-      enableGrouping: true,
-      id: 'initiatedBy',
-      label: 'Initiate By',
-      size: 140,
-      renderCell: (row) => (
-        <FormTypeBadge type={String(row.initiatedBy) as any} />
-      ),
+      renderCell: (row) => String(row.description || '-'),
     },
     {
       id: 'createdBy',
@@ -69,12 +70,16 @@ const Table = ({ onCreate }: TableProps) => {
       id: 'modifiedBy',
       label: 'Modified By',
       size: 140,
+      renderCell: (row) => String(row.modifiedBy || '-'),
     },
     {
       id: 'modifiedAt',
       label: 'Modified At',
       size: 180,
-      renderCell: (row) => formatDatetime(row.modifiedAt as string, 'datetime'),
+      renderCell: (row) =>
+        row.modifiedAt
+          ? formatDatetime(row.modifiedAt as string, 'datetime')
+          : '-',
     },
     {
       className: 'p-1',
@@ -115,7 +120,7 @@ const Table = ({ onCreate }: TableProps) => {
               label='Delete'
               onClick={() => {
                 const workflow = row as unknown as any
-                alert(workflow.id)
+                showToast({ message: `Delete workflow ID: ${workflow.id}` })
               }}
             />
           </Menu>
@@ -136,44 +141,105 @@ const Table = ({ onCreate }: TableProps) => {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(100)
 
-  const payload = useMemo(
-    () => ({
+  const payload = useMemo((): WorkflowBrowsePayload => {
+    const sortColumn = sortState?.[0]?.id
+    const sortCriteria =
+      sortColumn && sortColumn !== 'flowstatus' ? sortColumn : 'name'
+
+    const filters = []
+    if (tabValue === 'Published') {
+      filters.push({
+        condition: 'IS_EQUALS_TO',
+        criteria: 'flowStatus',
+        value: 'PUBLISHED',
+      })
+    } else if (tabValue === 'Drafts') {
+      filters.push({
+        condition: 'IS_EQUALS_TO',
+        criteria: 'flowStatus',
+        value: 'DRAFT',
+      })
+    }
+
+    return {
       currentPage: page,
-      filterBy: [],
-      groupBy: 'flowstatus',
+      filterBy:
+        filters.length > 0
+          ? [
+              {
+                filters,
+                groupCondition: '',
+              },
+            ]
+          : [],
+      groupBy: tabValue === 'All' ? 'flowstatus' : '',
+      hasReport: true,
       hasSecurity: true,
       itemsPerPage: pageSize,
       mode: 'BROWSE',
       sortBy: {
-        criteria: sortState?.[0]?.id || 'name',
+        criteria: sortCriteria,
         order: sortState?.[0]?.desc ? 'DESC' : 'ASC',
       },
-    }),
-    [page, pageSize, sortState],
-  )
+    }
+  }, [page, pageSize, sortState, tabValue])
 
   const { data, isFetching, isPending, isRefetching, refetch } = useQuery(
     getWorkflowListQueryOptions(payload),
   )
 
   const workflows = useMemo(() => {
-    if (!data?.data || !Array.isArray(data.data)) return []
+    if (!data?.data?.length) return []
 
-    const groups = data.data.map((cluster: any) => ({
-      groupCount: cluster.value?.length || 0,
-      groupId: cluster.key,
-      groupKey: 'flowstatus',
-      groupValue: cluster.key,
-      items: Array.isArray(cluster.value) ? cluster.value : [],
-    }))
+    const groups = data.data
+      .map((cluster) => {
+        const items = (cluster.value ?? []).map((item) =>
+          mapWorkflowBrowseItem(item, cluster.key),
+        )
 
-    const totalItems = data?.meta?.totalItems ?? 0
-    const hasItems = groups.some((group: any) => group.items.length > 0)
+        // Filter items locally based on tabValue status
+        const filteredItems = items.filter((item) => {
+          const status = String(item.flowstatus || item.flowStatus).toLowerCase()
+          if (tabValue === 'Published') {
+            return status === 'published'
+          }
+          if (tabValue === 'Drafts') {
+            return status === 'draft'
+          }
+          return true
+        })
+
+        return {
+          groupCount: filteredItems.length,
+          groupId: cluster.key,
+          groupKey: 'flowstatus',
+          groupValue: cluster.key,
+          items: filteredItems,
+        }
+      })
+      .filter((group) => group.items.length > 0)
+
+    if (tabValue !== 'All') {
+      const allItems = groups.flatMap((group) => group.items)
+      if (allItems.length === 0) return []
+      return [
+        {
+          groupCount: allItems.length,
+          groupId: 'all',
+          groupKey: '',
+          groupValue: '',
+          items: allItems,
+        },
+      ]
+    }
+
+    const totalItems = data.meta?.totalItems ?? 0
+    const hasItems = groups.some((group) => group.items.length > 0)
 
     if (totalItems === 0 || !hasItems) return []
 
     return groups
-  }, [data])
+  }, [data, tabValue])
 
   const { table } = useDataTable({
     columns,
@@ -192,6 +258,7 @@ const Table = ({ onCreate }: TableProps) => {
           pageSize={pageSize}
           stickyHeader={true}
           table={table}
+          hideGroupItemCountOnHover
           onEmptyPrimaryAction={onCreate}
           onReload={refetch}
         />

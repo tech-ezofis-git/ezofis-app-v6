@@ -46,19 +46,22 @@ export const StepLayout = ({
 }
 
 interface StepFooterProps {
-  align?: 'between' | 'end'
   children: React.ReactNode
+  align?: 'between' | 'end'
 }
 
-export const StepFooter = ({ align = 'between', children }: StepFooterProps) => (
+export const StepFooter = ({
+  align = 'between',
+  children,
+}: StepFooterProps) => (
   <motion.div
     animate={{ opacity: 1, y: 0 }}
+    initial={{ opacity: 0, y: 10 }}
+    transition={{ delay: 0.5, duration: 0.4 }}
     className={cn(
       'mt-2 flex flex-wrap items-center gap-3 border-t border-gray-3 pt-6',
       align === 'end' ? 'justify-end' : 'justify-between',
     )}
-    initial={{ opacity: 0, y: 10 }}
-    transition={{ delay: 0.5, duration: 0.4 }}
   >
     {children}
   </motion.div>

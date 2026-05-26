@@ -76,7 +76,7 @@ const Header = ({
           <button
             className={`cursor-pointer rounded-md px-3 py-1.5 transition-all duration-200 ${
               viewMode === 'grid'
-                ? 'bg-white text-[var(--primary-9)] shadow-sm'
+                ? 'bg-surface text-[var(--primary-9)] shadow-sm'
                 : 'text-[var(--gray-10)] hover:text-[var(--gray-12)]'
             }`}
             onClick={() => setViewMode('grid')}
@@ -86,7 +86,7 @@ const Header = ({
           <button
             className={`cursor-pointer rounded-md px-3 py-1.5 transition-all duration-200 ${
               viewMode === 'table'
-                ? 'bg-white text-[var(--primary-9)] shadow-sm'
+                ? 'bg-surface text-[var(--primary-9)] shadow-sm'
                 : 'text-[var(--gray-10)] hover:text-[var(--gray-12)]'
             }`}
             onClick={() => setViewMode('table')}

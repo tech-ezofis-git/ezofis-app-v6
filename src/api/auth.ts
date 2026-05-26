@@ -3,6 +3,7 @@ import authUserStore from '../stores/authUserStore'
 import { setToLocalStorage } from '../utils/local-storage'
 // src/api/authApi.ts
 import { _axios, axiosCrypto } from './axios'
+import { authApiV6 } from './v6/auth'
 
 // Vite-style env (adjust name to your setup)
 const API_URL = import.meta.env.VITE_API_URL || ''
@@ -97,6 +98,11 @@ interface IdentityKeys {
 
 // The original getSession function now accepts the fresh keys
 const getSession = async (identityKeys?: IdentityKeys) => {
+  const store = authUserStore.getState()
+  if (store.identity?.accessToken) {
+    return await authApiV6.getSession()
+  }
+
   console.log(identityKeys)
   const response: any = {
     data: '',

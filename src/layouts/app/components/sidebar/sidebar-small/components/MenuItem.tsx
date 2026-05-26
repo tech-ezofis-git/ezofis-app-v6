@@ -2,8 +2,8 @@ import { Link, useLocation } from '@tanstack/react-router'
 import type { Menu } from '@/layouts/app/types'
 import Icon from '@/components/base/icon/Icon'
 import Tooltip from '@/components/base/Tooltip'
-import cn from '@/utils/cn'
 import useSetupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
+import cn from '@/utils/cn'
 
 interface Props extends Menu {
   iconClassName?: string
@@ -22,14 +22,19 @@ const MenuItem = ({ icon, iconClassName, label, route }: Props) => {
 
   return (
     <li key={label}>
-      <Tooltip content={isLinkDisabled ? `${label} (locked)` : label} openDelay={500} position='right'>
+      <Tooltip
+        content={isLinkDisabled ? `${label} (locked)` : label}
+        openDelay={500}
+        position='right'
+      >
         <Link
-          to={route}
           tabIndex={isLinkDisabled ? -1 : undefined}
+          to={route}
           className={cn(
             'group flex size-8 items-center justify-center rounded outline-0 transition-colors hover:bg-gray-2 focus-visible:bg-gray-2',
             isActive && 'bg-gray-3',
-            isLinkDisabled && 'pointer-events-none opacity-40 cursor-not-allowed',
+            isLinkDisabled &&
+              'pointer-events-none cursor-not-allowed opacity-40',
           )}
         >
           <Icon

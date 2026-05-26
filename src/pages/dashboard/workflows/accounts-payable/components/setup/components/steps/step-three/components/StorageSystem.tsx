@@ -14,8 +14,8 @@ import {
 // import Icon from '@/components/base/icon/Icon'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import BrandCard from '../../components/BrandCard'
-import { OrDivider } from '../../components/StepLayout'
 import SectionHeader from '../../components/SectionHeader'
+import { OrDivider } from '../../components/StepLayout'
 
 const includedStorageItem = {
   logo: StorageLogo,

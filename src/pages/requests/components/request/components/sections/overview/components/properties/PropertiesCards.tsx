@@ -48,7 +48,7 @@ const PropertiesCards = ({ data }: Props) => {
       <Title className='mb-3' level={3} title='Invoice Summary' />
 
       {/* REAL CARD */}
-      <div className='rounded-xl border border-gray-3 bg-white p-4 shadow-sm'>
+      <div className='rounded-xl border border-gray-3 bg-surface p-4 shadow-sm'>
         {/* top strip */}
         <div className='mb-3 flex items-center justify-between'>
           <Badge color={scoreColor} label={`${score.toFixed(0)}%`} />

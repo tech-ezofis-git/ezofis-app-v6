@@ -103,7 +103,7 @@ export const ProcessingBackgroundManager = () => {
       <AnimatePresence>
         <motion.div
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          className='pointer-events-auto w-80 rounded-2xl border border-[var(--gray-3)] bg-white p-4 shadow-2xl'
+          className='pointer-events-auto w-80 rounded-2xl border border-[var(--gray-3)] bg-surface p-4 shadow-2xl'
           exit={{ opacity: 0, scale: 0.95 }}
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
         >

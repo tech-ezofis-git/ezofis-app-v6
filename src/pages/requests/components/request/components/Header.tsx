@@ -11,13 +11,13 @@ interface HeaderProps {
   raisedAt: any
   requestNo: string
   rightView: 'analysis' | 'comments' | 'attachments' | 'forms'
-  enableAIInsights?: boolean
   actions?: any[]
   agentData?: any
   approveLoading?: boolean
   attachmentCount?: number
   commentsCount?: number
   currency?: string
+  enableAIInsights?: boolean
   hideActions?: boolean
   isEditing?: boolean
   poNumber?: string
@@ -119,9 +119,9 @@ const Header: React.FC<HeaderProps> = ({
   }
 
   return (
-    <OverlayHeaderWrapper className='h-14 justify-between gap-4 bg-white px-4'>
+    <OverlayHeaderWrapper className='h-14 justify-between gap-4 bg-surface px-4'>
       {/* Left Side Group: Request Number + Navigation Buttons */}
-      <div className='flex items-center gap-4 bg-white p-0'>
+      <div className='flex items-center gap-4 bg-surface p-0'>
         <IconButton
           className='cursor-pointer hover:bg-[var(--gray-2)]'
           color='gray'
@@ -134,7 +134,7 @@ const Header: React.FC<HeaderProps> = ({
         <div className='flex flex-col pb-1'>
           <div className='flex items-center gap-3'>
             <IconButton
-              className='size-7 cursor-pointer hover:bg-white'
+              className='size-7 cursor-pointer hover:bg-surface'
               color='gray'
               disabled={!onPrev}
               icon='tabler:chevron-left'
@@ -146,7 +146,7 @@ const Header: React.FC<HeaderProps> = ({
               {requestNo}
             </h1>
             <IconButton
-              className='size-7 cursor-pointer hover:bg-white'
+              className='size-7 cursor-pointer hover:bg-surface'
               color='gray'
               disabled={!onNext}
               icon='tabler:chevron-right'
@@ -248,7 +248,7 @@ const Header: React.FC<HeaderProps> = ({
                 'flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2 font-semibold transition-all',
                 showAIInsights
                   ? 'border-[var(--primary-6)] bg-[var(--primary-1)] text-[var(--primary-9)]'
-                  : 'border-[var(--gray-3)] bg-white text-[var(--gray-11)]',
+                  : 'border-[var(--gray-3)] bg-surface text-[var(--gray-11)]',
               )}
               onClick={() => setShowAIInsights(!showAIInsights)}
             >
@@ -274,7 +274,7 @@ const Header: React.FC<HeaderProps> = ({
               {showAIInsights && (
                 <motion.div
                   animate={{ opacity: 1, scale: 1, y: 0 }}
-                  className='absolute top-full right-0 z-[100] mt-3 min-w-[500px] rounded-xl border border-[var(--gray-3)] bg-white/95 p-4 shadow-2xl backdrop-blur-md'
+                  className='absolute top-full right-0 z-[100] mt-3 min-w-[500px] rounded-xl border border-[var(--gray-3)] bg-surface/95 p-4 shadow-2xl backdrop-blur-md'
                   exit={{ opacity: 0, scale: 0.95, y: 10 }}
                   initial={{ opacity: 0, scale: 0.95, y: 10 }}
                 >

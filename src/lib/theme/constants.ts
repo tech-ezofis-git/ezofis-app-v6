@@ -3,11 +3,15 @@ import type { MantineColorScheme } from '@mantine/core'
 /** Mantine localStorage key for the user's theme preference (auto | light | dark). */
 export const THEME_STORAGE_KEY = 'mantine-color-scheme-value'
 
-export const THEME_MODES = ['auto', 'light', 'dark'] as const satisfies readonly MantineColorScheme[]
-
-export type ThemeMode = (typeof THEME_MODES)[number]
+export const THEME_MODES = [
+  'auto',
+  'light',
+  'dark',
+] as const satisfies readonly MantineColorScheme[]
 
 export type ResolvedTheme = 'light' | 'dark'
+
+export type ThemeMode = (typeof THEME_MODES)[number]
 
 export const DEFAULT_THEME_MODE: ThemeMode = 'auto'
 

@@ -2,6 +2,21 @@ import authUserStore from '../../stores/authUserStore'
 import { setToLocalStorage } from '../../utils/local-storage'
 import { axiosV6 } from '../axios'
 
+export const getV6ApiErrorMessage = (
+  data: unknown,
+  fallback: string,
+): string => {
+  if (!data) return fallback
+  if (typeof data === 'string') return data
+  if (typeof data === 'object' && data !== null) {
+    const record = data as Record<string, unknown>
+    if (typeof record.error === 'string') return record.error
+    if (typeof record.message === 'string') return record.message
+    if (typeof record.title === 'string') return record.title
+  }
+  return fallback
+}
+
 // The JSON structure required by V6 Signup
 export interface V6SignupPayload {
   name: string
@@ -33,7 +48,7 @@ const signUp = async (payload: V6SignupPayload) => {
     })
 
     if (status !== 201 && status !== 200) {
-      throw 'invalid status code'
+      throw new Error('invalid status code')
     }
 
     if (data) {
@@ -47,7 +62,7 @@ const signUp = async (payload: V6SignupPayload) => {
     }
   } catch (e: any) {
     console.error(e)
-    response.error = e?.response?.data || 'error in sign up'
+    response.error = getV6ApiErrorMessage(e?.response?.data, 'error in sign up')
   }
 
   return response
@@ -65,7 +80,7 @@ export const sendMailOTP = async (payload: {
       url: `/tenant/checkAuthenticate`,
     })
     if (status !== 201 && status !== 200 && status !== 400)
-      throw 'invalid status code'
+      throw new Error('invalid status code')
     if (data === 'OTP sent succeeded' || data === 'success') {
       response.data = 'success'
       response.status = status
@@ -74,7 +89,10 @@ export const sendMailOTP = async (payload: {
     }
   } catch (e: any) {
     console.error(e)
-    response.error = e?.response?.data || 'error in verify mail'
+    response.error = getV6ApiErrorMessage(
+      e?.response?.data,
+      'error in verify mail',
+    )
     response.status = e?.response?.status
   }
   return response
@@ -91,7 +109,7 @@ export const verifyMailOTP = async (payload: {
       method: 'POST',
       url: `/tenant/validateOTP`,
     })
-    if (status !== 201 && status !== 200) throw 'invalid status code'
+    if (status !== 201 && status !== 200) throw new Error('invalid status code')
     if (data === 'success') {
       response.data = 'Success'
     } else {
@@ -99,7 +117,10 @@ export const verifyMailOTP = async (payload: {
     }
   } catch (e: any) {
     console.error(e)
-    response.error = e?.response?.data || 'error in verify mail'
+    response.error = getV6ApiErrorMessage(
+      e?.response?.data,
+      'error in verify mail',
+    )
   }
   return response
 }
@@ -111,11 +132,14 @@ export const getTenants = async (email: string) => {
       method: 'GET',
       url: `/auth/tenants?email=${encodeURIComponent(email)}`,
     })
-    if (status !== 200) throw 'invalid status code'
+    if (status !== 200) throw new Error('invalid status code')
     response.data = data
   } catch (e: any) {
     console.error(e)
-    response.error = e?.response?.data || 'error fetching tenants'
+    response.error = getV6ApiErrorMessage(
+      e?.response?.data,
+      'error fetching tenants',
+    )
   }
   return response
 }
@@ -139,7 +163,7 @@ export const login = async (payload: {
       url: `/auth/ezofis/login`,
     })
 
-    if (status !== 200) throw 'invalid status code'
+    if (status !== 200) throw new Error('invalid status code')
 
     if (data) {
       setToLocalStorage(data, 'identity')
@@ -151,7 +175,45 @@ export const login = async (payload: {
     }
   } catch (e: any) {
     console.error(e)
-    response.error = e?.response?.data || 'error in login'
+    response.error = getV6ApiErrorMessage(
+      e?.response?.data,
+      'Invalid email or password.',
+    )
+  }
+  return response
+}
+
+export const getSession = async () => {
+  const response: any = { data: null, error: '' }
+  try {
+    let res = null
+    try {
+      res = await axiosV6({
+        method: 'GET',
+        url: `/auth/session`,
+      })
+    } catch {
+      res = await axiosV6({
+        method: 'GET',
+        url: `/userSession`,
+      })
+    }
+
+    const { data, status } = res
+    if (status !== 200) throw new Error('invalid status code')
+
+    if (data) {
+      setToLocalStorage(data, 'session')
+      const { setSession } = authUserStore.getState()
+      setSession(data)
+      response.data = data
+    }
+  } catch (e: any) {
+    console.error(e)
+    response.error = getV6ApiErrorMessage(
+      e?.response?.data,
+      'error fetching session',
+    )
   }
   return response
 }
@@ -161,6 +223,7 @@ export const authApiV6 = {
   sendMailOTP,
   signUp,
   verifyMailOTP,
+  getSession,
   getTenants,
 }
 

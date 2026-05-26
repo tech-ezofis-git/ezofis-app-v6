@@ -65,7 +65,7 @@ const BuilderHeader = () => {
               className={`rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase ${
                 workflowStatus === 'draft'
                   ? 'bg-gray-3 text-gray-11'
-                  : 'text-success-main bg-success-subtle'
+                  : 'bg-success-subtle text-success-main'
               }`}
             >
               {workflowStatus}

@@ -2,30 +2,30 @@ import type { TreeNode } from '../types/folderTypes'
 import { DynamicIcon } from './icons'
 
 export function TreeSidebar({
-  tree,
   activeId,
   expandedIds,
-  onToggle,
+  tree,
   onSelect,
+  onToggle,
 }: {
-  tree: TreeNode[]
   activeId: string
   expandedIds: string[]
-  onToggle: (id: string) => void
+  tree: TreeNode[]
   onSelect: (id: string) => void
+  onToggle: (id: string) => void
 }) {
   return (
-    <aside className="flex h-full w-[250px] shrink-0 flex-col border-r border-gray-3 bg-surface-primary">
-      <div className="min-h-0 flex-1 overflow-auto py-3">
+    <aside className='flex h-full w-[250px] shrink-0 flex-col border-r border-gray-3 bg-surface-primary'>
+      <div className='min-h-0 flex-1 overflow-auto py-3'>
         {tree.map((node) => (
           <TreeNodeRow
-            key={node.id}
-            node={node}
             activeId={activeId}
             expandedIds={expandedIds}
-            onToggle={onToggle}
-            onSelect={onSelect}
+            key={node.id}
             level={0}
+            node={node}
+            onSelect={onSelect}
+            onToggle={onToggle}
           />
         ))}
       </div>
@@ -34,19 +34,19 @@ export function TreeSidebar({
 }
 
 function TreeNodeRow({
-  node,
   activeId,
   expandedIds,
-  onToggle,
-  onSelect,
   level,
+  node,
+  onSelect,
+  onToggle,
 }: {
-  node: TreeNode
   activeId: string
   expandedIds: string[]
-  onToggle: (id: string) => void
-  onSelect: (id: string) => void
   level: number
+  node: TreeNode
+  onSelect: (id: string) => void
+  onToggle: (id: string) => void
 }) {
   const hasChildren = Boolean(node.children?.length)
   const isOpen = expandedIds.includes(node.id)
@@ -64,41 +64,47 @@ function TreeNodeRow({
   return (
     <div>
       <button
-        type="button"
-        onClick={handleRowClick}
+        style={{ paddingLeft: `${12 + level * 18}px` }}
+        type='button'
         className={`group flex h-9 w-full items-center gap-2 rounded-r-lg pr-2 text-left text-sm transition-all hover:bg-gray-4 hover:text-gray-12 active:scale-[0.99] ${
           isActive ? 'bg-blue-3 font-medium text-blue-11' : 'text-gray-11'
         }`}
-        style={{ paddingLeft: `${12 + level * 18}px` }}
+        onClick={handleRowClick}
       >
         <span
-          role="button"
+          className='flex h-4 w-4 shrink-0 items-center justify-center'
+          role='button'
           tabIndex={-1}
           onClick={hasChildren ? handleChevronClick : undefined}
-          className="flex h-4 w-4 shrink-0 items-center justify-center"
         >
           <DynamicIcon
-            name={hasChildren ? (isOpen ? 'chevronDown' : 'chevronRight') : undefined}
             className={`h-3.5 w-3.5 ${hasChildren ? '' : 'opacity-0'}`}
+            name={
+              hasChildren
+                ? isOpen
+                  ? 'chevronDown'
+                  : 'chevronRight'
+                : undefined
+            }
           />
         </span>
 
-        <DynamicIcon name={node.iconKey} className="h-4 w-4 shrink-0" />
+        <DynamicIcon className='h-4 w-4 shrink-0' name={node.iconKey} />
 
-        <span className="truncate">{node.title}</span>
+        <span className='truncate'>{node.title}</span>
       </button>
 
       {isOpen && node.children && (
-        <div className="animate-in fade-in slide-in-from-left-2 duration-200">
+        <div className='animate-in fade-in slide-in-from-left-2 duration-200'>
           {node.children.map((child) => (
             <TreeNodeRow
-              key={child.id}
-              node={child}
               activeId={activeId}
               expandedIds={expandedIds}
-              onToggle={onToggle}
-              onSelect={onSelect}
+              key={child.id}
               level={level + 1}
+              node={child}
+              onSelect={onSelect}
+              onToggle={onToggle}
             />
           ))}
         </div>

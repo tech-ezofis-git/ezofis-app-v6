@@ -1,9 +1,11 @@
+import { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import Header from './components/header/Header'
 import Table from './components/Table'
 
 const WorkflowsPage = () => {
   const navigate = useNavigate()
+  const [tabValue, setTabValue] = useState<string>('All')
 
   const handleCreate = () => {
     // TODO: Generate a real ID or handle 'new'
@@ -15,9 +17,9 @@ const WorkflowsPage = () => {
 
   return (
     <div className='flex h-full flex-col'>
-      <Header onCreate={handleCreate} />
+      <Header tabValue={tabValue} onTabChange={setTabValue} onCreate={handleCreate} />
       <div className='bg-gray-50/50 flex-1 overflow-hidden px-6 py-2'>
-        <Table onCreate={handleCreate} />
+        <Table tabValue={tabValue} onCreate={handleCreate} />
       </div>
     </div>
   )
@@ -25,3 +27,4 @@ const WorkflowsPage = () => {
 
 WorkflowsPage.displayName = 'WorkflowsPage'
 export default WorkflowsPage
+

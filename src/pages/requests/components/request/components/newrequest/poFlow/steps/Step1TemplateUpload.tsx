@@ -219,14 +219,14 @@ export default function Step1TemplateUpload({
         <AnimateEntrancePop>
           <div className='flex items-center gap-3 rounded-2xl border border-success-subtle bg-success-subtle/40 p-3'>
             <Icon
-              className='text-success-main size-5'
+              className='size-5 text-success-main'
               name='tabler:circle-check'
             />
             <div>
-              <p className='text-success-main text-xs font-bold'>
+              <p className='text-xs font-bold text-success-main'>
                 File Selected
               </p>
-              <p className='text-success-main/70 text-[10px] font-medium'>
+              <p className='text-[10px] font-medium text-success-main/70'>
                 {uploadedFile.name} • {uploadedColumns.length} columns •{' '}
                 {rowCount} records
               </p>

@@ -1,18 +1,22 @@
 import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
+import { createRepository } from '@/api/createFolder'
+import formApi from '@/api/form/form'
+import workflowApi from '@/api/workflow/workflow'
 import Button from '@/components/base/button/Button'
+import showToast from '@/components/base/toast/showToast'
 import { AnimateFadeIn } from '@/components/common/animations'
+import apSetupPayloads from '@/pages/dashboard/workflows/accounts-payable/constants/apSetupPayloads.json'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import requestStore from '@/pages/requests/stores/useRequestStore'
+import authUserStore from '@/stores/authUserStore'
 import { StepFooter, StepLayout } from '../components/StepLayout'
 import WorkflowPreview from './components/WorkflowPreview'
-// import { createFolder } from '@/api/createFolder'
-// import formApi from '@/api/form/form'
-// import workflowApi from '@/api/workflow/workflow'
-// import apSetupPayloads from '@/pages/dashboard/workflows/accounts-payable/constants/apSetupPayloads.json'
 
-/*
-const replacePlaceholders = (obj: any, placeholders: Record<string, any>): any => {
+const replacePlaceholders = (
+  obj: any,
+  placeholders: Record<string, any>,
+): any => {
   if (typeof obj === 'string') {
     let result = obj
     for (const [key, val] of Object.entries(placeholders)) {
@@ -24,7 +28,7 @@ const replacePlaceholders = (obj: any, placeholders: Record<string, any>): any =
     return result
   }
   if (Array.isArray(obj)) {
-    return obj.map(item => replacePlaceholders(item, placeholders))
+    return obj.map((item) => replacePlaceholders(item, placeholders))
   }
   if (typeof obj === 'object' && obj !== null) {
     const newObj: any = {}
@@ -35,7 +39,6 @@ const replacePlaceholders = (obj: any, placeholders: Record<string, any>): any =
   }
   return obj
 }
-*/
 
 const StepFour = () => {
   const setStep = setupStore((state) => state.setStep)
@@ -59,50 +62,79 @@ const StepFour = () => {
     setIsSaving(true)
 
     try {
-      /*
       // 1. Create Folder
-      const folderRes = await createFolder(apSetupPayloads.folderPayload)
+      const folderPayload = {
+        ...apSetupPayloads.folderPayload,
+      }
+      const folderRes = await createRepository(folderPayload)
       if (folderRes.error) {
-        alert(`Failed to create Folder: ${folderRes.error}`)
+        showToast({
+          message: `Failed to create Folder: ${folderRes.error}`,
+          variant: 'error',
+        })
         setIsSaving(false)
         return
       }
 
-      const folderId = folderRes.data?.id ?? folderRes.data?.folderId ?? folderRes.data
+      const folderId =
+        folderRes.data?.repositoryId ??
+        folderRes.data?.id ??
+        folderRes.data?.folderId ??
+        folderRes.data
       if (!folderId) {
-        alert('Folder created but did not return a valid folder ID.')
+        showToast({
+          message: 'Folder created but did not return a valid folder ID.',
+          variant: 'error',
+        })
         setIsSaving(false)
         return
       }
 
       // 2. Prepare Form payload with dynamic folderId placeholder replacement
-      const formPayload = replacePlaceholders(apSetupPayloads.formPayload, { folderId })
-      const formRes = await formApi.createForm(formPayload)
+      const formPayload = replacePlaceholders(apSetupPayloads.formPayload, {
+        folderId,
+      })
+      const formRes = await formApi.createForm(JSON.stringify(formPayload))
       if (formRes.error) {
-        alert(`Failed to create Form: ${formRes.error}`)
+        showToast({
+          message: `Failed to create Form: ${formRes.error}`,
+          variant: 'error',
+        })
         setIsSaving(false)
         return
       }
 
       const formId = formRes.data?.id ?? formRes.data?.formId ?? formRes.data
       if (!formId) {
-        alert('Form created but did not return a valid form ID.')
+        showToast({
+          message: 'Form created but did not return a valid form ID.',
+          variant: 'error',
+        })
         setIsSaving(false)
         return
       }
 
-      // 3. Prepare Workflow payload with dynamic folderId and formId placeholders replacement
-      const workflowPayload = replacePlaceholders(apSetupPayloads.workflowPayload, {
-        folderId,
-        formId,
-      })
+      // 3. Prepare Workflow payload with dynamic folderId, formId, and userId placeholders replacement
+      const session = authUserStore.getState().session
+      const userId = session?.id || ''
+
+      const workflowPayload = replacePlaceholders(
+        apSetupPayloads.workflowPayload,
+        {
+          folderId,
+          formId,
+          userId,
+        },
+      )
       const workflowRes = await workflowApi.createWorkflow(workflowPayload)
       if (workflowRes.error) {
-        alert(`Failed to create Workflow: ${workflowRes.error}`)
+        showToast({
+          message: `Failed to create Workflow: ${workflowRes.error}`,
+          variant: 'error',
+        })
         setIsSaving(false)
         return
       }
-      */
 
       // Proceed with setup completion after all V6 APIs run successfully
       setPendingOpenNewRequest(true)
@@ -113,7 +145,10 @@ const StepFour = () => {
       closeSetup()
     } catch (e: any) {
       console.error(e)
-      alert(`An unexpected error occurred during activation: ${e.message || e}`)
+      showToast({
+        message: `An unexpected error occurred during activation: ${e.message || e}`,
+        variant: 'error',
+      })
     } finally {
       setIsSaving(false)
     }
@@ -136,10 +171,10 @@ const StepFour = () => {
           <Button
             disabled={isSaving}
             loading={isSaving}
+            suffixIcon='tabler:arrow-right'
             label={
               isApSetUpCompleted ? 'Save Configuration' : 'Activate Automation'
             }
-            suffixIcon='tabler:arrow-right'
             onClick={handleClose}
           />
         </StepFooter>

@@ -1,17 +1,20 @@
 import type { Table as TanstackTable } from '@tanstack/react-table'
+import type {
+  MenuPage,
+  MenuPageEmptyVariant,
+} from '@/components/common/menuPageEmptyStates'
 import PageEmptyState, {
   hasActiveTableSearch,
   resolveEmptyVariant,
 } from '@/components/common/PageEmptyState'
-import type { MenuPage, MenuPageEmptyVariant } from '@/components/common/menuPageEmptyStates'
 
 /** Shared padding for menu list/table empty states (workflows, forms, requests). */
 export const MENU_LIST_EMPTY_CONTAINER_CLASS = 'pt-12 pb-24'
 
 interface Props {
+  page: MenuPage
   containerClassName?: string
   fill?: boolean
-  page: MenuPage
   table?: TanstackTable<any>
   variant?: MenuPageEmptyVariant
   onPrimaryAction?: () => void
@@ -61,10 +64,10 @@ export const MenuListEmptyPanel = ({
   <div className='flex min-h-0 w-full flex-1 rounded-xl border border-[var(--gray-3)] bg-white shadow-sm'>
     <ListEmptyState
       containerClassName={MENU_LIST_EMPTY_CONTAINER_CLASS}
-      fill
       page={page}
       table={table}
       variant={variant}
+      fill
       onPrimaryAction={onPrimaryAction}
       onSecondaryAction={onSecondaryAction}
     />

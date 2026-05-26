@@ -24,7 +24,7 @@ const Drawer = ({
   const classNames = {
     body: 'p-0',
     content: cn('bg-surface', offset && 'rounded-lg'),
-    overlay: 'bg-overlay/60',
+    overlay: 'bg-[var(--overlay-backdrop)]',
   }
 
   return (

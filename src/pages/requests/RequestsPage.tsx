@@ -2,14 +2,17 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Option } from '@/types/option'
 import formApi from '@/api/form/form'
 import requestApi from '@/api/requests/requests'
+import workflowsApiV6, {
+  mapPublishedWorkflowListToOptions,
+} from '@/api/v6/workflows'
 import PageEmptyState from '@/components/common/PageEmptyState'
+import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import type { InboxItem, IRequestMeta, WorkflowOption } from './types'
 import Header from './components/Header'
 import InboxList from './components/InboxList'
 import { ProcessingBackgroundManager } from './components/ProcessingBackgroundManager'
 import Request from './components/request/Request'
 import { useInboxData } from './hooks/useInboxData'
-import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import requestStore from './stores/useRequestStore'
 
 type WorkflowLoadStatus = 'loading' | 'ready' | 'empty'
@@ -34,8 +37,8 @@ const RequestsPage = () => {
     pendingOpenNewRequest,
     reloadMeta,
     selectedItem,
-    setPendingOpenNewRequest,
     stopRefresh,
+    setPendingOpenNewRequest,
     setRawWorkflowData: setRawWorflow,
     setRequestListTab,
   } = requestStore()
@@ -61,31 +64,16 @@ const RequestsPage = () => {
   }
 
   // --- 3. HANDLERS ---
-  const handleSelectAllRequests = useCallback(async () => {
+  const loadWorkflowList = useCallback(async () => {
     setWorkflowLoadStatus('loading')
     try {
-      const browseConfig = {
-        currentPage: 1,
-        filterBy: [],
-        groupBy: 'flowstatus',
-        hasSecurity: true,
-        itemsPerPage: 100,
-        mode: 'BROWSE',
-        sortBy: { criteria: 'name', order: 'ASC' },
-      }
-      const response = await requestApi?.getAllRequests(browseConfig)
+      const { data, error } = await workflowsApiV6.getWorkflows()
+      if (error) throw new Error(error)
 
-      let data
-      if (response?.data) {
-        data = response?.data[0]?.value.map((request: any) => ({
-          disabled: false,
-          id: request?.id || request?.requestId,
-          name: request?.name || request?.requestNo || 'Request',
-        }))
-      }
-      if (data && data.length > 0) {
-        setAllWorkflow(data)
-        setWorkflow(data[0]) // This triggers the useEffect below
+      const options = mapPublishedWorkflowListToOptions(data)
+      if (options.length > 0) {
+        setAllWorkflow(options)
+        setWorkflow(options[0])
       } else {
         setAllWorkflow([])
         setWorkflow(null)
@@ -100,44 +88,57 @@ const RequestsPage = () => {
       setWorkflowLoadStatus('empty')
       setIsLoading(false)
     }
-  }, [requestApi])
+  }, [])
 
-  const handleGetAllRequestMetaById = useCallback(
-    async (id: string | number) => {
+  const loadSelectedWorkflow = useCallback(
+    async (workflowId: string, workflowName?: string) => {
       setWorkflowLoadStatus('loading')
       try {
-        const response = await requestApi?.getMetaDataByRequest(id)
-        if (response?.data?.length) {
-          // Update Metadata counts
-          setRawWorflow(response.data[0])
-          setMetaData({
-            completedCount: response.data[0].completedCount,
-            inboxCount: response.data[0].inboxCount,
-            sentCount: response.data[0].processCount,
-          })
-          console.log(response?.data, 'this is meta data request')
-          // Update Selected Workflow Details
-          const wf = response.data[0]
+        const [workflowRes, metaRes] = await Promise.all([
+          workflowsApiV6.getWorkflowById(workflowId),
+          requestApi.getMetaDataByRequest(workflowId),
+        ])
 
-          let formJson = wf.formJson
-
-          if (!formJson && wf.wFormId) {
-            const formRes = await formApi.getFormDataById(wf.wFormId)
-            console.log('formRes', formRes)
-            formJson = formRes?.data
-          }
-          setSelectedWorkflow({
-            flowJson: wf.flowJson,
-            formJson: formJson ?? '',
-            id: wf.id,
-            name: wf.name,
-            wFormId: wf.wFormId ?? '',
-          })
-          setWorkflowLoadStatus('ready')
-        } else {
-          setSelectedWorkflow(null)
-          setWorkflowLoadStatus('empty')
+        if (workflowRes.error || !workflowRes.data) {
+          throw new Error(workflowRes.error || 'Failed to load workflow')
         }
+
+        const wf = workflowRes.data
+
+        if (metaRes?.data?.length) {
+          setRawWorflow(metaRes.data[0])
+          setMetaData({
+            completedCount: metaRes.data[0].completedCount,
+            inboxCount: metaRes.data[0].inboxCount,
+            sentCount: metaRes.data[0].processCount,
+          })
+        }
+
+        const wFormId =
+          wf.wFormId ?? wf.settings?.general?.initiateUsing?.formId ?? ''
+
+        let formJson = wf.formJson
+        if (!formJson && wFormId) {
+          const formRes = await formApi.getFormDataById(String(wFormId))
+          formJson = formRes?.data
+        }
+
+        const flowJson =
+          typeof wf.flowJson === 'string'
+            ? wf.flowJson
+            : wf.flowJson
+              ? JSON.stringify(wf.flowJson)
+              : ''
+
+        setSelectedWorkflow({
+          flowJson,
+          formJson: formJson ?? '',
+          id: workflowId,
+          name:
+            wf.name ?? wf.settings?.general?.name ?? workflowName ?? 'Workflow',
+          wFormId: wFormId || '',
+        })
+        setWorkflowLoadStatus('ready')
         setIsLoading(false)
       } catch {
         setSelectedWorkflow(null)
@@ -145,14 +146,14 @@ const RequestsPage = () => {
         setIsLoading(false)
       }
     },
-    [requestApi, formApi, setRawWorflow],
+    [formApi, setRawWorflow],
   )
 
   // Initial Load
   useEffect(() => {
     setIsLoading(true)
-    handleSelectAllRequests()
-  }, [handleSelectAllRequests])
+    loadWorkflowList()
+  }, [loadWorkflowList])
 
   // Workflow Change Listener
   useEffect(() => {
@@ -163,12 +164,12 @@ const RequestsPage = () => {
         setIsLoading(true)
       }
 
-      handleGetAllRequestMetaById(workflow.id)
-      // Note: We don't need manual API calls here anymore.
-      // The useInboxData hook watches 'selectedWorkflow' and auto-fetches.
+      loadSelectedWorkflow(String(workflow.id), workflow.name)
     } else {
       if (reloadMeta) {
-        if (workflow?.id) handleGetAllRequestMetaById(workflow.id)
+        if (workflow?.id) {
+          loadSelectedWorkflow(String(workflow.id), workflow.name)
+        }
         stopRefresh()
         refetch()
       }
@@ -177,7 +178,7 @@ const RequestsPage = () => {
     workflow,
     reloadMeta,
     isFetching,
-    handleGetAllRequestMetaById,
+    loadSelectedWorkflow,
     stopRefresh,
     refetch,
   ])
@@ -272,7 +273,8 @@ const RequestsPage = () => {
     }
   }
 
-  const isWorkflowReady = workflowLoadStatus === 'ready' && !!selectedWorkflow?.id
+  const isWorkflowReady =
+    workflowLoadStatus === 'ready' && !!selectedWorkflow?.id
   const showWorkflowEmpty = workflowLoadStatus === 'empty'
   const inboxIsLoading =
     workflowLoadStatus === 'loading' ||

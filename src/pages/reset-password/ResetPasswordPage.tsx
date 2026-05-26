@@ -1,6 +1,7 @@
 import { useNavigate } from '@tanstack/react-router'
 import { useEffect, useMemo, useState } from 'react'
 import { apiRouter } from '@/api/apiRouter'
+import authApi from '@/api/auth'
 import Button from '@/components/base/button/Button'
 import IconIllustrated from '@/components/base/icon/IconIllustrated'
 import InputText from '@/components/base/inputs/InputText'
@@ -8,7 +9,9 @@ import InputPassword from '@/components/base/inputs/password/InputPassword'
 import Title from '@/components/base/Title'
 import showToast from '@/components/base/toast/showToast'
 // import HeroText from '@/components/common/HeroText'
-import PasswordRequirements, { requirementsConfig } from '@/layouts/auth/components/PasswordRequirements'
+import PasswordRequirements, {
+  requirementsConfig,
+} from '@/layouts/auth/components/PasswordRequirements'
 import useSetupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import authUserStore from '@/stores/authUserStore'
 
@@ -64,9 +67,13 @@ const ResetPasswordPage = () => {
         if (!password) return setError('Password is required')
 
         // Validate password against all requirements
-        const unmetRequirement = requirementsConfig.find((req) => !req.regex.test(password))
+        const unmetRequirement = requirementsConfig.find(
+          (req) => !req.regex.test(password),
+        )
         if (unmetRequirement) {
-          return setError(`Password must meet all requirements: ${unmetRequirement.label}`)
+          return setError(
+            `Password must meet all requirements: ${unmetRequirement.label}`,
+          )
         }
 
         if (password !== confirmPassword)
@@ -92,8 +99,39 @@ const ResetPasswordPage = () => {
       const { data, status } = await apiRouter.signUp(payload)
 
       if (status === 200 || status === 201 || data === 'Success') {
-        const { setRestrictNavigationUntilApSetup, setisApSetUpCompleted, setIsSetupStarted } =
-          useSetupStore.getState()
+        if (isSocial) {
+          // social login with email to get the token
+          const socialPayload = {
+            email,
+            loggedFrom: 'WEB',
+            loginType,
+          }
+          const loginRes = await authApi.socialLogin(socialPayload)
+          if (loginRes.error) {
+            setError(loginRes.error)
+            setLoading(false)
+            return
+          }
+        } else {
+          // password login
+          const loginRes = await apiRouter.login({
+            email,
+            password,
+          })
+          if (loginRes.error) {
+            setError(loginRes.error)
+            setLoading(false)
+            return
+          }
+          // then call the user session
+          await authApi.getSession()
+        }
+
+        const {
+          setisApSetUpCompleted,
+          setIsSetupStarted,
+          setRestrictNavigationUntilApSetup,
+        } = useSetupStore.getState()
         setRestrictNavigationUntilApSetup(true)
         setisApSetUpCompleted(false)
         setIsSetupStarted(true)
@@ -105,14 +143,18 @@ const ResetPasswordPage = () => {
         setLoading(false)
         navigate({ to: '/' })
       } else {
-        setError('Failed to complete account setup. Please contact the EZOFIS team.')
+        setError(
+          'Failed to complete account setup. Please contact the EZOFIS team.',
+        )
         setLoading(false)
       }
 
       console.log(data)
     } catch (err: any) {
       console.error(err)
-      setError('Failed to complete account setup. Please contact the EZOFIS team.')
+      setError(
+        'Failed to complete account setup. Please contact the EZOFIS team.',
+      )
       setLoading(false)
     }
   }
@@ -123,7 +165,7 @@ const ResetPasswordPage = () => {
   }
 
   return (
-    <form onSubmit={handleSubmit} className='flex flex-col gap-6'>
+    <form className='flex flex-col gap-6' onSubmit={handleSubmit}>
       <IconIllustrated icon='lucide:lock' />
       <Title
         className='text-center'
@@ -134,9 +176,9 @@ const ResetPasswordPage = () => {
 
       <div className='space-y-4'>
         <InputText
-          required
           label='First name'
           value={firstName}
+          required
           onChange={(v) => {
             setFirstName(v)
             setError(null)
@@ -144,9 +186,9 @@ const ResetPasswordPage = () => {
         />
 
         <InputText
-          required
           label='Last name'
           value={lastName}
+          required
           onChange={(v) => {
             setLastName(v)
             setError(null)
@@ -154,9 +196,9 @@ const ResetPasswordPage = () => {
         />
 
         <InputText
-          required
           label='Organisation'
           value={organisation}
+          required
           onChange={(v) => {
             setOrganisation(v)
             setError(null)
@@ -166,9 +208,9 @@ const ResetPasswordPage = () => {
         {!isSocial && (
           <>
             <InputPassword
-              required
               label='Password'
               value={password}
+              required
               onChange={(v) => {
                 setPassword(v)
                 setError(null)
@@ -176,9 +218,9 @@ const ResetPasswordPage = () => {
             />
             <PasswordRequirements password={password} />
             <InputPassword
-              required
               label='Confirm password'
               value={confirmPassword}
+              required
               onChange={(v) => {
                 setConfirmPassword(v)
                 setError(null)
@@ -191,10 +233,10 @@ const ResetPasswordPage = () => {
       {error && <div className='text-red-500 text-center text-sm'>{error}</div>}
 
       <Button
-        type='submit'
         className='w-full justify-center'
         label='Create Account'
         loading={loading}
+        type='submit'
       />
     </form>
   )

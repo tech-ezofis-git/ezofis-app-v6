@@ -447,15 +447,17 @@ const SparkIcon = ({ small = false }: { small?: boolean }) => (
         y1='0'
         y2='44'
       >
-        <stop offset='0%' stopColor='#9c40ff' />
-        <stop offset='100%' stopColor='#448aff' />
+        <stop offset='0%' stopColor='var(--primary-8)' />
+        <stop offset='100%' stopColor='var(--blue-9)' />
       </linearGradient>
     </defs>
     <path
       d='M22 3L25.6 16.8L39.5 22L25.6 27.2L22 41L18.4 27.2L4.5 22L18.4 16.8L22 3Z'
       fill={`url(#${small ? 'sparkSmall' : 'sparkLarge'})`}
     />
-    {!small && <circle cx='34' cy='8' fill='#c084fc' opacity='.7' r='3.5' />}
+    {!small && (
+      <circle cx='34' cy='8' fill='var(--primary-7)' opacity='.7' r='3.5' />
+    )}
   </svg>
 )
 
@@ -582,20 +584,20 @@ const AskAI = () => {
   const shellStyle = useMemo(
     () =>
       ({
-        '--bg': '#ffffff',
-        '--bg2': '#f7f7f7',
-        '--bg3': '#f0eef8',
-        '--border': '#e6e6e6',
-        '--border2': '#d0d0d0',
-        '--green': '#1a9e6e',
-        '--green-bg': '#e6f7f2',
-        '--purple': '#8300e6',
-        '--purple-light': '#f3e8ff',
-        '--spark1': '#7c4dff',
-        '--teal': '#19c1d4',
-        '--text1': '#1a1a1a',
-        '--text2': '#4a4a4a',
-        '--text3': '#9a9a9a',
+        '--bg': 'var(--surface)',
+        '--bg2': 'var(--surface-muted)',
+        '--bg3': 'var(--primary-2)',
+        '--border': 'var(--border-default)',
+        '--border2': 'var(--border-strong)',
+        '--green': 'var(--green-9)',
+        '--green-bg': 'var(--green-3)',
+        '--purple': 'var(--primary-9)',
+        '--purple-light': 'var(--primary-3)',
+        '--spark1': 'var(--primary-8)',
+        '--teal': 'var(--secondary-9)',
+        '--text1': 'var(--text-primary)',
+        '--text2': 'var(--text-secondary)',
+        '--text3': 'var(--text-muted)',
       }) as CSSProperties,
     [],
   )
@@ -829,7 +831,7 @@ const HistoryView = ({
         </div>
         {history.map((item) => (
           <button
-            className='w-full rounded-[14px] border border-[var(--border)] bg-white p-3 text-left transition hover:border-[var(--purple)] hover:bg-[var(--purple-light)]'
+            className='w-full rounded-[14px] border border-[var(--border)] bg-[var(--bg)] p-3 text-left transition hover:border-[var(--purple)] hover:bg-[var(--purple-light)]'
             key={item.id}
             type='button'
             onClick={() => onLoad(item)}
@@ -851,7 +853,7 @@ const HistoryView = ({
               <div className='text-[10.5px] text-[var(--text3)]'>
                 {item.createdAt}
               </div>
-              <div className='flex shrink-0 items-center gap-1 rounded-full border border-[#d8cef5] bg-[#f0ebff] px-2 py-1 text-[10.5px] font-semibold text-[var(--spark1)]'>
+              <div className='flex shrink-0 items-center gap-1 rounded-full border border-[var(--primary-4)] bg-[var(--primary-3)] px-2 py-1 text-[10.5px] font-semibold text-[var(--spark1)]'>
                 <UiIcon className='size-3' name='mingcute:lightning-line' />
                 {item.creditsUsed} credit{item.creditsUsed > 1 ? 's' : ''} used
               </div>
@@ -890,7 +892,7 @@ const ChatMessage = ({ msg }: { msg: Message }) => {
           <div className='mt-0.5 grid size-6 shrink-0 place-items-center rounded-full border border-[var(--border2)] bg-[var(--bg)] text-[var(--text3)]'>
             <UiIcon className='size-3' name='mingcute:pencil-line' />
           </div>
-          <div className='max-w-[88%] rounded-[4px_16px_16px_16px] border border-[#e4e2ec] bg-[#f1f0f5] px-3.5 py-2 text-[13.5px] leading-[1.55] text-[var(--text1)]'>
+          <div className='max-w-[88%] rounded-[4px_16px_16px_16px] border border-[var(--border)] bg-[var(--bg2)] px-3.5 py-2 text-[13.5px] leading-[1.55] text-[var(--text1)]'>
             {msg.text}
           </div>
         </div>
@@ -933,10 +935,10 @@ const ChatMessage = ({ msg }: { msg: Message }) => {
           />
           <div className='mt-3 flex items-center justify-center gap-1 border-t border-[var(--border)] pt-2 text-[11px] text-[var(--text3)]'>
             <UiIcon
-              className='size-3 text-[#b090e0]'
+              className='size-3 text-[var(--primary-7)]'
               name='mingcute:lightning-line'
             />
-            <span className='rounded border border-[#d8cef5] bg-[#f0ebff] px-1.5 py-0.5 text-[9.5px] font-semibold text-[var(--spark1)]'>
+            <span className='rounded border border-[var(--primary-4)] bg-[var(--primary-3)] px-1.5 py-0.5 text-[9.5px] font-semibold text-[var(--spark1)]'>
               EZOFIS Search AI
             </span>
             <span>· 1 call used</span>
@@ -968,7 +970,7 @@ const ClarifyCard = ({ clarify }: { clarify: Clarify }) => {
       <div className='flex flex-wrap gap-1.5 px-3 py-2.5'>
         {(clarify.options || []).map((item) => (
           <button
-            className={`rounded-full border px-3 py-1.5 text-xs ${picked === item ? 'border-[var(--purple)] bg-[var(--purple-light)] text-[var(--purple)]' : 'border-[var(--border2)] bg-white text-[var(--text1)] hover:border-[var(--purple)] hover:bg-[var(--purple-light)] hover:text-[var(--purple)]'}`}
+            className={`rounded-full border px-3 py-1.5 text-xs ${picked === item ? 'border-[var(--purple)] bg-[var(--purple-light)] text-[var(--purple)]' : 'border-[var(--border2)] bg-[var(--bg)] text-[var(--text1)] hover:border-[var(--purple)] hover:bg-[var(--purple-light)] hover:text-[var(--purple)]'}`}
             key={item}
             type='button'
             onClick={() => setPicked(item)}
@@ -1045,7 +1047,7 @@ const FileCard = ({ result }: { result: FileResult }) => (
         </span>
       </div>
       <button
-        className='flex shrink-0 items-center gap-1 rounded-md border border-[rgba(131,0,230,.3)] bg-white px-2.5 py-1.5 text-[11.5px] font-medium text-[var(--purple)] hover:bg-[var(--purple-light)]'
+        className='flex shrink-0 items-center gap-1 rounded-md border border-[rgba(131,0,230,.3)] bg-[var(--bg)] px-2.5 py-1.5 text-[11.5px] font-medium text-[var(--purple)] hover:bg-[var(--purple-light)]'
         type='button'
         onClick={() => result.url && window.open(result.url, '_blank')}
       >
@@ -1082,7 +1084,7 @@ const ExtraResults = ({ results }: { results: ExtraResult[] }) => (
     </div>
     {results.map((item, index) => (
       <button
-        className='flex items-center gap-2 rounded-[10px] border border-[var(--border)] bg-white px-2.5 py-2 hover:border-[var(--purple)] hover:bg-[var(--purple-light)]'
+        className='flex items-center gap-2 rounded-[10px] border border-[var(--border)] bg-[var(--bg)] px-2.5 py-2 hover:border-[var(--purple)] hover:bg-[var(--purple-light)]'
         key={`${item.name}-${index}`}
         type='button'
         onClick={() => item.url && window.open(item.url, '_blank')}
@@ -1161,7 +1163,7 @@ const AttachmentSection = ({ attachments }: { attachments: Attachments }) => {
           {items.map((item, index) => (
             <div key={`${item.file}-${index}`}>
               <button
-                className='mb-1 flex w-full items-center gap-1.5 rounded-md border border-[#ddd6f3] bg-[#f4f0ff] px-2.5 py-1.5 text-left font-mono text-[11.5px] text-[#3a2070] hover:bg-[#ece4ff]'
+                className='mb-1 flex w-full items-center gap-1.5 rounded-md border border-[var(--primary-4)] bg-[var(--primary-2)] px-2.5 py-1.5 text-left font-mono text-[11.5px] text-[var(--primary-11)] hover:bg-[var(--primary-3)]'
                 type='button'
                 onClick={() => item.url && window.open(item.url, '_blank')}
               >
@@ -1171,7 +1173,7 @@ const AttachmentSection = ({ attachments }: { attachments: Attachments }) => {
                 />
                 <span className='min-w-0 flex-1 truncate'>{item.file}</span>
                 {item.cite && (
-                  <sup className='text-[8.5px] font-bold text-[#448aff]'>
+                  <sup className='text-[8.5px] font-bold text-[var(--blue-9)]'>
                     {item.cite}
                   </sup>
                 )}
@@ -1213,7 +1215,7 @@ const ActionRow = ({
     <div className='mt-3 flex flex-wrap items-center gap-1.5'>
       {finalActions.map((label) => (
         <button
-          className='flex items-center gap-1 rounded-full border border-[var(--border)] bg-white px-2.5 py-1 text-[11.5px] text-[var(--text2)] hover:border-[var(--purple)] hover:bg-[var(--purple-light)] hover:text-[var(--purple)]'
+          className='flex items-center gap-1 rounded-full border border-[var(--border)] bg-[var(--bg)] px-2.5 py-1 text-[11.5px] text-[var(--text2)] hover:border-[var(--purple)] hover:bg-[var(--purple-light)] hover:text-[var(--purple)]'
           key={label}
           type='button'
         >

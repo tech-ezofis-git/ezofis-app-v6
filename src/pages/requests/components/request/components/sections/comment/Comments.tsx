@@ -129,22 +129,7 @@ export default function Comments({
 
   return (
     <div className='relative mx-auto mt-0 flex h-full w-full flex-col overflow-hidden font-sans transition-all duration-300'>
-      {/* Header - Compact */}
-      {/* <div className="flex items-center justify-between px-3 py-2 bg-white sticky top-0 z-20 border-b border-gray-4">
-                <div className="flex items-center gap-2">
-                    <Icon name="tabler:message-circle-2" className="size-4 text-gray-10" />
-                    <h2 className="text-12 font-bold text-gray-12">Comments</h2>
-                </div>
-                <IconButton
-                    icon="tabler:refresh"
-                    variant="ghost"
-                    color="gray"
-                    size="xs"
-                    className="size-6"
-                    onClick={() => refetch()}
-                    loading={isLoading}
-                />
-            </div> */}
+      {/* Header - Compact (removed legacy commented snippet) */}
 
       {/* Chat Feed */}
       <div
@@ -263,7 +248,7 @@ export default function Comments({
             </div>
 
             {/* Input Box */}
-            <div className='flex-1 overflow-hidden rounded-xl border border-gray-3 bg-gray-1 transition-all focus-within:border-primary-7 focus-within:bg-white focus-within:ring-1 focus-within:ring-primary-4'>
+            <div className='flex-1 overflow-hidden rounded-xl border border-gray-3 bg-gray-1 transition-all focus-within:border-primary-7 focus-within:bg-surface focus-within:ring-1 focus-within:ring-primary-4'>
               <textarea
                 className='w-full resize-none bg-transparent px-3 py-2 text-13 font-medium text-gray-12 placeholder:text-gray-8 focus:outline-none'
                 placeholder='Add a comment...'
@@ -287,7 +272,7 @@ export default function Comments({
               disabled={!canSend}
               style={{
                 background: canSend ? 'var(--primary-9)' : 'var(--gray-3)',
-                color: canSend ? 'white' : 'var(--gray-9)',
+                color: canSend ? 'var(--text-on-accent)' : 'var(--gray-9)',
                 cursor: canSend ? 'pointer' : 'not-allowed',
               }}
               onClick={onPost}

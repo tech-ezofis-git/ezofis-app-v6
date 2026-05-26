@@ -1,9 +1,31 @@
-import avatar from '@/assets/avatar.jpg'
 import Avatar from '@/components/base/Avatar'
 import Button from '@/components/base/button/Button'
 import Title from '@/components/base/Title'
+import authUserStore from '@/stores/authUserStore'
 
 const ProfilePicture = () => {
+  const session = authUserStore((state) => state.session)
+  const API_URI = import.meta.env?.VITE_BASE_URL
+  const imageUrl = session
+    ? `${API_URI}/user/avatar/${session.tenantId}/${session.id}`
+    : ''
+
+  const getInitials = () => {
+    if (!session) return 'U'
+    const name =
+      session.name ||
+      (session.firstName
+        ? `${session.firstName} ${session.lastName || ''}`.trim()
+        : '')
+    if (!name) return 'U'
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2)
+  }
+
   return (
     <div className='grid grid-cols-1 gap-6 lg:grid-cols-2'>
       <Title
@@ -15,9 +37,9 @@ const ProfilePicture = () => {
       <div className='flex gap-6 md:items-center'>
         <Avatar
           className='rounded border border-gray-4'
-          image={avatar}
+          image={imageUrl}
           imageLabel='user picture'
-          initials='CV'
+          initials={getInitials()}
           size={60}
         />
 

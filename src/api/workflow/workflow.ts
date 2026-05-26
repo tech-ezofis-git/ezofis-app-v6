@@ -1,4 +1,5 @@
-import { axiosCrypto } from '../axios'
+import authUserStore from '../../stores/authUserStore'
+import { axiosCrypto, axiosV6 } from '../axios'
 
 const createProcessTransaction = async (payload: any) => {
   const response: any = { data: '', error: '' }
@@ -45,9 +46,16 @@ const createWorkflow = async (payload: any) => {
   const response: any = { error: '', payload: '' }
 
   try {
-    const { data, status } = await axiosCrypto.post(
-      '/workflow',
+    const store = authUserStore.getState()
+    const tenantId = store.session?.tenantId || ''
+    const { data, status } = await axiosV6.post(
+      '/workflows',
       JSON.stringify(payload),
+      {
+        headers: {
+          'X-Tenant-Id': tenantId,
+        },
+      },
     )
 
     if (status !== 201) {

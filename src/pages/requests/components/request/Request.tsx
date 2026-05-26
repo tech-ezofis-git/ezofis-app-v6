@@ -447,7 +447,7 @@ const Request = ({
     <div
       className={`flex w-full flex-col p-0 ${hideActions ? 'bg-grey-2 h-full p-4' : 'h-[calc(100vh-85px)]'}`}
     >
-      <div className='sticky top-0 z-20 border-b border-[var(--gray-3)] bg-white px-2'>
+      <div className='sticky top-0 z-20 border-b border-[var(--gray-3)] bg-surface px-2'>
         <Header
           actions={actions}
           agentData={currentAgentData}
@@ -455,6 +455,7 @@ const Request = ({
           attachmentCount={selectedItem?.attachmentCount || 0}
           commentsCount={selectedItem?.commentsCount || 0}
           currency={currency}
+          enableAIInsights={requestListTab !== 'Processed'}
           hideActions={hideActions}
           isEditing={isEditing}
           isLoading={isLoading}
@@ -462,7 +463,6 @@ const Request = ({
           poValue={poValue}
           raisedAt={request?.createdAt}
           rightView={rightView}
-          enableAIInsights={requestListTab !== 'Processed'}
           showApprove={requestListTab === 'Inbox'}
           status={statusBadge}
           totalAmount={totalAmount}

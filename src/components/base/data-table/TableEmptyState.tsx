@@ -1,17 +1,17 @@
 import { type Table as TanstackTable } from '@tanstack/react-table'
+import type { MenuPage } from '@/components/common/menuPageEmptyStates'
+import Tbody from '@/components/base/table/Tbody'
+import Td from '@/components/base/table/Td'
+import Tr from '@/components/base/table/Tr'
 import ListEmptyState, {
   MENU_LIST_EMPTY_CONTAINER_CLASS,
   resolveEmptyVariant,
 } from '@/components/common/ListEmptyState'
 import PageEmptyState from '@/components/common/PageEmptyState'
-import type { MenuPage } from '@/components/common/menuPageEmptyStates'
-import Tbody from '@/components/base/table/Tbody'
-import Td from '@/components/base/table/Td'
-import Tr from '@/components/base/table/Tr'
 
 interface Props<TData> {
-  page?: MenuPage
   table: TanstackTable<TData>
+  page?: MenuPage
   onPrimaryAction?: () => void
 }
 
@@ -38,18 +38,16 @@ const TableEmptyState = <TData,>({
             <PageEmptyState
               containerClassName={MENU_LIST_EMPTY_CONTAINER_CLASS}
               fill={false}
+              icon='lucide:folder-search'
+              variant={variant}
               description={
                 variant === 'filtered'
                   ? 'No rows match your current search or filters. Try different keywords or clear filters.'
                   : 'There is no data to display yet.'
               }
-              icon='lucide:folder-search'
               title={
-                variant === 'filtered'
-                  ? 'No matching results'
-                  : 'No data yet'
+                variant === 'filtered' ? 'No matching results' : 'No data yet'
               }
-              variant={variant}
             />
           )}
         </Td>

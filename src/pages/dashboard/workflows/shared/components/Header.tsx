@@ -51,10 +51,11 @@ interface FilterButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement
 const FilterButton = ({ active, icon, label, ...props }: FilterButtonProps) => {
   return (
     <button
-      className={`hover:bg-opacity-80 flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[12px] font-medium transition-all active:scale-95 ${active
-        ? 'border-[#4285F4] bg-[#4285F4]/10 text-[#4285F4]'
-        : 'text-gray-500 hover:bg-gray-50 border-gray-3 bg-white shadow-sm'
-        }`}
+      className={`hover:bg-opacity-80 flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[12px] font-medium transition-all active:scale-95 ${
+        active
+          ? 'border-[#4285F4] bg-[#4285F4]/10 text-[#4285F4]'
+          : 'text-gray-500 hover:bg-gray-50 border-gray-3 bg-white shadow-sm'
+      }`}
       {...props}
     >
       {React.cloneElement(icon as React.ReactElement<{ className?: string }>, {
@@ -67,21 +68,21 @@ const FilterButton = ({ active, icon, label, ...props }: FilterButtonProps) => {
 
 interface FilterDropdownProps {
   icon: React.ReactNode
+  isOpen: boolean
   label: string
   options: string[]
   selectedValue: string
   onSelect: (val: string) => void
-  isOpen: boolean
   onToggle: () => void
 }
 
 const FilterDropdown = ({
   icon,
+  isOpen,
   label,
   options,
   selectedValue,
   onSelect,
-  isOpen,
   onToggle,
 }: FilterDropdownProps) => {
   const isActive =
@@ -104,7 +105,7 @@ const FilterDropdown = ({
       />
       {isOpen && (
         <div
-          className='absolute left-0 mt-1 z-50 min-w-[130px] bg-white border border-[#7F7F7F] shadow-lg rounded-sm overflow-hidden animate-in fade-in zoom-in-95 duration-100'
+          className='animate-in fade-in zoom-in-95 absolute left-0 z-50 mt-1 min-w-[130px] overflow-hidden rounded-sm border border-[#7F7F7F] bg-white shadow-lg duration-100'
           style={{ transformOrigin: 'top left' }}
         >
           {options.map((option) => {
@@ -112,15 +113,15 @@ const FilterDropdown = ({
             return (
               <button
                 key={option}
+                className={`w-full px-3 py-1.5 text-left text-[12px] leading-normal font-medium transition-colors ${
+                  isSelected
+                    ? 'bg-[#4285F4] text-white'
+                    : 'hover:bg-slate-100 bg-white text-[#4285F4]'
+                }`}
                 onClick={(e) => {
                   e.stopPropagation()
                   onSelect(option)
                 }}
-                className={`w-full text-left px-3 py-1.5 text-[12px] font-medium leading-normal transition-colors ${
-                  isSelected
-                    ? 'bg-[#4285F4] text-white'
-                    : 'text-[#4285F4] bg-white hover:bg-slate-100'
-                }`}
               >
                 {option}
               </button>
@@ -215,15 +216,15 @@ export const SupplierRiskCard = () => {
   return (
     <div className='col-span-12 flex flex-col rounded-xl bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md lg:col-span-3'>
       <div>
-        <h4 className='font-poppins text-13 font-bold text-gray-13 capitalize leading-none pl-0.5'>
+        <h4 className='pl-0.5 font-poppins text-13 leading-none font-bold text-gray-13 capitalize'>
           supplier risk spending
         </h4>
-        <div className='mt-1 text-[11px] text-[var(--gray-9)] lowercase pl-0.5'>
+        <div className='mt-1 pl-0.5 text-[11px] text-[var(--gray-9)] lowercase'>
           {total} active vendors analyzed
         </div>
       </div>
 
-      <div className='mt-6 flex flex-col justify-between flex-1 gap-4'>
+      <div className='mt-6 flex flex-1 flex-col justify-between gap-4'>
         {/* Chart Area */}
         <div className='flex items-center justify-center'>
           <div className='relative h-[100px] w-[100px] shrink-0'>
@@ -240,25 +241,33 @@ export const SupplierRiskCard = () => {
                   stroke='none'
                 >
                   {RISK_DATA.map((entry, index) => (
-                    <Cell fill={entry.color} key={`cell-${index}`} className='outline-none hover:opacity-90 transition-opacity' />
+                    <Cell
+                      className='transition-opacity outline-none hover:opacity-90'
+                      fill={entry.color}
+                      key={`cell-${index}`}
+                    />
                   ))}
                 </Pie>
                 <Tooltip
+                  formatter={(value: any) => [`${value} vendors`]}
                   contentStyle={{
                     border: 'none',
                     borderRadius: '8px',
                     boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
                     fontSize: '11px',
                   }}
-                  formatter={(value: any) => [`${value} vendors`]}
                 />
               </PieChart>
             </ResponsiveContainer>
 
             {/* Center Label Overlay */}
             <div className='pointer-events-none absolute inset-0 flex flex-col items-center justify-center'>
-              <span className='font-poppins text-16 font-extrabold text-gray-13 leading-none'>{total}</span>
-              <span className='text-[8px] text-gray-10 lowercase font-medium mt-0.5'>vendors</span>
+              <span className='font-poppins text-16 leading-none font-extrabold text-gray-13'>
+                {total}
+              </span>
+              <span className='mt-0.5 text-[8px] font-medium text-gray-10 lowercase'>
+                vendors
+              </span>
             </div>
           </div>
         </div>
@@ -269,7 +278,7 @@ export const SupplierRiskCard = () => {
             const percentage = Math.round((entry.value / total) * 100)
             return (
               <div
-                className='flex flex-col gap-1 p-1.5 rounded-lg hover:bg-gray-50 transition-all cursor-pointer active:scale-95 group'
+                className='hover:bg-gray-50 group flex cursor-pointer flex-col gap-1 rounded-lg p-1.5 transition-all active:scale-95'
                 key={index}
                 title={`${entry.value} vendors (${percentage}%)`}
               >
@@ -279,19 +288,25 @@ export const SupplierRiskCard = () => {
                       className='size-2.5 shrink-0 rounded-md transition-transform group-hover:scale-110'
                       style={{ backgroundColor: entry.color }}
                     />
-                    <span className='text-gray-10 font-semibold group-hover:text-gray-13 transition-colors'>{entry.name}</span>
+                    <span className='font-semibold text-gray-10 transition-colors group-hover:text-gray-13'>
+                      {entry.name}
+                    </span>
                   </div>
                   <div className='flex items-center gap-1.5'>
-                    <span className='text-gray-13 font-bold'>{entry.value}</span>
-                    <span className='text-gray-10 text-[9px] font-normal'>({percentage}%)</span>
+                    <span className='font-bold text-gray-13'>
+                      {entry.value}
+                    </span>
+                    <span className='text-[9px] font-normal text-gray-10'>
+                      ({percentage}%)
+                    </span>
                   </div>
                 </div>
-                <div className='h-1 w-full bg-gray-100 rounded-full overflow-hidden'>
+                <div className='bg-gray-100 h-1 w-full overflow-hidden rounded-full'>
                   <div
                     className='h-full rounded-full transition-all duration-500'
                     style={{
+                      backgroundColor: entry.color,
                       width: `${percentage}%`,
-                      backgroundColor: entry.color
                     }}
                   />
                 </div>
@@ -321,15 +336,15 @@ export const CategoryWiseInvoiceDistributionCard = () => {
   return (
     <div className='col-span-12 flex flex-col rounded-xl bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md lg:col-span-3'>
       <div>
-        <h4 className='font-poppins text-13 font-bold text-gray-13 capitalize leading-none pl-0.5'>
+        <h4 className='pl-0.5 font-poppins text-13 leading-none font-bold text-gray-13 capitalize'>
           invoice distribution
         </h4>
-        <div className='mt-1 text-[11px] text-[var(--gray-9)] lowercase pl-0.5'>
+        <div className='mt-1 pl-0.5 text-[11px] text-[var(--gray-9)] lowercase'>
           by spend category · {total} items
         </div>
       </div>
 
-      <div className='mt-6 flex flex-col justify-between flex-1 gap-4'>
+      <div className='mt-6 flex flex-1 flex-col justify-between gap-4'>
         {/* Chart Area */}
         <div className='flex items-center justify-center'>
           <div className='relative h-[100px] w-[100px] shrink-0'>
@@ -346,25 +361,33 @@ export const CategoryWiseInvoiceDistributionCard = () => {
                   stroke='none'
                 >
                   {CATEGORY_DISTRIBUTION_DATA.map((entry, index) => (
-                    <Cell fill={entry.color} key={`cell-${index}`} className='outline-none hover:opacity-90 transition-opacity' />
+                    <Cell
+                      className='transition-opacity outline-none hover:opacity-90'
+                      fill={entry.color}
+                      key={`cell-${index}`}
+                    />
                   ))}
                 </Pie>
                 <Tooltip
+                  formatter={(value: any) => [`${value} invoices`]}
                   contentStyle={{
                     border: 'none',
                     borderRadius: '8px',
                     boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
                     fontSize: '11px',
                   }}
-                  formatter={(value: any) => [`${value} invoices`]}
                 />
               </PieChart>
             </ResponsiveContainer>
 
             {/* Center Label Overlay */}
             <div className='pointer-events-none absolute inset-0 flex flex-col items-center justify-center'>
-              <span className='font-poppins text-16 font-extrabold text-gray-13 leading-none'>{total}</span>
-              <span className='text-[8px] text-gray-10 lowercase font-medium mt-0.5'>invoices</span>
+              <span className='font-poppins text-16 leading-none font-extrabold text-gray-13'>
+                {total}
+              </span>
+              <span className='mt-0.5 text-[8px] font-medium text-gray-10 lowercase'>
+                invoices
+              </span>
             </div>
           </div>
         </div>
@@ -375,7 +398,7 @@ export const CategoryWiseInvoiceDistributionCard = () => {
             const percentage = Math.round((entry.value / total) * 100)
             return (
               <div
-                className='flex flex-col gap-1 p-1 rounded-lg hover:bg-gray-55 transition-all cursor-pointer active:scale-95 group'
+                className='hover:bg-gray-55 group flex cursor-pointer flex-col gap-1 rounded-lg p-1 transition-all active:scale-95'
                 key={index}
                 title={`${entry.value} invoices (${percentage}%)`}
               >
@@ -385,19 +408,25 @@ export const CategoryWiseInvoiceDistributionCard = () => {
                       className='size-2.5 shrink-0 rounded-md transition-transform group-hover:scale-110'
                       style={{ backgroundColor: entry.color }}
                     />
-                    <span className='text-gray-10 font-semibold group-hover:text-gray-13 transition-colors'>{entry.name}</span>
+                    <span className='font-semibold text-gray-10 transition-colors group-hover:text-gray-13'>
+                      {entry.name}
+                    </span>
                   </div>
                   <div className='flex items-center gap-1.5'>
-                    <span className='text-gray-13 font-bold'>{entry.value}</span>
-                    <span className='text-gray-10 text-[9px] font-normal'>({percentage}%)</span>
+                    <span className='font-bold text-gray-13'>
+                      {entry.value}
+                    </span>
+                    <span className='text-[9px] font-normal text-gray-10'>
+                      ({percentage}%)
+                    </span>
                   </div>
                 </div>
-                <div className='h-1 w-full bg-gray-100 rounded-full overflow-hidden'>
+                <div className='bg-gray-100 h-1 w-full overflow-hidden rounded-full'>
                   <div
                     className='h-full rounded-full transition-all duration-500'
                     style={{
+                      backgroundColor: entry.color,
                       width: `${percentage}%`,
-                      backgroundColor: entry.color
                     }}
                   />
                 </div>
@@ -422,15 +451,15 @@ export const TopSuppliersCard = () => {
   return (
     <div className='col-span-12 flex flex-col rounded-xl bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md lg:col-span-3'>
       <div>
-        <h4 className='font-poppins text-13 font-bold text-gray-13 capitalize leading-none pl-0.5'>
+        <h4 className='pl-0.5 font-poppins text-13 leading-none font-bold text-gray-13 capitalize'>
           Top Suppliers
         </h4>
-        <div className='mt-1 text-[11px] text-[var(--gray-9)] lowercase pl-0.5'>
+        <div className='mt-1 pl-0.5 text-[11px] text-[var(--gray-9)] lowercase'>
           by invoice value · may 2026
         </div>
       </div>
 
-      <div className='mt-6 flex-1 pr-1 flex flex-col justify-center'>
+      <div className='mt-6 flex flex-1 flex-col justify-center pr-1'>
         <ResponsiveContainer height={200} width='100%'>
           <BarChart
             data={TOP_SUPPLIERS_DATA}
@@ -438,9 +467,23 @@ export const TopSuppliersCard = () => {
             margin={{ bottom: 0, left: -20, right: 35, top: 0 }}
           >
             <defs>
-              <linearGradient id='topSuppliersGradient' x1='0' x2='1' y1='0' y2='0'>
-                <stop offset='0%' stopColor='var(--primary-6)' stopOpacity={0.7} />
-                <stop offset='100%' stopColor='var(--primary-9)' stopOpacity={0.95} />
+              <linearGradient
+                id='topSuppliersGradient'
+                x1='0'
+                x2='1'
+                y1='0'
+                y2='0'
+              >
+                <stop
+                  offset='0%'
+                  stopColor='var(--primary-6)'
+                  stopOpacity={0.7}
+                />
+                <stop
+                  offset='100%'
+                  stopColor='var(--primary-9)'
+                  stopOpacity={0.95}
+                />
               </linearGradient>
             </defs>
             <XAxis type='number' hide />
@@ -454,15 +497,20 @@ export const TopSuppliersCard = () => {
             />
             <Tooltip
               cursor={{ fill: 'var(--gray-2)', opacity: 0.15 }}
+              formatter={(val: any) => [`$${val}M`, 'Value']}
               contentStyle={{
                 border: 'none',
                 borderRadius: '8px',
                 boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
                 fontSize: '11px',
               }}
-              formatter={(val: any) => [`$${val}M`, 'Value']}
             />
-            <Bar barSize={14} dataKey='value' radius={[0, 6, 6, 0]} fill='url(#topSuppliersGradient)'>
+            <Bar
+              barSize={14}
+              dataKey='value'
+              fill='url(#topSuppliersGradient)'
+              radius={[0, 6, 6, 0]}
+            >
               <LabelList
                 dataKey='displayValue'
                 fill='var(--gray-11)'
@@ -637,23 +685,37 @@ export const InvoiceAgingCard = () => {
   return (
     <div className='col-span-12 flex flex-col rounded-xl bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md lg:col-span-3'>
       <div>
-        <h4 className='font-poppins text-13 font-bold text-gray-13 capitalize leading-none pl-0.5'>
+        <h4 className='pl-0.5 font-poppins text-13 leading-none font-bold text-gray-13 capitalize'>
           Invoice Aging Analysis
         </h4>
-        <div className='mt-1 text-[11px] text-[var(--gray-9)] lowercase pl-0.5'>
+        <div className='mt-1 pl-0.5 text-[11px] text-[var(--gray-9)] lowercase'>
           days outstanding status
         </div>
       </div>
-      <div className='mt-6 flex-1 flex flex-col justify-center'>
+      <div className='mt-6 flex flex-1 flex-col justify-center'>
         <ResponsiveContainer height={180} width='100%'>
           <BarChart
             data={AGING_DATA}
             margin={{ bottom: 0, left: -25, right: 0, top: 20 }}
           >
             <defs>
-              <linearGradient id='invoiceAgingGradient' x1='0' x2='0' y1='0' y2='1'>
-                <stop offset='0%' stopColor='var(--primary-9)' stopOpacity={0.9} />
-                <stop offset='100%' stopColor='var(--primary-4)' stopOpacity={0.4} />
+              <linearGradient
+                id='invoiceAgingGradient'
+                x1='0'
+                x2='0'
+                y1='0'
+                y2='1'
+              >
+                <stop
+                  offset='0%'
+                  stopColor='var(--primary-9)'
+                  stopOpacity={0.9}
+                />
+                <stop
+                  offset='100%'
+                  stopColor='var(--primary-4)'
+                  stopOpacity={0.4}
+                />
               </linearGradient>
             </defs>
             <XAxis
@@ -665,15 +727,20 @@ export const InvoiceAgingCard = () => {
             />
             <Tooltip
               cursor={{ fill: 'var(--gray-2)', opacity: 0.15 }}
+              formatter={(val: any) => [`${val} Invoices`, 'Volume']}
               contentStyle={{
                 border: 'none',
                 borderRadius: '8px',
                 boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
                 fontSize: '11px',
               }}
-              formatter={(val: any) => [`${val} Invoices`, 'Volume']}
             />
-            <Bar barSize={28} dataKey='value' radius={[6, 6, 0, 0]} fill='url(#invoiceAgingGradient)'>
+            <Bar
+              barSize={28}
+              dataKey='value'
+              fill='url(#invoiceAgingGradient)'
+              radius={[6, 6, 0, 0]}
+            >
               <LabelList
                 dataKey='value'
                 position='top'
@@ -1140,7 +1207,7 @@ const PaymentCalendarCard = () => {
     <div className='col-span-12 flex flex-col rounded-xl bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md lg:col-span-4'>
       {/* Title & Subtitle */}
       <div>
-        <h4 className='font-poppins text-14 font-semibold text-gray-13 capitalize leading-none'>
+        <h4 className='font-poppins text-14 leading-none font-semibold text-gray-13 capitalize'>
           Payment Calendar
         </h4>
         <div className='mt-1 text-[11px] text-[var(--gray-9)] lowercase'>
@@ -1149,10 +1216,10 @@ const PaymentCalendarCard = () => {
       </div>
 
       {/* Calendar Grid Container */}
-      <div className='mt-6 w-full max-w-[340px] mx-auto flex-1 flex flex-col justify-between'>
+      <div className='mx-auto mt-6 flex w-full max-w-[340px] flex-1 flex-col justify-between'>
         <div>
           {/* Weekday headers */}
-          <div className='grid grid-cols-7 gap-y-2 text-center text-[11px] font-semibold text-gray-10 capitalize mb-2'>
+          <div className='mb-2 grid grid-cols-7 gap-y-2 text-center text-[11px] font-semibold text-gray-10 capitalize'>
             <div>su</div>
             <div>mo</div>
             <div>tu</div>
@@ -1166,14 +1233,14 @@ const PaymentCalendarCard = () => {
           <div className='grid grid-cols-7 gap-[5px]'>
             {CALENDAR_DAYS.map((cell, idx) => {
               if (cell.type === 'empty') {
-                return <div key={`empty-${idx}`} className='aspect-square' />
+                return <div className='aspect-square' key={`empty-${idx}`} />
               }
 
               if (cell.type === 'today') {
                 return (
                   <div
+                    className='flex aspect-square cursor-pointer items-center justify-center rounded-lg bg-accent-primary text-[12px] font-bold text-white shadow-sm transition-all hover:opacity-90 active:scale-95'
                     key={`day-${cell.day}`}
-                    className='aspect-square rounded-lg bg-accent-primary text-white font-bold flex items-center justify-center text-[12px] cursor-pointer shadow-sm hover:opacity-90 active:scale-95 transition-all'
                     title='Today (May 21)'
                   >
                     {cell.day}
@@ -1184,8 +1251,8 @@ const PaymentCalendarCard = () => {
               if (cell.type === 'due') {
                 return (
                   <div
+                    className='flex aspect-square cursor-pointer items-center justify-center rounded-lg bg-accent-soft text-[12px] font-semibold text-accent-primary transition-all hover:bg-accent-primary hover:text-white active:scale-95'
                     key={`day-${cell.day}`}
-                    className='aspect-square rounded-lg bg-accent-soft text-accent-primary font-semibold flex items-center justify-center text-[12px] cursor-pointer hover:bg-accent-primary hover:text-white active:scale-95 transition-all'
                     title={`Payment Due on May ${cell.day}`}
                   >
                     {cell.day}
@@ -1195,8 +1262,8 @@ const PaymentCalendarCard = () => {
 
               return (
                 <div
+                  className='flex aspect-square cursor-pointer items-center justify-center rounded-lg text-[12px] font-medium text-gray-11 transition-all hover:bg-gray-2 active:scale-95'
                   key={`day-${cell.day}`}
-                  className='aspect-square rounded-lg text-gray-11 font-medium flex items-center justify-center text-[12px] cursor-pointer hover:bg-gray-2 active:scale-95 transition-all'
                 >
                   {cell.day}
                 </div>
@@ -1208,11 +1275,11 @@ const PaymentCalendarCard = () => {
         {/* Legend */}
         <div className='mt-4 flex items-center gap-4 pl-1 text-[11px] font-medium text-gray-10 capitalize'>
           <div className='flex items-center gap-1.5'>
-            <div className='size-3.5 rounded-md bg-accent-primary shrink-0' />
+            <div className='size-3.5 shrink-0 rounded-md bg-accent-primary' />
             <span>today</span>
           </div>
           <div className='flex items-center gap-1.5'>
-            <div className='size-3.5 rounded-md bg-accent-soft shrink-0 border border-accent-soft' />
+            <div className='size-3.5 shrink-0 rounded-md border border-accent-soft bg-accent-soft' />
             <span>payment due</span>
           </div>
         </div>
@@ -1223,30 +1290,46 @@ const PaymentCalendarCard = () => {
 
       {/* Bottom KPI stats */}
       <div className='flex flex-col gap-3'>
-        <h5 className='font-poppins text-13 font-bold text-gray-13 capitalize leading-none pl-0.5'>
+        <h5 className='pl-0.5 font-poppins text-13 leading-none font-bold text-gray-13 capitalize'>
           This Month
         </h5>
 
         <div className='grid grid-cols-2 gap-2'>
           {/* KPI 1 */}
-          <div className='bg-gray-2/40 border border-gray-3/20 rounded-xl p-3 flex flex-col gap-0.5 shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)] transition-all hover:bg-gray-2/65'>
-            <span className='font-poppins text-16 font-extrabold text-gray-13 leading-tight'>$642k</span>
-            <span className='text-[10px] text-gray-10 lowercase font-medium'>total paid</span>
+          <div className='flex flex-col gap-0.5 rounded-xl border border-gray-3/20 bg-gray-2/40 p-3 shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)] transition-all hover:bg-gray-2/65'>
+            <span className='font-poppins text-16 leading-tight font-extrabold text-gray-13'>
+              $642k
+            </span>
+            <span className='text-[10px] font-medium text-gray-10 lowercase'>
+              total paid
+            </span>
           </div>
           {/* KPI 2 */}
-          <div className='bg-gray-2/40 border border-gray-3/20 rounded-xl p-3 flex flex-col gap-0.5 shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)] transition-all hover:bg-gray-2/65'>
-            <span className='font-poppins text-16 font-extrabold text-gray-13 leading-tight'>$343k</span>
-            <span className='text-[10px] text-gray-10 lowercase font-medium'>outstanding</span>
+          <div className='flex flex-col gap-0.5 rounded-xl border border-gray-3/20 bg-gray-2/40 p-3 shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)] transition-all hover:bg-gray-2/65'>
+            <span className='font-poppins text-16 leading-tight font-extrabold text-gray-13'>
+              $343k
+            </span>
+            <span className='text-[10px] font-medium text-gray-10 lowercase'>
+              outstanding
+            </span>
           </div>
           {/* KPI 3 */}
-          <div className='bg-gray-2/40 border border-gray-3/20 rounded-xl p-3 flex flex-col gap-0.5 shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)] transition-all hover:bg-gray-2/65'>
-            <span className='font-poppins text-16 font-extrabold text-gray-13 leading-tight'>4.2d</span>
-            <span className='text-[10px] text-gray-10 lowercase font-medium'>avg processing</span>
+          <div className='flex flex-col gap-0.5 rounded-xl border border-gray-3/20 bg-gray-2/40 p-3 shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)] transition-all hover:bg-gray-2/65'>
+            <span className='font-poppins text-16 leading-tight font-extrabold text-gray-13'>
+              4.2d
+            </span>
+            <span className='text-[10px] font-medium text-gray-10 lowercase'>
+              avg processing
+            </span>
           </div>
           {/* KPI 4 */}
-          <div className='bg-gray-2/40 border border-gray-3/20 rounded-xl p-3 flex flex-col gap-0.5 shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)] transition-all hover:bg-gray-2/65'>
-            <span className='font-poppins text-16 font-extrabold text-gray-13 leading-tight'>98.1%</span>
-            <span className='text-[10px] text-gray-10 lowercase font-medium'>on-time rate</span>
+          <div className='flex flex-col gap-0.5 rounded-xl border border-gray-3/20 bg-gray-2/40 p-3 shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)] transition-all hover:bg-gray-2/65'>
+            <span className='font-poppins text-16 leading-tight font-extrabold text-gray-13'>
+              98.1%
+            </span>
+            <span className='text-[10px] font-medium text-gray-10 lowercase'>
+              on-time rate
+            </span>
           </div>
         </div>
       </div>
@@ -1256,11 +1339,15 @@ const PaymentCalendarCard = () => {
 
 const DashboardPage = () => {
   const [selectedTimeframe, setSelectedTimeframe] = React.useState('This Month')
-  const [selectedSupplier, setSelectedSupplier] = React.useState('All Suppliers')
+  const [selectedSupplier, setSelectedSupplier] =
+    React.useState('All Suppliers')
   const [selectedStatus, setSelectedStatus] = React.useState('All Statuses')
-  const [selectedCurrency, setSelectedCurrency] = React.useState('All Currencies')
+  const [selectedCurrency, setSelectedCurrency] =
+    React.useState('All Currencies')
 
-  const [activeDropdown, setActiveDropdown] = React.useState<string | null>(null)
+  const [activeDropdown, setActiveDropdown] = React.useState<string | null>(
+    null,
+  )
 
   React.useEffect(() => {
     const handleOutsideClick = () => {
@@ -1272,22 +1359,36 @@ const DashboardPage = () => {
     }
   }, [])
 
-  const timeframeOptions = ['This Month', 'Last Month', 'This Quarter', 'This Year']
-  const supplierOptions = ['All Suppliers', 'Global Freight', 'TechParts Ltd', 'Office Hub']
-  const statusOptions = ['All Statuses', 'Matched', 'Pending', 'Exception', 'Posted']
+  const timeframeOptions = [
+    'This Month',
+    'Last Month',
+    'This Quarter',
+    'This Year',
+  ]
+  const supplierOptions = [
+    'All Suppliers',
+    'Global Freight',
+    'TechParts Ltd',
+    'Office Hub',
+  ]
+  const statusOptions = [
+    'All Statuses',
+    'Matched',
+    'Pending',
+    'Exception',
+    'Posted',
+  ]
   const currencyOptions = ['All Currencies', 'USD', 'EUR', 'INR', 'GBP']
 
   return (
     <>
-      <AnimateSlideUp delay={0.1}>
-        {/* <Header /> */}
-      </AnimateSlideUp>
+      <AnimateSlideUp delay={0.1}>{/* <Header /> */}</AnimateSlideUp>
       <AnimateFadeIn
-        className='bg-gray-50/50 relative flex min-h-0 flex-1 flex-col overflow-y-auto p-6 scrollbar'
+        className='bg-gray-50/50 scrollbar relative flex min-h-0 flex-1 flex-col overflow-y-auto p-6'
         delay={0.2}
       >
         {/* AP Setup Callout Banner */}
-        <div className='mb-6 flex flex-wrap items-center justify-between gap-4 border border-[var(--gray-3)] bg-white px-6 py-4 rounded-xl shadow-sm animate-in fade-in slide-in-from-top-4 duration-300'>
+        <div className='animate-in fade-in slide-in-from-top-4 mb-6 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-[var(--gray-3)] bg-white px-6 py-4 shadow-sm duration-300'>
           <div className='flex items-center gap-3'>
             <div className='flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--primary-2)] text-[var(--primary-9)]'>
               <Bot className='h-4.5 w-4.5' />
@@ -1323,39 +1424,53 @@ const DashboardPage = () => {
             </span>
             <FilterDropdown
               icon={<Calendar />}
+              isOpen={activeDropdown === 'timeframe'}
               label='This Month'
               options={timeframeOptions}
               selectedValue={selectedTimeframe}
               onSelect={setSelectedTimeframe}
-              isOpen={activeDropdown === 'timeframe'}
-              onToggle={() => setActiveDropdown(activeDropdown === 'timeframe' ? null : 'timeframe')}
+              onToggle={() =>
+                setActiveDropdown(
+                  activeDropdown === 'timeframe' ? null : 'timeframe',
+                )
+              }
             />
             <FilterDropdown
               icon={<Building2 />}
+              isOpen={activeDropdown === 'supplier'}
               label='All Suppliers'
               options={supplierOptions}
               selectedValue={selectedSupplier}
               onSelect={setSelectedSupplier}
-              isOpen={activeDropdown === 'supplier'}
-              onToggle={() => setActiveDropdown(activeDropdown === 'supplier' ? null : 'supplier')}
+              onToggle={() =>
+                setActiveDropdown(
+                  activeDropdown === 'supplier' ? null : 'supplier',
+                )
+              }
             />
             <FilterDropdown
               icon={<ClipboardList />}
+              isOpen={activeDropdown === 'status'}
               label='All Statuses'
               options={statusOptions}
               selectedValue={selectedStatus}
               onSelect={setSelectedStatus}
-              isOpen={activeDropdown === 'status'}
-              onToggle={() => setActiveDropdown(activeDropdown === 'status' ? null : 'status')}
+              onToggle={() =>
+                setActiveDropdown(activeDropdown === 'status' ? null : 'status')
+              }
             />
             <FilterDropdown
               icon={<DollarSign />}
+              isOpen={activeDropdown === 'currency'}
               label='All Currencies'
               options={currencyOptions}
               selectedValue={selectedCurrency}
               onSelect={setSelectedCurrency}
-              isOpen={activeDropdown === 'currency'}
-              onToggle={() => setActiveDropdown(activeDropdown === 'currency' ? null : 'currency')}
+              onToggle={() =>
+                setActiveDropdown(
+                  activeDropdown === 'currency' ? null : 'currency',
+                )
+              }
             />
           </div>
           <div className='relative'>

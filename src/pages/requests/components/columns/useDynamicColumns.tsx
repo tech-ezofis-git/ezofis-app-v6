@@ -75,7 +75,7 @@ const resolveFormJson = (workflow: WorkflowOption | null): any | null => {
 //                         initial={{ opacity: 0, y: 10, scale: 0.95 }}
 //                         whileInView={{ opacity: 1, y: 0, scale: 1 }}
 //                         transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-//                         className="bg-white rounded-xl border border-[var(--gray-3)] shadow-xl p-4 min-w-[260px] overflow-hidden relative"
+//                         className="bg-surface rounded-xl border border-[var(--gray-3)] shadow-xl p-4 min-w-[260px] overflow-hidden relative"
 //                     >
 //                         <div className={cn(
 //                             "absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl opacity-10 -mr-16 -mt-16 pointer-events-none",
@@ -503,220 +503,223 @@ const StatusCell = ({
         />
       </div>
 
-      {row.isProcessing && isHovered && typeof document !== 'undefined' && createPortal(
-        <div
-          className='pointer-events-none fixed top-1/2 left-1/2 w-[360px] -translate-x-1/2 -translate-y-1/2 text-left transition-all duration-300'
-          style={{ zIndex: 999999 }}
-        >
+      {row.isProcessing &&
+        isHovered &&
+        typeof document !== 'undefined' &&
+        createPortal(
           <div
-            className='animate-in fade-in zoom-in-95 relative overflow-hidden rounded-xl border border-[var(--gray-3)] bg-white p-5 shadow-2xl duration-200'
-            style={{ opacity: 1 }}
+            className='pointer-events-none fixed top-1/2 left-1/2 w-[360px] -translate-x-1/2 -translate-y-1/2 text-left transition-all duration-300'
+            style={{ zIndex: 999999 }}
           >
-            <div className='pointer-events-none absolute top-0 right-0 -mt-10 -mr-10 h-20 w-20 rounded-full bg-[var(--orange-9)] opacity-10 blur-2xl' />
+            <div
+              className='animate-in fade-in zoom-in-95 relative overflow-hidden rounded-xl border border-[var(--gray-3)] bg-surface p-5 shadow-2xl duration-200'
+              style={{ opacity: 1 }}
+            >
+              <div className='pointer-events-none absolute top-0 right-0 -mt-10 -mr-10 h-20 w-20 rounded-full bg-[var(--orange-9)] opacity-10 blur-2xl' />
 
-            {/* Title / Header */}
-            <div className='relative z-10 mb-4 flex items-center justify-between border-b border-[var(--gray-2)] pb-2'>
-              <div className='flex items-center gap-2'>
-                <div className='rounded-lg bg-[var(--orange-2)] p-1.5 text-[var(--orange-9)]'>
-                  <Icon
-                    className='size-4 animate-spin'
-                    name='tabler:loader-2'
-                  />
+              {/* Title / Header */}
+              <div className='relative z-10 mb-4 flex items-center justify-between border-b border-[var(--gray-2)] pb-2'>
+                <div className='flex items-center gap-2'>
+                  <div className='rounded-lg bg-[var(--orange-2)] p-1.5 text-[var(--orange-9)]'>
+                    <Icon
+                      className='size-4 animate-spin'
+                      name='tabler:loader-2'
+                    />
+                  </div>
+                  <div>
+                    <h4 className='text-[13px] font-bold text-[var(--gray-12)]'>
+                      Extraction Progress
+                    </h4>
+                    <p className='text-[10px] text-[var(--gray-9)]'>
+                      ID: {rowId}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className='text-[13px] font-bold text-[var(--gray-12)]'>
-                    Extraction Progress
-                  </h4>
-                  <p className='text-[10px] text-[var(--gray-9)]'>
-                    ID: {rowId}
-                  </p>
-                </div>
+                <span className='rounded bg-[var(--primary-2)] px-2 py-0.5 text-[10px] font-bold text-[var(--primary-11)]'>
+                  {row.stage || 'Start'}
+                </span>
               </div>
-              <span className='rounded bg-[var(--primary-2)] px-2 py-0.5 text-[10px] font-bold text-[var(--primary-11)]'>
-                {row.stage || 'Start'}
-              </span>
-            </div>
 
-            {/* Stepper Content */}
-            {(() => {
-              const stage = row.stage || 'Start'
-              let step2Status = 'pending'
-              let step3Status = 'pending'
-              let step4Status = 'pending'
+              {/* Stepper Content */}
+              {(() => {
+                const stage = row.stage || 'Start'
+                let step2Status = 'pending'
+                let step3Status = 'pending'
+                let step4Status = 'pending'
 
-              if (stage === 'Start') {
-                step2Status = 'active'
-              } else if (stage === 'AI Agent') {
-                step2Status = 'completed'
-                step3Status = 'active'
-              } else if (stage === 'Verifier') {
-                step2Status = 'completed'
-                step3Status = 'completed'
-                step4Status = 'active'
-              } else if (['Approved', 'Completed'].includes(stage)) {
-                step2Status = 'completed'
-                step3Status = 'completed'
-                step4Status = 'completed'
-              }
+                if (stage === 'Start') {
+                  step2Status = 'active'
+                } else if (stage === 'AI Agent') {
+                  step2Status = 'completed'
+                  step3Status = 'active'
+                } else if (stage === 'Verifier') {
+                  step2Status = 'completed'
+                  step3Status = 'completed'
+                  step4Status = 'active'
+                } else if (['Approved', 'Completed'].includes(stage)) {
+                  step2Status = 'completed'
+                  step3Status = 'completed'
+                  step4Status = 'completed'
+                }
 
-              return (
-                <div className='relative z-10 flex flex-col pl-2'>
-                  {/* Step 1: Upload */}
-                  <div className='relative flex gap-3 pb-5'>
-                    {/* Line */}
-                    <div className='absolute top-5 bottom-0 left-[9px] w-0.5 bg-[var(--green-9)]' />
-                    {/* Circle */}
-                    <div className='relative z-10 flex size-5 shrink-0 items-center justify-center rounded-full bg-[var(--green-9)] text-white ring-4 ring-[var(--green-2)]'>
-                      <Icon
-                        className='size-3 stroke-[3px]'
-                        name='tabler:check'
+                return (
+                  <div className='relative z-10 flex flex-col pl-2'>
+                    {/* Step 1: Upload */}
+                    <div className='relative flex gap-3 pb-5'>
+                      {/* Line */}
+                      <div className='absolute top-5 bottom-0 left-[9px] w-0.5 bg-[var(--green-9)]' />
+                      {/* Circle */}
+                      <div className='relative z-10 flex size-5 shrink-0 items-center justify-center rounded-full bg-[var(--green-9)] text-white ring-4 ring-[var(--green-2)]'>
+                        <Icon
+                          className='size-3 stroke-[3px]'
+                          name='tabler:check'
+                        />
+                      </div>
+                      <div className='flex flex-col gap-0.5'>
+                        <span className='text-[12px] font-bold text-[var(--gray-12)]'>
+                          Upload & Ingestion
+                        </span>
+                        <span className='text-[10px] leading-normal text-[var(--gray-10)]'>
+                          Invoice document successfully received and parsed.
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Step 2: Extraction */}
+                    <div className='relative flex gap-3 pb-5'>
+                      {/* Line */}
+                      <div
+                        className={cn(
+                          'absolute top-5 bottom-0 left-[9px] w-0.5',
+                          step2Status === 'completed'
+                            ? 'bg-[var(--green-9)]'
+                            : 'bg-[var(--gray-3)]',
+                        )}
                       />
-                    </div>
-                    <div className='flex flex-col gap-0.5'>
-                      <span className='text-[12px] font-bold text-[var(--gray-12)]'>
-                        Upload & Ingestion
-                      </span>
-                      <span className='text-[10px] leading-normal text-[var(--gray-10)]'>
-                        Invoice document successfully received and parsed.
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Step 2: Extraction */}
-                  <div className='relative flex gap-3 pb-5'>
-                    {/* Line */}
-                    <div
-                      className={cn(
-                        'absolute top-5 bottom-0 left-[9px] w-0.5',
-                        step2Status === 'completed'
-                          ? 'bg-[var(--green-9)]'
-                          : 'bg-[var(--gray-3)]',
+                      {/* Circle */}
+                      {step2Status === 'completed' ? (
+                        <div className='relative z-10 flex size-5 shrink-0 items-center justify-center rounded-full bg-[var(--green-9)] text-white ring-4 ring-[var(--green-2)]'>
+                          <Icon
+                            className='size-3 stroke-[3px]'
+                            name='tabler:check'
+                          />
+                        </div>
+                      ) : step2Status === 'active' ? (
+                        <div className='relative z-10 flex size-5 shrink-0 items-center justify-center rounded-full border border-[var(--primary-9)] bg-surface ring-4 ring-[var(--primary-2)]'>
+                          <div className='size-1.5 animate-pulse rounded-full bg-[var(--primary-9)]' />
+                        </div>
+                      ) : (
+                        <div className='relative z-10 flex size-5 shrink-0 items-center justify-center rounded-full border border-[var(--gray-4)] bg-surface text-[var(--gray-8)]'>
+                          <div className='size-1.5 rounded-full bg-[var(--gray-4)]' />
+                        </div>
                       )}
-                    />
-                    {/* Circle */}
-                    {step2Status === 'completed' ? (
-                      <div className='relative z-10 flex size-5 shrink-0 items-center justify-center rounded-full bg-[var(--green-9)] text-white ring-4 ring-[var(--green-2)]'>
-                        <Icon
-                          className='size-3 stroke-[3px]'
-                          name='tabler:check'
-                        />
+                      <div className='flex flex-col gap-0.5'>
+                        <span
+                          className={cn(
+                            'text-[12px] font-bold',
+                            step2Status === 'active'
+                              ? 'text-[var(--primary-9)]'
+                              : 'text-[var(--gray-12)]',
+                          )}
+                        >
+                          Data Extraction (OCR)
+                        </span>
+                        <span className='text-[10px] leading-normal text-[var(--gray-10)]'>
+                          AI Agent is reading metadata, headers, line items &
+                          amounts.
+                        </span>
                       </div>
-                    ) : step2Status === 'active' ? (
-                      <div className='relative z-10 flex size-5 shrink-0 items-center justify-center rounded-full border border-[var(--primary-9)] bg-white ring-4 ring-[var(--primary-2)]'>
-                        <div className='size-1.5 animate-pulse rounded-full bg-[var(--primary-9)]' />
-                      </div>
-                    ) : (
-                      <div className='relative z-10 flex size-5 shrink-0 items-center justify-center rounded-full border border-[var(--gray-4)] bg-white text-[var(--gray-8)]'>
-                        <div className='size-1.5 rounded-full bg-[var(--gray-4)]' />
-                      </div>
-                    )}
-                    <div className='flex flex-col gap-0.5'>
-                      <span
-                        className={cn(
-                          'text-[12px] font-bold',
-                          step2Status === 'active'
-                            ? 'text-[var(--primary-9)]'
-                            : 'text-[var(--gray-12)]',
-                        )}
-                      >
-                        Data Extraction (OCR)
-                      </span>
-                      <span className='text-[10px] leading-normal text-[var(--gray-10)]'>
-                        AI Agent is reading metadata, headers, line items &
-                        amounts.
-                      </span>
                     </div>
-                  </div>
 
-                  {/* Step 3: PO Matching */}
-                  <div className='relative flex gap-3 pb-5'>
-                    {/* Line */}
-                    <div
-                      className={cn(
-                        'absolute top-5 bottom-0 left-[9px] w-0.5',
-                        step3Status === 'completed'
-                          ? 'bg-[var(--green-9)]'
-                          : 'bg-[var(--gray-3)]',
+                    {/* Step 3: PO Matching */}
+                    <div className='relative flex gap-3 pb-5'>
+                      {/* Line */}
+                      <div
+                        className={cn(
+                          'absolute top-5 bottom-0 left-[9px] w-0.5',
+                          step3Status === 'completed'
+                            ? 'bg-[var(--green-9)]'
+                            : 'bg-[var(--gray-3)]',
+                        )}
+                      />
+                      {/* Circle */}
+                      {step3Status === 'completed' ? (
+                        <div className='relative z-10 flex size-5 shrink-0 items-center justify-center rounded-full bg-[var(--green-9)] text-white ring-4 ring-[var(--green-2)]'>
+                          <Icon
+                            className='size-3 stroke-[3px]'
+                            name='tabler:check'
+                          />
+                        </div>
+                      ) : step3Status === 'active' ? (
+                        <div className='relative z-10 flex size-5 shrink-0 items-center justify-center rounded-full border border-[var(--primary-9)] bg-surface ring-4 ring-[var(--primary-2)]'>
+                          <div className='size-1.5 animate-pulse rounded-full bg-[var(--primary-9)]' />
+                        </div>
+                      ) : (
+                        <div className='relative z-10 flex size-5 shrink-0 items-center justify-center rounded-full border border-[var(--gray-4)] bg-surface text-[var(--gray-8)]'>
+                          <div className='size-1.5 rounded-full bg-[var(--gray-4)]' />
+                        </div>
                       )}
-                    />
-                    {/* Circle */}
-                    {step3Status === 'completed' ? (
-                      <div className='relative z-10 flex size-5 shrink-0 items-center justify-center rounded-full bg-[var(--green-9)] text-white ring-4 ring-[var(--green-2)]'>
-                        <Icon
-                          className='size-3 stroke-[3px]'
-                          name='tabler:check'
-                        />
+                      <div className='flex flex-col gap-0.5'>
+                        <span
+                          className={cn(
+                            'text-[12px] font-bold',
+                            step3Status === 'active'
+                              ? 'text-[var(--primary-9)]'
+                              : 'text-[var(--gray-12)]',
+                          )}
+                        >
+                          PO Matching & Verification
+                        </span>
+                        <span className='text-[10px] leading-normal text-[var(--gray-10)]'>
+                          Matching invoice items with PO and checking policy
+                          compliance.
+                        </span>
                       </div>
-                    ) : step3Status === 'active' ? (
-                      <div className='relative z-10 flex size-5 shrink-0 items-center justify-center rounded-full border border-[var(--primary-9)] bg-white ring-4 ring-[var(--primary-2)]'>
-                        <div className='size-1.5 animate-pulse rounded-full bg-[var(--primary-9)]' />
-                      </div>
-                    ) : (
-                      <div className='relative z-10 flex size-5 shrink-0 items-center justify-center rounded-full border border-[var(--gray-4)] bg-white text-[var(--gray-8)]'>
-                        <div className='size-1.5 rounded-full bg-[var(--gray-4)]' />
-                      </div>
-                    )}
-                    <div className='flex flex-col gap-0.5'>
-                      <span
-                        className={cn(
-                          'text-[12px] font-bold',
-                          step3Status === 'active'
-                            ? 'text-[var(--primary-9)]'
-                            : 'text-[var(--gray-12)]',
-                        )}
-                      >
-                        PO Matching & Verification
-                      </span>
-                      <span className='text-[10px] leading-normal text-[var(--gray-10)]'>
-                        Matching invoice items with PO and checking policy
-                        compliance.
-                      </span>
                     </div>
-                  </div>
 
-                  {/* Step 4: Final Review */}
-                  <div className='relative flex gap-3'>
-                    {/* Circle */}
-                    {step4Status === 'completed' ? (
-                      <div className='relative z-10 flex size-5 shrink-0 items-center justify-center rounded-full bg-[var(--green-9)] text-white ring-4 ring-[var(--green-2)]'>
-                        <Icon
-                          className='size-3 stroke-[3px]'
-                          name='tabler:check'
-                        />
+                    {/* Step 4: Final Review */}
+                    <div className='relative flex gap-3'>
+                      {/* Circle */}
+                      {step4Status === 'completed' ? (
+                        <div className='relative z-10 flex size-5 shrink-0 items-center justify-center rounded-full bg-[var(--green-9)] text-white ring-4 ring-[var(--green-2)]'>
+                          <Icon
+                            className='size-3 stroke-[3px]'
+                            name='tabler:check'
+                          />
+                        </div>
+                      ) : step4Status === 'active' ? (
+                        <div className='relative z-10 flex size-5 shrink-0 items-center justify-center rounded-full border border-[var(--primary-9)] bg-surface ring-4 ring-[var(--primary-2)]'>
+                          <div className='size-1.5 animate-pulse rounded-full bg-[var(--primary-9)]' />
+                        </div>
+                      ) : (
+                        <div className='relative z-10 flex size-5 shrink-0 items-center justify-center rounded-full border border-[var(--gray-4)] bg-surface text-[var(--gray-8)]'>
+                          <div className='size-1.5 rounded-full bg-[var(--gray-4)]' />
+                        </div>
+                      )}
+                      <div className='flex flex-col gap-0.5'>
+                        <span
+                          className={cn(
+                            'text-[12px] font-bold',
+                            step4Status === 'active'
+                              ? 'text-[var(--primary-9)]'
+                              : 'text-[var(--gray-12)]',
+                          )}
+                        >
+                          Final Verification Review
+                        </span>
+                        <span className='text-[10px] leading-normal text-[var(--gray-10)]'>
+                          Routing the verified invoice to the final approval
+                          queue.
+                        </span>
                       </div>
-                    ) : step4Status === 'active' ? (
-                      <div className='relative z-10 flex size-5 shrink-0 items-center justify-center rounded-full border border-[var(--primary-9)] bg-white ring-4 ring-[var(--primary-2)]'>
-                        <div className='size-1.5 animate-pulse rounded-full bg-[var(--primary-9)]' />
-                      </div>
-                    ) : (
-                      <div className='relative z-10 flex size-5 shrink-0 items-center justify-center rounded-full border border-[var(--gray-4)] bg-white text-[var(--gray-8)]'>
-                        <div className='size-1.5 rounded-full bg-[var(--gray-4)]' />
-                      </div>
-                    )}
-                    <div className='flex flex-col gap-0.5'>
-                      <span
-                        className={cn(
-                          'text-[12px] font-bold',
-                          step4Status === 'active'
-                            ? 'text-[var(--primary-9)]'
-                            : 'text-[var(--gray-12)]',
-                        )}
-                      >
-                        Final Verification Review
-                      </span>
-                      <span className='text-[10px] leading-normal text-[var(--gray-10)]'>
-                        Routing the verified invoice to the final approval
-                        queue.
-                      </span>
                     </div>
                   </div>
-                </div>
-              )
-            })()}
-          </div>
-        </div>,
-        document.body
-      )}
+                )
+              })()}
+            </div>
+          </div>,
+          document.body,
+        )}
     </div>
   )
 }
@@ -767,7 +770,8 @@ export const useDynamicColumns = (
         : [
             {
               id: 'matchStatus',
-              label: activeTab === 'Processed' ? 'Payment Status' : 'Match Status',
+              label:
+                activeTab === 'Processed' ? 'Payment Status' : 'Match Status',
               size: 140,
               renderCell: (_row: any, index = 0) => {
                 if (activeTab === 'Processed') {
@@ -983,7 +987,7 @@ export const useDynamicColumns = (
                     0,
                 )
                 return (
-                  <span className='text-[14px] leading-none font-semibold tracking-tight text-[#0F172A] tabular-nums'>
+                  <span className='text-[14px] leading-none font-semibold tracking-tight text-[var(--text-primary)] tabular-nums'>
                     $
                     {(amount || 3450).toLocaleString(undefined, {
                       maximumFractionDigits: 2,

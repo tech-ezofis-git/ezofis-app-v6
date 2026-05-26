@@ -1,6 +1,6 @@
 import { useNavigate } from '@tanstack/react-router'
-import PageEmptyState from '@/components/common/PageEmptyState'
 import Logo from '@/components/common/Logo'
+import PageEmptyState from '@/components/common/PageEmptyState'
 import AuthFooter from '@/layouts/auth/components/AuthFooter'
 
 const InvalidUrlPage = () => {

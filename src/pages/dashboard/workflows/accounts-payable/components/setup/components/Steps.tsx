@@ -57,8 +57,10 @@ const Steps = () => {
         top: 0,
       })
     }
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-    const scrollables = document.querySelectorAll('.overflow-y-auto, [class*="overflow-y-auto"]')
+    window.scrollTo({ behavior: 'smooth', top: 0 })
+    const scrollables = document.querySelectorAll(
+      '.overflow-y-auto, [class*="overflow-y-auto"]',
+    )
     scrollables.forEach((el) => {
       el.scrollTo({
         behavior: 'smooth',

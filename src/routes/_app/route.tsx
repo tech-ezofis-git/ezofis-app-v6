@@ -1,8 +1,8 @@
 // routes/_app/route.ts
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router'
 import AppLayout from '@/layouts/app/AppLayout'
-import authUserStore from '@/stores/authUserStore'
 import { shouldLockAppNavigation } from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
+import authUserStore from '@/stores/authUserStore'
 
 export const Route = createFileRoute('/_app')({
   component: RouteComponent,

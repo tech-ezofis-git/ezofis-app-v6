@@ -7,13 +7,6 @@ import {
 } from './constants'
 import { applyResolvedTheme, getSystemTheme } from './resolveTheme'
 
-function updateMetaThemeColor(resolved: ResolvedTheme) {
-  const meta = document.querySelector('meta[name="theme-color"]')
-  if (meta) {
-    meta.setAttribute('content', META_THEME_COLORS[resolved])
-  }
-}
-
 /**
  * Keeps document attributes and meta tags in sync with the active color scheme.
  * Complements MantineProvider for app-level theme hooks (data-resolved-theme, OS changes).
@@ -47,4 +40,11 @@ export default function ThemeSync() {
   }, [colorScheme])
 
   return null
+}
+
+function updateMetaThemeColor(resolved: ResolvedTheme) {
+  const meta = document.querySelector('meta[name="theme-color"]')
+  if (meta) {
+    meta.setAttribute('content', META_THEME_COLORS[resolved])
+  }
 }

@@ -34,11 +34,11 @@ const PasswordRequirements = ({ password }: Props) => {
       <ul className='space-y-2' role='list'>
         {requirements.map(({ id, isValid, label }) => (
           <li
-            className={`flex items-center gap-x-2 transition-all duration-200 ${
-              isValid ? 'text-success-main font-semibold' : 'text-gray-9'
-            }`}
             key={id}
             role='listitem'
+            className={`flex items-center gap-x-2 transition-all duration-200 ${
+              isValid ? 'font-semibold text-success-main' : 'text-gray-9'
+            }`}
           >
             <Icon
               className={isValid ? 'text-success-main' : 'text-gray-6'}

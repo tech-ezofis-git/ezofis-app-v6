@@ -1,5 +1,5 @@
-import type { ComponentProps } from 'react'
 import type { Table as TanstackTable } from '@tanstack/react-table'
+import type { ComponentProps } from 'react'
 import EmptyState from '@/components/base/EmptyState'
 import cn from '@/utils/cn'
 import {
@@ -9,11 +9,14 @@ import {
 } from './menuPageEmptyStates'
 
 export type { MenuPage, MenuPageEmptyVariant } from './menuPageEmptyStates'
-export { MENU_PAGE_EMPTY_STATES, getMenuPageEmptyContent } from './menuPageEmptyStates'
-
-type SearchState = { id?: string; value?: string }
+export {
+  getMenuPageEmptyContent,
+  MENU_PAGE_EMPTY_STATES,
+} from './menuPageEmptyStates'
 
 type EmptyStateProps = ComponentProps<typeof EmptyState>
+
+type SearchState = { id?: string; value?: string }
 
 export const hasActiveTableSearch = (table?: TanstackTable<any>) => {
   if (!table) return false
@@ -29,7 +32,10 @@ export const resolveEmptyVariant = (
   return hasActiveTableSearch(table) ? 'filtered' : 'initial'
 }
 
-interface Props extends Omit<EmptyStateProps, 'description' | 'icon' | 'title'> {
+interface Props extends Omit<
+  EmptyStateProps,
+  'description' | 'icon' | 'title'
+> {
   containerClassName?: string
   description?: string
   /** When true, fills the available page/section height (default). */
@@ -72,15 +78,15 @@ const PageEmptyState = ({
       <EmptyState
         description={description ?? content.description}
         icon={icon ?? content.icon}
+        title={title ?? content.title}
         primaryActionLabel={
           showCreateAction
-            ? emptyStateProps.primaryActionLabel ?? content.primaryActionLabel
+            ? (emptyStateProps.primaryActionLabel ?? content.primaryActionLabel)
             : undefined
         }
         secondaryActionLabel={
           emptyStateProps.secondaryActionLabel ?? content.secondaryActionLabel
         }
-        title={title ?? content.title}
         onPrimaryAction={
           showCreateAction ? emptyStateProps.onPrimaryAction : undefined
         }

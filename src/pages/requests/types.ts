@@ -68,6 +68,6 @@ export interface WorkflowOption {
   flowJson: string // The JSON string defining rules/actions
   id: number | string
   name: string
-  wFormId: number
+  wFormId: number | string
   formJson?: string // The JSON defining columns/fields
 }

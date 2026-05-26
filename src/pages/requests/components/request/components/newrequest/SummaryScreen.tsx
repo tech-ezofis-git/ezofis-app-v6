@@ -10,7 +10,7 @@ const SummaryScreen = ({ data }: SummaryScreenProps) => {
     <div className='flex h-[calc(100vh-150px)] flex-col overflow-hidden bg-[var(--surface-muted)]'>
       <main className='mx-auto flex w-full max-w-[1600px] flex-1 flex-col space-y-6 overflow-hidden p-6'>
         {/* Top Header Card */}
-        <div className='flex flex-none flex-col items-start gap-8 rounded-xl border border-[var(--gray-3)] bg-white p-6 shadow-sm md:flex-row'>
+        <div className='flex flex-none flex-col items-start gap-8 rounded-xl border border-[var(--gray-3)] bg-surface p-6 shadow-sm md:flex-row'>
           <div className='flex min-w-[200px] items-center gap-4'>
             <div className='flex h-12 w-12 items-center justify-center rounded-full bg-[var(--green-3)] text-[var(--green-11)]'>
               <Icon
@@ -64,7 +64,7 @@ const SummaryScreen = ({ data }: SummaryScreenProps) => {
                 Schedule Payment
               </span>
             </div>
-            <div className='flex items-center gap-3 rounded-lg border border-[var(--gray-3)] bg-white p-3'>
+            <div className='flex items-center gap-3 rounded-lg border border-[var(--gray-3)] bg-surface p-3'>
               <Icon
                 className='text-xl text-[var(--orange-9)]'
                 name='material-symbols:calendar-today-outline'
@@ -86,7 +86,7 @@ const SummaryScreen = ({ data }: SummaryScreenProps) => {
         <div className='grid min-h-0 flex-1 grid-cols-1 gap-6 lg:grid-cols-2'>
           {/* Left: Invoice View */}
           <div className='flex h-full flex-col overflow-hidden rounded-xl border border-[var(--gray-4)] bg-[var(--gray-3)]'>
-            <div className='flex flex-none items-center justify-between border-b border-[var(--gray-4)] bg-white p-2 text-[var(--gray-11)]'>
+            <div className='flex flex-none items-center justify-between border-b border-[var(--gray-4)] bg-surface p-2 text-[var(--gray-11)]'>
               <div className='flex items-center gap-4'>
                 <button className='rounded p-1.5 transition-colors hover:bg-[var(--gray-2)]'>
                   <Icon name='material-symbols:view-sidebar-outline' />
@@ -101,7 +101,7 @@ const SummaryScreen = ({ data }: SummaryScreenProps) => {
                 <button className='rounded p-1.5 transition-colors hover:bg-[var(--gray-2)]'>
                   <Icon name='material-symbols:expand-more' />
                 </button>
-                <span className='rounded border border-[var(--gray-4)] bg-white px-2 py-0.5 text-sm'>
+                <span className='rounded border border-[var(--gray-4)] bg-surface px-2 py-0.5 text-sm'>
                   1
                 </span>
               </div>
@@ -118,7 +118,7 @@ const SummaryScreen = ({ data }: SummaryScreenProps) => {
               </div>
             </div>
             <div className='custom-scrollbar flex flex-1 justify-center overflow-auto bg-[var(--gray-6)] p-12'>
-              <div className='min-h-[842px] w-[595px] bg-white p-12 text-xs text-[var(--gray-13)] shadow-xl'>
+              <div className='min-h-[842px] w-[595px] bg-surface p-12 text-xs text-[var(--gray-13)] shadow-xl'>
                 {/* Simplified Invoice Rendering for Summary */}
                 <div className='mb-8'>
                   <h1 className='mb-4 text-lg font-bold text-[var(--blue-12)]'>
@@ -191,7 +191,7 @@ const SummaryScreen = ({ data }: SummaryScreenProps) => {
               <h2 className='mb-4 text-xs font-bold tracking-widest text-[var(--gray-10)] uppercase'>
                 Invoice Summary
               </h2>
-              <div className='grid grid-cols-2 gap-x-6 gap-y-8 rounded-xl border border-[var(--gray-3)] bg-white p-6'>
+              <div className='grid grid-cols-2 gap-x-6 gap-y-8 rounded-xl border border-[var(--gray-3)] bg-surface p-6'>
                 <div className='flex items-center gap-4'>
                   <div className='flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--purple-3)] text-[var(--purple-11)]'>
                     <Icon name='tabler:building-skyscraper' />
@@ -260,7 +260,7 @@ const SummaryScreen = ({ data }: SummaryScreenProps) => {
                   { label: 'Total Due', val: data.total.toFixed(2) },
                 ].map((field, i) => (
                   <div
-                    className='rounded-xl border border-[var(--gray-3)] bg-white p-5'
+                    className='rounded-xl border border-[var(--gray-3)] bg-surface p-5'
                     key={i}
                   >
                     <div className='mb-4 flex items-center justify-between'>
@@ -308,7 +308,7 @@ const SummaryScreen = ({ data }: SummaryScreenProps) => {
                   {data.lineItems.length} of {data.lineItems.length} matched
                 </span>
               </div>
-              <div className='overflow-hidden rounded-xl border border-[var(--gray-3)] bg-white'>
+              <div className='overflow-hidden rounded-xl border border-[var(--gray-3)] bg-surface'>
                 <table className='w-full text-xs'>
                   <thead className='border-b border-[var(--gray-3)] bg-[var(--gray-2)]'>
                     <tr className='text-left text-[var(--gray-11)]'>

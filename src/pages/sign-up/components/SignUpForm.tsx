@@ -120,10 +120,13 @@ const SignUpForm = ({ email, setEmail, onChangeView }: Props) => {
         })
 
         // OPTIONAL: call sendMailOTP with requiredOTP false (you asked for it earlier)
-        const { error: otpError, status: otpStatus } = await apiRouter.sendMailOTP({ email: gEmail, requiredOTP: false })
+        const { error: otpError, status: otpStatus } =
+          await apiRouter.sendMailOTP({ email: gEmail, requiredOTP: false })
 
         if (otpStatus === 409) {
-          setError('Tenant is already exists, Please change the Email for signup')
+          setError(
+            'Tenant is already exists, Please change the Email for signup',
+          )
           return
         }
         if (otpError) {
@@ -175,7 +178,8 @@ const SignUpForm = ({ email, setEmail, onChangeView }: Props) => {
       })
 
       // OPTIONAL: call sendMailOTP with requiredOTP false
-      const { error: otpError, status: otpStatus } = await apiRouter.sendMailOTP({ email: msEmail, requiredOTP: false })
+      const { error: otpError, status: otpStatus } =
+        await apiRouter.sendMailOTP({ email: msEmail, requiredOTP: false })
 
       if (otpStatus === 409) {
         setError('Tenant is already exists, Please change the Email for signup')

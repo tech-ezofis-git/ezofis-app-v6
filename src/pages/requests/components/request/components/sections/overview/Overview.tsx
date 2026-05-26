@@ -148,7 +148,7 @@ const AnalysisCard = ({
   title,
   value,
 }: any) => (
-  <div className='flex min-w-0 flex-1 flex-col gap-1.5 rounded-xl border border-[var(--gray-3)] bg-white p-2.5 transition-colors hover:bg-[var(--gray-1)]'>
+  <div className='flex min-w-0 flex-1 flex-col gap-1.5 rounded-xl border border-[var(--gray-3)] bg-surface p-2.5 transition-colors hover:bg-[var(--gray-1)]'>
     <div className='flex items-center justify-between'>
       <div
         className={cn(
@@ -252,7 +252,7 @@ const FormCard = ({
     return (
       <div
         className={cn(
-          'group flex items-start gap-3 rounded-lg border border-[var(--primary-3)] bg-white p-3 shadow-sm ring-1 ring-[var(--primary-3)]/20',
+          'group flex items-start gap-3 rounded-lg border border-[var(--primary-3)] bg-surface p-3 shadow-sm ring-1 ring-[var(--primary-3)]/20',
         )}
       >
         <div
@@ -279,7 +279,7 @@ const FormCard = ({
     <button
       type='button'
       className={cn(
-        'group flex w-full cursor-pointer items-start gap-3 rounded-lg border border-none border-transparent bg-transparent p-3 text-left transition-all hover:border-[var(--gray-3)] hover:bg-white hover:shadow-sm focus:ring-1 focus:ring-[var(--primary-3)]/50 focus:outline-none',
+        'group flex w-full cursor-pointer items-start gap-3 rounded-lg border border-none border-transparent bg-transparent p-3 text-left transition-all hover:border-[var(--gray-3)] hover:bg-surface hover:shadow-sm focus:ring-1 focus:ring-[var(--primary-3)]/50 focus:outline-none',
       )}
       onClick={() => setIsEditing(true)}
     >
@@ -311,7 +311,7 @@ const FormCard = ({
 
 const SummarySkeleton = () => (
   <div className='flex-1 animate-pulse space-y-6 overflow-y-auto px-4 pb-8'>
-    <div className='space-y-5 rounded-xl border border-[var(--gray-3)]/10 bg-white p-6 shadow-sm'>
+    <div className='space-y-5 rounded-xl border border-[var(--gray-3)]/10 bg-surface p-6 shadow-sm'>
       <div className='flex items-start justify-between'>
         <div className='flex items-center gap-4'>
           <div className='h-12 w-12 rounded-xl bg-[var(--gray-2)]' />
@@ -327,7 +327,7 @@ const SummarySkeleton = () => (
     <div className='grid grid-cols-2 gap-4'>
       {[1, 2, 3, 4].map((i) => (
         <div
-          className='space-y-3 rounded-xl border border-[var(--gray-3)]/10 bg-white p-4'
+          className='space-y-3 rounded-xl border border-[var(--gray-3)]/10 bg-surface p-4'
           key={i}
         >
           <div className='h-3 w-16 rounded bg-[var(--gray-2)]' />
@@ -699,7 +699,7 @@ const Overview = (props: any) => {
               fileUrl={previewUrl}
               plugins={[toolbarPluginInstance]}
             />
-            <div className='absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 items-center gap-4 rounded-xl border border-[var(--gray-3)] bg-white/90 px-4 py-2 opacity-0 shadow-2xl backdrop-blur-sm transition-all duration-300 group-hover:opacity-100'>
+            <div className='absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 items-center gap-4 rounded-xl border border-[var(--gray-3)] bg-surface/90 px-4 py-2 opacity-0 shadow-2xl backdrop-blur-sm transition-all duration-300 group-hover:opacity-100'>
               <button
                 className='p-1 hover:text-[var(--primary-9)]'
                 onClick={() => viewerRef.current?.zoom(scale - 0.1)}
@@ -748,7 +748,7 @@ const Overview = (props: any) => {
     <div className='flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden font-sans'>
       <div className='flex min-h-0 flex-1 overflow-hidden'>
         {/* Left Side - Document Viewer (40% Width) */}
-        <div className='relative flex w-[40%] flex-col overflow-hidden border-r border-[var(--gray-3)] bg-white'>
+        <div className='relative flex w-[40%] flex-col overflow-hidden border-r border-[var(--gray-3)] bg-surface'>
           {isViewerLoading && (
             <div className='absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 bg-[var(--gray-1)]'>
               <BarLoader />
@@ -763,7 +763,7 @@ const Overview = (props: any) => {
 
         {/* Right Side - Analysis & Data (60% Width) */}
         <div className='flex flex-1 flex-col bg-[var(--gray-1)]'>
-          <div className='flex min-h-0 flex-1 flex-col overflow-hidden bg-white'>
+          <div className='flex min-h-0 flex-1 flex-col overflow-hidden bg-surface'>
             {!selectedItem || Object.keys(selectedItem).length === 0 ? (
               <SummarySkeleton />
             ) : (
@@ -852,7 +852,7 @@ const Overview = (props: any) => {
                   </div>
                 </div>
 
-                <div className='sticky top-0 z-10 shrink-0 border-b border-[var(--gray-3)] bg-white px-6 pt-2'>
+                <div className='sticky top-0 z-10 shrink-0 border-b border-[var(--gray-3)] bg-surface px-6 pt-2'>
                   <div className='flex items-center gap-8'>
                     {[
                       {
@@ -949,7 +949,7 @@ const Overview = (props: any) => {
 
                   {activeTab === 'line_items' && (
                     <div className='flex-1 overflow-y-auto p-4'>
-                      <div className='overflow-hidden rounded-xl border border-[var(--gray-3)] bg-white shadow-sm'>
+                      <div className='overflow-hidden rounded-xl border border-[var(--gray-3)] bg-surface shadow-sm'>
                         <table className='w-full border-collapse text-left text-xs'>
                           <thead className='border-b border-[var(--gray-3)] bg-[var(--gray-1)]'>
                             <tr>
@@ -1015,7 +1015,7 @@ const Overview = (props: any) => {
                                   {/* Description Cell */}
                                   <td className='px-2 py-0.5 font-semibold text-[var(--gray-13)]'>
                                     <input
-                                      className='w-full rounded border-none bg-transparent px-1.5 py-1 text-xs font-semibold text-[var(--gray-13)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-white focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
+                                      className='w-full rounded border-none bg-transparent px-1.5 py-1 text-xs font-semibold text-[var(--gray-13)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
                                       value={descVal}
                                       onChange={(e) =>
                                         handleLineItemChange(
@@ -1030,7 +1030,7 @@ const Overview = (props: any) => {
                                   {/* Quantity Cell */}
                                   <td className='w-[70px] px-2 py-0.5 text-right font-semibold text-[var(--gray-11)]'>
                                     <input
-                                      className='w-full rounded border-none bg-transparent px-1.5 py-1 text-right text-xs font-semibold text-[var(--gray-11)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-white focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
+                                      className='w-full rounded border-none bg-transparent px-1.5 py-1 text-right text-xs font-semibold text-[var(--gray-11)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
                                       value={qtyVal}
                                       onChange={(e) =>
                                         handleLineItemChange(
@@ -1045,7 +1045,7 @@ const Overview = (props: any) => {
                                   {/* Rate/Price Cell */}
                                   <td className='w-[100px] px-2 py-0.5 text-right font-semibold text-[var(--gray-11)]'>
                                     <input
-                                      className='w-full rounded border-none bg-transparent px-1.5 py-1 text-right text-xs font-semibold text-[var(--gray-11)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-white focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
+                                      className='w-full rounded border-none bg-transparent px-1.5 py-1 text-right text-xs font-semibold text-[var(--gray-11)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
                                       value={priceVal}
                                       onBlur={(e) => {
                                         const num = Number.parseFloat(
@@ -1075,7 +1075,7 @@ const Overview = (props: any) => {
                                   {/* Total Amount Cell */}
                                   <td className='w-[120px] px-2 py-0.5 text-right font-semibold text-[var(--gray-13)]'>
                                     <input
-                                      className='w-full rounded border-none bg-transparent px-1.5 py-1 text-right text-xs font-semibold text-[var(--gray-13)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-white focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
+                                      className='w-full rounded border-none bg-transparent px-1.5 py-1 text-right text-xs font-semibold text-[var(--gray-13)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
                                       value={amountVal}
                                       onBlur={(e) => {
                                         const num = Number.parseFloat(

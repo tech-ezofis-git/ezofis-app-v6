@@ -1,4 +1,3 @@
-import { authApi as v5AuthApi } from './auth'
 import { authApiV6 } from './v6/auth'
 
 /**
@@ -6,8 +5,8 @@ import { authApiV6 } from './v6/auth'
  * Modify this logic to suit your specific tenant check.
  */
 export const getApiVersion = (): 'v5' | 'v6' => {
-  if (typeof window !== 'undefined') {
-    const origin = window.location.origin
+  if (globalThis.window !== undefined) {
+    const origin = globalThis.location.origin
     // Example logic: if the origin contains 'localhost:3000', use the V6 API
     // Adjust this to your actual condition
     if (origin.includes('localhost:3001')) {
@@ -48,8 +47,44 @@ export const verifyMailOTP = async (payload: any) => {
 }
 
 export const login = async (payload: any, tenantId?: string | number) => {
-  // Fallback/Default to V5
-  return await v5AuthApi.login(payload, tenantId)
+  // If tenantId is already provided (from selection UI), go straight to login
+  if (tenantId) {
+    return await authApiV6.login({
+      email: payload.email,
+      password: payload.password,
+      tenantId: String(tenantId),
+    })
+  }
+
+  // Otherwise, first fetch tenants for this email
+  const tenantRes = await authApiV6.getTenants(payload.email)
+  if (tenantRes.error) return tenantRes
+
+  const tenants = tenantRes.data?.tenants || []
+
+  if (tenants.length === 0) {
+    return { data: null, error: 'No organizations found for this email.' }
+  }
+
+  if (tenants.length > 1) {
+    // Return 300 to trigger the tenant selection UI in SignInForm.tsx
+    // Map V6 tenant structure to what the UI expects (id, name, email)
+    return {
+      data: tenants.map((t: any) => ({
+        email: payload.email,
+        id: t.tenantId,
+        name: t.name,
+      })),
+      status: 300,
+    }
+  }
+
+  // Only one tenant, proceed to login automatically
+  return await authApiV6.login({
+    email: payload.email,
+    password: payload.password,
+    tenantId: tenants[0].tenantId,
+  })
 }
 
 export const apiRouter = {

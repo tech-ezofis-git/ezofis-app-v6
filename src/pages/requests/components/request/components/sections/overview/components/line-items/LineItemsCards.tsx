@@ -41,7 +41,7 @@ const LineItemsCards = ({ data }: Props) => {
       <div className='space-y-2'>
         {items.map((item: any) => (
           <div
-            className='rounded-lg border border-gray-3 bg-white p-3 shadow-sm'
+            className='rounded-lg border border-gray-3 bg-surface p-3 shadow-sm'
             key={item.id}
           >
             {/* header */}

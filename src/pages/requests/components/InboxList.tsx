@@ -79,7 +79,8 @@ const InboxList: React.FC<InboxListProps> = ({
   onRowClick,
 }) => {
   const openNewRequest = requestStore((state) => state.openNewRequest)
-  const columns = useDynamicColumns(workflow, onRowClick, selectedItem, activeTab) || []
+  const columns =
+    useDynamicColumns(workflow, onRowClick, selectedItem, activeTab) || []
 
   console.log(data, 'this is from inbox list')
   const initialVisibilityState = {
@@ -279,7 +280,6 @@ const InboxList: React.FC<InboxListProps> = ({
                   pageSize={pageSize}
                   stickyHeader={true}
                   table={table}
-                  onEmptyPrimaryAction={() => openNewRequest('request')}
                   actions={[
                     {
                       align: 'right', // or 'left'
@@ -290,6 +290,7 @@ const InboxList: React.FC<InboxListProps> = ({
                       },
                     },
                   ]}
+                  onEmptyPrimaryAction={() => openNewRequest('request')}
                   onReload={onRefresh}
                 />
               </div>
@@ -304,7 +305,6 @@ const InboxList: React.FC<InboxListProps> = ({
                   isLoading={isLoading}
                   isReloading={isRefetching}
                   table={table} // Pass the instance
-                  onNewRequest={() => openNewRequest('request')}
                   actions={[
                     {
                       align: 'right',
@@ -315,6 +315,7 @@ const InboxList: React.FC<InboxListProps> = ({
                       },
                     },
                   ]}
+                  onNewRequest={() => openNewRequest('request')}
                   onReload={onRefresh}
                   onRowClick={onRowClick}
                 />

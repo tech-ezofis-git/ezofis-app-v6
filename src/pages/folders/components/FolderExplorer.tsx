@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { folderApi } from '../api/folderApi'
 import type {
   AppView,
   ExplorerView,
@@ -7,16 +6,17 @@ import type {
   FolderItem,
   TreeNode,
 } from '../types/folderTypes'
-import { ExplorerToolbar } from './ExplorerToolbar'
-import { TreeSidebar } from './TreeSidebar'
-import { Breadcrumbs, type BreadcrumbItem } from './Breadcrumbs'
-import { FolderTable } from './FolderTable'
-import { DocumentsListView } from './DocumentsListView'
-import { DocumentDetailsView } from './DocumentDetailsView'
-import { EditMetadataView } from './EditMetadataView'
+import { folderApi } from '../api/folderApi'
 import { AiSummaryView } from './AiSummaryView'
+import { type BreadcrumbItem, Breadcrumbs } from './Breadcrumbs'
+import { DocumentDetailsView } from './DocumentDetailsView'
+import { DocumentsListView } from './DocumentsListView'
+import { EditMetadataView } from './EditMetadataView'
+import { ExplorerToolbar } from './ExplorerToolbar'
+import { FolderTable } from './FolderTable'
 import { ShareView } from './ShareView'
 import { StartWorkflowView } from './StartWorkflowView'
+import { TreeSidebar } from './TreeSidebar'
 
 export function FolderExplorer() {
   const [tree, setTree] = useState<TreeNode[]>([])
@@ -44,7 +44,7 @@ export function FolderExplorer() {
   const findPathToNode = (
     nodes: TreeNode[],
     targetId: string,
-    path: string[] = []
+    path: string[] = [],
   ): string[] => {
     for (const node of nodes) {
       const currentPath = [...path, node.id]
@@ -68,15 +68,12 @@ export function FolderExplorer() {
   const getChildIds = (node: TreeNode): string[] => {
     const children = node.children || []
 
-    return children.flatMap((child) => [
-      child.id,
-      ...getChildIds(child),
-    ])
+    return children.flatMap((child) => [child.id, ...getChildIds(child)])
   }
 
   const findNodeById = (
     nodes: TreeNode[],
-    targetId: string
+    targetId: string,
   ): TreeNode | null => {
     for (const node of nodes) {
       if (node.id === targetId) {
@@ -131,15 +128,15 @@ export function FolderExplorer() {
   if (appView === 'documents') {
     return (
       <DocumentsListView
-        files={files}
         breadcrumbs={breadcrumbs}
+        files={files}
+        onAiSummary={() => setAppView('aiSummary')}
         onBreadcrumbSelect={(id) => {
           openFolder(id)
           // setViewMode('grid')
         }}
-        onOpenFile={openFile}
         onEdit={() => setAppView('editMetadata')}
-        onAiSummary={() => setAppView('aiSummary')}
+        onOpenFile={openFile}
         onShare={() => setAppView('share')}
         onWorkflow={() => setAppView('workflow')}
       />
@@ -150,9 +147,9 @@ export function FolderExplorer() {
     return (
       <DocumentDetailsView
         id={selectedFile}
+        onAiSummary={() => setAppView('aiSummary')}
         onBack={() => setAppView('explorer')}
         onEdit={() => setAppView('editMetadata')}
-        onAiSummary={() => setAppView('aiSummary')}
         onShare={() => setAppView('share')}
         onWorkflow={() => setAppView('workflow')}
       />
@@ -177,19 +174,19 @@ export function FolderExplorer() {
 
   if (viewMode === 'list') {
     return (
-      <div className="flex h-full min-h-0 flex-col bg-surface-secondary text-sm text-gray-11">
+      <div className='flex h-full min-h-0 flex-col bg-surface-secondary text-sm text-gray-11'>
         <ExplorerToolbar view={viewMode} setView={setViewMode} />
 
         <DocumentsListView
-          files={files}
           breadcrumbs={breadcrumbs}
+          files={files}
+          onAiSummary={() => setAppView('aiSummary')}
           onBreadcrumbSelect={(id) => {
             openFolder(id)
             // setViewMode('grid')
           }}
-          onOpenFile={openFile}
           onEdit={() => setAppView('editMetadata')}
-          onAiSummary={() => setAppView('aiSummary')}
+          onOpenFile={openFile}
           onShare={() => setAppView('share')}
           onWorkflow={() => setAppView('workflow')}
         />
@@ -198,35 +195,35 @@ export function FolderExplorer() {
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-surface-secondary text-sm text-gray-11">
+    <div className='flex h-full min-h-0 flex-col bg-surface-secondary text-sm text-gray-11'>
       <ExplorerToolbar view={viewMode} setView={setViewMode} />
 
-      <div className="flex min-h-0 flex-1 overflow-hidden">
+      <div className='flex min-h-0 flex-1 overflow-hidden'>
         <TreeSidebar
-          tree={tree}
           activeId={activeFolder}
           expandedIds={expandedIds}
-          onToggle={toggleFolder}
+          tree={tree}
           onSelect={openFolder}
+          onToggle={toggleFolder}
         />
 
-        <main className="flex min-w-0 flex-1 flex-col overflow-hidden bg-surface-secondary">
+        <main className='flex min-w-0 flex-1 flex-col overflow-hidden bg-surface-secondary'>
           <Breadcrumbs items={breadcrumbs} onSelect={openFolder} />
 
-          <div className="ez-scrollbar min-h-0 flex-1 overflow-y-auto">
+          <div className='ez-scrollbar min-h-0 flex-1 overflow-y-auto'>
             <FolderTable
-              folders={folders}
               files={files}
-              onOpenFolder={openFolder}
-              onOpenFile={openFile}
-              onEditMetadata={(id) => {
-                setSelectedFile(id)
-                setAppView('editMetadata')
-              }}
+              folders={folders}
               onAiSummary={(id) => {
                 setSelectedFile(id)
                 setAppView('aiSummary')
               }}
+              onEditMetadata={(id) => {
+                setSelectedFile(id)
+                setAppView('editMetadata')
+              }}
+              onOpenFile={openFile}
+              onOpenFolder={openFolder}
               onShare={(id) => {
                 setSelectedFile(id)
                 setAppView('share')

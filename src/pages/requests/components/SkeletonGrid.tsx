@@ -97,7 +97,7 @@ const SkeletonCard = ({
     <div
       aria-hidden='true'
       className={cn(
-        'relative overflow-hidden rounded-2xl border border-[var(--gray-3)] bg-white/90 p-5 shadow-sm',
+        'relative overflow-hidden rounded-2xl border border-[var(--gray-3)] bg-surface/90 p-5 shadow-sm',
         'backdrop-blur select-none',
       )}
     >
@@ -112,7 +112,7 @@ const SkeletonCard = ({
           animate={{ translateX: ['-100%', '200%'] }}
           className='absolute inset-0 -translate-x-full'
           style={{
-            background: `linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.5) 50%, transparent 100%)`,
+            background: `linear-gradient(90deg, transparent 0%, color-mix(in srgb, var(--surface) 55%, transparent) 50%, transparent 100%)`,
           }}
           transition={{
             delay: index * 0.15, // Stagger effect

@@ -36,22 +36,22 @@ type Store = {
   erpSettings: ErpSettings
   isActivatingAutomation: boolean
   isApSetUpCompleted: boolean
-  /** When true, sidebar and routes stay locked until AP setup finishes (signup redirect only). */
-  restrictNavigationUntilApSetup: boolean
   isSetupCalloutDismissed: boolean
   isSetupOpen: boolean
   isSetupStarted: boolean
+  /** When true, sidebar and routes stay locked until AP setup finishes (signup redirect only). */
+  restrictNavigationUntilApSetup: boolean
   step: number
   storageSettings: StorageSettings
   closeSetup: () => void
   openSetup: () => void
   setEmailSettings: (emailSettings: EmailSettings) => void
   setErpSettings: (erpSettings: ErpSettings) => void
-  setisApSetUpCompleted: (value: boolean) => void
-  setRestrictNavigationUntilApSetup: (value: boolean) => void
   setIsActivatingAutomation: (value: boolean) => void
+  setisApSetUpCompleted: (value: boolean) => void
   setIsSetupCalloutDismissed: (value: boolean) => void
   setIsSetupStarted: (value: boolean) => void
+  setRestrictNavigationUntilApSetup: (value: boolean) => void
   setStep: (value: number) => void
   setStorageSettings: (storageSettings: StorageSettings) => void
 }
@@ -91,14 +91,17 @@ const useSetupStore = create<Store>()((set, get) => ({
   emailSettings: initialEmailSettings,
   erpSettings: initialErpSettings,
   isActivatingAutomation: false,
-  isApSetUpCompleted: typeof window !== 'undefined' ? localStorage.getItem('isApSetUpCompleted') === 'true' : false,
-  restrictNavigationUntilApSetup:
+  isApSetUpCompleted:
     typeof window !== 'undefined'
-      ? localStorage.getItem('restrictNavigationUntilApSetup') === 'true'
+      ? localStorage.getItem('isApSetUpCompleted') === 'true'
       : false,
   isSetupCalloutDismissed: false,
   isSetupOpen: false,
   isSetupStarted: true,
+  restrictNavigationUntilApSetup:
+    typeof window !== 'undefined'
+      ? localStorage.getItem('restrictNavigationUntilApSetup') === 'true'
+      : false,
   step: 0,
   storageSettings: initialStorageSettings,
   closeSetup: () =>
@@ -126,6 +129,9 @@ const useSetupStore = create<Store>()((set, get) => ({
       },
     }),
 
+  setIsActivatingAutomation: (value: boolean) =>
+    set({ isActivatingAutomation: value }),
+
   setisApSetUpCompleted: (value: boolean) => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('isApSetUpCompleted', String(value))
@@ -133,20 +139,17 @@ const useSetupStore = create<Store>()((set, get) => ({
     set({ isApSetUpCompleted: value })
   },
 
+  setIsSetupCalloutDismissed: (value: boolean) =>
+    set({ isSetupCalloutDismissed: value }),
+
+  setIsSetupStarted: (value: boolean) => set({ isSetupStarted: value }),
+
   setRestrictNavigationUntilApSetup: (value: boolean) => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('restrictNavigationUntilApSetup', String(value))
     }
     set({ restrictNavigationUntilApSetup: value })
   },
-
-  setIsActivatingAutomation: (value: boolean) =>
-    set({ isActivatingAutomation: value }),
-
-  setIsSetupCalloutDismissed: (value: boolean) =>
-    set({ isSetupCalloutDismissed: value }),
-
-  setIsSetupStarted: (value: boolean) => set({ isSetupStarted: value }),
   setStep: (value: number) => {
     const { emailSettings } = get()
     // Block moving past Step 1 if not connected
@@ -164,7 +167,7 @@ const useSetupStore = create<Store>()((set, get) => ({
 }))
 
 export const shouldLockAppNavigation = () => {
-  const { restrictNavigationUntilApSetup, isApSetUpCompleted } =
+  const { isApSetUpCompleted, restrictNavigationUntilApSetup } =
     useSetupStore.getState()
   return restrictNavigationUntilApSetup && !isApSetUpCompleted
 }

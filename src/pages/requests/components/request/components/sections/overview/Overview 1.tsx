@@ -390,7 +390,7 @@ const Overview = ({
             {/* TOP STAT / DECISION BANNER */}
             <div className='mt-2 w-full'>
               <AnimateSlideUp delay={0.25}>
-                <div className='w-full rounded-xl border border-[var(--gray-3)] bg-white p-5 shadow-sm transition-all duration-300 hover:shadow-md'>
+                <div className='w-full rounded-xl border border-[var(--gray-3)] bg-surface p-5 shadow-sm transition-all duration-300 hover:shadow-md'>
                   <div className='flex w-full items-center gap-6'>
                     {/* LEFT: Status & Score */}
                     <div className='flex min-w-[180px] shrink-0 items-center gap-4'>
@@ -458,18 +458,18 @@ const Overview = ({
                     {/* MIDDLE: AI Analysis */}
                     <div className='min-w-0 flex-1 py-1'>
                       <div className='flex h-full items-start gap-3'>
-                        <div className='w-2 self-stretch rounded-full bg-[#8B5CF6] opacity-30' />
+                        <div className='w-2 self-stretch rounded-full bg-[var(--primary-9)] opacity-30' />
                         <div className='flex min-w-0 flex-col gap-1'>
                           <div className='flex items-center gap-2'>
                             <Icon
-                              className='size-3.5 text-[#8B5CF6]'
+                              className='size-3.5 text-[var(--primary-9)]'
                               name='tabler:sparkles'
                             />
                             <span className='text-[11px] font-bold tracking-wider text-[var(--gray-10)] uppercase'>
                               Analysis
                             </span>
                             {banner.badgeText && (
-                              <span className='rounded-full border border-[#8B5CF6]/20 bg-[#8B5CF6]/10 px-2 py-0.5 text-[10px] font-bold text-[#7C3AED]'>
+                              <span className='rounded-full border border-[var(--primary-4)] bg-[var(--primary-2)] px-2 py-0.5 text-[10px] font-bold text-[var(--primary-11)]'>
                                 {banner.badgeText}
                               </span>
                             )}
@@ -496,8 +496,8 @@ const Overview = ({
                         </span>
                       </div>
 
-                      <div className='flex min-w-[160px] items-center gap-3 rounded-lg border border-[var(--gray-3)] bg-white px-3 py-2 shadow-sm'>
-                        <div className='flex size-9 shrink-0 items-center justify-center rounded-md bg-[#FFEDD5]/50 text-[#F97316]'>
+                      <div className='flex min-w-[160px] items-center gap-3 rounded-lg border border-[var(--gray-3)] bg-surface px-3 py-2 shadow-sm'>
+                        <div className='flex size-9 shrink-0 items-center justify-center rounded-md bg-[var(--orange-2)]/60 text-[var(--orange-9)]'>
                           <Icon className='size-5' name='tabler:calendar' />
                         </div>
 
@@ -506,7 +506,7 @@ const Overview = ({
                             <span className='text-[13px] font-bold whitespace-nowrap text-[var(--gray-12)]'>
                               Due {banner.nextActionDate}
                             </span>
-                            <div className='size-1.5 rounded-full bg-[#F97316]' />
+                            <div className='size-1.5 rounded-full bg-[var(--orange-9)]' />
                           </div>
 
                           <div className='flex items-center gap-1 leading-none'>
@@ -585,7 +585,7 @@ const Overview = ({
                       </div>
 
                       <div
-                        className='rounded-xl border border-[var(--gray-4)] bg-white p-4 shadow-sm'
+                        className='rounded-xl border border-[var(--gray-4)] bg-surface p-4 shadow-sm'
                         id='section-summary'
                       >
                         {invoiceHeader && (
@@ -683,7 +683,7 @@ const Overview = ({
 
                             return (
                               <div
-                                className='flex flex-col gap-3 rounded-xl border border-[var(--gray-3)] bg-white p-3 shadow-sm'
+                                className='flex flex-col gap-3 rounded-xl border border-[var(--gray-3)] bg-surface p-3 shadow-sm'
                                 key={index}
                               >
                                 <div className='flex items-center justify-between'>
@@ -741,7 +741,7 @@ const Overview = ({
                             )
                           })
                         ) : (
-                          <div className='col-span-full rounded-xl border border-[var(--gray-3)] bg-white p-4 text-center text-12 text-[var(--gray-8)] italic'>
+                          <div className='col-span-full rounded-xl border border-[var(--gray-3)] bg-surface p-4 text-center text-12 text-[var(--gray-8)] italic'>
                             No fields matched.
                           </div>
                         )}
@@ -757,7 +757,7 @@ const Overview = ({
                       </div>
 
                       <div
-                        className='overflow-hidden rounded-xl border border-[var(--gray-4)] bg-white shadow-sm'
+                        className='overflow-hidden rounded-xl border border-[var(--gray-4)] bg-surface shadow-sm'
                         id='section-line-items'
                       >
                         <div className='overflow-x-auto'>
@@ -940,7 +940,7 @@ const Overview = ({
                                       </p>
                                     </h4>
                                   </div>
-                                  <div className='flex shrink-0 items-center gap-1.5 rounded-lg border border-[var(--red-3)] bg-white px-3 py-1.5 shadow-sm'>
+                                  <div className='flex shrink-0 items-center gap-1.5 rounded-lg border border-[var(--red-3)] bg-surface px-3 py-1.5 shadow-sm'>
                                     <Icon
                                       className='size-4 text-[var(--red-9)]'
                                       name='tabler:alert-circle'
@@ -962,11 +962,11 @@ const Overview = ({
                                       const formatted = formatInvoiceError(err)
                                       return (
                                         <div
-                                          className='group flex items-start gap-3 rounded-lg border border-[var(--red-3)] bg-white px-4 py-3 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--red-5)] hover:shadow-md'
+                                          className='group flex items-start gap-3 rounded-lg border border-[var(--red-3)] bg-surface px-4 py-3 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--red-5)] hover:shadow-md'
                                           key={idx}
                                         >
                                           {/* Error number badge */}
-                                          <div className='flex size-6 shrink-0 items-center justify-center rounded-full bg-[var(--red-2)] text-[10px] font-bold text-[var(--red-10)] ring-2 ring-white'>
+                                          <div className='flex size-6 shrink-0 items-center justify-center rounded-full bg-[var(--red-2)] text-[10px] font-bold text-[var(--red-10)] ring-2 ring-[var(--surface)]'>
                                             {idx + 1}
                                           </div>
 
@@ -1049,7 +1049,7 @@ const Overview = ({
                             })()}
                           </div>
 
-                          <div className='overflow-hidden rounded-xl border border-[var(--gray-4)] bg-white shadow-sm'>
+                          <div className='overflow-hidden rounded-xl border border-[var(--gray-4)] bg-surface shadow-sm'>
                             <div className='flex items-center justify-between gap-4 border-b border-[var(--gray-3)] bg-[var(--gray-1)] px-4 py-3'>
                               <div className='flex items-center gap-3'>
                                 <div className='flex size-9 items-center justify-center rounded-lg bg-[var(--orange-1)] text-[var(--orange-9)]'>
@@ -1080,7 +1080,7 @@ const Overview = ({
 
                             <div className='overflow-x-auto'>
                               <div className='min-w-[720px]'>
-                                <div className='grid grid-cols-[2fr_0.8fr_0.8fr_0.8fr_1fr_1fr] border-b border-[var(--gray-3)] bg-white px-4 py-2 text-[10px] font-bold tracking-wider text-[var(--gray-9)] uppercase'>
+                                <div className='grid grid-cols-[2fr_0.8fr_0.8fr_0.8fr_1fr_1fr] border-b border-[var(--gray-3)] bg-surface px-4 py-2 text-[10px] font-bold tracking-wider text-[var(--gray-9)] uppercase'>
                                   <div>Description</div>
                                   <div>PO Qty</div>
                                   <div>Inv Qty</div>
@@ -1149,7 +1149,7 @@ const Overview = ({
                                 </div>
 
                                 {backorder?.recommendation && (
-                                  <div className='flex items-center justify-between border-t border-[var(--gray-3)] bg-white px-4 py-3'>
+                                  <div className='flex items-center justify-between border-t border-[var(--gray-3)] bg-surface px-4 py-3'>
                                     <div className='flex items-center gap-2 text-[11px] font-bold text-[var(--gray-10)]'>
                                       <Icon
                                         className='size-4'
@@ -1195,7 +1195,7 @@ const Overview = ({
                           History
                         </div>
                       </div>
-                      <div className='rounded-xl border border-[var(--gray-4)] bg-white p-4 shadow-sm'>
+                      <div className='rounded-xl border border-[var(--gray-4)] bg-surface p-4 shadow-sm'>
                         <History
                           enabled={true}
                           processId={processId}
@@ -1215,7 +1215,7 @@ const Overview = ({
                 <div className='animate-in slide-in-from-right-10 h-full w-[30%] overflow-hidden rounded-lg duration-300'>
                   {rightView === 'comments' ? (
                     /* --- COMMENTS VIEW --- */
-                    <div className='flex h-full flex-col overflow-hidden rounded-lg border border-[var(--gray-3)] bg-white'>
+                    <div className='flex h-full flex-col overflow-hidden rounded-lg border border-[var(--gray-3)] bg-surface'>
                       {/* Header */}
                       <div className='flex shrink-0 items-center justify-between gap-3 border-b border-[var(--gray-3)] bg-[var(--gray-1)] px-4 py-3'>
                         <div className='flex items-center gap-2'>
@@ -1228,7 +1228,7 @@ const Overview = ({
                           </span>
                         </div>
                         <button
-                          className='flex size-8 cursor-pointer items-center justify-center rounded-lg border border-transparent text-[var(--gray-9)] transition-all hover:border-[var(--gray-3)] hover:bg-white hover:shadow-sm'
+                          className='flex size-8 cursor-pointer items-center justify-center rounded-lg border border-transparent text-[var(--gray-9)] transition-all hover:border-[var(--gray-3)] hover:bg-surface hover:shadow-sm'
                           onClick={() => setRightView('analysis')}
                         >
                           <Icon className='size-5' name='tabler:x' />
@@ -1248,7 +1248,7 @@ const Overview = ({
                     </div>
                   ) : (
                     /* --- ATTACHMENTS VIEW --- */
-                    <div className='flex h-full flex-col overflow-hidden rounded-lg border border-[var(--gray-3)] bg-white'>
+                    <div className='flex h-full flex-col overflow-hidden rounded-lg border border-[var(--gray-3)] bg-surface'>
                       {/* Header */}
                       <div className='flex shrink-0 items-center justify-between gap-3 border-b border-[var(--gray-3)] bg-[var(--gray-1)] px-4 py-3'>
                         <div className='flex items-center gap-2'>
@@ -1261,7 +1261,7 @@ const Overview = ({
                           </span>
                         </div>
                         <button
-                          className='flex size-8 cursor-pointer items-center justify-center rounded-lg border border-transparent text-[var(--gray-9)] transition-all hover:border-[var(--gray-3)] hover:bg-white hover:shadow-sm'
+                          className='flex size-8 cursor-pointer items-center justify-center rounded-lg border border-transparent text-[var(--gray-9)] transition-all hover:border-[var(--gray-3)] hover:bg-surface hover:shadow-sm'
                           onClick={() => setRightView('analysis')}
                         >
                           <Icon className='size-5' name='tabler:x' />

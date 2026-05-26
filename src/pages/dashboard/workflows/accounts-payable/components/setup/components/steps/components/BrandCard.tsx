@@ -23,15 +23,15 @@ const BrandCard = ({
   return (
     <motion.button
       aria-pressed={checked}
+      type='button'
+      whileHover={{ scale: 1.01 }}
+      whileTap={{ scale: 0.99 }}
       className={cn(
         'group relative flex h-full min-h-[76px] w-full cursor-pointer flex-row items-center justify-between gap-3 rounded-lg border px-4 py-3.5 text-left transition-all duration-200',
         checked
           ? 'border-green-9 bg-green-1 shadow-sm ring-2 ring-green-9/25'
           : 'border-gray-4 bg-surface hover:border-gray-5 hover:bg-gray-2',
       )}
-      type='button'
-      whileHover={{ scale: 1.01 }}
-      whileTap={{ scale: 0.99 }}
       onClick={onClick}
     >
       <div className='flex flex-1 items-center gap-3'>

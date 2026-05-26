@@ -7,6 +7,7 @@ import { getConnectionQueryOptions } from '@/api/connectorQueries'
 import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
 import Input from '@/components/base/inputs/InputText'
+import showToast from '@/components/base/toast/showToast'
 import cn from '@/utils/cn'
 import ConnectionsRouting from './common/ConnectionsRouting'
 import SettingsSection from './common/SettingsSection'
@@ -218,7 +219,7 @@ export default function FTPAgentSettingsPanel({
     const { error, payload } = await connectorApi.addConnector(input)
 
     if (error) {
-      alert(error)
+      showToast({ message: error, variant: 'error' })
       setIsConnecting(false)
       return
     }

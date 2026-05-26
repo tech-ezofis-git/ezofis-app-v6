@@ -14,11 +14,12 @@ import TableSearch from '@/components/base/data-table/actions/TableSearch'
 // import { generateDummySummary } from '@/pages/requests/utils/dummyData'
 // import SummaryBadge from '@/components/common/SummaryBadge'
 import Icon from '@/components/base/icon/Icon'
+import showToast from '@/components/base/toast/showToast'
 // import RequestSummary from './RequestSummary'
 import FileSheet from '@/components/common/file-sheet/FileSheet'
+import ListEmptyState from '@/components/common/ListEmptyState'
 import cn from '@/utils/cn'
 import { formatDatetime } from '@/utils/dayjs'
-import ListEmptyState from '@/components/common/ListEmptyState'
 import HoverExpandableText from './HoverExpandableText'
 
 const GridRowSkeleton = ({ index }: { index: number }) => {
@@ -310,11 +311,11 @@ const extractInvoiceDate = (row: any): string => {
 }
 
 interface GridViewProps<TData> {
-  activeTab?: string
   data: any[]
   isLoading: boolean
   table: TanstackTable<TData>
   actions?: TableActionButton[]
+  activeTab?: string
   allWorkflows?: Option[] | null
   hideGrouping?: boolean
   isReloading?: boolean
@@ -325,17 +326,17 @@ interface GridViewProps<TData> {
 
   workflow?: Option | null
   setWorkflow?: (workflow: Option | null) => void
+  onNewRequest?: () => void
   onReload?: () => void
   onRoleChange?: (role: string) => void
-  onNewRequest?: () => void
   onRowClick: (item: any, tab: string) => void
   onRowSizeChange?: (size: RowSize) => void
   onViewModeChange?: (mode: 'table' | 'grid') => void
 }
 
 const GridView = <TData extends unknown>({
-  activeTab,
   actions,
+  activeTab,
   data,
   hideGrouping: _hideGrouping,
   isLoading,
@@ -415,17 +416,17 @@ const GridView = <TData extends unknown>({
   return (
     <>
       <div className='flex h-full flex-col overflow-hidden'>
-        <div className='sticky top-0 z-20 flex items-center justify-between border-b border-[var(--gray-2)] bg-white/50 py-1 pr-4 pl-7 backdrop-blur-sm'>
+        <div className='sticky top-0 z-20 flex items-center justify-between border-b border-[var(--gray-2)] bg-surface/70 py-1 pr-4 pl-7 backdrop-blur-sm'>
           <div className='flex items-center gap-4'>
             {isSelectionMode ? (
               <div
                 className={cn(
                   'flex size-5 cursor-pointer items-center justify-center rounded-md border-2 transition-all',
                   isAllSelected
-                    ? 'border-[var(--primary-9)] bg-white'
+                    ? 'border-[var(--primary-9)] bg-surface'
                     : isPartiallySelected
-                      ? 'border-[var(--primary-9)] bg-white'
-                      : 'border-[var(--gray-3)] bg-white hover:border-[var(--primary-9)]',
+                      ? 'border-[var(--primary-9)] bg-surface'
+                      : 'border-[var(--gray-3)] bg-surface hover:border-[var(--primary-9)]',
                 )}
                 onClick={toggleAllSelection}
               >
@@ -440,7 +441,7 @@ const GridView = <TData extends unknown>({
                 )}
               </div>
             ) : null}
-            <span className='text-[14px] font-medium text-[#0F172A]'>
+            <span className='text-[14px] font-medium text-[var(--text-primary)]'>
               Invoices{' '}
               {isSelectionMode && selectedIds.size > 0 && (
                 <span className='ml-1 text-[var(--gray-10)]'>
@@ -450,7 +451,7 @@ const GridView = <TData extends unknown>({
             </span>
             {!isSelectionMode && allItems.length > 0 && (
               <button
-                className='inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[var(--gray-3)] bg-white px-2.5 py-1 text-[12px] font-medium text-[var(--gray-11)] transition-all hover:border-[var(--primary-4)] hover:bg-[var(--primary-1)] hover:text-[var(--primary-11)]'
+                className='inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[var(--gray-3)] bg-surface px-2.5 py-1 text-[12px] font-medium text-[var(--gray-11)] transition-all hover:border-[var(--primary-4)] hover:bg-[var(--primary-1)] hover:text-[var(--primary-11)]'
                 type='button'
                 onClick={() => setIsSelectionMode(true)}
               >
@@ -485,9 +486,10 @@ const GridView = <TData extends unknown>({
                     className='inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-[var(--green-9)] px-3 py-1.5 text-12 font-semibold text-white shadow-sm transition-all hover:bg-[var(--green-10)] hover:shadow-md active:scale-95'
                     type='button'
                     onClick={() => {
-                      alert(
-                        `Bulk marked ${selectedIds.size} requests as Paid successfully!`,
-                      )
+                      showToast({
+                        message: `Bulk marked ${selectedIds.size} requests as Paid successfully!`,
+                        variant: 'success',
+                      })
                       exitSelectionMode()
                     }}
                   >
@@ -500,9 +502,10 @@ const GridView = <TData extends unknown>({
                       className='inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-[var(--green-9)] px-3 py-1.5 text-12 font-semibold text-white shadow-sm transition-all hover:bg-[var(--green-10)] hover:shadow-md active:scale-95'
                       type='button'
                       onClick={() => {
-                        alert(
-                          `Bulk approved ${selectedIds.size} requests successfully!`,
-                        )
+                        showToast({
+                          message: `Bulk approved ${selectedIds.size} requests successfully!`,
+                          variant: 'success',
+                        })
                         exitSelectionMode()
                       }}
                     >
@@ -514,9 +517,10 @@ const GridView = <TData extends unknown>({
                       className='inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[var(--red-3)] bg-[var(--red-2)] px-3 py-1.5 text-12 font-semibold text-[var(--red-11)] shadow-sm transition-all hover:bg-[var(--red-3)] hover:shadow-md active:scale-95'
                       type='button'
                       onClick={() => {
-                        alert(
-                          `Bulk rejected ${selectedIds.size} requests successfully!`,
-                        )
+                        showToast({
+                          message: `Bulk rejected ${selectedIds.size} requests successfully!`,
+                          variant: 'warning',
+                        })
                         exitSelectionMode()
                       }}
                     >
@@ -530,7 +534,7 @@ const GridView = <TData extends unknown>({
                 )}
 
                 <button
-                  className='inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[var(--gray-3)] bg-white px-2.5 py-1.5 text-12 font-medium text-[var(--gray-11)] transition-all hover:bg-[var(--gray-1)] hover:text-[var(--gray-13)]'
+                  className='inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[var(--gray-3)] bg-surface px-2.5 py-1.5 text-12 font-medium text-[var(--gray-11)] transition-all hover:bg-[var(--gray-1)] hover:text-[var(--gray-13)]'
                   type='button'
                   onClick={exitSelectionMode}
                 >
@@ -653,14 +657,14 @@ const GridView = <TData extends unknown>({
                       'group relative flex w-full items-center gap-4 rounded-xl border-0 border-b border-b-[var(--gray-2)] px-5 py-3 transition-colors transition-shadow duration-200',
                       row.isProcessing ? 'cursor-default' : 'cursor-pointer',
                       isSelected
-                        ? 'border-b-[var(--primary-3)] border-l border-l-[var(--primary-3)] border-r border-r-[var(--primary-3)] bg-[var(--primary-1)] shadow-sm'
+                        ? 'border-r border-l border-r-[var(--primary-3)] border-b-[var(--primary-3)] border-l-[var(--primary-3)] bg-[var(--primary-1)] shadow-sm'
                         : 'bg-[var(--surface)]',
                       !isSelected &&
                         !row.isProcessing &&
-                        'hover:z-10 hover:border-b-[var(--primary-4)] hover:border-l hover:border-l-[var(--primary-4)] hover:border-r hover:border-r-[var(--primary-4)] hover:bg-[var(--gray-1)] hover:shadow-sm',
+                        'hover:z-10 hover:border-r hover:border-l hover:border-r-[var(--primary-4)] hover:border-b-[var(--primary-4)] hover:border-l-[var(--primary-4)] hover:bg-[var(--gray-1)] hover:shadow-sm',
                       !isSelected &&
                         row.isProcessing &&
-                        'hover:border-b-[var(--orange-4)] hover:border-l hover:border-l-[var(--orange-4)] hover:border-r hover:border-r-[var(--orange-4)] hover:bg-[var(--orange-1)]/40 hover:shadow-sm',
+                        'hover:border-r hover:border-l hover:border-r-[var(--orange-4)] hover:border-b-[var(--orange-4)] hover:border-l-[var(--orange-4)] hover:bg-[var(--orange-1)]/40 hover:shadow-sm',
                     )}
                     onClick={() => {
                       if (!row.isProcessing) onRowClick(row, 'Overview')
@@ -673,8 +677,8 @@ const GridView = <TData extends unknown>({
                           className={cn(
                             'flex size-5 items-center justify-center rounded-md border-2 transition-all',
                             isSelected
-                              ? 'border-[var(--primary-9)] bg-white'
-                              : 'border-[var(--gray-3)] bg-white group-hover:border-[var(--primary-9)]',
+                              ? 'border-[var(--primary-9)] bg-surface'
+                              : 'border-[var(--gray-3)] bg-surface group-hover:border-[var(--primary-9)]',
                           )}
                           onClick={(e) => {
                             if (row.isProcessing) {
@@ -712,7 +716,7 @@ const GridView = <TData extends unknown>({
                     <div className='flex min-w-0 flex-1 flex-col gap-1.5'>
                       <div className='flex items-center gap-3'>
                         <h3
-                          className='truncate text-[15px] tracking-tight text-[#0F172A] transition-colors group-hover:text-[var(--primary-9)]'
+                          className='truncate text-[15px] tracking-tight text-[var(--text-primary)] transition-colors group-hover:text-[var(--primary-9)]'
                           style={{ fontWeight: 500 }}
                         >
                           {invoiceNo}
@@ -726,7 +730,8 @@ const GridView = <TData extends unknown>({
                           />
                         )}
                         <div className='flex shrink-0 justify-start'>
-                          {row.isProcessing ? null : activeTab === 'Processed' ? (
+                          {row.isProcessing ? null : activeTab ===
+                            'Processed' ? (
                             originalIndex % 2 === 0 ? (
                               <span className='flex items-center gap-1 rounded-md border border-[var(--green-4)] bg-[var(--green-2)] px-2 py-0.5 text-[11px] font-semibold text-[var(--green-11)]'>
                                 <Icon
@@ -906,10 +911,7 @@ const GridView = <TData extends unknown>({
                                 : 'bottom-full mb-3 translate-y-2 group-hover/aiscore:translate-y-0',
                             )}
                           >
-                            <div
-                              className='relative overflow-hidden rounded-xl border border-[var(--gray-3)] p-4 shadow-2xl'
-                              style={{ backgroundColor: '#ffffff', opacity: 1 }}
-                            >
+                            <div className='relative overflow-hidden rounded-xl border border-[var(--gray-3)] bg-surface p-4 opacity-100 shadow-2xl'>
                               <div className='pointer-events-none absolute top-0 right-0 -mt-10 -mr-10 h-20 w-20 rounded-full bg-[var(--teal-9)] opacity-10 blur-2xl' />
 
                               <div className='relative z-10 mb-2 flex items-center gap-2'>
@@ -1024,7 +1026,7 @@ const GridView = <TData extends unknown>({
                           {/* Column 4: Invoice Value & Date */}
                           <div className='flex w-[115px] shrink-0 flex-col items-end'>
                             <span
-                              className='text-[15px] leading-none tracking-tight text-[#0F172A] tabular-nums'
+                              className='text-[15px] leading-none tracking-tight text-[var(--text-primary)] tabular-nums'
                               style={{ fontWeight: 600 }}
                             >
                               $

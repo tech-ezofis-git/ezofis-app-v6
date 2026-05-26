@@ -11,6 +11,7 @@ import useDataTableState from '@/components/base/data-table/hooks/useDataTableSt
 import Menu from '@/components/base/menu/Menu'
 import MenuItem from '@/components/base/menu/MenuItem'
 import Pagination from '@/components/base/pagination/Pagination'
+import showToast from '@/components/base/toast/showToast'
 import UserRoleBadge from '@/components/common/UserRoleBadge'
 import { formatDatetime } from '@/utils/dayjs'
 import StoryCode from './-components/StoryCode'
@@ -82,13 +83,13 @@ const columns: Column[] = [
           <MenuItem
             icon='lucide:edit'
             label='Edit'
-            onClick={() => alert(row.itemId)}
+            onClick={() => showToast({ message: String(row.itemId) })}
           />
           <MenuItem
             icon='lucide:trash-2'
             iconClass='text-red-11'
             label='Delete'
-            onClick={() => alert(row.itemId)}
+            onClick={() => showToast({ message: String(row.itemId) })}
           />
         </Menu>
       </div>

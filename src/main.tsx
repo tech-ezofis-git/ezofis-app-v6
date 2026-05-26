@@ -9,11 +9,11 @@ import { StrictMode } from 'react'
 import '@/lib/web-vitals/report'
 import ReactDOM from 'react-dom/client'
 import Toasts from '@/components/base/toast/Toasts'
-import cssVariablesResolver from '@/lib/theme/cssVariablesResolver'
-import { ThemeSync } from '@/lib/theme'
 import theme from '@/lib/mantine/theme'
 import TanstackQueryProvider from '@/lib/tanstack-query/Provider.tsx'
 import TanstackRouterProvider from '@/lib/tanstack-router/Provider.tsx'
+import { ThemeSync } from '@/lib/theme'
+import cssVariablesResolver from '@/lib/theme/cssVariablesResolver'
 import LingUiProvider from './lib/lingui/LingUiProvider'
 
 const googleClientId = import.meta.env?.VITE_GOOGLE_CLIENT_ID as string

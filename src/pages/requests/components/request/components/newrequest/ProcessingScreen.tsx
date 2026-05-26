@@ -192,9 +192,9 @@ const ProcessingScreen = ({
     <div className='box-border h-[calc(100vh-110px)] w-full overflow-hidden p-4 lg:p-6'>
       <div className='mx-auto grid h-full max-w-[1600px] grid-cols-12 gap-4 2xl:gap-6'>
         {/* Left Column: File Preview */}
-        <section className='group relative col-span-8 flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-[var(--gray-3)] bg-white shadow-sm'>
+        <section className='group relative col-span-8 flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-[var(--gray-3)] bg-surface shadow-sm'>
           {/* Document Header */}
-          <div className='flex shrink-0 items-center justify-between border-b border-[var(--gray-2)] bg-white px-5 py-3'>
+          <div className='flex shrink-0 items-center justify-between border-b border-[var(--gray-2)] bg-surface px-5 py-3'>
             <div className='flex min-w-0 items-center gap-3'>
               <div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--indigo-2)] text-[var(--indigo-9)]'>
                 <Icon className='h-5 w-5' name='lucide:file-text' />
@@ -245,7 +245,7 @@ const ProcessingScreen = ({
           </div>
 
           {/* Viewer Area */}
-          <div className='relative flex h-full flex-grow items-center justify-center overflow-hidden bg-white'>
+          <div className='relative flex h-full flex-grow items-center justify-center overflow-hidden bg-surface'>
             <div className='absolute inset-0 z-0 h-full w-full overflow-hidden'>
               {previewUrl ? (
                 fileType === 'application/pdf' ? (
@@ -287,7 +287,7 @@ const ProcessingScreen = ({
 
         {/* Right Column: Timeline */}
         <section className='col-span-4 flex h-full min-h-0 flex-col'>
-          <div className='relative flex h-full flex-col overflow-hidden rounded-xl border border-[var(--gray-3)] bg-white p-4 shadow-sm 2xl:p-6'>
+          <div className='relative flex h-full flex-col overflow-hidden rounded-xl border border-[var(--gray-3)] bg-surface p-4 shadow-sm 2xl:p-6'>
             <div className='mb-2 flex shrink-0 items-center justify-between 2xl:mb-4'>
               <h2 className='text-base font-bold text-[var(--gray-12)] 2xl:text-lg'>
                 Processing Timeline
@@ -319,7 +319,7 @@ const ProcessingScreen = ({
               {/* Step 0: Upload */}
               <div className='relative z-10 flex items-start space-x-4 2xl:space-x-6'>
                 <div
-                  className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full shadow-lg ring-4 ring-white transition-all duration-300 2xl:h-8 2xl:w-8 ${
+                  className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full shadow-lg ring-4 ring-[var(--surface)] transition-all duration-300 2xl:h-8 2xl:w-8 ${
                     uploadStatus === 'success'
                       ? 'bg-[var(--green-9)]'
                       : uploadStatus === 'error'
@@ -391,7 +391,7 @@ const ProcessingScreen = ({
                 className={`relative z-10 flex items-start space-x-4 opacity-100 transition-opacity duration-300 2xl:space-x-6`}
               >
                 <div
-                  className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full shadow-lg ring-4 ring-white transition-all duration-300 2xl:h-8 2xl:w-8 ${step >= 1 ? (step > 1 ? 'bg-[var(--green-9)]' : 'bg-[var(--primary-9)]') : 'border-2 border-[var(--gray-4)] bg-white'}`}
+                  className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full shadow-lg ring-4 ring-[var(--surface)] transition-all duration-300 2xl:h-8 2xl:w-8 ${step >= 1 ? (step > 1 ? 'bg-[var(--green-9)]' : 'bg-[var(--primary-9)]') : 'border-2 border-[var(--gray-4)] bg-surface'}`}
                 >
                   {step > 1 ? (
                     <Icon
@@ -455,7 +455,7 @@ const ProcessingScreen = ({
                 className={`relative z-10 flex items-start space-x-4 opacity-100 transition-opacity duration-300 2xl:space-x-6`}
               >
                 <div
-                  className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full shadow-lg ring-4 ring-white transition-all duration-300 2xl:h-8 2xl:w-8 ${step >= 2 ? (step > 2 ? 'bg-[var(--green-9)]' : 'bg-[var(--primary-9)]') : 'border-2 border-[var(--gray-4)] bg-white'}`}
+                  className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full shadow-lg ring-4 ring-[var(--surface)] transition-all duration-300 2xl:h-8 2xl:w-8 ${step >= 2 ? (step > 2 ? 'bg-[var(--green-9)]' : 'bg-[var(--primary-9)]') : 'border-2 border-[var(--gray-4)] bg-surface'}`}
                 >
                   {step > 2 ? (
                     <Icon
@@ -508,7 +508,7 @@ const ProcessingScreen = ({
                 className={`relative z-10 flex items-start space-x-4 opacity-100 transition-opacity duration-300 2xl:space-x-6`}
               >
                 <div
-                  className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full shadow-lg ring-4 ring-white transition-all duration-300 2xl:h-8 2xl:w-8 ${step >= 3 ? (step > 3 ? 'bg-[var(--green-9)]' : 'bg-[var(--primary-9)]') : 'border-2 border-[var(--gray-4)] bg-white'}`}
+                  className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full shadow-lg ring-4 ring-[var(--surface)] transition-all duration-300 2xl:h-8 2xl:w-8 ${step >= 3 ? (step > 3 ? 'bg-[var(--green-9)]' : 'bg-[var(--primary-9)]') : 'border-2 border-[var(--gray-4)] bg-surface'}`}
                 >
                   {step > 3 ? (
                     <Icon
@@ -561,7 +561,7 @@ const ProcessingScreen = ({
                 className={`relative z-10 flex items-start space-x-4 opacity-100 transition-opacity duration-300 2xl:space-x-6`}
               >
                 <div
-                  className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full shadow-lg ring-4 ring-white transition-all duration-300 2xl:h-8 2xl:w-8 ${step >= 4 ? 'bg-[var(--green-9)]' : 'border-2 border-[var(--gray-4)] bg-white'}`}
+                  className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full shadow-lg ring-4 ring-[var(--surface)] transition-all duration-300 2xl:h-8 2xl:w-8 ${step >= 4 ? 'bg-[var(--green-9)]' : 'border-2 border-[var(--gray-4)] bg-surface'}`}
                 >
                   {step >= 4 ? (
                     <Icon

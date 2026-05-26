@@ -9,6 +9,7 @@ import useDataTable from '@/components/base/data-table/hooks/useDataTable'
 import useDataTableState from '@/components/base/data-table/hooks/useDataTableState'
 import Menu from '@/components/base/menu/Menu'
 import MenuItem from '@/components/base/menu/MenuItem'
+import showToast from '@/components/base/toast/showToast'
 import FormStatusBadge from '@/components/common/FormStatusBadge'
 import FormTypeBadge from '@/components/common/FormTypeBadge'
 import { formatDatetime } from '@/utils/dayjs'
@@ -19,6 +20,7 @@ const FormsPage = () => {
   const navigate = useNavigate()
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+  const [tabValue, setTabValue] = useState<string>('All')
 
   const initialVisibilityState = {
     createdAt: false,
@@ -37,10 +39,37 @@ const FormsPage = () => {
     initialVisibilityState,
   })
 
-  const groupBy = useMemo(() => groupState[0] || 'type', [groupState])
+  const groupBy = 'type'
+
+  const filterBy = useMemo(() => {
+    const filters = []
+    if (tabValue === 'Published') {
+      filters.push({
+        condition: 'IS_EQUALS_TO',
+        criteria: 'publishOption',
+        dataType: '',
+        value: 'PUBLISHED',
+      })
+    } else if (tabValue === 'Drafts') {
+      filters.push({
+        condition: 'IS_EQUALS_TO',
+        criteria: 'publishOption',
+        dataType: '',
+        value: 'DRAFT',
+      })
+    }
+    return filters.length > 0
+      ? [
+          {
+            filters,
+            groupCondition: '',
+          },
+        ]
+      : []
+  }, [tabValue])
 
   const { data, isFetching, isPending, isRefetching, refetch } = useQuery(
-    getFormsListQueryOptions(page, pageSize, groupBy, []),
+    getFormsListQueryOptions(page, pageSize, groupBy, filterBy),
   )
 
   const columns: Column[] = useMemo(
@@ -164,7 +193,9 @@ const FormsPage = () => {
                 icon='lucide:trash-2'
                 iconClass='text-red-11'
                 label='Delete'
-                onClick={() => alert(row.uid || row.id)}
+                onClick={() =>
+                  showToast({ message: `Delete form ID: ${row.uid || row.id}` })
+                }
               />
             </Menu>
           </div>
@@ -219,35 +250,72 @@ const FormsPage = () => {
         'key' in rawList[0] && ('value' in rawList[0] || 'data' in rawList[0])
 
       if (isGrouped) {
-        return rawList.map((group: any) => {
-          const items = Array.isArray(group.value)
-            ? group.value
-            : Array.isArray(group.data)
-              ? group.data
-              : []
-          return {
-            groupCount: items.length,
-            groupId: String(group.key),
-            groupKey: 'type',
-            groupValue: String(group.key),
-            items: items.map(mapItem),
-          }
-        })
+        return rawList
+          .map((group: any) => {
+            const items = Array.isArray(group.value)
+              ? group.value
+              : Array.isArray(group.data)
+                ? group.data
+                : []
+            const mappedItems = items.map(mapItem)
+
+            // Apply local filtering for tabValue status
+            const filteredItems = mappedItems.filter((item: any) => {
+              const option = (
+                item._json?.settings?.publish?.publishOption ||
+                item.publishOption ||
+                ''
+              ).toUpperCase()
+              if (tabValue === 'Published') {
+                return option === 'PUBLISHED'
+              }
+              if (tabValue === 'Drafts') {
+                return option === 'DRAFT'
+              }
+              return true
+            })
+
+            return {
+              groupCount: filteredItems.length,
+              groupId: String(group.key),
+              groupKey: 'type',
+              groupValue: String(group.key),
+              items: filteredItems,
+            }
+          })
+          .filter((group) => group.groupCount > 0)
       }
+
+      // If not grouped, fallback to flat mapper
+      const mappedItems = rawList.map(mapItem)
+      const filteredItems = mappedItems.filter((item: any) => {
+        const option = (
+          item._json?.settings?.publish?.publishOption ||
+          item.publishOption ||
+          ''
+        ).toUpperCase()
+        if (tabValue === 'Published') {
+          return option === 'PUBLISHED'
+        }
+        if (tabValue === 'Drafts') {
+          return option === 'DRAFT'
+        }
+        return true
+      })
 
       return [
         {
-          groupCount: rawList.length,
+          groupCount: filteredItems.length,
           groupId: 'all',
           groupKey: 'all',
           groupValue: 'All Forms',
-          items: rawList.map(mapItem),
+          items: filteredItems,
         },
       ]
     }
 
     return []
-  }, [data])
+  }, [data, tabValue])
 
   const totalItems = useMemo(() => {
     if (!data) return 0
@@ -282,14 +350,10 @@ const FormsPage = () => {
     },
   })
 
-  // Expand ALL groups when grouping is active, similar to Requests Page
+  // Expand ALL groups by default
   useEffect(() => {
-    if (groupState.length > 0) {
-      setExpandState(true)
-    } else {
-      setExpandState({})
-    }
-  }, [groupState, setExpandState])
+    setExpandState(true)
+  }, [setExpandState])
 
   const openFormBuilder = () => {
     navigate({ to: '/form-builder' })
@@ -297,7 +361,7 @@ const FormsPage = () => {
 
   return (
     <div className='flex h-full flex-col'>
-      <Header />
+      <Header tabValue={tabValue} onTabChange={setTabValue} />
 
       <div className='bg-gray-50/50 flex-1 overflow-hidden px-6 py-2'>
         <Table

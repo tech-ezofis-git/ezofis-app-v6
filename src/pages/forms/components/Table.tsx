@@ -18,11 +18,11 @@ interface TableProps {
 const Table = ({
   isLoading,
   isRefetching,
-  onCreate,
   page,
   pageSize,
   table,
   totalItems,
+  onCreate,
   onPageChange,
   onPageSizeChange,
   onReload,

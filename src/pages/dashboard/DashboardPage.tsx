@@ -1,7 +1,7 @@
 import { AnimateSlideUp } from '@/components/common/animations'
 import AccountsPayable from './workflows/accounts-payable/AccountsPayable'
-import DashboardCharts from './workflows/shared/components/Header'
 import setupStore from './workflows/accounts-payable/stores/useSetupStore'
+import DashboardCharts from './workflows/shared/components/Header'
 
 const DashboardPage = () => {
   const isActivatingAutomation = setupStore(
@@ -11,12 +11,12 @@ const DashboardPage = () => {
 
   if (isActivatingAutomation) {
     return (
-      <div className='flex h-full min-h-[50vh] flex-col items-center justify-center bg-gray-50/50' />
+      <div className='bg-gray-50/50 flex h-full min-h-[50vh] flex-col items-center justify-center' />
     )
   }
 
   return (
-    <div className='flex h-full flex-col overflow-y-auto bg-gray-50/50'>
+    <div className='bg-gray-50/50 flex h-full flex-col overflow-y-auto'>
       {isApSetUpCompleted ? (
         <AnimateSlideUp delay={0.1}>
           <DashboardCharts />

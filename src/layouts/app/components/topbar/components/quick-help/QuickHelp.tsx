@@ -251,7 +251,7 @@ const QuickHelp = () => {
                       className={cn(
                         'max-w-[280px] rounded-xl px-4 py-2.5 text-sm leading-relaxed shadow-sm',
                         m.sender === 'user'
-                          ? 'bg-[#F3F4F6] text-gray-13'
+                          ? 'bg-surface-muted text-gray-13'
                           : 'border border-gray-2 bg-surface text-gray-12',
                       )}
                     >

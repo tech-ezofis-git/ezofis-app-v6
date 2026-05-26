@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import PageEmptyState from '@/components/common/PageEmptyState'
 import Menu from '@/components/base/menu/Menu'
+import PageEmptyState from '@/components/common/PageEmptyState'
 import Header from './components/header/Header'
 import NotificationsTrigger from './components/NotificationsTrigger'
 

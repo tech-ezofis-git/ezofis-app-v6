@@ -1,10 +1,14 @@
-import { THEME_STORAGE_KEY, type ResolvedTheme, type ThemeMode } from './constants'
+import {
+  type ResolvedTheme,
+  THEME_STORAGE_KEY,
+  type ThemeMode,
+} from './constants'
 
-export function getSystemTheme(): ResolvedTheme {
-  if (typeof window === 'undefined') return 'light'
-  return window.matchMedia('(prefers-color-scheme: dark)').matches
-    ? 'dark'
-    : 'light'
+/** Apply resolved scheme to the document root (used by init script and ThemeSync). */
+export function applyResolvedTheme(resolved: ResolvedTheme) {
+  document.documentElement.setAttribute('data-mantine-color-scheme', resolved)
+  document.documentElement.setAttribute('data-resolved-theme', resolved)
+  document.documentElement.style.colorScheme = resolved
 }
 
 export function getStoredThemeMode(): ThemeMode | null {
@@ -22,14 +26,14 @@ export function getStoredThemeMode(): ThemeMode | null {
   return null
 }
 
+export function getSystemTheme(): ResolvedTheme {
+  if (typeof window === 'undefined') return 'light'
+  return window.matchMedia('(prefers-color-scheme: dark)').matches
+    ? 'dark'
+    : 'light'
+}
+
 export function resolveTheme(mode: ThemeMode): ResolvedTheme {
   if (mode === 'auto') return getSystemTheme()
   return mode
-}
-
-/** Apply resolved scheme to the document root (used by init script and ThemeSync). */
-export function applyResolvedTheme(resolved: ResolvedTheme) {
-  document.documentElement.setAttribute('data-mantine-color-scheme', resolved)
-  document.documentElement.setAttribute('data-resolved-theme', resolved)
-  document.documentElement.style.colorScheme = resolved
 }
