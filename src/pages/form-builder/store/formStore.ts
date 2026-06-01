@@ -658,10 +658,15 @@ export const useFormStore = create<FormStore>()(
           set({ publishStatus: targetStatus })
         }
 
-        const payload = cleanFormPayload({
+        const formSchema = cleanFormPayload({
           ...state,
           publishStatus: currentStatus,
         })
+
+        const payload = {
+          name: state.name || 'Untitled Form',
+          formJson: formSchema,
+        }
 
         const hasFields = state.panels.some((p) => p.fields.length > 0)
         if (!hasFields) {

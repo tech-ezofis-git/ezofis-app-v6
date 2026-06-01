@@ -1,49 +1,60 @@
-import { useNavigate } from '@tanstack/react-router'
+import { useNavigate, useParams } from '@tanstack/react-router'
 import { useReactFlow } from '@xyflow/react'
+import { useState } from 'react'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
+import showToast from '@/components/base/toast/showToast'
+import workflowsApiV6 from '@/api/v6/workflows'
 import useWorkflowStore from '../../stores/useWorkflowStore'
 import { exportWorkflow } from '../../utils/exportWorkflow'
 
 const BuilderHeader = () => {
   const navigate = useNavigate()
+  const { workflowId } = useParams({ strict: false }) as any
   const { getEdges, getNodes } = useReactFlow()
   const { workflowDescription, workflowName, workflowStatus } =
     useWorkflowStore((state) => state)
+  const [isSaving, setIsSaving] = useState(false)
 
-  const handleDownload = () => {
+  const handleSave = async () => {
+    if (!workflowId || workflowId === 'new') {
+      showToast({
+        message: 'No active workflow ID found to save. Cannot save new draft workflows.',
+        variant: 'error',
+      })
+      return
+    }
+
+    setIsSaving(true)
     try {
       const exportedJson = exportWorkflow(getNodes(), getEdges())
-      const blob = new Blob([JSON.stringify(exportedJson, null, 2)], {
-        type: 'application/json',
-      })
-      const url = URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = `${workflowName || 'workflow'}.json`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      URL.revokeObjectURL(url)
+      
+      const payload = {
+        name: workflowName,
+        workflowJson: exportedJson,
+      }
 
-      import('@/components/base/toast/showToast').then(
-        ({ default: showToast }) => {
-          showToast({
-            message: 'Workflow settings exported successfully',
-            variant: 'success',
-          })
-        },
-      )
-    } catch (error) {
-      console.error('Export failed:', error)
-      import('@/components/base/toast/showToast').then(
-        ({ default: showToast }) => {
-          showToast({
-            message: 'Failed to export workflow settings',
-            variant: 'error',
-          })
-        },
-      )
+      const { error } = await workflowsApiV6.updateWorkflow(String(workflowId), payload)
+
+      if (error) {
+        showToast({
+          message: `Failed to save workflow: ${error}`,
+          variant: 'error',
+        })
+      } else {
+        showToast({
+          message: 'Workflow saved successfully',
+          variant: 'success',
+        })
+      }
+    } catch (error: any) {
+      console.error('Save failed:', error)
+      showToast({
+        message: `Failed to save workflow: ${error.message || error}`,
+        variant: 'error',
+      })
+    } finally {
+      setIsSaving(false)
     }
   }
 
@@ -92,7 +103,13 @@ const BuilderHeader = () => {
           variant='outline'
           onClick={useWorkflowStore((state) => state.startTestRun)}
         />
-        <Button icon='lucide:save' label='Save' onClick={handleDownload} />
+        <Button
+          disabled={isSaving}
+          icon='lucide:save'
+          label='Save'
+          loading={isSaving}
+          onClick={handleSave}
+        />
       </div>
     </header>
   )

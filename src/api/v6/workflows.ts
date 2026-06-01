@@ -140,9 +140,9 @@ export const mapPublishedWorkflowListToOptions = (
     }))
 
 export interface V6WorkflowDetail {
-  flowJson?: string
-  workflowJson?: string
-  formJson?: string
+  flowJson?: any
+  workflowJson?: any
+  formJson?: any
   id?: string
   name?: string
   wFormId?: string | number
@@ -224,10 +224,33 @@ const getWorkflowById = async (workflowId: string) => {
   return response
 }
 
+const updateWorkflow = async (workflowId: string, payload: any) => {
+  const response: { data: any; error: string } = {
+    data: null,
+    error: '',
+  }
+  try {
+    const { data, status } = await axiosV6({
+      data: payload,
+      headers: getTenantHeaders(),
+      method: 'PUT',
+      url: `/workflows/${workflowId}`,
+    })
+    if (![200, 201, 202, 204].includes(status)) throw new Error('invalid status code')
+    response.data = data
+  } catch (e: unknown) {
+    console.error(e)
+    const err = e as { response?: { data?: string } }
+    response.error = err?.response?.data || 'error updating workflow'
+  }
+  return response
+}
+
 export const workflowsApiV6 = {
   getAllWorkflows,
   getWorkflowById,
   getWorkflows,
+  updateWorkflow,
 }
 
 export default workflowsApiV6

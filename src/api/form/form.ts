@@ -56,7 +56,13 @@ const createForm = async (payload: any) => {
 const updateForm = async (id: string, payload: any) => {
   const response: any = { data: null, error: '' }
   try {
-    const { data, status } = await axiosCrypto.put(`/form/${id}`, payload)
+    const store = authUserStore.getState()
+    const tenantId = store.session?.tenantId || ''
+    const { data, status } = await axiosV6.put(`/form/${id}`, payload, {
+      headers: {
+        'X-Tenant-Id': tenantId,
+      },
+    })
     if (![200, 201, 202, 204].includes(status)) {
       console.error(
         `[formApi.updateForm] Error: Invalid status code ${status}`,
