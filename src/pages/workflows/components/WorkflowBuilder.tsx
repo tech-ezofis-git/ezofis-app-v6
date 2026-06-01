@@ -124,7 +124,7 @@ const WorkflowBuilderCanvas = ({ workflowId }: { workflowId: string }) => {
     const flowJsonStr = data?.workflowJson || data?.flowJson
     if (flowJsonStr && !isNew) {
       try {
-        const json = JSON.parse(flowJsonStr)
+        const json = flowJsonStr
         loadLegacyWorkflow(json)
       } catch (e) {
         console.error('Failed to parse workflow json', e)
@@ -364,16 +364,16 @@ const WorkflowBuilderCanvas = ({ workflowId }: { workflowId: string }) => {
                   (nodes.find((n) => n.id === contextMenu.id)?.data.type !==
                     'trigger' &&
                     nodes.find((n) => n.id === contextMenu.id)?.data.label !==
-                      'Workflow Success')) && (
-                  <button
-                    className='text-red-600 hover:bg-red-50 flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm'
-                    onClick={deleteItem}
-                  >
-                    {contextMenu.type === 'node'
-                      ? 'Delete Node'
-                      : 'Delete Connection'}
-                  </button>
-                )}
+                    'Workflow Success')) && (
+                    <button
+                      className='text-red-600 hover:bg-red-50 flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm'
+                      onClick={deleteItem}
+                    >
+                      {contextMenu.type === 'node'
+                        ? 'Delete Node'
+                        : 'Delete Connection'}
+                    </button>
+                  )}
               </div>
             )}
           </ReactFlow>

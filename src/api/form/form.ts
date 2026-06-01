@@ -4,15 +4,24 @@ import { axiosCrypto, axiosV6 } from '../axios'
 const getFormDataById = async (id: string) => {
   const response: any = { data: null, error: '' }
   try {
-    const { data, status } = await axiosCrypto.get(`/form/${id}`)
+    const { data, status } = await axiosV6.get(`/form/${id}`)
     if (status !== 200) throw new Error('Invalid status code')
 
-    // Parse formJson if it exists
+    // Safely parse formJson if it exists and is a string
     if (data?.formJson) {
-      data.formJson = JSON.parse(data.formJson)
+      if (typeof data.formJson === 'string') {
+        try {
+          data.formJson = JSON.parse(data.formJson)
+        } catch (e) {
+          console.error('Failed to parse formJson in getFormDataById:', e)
+        }
+      }
+      
       // Safety check for hubLinkIds as per technical reference
-      if (!data.formJson.hubLinkIds) {
-        data.formJson.hubLinkIds = []
+      if (data.formJson && typeof data.formJson === 'object') {
+        if (!data.formJson.hubLinkIds) {
+          data.formJson.hubLinkIds = []
+        }
       }
     }
 
