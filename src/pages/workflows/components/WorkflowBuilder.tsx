@@ -121,12 +121,13 @@ const WorkflowBuilderCanvas = ({ workflowId }: { workflowId: string }) => {
 
   // Load from database
   useEffect(() => {
-    if (data?.flowJson && !isNew) {
+    const flowJsonStr = data?.workflowJson || data?.flowJson
+    if (flowJsonStr && !isNew) {
       try {
-        const json = JSON.parse(data.flowJson)
+        const json = JSON.parse(flowJsonStr)
         loadLegacyWorkflow(json)
       } catch (e) {
-        console.error('Failed to parse flowJson', e)
+        console.error('Failed to parse workflow json', e)
       }
     }
   }, [data, loadLegacyWorkflow, isNew])

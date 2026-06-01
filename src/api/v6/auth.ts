@@ -186,20 +186,10 @@ export const login = async (payload: {
 export const getSession = async () => {
   const response: any = { data: null, error: '' }
   try {
-    let res = null
-    try {
-      res = await axiosV6({
-        method: 'GET',
-        url: `/auth/session`,
-      })
-    } catch {
-      res = await axiosV6({
-        method: 'GET',
-        url: `/userSession`,
-      })
-    }
-
-    const { data, status } = res
+    const { data, status } = await axiosV6({
+      method: 'GET',
+      url: `/userSession`,
+    })
     if (status !== 200) throw new Error('invalid status code')
 
     if (data) {

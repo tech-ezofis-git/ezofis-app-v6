@@ -15,7 +15,7 @@ export type Identity = {
   token?: string
   tokenType?: string
 }
-export type ProfileMenu = unknown
+
 export type Session = {
   email: string
   firstName: string
@@ -40,7 +40,7 @@ type Store = {
   identity: Identity | null
   isAuthenticated: boolean
   preferenceId: number
-  profileMenus: ProfileMenu[]
+  profileMenus: unknown[]
   session: Session | null
   signUpUserData: SignUpUserData
   user: User
@@ -49,7 +49,7 @@ type Store = {
   setDefaultView: (view: DefaultView) => void
   setIdentity: (identity: Identity | null) => void
   setPreferenceId: (id: number) => void
-  setProfileMenu: (menus: ProfileMenu[]) => void
+  setProfileMenu: (menus: unknown[]) => void
   setSession: (session: Session | null) => void
   setSignUpUserData: (partial: Partial<SignUpUserData>) => void
   setUser: (user: User) => void
@@ -68,7 +68,7 @@ const authUserStore = create<Store>()((set) => {
   let identity: Identity | null = null
   let session: Session | null = null
 
-  if (typeof window !== 'undefined') {
+  if (globalThis.window !== undefined) {
     identity = (getFromLocalStorage('identity') as Identity) ?? null
     session = (getFromLocalStorage('session') as Session) ?? null
   }
@@ -108,11 +108,11 @@ const authUserStore = create<Store>()((set) => {
 
     resetAuthState: () => {
       // Clear localStorage
-      if (typeof window !== 'undefined') {
-        window.localStorage.removeItem('identity')
-        window.localStorage.removeItem('session')
-        window.localStorage.removeItem('isApSetUpCompleted')
-        window.localStorage.removeItem('restrictNavigationUntilApSetup')
+      if (globalThis.window !== undefined) {
+        globalThis.localStorage.removeItem('identity')
+        globalThis.localStorage.removeItem('session')
+        globalThis.localStorage.removeItem('isApSetUpCompleted')
+        globalThis.localStorage.removeItem('restrictNavigationUntilApSetup')
       }
 
       // Reset setup store state

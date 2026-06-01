@@ -33,7 +33,13 @@ const getAllWorkflows = async (payload: any) => {
 
 const getWorkflowById = async (id: string) => {
   try {
-    const { data, status } = await axiosCrypto.get(`/workflow/${id}`)
+    const store = authUserStore.getState()
+    const tenantId = store.session?.tenantId || ''
+    const { data, status } = await axiosV6.get(`/Workflows/${id}`, {
+      headers: {
+        'X-Tenant-Id': tenantId,
+      },
+    })
     if (status === 200) return data
     throw new Error('Failed to fetch workflow')
   } catch (e) {

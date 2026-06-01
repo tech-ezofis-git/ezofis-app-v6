@@ -1,5 +1,5 @@
 import { queryOptions } from '@tanstack/react-query'
-import folderApi from './folders'
+import { authApiV6 } from '@/api/v6/folder/folder'
 
 export const folderQueries = {
   all: () => ['folders'] as const,
@@ -10,8 +10,8 @@ export const getRepositoriesQueryOptions = () => {
   return queryOptions({
     queryKey: folderQueries.repositories(),
     queryFn: async () => {
-      const { data, error } = await folderApi.getRepositoryList()
-      if (error) throw new Error(error)
+      const { data, error } = await authApiV6.repositories()
+      if (error) throw new Error(String(error))
 
       const extractData = (obj: any): any[] => {
         if (!obj) return []
@@ -32,7 +32,7 @@ export const getRepositoriesQueryOptions = () => {
       // Map to standardized { id, name } structure
       return repositories.map((repo: any) => ({
         id: repo.id,
-        name: repo.value || 'Untitled Folder',
+        name: repo.name || repo.value || 'Untitled Folder',
       }))
     },
   })

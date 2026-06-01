@@ -37,7 +37,7 @@ const login = async (payload: any, tenantId?: number | string) => {
     })
 
     if (status !== 200) {
-      throw 'invalid status code'
+      throw new Error('invalid status code')
     }
 
     const identity = decodeBase64Json(data) as unknown
@@ -120,7 +120,7 @@ const getSession = async (identityKeys?: IdentityKeys) => {
     )
 
     if (status !== 200) {
-      throw 'invalid status code'
+      throw new Error('invalid status code')
     }
     console.log(data)
 
@@ -152,7 +152,7 @@ const authentication = async (payload: any) => {
     })
 
     if (status !== 201 && status !== 200) {
-      throw 'invalid status code'
+      throw new Error('invalid status code')
     }
 
     if (data === 'Invalid OTP') {
@@ -197,7 +197,7 @@ const socialLogin = async (payload: any, tenantId?: number | string) => {
     })
 
     if (status !== 200) {
-      throw 'invalid status code'
+      throw new Error('invalid status code')
     }
 
     const identity = decodeBase64Json(data)
@@ -253,7 +253,7 @@ const portalLogin = async (payload: any) => {
       const { error } = await getSession()
       response.error = error
     } else if (status !== 201) {
-      throw 'invalid status code'
+      throw new Error('invalid status code')
     }
   } catch (e: any) {
     console.error(e)
@@ -280,7 +280,7 @@ const testDBConnection = async (payload: any) => {
     )
 
     if (status !== 200) {
-      throw 'invalid status code'
+      throw new Error('invalid status code')
     }
   } catch (e) {
     console.error(e)
@@ -303,7 +303,7 @@ const updateDBConnection = async (payload: any) => {
     )
 
     if (status !== 200) {
-      throw 'invalid status code'
+      throw new Error('invalid status code')
     }
   } catch (e) {
     console.error(e)
@@ -326,7 +326,7 @@ const validatePassword = async (payload: any) => {
     )
 
     if (status !== 200) {
-      throw 'invalid status code'
+      throw new Error('invalid status code')
     }
   } catch (e) {
     console.error(e)
@@ -350,7 +350,7 @@ const emailValidate = async (tenantId: number | string, payload: any) => {
     })
 
     if (status !== 200) {
-      throw 'invalid status code'
+      throw new Error('invalid status code')
     }
 
     response.data = data
@@ -380,7 +380,7 @@ const signUp = async (payload: any) => {
     })
 
     if (status !== 201 && status !== 200) {
-      throw 'invalid status code'
+      throw new Error('invalid status code')
     }
 
     if (data) {
@@ -420,7 +420,7 @@ const verifyMailOTP = async (payload: any) => {
     })
 
     if (status !== 201 && status !== 200) {
-      throw 'invalid status code'
+      throw new Error('invalid status code')
     }
 
     if (data === 'success') {
@@ -454,7 +454,7 @@ const sendMailOTP = async (payload: any) => {
     })
 
     if (status !== 201 && status !== 200 && status !== 400) {
-      throw 'invalid status code'
+      throw new Error('invalid status code')
     }
 
     if (data === 'OTP sent succeeded' || data === 'success') {
@@ -486,7 +486,7 @@ const externalLogin = async (
     })
 
     if (status !== 200) {
-      throw 'invalid status code'
+      throw new Error('invalid status code')
     }
 
     const identity = decodeBase64Json(data)
@@ -531,7 +531,7 @@ const auth0Login = async (payload: any, tenantId: number | string) => {
       const { error } = await getSession()
       response.error = error
     } else if (status !== 201) {
-      throw 'invalid status code'
+      throw new Error('invalid status code')
     }
   } catch (e: any) {
     console.error(e)
