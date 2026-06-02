@@ -29,10 +29,20 @@ export default function ManualUserSettingsPanel({
   const userOptions: Option[] = useMemo(() => {
     const users = userData as any[]
     if (!users || !Array.isArray(users)) return []
-    return users.map((u: any) => ({
-      id: String(u.id || u.value),
-      name: String(u.value || u.loginName || 'Unknown User'),
-    }))
+    return users.map((u: any) => {
+      const name =
+        u.value ||
+        u.name ||
+        (u.firstName && u.lastName ? `${u.firstName} ${u.lastName}` : null) ||
+        u.loginName ||
+        u.displayName ||
+        u.email ||
+        'Unknown User'
+      return {
+        id: String(u.id || u.value),
+        name: String(name),
+      }
+    })
   }, [userData])
 
   const groupOptions: Option[] = useMemo(() => {

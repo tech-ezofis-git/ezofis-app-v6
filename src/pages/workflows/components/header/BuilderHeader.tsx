@@ -17,9 +17,9 @@ const BuilderHeader = () => {
   const [isSaving, setIsSaving] = useState(false)
 
   const handleSave = async () => {
-    if (!workflowId || workflowId === 'new') {
+    if (!workflowId) {
       showToast({
-        message: 'No active workflow ID found to save. Cannot save new draft workflows.',
+        message: 'No active workflow ID found to save.',
         variant: 'error',
       })
       return
@@ -34,7 +34,14 @@ const BuilderHeader = () => {
         workflowJson: exportedJson,
       }
 
-      const { error } = await workflowsApiV6.updateWorkflow(String(workflowId), payload)
+      let response
+      if (workflowId === 'new') {
+        response = await workflowsApiV6.createWorkflow(payload)
+      } else {
+        response = await workflowsApiV6.updateWorkflow(String(workflowId), payload)
+      }
+
+      const { data, error } = response
 
       if (error) {
         showToast({
@@ -46,6 +53,13 @@ const BuilderHeader = () => {
           message: 'Workflow saved successfully',
           variant: 'success',
         })
+        const newId = data?.id || (typeof data === 'string' ? data : null)
+        if (workflowId === 'new' && newId) {
+          navigate({
+            params: { workflowId: String(newId) },
+            to: '/workflow-builder/$workflowId',
+          })
+        }
       }
     } catch (error: any) {
       console.error('Save failed:', error)

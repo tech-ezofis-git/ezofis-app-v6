@@ -246,11 +246,34 @@ const updateWorkflow = async (workflowId: string, payload: any) => {
   return response
 }
 
+const createWorkflow = async (payload: any) => {
+  const response: { data: any; error: string } = {
+    data: null,
+    error: '',
+  }
+  try {
+    const { data, status } = await axiosV6({
+      data: payload,
+      headers: getTenantHeaders(),
+      method: 'POST',
+      url: '/workflows',
+    })
+    if (![200, 201, 202, 204].includes(status)) throw new Error('invalid status code')
+    response.data = data
+  } catch (e: unknown) {
+    console.error(e)
+    const err = e as { response?: { data?: string } }
+    response.error = err?.response?.data || 'error creating workflow'
+  }
+  return response
+}
+
 export const workflowsApiV6 = {
   getAllWorkflows,
   getWorkflowById,
   getWorkflows,
   updateWorkflow,
+  createWorkflow,
 }
 
 export default workflowsApiV6

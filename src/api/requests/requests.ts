@@ -1,4 +1,4 @@
-import { axiosCrypto } from '../axios'
+import { axiosCrypto, axiosV6 } from '../axios'
 
 const getAllRequests = async (payload: any) => {
   const response: any = { data: '', error: '' }
@@ -875,7 +875,7 @@ const getForm = async (formId: number | string) => {
   try {
     // Assuming a standard endpoint for fetching form json by ID based on your workflow patterns
     // If you don't have this exact endpoint, use the one that returns formJson
-    const { data, status } = await axiosCrypto.get(`/form/${formId}`)
+    const { data, status } = await axiosV6.get(`/form/${formId}`)
     if (status === 200) return data
     throw new Error('Error fetching form')
   } catch (e) {
