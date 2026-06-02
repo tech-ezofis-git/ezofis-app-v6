@@ -4,7 +4,13 @@ import { axiosCrypto, axiosV6 } from '../axios'
 const getFormDataById = async (id: string) => {
   const response: any = { data: null, error: '' }
   try {
-    const { data, status } = await axiosV6.get(`/form/${id}`)
+    const store = authUserStore.getState()
+    const tenantId = store.session?.tenantId || ''
+    const { data, status } = await axiosV6.get(`/form/${id}`, {
+      headers: {
+        'X-Tenant-Id': tenantId,
+      },
+    })
     if (status !== 200) throw new Error('Invalid status code')
 
     // Safely parse formJson if it exists and is a string

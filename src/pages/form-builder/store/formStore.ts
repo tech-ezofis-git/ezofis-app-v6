@@ -709,6 +709,15 @@ export const useFormStore = create<FormStore>()(
             message: `Your form has been ${currentStatus === 'PUBLISHED' ? 'published' : 'saved'} successfully.`,
             title: 'Success!',
           })
+
+          const createdFormId =
+            response.data?.id ??
+            response.data?.formId ??
+            (typeof response.data === 'string' ? response.data : null)
+
+          if (isCreation && createdFormId) {
+            window.location.replace(`/form-builder/${createdFormId}`)
+          }
           return true
         } catch (error) {
           notifications.show({

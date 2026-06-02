@@ -268,12 +268,34 @@ const createWorkflow = async (payload: any) => {
   return response
 }
 
+const deleteWorkflow = async (workflowId: string) => {
+  const response: { data: any; error: string } = {
+    data: null,
+    error: '',
+  }
+  try {
+    const { data, status } = await axiosV6({
+      headers: getTenantHeaders(),
+      method: 'DELETE',
+      url: `/workflows/${workflowId}`,
+    })
+    if (![200, 202, 204].includes(status)) throw new Error('invalid status code')
+    response.data = data
+  } catch (e: unknown) {
+    console.error(e)
+    const err = e as { response?: { data?: string } }
+    response.error = err?.response?.data || 'error deleting workflow'
+  }
+  return response
+}
+
 export const workflowsApiV6 = {
   getAllWorkflows,
   getWorkflowById,
   getWorkflows,
   updateWorkflow,
   createWorkflow,
+  deleteWorkflow,
 }
 
 export default workflowsApiV6

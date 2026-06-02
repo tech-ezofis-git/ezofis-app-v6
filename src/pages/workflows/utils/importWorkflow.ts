@@ -117,6 +117,8 @@ export const importWorkflow = (
     return { edges: [], nodes: [] }
   }
 
+  const isV6 = legacyJson.layoutVersion === 2
+
   // Find the exact boundaries of the imported layout to normalize it
   let minX = Infinity
   let minY = Infinity
@@ -152,8 +154,8 @@ export const importWorkflow = (
 
     // Apply a scaling factor to space out nodes more appropriately for the new React Flow canvas
     // Calculate position relative to the discovered minimums and shift to the new origin
-    const scaleX = 2.2
-    const scaleY = 2.2
+    const scaleX = isV6 ? 1.0 : 2.2
+    const scaleY = isV6 ? 1.0 : 2.2
 
     const blockLeft = Number(block.left) || 0
     const blockTop = Number(block.top) || 0
@@ -287,8 +289,8 @@ export const importWorkflow = (
       },
       id: block.id,
       position: {
-        x: originX + relativeX,
-        y: originY + relativeY,
+        x: isV6 ? blockLeft : (originX + relativeX),
+        y: isV6 ? blockTop : (originY + relativeY),
       },
       type: 'custom',
     }

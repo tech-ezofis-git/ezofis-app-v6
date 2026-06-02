@@ -131,6 +131,7 @@ export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
   })
 
   return {
+    layoutVersion: 2,
     blocks,
     blockStatus: 0,
     hasSLASettings: 1,
