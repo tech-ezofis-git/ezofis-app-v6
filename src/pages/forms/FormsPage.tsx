@@ -45,7 +45,7 @@ const FormsPage = () => {
     initialVisibilityState,
   })
 
-  const groupBy = 'type'
+  const groupBy = tabValue === 'All' ? 'publishOption' : ''
 
   const filterBy = useMemo(() => {
     const filters = []
@@ -279,11 +279,18 @@ const FormsPage = () => {
               return true
             })
 
+            let groupValue = String(group.key)
+            if (groupValue.toUpperCase() === 'PUBLISHED') {
+              groupValue = 'Published'
+            } else if (groupValue.toUpperCase() === 'DRAFT') {
+              groupValue = 'Draft'
+            }
+
             return {
               groupCount: filteredItems.length,
               groupId: String(group.key),
-              groupKey: 'type',
-              groupValue: String(group.key),
+              groupKey: tabValue === 'All' ? 'publishOption' : 'type',
+              groupValue,
               items: filteredItems,
             }
           })
@@ -311,8 +318,8 @@ const FormsPage = () => {
         {
           groupCount: filteredItems.length,
           groupId: 'all',
-          groupKey: 'all',
-          groupValue: 'All Forms',
+          groupKey: '',
+          groupValue: '',
           items: filteredItems,
         },
       ]
