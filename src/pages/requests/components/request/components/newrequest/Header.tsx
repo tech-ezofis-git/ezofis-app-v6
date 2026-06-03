@@ -9,7 +9,7 @@ interface Props {
 
 const Header = ({ badge, title = 'New Request', onClose }: Props) => {
   return (
-    <div className='flex h-13 items-center justify-between gap-2 border-b border-gray-3 px-2'>
+    <div className='flex h-13 items-center justify-between gap-2 border-b border-gray-3 px-2 bg-gradient-to-b from-gray-1 to-gray-2'>
       <div className='flex items-center gap-1.5'>
         <IconButton
           aria-label='Back'

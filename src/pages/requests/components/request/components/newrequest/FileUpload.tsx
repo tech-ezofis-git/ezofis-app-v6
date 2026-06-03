@@ -721,8 +721,8 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
 
   // Step 1: Upload (Premium Centered UI)
   return (
-    <AnimateFadeIn className='flex h-full flex-col items-center justify-center overflow-y-auto bg-surface-muted px-4 py-4 sm:px-6 lg:px-8'>
-      <div className='flex w-full max-w-5xl flex-col items-center gap-5'>
+    <AnimateFadeIn className='flex h-full flex-col items-center overflow-y-auto bg-surface-muted px-4 py-4 sm:px-6 lg:px-8'>
+      <div className='flex w-full max-w-5xl flex-col items-center gap-5 my-auto'>
         {/* Header Section */}
         <AnimateSlideUp className='space-y-1 text-center'>
           <h1 className='text-2xl font-bold tracking-tight text-[var(--gray-13)]'>
