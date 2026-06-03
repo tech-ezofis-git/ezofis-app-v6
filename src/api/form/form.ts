@@ -22,7 +22,7 @@ const getFormDataById = async (id: string) => {
           console.error('Failed to parse formJson in getFormDataById:', e)
         }
       }
-      
+
       // Safety check for hubLinkIds as per technical reference
       if (data.formJson && typeof data.formJson === 'object') {
         if (!data.formJson.hubLinkIds) {
@@ -160,8 +160,29 @@ const getForms = async (payload: any) => {
   return response
 }
 
+const deleteForm = async (id: string) => {
+  const response: any = { data: null, error: '' }
+  try {
+    const store = authUserStore.getState()
+    const tenantId = store.session?.tenantId || ''
+    const { data, status } = await axiosV6.delete(`/form/${id}`, {
+      headers: {
+        'X-Tenant-Id': tenantId,
+      },
+    })
+    if (![200, 201, 202, 204].includes(status))
+      throw new Error(`Invalid status code ${status}`)
+    response.data = data
+  } catch (e: any) {
+    console.error(e)
+    response.error = e.message || 'Error deleting form'
+  }
+  return response
+}
+
 const formApi = {
   createForm,
+  deleteForm,
   deleteFormEntry,
   listAllForms,
   updateForm,
