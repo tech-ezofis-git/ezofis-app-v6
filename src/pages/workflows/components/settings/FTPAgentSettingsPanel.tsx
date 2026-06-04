@@ -18,17 +18,72 @@ const protocolOptions = [
   { id: 3, name: 'FTPS' },
 ]
 
+const validateHost = (host: string) => {
+  if (!host) return 'Host is required'
+  const hostRegex = /^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$|^(?:\d{1,3}\.){3}\d{1,3}$/
+  if (!hostRegex.test(host)) return 'Invalid host format'
+  return undefined
+}
+
+const buildConnectionOptions = (
+  connection: any,
+  connectionLabel: any,
+  apiConnections: any,
+) => {
+  const options: { label: string; value: string }[] = []
+  const seenValues = new Set<string>()
+
+  if (connection && connectionLabel) {
+    const val = String(connection)
+    options.push({
+      label: connectionLabel,
+      value: val,
+    })
+    seenValues.add(val)
+  }
+
+  if (apiConnections && Array.isArray(apiConnections)) {
+    apiConnections.forEach((item: any) => {
+      const val = String(item.id)
+      if (!seenValues.has(val)) {
+        options.push({
+          label: item.name,
+          value: val,
+        })
+        seenValues.add(val)
+      }
+    })
+  }
+
+  return options
+}
+
+const validateConnectForm = (formData: any) => {
+  const newErrors: any = {}
+  if (!formData.name.trim()) newErrors.name = 'Name is required'
+  const hostErr = validateHost(formData.host)
+  if (hostErr) newErrors.host = hostErr
+  if (!formData.port) {
+    newErrors.port = 'Port is required'
+  } else if (Number.parseInt(formData.port, 10) > 65535) {
+    newErrors.port = 'Invalid Port'
+  }
+  if (!formData.username.trim()) newErrors.username = 'Username is required'
+  if (!formData.password.trim()) newErrors.password = 'Password is required'
+  return newErrors
+}
+
 export default function FTPAgentSettingsPanel({
   node: initialNode,
-}: {
+}: Readonly<{
   node: Node
-}) {
+}>) {
   const { setNodes } = useReactFlow()
   const liveNodes = useNodes()
 
   // Find matching node in the live nodes array to ensure reactivity
   const currentNode =
-    liveNodes.find((n) => n.id === initialNode?.id) || initialNode
+    liveNodes.find((n) => n.id === initialNode?.id) ?? initialNode
   const nodeData = (currentNode?.data || {}) as any
 
   const updateNodeData = (key: string, value: any) => {
@@ -51,34 +106,11 @@ export default function FTPAgentSettingsPanel({
   const { data: apiConnections } = useQuery(getConnectionQueryOptions('FTP'))
 
   const allConnectionOptions = useMemo(() => {
-    const options: { label: string; value: string }[] = []
-    const seenValues = new Set<string>()
-
-    // 1. Add current connection first if it exists
-    if (nodeData.connection && nodeData.connectionLabel) {
-      const val = String(nodeData.connection)
-      options.push({
-        label: nodeData.connectionLabel,
-        value: val,
-      })
-      seenValues.add(val)
-    }
-
-    // 2. Add API connections, avoiding duplicates
-    if (apiConnections && Array.isArray(apiConnections)) {
-      apiConnections.forEach((item: any) => {
-        const val = String(item.id)
-        if (!seenValues.has(val)) {
-          options.push({
-            label: item.name,
-            value: val,
-          })
-          seenValues.add(val)
-        }
-      })
-    }
-
-    return options
+    return buildConnectionOptions(
+      nodeData.connection,
+      nodeData.connectionLabel,
+      apiConnections,
+    )
   }, [nodeData.connection, nodeData.connectionLabel, apiConnections])
 
   // Keep path in sync with node data if it changes externally
@@ -86,7 +118,7 @@ export default function FTPAgentSettingsPanel({
     if (nodeData.path !== undefined && nodeData.path !== path) {
       setPath(nodeData.path)
     }
-  }, [nodeData.path])
+  }, [nodeData.path, path])
 
   // Connection form state
   const [formData, setFormData] = useState({
@@ -115,14 +147,6 @@ export default function FTPAgentSettingsPanel({
     }
   }
 
-  const validateHost = (host: string) => {
-    if (!host) return 'Host is required'
-    const hostRegex =
-      /^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,6}$|(?:\d{1,3}\.){3}\d{1,3}$/
-    if (!hostRegex.test(host)) return 'Invalid host format'
-    return undefined
-  }
-
   const handleHostBlur = () => {
     const error = validateHost(formData.host)
     setErrors((prev) => ({ ...prev, host: error }))
@@ -142,7 +166,7 @@ export default function FTPAgentSettingsPanel({
     if (/^\d*$/.test(val)) {
       setFormData((prev) => ({ ...prev, port: val }))
       if (val) {
-        if (parseInt(val) > 65535) {
+        if (Number.parseInt(val, 10) > 65535) {
           setErrors((prev) => ({ ...prev, port: 'Max 65535' }))
         } else {
           setErrors((prev) => ({ ...prev, port: undefined }))
@@ -156,7 +180,7 @@ export default function FTPAgentSettingsPanel({
   const handlePortBlur = () => {
     if (!formData.port) {
       setErrors((prev) => ({ ...prev, port: 'Port is required' }))
-    } else if (parseInt(formData.port) > 65535) {
+    } else if (Number.parseInt(formData.port, 10) > 65535) {
       setErrors((prev) => ({ ...prev, port: 'Max 65535' }))
     } else {
       setErrors((prev) => ({ ...prev, port: undefined }))
@@ -181,14 +205,7 @@ export default function FTPAgentSettingsPanel({
   }
 
   const handleConnect = async () => {
-    const newErrors: any = {}
-    if (!formData.name.trim()) newErrors.name = 'Name is required'
-    const hostErr = validateHost(formData.host)
-    if (hostErr) newErrors.host = hostErr
-    if (!formData.port) newErrors.port = 'Port is required'
-    else if (parseInt(formData.port) > 65535) newErrors.port = 'Invalid Port'
-    if (!formData.username.trim()) newErrors.username = 'Username is required'
-    if (!formData.password.trim()) newErrors.password = 'Password is required'
+    const newErrors = validateConnectForm(formData)
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
@@ -265,11 +282,15 @@ export default function FTPAgentSettingsPanel({
 
             <div className='space-y-3 rounded-xl bg-white p-4 shadow-sm'>
               <div className='space-y-1.5'>
-                <label className='flex items-center gap-1 text-[13px] font-medium text-gray-11'>
+                <label
+                  className='flex items-center gap-1 text-[13px] font-medium text-gray-11'
+                  htmlFor='connection-select'
+                >
                   Connection <span className='text-red-11'>*</span>
                 </label>
                 <div className='relative'>
                   <button
+                    id='connection-select'
                     className={cn(
                       'flex h-10 w-full items-center justify-between rounded-md border bg-white px-3 text-sm transition-all duration-200 outline-none focus:border-primary-9 focus:ring-2 focus:ring-primary-4',
                       isConnectionOpen
@@ -280,9 +301,9 @@ export default function FTPAgentSettingsPanel({
                   >
                     <span
                       className={
-                        !nodeData.connection
-                          ? 'text-gray-9'
-                          : 'font-medium text-gray-13'
+                        nodeData.connection
+                          ? 'font-medium text-gray-13'
+                          : 'text-gray-9'
                       }
                     >
                       {allConnectionOptions.find(
@@ -299,8 +320,10 @@ export default function FTPAgentSettingsPanel({
 
                   {isConnectionOpen && (
                     <>
-                      <div
-                        className='fixed inset-0 z-40'
+                      <button
+                        aria-label='Close dropdown'
+                        className='fixed inset-0 z-40 h-full w-full cursor-default border-0 bg-transparent outline-none'
+                        type='button'
                         onClick={() => {
                           setIsConnectionOpen(false)
                           setIsCreatingConnection(false)
@@ -315,50 +338,18 @@ export default function FTPAgentSettingsPanel({
                             : 'overflow-hidden',
                         )}
                       >
-                        {!isCreatingConnection ? (
-                          <>
-                            {allConnectionOptions.map((option) => (
-                              <button
-                                key={option.value}
-                                className={cn(
-                                  'w-full px-3 py-2 text-left text-sm transition-colors',
-                                  String(nodeData.connection) === option.value
-                                    ? 'bg-primary-1 font-medium text-primary-9'
-                                    : 'text-gray-13 hover:bg-gray-2',
-                                )}
-                                onClick={() => {
-                                  updateNodeData('connection', option.value)
-                                  updateNodeData(
-                                    'connectionLabel',
-                                    option.label,
-                                  )
-                                  setIsConnectionOpen(false)
-                                }}
-                              >
-                                {option.label}
-                              </button>
-                            ))}
-
-                            {allConnectionOptions.length > 0 && (
-                              <div className='my-1 h-px bg-gray-2' />
-                            )}
-
-                            <button
-                              className='flex w-full items-center gap-2 px-3 py-2 text-left text-sm font-medium text-primary-9 transition-colors hover:bg-primary-1'
-                              onClick={() => setIsCreatingConnection(true)}
-                            >
-                              <Icon className='h-4 w-4' name='lucide:plus' />
-                              Create Connection
-                            </button>
-                          </>
-                        ) : (
+                        {isCreatingConnection ? (
                           <div className='space-y-4 p-4'>
                             <div className='flex flex-col gap-1.5'>
-                              <label className='text-xs font-medium text-gray-11'>
+                              <label
+                                className='text-xs font-medium text-gray-11'
+                                htmlFor='connection-name'
+                              >
                                 Connection Name{' '}
                                 <span className='text-red-11'>*</span>
                               </label>
                               <input
+                                id='connection-name'
                                 placeholder='e.g. Production SFTP'
                                 type='text'
                                 value={formData.name}
@@ -375,10 +366,16 @@ export default function FTPAgentSettingsPanel({
                             </div>
 
                             <div className='flex flex-col gap-1.5'>
-                              <label className='text-xs font-medium text-gray-11'>
+                              <span
+                                className='text-xs font-medium text-gray-11'
+                                id='protocol-label'
+                              >
                                 Protocol <span className='text-red-11'>*</span>
-                              </label>
-                              <div className='bg-gray-50/50 flex rounded-lg border border-gray-2/50 p-1 shadow-inner'>
+                              </span>
+                              <fieldset
+                                aria-labelledby='protocol-label'
+                                className='bg-gray-50/50 flex rounded-lg border border-gray-2/50 p-1 shadow-inner'
+                              >
                                 {protocolOptions.map((opt) => (
                                   <button
                                     key={opt.id}
@@ -399,15 +396,19 @@ export default function FTPAgentSettingsPanel({
                                     {opt.name}
                                   </button>
                                 ))}
-                              </div>
+                              </fieldset>
                             </div>
 
                             <div className='grid grid-cols-4 gap-3'>
                               <div className='col-span-3 flex flex-col gap-1.5'>
-                                <label className='text-xs font-medium text-gray-11'>
+                                <label
+                                  className='text-xs font-medium text-gray-11'
+                                  htmlFor='connection-host'
+                                >
                                   Host <span className='text-red-11'>*</span>
                                 </label>
                                 <input
+                                  id='connection-host'
                                   type='text'
                                   value={formData.host}
                                   className={cn(
@@ -423,10 +424,14 @@ export default function FTPAgentSettingsPanel({
                                 />
                               </div>
                               <div className='col-span-1 flex flex-col gap-1.5'>
-                                <label className='text-xs font-medium text-gray-11'>
+                                <label
+                                  className='text-xs font-medium text-gray-11'
+                                  htmlFor='connection-port'
+                                >
                                   Port <span className='text-red-11'>*</span>
                                 </label>
                                 <input
+                                  id='connection-port'
                                   type='text'
                                   value={formData.port}
                                   className={cn(
@@ -444,10 +449,14 @@ export default function FTPAgentSettingsPanel({
                             </div>
 
                             <div className='flex flex-col gap-1.5'>
-                              <label className='text-xs font-medium text-gray-11'>
+                              <label
+                                className='text-xs font-medium text-gray-11'
+                                htmlFor='connection-username'
+                              >
                                 Username <span className='text-red-11'>*</span>
                               </label>
                               <input
+                                id='connection-username'
                                 type='text'
                                 value={formData.username}
                                 className={cn(
@@ -463,11 +472,15 @@ export default function FTPAgentSettingsPanel({
                             </div>
 
                             <div className='flex flex-col gap-1.5'>
-                              <label className='text-xs font-medium text-gray-11'>
+                              <label
+                                className='text-xs font-medium text-gray-11'
+                                htmlFor='connection-password'
+                              >
                                 Password <span className='text-red-11'>*</span>
                               </label>
                               <div className='relative'>
                                 <input
+                                  id='connection-password'
                                   type={showPassword ? 'text' : 'password'}
                                   value={formData.password}
                                   className={cn(
@@ -518,6 +531,42 @@ export default function FTPAgentSettingsPanel({
                               </Button>
                             </div>
                           </div>
+                        ) : (
+                          <>
+                            {allConnectionOptions.map((option) => (
+                              <button
+                                key={option.value}
+                                className={cn(
+                                  'w-full px-3 py-2 text-left text-sm transition-colors',
+                                  String(nodeData.connection) === option.value
+                                    ? 'bg-primary-1 font-medium text-primary-9'
+                                    : 'text-gray-13 hover:bg-gray-2',
+                                )}
+                                onClick={() => {
+                                  updateNodeData('connection', option.value)
+                                  updateNodeData(
+                                    'connectionLabel',
+                                    option.label,
+                                  )
+                                  setIsConnectionOpen(false)
+                                }}
+                              >
+                                {option.label}
+                              </button>
+                            ))}
+
+                            {allConnectionOptions.length > 0 && (
+                              <div className='my-1 h-px bg-gray-2' />
+                            )}
+
+                            <button
+                              className='flex w-full items-center gap-2 px-3 py-2 text-left text-sm font-medium text-primary-9 transition-colors hover:bg-primary-1'
+                              onClick={() => setIsCreatingConnection(true)}
+                            >
+                              <Icon className='h-4 w-4' name='lucide:plus' />
+                              Create Connection
+                            </button>
+                          </>
                         )}
                       </div>
                     </>

@@ -82,7 +82,6 @@ const InboxList: React.FC<InboxListProps> = ({
   const columns =
     useDynamicColumns(workflow, onRowClick, selectedItem, activeTab) || []
 
-  console.log(data, 'this is from inbox list')
   const initialVisibilityState = {
     createdAt: false,
     createdBy: false,
@@ -132,12 +131,17 @@ const InboxList: React.FC<InboxListProps> = ({
       return Object.entries(row).some(([key, value]) => {
         if (value == null || key === 'id') return false
 
-        // Handle nested objects (like formData)
+        if (
+          typeof value === 'string' ||
+          typeof value === 'number' ||
+          typeof value === 'boolean'
+        ) {
+          return String(value).toLowerCase().includes(searchValue)
+        }
         if (typeof value === 'object') {
           return JSON.stringify(value).toLowerCase().includes(searchValue)
         }
-
-        return String(value).toLowerCase().includes(searchValue)
+        return false
       })
     })
   }, [flatRows, searchState])
@@ -264,82 +268,80 @@ const InboxList: React.FC<InboxListProps> = ({
     openNewRequest('po')
   }
   return (
-    <>
-      <div className='bg-primary flex min-h-0 flex-1 flex-col overflow-hidden px-6 py-2 md:px-6'>
-        <div className='relative flex min-h-0 w-full flex-1 flex-col'>
-          <div className='flex h-full w-full gap-3'>
-            {/* Left */}
-            {!selectedItem && viewMode === 'table' && (
-              <div className='flex h-full min-w-0 flex-1 flex-col'>
-                <DataTable
-                  component={selectedItem}
-                  emptyPage='requests'
-                  hideGrouping={true}
-                  isLoading={isLoading}
-                  isReLoading={isRefetching}
-                  pageSize={pageSize}
-                  stickyHeader={true}
-                  table={table}
-                  actions={[
-                    {
-                      align: 'right', // or 'left'
-                      icon: 'tabler:upload',
-                      label: 'Upload PO',
-                      onClick: () => {
-                        handlePoSheet()
-                      },
+    <div className='bg-primary flex min-h-0 flex-1 flex-col overflow-hidden px-6 py-2 md:px-6'>
+      <div className='relative flex min-h-0 w-full flex-1 flex-col'>
+        <div className='flex h-full w-full gap-3'>
+          {/* Left */}
+          {!selectedItem && viewMode === 'table' && (
+            <div className='flex h-full min-w-0 flex-1 flex-col'>
+              <DataTable
+                component={selectedItem}
+                emptyPage='requests'
+                hideGrouping={true}
+                isLoading={isLoading}
+                isReLoading={isRefetching}
+                pageSize={pageSize}
+                stickyHeader={true}
+                table={table}
+                actions={[
+                  {
+                    align: 'right', // or 'left'
+                    icon: 'tabler:upload',
+                    label: 'Upload PO',
+                    onClick: () => {
+                      handlePoSheet()
                     },
-                  ]}
-                  onEmptyPrimaryAction={() => openNewRequest('request')}
-                  onReload={onRefresh}
-                />
-              </div>
-            )}
+                  },
+                ]}
+                onEmptyPrimaryAction={() => openNewRequest('request')}
+                onReload={onRefresh}
+              />
+            </div>
+          )}
 
-            {!selectedItem && viewMode === 'grid' && (
-              <div className='h-full min-w-0 flex-1 overflow-hidden'>
-                <GridView
-                  activeTab={activeTab}
-                  data={finalData} // ✅ Use final data
-                  hideGrouping={activeTab !== 'Inbox'}
-                  isLoading={isLoading}
-                  isReloading={isRefetching}
-                  table={table} // Pass the instance
-                  actions={[
-                    {
-                      align: 'right',
-                      icon: 'tabler:upload',
-                      label: 'Upload PO',
-                      onClick: () => {
-                        handlePoSheet()
-                      },
+          {!selectedItem && viewMode === 'grid' && (
+            <div className='h-full min-w-0 flex-1 overflow-hidden'>
+              <GridView
+                activeTab={activeTab}
+                data={finalData} // ✅ Use final data
+                hideGrouping={activeTab !== 'Inbox'}
+                isLoading={isLoading}
+                isReloading={isRefetching}
+                table={table} // Pass the instance
+                actions={[
+                  {
+                    align: 'right',
+                    icon: 'tabler:upload',
+                    label: 'Upload PO',
+                    onClick: () => {
+                      handlePoSheet()
                     },
-                  ]}
-                  onNewRequest={() => openNewRequest('request')}
-                  onReload={onRefresh}
-                  onRowClick={onRowClick}
-                />
-              </div>
-            )}
-          </div>
+                  },
+                ]}
+                onNewRequest={() => openNewRequest('request')}
+                onReload={onRefresh}
+                onRowClick={onRowClick}
+              />
+            </div>
+          )}
         </div>
-
-        {/* Footer */}
-        {!selectedItem && (
-          <div className='z-10 shrink-0 bg-primary-1 pt-2'>
-            <Pagination
-              itemLabel='Requests'
-              page={page}
-              pageSize={pageSize}
-              showPageNumbers={false}
-              totalItems={totalItems}
-              onPageChange={setPage}
-              onPageSizeChange={setPageSize}
-            />
-          </div>
-        )}
       </div>
-    </>
+
+      {/* Footer */}
+      {!selectedItem && (
+        <div className='z-10 shrink-0 bg-primary-1 pt-2'>
+          <Pagination
+            itemLabel='Requests'
+            page={page}
+            pageSize={pageSize}
+            showPageNumbers={false}
+            totalItems={totalItems}
+            onPageChange={setPage}
+            onPageSizeChange={setPageSize}
+          />
+        </div>
+      )}
+    </div>
   )
 }
 

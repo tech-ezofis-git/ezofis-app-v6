@@ -141,11 +141,11 @@ export const mapPublishedWorkflowListToOptions = (
 
 export interface V6WorkflowDetail {
   flowJson?: string
-  workflowJson?: string
   formJson?: string
   id?: string
   name?: string
   wFormId?: string | number
+  workflowJson?: string
   settings?: {
     general?: {
       initiateUsing?: { formId?: string | number }
@@ -224,8 +224,169 @@ const getWorkflowById = async (workflowId: string) => {
   return response
 }
 
+const startWorkflow = async (workflowId: string, formData: FormData) => {
+  const response: { data: any; error: string } = { data: null, error: '' }
+  try {
+    const { data, status } = await axiosV6({
+      data: formData,
+      headers: {
+        ...getTenantHeaders(),
+        'accept': 'text/plain',
+        'Content-Type': 'multipart/form-data',
+      },
+      method: 'POST',
+      url: `/Workflows/${workflowId}/start`,
+    })
+    if (status !== 200 && status !== 201) throw new Error('invalid status code')
+    response.data = data
+  } catch (e: unknown) {
+    console.error(e)
+    const err = e as { message?: string; response?: { data?: string } }
+    response.error =
+      err?.response?.data || err?.message || 'error starting workflow'
+  }
+  return response
+}
+
+const getInboxList = async (
+  workflowId: string,
+  pageNumber: number,
+  pageSize: number,
+  instanceId?: string,
+  transactionId?: string,
+) => {
+  const response: { data: any; error: string } = { data: null, error: '' }
+  try {
+    const { data, status } = await axiosV6({
+      headers: getTenantHeaders(),
+      method: 'GET',
+      params: {
+        pageNumber,
+        pageSize,
+        skipTotal: false,
+        workflowId,
+        ...(instanceId ? { instanceId } : {}),
+        ...(transactionId ? { transactionId } : {}),
+      },
+      url: `/Workflows/inbox`,
+    })
+    if (status !== 200) throw new Error('invalid status code')
+    response.data = data
+  } catch (e: unknown) {
+    console.error(e)
+    const err = e as { message?: string; response?: { data?: string } }
+    response.error =
+      err?.response?.data || err?.message || 'error fetching inbox list'
+  }
+  return response
+}
+
+const getSentList = async (
+  workflowId: string,
+  pageNumber: number,
+  pageSize: number,
+  instanceId?: string,
+  transactionId?: string,
+) => {
+  const response: { data: any; error: string } = { data: null, error: '' }
+  try {
+    const { data, status } = await axiosV6({
+      headers: getTenantHeaders(),
+      method: 'GET',
+      params: {
+        pageNumber,
+        pageSize,
+        skipTotal: false,
+        workflowId,
+        ...(instanceId ? { instanceId } : {}),
+        ...(transactionId ? { transactionId } : {}),
+      },
+      url: `/Workflows/sent`,
+    })
+    if (status !== 200) throw new Error('invalid status code')
+    response.data = data
+  } catch (e: unknown) {
+    console.error(e)
+    const err = e as { message?: string; response?: { data?: string } }
+    response.error =
+      err?.response?.data || err?.message || 'error fetching sent list'
+  }
+  return response
+}
+
+const getCompletedList = async (
+  workflowId: string,
+  pageNumber: number,
+  pageSize: number,
+  instanceId?: string,
+  transactionId?: string,
+) => {
+  const response: { data: any; error: string } = { data: null, error: '' }
+  try {
+    const { data, status } = await axiosV6({
+      headers: getTenantHeaders(),
+      method: 'GET',
+      params: {
+        pageNumber,
+        pageSize,
+        skipTotal: false,
+        workflowId,
+        ...(instanceId ? { instanceId } : {}),
+        ...(transactionId ? { transactionId } : {}),
+      },
+      url: `/Workflows/completed`,
+    })
+    if (status !== 200) throw new Error('invalid status code')
+    response.data = data
+  } catch (e: unknown) {
+    console.error(e)
+    const err = e as { message?: string; response?: { data?: string } }
+    response.error =
+      err?.response?.data || err?.message || 'error fetching completed list'
+  }
+  return response
+}
+
+export interface V6WorkflowInstanceCount {
+  completedCount: number
+  completedTableExists: boolean
+  inboxCount: number
+  inboxTableExists: boolean
+  sentCount: number
+  sentTableExists: boolean
+  workflowId: string
+}
+
+const getInstanceCount = async (workflowId: string) => {
+  const response: { data: V6WorkflowInstanceCount | null; error: string } = {
+    data: null,
+    error: '',
+  }
+  try {
+    const { data, status } = await axiosV6({
+      headers: getTenantHeaders(),
+      method: 'GET',
+      params: { workflowId },
+      url: `/Workflows/instance-count`,
+    })
+    if (status !== 200) throw new Error('invalid status code')
+    response.data = data as V6WorkflowInstanceCount
+  } catch (e: unknown) {
+    console.error(e)
+    const err = e as { message?: string; response?: { data?: string } }
+    response.error =
+      err?.response?.data || err?.message || 'error fetching instance count'
+  }
+  return response
+}
+
 export const workflowsApiV6 = {
+  startWorkflow,
   getAllWorkflows,
+  getCompletedList,
+  getInboxList,
+  getInstanceCount,
+  getSentList,
   getWorkflowById,
   getWorkflows,
 }

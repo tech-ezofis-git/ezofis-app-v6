@@ -1,15 +1,3 @@
-import {
-  authApiV6,
-  getRepositoryItems,
-  getRepositoryItemWorkspace,
-  getRepositoryItemTimeline,
-  getRepositoryItemComments,
-  addRepositoryItemComment,
-  type BrowseChildrenDto,
-  type PagedDto,
-  type RepositoryDto,
-  type RepositoryFieldDto,
-} from '../../../api/v6/folder/folder'
 import type { BreadcrumbItem } from '../components/Breadcrumbs'
 import type {
   AiSummaryData,
@@ -21,6 +9,18 @@ import type {
   TreeNode,
   WorkflowData,
 } from '../types/folderTypes'
+import {
+  addRepositoryItemComment,
+  authApiV6,
+  type BrowseChildrenDto,
+  getRepositoryItemComments,
+  getRepositoryItems,
+  getRepositoryItemTimeline,
+  getRepositoryItemWorkspace,
+  type PagedDto,
+  type RepositoryDto,
+  type RepositoryFieldDto,
+} from '../../../api/v6/folder/folder'
 
 export interface DynamicRepositoryColumn {
   key: string
@@ -29,29 +29,40 @@ export interface DynamicRepositoryColumn {
 }
 
 export interface FolderContentRequest {
+  append?: boolean
+  cursor?: string | null
   page?: number
   pageSize?: number
-  cursor?: string | null
-  append?: boolean
   search?: string
   sortBy?: string
-  sortOrder?: 'asc' | 'desc' | string
+  sortOrder?: 'asc' | 'desc' | (string & {})
 }
 
-type RepositoryFolderNode = { kind: 'repository'; repositoryId: string; label: string }
 type BrowseFolderNode = {
-  kind: 'browse'
-  repositoryId: string
-  repositoryName: string
-  pathId: string
-  label: string
-  level: number
   groupField: string
   groupValue: string
+  kind: 'browse'
+  label: string
+  level: number
   parentFilters: Record<string, string>
+  pathId: string
+  repositoryId: string
+  repositoryName: string
 }
-type StaticFolderNode = { kind: 'static'; staticId: 'recent' | 'favorites'; label: string }
-type FolderNodePayload = RepositoryFolderNode | BrowseFolderNode | StaticFolderNode
+type FolderNodePayload =
+  | RepositoryFolderNode
+  | BrowseFolderNode
+  | StaticFolderNode
+type RepositoryFolderNode = {
+  kind: 'repository'
+  label: string
+  repositoryId: string
+}
+type StaticFolderNode = {
+  kind: 'static'
+  label: string
+  staticId: 'recent' | 'favorites'
+}
 
 const nodePrefix = 'repo-node:'
 const defaultPage = 1
@@ -60,30 +71,45 @@ const defaultItemPageSize = 50
 
 export const encodeRepositoryNodeId = (payload: FolderNodePayload) => {
   const json = JSON.stringify(payload)
-  const encoded =
-    typeof window === 'undefined'
-      ? Buffer.from(json, 'utf8').toString('base64')
-      : window.btoa(unescape(encodeURIComponent(json)))
-  return `${nodePrefix}${encoded}`
+  if (globalThis.window === undefined) {
+    const encoded = Buffer.from(json, 'utf8').toString('base64')
+    return `${nodePrefix}${encoded}`
+  } else {
+    const bytes = new TextEncoder().encode(json)
+    const binString = Array.from(bytes, (byte) =>
+      String.fromCodePoint(byte),
+    ).join('')
+    const encoded = globalThis.btoa(binString)
+    return `${nodePrefix}${encoded}`
+  }
 }
 
-export const decodeRepositoryNodeId = (id: string): FolderNodePayload | null => {
+export const decodeRepositoryNodeId = (
+  id: string,
+): FolderNodePayload | null => {
   if (!id.startsWith(nodePrefix)) return null
 
   try {
     const raw = id.slice(nodePrefix.length)
-    const json =
-      typeof window === 'undefined'
-        ? Buffer.from(raw, 'base64').toString('utf8')
-        : decodeURIComponent(escape(window.atob(raw)))
-    return JSON.parse(json) as FolderNodePayload
+    if (globalThis.window === undefined) {
+      const json = Buffer.from(raw, 'base64').toString('utf8')
+      return JSON.parse(json) as FolderNodePayload
+    } else {
+      const binString = globalThis.atob(raw)
+      const bytes = Uint8Array.from(
+        binString,
+        (char) => char.codePointAt(0) ?? 0,
+      )
+      const json = new TextDecoder().decode(bytes)
+      return JSON.parse(json) as FolderNodePayload
+    }
   } catch (error) {
     console.error('Invalid repository node id', error)
     return null
   }
 }
 
-const getPagedData = <T,>(paged: any): T[] => {
+const getPagedData = <T>(paged: any): T[] => {
   if (Array.isArray(paged)) return paged
   if (Array.isArray(paged?.data)) return paged.data
   return []
@@ -95,64 +121,81 @@ const toPage = (paged?: PagedDto<any> | null): RepositoryFilePage => {
   const totalPagesFromApi = Number(paged?.totalPages ?? 0)
 
   return {
+    hasMore: Boolean(paged?.hasMore),
+    nextCursor: paged?.nextCursor ?? null,
     page: Math.max(1, Number(paged?.page ?? defaultPage)),
     pageSize,
     totalCount,
-    totalPages: Math.max(1, totalPagesFromApi || Math.ceil(totalCount / pageSize)),
-    hasMore: Boolean(paged?.hasMore),
-    nextCursor: paged?.nextCursor ?? null,
+    totalPages: Math.max(
+      1,
+      totalPagesFromApi || Math.ceil(totalCount / pageSize),
+    ),
   }
 }
 
-const toFileColumns = (fields: RepositoryFieldDto[] = []): DynamicRepositoryColumn[] => {
+const toFileColumns = (
+  fields: RepositoryFieldDto[] = [],
+): DynamicRepositoryColumn[] => {
   const metadataColumns = fields
     .filter((field) => !field.includeInFolderStructure)
     .map((field) => ({
+      dataType: field.dataType,
       key: field.sqlColumnName || field.name,
       label: field.name || field.sqlColumnName,
-      dataType: field.dataType,
     }))
 
-  return [
-    { key: 'name', label: 'Name' },
-    ...metadataColumns,
-  ]
+  return [{ key: 'name', label: 'Name' }, ...metadataColumns]
 }
 
-
 const detailSectionIconMap: Record<string, string> = {
+  aiAnalysis: 'bot',
   documentInfo: 'fileText',
   supplierDetails: 'building',
-  aiAnalysis: 'bot',
   systemInfo: 'settings',
 }
 
 const toWorkspaceDetail = (workspace: any): any => {
-  const sections = Array.isArray(workspace?.DetailsRow) ? workspace.DetailsRow : []
-  const lineItems = Array.isArray(workspace?.lineItems) ? workspace.lineItems : []
+  const sections = Array.isArray(workspace?.DetailsRow)
+    ? workspace.DetailsRow
+    : []
+  const lineItems = Array.isArray(workspace?.lineItems)
+    ? workspace.lineItems
+    : []
 
   return {
+    alert: null,
     documentId: String(workspace?.id ?? ''),
-    fileName: String(workspace?.fileName ?? workspace?.name ?? 'Untitled document'),
+    fileName: String(
+      workspace?.fileName ?? workspace?.name ?? 'Untitled document',
+    ),
     fileType: String(workspace?.fileType ?? 'pdf').toUpperCase(),
     fileUrl: workspace?.fileUrl || '',
-    alert: null,
     infoCards: sections
-      .filter((section: any) => Array.isArray(section?.fields) && section.fields.length > 0)
+      .filter(
+        (section: any) =>
+          Array.isArray(section?.fields) && section.fields.length > 0,
+      )
       .map((section: any, index: number) => ({
-        id: String(section.sectionKey || `section-${index}`),
-        title: String(section.title || section.sectionKey || `Section ${index + 1}`),
         iconKey: detailSectionIconMap[String(section.sectionKey)] || 'fileText',
+        id: String(section.sectionKey || `section-${index}`),
         rows: section.fields
-          .filter((field: any) => field && field.value !== null && field.value !== undefined && field.value !== '')
+          .filter(
+            (field: any) =>
+              field?.value !== null &&
+              field?.value !== undefined &&
+              field?.value !== '',
+          )
           .map((field: any) => ({
             label: String(field.label || field.key || '-'),
             value: String(field.value),
           })),
+        title: String(
+          section.title || section.sectionKey || `Section ${index + 1}`,
+        ),
       }))
       .filter((card: any) => card.rows.length > 0),
     lineItems,
-    tabs: { timeline: [], comments: [], relatedDocs: [] },
+    tabs: { comments: [], relatedDocs: [], timeline: [] },
   }
 }
 
@@ -164,33 +207,65 @@ const formatDate = (value: any) => {
 }
 
 const toFileItem = (row: Record<string, any>, index: number): FileItem => {
-  const id = String(row.id ?? row.Id ?? row.itemId ?? row.ItemId ?? row.documentId ?? row.DocumentId ?? row.fileId ?? row.FileId ?? `file-${index}`)
-  const name = String(row.name ?? row.Name ?? row.fileName ?? row.FileName ?? row.documentName ?? row.DocumentName ?? row.invoiceNumber ?? row.InvoiceNumber ?? id)
+  const id = String(
+    row.id ??
+      row.Id ??
+      row.itemId ??
+      row.ItemId ??
+      row.documentId ??
+      row.DocumentId ??
+      row.fileId ??
+      row.FileId ??
+      `file-${index}`,
+  )
+  const name = String(
+    row.name ??
+      row.Name ??
+      row.fileName ??
+      row.FileName ??
+      row.documentName ??
+      row.DocumentName ??
+      row.invoiceNumber ??
+      row.InvoiceNumber ??
+      id,
+  )
   const amountValue = row.Amount ?? row.amount
   const currency = row.Currency ?? row.currency
 
+  const amount =
+    amountValue === undefined || amountValue === null
+      ? '-'
+      : currency
+        ? `${amountValue} ${currency}`
+        : String(amountValue)
+
   const file: FileItem = {
+    amount,
+    date: formatDate(
+      row.DocumentDate ?? row.documentDate ?? row.date ?? row.Date,
+    ),
+    fileUrl: row.fileUrl ?? row.FileUrl ?? row.url ?? row.Url,
     id,
+    invoiceNo: String(
+      row.InvoiceNumber ?? row.invoiceNumber ?? row.invoiceNo ?? '-',
+    ),
     name,
-    type: String(row.DocumentType ?? row.documentType ?? row.type ?? row.Type ?? '-'),
-    supplier: String(row.Supplier ?? row.supplier ?? '-'),
-    invoiceNo: String(row.InvoiceNumber ?? row.invoiceNumber ?? row.invoiceNo ?? '-'),
-    poNo: String(row.PoNumber ?? row.poNumber ?? row.poNo ?? '-'),
-    date: formatDate(row.DocumentDate ?? row.documentDate ?? row.date ?? row.Date),
-    amount: amountValue === undefined || amountValue === null ? '-' : `${amountValue}${currency ? ` ${currency}` : ''}`,
-    status: String(row.Status ?? row.status ?? '-'),
     ocr: Number(row.Ocr ?? row.ocr ?? row.ocrPercent ?? row.OcrPercent ?? 0),
+    poNo: String(row.PoNumber ?? row.poNumber ?? row.poNo ?? '-'),
     risk: String(row.RiskLevel ?? row.risk ?? row.riskLevel ?? '-'),
     source: String(row.Source ?? row.source ?? '-'),
-    fileUrl: row.fileUrl ?? row.FileUrl ?? row.url ?? row.Url,
-  } as FileItem
+    status: String(row.Status ?? row.status ?? '-'),
+    supplier: String(row.Supplier ?? row.supplier ?? '-'),
+    type: String(
+      row.DocumentType ?? row.documentType ?? row.type ?? row.Type ?? '-',
+    ),
+  }
 
   Object.entries(row).forEach(([key, value]) => {
     ;(file as any)[key] = value
     const pascalKey = key.charAt(0).toUpperCase() + key.slice(1)
     ;(file as any)[pascalKey] = value
   })
-
   ;(file as any).FileName = name
   ;(file as any).DocumentDate = file.date
   ;(file as any).Amount = file.amount
@@ -201,41 +276,47 @@ const toFileItem = (row: Record<string, any>, index: number): FileItem => {
 }
 
 const toFolderItem = (args: {
-  repositoryId: string
-  repositoryName: string
+  dateModified?: string | null
   groupField: string
   groupValue: string
-  level: number
-  pathId: string
-  parentFilters: Record<string, string>
-  itemCount?: number
-  dateModified?: string | null
   hasChildren?: boolean
+  itemCount?: number
+  level: number
+  parentFilters: Record<string, string>
+  pathId: string
+  repositoryId: string
+  repositoryName: string
 }): FolderItem => {
-  const nextFilters = { ...args.parentFilters, [args.groupField]: args.groupValue }
+  const nextFilters = {
+    ...args.parentFilters,
+    [args.groupField]: args.groupValue,
+  }
 
   return {
+    hasChildren: args.hasChildren ?? true,
+    iconKey: 'folder',
     id: encodeRepositoryNodeId({
-      kind: 'browse',
-      repositoryId: args.repositoryId,
-      repositoryName: args.repositoryName,
-      pathId: args.pathId,
-      label: args.groupValue,
-      level: args.level,
       groupField: args.groupField,
       groupValue: args.groupValue,
+      kind: 'browse',
+      label: args.groupValue,
+      level: args.level,
       parentFilters: nextFilters,
+      pathId: args.pathId,
+      repositoryId: args.repositoryId,
+      repositoryName: args.repositoryName,
     }),
-    title: args.groupValue,
-    iconKey: 'folder',
     itemsText: `${args.itemCount ?? 0} items`,
     modifiedText: args.dateModified || '-',
     sizeText: '-',
-    hasChildren: args.hasChildren ?? true,
+    title: args.groupValue,
   }
 }
 
-const getRepositoryFields = async (repositoryId: string, fallback?: RepositoryDto) => {
+const getRepositoryFields = async (
+  repositoryId: string,
+  fallback?: RepositoryDto,
+) => {
   if (fallback?.fields?.length) return fallback.fields
   const result = await authApiV6.getRepositoryById(repositoryId)
   if (result.error) throw new Error(String(result.error))
@@ -243,7 +324,8 @@ const getRepositoryFields = async (repositoryId: string, fallback?: RepositoryDt
 }
 
 const buildBreadcrumbs = (payload: FolderNodePayload): BreadcrumbItem[] => {
-  if (payload.kind === 'static') return [{ id: encodeRepositoryNodeId(payload), label: payload.label }]
+  if (payload.kind === 'static')
+    return [{ id: encodeRepositoryNodeId(payload), label: payload.label }]
 
   if (payload.kind === 'repository') {
     return [
@@ -254,181 +336,196 @@ const buildBreadcrumbs = (payload: FolderNodePayload): BreadcrumbItem[] => {
 
   const crumbs: BreadcrumbItem[] = [
     { id: payload.repositoryId, label: 'EZOFIS' },
-    { id: encodeRepositoryNodeId({ kind: 'repository', repositoryId: payload.repositoryId, label: payload.repositoryName }), label: payload.repositoryName },
+    {
+      id: encodeRepositoryNodeId({
+        kind: 'repository',
+        label: payload.repositoryName,
+        repositoryId: payload.repositoryId,
+      }),
+      label: payload.repositoryName,
+    },
   ]
 
-  Object.entries(payload.parentFilters).forEach(([field, value], index, entries) => {
-    const filters = Object.fromEntries(entries.slice(0, index + 1))
-    crumbs.push({
-      id: encodeRepositoryNodeId({
-        kind: 'browse',
-        repositoryId: payload.repositoryId,
-        repositoryName: payload.repositoryName,
-        pathId: payload.pathId,
+  Object.entries(payload.parentFilters).forEach(
+    ([field, value], index, entries) => {
+      const filters = Object.fromEntries(entries.slice(0, index + 1))
+      crumbs.push({
+        id: encodeRepositoryNodeId({
+          groupField: field,
+          groupValue: value,
+          kind: 'browse',
+          label: value,
+          level: index + 1,
+          parentFilters: filters,
+          pathId: payload.pathId,
+          repositoryId: payload.repositoryId,
+          repositoryName: payload.repositoryName,
+        }),
         label: value,
-        level: index + 1,
-        groupField: field,
-        groupValue: value,
-        parentFilters: filters,
-      }),
-      label: value,
-    })
-  })
+      })
+    },
+  )
 
   return crumbs
 }
 
-const normalizeChildren = (response: BrowseChildrenDto, payload: FolderNodePayload) => {
-  const repositoryId = payload.kind === 'repository' ? payload.repositoryId : payload.kind === 'browse' ? payload.repositoryId : ''
-  const repositoryName = payload.kind === 'repository' ? payload.label : payload.kind === 'browse' ? payload.repositoryName : ''
+const normalizeChildren = (
+  response: BrowseChildrenDto,
+  payload: FolderNodePayload,
+) => {
+  let repositoryId = ''
+  if (payload.kind === 'repository' || payload.kind === 'browse') {
+    repositoryId = payload.repositoryId
+  }
+  let repositoryName = ''
+  if (payload.kind === 'repository') {
+    repositoryName = payload.label
+  } else if (payload.kind === 'browse') {
+    repositoryName = payload.repositoryName
+  }
   const currentFilters = payload.kind === 'browse' ? payload.parentFilters : {}
-  const pathId = response.pathId || (payload.kind === 'browse' ? payload.pathId : 'default')
+  const pathId =
+    response.pathId || (payload.kind === 'browse' ? payload.pathId : 'default')
   const groups = getPagedData<any>(response.groups)
   const groupField = response.groupField || response.groupFieldName || 'Folder'
 
   return groups.map((group) =>
     toFolderItem({
-      repositoryId,
-      repositoryName,
+      dateModified: group.dateModified,
       groupField,
       groupValue: String(group.name),
-      level: response.level ?? Object.keys(currentFilters).length + 1,
-      pathId,
-      parentFilters: currentFilters,
-      itemCount: group.itemCount,
-      dateModified: group.dateModified,
       hasChildren: !response.isLeafLevel,
-    })
+      itemCount: group.itemCount,
+      level: response.level ?? Object.keys(currentFilters).length + 1,
+      parentFilters: currentFilters,
+      pathId,
+      repositoryId,
+      repositoryName,
+    }),
   )
 }
 
 const getDecodedRepositoryInfo = (payload: FolderNodePayload) => {
-  if (payload.kind === 'repository') return { repositoryId: payload.repositoryId, repositoryName: payload.label, filters: {} as Record<string, string>, pathId: 'default' }
-  if (payload.kind === 'browse') return { repositoryId: payload.repositoryId, repositoryName: payload.repositoryName, filters: payload.parentFilters, pathId: payload.pathId || 'default' }
-  return { repositoryId: '', repositoryName: '', filters: {} as Record<string, string>, pathId: 'default' }
+  if (payload.kind === 'repository')
+    return {
+      filters: {} as Record<string, string>,
+      pathId: 'default',
+      repositoryId: payload.repositoryId,
+      repositoryName: payload.label,
+    }
+  if (payload.kind === 'browse')
+    return {
+      filters: payload.parentFilters,
+      pathId: payload.pathId || 'default',
+      repositoryId: payload.repositoryId,
+      repositoryName: payload.repositoryName,
+    }
+  return {
+    filters: {} as Record<string, string>,
+    pathId: 'default',
+    repositoryId: '',
+    repositoryName: '',
+  }
 }
 
 export const foldersToTreeNodes = (folders: FolderItem[]): TreeNode[] =>
   folders.map((folder) => ({
-    id: folder.id,
-    title: folder.title,
-    iconKey: folder.iconKey || 'folder',
     children: folder.hasChildren === false ? undefined : [],
     hasChildren: folder.hasChildren !== false,
+    iconKey: folder.iconKey || 'folder',
+    id: folder.id,
     isLoaded: false,
+    title: folder.title,
   }))
 
 export const folderApi = {
-  async getTree(): Promise<TreeNode[]> {
-    const result = await authApiV6.repositories()
-    if (result.error) throw new Error(String(result.error))
-
-    const repositories = (Array.isArray(result.data) ? result.data : []) as RepositoryDto[]
-    const repositoryNodes: TreeNode[] = repositories.map((repository) => ({
-      id: encodeRepositoryNodeId({ kind: 'repository', repositoryId: repository.id, label: repository.name }),
-      title: repository.name,
-      iconKey: 'folder',
-      children: [],
-      hasChildren: true,
-      isLoaded: false,
-    }))
-
-    return [
-      ...repositoryNodes,
-      { id: encodeRepositoryNodeId({ kind: 'static', staticId: 'recent', label: 'Recent' }), title: 'Recent', iconKey: 'clock', hasChildren: false, isLoaded: true, isStatic: true },
-      { id: encodeRepositoryNodeId({ kind: 'static', staticId: 'favorites', label: 'Favorites' }), title: 'Favorites', iconKey: 'sparkles', hasChildren: false, isLoaded: true, isStatic: true },
-    ]
-  },
-
-  async getFolderContent(folderId: string, request: FolderContentRequest = {}): Promise<{
-    breadcrumbs: BreadcrumbItem[]
-    folders: FolderItem[]
-    files: FileItem[]
-    fileColumns: DynamicRepositoryColumn[]
-    filePage: RepositoryFilePage
-    folderPage: RepositoryFilePage
-  }> {
-    const decoded = decodeRepositoryNodeId(folderId)
-
-    if (!decoded) {
-      return { breadcrumbs: [{ id: folderId, label: 'Repository' }], folders: [], files: [], fileColumns: [], filePage: toPage(null), folderPage: toPage(null) }
-    }
-
-    if (decoded.kind === 'static') {
-      return { breadcrumbs: buildBreadcrumbs(decoded), folders: [], files: [], fileColumns: [], filePage: toPage(null), folderPage: toPage(null) }
-    }
-
-    const repository = decoded.kind === 'repository' ? (await authApiV6.getRepositoryById(decoded.repositoryId)).data as RepositoryDto : undefined
-    const fields = await getRepositoryFields(decoded.kind === 'repository' ? decoded.repositoryId : decoded.repositoryId, repository)
-    const { repositoryId, filters, pathId } = getDecodedRepositoryInfo(decoded)
-
-    let folders: FolderItem[] = []
-
-    // Children API powers the tree/folder hierarchy.
-    const childrenResult = await authApiV6.getRepositoryBrowseChildren({
-      id: repositoryId,
-      pathId,
-      page: defaultPage,
-      pageSize: defaultGroupPageSize,
-      parentFilters: filters,
-      search: request.search?.trim() || undefined,
-    } as any)
-
-    if (childrenResult.error) throw new Error(String(childrenResult.error))
-    folders = normalizeChildren(childrenResult.data, decoded)
-    const folderPage = toPage(childrenResult.data?.groups)
-
-    // Items API powers the file list. Same filters as the clicked folder.
-    const itemResult = await getRepositoryItems({
-      id: repositoryId,
-      filters,
-      search: request.search,
-      sortBy: request.sortBy || 'DocumentDate',
-      sortOrder: request.sortOrder || 'desc',
-      page: request.page ?? defaultPage,
-      pageSize: request.pageSize ?? defaultItemPageSize,
-      cursor: request.cursor ?? null,
-      skipTotal: true, // required so UI can show totalCount / totalPages from API
+  async addDocumentComment(
+    repositoryId: string,
+    itemId: string,
+    payload: { body: string },
+  ): Promise<any> {
+    const result = await addRepositoryItemComment({
+      body: payload.body,
+      itemId,
+      repositoryId,
     })
 
-    if (itemResult.error) throw new Error(String(itemResult.error))
+    if (result.error) throw new Error(String(result.error))
+    return result.data
+  },
 
-    const rawFiles = getPagedData<Record<string, any>>(itemResult.data)
-    const files = rawFiles.map(toFileItem)
-
+  async getAiSummary(): Promise<AiSummaryData> {
     return {
-      breadcrumbs: buildBreadcrumbs(decoded),
-      folders,
-      files,
-      fileColumns: toFileColumns(fields),
-      filePage: toPage(itemResult.data),
-      // Folder/group total is different from file/item total.
-      // Example: 50 supplier folders can represent 100000 files through itemCount = 2000 each.
-      folderPage,
+      checks: [],
+      confidence: 0,
+      documentId: '',
+      engineSubtitle: '',
+      engineTitle: 'EZOFIS AI Engine',
+      facts: [],
+      insight: '',
+      recommendations: [],
+      summary: '',
     }
+  },
+
+  async getDocumentComments(
+    repositoryId: string,
+    itemId: string,
+    request: { page?: number; pageSize?: number } = {},
+  ): Promise<any> {
+    const result = await getRepositoryItemComments({
+      itemId,
+      page: request.page ?? 1,
+      pageSize: request.pageSize ?? 50,
+      repositoryId,
+    })
+    if (result.error) throw new Error(String(result.error))
+    return (
+      result.data || {
+        comments: [],
+        page: request.page ?? 1,
+        pageSize: request.pageSize ?? 50,
+        totalCount: 0,
+      }
+    )
+  },
+
+  async getDocumentDetail(repositoryId: string, itemId: string): Promise<any> {
+    const result = await getRepositoryItemWorkspace({ itemId, repositoryId })
+    if (result.error) throw new Error(String(result.error))
+    return toWorkspaceDetail(result.data)
+  },
+
+  async getDocumentTimeline(
+    repositoryId: string,
+    itemId: string,
+  ): Promise<any> {
+    const result = await getRepositoryItemTimeline({ itemId, repositoryId })
+    if (result.error) throw new Error(String(result.error))
+    return result.data || { events: [], totalCount: 0 }
   },
 
   async getFolderChildren(
     folderId: string,
-    request: { page?: number; pageSize?: number; search?: string } = {}
+    request: { page?: number; pageSize?: number; search?: string } = {},
   ): Promise<{
-    folders: FolderItem[]
     folderPage: RepositoryFilePage
+    folders: FolderItem[]
   }> {
     const decoded = decodeRepositoryNodeId(folderId)
 
     if (!decoded || decoded.kind === 'static') {
-      return { folders: [], folderPage: toPage(null) }
+      return { folderPage: toPage(null), folders: [] }
     }
 
-    const { repositoryId, filters, pathId } = getDecodedRepositoryInfo(decoded)
+    const { filters, pathId, repositoryId } = getDecodedRepositoryInfo(decoded)
 
     const childrenResult = await authApiV6.getRepositoryBrowseChildren({
       id: repositoryId,
-      pathId,
       page: request.page ?? defaultPage,
       pageSize: request.pageSize ?? defaultGroupPageSize,
       parentFilters: filters,
+      pathId,
       search: request.search?.trim() || undefined,
     } as any)
 
@@ -438,62 +535,174 @@ export const folderApi = {
     const folderPage = toPage(childrenResult.data?.groups)
 
     return {
-      folders,
       folderPage: {
         ...folderPage,
+        hasMore: (request.page ?? folderPage.page) < folderPage.totalPages,
         page: request.page ?? folderPage.page,
         pageSize: request.pageSize ?? folderPage.pageSize,
-        hasMore: (request.page ?? folderPage.page) < folderPage.totalPages,
       },
+      folders,
     }
   },
 
-  async getDocumentDetail(repositoryId: string, itemId: string): Promise<any> {
-    const result = await getRepositoryItemWorkspace({ repositoryId, itemId })
-    if (result.error) throw new Error(String(result.error))
-    return toWorkspaceDetail(result.data)
-  },
+  async getFolderContent(
+    folderId: string,
+    request: FolderContentRequest = {},
+  ): Promise<{
+    breadcrumbs: BreadcrumbItem[]
+    fileColumns: DynamicRepositoryColumn[]
+    filePage: RepositoryFilePage
+    files: FileItem[]
+    folderPage: RepositoryFilePage
+    folders: FolderItem[]
+  }> {
+    const decoded = decodeRepositoryNodeId(folderId)
 
-  async getDocumentTimeline(repositoryId: string, itemId: string): Promise<any> {
-    const result = await getRepositoryItemTimeline({ repositoryId, itemId })
-    if (result.error) throw new Error(String(result.error))
-    return result.data || { events: [], totalCount: 0 }
-  },
+    if (!decoded) {
+      return {
+        breadcrumbs: [{ id: folderId, label: 'Repository' }],
+        fileColumns: [],
+        filePage: toPage(null),
+        files: [],
+        folderPage: toPage(null),
+        folders: [],
+      }
+    }
 
-  async getDocumentComments(
-    repositoryId: string,
-    itemId: string,
-    request: { page?: number; pageSize?: number } = {}
-  ): Promise<any> {
-    const result = await getRepositoryItemComments({
-      repositoryId,
-      itemId,
-      page: request.page ?? 1,
-      pageSize: request.pageSize ?? 50,
+    if (decoded.kind === 'static') {
+      return {
+        breadcrumbs: buildBreadcrumbs(decoded),
+        fileColumns: [],
+        filePage: toPage(null),
+        files: [],
+        folderPage: toPage(null),
+        folders: [],
+      }
+    }
+
+    const repository =
+      decoded.kind === 'repository'
+        ? ((await authApiV6.getRepositoryById(decoded.repositoryId))
+            .data as RepositoryDto)
+        : undefined
+    const fields = await getRepositoryFields(decoded.repositoryId, repository)
+    const { filters, pathId, repositoryId } = getDecodedRepositoryInfo(decoded)
+
+    let folders: FolderItem[] = []
+
+    // Children API powers the tree/folder hierarchy.
+    const childrenResult = await authApiV6.getRepositoryBrowseChildren({
+      id: repositoryId,
+      page: defaultPage,
+      pageSize: defaultGroupPageSize,
+      parentFilters: filters,
+      pathId,
+      search: request.search?.trim() || undefined,
+    } as any)
+
+    if (childrenResult.error) throw new Error(String(childrenResult.error))
+    folders = normalizeChildren(childrenResult.data, decoded)
+    const folderPage = toPage(childrenResult.data?.groups)
+
+    // Items API powers the file list. Same filters as the clicked folder.
+    const itemResult = await getRepositoryItems({
+      cursor: request.cursor ?? null,
+      filters,
+      id: repositoryId,
+      page: request.page ?? defaultPage,
+      pageSize: request.pageSize ?? defaultItemPageSize,
+      search: request.search,
+      skipTotal: true, // required so UI can show totalCount / totalPages from API
+      sortBy: request.sortBy || 'DocumentDate',
+      sortOrder: request.sortOrder || 'desc',
     })
-    if (result.error) throw new Error(String(result.error))
-    return result.data || { comments: [], totalCount: 0, page: request.page ?? 1, pageSize: request.pageSize ?? 50 }
+
+    if (itemResult.error) throw new Error(String(itemResult.error))
+
+    const rawFiles = getPagedData<Record<string, any>>(itemResult.data)
+    const files = rawFiles.map((row, index) => toFileItem(row, index))
+
+    return {
+      breadcrumbs: buildBreadcrumbs(decoded),
+      fileColumns: toFileColumns(fields),
+      filePage: toPage(itemResult.data),
+      files,
+      // Folder/group total is different from file/item total.
+      // Example: 50 supplier folders can represent 100000 files through itemCount = 2000 each.
+      folderPage,
+      folders,
+    }
   },
 
-  async addDocumentComment(
-    repositoryId: string,
-    itemId: string,
-    payload: { body: string }
-  ): Promise<any> {
-    const result = await addRepositoryItemComment({
-      repositoryId,
-      itemId,
-      body: payload.body,
-    })
-
-    if (result.error) throw new Error(String(result.error))
-    return result.data
+  async getMetadataSections(): Promise<MetadataSection[]> {
+    return []
   },
+  async getShareData(): Promise<ShareData> {
+    return {
+      documentId: '',
+      invitePermissions: ['Can View', 'Can Edit'],
+      link: '',
+      permissions: [],
+      sharedWith: [],
+    }
+  },
+  async getTree(): Promise<TreeNode[]> {
+    const result = await authApiV6.repositories()
+    if (result.error) throw new Error(String(result.error))
 
-  async getMetadataSections(): Promise<MetadataSection[]> { return [] },
-  async getAiSummary(): Promise<AiSummaryData> { return { documentId: '', engineTitle: 'EZOFIS AI Engine', engineSubtitle: '', confidence: 0, summary: '', facts: [], checks: [], recommendations: [], insight: '' } },
-  async getShareData(): Promise<ShareData> { return { documentId: '', invitePermissions: ['Can View', 'Can Edit'], sharedWith: [], link: '', permissions: [] } },
-  async getWorkflowData(): Promise<WorkflowData> { return { documentId: '', document: { name: '', supplier: '', amount: '', date: '', status: '' }, templates: [], approvers: [], priorities: ['Low', 'Medium', 'High'] } },
+    const repositories = (
+      Array.isArray(result.data) ? result.data : []
+    ) as RepositoryDto[]
+    const repositoryNodes: TreeNode[] = repositories.map((repository) => ({
+      children: [],
+      hasChildren: true,
+      iconKey: 'folder',
+      id: encodeRepositoryNodeId({
+        kind: 'repository',
+        label: repository.name,
+        repositoryId: repository.id,
+      }),
+      isLoaded: false,
+      title: repository.name,
+    }))
+
+    return [
+      ...repositoryNodes,
+      {
+        hasChildren: false,
+        iconKey: 'clock',
+        id: encodeRepositoryNodeId({
+          kind: 'static',
+          label: 'Recent',
+          staticId: 'recent',
+        }),
+        isLoaded: true,
+        isStatic: true,
+        title: 'Recent',
+      },
+      {
+        hasChildren: false,
+        iconKey: 'sparkles',
+        id: encodeRepositoryNodeId({
+          kind: 'static',
+          label: 'Favorites',
+          staticId: 'favorites',
+        }),
+        isLoaded: true,
+        isStatic: true,
+        title: 'Favorites',
+      },
+    ]
+  },
+  async getWorkflowData(): Promise<WorkflowData> {
+    return {
+      approvers: [],
+      document: { amount: '', date: '', name: '', status: '', supplier: '' },
+      documentId: '',
+      priorities: ['Low', 'Medium', 'High'],
+      templates: [],
+    }
+  },
 }
 
 export default folderApi

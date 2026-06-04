@@ -14,8 +14,7 @@ import {
   useNodesState,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
-import { useCallback, useState } from 'react'
-import { useEffect } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { getWorkflowQueryOptions } from '@/api/workflow/queries'
 import useWorkflowStore from '../stores/useWorkflowStore'
 import { generateId } from '../utils/generateId'
@@ -25,6 +24,45 @@ import BuilderHeader from './header/BuilderHeader'
 import CustomNode from './nodes/CustomNode'
 import PropertiesPanel from './PropertiesPanel'
 import { WorkflowSettings } from './WorkflowSettings'
+
+const computeEdgeHandles = (
+  edges: Edge[],
+  nodes: Node[],
+): { changed: boolean; edges: Edge[] } => {
+  let changed = false
+  const updatedEdges = edges.map((edge) => {
+    const sourceNode = nodes.find((n) => n.id === edge.source)
+    const targetNode = nodes.find((n) => n.id === edge.target)
+
+    if (!sourceNode || !targetNode) return edge
+
+    const dx = targetNode.position.x - sourceNode.position.x
+    const dy = targetNode.position.y - sourceNode.position.y
+
+    const isHorizontal = Math.abs(dx) > Math.abs(dy) + 100
+    let sourceHandle = ''
+    let targetHandle = ''
+
+    if (isHorizontal) {
+      sourceHandle = dx > 0 ? 's-right' : 's-left'
+      targetHandle = dx > 0 ? 't-left' : 't-right'
+    } else {
+      sourceHandle = dy > 0 ? 's-bottom' : 's-top'
+      targetHandle = dy > 0 ? 't-top' : 't-bottom'
+    }
+
+    if (
+      sourceHandle !== edge.sourceHandle ||
+      targetHandle !== edge.targetHandle
+    ) {
+      changed = true
+      return { ...edge, sourceHandle, targetHandle }
+    }
+    return edge
+  })
+
+  return { changed, edges: updatedEdges }
+}
 
 const nodeTypes = {
   custom: CustomNode,
@@ -124,7 +162,7 @@ const WorkflowBuilderCanvas = ({ workflowId }: { workflowId: string }) => {
     const flowJsonStr = data?.workflowJson || data?.flowJson
     if (flowJsonStr && !isNew) {
       try {
-        const json = JSON.parse(flowJsonStr)
+        const json = flowJsonStr
         loadLegacyWorkflow(json)
       } catch (e) {
         console.error('Failed to parse workflow json', e)
@@ -151,40 +189,8 @@ const WorkflowBuilderCanvas = ({ workflowId }: { workflowId: string }) => {
   // Dynamic Edge Handle Logic: Snap to best face based on relative position
   useEffect(() => {
     setEdges((eds) => {
-      let hasChanged = false
-      const newEdges = eds.map((edge) => {
-        const sourceNode = nodes.find((n) => n.id === edge.source)
-        const targetNode = nodes.find((n) => n.id === edge.target)
-
-        if (!sourceNode || !targetNode) return edge
-
-        const dx = targetNode.position.x - sourceNode.position.x
-        const dy = targetNode.position.y - sourceNode.position.y
-
-        let sourceHandle = edge.sourceHandle
-        let targetHandle = edge.targetHandle
-
-        if (Math.abs(dx) > Math.abs(dy) + 100) {
-          // Primarily Horizontal
-          sourceHandle = dx > 0 ? 's-right' : 's-left'
-          targetHandle = dx > 0 ? 't-left' : 't-right'
-        } else {
-          // Primarily Vertical
-          sourceHandle = dy > 0 ? 's-bottom' : 's-top'
-          targetHandle = dy > 0 ? 't-top' : 't-bottom'
-        }
-
-        if (
-          sourceHandle !== edge.sourceHandle ||
-          targetHandle !== edge.targetHandle
-        ) {
-          hasChanged = true
-          return { ...edge, sourceHandle, targetHandle }
-        }
-        return edge
-      })
-
-      return hasChanged ? newEdges : eds
+      const { changed, edges: newEdges } = computeEdgeHandles(eds, nodes)
+      return changed ? newEdges : eds
     })
   }, [nodes, setEdges])
 
@@ -196,7 +202,7 @@ const WorkflowBuilderCanvas = ({ workflowId }: { workflowId: string }) => {
 
     let mounted = true
     const sequence = async () => {
-      const startNode = nodes.find((n) => n.data.type === 'trigger') || nodes[0]
+      const startNode = nodes.find((n) => n.data.type === 'trigger') ?? nodes[0]
       if (!startNode) return
 
       let currentNodeId = startNode.id

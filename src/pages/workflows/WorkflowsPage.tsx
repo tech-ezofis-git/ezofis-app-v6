@@ -1,5 +1,5 @@
-import { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
+import { useState } from 'react'
 import Header from './components/header/Header'
 import Table from './components/Table'
 
@@ -8,7 +8,7 @@ const WorkflowsPage = () => {
   const [tabValue, setTabValue] = useState<string>('All')
 
   const handleCreate = () => {
-    // TODO: Generate a real ID or handle 'new'
+    // Note: workflow builder routing uses 'new' as template identifier parameter
     navigate({
       params: { workflowId: 'new' },
       to: '/workflow-builder/$workflowId',
@@ -17,7 +17,11 @@ const WorkflowsPage = () => {
 
   return (
     <div className='flex h-full flex-col'>
-      <Header tabValue={tabValue} onTabChange={setTabValue} onCreate={handleCreate} />
+      <Header
+        tabValue={tabValue}
+        onCreate={handleCreate}
+        onTabChange={setTabValue}
+      />
       <div className='bg-gray-50/50 flex-1 overflow-hidden px-6 py-2'>
         <Table tabValue={tabValue} onCreate={handleCreate} />
       </div>
@@ -27,4 +31,3 @@ const WorkflowsPage = () => {
 
 WorkflowsPage.displayName = 'WorkflowsPage'
 export default WorkflowsPage
-

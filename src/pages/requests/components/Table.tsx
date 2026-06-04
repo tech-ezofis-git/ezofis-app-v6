@@ -131,7 +131,7 @@ const Table = () => {
     initialVisibilityState,
   })
   const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
+  const [pageSize, setPageSize] = useState(100)
 
   const { data, isFetching, isPending, isRefetching, refetch } = useQuery(
     getRequestGroupListQueryOptions({

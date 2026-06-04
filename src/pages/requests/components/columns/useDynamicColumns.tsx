@@ -31,11 +31,13 @@ import FileUploadCell from './components/FileUploadCell'
 import WrapOnHoverCell from './components/WrapOnHoverCell'
 
 const LINK_TEXT =
-  'transition-colors cursor-pointer font-medium underline hover:text-gray-13 text-14'
+  'transition-colors cursor-pointer font-medium underline hover:text-gray-13 text-14 bg-transparent border-0 p-0 text-left'
 
 const wrap = (content: React.ReactNode) => <WrapOnHoverCell value={content} />
 
-const resolveFormJson = (workflow: WorkflowOption | null): any | null => {
+const resolveFormJson = (
+  workflow: WorkflowOption | null,
+): Record<string, any> | any[] | null => {
   if (!workflow?.formJson) return null
 
   const raw = workflow.formJson
@@ -267,53 +269,44 @@ const extractDueDate = (row: any): string => {
   }
 }
 
+const getFromObjectOrVal = (obj: any): string | null => {
+  if (!obj) return null
+  if (typeof obj !== 'object') return String(obj)
+  const val = obj.payment_terms ?? obj.terms ?? obj.payment_term ?? obj.term
+  return val ? String(val) : null
+}
+
+const getFromFields = (fields: any): string | null => {
+  if (!fields) return null
+  return (
+    fields['Payment Terms'] ??
+    fields['payment_terms'] ??
+    fields['Terms'] ??
+    fields['terms']
+  )
+}
+
 const extractPaymentTerms = (row: any): string => {
   if (!row) return '-'
-  const agentData = row._agentData?.[0] || row._agentData || {}
+  const agentData = row._agentData?.[0] ?? row._agentData ?? {}
 
-  const termObj = row.payment_terms || row.paymentTerms || {}
-  let val =
-    typeof termObj === 'object'
-      ? termObj.payment_terms ||
-        termObj.terms ||
-        termObj.payment_term ||
-        termObj.term
-      : termObj
-  if (val && val !== '-') return String(val)
+  const fromRow = getFromObjectOrVal(row.payment_terms ?? row.paymentTerms)
+  if (fromRow && fromRow !== '-') return fromRow
 
-  val = row.terms || row.payment_term || row.paymentTerms
-  if (val && typeof val !== 'object' && val !== '-') return String(val)
+  const rowTerms = row.terms ?? row.payment_term ?? row.paymentTerms
+  if (rowTerms && typeof rowTerms !== 'object' && rowTerms !== '-')
+    return String(rowTerms)
 
-  val =
-    row.formData?.fields?.['Payment Terms'] ||
-    row.formData?.fields?.['payment_terms'] ||
-    row.formData?.fields?.['Terms'] ||
-    row.formData?.fields?.['terms'] ||
-    row.formData?.['Payment Terms'] ||
-    row.formData?.['payment_terms'] ||
-    row.formData?.['Terms'] ||
-    row.formData?.['terms']
-  if (val && val !== '-') return String(val)
+  const fromForm =
+    getFromFields(row.formData?.fields) ?? getFromFields(row.formData)
+  if (fromForm && fromForm !== '-') return String(fromForm)
 
-  if (agentData) {
-    const agentTermObj = agentData.payment_terms || {}
-    val =
-      typeof agentTermObj === 'object'
-        ? agentTermObj.payment_terms ||
-          agentTermObj.terms ||
-          agentTermObj.payment_term ||
-          agentTermObj.term
-        : agentTermObj
-    if (val && val !== '-') return String(val)
+  const fromAgent = getFromObjectOrVal(agentData.payment_terms)
+  if (fromAgent && fromAgent !== '-') return fromAgent
 
-    const header = agentData['Extracted Invoice JSON']?.invoice_header || {}
-    val =
-      header['Payment Terms'] ||
-      header['payment_terms'] ||
-      header['Terms'] ||
-      header['terms']
-    if (val && val !== '-') return String(val)
-  }
+  const header = agentData['Extracted Invoice JSON']?.invoice_header
+  const fromHeader = getFromFields(header)
+  if (fromHeader && fromHeader !== '-') return String(fromHeader)
 
   return '-'
 }
@@ -342,7 +335,7 @@ const extractInvoiceDate = (row: any): string => {
     if (typeof val === 'object') {
       const inner =
         val['Invoice Value'] || val['value'] || val['val'] || val['text']
-      return inner !== undefined ? String(inner).trim() : null
+      return inner === undefined ? null : String(inner).trim()
     }
     return String(val).trim()
   }
@@ -413,13 +406,71 @@ const calculateDaysDifference = (
   try {
     const invDate = new Date(invoiceDateStr)
     const dueDate = new Date(dueDateStr)
-    if (isNaN(invDate.getTime()) || isNaN(dueDate.getTime())) return null
+    if (Number.isNaN(invDate.getTime()) || Number.isNaN(dueDate.getTime()))
+      return null
     const diffTime = dueDate.getTime() - invDate.getTime()
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
     return diffDays
   } catch {
     return null
   }
+}
+
+const computeDueDateInfo = (
+  row: any,
+  terms: string,
+  dueDate: string,
+): {
+  calculationText: string
+  calculationTheme: string
+  termsDisplay: string
+} => {
+  const raisedAt = row?.raisedAt || row?.transaction_createdAt
+  const daysDiff = calculateDaysDifference(raisedAt, dueDate)
+
+  let termsDisplay = terms === '-' ? 'Immediate' : terms
+  if (termsDisplay.toLowerCase() === 'immediate') {
+    termsDisplay = '0 Days'
+  } else {
+    const numMatch = /\d+/.exec(termsDisplay)
+    if (numMatch) {
+      termsDisplay = `${numMatch[0]} Days`
+    }
+  }
+
+  let calculationText = 'Immediate'
+  const calculationTheme =
+    'border-[var(--red-4)] bg-[var(--red-2)] text-[var(--red-11)]'
+
+  if (daysDiff === null) {
+    const numMatch = /\d+/.exec(terms)
+    if (numMatch) {
+      const days = Number.parseInt(numMatch[0], 10)
+      const theme =
+        days <= 15
+          ? 'border-[var(--orange-4)] bg-[var(--orange-2)] text-[var(--orange-11)]'
+          : 'border-[var(--blue-4)] bg-[var(--blue-2)] text-[var(--blue-11)]'
+      return {
+        calculationText: `In ${days} days`,
+        calculationTheme: theme,
+        termsDisplay,
+      }
+    }
+  } else if (daysDiff > 0) {
+    const theme =
+      daysDiff <= 15
+        ? 'border-[var(--orange-4)] bg-[var(--orange-2)] text-[var(--orange-11)]'
+        : 'border-[var(--blue-4)] bg-[var(--blue-2)] text-[var(--blue-11)]'
+    return {
+      calculationText: `In ${daysDiff} days`,
+      calculationTheme: theme,
+      termsDisplay,
+    }
+  } else if (daysDiff < 0) {
+    calculationText = `${Math.abs(daysDiff)}d Overdue`
+  }
+
+  return { calculationText, calculationTheme, termsDisplay }
 }
 
 const isStandardField = (field: any, label: string) => {
@@ -451,6 +502,56 @@ const isStandardField = (field: any, label: string) => {
     lowerLabel.includes('total') ||
     lowerLabel.includes('value')
   )
+}
+
+const StepIcon = ({ status }: { status: string }) => {
+  if (status === 'completed') {
+    return (
+      <div className='relative z-10 flex size-5 shrink-0 items-center justify-center rounded-full bg-[var(--green-9)] text-white ring-4 ring-[var(--green-2)]'>
+        <Icon className='size-3 stroke-[3px]' name='tabler:check' />
+      </div>
+    )
+  }
+  if (status === 'active') {
+    return (
+      <div className='relative z-10 flex size-5 shrink-0 items-center justify-center rounded-full border border-[var(--primary-9)] bg-surface ring-4 ring-[var(--primary-2)]'>
+        <div className='size-1.5 animate-pulse rounded-full bg-[var(--primary-9)]' />
+      </div>
+    )
+  }
+  return (
+    <div className='relative z-10 flex size-5 shrink-0 items-center justify-center rounded-full border border-[var(--gray-4)] bg-surface text-[var(--gray-8)]'>
+      <div className='size-1.5 rounded-full bg-[var(--gray-4)]' />
+    </div>
+  )
+}
+
+const getStepStatuses = (stage: string) => {
+  let step2Status = 'pending'
+  let step3Status = 'pending'
+  let step4Status = 'pending'
+
+  if (
+    stage === 'Start' ||
+    stage === 'Fetching & Analysing...' ||
+    stage.startsWith('AP AGENT') ||
+    stage.startsWith('AP_AGENT')
+  ) {
+    step2Status = 'active'
+  } else if (stage === 'AI Agent') {
+    step2Status = 'completed'
+    step3Status = 'active'
+  } else if (stage === 'Verifier') {
+    step2Status = 'completed'
+    step3Status = 'completed'
+    step4Status = 'active'
+  } else if (['Approved', 'Completed'].includes(stage)) {
+    step2Status = 'completed'
+    step3Status = 'completed'
+    step4Status = 'completed'
+  }
+
+  return { step2Status, step3Status, step4Status }
 }
 
 const StatusCell = ({
@@ -487,6 +588,7 @@ const StatusCell = ({
 
   return (
     <div
+      aria-hidden='true'
       className='relative flex size-9 items-center justify-center'
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -543,24 +645,8 @@ const StatusCell = ({
               {/* Stepper Content */}
               {(() => {
                 const stage = row.stage || 'Start'
-                let step2Status = 'pending'
-                let step3Status = 'pending'
-                let step4Status = 'pending'
-
-                if (stage === 'Start') {
-                  step2Status = 'active'
-                } else if (stage === 'AI Agent') {
-                  step2Status = 'completed'
-                  step3Status = 'active'
-                } else if (stage === 'Verifier') {
-                  step2Status = 'completed'
-                  step3Status = 'completed'
-                  step4Status = 'active'
-                } else if (['Approved', 'Completed'].includes(stage)) {
-                  step2Status = 'completed'
-                  step3Status = 'completed'
-                  step4Status = 'completed'
-                }
+                const { step2Status, step3Status, step4Status } =
+                  getStepStatuses(stage)
 
                 return (
                   <div className='relative z-10 flex flex-col pl-2'>
@@ -597,22 +683,7 @@ const StatusCell = ({
                         )}
                       />
                       {/* Circle */}
-                      {step2Status === 'completed' ? (
-                        <div className='relative z-10 flex size-5 shrink-0 items-center justify-center rounded-full bg-[var(--green-9)] text-white ring-4 ring-[var(--green-2)]'>
-                          <Icon
-                            className='size-3 stroke-[3px]'
-                            name='tabler:check'
-                          />
-                        </div>
-                      ) : step2Status === 'active' ? (
-                        <div className='relative z-10 flex size-5 shrink-0 items-center justify-center rounded-full border border-[var(--primary-9)] bg-surface ring-4 ring-[var(--primary-2)]'>
-                          <div className='size-1.5 animate-pulse rounded-full bg-[var(--primary-9)]' />
-                        </div>
-                      ) : (
-                        <div className='relative z-10 flex size-5 shrink-0 items-center justify-center rounded-full border border-[var(--gray-4)] bg-surface text-[var(--gray-8)]'>
-                          <div className='size-1.5 rounded-full bg-[var(--gray-4)]' />
-                        </div>
-                      )}
+                      <StepIcon status={step2Status} />
                       <div className='flex flex-col gap-0.5'>
                         <span
                           className={cn(
@@ -643,22 +714,7 @@ const StatusCell = ({
                         )}
                       />
                       {/* Circle */}
-                      {step3Status === 'completed' ? (
-                        <div className='relative z-10 flex size-5 shrink-0 items-center justify-center rounded-full bg-[var(--green-9)] text-white ring-4 ring-[var(--green-2)]'>
-                          <Icon
-                            className='size-3 stroke-[3px]'
-                            name='tabler:check'
-                          />
-                        </div>
-                      ) : step3Status === 'active' ? (
-                        <div className='relative z-10 flex size-5 shrink-0 items-center justify-center rounded-full border border-[var(--primary-9)] bg-surface ring-4 ring-[var(--primary-2)]'>
-                          <div className='size-1.5 animate-pulse rounded-full bg-[var(--primary-9)]' />
-                        </div>
-                      ) : (
-                        <div className='relative z-10 flex size-5 shrink-0 items-center justify-center rounded-full border border-[var(--gray-4)] bg-surface text-[var(--gray-8)]'>
-                          <div className='size-1.5 rounded-full bg-[var(--gray-4)]' />
-                        </div>
-                      )}
+                      <StepIcon status={step3Status} />
                       <div className='flex flex-col gap-0.5'>
                         <span
                           className={cn(
@@ -680,22 +736,7 @@ const StatusCell = ({
                     {/* Step 4: Final Review */}
                     <div className='relative flex gap-3'>
                       {/* Circle */}
-                      {step4Status === 'completed' ? (
-                        <div className='relative z-10 flex size-5 shrink-0 items-center justify-center rounded-full bg-[var(--green-9)] text-white ring-4 ring-[var(--green-2)]'>
-                          <Icon
-                            className='size-3 stroke-[3px]'
-                            name='tabler:check'
-                          />
-                        </div>
-                      ) : step4Status === 'active' ? (
-                        <div className='relative z-10 flex size-5 shrink-0 items-center justify-center rounded-full border border-[var(--primary-9)] bg-surface ring-4 ring-[var(--primary-2)]'>
-                          <div className='size-1.5 animate-pulse rounded-full bg-[var(--primary-9)]' />
-                        </div>
-                      ) : (
-                        <div className='relative z-10 flex size-5 shrink-0 items-center justify-center rounded-full border border-[var(--gray-4)] bg-surface text-[var(--gray-8)]'>
-                          <div className='size-1.5 rounded-full bg-[var(--gray-4)]' />
-                        </div>
-                      )}
+                      <StepIcon status={step4Status} />
                       <div className='flex flex-col gap-0.5'>
                         <span
                           className={cn(
@@ -724,458 +765,465 @@ const StatusCell = ({
   )
 }
 
+const GL_CATEGORIES = ['Supplies', 'Software', 'Utilities', 'Travel']
+
+const AI_INSIGHTS = [
+  'Ready for auto-approval',
+  'No PO linked — request PO or code to GL',
+  'Partial match — review unmatched lines',
+]
+
+const isPOField = (label: string) =>
+  label.includes('po number') || label === 'po' || label === 'po_number'
+
+const isDueDateField = (label: string) =>
+  label.includes('due date') || label === 'due_date'
+
+const isTermsField = (label: string) =>
+  label === 'terms' ||
+  label.includes('payment terms') ||
+  label === 'payment_term' ||
+  label === 'payment_terms'
+
+const isInvoiceDateField = (label: string, fieldKey: string) =>
+  label.includes('invoice date') ||
+  label === 'invoice_date' ||
+  fieldKey === '9F6tPVHoRnmONGx3kYJu2'
+
+const extractStandardFieldValue = (
+  row: any,
+  fieldKey: string,
+  label: string,
+): string | null => {
+  const lowerLabel = String(label || '').toLowerCase()
+
+  if (isPOField(lowerLabel)) {
+    const extracted = extractPONumber(row)
+    return extracted && extracted !== 'N/A' ? extracted : null
+  }
+  if (isDueDateField(lowerLabel)) {
+    const extracted = extractDueDate(row)
+    return extracted && extracted !== '-' ? extracted : null
+  }
+  if (isTermsField(lowerLabel)) {
+    const extracted = extractPaymentTerms(row)
+    return extracted && extracted !== '-' ? extracted : null
+  }
+  if (isInvoiceDateField(lowerLabel, fieldKey)) {
+    const extracted = extractInvoiceDate(row)
+    return extracted && extracted !== '-' ? extracted : null
+  }
+
+  return null
+}
+
+const renderCellByType = (type: string, rawVal: any, row: any) => {
+  switch (type) {
+    case 'FILE_UPLOAD':
+      return wrap(<FileUploadCell rawVal={rawVal} row={row} />)
+
+    case 'DATE':
+      return (
+        <WrapOnHoverCell value={formatDatetime(rawVal as string, 'date')} />
+      )
+
+    case 'CURRENCY':
+      return (
+        <WrapOnHoverCell
+          value={
+            <span className='text-gray-900 font-medium'>{String(rawVal)}</span>
+          }
+        />
+      )
+
+    case 'NUMBER':
+      return <WrapOnHoverCell value={String(rawVal)} />
+
+    default:
+      return <WrapOnHoverCell value={String(rawVal)} />
+  }
+}
+
+const renderDynamicCell = (
+  row: any,
+  fieldKey: string,
+  label: string,
+  field: any,
+  tableMetaByParentId: Map<string, any>,
+) => {
+  let rawVal =
+    row[fieldKey] ??
+    row.formData?.fields?.[fieldKey] ??
+    row.formData?.[fieldKey]
+
+  const extracted = extractStandardFieldValue(row, fieldKey, label)
+  if (extracted !== null) {
+    rawVal = extracted
+  }
+
+  if (rawVal === undefined || rawVal === null || rawVal === '') {
+    return <WrapOnHoverCell value='-' />
+  }
+
+  if (isTableType(field.type)) {
+    const tableParentId = field?.id
+    const colMeta =
+      tableParentId !== undefined && tableParentId !== null
+        ? tableMetaByParentId.get(String(tableParentId))
+        : undefined
+
+    return (
+      <span className='inline-flex items-center'>
+        <DynamicTableCell
+          colMeta={colMeta}
+          modalWidth={900}
+          rawVal={rawVal}
+          safeParse={safeParse}
+          title={String(label)}
+        />
+      </span>
+    )
+  }
+
+  const type = String(field.type ?? '').toUpperCase()
+  return renderCellByType(type, rawVal, row)
+}
+
+const getFormPanels = (form: any) => {
+  if (!form) return []
+  const panels =
+    !Array.isArray(form) && Array.isArray(form?.panels) ? form.panels : []
+  const secondaryPanels =
+    !Array.isArray(form) && Array.isArray(form?.secondaryPanels)
+      ? form.secondaryPanels
+      : []
+  const rootPanels = Array.isArray(form) ? form : [form]
+  return [...rootPanels, ...panels, ...secondaryPanels]
+}
+
+const getBaseColumns = (
+  selectedItem: any,
+  activeTab: string | undefined,
+  onRowClick: (item: any, tab: string) => void,
+): Column[] => {
+  const columns: Column[] = [
+    {
+      id: 'requestNo',
+      label: 'Invoice Number',
+      size: 260,
+      renderCell: (row: any, index = 0) => (
+        <div className='flex min-w-0 items-center gap-3'>
+          <StatusCell originalIndex={index} row={row} />
+          <div className='flex min-w-0 items-center gap-2'>
+            <WrapOnHoverCell
+              value={
+                <button
+                  className={LINK_TEXT}
+                  type='button'
+                  onClick={(e) => {
+                    e?.stopPropagation?.()
+                    if (onRowClick) {
+                      onRowClick(row, 'Overview')
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.stopPropagation()
+                      if (onRowClick) {
+                        onRowClick(row, 'Overview')
+                      }
+                    }
+                  }}
+                >
+                  {extractInvoiceNumber(row)}
+                </button>
+              }
+            />
+            {row?.isDuplicateInvoice && (
+              <RequestStatusBadge status='Duplicated' />
+            )}
+          </div>
+        </div>
+      ),
+    },
+  ]
+
+  if (selectedItem) {
+    return columns
+  }
+
+  columns.push(
+    {
+      id: 'matchStatus',
+      label: activeTab === 'Processed' ? 'Payment Status' : 'Match Status',
+      size: 140,
+      renderCell: (_row: any, index = 0) => {
+        if (activeTab === 'Processed') {
+          const isPaid = index % 2 === 0
+          if (isPaid) {
+            return (
+              <span className='flex items-center gap-1 rounded-md border border-[var(--green-4)] bg-[var(--green-2)] px-2 py-0.5 text-[11px] font-semibold text-[var(--green-11)]'>
+                <Icon className='size-3.5' name='tabler:circle-check' />
+                Paid
+              </span>
+            )
+          } else {
+            return (
+              <span className='flex items-center gap-1 rounded-md border border-[var(--orange-4)] bg-[var(--orange-2)] px-2 py-0.5 text-[11px] font-semibold text-[var(--orange-11)]'>
+                <Icon className='size-3.5' name='tabler:clock' />
+                Pending for Payment
+              </span>
+            )
+          }
+        }
+        const matchType = index % 3
+        if (matchType === 0) {
+          return (
+            <span className='flex items-center gap-1 rounded-md border border-[var(--green-4)] bg-[var(--green-2)] px-2 py-0.5 text-[11px] font-semibold text-[var(--green-11)]'>
+              <Icon className='size-3.5' name='tabler:circle-check' />
+              Matched
+            </span>
+          )
+        } else if (matchType === 1) {
+          return (
+            <span className='flex items-center gap-1 rounded-md border border-[var(--red-4)] bg-[var(--red-2)] px-2 py-0.5 text-[11px] font-semibold text-[var(--red-11)]'>
+              <Icon className='size-3.5' name='tabler:alert-circle' />
+              No Match
+            </span>
+          )
+        } else {
+          return (
+            <span className='flex items-center gap-1 rounded-md border border-[var(--orange-4)] bg-[var(--orange-2)] px-2 py-0.5 text-[11px] font-semibold text-[var(--orange-11)]'>
+              <Icon className='size-3.5' name='tabler:alert-triangle' />
+              Partial Match
+            </span>
+          )
+        }
+      },
+    },
+    {
+      id: 'raisedBy',
+      label: 'Raised By',
+      size: 200,
+      renderCell: (row: any) => {
+        const supplierName =
+          row?.vendor ||
+          row?.['UtfgJy6Z0qyfRC5Bclf-c'] ||
+          row?.raisedBy ||
+          'Unknown Supplier'
+        return (
+          <HoverExpandableText
+            className='text-[13px] font-medium text-[var(--gray-11)]'
+            fallbackText='Unknown Supplier'
+            normalMaxWidthClass='max-w-[180px]'
+            text={supplierName}
+          />
+        )
+      },
+    },
+    {
+      id: 'glCodeCategory',
+      label: 'GL & Category',
+      size: 220,
+      renderCell: (_row: any, index = 0) => {
+        const category = GL_CATEGORIES[index % 4]
+        return (
+          <div className='flex items-center gap-2 text-[12px] font-medium text-[var(--gray-10)]'>
+            <div className='flex items-center gap-1 text-[var(--gray-8)]'>
+              <Icon className='size-3.5' name='tabler:stack' />
+              <span>5100-00{index + 1}</span>
+            </div>
+            <div className='flex items-center gap-1 text-[var(--gray-8)]'>
+              <Icon className='size-3.5' name='tabler:tag' />
+              <span>{category}</span>
+            </div>
+          </div>
+        )
+      },
+    },
+  )
+
+  if (activeTab !== 'Processed') {
+    columns.push({
+      id: 'aiInsight',
+      label: 'AI Insight',
+      size: 260,
+      renderCell: (_row: any, index = 0) => {
+        const aiInsight = AI_INSIGHTS[index % 3]
+        return (
+          <div className='flex min-w-0 items-center gap-1.5'>
+            <Icon
+              className='size-3.5 shrink-0 text-[var(--primary-9)]'
+              name='tabler:sparkles'
+            />
+            <HoverExpandableText
+              className='text-[13px] font-medium text-[var(--gray-11)]'
+              normalMaxWidthClass='max-w-[220px]'
+              text={aiInsight}
+            />
+          </div>
+        )
+      },
+    })
+  }
+
+  columns.push(
+    {
+      id: 'poNumber',
+      label: 'PO Number',
+      size: 160,
+      renderCell: (row: any) => {
+        const poNum = extractPONumber(row)
+        return (
+          <div className='flex items-center gap-1.5 text-[12px] font-medium text-[var(--gray-10)]'>
+            <Icon className='size-3.5' name='tabler:hash' />
+            <span>{poNum}</span>
+          </div>
+        )
+      },
+    },
+    {
+      id: 'termsDueDate',
+      label: 'Due & Terms',
+      size: 160,
+      renderCell: (row: any) => {
+        const terms = extractPaymentTerms(row)
+        const dueDate = extractDueDate(row)
+        const { calculationText, calculationTheme, termsDisplay } =
+          computeDueDateInfo(row, terms, dueDate)
+
+        return (
+          <div className='flex flex-col items-start gap-1'>
+            <span className='text-[12px] font-semibold tracking-tight text-[var(--gray-12)]'>
+              {termsDisplay}
+            </span>
+            <span
+              className={cn(
+                'rounded-full border px-2 py-0.5 text-[10px] font-bold tracking-wide',
+                calculationTheme,
+              )}
+            >
+              {calculationText}
+            </span>
+          </div>
+        )
+      },
+    },
+    {
+      id: 'amount',
+      label: 'Total Value',
+      size: 140,
+      renderCell: (row: any) => {
+        const amount = Number(
+          row['suyqsm0SYii_8vsj4p0c_'] || row['WksH1Mrs42X4J9AHgoBtw'] || 0,
+        )
+        return (
+          <span className='text-[14px] leading-none font-semibold tracking-tight text-[var(--text-primary)] tabular-nums'>
+            $
+            {(amount || 3450).toLocaleString(undefined, {
+              maximumFractionDigits: 2,
+              minimumFractionDigits: 2,
+            })}
+          </span>
+        )
+      },
+    },
+    {
+      id: 'invoiceDate',
+      label: 'Invoice Date',
+      size: 140,
+      renderCell: (row: any) => {
+        const rawDate = extractInvoiceDate(row)
+        let dateDisplay = 'May 19, 2026'
+        if (rawDate && rawDate !== '-') {
+          try {
+            dateDisplay = new Date(rawDate).toLocaleDateString('en-US', {
+              day: 'numeric',
+              month: 'short',
+              year: 'numeric',
+            })
+          } catch {
+            // fallback
+          }
+        }
+        return (
+          <span className='text-[12px] font-medium text-[var(--gray-10)]'>
+            {dateDisplay}
+          </span>
+        )
+      },
+    },
+  )
+
+  return columns
+}
+
+const buildDynamicColumns = (
+  allPanels: any[],
+  selectedItem: any,
+  tableMetaByParentId: Map<string, any>,
+) => {
+  const dynamicCols: Column[] = []
+  for (const panel of allPanels) {
+    const controls =
+      panel?.controlList || panel?.controllist || panel?.fields || []
+
+    for (const field of controls) {
+      if (isIgnorableField(field)) continue
+      if (!isParentField(field)) continue
+
+      const fieldKey = getFieldKey(field) // Uses encrypted jsonId if available
+      if (!fieldKey) continue
+
+      const label = getFieldLabel(field)
+      if (isStandardField(field, label)) continue
+
+      if (!selectedItem) {
+        dynamicCols.push({
+          id: fieldKey,
+          label,
+          size: 200,
+          renderCell: (row: any) =>
+            renderDynamicCell(row, fieldKey, label, field, tableMetaByParentId),
+        })
+      }
+    }
+  }
+  return dynamicCols
+}
+
 export const useDynamicColumns = (
   workflow: WorkflowOption | null,
   onRowClick: (item: any, tab: string) => void,
   selectedItem: any,
   activeTab?: string,
-  /**
-   * ✅ Optional: provide a real preview URL builder for your backend
-   * Example: (file) => `/api/workflow/files/preview/${file.repositoryId}/${file.id}`
-   */
-  //getFilePreviewUrl?: (file: UploadedFile, row: any) => string,
 ) => {
   return useMemo(() => {
-    const columns: Column[] = [
-      {
-        id: 'requestNo',
-        label: 'Invoice Number',
-        size: 260,
-        renderCell: (row: any, index = 0) => (
-          <div className='flex min-w-0 items-center gap-3'>
-            <StatusCell originalIndex={index} row={row} />
-            <div className='flex min-w-0 items-center gap-2'>
-              <WrapOnHoverCell
-                value={
-                  <span
-                    className={LINK_TEXT}
-                    onClick={(e) => {
-                      e?.stopPropagation?.()
-                      onRowClick && onRowClick(row, 'Overview')
-                    }}
-                  >
-                    {extractInvoiceNumber(row)}
-                  </span>
-                }
-              />
-              {row?.isDuplicateInvoice && (
-                <RequestStatusBadge status='Duplicated' />
-              )}
-            </div>
-          </div>
-        ),
-      },
-      ...(selectedItem
-        ? []
-        : [
-            {
-              id: 'matchStatus',
-              label:
-                activeTab === 'Processed' ? 'Payment Status' : 'Match Status',
-              size: 140,
-              renderCell: (_row: any, index = 0) => {
-                if (activeTab === 'Processed') {
-                  const isPaid = index % 2 === 0
-                  if (isPaid) {
-                    return (
-                      <span className='flex items-center gap-1 rounded-md border border-[var(--green-4)] bg-[var(--green-2)] px-2 py-0.5 text-[11px] font-semibold text-[var(--green-11)]'>
-                        <Icon className='size-3.5' name='tabler:circle-check' />
-                        Paid
-                      </span>
-                    )
-                  } else {
-                    return (
-                      <span className='flex items-center gap-1 rounded-md border border-[var(--orange-4)] bg-[var(--orange-2)] px-2 py-0.5 text-[11px] font-semibold text-[var(--orange-11)]'>
-                        <Icon className='size-3.5' name='tabler:clock' />
-                        Pending for Payment
-                      </span>
-                    )
-                  }
-                }
-                const matchType = index % 3
-                if (matchType === 0) {
-                  return (
-                    <span className='flex items-center gap-1 rounded-md border border-[var(--green-4)] bg-[var(--green-2)] px-2 py-0.5 text-[11px] font-semibold text-[var(--green-11)]'>
-                      <Icon className='size-3.5' name='tabler:circle-check' />
-                      Matched
-                    </span>
-                  )
-                } else if (matchType === 1) {
-                  return (
-                    <span className='flex items-center gap-1 rounded-md border border-[var(--red-4)] bg-[var(--red-2)] px-2 py-0.5 text-[11px] font-semibold text-[var(--red-11)]'>
-                      <Icon className='size-3.5' name='tabler:alert-circle' />
-                      No Match
-                    </span>
-                  )
-                } else {
-                  return (
-                    <span className='flex items-center gap-1 rounded-md border border-[var(--orange-4)] bg-[var(--orange-2)] px-2 py-0.5 text-[11px] font-semibold text-[var(--orange-11)]'>
-                      <Icon className='size-3.5' name='tabler:alert-triangle' />
-                      Partial Match
-                    </span>
-                  )
-                }
-              },
-            },
-            {
-              id: 'raisedBy',
-              label: 'Raised By',
-              size: 200,
-              renderCell: (row: any) => {
-                const supplierName =
-                  row?.vendor ||
-                  row?.['UtfgJy6Z0qyfRC5Bclf-c'] ||
-                  row?.raisedBy ||
-                  'Unknown Supplier'
-                return (
-                  <HoverExpandableText
-                    className='text-[13px] font-medium text-[var(--gray-11)]'
-                    fallbackText='Unknown Supplier'
-                    normalMaxWidthClass='max-w-[180px]'
-                    text={supplierName}
-                  />
-                )
-              },
-            },
-            {
-              id: 'glCodeCategory',
-              label: 'GL & Category',
-              size: 220,
-              renderCell: (_row: any, index = 0) => {
-                const category =
-                  index % 4 === 0
-                    ? 'Supplies'
-                    : index % 4 === 1
-                      ? 'Software'
-                      : index % 4 === 2
-                        ? 'Utilities'
-                        : 'Travel'
-                return (
-                  <div className='flex items-center gap-2 text-[12px] font-medium text-[var(--gray-10)]'>
-                    <div className='flex items-center gap-1 text-[var(--gray-8)]'>
-                      <Icon className='size-3.5' name='tabler:stack' />
-                      <span>5100-00{index + 1}</span>
-                    </div>
-                    <div className='flex items-center gap-1 text-[var(--gray-8)]'>
-                      <Icon className='size-3.5' name='tabler:tag' />
-                      <span>{category}</span>
-                    </div>
-                  </div>
-                )
-              },
-            },
-            ...(activeTab === 'Processed'
-              ? []
-              : [
-                  {
-                    id: 'aiInsight',
-                    label: 'AI Insight',
-                    size: 260,
-                    renderCell: (_row: any, index = 0) => {
-                      const aiInsight =
-                        index % 3 === 0
-                          ? 'Ready for auto-approval'
-                          : index % 3 === 1
-                            ? 'No PO linked — request PO or code to GL'
-                            : 'Partial match — review unmatched lines'
-                      return (
-                        <div className='flex min-w-0 items-center gap-1.5'>
-                          <Icon
-                            className='size-3.5 shrink-0 text-[var(--primary-9)]'
-                            name='tabler:sparkles'
-                          />
-                          <HoverExpandableText
-                            className='text-[13px] font-medium text-[var(--gray-11)]'
-                            normalMaxWidthClass='max-w-[220px]'
-                            text={aiInsight}
-                          />
-                        </div>
-                      )
-                    },
-                  },
-                ]),
-            {
-              id: 'poNumber',
-              label: 'PO Number',
-              size: 160,
-              renderCell: (row: any) => {
-                const poNum = extractPONumber(row)
-                return (
-                  <div className='flex items-center gap-1.5 text-[12px] font-medium text-[var(--gray-10)]'>
-                    <Icon className='size-3.5' name='tabler:hash' />
-                    <span>{poNum}</span>
-                  </div>
-                )
-              },
-            },
-            {
-              id: 'termsDueDate',
-              label: 'Due & Terms',
-              size: 160,
-              renderCell: (row: any) => {
-                const terms = extractPaymentTerms(row)
-                const dueDate = extractDueDate(row)
-                const raisedAt = row?.raisedAt || row?.transaction_createdAt
-                const daysDiff = calculateDaysDifference(raisedAt, dueDate)
-
-                let termsDisplay = terms !== '-' ? terms : 'Immediate'
-                if (termsDisplay.toLowerCase() === 'immediate') {
-                  termsDisplay = '0 Days'
-                } else {
-                  const numMatch = termsDisplay.match(/\d+/)
-                  if (numMatch) {
-                    termsDisplay = `${numMatch[0]} Days`
-                  }
-                }
-
-                let calculationText = 'Immediate'
-                let calculationTheme =
-                  'border-[var(--red-4)] bg-[var(--red-2)] text-[var(--red-11)]'
-
-                if (daysDiff !== null) {
-                  if (daysDiff > 0) {
-                    calculationText = `In ${daysDiff} days`
-                    if (daysDiff <= 15) {
-                      calculationTheme =
-                        'border-[var(--orange-4)] bg-[var(--orange-2)] text-[var(--orange-11)]'
-                    } else {
-                      calculationTheme =
-                        'border-[var(--blue-4)] bg-[var(--blue-2)] text-[var(--blue-11)]'
-                    }
-                  } else if (daysDiff < 0) {
-                    calculationText = `${Math.abs(daysDiff)}d Overdue`
-                    calculationTheme =
-                      'border-[var(--red-4)] bg-[var(--red-2)] text-[var(--red-11)]'
-                  }
-                } else {
-                  const numMatch = terms.match(/\d+/)
-                  if (numMatch) {
-                    const days = parseInt(numMatch[0])
-                    calculationText = `In ${days} days`
-                    calculationTheme =
-                      days <= 15
-                        ? 'border-[var(--orange-4)] bg-[var(--orange-2)] text-[var(--orange-11)]'
-                        : 'border-[var(--blue-4)] bg-[var(--blue-2)] text-[var(--blue-11)]'
-                  }
-                }
-
-                return (
-                  <div className='flex flex-col items-start gap-1'>
-                    <span className='text-[12px] font-semibold tracking-tight text-[var(--gray-12)]'>
-                      {termsDisplay}
-                    </span>
-                    <span
-                      className={cn(
-                        'rounded-full border px-2 py-0.5 text-[10px] font-bold tracking-wide',
-                        calculationTheme,
-                      )}
-                    >
-                      {calculationText}
-                    </span>
-                  </div>
-                )
-              },
-            },
-            {
-              id: 'amount',
-              label: 'Total Value',
-              size: 140,
-              renderCell: (row: any) => {
-                const amount = Number(
-                  row['suyqsm0SYii_8vsj4p0c_'] ||
-                    row['WksH1Mrs42X4J9AHgoBtw'] ||
-                    0,
-                )
-                return (
-                  <span className='text-[14px] leading-none font-semibold tracking-tight text-[var(--text-primary)] tabular-nums'>
-                    $
-                    {(amount || 3450).toLocaleString(undefined, {
-                      maximumFractionDigits: 2,
-                      minimumFractionDigits: 2,
-                    })}
-                  </span>
-                )
-              },
-            },
-            {
-              id: 'invoiceDate',
-              label: 'Invoice Date',
-              size: 140,
-              renderCell: (row: any) => {
-                const rawDate = extractInvoiceDate(row)
-                let dateDisplay = 'May 19, 2026'
-                if (rawDate && rawDate !== '-') {
-                  try {
-                    dateDisplay = new Date(rawDate).toLocaleDateString(
-                      'en-US',
-                      {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric',
-                      },
-                    )
-                  } catch {
-                    // fallback
-                  }
-                }
-                return (
-                  <span className='text-[12px] font-medium text-[var(--gray-10)]'>
-                    {dateDisplay}
-                  </span>
-                )
-              },
-            },
-          ]),
-    ]
+    const columns = getBaseColumns(selectedItem, activeTab, onRowClick)
 
     const form = resolveFormJson(workflow)
     if (!form) {
-      columns.push(makeActionsColumn(onRowClick))
+      if (!selectedItem) {
+        columns.push(makeActionsColumn(onRowClick))
+      }
       return columns
     }
 
-    const panels = Array.isArray((form as any).panels)
-      ? (form as any).panels
-      : []
-    const secondaryPanels = Array.isArray((form as any).secondaryPanels)
-      ? (form as any).secondaryPanels
-      : []
-    const rootPanels = Array.isArray(form) ? form : [form]
-
-    const allPanels = [...rootPanels, ...panels, ...secondaryPanels]
+    const allPanels = getFormPanels(form)
     if (!allPanels.length) {
-      columns.push(makeActionsColumn(onRowClick))
+      if (!selectedItem) {
+        columns.push(makeActionsColumn(onRowClick))
+      }
       return columns
     }
 
     const tableMetaByParentId = buildTableMeta(allPanels)
-
-    allPanels.forEach((panel: any) => {
-      const controls =
-        panel?.controlList || panel?.controllist || panel?.fields || []
-
-      controls.forEach((field: any) => {
-        if (isIgnorableField(field)) return
-        if (!isParentField(field)) return
-
-        const fieldKey = getFieldKey(field) // Uses encrypted jsonId if available
-        if (!fieldKey) return
-
-        const label = getFieldLabel(field)
-
-        if (isStandardField(field, label)) return
-
-        if (!selectedItem) {
-          columns.push({
-            id: fieldKey,
-            label,
-            size: 200,
-            renderCell: (row: any) => {
-              let rawVal =
-                row[fieldKey] ??
-                row.formData?.fields?.[fieldKey] ??
-                row.formData?.[fieldKey]
-
-              const lowerLabel = String(label || '').toLowerCase()
-              const isPOField =
-                lowerLabel.includes('po number') ||
-                lowerLabel === 'po' ||
-                lowerLabel === 'po_number'
-              const isDueDateField =
-                lowerLabel.includes('due date') || lowerLabel === 'due_date'
-              const isTermsField =
-                lowerLabel === 'terms' ||
-                lowerLabel.includes('payment terms') ||
-                lowerLabel === 'payment_term' ||
-                lowerLabel === 'payment_terms'
-              const isInvoiceDateField =
-                lowerLabel.includes('invoice date') ||
-                lowerLabel === 'invoice_date' ||
-                fieldKey === '9F6tPVHoRnmONGx3kYJu2'
-
-              if (isPOField) {
-                const extracted = extractPONumber(row)
-                if (extracted && extracted !== 'N/A') {
-                  rawVal = extracted
-                }
-              } else if (isDueDateField) {
-                const extracted = extractDueDate(row)
-                if (extracted && extracted !== '-') {
-                  rawVal = extracted
-                }
-              } else if (isTermsField) {
-                const extracted = extractPaymentTerms(row)
-                if (extracted && extracted !== '-') {
-                  rawVal = extracted
-                }
-              } else if (isInvoiceDateField) {
-                const extracted = extractInvoiceDate(row)
-                if (extracted && extracted !== '-') {
-                  rawVal = extracted
-                }
-              }
-
-              if (rawVal === undefined || rawVal === null || rawVal === '') {
-                return <WrapOnHoverCell value='-' />
-              }
-
-              if (isTableType(field.type)) {
-                const tableParentId = field?.id
-                const colMeta =
-                  tableParentId !== undefined && tableParentId !== null
-                    ? tableMetaByParentId.get(String(tableParentId))
-                    : undefined
-
-                return (
-                  <span className='inline-flex items-center'>
-                    <DynamicTableCell
-                      colMeta={colMeta}
-                      modalWidth={900}
-                      rawVal={rawVal}
-                      safeParse={safeParse}
-                      title={String(label)}
-                    />
-                  </span>
-                )
-              }
-
-              const type = String(field.type ?? '').toUpperCase()
-
-              switch (type) {
-                case 'FILE_UPLOAD': {
-                  // ✅ OPEN FILESHEET MODAL HERE
-                  return wrap(<FileUploadCell rawVal={rawVal} row={row} />)
-                }
-
-                case 'DATE':
-                  return (
-                    <WrapOnHoverCell
-                      value={formatDatetime(rawVal as string, 'date')}
-                    />
-                  )
-
-                case 'CURRENCY':
-                  return (
-                    <WrapOnHoverCell
-                      value={
-                        <span className='text-gray-900 font-medium'>
-                          {String(rawVal)}
-                        </span>
-                      }
-                    />
-                  )
-
-                case 'NUMBER':
-                  return <WrapOnHoverCell value={String(rawVal)} />
-
-                default:
-                  return <WrapOnHoverCell value={String(rawVal)} />
-              }
-            },
-          } as Column)
-        }
-      })
-    })
+    const dynamicCols = buildDynamicColumns(
+      allPanels,
+      selectedItem,
+      tableMetaByParentId,
+    )
+    columns.push(...dynamicCols)
 
     if (!selectedItem) {
       columns.push(makeActionsColumn(onRowClick))
@@ -1215,21 +1263,21 @@ function makeActionsColumn(
             <MenuItem
               icon='tabler:paperclip'
               label={attachmentsLabel}
-              onClick={() => onRowClick && onRowClick(row, 'Attachments')}
+              onClick={() => onRowClick?.(row, 'Attachments')}
             />
             <MenuItem
               icon='tabler:message-circle'
               label={commentsLabel}
-              onClick={() => onRowClick && onRowClick(row, 'Comments')}
+              onClick={() => onRowClick?.(row, 'Comments')}
             />
             <MenuItem
               icon='tabler:history'
               label='History'
-              onClick={() => onRowClick && onRowClick(row, 'History')}
+              onClick={() => onRowClick?.(row, 'History')}
             />
           </Menu>
         </div>
       )
     },
-  } as Column
+  }
 }

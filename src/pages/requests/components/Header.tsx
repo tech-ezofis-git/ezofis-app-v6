@@ -1,4 +1,3 @@
-// import { useState } from 'react'
 import type { Option } from '@/types/option'
 import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
@@ -31,13 +30,6 @@ const Header = ({
   setViewMode,
   setWorkflow,
 }: Props) => {
-  // const [value, setValue] = useState<string | null>('Inbox')
-  // const [workflow, setWorkflow] = useState<Option | null>({
-  //   disabled: false,
-  //   id: 1,
-  //   name: 'Accounts Payable',
-  // })
-
   const openNewRequest = requestStore((state) => state.openNewRequest)
   const handleOpenRequest = () => {
     console.log('am running')
@@ -58,15 +50,17 @@ const Header = ({
         onChange={(val) => setActiveTab(val as string)}
       >
         <Tab
-          label={`Invoices ${isLoading ? '' : `(${metaData?.inboxCount ?? 0})`}`}
           value='Inbox'
+          label={
+            isLoading ? 'Invoices' : `Invoices (${metaData?.inboxCount ?? 0})`
+          }
         />
         <Tab
-          label={`Exceptions ${isLoading ? '' : `(${exceptionsCount})`}`}
+          label={isLoading ? 'Exceptions' : `Exceptions (${exceptionsCount})`}
           value='Exceptions'
         />
         <Tab
-          label={`Processed ${isLoading ? '' : `(${processedCount})`}`}
+          label={isLoading ? 'Processed' : `Processed (${processedCount})`}
           value='Processed'
         />
       </Tabs>

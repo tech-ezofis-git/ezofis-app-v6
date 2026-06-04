@@ -4,11 +4,11 @@ import Tab from '@/components/base/tabs/Tab'
 import Tabs from '@/components/base/tabs/Tabs'
 
 interface HeaderProps {
-  onTabChange: (value: string) => void
   tabValue: string
+  onTabChange: (value: string) => void
 }
 
-const Header = ({ onTabChange, tabValue }: HeaderProps) => {
+const Header = ({ tabValue, onTabChange }: HeaderProps) => {
   const navigate = useNavigate()
 
   const openFormBuilder = () => {
@@ -17,7 +17,11 @@ const Header = ({ onTabChange, tabValue }: HeaderProps) => {
 
   return (
     <div className='flex flex-wrap items-center justify-between gap-6 border-b border-gray-3 px-6 md:px-8'>
-      <Tabs color='primary' value={tabValue} onChange={(val) => onTabChange(val || 'All')}>
+      <Tabs
+        color='primary'
+        value={tabValue}
+        onChange={(val) => onTabChange(val || 'All')}
+      >
         <Tab label='All' value='All' />
         <Tab label='Published' value='Published' />
         <Tab label='Drafts' value='Drafts' />
@@ -32,4 +36,3 @@ const Header = ({ onTabChange, tabValue }: HeaderProps) => {
 
 Header.displayName = 'Header'
 export default Header
-

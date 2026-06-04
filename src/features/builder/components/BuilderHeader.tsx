@@ -1,4 +1,4 @@
-import { t } from '@lingui/macro'
+import { t } from '@lingui/core/macro'
 import {
   ActionIcon,
   Box,
@@ -20,7 +20,7 @@ const BuilderHeader = () => {
         <ActionIcon
           color='gray'
           variant='subtle'
-          onClick={() => window.history.back()}
+          onClick={() => globalThis.history.back()}
         >
           <Icon className='size-[18px]' name='tabler:arrow-left' />
         </ActionIcon>
@@ -100,7 +100,7 @@ const BuilderHeader = () => {
             variant='gradient'
             onClick={() => {}}
           >
-            <Icon className='size-4' name='tabler:sparkles' />
+            <Icon className='size-4' name='lucide:bot' />
           </ActionIcon>
 
           <ActionIcon color='gray' radius='md' size='md' variant='outline'>

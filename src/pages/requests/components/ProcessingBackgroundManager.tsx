@@ -1,9 +1,30 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect } from 'react'
-import requestApi from '@/api/requests/requests'
+import workflowsApiV6 from '@/api/v6/workflows'
 import Icon from '@/components/base/icon/Icon'
 import requestStore from '../stores/useRequestStore'
+
+const findItemInResponse = (data: any, processId: any) => {
+  if (!data) return null
+  const items =
+    data.items ||
+    (Array.isArray(data)
+      ? data.flatMap((g: any) => g.items || g.value || [])
+      : [])
+  return (
+    items.find((i: any) => {
+      const id = i.workflowInstanceId || i.processId || i.id
+      return String(id) === String(processId)
+    }) || null
+  )
+}
+
+const getProgressWidth = (stage?: string) => {
+  if (stage === 'Start') return '25%'
+  if (stage === 'AI Agent') return '60%'
+  return '90%'
+}
 
 const POLLING_INTERVAL = 10000 // 10 seconds
 
@@ -21,60 +42,54 @@ export const ProcessingBackgroundManager = () => {
 
     const pollers = processingProcesses.map((process) => {
       const processId = process.processId || process.id
+      const transactionId = process.transactionId
       const workflowId = process.workflowId || rawWorkflowData?.id
 
       if (!processId || !workflowId) return null
 
       const poll = async () => {
         try {
-          const payload = {
-            currentPage: 1,
-            filterBy: [],
-            itemsPerPage: 5,
-            sortBy: { criteria: '', order: 'DESC' },
-          }
-
-          const findItemInResponse = (data: any) => {
-            if (Array.isArray(data)) {
-              for (const group of data) {
-                if (group.items && Array.isArray(group.items)) {
-                  const found = group.items.find(
-                    (i: any) => String(i.processId) === String(processId),
-                  )
-                  if (found) return found
-                }
-                if (group.value && Array.isArray(group.value)) {
-                  const found = group.value.find(
-                    (i: any) => String(i.processId) === String(processId),
-                  )
-                  if (found) return found
-                }
-              }
-            } else if (data?.data && Array.isArray(data.data)) {
-              return data.data[0]
-            }
-            return null
-          }
-
-          // Check Sent List
-          let response = await requestApi.getSentListById(workflowId, payload)
-          let item = response?.data ? findItemInResponse(response.data) : null
+          let response = await workflowsApiV6.getSentList(
+            String(workflowId),
+            1,
+            5,
+            processId,
+            transactionId,
+          )
+          let item = response?.data
+            ? findItemInResponse(response.data, processId)
+            : null
 
           // Fallback to Inbox List
           if (!item) {
-            response = await requestApi.getInboxListById(workflowId, payload)
-            item = response?.data ? findItemInResponse(response.data) : null
+            response = await workflowsApiV6.getInboxList(
+              String(workflowId),
+              1,
+              5,
+              processId,
+              transactionId,
+            )
+            item = response?.data
+              ? findItemInResponse(response.data, processId)
+              : null
           }
 
           if (item) {
             const stage = item.stage || item.activityName || 'Start'
+            const stageType = item.stageType
+
             updateProcessingProcess(processId, {
               lastUpdated: new Date(),
               stage,
+              stageType,
             })
 
-            // If finished, remove from background tracker and refresh list
-            if (['Verifier', 'Approved', 'Completed'].includes(stage)) {
+            // Keep polling as long as stageType is AP_AGENT. Remove when stageType is NOT AP_AGENT (meaning AP_AGENT completed).
+            const isCompleted =
+              stageType !== 'AP_AGENT' ||
+              item.completedAtUtc ||
+              ['Verifier', 'Approved', 'Completed'].includes(stage)
+            if (isCompleted) {
               removeProcessingProcess(processId)
               queryClient.invalidateQueries({ queryKey: ['inbox'] })
             }
@@ -156,12 +171,7 @@ export const ProcessingBackgroundManager = () => {
                     className='h-full bg-[var(--primary-9)]'
                     transition={{ duration: 1 }}
                     animate={{
-                      width:
-                        p.stage === 'Start'
-                          ? '25%'
-                          : p.stage === 'AI Agent'
-                            ? '60%'
-                            : '90%',
+                      width: getProgressWidth(p.stage),
                     }}
                   />
                 </div>

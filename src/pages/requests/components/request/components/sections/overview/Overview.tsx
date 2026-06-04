@@ -748,7 +748,7 @@ const Overview = (props: any) => {
     <div className='flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden font-sans'>
       <div className='flex min-h-0 flex-1 overflow-hidden'>
         {/* Left Side - Document Viewer (40% Width) */}
-        <div className='relative flex w-[40%] flex-col overflow-hidden border-r border-[var(--gray-3)] bg-surface'>
+        <div className='relative flex w-[40%] flex-col overflow-hidden border-r border-[var(--gray-3)]'>
           {isViewerLoading && (
             <div className='absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 bg-[var(--gray-1)]'>
               <BarLoader />
@@ -763,7 +763,7 @@ const Overview = (props: any) => {
 
         {/* Right Side - Analysis & Data (60% Width) */}
         <div className='flex flex-1 flex-col bg-[var(--gray-1)]'>
-          <div className='flex min-h-0 flex-1 flex-col overflow-hidden bg-surface'>
+          <div className='flex min-h-0 flex-1 flex-col overflow-hidden'>
             {!selectedItem || Object.keys(selectedItem).length === 0 ? (
               <SummarySkeleton />
             ) : (
@@ -831,11 +831,11 @@ const Overview = (props: any) => {
                       title='Supplier Verification'
                       status={
                         formModel?.['Supplier ID'] ||
-                        formModel?.['SupplierCode'] ||
-                        formModel?.['Supplier Code'] ||
-                        formModel?.['supplier_id'] ||
-                        formModel?.['Vendor ID'] ||
-                        formModel?.['vendor_id']
+                          formModel?.['SupplierCode'] ||
+                          formModel?.['Supplier Code'] ||
+                          formModel?.['supplier_id'] ||
+                          formModel?.['Vendor ID'] ||
+                          formModel?.['vendor_id']
                           ? 'Verified'
                           : 'Not Verified'
                       }
@@ -852,7 +852,7 @@ const Overview = (props: any) => {
                   </div>
                 </div>
 
-                <div className='sticky top-0 z-10 shrink-0 border-b border-[var(--gray-3)] bg-surface px-6 pt-2'>
+                <div className='sticky top-0 z-10 shrink-0 border-b border-[var(--gray-3)] px-6 pt-2'>
                   <div className='flex items-center gap-8'>
                     {[
                       {

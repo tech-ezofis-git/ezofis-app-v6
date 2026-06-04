@@ -3,7 +3,6 @@ import useAskAIStore from '@/components/common/ask-ai/stores/useAskAIStore'
 import GlobalSearch from './components/GlobalSearch'
 import Notifications from './components/notifications/Notifications'
 import PageTitle from './components/PageTitle'
-import QuickHelp from './components/quick-help/QuickHelp'
 import SidebarToggle from './components/SidebarToggle'
 import UserMenu from './components/user-menu/UserMenu'
 
@@ -19,13 +18,25 @@ const Topbar = () => {
       <div className='flex items-center'>
         <GlobalSearch />
         <IconButton
+          ariaLabel='Ask AI'
           className='text-gray-11 hover:text-gray-13'
           color='gray'
-          icon='mingcute:magic-1-line'
+          icon='lucide:bot'
+          title='Ask AI'
           variant='ghost'
           onClick={openAskAI}
         />
-        <QuickHelp />
+        <IconButton
+          ariaLabel='Quick Help'
+          className='text-gray-11 hover:text-gray-13'
+          color='gray'
+          icon='lucide:help-circle'
+          title='Quick Help'
+          variant='ghost'
+          onClick={() =>
+            globalThis.open('https://help.ezofis.com/', '_blank', 'noopener')
+          }
+        />
         <Notifications />
         <UserMenu />
       </div>

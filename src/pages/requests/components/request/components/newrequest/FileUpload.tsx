@@ -1,7 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import folderApi from '@/api/folders/folders'
-import workflowApi from '@/api/workflow/workflow'
+import workflowsApiV6 from '@/api/v6/workflows'
 import sample1 from '@/assets/Sample Invoices/inv-1.pdf'
 import sample1Img from '@/assets/Sample Invoices/inv-1.png'
 import sample10 from '@/assets/Sample Invoices/inv-10.pdf'
@@ -24,7 +23,6 @@ import sample9 from '@/assets/Sample Invoices/inv-9.pdf'
 import sample9Img from '@/assets/Sample Invoices/inv-9.png'
 import showToast from '@/components/base/toast/showToast'
 import requestStore from '@/pages/requests/stores/useRequestStore'
-import authUserStore from '@/stores/authUserStore'
 import Icon from '../../../../../../components/base/icon/Icon'
 import {
   AnimateEntrancePop,
@@ -377,6 +375,7 @@ const SampleThumbnail = ({
 
   return (
     <div
+      aria-hidden='true'
       className='group/thumb relative z-10 w-full hover:z-30'
       ref={wrapperRef}
       onMouseEnter={handleMouseEnter}
@@ -427,17 +426,22 @@ const SampleThumbnail = ({
   )
 }
 
+const getUploadErrorMessage = (files: File[]): string => {
+  const tooLarge = files.some((f) => f.size > MAX_SIZE)
+  if (tooLarge) return 'File is too large. Max size is 4MB.'
+  const invalidType = files.some((f) => !isPdf(f) && !isImage(f))
+  if (invalidType) return 'Invalid file type. Please upload a PDF or Image.'
+  return 'No valid files selected.'
+}
+
 const FileUpload = ({ onClose }: { onClose?: () => void }) => {
   const rawWorkflow = requestStore((state) => state.rawWorkflowData)
   const workflowRefresh = requestStore((state) => state.workflowRefresh)
 
   const invoiceInputRef = useRef<HTMLInputElement>(null)
   const [isDragOver, setIsDragOver] = useState(false)
-  // const [isInvoiceUploading, setIsInvoiceUploading] = useState(false) // Removed unused state
-  // const [uploadedInvoiceName, setUploadedInvoiceName] = useState<string | null>(null)
 
   // Flow State
-  const [fileData, setFileData] = useState<File | null>(null)
   const [uploadStatus, setUploadStatus] = useState<
     'idle' | 'uploading' | 'success' | 'error'
   >('idle')
@@ -445,36 +449,80 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
     null,
   )
 
-  // API State
-  const [repoData, setRepoData] = useState<any>(null)
-  const [fileId, setFileId] = useState<string | null>(null)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-
-  useEffect(() => {
-    handleFolderFetch()
-  }, [])
-
-  // Trigger creation automatically when upload is complete
-  useEffect(() => {
-    if (uploadStatus === 'success' && fileId && fileData && !isSubmitting) {
-      handleCreateRequest()
-    }
-  }, [uploadStatus, fileId, fileData])
-
-  const handleFolderFetch = async () => {
-    if (!rawWorkflow?.repositoryId) return
-    try {
-      const response = await folderApi.fetchFoldersById(
-        rawWorkflow?.repositoryId,
-      )
-      if (response) setRepoData(response)
-    } catch (error) {
-      console.error('Error fetching folders:', error)
-    }
-  }
-
   const resetInput = (ref: React.RefObject<HTMLInputElement | null>) => {
     if (ref.current) ref.current.value = ''
+  }
+
+  const startWorkflowInstance = async (file: File) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('context', '')
+    formData.append('envType', 'trial')
+
+    console.log(
+      'Starting workflow with new upload API for workflow ID:',
+      rawWorkflow?.id,
+    )
+    const { data, error } = await workflowsApiV6.startWorkflow(
+      rawWorkflow?.id,
+      formData,
+    )
+
+    if (error) {
+      throw new Error(String(error))
+    }
+
+    if (!data) {
+      throw new Error('Workflow started but did not return any data.')
+    }
+
+    const parsedData = typeof data === 'string' ? JSON.parse(data) : data
+    const processId = parsedData?.instanceId
+    const transactionId = parsedData?.startPayload?.transactionId
+
+    if (!processId) {
+      throw new Error('Workflow started but did not return a valid instanceId.')
+    }
+
+    return { processId, transactionId }
+  }
+
+  const fetchWorkflowStageDetails = async (
+    processId: string,
+    transactionId: string,
+  ) => {
+    try {
+      const inboxRes = await workflowsApiV6.getInboxList(
+        String(rawWorkflow?.id),
+        1,
+        10,
+        processId,
+        transactionId,
+      )
+      const items = inboxRes.data?.items || []
+      const foundItem =
+        items.find((i: any) => {
+          const id = i.workflowInstanceId || i.processId || i.id
+          return String(id) === String(processId)
+        }) || items[0]
+
+      if (foundItem) {
+        return {
+          requestNo:
+            foundItem.referenceNumber ||
+            `REQ-${processId.substring(0, 8).toUpperCase()}` ||
+            foundItem.requestNo ||
+            'New Request',
+          stage: foundItem.stage || 'Start',
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching specific request from V6 inbox:', err)
+    }
+    return {
+      requestNo: `REQ-${processId.substring(0, 8).toUpperCase()}`,
+      stage: 'Start',
+    }
   }
 
   const handleInvoiceFiles = async (
@@ -489,114 +537,79 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
     console.log('Files selected:', files)
     console.log('Valid files:', validFiles)
     console.log('Raw Workflow:', rawWorkflow)
-    console.log('Repo Data:', repoData)
 
     if (!validFiles.length && files.length > 0) {
-      const tooLarge = files.some((f) => f.size > MAX_SIZE)
-      const invalidType = files.some((f) => !isPdf(f) && !isImage(f))
-
-      if (tooLarge)
-        showToast({
-          message: 'File is too large. Max size is 4MB.',
-          variant: 'error',
-        })
-      else if (invalidType)
-        showToast({
-          message: 'Invalid file type. Please upload a PDF or Image.',
-          variant: 'error',
-        })
-      else showToast({ message: 'No valid files selected.', variant: 'error' })
-
+      showToast({
+        message: getUploadErrorMessage(files),
+        variant: 'error',
+      })
       resetInput(invoiceInputRef)
       return
     }
 
-    if (validFiles.length) {
-      if (!rawWorkflow?.repositoryId) {
-        console.error('Missing repositoryId in rawWorkflow:', rawWorkflow)
-        showToast({
-          message: 'Repository ID is missing. Cannot upload.',
-          variant: 'error',
-        })
-        return
+    if (!validFiles.length) {
+      resetInput(invoiceInputRef)
+      return
+    }
+
+    if (!rawWorkflow?.id) {
+      console.error('Missing workflow ID in rawWorkflow:', rawWorkflow)
+      showToast({
+        message: 'Workflow ID is missing. Cannot start workflow.',
+        variant: 'error',
+      })
+      return
+    }
+
+    if (!isSample) {
+      setSelectedSampleName(null)
+    }
+
+    setUploadStatus('uploading')
+
+    try {
+      const { processId, transactionId } = await startWorkflowInstance(
+        validFiles[0],
+      )
+      setUploadStatus('success')
+
+      let requestNo = 'New Request'
+      let stage = 'Start'
+
+      if (transactionId) {
+        const details = await fetchWorkflowStageDetails(
+          processId,
+          transactionId,
+        )
+        requestNo = details.requestNo
+        stage = details.stage
       }
-      if (!repoData?.data?.id) {
-        console.error('Missing repoData.data.id:', repoData)
-        // Attempt to fetch again if missing
-        handleFolderFetch()
-        showToast({
-          message:
-            'Repository folder data is missing. Please try again in a moment.',
-          variant: 'error',
-        })
-        return
-      }
 
-      if (!isSample) {
-        setSelectedSampleName(null)
-      }
+      // Add to background processing
+      requestStore.getState().addProcessingProcess({
+        id: processId,
+        name: validFiles[0].name,
+        processId,
+        repositoryId: rawWorkflow?.repositoryId,
+        requestNo,
+        stage,
+        transactionId,
+        workflowId: rawWorkflow?.id,
+      })
 
-      setFileData(validFiles[0])
-      setUploadStatus('uploading')
+      // Trigger list refresh
+      workflowRefresh()
 
-      try {
-        const fieldData: any = []
-
-        if (repoData?.data?.fields) {
-          const highestLevelObject = repoData?.data?.fields.reduce(
-            (acc: any, curr: any) => {
-              return (curr.level || 0) > (acc.level || 0) ? curr : acc
-            },
-          )
-
-          repoData?.data?.fields.forEach((item: any) => {
-            fieldData.push({
-              id: item.id,
-              name: item.name,
-              type: item.dataType,
-              value:
-                highestLevelObject?.id == item?.id ? validFiles[0].name : '',
-            })
-          })
-        }
-
-        const formData = new FormData()
-        formData.append('file', validFiles[0])
-        formData.append('repositoryId', String(repoData?.data?.id))
-        formData.append('fields', JSON.stringify(fieldData))
-        formData.append('fileName', validFiles[0].name)
-
-        console.log('Uploading file with formData:', {
-          fieldCount: fieldData.length,
-          fileName: validFiles[0].name,
-          repositoryId: repoData?.data?.id,
-        })
-
-        const { data, error } = await folderApi.uploadFileWithIndex(formData)
-        if (data) {
-          console.log('Upload success:', data)
-          const parsedData = typeof data === 'string' ? JSON.parse(data) : data
-          setFileId(parsedData?.fileId || data?.fileId)
-          setUploadStatus('success')
-        }
-        if (error) {
-          console.error('Upload error:', error)
-          setUploadStatus('error')
-          setSelectedSampleName(null)
-          showToast({
-            message: `Error uploading file: ${error}`,
-            variant: 'error',
-          })
-        }
-      } catch (error: any) {
-        console.error('Upload exception:', error)
-        setUploadStatus('error')
-        setSelectedSampleName(null)
-        showToast({
-          message: `Exception uploading file: ${error.message || error}`,
-          variant: 'error',
-        })
-      }
+      // Close the upload sheet immediately
+      if (onClose) onClose()
+    } catch (error: any) {
+      console.error('Workflow start error:', error)
+      setUploadStatus('error')
+      setSelectedSampleName(null)
+      showToast({
+        message: error.message || 'Error starting workflow',
+        variant: 'error',
+      })
     }
     resetInput(invoiceInputRef)
   }
@@ -622,103 +635,6 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
     }
   }
 
-  // ... (handleCreateRequest remains the same) ...
-  const handleCreateRequest = async () => {
-    if (!fileId || !fileData) {
-      console.error('Cannot create request: missing fileId or fileData', {
-        fileData,
-        fileId,
-      })
-      if (uploadStatus === 'success') {
-        showToast({
-          message:
-            'Request creation failed: missing file reference. Please try again.',
-          variant: 'error',
-        })
-      }
-      return
-    }
-    if (isSubmitting) return
-
-    try {
-      setIsSubmitting(true)
-      const payload = {
-        comments: [],
-        fileIds: [],
-        formData: {
-          fields: {
-            '9l_i90JwGJV3WGDGv3dj6': [
-              {
-                createdAt: new Date().toISOString(),
-                createdBy: authUserStore.getState()?.session?.email,
-                fileId: fileId,
-                name: fileData?.name,
-                size: fileData?.size,
-                uploadedPercentage: 100,
-              },
-            ],
-          },
-          formId: rawWorkflow?.wFormId,
-          formUpload: [
-            {
-              fileIds: [fileId],
-              isStage: true,
-              jsonId: '9l_i90JwGJV3WGDGv3dj6',
-              rowid: 0,
-            },
-          ],
-        },
-        hasFormPDF: 0,
-        mlPrediction: '',
-        prefix: '',
-        review: 'Submit',
-        task: [],
-        workflowId: rawWorkflow?.id,
-      }
-
-      const response = await workflowApi?.createProcessTransaction(payload)
-
-      // Log response as requested
-      console.log('Process Transaction Created Response:', response)
-
-      if (!response?.error) {
-        const processId = response?.data?.processId
-        const requestNo = response?.data?.requestNo
-
-        // Add to background processing
-        if (processId) {
-          requestStore.getState().addProcessingProcess({
-            fileId,
-            id: processId,
-            name: fileData?.name,
-            processId,
-            repositoryId: rawWorkflow?.repositoryId,
-            requestNo,
-            stage: 'Start',
-            workflowId: rawWorkflow?.id,
-          })
-        }
-
-        // Trigger list refresh
-        workflowRefresh()
-
-        // Close the upload sheet immediately
-        if (onClose) onClose()
-      }
-    } catch (e) {
-      console.error(e)
-      setIsSubmitting(false)
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  // const handleCancel = () => {
-  //     setUploadedInvoiceName(null)
-  //     setUploadedFile(null)
-  //     setStep('upload')
-  // }
-
   // Step 1: Upload (Premium Centered UI)
   return (
     <AnimateFadeIn className='flex h-full flex-col items-center justify-center overflow-y-auto bg-surface-muted px-4 py-4 sm:px-6 lg:px-8'>
@@ -742,13 +658,15 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
               <div className='absolute inset-0 h-1/2 w-full animate-[scan_3s_linear_infinite] bg-gradient-to-b from-transparent via-[var(--primary-2)]/20 to-transparent' />
             </div>
 
-            <div
+            <button
+              aria-label='Upload invoice'
+              type='button'
               className={[
-                'relative z-10 flex min-h-[140px] cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed border-[var(--primary-4)] px-8 py-6 text-center transition-all duration-500 ease-out sm:min-h-[128px]',
+                'relative z-10 flex min-h-[140px] w-full cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed border-[var(--primary-4)] px-8 py-6 text-center transition-all duration-500 ease-out sm:min-h-[128px]',
                 isDragOver
                   ? 'scale-[0.99] border-[var(--primary-6)] bg-[var(--primary-1)]'
                   : 'bg-surface hover:border-[var(--primary-5)] hover:bg-[var(--primary-1)]/30',
-                uploadStatus === 'uploading' || isSubmitting
+                uploadStatus === 'uploading'
                   ? 'pointer-events-none opacity-60'
                   : '',
               ].join(' ')}
@@ -764,7 +682,7 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
                 handleInvoiceFiles(e.dataTransfer.files)
               }}
             >
-              {uploadStatus === 'uploading' || isSubmitting ? (
+              {uploadStatus === 'uploading' ? (
                 <div className='flex flex-col items-center gap-3 py-2'>
                   <div className='flex size-14 items-center justify-center rounded-full bg-[var(--primary-1)]'>
                     <Icon
@@ -774,9 +692,7 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
                   </div>
                   <div className='text-center'>
                     <h2 className='text-base font-bold text-[var(--gray-13)]'>
-                      {uploadStatus === 'uploading'
-                        ? 'Uploading Invoice...'
-                        : 'Creating Request...'}
+                      Uploading & Processing...
                     </h2>
                     <p className='text-sm font-medium text-[var(--gray-10)]'>
                       Please wait while we process your document
@@ -811,7 +727,7 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
                 multiple
                 onChange={(e) => handleInvoiceFiles(e.target.files)}
               />
-            </div>
+            </button>
           </div>
         </AnimateSlideUp>
 
@@ -831,15 +747,15 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
             </div>
 
             <div className='custom-scrollbar flex flex-wrap justify-center gap-2.5 overflow-visible pt-4 pb-1'>
-              {SAMPLE_DOCUMENTS.map((doc, idx) => {
+              {SAMPLE_DOCUMENTS.map((doc) => {
                 const colors = TAG_COLOR_STYLES[doc.tagColor]
                 const displayLabel =
                   doc.label.replace('invoice', 'inv-') + '.pdf'
                 const isSelected = selectedSampleName === doc.fileName
                 return (
                   <button
-                    disabled={uploadStatus === 'uploading' || isSubmitting}
-                    key={idx}
+                    disabled={uploadStatus === 'uploading'}
+                    key={doc.fileName}
                     type='button'
                     className={`group/card relative z-10 flex w-[156px] shrink-0 flex-col overflow-visible rounded-lg border bg-surface text-left shadow-sm transition-all duration-300 hover:z-50 ${
                       isSelected
@@ -901,7 +817,7 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
               title: 'Payables Overview',
             },
           ].map((item, idx) => (
-            <AnimateEntrancePop delay={0.4 + idx * 0.1} key={idx}>
+            <AnimateEntrancePop delay={0.4 + idx * 0.1} key={item.title}>
               <div className='group flex h-full flex-col items-start rounded-xl border border-[var(--gray-3)] bg-surface p-6 text-left shadow-sm transition-all duration-300 hover:shadow-md'>
                 <div
                   className={`flex size-9 shrink-0 items-center justify-center rounded-lg 2xl:size-10 ${item.color} mt-1 mb-4 transition-transform duration-300 group-hover:scale-110`}

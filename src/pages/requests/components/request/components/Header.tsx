@@ -119,9 +119,9 @@ const Header: React.FC<HeaderProps> = ({
   }
 
   return (
-    <OverlayHeaderWrapper className='h-14 justify-between gap-4 bg-surface px-4'>
+    <OverlayHeaderWrapper className='h-14 justify-between gap-4 px-4'>
       {/* Left Side Group: Request Number + Navigation Buttons */}
-      <div className='flex items-center gap-4 bg-surface p-0'>
+      <div className='flex items-center gap-4 p-0'>
         <IconButton
           className='cursor-pointer hover:bg-[var(--gray-2)]'
           color='gray'
@@ -210,9 +210,9 @@ const Header: React.FC<HeaderProps> = ({
             return isNaN(num)
               ? '0.00'
               : num.toLocaleString(undefined, {
-                  maximumFractionDigits: 2,
-                  minimumFractionDigits: 2,
-                })
+                maximumFractionDigits: 2,
+                minimumFractionDigits: 2,
+              })
           }
 
           const currDisplay = getCurrencyDisplay(currency || '')
@@ -248,7 +248,7 @@ const Header: React.FC<HeaderProps> = ({
                 'flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2 font-semibold transition-all',
                 showAIInsights
                   ? 'border-[var(--primary-6)] bg-[var(--primary-1)] text-[var(--primary-9)]'
-                  : 'border-[var(--gray-3)] bg-surface text-[var(--gray-11)]',
+                  : 'border-[var(--gray-3)] text-[var(--gray-11)]',
               )}
               onClick={() => setShowAIInsights(!showAIInsights)}
             >

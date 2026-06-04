@@ -7,26 +7,11 @@ const getAllRequests = async (payload: any) => {
       '/workflow/all',
       JSON.stringify(payload),
     )
-    if (status !== 200) throw 'invalid status code'
+    if (status !== 200) throw new Error('invalid status code')
     response.data = data?.data
   } catch (e) {
     console.error(e)
     response.error = 'error fetching request'
-  }
-  return response
-}
-
-const getMetaDataByRequest = async (requestId: number | string) => {
-  const response: any = { data: '', error: '' }
-  try {
-    const { data, status } = await axiosCrypto(
-      `/workflow/listByUserId/${requestId}`,
-    )
-    if (status != 200) return
-    response.data = data
-  } catch (error) {
-    console.error(error)
-    response.error = 'Error in fetching the request meta data'
   }
   return response
 }
@@ -928,7 +913,6 @@ export const requestApi = {
   getLinkedRequestDetails,
   getMailTransactions,
   getMainProcessDetails,
-  getMetaDataByRequest,
   getMyInboxList,
   getOcrTemplate,
   getPaymentList,

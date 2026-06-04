@@ -19,11 +19,11 @@ import FormStatusBadge from '@/components/common/FormStatusBadge'
 import { formatDatetime } from '@/utils/dayjs'
 
 interface TableProps {
-  onCreate?: () => void
   tabValue: string
+  onCreate?: () => void
 }
 
-const Table = ({ onCreate, tabValue }: TableProps) => {
+const Table = ({ tabValue, onCreate }: TableProps) => {
   const navigate = useNavigate()
   const columns: Column[] = [
     {
@@ -70,16 +70,15 @@ const Table = ({ onCreate, tabValue }: TableProps) => {
       id: 'modifiedBy',
       label: 'Modified By',
       size: 140,
-      renderCell: (row) => String(row.modifiedBy || '-'),
+      renderCell: (row) =>
+        String(row.modifiedByName || row.createdByName || '-'),
     },
     {
       id: 'modifiedAt',
       label: 'Modified At',
       size: 180,
-      renderCell: (row) =>
-        row.modifiedAt
-          ? formatDatetime(row.modifiedAt as string, 'datetime')
-          : '-',
+      renderCell: (row: any) =>
+        formatDatetime(row.modifiedAt || (row.createdAt as string), 'datetime'),
     },
     {
       className: 'p-1',
@@ -199,7 +198,9 @@ const Table = ({ onCreate, tabValue }: TableProps) => {
 
         // Filter items locally based on tabValue status
         const filteredItems = items.filter((item) => {
-          const status = String(item.flowstatus || item.flowStatus).toLowerCase()
+          const status = String(
+            item.flowstatus || item.flowStatus,
+          ).toLowerCase()
           if (tabValue === 'Published') {
             return status === 'published'
           }

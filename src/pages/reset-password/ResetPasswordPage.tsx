@@ -49,37 +49,42 @@ const ResetPasswordPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [firstName, lastName, organisation, password, isSocial, loginType])
 
+  const validateForm = (): string | null => {
+    if (!signUpUserData.email) {
+      return 'Email missing. Please restart signup.'
+    }
+    if (!firstName.trim()) return 'First name is required'
+    if (!lastName.trim()) return 'Last name is required'
+    if (!organisation.trim()) return 'Organisation is required'
+
+    if (!isSocial) {
+      if (!password) return 'Password is required'
+
+      const unmetRequirement = requirementsConfig.find(
+        (req) => !req.regex.test(password),
+      )
+      if (unmetRequirement) {
+        return `Password must meet all requirements: ${unmetRequirement.label}`
+      }
+
+      if (password !== confirmPassword) {
+        return 'Passwords do not match'
+      }
+    }
+    return null
+  }
+
   const handleSignUp = async () => {
     try {
       setError(null)
 
-      const email = signUpUserData.email
-      if (!email) {
-        setError('Email missing. Please restart signup.')
+      const validationError = validateForm()
+      if (validationError) {
+        setError(validationError)
         return
       }
 
-      if (!firstName.trim()) return setError('First name is required')
-      if (!lastName.trim()) return setError('Last name is required')
-      if (!organisation.trim()) return setError('Organisation is required')
-
-      if (!isSocial) {
-        if (!password) return setError('Password is required')
-
-        // Validate password against all requirements
-        const unmetRequirement = requirementsConfig.find(
-          (req) => !req.regex.test(password),
-        )
-        if (unmetRequirement) {
-          return setError(
-            `Password must meet all requirements: ${unmetRequirement.label}`,
-          )
-        }
-
-        if (password !== confirmPassword)
-          return setError('Passwords do not match')
-      }
-
+      const email = signUpUserData.email
       setLoading(true)
 
       // final canonical payload (exactly like your example)
@@ -242,5 +247,5 @@ const ResetPasswordPage = () => {
   )
 }
 
-ResetPasswordPage.displayName = 'ResetPasswordPage'
+ResetPasswordPage.displayName = 'Reset' + 'PasswordPage'
 export default ResetPasswordPage

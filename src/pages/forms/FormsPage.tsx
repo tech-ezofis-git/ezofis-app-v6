@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { useNavigate } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 import { useEffect, useMemo, useState } from 'react'
 import type { Column } from '@/components/base/data-table/types'
 import type { Form } from '@/types/form'
@@ -15,6 +15,37 @@ import FormTypeBadge from '@/components/common/FormTypeBadge'
 import { formatDatetime } from '@/utils/dayjs'
 import Header from './components/header/Header'
 import Table from './components/Table'
+
+const mapItem = (item: any) => ({
+  ...item,
+  _json:
+    typeof item.formJson === 'string'
+      ? JSON.parse(item.formJson)
+      : item.formJson,
+  id: String(
+    item.uid || item.id || Math.random().toString(36).substring(2, 11),
+  ),
+})
+
+const findDeepData = (obj: any): any[] | null => {
+  if (Array.isArray(obj)) return obj
+  if (!obj || typeof obj !== 'object') return null
+  if (obj.data) {
+    const results = findDeepData(obj.data)
+    if (results) return results
+  }
+  if (obj.value) {
+    const results = findDeepData(obj.value)
+    if (results) return results
+  }
+  for (const key in obj) {
+    if (key !== 'data' && key !== 'value' && typeof obj[key] === 'object') {
+      const results = findDeepData(obj[key])
+      if (results) return results
+    }
+  }
+  return null
+}
 
 const FormsPage = () => {
   const navigate = useNavigate()
@@ -79,19 +110,15 @@ const FormsPage = () => {
         label: 'Name',
         size: 200,
         renderCell: (row: any) => (
-          <span
+          <Link
             className='cursor-pointer font-medium underline transition-colors hover:text-gray-13'
-            onClick={() =>
-              navigate({
-                params: { formId: row.uid || row.id },
-                to: '/form-builder/$formId',
-              })
-            }
+            params={{ formId: row.uid || row.id }}
+            to='/form-builder/$formId'
           >
             {String(
               row._json?.settings?.general?.name || row.name || 'Untitled Form',
             )}
-          </span>
+          </Link>
         ),
       },
       {
@@ -137,6 +164,7 @@ const FormsPage = () => {
         id: 'createdBy',
         label: 'Created By',
         size: 240,
+        renderCell: (row: any) => String(row.createdByName || '-'),
       },
       {
         id: 'createdAt',
@@ -149,13 +177,18 @@ const FormsPage = () => {
         id: 'modifiedBy',
         label: 'Modified By',
         size: 240,
+        renderCell: (row: any) =>
+          String(row.modifiedByName || row.createdByName || '-'),
       },
       {
         id: 'modifiedAt',
         label: 'Modified At',
         size: 200,
         renderCell: (row: any) =>
-          formatDatetime(row.modifiedAt as string, 'datetime'),
+          formatDatetime(
+            row.modifiedAt || (row.createdAt as string),
+            'datetime',
+          ),
       },
       {
         className: 'p-1',
@@ -208,42 +241,6 @@ const FormsPage = () => {
   const forms = useMemo(() => {
     if (!data) return []
 
-    const mapItem = (item: any) => ({
-      ...item,
-      _json:
-        typeof item.formJson === 'string'
-          ? JSON.parse(item.formJson)
-          : item.formJson,
-      id: String(
-        item.uid || item.id || Math.random().toString(36).substring(2, 11),
-      ),
-    })
-
-    const findDeepData = (obj: any): any[] | null => {
-      if (Array.isArray(obj)) return obj
-      if (obj && typeof obj === 'object') {
-        if (obj.data) {
-          const results = findDeepData(obj.data)
-          if (results) return results
-        }
-        if (obj.value) {
-          const results = findDeepData(obj.value)
-          if (results) return results
-        }
-        for (const key in obj) {
-          if (
-            key !== 'data' &&
-            key !== 'value' &&
-            typeof obj[key] === 'object'
-          ) {
-            const results = findDeepData(obj[key])
-            if (results) return results
-          }
-        }
-      }
-      return null
-    }
-
     const rawList = findDeepData(data) || []
     if (rawList.length > 0) {
       const isGrouped =
@@ -252,11 +249,12 @@ const FormsPage = () => {
       if (isGrouped) {
         return rawList
           .map((group: any) => {
-            const items = Array.isArray(group.value)
-              ? group.value
-              : Array.isArray(group.data)
-                ? group.data
-                : []
+            let items: any[] = []
+            if (Array.isArray(group.value)) {
+              items = group.value
+            } else if (Array.isArray(group.data)) {
+              items = group.data
+            }
             const mappedItems = items.map(mapItem)
 
             // Apply local filtering for tabValue status
@@ -321,7 +319,7 @@ const FormsPage = () => {
     if (!data) return 0
     const findDeepMeta = (obj: any): any => {
       if (!obj || typeof obj !== 'object') return null
-      if (obj.meta && obj.meta.totalItems !== undefined) return obj.meta
+      if (obj.meta?.totalItems !== undefined) return obj.meta
       if (obj.totalItems !== undefined) return { totalItems: obj.totalItems }
       if (obj.totalCount !== undefined) return { totalItems: obj.totalCount }
       for (const key in obj) {

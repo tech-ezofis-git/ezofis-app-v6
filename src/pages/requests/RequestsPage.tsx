@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Option } from '@/types/option'
 import formApi from '@/api/form/form'
-import requestApi from '@/api/requests/requests'
 import workflowsApiV6, {
   mapPublishedWorkflowListToOptions,
 } from '@/api/v6/workflows'
@@ -16,6 +15,20 @@ import { useInboxData } from './hooks/useInboxData'
 import requestStore from './stores/useRequestStore'
 
 type WorkflowLoadStatus = 'loading' | 'ready' | 'empty'
+
+function flattenRows(groups: any[]): any[] {
+  const out: any[] = []
+  const walk = (node: any) => {
+    if (!node) return
+    if (Array.isArray(node.items)) out.push(...node.items)
+    if (Array.isArray(node.value)) out.push(...node.value)
+    if (Array.isArray(node.rows)) out.push(...node.rows)
+    if (Array.isArray(node.children)) node.children.forEach(walk)
+    if (Array.isArray(node.groups)) node.groups.forEach(walk)
+  }
+  ;(groups || []).forEach(walk)
+  return out
+}
 
 const RequestsPage = () => {
   const [activeTab, setActiveTab] = useState<string>('Inbox')
@@ -44,7 +57,7 @@ const RequestsPage = () => {
   } = requestStore()
 
   const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
+  const [pageSize, setPageSize] = useState(100)
   const [groupBy, setGroupBy] = useState<string[]>([])
 
   // --- 2. DATA FETCHING ---
@@ -94,9 +107,9 @@ const RequestsPage = () => {
     async (workflowId: string, workflowName?: string) => {
       setWorkflowLoadStatus('loading')
       try {
-        const [workflowRes, metaRes] = await Promise.all([
+        const [workflowRes, countRes] = await Promise.all([
           workflowsApiV6.getWorkflowById(workflowId),
-          requestApi.getMetaDataByRequest(workflowId),
+          workflowsApiV6.getInstanceCount(workflowId),
         ])
 
         if (workflowRes.error || !workflowRes.data) {
@@ -105,12 +118,19 @@ const RequestsPage = () => {
 
         const wf = workflowRes.data
 
-        if (metaRes?.data?.length) {
-          setRawWorflow(metaRes.data[0])
+        setRawWorflow(wf)
+
+        if (countRes?.data) {
           setMetaData({
-            completedCount: metaRes.data[0].completedCount,
-            inboxCount: metaRes.data[0].inboxCount,
-            sentCount: metaRes.data[0].processCount,
+            completedCount: String(countRes.data.completedCount ?? 0),
+            inboxCount: String(countRes.data.inboxCount ?? 0),
+            sentCount: String(countRes.data.sentCount ?? 0),
+          })
+        } else {
+          setMetaData({
+            completedCount: '0',
+            inboxCount: '0',
+            sentCount: '0',
           })
         }
 
@@ -123,12 +143,12 @@ const RequestsPage = () => {
           formJson = formRes?.data
         }
 
-        const flowJson =
-          typeof wf.flowJson === 'string'
-            ? wf.flowJson
-            : wf.flowJson
-              ? JSON.stringify(wf.flowJson)
-              : ''
+        let flowJson = ''
+        if (typeof wf.flowJson === 'string') {
+          flowJson = wf.flowJson
+        } else if (wf.flowJson) {
+          flowJson = JSON.stringify(wf.flowJson)
+        }
 
         setSelectedWorkflow({
           flowJson,
@@ -157,22 +177,18 @@ const RequestsPage = () => {
 
   // Workflow Change Listener
   useEffect(() => {
-    console.log(reloadMeta, isFetching, 'this is reload meta')
-
     if (workflow?.id && !reloadMeta && !isFetching) {
       if (reloadMeta) {
         setIsLoading(true)
       }
 
       loadSelectedWorkflow(String(workflow.id), workflow.name)
-    } else {
-      if (reloadMeta) {
-        if (workflow?.id) {
-          loadSelectedWorkflow(String(workflow.id), workflow.name)
-        }
-        stopRefresh()
-        refetch()
+    } else if (reloadMeta) {
+      if (workflow?.id) {
+        loadSelectedWorkflow(String(workflow.id), workflow.name)
       }
+      stopRefresh()
+      refetch()
     }
   }, [
     workflow,
@@ -227,19 +243,6 @@ const RequestsPage = () => {
   ])
 
   // --- 4. NAVIGATION & FLATTENING ---
-  function flattenRows(groups: any[]): any[] {
-    const out: any[] = []
-    const walk = (node: any) => {
-      if (!node) return
-      if (Array.isArray(node.items)) out.push(...node.items)
-      if (Array.isArray(node.value)) out.push(...node.value)
-      if (Array.isArray(node.rows)) out.push(...node.rows)
-      if (Array.isArray(node.children)) node.children.forEach(walk)
-      if (Array.isArray(node.groups)) node.groups.forEach(walk)
-    }
-    ;(groups || []).forEach(walk)
-    return out
-  }
 
   const flatRows = useMemo(
     () => flattenRows(inboxResult?.data || []),

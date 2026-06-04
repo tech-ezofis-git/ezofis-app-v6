@@ -192,7 +192,12 @@ const extractDueDate = (row: any): string => {
 
 const extractValueFromTermObj = (termObj: any) => {
   if (!termObj || typeof termObj !== 'object') return termObj
-  return termObj.payment_terms || termObj.terms || termObj.payment_term || termObj.term
+  return (
+    termObj.payment_terms ||
+    termObj.terms ||
+    termObj.payment_term ||
+    termObj.term
+  )
 }
 
 const extractPaymentTerms = (row: any): string => {
@@ -239,7 +244,8 @@ const calculateDaysDifference = (
   try {
     const invDate = new Date(invoiceDateStr)
     const dueDate = new Date(dueDateStr)
-    if (Number.isNaN(invDate.getTime()) || Number.isNaN(dueDate.getTime())) return null
+    if (Number.isNaN(invDate.getTime()) || Number.isNaN(dueDate.getTime()))
+      return null
     const diffTime = dueDate.getTime() - invDate.getTime()
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
     return diffDays
@@ -315,13 +321,13 @@ const getCategory = (index: number): string => {
 
 interface RowStatusBadgeProps {
   isProcessing: boolean
-  activeTab?: string
   originalIndex: number
+  activeTab?: string
 }
 
 const RowStatusBadge = ({
-  isProcessing,
   activeTab,
+  isProcessing,
   originalIndex,
 }: RowStatusBadgeProps) => {
   if (isProcessing) return null
@@ -370,11 +376,11 @@ const RowStatusBadge = ({
 }
 
 interface TermsColumnProps {
-  row: any
   raisedAt: any
+  row: any
 }
 
-const TermsColumn = ({ row, raisedAt }: TermsColumnProps) => {
+const TermsColumn = ({ raisedAt, row }: TermsColumnProps) => {
   const terms = extractPaymentTerms(row)
   const dueDate = extractDueDate(row)
   const daysDiff = calculateDaysDifference(raisedAt, dueDate)
@@ -435,28 +441,24 @@ const TermsColumn = ({ row, raisedAt }: TermsColumnProps) => {
 }
 
 interface GridRowItemProps {
-  row: any
   index: number
-  activeTab?: string
-  isSelectionMode: boolean
   isSelected: boolean
+  row: any
+  activeTab?: string
   toggleRowSelection: (id: string | number, e: React.MouseEvent) => void
   onRowClick: (item: any, tab: string) => void
 }
 
 const GridRowItem = ({
-  row,
-  index,
   activeTab,
-  isSelectionMode,
+  index,
   isSelected,
+  row,
   toggleRowSelection,
   onRowClick,
 }: GridRowItemProps) => {
   const originalIndex =
-    typeof row?._originalIndex === 'number'
-      ? row._originalIndex
-      : index
+    typeof row?._originalIndex === 'number' ? row._originalIndex : index
   const rowId = row?.id || row?.processId || `item-${originalIndex}`
   const invoiceNo =
     row?.documentNumber ||
@@ -471,9 +473,7 @@ const GridRowItem = ({
     'Unknown Supplier'
   const raisedAt = row?.raisedAt || row?.transaction_createdAt
   const amount = Number(
-    row['suyqsm0SYii_8vsj4p0c_'] ||
-      row['WksH1Mrs42X4J9AHgoBtw'] ||
-      0,
+    row['suyqsm0SYii_8vsj4p0c_'] || row['WksH1Mrs42X4J9AHgoBtw'] || 0,
   )
   const status = row?.status || 'Pending'
 
@@ -528,18 +528,17 @@ const GridRowItem = ({
     >
       {/* Checkbox & Status Icon */}
       <div className='flex shrink-0 items-center gap-4'>
-        {isSelectionMode && (
-          <label className='relative flex items-center cursor-pointer'>
+        {!row.isProcessing && (
+          <label className='relative flex cursor-pointer items-center'>
             <input
-              type='checkbox'
               checked={isSelected}
+              className='sr-only'
+              type='checkbox'
+              onChange={() => {}}
               onClick={(e) => {
                 e.stopPropagation()
-                if (row.isProcessing) return
                 toggleRowSelection(rowId, e)
               }}
-              onChange={() => {}}
-              className='sr-only'
             />
             <div
               className={cn(
@@ -565,11 +564,8 @@ const GridRowItem = ({
           )}
         >
           <Icon
+            className={cn('size-5', row.isProcessing && 'animate-spin')}
             name={iconName}
-            className={cn(
-              'size-5',
-              row.isProcessing && 'animate-spin',
-            )}
           />
         </div>
       </div>
@@ -592,8 +588,8 @@ const GridRowItem = ({
             />
           )}
           <RowStatusBadge
-            isProcessing={row.isProcessing}
             activeTab={activeTab}
+            isProcessing={row.isProcessing}
             originalIndex={originalIndex}
           />
         </div>
@@ -603,9 +599,7 @@ const GridRowItem = ({
           <div className='flex items-center gap-1.5'>
             <Icon className='size-3.5' name='tabler:hash' />
             <span>
-              {row.isProcessing
-                ? 'Fetching...'
-                : extractPONumber(row)}
+              {row.isProcessing ? 'Fetching...' : extractPONumber(row)}
             </span>
           </div>
           {!row.isProcessing && (
@@ -657,7 +651,7 @@ const GridRowItem = ({
           <>
             {/* Column 3: Terms & Due Calculation */}
             <div className='flex w-[110px] shrink-0 flex-col items-center justify-center text-center'>
-              <TermsColumn row={row} raisedAt={raisedAt} />
+              <TermsColumn raisedAt={raisedAt} row={row} />
             </div>
 
             {/* Column 4: Invoice Value & Date */}
@@ -677,14 +671,11 @@ const GridRowItem = ({
                   const rawDate = extractInvoiceDate(row)
                   if (rawDate && rawDate !== '-') {
                     try {
-                      return new Date(rawDate).toLocaleDateString(
-                        'en-US',
-                        {
-                          day: 'numeric',
-                          month: 'short',
-                          year: 'numeric',
-                        },
-                      )
+                      return new Date(rawDate).toLocaleDateString('en-US', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
+                      })
                     } catch {
                       return 'May 19, 2026'
                     }
@@ -743,16 +734,13 @@ const GridView = <TData,>({
   const [selectedIds, setSelectedIds] = useState<Set<string | number>>(
     new Set(),
   )
-  const [isSelectionMode, setIsSelectionMode] = useState(false)
 
   useEffect(() => {
-    setIsSelectionMode(false)
     setSelectedIds(new Set())
   }, [activeTab])
 
   const exitSelectionMode = () => {
     setSelectedIds(new Set())
-    setIsSelectionMode(false)
   }
 
   const allItems = useMemo(() => {
@@ -804,25 +792,26 @@ const GridView = <TData,>({
   const isPartiallySelected =
     selectedIds.size > 0 && selectedIds.size < allItems.length
 
-  const checkboxBorderClass = (isAllSelected || isPartiallySelected)
-    ? 'border-[var(--primary-9)] bg-surface'
-    : 'border-[var(--gray-3)] bg-surface hover:border-[var(--primary-9)]'
+  const checkboxBorderClass =
+    isAllSelected || isPartiallySelected
+      ? 'border-[var(--primary-9)] bg-surface'
+      : 'border-[var(--gray-3)] bg-surface hover:border-[var(--primary-9)]'
 
   return (
     <>
       <div className='flex h-full flex-col overflow-hidden'>
         <div className='sticky top-0 z-20 flex items-center justify-between border-b border-[var(--gray-2)] bg-surface/70 py-1 pr-4 pl-7 backdrop-blur-sm'>
           <div className='flex items-center gap-4'>
-            {isSelectionMode ? (
-              <label className='relative flex items-center cursor-pointer'>
+            {allItems.length > 0 && (
+              <label className='relative flex cursor-pointer items-center'>
                 <input
-                  type='checkbox'
                   checked={isAllSelected}
-                  onChange={toggleAllSelection}
+                  className='sr-only'
+                  type='checkbox'
                   ref={(el) => {
                     if (el) el.indeterminate = isPartiallySelected
                   }}
-                  className='sr-only'
+                  onChange={toggleAllSelection}
                 />
                 <div
                   className={cn(
@@ -841,34 +830,15 @@ const GridView = <TData,>({
                   )}
                 </div>
               </label>
-            ) : null}
+            )}
             <span className='text-[14px] font-medium text-[var(--text-primary)]'>
               Invoices{' '}
-              {isSelectionMode && selectedIds.size > 0 && (
+              {selectedIds.size > 0 && (
                 <span className='ml-1 text-[var(--gray-10)]'>
                   ({selectedIds.size})
                 </span>
               )}
             </span>
-            {!isSelectionMode && allItems.length > 0 && (
-              <button
-                className='inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[var(--gray-3)] bg-surface px-2.5 py-1 text-[12px] font-medium text-[var(--gray-11)] transition-all hover:border-[var(--primary-4)] hover:bg-[var(--primary-1)] hover:text-[var(--primary-11)]'
-                type='button'
-                onClick={() => setIsSelectionMode(true)}
-              >
-                <Icon className='size-3.5' name='tabler:checkbox' />
-                Select
-              </button>
-            )}
-            {isSelectionMode && selectedIds.size === 0 && (
-              <button
-                className='inline-flex cursor-pointer items-center gap-1 rounded-lg px-2 py-1 text-[12px] font-medium text-[var(--gray-10)] transition-all hover:bg-[var(--gray-1)] hover:text-[var(--gray-12)]'
-                type='button'
-                onClick={exitSelectionMode}
-              >
-                Cancel
-              </button>
-            )}
           </div>
 
           <div className='flex items-center gap-2'>
@@ -968,9 +938,7 @@ const GridView = <TData,>({
                     )}
                     onClick={a.onClick}
                   >
-                    {a.icon ? (
-                      <Icon className='size-4' name={a.icon} />
-                    ) : null}
+                    {a.icon ? <Icon className='size-4' name={a.icon} /> : null}
                     {a.label}
                   </button>
                 ))}
@@ -1002,7 +970,6 @@ const GridView = <TData,>({
                     activeTab={activeTab}
                     index={index}
                     isSelected={isSelected}
-                    isSelectionMode={isSelectionMode}
                     key={rowId}
                     row={row}
                     toggleRowSelection={toggleRowSelection}

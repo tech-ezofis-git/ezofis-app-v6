@@ -37,7 +37,7 @@ const Header = () => {
           icon='lucide:chevron-left'
           size='sm'
           variant='ghost'
-          onClick={() => window.history.back()}
+          onClick={() => globalThis.history.back()}
         />
 
         <div className='flex min-w-0 flex-col'>
@@ -104,7 +104,7 @@ const Header = () => {
         <Button
           className='cursor-pointer font-medium'
           color='primary'
-          icon='lucide:sparkles'
+          icon='lucide:bot'
           label='Ask AI'
           size='sm'
           variant='ghost'

@@ -1,7 +1,248 @@
 import { useQuery } from '@tanstack/react-query'
-import requestApi from '@/api/requests/requests'
+import workflowsApiV6 from '@/api/v6/workflows'
 import type { InboxItem, TableGroup, WorkflowOption } from '../types'
 import { getActionsForActivity } from '../utils/workflow.utils'
+
+const transformProcess = (
+  process: any,
+  groupKey: string,
+  originalIndex: number,
+  activeTab: string,
+  selectedWorkflow: WorkflowOption | null,
+): InboxItem => {
+  const dynamicFields = process.formData?.fields || {}
+  let actions: any[] = []
+  if (activeTab === 'Inbox' || activeTab === 'Exceptions') {
+    actions = getActionsForActivity(
+      process.activityId,
+      selectedWorkflow?.flowJson,
+    )
+  }
+  const processId = process.workflowInstanceId || process.processId
+  const requestNo =
+    process.referenceNumber ||
+    (processId ? `REQ-${processId.substring(0, 8).toUpperCase()}` : '') ||
+    process.requestNo ||
+    ''
+  const isAgentProcessing = process.stageType === 'AP_AGENT'
+
+  return {
+    ...process,
+    ...dynamicFields,
+    _actions: actions,
+    _groupKey: groupKey || activeTab,
+    _originalIndex: originalIndex,
+    documentNumber: requestNo,
+    id: processId || process.id,
+    processId: processId,
+    raisedAt:
+      process.createdAtUtc || process.transactionCreatedAt || process.raisedAt,
+    raisedBy: process.transactionCreatedByEmail || process.raisedBy,
+    requestNo: requestNo,
+    ...(isAgentProcessing
+      ? {
+          isProcessing: true,
+          stage: process.stage || 'Start',
+          status: 'Progressing',
+        }
+      : {}),
+  }
+}
+
+const fetchInboxDataFn = async (
+  activeTab: string,
+  workflowId: string,
+  page: number,
+  pageSize: number,
+) => {
+  switch (activeTab) {
+    case 'Sent': {
+      const sentRes = await workflowsApiV6.getSentList(
+        workflowId,
+        page,
+        pageSize,
+      )
+      if (sentRes.error) {
+        throw new Error(sentRes.error)
+      }
+      const responseData = sentRes.data || {}
+      return {
+        data: [
+          {
+            key: 'root',
+            value: responseData.items || [],
+          },
+        ],
+        meta: {
+          totalItems:
+            responseData.totalCount || responseData.items?.length || 0,
+        },
+      }
+    }
+    case 'Closed': {
+      const completedRes = await workflowsApiV6.getCompletedList(
+        workflowId,
+        page,
+        pageSize,
+      )
+      if (completedRes.error) {
+        throw new Error(completedRes.error)
+      }
+      const responseData = completedRes.data || {}
+      return {
+        data: [
+          {
+            key: 'root',
+            value: responseData.items || [],
+          },
+        ],
+        meta: {
+          totalItems:
+            responseData.totalCount || responseData.items?.length || 0,
+        },
+      }
+    }
+    case 'Processed': {
+      const [sentRes, completedRes] = await Promise.all([
+        workflowsApiV6.getSentList(workflowId, page, pageSize),
+        workflowsApiV6.getCompletedList(workflowId, page, pageSize),
+      ])
+
+      if (sentRes.error) throw new Error(sentRes.error)
+      if (completedRes.error) throw new Error(completedRes.error)
+
+      const sentItems = sentRes.data?.items || []
+      const completedItems = completedRes.data?.items || []
+      const combinedData = [...sentItems, ...completedItems]
+      const totalItems =
+        (sentRes.data?.totalCount || sentItems.length) +
+        (completedRes.data?.totalCount || completedItems.length)
+
+      return {
+        data: [
+          {
+            key: 'root',
+            value: combinedData,
+          },
+        ],
+        meta: {
+          totalItems,
+        },
+      }
+    }
+    case 'Exceptions':
+    case 'Inbox':
+    default: {
+      const v6Res = await workflowsApiV6.getInboxList(
+        workflowId,
+        page,
+        pageSize,
+      )
+      if (v6Res.error) {
+        throw new Error(v6Res.error)
+      }
+      const responseData = v6Res.data || {}
+      return {
+        data: [
+          {
+            key: 'root',
+            value: responseData.items || [],
+          },
+        ],
+        meta: {
+          totalItems:
+            responseData.totalCount || responseData.items?.length || 0,
+        },
+      }
+    }
+  }
+}
+
+interface IndexTracker {
+  value: number
+}
+
+const handleGroupedInner = (
+  inner: any,
+  idx: number,
+  activeTab: string,
+  selectedWorkflow: WorkflowOption | null,
+  tracker: IndexTracker,
+  groupedData: TableGroup[],
+) => {
+  const validItems = []
+  for (const p of inner.value) {
+    if (p && (p.processId || p.id || p.workflowInstanceId)) {
+      validItems.push(p)
+    }
+  }
+
+  let groupItems = validItems.map((p) => {
+    const item = transformProcess(
+      p,
+      inner.key,
+      tracker.value,
+      activeTab,
+      selectedWorkflow,
+    )
+    tracker.value++
+    return item
+  })
+
+  if (activeTab === 'Exceptions') {
+    groupItems = groupItems.filter(
+      (item: InboxItem) =>
+        item._originalIndex !== undefined && item._originalIndex % 12 !== 0,
+    )
+  }
+
+  if (groupItems.length > 0) {
+    groupedData.push({
+      groupCount: groupItems.length,
+      groupId: inner.key || `group-${idx}`,
+      groupKey: inner.key,
+      groupValue: inner.key,
+      items: groupItems,
+    })
+  }
+}
+
+const handleFlatInner = (
+  inner: any,
+  activeTab: string,
+  selectedWorkflow: WorkflowOption | null,
+  tracker: IndexTracker,
+  groupedData: TableGroup[],
+) => {
+  const transformed = transformProcess(
+    inner,
+    activeTab,
+    tracker.value,
+    activeTab,
+    selectedWorkflow,
+  )
+  tracker.value++
+
+  if (
+    activeTab === 'Exceptions' &&
+    transformed._originalIndex !== undefined &&
+    transformed._originalIndex % 12 === 0
+  ) {
+    return
+  }
+
+  const rootGroup = groupedData.find((g) => g.groupId === 'root')
+  if (rootGroup) {
+    rootGroup.items.push(transformed)
+    rootGroup.groupCount = rootGroup.items.length
+  } else {
+    groupedData.push({
+      groupCount: 1,
+      groupId: 'root',
+      items: [transformed],
+    })
+  }
+}
 
 export const useInboxData = (
   selectedWorkflow: WorkflowOption | null,
@@ -26,7 +267,6 @@ export const useInboxData = (
         currentPage: page,
         filterBy: [],
         itemsPerPage: pageSize,
-
         sortBy: { criteria: '', order: 'DESC' },
       }
 
@@ -36,63 +276,22 @@ export const useInboxData = (
           groupBy.length > 0 ? groupBy : ['RXwLGHILLrreMmRqlk9mj']
       }
 
-      const workflowId = selectedWorkflow?.id as number | string
-      let response
+      const workflowId = selectedWorkflow?.id
+      if (!workflowId) {
+        return { data: [], meta: { totalItems: 0 } }
+      }
 
       try {
-        switch (activeTab) {
-          case 'Sent':
-            response = await requestApi.getSentListById(workflowId, config)
-            break
-          case 'Closed':
-            response = await requestApi.getCompletedRequestById(
-              workflowId,
-              config,
-            )
-            break
-          case 'Exceptions':
-            response = await requestApi.getInboxListById(workflowId, config)
-            break
-          case 'Processed': {
-            const [sentResponse, completedResponse] = await Promise.all([
-              requestApi.getSentListById(workflowId, config),
-              requestApi.getCompletedRequestById(workflowId, config),
-            ])
-
-            const sentData =
-              sentResponse?.data?.data || sentResponse?.data || []
-            const completedData =
-              completedResponse?.data?.data || completedResponse?.data || []
-
-            const combinedData = [...sentData, ...completedData]
-            const totalItems =
-              (sentResponse?.meta?.totalItems ||
-                sentResponse?.data?.meta?.totalItems ||
-                0) +
-              (completedResponse?.meta?.totalItems ||
-                completedResponse?.data?.meta?.totalItems ||
-                0)
-
-            response = {
-              data: {
-                data: combinedData,
-                meta: {
-                  totalItems,
-                },
-              },
-            }
-            break
-          }
-          case 'Inbox':
-          default:
-            response = await requestApi.getInboxListById(workflowId, config)
-            break
-        }
+        return await fetchInboxDataFn(
+          activeTab,
+          String(workflowId),
+          page,
+          pageSize,
+        )
       } catch (error) {
         console.error(error)
         return { data: [], meta: { totalItems: 0 } }
       }
-      return response || { data: [], meta: { totalItems: 0 } }
     },
 
     select: (payload: any) => {
@@ -101,94 +300,40 @@ export const useInboxData = (
         payload?.meta?.totalItems || payload?.data?.meta?.totalItems || 0
 
       const groupedData: TableGroup[] = []
+      const tracker = { value: 0 }
 
-      // Helper to transform process into InboxItem
-      const transformProcess = (
-        process: any,
-        groupKey: string,
-        originalIndex: number,
-      ): InboxItem => {
-        const dynamicFields = process.formData?.fields || {}
-        let actions: any[] = []
-        if (activeTab === 'Inbox' || activeTab === 'Exceptions') {
-          actions = getActionsForActivity(
-            process.activityId,
-            selectedWorkflow?.flowJson,
-          )
-        }
-        return {
-          ...process,
-          ...dynamicFields,
-          _actions: actions,
-          _groupKey: groupKey || activeTab,
-          _originalIndex: originalIndex,
-          id: process.processId || process.id,
-        }
-      }
-
-      let globalIndex = 0
       if (Array.isArray(apiData)) {
-        apiData.forEach((outer: any) => {
-          // outer is usually { key: "", totalCount: X, value: [...] }
-          if (outer && Array.isArray(outer.value)) {
-            outer.value.forEach((inner: any, idx: number) => {
-              // Format 1: Grouped (inner has 'value' array of items)
-              if (inner && Array.isArray(inner.value)) {
-                let groupItems = inner.value
-                  .filter((p: any) => p && (p.processId || p.id))
-                  .map((p: any) => {
-                    const item = transformProcess(p, inner.key, globalIndex)
-                    globalIndex++
-                    return item
-                  })
+        for (const outer of apiData) {
+          if (!outer || !Array.isArray(outer.value)) continue
 
-                if (activeTab === 'Exceptions') {
-                  groupItems = groupItems.filter(
-                    (item: any) => (item as any)._originalIndex % 12 !== 0,
-                  )
-                }
+          for (let idx = 0; idx < outer.value.length; idx++) {
+            const inner = outer.value[idx]
+            if (!inner) continue
 
-                if (groupItems.length > 0) {
-                  groupedData.push({
-                    groupCount: groupItems.length,
-                    groupId: inner.key || `group-${idx}`,
-                    groupKey: inner.key,
-                    groupValue: inner.key,
-                    items: groupItems,
-                  })
-                }
-              }
-              // Format 2: Flat (inner is the item itself)
-              else if (inner && (inner.processId || inner.id)) {
-                const transformed = transformProcess(
-                  inner,
-                  activeTab,
-                  globalIndex,
-                )
-                globalIndex++
-
-                if (
-                  activeTab === 'Exceptions' &&
-                  (transformed as any)._originalIndex % 12 === 0
-                ) {
-                  return
-                }
-
-                const rootGroup = groupedData.find((g) => g.groupId === 'root')
-                if (rootGroup) {
-                  rootGroup.items.push(transformed)
-                  rootGroup.groupCount = rootGroup.items.length
-                } else {
-                  groupedData.push({
-                    groupCount: 1,
-                    groupId: 'root',
-                    items: [transformed],
-                  })
-                }
-              }
-            })
+            if (Array.isArray(inner.value)) {
+              handleGroupedInner(
+                inner,
+                idx,
+                activeTab,
+                selectedWorkflow,
+                tracker,
+                groupedData,
+              )
+            } else if (
+              inner.processId ||
+              inner.id ||
+              inner.workflowInstanceId
+            ) {
+              handleFlatInner(
+                inner,
+                activeTab,
+                selectedWorkflow,
+                tracker,
+                groupedData,
+              )
+            }
           }
-        })
+        }
       }
 
       return { data: groupedData, totalItems }
