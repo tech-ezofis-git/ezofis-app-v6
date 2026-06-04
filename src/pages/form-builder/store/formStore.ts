@@ -559,8 +559,23 @@ export const useFormStore = create<FormStore>()(
 
       // Lifecycle Actions
       loadForm: (data: any) => {
-        if (!data || !data.formJson) return
-        const json = data.formJson
+        if (!data) return
+
+        let json = data.formJson || data
+
+        // If it's a string, attempt to parse it
+        if (typeof json === 'string') {
+          try {
+            json = JSON.parse(json)
+          } catch (e) {
+            console.error('Failed to parse formJson in loadForm:', e)
+            return
+          }
+        }
+
+        // Validate that we have some valid form structure
+        if (!json || (!json.panels && !json.settings)) return
+
         const genSettings = json.settings?.general || {}
 
         set({
@@ -578,7 +593,7 @@ export const useFormStore = create<FormStore>()(
           panels: json.panels || [],
           publishStatus: json.settings?.publish?.publishOption || 'DRAFT',
           secondaryPanels: json.secondaryPanels || [],
-          uid: data.uid || generateId(),
+          uid: data.uid || json.uid || generateId(),
         })
       },
 
@@ -643,10 +658,15 @@ export const useFormStore = create<FormStore>()(
           set({ publishStatus: targetStatus })
         }
 
-        const payload = cleanFormPayload({
+        const formSchema = cleanFormPayload({
           ...state,
           publishStatus: currentStatus,
         })
+
+        const payload = {
+          name: state.name || 'Untitled Form',
+          formJson: formSchema,
+        }
 
         const hasFields = state.panels.some((p) => p.fields.length > 0)
         if (!hasFields) {
@@ -689,6 +709,15 @@ export const useFormStore = create<FormStore>()(
             message: `Your form has been ${currentStatus === 'PUBLISHED' ? 'published' : 'saved'} successfully.`,
             title: 'Success!',
           })
+
+          const createdFormId =
+            response.data?.id ??
+            response.data?.formId ??
+            (typeof response.data === 'string' ? response.data : null)
+
+          if (isCreation && createdFormId) {
+            window.location.replace(`/form-builder/${createdFormId}`)
+          }
           return true
         } catch (error) {
           notifications.show({

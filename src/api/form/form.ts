@@ -4,15 +4,30 @@ import { axiosCrypto, axiosV6 } from '../axios'
 const getFormDataById = async (id: string) => {
   const response: any = { data: null, error: '' }
   try {
-    const { data, status } = await axiosCrypto.get(`/form/${id}`)
+    const store = authUserStore.getState()
+    const tenantId = store.session?.tenantId || ''
+    const { data, status } = await axiosV6.get(`/form/${id}`, {
+      headers: {
+        'X-Tenant-Id': tenantId,
+      },
+    })
     if (status !== 200) throw new Error('Invalid status code')
 
-    // Parse formJson if it exists
+    // Safely parse formJson if it exists and is a string
     if (data?.formJson) {
-      data.formJson = JSON.parse(data.formJson)
+      if (typeof data.formJson === 'string') {
+        try {
+          data.formJson = JSON.parse(data.formJson)
+        } catch (e) {
+          console.error('Failed to parse formJson in getFormDataById:', e)
+        }
+      }
+
       // Safety check for hubLinkIds as per technical reference
-      if (!data.formJson.hubLinkIds) {
-        data.formJson.hubLinkIds = []
+      if (data.formJson && typeof data.formJson === 'object') {
+        if (!data.formJson.hubLinkIds) {
+          data.formJson.hubLinkIds = []
+        }
       }
     }
 
@@ -47,7 +62,13 @@ const createForm = async (payload: any) => {
 const updateForm = async (id: string, payload: any) => {
   const response: any = { data: null, error: '' }
   try {
-    const { data, status } = await axiosCrypto.put(`/form/${id}`, payload)
+    const store = authUserStore.getState()
+    const tenantId = store.session?.tenantId || ''
+    const { data, status } = await axiosV6.put(`/form/${id}`, payload, {
+      headers: {
+        'X-Tenant-Id': tenantId,
+      },
+    })
     if (![200, 201, 202, 204].includes(status)) {
       console.error(
         `[formApi.updateForm] Error: Invalid status code ${status}`,
@@ -139,8 +160,29 @@ const getForms = async (payload: any) => {
   return response
 }
 
+const deleteForm = async (id: string) => {
+  const response: any = { data: null, error: '' }
+  try {
+    const store = authUserStore.getState()
+    const tenantId = store.session?.tenantId || ''
+    const { data, status } = await axiosV6.delete(`/form/${id}`, {
+      headers: {
+        'X-Tenant-Id': tenantId,
+      },
+    })
+    if (![200, 201, 202, 204].includes(status))
+      throw new Error(`Invalid status code ${status}`)
+    response.data = data
+  } catch (e: any) {
+    console.error(e)
+    response.error = e.message || 'Error deleting form'
+  }
+  return response
+}
+
 const formApi = {
   createForm,
+  deleteForm,
   deleteFormEntry,
   listAllForms,
   updateForm,

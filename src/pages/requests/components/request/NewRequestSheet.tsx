@@ -16,18 +16,18 @@ const NewRequestSheet = ({ onClose }: Props) => {
   const { newRequestMeta } = requestStore((state) => state)
 
   return (
-    <div className='flex flex-col'>
-      <Header
-        title={newRequestMeta === 'po' ? 'PO Setup' : 'New Request'}
+    <div className='flex flex-col h-full flex-1 overflow-hidden bg-surface-muted'>
+      {newRequestMeta != 'po' && <Header
+        title={newRequestMeta === 'po1x`' ? 'PO Setup' : 'New Request'}
         onClose={onClose}
-        // optional: show a subtle badge when in PO mode
-        // badge={mode === "po" ? "Configuration" : undefined}
-      />
+      // optional: show a subtle badge when in PO mode
+      // badge={mode === "po" ? "Configuration" : undefined}
+      />}
 
       {newRequestMeta === 'request' ? (
         <NewRequestFileUpload
           onClose={onClose}
-          // onStartPoImport={() => setMode("po")}
+        // onStartPoImport={() => setMode("po")}
         />
       ) : (
         <PoSetupFlowPage

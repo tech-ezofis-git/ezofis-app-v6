@@ -9,7 +9,7 @@ import UserMenu from './components/user-menu/UserMenu'
 const Topbar = () => {
   const openAskAI = useAskAIStore((state) => state.open)
   return (
-    <header className='flex h-14 items-center justify-between border-b border-gray-3 pr-6 pl-4'>
+    <header className='flex h-14 items-center justify-between border-b border-gray-3 pr-6 pl-4 bg-gradient-to-b from-gray-1 to-gray-2'>
       <div className='flex items-center gap-2'>
         <SidebarToggle />
         <PageTitle />

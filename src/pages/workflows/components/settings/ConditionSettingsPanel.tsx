@@ -255,7 +255,10 @@ export default function ConditionSettingsPanel({
       try {
         const response = await requestApi.getForm(formId)
         if (response && response.formJson) {
-          const form = JSON.parse(response.formJson)
+          const form =
+            typeof response.formJson === 'string'
+              ? JSON.parse(response.formJson)
+              : response.formJson
           const allOptions: any[] = []
           const panels = [
             ...(form.panels || []),
