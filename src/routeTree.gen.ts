@@ -82,6 +82,7 @@ import { Route as AuthSignInIndexRouteImport } from './routes/_auth/sign-in/inde
 import { Route as AuthResetPasswordIndexRouteImport } from './routes/_auth/reset-password/index'
 import { Route as AuthForgotPasswordIndexRouteImport } from './routes/_auth/forgot-password/index'
 import { Route as AppMyAccountChar123SlugChar125RouteImport } from './routes/_app/my-account.{-$slug}'
+import { Route as AppFormsFormIdEntriesRouteImport } from './routes/_app/forms_.$formId.entries'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -451,6 +452,11 @@ const AppMyAccountChar123SlugChar125Route =
     path: '/my-account/{-$slug}',
     getParentRoute: () => AppRouteRoute,
   } as any)
+const AppFormsFormIdEntriesRoute = AppFormsFormIdEntriesRouteImport.update({
+  id: '/forms_/$formId/entries',
+  path: '/forms/$formId/entries',
+  getParentRoute: () => AppRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/playground': typeof PlaygroundRouteRoute
@@ -524,6 +530,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof AuthResetPasswordIndexRoute
   '/sign-in': typeof AuthSignInIndexRoute
   '/sign-up': typeof AuthSignUpIndexRoute
+  '/forms/$formId/entries': typeof AppFormsFormIdEntriesRoute
 }
 export interface FileRoutesByTo {
   '/playground': typeof PlaygroundRouteRoute
@@ -596,6 +603,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof AuthResetPasswordIndexRoute
   '/sign-in': typeof AuthSignInIndexRoute
   '/sign-up': typeof AuthSignUpIndexRoute
+  '/forms/$formId/entries': typeof AppFormsFormIdEntriesRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -672,6 +680,7 @@ export interface FileRoutesById {
   '/_auth/reset-password/': typeof AuthResetPasswordIndexRoute
   '/_auth/sign-in/': typeof AuthSignInIndexRoute
   '/_auth/sign-up/': typeof AuthSignUpIndexRoute
+  '/_app/forms_/$formId/entries': typeof AppFormsFormIdEntriesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -747,6 +756,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/sign-in'
     | '/sign-up'
+    | '/forms/$formId/entries'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/playground'
@@ -819,6 +829,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/sign-in'
     | '/sign-up'
+    | '/forms/$formId/entries'
   id:
     | '__root__'
     | '/_app'
@@ -894,6 +905,7 @@ export interface FileRouteTypes {
     | '/_auth/reset-password/'
     | '/_auth/sign-in/'
     | '/_auth/sign-up/'
+    | '/_app/forms_/$formId/entries'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1422,6 +1434,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppMyAccountChar123SlugChar125RouteImport
       parentRoute: typeof AppRouteRoute
     }
+    '/_app/forms_/$formId/entries': {
+      id: '/_app/forms_/$formId/entries'
+      path: '/forms/$formId/entries'
+      fullPath: '/forms/$formId/entries'
+      preLoaderRoute: typeof AppFormsFormIdEntriesRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
   }
 }
 
@@ -1438,6 +1457,7 @@ interface AppRouteRouteChildren {
   AppWorkflowsRoute: typeof AppWorkflowsRoute
   AppIndexRoute: typeof AppIndexRoute
   AppMyAccountChar123SlugChar125Route: typeof AppMyAccountChar123SlugChar125Route
+  AppFormsFormIdEntriesRoute: typeof AppFormsFormIdEntriesRoute
 }
 
 const AppRouteRouteChildren: AppRouteRouteChildren = {
@@ -1453,6 +1473,7 @@ const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppWorkflowsRoute: AppWorkflowsRoute,
   AppIndexRoute: AppIndexRoute,
   AppMyAccountChar123SlugChar125Route: AppMyAccountChar123SlugChar125Route,
+  AppFormsFormIdEntriesRoute: AppFormsFormIdEntriesRoute,
 }
 
 const AppRouteRouteWithChildren = AppRouteRoute._addFileChildren(
