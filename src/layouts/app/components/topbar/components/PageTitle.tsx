@@ -1,7 +1,9 @@
-import { useMatches } from '@tanstack/react-router'
+import { useMatches, useParams } from '@tanstack/react-router'
+import { useQuery } from '@tanstack/react-query'
 import Badge from '@/components/base/Badge'
 import Icon from '@/components/base/icon/Icon'
 import Title from '@/components/base/Title'
+import formApi from '@/api/form/form'
 import requestStore from '@/pages/requests/stores/useRequestStore'
 import useWorkflowStore from '@/pages/workflows/stores/useWorkflowStore'
 
@@ -12,7 +14,24 @@ const PageTitle = () => {
   const { closeBuilder, isBuilderOpen } = useWorkflowStore((state) => state)
 
   const current = matches[matches.length - 1]
-  const pageTitle = current?.staticData?.pageTitle ?? 'Untitled'
+  const isFormEntriesRoute = current?.routeId === '/_app/forms_/$formId/entries'
+
+  const { formId } = useParams({ strict: false }) as any
+  const { data: formData } = useQuery({
+    queryKey: ['forms', 'detail', formId],
+    queryFn: async () => {
+      const { data, error } = await formApi.getFormDataById(formId)
+      if (error) throw new Error(error)
+      return data
+    },
+    enabled: !!formId && isFormEntriesRoute,
+  })
+
+  const formName = formData?._json?.settings?.general?.name || formData?.name
+  const pageTitle = (isFormEntriesRoute && formName)
+    ? formName
+    : (current?.staticData?.pageTitle ?? 'Untitled')
+
 
   const renderContent = () => {
     if (isBuilderOpen) {

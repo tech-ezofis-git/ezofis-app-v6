@@ -1,8 +1,7 @@
-import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useParams } from '@tanstack/react-router'
+import { useQuery } from '@tanstack/react-query'
 import { useEffect, useMemo, useState } from 'react'
-import { Skeleton, Stack, Tooltip } from '@mantine/core'
-import Badge from '@/components/base/Badge'
+import { Skeleton, Stack, Tooltip, Rating, Divider } from '@mantine/core'
 import formApi from '@/api/form/form'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
@@ -18,6 +17,13 @@ import Tabs from '@/components/base/tabs/Tabs'
 import showToast from '@/components/base/toast/showToast'
 import cn from '@/utils/cn'
 import type { Question } from '@/pages/form-builder/store/formStore'
+
+// DataTable and pagination imports
+import DataTable from '@/components/base/data-table/DataTable'
+import useDataTable from '@/components/base/data-table/hooks/useDataTable'
+import useDataTableState from '@/components/base/data-table/hooks/useDataTableState'
+import Pagination from '@/components/base/pagination/Pagination'
+import type { Column } from '@/components/base/data-table/types'
 
 // Helper to generate dynamic mock values based on field schema
 const generateDummyEntries = (fields: Question[], count: number = 6) => {
@@ -100,13 +106,14 @@ const FormEntriesPage = () => {
   const [entries, setEntries] = useState<any[]>([])
   const [trashEntries, setTrashEntries] = useState<any[]>([])
   const [tabValue, setTabValue] = useState<string>('Browse')
-  const [search, setSearch] = useState('')
   const [selectedEntry, setSelectedEntry] = useState<any | null>(null)
   const [isAddOpen, setIsAddOpen] = useState(false)
   const [editValues, setEditValues] = useState<Record<string, any>>({})
-  const [selectedColumns, setSelectedColumns] = useState<string[]>([])
-  const [isColumnsVisible, setIsColumnsVisible] = useState(false)
   const [deletingEntry, setDeletingEntry] = useState<{ id: string; type: 'trash' | 'permanent' } | null>(null)
+
+  // Pagination states
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
 
   // Fetch form schema
   const { data: formData, isLoading, isError, refetch } = useQuery({
@@ -119,51 +126,48 @@ const FormEntriesPage = () => {
     enabled: !!formId,
   })
 
-  const formName = useMemo(() => {
-    if (!formData) return 'Loading...'
-    return formData._json?.settings?.general?.name || formData.name || 'Untitled Form'
-  }, [formData])
-
-  const panels = useMemo(() => formData?.formJson?.panels || [], [formData])
-  const fields = useMemo(() => panels.flatMap((p: any) => p.fields || []), [panels])
-  
-  // Filter columns based on user selection
-  const displayedFields = useMemo(() => {
-    return fields.filter((field: Question) => selectedColumns.includes(field.id))
-  }, [fields, selectedColumns])
-
-  // Determine if the form is published or draft
-  const publishOption = useMemo(() => {
-    if (!formData) return 'DRAFT'
-    
+  const panels = useMemo(() => {
+    if (!formData) return []
     let json = formData._json || formData.formJson
     if (typeof json === 'string') {
       try {
         json = JSON.parse(json)
       } catch (e) {
+        console.error('Failed to parse formJson:', e)
         json = null
       }
     }
-    
-    return (
-      json?.settings?.publish?.publishOption ||
-      formData.publishOption ||
-      'DRAFT'
-    )
+    return json?.panels || []
   }, [formData])
 
-  const isPublished = useMemo(() => {
-    return publishOption.toUpperCase() === 'PUBLISHED'
-  }, [publishOption])
+  const fields = useMemo(() => panels.flatMap((p: any) => p.fields || []), [panels])
+  
+  // Set up standard data table state
+  const {
+    expandState,
+    groupState,
+    searchState,
+    sortState,
+    visibilityState,
+    setExpandState,
+    setVisibilityState,
+    ...restState
+  } = useDataTableState({
+    initialVisibilityState: {},
+  })
 
-  // Initialize selected columns
+  // Initialize selected columns (first 5 fields visible by default)
+  const [initialVisibilitySet, setInitialVisibilitySet] = useState(false)
   useEffect(() => {
-    if (fields.length > 0 && selectedColumns.length === 0) {
-      // If fields <= 5, select all. Otherwise, select first 5.
-      const initial = fields.slice(0, 5).map((f: Question) => f.id)
-      setSelectedColumns(initial)
+    if (fields.length > 0 && !initialVisibilitySet) {
+      const visibility: Record<string, boolean> = {}
+      fields.forEach((field: Question, idx: number) => {
+        visibility[field.id] = idx < 5
+      })
+      setVisibilityState(visibility)
+      setInitialVisibilitySet(true)
     }
-  }, [fields, selectedColumns.length])
+  }, [fields, initialVisibilitySet, setVisibilityState])
 
   // Populate dynamic mock data on load
   useEffect(() => {
@@ -247,12 +251,18 @@ const FormEntriesPage = () => {
     showToast({ message: 'Entry deleted permanently', variant: 'success' })
   }
 
-  // Filtering
+  // Filtering based on active tab and search state
   const activeList = tabValue === 'Browse' ? entries : trashEntries
+  const searchVal = searchState.value || ''
+
+  // Reset page when tab, search value or sort changes
+  useEffect(() => {
+    setPage(1)
+  }, [tabValue, searchVal, sortState])
 
   const filteredEntries = useMemo(() => {
-    if (!search.trim()) return activeList
-    const q = search.toLowerCase()
+    if (!searchVal.trim()) return activeList
+    const q = searchVal.toLowerCase()
     return activeList.filter((entry) => {
       if (entry.id.toLowerCase().includes(q)) return true
       if (entry.createdBy.toLowerCase().includes(q)) return true
@@ -260,7 +270,194 @@ const FormEntriesPage = () => {
         String(v).toLowerCase().includes(q)
       )
     })
-  }, [activeList, search])
+  }, [activeList, searchVal])
+
+  // Sorting
+  const sortedAndFilteredEntries = useMemo(() => {
+    const list = [...filteredEntries]
+    if (sortState && sortState.length > 0) {
+      const { id, desc } = sortState[0]
+      list.sort((a, b) => {
+        let valA, valB
+        if (id === 'id') {
+          valA = a.id
+          valB = b.id
+        } else if (id === 'createdBy') {
+          valA = a.createdBy
+          valB = b.createdBy
+        } else {
+          valA = a.values?.[id] ?? ''
+          valB = b.values?.[id] ?? ''
+        }
+
+        if (typeof valA === 'string') {
+          return desc
+            ? String(valB).localeCompare(String(valA))
+            : String(valA).localeCompare(String(valB))
+        } else {
+          return desc ? Number(valB) - Number(valA) : Number(valA) - Number(valB)
+        }
+      })
+    }
+    return list
+  }, [filteredEntries, sortState])
+
+  const totalItems = sortedAndFilteredEntries.length
+
+  // Paginated list
+  const paginatedEntries = useMemo(() => {
+    const start = (page - 1) * pageSize
+    const end = start + pageSize
+    return sortedAndFilteredEntries.slice(start, end)
+  }, [sortedAndFilteredEntries, page, pageSize])
+
+  // Build Table Columns dynamically
+  const columns: Column[] = useMemo(() => {
+    const colList: Column[] = [
+      {
+        id: 'id',
+        label: 'Entry #',
+        size: 120,
+        renderCell: (row: any) => (
+          <span
+            className='cursor-pointer font-bold text-[var(--primary-9)] hover:underline'
+            onClick={() => openEditEntry(row)}
+          >
+            {row.id}
+          </span>
+        ),
+      },
+    ]
+
+    // Render dynamic columns from fields
+    fields.forEach((field: Question) => {
+      colList.push({
+        id: field.id,
+        label: field.label || 'Untitled Field',
+        size: 180,
+        renderCell: (row: any) => {
+          const val = row.values?.[field.id]
+          return (
+            <span className='truncate block max-w-[200px] font-medium text-[var(--gray-12)]'>
+              {val !== undefined && val !== null ? String(val) : '-'}
+            </span>
+          )
+        },
+      })
+    })
+
+    if (fields.length === 0) {
+      colList.push(
+        {
+          id: 'empty-1',
+          label: 'Placeholder Column 1',
+          size: 180,
+          renderCell: () => <span className='text-[var(--gray-6)] italic'>Empty form field</span>,
+        },
+        {
+          id: 'empty-2',
+          label: 'Placeholder Column 2',
+          size: 180,
+          renderCell: () => <span className='text-[var(--gray-6)] italic'>Empty form field</span>,
+        }
+      )
+    }
+
+    colList.push(
+      {
+        id: 'createdBy',
+        label: 'Created By',
+        size: 180,
+        renderCell: (row: any) => (
+          <span className='font-medium text-[var(--gray-12)]'>{row.createdBy}</span>
+        ),
+      },
+      {
+        className: 'p-1',
+        enableSorting: false,
+        hideHeader: true,
+        id: 'actions',
+        isDisplayColumn: true,
+        label: 'Actions',
+        showMenu: false,
+        size: 80,
+        renderCell: (row: any) => (
+          <div className='flex items-center justify-end gap-1.5' onClick={(e) => e.stopPropagation()}>
+            {tabValue === 'Browse' ? (
+              <>
+                <Tooltip label='Edit Entry'>
+                  <IconButton
+                    color='gray'
+                    variant='ghost'
+                    icon='lucide:pencil'
+                    onClick={() => openEditEntry(row)}
+                  />
+                </Tooltip>
+                <Tooltip label='Move to Trash'>
+                  <IconButton
+                    color='red'
+                    variant='ghost'
+                    icon='lucide:trash-2'
+                    onClick={() => setDeletingEntry({ id: row.id, type: 'trash' })}
+                  />
+                </Tooltip>
+              </>
+            ) : (
+              <>
+                <Tooltip label='Restore Entry'>
+                  <IconButton
+                    color='green'
+                    variant='ghost'
+                    icon='lucide:rotate-ccw'
+                    onClick={() => handleRestore(row.id)}
+                  />
+                </Tooltip>
+                <Tooltip label='Permanent Delete'>
+                  <IconButton
+                    color='red'
+                    variant='ghost'
+                    icon='lucide:trash-2'
+                    onClick={() => setDeletingEntry({ id: row.id, type: 'permanent' })}
+                  />
+                </Tooltip>
+              </>
+            )}
+          </div>
+        ),
+      }
+    )
+
+    return colList
+  }, [fields, tabValue])
+
+  // Map flat paginated entries to DataTable format
+  const formattedRows = useMemo(() => {
+    return [
+      {
+        groupCount: paginatedEntries.length,
+        groupId: 'all',
+        groupKey: '',
+        groupValue: '',
+        items: paginatedEntries,
+      },
+    ]
+  }, [paginatedEntries])
+
+  const { table } = useDataTable({
+    columns,
+    enableRowSelection: false,
+    rows: formattedRows as any,
+    state: {
+      expandState,
+      groupState,
+      searchState,
+      sortState,
+      visibilityState,
+      setExpandState,
+      setVisibilityState,
+      ...restState,
+    },
+  })
 
   // Skeleton Loader for initial fetching
   if (isLoading) {
@@ -296,54 +493,307 @@ const FormEntriesPage = () => {
 
   const isPanelOpen = isAddOpen || !!selectedEntry
 
-  return (
-    <div className='flex h-full flex-col bg-gray-50/10 font-inter'>
-      {/* 1. BREADCRUMBS & ACTION HEADER */}
-      <div className='flex flex-wrap items-center justify-between gap-4 bg-white px-6 py-2 md:px-8 border-b border-[var(--gray-2)]'>
-        <div className='flex items-center gap-2 text-[13px] font-bold text-[var(--gray-12)] min-w-0 flex-wrap'>
-          <span
-            className='cursor-pointer text-[var(--gray-9)] hover:text-[var(--primary-9)] transition-colors'
-            onClick={() => navigate({ to: '/forms' })}
-          >
-            Forms
-          </span>
-          <Icon name='lucide:chevron-right' className='size-3 text-[var(--gray-5)] shrink-0' />
-          <span className='text-[var(--gray-9)]'>Entries</span>
-          <Icon name='lucide:chevron-right' className='size-3 text-[var(--gray-5)] shrink-0' />
-          <h1 className='text-sm font-extrabold text-[var(--gray-13)] truncate max-w-[280px]'>
-            {formName}
-          </h1>
-          <Badge
-            color={isPublished ? 'green' : 'gray'}
-            label={publishOption}
-            className='text-[9px] py-0.5 px-2 font-black shrink-0'
-          />
+  if (isPanelOpen) {
+    return (
+      <div className='flex h-full flex-col bg-gray-50/10 font-inter'>
+        {/* Form Header */}
+        <div className='flex shrink-0 items-center justify-between border-b border-gray-2 px-6 py-4 bg-white'>
+          <div className='flex items-center gap-3 min-w-0'>
+            <IconButton
+              color='gray'
+              variant='ghost'
+              icon='lucide:arrow-left'
+              onClick={closeSidebar}
+              title='Back to Entries'
+            />
+            <div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent-soft/10 text-accent-primary'>
+              <Icon height={18} name={isAddOpen ? 'lucide:file-plus-2' : 'lucide:file-edit'} width={18} />
+            </div>
+            <div className='flex flex-col min-w-0'>
+              <h3 className='font-extrabold text-[14px] text-gray-13 truncate'>
+                {isAddOpen ? 'New Form Entry' : selectedEntry?.id}
+              </h3>
+              <p className='text-[10px] text-gray-7 uppercase tracking-wider font-semibold truncate'>
+                {isAddOpen ? 'Submit answers to form' : 'Modify submitted answers'}
+              </p>
+            </div>
+          </div>
+          <div className='flex items-center gap-3'>
+            <Button
+              color='gray'
+              variant='outline'
+              label='Cancel'
+              onClick={closeSidebar}
+            />
+            <Button
+              color='primary'
+              variant='solid'
+              icon='lucide:save'
+              label={isAddOpen ? 'Submit' : 'Save Changes'}
+              onClick={handleSaveEntry}
+            />
+          </div>
         </div>
 
-        {/* Global Toolbar buttons */}
-        <div className='flex items-center gap-2.5'>
-          <Button
-            color='gray'
-            variant='outline'
-            size='sm'
-            icon='lucide:edit-3'
-            label='Edit Form Structure'
-            onClick={() =>
-              navigate({
-                params: { formId },
-                to: '/form-builder/$formId',
-              })
-            }
-          />
-          <Button
-            color='primary'
-            variant='solid'
-            size='sm'
-            icon='lucide:plus'
-            label='Add Entry'
-            onClick={openNewEntry}
-          />
+        {/* Scrollable Form Body (similar to Form Builder style) */}
+        <div className='flex-1 overflow-y-auto bg-[var(--gray-2)]/30 px-6 py-8 custom-scrollbar'>
+          <div className='mx-auto max-w-[800px] w-full bg-white rounded-2xl border border-[var(--gray-3)] shadow-md p-8 space-y-6'>
+            {fields.map((field: Question) => {
+              const type = (field.type || 'SHORT_TEXT').toUpperCase()
+              const val = editValues[field.id] ?? ''
+              const isFieldRequired = field.settings?.validation?.fieldRule === 'REQUIRED'
+
+              return (
+                <div key={field.id} className='border-b border-gray-1 pb-6 last:border-0 last:pb-0'>
+                  {/* Handle divider / heading types specially (no labels/inputs needed) */}
+                  {type === 'DIVIDER' ? (
+                    <Divider className='my-4' />
+                  ) : type === 'HEADING' ? (
+                    <h3 className='text-lg font-bold text-gray-13'>{field.label || 'Heading Section'}</h3>
+                  ) : (
+                    <>
+                      {/* Label / Description wrapper */}
+                      <div className='mb-2'>
+                        <label className='block text-sm font-bold text-gray-12'>
+                          {field.label || 'Untitled Question'}
+                          {isFieldRequired && <span className='text-red-9 ml-1'>*</span>}
+                        </label>
+                        {field.settings?.general?.description && (
+                          <span className='block text-xs text-gray-7 mt-0.5'>{field.settings.general.description}</span>
+                        )}
+                      </div>
+
+                      {/* Render matching dynamic form control */}
+                      {type === 'YES_NO_TOGGLE' || type === 'CONSENT' ? (
+                        <div className='bg-gray-50/50 flex items-center justify-between rounded-xl border border-gray-2 p-3 transition-colors hover:border-gray-3 max-w-xs'>
+                          <span className='text-xs font-semibold text-gray-11'>Consent / Enable</span>
+                          <InputSwitch
+                            checked={val === 'Yes'}
+                            onChange={(checked) => handleFieldChange(field.id, checked ? 'Yes' : 'No')}
+                          />
+                        </div>
+                      ) : type === 'DATE' ? (
+                        <InputDate
+                          placeholder={field.settings?.general?.placeholder || 'Select Date'}
+                          value={val ? val : null}
+                          onChange={(dateString) => handleFieldChange(field.id, dateString)}
+                        />
+                      ) : type === 'NUMBER' || type === 'COUNTER' ? (
+                        <InputNumber
+                          placeholder={field.settings?.general?.placeholder || 'Enter value'}
+                          value={val}
+                          onChange={(num) => handleFieldChange(field.id, num)}
+                        />
+                      ) : type === 'CURRENCY_AMOUNT' ? (
+                        <div className='relative max-w-xs'>
+                          <span className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-8 text-sm font-bold'>$</span>
+                          <InputNumber
+                            placeholder={field.settings?.general?.placeholder || '0.00'}
+                            value={val}
+                            classNames={{
+                              input: 'pl-8'
+                            }}
+                            onChange={(num) => handleFieldChange(field.id, num)}
+                          />
+                        </div>
+                      ) : type === 'RATING' ? (
+                        <div className='py-2'>
+                          <Rating
+                            color='yellow'
+                            count={field.settings?.specific?.iconCount || 5}
+                            value={Number(val || 0)}
+                            size='lg'
+                            onChange={(v) => handleFieldChange(field.id, v)}
+                          />
+                        </div>
+                      ) : type === 'OPINION_SCALE' ? (
+                        <div className='flex gap-1 flex-wrap py-1'>
+                          {Array.from({ length: 11 }).map((_, i) => {
+                            const isSelected = Number(val) === i && val !== ''
+                            return (
+                              <button
+                                key={i}
+                                type='button'
+                                className={cn(
+                                  'size-10 rounded-lg border font-bold text-sm transition-all hover:bg-accent-soft hover:text-accent-primary active:scale-95',
+                                  isSelected
+                                    ? 'bg-accent-primary text-white border-accent-primary'
+                                    : 'bg-white text-gray-12 border-gray-3'
+                                )}
+                                onClick={() => handleFieldChange(field.id, i)}
+                              >
+                                {i}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      ) : type === 'SINGLE_CHOICE' ? (
+                        (() => {
+                          const optString = field.settings?.specific?.customOptions || 'Option A,Option B,Option C'
+                          const delimiter = field.settings?.specific?.separateOptionsUsing === 'COMMA' ? ',' : '\n'
+                          const opts = optString
+                            .split(delimiter)
+                            .map((o: any) => o.trim())
+                            .filter(Boolean)
+
+                          return (
+                            <div className='space-y-2 max-w-md'>
+                              {opts.map((opt: string) => {
+                                const isSelected = val === opt
+                                return (
+                                  <button
+                                    key={opt}
+                                    type='button'
+                                    className={cn(
+                                      'flex items-center gap-3 w-full rounded-xl border p-3 text-left transition-all hover:bg-gray-1 active:scale-[0.99]',
+                                      isSelected
+                                        ? 'border-accent-primary bg-accent-soft/10 text-accent-primary font-bold'
+                                        : 'border-gray-2 bg-white text-gray-12'
+                                    )}
+                                    onClick={() => handleFieldChange(field.id, opt)}
+                                  >
+                                    <div className='flex items-center justify-center border rounded-full size-5 border-gray-3 shrink-0'>
+                                      {isSelected && <div className='size-2.5 rounded-full bg-accent-primary' />}
+                                    </div>
+                                    <span className='text-sm'>{opt}</span>
+                                  </button>
+                                )
+                              })}
+                            </div>
+                          )
+                        })()
+                      ) : type === 'MULTIPLE_CHOICE' ? (
+                        (() => {
+                          const optString = field.settings?.specific?.customOptions || 'Option A,Option B,Option C'
+                          const delimiter = field.settings?.specific?.separateOptionsUsing === 'COMMA' ? ',' : '\n'
+                          const opts = optString
+                            .split(delimiter)
+                            .map((o: any) => o.trim())
+                            .filter(Boolean)
+
+                          const selectedList = Array.isArray(val) ? val : (val ? String(val).split(',') : [])
+
+                          const toggleOpt = (opt: string) => {
+                            const next = selectedList.includes(opt)
+                              ? selectedList.filter((x) => x !== opt)
+                              : [...selectedList, opt]
+                            handleFieldChange(field.id, next.join(','))
+                          }
+
+                          return (
+                            <div className='space-y-2 max-w-md'>
+                              {opts.map((opt: string) => {
+                                const isSelected = selectedList.includes(opt)
+                                return (
+                                  <button
+                                    key={opt}
+                                    type='button'
+                                    className={cn(
+                                      'flex items-center gap-3 w-full rounded-xl border p-3 text-left transition-all hover:bg-gray-1 active:scale-[0.99]',
+                                      isSelected
+                                        ? 'border-accent-primary bg-accent-soft/10 text-accent-primary font-bold'
+                                        : 'border-gray-2 bg-white text-gray-12'
+                                    )}
+                                    onClick={() => toggleOpt(opt)}
+                                  >
+                                    <div className='flex items-center justify-center border rounded-md size-5 border-gray-3 shrink-0'>
+                                      {isSelected && <Icon name='lucide:check' className='size-3.5 text-accent-primary' />}
+                                    </div>
+                                    <span className='text-sm'>{opt}</span>
+                                  </button>
+                                )
+                              })}
+                            </div>
+                          )
+                        })()
+                      ) : type === 'SINGLE_SELECT' || type === 'MULTI_SELECT' ? (
+                        (() => {
+                          const optString = field.settings?.specific?.customOptions || 'Option A,Option B,Option C'
+                          const delimiter = field.settings?.specific?.separateOptionsUsing === 'COMMA' ? ',' : '\n'
+                          const opts = optString
+                            .split(delimiter)
+                            .map((o: any) => o.trim())
+                            .filter(Boolean)
+                            .map((o: string) => ({ id: o, name: o }))
+
+                          const selectedOpt = val ? { id: val, name: val } : null
+
+                          return (
+                            <InputSelect
+                              placeholder={field.settings?.general?.placeholder || 'Select option'}
+                              options={opts}
+                              value={selectedOpt}
+                              onChange={(opt) => handleFieldChange(field.id, opt ? opt.id : '')}
+                            />
+                          )
+                        })()
+                      ) : type === 'FILE_UPLOAD' || type === 'IMAGE_UPLOAD' ? (
+                        <div className='bg-gray-50 flex items-center justify-between rounded-xl border border-gray-2 p-3 max-w-md'>
+                          <div className='flex items-center gap-2'>
+                            <Icon name='lucide:upload-cloud' className='size-5 text-gray-8' />
+                            <span className='text-xs font-semibold text-gray-11'>Upload dynamic documents / media</span>
+                          </div>
+                          <IconButton icon='lucide:upload' color='gray' variant='outline' onClick={() => showToast({ message: 'File picker simulated successfully' })} />
+                        </div>
+                      ) : type === 'LONG_TEXT' ? (
+                        <InputTextarea
+                          placeholder={field.settings?.general?.placeholder || 'Write here...'}
+                          value={val}
+                          onChange={(text) => handleFieldChange(field.id, text)}
+                        />
+                      ) : (
+                        <InputText
+                          placeholder={field.settings?.general?.placeholder || 'Type answer...'}
+                          value={val}
+                          onChange={(text) => handleFieldChange(field.id, text)}
+                        />
+                      )}
+                    </>
+                  )}
+                </div>
+              )
+            })}
+
+            {fields.length === 0 && (
+              <div className='py-12 text-center text-xs text-gray-5 bg-gray-50 border border-dashed border-gray-3 rounded-2xl'>
+                This form currently has no input fields.
+              </div>
+            )}
+          </div>
         </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className='flex h-full flex-col bg-gray-50/10 font-inter'>
+      {/* 1. TAB SUB-HEADER */}
+      <div className='flex items-center justify-between border-b border-gray-3 px-6 md:px-8 bg-white shrink-0 h-14'>
+        <div className='flex items-center gap-4'>
+          <IconButton
+            icon='lucide:arrow-left'
+            color='gray'
+            variant='ghost'
+            onClick={() => navigate({ to: '/forms' })}
+            title='Back to Forms'
+          />
+          <Tabs
+            color='primary'
+            value={tabValue}
+            onChange={(val) => setTabValue(val || 'Browse')}
+          >
+            <Tab label='Browse' value='Browse' />
+            <Tab label='Trash' value='Trash' />
+          </Tabs>
+        </div>
+
+        <Button
+          color='primary'
+          variant='solid'
+          icon='lucide:plus'
+          label='Add Entry'
+          onClick={openNewEntry}
+        />
       </div>
 
       {deletingEntry && (
@@ -394,432 +844,31 @@ const FormEntriesPage = () => {
         </div>
       )}
 
-      {/* 2. MAIN LAYOUT (Master-Detail Split Panel) */}
+      {/* 2. MAIN LAYOUT (Table view) */}
       <div className='flex flex-1 overflow-hidden relative'>
-        
-        {/* Left Columns Selector Sidebar (Reflow Layout) */}
-        {isColumnsVisible && (
-          <div className='w-[240px] shrink-0 border-r border-[var(--gray-3)] bg-white flex flex-col h-full animate-in slide-in-from-left duration-200 z-10'>
-            <div className='flex shrink-0 items-center justify-between border-b border-[var(--gray-2)] px-4 py-3 bg-[var(--gray-1)]/50'>
-              <div className='flex items-center gap-2'>
-                <Icon name='lucide:columns' className='size-3.5 text-[var(--gray-9)]' />
-                <span className='text-xs font-bold text-[var(--gray-12)]'>Columns</span>
-              </div>
-              <span className='text-[10px] text-[var(--gray-7)] font-black uppercase tracking-wider bg-[var(--gray-2)] px-1.5 py-0.5 rounded border border-[var(--gray-3)]'>
-                {selectedColumns.length} / {fields.length}
-              </span>
-            </div>
-            
-            <div className='flex-1 overflow-y-auto p-3 space-y-1.5 custom-scrollbar bg-white'>
-              {fields.map((field: Question) => {
-                const isChecked = selectedColumns.includes(field.id)
-                return (
-                  <label
-                    key={field.id}
-                    className='flex items-start gap-2.5 rounded-lg p-2 hover:bg-[var(--gray-1)] cursor-pointer select-none transition-colors border border-transparent hover:border-[var(--gray-2)]'
-                  >
-                    <input
-                      type='checkbox'
-                      checked={isChecked}
-                      className='mt-0.5 rounded border-[var(--gray-3)] text-[var(--primary-9)] focus:ring-[var(--primary-4)]/20'
-                      onChange={() => {
-                        setSelectedColumns((prev) =>
-                          isChecked
-                            ? prev.filter((id) => id !== field.id)
-                            : [...prev, field.id]
-                        )
-                      }}
-                    />
-                    <div className='flex flex-col min-w-0'>
-                      <span className='text-xs font-semibold text-[var(--gray-12)] truncate'>
-                        {field.label || 'Untitled Field'}
-                      </span>
-                      <span className='text-[9px] text-[var(--gray-7)] uppercase tracking-wider font-semibold'>
-                        {field.type.replace(/_/g, ' ')}
-                      </span>
-                    </div>
-                  </label>
-                )
-              })}
-              {fields.length === 0 && (
-                <div className='py-8 text-center text-xs text-[var(--gray-6)] italic'>
-                  No fields available.
-                </div>
-              )}
-            </div>
-
-            <div className='border-t border-[var(--gray-2)] px-4 py-2.5 bg-[var(--gray-1)]/50 flex justify-between gap-2 shrink-0'>
-              <button
-                className='text-[10px] font-bold text-[var(--primary-9)] hover:text-[var(--primary-10)] transition-colors'
-                onClick={() => setSelectedColumns(fields.map((f: Question) => f.id))}
-              >
-                Select All
-              </button>
-              <button
-                className='text-[10px] font-bold text-[var(--gray-8)] hover:text-[var(--gray-11)] transition-colors'
-                onClick={() => setSelectedColumns([])}
-              >
-                Clear All
-              </button>
-            </div>
+        <div className='flex flex-1 flex-col overflow-hidden bg-gray-50/50 p-6'>
+          <div className='min-h-0 flex-1 overflow-hidden'>
+            <DataTable
+              isLoading={isLoading}
+              isReLoading={isLoading}
+              pageSize={pageSize}
+              stickyHeader={true}
+              table={table}
+              actions={[]}
+              onReload={refetch}
+            />
           </div>
-        )}
-
-        {/* Left Side: Entries List (Takes remaining width) */}
-        <div className='flex flex-1 flex-col overflow-hidden'>
-          
-          {/* Tab Sub-Header & Controls */}
-          <div className='flex items-center justify-between border-b border-[var(--gray-3)] bg-white px-6 md:px-8 py-1'>
-            <Tabs
-              color='primary'
-              value={tabValue}
-              onChange={(val) => setTabValue(val || 'Browse')}
-            >
-              <Tab label='Browse' value='Browse' />
-              <Tab label='Trash' value='Trash' />
-            </Tabs>
-
-            {/* Quick search & refresh controls */}
-            <div className='flex items-center gap-3 py-1'>
-              <div className='relative group'>
-                <Icon
-                  name='lucide:search'
-                  className='absolute top-1/2 left-3 -translate-y-1/2 size-3.5 text-gray-4 group-focus-within:text-accent-primary transition-colors'
-                />
-                <input
-                  type='text'
-                  placeholder='Search entries...'
-                  value={search}
-                  className='bg-gray-50/50 w-52 rounded-lg border border-gray-2 py-1 pl-9 pr-3 text-xs font-semibold transition-all outline-none focus:border-accent-primary focus:bg-white focus:ring-2 focus:ring-accent-soft/20'
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-              </div>
-              <Tooltip label='Toggle columns visibility'>
-                <IconButton
-                  color='gray'
-                  variant={isColumnsVisible ? 'solid' : 'ghost'}
-                  icon='lucide:columns'
-                  onClick={() => setIsColumnsVisible((prev) => !prev)}
-                />
-              </Tooltip>
-              <Tooltip label='Refresh entries list'>
-                <IconButton
-                  color='gray'
-                  variant='ghost'
-                  icon='lucide:rotate-cw'
-                  onClick={() => {
-                    refetch()
-                    showToast({ message: 'Entries refreshed' })
-                  }}
-                />
-              </Tooltip>
-            </div>
-          </div>
-
-          {/* Scrollable table content area */}
-          <div className='flex-1 overflow-auto bg-[var(--gray-2)]/30 px-6 py-4 md:px-8'>
-            <div className='overflow-x-auto rounded-xl border border-[var(--gray-3)] bg-white shadow-sm minimal-scrollbar'>
-              <table className='w-full border-separate border-spacing-0 text-left text-[13px]' style={{ minWidth: `max(100%, ${(displayedFields.length + 3) * 160}px)` }}>
-                <thead>
-                  <tr className='bg-[var(--gray-2)] border-b border-[var(--gray-3)]'>
-                    <th className='border-b border-[var(--gray-3)] py-3 pl-6 pr-3 text-xs font-semibold uppercase tracking-wider text-[var(--gray-9)]'>
-                      Entry #
-                    </th>
-                    
-                    {/* Render dynamic columns from fields */}
-                    {displayedFields.map((field: Question) => (
-                      <th
-                        key={field.id}
-                        className='border-b border-[var(--gray-3)] py-3 px-3 text-xs font-semibold uppercase tracking-wider text-[var(--gray-9)]'
-                      >
-                        {field.label || 'Untitled Field'}
-                      </th>
-                    ))}
-
-                    {fields.length === 0 && (
-                      <>
-                        <th className='border-b border-[var(--gray-3)] py-3 px-3 text-xs font-semibold uppercase tracking-wider text-[var(--gray-9)]'>Placeholder Column 1</th>
-                        <th className='border-b border-[var(--gray-3)] py-3 px-3 text-xs font-semibold uppercase tracking-wider text-[var(--gray-9)]'>Placeholder Column 2</th>
-                      </>
-                    )}
-
-                    <th className='border-b border-[var(--gray-3)] py-3 px-3 text-xs font-semibold uppercase tracking-wider text-[var(--gray-9)]'>
-                      Created By
-                    </th>
-                    <th className='border-b border-[var(--gray-3)] py-3 pr-6 pl-3 text-right text-xs font-semibold uppercase tracking-wider text-[var(--gray-9)]'>
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredEntries.map((row) => (
-                    <tr
-                      key={row.id}
-                      className={cn(
-                        'group transition-all hover:bg-[var(--gray-1)] cursor-pointer',
-                        selectedEntry?.id === row.id && 'bg-[var(--primary-2)]/30 hover:bg-[var(--primary-2)]/40'
-                      )}
-                      onClick={() => openEditEntry(row)}
-                    >
-                      <td className='border-b border-[var(--gray-2)] py-2.5 pl-6 pr-3 font-bold text-[var(--primary-9)] hover:underline select-none'>
-                        {row.id}
-                      </td>
-
-                      {/* Render dynamic columns values */}
-                      {displayedFields.map((field: Question) => (
-                        <td
-                          key={field.id}
-                          className='border-b border-[var(--gray-2)] py-2.5 px-3 font-medium text-[var(--gray-12)] truncate max-w-[200px]'
-                        >
-                          {String(row.values[field.id] ?? '-')}
-                        </td>
-                      ))}
-
-                      {fields.length === 0 && (
-                        <>
-                          <td className='border-b border-[var(--gray-2)] py-2.5 px-3 text-[var(--gray-6)] italic'>Empty form field</td>
-                          <td className='border-b border-[var(--gray-2)] py-2.5 px-3 text-[var(--gray-6)] italic'>Empty form field</td>
-                        </>
-                      )}
-
-                      <td className='border-b border-[var(--gray-2)] py-2.5 px-3 font-medium text-[var(--gray-12)]'>
-                        {row.createdBy}
-                      </td>
-                      <td className='border-b border-[var(--gray-2)] py-2.5 pr-6 pl-3 text-right' onClick={(e) => e.stopPropagation()}>
-                        <div className='flex items-center justify-end gap-1.5'>
-                          {tabValue === 'Browse' ? (
-                            <>
-                              <Tooltip label='Edit Entry'>
-                                <IconButton
-                                  color='gray'
-                                  variant='ghost'
-                                  icon='lucide:pencil'
-                                  onClick={() => openEditEntry(row)}
-                                />
-                              </Tooltip>
-                              <Tooltip label='Move to Trash'>
-                                <IconButton
-                                  color='red'
-                                  variant='ghost'
-                                  icon='lucide:trash-2'
-                                  onClick={() => setDeletingEntry({ id: row.id, type: 'trash' })}
-                                />
-                              </Tooltip>
-                            </>
-                          ) : (
-                            <>
-                              <Tooltip label='Restore Entry'>
-                                <IconButton
-                                  color='green'
-                                  variant='ghost'
-                                  icon='lucide:rotate-ccw'
-                                  onClick={() => handleRestore(row.id)}
-                                />
-                              </Tooltip>
-                              <Tooltip label='Permanent Delete'>
-                                <IconButton
-                                  color='red'
-                                  variant='ghost'
-                                  icon='lucide:trash-2'
-                                  onClick={() => setDeletingEntry({ id: row.id, type: 'permanent' })}
-                                />
-                              </Tooltip>
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                  {filteredEntries.length === 0 && (
-                    <tr>
-                      <td
-                        colSpan={displayedFields.length + 3 + (fields.length === 0 ? 2 : 0)}
-                        className='py-20 text-center border-b border-[var(--gray-2)]'
-                      >
-                        <div className='flex flex-col items-center justify-center'>
-                          <div className='flex size-11 items-center justify-center rounded-xl bg-gray-2 text-gray-7 mb-3'>
-                            <Icon name='lucide:database-backup' className='size-5' />
-                          </div>
-                          <div className='text-xs font-bold text-gray-12'>No entries found</div>
-                          <p className='text-[11px] text-gray-6 mt-1'>
-                            {search ? 'Try adjusting your search filters.' : 'Click "+ Add Entry" to submit your first entry.'}
-                          </p>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <Pagination
+            className='mt-4 shrink-0'
+            itemLabel='Entries'
+            page={page}
+            pageSize={pageSize}
+            showPageNumbers={false}
+            totalItems={totalItems}
+            onPageChange={setPage}
+            onPageSizeChange={setPageSize}
+          />
         </div>
-
-        {/* Right Side: Flat-Focus Entry Panel (Slides in side-by-side) */}
-        {isPanelOpen && (
-          <div className='w-[420px] shrink-0 border-l border-gray-3 bg-white shadow-2xl flex flex-col h-full animate-in slide-in-from-right duration-300 relative z-30'>
-            {/* Sidebar Header */}
-            <div className='flex shrink-0 items-center justify-between border-b border-gray-2 px-5 py-4 bg-gradient-to-b from-gray-1 to-white'>
-              <div className='flex items-center gap-2.5 min-w-0'>
-                <div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent-soft/10 text-accent-primary'>
-                  <Icon height={18} name={isAddOpen ? 'lucide:file-plus-2' : 'lucide:file-edit'} width={18} />
-                </div>
-                <div className='flex flex-col min-w-0'>
-                  <h3 className='font-extrabold text-[14px] text-gray-13 truncate'>
-                    {isAddOpen ? 'New Form Entry' : selectedEntry?.id}
-                  </h3>
-                  <p className='text-[10px] text-gray-7 uppercase tracking-wider font-semibold truncate'>
-                    {isAddOpen ? 'Submit answers' : 'Modify submitted answers'}
-                  </p>
-                </div>
-              </div>
-              <IconButton
-                color='gray'
-                variant='ghost'
-                icon='lucide:x'
-                className='rounded-xl'
-                onClick={closeSidebar}
-              />
-            </div>
-
-            {/* Sidebar Scrollable Content Form */}
-            <div className='flex-1 overflow-y-auto px-5 py-6 space-y-5 custom-scrollbar'>
-              {fields.map((field: Question) => {
-                const type = (field.type || 'SHORT_TEXT').toUpperCase()
-                const val = editValues[field.id] ?? ''
-                const isFieldRequired = field.settings?.validation?.fieldRule === 'REQUIRED'
-
-                // Render matching dynamic form control
-                if (type === 'YES_NO_TOGGLE' || type === 'CONSENT') {
-                  return (
-                    <div
-                      key={field.id}
-                      className='bg-gray-50/50 flex items-center justify-between rounded-xl border border-gray-2 p-3 transition-colors hover:border-gray-3'
-                    >
-                      <div className='flex flex-col pr-4 min-w-0'>
-                        <span className='text-[13px] font-bold text-gray-12 truncate'>{field.label}</span>
-                        {field.settings?.general?.description && (
-                          <span className='text-[11px] text-gray-6 mt-0.5'>{field.settings.general.description}</span>
-                        )}
-                      </div>
-                      <InputSwitch
-                        checked={val === 'Yes'}
-                        onChange={(checked) => handleFieldChange(field.id, checked ? 'Yes' : 'No')}
-                      />
-                    </div>
-                  )
-                }
-
-                if (type === 'DATE') {
-                  return (
-                    <div key={field.id}>
-                      <InputDate
-                        label={field.label || 'Date'}
-                        required={isFieldRequired}
-                        placeholder={field.settings?.general?.placeholder || 'Select Date'}
-                        description={field.settings?.general?.description}
-                        value={val ? val : null}
-                        onChange={(dateString) => handleFieldChange(field.id, dateString)}
-                      />
-                    </div>
-                  )
-                }
-
-                if (type === 'NUMBER' || type === 'COUNTER') {
-                  return (
-                    <div key={field.id}>
-                      <InputNumber
-                        label={field.label || 'Number'}
-                        required={isFieldRequired}
-                        placeholder={field.settings?.general?.placeholder || 'Enter value'}
-                        description={field.settings?.general?.description}
-                        value={val}
-                        onChange={(num) => handleFieldChange(field.id, num)}
-                      />
-                    </div>
-                  )
-                }
-
-                if (type === 'LONG_TEXT') {
-                  return (
-                    <div key={field.id}>
-                      <InputTextarea
-                        label={field.label || 'Description'}
-                        required={isFieldRequired}
-                        placeholder={field.settings?.general?.placeholder || 'Write here...'}
-                        description={field.settings?.general?.description}
-                        value={val}
-                        onChange={(text) => handleFieldChange(field.id, text)}
-                      />
-                    </div>
-                  )
-                }
-
-                if (type === 'SINGLE_SELECT' || type === 'SINGLE_CHOICE' || type === 'MULTI_SELECT') {
-                  const optString = field.settings?.specific?.customOptions || 'Option 1,Option 2,Option 3'
-                  const delimiter = field.settings?.specific?.separateOptionsUsing === 'COMMA' ? ',' : '\n'
-                  const opts = optString
-                    .split(delimiter)
-                    .map((o: any) => o.trim())
-                    .filter(Boolean)
-                    .map((o: string) => ({ id: o, name: o }))
-
-                  const selectedOpt = val ? { id: val, name: val } : null
-
-                  return (
-                    <div key={field.id}>
-                      <InputSelect
-                        label={field.label || 'Select Options'}
-                        required={isFieldRequired}
-                        description={field.settings?.general?.description}
-                        placeholder={field.settings?.general?.placeholder || 'Select option'}
-                        options={opts}
-                        value={selectedOpt}
-                        onChange={(opt) => handleFieldChange(field.id, opt ? opt.id : '')}
-                      />
-                    </div>
-                  )
-                }
-
-                // Default fallback: text input
-                return (
-                  <div key={field.id}>
-                    <InputText
-                      label={field.label || 'Text'}
-                      required={isFieldRequired}
-                      placeholder={field.settings?.general?.placeholder || 'Type answer...'}
-                      description={field.settings?.general?.description}
-                      value={val}
-                      onChange={(text) => handleFieldChange(field.id, text)}
-                    />
-                  </div>
-                )
-              })}
-
-              {fields.length === 0 && (
-                <div className='py-8 text-center text-xs text-gray-5 bg-gray-50 border border-dashed border-gray-3 rounded-2xl'>
-                  This form currently has no input fields.
-                </div>
-              )}
-            </div>
-
-            {/* Sidebar Footer actions */}
-            <div className='flex items-center justify-end gap-3 border-t border-gray-2 bg-gray-50/50 px-5 py-4 shrink-0'>
-              <Button
-                color='gray'
-                variant='outline'
-                label='Cancel'
-                onClick={closeSidebar}
-              />
-              <Button
-                color='primary'
-                variant='solid'
-                icon='lucide:save'
-                label={isAddOpen ? 'Submit' : 'Save Changes'}
-                onClick={handleSaveEntry}
-              />
-            </div>
-          </div>
-        )}
       </div>
     </div>
   )

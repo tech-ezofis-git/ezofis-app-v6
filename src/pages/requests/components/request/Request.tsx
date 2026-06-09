@@ -16,6 +16,8 @@ import { useRequestDetail } from '../../hooks/useRequestDetails'
 // import Comments from './components/sections/comment/Comments';
 // import History from './components/sections/history/History';
 import requestStore from '../../stores/useRequestStore'
+import workflowsApiV6 from '@/api/v6/workflows'
+import authUserStore from '@/stores/authUserStore'
 import Header from './components/Header'
 import Overview from './components/sections/overview/Overview'
 
@@ -113,8 +115,8 @@ const extractPONumber = (
 export const buildFieldMetaMap = (
   workflow: any,
   fallbackFormJson?: any,
-): Map<string, { label: string; type: string }> => {
-  const metaMap = new Map<string, { label: string; type: string }>()
+): Map<string, { label: string; type: string; originalId?: string }> => {
+  const metaMap = new Map<string, { label: string; type: string; originalId?: string }>()
   let formJson = workflow?.formJson || fallbackFormJson
   if (!formJson) return metaMap
 
@@ -148,15 +150,16 @@ export const buildFieldMetaMap = (
       const name = c.name
       const label = c.label || c.name || jsonId || id || ''
       const type = c.type || c.control || c.controlType || ''
+      const originalId = jsonId || id || name || ''
 
       if (jsonId) {
-        metaMap.set(String(jsonId).toLowerCase(), { label, type })
+        metaMap.set(String(jsonId).toLowerCase(), { label, type, originalId })
       }
       if (id) {
-        metaMap.set(String(id).toLowerCase(), { label, type })
+        metaMap.set(String(id).toLowerCase(), { label, type, originalId })
       }
       if (name) {
-        metaMap.set(String(name).toLowerCase(), { label, type })
+        metaMap.set(String(name).toLowerCase(), { label, type, originalId })
       }
     }
   }
@@ -200,25 +203,35 @@ export const buildFieldLabelMap = (
   return labelMap
 }
 
+export const buildLabelToIdMap = (
+  workflow: any,
+  fallbackFormJson?: any,
+): Map<string, string> => {
+  const labelToIdMap = new Map<string, string>()
+  const metaMap = buildFieldMetaMap(workflow, fallbackFormJson)
+  metaMap.forEach((val) => {
+    const label = val.label
+    const originalId = val.originalId
+    if (label && originalId) {
+      labelToIdMap.set(label, originalId)
+    }
+  })
+  return labelToIdMap
+}
+
 const mapFormModelToPayloadFields = (
   formModel: any,
   workflow: any,
   fallbackFormJson?: any,
 ) => {
   const fieldsPayload: any = {}
-  const labelMap = buildFieldLabelMap(workflow, fallbackFormJson)
-
-  const inverseMap = new Map<string, string>()
-  labelMap.forEach((label, jsonId) => {
-    inverseMap.set(label, jsonId)
-  })
+  const labelToIdMap = buildLabelToIdMap(workflow, fallbackFormJson)
 
   Object.keys(formModel).forEach((key) => {
     const val = formModel[key]
-    fieldsPayload[key] = val
-    const jsonId = inverseMap.get(key)
-    if (jsonId) {
-      fieldsPayload[jsonId] = val
+    const originalId = labelToIdMap.get(key)
+    if (originalId) {
+      fieldsPayload[originalId] = val
     }
   })
 
@@ -274,6 +287,27 @@ const Request = ({
     selectedItem?._actions ||
     storeSelectedItem?._actions ||
     []
+
+  const dynamicRules = useMemo(() => {
+    const rules = rawWorkflowData?.workflowJson?.rules || []
+    const currentActivityId = selectedItem?.activityId
+    if (!currentActivityId) return []
+    return rules.filter((rule: any) => rule.fromBlockId === currentActivityId)
+  }, [rawWorkflowData, selectedItem?.activityId])
+
+  const ruleActions = useMemo(() => {
+    return dynamicRules.map((rule: any) => {
+      const actionName = rule.proceedAction || rule.action || 'Submit'
+      return {
+        label: actionName,
+        value: actionName,
+      }
+    })
+  }, [dynamicRules])
+
+  const headerActions = useMemo(() => {
+    return ruleActions.length > 0 ? ruleActions : actions
+  }, [ruleActions, actions])
 
   const agentDataList = request?._agentData || selectedItem?._agentData || []
   const hasAgentData = agentDataList.length > 0
@@ -405,7 +439,69 @@ const Request = ({
   //   setActiveTab(tabValue);
   // };
 
+  const handleMoveNext = async (action: string) => {
+    try {
+      setSubmitting(true)
+      
+      const fields =
+        Object.keys(formModel).length > 0
+          ? mapFormModelToPayloadFields(
+              formModel,
+              selectedWorkflow,
+              request?._formDefinition,
+            )
+          : (typeof selectedItem?.formData === 'string'
+              ? JSON.parse(selectedItem?.formData || '{}')
+              : selectedItem?.formData?.fields || selectedItem?.formData || {})
+
+      const formDataStr = JSON.stringify(fields)
+
+      const payload = {
+        activityid: selectedItem?.activityId || '',
+        review: action,
+        comments: '',
+        activityUserId: selectedItem?.userId || authUserStore.getState().session?.id || null,
+        workflowId: selectedItem?.workflowId || rawWorkflowData?.id || null,
+        transactionId: selectedItem?.transactionId || null,
+        instanceId: selectedItem?.workflowInstanceId || null,
+        processId: selectedItem?.processId || selectedItem?.id || null,
+        AIAGENTResponse: typeof selectedItem?.agentResponse === 'string'
+          ? selectedItem.agentResponse
+          : JSON.stringify(selectedItem?.agentResponse || {}),
+        AIAGENTHtml: selectedItem?.agentHtml || '',
+        itemId: selectedItem?.itemId || null,
+        repositoryId: selectedItem?.repositoryId || rawWorkflowData?.repositoryId || null,
+        formData: formDataStr,
+        formId: selectedItem?.formId || rawWorkflowData?.formId || rawWorkflowData?.wFormId || null,
+        formEntryId: Number(selectedItem?.formEntryId || 0),
+        isItemTable: true,
+      }
+
+      console.log('MoveNext Payload:', payload)
+
+      const instanceId = selectedItem?.workflowInstanceId
+      if (!instanceId) {
+        throw new Error('Instance ID is missing')
+      }
+
+      const response = await workflowsApiV6.moveNext(instanceId, payload)
+      console.log('MoveNext Response:', response)
+      
+      workflowRefresh()
+      closeRequest()
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   const handleVerifier = async (action: string) => {
+    if (action !== 'Save' && ruleActions.length > 0) {
+      await handleMoveNext(action)
+      return
+    }
+
     try {
       setSubmitting(true)
       console.log(rawWorkflowData)
@@ -525,7 +621,7 @@ const Request = ({
     >
       <div className='sticky top-0 z-20 border-b border-[var(--gray-3)] px-2'>
         <Header
-          actions={actions}
+          actions={headerActions}
           agentData={currentAgentData}
           approveLoading={submitting}
           attachmentCount={selectedItem?.attachmentCount || 0}

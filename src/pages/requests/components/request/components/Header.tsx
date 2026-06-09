@@ -325,19 +325,35 @@ const Header: React.FC<HeaderProps> = ({
             )}
 
             {actions?.map((action: any) => {
-              const isPrimary =
-                action?.label === 'Verified' ||
-                action?.label === 'Approve' ||
-                action?.label?.includes('Verify')
+              const label = String(action?.label || '').toLowerCase()
+              let btnColor: 'gray' | 'primary' | 'secondary' | 'red' | 'green' = 'primary'
+              let btnVariant: 'solid' | 'outline' | 'subtle' | 'ghost' = 'subtle'
+              let borderClass = ''
+
+              if (label === 'verified' || label === 'verify' || label.includes('verify')) {
+                btnColor = 'primary'
+                borderClass = 'border-[var(--primary-3)]'
+              } else if (label === 'approved' || label === 'approve' || label.includes('approve')) {
+                btnColor = 'green'
+                borderClass = 'border-[var(--green-3)]'
+              } else if (label === 'rejected' || label === 'reject' || label.includes('reject')) {
+                btnColor = 'red'
+                borderClass = 'border-[var(--red-3)]'
+              } else {
+                btnColor = 'primary'
+                borderClass = 'border-[var(--primary-3)]'
+              }
+
               return (
                 <Button
-                  color={isPrimary ? 'primary' : 'gray'}
+                  className={borderClass}
+                  color={btnColor}
                   icon={action?.icon}
                   key={action?.value}
                   label={action?.label}
                   loading={approveLoading}
                   size='lg'
-                  variant={isPrimary ? 'solid' : 'subtle'}
+                  variant={btnVariant}
                   onClick={() => onApprove?.(action?.value)}
                 />
               )
