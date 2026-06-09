@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Link, useNavigate } from '@tanstack/react-router'
+import { useNavigate } from '@tanstack/react-router'
 import { useEffect, useMemo, useState } from 'react'
 import type { Column } from '@/components/base/data-table/types'
 import type { Form } from '@/types/form'
@@ -116,15 +116,19 @@ const FormsPage = () => {
         label: 'Name',
         size: 200,
         renderCell: (row: any) => (
-          <Link
+          <span
             className='cursor-pointer font-medium underline transition-colors hover:text-gray-13'
-            params={{ formId: row.uid || row.id }}
-            to='/form-builder/$formId'
+            onClick={() =>
+              navigate({
+                params: { formId: row.uid || row.id },
+                to: '/forms/$formId/entries',
+              })
+            }
           >
             {String(
               row._json?.settings?.general?.name || row.name || 'Untitled Form',
             )}
-          </Link>
+          </span>
         ),
       },
       {
