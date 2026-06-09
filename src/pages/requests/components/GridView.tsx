@@ -322,13 +322,24 @@ const getCategory = (index: number): string => {
 interface RowStatusBadgeProps {
   isProcessing: boolean
   originalIndex: number
+  row: any
   activeTab?: string
+}
+
+const formatDecision = (decision: string) => {
+  if (!decision) return ''
+  return decision
+    .toLowerCase()
+    .split(' ')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
 }
 
 const RowStatusBadge = ({
   activeTab,
   isProcessing,
   originalIndex,
+  row,
 }: RowStatusBadgeProps) => {
   if (isProcessing) return null
 
@@ -349,20 +360,35 @@ const RowStatusBadge = ({
     )
   }
 
-  if (originalIndex % 3 === 0) {
+  // Retrieve decision from agentResponse
+  const agentData = row._agentData?.[0] || row._agentData || {}
+  const rawDecision = agentData?.decision || row.decision || row.status || ''
+
+  if (!rawDecision) {
     return (
-      <span className='flex items-center gap-1 rounded-md border border-[var(--green-4)] bg-[var(--green-2)] px-2 py-0.5 text-[11px] font-semibold text-[var(--green-11)]'>
-        <Icon className='size-3.5' name='tabler:circle-check' />
-        Matched
+      <span className='flex items-center gap-1 rounded-md border border-[var(--gray-4)] bg-[var(--gray-2)] px-2 py-0.5 text-[11px] font-semibold text-[var(--gray-11)]'>
+        <Icon className='size-3.5' name='tabler:clock' />
+        Pending Review
       </span>
     )
   }
 
-  if (originalIndex % 3 === 1) {
+  const formatted = formatDecision(String(rawDecision))
+
+  if (formatted.toLowerCase() === 'approved' || formatted.toLowerCase() === 'matched') {
+    return (
+      <span className='flex items-center gap-1 rounded-md border border-[var(--green-4)] bg-[var(--green-2)] px-2 py-0.5 text-[11px] font-semibold text-[var(--green-11)]'>
+        <Icon className='size-3.5' name='tabler:circle-check' />
+        {formatted}
+      </span>
+    )
+  }
+
+  if (formatted.toLowerCase() === 'rejected' || formatted.toLowerCase() === 'no match') {
     return (
       <span className='flex items-center gap-1 rounded-md border border-[var(--red-4)] bg-[var(--red-2)] px-2 py-0.5 text-[11px] font-semibold text-[var(--red-11)]'>
         <Icon className='size-3.5' name='tabler:alert-circle' />
-        No Match
+        {formatted}
       </span>
     )
   }
@@ -370,7 +396,7 @@ const RowStatusBadge = ({
   return (
     <span className='flex items-center gap-1 rounded-md border border-[var(--orange-4)] bg-[var(--orange-2)] px-2 py-0.5 text-[11px] font-semibold text-[var(--orange-11)]'>
       <Icon className='size-3.5' name='tabler:alert-triangle' />
-      Partial Match
+      {formatted}
     </span>
   )
 }
@@ -385,20 +411,8 @@ const TermsColumn = ({ raisedAt, row }: TermsColumnProps) => {
   const dueDate = extractDueDate(row)
   const daysDiff = calculateDaysDifference(raisedAt, dueDate)
 
-  // Format terms in days (e.g. Net 30 -> 30 Days)
-  let termsDisplay = terms === '-' ? 'Immediate' : terms
-  if (termsDisplay.toLowerCase() === 'immediate') {
-    termsDisplay = '0 Days'
-  } else {
-    // Extract numeric value from terms (e.g. "Net 30" -> "30 Days")
-    const numMatch = /\d+/.exec(termsDisplay)
-    if (numMatch) {
-      termsDisplay = `${numMatch[0]} Days`
-    }
-  }
-
-  // Calculation from invoice date
-  let calculationText = 'Immediate'
+  let topText = '0 days'
+  let bottomText = 'immediate'
   let calculationTheme =
     'border-[var(--red-4)] bg-[var(--red-2)] text-[var(--red-11)]'
 
@@ -407,26 +421,34 @@ const TermsColumn = ({ raisedAt, row }: TermsColumnProps) => {
     const numMatch = /\d+/.exec(terms)
     if (numMatch) {
       const days = Number.parseInt(numMatch[0], 10)
-      calculationText = `In ${days} days`
+      topText = `${days} days`
+      bottomText = 'in due'
       calculationTheme =
         days <= 15
           ? 'border-[var(--orange-4)] bg-[var(--orange-2)] text-[var(--orange-11)]'
           : 'border-[var(--blue-4)] bg-[var(--blue-2)] text-[var(--blue-11)]'
     }
   } else if (daysDiff > 0) {
-    calculationText = `In ${daysDiff} days`
+    topText = `${daysDiff} days`
+    bottomText = 'in due'
     calculationTheme =
       daysDiff <= 15
         ? 'border-[var(--orange-4)] bg-[var(--orange-2)] text-[var(--orange-11)]'
         : 'border-[var(--blue-4)] bg-[var(--blue-2)] text-[var(--blue-11)]'
   } else if (daysDiff < 0) {
-    calculationText = `${Math.abs(daysDiff)}d Overdue`
+    topText = `${Math.abs(daysDiff)} days`
+    bottomText = 'overdue'
+    calculationTheme = 'border-[var(--red-4)] bg-[var(--red-2)] text-[var(--red-11)]'
+  } else if (daysDiff === 0) {
+    topText = '0 days'
+    bottomText = 'immediate'
+    calculationTheme = 'border-[var(--red-4)] bg-[var(--red-2)] text-[var(--red-11)]'
   }
 
   return (
     <div className='flex flex-col items-center gap-1'>
       <span className='text-[12px] font-semibold tracking-tight text-[var(--gray-12)]'>
-        {termsDisplay}
+        {topText}
       </span>
       <span
         className={cn(
@@ -434,7 +456,7 @@ const TermsColumn = ({ raisedAt, row }: TermsColumnProps) => {
           calculationTheme,
         )}
       >
-        {calculationText}
+        {bottomText}
       </span>
     </div>
   )
@@ -477,30 +499,45 @@ const GridRowItem = ({
   const amount = Number(
     row['suyqsm0SYii_8vsj4p0c_'] || row['WksH1Mrs42X4J9AHgoBtw'] || 0,
   )
-  const status = row?.status || 'Pending'
-
+  const agentData = row._agentData?.[0] || row._agentData || {}
+  const rawDecision = String(agentData?.decision || row.decision || row.status || '').toUpperCase()
   const aiInsight = getAIInsight(originalIndex)
 
   // Exact Icon and Color matching from design
   let iconName = 'tabler:clock'
-  let iconColorClass = 'bg-orange-2 border-orange-2 text-orange-9'
+  let iconColorClass = 'bg-[var(--orange-2)] border-[var(--orange-2)] text-[var(--orange-9)]'
 
   if (row.isProcessing) {
     iconName = 'tabler:loader-2'
     iconColorClass =
       'bg-[var(--orange-2)] border-[var(--orange-2)] text-[var(--orange-9)]'
-  } else if (status === 'Approved' || originalIndex % 5 === 0) {
+  } else if (rawDecision === 'APPROVED') {
     iconName = 'tabler:circle-check'
     iconColorClass =
       'bg-[var(--green-2)] border-[var(--green-2)] text-[var(--green-9)]'
-  } else if (row?.isDuplicateInvoice || originalIndex % 7 === 0) {
-    iconName = 'tabler:stack-2'
+  } else if (rawDecision === 'REJECTED') {
+    iconName = 'tabler:alert-circle'
     iconColorClass =
-      'bg-[var(--purple-2)] border-[var(--purple-2)] text-[var(--purple-9)]'
-  } else if (originalIndex % 4 === 0) {
-    iconName = 'tabler:circle-check'
+      'bg-[var(--red-2)] border-[var(--red-2)] text-[var(--red-9)]'
+  } else if (rawDecision === 'PARTIALLY APPROVED') {
+    iconName = 'tabler:alert-triangle'
     iconColorClass =
-      'bg-[var(--blue-2)] border-[var(--blue-2)] text-[var(--blue-9)]'
+      'bg-[var(--orange-2)] border-[var(--orange-2)] text-[var(--orange-9)]'
+  } else {
+    // Fallback based on originalIndex for simulated items
+    if (originalIndex % 5 === 0) {
+      iconName = 'tabler:circle-check'
+      iconColorClass =
+        'bg-[var(--green-2)] border-[var(--green-2)] text-[var(--green-9)]'
+    } else if (row?.isDuplicateInvoice || originalIndex % 7 === 0) {
+      iconName = 'tabler:stack-2'
+      iconColorClass =
+        'bg-[var(--purple-2)] border-[var(--purple-2)] text-[var(--purple-9)]'
+    } else if (originalIndex % 4 === 0) {
+      iconName = 'tabler:circle-check'
+      iconColorClass =
+        'bg-[var(--blue-2)] border-[var(--blue-2)] text-[var(--blue-9)]'
+    }
   }
 
   return (
@@ -603,6 +640,7 @@ const GridRowItem = ({
             activeTab={activeTab}
             isProcessing={row.isProcessing}
             originalIndex={originalIndex}
+            row={row}
           />
         </div>
 
