@@ -137,9 +137,30 @@ const findPONumberInObject = (obj: any): string | null => {
   return null
 }
 
+const getParsedFormData = (row: any): any => {
+  if (!row || !row.formData) return {}
+  if (typeof row.formData === 'object') {
+    return row.formData.fields || row.formData || {}
+  }
+  if (typeof row.formData === 'string') {
+    try {
+      const parsed = JSON.parse(row.formData)
+      return parsed.fields || parsed || {}
+    } catch {
+      return {}
+    }
+  }
+  return {}
+}
+
 const extractPONumber = (row: any): string => {
   if (!row) return 'N/A'
   const agentData = row._agentData?.[0] || row._agentData || {}
+  const parsedForm = getParsedFormData(row)
+
+  if (parsedForm['RXwLGHILLrreMmRqlk9mj']) {
+    return String(parsedForm['RXwLGHILLrreMmRqlk9mj'])
+  }
 
   const fromForm =
     findPONumberInObject(row.formData?.fields) ||
@@ -166,7 +187,12 @@ const extractPONumber = (row: any): string => {
 const extractDueDate = (row: any): string => {
   if (!row) return '-'
   const agentData = row._agentData?.[0] || row._agentData || {}
-  const val =
+  const parsedForm = getParsedFormData(row)
+
+  let val =
+    parsedForm['Due Date'] ||
+    parsedForm['due_date'] ||
+    parsedForm['Due_Date'] ||
     row.dueDate ||
     row.due_date ||
     row.payment_terms?.due_date ||
@@ -182,6 +208,23 @@ const extractDueDate = (row: any): string => {
     agentData?.['Extracted Invoice JSON']?.invoice_header?.['Due Date'] ||
     agentData?.['Extracted Invoice JSON']?.invoice_header?.['due_date'] ||
     agentData?.po_matching?.due_date
+
+  if ((!val || val === '-') && parsedForm['9F6tPVHoRnmONGx3kYJu2']) {
+    const invDateStr = parsedForm['9F6tPVHoRnmONGx3kYJu2']
+    const termsStr = parsedForm['vxnKCXsXkz8_acPogKe'] || ''
+    const numMatch = /\d+/.exec(termsStr)
+    if (numMatch) {
+      const days = parseInt(numMatch[0], 10)
+      try {
+        const d = new Date(invDateStr)
+        if (!isNaN(d.getTime())) {
+          d.setDate(d.getDate() + days)
+          val = d.toISOString().split('T')[0]
+        }
+      } catch (e) {}
+    }
+  }
+
   if (!val || val === '-') return '-'
   try {
     return formatDatetime(val as string, 'date')
@@ -203,6 +246,11 @@ const extractValueFromTermObj = (termObj: any) => {
 const extractPaymentTerms = (row: any): string => {
   if (!row) return '-'
   const agentData = row._agentData?.[0] || row._agentData || {}
+  const parsedForm = getParsedFormData(row)
+
+  if (parsedForm['vxnKCXsXkz8_acPogKe'] && parsedForm['vxnKCXsXkz8_acPogKe'] !== '-') {
+    return String(parsedForm['vxnKCXsXkz8_acPogKe'])
+  }
 
   // check termObj
   const termObj = row.payment_terms || row.paymentTerms || {}
@@ -257,6 +305,11 @@ const calculateDaysDifference = (
 const extractInvoiceDate = (row: any): string => {
   if (!row) return '-'
   const agentData = row._agentData?.[0] || row._agentData || {}
+  const parsedForm = getParsedFormData(row)
+
+  if (parsedForm['9F6tPVHoRnmONGx3kYJu2'] && parsedForm['9F6tPVHoRnmONGx3kYJu2'] !== '-') {
+    return String(parsedForm['9F6tPVHoRnmONGx3kYJu2']).trim()
+  }
 
   // 1. Check dynamic field key 9F6tPVHoRnmONGx3kYJu2 in fields and row
   const fromForm9F =
@@ -362,7 +415,13 @@ const RowStatusBadge = ({
 
   // Retrieve decision from agentResponse
   const agentData = row._agentData?.[0] || row._agentData || {}
-  const rawDecision = agentData?.decision || row.decision || row.status || ''
+  const parsedForm = getParsedFormData(row)
+  const rawDecision =
+    parsedForm['2MH_BMDFEVKsU0uAQjoI1'] ||
+    agentData?.decision ||
+    row.decision ||
+    row.status ||
+    ''
 
   if (!rawDecision) {
     return (
@@ -484,23 +543,41 @@ const GridRowItem = ({
   const originalIndex =
     typeof row?._originalIndex === 'number' ? row._originalIndex : index
   const rowId = row?.id || row?.processId || `item-${originalIndex}`
+
+  const parsedForm = getParsedFormData(row)
   const invoiceNo =
+    parsedForm['kvcYuknkDumkTenjvrVLj'] ||
     row?.documentNumber ||
     row?.['kvcYuknkDumkTenjvrVLj'] ||
     row?.invoiceNo ||
     row?.requestNo ||
     `INV-${rowId}`
   const supplierName =
+    parsedForm['UtfgJy6Z0qyfRC5Bclfc'] ||
+    parsedForm['UtfgJy6Z0qyfRC5Bclf-c'] ||
     row?.vendor ||
     row?.['UtfgJy6Z0qyfRC5Bclf-c'] ||
     row?.raisedBy ||
     'Unknown Supplier'
-  const raisedAt = row?.raisedAt || row?.transaction_createdAt
+  const raisedAt =
+    parsedForm['9F6tPVHoRnmONGx3kYJu2'] ||
+    row?.raisedAt ||
+    row?.transaction_createdAt
   const amount = Number(
-    row['suyqsm0SYii_8vsj4p0c_'] || row['WksH1Mrs42X4J9AHgoBtw'] || 0,
+    parsedForm['suyqsm0SYii_8vsj4p0c_'] ||
+    parsedForm['WksH1Mrs42X4J9AHgoBtw'] ||
+    row['suyqsm0SYii_8vsj4p0c_'] ||
+    row['WksH1Mrs42X4J9AHgoBtw'] ||
+    0,
   )
   const agentData = row._agentData?.[0] || row._agentData || {}
-  const rawDecision = String(agentData?.decision || row.decision || row.status || '').toUpperCase()
+  const rawDecision = String(
+    parsedForm['2MH_BMDFEVKsU0uAQjoI1'] ||
+    agentData?.decision ||
+    row.decision ||
+    row.status ||
+    ''
+  ).toUpperCase()
   const aiInsight = getAIInsight(originalIndex)
 
   // Exact Icon and Color matching from design

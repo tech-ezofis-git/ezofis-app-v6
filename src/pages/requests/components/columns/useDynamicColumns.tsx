@@ -216,9 +216,39 @@ const findPONumberInObject = (obj: any): string | null => {
   return null
 }
 
+const getParsedFormData = (row: any): any => {
+  if (!row || !row.formData) return {}
+  if (typeof row.formData === 'object') {
+    return row.formData.fields || row.formData || {}
+  }
+  if (typeof row.formData === 'string') {
+    try {
+      const parsed = JSON.parse(row.formData)
+      return parsed.fields || parsed || {}
+    } catch {
+      return {}
+    }
+  }
+  return {}
+}
+
+const formatDecision = (decision: string) => {
+  if (!decision) return ''
+  return decision
+    .toLowerCase()
+    .split(' ')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
+}
+
 const extractPONumber = (row: any): string => {
   if (!row) return 'N/A'
   const agentData = row._agentData?.[0] || row._agentData || {}
+  const parsedForm = getParsedFormData(row)
+
+  if (parsedForm['RXwLGHILLrreMmRqlk9mj']) {
+    return String(parsedForm['RXwLGHILLrreMmRqlk9mj'])
+  }
 
   const fromForm =
     findPONumberInObject(row.formData?.fields) ||
@@ -245,7 +275,12 @@ const extractPONumber = (row: any): string => {
 const extractDueDate = (row: any): string => {
   if (!row) return '-'
   const agentData = row._agentData?.[0] || row._agentData || {}
-  const val =
+  const parsedForm = getParsedFormData(row)
+
+  let val =
+    parsedForm['Due Date'] ||
+    parsedForm['due_date'] ||
+    parsedForm['Due_Date'] ||
     row.dueDate ||
     row.due_date ||
     row.payment_terms?.due_date ||
@@ -261,6 +296,23 @@ const extractDueDate = (row: any): string => {
     agentData?.['Extracted Invoice JSON']?.invoice_header?.['Due Date'] ||
     agentData?.['Extracted Invoice JSON']?.invoice_header?.['due_date'] ||
     agentData?.po_matching?.due_date
+
+  if ((!val || val === '-') && parsedForm['9F6tPVHoRnmONGx3kYJu2']) {
+    const invDateStr = parsedForm['9F6tPVHoRnmONGx3kYJu2']
+    const termsStr = parsedForm['vxnKCXsXkz8_acPogKe'] || ''
+    const numMatch = /\d+/.exec(termsStr)
+    if (numMatch) {
+      const days = parseInt(numMatch[0], 10)
+      try {
+        const d = new Date(invDateStr)
+        if (!isNaN(d.getTime())) {
+          d.setDate(d.getDate() + days)
+          val = d.toISOString().split('T')[0]
+        }
+      } catch (e) {}
+    }
+  }
+
   if (!val || val === '-') return '-'
   try {
     return formatDatetime(val as string, 'date')
@@ -289,6 +341,11 @@ const getFromFields = (fields: any): string | null => {
 const extractPaymentTerms = (row: any): string => {
   if (!row) return '-'
   const agentData = row._agentData?.[0] ?? row._agentData ?? {}
+  const parsedForm = getParsedFormData(row)
+
+  if (parsedForm['vxnKCXsXkz8_acPogKe'] && parsedForm['vxnKCXsXkz8_acPogKe'] !== '-') {
+    return String(parsedForm['vxnKCXsXkz8_acPogKe'])
+  }
 
   const fromRow = getFromObjectOrVal(row.payment_terms ?? row.paymentTerms)
   if (fromRow && fromRow !== '-') return fromRow
@@ -313,6 +370,11 @@ const extractPaymentTerms = (row: any): string => {
 const extractInvoiceDate = (row: any): string => {
   if (!row) return '-'
   const agentData = row._agentData?.[0] || row._agentData || {}
+  const parsedForm = getParsedFormData(row)
+
+  if (parsedForm['9F6tPVHoRnmONGx3kYJu2'] && parsedForm['9F6tPVHoRnmONGx3kYJu2'] !== '-') {
+    return String(parsedForm['9F6tPVHoRnmONGx3kYJu2']).trim()
+  }
 
   // 1. Check dynamic field key 9F6tPVHoRnmONGx3kYJu2 in fields and row
   const fromForm9F =
@@ -364,6 +426,11 @@ const extractInvoiceDate = (row: any): string => {
 const extractInvoiceNumber = (row: any): string => {
   if (!row) return '-'
   const agentData = row._agentData?.[0] || row._agentData || {}
+  const parsedForm = getParsedFormData(row)
+
+  if (parsedForm['kvcYuknkDumkTenjvrVLj'] && parsedForm['kvcYuknkDumkTenjvrVLj'] !== '-') {
+    return String(parsedForm['kvcYuknkDumkTenjvrVLj']).trim()
+  }
 
   // 1. Check dynamic field key kvcYuknkDumkTenjvrVLj in fields and row
   const fromFormKvc =
@@ -425,7 +492,11 @@ const computeDueDateInfo = (
   calculationTheme: string
   termsDisplay: string
 } => {
-  const raisedAt = row?.raisedAt || row?.transaction_createdAt
+  const parsedForm = getParsedFormData(row)
+  const raisedAt =
+    parsedForm['9F6tPVHoRnmONGx3kYJu2'] ||
+    row?.raisedAt ||
+    row?.transaction_createdAt
   const daysDiff = calculateDaysDifference(raisedAt, dueDate)
 
   let termsDisplay = terms === '-' ? 'Immediate' : terms
@@ -957,7 +1028,7 @@ const getBaseColumns = (
       id: 'matchStatus',
       label: activeTab === 'Processed' ? 'Payment Status' : 'Match Status',
       size: 140,
-      renderCell: (_row: any, index = 0) => {
+      renderCell: (row: any, index = 0) => {
         if (activeTab === 'Processed') {
           const isPaid = index % 2 === 0
           if (isPaid) {
@@ -976,29 +1047,68 @@ const getBaseColumns = (
             )
           }
         }
-        const matchType = index % 3
-        if (matchType === 0) {
+
+        const agentData = row._agentData?.[0] || row._agentData || {}
+        const parsedForm = getParsedFormData(row)
+        const rawDecision =
+          parsedForm['2MH_BMDFEVKsU0uAQjoI1'] ||
+          agentData?.decision ||
+          row.decision ||
+          row.status ||
+          ''
+
+        if (!rawDecision) {
+          const matchType = index % 3
+          if (matchType === 0) {
+            return (
+              <span className='flex items-center gap-1 rounded-md border border-[var(--green-4)] bg-[var(--green-2)] px-2 py-0.5 text-[11px] font-semibold text-[var(--green-11)]'>
+                <Icon className='size-3.5' name='tabler:circle-check' />
+                Matched
+              </span>
+            )
+          } else if (matchType === 1) {
+            return (
+              <span className='flex items-center gap-1 rounded-md border border-[var(--red-4)] bg-[var(--red-2)] px-2 py-0.5 text-[11px] font-semibold text-[var(--red-11)]'>
+                <Icon className='size-3.5' name='tabler:alert-circle' />
+                No Match
+              </span>
+            )
+          } else {
+            return (
+              <span className='flex items-center gap-1 rounded-md border border-[var(--orange-4)] bg-[var(--orange-2)] px-2 py-0.5 text-[11px] font-semibold text-[var(--orange-11)]'>
+                <Icon className='size-3.5' name='tabler:alert-triangle' />
+                Partial Match
+              </span>
+            )
+          }
+        }
+
+        const formatted = formatDecision(String(rawDecision))
+
+        if (formatted.toLowerCase() === 'approved' || formatted.toLowerCase() === 'matched') {
           return (
             <span className='flex items-center gap-1 rounded-md border border-[var(--green-4)] bg-[var(--green-2)] px-2 py-0.5 text-[11px] font-semibold text-[var(--green-11)]'>
               <Icon className='size-3.5' name='tabler:circle-check' />
-              Matched
-            </span>
-          )
-        } else if (matchType === 1) {
-          return (
-            <span className='flex items-center gap-1 rounded-md border border-[var(--red-4)] bg-[var(--red-2)] px-2 py-0.5 text-[11px] font-semibold text-[var(--red-11)]'>
-              <Icon className='size-3.5' name='tabler:alert-circle' />
-              No Match
-            </span>
-          )
-        } else {
-          return (
-            <span className='flex items-center gap-1 rounded-md border border-[var(--orange-4)] bg-[var(--orange-2)] px-2 py-0.5 text-[11px] font-semibold text-[var(--orange-11)]'>
-              <Icon className='size-3.5' name='tabler:alert-triangle' />
-              Partial Match
+              {formatted}
             </span>
           )
         }
+
+        if (formatted.toLowerCase() === 'rejected' || formatted.toLowerCase() === 'no match') {
+          return (
+            <span className='flex items-center gap-1 rounded-md border border-[var(--red-4)] bg-[var(--red-2)] px-2 py-0.5 text-[11px] font-semibold text-[var(--red-11)]'>
+              <Icon className='size-3.5' name='tabler:alert-circle' />
+              {formatted}
+            </span>
+          )
+        }
+
+        return (
+          <span className='flex items-center gap-1 rounded-md border border-[var(--orange-4)] bg-[var(--orange-2)] px-2 py-0.5 text-[11px] font-semibold text-[var(--orange-11)]'>
+            <Icon className='size-3.5' name='tabler:alert-triangle' />
+            {formatted}
+          </span>
+        )
       },
     },
     {
@@ -1006,7 +1116,10 @@ const getBaseColumns = (
       label: 'Raised By',
       size: 200,
       renderCell: (row: any) => {
+        const parsedForm = getParsedFormData(row)
         const supplierName =
+          parsedForm['UtfgJy6Z0qyfRC5Bclfc'] ||
+          parsedForm['UtfgJy6Z0qyfRC5Bclf-c'] ||
           row?.vendor ||
           row?.['UtfgJy6Z0qyfRC5Bclf-c'] ||
           row?.raisedBy ||
@@ -1114,8 +1227,13 @@ const getBaseColumns = (
       label: 'Total Value',
       size: 140,
       renderCell: (row: any) => {
+        const parsedForm = getParsedFormData(row)
         const amount = Number(
-          row['suyqsm0SYii_8vsj4p0c_'] || row['WksH1Mrs42X4J9AHgoBtw'] || 0,
+          parsedForm['suyqsm0SYii_8vsj4p0c_'] ||
+          parsedForm['WksH1Mrs42X4J9AHgoBtw'] ||
+          row['suyqsm0SYii_8vsj4p0c_'] ||
+          row['WksH1Mrs42X4J9AHgoBtw'] ||
+          0,
         )
         return (
           <span className='text-[14px] leading-none font-semibold tracking-tight text-[var(--text-primary)] tabular-nums'>
