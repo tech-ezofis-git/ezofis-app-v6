@@ -9,7 +9,7 @@ interface Props {
   onPageSizeChange: (value: number) => void
 }
 
-const options = [5, 10, 20, 30, 50, 100]
+const options = [5, 10, 20, 30, 50, 100, 0]
 
 const PaginationItemsPerPage = ({
   className,
@@ -30,7 +30,7 @@ const PaginationItemsPerPage = ({
         target={
           <Button
             color='gray'
-            label={pageSize.toString()}
+            label={pageSize === 0 ? 'All' : pageSize.toString()}
             suffixIcon='lucide:chevron-down'
             suffixIconClass='text-gray-9'
             variant='outline'
@@ -40,7 +40,7 @@ const PaginationItemsPerPage = ({
         {options.map((option) => (
           <MenuItem
             key={option}
-            label={option.toString()}
+            label={option === 0 ? 'All' : option.toString()}
             onClick={() => onPageSizeChange(option)}
           />
         ))}

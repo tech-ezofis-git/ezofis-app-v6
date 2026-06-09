@@ -441,6 +441,7 @@ const TermsColumn = ({ raisedAt, row }: TermsColumnProps) => {
 }
 
 interface GridRowItemProps {
+  hasSelectionActive: boolean
   index: number
   isSelected: boolean
   row: any
@@ -451,6 +452,7 @@ interface GridRowItemProps {
 
 const GridRowItem = ({
   activeTab,
+  hasSelectionActive,
   index,
   isSelected,
   row,
@@ -527,9 +529,19 @@ const GridRowItem = ({
       }}
     >
       {/* Checkbox & Status Icon */}
-      <div className='flex shrink-0 items-center gap-4'>
+      <div className='flex shrink-0 items-center'>
         {!row.isProcessing && (
-          <label className='relative flex cursor-pointer items-center'>
+          <label
+            className={cn(
+              'relative flex cursor-pointer items-center overflow-hidden transition-all duration-200',
+              isSelected || hasSelectionActive
+                ? 'mr-4 w-5 opacity-100'
+                : 'mr-0 w-0 opacity-0 group-hover:mr-4 group-hover:w-5 group-hover:opacity-100',
+            )}
+            onClick={(e) => {
+              e.stopPropagation()
+            }}
+          >
             <input
               checked={isSelected}
               className='sr-only'
@@ -854,7 +866,7 @@ const GridView = <TData,>({
 
                 {activeTab === 'Processed' ? (
                   <button
-                    className='inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-[var(--green-9)] px-3 py-1.5 text-12 font-semibold text-white shadow-sm transition-all hover:bg-[var(--green-10)] hover:shadow-md active:scale-95'
+                    className='inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[var(--green-3)] bg-[var(--green-2)] px-3 py-1.5 text-12 font-semibold text-[var(--green-11)] shadow-sm transition-all hover:bg-[var(--green-3)] hover:shadow-md active:scale-95'
                     type='button'
                     onClick={() => {
                       showToast({
@@ -864,13 +876,16 @@ const GridView = <TData,>({
                       exitSelectionMode()
                     }}
                   >
-                    <Icon className='size-4' name='tabler:circle-check' />
+                    <Icon
+                      className='size-4 text-[var(--green-9)]'
+                      name='tabler:circle-check'
+                    />
                     Mark as Paid
                   </button>
                 ) : (
                   <>
                     <button
-                      className='inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-[var(--green-9)] px-3 py-1.5 text-12 font-semibold text-white shadow-sm transition-all hover:bg-[var(--green-10)] hover:shadow-md active:scale-95'
+                      className='inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[var(--green-3)] bg-[var(--green-2)] px-3 py-1.5 text-12 font-semibold text-[var(--green-11)] shadow-sm transition-all hover:bg-[var(--green-3)] hover:shadow-md active:scale-95'
                       type='button'
                       onClick={() => {
                         showToast({
@@ -880,7 +895,10 @@ const GridView = <TData,>({
                         exitSelectionMode()
                       }}
                     >
-                      <Icon className='size-4' name='tabler:circle-check' />
+                      <Icon
+                        className='size-4 text-[var(--green-9)]'
+                        name='tabler:circle-check'
+                      />
                       Approve
                     </button>
 
@@ -968,6 +986,7 @@ const GridView = <TData,>({
                 return (
                   <GridRowItem
                     activeTab={activeTab}
+                    hasSelectionActive={selectedIds.size > 0}
                     index={index}
                     isSelected={isSelected}
                     key={rowId}

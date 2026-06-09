@@ -112,11 +112,13 @@ const extractPONumber = (
 
 export const buildFieldMetaMap = (
   workflow: any,
+  fallbackFormJson?: any,
 ): Map<string, { label: string; type: string }> => {
   const metaMap = new Map<string, { label: string; type: string }>()
-  if (!workflow?.formJson) return metaMap
+  let formJson = workflow?.formJson || fallbackFormJson
+  if (!formJson) return metaMap
 
-  let form = workflow.formJson
+  let form = formJson
   if (typeof form === 'string' && form !== '') {
     try {
       form = JSON.parse(form)
@@ -125,59 +127,86 @@ export const buildFieldMetaMap = (
     }
   }
 
+  if (form && typeof form === 'object' && 'formJson' in form) {
+    let inner = form.formJson
+    if (typeof inner === 'string' && inner !== '') {
+      try {
+        inner = JSON.parse(inner)
+      } catch {
+        // keep as is
+      }
+    }
+    if (inner && typeof inner === 'object') {
+      form = inner
+    }
+  }
+
   const addControl = (c: any) => {
     if (c) {
-      const key = c.jsonId || c.id || c.name
-      const label = c.label || c.name || key
+      const id = c.id
+      const jsonId = c.jsonId
+      const name = c.name
+      const label = c.label || c.name || jsonId || id || ''
       const type = c.type || c.control || c.controlType || ''
-      if (key) {
-        metaMap.set(key, { label, type })
+
+      if (jsonId) {
+        metaMap.set(String(jsonId).toLowerCase(), { label, type })
+      }
+      if (id) {
+        metaMap.set(String(id).toLowerCase(), { label, type })
+      }
+      if (name) {
+        metaMap.set(String(name).toLowerCase(), { label, type })
       }
     }
   }
 
-  // 1. Check controllist if present
-  const controllist = form.controllist
-  if (Array.isArray(controllist)) {
-    controllist.forEach(addControl)
+  const traverse = (obj: any) => {
+    if (!obj || typeof obj !== 'object') return
+
+    if (Array.isArray(obj)) {
+      obj.forEach(traverse)
+      return
+    }
+
+    const hasId = obj.id || obj.jsonId
+    const hasType = obj.type || obj.control || obj.controlType
+    if (hasId && hasType) {
+      addControl(obj)
+    }
+
+    Object.keys(obj).forEach((k) => {
+      const val = obj[k]
+      if (typeof val === 'object' && val !== null) {
+        traverse(val)
+      }
+    })
   }
 
-  // 2. Also check panels / secondaryPanels / fields
-  const panels = Array.isArray(form?.panels) ? form.panels : []
-  const secondaryPanels = Array.isArray(form?.secondaryPanels)
-    ? form.secondaryPanels
-    : []
-  const formJsonList = form?.formJson || {}
-  const innerPanels = Array.isArray(formJsonList?.panels)
-    ? formJsonList.panels
-    : []
-
-  const allPanels = [...panels, ...secondaryPanels, ...innerPanels]
-
-  allPanels.forEach((panel: any) => {
-    if (!panel) return
-    const controls =
-      panel.controlList || panel.controllist || panel.fields || []
-    if (Array.isArray(controls)) {
-      controls.forEach(addControl)
-    }
-  })
+  traverse(form)
 
   return metaMap
 }
 
-export const buildFieldLabelMap = (workflow: any): Map<string, string> => {
+export const buildFieldLabelMap = (
+  workflow: any,
+  fallbackFormJson?: any,
+): Map<string, string> => {
   const labelMap = new Map<string, string>()
-  const metaMap = buildFieldMetaMap(workflow)
+  const metaMap = buildFieldMetaMap(workflow, fallbackFormJson)
   metaMap.forEach((val, key) => {
     labelMap.set(key, val.label)
   })
   return labelMap
 }
 
-const mapFormModelToPayloadFields = (formModel: any, workflow: any) => {
+const mapFormModelToPayloadFields = (
+  formModel: any,
+  workflow: any,
+  fallbackFormJson?: any,
+) => {
   const fieldsPayload: any = {}
-  const labelMap = buildFieldLabelMap(workflow)
+  const labelMap = buildFieldLabelMap(workflow, fallbackFormJson)
 
   const inverseMap = new Map<string, string>()
   labelMap.forEach((label, jsonId) => {
@@ -223,9 +252,7 @@ const Request = ({
   } = requestStore((state) => state)
 
   const selectedItem = item || storeSelectedItem
-  const resolvedWorkflowId = workflowId
-    ? Number(workflowId)
-    : selectedWorkflowId
+  const resolvedWorkflowId = selectedWorkflow?.id || workflowId || selectedWorkflowId
 
   const [activeTab, setActiveTab] = useState<string>(
     activeTabValue ? activeTabValue : 'Overview',
@@ -237,47 +264,96 @@ const Request = ({
   >('analysis')
   const [isEditing, setIsEditing] = useState<boolean>(false)
 
-  const actions = storeSelectedItem?._actions || []
   const { data: request, isLoading } = useRequestDetail(
     resolvedWorkflowId,
     selectedItem?.processId,
     selectedItem?.transactionId,
   )
+  const actions =
+    request?._actions ||
+    selectedItem?._actions ||
+    storeSelectedItem?._actions ||
+    []
 
-  const agentDataList = request?._agentData || []
+  const agentDataList = request?._agentData || selectedItem?._agentData || []
   const hasAgentData = agentDataList.length > 0
 
   const [formModel, setFormModel] = useState<any>({})
 
   const allowedLabels = useMemo(() => {
     if (!selectedItem) return new Set<string>()
-    const metaMap = buildFieldMetaMap(selectedWorkflow)
+    const metaMap = buildFieldMetaMap(selectedWorkflow, request?._formDefinition)
     const fieldsSource = selectedItem.formData?.fields || {}
     const labels = new Set<string>()
     Object.keys(fieldsSource).forEach((key) => {
-      const meta = metaMap.get(key)
+      const meta = metaMap.get(String(key).toLowerCase())
       const fieldType = String(meta?.type || '').toUpperCase()
-      const isTable = fieldType === 'TABLE' || fieldType === 'DYNAMIC_TABLE'
+      const val = fieldsSource[key]
+      let isTable =
+        fieldType === 'TABLE' ||
+        fieldType === 'DYNAMIC_TABLE' ||
+        fieldType === 'DYNAMIC TABLE' ||
+        fieldType.includes('TABLE')
+      if (!isTable && val) {
+        if (Array.isArray(val)) {
+          isTable = true
+        } else if (typeof val === 'string') {
+          const trimmed = val.trim()
+          if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+            isTable = true
+          }
+        }
+      }
       const isFileUpload =
         fieldType === 'FILE_UPLOAD' || fieldType === 'FILEUPLOAD'
 
       if (!isTable && !isFileUpload) {
+        if (metaMap.size > 0 && !meta) {
+          return // Skip fields not defined in the form
+        }
         const label = meta?.label || key
         labels.add(label)
       }
     })
     return labels
-  }, [selectedItem, selectedWorkflow])
+  }, [selectedItem, selectedWorkflow, request?._formDefinition])
 
   useEffect(() => {
     if (selectedItem) {
-      const metaMap = buildFieldMetaMap(selectedWorkflow)
+      const metaMap = buildFieldMetaMap(selectedWorkflow, request?._formDefinition)
       const cleanFields: any = {}
-      const fieldsSource = selectedItem.formData?.fields || {}
+
+      let fieldsSource: any = {}
+      if (selectedItem.formData) {
+        if (typeof selectedItem.formData === 'string') {
+          try {
+            const parsed = JSON.parse(selectedItem.formData)
+            fieldsSource = parsed?.fields || parsed || {}
+          } catch {
+            fieldsSource = {}
+          }
+        } else if (typeof selectedItem.formData === 'object') {
+          fieldsSource = selectedItem.formData?.fields || selectedItem.formData || {}
+        }
+      }
 
       Object.keys(fieldsSource).forEach((key) => {
-        const val = fieldsSource[key]
-        const meta = metaMap.get(key)
+        let val = fieldsSource[key]
+        if (
+          typeof val === 'string' &&
+          ((val.trim().startsWith('[') && val.trim().endsWith(']')) ||
+            (val.trim().startsWith('{') && val.trim().endsWith('}')))
+        ) {
+          try {
+            val = JSON.parse(val)
+          } catch {
+            // Keep original
+          }
+        }
+        const meta = metaMap.get(String(key).toLowerCase())
+        if (metaMap.size > 0 && !meta) {
+          return // Skip fields not defined in the form
+        }
         const label = meta?.label || key
         cleanFields[label] = val
       })
@@ -285,7 +361,7 @@ const Request = ({
     } else {
       setFormModel({})
     }
-  }, [selectedItem?.transactionId, selectedWorkflow])
+  }, [selectedItem?.transactionId, selectedWorkflow, request?._formDefinition])
 
   console.log('=== REQUEST COMPONENT DEBUG LOGS ===')
   console.log('Prop item:', item)
@@ -337,7 +413,7 @@ const Request = ({
         formData: {
           fields:
             Object.keys(formModel).length > 0
-              ? mapFormModelToPayloadFields(formModel, selectedWorkflow)
+              ? mapFormModelToPayloadFields(formModel, selectedWorkflow, request?._formDefinition)
               : selectedItem?.formData?.fields || {},
           formEntryId: selectedItem?.formData?.formEntryId,
           formId: rawWorkflowData?.wFormId,
@@ -516,13 +592,14 @@ const Request = ({
           agentData={currentAgentData}
           allowedLabels={allowedLabels}
           formModel={formModel}
+          formDefinition={request?._formDefinition}
           processId={Number(selectedItem?.processId)}
           repositoryId={Number(rawWorkflowData?.repositoryId)}
           rightView={rightView}
           selectedItem={selectedItem}
           selectedWorkflow={selectedWorkflow}
           transactionId={Number(selectedItem?.transactionId)}
-          workflowId={Number(resolvedWorkflowId)}
+          workflowId={resolvedWorkflowId}
           setFormModel={setFormModel}
           setRightView={setRightView}
         />

@@ -14,8 +14,8 @@ export type CommentItem = {
 }
 
 export function useComments(
-  workflowId?: number,
-  processId?: number,
+  workflowId?: number | string,
+  processId?: number | string,
   enabled?: boolean,
 ) {
   const [data, setData] = useState<CommentItem[]>([])

@@ -20,8 +20,8 @@ export type AttachmentItem = {
 }
 
 export function useAttachments(
-  workflowId?: number,
-  processId?: number,
+  workflowId?: number | string,
+  processId?: number | string,
   enabled?: boolean,
 ) {
   const [data, setData] = useState<AttachmentItem[]>([])

@@ -9,7 +9,7 @@ interface RequestSummaryProps {
   processId: number
   requestNo: string
   transactionId: number
-  workflowId: number
+  workflowId: number | string
 }
 
 const gridVariants = {

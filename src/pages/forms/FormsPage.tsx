@@ -5,11 +5,11 @@ import type { Column } from '@/components/base/data-table/types'
 import type { Form } from '@/types/form'
 import formApi from '@/api/form/form'
 import { getFormsListQueryOptions } from '@/api/form/queries'
-import IconButton from '@/components/base/button/IconButton'
 import Button from '@/components/base/button/Button'
-import Icon from '@/components/base/icon/Icon'
+import IconButton from '@/components/base/button/IconButton'
 import useDataTable from '@/components/base/data-table/hooks/useDataTable'
 import useDataTableState from '@/components/base/data-table/hooks/useDataTableState'
+import Icon from '@/components/base/icon/Icon'
 import Menu from '@/components/base/menu/Menu'
 import MenuItem from '@/components/base/menu/MenuItem'
 import showToast from '@/components/base/toast/showToast'
@@ -373,42 +373,55 @@ const FormsPage = () => {
       <Header tabValue={tabValue} onTabChange={setTabValue} />
 
       {deletingForm && (
-        <div className='mx-6 mt-4 flex animate-in fade-in slide-in-from-top-4 duration-300 items-center justify-between gap-4 rounded-xl border border-red-3 bg-red-2 p-4 text-red-11 shadow-sm'>
+        <div className='animate-in fade-in slide-in-from-top-4 mx-6 mt-4 flex items-center justify-between gap-4 rounded-xl border border-red-3 bg-red-2 p-4 text-red-11 shadow-sm duration-300'>
           <div className='flex items-center gap-3'>
             <div className='flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-red-3 text-red-11'>
-              <Icon className='h-5 w-5 text-red-11 animate-pulse' name='lucide:triangle-alert' />
+              <Icon
+                className='h-5 w-5 animate-pulse text-red-11'
+                name='lucide:triangle-alert'
+              />
             </div>
             <div>
               <h4 className='text-sm font-semibold text-red-12'>Delete Form</h4>
-              <p className='text-xs text-red-11 mt-0.5'>
-                Are you sure you want to delete <span className='font-bold text-red-12'>"{deletingForm._json?.settings?.general?.name || deletingForm.name || 'Untitled Form'}"</span>? This action is permanent and cannot be undone.
+              <p className='mt-0.5 text-xs text-red-11'>
+                Are you sure you want to delete{' '}
+                <span className='font-bold text-red-12'>
+                  "
+                  {deletingForm._json?.settings?.general?.name ||
+                    deletingForm.name ||
+                    'Untitled Form'}
+                  "
+                </span>
+                ? This action is permanent and cannot be undone.
               </p>
             </div>
           </div>
-          <div className='flex items-center gap-2 shrink-0'>
+          <div className='flex shrink-0 items-center gap-2'>
             <Button
               color='gray'
-              variant='subtle'
-              size='sm'
               disabled={isDeleting}
+              size='sm'
+              variant='subtle'
               onClick={() => setDeletingForm(null)}
             >
               Cancel
             </Button>
             <Button
               color='red'
-              variant='solid'
-              size='sm'
+              disabled={isDeleting}
               icon='lucide:trash-2'
               loading={isDeleting}
-              disabled={isDeleting}
+              size='sm'
+              variant='solid'
               onClick={async () => {
                 setIsDeleting(true)
                 const targetForm = deletingForm
                 showToast({
                   message: 'Deleting form...',
                 })
-                const { error } = await formApi.deleteForm(targetForm.uid || targetForm.id)
+                const { error } = await formApi.deleteForm(
+                  targetForm.uid || targetForm.id,
+                )
                 setIsDeleting(false)
                 setDeletingForm(null)
                 if (error) {

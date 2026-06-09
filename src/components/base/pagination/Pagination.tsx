@@ -25,7 +25,7 @@ const Pagination = ({
   onPageChange,
   onPageSizeChange,
 }: Props) => {
-  const totalPages = Math.ceil(totalItems / pageSize)
+  const totalPages = pageSize === 0 ? 1 : Math.ceil(totalItems / pageSize)
 
   const handlePageSizeChange = (value: number) => {
     onPageSizeChange(value)

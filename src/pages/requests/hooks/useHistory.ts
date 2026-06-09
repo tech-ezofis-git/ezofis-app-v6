@@ -16,8 +16,8 @@ export type HistoryRow = {
 }
 
 export function useHistory(
-  workflowId?: number,
-  processId?: number,
+  workflowId?: number | string,
+  processId?: number | string,
   enabled?: boolean,
 ) {
   const [data, setData] = useState<HistoryRow[]>([])

@@ -3,7 +3,7 @@ import requestApi from '@/api/requests/requests'
 import { getActionsForActivity } from '../utils/workflow.utils'
 
 export const useRequestDetail = (
-  workflowId: number | null,
+  workflowId: number | string | null,
   processId: number | null,
   transactionId: number | null,
 ) => {
@@ -14,7 +14,7 @@ export const useRequestDetail = (
     queryFn: async () => {
       // 1. Fetch Basic Process Data
       const processData = await requestApi.getProcess(
-        workflowId as number,
+        workflowId as number | string,
         processId as number,
         transactionId as number,
       )
@@ -28,7 +28,7 @@ export const useRequestDetail = (
       // 3. Fetch History (Critical for Agent Data)
       // This mimics Vue's 'showHistoryStepper' function
       const historyData = await requestApi.processHistory(
-        workflowId as number,
+        workflowId as number | string,
         processId as number,
       )
 

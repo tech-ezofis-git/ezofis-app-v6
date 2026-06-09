@@ -20,7 +20,7 @@ type Store = {
   selectedItem: any | null
   // Actions
   selectedWorkflow: any
-  selectedWorkflowId: number | null
+  selectedWorkflowId: number | string | null
   summaryCache: Record<string, any>
   addProcessingProcess: (process: any) => void
   cacheSummaryData: (reqNo: string, data: any) => void
@@ -93,7 +93,7 @@ const requestStore = create<Store>((set) => ({
       isRequestOpen: true,
       selectedItem: item,
       selectedWorkflow: workflow,
-      selectedWorkflowId: workflow.id as number,
+      selectedWorkflowId: workflow.id as number | string,
     }),
   removeProcessingProcess: (id) =>
     set((state) => ({

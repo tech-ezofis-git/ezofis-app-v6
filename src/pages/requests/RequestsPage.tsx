@@ -135,12 +135,17 @@ const RequestsPage = () => {
         }
 
         const wFormId =
-          wf.wFormId ?? wf.settings?.general?.initiateUsing?.formId ?? ''
+          wf.formId ??
+          wf.wFormId ??
+          wf.settings?.general?.initiateUsing?.formId ??
+          ''
 
         let formJson = wf.formJson
-        if (!formJson && wFormId) {
+        if (wFormId) {
           const formRes = await formApi.getFormDataById(String(wFormId))
-          formJson = formRes?.data
+          if (formRes?.data) {
+            formJson = formRes.data.formJson ?? formRes.data
+          }
         }
 
         let flowJson = ''

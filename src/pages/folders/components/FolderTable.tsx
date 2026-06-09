@@ -124,16 +124,16 @@ export function FolderTable({
   const currentPage = filePage?.page || 1
   const pageSize = filePage?.pageSize || 50
   const totalCount = filePage?.totalCount || files.length
-  const totalPages = Math.max(
-    1,
-    filePage?.totalPages || Math.ceil(totalCount / pageSize),
-  )
+  const isAll = pageSize === 0
+  const totalPages = isAll
+    ? 1
+    : Math.max(1, filePage?.totalPages || Math.ceil(totalCount / pageSize))
   const hasMore = Boolean(filePage?.hasMore)
-  const fromItem = totalCount === 0 ? 0 : (currentPage - 1) * pageSize + 1
-  const toItem = Math.min(
-    (currentPage - 1) * pageSize + files.length,
-    totalCount,
-  )
+  const fromItem =
+    totalCount === 0 ? 0 : isAll ? 1 : (currentPage - 1) * pageSize + 1
+  const toItem = isAll
+    ? totalCount
+    : Math.min((currentPage - 1) * pageSize + files.length, totalCount)
   const showFooter =
     Boolean(filePage) &&
     (files.length > 0 || loading || loadingPage) &&
@@ -621,7 +621,7 @@ export function FolderTable({
 
               <PageSizeDropdown
                 disabled={loadingPage}
-                options={[5, 10, 20, 30, 50, 100]}
+                options={[5, 10, 20, 30, 50, 100, 0]}
                 value={pageSize}
                 onChange={(value) => onPageSizeChange?.(value)}
               />
@@ -749,7 +749,7 @@ function PageSizeDropdown({
         type='button'
         onClick={() => setOpen((current) => !current)}
       >
-        <span>{value}</span>
+        <span>{value === 0 ? 'All' : value}</span>
         <DynamicIcon
           className={`h-4 w-4 text-[#7f89a8] transition-transform ${open ? 'rotate-180' : ''}`}
           name='chevronDown'
@@ -765,7 +765,7 @@ function PageSizeDropdown({
               type='button'
               onClick={() => selectValue(option)}
             >
-              {option}
+              {option === 0 ? 'All' : option}
             </button>
           ))}
         </div>

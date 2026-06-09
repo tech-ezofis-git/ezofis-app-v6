@@ -141,11 +141,12 @@ export const mapPublishedWorkflowListToOptions = (
 
 export interface V6WorkflowDetail {
   flowJson?: any
-  workflowJson?: any
+  formId?: string | number
   formJson?: any
   id?: string
   name?: string
   wFormId?: string | number
+  workflowJson?: any
   settings?: {
     general?: {
       initiateUsing?: { formId?: string | number }
@@ -260,7 +261,8 @@ const updateWorkflow = async (workflowId: string, payload: any) => {
       method: 'PUT',
       url: `/workflows/${workflowId}`,
     })
-    if (![200, 201, 202, 204].includes(status)) throw new Error('invalid status code')
+    if (![200, 201, 202, 204].includes(status))
+      throw new Error('invalid status code')
     response.data = data
   } catch (e: unknown) {
     console.error(e)
@@ -282,7 +284,8 @@ const createWorkflow = async (payload: any) => {
       method: 'POST',
       url: '/workflows',
     })
-    if (![200, 201, 202, 204].includes(status)) throw new Error('invalid status code')
+    if (![200, 201, 202, 204].includes(status))
+      throw new Error('invalid status code')
     response.data = data
   } catch (e: unknown) {
     console.error(e)
@@ -435,7 +438,8 @@ const deleteWorkflow = async (workflowId: string) => {
       method: 'DELETE',
       url: `/workflows/${workflowId}`,
     })
-    if (![200, 202, 204].includes(status)) throw new Error('invalid status code')
+    if (![200, 202, 204].includes(status))
+      throw new Error('invalid status code')
     response.data = data
   } catch (e: unknown) {
     console.error(e)
@@ -446,7 +450,10 @@ const deleteWorkflow = async (workflowId: string) => {
 }
 
 export const workflowsApiV6 = {
+  createWorkflow,
+  deleteWorkflow,
   startWorkflow,
+  updateWorkflow,
   getAllWorkflows,
   getCompletedList,
   getInboxList,
@@ -454,9 +461,6 @@ export const workflowsApiV6 = {
   getSentList,
   getWorkflowById,
   getWorkflows,
-  updateWorkflow,
-  createWorkflow,
-  deleteWorkflow,
 }
 
 export default workflowsApiV6

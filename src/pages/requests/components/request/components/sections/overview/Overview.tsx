@@ -344,6 +344,7 @@ const Overview = (props: any) => {
   const {
     agentData,
     allowedLabels,
+    formDefinition,
     formModel,
     processId,
     repositoryId,
@@ -366,7 +367,7 @@ const Overview = (props: any) => {
   const [lineItems, setLineItems] = useState<any[]>([])
 
   const tableFieldKey = useMemo(() => {
-    const metaMap = buildFieldMetaMap(selectedWorkflow)
+    const metaMap = buildFieldMetaMap(selectedWorkflow, formDefinition)
     const foundEntry = Object.entries(formModel || {}).find(([key, _]) => {
       const meta = Array.from(metaMap.values()).find((m) => m.label === key)
       if (meta) {
@@ -376,7 +377,7 @@ const Overview = (props: any) => {
       return false
     })
     return foundEntry ? foundEntry[0] : null
-  }, [formModel, selectedWorkflow])
+  }, [formModel, selectedWorkflow, formDefinition])
 
   const rawLineItems = useMemo(() => {
     if (
@@ -621,28 +622,63 @@ const Overview = (props: any) => {
   }, [attachmentData, selectedFile])
 
   useEffect(() => {
+    let activeUrl: string | null = null
     const fetchFile = async () => {
-      const rId = Number(repositoryId)
-      if (!selectedFile?.id || Number.isNaN(rId) || rId <= 0) return
+      const repoId = String(
+        selectedFile?.repositoryId ||
+          selectedItem?.repositoryId ||
+          repositoryId ||
+          '',
+      ).trim()
+      const itemId = String(
+        selectedFile?.id || selectedItem?.itemId || '',
+      ).trim()
+
+      if (
+        !repoId ||
+        !itemId ||
+        repoId === 'undefined' ||
+        itemId === 'undefined'
+      )
+        return
 
       setIsViewerLoading(true)
       try {
-        const tId = tenantId ? Number(tenantId) : 2
-        const uId = userId ? String(userId) : '2'
-        const response = await fileApi.viewBinary(
-          tId,
-          uId,
-          rId,
-          selectedFile.id,
-          2,
-        )
+        const isUuid = (val: string) =>
+          /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(
+            val,
+          )
 
-        const base64 = response?.data?.file || response?.data
-        if (typeof base64 === 'string') {
-          const mimeType = getMimeTypeFromBase64(base64)
-          const url = formatBase64Url(base64, mimeType)
-          setPreviewUrl(url)
-          setFileType(mimeType)
+        if (isUuid(repoId) && isUuid(itemId)) {
+          const response = await fileApi.viewBinaryV6(repoId, itemId)
+          if (response?.data instanceof Blob) {
+            const mimeType = response.data.type || 'application/pdf'
+            const url = URL.createObjectURL(response.data)
+            activeUrl = url
+            setPreviewUrl(url)
+            setFileType(mimeType)
+          }
+        } else {
+          const rId = Number(repoId)
+          if (!Number.isNaN(rId) && rId > 0) {
+            const tId = tenantId ? Number(tenantId) : 2
+            const uId = userId ? String(userId) : '2'
+            const response = await fileApi.viewBinary(
+              tId,
+              uId,
+              rId,
+              Number(itemId) || selectedFile?.id,
+              2,
+            )
+
+            const base64 = response?.data?.file || response?.data
+            if (typeof base64 === 'string') {
+              const mimeType = getMimeTypeFromBase64(base64)
+              const url = formatBase64Url(base64, mimeType)
+              setPreviewUrl(url)
+              setFileType(mimeType)
+            }
+          }
         }
       } catch (error) {
         console.error('Error fetching file:', error)
@@ -651,7 +687,12 @@ const Overview = (props: any) => {
       }
     }
     fetchFile()
-  }, [selectedFile, repositoryId, tenantId, userId])
+    return () => {
+      if (activeUrl) {
+        URL.revokeObjectURL(activeUrl)
+      }
+    }
+  }, [selectedFile, repositoryId, selectedItem, tenantId, userId])
 
   const handleFieldChange = (key: string, value: string) => {
     setFormModel?.((prev: any) => ({ ...prev, [key]: value }))
@@ -823,7 +864,7 @@ const Overview = (props: any) => {
                       status={agentData?.gl_matching?.status || 'Matched'}
                       statusType='success'
                       title='GL Account Matching'
-                      value={agentData?.gl_matching?.account || 'GL: 5100-001'}
+                      value={agentData?.gl_matching?.account || ''}
                     />
                     <AnalysisCard
                       icon={Store}
@@ -831,11 +872,11 @@ const Overview = (props: any) => {
                       title='Supplier Verification'
                       status={
                         formModel?.['Supplier ID'] ||
-                          formModel?.['SupplierCode'] ||
-                          formModel?.['Supplier Code'] ||
-                          formModel?.['supplier_id'] ||
-                          formModel?.['Vendor ID'] ||
-                          formModel?.['vendor_id']
+                        formModel?.['SupplierCode'] ||
+                        formModel?.['Supplier Code'] ||
+                        formModel?.['supplier_id'] ||
+                        formModel?.['Vendor ID'] ||
+                        formModel?.['vendor_id']
                           ? 'Verified'
                           : 'Not Verified'
                       }
@@ -846,7 +887,7 @@ const Overview = (props: any) => {
                         formModel?.['supplier_id'] ||
                         formModel?.['Vendor ID'] ||
                         formModel?.['vendor_id'] ||
-                        'SUP-001'
+                        ''
                       }
                     />
                   </div>
@@ -922,11 +963,24 @@ const Overview = (props: any) => {
                   {activeTab === 'summary' && (
                     <div className='grid flex-1 grid-cols-2 gap-x-4 gap-y-2 overflow-y-auto p-4'>
                       {Object.entries(formModel || {})
-                        .filter(
-                          ([key, val]) =>
-                            typeof val !== 'object' &&
-                            (!allowedLabels || allowedLabels.has(key)),
-                        )
+                        .filter(([key, val]) => {
+                          if (typeof val === 'object' && val !== null)
+                            return false
+                          if (typeof val === 'string') {
+                            const trimmed = val.trim()
+                            if (
+                              trimmed.startsWith('[') &&
+                              trimmed.endsWith(']')
+                            )
+                              return false
+                            if (
+                              trimmed.startsWith('{') &&
+                              trimmed.endsWith('}')
+                            )
+                              return false
+                          }
+                          return !allowedLabels || allowedLabels.has(key)
+                        })
                         .map(([key, val]) => (
                           <FormCard
                             icon={getFieldIcon(key)}

@@ -11,21 +11,49 @@ export const checkTenantFeature = (feature: string) => {
 // Parse flowJson to determine buttons (Approve, Reject, Forward)
 export const getActionsForActivity = (
   activityId: string,
-  flowJsonString: string | undefined,
+  flowJsonInput: string | any | undefined,
 ): ActionButton[] => {
-  if (!activityId || !flowJsonString) return []
+  if (!activityId || !flowJsonInput) return []
 
   const actions: ActionButton[] = []
   try {
-    const flow = JSON.parse(flowJsonString)
+    const flow =
+      typeof flowJsonInput === 'string'
+        ? JSON.parse(flowJsonInput)
+        : flowJsonInput
+
+    // Extract rules array from various possible structures
+    let rules: any[] = []
+    if (Array.isArray(flow)) {
+      rules = flow
+    } else if (flow && typeof flow === 'object') {
+      if (Array.isArray(flow.rules)) {
+        rules = flow.rules
+      } else if (flow.flowJson && Array.isArray(flow.flowJson.rules)) {
+        rules = flow.flowJson.rules
+      } else if (flow.flowJson && typeof flow.flowJson === 'string') {
+        try {
+          const parsedInner = JSON.parse(flow.flowJson)
+          if (Array.isArray(parsedInner?.rules)) {
+            rules = parsedInner.rules
+          } else if (Array.isArray(parsedInner)) {
+            rules = parsedInner
+          }
+        } catch {
+          // ignore
+        }
+      }
+    }
 
     // 1. Check Rules (Outgoing Lines)
-    flow.rules?.forEach((rule: any) => {
+    rules.forEach((rule: any) => {
       if (rule.fromBlockId === activityId) {
         let color: ActionButton['color'] = 'blue'
         let icon = 'tabler:arrow-right'
 
-        const action = rule.proceedAction
+        const action = rule.action || rule.proceedAction
+        if (!action) return
+
         if (['Approve', 'Complete'].includes(action)) {
           color = 'green'
           icon = 'tabler:check'
@@ -42,14 +70,17 @@ export const getActionsForActivity = (
     })
 
     // 2. Check Block Settings (Internal Forward)
-    const block = flow.blocks?.find((b: any) => b.id === activityId)
-    if (block?.settings?.internalForward) {
-      actions.push({
-        color: 'orange',
-        icon: 'tabler:user-share',
-        label: 'Assign',
-        value: 'Assign',
-      })
+    if (flow && typeof flow === 'object') {
+      const blocks = Array.isArray(flow.blocks) ? flow.blocks : []
+      const block = blocks.find((b: any) => b.id === activityId)
+      if (block?.settings?.internalForward) {
+        actions.push({
+          color: 'orange',
+          icon: 'tabler:user-share',
+          label: 'Assign',
+          value: 'Assign',
+        })
+      }
     }
   } catch (e) {
     console.error('Error parsing flowJson', e)

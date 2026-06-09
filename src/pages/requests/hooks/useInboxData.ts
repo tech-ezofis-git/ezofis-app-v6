@@ -10,7 +10,46 @@ const transformProcess = (
   activeTab: string,
   selectedWorkflow: WorkflowOption | null,
 ): InboxItem => {
-  const dynamicFields = process.formData?.fields || {}
+  let fieldsSource: any = {}
+  if (process.formData) {
+    if (typeof process.formData === 'string') {
+      try {
+        const parsed = JSON.parse(process.formData)
+        fieldsSource = parsed?.fields || parsed || {}
+      } catch {
+        fieldsSource = {}
+      }
+    } else if (typeof process.formData === 'object') {
+      fieldsSource = process.formData?.fields || process.formData || {}
+    }
+  }
+
+  // Parse any nested stringified JSON objects/arrays in fieldsSource
+  Object.keys(fieldsSource).forEach((key) => {
+    let val = fieldsSource[key]
+    if (
+      typeof val === 'string' &&
+      ((val.trim().startsWith('[') && val.trim().endsWith(']')) ||
+        (val.trim().startsWith('{') && val.trim().endsWith('}')))
+    ) {
+      try {
+        val = JSON.parse(val)
+        fieldsSource[key] = val
+      } catch {
+        // Keep original
+      }
+    }
+  })
+
+  const processCopy = {
+    ...process,
+    formData: {
+      ...(typeof process.formData === 'object' ? process.formData : {}),
+      fields: fieldsSource,
+    },
+  }
+
+  const dynamicFields = fieldsSource
   let actions: any[] = []
   if (activeTab === 'Inbox' || activeTab === 'Exceptions') {
     actions = getActionsForActivity(
@@ -21,15 +60,44 @@ const transformProcess = (
   const processId = process.workflowInstanceId || process.processId
   const requestNo =
     process.referenceNumber ||
-    (processId ? `REQ-${processId.substring(0, 8).toUpperCase()}` : '') ||
+    (processId && typeof processId === 'string'
+      ? `REQ-${processId.substring(0, 8).toUpperCase()}`
+      : '') ||
     process.requestNo ||
     ''
   const isAgentProcessing = process.stageType === 'AP_AGENT'
 
+  let parsedAgentResponse = null
+  if (process.agentResponse) {
+    if (typeof process.agentResponse === 'string') {
+      try {
+        parsedAgentResponse = JSON.parse(process.agentResponse)
+      } catch {
+        parsedAgentResponse = null
+      }
+    } else if (typeof process.agentResponse === 'object') {
+      parsedAgentResponse = process.agentResponse
+    }
+  }
+
+  if (parsedAgentResponse) {
+    parsedAgentResponse = {
+      ...parsedAgentResponse,
+      id:
+        process.activityId ||
+        parsedAgentResponse.id ||
+        Math.random().toString(),
+      reqNo: requestNo,
+      stage: process.stageType === 'AP_AGENT' ? process.stage : 'AI Agent',
+    }
+  }
+
   return {
-    ...process,
+    ...processCopy,
     ...dynamicFields,
     _actions: actions,
+    _agentData: parsedAgentResponse ? [parsedAgentResponse] : [],
+    _agentResponse: parsedAgentResponse,
     _groupKey: groupKey || activeTab,
     _originalIndex: originalIndex,
     documentNumber: requestNo,

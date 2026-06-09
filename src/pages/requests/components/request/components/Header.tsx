@@ -43,7 +43,6 @@ const Header: React.FC<HeaderProps> = ({
   approveLoading,
   currency,
   enableAIInsights = true,
-  hideActions,
   isEditing = false,
   isLoading: _isLoading,
   poNumber,
@@ -312,7 +311,7 @@ const Header: React.FC<HeaderProps> = ({
           </div>
         )}
 
-        {!hideActions && (
+        {(
           <div className='flex items-center gap-2'>
             {isEditing && (
               <Button

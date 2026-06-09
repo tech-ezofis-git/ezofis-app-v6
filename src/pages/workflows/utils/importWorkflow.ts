@@ -289,8 +289,8 @@ export const importWorkflow = (
       },
       id: block.id,
       position: {
-        x: isV6 ? blockLeft : (originX + relativeX),
-        y: isV6 ? blockTop : (originY + relativeY),
+        x: isV6 ? blockLeft : originX + relativeX,
+        y: isV6 ? blockTop : originY + relativeY,
       },
       type: 'custom',
     }

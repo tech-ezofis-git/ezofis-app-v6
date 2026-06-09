@@ -59,8 +59,9 @@ export const getConnection = async (payload: ConnectorPayload) => {
     _response.payload = connectorType
       ? list.filter(
           (item: any) =>
-            String(item.connectorType || item.ConnectorType || '').toUpperCase() ===
-            String(connectorType).toUpperCase(),
+            String(
+              item.connectorType || item.ConnectorType || '',
+            ).toUpperCase() === String(connectorType).toUpperCase(),
         )
       : list
   } catch (e: any) {
