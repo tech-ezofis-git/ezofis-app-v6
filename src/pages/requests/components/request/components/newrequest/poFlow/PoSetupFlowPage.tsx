@@ -5,7 +5,7 @@ import folderApi from '@/api/folders/folders'
 import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
 import showToast from '@/components/base/toast/showToast'
-import { AnimateFadeIn } from '@/components/common/animations'
+import { AnimateFadeIn, AnimateSlideUp } from '@/components/common/animations'
 import requestStore from '@/pages/requests/stores/useRequestStore'
 import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
@@ -443,7 +443,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
     <div className='animate-in fade-in flex h-full w-full flex-1 flex-col overflow-hidden bg-surface-muted font-inter text-gray-13 duration-300'>
       {/* SCREEN 1: UPLOAD SCREEN */}
       {(uploadState === 'idle' || uploadState === 'parsing') && (
-        <div className='flex h-full w-full flex-col overflow-hidden'>
+        <AnimateFadeIn className='flex h-full w-full flex-col overflow-hidden'>
           {/* Header */}
           <div className='flex h-13 shrink-0 items-center gap-2 border-b border-border-default bg-gradient-to-b from-gray-1 to-gray-2 px-4'>
             <button
@@ -463,11 +463,10 @@ export default function PoSetupFlowPage({ onClose }: Props) {
             </div>
           </div>
 
-          {/* Main Body content */}
           <main className='custom-scrollbar flex min-h-0 flex-1 flex-col items-center overflow-y-auto p-6'>
             <div className='my-auto flex w-full max-w-xl flex-col items-center gap-4 py-2'>
               {/* Header Section */}
-              <div className='animate-in slide-in-from-top-4 mb-1 space-y-1.5 text-center duration-300'>
+              <AnimateSlideUp className='space-y-1.5 text-center'>
                 <h1 className='text-2xl font-bold tracking-tight text-gray-13'>
                   Intelligent <span className='text-primary-9'>PO Agent</span>
                 </h1>
@@ -475,14 +474,15 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                   Streamline your Purchase Orders. Automatically match columns,
                   extract records, and configure ingestion logic.
                 </p>
-              </div>
+              </AnimateSlideUp>
 
               {/* Download template button centered */}
-              <button
-                className='mb-2 flex cursor-pointer items-center gap-2 self-end rounded-lg border border-border-default bg-surface-primary px-4 py-2 text-[12px] font-bold text-gray-11 shadow-2xs transition-all duration-300 hover:scale-[1.02] hover:bg-surface-secondary active:scale-[0.98]'
-                disabled={isDownloading}
-                onClick={handleDownload}
-              >
+              <AnimateSlideUp className='w-full flex justify-end' delay={0.05}>
+                <button
+                  className='mb-2 flex cursor-pointer items-center gap-2 self-end rounded-lg border border-border-default bg-surface-primary px-4 py-2 text-[12px] font-bold text-gray-11 shadow-2xs transition-all duration-300 hover:scale-[1.02] hover:bg-surface-secondary active:scale-[0.98]'
+                  disabled={isDownloading}
+                  onClick={handleDownload}
+                >
                 {isDownloading ? (
                   <span className='size-3.5 animate-spin rounded-full border-2 border-gray-10 border-t-transparent' />
                 ) : (
@@ -495,10 +495,12 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                   {isDownloading ? 'Preparing...' : 'Download PO template'}
                 </span>
               </button>
+            </AnimateSlideUp>
 
               {/* Drop Zone / Selection state */}
-              {uploadState === 'idle' ? (
-                <div className='group relative w-full overflow-hidden rounded-xl border border-border-default bg-surface-primary p-2 shadow-2xs transition-all duration-500 hover:shadow-xs'>
+              <AnimateSlideUp className='w-full' delay={0.1}>
+                {uploadState === 'idle' ? (
+                  <div className='group relative w-full overflow-hidden rounded-xl border border-border-default bg-surface-primary p-2 shadow-2xs transition-all duration-500 hover:shadow-xs'>
                   {/* Scan Animation effect */}
                   <div className='pointer-events-none absolute inset-0 z-0 overflow-hidden rounded-xl opacity-0 transition-opacity duration-700 group-hover:opacity-100'>
                     <div className='absolute inset-0 h-1/2 w-full animate-[scan_3s_linear_infinite] bg-gradient-to-b from-transparent via-accent-soft/20 to-transparent' />
@@ -580,62 +582,65 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                   </div>
                 </div>
               )}
+            </AnimateSlideUp>
 
               {/* Three Context Cards Grid */}
-              <div className='mt-1.5 grid w-full grid-cols-3 gap-3.5'>
-                {/* Card 1 */}
-                <div className='flex flex-col gap-2 rounded-xl border border-border-default bg-surface-primary p-3 shadow-2xs transition-shadow duration-300 hover:shadow-xs'>
-                  <div className='flex size-8 items-center justify-center rounded-lg bg-accent-soft text-primary-9'>
-                    <Icon className='size-4' name='tabler:table-column' />
-                  </div>
-                  <div>
-                    <div className='mb-1 text-[11px] leading-none font-medium text-gray-8'>
-                      Auto column mapping
+              <AnimateSlideUp className='w-full' delay={0.15}>
+                <div className='mt-1.5 grid w-full grid-cols-3 gap-3.5'>
+                  {/* Card 1 */}
+                  <div className='flex flex-col gap-2 rounded-xl border border-border-default bg-surface-primary p-3 shadow-2xs transition-shadow duration-300 hover:shadow-xs'>
+                    <div className='flex size-8 items-center justify-center rounded-lg bg-accent-soft text-primary-9'>
+                      <Icon className='size-4' name='tabler:table-column' />
                     </div>
-                    <div className='text-[13px] leading-tight font-bold text-gray-12'>
-                      AI-matched fields
+                    <div>
+                      <div className='mb-1 text-[11px] leading-none font-medium text-gray-8'>
+                        Auto column mapping
+                      </div>
+                      <div className='text-[13px] leading-tight font-bold text-gray-12'>
+                        AI-matched fields
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Card 2 */}
-                <div className='flex flex-col gap-2 rounded-xl border border-border-default bg-surface-primary p-3 shadow-2xs transition-shadow duration-300 hover:shadow-xs'>
-                  <div className='flex size-8 items-center justify-center rounded-lg bg-accent-soft text-primary-9'>
-                    <Icon className='size-4' name='tabler:checks' />
-                  </div>
-                  <div>
-                    <div className='mb-1 text-[11px] leading-none font-medium text-gray-8'>
-                      Validation
+                  {/* Card 2 */}
+                  <div className='flex flex-col gap-2 rounded-xl border border-border-default bg-surface-primary p-3 shadow-2xs transition-shadow duration-300 hover:shadow-xs'>
+                    <div className='flex size-8 items-center justify-center rounded-lg bg-accent-soft text-primary-9'>
+                      <Icon className='size-4' name='tabler:checks' />
                     </div>
-                    <div className='text-[13px] leading-tight font-bold text-gray-12'>
-                      Required fields checked
+                    <div>
+                      <div className='mb-1 text-[11px] leading-none font-medium text-gray-8'>
+                        Validation
+                      </div>
+                      <div className='text-[13px] leading-tight font-bold text-gray-12'>
+                        Required fields checked
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Card 3 */}
-                <div className='flex flex-col gap-2 rounded-xl border border-border-default bg-surface-primary p-3 shadow-2xs transition-shadow duration-300 hover:shadow-xs'>
-                  <div className='flex size-8 items-center justify-center rounded-lg bg-accent-soft text-primary-9'>
-                    <Icon className='size-4' name='tabler:history' />
-                  </div>
-                  <div>
-                    <div className='mb-1 text-[11px] leading-none font-medium text-gray-8'>
-                      Previous templates
+                  {/* Card 3 */}
+                  <div className='flex flex-col gap-2 rounded-xl border border-border-default bg-surface-primary p-3 shadow-2xs transition-shadow duration-300 hover:shadow-xs'>
+                    <div className='flex size-8 items-center justify-center rounded-lg bg-accent-soft text-primary-9'>
+                      <Icon className='size-4' name='tabler:history' />
                     </div>
-                    <div className='text-[13px] leading-tight font-bold text-gray-12'>
-                      3 saved mappings
+                    <div>
+                      <div className='mb-1 text-[11px] leading-none font-medium text-gray-8'>
+                        Previous templates
+                      </div>
+                      <div className='text-[13px] leading-tight font-bold text-gray-12'>
+                        3 saved mappings
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              </AnimateSlideUp>
             </div>
           </main>
-        </div>
+        </AnimateFadeIn>
       )}
 
       {/* SCREEN 2: INGESTION TIMELINE SCREEN */}
       {uploadState === 'processing' && (
-        <div className='flex h-full w-full flex-col overflow-hidden'>
+        <AnimateFadeIn className='flex h-full w-full flex-col overflow-hidden'>
           {/* Header */}
           <div className='flex h-13 shrink-0 items-center gap-2 border-b border-border-default bg-gradient-to-b from-gray-1 to-gray-2 px-4'>
             <button
@@ -656,7 +661,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
 
           {/* Timeline Layout */}
           <main className='custom-scrollbar flex min-h-0 flex-1 flex-col items-center overflow-y-auto p-6'>
-            <div className='relative my-auto w-full max-w-xl space-y-6 py-4 pl-8'>
+            <AnimateSlideUp className='relative my-auto w-full max-w-xl space-y-6 py-4 pl-8'>
               {/* Vertical connector line */}
               <div className='absolute top-3 bottom-3 left-3.5 z-0 w-[1.5px] bg-border-default' />
 
@@ -922,14 +927,14 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                   </div>
                 </div>
               </div>
-            </div>
+            </AnimateSlideUp>
           </main>
-        </div>
+        </AnimateFadeIn>
       )}
 
       {/* SCREEN 3: VERIFY FIELDS SCREEN */}
       {uploadState === 'ready' && (
-        <div className='flex h-full w-full flex-col overflow-hidden'>
+        <AnimateFadeIn className='flex h-full w-full flex-col overflow-hidden'>
           {/* Header */}
           <div className='flex h-13 shrink-0 items-center gap-2 border-b border-border-default bg-gradient-to-b from-gray-1 to-gray-2 px-4'>
             <button
@@ -953,7 +958,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
 
           {/* Body Content */}
           <main className='custom-scrollbar flex min-h-0 flex-1 flex-col items-center justify-start overflow-y-auto p-6'>
-            <div className='animate-in fade-in w-full max-w-xl space-y-5 py-4 duration-300'>
+            <AnimateSlideUp className='w-full max-w-xl space-y-5 py-4'>
               {/* Progress Indicator */}
               <div className='space-y-2 rounded-xl border border-border-default bg-surface-primary p-4 shadow-2xs'>
                 <div className='flex items-center justify-between text-[12px]'>
@@ -1301,14 +1306,14 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                   </span>
                 </button>
               </div>
-            </div>
+            </AnimateSlideUp>
           </main>
-        </div>
+        </AnimateFadeIn>
       )}
 
       {/* COMPLETED SUCCESS SCREEN */}
       {uploadState === 'completed' && (
-        <div className='flex h-full w-full flex-col overflow-hidden'>
+        <AnimateFadeIn className='flex h-full w-full flex-col overflow-hidden'>
           {/* Header */}
           <div className='flex h-13 shrink-0 items-center gap-2 border-b border-border-default bg-gradient-to-b from-gray-1 to-gray-2 px-4'>
             <div className='flex items-center gap-2 pl-6'>
@@ -1386,12 +1391,12 @@ export default function PoSetupFlowPage({ onClose }: Props) {
               />
             </AnimateFadeIn>
           </main>
-        </div>
+        </AnimateFadeIn>
       )}
 
       {/* COMPLETED ERROR SCREEN */}
       {uploadState === 'error' && (
-        <div className='flex h-full w-full flex-col overflow-hidden'>
+        <AnimateFadeIn className='flex h-full w-full flex-col overflow-hidden'>
           {/* Header */}
           <div className='flex h-13 shrink-0 items-center gap-2 border-b border-border-default bg-gradient-to-b from-gray-1 to-gray-2 px-4'>
             <button
@@ -1450,7 +1455,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
               </div>
             </AnimateFadeIn>
           </main>
-        </div>
+        </AnimateFadeIn>
       )}
     </div>
   )

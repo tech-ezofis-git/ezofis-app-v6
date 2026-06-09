@@ -332,16 +332,16 @@ const Header: React.FC<HeaderProps> = ({
 
               if (label === 'verified' || label === 'verify' || label.includes('verify')) {
                 btnColor = 'primary'
-                borderClass = 'border-[var(--primary-3)]'
+                borderClass = 'border-primary-4 hover:border-primary-6 shadow-sm hover:shadow-md transition-shadow'
               } else if (label === 'approved' || label === 'approve' || label.includes('approve')) {
                 btnColor = 'green'
-                borderClass = 'border-[var(--green-3)]'
+                borderClass = 'border-green-4 hover:border-green-6 shadow-sm hover:shadow-md transition-shadow'
               } else if (label === 'rejected' || label === 'reject' || label.includes('reject')) {
                 btnColor = 'red'
-                borderClass = 'border-[var(--red-3)]'
+                borderClass = 'border-red-4 hover:border-red-6 shadow-sm hover:shadow-md transition-shadow'
               } else {
                 btnColor = 'primary'
-                borderClass = 'border-[var(--primary-3)]'
+                borderClass = 'border-primary-4 hover:border-primary-6 shadow-sm hover:shadow-md transition-shadow'
               }
 
               return (
