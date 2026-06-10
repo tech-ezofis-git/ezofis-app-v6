@@ -639,6 +639,15 @@ const Request = ({
           status={statusBadge}
           totalAmount={totalAmount}
           requestNo={
+            formModel?.['Invoice Number'] ||
+            formModel?.['Invoice No'] ||
+            formModel?.['invoice_number'] ||
+            formModel?.['invoice_no'] ||
+            currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.['Invoice No'] ||
+            currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.['invoice_no'] ||
+            currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.['Invoice Number'] ||
+            currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.['invoice_number'] ||
+            currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.['invoice_num'] ||
             currentAgentData?.['kvcYuknkDumkTenjvrVLj'] ||
             selectedItem?.reqNo ||
             selectedItem?.['kvcYuknkDumkTenjvrVLj'] ||

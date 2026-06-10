@@ -272,6 +272,204 @@ const extractPONumber = (row: any): string => {
   return 'N/A'
 }
 
+const findInvoiceNumber = (row: any): string | null => {
+  if (!row) return null
+  const parsedForm = getParsedFormData(row)
+
+  const searchInObj = (obj: any): string | null => {
+    if (!obj || typeof obj !== 'object') return null
+
+    const directKeys = [
+      'kvcYuknkDumkTenjvrVLj',
+      'Invoice No',
+      'Invoice No.',
+      'Invoice Number',
+      'Invoice_No',
+      'Invoice_Number',
+      'InvoiceNo',
+      'InvoiceNumber'
+    ]
+    for (const key of directKeys) {
+      if (obj[key] !== undefined && obj[key] !== null) {
+        const val = String(obj[key]).trim()
+        if (val !== '' && val !== '-') return val
+      }
+    }
+
+    for (const key of Object.keys(obj)) {
+      const k = key.toLowerCase().replace(/[^a-z0-9]/g, '').trim()
+      if (k === 'invoiceno' || k === 'invoicenumber' || k === 'invoicenum') {
+        const val = obj[key]
+        if (val && typeof val !== 'object' && String(val).trim() !== '' && String(val).trim() !== '-') {
+          return String(val).trim()
+        }
+      }
+    }
+    return null
+  }
+
+  // 1. Priority: Form Data
+  const fromForm = searchInObj(parsedForm)
+  if (fromForm) return fromForm
+
+  // 2. Priority: Agent Data
+  const agentData = row._agentData?.[0] || row._agentData || {}
+  const fromAgent = searchInObj(agentData)
+  if (fromAgent) return fromAgent
+
+  // Check Extracted Invoice JSON
+  const invoiceHeader = agentData?.['Extracted Invoice JSON']?.invoice_header
+  if (invoiceHeader) {
+    const fromHeader = searchInObj(invoiceHeader)
+    if (fromHeader) return fromHeader
+  }
+
+  return null
+}
+
+const findSupplierName = (row: any): string | null => {
+  if (!row) return null
+  const parsedForm = getParsedFormData(row)
+
+  const searchInObj = (obj: any): string | null => {
+    if (!obj || typeof obj !== 'object') return null
+
+    const directKeys = [
+      'UtfgJy6Z0qyfRC5Bclfc',
+      'UtfgJy6Z0qyfRC5Bclf-c',
+      'UtfgJy6Z0qyfRC5Bclf_c',
+      'Supplier Name',
+      'Vendor Name',
+      'Supplier_Name',
+      'Vendor_Name',
+      'SupplierName',
+      'VendorName'
+    ]
+    for (const key of directKeys) {
+      if (obj[key] !== undefined && obj[key] !== null) {
+        const val = String(obj[key]).trim()
+        if (val !== '' && val !== '-') return val
+      }
+    }
+
+    for (const key of Object.keys(obj)) {
+      const k = key.toLowerCase().replace(/[^a-z0-9]/g, '').trim()
+      if (k === 'suppliername' || k === 'vendorname' || k === 'supplier' || k === 'vendor') {
+        const val = obj[key]
+        if (val && typeof val !== 'object' && String(val).trim() !== '' && String(val).trim() !== '-') {
+          return String(val).trim()
+        }
+      }
+    }
+    return null
+  }
+
+  // 1. Priority: Form Data
+  const fromForm = searchInObj(parsedForm)
+  if (fromForm) return fromForm
+
+  // 2. Priority: Agent Data
+  const agentData = row._agentData?.[0] || row._agentData || {}
+  const fromAgent = searchInObj(agentData)
+  if (fromAgent) return fromAgent
+
+  // Check Extracted Invoice JSON
+  const invoiceHeader = agentData?.['Extracted Invoice JSON']?.invoice_header
+  if (invoiceHeader) {
+    const fromHeader = searchInObj(invoiceHeader)
+    if (fromHeader) return fromHeader
+  }
+
+  return null
+}
+
+const findGLNumber = (row: any): string | null => {
+  if (!row) return null
+  const parsedForm = getParsedFormData(row)
+
+  const searchInObj = (obj: any): string | null => {
+    if (!obj || typeof obj !== 'object') return null
+    for (const key of Object.keys(obj)) {
+      const k = key.toLowerCase().replace(/_/g, ' ').trim()
+      if (k === 'gl number' || k === 'gl account' || k === 'gl account code' || k === 'gl code') {
+        const val = obj[key]
+        if (val && typeof val !== 'object' && String(val).trim() !== '' && String(val).trim() !== '-') {
+          return String(val).trim()
+        }
+      }
+    }
+    return null
+  }
+
+  // 1. Priority: Form Data
+  const fromForm = searchInObj(parsedForm)
+  if (fromForm) return fromForm
+
+  // 2. Priority: Agent Data
+  const agentData = row._agentData?.[0] || row._agentData || {}
+  const fromAgent = searchInObj(agentData)
+  if (fromAgent) return fromAgent
+
+  // 3. gl_matching in agentData
+  if (agentData?.gl_matching?.account) {
+    return String(agentData.gl_matching.account).trim()
+  }
+
+  // 4. Extracted Invoice JSON
+  const invoiceHeader = agentData?.['Extracted Invoice JSON']?.invoice_header
+  if (invoiceHeader) {
+    const fromHeader = searchInObj(invoiceHeader)
+    if (fromHeader) return fromHeader
+  }
+
+  return null
+}
+
+const findCategory = (row: any): string | null => {
+  if (!row) return null
+  const parsedForm = getParsedFormData(row)
+
+  const searchInObj = (obj: any): string | null => {
+    if (!obj || typeof obj !== 'object') return null
+    for (const key of Object.keys(obj)) {
+      const k = key.toLowerCase().replace(/_/g, ' ').trim()
+      if (k === 'category' || k === 'supplier category') {
+        const val = obj[key]
+        if (val && typeof val !== 'object' && String(val).trim() !== '' && String(val).trim() !== '-') {
+          return String(val).trim()
+        }
+      }
+    }
+    return null
+  }
+
+  // 1. Priority: Form Data
+  const fromForm = searchInObj(parsedForm)
+  if (fromForm) return fromForm
+
+  // 2. Priority: Agent Data
+  const agentData = row._agentData?.[0] || row._agentData || {}
+  const fromAgent = searchInObj(agentData)
+  if (fromAgent) return fromAgent
+
+  // 3. Extracted Invoice JSON
+  const invoiceHeader = agentData?.['Extracted Invoice JSON']?.invoice_header
+  if (invoiceHeader) {
+    const fromHeader = searchInObj(invoiceHeader)
+    if (fromHeader) return fromHeader
+  }
+
+  // 4. Check row fields directly
+  if (row.category && typeof row.category !== 'object') {
+    return String(row.category).trim()
+  }
+  if (row.supplierCategory && typeof row.supplierCategory !== 'object') {
+    return String(row.supplierCategory).trim()
+  }
+
+  return null
+}
+
 const extractDueDate = (row: any): string => {
   if (!row) return '-'
   const agentData = row._agentData?.[0] || row._agentData || {}
@@ -425,32 +623,9 @@ const extractInvoiceDate = (row: any): string => {
 
 const extractInvoiceNumber = (row: any): string => {
   if (!row) return '-'
-  const agentData = row._agentData?.[0] || row._agentData || {}
-  const parsedForm = getParsedFormData(row)
-
-  if (parsedForm['kvcYuknkDumkTenjvrVLj'] && parsedForm['kvcYuknkDumkTenjvrVLj'] !== '-') {
-    return String(parsedForm['kvcYuknkDumkTenjvrVLj']).trim()
-  }
-
-  // 1. Check dynamic field key kvcYuknkDumkTenjvrVLj in fields and row
-  const fromFormKvc =
-    row.formData?.fields?.['kvcYuknkDumkTenjvrVLj'] ||
-    row['kvcYuknkDumkTenjvrVLj']
-  if (fromFormKvc && fromFormKvc !== '-') return String(fromFormKvc).trim()
-
-  // 2. Check agent data
-  const fromAgent =
-    agentData?.['kvcYuknkDumkTenjvrVLj'] ||
-    agentData?.['Extracted Invoice JSON']?.invoice_header?.['Invoice Number'] ||
-    agentData?.['Extracted Invoice JSON']?.invoice_header?.['invoice_number'] ||
-    agentData?.['Extracted Invoice JSON']?.invoice_header?.['invoice_num'] ||
-    agentData?.['Extracted Invoice JSON']?.invoice_header?.['invoice_no'] ||
-    agentData?.invoice_number ||
-    agentData?.invoiceNumber ||
-    agentData?.invoiceNo ||
-    agentData?.reqNo
-
-  if (fromAgent && fromAgent !== '-') return String(fromAgent).trim()
+  
+  const fromResolved = findInvoiceNumber(row)
+  if (fromResolved) return fromResolved
 
   // 3. Fallbacks
   const fallback =
@@ -634,27 +809,40 @@ const StatusCell = ({
 }) => {
   const [isHovered, setIsHovered] = useState(false)
   const rowId = row?.id || row?.processId || `item-${originalIndex}`
-  const status = row?.status || 'Pending'
+
+  const agentData = row._agentData?.[0] || row._agentData || {}
+  const parsedForm = getParsedFormData(row)
+  const rawDecision = String(
+    parsedForm['2MH_BMDFEVKsU0uAQjoI1'] ||
+    agentData?.decision ||
+    row.decision ||
+    row.status ||
+    ''
+  ).toUpperCase()
 
   let iconName = 'tabler:clock'
-  let iconColorClass = 'bg-orange-2 border-orange-2 text-orange-9'
+  let iconColorClass = 'bg-[var(--gray-2)] border-[var(--gray-2)] text-[var(--gray-9)]'
 
   if (row.isProcessing) {
     iconName = 'tabler:loader-2'
     iconColorClass =
       'bg-[var(--orange-2)] border-[var(--orange-2)] text-[var(--orange-9)]'
-  } else if (status === 'Approved' || originalIndex % 5 === 0) {
+  } else if (rawDecision === 'APPROVED' || rawDecision === 'MATCHED') {
     iconName = 'tabler:circle-check'
     iconColorClass =
       'bg-[var(--green-2)] border-[var(--green-2)] text-[var(--green-9)]'
-  } else if (row?.isDuplicateInvoice || originalIndex % 7 === 0) {
+  } else if (rawDecision === 'REJECTED' || rawDecision === 'NO MATCH') {
+    iconName = 'tabler:alert-circle'
+    iconColorClass =
+      'bg-[var(--red-2)] border-[var(--red-2)] text-[var(--red-9)]'
+  } else if (row?.isDuplicateInvoice) {
     iconName = 'tabler:stack-2'
     iconColorClass =
       'bg-[var(--purple-2)] border-[var(--purple-2)] text-[var(--purple-9)]'
-  } else if (originalIndex % 4 === 0) {
-    iconName = 'tabler:circle-check'
+  } else if (rawDecision === 'PARTIALLY APPROVED' || rawDecision === 'PARTIAL MATCH') {
+    iconName = 'tabler:alert-triangle'
     iconColorClass =
-      'bg-[var(--blue-2)] border-[var(--blue-2)] text-[var(--blue-9)]'
+      'bg-[var(--orange-2)] border-[var(--orange-2)] text-[var(--orange-9)]'
   }
 
   return (
@@ -835,8 +1023,6 @@ const StatusCell = ({
     </div>
   )
 }
-
-const GL_CATEGORIES = ['Supplies', 'Software', 'Utilities', 'Travel']
 
 const AI_INSIGHTS = [
   'Ready for auto-approval',
@@ -1058,29 +1244,7 @@ const getBaseColumns = (
           ''
 
         if (!rawDecision) {
-          const matchType = index % 3
-          if (matchType === 0) {
-            return (
-              <span className='flex items-center gap-1 rounded-md border border-[var(--green-4)] bg-[var(--green-2)] px-2 py-0.5 text-[11px] font-semibold text-[var(--green-11)]'>
-                <Icon className='size-3.5' name='tabler:circle-check' />
-                Matched
-              </span>
-            )
-          } else if (matchType === 1) {
-            return (
-              <span className='flex items-center gap-1 rounded-md border border-[var(--red-4)] bg-[var(--red-2)] px-2 py-0.5 text-[11px] font-semibold text-[var(--red-11)]'>
-                <Icon className='size-3.5' name='tabler:alert-circle' />
-                No Match
-              </span>
-            )
-          } else {
-            return (
-              <span className='flex items-center gap-1 rounded-md border border-[var(--orange-4)] bg-[var(--orange-2)] px-2 py-0.5 text-[11px] font-semibold text-[var(--orange-11)]'>
-                <Icon className='size-3.5' name='tabler:alert-triangle' />
-                Partial Match
-              </span>
-            )
-          }
+          return null
         }
 
         const formatted = formatDecision(String(rawDecision))
@@ -1116,10 +1280,8 @@ const getBaseColumns = (
       label: 'Raised By',
       size: 200,
       renderCell: (row: any) => {
-        const parsedForm = getParsedFormData(row)
         const supplierName =
-          parsedForm['UtfgJy6Z0qyfRC5Bclfc'] ||
-          parsedForm['UtfgJy6Z0qyfRC5Bclf-c'] ||
+          findSupplierName(row) ||
           row?.vendor ||
           row?.['UtfgJy6Z0qyfRC5Bclf-c'] ||
           row?.raisedBy ||
@@ -1138,18 +1300,26 @@ const getBaseColumns = (
       id: 'glCodeCategory',
       label: 'GL & Category',
       size: 220,
-      renderCell: (_row: any, index = 0) => {
-        const category = GL_CATEGORIES[index % 4]
+      renderCell: (row: any) => {
+        const glNumber = findGLNumber(row)
+        const category = findCategory(row)
+
+        if (!glNumber && !category) return null
+
         return (
           <div className='flex items-center gap-2 text-[12px] font-medium text-[var(--gray-10)]'>
-            <div className='flex items-center gap-1 text-[var(--gray-8)]'>
-              <Icon className='size-3.5' name='tabler:stack' />
-              <span>5100-00{index + 1}</span>
-            </div>
-            <div className='flex items-center gap-1 text-[var(--gray-8)]'>
-              <Icon className='size-3.5' name='tabler:tag' />
-              <span>{category}</span>
-            </div>
+            {glNumber && (
+              <div className='flex items-center gap-1 text-[var(--gray-8)]'>
+                <Icon className='size-3.5' name='tabler:stack' />
+                <span>{glNumber}</span>
+              </div>
+            )}
+            {category && (
+              <div className='flex items-center gap-1 text-[var(--gray-8)]'>
+                <Icon className='size-3.5' name='tabler:tag' />
+                <span>{category}</span>
+              </div>
+            )}
           </div>
         )
       },
