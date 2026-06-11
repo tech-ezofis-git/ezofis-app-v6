@@ -44,6 +44,11 @@ const Sidebar = () => {
           label: 'Forms',
           route: '/forms',
         },
+        {
+          icon: 'lucide:settings',
+          label: 'Settings',
+          route: '/settings',
+        },
         // {
         //   icon: 'lucide:folder',
         //   label: 'Folders',
