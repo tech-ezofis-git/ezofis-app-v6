@@ -27,6 +27,7 @@ import { buildFieldMetaMap } from '../../../Request'
 import Attachments from '../attachment/Attachments'
 import Comments from '../comment/Comments'
 import History from '../history/History'
+import requestStore from '@/pages/requests/stores/useRequestStore'
 
 // --- Helpers ---
 
@@ -147,6 +148,7 @@ const AnalysisCard = ({
   statusType = 'success',
   title,
   value,
+  isLoading = false,
 }: any) => (
   <div className='flex min-w-0 flex-1 flex-col gap-1.5 rounded-xl border border-[var(--gray-3)] bg-surface p-2.5 transition-colors hover:bg-[var(--gray-1)]'>
     <div className='flex items-center justify-between'>
@@ -158,25 +160,33 @@ const AnalysisCard = ({
       >
         <Icon className='h-3.5 w-3.5' />
       </div>
-      <div
-        className={cn(
-          'shrink-0 rounded-md border px-2 py-0.5 text-[9px] font-semibold',
-          getStatusBorderStyles(statusType),
-        )}
-      >
-        {status}
-      </div>
+      {isLoading ? (
+        <div className='h-5 w-14 animate-pulse rounded bg-[var(--gray-3)]' />
+      ) : (
+        <div
+          className={cn(
+            'shrink-0 rounded-md border px-2 py-0.5 text-[9px] font-semibold',
+            getStatusBorderStyles(statusType),
+          )}
+        >
+          {status}
+        </div>
+      )}
     </div>
     <div className='mt-0.5 flex min-w-0 flex-col gap-0.5'>
       <span className='text-[11px] leading-none font-semibold tracking-tight text-[var(--gray-11)]'>
         {title}
       </span>
-      <span
-        className='text-[13px] leading-tight font-semibold text-[var(--gray-13)]'
-        title={value}
-      >
-        {value || '---'}
-      </span>
+      {isLoading ? (
+        <div className='h-4 w-24 animate-pulse rounded bg-[var(--gray-3)] mt-1' />
+      ) : (
+        <span
+          className='text-[13px] leading-tight font-semibold text-[var(--gray-13)]'
+          title={value}
+        >
+          {value || '---'}
+        </span>
+      )}
     </div>
   </div>
 )
@@ -353,7 +363,17 @@ const Overview = (props: any) => {
     transactionId,
     workflowId,
     setFormModel,
+    isProcessing,
   } = props
+
+  const processingProcesses = requestStore((state) => state.processingProcesses)
+  const matchingProc = useMemo(() => {
+    return processingProcesses.find(
+      (p) => String(p.processId || p.id) === String(selectedItem?.processId || selectedItem?.id)
+    )
+  }, [processingProcesses, selectedItem])
+
+  const isCurrentlyProcessing = isProcessing !== undefined ? isProcessing : (!!matchingProc || selectedItem?.isProcessing)
 
   const [activeTab, setActiveTab] = useState('summary')
   const [selectedFile, setSelectedFile] = useState<any>(null)
@@ -624,6 +644,14 @@ const Overview = (props: any) => {
   useEffect(() => {
     let activeUrl: string | null = null
     const fetchFile = async () => {
+      const localUrl = selectedFile?._localFileUrl || selectedItem?._localFileUrl || selectedFile?.localUrl || selectedItem?.localUrl
+      if (localUrl) {
+        setPreviewUrl(localUrl)
+        setFileType(selectedFile?.type || selectedItem?.type || 'application/pdf')
+        setIsViewerLoading(false)
+        return
+      }
+
       const repoId = String(
         selectedFile?.repositoryId ||
           selectedItem?.repositoryId ||
@@ -825,6 +853,7 @@ const Overview = (props: any) => {
                         <AnalysisCard
                           icon={Paperclip}
                           title='PO Matching'
+                          isLoading={isCurrentlyProcessing}
                           status={
                             poVal && poVal !== '-' && poVal !== 'N/A'
                               ? 'Matched'
@@ -846,6 +875,7 @@ const Overview = (props: any) => {
                     <AnalysisCard
                       icon={Layers}
                       title='Duplicate Detection'
+                      isLoading={isCurrentlyProcessing}
                       status={
                         agentData?.duplicate_check?.status || 'No Duplicate'
                       }
@@ -861,6 +891,7 @@ const Overview = (props: any) => {
                     />
                     <AnalysisCard
                       icon={ListFilter}
+                      isLoading={isCurrentlyProcessing}
                       status={agentData?.gl_matching?.status || 'Matched'}
                       statusType='success'
                       title='GL Account Matching'
@@ -868,6 +899,7 @@ const Overview = (props: any) => {
                     />
                     <AnalysisCard
                       icon={Store}
+                      isLoading={isCurrentlyProcessing}
                       statusType='success'
                       title='Supplier Verification'
                       status={
@@ -962,42 +994,73 @@ const Overview = (props: any) => {
                 <div className='flex min-h-0 flex-1 flex-col'>
                   {activeTab === 'summary' && (
                     <div className='grid flex-1 grid-cols-2 gap-x-4 gap-y-2 overflow-y-auto p-4'>
-                      {Object.entries(formModel || {})
-                        .filter(([key, val]) => {
-                          if (typeof val === 'object' && val !== null)
-                            return false
-                          if (typeof val === 'string') {
-                            const trimmed = val.trim()
-                            if (
-                              trimmed.startsWith('[') &&
-                              trimmed.endsWith(']')
-                            )
-                              return false
-                            if (
-                              trimmed.startsWith('{') &&
-                              trimmed.endsWith('}')
-                            )
-                              return false
-                          }
-                          return !allowedLabels || allowedLabels.has(key)
+                      {isCurrentlyProcessing ? (
+                        Array.from({ length: 8 }).map((_, idx) => {
+                          const labels = [
+                            'Supplier Name',
+                            'Invoice Number',
+                            'Invoice Date',
+                            'Invoice Amount',
+                            'PO Number',
+                            'Payment Terms',
+                            'Currency',
+                            'Tax Amount',
+                          ]
+                          const icons = [Store, ListFilter, HistoryIcon, Wallet, Paperclip, HistoryIcon, CreditCard, Wallet]
+                          const label = labels[idx]
+                          const IconComp = icons[idx]
+                          return (
+                            <div key={idx} className='flex w-full items-start gap-3 rounded-lg border border-transparent p-3 text-left'>
+                              <div className='mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--gray-2)] text-[var(--gray-11)]'>
+                                <IconComp className='h-3.5 w-3.5' />
+                              </div>
+                              <div className='min-w-0 flex-1 space-y-1.5'>
+                                <p className='text-[10px] font-semibold text-[var(--gray-11)] leading-none'>
+                                  {label}
+                                </p>
+                                <div className='h-4 w-28 animate-pulse rounded bg-[var(--gray-3)]' />
+                              </div>
+                            </div>
+                          )
                         })
-                        .map(([key, val]) => (
-                          <FormCard
-                            icon={getFieldIcon(key)}
-                            key={key}
-                            label={key}
-                            options={getOptions(key)}
-                            type={getFieldType(key)}
-                            value={val || '-'}
-                            highlight={
-                              key.toLowerCase().includes('total') ||
-                              key.toLowerCase().includes('due')
+                      ) : (
+                        Object.entries(formModel || {})
+                          .filter(([key, val]) => {
+                            if (typeof val === 'object' && val !== null)
+                              return false
+                            if (typeof val === 'string') {
+                              const trimmed = val.trim()
+                              if (
+                                trimmed.startsWith('[') &&
+                                trimmed.endsWith(']')
+                              )
+                                return false
+                              if (
+                                trimmed.startsWith('{') &&
+                                trimmed.endsWith('}')
+                              )
+                                return false
                             }
-                            onChange={(newVal: string) =>
-                              handleFieldChange(key, newVal)
-                            }
-                          />
-                        ))}
+                            return !allowedLabels || allowedLabels.has(key)
+                          })
+                          .map(([key, val]) => (
+                            <FormCard
+                              icon={getFieldIcon(key)}
+                              key={key}
+                              label={key}
+                              options={getOptions(key)}
+                              type={getFieldType(key)}
+                              value={val || '-'}
+                              highlight={
+                                key.toLowerCase().includes('total') ||
+                                key.toLowerCase().includes('due')
+                              }
+                              onChange={(newVal: string) =>
+                                handleFieldChange(key, newVal)
+                              }
+                            />
+                          ))
+                      )}
                     </div>
                   )}
 
@@ -1032,40 +1095,59 @@ const Overview = (props: any) => {
                             </tr>
                           </thead>
                           <tbody className='divide-y divide-[var(--gray-2)]'>
-                            {lineItems.map((item: any, index: number) => {
-                              const isMatch =
-                                (item['Line Score'] || item?.score) >= 90 ||
-                                item?.status === 'MATCH'
+                            {isCurrentlyProcessing ? (
+                              Array.from({ length: 3 }).map((_, idx) => (
+                                <tr key={idx} className='group transition-colors'>
+                                  <td className='px-3 py-3'>
+                                    <div className='h-4 w-5/6 animate-pulse rounded bg-[var(--gray-3)]' />
+                                  </td>
+                                  <td className='w-[70px] px-3 py-3'>
+                                    <div className='h-4 w-8 animate-pulse rounded bg-[var(--gray-3)] ml-auto' />
+                                  </td>
+                                  <td className='w-[100px] px-3 py-3'>
+                                    <div className='h-4 w-12 animate-pulse rounded bg-[var(--gray-3)] ml-auto' />
+                                  </td>
+                                  <td className='w-[120px] px-3 py-3'>
+                                    <div className='h-4 w-16 animate-pulse rounded bg-[var(--gray-3)] ml-auto' />
+                                  </td>
+                                  <td className='w-[44px]' />
+                                </tr>
+                              ))
+                            ) : (
+                              lineItems.map((item: any, index: number) => {
+                                const isMatch =
+                                  (item['Line Score'] || item?.score) >= 90 ||
+                                  item?.status === 'MATCH'
 
-                              const descVal =
-                                item.Description?.['Invoice Value'] ??
-                                item.description ??
-                                ''
-                              const qtyVal =
-                                item.Quantity?.['Invoice Value'] ??
-                                item.quantity ??
-                                ''
-                              const priceVal =
-                                item.Price?.['Invoice Value'] ??
-                                item.rate ??
-                                item.unit_price ??
-                                ''
-                              const amountVal =
-                                item.Amount?.['Invoice Value'] ??
-                                item.total ??
-                                item.amount ??
-                                ''
+                                const descVal =
+                                  item.Description?.['Invoice Value'] ??
+                                  item.description ??
+                                  ''
+                                const qtyVal =
+                                  item.Quantity?.['Invoice Value'] ??
+                                  item.quantity ??
+                                  ''
+                                const priceVal =
+                                  item.Price?.['Invoice Value'] ??
+                                  item.rate ??
+                                  item.unit_price ??
+                                  ''
+                                const amountVal =
+                                  item.Amount?.['Invoice Value'] ??
+                                  item.total ??
+                                  item.amount ??
+                                  ''
 
-                              return (
-                                <tr
-                                  key={item._id}
-                                  className={cn(
-                                    'group transition-colors',
-                                    isMatch
-                                      ? 'hover:bg-[var(--gray-1)]'
-                                      : 'bg-[var(--red-1)]/30 hover:bg-[var(--red-1)]/50',
-                                  )}
-                                >
+                                return (
+                                  <tr
+                                    key={item._id}
+                                    className={cn(
+                                      'group transition-colors',
+                                      isMatch
+                                        ? 'hover:bg-[var(--gray-1)]'
+                                        : 'bg-[var(--red-1)]/30 hover:bg-[var(--red-1)]/50',
+                                    )}
+                                  >
                                   {/* Description Cell */}
                                   <td className='px-2 py-0.5 font-semibold text-[var(--gray-13)]'>
                                     <input
@@ -1169,7 +1251,7 @@ const Overview = (props: any) => {
                                   </td>
                                 </tr>
                               )
-                            })}
+                            }))}
                           </tbody>
                           <tfoot className='border-t border-[var(--gray-3)] bg-[var(--gray-1)]'>
                             <tr className='font-bold'>
@@ -1218,43 +1300,64 @@ const Overview = (props: any) => {
 
                   {activeTab === 'attachments' && (
                     <div className='flex-1 overflow-y-auto p-4'>
-                      <Attachments
-                        enabled={true}
-                        processId={processId}
-                        workflowId={workflowId}
-                        onSelect={(file) =>
-                          selectedFile?.id === file.id
-                            ? (setIsViewerLoading(true),
-                              setTimeout(() => setIsViewerLoading(false), 500))
-                            : setSelectedFile(file)
-                        }
-                      />
+                      {isCurrentlyProcessing ? (
+                        <div className='flex h-48 flex-col items-center justify-center text-center'>
+                          <Icon className='size-8 animate-spin text-[var(--primary-9)] mb-2' name='tabler:loader-2' />
+                          <p className='text-xs font-semibold text-[var(--gray-10)]'>Loading Attachments...</p>
+                        </div>
+                      ) : (
+                        <Attachments
+                          enabled={true}
+                          processId={processId}
+                          workflowId={workflowId}
+                          onSelect={(file) =>
+                            selectedFile?.id === file.id
+                              ? (setIsViewerLoading(true),
+                                setTimeout(() => setIsViewerLoading(false), 500))
+                              : setSelectedFile(file)
+                          }
+                        />
+                      )}
                     </div>
                   )}
 
                   {activeTab === 'comments' && (
                     <div className='flex min-h-0 flex-1 flex-col pt-4 pb-0'>
-                      <Comments
-                        attachments={selectedItem?.attachments || []}
-                        comments={commentsData}
-                        enabled={true}
-                        isLoading={isLoadingComments}
-                        processId={processId}
-                        refetch={refetchComments}
-                        repositoryId={repositoryId}
-                        transactionId={transactionId}
-                        workflowId={workflowId}
-                      />
+                      {isCurrentlyProcessing ? (
+                        <div className='flex h-48 flex-col items-center justify-center text-center'>
+                          <Icon className='size-8 animate-spin text-[var(--primary-9)] mb-2' name='tabler:loader-2' />
+                          <p className='text-xs font-semibold text-[var(--gray-10)]'>Loading Comments...</p>
+                        </div>
+                      ) : (
+                        <Comments
+                          attachments={selectedItem?.attachments || []}
+                          comments={commentsData}
+                          enabled={true}
+                          isLoading={isLoadingComments}
+                          processId={processId}
+                          refetch={refetchComments}
+                          repositoryId={repositoryId}
+                          transactionId={transactionId}
+                          workflowId={workflowId}
+                        />
+                      )}
                     </div>
                   )}
 
                   {activeTab === 'history' && (
                     <div className='flex-1 overflow-y-auto p-4'>
-                      <History
-                        enabled={true}
-                        processId={processId}
-                        workflowId={workflowId}
-                      />
+                      {isCurrentlyProcessing ? (
+                        <div className='flex h-48 flex-col items-center justify-center text-center'>
+                          <Icon className='size-8 animate-spin text-[var(--primary-9)] mb-2' name='tabler:loader-2' />
+                          <p className='text-xs font-semibold text-[var(--gray-10)]'>Loading History...</p>
+                        </div>
+                      ) : (
+                        <History
+                          enabled={true}
+                          processId={processId}
+                          workflowId={workflowId}
+                        />
+                      )}
                     </div>
                   )}
                 </div>

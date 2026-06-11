@@ -21,6 +21,19 @@ import authUserStore from '@/stores/authUserStore'
 import Header from './components/Header'
 import Overview from './components/sections/overview/Overview'
 
+const cleanKey = (s: string) =>
+  s
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '')
+    .replace('number', 'no')
+    .replace('num', 'no')
+    .replace('amt', 'amount')
+    .replace('val', 'value')
+
+const matchKeysLoosely = (key1: string, key2: string): boolean => {
+  return cleanKey(key1) === cleanKey(key2)
+}
+
 const findPONumberInObject = (obj: any): string | null => {
   if (!obj || typeof obj !== 'object') return null
 
@@ -262,6 +275,7 @@ const Request = ({
     selectedWorkflow,
     selectedWorkflowId,
     workflowRefresh,
+    processingProcesses,
   } = requestStore((state) => state)
 
   const selectedItem = item || storeSelectedItem
@@ -277,11 +291,18 @@ const Request = ({
   >('analysis')
   const [isEditing, setIsEditing] = useState<boolean>(false)
 
+  // Determine if it was known to be processing initially
+  const initialProcessing = processingProcesses.some((p) => String(p.processId || p.id) === String(selectedItem?.processId || selectedItem?.id)) || selectedItem?.isProcessing
+
   const { data: request, isLoading } = useRequestDetail(
     resolvedWorkflowId,
     selectedItem?.processId,
     selectedItem?.transactionId,
+    initialProcessing,
   )
+
+  const hasAgentDecision = request ? !!(request.review || request._agentData?.[0]?.decision || request.completedAtUtc) : false
+  const isCurrentlyProcessing = !hasAgentDecision && initialProcessing
   const actions =
     request?._actions ||
     selectedItem?._actions ||
@@ -315,9 +336,23 @@ const Request = ({
   const [formModel, setFormModel] = useState<any>({})
 
   const allowedLabels = useMemo(() => {
-    if (!selectedItem) return new Set<string>()
+    const activeItem = request || selectedItem
+    if (!activeItem) return new Set<string>()
     const metaMap = buildFieldMetaMap(selectedWorkflow, request?._formDefinition)
-    const fieldsSource = selectedItem.formData?.fields || {}
+    
+    let fieldsSource: any = {}
+    const rawFormData = activeItem.formData
+    if (rawFormData) {
+      if (typeof rawFormData === 'string') {
+        try {
+          const parsed = JSON.parse(rawFormData)
+          fieldsSource = parsed?.fields || parsed || {}
+        } catch {}
+      } else if (typeof rawFormData === 'object') {
+        fieldsSource = rawFormData.fields || rawFormData || {}
+      }
+    }
+
     const labels = new Set<string>()
     Object.keys(fieldsSource).forEach((key) => {
       const meta = metaMap.get(String(key).toLowerCase())
@@ -350,24 +385,40 @@ const Request = ({
       }
     })
     return labels
-  }, [selectedItem, selectedWorkflow, request?._formDefinition])
+  }, [selectedItem, selectedWorkflow, request?._formDefinition, request?.formData, request])
 
   useEffect(() => {
-    if (selectedItem) {
+    if (hasAgentData && agentDataList.length > 0) {
+      setSelectedAgentId(agentDataList[0].id)
+    } else {
+      setSelectedAgentId(null)
+    }
+  }, [request?._agentData, hasAgentData])
+
+  const currentAgentData = useMemo(() => {
+    return agentDataList.find((a: any) => a.id === selectedAgentId) || {}
+  }, [agentDataList, selectedAgentId])
+
+  const invoiceHeader = currentAgentData?.['Extracted Invoice JSON']?.invoice_header as any
+
+  useEffect(() => {
+    const activeItem = request || selectedItem
+    if (activeItem) {
       const metaMap = buildFieldMetaMap(selectedWorkflow, request?._formDefinition)
       const cleanFields: any = {}
 
       let fieldsSource: any = {}
-      if (selectedItem.formData) {
-        if (typeof selectedItem.formData === 'string') {
+      const rawFormData = activeItem.formData
+      if (rawFormData) {
+        if (typeof rawFormData === 'string') {
           try {
-            const parsed = JSON.parse(selectedItem.formData)
+            const parsed = JSON.parse(rawFormData)
             fieldsSource = parsed?.fields || parsed || {}
           } catch {
             fieldsSource = {}
           }
-        } else if (typeof selectedItem.formData === 'object') {
-          fieldsSource = selectedItem.formData?.fields || selectedItem.formData || {}
+        } else if (typeof rawFormData === 'object') {
+          fieldsSource = rawFormData.fields || rawFormData || {}
         }
       }
 
@@ -391,11 +442,34 @@ const Request = ({
         const label = meta?.label || key
         cleanFields[label] = val
       })
+
+      // Merge invoiceHeader values if present to resolve race condition
+      if (invoiceHeader) {
+        for (const key of Object.keys(invoiceHeader)) {
+          const existingKey = Object.keys(cleanFields).find((k) =>
+            matchKeysLoosely(k, key)
+          )
+          if (existingKey) {
+            const val = cleanFields[existingKey]
+            if (!val || val === '-' || val === '') {
+              cleanFields[existingKey] = invoiceHeader[key]
+            }
+          }
+        }
+      }
+
       setFormModel(cleanFields)
     } else {
       setFormModel({})
     }
-  }, [selectedItem?.transactionId, selectedWorkflow, request?._formDefinition])
+  }, [
+    selectedItem?.transactionId,
+    selectedWorkflow,
+    request?._formDefinition,
+    request?.formData,
+    invoiceHeader,
+    request,
+  ])
 
   console.log('=== REQUEST COMPONENT DEBUG LOGS ===')
   console.log('Prop item:', item)
@@ -417,19 +491,7 @@ const Request = ({
     }
   }, [hasAgentData, activeTabValue])
 
-  useEffect(() => {
-    if (hasAgentData && agentDataList.length > 0) {
-      setSelectedAgentId(agentDataList[0].id)
-    } else {
-      setSelectedAgentId(null)
-    }
-  }, [request?._agentData, hasAgentData])
 
-  const currentAgentData = useMemo(() => {
-    return agentDataList.find((a: any) => a.id === selectedAgentId) || {}
-  }, [agentDataList, selectedAgentId])
-
-  console.log(currentAgentData, 'currentAgentData')
   // const handleActivetab = (tabValue: string) => {
   //   if (tabValue === 'close') {
   //     setActiveTab("");
@@ -531,8 +593,6 @@ const Request = ({
     }
   }
 
-  const invoiceHeader = currentAgentData?.['Extracted Invoice JSON']
-    ?.invoice_header as any
   const totalAmount =
     formModel?.['Invoice Amount'] ||
     formModel?.['Total Due'] ||
@@ -626,6 +686,7 @@ const Request = ({
           approveLoading={submitting}
           attachmentCount={selectedItem?.attachmentCount || 0}
           commentsCount={selectedItem?.commentsCount || 0}
+          isProcessing={isCurrentlyProcessing}
           currency={currency}
           enableAIInsights={requestListTab !== 'Processed'}
           hideActions={hideActions}
@@ -701,12 +762,13 @@ const Request = ({
           processId={Number(selectedItem?.processId)}
           repositoryId={Number(rawWorkflowData?.repositoryId)}
           rightView={rightView}
-          selectedItem={selectedItem}
+          selectedItem={request || selectedItem}
           selectedWorkflow={selectedWorkflow}
           transactionId={Number(selectedItem?.transactionId)}
           workflowId={resolvedWorkflowId}
           setFormModel={setFormModel}
           setRightView={setRightView}
+          isProcessing={isCurrentlyProcessing || isLoading}
         />
       </AnimateFadeIn>
     </div>

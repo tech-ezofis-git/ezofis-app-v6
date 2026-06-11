@@ -1,4 +1,44 @@
+import { useState, useEffect } from 'react'
 import { create } from 'zustand'
+
+export const getProcessingStatusText = (startTime?: string) => {
+  if (!startTime) return 'We are processing your file...'
+  const start = new Date(startTime).getTime()
+  const now = Date.now()
+  const elapsed = (now - start) / 1000
+
+  if (elapsed < 15) {
+    return 'We are processing your file...'
+  } else if (elapsed < 30) {
+    return 'Extracting OCR data...'
+  } else if (elapsed < 45) {
+    return 'Extracting invoice fields...'
+  } else if (elapsed < 60) {
+    return 'Matching fields with Purchase Order...'
+  } else if (elapsed < 75) {
+    return 'Matching fields with GL Accounts...'
+  } else if (elapsed < 90) {
+    return 'Verifying supplier details...'
+  } else {
+    return 'Making the decision...'
+  }
+}
+
+export const useProcessingStatusText = (startTime?: string) => {
+  const [text, setText] = useState(() => getProcessingStatusText(startTime))
+
+  useEffect(() => {
+    if (!startTime) return
+
+    const interval = setInterval(() => {
+      setText(getProcessingStatusText(startTime))
+    }, 1000)
+
+    return () => clearInterval(interval)
+  }, [startTime])
+
+  return text
+}
 
 type Store = {
   activeTabValue: string | null
@@ -63,7 +103,13 @@ const requestStore = create<Store>((set) => ({
   summaryCache: {},
   addProcessingProcess: (process) =>
     set((state) => ({
-      processingProcesses: [...state.processingProcesses, process],
+      processingProcesses: [
+        ...state.processingProcesses,
+        {
+          ...process,
+          startTime: process.startTime || new Date().toISOString(),
+        },
+      ],
     })),
   cacheSummaryData: (reqNo, data) =>
     set((state) => ({

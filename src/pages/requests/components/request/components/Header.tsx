@@ -27,6 +27,7 @@ interface HeaderProps {
   stage?: any
   status?: string
   totalAmount?: string
+  isProcessing?: boolean
   setRightView: (
     view: 'analysis' | 'comments' | 'attachments' | 'forms',
   ) => void
@@ -50,6 +51,7 @@ const Header: React.FC<HeaderProps> = ({
   requestNo,
   status = 'Pending Review',
   totalAmount,
+  isProcessing = false,
   onApprove,
   onBack,
   onManualCorrection: _onManualCorrection,
@@ -180,7 +182,7 @@ const Header: React.FC<HeaderProps> = ({
 
       {/* Right Side Group: Total Amount + Actions */}
       <div className='flex items-center gap-6'>
-        {(() => {
+        {!isProcessing && (() => {
           const getCurrencyDisplay = (curr: string) => {
             if (!curr) return '$'
             const symbols: { [key: string]: string } = {
@@ -239,7 +241,7 @@ const Header: React.FC<HeaderProps> = ({
         })()}
 
         {/* AI Insights Toggle & Overlay */}
-        {enableAIInsights && (
+        {!isProcessing && enableAIInsights && (
           <div className='relative flex items-center gap-3' ref={containerRef}>
             <Button
               variant='outline'
@@ -311,7 +313,7 @@ const Header: React.FC<HeaderProps> = ({
           </div>
         )}
 
-        {(
+        {!isProcessing && (
           <div className='flex items-center gap-2'>
             {isEditing && (
               <Button

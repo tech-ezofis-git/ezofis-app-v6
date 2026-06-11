@@ -118,8 +118,6 @@ const RequestsPage = () => {
 
         const wf = workflowRes.data
 
-        setRawWorflow(wf)
-
         if (countRes?.data) {
           setMetaData({
             completedCount: String(countRes.data.completedCount ?? 0),
@@ -147,6 +145,8 @@ const RequestsPage = () => {
             formJson = formRes.data.formJson ?? formRes.data
           }
         }
+
+        setRawWorflow({ ...wf, formJson })
 
         let flowJson = ''
         if (typeof wf.flowJson === 'string') {
@@ -182,23 +182,20 @@ const RequestsPage = () => {
 
   // Workflow Change Listener
   useEffect(() => {
-    if (workflow?.id && !reloadMeta && !isFetching) {
-      if (reloadMeta) {
-        setIsLoading(true)
-      }
-
-      loadSelectedWorkflow(String(workflow.id), workflow.name)
-    } else if (reloadMeta) {
-      if (workflow?.id) {
+    if (workflow?.id) {
+      const isNewWorkflow = !selectedWorkflow || String(workflow.id) !== String(selectedWorkflow.id)
+      if (isNewWorkflow && !reloadMeta) {
         loadSelectedWorkflow(String(workflow.id), workflow.name)
+      } else if (reloadMeta) {
+        loadSelectedWorkflow(String(workflow.id), workflow.name)
+        stopRefresh()
+        refetch()
       }
-      stopRefresh()
-      refetch()
     }
   }, [
     workflow,
     reloadMeta,
-    isFetching,
+    selectedWorkflow,
     loadSelectedWorkflow,
     stopRefresh,
     refetch,

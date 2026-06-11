@@ -327,6 +327,96 @@ const findInvoiceNumber = (row: any): string | null => {
   return null
 }
 
+const findInvoiceAmount = (row: any): string | null => {
+  if (!row) return null
+  const parsedForm = getParsedFormData(row)
+
+  const searchInObj = (obj: any): string | null => {
+    if (!obj || typeof obj !== 'object') return null
+
+    const directKeys = [
+      'suyqsm0SYii_8vsj4p0c_',
+      'WksH1Mrs42X4J9AHgoBtw',
+      'Invoice Amount',
+      'Invoice Amount Value',
+      'Invoice No',
+      'Invoice No.',
+      'Invoice Number',
+      'Invoice_No',
+      'Invoice_Number',
+      'InvoiceNo',
+      'InvoiceNumber',
+      'PO Amount',
+      'PO_Amount',
+      'POAmount',
+      'Invoice Value',
+      'PO Value',
+      'Amount',
+      'total',
+      'amount'
+    ]
+    for (const key of directKeys) {
+      if (obj[key] !== undefined && obj[key] !== null) {
+        let val = obj[key]
+        if (val && typeof val === 'object') {
+          val = val['Invoice Value'] || val['InvoiceValue'] || val['value'] || val['val']
+        }
+        if (val !== undefined && val !== null) {
+          const strVal = String(val).trim()
+          if (strVal !== '' && strVal !== '-') return strVal
+        }
+      }
+    }
+
+    for (const key of Object.keys(obj)) {
+      const k = key.toLowerCase().replace(/[^a-z0-9]/g, '').trim()
+      if (
+        k === 'invoiceamount' ||
+        k === 'totalamount' ||
+        k === 'amount' ||
+        k === 'total' ||
+        k === 'suyqsm0syii8vsj4p0c' ||
+        k === 'wksh1mrs42x4j9ahgobtw'
+      ) {
+        let val = obj[key]
+        if (val && typeof val === 'object') {
+          val = val['Invoice Value'] || val['InvoiceValue'] || val['value'] || val['val']
+        }
+        if (val !== undefined && val !== null) {
+          const strVal = String(val).trim()
+          if (strVal !== '' && strVal !== '-') return strVal
+        }
+      }
+    }
+    return null
+  }
+
+  // 1. Priority: Form Data
+  const fromForm = searchInObj(parsedForm)
+  if (fromForm) return fromForm
+
+  // 2. Priority: Agent Data
+  const agentData = row._agentResponse || row._agentData?.[0] || row._agentData || {}
+  const fromAgent = searchInObj(agentData)
+  if (fromAgent) return fromAgent
+
+  // Check Extracted Invoice JSON
+  const invoiceHeader = agentData?.['Extracted Invoice JSON']?.invoice_header
+  if (invoiceHeader) {
+    const fromHeader = searchInObj(invoiceHeader)
+    if (fromHeader) return fromHeader
+  }
+
+  // Check po_matching
+  const poMatching = agentData?.po_matching
+  if (poMatching) {
+    const fromPO = searchInObj(poMatching)
+    if (fromPO) return fromPO
+  }
+
+  return null
+}
+
 const findSupplierName = (row: any): string | null => {
   if (!row) return null
   const parsedForm = getParsedFormData(row)
@@ -1024,11 +1114,7 @@ const StatusCell = ({
   )
 }
 
-const AI_INSIGHTS = [
-  'Ready for auto-approval',
-  'No PO linked — request PO or code to GL',
-  'Partial match — review unmatched lines',
-]
+
 
 const isPOField = (label: string) =>
   label.includes('po number') || label === 'po' || label === 'po_number'
@@ -1234,6 +1320,15 @@ const getBaseColumns = (
           }
         }
 
+        if (row.isProcessing) {
+          return (
+            <span className='flex items-center gap-1 rounded-md border border-[var(--orange-4)] bg-[var(--orange-2)] px-2 py-0.5 text-[11px] font-semibold text-[var(--orange-11)] animate-pulse'>
+              <Icon className='size-3.5 animate-spin' name='tabler:loader-2' />
+              Processing
+            </span>
+          )
+        }
+
         const agentData = row._agentData?.[0] || row._agentData || {}
         const parsedForm = getParsedFormData(row)
         const rawDecision =
@@ -1331,8 +1426,12 @@ const getBaseColumns = (
       id: 'aiInsight',
       label: 'AI Insight',
       size: 260,
-      renderCell: (_row: any, index = 0) => {
-        const aiInsight = AI_INSIGHTS[index % 3]
+      renderCell: (_row: any) => {
+        const agentData = _row._agentResponse || _row._agentData?.[0] || _row._agentData || {}
+        const aiInsight = agentData?.ai_insight || agentData?.aiInsight || agentData?.ai_insect || ''
+        if (!aiInsight) {
+          return <span className='text-[13px] font-semibold text-[var(--gray-9)]'>N/A</span>
+        }
         return (
           <div className='flex min-w-0 items-center gap-1.5'>
             <Icon
@@ -1397,21 +1496,18 @@ const getBaseColumns = (
       label: 'Total Value',
       size: 140,
       renderCell: (row: any) => {
-        const parsedForm = getParsedFormData(row)
-        const amount = Number(
-          parsedForm['suyqsm0SYii_8vsj4p0c_'] ||
-          parsedForm['WksH1Mrs42X4J9AHgoBtw'] ||
-          row['suyqsm0SYii_8vsj4p0c_'] ||
-          row['WksH1Mrs42X4J9AHgoBtw'] ||
-          0,
-        )
+        const amtStr = findInvoiceAmount(row)
+        const amount = amtStr ? Number(amtStr.replace(/[^0-9.-]/g, '')) : null
         return (
           <span className='text-[14px] leading-none font-semibold tracking-tight text-[var(--text-primary)] tabular-nums'>
-            $
-            {(amount || 3450).toLocaleString(undefined, {
-              maximumFractionDigits: 2,
-              minimumFractionDigits: 2,
-            })}
+            {amount !== null && !Number.isNaN(amount) ? (
+              `$${amount.toLocaleString(undefined, {
+                maximumFractionDigits: 2,
+                minimumFractionDigits: 2,
+              })}`
+            ) : (
+              <span className='text-[13px] text-[var(--gray-9)] font-semibold'>N/A</span>
+            )}
           </span>
         )
       },

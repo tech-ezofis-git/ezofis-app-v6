@@ -65,8 +65,6 @@ const transformProcess = (
       : '') ||
     process.requestNo ||
     ''
-  const isAgentProcessing = process.stageType === 'AP_AGENT'
-
   let parsedAgentResponse = null
   if (process.agentResponse) {
     if (typeof process.agentResponse === 'string') {
@@ -79,6 +77,13 @@ const transformProcess = (
       parsedAgentResponse = process.agentResponse
     }
   }
+
+  const hasAgentDecision = !!(
+    process.review ||
+    parsedAgentResponse?.decision ||
+    process.completedAtUtc
+  )
+  const isAgentProcessing = process.stageType === 'AP_AGENT' && !hasAgentDecision
 
   if (parsedAgentResponse) {
     parsedAgentResponse = {

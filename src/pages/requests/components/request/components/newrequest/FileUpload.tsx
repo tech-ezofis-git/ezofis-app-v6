@@ -585,6 +585,9 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
         stage = details.stage
       }
 
+      const localUrl = URL.createObjectURL(validFiles[0])
+      const startTime = new Date().toISOString()
+      
       // Add to background processing
       requestStore.getState().addProcessingProcess({
         id: processId,
@@ -595,7 +598,36 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
         stage,
         transactionId,
         workflowId: rawWorkflow?.id,
+        startTime,
       })
+
+      // Resolve workflow metadata stub
+      const wFormId = rawWorkflow?.formId ?? rawWorkflow?.wFormId ?? rawWorkflow?.settings?.general?.initiateUsing?.formId ?? ''
+      const selectedWorkflowStub = {
+        flowJson: typeof rawWorkflow?.flowJson === 'string' ? rawWorkflow.flowJson : JSON.stringify(rawWorkflow?.flowJson || {}),
+        formJson: typeof rawWorkflow?.formJson === 'string' ? rawWorkflow.formJson : JSON.stringify(rawWorkflow?.formJson || ''),
+        id: rawWorkflow?.id,
+        name: rawWorkflow?.name ?? rawWorkflow?.settings?.general?.name ?? 'Workflow',
+        wFormId: wFormId || '',
+      }
+
+      const stubItem = {
+        id: processId,
+        processId,
+        transactionId,
+        isProcessing: true,
+        stageType: 'AP_AGENT',
+        stage: 'Start',
+        _localFileUrl: localUrl,
+        reqNo: requestNo,
+        requestNo: requestNo,
+        vendor: 'Analyzing Supplier...',
+        documentNumber: 'Analyzing Invoice...',
+        createdAt: startTime,
+      }
+
+      // Transition straight to detail overview
+      requestStore.getState().openRequest(stubItem, selectedWorkflowStub, 'Overview')
 
       // Trigger list refresh
       workflowRefresh()

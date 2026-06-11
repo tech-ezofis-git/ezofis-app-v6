@@ -20,6 +20,7 @@ import ListEmptyState from '@/components/common/ListEmptyState'
 import cn from '@/utils/cn'
 import { formatDatetime } from '@/utils/dayjs'
 import HoverExpandableText from './HoverExpandableText'
+import requestStore, { useProcessingStatusText } from '@/pages/requests/stores/useRequestStore'
 
 const GridRowSkeleton = ({ index }: { index: number }) => {
   const prefersReducedMotion = useReducedMotion()
@@ -234,6 +235,96 @@ const findInvoiceNumber = (row: any): string | null => {
   if (invoiceHeader) {
     const fromHeader = searchInObj(invoiceHeader)
     if (fromHeader) return fromHeader
+  }
+
+  return null
+}
+
+const findInvoiceAmount = (row: any): string | null => {
+  if (!row) return null
+  const parsedForm = getParsedFormData(row)
+
+  const searchInObj = (obj: any): string | null => {
+    if (!obj || typeof obj !== 'object') return null
+
+    const directKeys = [
+      'suyqsm0SYii_8vsj4p0c_',
+      'WksH1Mrs42X4J9AHgoBtw',
+      'Invoice Amount',
+      'Invoice Amount Value',
+      'Invoice No',
+      'Invoice No.',
+      'Invoice Number',
+      'Invoice_No',
+      'Invoice_Number',
+      'InvoiceNo',
+      'InvoiceNumber',
+      'PO Amount',
+      'PO_Amount',
+      'POAmount',
+      'Invoice Value',
+      'PO Value',
+      'Amount',
+      'total',
+      'amount'
+    ]
+    for (const key of directKeys) {
+      if (obj[key] !== undefined && obj[key] !== null) {
+        let val = obj[key]
+        if (val && typeof val === 'object') {
+          val = val['Invoice Value'] || val['InvoiceValue'] || val['value'] || val['val']
+        }
+        if (val !== undefined && val !== null) {
+          const strVal = String(val).trim()
+          if (strVal !== '' && strVal !== '-') return strVal
+        }
+      }
+    }
+
+    for (const key of Object.keys(obj)) {
+      const k = key.toLowerCase().replace(/[^a-z0-9]/g, '').trim()
+      if (
+        k === 'invoiceamount' ||
+        k === 'totalamount' ||
+        k === 'amount' ||
+        k === 'total' ||
+        k === 'suyqsm0syii8vsj4p0c' ||
+        k === 'wksh1mrs42x4j9ahgobtw'
+      ) {
+        let val = obj[key]
+        if (val && typeof val === 'object') {
+          val = val['Invoice Value'] || val['InvoiceValue'] || val['value'] || val['val']
+        }
+        if (val !== undefined && val !== null) {
+          const strVal = String(val).trim()
+          if (strVal !== '' && strVal !== '-') return strVal
+        }
+      }
+    }
+    return null
+  }
+
+  // 1. Priority: Form Data
+  const fromForm = searchInObj(parsedForm)
+  if (fromForm) return fromForm
+
+  // 2. Priority: Agent Data
+  const agentData = row._agentResponse || row._agentData?.[0] || row._agentData || {}
+  const fromAgent = searchInObj(agentData)
+  if (fromAgent) return fromAgent
+
+  // Check Extracted Invoice JSON
+  const invoiceHeader = agentData?.['Extracted Invoice JSON']?.invoice_header
+  if (invoiceHeader) {
+    const fromHeader = searchInObj(invoiceHeader)
+    if (fromHeader) return fromHeader
+  }
+
+  // Check po_matching
+  const poMatching = agentData?.po_matching
+  if (poMatching) {
+    const fromPO = searchInObj(poMatching)
+    if (fromPO) return fromPO
   }
 
   return null
@@ -556,14 +647,7 @@ const extractInvoiceDate = (row: any): string => {
   return '-'
 }
 
-const getAIInsight = (index: number): string => {
-  const insights = [
-    'Ready for auto-approval',
-    'No PO linked — request PO or code to GL',
-    'Partial match — review unmatched lines',
-  ]
-  return insights[index % 3]
-}
+
 
 
 
@@ -734,6 +818,13 @@ const GridRowItem = ({
     typeof row?._originalIndex === 'number' ? row._originalIndex : index
   const rowId = row?.id || row?.processId || `item-${originalIndex}`
 
+  const processingProcesses = requestStore((state) => state.processingProcesses)
+  const matchingProc = useMemo(() => {
+    return processingProcesses.find((p) => String(p.processId || p.id) === String(row.processId || row.id))
+  }, [processingProcesses, row.processId, row.id])
+
+  const statusText = useProcessingStatusText(matchingProc?.startTime || row?.createdAt)
+
   const parsedForm = getParsedFormData(row)
   const invoiceNo =
     findInvoiceNumber(row) ||
@@ -752,14 +843,9 @@ const GridRowItem = ({
     parsedForm['9F6tPVHoRnmONGx3kYJu2'] ||
     row?.raisedAt ||
     row?.transaction_createdAt
-  const amount = Number(
-    parsedForm['suyqsm0SYii_8vsj4p0c_'] ||
-    parsedForm['WksH1Mrs42X4J9AHgoBtw'] ||
-    row['suyqsm0SYii_8vsj4p0c_'] ||
-    row['WksH1Mrs42X4J9AHgoBtw'] ||
-    0,
-  )
-  const agentData = row._agentData?.[0] || row._agentData || {}
+  const amtStr = findInvoiceAmount(row)
+  const amount = amtStr ? Number(amtStr.replace(/[^0-9.-]/g, '')) : null
+  const agentData = row._agentResponse || row._agentData?.[0] || row._agentData || {}
   const rawDecision = String(
     parsedForm['2MH_BMDFEVKsU0uAQjoI1'] ||
     agentData?.decision ||
@@ -767,7 +853,7 @@ const GridRowItem = ({
     row.status ||
     ''
   ).toUpperCase()
-  const aiInsight = getAIInsight(originalIndex)
+  const aiInsight = agentData?.ai_insight || agentData?.aiInsight || agentData?.ai_insect || ''
 
   // Exact Icon and Color matching from design
   let iconName = 'tabler:clock'
@@ -805,7 +891,7 @@ const GridRowItem = ({
       variants={itemVariantSet() as any}
       className={cn(
         'group relative flex w-full items-center gap-4 rounded-xl border-0 border-b border-b-[var(--gray-2)] px-5 py-3 transition-colors transition-shadow duration-200',
-        row.isProcessing ? 'cursor-default' : 'cursor-pointer',
+        'cursor-pointer',
         isSelected
           ? 'border-r border-l border-r-[var(--primary-3)] border-b-[var(--primary-3)] border-l-[var(--primary-3)] bg-[var(--primary-1)] shadow-sm'
           : 'bg-[var(--surface)]',
@@ -817,7 +903,7 @@ const GridRowItem = ({
           'hover:border-r hover:border-l hover:border-r-[var(--orange-4)] hover:border-b-[var(--orange-4)] hover:border-l-[var(--orange-4)] hover:bg-[var(--orange-1)]/40 hover:shadow-sm',
       )}
       onClick={() => {
-        if (!row.isProcessing) onRowClick(row, 'Overview')
+        onRowClick(row, 'Overview')
       }}
     >
       {/* Checkbox & Status Icon */}
@@ -904,7 +990,7 @@ const GridRowItem = ({
           <div className='flex items-center gap-1.5'>
             <Icon className='size-3.5' name='tabler:hash' />
             <span>
-              {row.isProcessing ? 'Fetching...' : extractPONumber(row)}
+              {row.isProcessing ? statusText : extractPONumber(row)}
             </span>
           </div>
           {!row.isProcessing && (() => {
@@ -931,7 +1017,7 @@ const GridRowItem = ({
       </div>
 
       {/* AI Insight Line - Centered in middle of row */}
-      {!row.isProcessing && activeTab !== 'Processed' && (
+      {!row.isProcessing && activeTab !== 'Processed' && aiInsight && (
         <div className='flex min-w-0 flex-1 items-center justify-center px-4'>
           <div className='flex min-w-0 items-center gap-1.5'>
             <Icon
@@ -951,14 +1037,9 @@ const GridRowItem = ({
       <div className='ml-auto flex shrink-0 items-center gap-6 select-none'>
         {row.isProcessing ? (
           <div className='relative flex w-[249px] items-center justify-end gap-2 pr-4'>
-            <span className='text-[12px] font-medium text-[var(--gray-10)]'>
-              Analyzing...
+            <span className='text-[12px] font-semibold text-[var(--orange-9)] animate-pulse'>
+              {statusText}
             </span>
-            {row.stage ? (
-              <span className='rounded-md border border-[var(--primary-3)] bg-[var(--primary-1)] px-2 py-0.5 text-[11px] font-semibold text-[var(--primary-11)]'>
-                {row.stage}
-              </span>
-            ) : null}
           </div>
         ) : (
           <>
@@ -970,14 +1051,16 @@ const GridRowItem = ({
             {/* Column 4: Invoice Value & Date */}
             <div className='flex w-[115px] shrink-0 flex-col items-end'>
               <span
-                className='text-[15px] leading-none tracking-tight text-[var(--text-primary)] tabular-nums'
-                style={{ fontWeight: 600 }}
+                className='text-[15px] leading-none tracking-tight text-[var(--text-primary)] tabular-nums font-semibold'
               >
-                $
-                {(amount || 3450).toLocaleString(undefined, {
-                  maximumFractionDigits: 2,
-                  minimumFractionDigits: 2,
-                })}
+                {amount !== null && !Number.isNaN(amount) ? (
+                  `$${amount.toLocaleString(undefined, {
+                    maximumFractionDigits: 2,
+                    minimumFractionDigits: 2,
+                  })}`
+                ) : (
+                  <span className='text-[14px] text-[var(--gray-9)] font-semibold'>N/A</span>
+                )}
               </span>
               <span className='mt-1.5 text-[12px] font-medium text-[var(--gray-10)]'>
                 {(() => {
@@ -1090,15 +1173,7 @@ const GridView = <TData,>({
     }
   }
 
-  if (isLoading) {
-    return (
-      <div className='flex flex-col gap-3 p-2'>
-        {[1, 2, 3].map((i) => (
-          <GridRowSkeleton index={i} key={i} />
-        ))}
-      </div>
-    )
-  }
+
 
   const isAllSelected =
     allItems.length > 0 && selectedIds.size === allItems.length
@@ -1267,7 +1342,13 @@ const GridView = <TData,>({
         </div>
 
         <div className='min-h-0 flex-1 overflow-y-auto'>
-          {allItems.length === 0 ? (
+          {isLoading ? (
+            <div className='flex flex-col gap-3 p-2'>
+              {[1, 2, 3].map((i) => (
+                <GridRowSkeleton index={i} key={i} />
+              ))}
+            </div>
+          ) : allItems.length === 0 ? (
             <ListEmptyState
               containerClassName='py-12'
               page='requests'
