@@ -303,18 +303,54 @@ const Request = ({
 
   const hasAgentDecision = request ? !!(request.review || request._agentData?.[0]?.decision || request.completedAtUtc) : false
   const isCurrentlyProcessing = !hasAgentDecision && initialProcessing
+
+  const resolvedItem = useMemo(() => {
+    if (!request) return selectedItem
+    return {
+      ...request,
+      processId: selectedItem?.processId || request?.processId,
+      transactionId: selectedItem?.transactionId || request?.transactionId,
+      id: selectedItem?.id || request?.id,
+      _localFileUrl: selectedItem?._localFileUrl || request?._localFileUrl,
+      localUrl: selectedItem?.localUrl || request?.localUrl,
+      type: selectedItem?.type || request?.type,
+    }
+  }, [request, selectedItem])
   const actions =
-    request?._actions ||
-    selectedItem?._actions ||
-    storeSelectedItem?._actions ||
-    []
+    resolvedItem?.stageType === 'AP_AGENT'
+      ? []
+      : (resolvedItem?._actions || [])
+
+  const workflowRules = useMemo(() => {
+    let flow = rawWorkflowData?.flowJson || rawWorkflowData?.workflowJson
+    if (!flow) return []
+    try {
+      if (typeof flow === 'string') {
+        flow = JSON.parse(flow)
+      }
+      if (Array.isArray(flow)) {
+        return flow
+      }
+      if (flow && typeof flow === 'object') {
+        if (Array.isArray(flow.rules)) return flow.rules
+        if (flow.flowJson && Array.isArray(flow.flowJson.rules)) return flow.flowJson.rules
+        if (flow.flowJson && typeof flow.flowJson === 'string') {
+          const parsedInner = JSON.parse(flow.flowJson)
+          if (Array.isArray(parsedInner?.rules)) return parsedInner.rules
+          if (Array.isArray(parsedInner)) return parsedInner
+        }
+      }
+    } catch (e) {
+      console.error('Error parsing rules in Request.tsx:', e)
+    }
+    return []
+  }, [rawWorkflowData])
 
   const dynamicRules = useMemo(() => {
-    const rules = rawWorkflowData?.workflowJson?.rules || []
-    const currentActivityId = selectedItem?.activityId
+    const currentActivityId = resolvedItem?.activityId
     if (!currentActivityId) return []
-    return rules.filter((rule: any) => rule.fromBlockId === currentActivityId)
-  }, [rawWorkflowData, selectedItem?.activityId])
+    return workflowRules.filter((rule: any) => rule.fromBlockId === currentActivityId)
+  }, [workflowRules, resolvedItem?.activityId])
 
   const ruleActions = useMemo(() => {
     return dynamicRules.map((rule: any) => {
@@ -327,8 +363,9 @@ const Request = ({
   }, [dynamicRules])
 
   const headerActions = useMemo(() => {
+    if (resolvedItem?.stageType === 'AP_AGENT') return []
     return ruleActions.length > 0 ? ruleActions : actions
-  }, [ruleActions, actions])
+  }, [ruleActions, actions, resolvedItem?.stageType])
 
   const agentDataList = request?._agentData || selectedItem?._agentData || []
   const hasAgentData = agentDataList.length > 0
@@ -336,7 +373,7 @@ const Request = ({
   const [formModel, setFormModel] = useState<any>({})
 
   const allowedLabels = useMemo(() => {
-    const activeItem = request || selectedItem
+    const activeItem = resolvedItem
     if (!activeItem) return new Set<string>()
     const metaMap = buildFieldMetaMap(selectedWorkflow, request?._formDefinition)
     
@@ -385,7 +422,7 @@ const Request = ({
       }
     })
     return labels
-  }, [selectedItem, selectedWorkflow, request?._formDefinition, request?.formData, request])
+  }, [selectedItem, selectedWorkflow, request?._formDefinition, request?.formData, request, resolvedItem])
 
   useEffect(() => {
     if (hasAgentData && agentDataList.length > 0) {
@@ -402,7 +439,7 @@ const Request = ({
   const invoiceHeader = currentAgentData?.['Extracted Invoice JSON']?.invoice_header as any
 
   useEffect(() => {
-    const activeItem = request || selectedItem
+    const activeItem = resolvedItem
     if (activeItem) {
       const metaMap = buildFieldMetaMap(selectedWorkflow, request?._formDefinition)
       const cleanFields: any = {}
@@ -469,6 +506,7 @@ const Request = ({
     request?.formData,
     invoiceHeader,
     request,
+    resolvedItem,
   ])
 
   console.log('=== REQUEST COMPONENT DEBUG LOGS ===')
@@ -759,12 +797,12 @@ const Request = ({
           allowedLabels={allowedLabels}
           formModel={formModel}
           formDefinition={request?._formDefinition}
-          processId={Number(selectedItem?.processId)}
+          processId={selectedItem?.processId}
           repositoryId={Number(rawWorkflowData?.repositoryId)}
           rightView={rightView}
-          selectedItem={request || selectedItem}
+          selectedItem={resolvedItem}
           selectedWorkflow={selectedWorkflow}
-          transactionId={Number(selectedItem?.transactionId)}
+          transactionId={selectedItem?.transactionId}
           workflowId={resolvedWorkflowId}
           setFormModel={setFormModel}
           setRightView={setRightView}

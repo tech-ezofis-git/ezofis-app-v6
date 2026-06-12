@@ -23,8 +23,8 @@ type HistoryRow = {
 
 type Props = {
   enabled?: boolean
-  processId?: number
-  workflowId?: number
+  processId?: number | string
+  workflowId?: number | string
 }
 
 const safeLower = (v?: string) => (v || '').toLowerCase()

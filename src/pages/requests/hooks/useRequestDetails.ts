@@ -20,16 +20,7 @@ export const useRequestDetail = (
         return isProcessing ? 10000 : false
       }
 
-      // Check if it has agent decision or is completed
-      const agentDataList = data._agentData || []
-      const hasAgentDecision = agentDataList.some((agent: any) => {
-        return !!(agent?.decision || data.review || data.completedAtUtc)
-      })
-
-      const isCompleted =
-        data.stageType !== 'AP_AGENT' ||
-        hasAgentDecision ||
-        ['Verifier', 'Approved', 'Completed'].includes(data.stage)
+      const isCompleted = data.stageType !== 'AP_AGENT'
 
       return !isCompleted ? 10000 : false
     },

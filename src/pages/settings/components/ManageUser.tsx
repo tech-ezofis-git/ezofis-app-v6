@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import {
   Check,
-  ChevronDown,
   Download,
   Edit3,
   MoreHorizontal,
@@ -11,7 +10,6 @@ import {
   Trash2,
   UserRound,
   UsersRound,
-  X,
 } from "lucide-react";
 import InputSelect from '@/components/base/inputs/InputSelect'
 import InputText from '@/components/base/inputs/InputText'
@@ -940,73 +938,6 @@ function FormCard({
     </div>
   );
 }
-
-function Input({
-  label,
-  value,
-  onChange,
-  placeholder,
-  required,
-  type = "text",
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
-  required?: boolean;
-  type?: string;
-}) {
-  return (
-    <label className="block">
-      <span className="mb-2 block text-sm font-medium text-[var(--gray-13)]">
-        {label} {required && <span className="text-[var(--red-9)]">*</span>}
-      </span>
-      <input
-        type={type}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        placeholder={placeholder}
-        className="h-[46px] w-full rounded-[10px] border border-[var(--border-default)] bg-white px-4 text-[18px] text-[var(--gray-13)] shadow-[var(--shadow-sm)] outline-none transition placeholder:text-[var(--gray-10)] focus:border-[var(--primary-8)] focus:ring-2 focus:ring-[var(--primary-4)]"
-      />
-    </label>
-  );
-}
-
-function Select({
-  label,
-  value,
-  options,
-  onChange,
-  placeholder = "Select",
-}: {
-  label: string;
-  value: string;
-  options: string[];
-  onChange: (value: string) => void;
-  placeholder?: string;
-}) {
-  return (
-    <label className="block">
-      <span className="mb-2 block text-[18px] font-medium text-[var(--gray-13)]">{label}</span>
-      <div className="relative">
-        <select
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          className="h-[46px] w-full appearance-none rounded-[10px] border border-[var(--border-default)] bg-white px-4 pr-10 text-[18px] text-[var(--gray-13)] shadow-[var(--shadow-sm)] outline-none transition focus:border-[var(--primary-8)] focus:ring-2 focus:ring-[var(--primary-4)]"
-        >
-          {!value && <option value="">{placeholder}</option>}
-          {options.map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </select>
-        <ChevronDown className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[var(--gray-9)]" size={18} />
-      </div>
-    </label>
-  );
-}
-
 type SelectOption = {
   id: string | number;
   name: string;
