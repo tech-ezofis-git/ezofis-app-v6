@@ -1,6 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
 import workflowsApiV6 from '@/api/v6/workflows'
 import type { InboxItem, TableGroup, WorkflowOption } from '../types'
+import {
+  countInboxSplit,
+  filterInboxItemsByTab,
+  isDuplicatedInboxItem,
+} from '../utils/inboxList.utils'
 import { getActionsForActivity } from '../utils/workflow.utils'
 
 const transformProcess = (
@@ -83,7 +88,8 @@ const transformProcess = (
     parsedAgentResponse?.decision ||
     process.completedAtUtc
   )
-  const isAgentProcessing = process.stageType === 'AP_AGENT' && !hasAgentDecision
+  const isAgentProcessing =
+    process.stageType === 'AP_AGENT' && !hasAgentDecision
 
   if (parsedAgentResponse) {
     parsedAgentResponse = {
@@ -97,6 +103,15 @@ const transformProcess = (
     }
   }
 
+  const isDuplicateInvoice = isDuplicatedInboxItem({
+    _agentData: parsedAgentResponse ? [parsedAgentResponse] : [],
+    _agentResponse: parsedAgentResponse,
+    decision: process.decision,
+    formData: processCopy.formData,
+    review: process.review,
+    status: process.status,
+  })
+
   return {
     ...processCopy,
     ...dynamicFields,
@@ -107,6 +122,7 @@ const transformProcess = (
     _originalIndex: originalIndex,
     documentNumber: requestNo,
     id: processId || process.id,
+    isDuplicateInvoice,
     processId: processId,
     raisedAt:
       process.createdAtUtc || process.transactionCreatedAt || process.raisedAt,
@@ -250,7 +266,7 @@ const handleGroupedInner = (
     }
   }
 
-  let groupItems = validItems.map((p) => {
+  const groupItems = validItems.map((p) => {
     const item = transformProcess(
       p,
       inner.key,
@@ -261,13 +277,6 @@ const handleGroupedInner = (
     tracker.value++
     return item
   })
-
-  if (activeTab === 'Exceptions') {
-    groupItems = groupItems.filter(
-      (item: InboxItem) =>
-        item._originalIndex !== undefined && item._originalIndex % 12 !== 0,
-    )
-  }
 
   if (groupItems.length > 0) {
     groupedData.push({
@@ -295,14 +304,6 @@ const handleFlatInner = (
     selectedWorkflow,
   )
   tracker.value++
-
-  if (
-    activeTab === 'Exceptions' &&
-    transformed._originalIndex !== undefined &&
-    transformed._originalIndex % 12 === 0
-  ) {
-    return
-  }
 
   const rootGroup = groupedData.find((g) => g.groupId === 'root')
   if (rootGroup) {
@@ -409,7 +410,29 @@ export const useInboxData = (
         }
       }
 
-      return { data: groupedData, totalItems }
+      const allItems = groupedData.flatMap((group) => group.items)
+      const { exceptionsCount, inboxTabCount } = countInboxSplit(allItems)
+
+      const filteredGroupedData =
+        activeTab === 'Inbox' || activeTab === 'Exceptions'
+          ? groupedData
+              .map((group) => {
+                const items = filterInboxItemsByTab(group.items, activeTab)
+                return {
+                  ...group,
+                  groupCount: items.length,
+                  items,
+                }
+              })
+              .filter((group) => group.items.length > 0)
+          : groupedData
+
+      return {
+        data: filteredGroupedData,
+        exceptionsCount,
+        inboxTabCount,
+        totalItems,
+      }
     },
   })
 }

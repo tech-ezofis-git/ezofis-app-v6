@@ -13,6 +13,8 @@ interface Props {
   isLoading: boolean
   viewMode: 'table' | 'grid'
   workflow: Option | null
+  exceptionsCount?: number
+  inboxTabCount?: number
   metaData?: IRequestMeta
   setActiveTab: (val: string) => void
   setViewMode: (mode: 'table' | 'grid') => void
@@ -22,6 +24,8 @@ interface Props {
 const Header = ({
   activeTab,
   allWorkflows,
+  exceptionsCount,
+  inboxTabCount,
   isLoading,
   metaData,
   viewMode,
@@ -37,9 +41,8 @@ const Header = ({
   }
   const processedCount =
     Number(metaData?.completedCount ?? 0) + Number(metaData?.sentCount ?? 0)
-  const exceptionsCount = metaData?.inboxCount
-    ? Number(metaData.inboxCount) - Math.ceil(Number(metaData.inboxCount) / 12)
-    : 0
+  const inboxCount = inboxTabCount ?? metaData?.inboxCount ?? 0
+  const resolvedExceptionsCount = exceptionsCount ?? 0
 
   return (
     <div className='flex flex-wrap items-center justify-between gap-6 border-b border-gray-3 px-6 md:px-8'>
@@ -50,14 +53,14 @@ const Header = ({
         onChange={(val) => setActiveTab(val as string)}
       >
         <Tab
+          label={isLoading ? 'Invoices' : `Invoices (${inboxCount})`}
           value='Inbox'
-          label={
-            isLoading ? 'Invoices' : `Invoices (${metaData?.inboxCount ?? 0})`
-          }
         />
         <Tab
-          label={isLoading ? 'Exceptions' : `Exceptions (${exceptionsCount})`}
           value='Exceptions'
+          label={
+            isLoading ? 'Exceptions' : `Exceptions (${resolvedExceptionsCount})`
+          }
         />
         <Tab
           label={isLoading ? 'Processed' : `Processed (${processedCount})`}

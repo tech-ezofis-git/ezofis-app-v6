@@ -17,10 +17,12 @@ import showToast from '@/components/base/toast/showToast'
 // import RequestSummary from './RequestSummary'
 import FileSheet from '@/components/common/file-sheet/FileSheet'
 import ListEmptyState from '@/components/common/ListEmptyState'
+import requestStore, {
+  useProcessingStatusText,
+} from '@/pages/requests/stores/useRequestStore'
 import cn from '@/utils/cn'
 import { formatDatetime } from '@/utils/dayjs'
 import HoverExpandableText from './HoverExpandableText'
-import requestStore, { useProcessingStatusText } from '@/pages/requests/stores/useRequestStore'
 
 const GridRowSkeleton = ({ index }: { index: number }) => {
   const prefersReducedMotion = useReducedMotion()
@@ -75,6 +77,206 @@ const itemVariantSet = () => ({
   rowHover: { backgroundColor: 'var(--gray-1)', scale: 1.005 },
   show: { opacity: 1, y: 0 },
 })
+
+const isNonEmptyString = (val: any): boolean => {
+  if (val == null || typeof val === 'object') return false
+  const str = String(val).trim()
+  return str !== '' && str !== '-'
+}
+
+const isValidTerm = (val: any): boolean => {
+  return (
+    val != null &&
+    typeof val !== 'object' &&
+    val !== '-' &&
+    String(val).trim() !== ''
+  )
+}
+
+const getRowIconAndColor = (
+  isProcessing: boolean,
+  rawDecision: string,
+  isDuplicateInvoice: boolean,
+) => {
+  if (isProcessing) {
+    return {
+      iconColorClass:
+        'bg-[var(--orange-2)] border-[var(--orange-2)] text-[var(--orange-9)]',
+      iconName: 'tabler:loader-2',
+    }
+  }
+  const dec = rawDecision.toUpperCase()
+  if (dec === 'APPROVED' || dec === 'MATCHED') {
+    return {
+      iconColorClass:
+        'bg-[var(--green-2)] border-[var(--green-2)] text-[var(--green-9)]',
+      iconName: 'tabler:circle-check',
+    }
+  }
+  if (dec === 'REJECTED' || dec === 'NO MATCH') {
+    return {
+      iconColorClass:
+        'bg-[var(--red-2)] border-[var(--red-2)] text-[var(--red-9)]',
+      iconName: 'tabler:alert-circle',
+    }
+  }
+  if (isDuplicateInvoice) {
+    return {
+      iconColorClass:
+        'bg-[var(--purple-2)] border-[var(--purple-2)] text-[var(--purple-9)]',
+      iconName: 'tabler:stack-2',
+    }
+  }
+  if (dec === 'PARTIALLY APPROVED' || dec === 'PARTIAL MATCH') {
+    return {
+      iconColorClass:
+        'bg-[var(--orange-2)] border-[var(--orange-2)] text-[var(--orange-9)]',
+      iconName: 'tabler:alert-triangle',
+    }
+  }
+  return {
+    iconColorClass:
+      'bg-[var(--gray-2)] border-[var(--gray-2)] text-[var(--gray-9)]',
+    iconName: 'tabler:clock',
+  }
+}
+
+const searchInvoiceNumberInObj = (obj: any): string | null => {
+  if (!obj || typeof obj !== 'object') return null
+
+  const directKeys = [
+    'kvcYuknkDumkTenjvrVLj',
+    'Invoice No',
+    'Invoice No.',
+    'Invoice Number',
+    'Invoice_No',
+    'Invoice_Number',
+    'InvoiceNo',
+    'InvoiceNumber',
+  ]
+  for (const key of directKeys) {
+    const val = obj[key]
+    if (isNonEmptyString(val)) {
+      return String(val).trim()
+    }
+  }
+
+  for (const key of Object.keys(obj)) {
+    const k = key
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '')
+      .trim()
+    if (k === 'invoiceno' || k === 'invoicenumber' || k === 'invoicenum') {
+      const val = obj[key]
+      if (isNonEmptyString(val)) {
+        return String(val).trim()
+      }
+    }
+  }
+  return null
+}
+
+const extractAmountStr = (val: any): string | null => {
+  if (val == null) return null
+  let actualVal = val
+  if (typeof val === 'object') {
+    actualVal =
+      val['Invoice Value'] || val['InvoiceValue'] || val['value'] || val['val']
+  }
+  if (actualVal == null) return null
+  const str = String(actualVal).trim()
+  return str !== '' && str !== '-' ? str : null
+}
+
+const searchInvoiceAmountInObj = (obj: any): string | null => {
+  if (!obj || typeof obj !== 'object') return null
+
+  const directKeys = [
+    'suyqsm0SYii_8vsj4p0c_',
+    'WksH1Mrs42X4J9AHgoBtw',
+    'Invoice Amount',
+    'Invoice Amount Value',
+    'Invoice No',
+    'Invoice No.',
+    'Invoice Number',
+    'Invoice_No',
+    'Invoice_Number',
+    'InvoiceNo',
+    'InvoiceNumber',
+    'PO Amount',
+    'PO_Amount',
+    'POAmount',
+    'Invoice Value',
+    'PO Value',
+    'Amount',
+    'total',
+    'amount',
+  ]
+  for (const key of directKeys) {
+    const extracted = extractAmountStr(obj[key])
+    if (extracted !== null) return extracted
+  }
+
+  for (const key of Object.keys(obj)) {
+    const k = key
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '')
+      .trim()
+    if (
+      k === 'invoiceamount' ||
+      k === 'totalamount' ||
+      k === 'amount' ||
+      k === 'total' ||
+      k === 'suyqsm0syii8vsj4p0c' ||
+      k === 'wksh1mrs42x4j9ahgobtw'
+    ) {
+      const extracted = extractAmountStr(obj[key])
+      if (extracted !== null) return extracted
+    }
+  }
+  return null
+}
+
+const searchSupplierNameInObj = (obj: any): string | null => {
+  if (!obj || typeof obj !== 'object') return null
+
+  const directKeys = [
+    'UtfgJy6Z0qyfRC5Bclfc',
+    'UtfgJy6Z0qyfRC5Bclf-c',
+    'UtfgJy6Z0qyfRC5Bclf_c',
+    'Supplier Name',
+    'Vendor Name',
+    'Supplier_Name',
+    'Vendor_Name',
+    'SupplierName',
+    'VendorName',
+  ]
+  for (const key of directKeys) {
+    const val = obj[key]
+    if (isNonEmptyString(val)) {
+      return String(val).trim()
+    }
+  }
+
+  for (const key of Object.keys(obj)) {
+    const k = key
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '')
+      .trim()
+    if (
+      k === 'suppliername' ||
+      k === 'vendorname' ||
+      k === 'supplier' ||
+      k === 'vendor'
+    ) {
+      const val = obj[key]
+      if (isNonEmptyString(val)) {
+        return String(val).trim()
+      }
+    }
+  }
+  return null
+}
 
 const findPONumberInObject = (obj: any): string | null => {
   if (!obj || typeof obj !== 'object') return null
@@ -139,7 +341,7 @@ const findPONumberInObject = (obj: any): string | null => {
 }
 
 const getParsedFormData = (row: any): any => {
-  if (!row || !row.formData) return {}
+  if (!row?.formData) return {}
   if (typeof row.formData === 'object') {
     return row.formData.fields || row.formData || {}
   }
@@ -189,51 +391,19 @@ const findInvoiceNumber = (row: any): string | null => {
   if (!row) return null
   const parsedForm = getParsedFormData(row)
 
-  const searchInObj = (obj: any): string | null => {
-    if (!obj || typeof obj !== 'object') return null
-
-    const directKeys = [
-      'kvcYuknkDumkTenjvrVLj',
-      'Invoice No',
-      'Invoice No.',
-      'Invoice Number',
-      'Invoice_No',
-      'Invoice_Number',
-      'InvoiceNo',
-      'InvoiceNumber'
-    ]
-    for (const key of directKeys) {
-      if (obj[key] !== undefined && obj[key] !== null) {
-        const val = String(obj[key]).trim()
-        if (val !== '' && val !== '-') return val
-      }
-    }
-
-    for (const key of Object.keys(obj)) {
-      const k = key.toLowerCase().replace(/[^a-z0-9]/g, '').trim()
-      if (k === 'invoiceno' || k === 'invoicenumber' || k === 'invoicenum') {
-        const val = obj[key]
-        if (val && typeof val !== 'object' && String(val).trim() !== '' && String(val).trim() !== '-') {
-          return String(val).trim()
-        }
-      }
-    }
-    return null
-  }
-
   // 1. Priority: Form Data
-  const fromForm = searchInObj(parsedForm)
+  const fromForm = searchInvoiceNumberInObj(parsedForm)
   if (fromForm) return fromForm
 
   // 2. Priority: Agent Data
   const agentData = row._agentData?.[0] || row._agentData || {}
-  const fromAgent = searchInObj(agentData)
+  const fromAgent = searchInvoiceNumberInObj(agentData)
   if (fromAgent) return fromAgent
 
   // Check Extracted Invoice JSON
   const invoiceHeader = agentData?.['Extracted Invoice JSON']?.invoice_header
   if (invoiceHeader) {
-    const fromHeader = searchInObj(invoiceHeader)
+    const fromHeader = searchInvoiceNumberInObj(invoiceHeader)
     if (fromHeader) return fromHeader
   }
 
@@ -244,86 +414,27 @@ const findInvoiceAmount = (row: any): string | null => {
   if (!row) return null
   const parsedForm = getParsedFormData(row)
 
-  const searchInObj = (obj: any): string | null => {
-    if (!obj || typeof obj !== 'object') return null
-
-    const directKeys = [
-      'suyqsm0SYii_8vsj4p0c_',
-      'WksH1Mrs42X4J9AHgoBtw',
-      'Invoice Amount',
-      'Invoice Amount Value',
-      'Invoice No',
-      'Invoice No.',
-      'Invoice Number',
-      'Invoice_No',
-      'Invoice_Number',
-      'InvoiceNo',
-      'InvoiceNumber',
-      'PO Amount',
-      'PO_Amount',
-      'POAmount',
-      'Invoice Value',
-      'PO Value',
-      'Amount',
-      'total',
-      'amount'
-    ]
-    for (const key of directKeys) {
-      if (obj[key] !== undefined && obj[key] !== null) {
-        let val = obj[key]
-        if (val && typeof val === 'object') {
-          val = val['Invoice Value'] || val['InvoiceValue'] || val['value'] || val['val']
-        }
-        if (val !== undefined && val !== null) {
-          const strVal = String(val).trim()
-          if (strVal !== '' && strVal !== '-') return strVal
-        }
-      }
-    }
-
-    for (const key of Object.keys(obj)) {
-      const k = key.toLowerCase().replace(/[^a-z0-9]/g, '').trim()
-      if (
-        k === 'invoiceamount' ||
-        k === 'totalamount' ||
-        k === 'amount' ||
-        k === 'total' ||
-        k === 'suyqsm0syii8vsj4p0c' ||
-        k === 'wksh1mrs42x4j9ahgobtw'
-      ) {
-        let val = obj[key]
-        if (val && typeof val === 'object') {
-          val = val['Invoice Value'] || val['InvoiceValue'] || val['value'] || val['val']
-        }
-        if (val !== undefined && val !== null) {
-          const strVal = String(val).trim()
-          if (strVal !== '' && strVal !== '-') return strVal
-        }
-      }
-    }
-    return null
-  }
-
   // 1. Priority: Form Data
-  const fromForm = searchInObj(parsedForm)
+  const fromForm = searchInvoiceAmountInObj(parsedForm)
   if (fromForm) return fromForm
 
   // 2. Priority: Agent Data
-  const agentData = row._agentResponse || row._agentData?.[0] || row._agentData || {}
-  const fromAgent = searchInObj(agentData)
+  const agentData =
+    row._agentResponse || row._agentData?.[0] || row._agentData || {}
+  const fromAgent = searchInvoiceAmountInObj(agentData)
   if (fromAgent) return fromAgent
 
   // Check Extracted Invoice JSON
   const invoiceHeader = agentData?.['Extracted Invoice JSON']?.invoice_header
   if (invoiceHeader) {
-    const fromHeader = searchInObj(invoiceHeader)
+    const fromHeader = searchInvoiceAmountInObj(invoiceHeader)
     if (fromHeader) return fromHeader
   }
 
   // Check po_matching
   const poMatching = agentData?.po_matching
   if (poMatching) {
-    const fromPO = searchInObj(poMatching)
+    const fromPO = searchInvoiceAmountInObj(poMatching)
     if (fromPO) return fromPO
   }
 
@@ -334,52 +445,19 @@ const findSupplierName = (row: any): string | null => {
   if (!row) return null
   const parsedForm = getParsedFormData(row)
 
-  const searchInObj = (obj: any): string | null => {
-    if (!obj || typeof obj !== 'object') return null
-
-    const directKeys = [
-      'UtfgJy6Z0qyfRC5Bclfc',
-      'UtfgJy6Z0qyfRC5Bclf-c',
-      'UtfgJy6Z0qyfRC5Bclf_c',
-      'Supplier Name',
-      'Vendor Name',
-      'Supplier_Name',
-      'Vendor_Name',
-      'SupplierName',
-      'VendorName'
-    ]
-    for (const key of directKeys) {
-      if (obj[key] !== undefined && obj[key] !== null) {
-        const val = String(obj[key]).trim()
-        if (val !== '' && val !== '-') return val
-      }
-    }
-
-    for (const key of Object.keys(obj)) {
-      const k = key.toLowerCase().replace(/[^a-z0-9]/g, '').trim()
-      if (k === 'suppliername' || k === 'vendorname' || k === 'supplier' || k === 'vendor') {
-        const val = obj[key]
-        if (val && typeof val !== 'object' && String(val).trim() !== '' && String(val).trim() !== '-') {
-          return String(val).trim()
-        }
-      }
-    }
-    return null
-  }
-
   // 1. Priority: Form Data
-  const fromForm = searchInObj(parsedForm)
+  const fromForm = searchSupplierNameInObj(parsedForm)
   if (fromForm) return fromForm
 
   // 2. Priority: Agent Data
   const agentData = row._agentData?.[0] || row._agentData || {}
-  const fromAgent = searchInObj(agentData)
+  const fromAgent = searchSupplierNameInObj(agentData)
   if (fromAgent) return fromAgent
 
   // Check Extracted Invoice JSON
   const invoiceHeader = agentData?.['Extracted Invoice JSON']?.invoice_header
   if (invoiceHeader) {
-    const fromHeader = searchInObj(invoiceHeader)
+    const fromHeader = searchSupplierNameInObj(invoiceHeader)
     if (fromHeader) return fromHeader
   }
 
@@ -393,10 +471,20 @@ const findGLNumber = (row: any): string | null => {
   const searchInObj = (obj: any): string | null => {
     if (!obj || typeof obj !== 'object') return null
     for (const key of Object.keys(obj)) {
-      const k = key.toLowerCase().replace(/_/g, ' ').trim()
-      if (k === 'gl number' || k === 'gl account' || k === 'gl account code' || k === 'gl code') {
+      const k = key.toLowerCase().replaceAll('_', ' ').trim()
+      if (
+        k === 'gl number' ||
+        k === 'gl account' ||
+        k === 'gl account code' ||
+        k === 'gl code'
+      ) {
         const val = obj[key]
-        if (val && typeof val !== 'object' && String(val).trim() !== '' && String(val).trim() !== '-') {
+        if (
+          val &&
+          typeof val !== 'object' &&
+          String(val).trim() !== '' &&
+          String(val).trim() !== '-'
+        ) {
           return String(val).trim()
         }
       }
@@ -435,10 +523,15 @@ const findCategory = (row: any): string | null => {
   const searchInObj = (obj: any): string | null => {
     if (!obj || typeof obj !== 'object') return null
     for (const key of Object.keys(obj)) {
-      const k = key.toLowerCase().replace(/_/g, ' ').trim()
+      const k = key.toLowerCase().replaceAll('_', ' ').trim()
       if (k === 'category' || k === 'supplier category') {
         const val = obj[key]
-        if (val && typeof val !== 'object' && String(val).trim() !== '' && String(val).trim() !== '-') {
+        if (
+          val &&
+          typeof val !== 'object' &&
+          String(val).trim() !== '' &&
+          String(val).trim() !== '-'
+        ) {
           return String(val).trim()
         }
       }
@@ -503,14 +596,16 @@ const extractDueDate = (row: any): string => {
     const termsStr = parsedForm['vxnKCXsXkz8_acPogKe'] || ''
     const numMatch = /\d+/.exec(termsStr)
     if (numMatch) {
-      const days = parseInt(numMatch[0], 10)
+      const days = Number.parseInt(numMatch[0], 10)
       try {
         const d = new Date(invDateStr)
-        if (!isNaN(d.getTime())) {
+        if (!Number.isNaN(d.getTime())) {
           d.setDate(d.getDate() + days)
           val = d.toISOString().split('T')[0]
         }
-      } catch (e) {}
+      } catch (error) {
+        console.debug('Failed to parse date fallback:', error)
+      }
     }
   }
 
@@ -537,18 +632,18 @@ const extractPaymentTerms = (row: any): string => {
   const agentData = row._agentData?.[0] || row._agentData || {}
   const parsedForm = getParsedFormData(row)
 
-  if (parsedForm['vxnKCXsXkz8_acPogKe'] && parsedForm['vxnKCXsXkz8_acPogKe'] !== '-') {
+  if (isValidTerm(parsedForm['vxnKCXsXkz8_acPogKe'])) {
     return String(parsedForm['vxnKCXsXkz8_acPogKe'])
   }
 
   // check termObj
   const termObj = row.payment_terms || row.paymentTerms || {}
   let val = extractValueFromTermObj(termObj)
-  if (val && val !== '-') return String(val)
+  if (isValidTerm(val)) return String(val)
 
   // check row terms
   val = row.terms || row.payment_term || row.paymentTerms
-  if (val && typeof val !== 'object' && val !== '-') return String(val)
+  if (isValidTerm(val)) return String(val)
 
   // check formData
   const fields = row.formData?.fields || {}
@@ -556,18 +651,18 @@ const extractPaymentTerms = (row: any): string => {
   const keys = ['Payment Terms', 'payment_terms', 'Terms', 'terms']
   for (const k of keys) {
     const v = fields[k] || fd[k]
-    if (v && v !== '-') return String(v)
+    if (isValidTerm(v)) return String(v)
   }
 
   // check agentData
   const agentTermObj = agentData.payment_terms || {}
   val = extractValueFromTermObj(agentTermObj)
-  if (val && val !== '-') return String(val)
+  if (isValidTerm(val)) return String(val)
 
   const header = agentData['Extracted Invoice JSON']?.invoice_header || {}
   for (const k of keys) {
     const v = header[k]
-    if (v && v !== '-') return String(v)
+    if (isValidTerm(v)) return String(v)
   }
 
   return '-'
@@ -596,7 +691,10 @@ const extractInvoiceDate = (row: any): string => {
   const agentData = row._agentData?.[0] || row._agentData || {}
   const parsedForm = getParsedFormData(row)
 
-  if (parsedForm['9F6tPVHoRnmONGx3kYJu2'] && parsedForm['9F6tPVHoRnmONGx3kYJu2'] !== '-') {
+  if (
+    parsedForm['9F6tPVHoRnmONGx3kYJu2'] &&
+    parsedForm['9F6tPVHoRnmONGx3kYJu2'] !== '-'
+  ) {
     return String(parsedForm['9F6tPVHoRnmONGx3kYJu2']).trim()
   }
 
@@ -646,10 +744,6 @@ const extractInvoiceDate = (row: any): string => {
 
   return '-'
 }
-
-
-
-
 
 interface RowStatusBadgeProps {
   isProcessing: boolean
@@ -708,7 +802,10 @@ const RowStatusBadge = ({
 
   const formatted = formatDecision(String(rawDecision))
 
-  if (formatted.toLowerCase() === 'approved' || formatted.toLowerCase() === 'matched') {
+  if (
+    formatted.toLowerCase() === 'approved' ||
+    formatted.toLowerCase() === 'matched'
+  ) {
     return (
       <span className='flex items-center gap-1 rounded-md border border-[var(--green-4)] bg-[var(--green-2)] px-2 py-0.5 text-[11px] font-semibold text-[var(--green-11)]'>
         <Icon className='size-3.5' name='tabler:circle-check' />
@@ -717,7 +814,10 @@ const RowStatusBadge = ({
     )
   }
 
-  if (formatted.toLowerCase() === 'rejected' || formatted.toLowerCase() === 'no match') {
+  if (
+    formatted.toLowerCase() === 'rejected' ||
+    formatted.toLowerCase() === 'no match'
+  ) {
     return (
       <span className='flex items-center gap-1 rounded-md border border-[var(--red-4)] bg-[var(--red-2)] px-2 py-0.5 text-[11px] font-semibold text-[var(--red-11)]'>
         <Icon className='size-3.5' name='tabler:alert-circle' />
@@ -744,10 +844,9 @@ const TermsColumn = ({ raisedAt, row }: TermsColumnProps) => {
   const dueDate = extractDueDate(row)
   const daysDiff = calculateDaysDifference(raisedAt, dueDate)
 
-  let topText = '0 days'
-  let bottomText = 'immediate'
-  let calculationTheme =
-    'border-[var(--red-4)] bg-[var(--red-2)] text-[var(--red-11)]'
+  let topText = ''
+  let bottomText = ''
+  let calculationTheme = ''
 
   if (daysDiff === null) {
     // fallback to terms numeric days diff if due date is not clear
@@ -760,6 +859,11 @@ const TermsColumn = ({ raisedAt, row }: TermsColumnProps) => {
         days <= 15
           ? 'border-[var(--orange-4)] bg-[var(--orange-2)] text-[var(--orange-11)]'
           : 'border-[var(--blue-4)] bg-[var(--blue-2)] text-[var(--blue-11)]'
+    } else {
+      topText = '0 days'
+      bottomText = 'immediate'
+      calculationTheme =
+        'border-[var(--red-4)] bg-[var(--red-2)] text-[var(--red-11)]'
     }
   } else if (daysDiff > 0) {
     topText = `${daysDiff} days`
@@ -771,11 +875,13 @@ const TermsColumn = ({ raisedAt, row }: TermsColumnProps) => {
   } else if (daysDiff < 0) {
     topText = `${Math.abs(daysDiff)} days`
     bottomText = 'overdue'
-    calculationTheme = 'border-[var(--red-4)] bg-[var(--red-2)] text-[var(--red-11)]'
-  } else if (daysDiff === 0) {
+    calculationTheme =
+      'border-[var(--red-4)] bg-[var(--red-2)] text-[var(--red-11)]'
+  } else {
     topText = '0 days'
     bottomText = 'immediate'
-    calculationTheme = 'border-[var(--red-4)] bg-[var(--red-2)] text-[var(--red-11)]'
+    calculationTheme =
+      'border-[var(--red-4)] bg-[var(--red-2)] text-[var(--red-11)]'
   }
 
   return (
@@ -820,10 +926,17 @@ const GridRowItem = ({
 
   const processingProcesses = requestStore((state) => state.processingProcesses)
   const matchingProc = useMemo(() => {
-    return processingProcesses.find((p) => String(p.processId || p.id) === String(row.processId || row.id))
+    return processingProcesses.find(
+      (p) => String(p.processId || p.id) === String(row.processId || row.id),
+    )
   }, [processingProcesses, row.processId, row.id])
 
-  const statusText = useProcessingStatusText(matchingProc?.startTime || row?.createdAt)
+  const statusText = useProcessingStatusText(
+    matchingProc?.startTime ||
+      row?.raisedAt ||
+      row?.transaction_createdAt ||
+      row?.createdAt,
+  )
 
   const parsedForm = getParsedFormData(row)
   const invoiceNo =
@@ -845,41 +958,23 @@ const GridRowItem = ({
     row?.transaction_createdAt
   const amtStr = findInvoiceAmount(row)
   const amount = amtStr ? Number(amtStr.replace(/[^0-9.-]/g, '')) : null
-  const agentData = row._agentResponse || row._agentData?.[0] || row._agentData || {}
+  const agentData =
+    row._agentResponse || row._agentData?.[0] || row._agentData || {}
   const rawDecision = String(
     parsedForm['2MH_BMDFEVKsU0uAQjoI1'] ||
-    agentData?.decision ||
-    row.decision ||
-    row.status ||
-    ''
+      agentData?.decision ||
+      row.decision ||
+      row.status ||
+      '',
   ).toUpperCase()
-  const aiInsight = agentData?.ai_insight || agentData?.aiInsight || agentData?.ai_insect || ''
+  const aiInsight =
+    agentData?.ai_insight || agentData?.aiInsight || agentData?.ai_insect || ''
 
-  // Exact Icon and Color matching from design
-  let iconName = 'tabler:clock'
-  let iconColorClass = 'bg-[var(--gray-2)] border-[var(--gray-2)] text-[var(--gray-9)]'
-
-  if (row.isProcessing) {
-    iconName = 'tabler:loader-2'
-    iconColorClass =
-      'bg-[var(--orange-2)] border-[var(--orange-2)] text-[var(--orange-9)]'
-  } else if (rawDecision === 'APPROVED' || rawDecision === 'MATCHED') {
-    iconName = 'tabler:circle-check'
-    iconColorClass =
-      'bg-[var(--green-2)] border-[var(--green-2)] text-[var(--green-9)]'
-  } else if (rawDecision === 'REJECTED' || rawDecision === 'NO MATCH') {
-    iconName = 'tabler:alert-circle'
-    iconColorClass =
-      'bg-[var(--red-2)] border-[var(--red-2)] text-[var(--red-9)]'
-  } else if (row?.isDuplicateInvoice) {
-    iconName = 'tabler:stack-2'
-    iconColorClass =
-      'bg-[var(--purple-2)] border-[var(--purple-2)] text-[var(--purple-9)]'
-  } else if (rawDecision === 'PARTIALLY APPROVED' || rawDecision === 'PARTIAL MATCH') {
-    iconName = 'tabler:alert-triangle'
-    iconColorClass =
-      'bg-[var(--orange-2)] border-[var(--orange-2)] text-[var(--orange-9)]'
-  }
+  const { iconColorClass, iconName } = getRowIconAndColor(
+    !!row.isProcessing,
+    rawDecision,
+    !!row?.isDuplicateInvoice,
+  )
 
   return (
     <motion.div
@@ -909,20 +1004,17 @@ const GridRowItem = ({
       {/* Checkbox & Status Icon */}
       <div className='flex shrink-0 items-center'>
         {!row.isProcessing && (
-          <label
+          <div
             className={cn(
-              'relative flex cursor-pointer items-center overflow-hidden transition-all duration-200',
+              'relative flex items-center overflow-hidden transition-all duration-200',
               isSelected || hasSelectionActive
                 ? 'mr-4 w-5 opacity-100'
                 : 'mr-0 w-0 opacity-0 group-hover:mr-4 group-hover:w-5 group-hover:opacity-100',
             )}
-            onClick={(e) => {
-              e.stopPropagation()
-            }}
           >
             <input
               checked={isSelected}
-              className='sr-only'
+              className='absolute inset-0 z-10 cursor-pointer opacity-0'
               type='checkbox'
               onChange={() => {}}
               onClick={(e) => {
@@ -945,7 +1037,7 @@ const GridRowItem = ({
                 />
               )}
             </div>
-          </label>
+          </div>
         )}
         <div
           className={cn(
@@ -964,7 +1056,7 @@ const GridRowItem = ({
       <div className='flex min-w-0 flex-1 flex-col gap-1.5'>
         <div className='flex items-center gap-3'>
           <h3
-            className='truncate text-[15px] tracking-tight text-[var(--text-primary)] transition-colors group-hover:text-[var(--primary-9)]'
+            className='truncate text-[15px] tracking-tight text-[var(--text-primary)] transition-colors group-hover:text-[var(--primary-9)] group-hover:underline'
             style={{ fontWeight: 500 }}
           >
             {invoiceNo}
@@ -987,32 +1079,33 @@ const GridRowItem = ({
 
         {/* Sub-metadata row */}
         <div className='flex items-center gap-4 text-[12px] font-medium text-[var(--gray-10)]'>
-          <div className='flex items-center gap-1.5'>
-            <Icon className='size-3.5' name='tabler:hash' />
-            <span>
-              {row.isProcessing ? statusText : extractPONumber(row)}
-            </span>
-          </div>
-          {!row.isProcessing && (() => {
-            const glNumber = findGLNumber(row)
-            const category = findCategory(row)
-            return (
-              <>
-                {glNumber && (
-                  <div className='flex items-center gap-1.5 text-[var(--gray-8)]'>
-                    <Icon className='size-3.5' name='tabler:stack' />
-                    <span>{glNumber}</span>
-                  </div>
-                )}
-                {category && (
-                  <div className='flex items-center gap-1.5 text-[var(--gray-8)]'>
-                    <Icon className='size-3.5' name='tabler:tag' />
-                    <span>{category}</span>
-                  </div>
-                )}
-              </>
-            )
-          })()}
+          {!row.isProcessing && (
+            <div className='flex items-center gap-1.5'>
+              <Icon className='size-3.5' name='tabler:hash' />
+              <span>{extractPONumber(row)}</span>
+            </div>
+          )}
+          {!row.isProcessing &&
+            (() => {
+              const glNumber = findGLNumber(row)
+              const category = findCategory(row)
+              return (
+                <>
+                  {glNumber && (
+                    <div className='flex items-center gap-1.5 text-[var(--gray-8)]'>
+                      <Icon className='size-3.5' name='tabler:stack' />
+                      <span>{glNumber}</span>
+                    </div>
+                  )}
+                  {category && (
+                    <div className='flex items-center gap-1.5 text-[var(--gray-8)]'>
+                      <Icon className='size-3.5' name='tabler:tag' />
+                      <span>{category}</span>
+                    </div>
+                  )}
+                </>
+              )
+            })()}
         </div>
       </div>
 
@@ -1037,7 +1130,7 @@ const GridRowItem = ({
       <div className='ml-auto flex shrink-0 items-center gap-6 select-none'>
         {row.isProcessing ? (
           <div className='relative flex w-[249px] items-center justify-end gap-2 pr-4'>
-            <span className='text-[12px] font-semibold text-[var(--orange-9)] animate-pulse'>
+            <span className='animate-pulse text-[12px] font-semibold text-[var(--orange-9)]'>
               {statusText}
             </span>
           </div>
@@ -1050,16 +1143,16 @@ const GridRowItem = ({
 
             {/* Column 4: Invoice Value & Date */}
             <div className='flex w-[115px] shrink-0 flex-col items-end'>
-              <span
-                className='text-[15px] leading-none tracking-tight text-[var(--text-primary)] tabular-nums font-semibold'
-              >
+              <span className='text-[15px] leading-none font-semibold tracking-tight text-[var(--text-primary)] tabular-nums'>
                 {amount !== null && !Number.isNaN(amount) ? (
                   `$${amount.toLocaleString(undefined, {
                     maximumFractionDigits: 2,
                     minimumFractionDigits: 2,
                   })}`
                 ) : (
-                  <span className='text-[14px] text-[var(--gray-9)] font-semibold'>N/A</span>
+                  <span className='text-[14px] font-semibold text-[var(--gray-9)]'>
+                    N/A
+                  </span>
                 )}
               </span>
               <span className='mt-1.5 text-[12px] font-medium text-[var(--gray-10)]'>
@@ -1173,8 +1266,6 @@ const GridView = <TData,>({
     }
   }
 
-
-
   const isAllSelected =
     allItems.length > 0 && selectedIds.size === allItems.length
   const isPartiallySelected =
@@ -1184,6 +1275,49 @@ const GridView = <TData,>({
     isAllSelected || isPartiallySelected
       ? 'border-[var(--primary-9)] bg-surface'
       : 'border-[var(--gray-3)] bg-surface hover:border-[var(--primary-9)]'
+
+  let content
+  if (isLoading) {
+    content = (
+      <div className='flex flex-col gap-3 p-2'>
+        {[1, 2, 3].map((i) => (
+          <GridRowSkeleton index={i} key={i} />
+        ))}
+      </div>
+    )
+  } else if (allItems.length === 0) {
+    content = (
+      <ListEmptyState
+        containerClassName='py-12'
+        page='requests'
+        table={table as TanstackTable<any>}
+        onPrimaryAction={onNewRequest}
+      />
+    )
+  } else {
+    content = (
+      <div className='flex flex-col gap-2.5 px-2 pt-3 pb-4'>
+        {allItems.map((row: any, index: number) => {
+          const originalIndex =
+            typeof row?._originalIndex === 'number' ? row._originalIndex : index
+          const rowId = row?.id || row?.processId || `item-${originalIndex}`
+          const isSelected = selectedIds.has(rowId)
+          return (
+            <GridRowItem
+              activeTab={activeTab}
+              hasSelectionActive={selectedIds.size > 0}
+              index={index}
+              isSelected={isSelected}
+              key={rowId}
+              row={row}
+              toggleRowSelection={toggleRowSelection}
+              onRowClick={onRowClick}
+            />
+          )
+        })}
+      </div>
+    )
+  }
 
   return (
     <>
@@ -1341,46 +1475,7 @@ const GridView = <TData,>({
           </div>
         </div>
 
-        <div className='min-h-0 flex-1 overflow-y-auto'>
-          {isLoading ? (
-            <div className='flex flex-col gap-3 p-2'>
-              {[1, 2, 3].map((i) => (
-                <GridRowSkeleton index={i} key={i} />
-              ))}
-            </div>
-          ) : allItems.length === 0 ? (
-            <ListEmptyState
-              containerClassName='py-12'
-              page='requests'
-              table={table as TanstackTable<any>}
-              onPrimaryAction={onNewRequest}
-            />
-          ) : (
-            <div className='flex flex-col gap-2.5 px-2 pt-3 pb-4'>
-              {allItems.map((row: any, index: number) => {
-                const originalIndex =
-                  typeof row?._originalIndex === 'number'
-                    ? row._originalIndex
-                    : index
-                const rowId =
-                  row?.id || row?.processId || `item-${originalIndex}`
-                const isSelected = selectedIds.has(rowId)
-                return (
-                  <GridRowItem
-                    activeTab={activeTab}
-                    hasSelectionActive={selectedIds.size > 0}
-                    index={index}
-                    isSelected={isSelected}
-                    key={rowId}
-                    row={row}
-                    toggleRowSelection={toggleRowSelection}
-                    onRowClick={onRowClick}
-                  />
-                )
-              })}
-            </div>
-          )}
-        </div>
+        <div className='min-h-0 flex-1 overflow-y-auto'>{content}</div>
       </div>
 
       {/* File Preview Sheet */}

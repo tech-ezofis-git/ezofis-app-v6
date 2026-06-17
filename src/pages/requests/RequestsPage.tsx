@@ -183,7 +183,8 @@ const RequestsPage = () => {
   // Workflow Change Listener
   useEffect(() => {
     if (workflow?.id) {
-      const isNewWorkflow = !selectedWorkflow || String(workflow.id) !== String(selectedWorkflow.id)
+      const isNewWorkflow =
+        !selectedWorkflow || String(workflow.id) !== String(selectedWorkflow.id)
       if (isNewWorkflow && !reloadMeta) {
         loadSelectedWorkflow(String(workflow.id), workflow.name)
       } else if (reloadMeta) {
@@ -292,6 +293,8 @@ const RequestsPage = () => {
           // Pass state and setter to Header
           activeTab={activeTab}
           allWorkflows={allWorkflow}
+          exceptionsCount={inboxResult?.exceptionsCount}
+          inboxTabCount={inboxResult?.inboxTabCount}
           isLoading={isLoading}
           metaData={metaData}
           viewMode={viewMode}
@@ -308,6 +311,7 @@ const RequestsPage = () => {
           onBack={closeRequest}
           onNext={onNext}
           onPrev={onPrev}
+          isFourthItem={selectedIndex === 3}
         />
       )}
       {showWorkflowEmpty && !selectedItem ? (

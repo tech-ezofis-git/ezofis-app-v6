@@ -1,0 +1,1596 @@
+diff --git a/src/pages/requests/components/request/components/sections/overview/Overview.tsx b/src/pages/requests/components/request/components/sections/overview/Overview.tsx
+index cd8c9b3..c681423 100644
+--- a/src/pages/requests/components/request/components/sections/overview/Overview.tsx
++++ b/src/pages/requests/components/request/components/sections/overview/Overview.tsx
+@@ -7,7 +7,6 @@ import {
+   Layers,
+   ListFilter,
+   MessageCircle,
+-  Package,
+   Paperclip,
+   Plus,
+   Store,
+@@ -15,7 +14,7 @@ import {
+   Wallet,
+ } from 'lucide-react'
+ import { AnimatePresence, motion } from 'motion/react'
+-import { useEffect, useMemo, useRef, useState } from 'react'
++import { useEffect, useMemo, useRef, useState, Fragment } from 'react'
+ import fileApi from '@/api/file/file'
+ import BarLoader from '@/components/base/BarLoader'
+ import Icon from '@/components/base/icon/Icon'
+@@ -24,7 +23,15 @@ import InputSelect from '@/components/base/inputs/InputSelect'
+ import { useAttachments } from '@/pages/requests/hooks/useAttachments'
+ import { useComments } from '@/pages/requests/hooks/useComments'
+ import requestStore from '@/pages/requests/stores/useRequestStore'
++import Table from '@/components/base/table/Table'
++import Tbody from '@/components/base/table/Tbody'
++import Td from '@/components/base/table/Td'
++import Th from '@/components/base/table/Th'
++import Thead from '@/components/base/table/Thead'
++import Tr from '@/components/base/table/Tr'
+ import '@react-pdf-viewer/core/lib/styles/index.css'
++import { searchPlugin } from '@react-pdf-viewer/search'
++import '@react-pdf-viewer/search/lib/styles/index.css'
+ import authUserStore from '@/stores/authUserStore'
+ import cn from '@/utils/cn'
+ import { buildFieldMetaMap } from '../../../Request'
+@@ -40,6 +47,9 @@ const getStatusStyles = (statusType: string) => {
+       return 'bg-[var(--green-1)] text-[var(--green-9)]'
+     case 'warning':
+       return 'bg-[var(--orange-1)] text-[var(--orange-9)]'
++    case 'danger':
++    case 'error':
++      return 'bg-[var(--red-1)] text-[var(--red-9)]'
+     default:
+       return 'bg-[var(--gray-1)] text-[var(--gray-11)]'
+   }
+@@ -51,11 +61,32 @@ const getStatusBorderStyles = (statusType: string) => {
+       return 'border-[var(--green-3)] bg-[var(--green-1)] text-[var(--green-9)]'
+     case 'warning':
+       return 'border-[var(--orange-3)] bg-[var(--orange-1)] text-[var(--orange-9)]'
++    case 'danger':
++    case 'error':
++      return 'border-[var(--red-3)] bg-[var(--red-1)] text-[var(--red-9)]'
+     default:
+       return 'border-[var(--gray-3)] bg-[var(--gray-1)] text-[var(--gray-11)]'
+   }
+ }
+ 
++const calculateDaysDifference = (
++  invoiceDateStr: any,
++  dueDateStr: any,
++): number | null => {
++  if (!invoiceDateStr || !dueDateStr || dueDateStr === '-') return null
++  try {
++    const invDate = new Date(invoiceDateStr)
++    const dueDate = new Date(dueDateStr)
++    if (Number.isNaN(invDate.getTime()) || Number.isNaN(dueDate.getTime()))
++      return null
++    const diffTime = dueDate.getTime() - invDate.getTime()
++    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
++    return diffDays
++  } catch {
++    return null
++  }
++}
++
+ const updateValueInStructure = (obj: any, pathKey: string, val: any) => {
+   if (
+     obj[pathKey] &&
+@@ -186,6 +217,65 @@ const formatBase64Url = (base64: string, mimeType: string): string => {
+     : `data:${mimeType};base64,${base64}`
+ }
+ 
++const CircledScore = ({ score, onClick }: { score: number; onClick?: () => void }) => {
++  const percentage = Math.max(0, Math.min(100, Math.round(score)))
++  const radius = 18
++  const strokeWidth = 3.5
++  const circumference = 2 * Math.PI * radius
++  const strokeDashoffset = circumference - (percentage / 100) * circumference
++
++  let colorClass = 'stroke-[var(--green-9)]'
++  let bgStrokeClass = 'stroke-[var(--green-3)]'
++  if (percentage < 50) {
++    colorClass = 'stroke-[var(--red-9)]'
++    bgStrokeClass = 'stroke-[var(--red-3)]'
++  } else if (percentage < 90) {
++    colorClass = 'stroke-[var(--orange-9)]'
++    bgStrokeClass = 'stroke-[var(--orange-3)]'
++  }
++
++  const content = (
++    <div className='relative flex h-11 w-11 shrink-0 items-center justify-center select-none'>
++      <svg className='h-full w-full -rotate-90'>
++        <circle
++          cx='22'
++          cy='22'
++          r={radius}
++          className={cn('fill-none', bgStrokeClass)}
++          strokeWidth={strokeWidth}
++        />
++        <circle
++          cx='22'
++          cy='22'
++          r={radius}
++          className={cn('fill-none transition-all duration-500 ease-out', colorClass)}
++          strokeWidth={strokeWidth}
++          strokeDasharray={circumference}
++          strokeDashoffset={strokeDashoffset}
++          strokeLinecap='round'
++        />
++      </svg>
++      <span className='absolute text-[11px] font-extrabold text-[var(--gray-12)]'>
++        {percentage}%
++      </span>
++    </div>
++  )
++
++  if (onClick) {
++    return (
++      <button
++        type='button'
++        onClick={onClick}
++        title='Click to toggle verification details'
++        className='focus:outline-none hover:scale-105 active:scale-95 transition-transform shrink-0'
++      >
++        {content}
++      </button>
++    )
++  }
++
++  return content
++}
+ // --- Components ---
+ 
+ const AnalysisCard = ({
+@@ -242,7 +332,7 @@ const getRecommendationMeta = (rec?: string) => {
+   if (r === 'APPROVE_TRANSACTION' || r === 'APPROVE') {
+     return {
+       bg: 'bg-[var(--green-1)]/50',
+-      chip: 'border-[var(--green-3)] bg-[var(--green-1)] text-[var(--green-9)]',
++      chip: 'border border-[var(--green-3)] bg-[var(--green-1)] text-[var(--green-9)]',
+       icon: 'tabler:check',
+       label: 'Approve',
+     }
+@@ -250,16 +340,40 @@ const getRecommendationMeta = (rec?: string) => {
+   if (r === 'REJECT_TRANSACTION' || r === 'REJECT') {
+     return {
+       bg: 'bg-[var(--red-1)]/50',
+-      chip: 'border-[var(--red-3)] bg-[var(--red-1)] text-[var(--red-9)]',
++      chip: 'border border-[var(--red-3)] bg-[var(--red-1)] text-[var(--red-9)]',
+       icon: 'tabler:x',
+       label: 'Reject Transaction',
+     }
+   }
++  if (r.includes('WAIT')) {
++    return {
++      bg: 'bg-[var(--blue-1)]/50',
++      chip: 'border border-[var(--blue-3)] bg-[var(--blue-1)] text-[var(--blue-9)]',
++      icon: 'tabler:hourglass-high',
++      label: 'Wait for Balance',
++    }
++  }
++  if (r.includes('CONTACT')) {
++    return {
++      bg: 'bg-[var(--purple-1)]/50',
++      chip: 'border border-[var(--purple-3)] bg-[var(--purple-1)] text-[var(--purple-9)]',
++      icon: 'tabler:message-circle',
++      label: 'Contact Vendor',
++    }
++  }
++  if (r.includes('CANCEL')) {
++    return {
++      bg: 'bg-[var(--red-1)]/50',
++      chip: 'border border-[var(--red-3)] bg-[var(--red-1)] text-[var(--red-9)]',
++      icon: 'tabler:ban',
++      label: 'Cancel Remaining',
++    }
++  }
+   return {
+     bg: 'bg-[var(--gray-1)]/50',
+-    chip: 'border-[var(--gray-3)] bg-[var(--gray-1)] text-[var(--gray-11)]',
++    chip: 'border border-[var(--gray-3)] bg-[var(--gray-1)] text-[var(--gray-11)]',
+     icon: 'tabler:dots',
+-    label: 'No Action',
++    label: rec || 'No Action',
+   }
+ }
+ 
+@@ -345,10 +459,12 @@ const BackOrderCard = ({
+                   </span>
+                 </div>
+                 <p className='text-[11px] leading-relaxed text-[var(--gray-12)]'>
+-                  Orchestrator flagged shortage risk on {missingCount} line item
+-                  {missingCount !== 1 ? 's' : ''}. Verification matching is
+-                  below threshold.
++                  {backOrder?.reason ||
++                    `Orchestrator flagged shortage risk on ${missingCount} line item${missingCount !== 1 ? 's' : ''}. Verification matching is below threshold.`}
+                 </p>
++                <div className='mt-2 border-t border-[var(--gray-2)] pt-1.5 text-[9px] font-medium text-[var(--gray-9)] text-center'>
++                  Click to view full history & details
++                </div>
+               </div>
+             </div>
+           </motion.div>
+@@ -368,6 +484,7 @@ const FormCard = ({
+   type = 'text',
+   value,
+   onChange,
++  onFocus,
+ }: any) => {
+   const [isEditing, setIsEditing] = useState(false)
+   const [localValue, setLocalValue] = useState(value)
+@@ -397,7 +514,10 @@ const FormCard = ({
+       <InputDate
+         className='w-full font-semibold'
+         value={localValue}
+-        onChange={(val: any) => setLocalValue(val)}
++        onChange={(val: any) => {
++          setLocalValue(val)
++          onFocus?.(val)
++        }}
+       />
+     )
+   } else if (type === 'dropdown') {
+@@ -408,6 +528,7 @@ const FormCard = ({
+         value={localValue}
+         onChange={(val: any) => {
+           setLocalValue(val)
++          onFocus?.(val)
+           setTimeout(handleBlur, 0)
+         }}
+       />
+@@ -421,7 +542,11 @@ const FormCard = ({
+         value={localValue === '-' ? '' : localValue}
+         autoFocus
+         onBlur={handleBlur}
+-        onChange={(e) => setLocalValue(e.target.value)}
++        onChange={(e) => {
++          setLocalValue(e.target.value)
++          onFocus?.(e.target.value)
++        }}
++        onFocus={() => onFocus?.(localValue)}
+         onKeyDown={handleKeyDown}
+       />
+     )
+@@ -480,7 +605,10 @@ const FormCard = ({
+       className={cn(
+         'group flex w-full cursor-pointer items-start gap-3 rounded-lg border border-none border-transparent bg-transparent p-3 text-left transition-all hover:border-[var(--gray-3)] hover:bg-surface hover:shadow-sm focus:ring-1 focus:ring-[var(--primary-3)]/50 focus:outline-none',
+       )}
+-      onClick={() => setIsEditing(true)}
++      onClick={() => {
++        setIsEditing(true)
++        onFocus?.(localValue)
++      }}
+     >
+       <div
+         className={cn(
+@@ -529,7 +657,7 @@ const FormCard = ({
+ }
+ 
+ const SummarySkeleton = () => (
+-  <div className='flex-1 animate-pulse space-y-6 overflow-y-auto px-4 pb-8'>
++  <div className='scrollbar flex-1 animate-pulse space-y-6 overflow-y-auto px-4 pb-8'>
+     <div className='space-y-5 rounded-xl border border-[var(--gray-3)]/10 bg-surface p-6 shadow-sm'>
+       <div className='flex items-start justify-between'>
+         <div className='flex items-center gap-4'>
+@@ -559,6 +687,37 @@ const SummarySkeleton = () => (
+ 
+ // --- Main App ---
+ 
++const MOCK_PREVIOUS_BACKORDERS: Record<string, any> = {
++  'MSP-REQ-55': {
++    detected: true,
++    missing_qty_by_item: [
++      {
++        po_line_id: '1',
++        po_qty: 10,
++        invoice_qty: 3,
++        remaining: 7,
++        description: 'Office Chair - Ergonomic',
++        price: 150.0,
++        amount: 1050.0,
++        reason: 'SHORT_SHIP',
++      },
++      {
++        po_line_id: '2',
++        po_qty: 1,
++        invoice_qty: 0,
++        remaining: 1,
++        description: 'Delivery Charges',
++        price: 45.0,
++        amount: 45.0,
++        reason: 'SHORT_SHIP',
++      }
++    ],
++    recommendation: 'WAIT_FOR_BALANCE',
++    full_filled: false,
++    reason: 'PO #00026648: Initial shipment of Office Chairs had 3 units invoiced, leaving 7 remaining. Ticket MSP-REQ-55 created to track balance.',
++  }
++}
++
+ const Overview = (props: any) => {
+   const {
+     agentData,
+@@ -581,27 +740,30 @@ const Overview = (props: any) => {
+       detected: true,
+       missing_qty_by_item: [
+         {
+-          amount: 573.0,
+-          description: 'Phone (Shortage)',
+-          invoice_qty: 7,
+-          po_line_id: 'POL-1002-4',
++          po_line_id: '1',
+           po_qty: 10,
+-          price: 191.0,
+-          reason: 'BACKORDER',
+-          remaining: 3,
++          invoice_qty: 5,
++          remaining: 5,
++          description: 'Office Chair - Ergonomic',
++          price: 150.0,
++          amount: 750.0,
++          reason: 'SHORT_SHIP',
+         },
+         {
+-          amount: 300.0,
+-          description: 'Router (Shortage)',
+-          invoice_qty: 4,
+-          po_line_id: 'POL-1002-1',
+-          po_qty: 6,
+-          price: 150.0,
+-          reason: 'BACKORDER',
+-          remaining: 2,
++          po_line_id: '2',
++          po_qty: 1,
++          invoice_qty: 0,
++          remaining: 1,
++          description: 'Delivery Charges',
++          price: 45.0,
++          amount: 45.0,
++          reason: 'SHORT_SHIP',
+         },
+       ],
+-      recommendation: 'REJECT_TRANSACTION',
++      recommendation: 'WAIT_FOR_BALANCE',
++      full_filled: false,
++      previous_id: ['MSP-REQ-55'],
++      reason: 'PO #00026648 is partially invoiced. Office Chair is short by 5 units and Delivery Charges were not invoiced. Prior back-order ticket MSP-REQ-55 exists on this PO. Awaiting a balance invoice before the PO can be fully closed.',
+     }),
+     [],
+   )
+@@ -632,6 +794,8 @@ const Overview = (props: any) => {
+   const [activeTab, setActiveTab] = useState(
+     hasBackOrder ? 'back_order' : 'summary',
+   )
++  const [showBackOrderDetailFull, setShowBackOrderDetailFull] = useState(false)
++  const [activeBackOrderTab, setActiveBackOrderTab] = useState<'current' | string>('current')
+   const [selectedFile, setSelectedFile] = useState<any>(null)
+   const { data: attachmentData } = useAttachments(workflowId, processId, true)
+   const {
+@@ -641,6 +805,7 @@ const Overview = (props: any) => {
+   } = useComments(workflowId, processId, true)
+ 
+   const [lineItems, setLineItems] = useState<any[]>([])
++  const [expandedRows, setExpandedRows] = useState<Record<number, boolean>>({})
+ 
+   const tableFieldKey = useMemo(() => {
+     const metaMap = buildFieldMetaMap(selectedWorkflow, formDefinition)
+@@ -862,6 +1027,18 @@ const Overview = (props: any) => {
+     [],
+   )
+ 
++  const searchPluginInstance = searchPlugin()
++  const { highlight, clearHighlights } = searchPluginInstance
++
++  const handleFieldFocus = (value: any) => {
++    const stringVal = String(value || '').trim()
++    if (stringVal && stringVal !== '-') {
++      highlight([stringVal])
++    } else {
++      clearHighlights()
++    }
++  }
++
+   const invoiceHeader = agentData?.['Extracted Invoice JSON']?.invoice_header
+ 
+   useEffect(() => {
+@@ -890,8 +1067,12 @@ const Overview = (props: any) => {
+     setSelectedFile(null)
+     setPreviewUrl(null)
+     setActiveTab(hasBackOrder ? 'back_order' : 'summary')
++    setExpandedRows({})
++    setShowBackOrderDetailFull(false)
++    setActiveBackOrderTab('current')
+   }, [processId, transactionId, hasBackOrder])
+ 
++
+   useEffect(() => {
+     if (attachmentData && attachmentData.length > 0 && !selectedFile) {
+       setSelectedFile(attachmentData[0])
+@@ -917,9 +1098,9 @@ const Overview = (props: any) => {
+ 
+       const repoId = String(
+         selectedFile?.repositoryId ||
+-          selectedItem?.repositoryId ||
+-          repositoryId ||
+-          '',
++        selectedItem?.repositoryId ||
++        repositoryId ||
++        '',
+       ).trim()
+       const itemId = String(
+         selectedFile?.id || selectedItem?.itemId || '',
+@@ -1029,7 +1210,7 @@ const Overview = (props: any) => {
+             <Viewer
+               defaultScale={SpecialZoomLevel.PageWidth}
+               fileUrl={previewUrl}
+-              plugins={[toolbarPluginInstance]}
++              plugins={[toolbarPluginInstance, searchPluginInstance]}
+             />
+             <div className='absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 items-center gap-4 rounded-xl border border-[var(--gray-3)] bg-surface/90 px-4 py-2 opacity-0 shadow-2xl backdrop-blur-sm transition-all duration-300 group-hover:opacity-100'>
+               <button
+@@ -1094,12 +1275,253 @@ const Overview = (props: any) => {
+         </div>
+ 
+         {/* Right Side - Analysis & Data (60% Width) */}
+-        <div className='flex flex-1 flex-col bg-[var(--gray-1)]'>
++        <div className='flex min-h-0 flex-1 flex-col bg-[var(--gray-1)] overflow-hidden'>
+           <div className='flex min-h-0 flex-1 flex-col overflow-hidden'>
+             {!selectedItem || Object.keys(selectedItem).length === 0 ? (
+               <SummarySkeleton />
++            ) : showBackOrderDetailFull ? (
++              <div className='flex min-h-0 flex-1 flex-col overflow-hidden bg-surface animate-in fade-in slide-in-from-left-4 duration-300'>
++                {/* Header with list icon and dot-actions */}
++                <div className='flex items-center justify-between border-b border-[var(--gray-3)] bg-[var(--gray-1)] px-6 py-3 shrink-0'>
++                  <div className='flex items-center gap-2.5'>
++                    <Icon className='h-4 w-4 text-[var(--gray-11)]' name='tabler:list-check' />
++                    <h3 className='text-sm font-bold text-[var(--gray-13)]'>PO line items vs invoices</h3>
++                  </div>
++                  <div className='flex items-center gap-2'>
++                    {/* Recommendation badge in header */}
++                    {(() => {
++                      const currentRec = activeBackOrderTab === 'current'
++                        ? backOrder?.recommendation
++                        : MOCK_PREVIOUS_BACKORDERS[activeBackOrderTab]?.recommendation
++                      const recMeta = getRecommendationMeta(currentRec)
++                      return (
++                        <span className={cn('inline-flex items-center gap-1 rounded px-2 py-0.5 text-[9px] font-bold shadow-xs border mr-2', recMeta.chip)}>
++                          <Icon className='h-3 w-3 animate-pulse' name={recMeta.icon} />
++                          {recMeta.label}
++                        </span>
++                      )
++                    })()}
++                    <button className='rounded-lg p-1.5 text-[var(--gray-11)] hover:bg-[var(--gray-2)] hover:text-[var(--gray-13)] active:scale-95 transition-all'>
++                      <Icon className='h-4 w-4' name='tabler:dots' />
++                    </button>
++                  </div>
++                </div>
++
++                {/* Sub-header with back button and active tabs */}
++                <div className='shrink-0 border-b border-[var(--gray-3)] bg-[var(--gray-1)] px-6 flex items-center gap-4'>
++                  <button
++                    onClick={() => {
++                      setShowBackOrderDetailFull(false)
++                      setActiveTab('summary')
++                    }}
++                    className='group flex items-center gap-1 py-3 text-xs font-semibold text-[var(--gray-11)] hover:text-[var(--gray-13)] active:scale-95 transition-all'
++                    title='Back to Overview'
++                  >
++                    <Icon className='h-4 w-4 transition-transform group-hover:-translate-x-0.5' name='tabler:arrow-left' />
++                    <span>Back</span>
++                  </button>
++                  <div className='h-4 w-[1px] bg-[var(--gray-3)]' />
++                  <div className='flex items-center gap-4'>
++                    {/* Current Invoice tab */}
++                    <button
++                      onClick={() => setActiveBackOrderTab('current')}
++                      className={cn(
++                        'border-b-2 pb-2.5 pt-2 px-1 text-xs font-semibold transition-all -mb-[1px]',
++                        activeBackOrderTab === 'current'
++                          ? 'border-[var(--teal-9)] text-[var(--teal-9)] font-bold'
++                          : 'border-transparent text-[var(--gray-11)] hover:text-[var(--gray-13)]'
++                      )}
++                    >
++                      INV-4402 (Current)
++                    </button>
++                    {/* Previous tickets mapped as tabs */}
++                    {backOrder?.previous_id?.map((prevId: string) => (
++                      <button
++                        key={prevId}
++                        onClick={() => setActiveBackOrderTab(prevId)}
++                        className={cn(
++                          'border-b-2 pb-2.5 pt-2 px-1 text-xs font-semibold transition-all -mb-[1px]',
++                          activeBackOrderTab === prevId
++                            ? 'border-[var(--teal-9)] text-[var(--teal-9)] font-bold'
++                            : 'border-transparent text-[var(--gray-11)] hover:text-[var(--gray-13)]'
++                        )}
++                      >
++                        INV-4401 ({prevId})
++                      </button>
++                    ))}
++                  </div>
++                </div>
++
++                {/* Metrics Summary Row - 4 equal columns split by lines */}
++                {(() => {
++                  const currentData = activeBackOrderTab === 'current'
++                    ? backOrder
++                    : MOCK_PREVIOUS_BACKORDERS[activeBackOrderTab] || {}
++                  const items = currentData?.missing_qty_by_item || []
++
++                  const currencySymbol = agentData?.po_row?.Currency || '$'
++                  const invoiceAmount = items.reduce((sum: number, r: any) => sum + ((r.invoice_qty || 0) * (r.price || 0)), 0)
++                  const linesReceivedCount = items.filter((r: any) => (r.invoice_qty || 0) > 0).length
++                  const totalLines = items.length
++                  const pendingItemsCount = items.filter((r: any) => (r.remaining || 0) > 0).length
++                  const stillPendingVal = items.reduce((sum: number, r: any) => sum + ((r.remaining || 0) * (r.price || 0)), 0)
++
++                  return (
++                    <div className='grid grid-cols-4 border-b border-[var(--gray-3)] bg-surface text-xs shrink-0 divide-x divide-[var(--gray-3)]'>
++                      <div className='p-4 space-y-1'>
++                        <p className='text-[10px] font-bold text-[var(--gray-10)] uppercase tracking-wider'>INVOICE AMOUNT</p>
++                        <p className='text-base font-extrabold text-[var(--gray-13)]'>{currencySymbol}{invoiceAmount.toFixed(2)}</p>
++                      </div>
++                      <div className='p-4 space-y-1'>
++                        <p className='text-[10px] font-bold text-[var(--gray-10)] uppercase tracking-wider'>LINES RECEIVED</p>
++                        <p className='text-base font-extrabold text-[var(--teal-9)]'>{linesReceivedCount} of {totalLines}</p>
++                      </div>
++                      <div className='p-4 space-y-1'>
++                        <p className='text-[10px] font-bold text-[var(--gray-10)] uppercase tracking-wider'>PENDING ITEMS</p>
++                        <p className='text-base font-extrabold text-[var(--orange-9)]'>{pendingItemsCount} item{pendingItemsCount !== 1 ? 's' : ''}</p>
++                      </div>
++                      <div className='p-4 space-y-1'>
++                        <p className='text-[10px] font-bold text-[var(--gray-10)] uppercase tracking-wider'>STILL PENDING</p>
++                        <p className='text-base font-extrabold text-[var(--orange-9)]'>{currencySymbol}{stillPendingVal.toFixed(2)}</p>
++                      </div>
++                    </div>
++                  )
++                })()}
++
++                {/* Main Content Area */}
++                <div className='scrollbar flex-1 overflow-y-auto p-6 space-y-5 bg-[var(--gray-1)]'>
++                  {/* Status/Explanation banner */}
++                  {(() => {
++                    const currentData = activeBackOrderTab === 'current'
++                      ? backOrder
++                      : MOCK_PREVIOUS_BACKORDERS[activeBackOrderTab] || {}
++
++                    return (
++                      <div className='rounded-xl border border-[var(--orange-3)] bg-[var(--orange-1)]/30 p-4 animate-in fade-in slide-in-from-top-2 duration-300 shadow-xs'>
++                        <div className='flex items-start gap-3'>
++                          <div className='mt-0.5 rounded bg-[var(--orange-2)] p-1.5 text-[var(--orange-9)] shrink-0'>
++                            <Icon className='h-4 w-4' name='tabler:info-circle' />
++                          </div>
++                          <div className='space-y-1'>
++                            <h4 className='text-xs font-bold text-[var(--orange-10)]'>
++                              {activeBackOrderTab === 'current' ? 'Current Invoice Back Order Status' : `Prior Ticket ${activeBackOrderTab} Details`}
++                            </h4>
++                            <p className='text-xs leading-relaxed text-[var(--gray-12)] font-medium'>
++                              {currentData?.reason}
++                            </p>
++                          </div>
++                        </div>
++                      </div>
++                    )
++                  })()}
++
++                  {/* Items Table with Circular progress matching percentage */}
++                  {(() => {
++                    const currentData = activeBackOrderTab === 'current'
++                      ? backOrder
++                      : MOCK_PREVIOUS_BACKORDERS[activeBackOrderTab] || {}
++
++                    const items = currentData?.missing_qty_by_item || []
++                    const currencySymbol = agentData?.po_row?.Currency || '$'
++
++                    // Totals
++                    const totalRemaining = items.reduce((sum: number, r: any) => sum + (r.remaining || 0), 0)
++                    const totalInvoiceAmt = items.reduce((sum: number, r: any) => sum + ((r.invoice_qty || 0) * (r.price || 0)), 0)
++
++                    return (
++                      <div className='overflow-hidden rounded-xl border border-[var(--gray-3)] bg-surface shadow-xs animate-in fade-in duration-300'>
++                        <div className='overflow-x-auto'>
++                          <table className='w-full border-collapse text-left text-xs'>
++                            <thead className='border-b border-[var(--gray-3)] bg-[var(--gray-1)]'>
++                              <tr className='text-[10px] font-bold tracking-wider text-[var(--gray-9)] uppercase'>
++                                <th className='px-4 py-3.5'>LINE ITEM</th>
++                                <th className='px-4 py-3.5 text-center'>PO QTY</th>
++                                <th className='px-4 py-3.5 text-center'>RECV QTY</th>
++                                <th className='px-4 py-3.5 text-center'>BALANCE QTY</th>
++                                <th className='px-4 py-3.5 text-right'>INV AMOUNT</th>
++                              </tr>
++                            </thead>
++                            <tbody className='divide-y divide-[var(--gray-2)] bg-surface'>
++                              {items.map((row: any, idx: number) => {
++                                const desc = row.description?.trim() || 'Unmapped item'
++                                const invQty = row.invoice_qty ?? 0
++                                const poQty = row.po_qty ?? 1
++                                const price = row.price ?? 0
++                                const receivedVal = invQty * price
++                                const remaining = row.remaining ?? 0
++
++                                // Dynamic percent calculation
++                                const totalReceived = poQty - remaining
++                                const pct = Math.max(0, Math.min(100, Math.round((totalReceived / poQty) * 100)))
++
++                                return (
++                                  <tr className='transition-colors hover:bg-[var(--gray-1)]/50' key={idx}>
++                                    <td className='px-4 py-3 font-semibold text-[var(--gray-13)] flex items-center gap-3.5'>
++                                      {/* Circular Progress Badge */}
++                                      <div className={cn(
++                                        'h-8 w-8 rounded-full border-2 flex items-center justify-center text-[9px] font-black shrink-0 transition-colors',
++                                        pct === 100
++                                          ? 'border-[var(--green-5)] bg-[var(--green-1)]/30 text-[var(--green-10)]'
++                                          : pct > 0
++                                            ? 'border-[var(--orange-5)] bg-[var(--orange-1)]/30 text-[var(--orange-10)]'
++                                            : 'border-[var(--gray-4)] bg-[var(--gray-1)]/30 text-[var(--gray-11)]'
++                                      )}>
++                                        {pct}%
++                                      </div>
++                                      <div>
++                                        <div className='font-bold text-[var(--gray-13)] text-xs'>{desc}</div>
++                                        <div className='text-[10px] font-medium text-[var(--gray-9)] mt-0.5'>
++                                          PO Line: {row.po_line_id || '—'} • Price: {currencySymbol}{price.toFixed(2)}
++                                        </div>
++                                      </div>
++                                    </td>
++                                    <td className='px-4 py-3 text-center font-bold text-[var(--gray-13)]'>
++                                      {poQty}
++                                    </td>
++                                    <td className={cn(
++                                      'px-4 py-3 text-center font-bold',
++                                      invQty > 0 ? 'text-[var(--teal-9)]' : 'text-[var(--gray-9)] font-medium'
++                                    )}>
++                                      {invQty > 0 ? invQty : '—'}
++                                    </td>
++                                    <td className='px-4 py-3 text-center font-bold'>
++                                      {remaining > 0 ? (
++                                        <span className='text-[var(--orange-9)]'>{remaining} pending</span>
++                                      ) : (
++                                        <span className='text-[var(--gray-11)]'>0</span>
++                                      )}
++                                    </td>
++                                    <td className={cn(
++                                      'px-4 py-3 text-right font-bold',
++                                      receivedVal > 0 ? 'text-[var(--teal-10)]' : 'text-[var(--gray-9)] font-medium'
++                                    )}>
++                                      {receivedVal > 0 ? `${currencySymbol}${receivedVal.toFixed(2)}` : '—'}
++                                    </td>
++                                  </tr>
++                                )
++                              })}
++                            </tbody>
++                            <tfoot className='border-t border-[var(--gray-3)] bg-[var(--gray-1)] font-semibold text-[var(--gray-11)] text-[11px]'>
++                              <tr className='h-11'>
++                                <td className='px-4 py-3 font-medium'>{items.length} line items</td>
++                                <td className='px-4 py-3' colSpan={2} />
++                                <td className='px-4 py-3 text-center font-bold text-[var(--orange-10)]'>
++                                  Total pending qty: <span className='underline underline-offset-4 decoration-2 decoration-[var(--orange-4)]'>{totalRemaining}</span>
++                                </td>
++                                <td className='px-4 py-3 text-right font-black text-[var(--gray-13)]'>
++                                  Inv total: {currencySymbol}{totalInvoiceAmt.toFixed(2)}
++                                </td>
++                              </tr>
++                            </tfoot>
++                          </table>
++                        </div>
++                      </div>
++                    )
++                  })()}
++                </div>
++              </div>
+             ) : (
+-              <div className='flex h-full flex-col overflow-hidden'>
++              <div className='flex min-h-0 flex-1 flex-col overflow-hidden'>
+                 <div className='shrink-0 space-y-4 p-4'>
+                   {(() => {
+                     const poVal =
+@@ -1190,7 +1612,10 @@ const Overview = (props: any) => {
+                       <BackOrderCard
+                         backOrder={backOrder}
+                         isLoading={isCurrentlyProcessing}
+-                        onClick={() => setActiveTab('back_order')}
++                        onClick={() => {
++                          setShowBackOrderDetailFull(true)
++                          setActiveBackOrderTab('current')
++                        }}
+                       />
+                     )
+ 
+@@ -1213,18 +1638,40 @@ const Overview = (props: any) => {
+                     if (otherCards.length < 2) {
+                       if (agentData?.payment_terms?.raw) {
+                         const termsMeta = agentData.payment_terms
+-                        const termsStatus = termsMeta.normalized?.net_days
++                        const raisedAt = selectedItem?.raisedAt || selectedItem?.transaction_createdAt || selectedItem?.createdAt
++                        const dueDate = termsMeta.due_date
++                        const daysDiff = calculateDaysDifference(raisedAt, dueDate)
++
++                        let termsStatus = termsMeta.normalized?.net_days
+                           ? `Net ${termsMeta.normalized.net_days}`
+                           : 'Terms'
+-                        const termsValue = termsMeta.due_date
++                        let termsStatusType = 'success'
++                        let termsValue = termsMeta.due_date
+                           ? `Due ${termsMeta.due_date}`
+                           : termsMeta.raw
++
++                        if (daysDiff !== null) {
++                          if (daysDiff < 0) {
++                            termsStatus = `${Math.abs(daysDiff)}d Overdue`
++                            termsStatusType = 'danger'
++                          } else if (daysDiff === 0) {
++                            termsStatus = 'Immediate'
++                            termsStatusType = 'danger'
++                          } else {
++                            termsStatus = `${daysDiff}d Due`
++                            termsStatusType = daysDiff <= 15 ? 'warning' : 'success'
++                          }
++                        } else if (termsMeta.normalized?.net_days !== undefined && termsMeta.normalized?.net_days !== null) {
++                          const netDays = termsMeta.normalized.net_days
++                          termsStatusType = netDays <= 15 ? 'warning' : 'success'
++                        }
++
+                         otherCards.push(
+                           <AnalysisCard
+                             icon={CreditCard}
+                             isLoading={isCurrentlyProcessing}
+                             status={termsStatus}
+-                            statusType='success'
++                            statusType={termsStatusType}
+                             title='Payment Terms'
+                             value={termsValue}
+                           />,
+@@ -1324,15 +1771,6 @@ const Overview = (props: any) => {
+                 <div className='sticky top-0 z-10 shrink-0 border-b border-[var(--gray-3)] px-6 pt-2'>
+                   <div className='flex items-center gap-8'>
+                     {[
+-                      ...(hasBackOrder
+-                        ? [
+-                            {
+-                              icon: Package,
+-                              id: 'back_order',
+-                              label: 'Back Order',
+-                            },
+-                          ]
+-                        : []),
+                       {
+                         icon: FileText,
+                         id: 'summary',
+@@ -1396,9 +1834,9 @@ const Overview = (props: any) => {
+                   </div>
+                 </div>
+ 
+-                <div className='flex min-h-0 flex-1 flex-col'>
++                <div className='flex min-h-0 flex-1 flex-col overflow-hidden'>
+                   {activeTab === 'back_order' && hasBackOrder && (
+-                    <div className='animate-in fade-in slide-in-from-left-4 flex-1 space-y-4 overflow-y-auto p-4 duration-300'>
++                    <div className='scrollbar animate-in fade-in slide-in-from-left-4 flex-1 space-y-4 overflow-y-auto p-4 duration-300'>
+                       {/* 2. Items Table */}
+                       <div className='overflow-hidden rounded-xl border border-[var(--gray-3)] bg-surface shadow-sm'>
+                         <div className='flex items-center justify-between border-b border-[var(--gray-3)] bg-[var(--gray-1)] px-4 py-3'>
+@@ -1500,522 +1938,347 @@ const Overview = (props: any) => {
+                   )}
+ 
+                   {activeTab === 'summary' && (
+-                    <div className='grid flex-1 grid-cols-2 gap-x-4 gap-y-2 overflow-y-auto p-4'>
++                    <div className='scrollbar grid min-h-0 flex-1 grid-cols-2 gap-x-4 gap-y-2 overflow-y-auto p-4'>
+                       {isCurrentlyProcessing
+                         ? Array.from({ length: 8 }).map((_, idx) => {
+-                            const labels = [
+-                              'Supplier Name',
+-                              'Invoice Number',
+-                              'Invoice Date',
+-                              'Invoice Amount',
+-                              'PO Number',
+-                              'Payment Terms',
+-                              'Currency',
+-                              'Tax Amount',
+-                            ]
+-                            const icons = [
+-                              Store,
+-                              ListFilter,
+-                              HistoryIcon,
+-                              Wallet,
+-                              Paperclip,
+-                              HistoryIcon,
+-                              CreditCard,
+-                              Wallet,
+-                            ]
+-                            const label = labels[idx]
+-                            const IconComp = icons[idx]
+-                            return (
+-                              <div
+-                                className='flex w-full items-start gap-3 rounded-lg border border-transparent p-3 text-left'
+-                                key={idx}
+-                              >
+-                                <div className='mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--gray-2)] text-[var(--gray-11)]'>
+-                                  <IconComp className='h-3.5 w-3.5' />
+-                                </div>
+-                                <div className='min-w-0 flex-1 space-y-1.5'>
+-                                  <p className='text-[10px] leading-none font-semibold text-[var(--gray-11)]'>
+-                                    {label}
+-                                  </p>
+-                                  <div className='h-4 w-28 animate-pulse rounded bg-[var(--gray-3)]' />
+-                                </div>
++                          const labels = [
++                            'Supplier Name',
++                            'Invoice Number',
++                            'Invoice Date',
++                            'Invoice Amount',
++                            'PO Number',
++                            'Payment Terms',
++                            'Currency',
++                            'Tax Amount',
++                          ]
++                          const icons = [
++                            Store,
++                            ListFilter,
++                            HistoryIcon,
++                            Wallet,
++                            Paperclip,
++                            HistoryIcon,
++                            CreditCard,
++                            Wallet,
++                          ]
++                          const label = labels[idx]
++                          const IconComp = icons[idx]
++                          return (
++                            <div
++                              className='flex w-full items-start gap-3 rounded-lg border border-transparent p-3 text-left'
++                              key={idx}
++                            >
++                              <div className='mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--gray-2)] text-[var(--gray-11)]'>
++                                <IconComp className='h-3.5 w-3.5' />
+                               </div>
+-                            )
+-                          })
++                              <div className='min-w-0 flex-1 space-y-1.5'>
++                                <p className='text-[10px] leading-none font-semibold text-[var(--gray-11)]'>
++                                  {label}
++                                </p>
++                                <div className='h-4 w-28 animate-pulse rounded bg-[var(--gray-3)]' />
++                              </div>
++                            </div>
++                          )
++                        })
+                         : Object.entries(formModel || {})
+-                            .filter(([key, val]) => {
+-                              if (typeof val === 'object' && val !== null)
+-                                return false
+-                              if (typeof val === 'string') {
+-                                const trimmed = val.trim()
+-                                if (
+-                                  trimmed.startsWith('[') &&
+-                                  trimmed.endsWith(']')
+-                                )
+-                                  return false
+-                                if (
+-                                  trimmed.startsWith('{') &&
+-                                  trimmed.endsWith('}')
+-                                )
+-                                  return false
+-                              }
+-                              return !allowedLabels || allowedLabels.has(key)
+-                            })
+-                            .map(([key, val]) => {
+-                              const fieldMatch = getFieldMatch(
+-                                key,
+-                                agentData?.debug?.[
+-                                  'Side-by-side Field Matching'
+-                                ] || [],
++                          .filter(([key, val]) => {
++                            if (typeof val === 'object' && val !== null)
++                              return false
++                            if (typeof val === 'string') {
++                              const trimmed = val.trim()
++                              if (
++                                trimmed.startsWith('[') &&
++                                trimmed.endsWith(']')
+                               )
+-                              return (
+-                                <FormCard
+-                                  icon={getFieldIcon(key)}
+-                                  key={key}
+-                                  label={key}
+-                                  matchScore={fieldMatch?.Score}
+-                                  options={getOptions(key)}
+-                                  poValue={fieldMatch?.['PO Value']}
+-                                  type={getFieldType(key)}
+-                                  value={val || '-'}
+-                                  highlight={
+-                                    key.toLowerCase().includes('total') ||
+-                                    key.toLowerCase().includes('due')
+-                                  }
+-                                  onChange={(newVal: string) =>
+-                                    handleFieldChange(key, newVal)
+-                                  }
+-                                />
++                                return false
++                              if (
++                                trimmed.startsWith('{') &&
++                                trimmed.endsWith('}')
+                               )
+-                            })}
++                                return false
++                            }
++                            return !allowedLabels || allowedLabels.has(key)
++                          })
++                          .map(([key, val]) => {
++                            const fieldMatch = getFieldMatch(
++                              key,
++                              agentData?.debug?.[
++                              'Side-by-side Field Matching'
++                              ] || [],
++                            )
++                            return (
++                              <FormCard
++                                icon={getFieldIcon(key)}
++                                key={key}
++                                label={key}
++                                matchScore={fieldMatch?.Score}
++                                options={getOptions(key)}
++                                poValue={fieldMatch?.['PO Value']}
++                                type={getFieldType(key)}
++                                value={val || '-'}
++                                highlight={
++                                  key.toLowerCase().includes('total') ||
++                                  key.toLowerCase().includes('due')
++                                }
++                                onFocus={handleFieldFocus}
++                                onChange={(newVal: string) =>
++                                  handleFieldChange(key, newVal)
++                                }
++                              />
++                            )
++                          })}
+                     </div>
+                   )}
+ 
+                   {activeTab === 'line_items' && (
+-                    <div className='flex-1 overflow-y-auto p-4'>
+-                      <div className='overflow-hidden rounded-xl border border-[var(--gray-3)] bg-surface shadow-sm'>
+-                        <table className='w-full border-collapse text-left text-xs'>
+-                          <thead className='border-b border-[var(--gray-3)] bg-[var(--gray-1)]'>
+-                            <tr>
+-                              <th className='px-3 py-2 text-[11px] font-semibold text-[var(--gray-11)]'>
+-                                Description
+-                              </th>
+-                              <th className='w-[70px] px-3 py-2 text-right text-[11px] font-semibold text-[var(--gray-11)]'>
+-                                Qty
+-                              </th>
+-                              <th className='w-[100px] px-3 py-2 text-right text-[11px] font-semibold text-[var(--gray-11)]'>
+-                                Rate
+-                              </th>
+-                              <th className='w-[120px] px-3 py-2 text-right text-[11px] font-semibold text-[var(--gray-11)]'>
+-                                Total Amount
+-                              </th>
+-                              <th className='w-[44px] p-1 text-center'>
++                    <div className='min-h-0 flex-1 p-4 flex flex-col gap-3 overflow-hidden'>
++                      {/* Standard Table Container */}
++                      <div className='scrollbar overflow-y-auto max-h-[350px] rounded-xl border border-[var(--gray-3)] bg-surface shadow-sm'>
++                        <Table className='text-xs'>
++                          <Thead className='sticky top-0 z-10 bg-[var(--gray-2)] shadow-sm'>
++                            <Tr>
++                              <Th className='w-[64px] py-1 px-2.5 pl-4 text-center'>Score</Th>
++                              <Th className='py-1 px-2.5'>Description</Th>
++                              <Th className='w-[70px] py-1 px-2.5 text-right'>Qty</Th>
++                              <Th className='w-[100px] py-1 px-2.5 text-right'>Rate</Th>
++                              <Th className='w-[120px] py-1 px-2.5 text-right'>Total Amount</Th>
++                              <Th className='w-[50px] py-1 px-2.5 pr-4 text-center'>
+                                 <button
+-                                  className='inline-flex cursor-pointer items-center justify-center rounded border border-[var(--primary-4)] bg-[var(--primary-2)] p-1 text-[var(--primary-11)] transition-all hover:bg-[var(--primary-3)] hover:text-[var(--primary-12)] active:scale-95'
+-                                  title='Add New Item'
+                                   type='button'
++                                  className='inline-flex cursor-pointer items-center justify-center rounded bg-[var(--primary-2)] border border-[var(--primary-3)]/20 p-1 text-[var(--primary-9)] hover:bg-[var(--primary-3)] transition-all active:scale-95'
++                                  title='Add New Item'
+                                   onClick={handleAddItem}
+                                 >
+-                                  <Plus className='h-3.5 w-3.5' />
++                                  <Plus className='h-3 w-3' />
+                                 </button>
+-                              </th>
+-                            </tr>
+-                          </thead>
+-                          <tbody className='divide-y divide-[var(--gray-2)]'>
+-                            {isCurrentlyProcessing
+-                              ? Array.from({ length: 3 }).map((_, idx) => (
+-                                  <tr
+-                                    className='group transition-colors'
+-                                    key={idx}
++                              </Th>
++                            </Tr>
++                          </Thead>
++
++                          <Tbody>
++                            {isCurrentlyProcessing ? (
++                              Array.from({ length: 3 }).map((_, idx) => (
++                                <Tr key={idx}>
++                                  <Td className='py-1.5 px-2.5 pl-4 text-center'><div className='h-11 w-11 rounded-full bg-[var(--gray-2)] animate-pulse mx-auto' /></Td>
++                                  <Td className='py-1.5 px-2.5'><div className='h-3 w-5/6 bg-[var(--gray-2)] rounded animate-pulse' /></Td>
++                                  <Td className='py-1.5 px-2.5'><div className='h-3 w-8 ml-auto bg-[var(--gray-2)] rounded animate-pulse' /></Td>
++                                  <Td className='py-1.5 px-2.5'><div className='h-3 w-12 ml-auto bg-[var(--gray-2)] rounded animate-pulse' /></Td>
++                                  <Td className='py-1.5 px-2.5'><div className='h-3 w-16 ml-auto bg-[var(--gray-2)] rounded animate-pulse' /></Td>
++                                  <Td className='py-1.5 px-2.5 pr-4' />
++                                </Tr>
++                              ))
++                            ) : lineItems.length === 0 ? (
++                              <Tr>
++                                <Td colSpan={6} className='py-6 text-center pl-4 pr-4 text-[var(--gray-10)]'>
++                                  No line items added yet.{' '}
++                                  <button
++                                    type='button'
++                                    className='font-bold text-[var(--primary-9)] hover:underline ml-1'
++                                    onClick={handleAddItem}
+                                   >
+-                                    <td className='px-3 py-3'>
+-                                      <div className='h-4 w-5/6 animate-pulse rounded bg-[var(--gray-3)]' />
+-                                    </td>
+-                                    <td className='w-[70px] px-3 py-3'>
+-                                      <div className='ml-auto h-4 w-8 animate-pulse rounded bg-[var(--gray-3)]' />
+-                                    </td>
+-                                    <td className='w-[100px] px-3 py-3'>
+-                                      <div className='ml-auto h-4 w-12 animate-pulse rounded bg-[var(--gray-3)]' />
+-                                    </td>
+-                                    <td className='w-[120px] px-3 py-3'>
+-                                      <div className='ml-auto h-4 w-16 animate-pulse rounded bg-[var(--gray-3)]' />
+-                                    </td>
+-                                    <td className='w-[44px]' />
+-                                  </tr>
+-                                ))
+-                              : lineItems.map((item: any, index: number) => {
+-                                  const descVal =
+-                                    item.Description?.['Invoice Value'] ??
+-                                    item.description ??
+-                                    ''
+-                                  const qtyVal =
+-                                    item.Quantity?.['Invoice Value'] ??
+-                                    item.quantity ??
+-                                    ''
+-                                  const priceVal =
+-                                    item.Price?.['Invoice Value'] ??
+-                                    item.rate ??
+-                                    item.unit_price ??
+-                                    ''
+-                                  const amountVal =
+-                                    item.Amount?.['Invoice Value'] ??
+-                                    item.total ??
+-                                    item.amount ??
+-                                    ''
+-
+-                                  const sideBySideItem = (() => {
+-                                    const matches =
+-                                      agentData?.debug?.[
+-                                        'Side-by-side Line Item matching'
+-                                      ]
+-                                    if (!matches || matches.length === 0)
+-                                      return null
+-
+-                                    // Try matching by index first if description is similar
+-                                    const byIndex = matches[index]
+-                                    if (byIndex) {
+-                                      const byIndexDesc =
+-                                        byIndex.Description?.[
+-                                          'Invoice Value'
+-                                        ] ||
+-                                        byIndex.description ||
+-                                        ''
+-                                      if (
+-                                        matchKeysLoosely(byIndexDesc, descVal)
+-                                      ) {
+-                                        return byIndex
+-                                      }
++                                    Add first item
++                                  </button>
++                                </Td>
++                              </Tr>
++                            ) : (
++                              lineItems.map((item: any, index: number) => {
++                                const descVal = item.Description?.['Invoice Value'] ?? item.description ?? ''
++                                const qtyVal = item.Quantity?.['Invoice Value'] ?? item.quantity ?? ''
++                                const priceVal = item.Price?.['Invoice Value'] ?? item.rate ?? item.unit_price ?? ''
++                                const amountVal = item.Amount?.['Invoice Value'] ?? item.total ?? item.amount ?? ''
++
++                                const sideBySideItem = (() => {
++                                  const matches = agentData?.debug?.['Side-by-side Line Item matching']
++                                  if (!matches || matches.length === 0) return null
++
++                                  const byIndex = matches[index]
++                                  if (byIndex) {
++                                    const byIndexDesc = byIndex.Description?.['Invoice Value'] || byIndex.description || ''
++                                    if (matchKeysLoosely(byIndexDesc, descVal)) {
++                                      return byIndex
+                                     }
++                                  }
+ 
+-                                    // Fallback: match by description
+-                                    return matches.find((m: any) => {
+-                                      const mDesc =
+-                                        m.Description?.['Invoice Value'] ||
+-                                        m.description ||
+-                                        ''
+-                                      return matchKeysLoosely(mDesc, descVal)
+-                                    })
+-                                  })()
+-
+-                                  const lineScore =
+-                                    sideBySideItem?.['Line Score'] ??
+-                                    sideBySideItem?.score ??
+-                                    item?.['Line Score'] ??
+-                                    item?.score ??
+-                                    100
+-
+-                                  const isMatch =
+-                                    lineScore >= 90 || item?.status === 'MATCH'
+-
+-                                  return (
+-                                    <tr
+-                                      key={item._id}
+-                                      className={cn(
+-                                        'group transition-colors',
+-                                        isMatch
+-                                          ? 'hover:bg-[var(--gray-1)]'
+-                                          : 'bg-[var(--red-1)]/30 hover:bg-[var(--red-1)]/50',
+-                                      )}
+-                                    >
+-                                      {/* Description Cell */}
+-                                      <td className='px-2 py-1.5 font-semibold text-[var(--gray-13)]'>
++                                  return matches.find((m: any) => {
++                                    const mDesc = m.Description?.['Invoice Value'] || m.description || ''
++                                    return matchKeysLoosely(mDesc, descVal)
++                                  })
++                                })()
++
++                                const lineScore =
++                                  sideBySideItem?.['Line Score'] ??
++                                  sideBySideItem?.score ??
++                                  item?.['Line Score'] ??
++                                  item?.score ??
++                                  100
++
++                                const isExpanded = !!expandedRows[index]
++
++                                return (
++                                  <Fragment key={item._id || index}>
++                                    <Tr className={cn('group transition-colors hover:bg-[var(--gray-1)]/50', isExpanded && 'bg-[var(--gray-1)]/30')}>
++                                      {/* Score Column */}
++                                      <Td className='py-1.5 px-2.5 pl-4 text-center'>
++                                        <CircledScore score={lineScore} onClick={() => setExpandedRows(prev => ({ ...prev, [index]: !prev[index] }))} />
++                                      </Td>
++
++                                      {/* Description Column */}
++                                      <Td className='py-1.5 px-2.5'>
+                                         <input
+-                                          className='w-full rounded border-none bg-transparent px-1.5 py-1 text-xs font-semibold text-[var(--gray-13)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
++                                          className='w-full border-none bg-transparent p-0 text-xs font-semibold text-[var(--gray-13)] placeholder:font-normal focus:ring-0 focus:outline-none hover:bg-[var(--gray-2)]/30 px-1 py-0.5 rounded transition-all'
+                                           value={descVal}
+-                                          onChange={(e) =>
+-                                            handleLineItemChange(
+-                                              index,
+-                                              'description',
+-                                              e.target.value,
+-                                            )
+-                                          }
++                                          placeholder='Description'
++                                          onFocus={() => handleFieldFocus?.(descVal)}
++                                          onChange={(e) => handleLineItemChange(index, 'description', e.target.value)}
+                                         />
+-                                        {sideBySideItem && (
+-                                          <div className='mt-0.5 flex flex-wrap items-center gap-1.5 px-1.5'>
+-                                            <span
+-                                              className={cn(
+-                                                'py-0.2 inline-flex items-center rounded px-1 text-[9px] font-bold tracking-wider uppercase',
+-                                                lineScore >= 90
+-                                                  ? 'border border-[var(--green-3)] bg-[var(--green-1)] text-[var(--green-9)]'
+-                                                  : lineScore >= 50
+-                                                    ? 'border border-[var(--orange-3)] bg-[var(--orange-1)] text-[var(--orange-9)]'
+-                                                    : 'border border-[var(--red-3)] bg-[var(--red-1)] text-[var(--red-9)]',
+-                                              )}
+-                                            >
+-                                              Line Score: {lineScore}%
+-                                            </span>
+-                                            {sideBySideItem.Description?.[
+-                                              'PO Value'
+-                                            ] &&
+-                                              sideBySideItem.Description?.[
+-                                                'PO Value'
+-                                              ] !== descVal && (
+-                                                <span
+-                                                  className='truncate text-[10px] text-[var(--gray-11)]'
+-                                                  title={`PO Desc: ${sideBySideItem.Description['PO Value']}`}
+-                                                >
+-                                                  PO:{' '}
+-                                                  <span className='font-semibold text-[var(--gray-12)]'>
+-                                                    {
+-                                                      sideBySideItem
+-                                                        .Description['PO Value']
+-                                                    }
+-                                                  </span>
+-                                                  <span className='ml-1 opacity-80'>
+-                                                    (
+-                                                    {
+-                                                      sideBySideItem.Description
+-                                                        .Score
+-                                                    }
+-                                                    % match)
+-                                                  </span>
+-                                                </span>
+-                                              )}
+-                                          </div>
+-                                        )}
+-                                      </td>
++                                      </Td>
+ 
+-                                      {/* Quantity Cell */}
+-                                      <td className='w-[70px] px-2 py-1.5 text-right font-semibold text-[var(--gray-11)]'>
++                                      {/* Quantity Column */}
++                                      <Td className='w-[70px] py-1.5 px-2.5 text-right'>
+                                         <input
+-                                          className='w-full rounded border-none bg-transparent px-1.5 py-1 text-right text-xs font-semibold text-[var(--gray-11)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
++                                          className='w-full border-none bg-transparent p-0 text-right text-xs font-semibold text-[var(--gray-12)] focus:ring-0 focus:outline-none hover:bg-[var(--gray-2)]/30 rounded px-1 py-0.5 transition-all'
+                                           value={qtyVal}
+-                                          onChange={(e) =>
+-                                            handleLineItemChange(
+-                                              index,
+-                                              'quantity',
+-                                              e.target.value,
+-                                            )
+-                                          }
++                                          onFocus={() => handleFieldFocus?.(qtyVal)}
++                                          onChange={(e) => handleLineItemChange(index, 'quantity', e.target.value)}
+                                         />
+-                                        {sideBySideItem?.Quantity &&
+-                                          sideBySideItem.Quantity.Score <
+-                                            100 && (
+-                                            <div className='mt-0.5 px-1.5 text-right text-[10px] text-[var(--gray-11)]'>
+-                                              <span className='opacity-80'>
+-                                                PO:{' '}
+-                                              </span>
+-                                              <span className='font-semibold text-[var(--gray-12)]'>
+-                                                {sideBySideItem.Quantity[
+-                                                  'PO Value'
+-                                                ] ?? '-'}
+-                                              </span>
+-                                              <span
+-                                                className={cn(
+-                                                  'ml-1 text-[9px] font-bold',
+-                                                  sideBySideItem.Quantity
+-                                                    .Score >= 90
+-                                                    ? 'text-[var(--green-9)]'
+-                                                    : sideBySideItem.Quantity
+-                                                          .Score >= 50
+-                                                      ? 'text-[var(--orange-9)]'
+-                                                      : 'text-[var(--red-9)]',
+-                                                )}
+-                                              >
+-                                                ({sideBySideItem.Quantity.Score}
+-                                                %)
+-                                              </span>
+-                                            </div>
+-                                          )}
+-                                      </td>
++                                      </Td>
+ 
+-                                      {/* Rate/Price Cell */}
+-                                      <td className='w-[100px] px-2 py-1.5 text-right font-semibold text-[var(--gray-11)]'>
++                                      {/* Rate Column */}
++                                      <Td className='w-[100px] py-1.5 px-2.5 text-right'>
+                                         <input
+-                                          className='w-full rounded border-none bg-transparent px-1.5 py-1 text-right text-xs font-semibold text-[var(--gray-11)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
++                                          className='w-full border-none bg-transparent p-0 text-right text-xs font-semibold text-[var(--gray-12)] focus:ring-0 focus:outline-none hover:bg-[var(--gray-2)]/30 rounded px-1 py-0.5 transition-all'
+                                           value={priceVal}
++                                          onFocus={() => handleFieldFocus?.(priceVal)}
++                                          onChange={(e) => handleLineItemChange(index, 'price', e.target.value)}
+                                           onBlur={(e) => {
+-                                            const num = Number.parseFloat(
+-                                              e.target.value.replace(
+-                                                /[^0-9.-]+/g,
+-                                                '',
+-                                              ),
+-                                            )
+-                                            if (!Number.isNaN(num)) {
+-                                              handleLineItemChange(
+-                                                index,
+-                                                'price',
+-                                                num.toFixed(2),
+-                                              )
++                                            const num = parseFloat(e.target.value.replace(/[^0-9.-]+/g, ''))
++                                            if (!isNaN(num)) {
++                                              handleLineItemChange(index, 'price', num.toFixed(2))
+                                             }
+                                           }}
+-                                          onChange={(e) =>
+-                                            handleLineItemChange(
+-                                              index,
+-                                              'price',
+-                                              e.target.value,
+-                                            )
+-                                          }
+                                         />
+-                                        {(() => {
+-                                          const priceMatch =
+-                                            sideBySideItem?.Price ??
+-                                            sideBySideItem?.Rate
+-                                          if (
+-                                            !priceMatch ||
+-                                            priceMatch.Score === 100
+-                                          )
+-                                            return null
+-                                          return (
+-                                            <div className='mt-0.5 px-1.5 text-right text-[10px] text-[var(--gray-11)]'>
+-                                              <span className='opacity-80'>
+-                                                PO:{' '}
+-                                              </span>
+-                                              <span className='font-semibold text-[var(--gray-12)]'>
+-                                                {priceMatch['PO Value'] !==
+-                                                  null &&
+-                                                priceMatch['PO Value'] !==
+-                                                  undefined &&
+-                                                priceMatch['PO Value'] !== ''
+-                                                  ? `$${Number(priceMatch['PO Value']).toFixed(2)}`
+-                                                  : '-'}
+-                                              </span>
+-                                              <span
+-                                                className={cn(
+-                                                  'ml-1 text-[9px] font-bold',
+-                                                  priceMatch.Score >= 90
+-                                                    ? 'text-[var(--green-9)]'
+-                                                    : priceMatch.Score >= 50
+-                                                      ? 'text-[var(--orange-9)]'
+-                                                      : 'text-[var(--red-9)]',
+-                                                )}
+-                                              >
+-                                                ({priceMatch.Score}%)
+-                                              </span>
+-                                            </div>
+-                                          )
+-                                        })()}
+-                                      </td>
++                                      </Td>
+ 
+-                                      {/* Total Amount Cell */}
+-                                      <td className='w-[120px] px-2 py-1.5 text-right font-semibold text-[var(--gray-13)]'>
++                                      {/* Total Amount Column */}
++                                      <Td className='w-[120px] py-1.5 px-2.5 text-right'>
+                                         <input
+-                                          className='w-full rounded border-none bg-transparent px-1.5 py-1 text-right text-xs font-semibold text-[var(--gray-13)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
++                                          className='w-full border-none bg-transparent p-0 text-right text-xs font-semibold text-[var(--gray-13)] focus:ring-0 focus:outline-none hover:bg-[var(--gray-2)]/30 rounded px-1 py-0.5 transition-all'
+                                           value={amountVal}
++                                          onFocus={() => handleFieldFocus?.(amountVal)}
++                                          onChange={(e) => handleLineItemChange(index, 'amount', e.target.value)}
+                                           onBlur={(e) => {
+-                                            const num = Number.parseFloat(
+-                                              e.target.value.replace(
+-                                                /[^0-9.-]+/g,
+-                                                '',
+-                                              ),
+-                                            )
+-                                            if (!Number.isNaN(num)) {
+-                                              handleLineItemChange(
+-                                                index,
+-                                                'amount',
+-                                                num.toFixed(2),
+-                                              )
++                                            const num = parseFloat(e.target.value.replace(/[^0-9.-]+/g, ''))
++                                            if (!isNaN(num)) {
++                                              handleLineItemChange(index, 'amount', num.toFixed(2))
+                                             }
+                                           }}
+-                                          onChange={(e) =>
+-                                            handleLineItemChange(
+-                                              index,
+-                                              'amount',
+-                                              e.target.value,
+-                                            )
+-                                          }
+                                         />
+-                                        {sideBySideItem?.Amount &&
+-                                          sideBySideItem.Amount.Score < 100 && (
+-                                            <div className='mt-0.5 px-1.5 text-right text-[10px] text-[var(--gray-11)]'>
+-                                              <span className='opacity-80'>
+-                                                PO:{' '}
+-                                              </span>
+-                                              <span className='font-semibold text-[var(--gray-12)]'>
+-                                                {sideBySideItem.Amount[
+-                                                  'PO Value'
+-                                                ] !== null &&
+-                                                sideBySideItem.Amount[
+-                                                  'PO Value'
+-                                                ] !== undefined &&
+-                                                sideBySideItem.Amount[
+-                                                  'PO Value'
+-                                                ] !== ''
+-                                                  ? `$${Number(sideBySideItem.Amount['PO Value']).toFixed(2)}`
+-                                                  : '-'}
+-                                              </span>
+-                                              <span
+-                                                className={cn(
+-                                                  'ml-1 text-[9px] font-bold',
+-                                                  sideBySideItem.Amount.Score >=
+-                                                    90
+-                                                    ? 'text-[var(--green-9)]'
+-                                                    : sideBySideItem.Amount
+-                                                          .Score >= 50
+-                                                      ? 'text-[var(--orange-9)]'
+-                                                      : 'text-[var(--red-9)]',
+-                                                )}
+-                                              >
+-                                                ({sideBySideItem.Amount.Score}%)
+-                                              </span>
+-                                            </div>
+-                                          )}
+-                                      </td>
++                                      </Td>
+ 
+-                                      {/* Action Cell */}
+-                                      <td className='w-[44px] px-2 py-0.5 text-center'>
++                                      {/* Actions Column */}
++                                      <Td className='w-[50px] py-1.5 px-2.5 pr-4 text-center'>
+                                         <button
+-                                          className='rounded p-1 text-[var(--red-9)] transition-all hover:bg-[var(--red-2)] hover:text-[var(--red-11)] active:scale-95'
+-                                          title='Remove Item'
+                                           type='button'
+-                                          onClick={() =>
+-                                            handleRemoveItem(index)
+-                                          }
++                                          className='rounded p-1 text-[var(--red-9)] hover:bg-[var(--red-2)] hover:text-[var(--red-11)] transition-all active:scale-95'
++                                          title='Remove Item'
++                                          onClick={() => handleRemoveItem(index)}
+                                         >
+                                           <Trash2 className='h-3.5 w-3.5' />
+                                         </button>
+-                                      </td>
+-                                    </tr>
+-                                  )
+-                                })}
+-                          </tbody>
+-                          <tfoot className='border-t border-[var(--gray-3)] bg-[var(--gray-1)]'>
+-                            <tr className='font-bold'>
+-                              <td
+-                                className='px-3 py-2 text-right text-[11px] text-[var(--gray-11)]'
+-                                colSpan={3}
+-                              >
+-                                Grand Total
+-                              </td>
+-                              <td className='px-3 py-2 text-right text-[13px] text-[var(--gray-13)]'>
+-                                {(() => {
+-                                  const currencyCode =
+-                                    formModel?.['Currency'] ||
+-                                    agentData?.['Extracted Invoice JSON']
+-                                      ?.invoice_header?.['Currency'] ||
+-                                    ''
+-                                  const total = lineItems.reduce(
+-                                    (sum: number, item: any) => {
+-                                      const val = getLineItemAmount(item)
+-                                      const num = Number.parseFloat(
+-                                        String(val).replace(/[^0-9.-]+/g, ''),
+-                                      )
+-                                      return sum + (Number.isNaN(num) ? 0 : num)
+-                                    },
+-                                    0,
+-                                  )
+-                                  const formattedTotal = total.toLocaleString(
+-                                    undefined,
+-                                    {
+-                                      maximumFractionDigits: 2,
+-                                      minimumFractionDigits: 2,
+-                                    },
+-                                  )
+-                                  return currencyCode
+-                                    ? `${currencyCode} ${formattedTotal}`
+-                                    : formattedTotal
+-                                })()}
+-                              </td>
+-                              <td className='w-[44px] bg-[var(--gray-1)]' />
+-                            </tr>
+-                          </tfoot>
+-                        </table>
++                                      </Td>
++                                    </Tr>
++
++                                    {/* Expanded Detail Row */}
++                                    <AnimatePresence>
++                                      {isExpanded && (
++                                        <Tr className='bg-[var(--gray-1)]/30'>
++                                          <Td colSpan={6} className='py-0.5 pl-4 pr-4 border-b border-[var(--gray-3)]'>
++                                            <motion.div
++                                              initial={{ height: 0, opacity: 0 }}
++                                              animate={{ height: 'auto', opacity: 1 }}
++                                              exit={{ height: 0, opacity: 0 }}
++                                              transition={{ duration: 0.15 }}
++                                              className='overflow-hidden'
++                                            >
++                                              <div className='my-1.5 grid grid-cols-2 gap-x-6 gap-y-1 text-[10px] p-2 bg-[var(--gray-1)] border border-[var(--gray-3)] rounded-lg text-left'>
++                                                <div>
++                                                  <span className='font-semibold text-[var(--gray-10)]'>Line Score: </span>
++                                                  <span className={cn(
++                                                    'font-bold',
++                                                    lineScore >= 90 ? 'text-[var(--green-9)]' : lineScore >= 50 ? 'text-[var(--orange-9)]' : 'text-[var(--red-9)]'
++                                                  )}>
++                                                    {lineScore}%
++                                                  </span>
++                                                </div>
++                                                <div>
++                                                  <span className='font-semibold text-[var(--gray-10)]'>Validation Status: </span>
++                                                  <span className='font-medium text-[var(--gray-12)]'>
++                                                    {lineScore >= 90 ? 'Passed Verification' : 'Requires Human Verification'}
++                                                  </span>
++                                                </div>
++                                                {item._id && (
++                                                  <div className='col-span-2'>
++                                                    <span className='font-semibold text-[var(--gray-10)]'>System UID: </span>
++                                                    <code className='text-[9px] text-[var(--gray-11)]'>{item._id}</code>
++                                                  </div>
++                                                )}
++                                              </div>
++                                            </motion.div>
++                                          </Td>
++                                        </Tr>
++                                      )}
++                                    </AnimatePresence>
++                                  </Fragment>
++                                )
++                              })
++                            )}
++
++                            {/* Grand Total Row */}
++                            {!isCurrentlyProcessing && lineItems.length > 0 && (
++                              <Tr className='sticky bottom-0 z-10 font-bold'>
++                                <Td colSpan={3} className='sticky bottom-0 z-10 border-t border-[var(--gray-3)] bg-surface py-2 px-2.5 text-right text-xs font-bold text-[var(--gray-13)]'>
++                                  Grand Total
++                                </Td>
++                                <Td className='sticky bottom-0 z-10 border-t border-[var(--gray-3)] bg-surface py-2 px-2.5 text-right text-xs font-bold text-[var(--gray-13)]' colSpan={2}>
++                                  {(() => {
++                                    const currencyCode =
++                                      formModel?.['Currency'] ||
++                                      agentData?.['Extracted Invoice JSON']
++                                        ?.invoice_header?.['Currency'] ||
++                                      ''
++                                    const total = lineItems.reduce(
++                                      (sum: number, item: any) => {
++                                        const val = getLineItemAmount(item)
++                                        const num = Number.parseFloat(
++                                          String(val).replace(/[^0-9.-]+/g, ''),
++                                        )
++                                        return sum + (Number.isNaN(num) ? 0 : num)
++                                      },
++                                      0,
++                                    )
++                                    const formattedTotal = total.toLocaleString(
++                                      undefined,
++                                      {
++                                        maximumFractionDigits: 2,
++                                        minimumFractionDigits: 2,
++                                      },
++                                    )
++                                    return currencyCode
++                                      ? `${currencyCode} ${formattedTotal}`
++                                      : formattedTotal
++                                  })()}
++                                </Td>
++                                <Td className='sticky bottom-0 z-10 border-t border-[var(--gray-3)] bg-surface py-2 px-2.5 pr-4' />
++                              </Tr>
++                            )}
++                          </Tbody>
++                        </Table>
+                       </div>
+                     </div>
+                   )}
+ 
+                   {activeTab === 'attachments' && (
+-                    <div className='flex-1 overflow-y-auto p-4'>
++                    <div className='scrollbar min-h-0 flex-1 overflow-y-auto p-4'>
+                       {isCurrentlyProcessing ? (
+                         <div className='flex h-48 flex-col items-center justify-center text-center'>
+                           <Icon
+@@ -2074,7 +2337,7 @@ const Overview = (props: any) => {
+                   )}
+ 
+                   {activeTab === 'history' && (
+-                    <div className='flex-1 overflow-y-auto p-4'>
++                    <div className='scrollbar min-h-0 flex-1 overflow-y-auto p-4'>
+                       {isCurrentlyProcessing ? (
+                         <div className='flex h-48 flex-col items-center justify-center text-center'>
+                           <Icon

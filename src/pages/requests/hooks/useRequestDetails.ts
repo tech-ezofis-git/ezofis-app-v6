@@ -5,26 +5,14 @@ import { getActionsForActivity } from '../utils/workflow.utils'
 
 export const useRequestDetail = (
   workflowId: number | string | null,
-  processId: number | null,
-  transactionId: number | null,
+  processId: number | string | null,
+  transactionId: number | string | null,
   isProcessing?: boolean,
 ) => {
   return useQuery({
-    enabled: !!workflowId && !!processId,
+    enabled:
+      !!workflowId && !!processId && !String(processId).startsWith('job-'),
     queryKey: ['request-detail', workflowId, processId, transactionId],
-    refetchInterval: (query) => {
-      const data: any = query.state.data
-      
-      // If we don't have data yet but know it's processing from parent
-      if (!data) {
-        return isProcessing ? 10000 : false
-      }
-
-      const isCompleted = data.stageType !== 'AP_AGENT'
-
-      return !isCompleted ? 10000 : false
-    },
-
     queryFn: async () => {
       // 1. Fetch Basic Process Data from V6 API instead of discontinued rowInfo
       let processData: any = null
@@ -147,7 +135,10 @@ export const useRequestDetail = (
             ...parsedAgentResponse,
             id: processData.activityId || Math.random().toString(),
             reqNo: processData.referenceNumber || processData.requestNo,
-            stage: processData.stageType === 'AP_AGENT' ? processData.stage : 'AI Agent',
+            stage:
+              processData.stageType === 'AP_AGENT'
+                ? processData.stage
+                : 'AI Agent',
           })
         }
       }
@@ -166,6 +157,28 @@ export const useRequestDetail = (
         _history: historyData,
         _stageLevel: stageLevel,
       }
+    },
+
+    refetchInterval: (query) => {
+      const data: any = query.state.data
+
+      // If we don't have data yet but know it's processing from parent
+      if (!data) {
+        return isProcessing ? 10000 : false
+      }
+
+      // Check if it has agent decision or is completed
+      const agentDataList = data._agentData || []
+      const hasAgentDecision = agentDataList.some((agent: any) => {
+        return !!(agent?.decision || data.review || data.completedAtUtc)
+      })
+
+      const isCompleted =
+        data.stageType !== 'AP_AGENT' ||
+        hasAgentDecision ||
+        ['Verifier', 'Approved', 'Completed'].includes(data.stage)
+
+      return !isCompleted ? 10000 : false
     },
   })
 }

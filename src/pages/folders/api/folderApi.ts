@@ -26,6 +26,10 @@ export interface DynamicRepositoryColumn {
   key: string
   label: string
   dataType?: string
+  fieldId?: string
+  includeInFolderStructure?: boolean
+  isMandatory?: boolean
+  level?: number
 }
 
 export interface FolderContentRequest {
@@ -71,17 +75,11 @@ const defaultItemPageSize = 50
 
 export const encodeRepositoryNodeId = (payload: FolderNodePayload) => {
   const json = JSON.stringify(payload)
-  if (globalThis.window === undefined) {
-    const encoded = Buffer.from(json, 'utf8').toString('base64')
-    return `${nodePrefix}${encoded}`
-  } else {
-    const bytes = new TextEncoder().encode(json)
-    const binString = Array.from(bytes, (byte) =>
-      String.fromCodePoint(byte),
-    ).join('')
-    const encoded = globalThis.btoa(binString)
-    return `${nodePrefix}${encoded}`
-  }
+  const encoded =
+    typeof globalThis.window === 'undefined'
+      ? Buffer.from(json, 'utf8').toString('base64')
+      : globalThis.btoa(String.fromCharCode(...new TextEncoder().encode(json)))
+  return `${nodePrefix}${encoded}`
 }
 
 export const decodeRepositoryNodeId = (
@@ -91,18 +89,13 @@ export const decodeRepositoryNodeId = (
 
   try {
     const raw = id.slice(nodePrefix.length)
-    if (globalThis.window === undefined) {
-      const json = Buffer.from(raw, 'base64').toString('utf8')
-      return JSON.parse(json) as FolderNodePayload
-    } else {
-      const binString = globalThis.atob(raw)
-      const bytes = Uint8Array.from(
-        binString,
-        (char) => char.codePointAt(0) ?? 0,
-      )
-      const json = new TextDecoder().decode(bytes)
-      return JSON.parse(json) as FolderNodePayload
-    }
+    const json =
+      typeof globalThis.window === 'undefined'
+        ? Buffer.from(raw, 'base64').toString('utf8')
+        : new TextDecoder().decode(
+            Uint8Array.from(globalThis.atob(raw), (c) => c.charCodeAt(0)),
+          )
+    return JSON.parse(json) as FolderNodePayload
   } catch (error) {
     console.error('Invalid repository node id', error)
     return null
@@ -135,17 +128,18 @@ const toPage = (paged?: PagedDto<any> | null): RepositoryFilePage => {
 
 const toFileColumns = (
   fields: RepositoryFieldDto[] = [],
-): DynamicRepositoryColumn[] => {
-  const metadataColumns = fields
-    .filter((field) => !field.includeInFolderStructure)
+): DynamicRepositoryColumn[] =>
+  fields
+    .filter((field) => field.sqlColumnName || field.name)
     .map((field) => ({
       dataType: field.dataType,
+      fieldId: field.id,
+      includeInFolderStructure: field.includeInFolderStructure,
+      isMandatory: field.isMandatory,
       key: field.sqlColumnName || field.name,
       label: field.name || field.sqlColumnName,
+      level: field.level,
     }))
-
-  return [{ key: 'name', label: 'Name' }, ...metadataColumns]
-}
 
 const detailSectionIconMap: Record<string, string> = {
   aiAnalysis: 'bot',
@@ -199,13 +193,6 @@ const toWorkspaceDetail = (workspace: any): any => {
   }
 }
 
-const formatDate = (value: any) => {
-  if (!value) return '-'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return String(value)
-  return date.toISOString().slice(0, 10)
-}
-
 const toFileItem = (row: Record<string, any>, index: number): FileItem => {
   const id = String(
     row.id ??
@@ -218,61 +205,11 @@ const toFileItem = (row: Record<string, any>, index: number): FileItem => {
       row.FileId ??
       `file-${index}`,
   )
-  const name = String(
-    row.name ??
-      row.Name ??
-      row.fileName ??
-      row.FileName ??
-      row.documentName ??
-      row.DocumentName ??
-      row.invoiceNumber ??
-      row.InvoiceNumber ??
-      id,
-  )
-  const amountValue = row.Amount ?? row.amount
-  const currency = row.Currency ?? row.currency
 
-  const amount =
-    amountValue === undefined || amountValue === null
-      ? '-'
-      : currency
-        ? `${amountValue} ${currency}`
-        : String(amountValue)
-
-  const file: FileItem = {
-    amount,
-    date: formatDate(
-      row.DocumentDate ?? row.documentDate ?? row.date ?? row.Date,
-    ),
-    fileUrl: row.fileUrl ?? row.FileUrl ?? row.url ?? row.Url,
+  return {
     id,
-    invoiceNo: String(
-      row.InvoiceNumber ?? row.invoiceNumber ?? row.invoiceNo ?? '-',
-    ),
-    name,
-    ocr: Number(row.Ocr ?? row.ocr ?? row.ocrPercent ?? row.OcrPercent ?? 0),
-    poNo: String(row.PoNumber ?? row.poNumber ?? row.poNo ?? '-'),
-    risk: String(row.RiskLevel ?? row.risk ?? row.riskLevel ?? '-'),
-    source: String(row.Source ?? row.source ?? '-'),
-    status: String(row.Status ?? row.status ?? '-'),
-    supplier: String(row.Supplier ?? row.supplier ?? '-'),
-    type: String(
-      row.DocumentType ?? row.documentType ?? row.type ?? row.Type ?? '-',
-    ),
-  }
-
-  Object.entries(row).forEach(([key, value]) => {
-    ;(file as any)[key] = value
-    const pascalKey = key.charAt(0).toUpperCase() + key.slice(1)
-    ;(file as any)[pascalKey] = value
-  })
-  ;(file as any).FileName = name
-  ;(file as any).DocumentDate = file.date
-  ;(file as any).Amount = file.amount
-  ;(file as any).Status = file.status
-  ;(file as any).DocumentType = file.type
-
-  return file
+    ...(row as any),
+  } as FileItem
 }
 
 const toFolderItem = (args: {
@@ -328,14 +265,10 @@ const buildBreadcrumbs = (payload: FolderNodePayload): BreadcrumbItem[] => {
     return [{ id: encodeRepositoryNodeId(payload), label: payload.label }]
 
   if (payload.kind === 'repository') {
-    return [
-      { id: payload.repositoryId, label: 'EZOFIS' },
-      { id: encodeRepositoryNodeId(payload), label: payload.label },
-    ]
+    return [{ id: encodeRepositoryNodeId(payload), label: payload.label }]
   }
 
   const crumbs: BreadcrumbItem[] = [
-    { id: payload.repositoryId, label: 'EZOFIS' },
     {
       id: encodeRepositoryNodeId({
         kind: 'repository',
@@ -620,15 +553,13 @@ export const folderApi = {
     if (itemResult.error) throw new Error(String(itemResult.error))
 
     const rawFiles = getPagedData<Record<string, any>>(itemResult.data)
-    const files = rawFiles.map((row, index) => toFileItem(row, index))
+    const files = rawFiles.map((row, idx) => toFileItem(row, idx))
 
     return {
       breadcrumbs: buildBreadcrumbs(decoded),
       fileColumns: toFileColumns(fields),
       filePage: toPage(itemResult.data),
       files,
-      // Folder/group total is different from file/item total.
-      // Example: 50 supplier folders can represent 100000 files through itemCount = 2000 each.
       folderPage,
       folders,
     }
@@ -636,6 +567,12 @@ export const folderApi = {
 
   async getMetadataSections(): Promise<MetadataSection[]> {
     return []
+  },
+
+  async getRepositoryFullData(repositoryId: string): Promise<RepositoryDto> {
+    const result = await authApiV6.getRepositoryById(repositoryId)
+    if (result.error) throw new Error(String(result.error))
+    return result.data as RepositoryDto
   },
   async getShareData(): Promise<ShareData> {
     return {
@@ -647,7 +584,7 @@ export const folderApi = {
     }
   },
   async getTree(): Promise<TreeNode[]> {
-    const result = await authApiV6.repositories()
+    const result = await authApiV6.getRepositorys()
     if (result.error) throw new Error(String(result.error))
 
     const repositories = (
@@ -655,6 +592,10 @@ export const folderApi = {
     ) as RepositoryDto[]
     const repositoryNodes: TreeNode[] = repositories.map((repository) => ({
       children: [],
+      createdAtUtc: repository.createdAtUtc,
+      createdBy: repository.createdBy,
+      createdByName: repository.createdByName,
+      description: repository.description,
       hasChildren: true,
       iconKey: 'folder',
       id: encodeRepositoryNodeId({
@@ -663,6 +604,10 @@ export const folderApi = {
         repositoryId: repository.id,
       }),
       isLoaded: false,
+      itemsTableName: repository.itemsTableName,
+      modifiedBy: repository.modifiedBy,
+      modifiedByName: repository.modifiedByName,
+      storageProviderId: repository.storageProviderId,
       title: repository.name,
     }))
 
@@ -697,7 +642,7 @@ export const folderApi = {
   async getWorkflowData(): Promise<WorkflowData> {
     return {
       approvers: [],
-      document: { amount: '', date: '', name: '', status: '', supplier: '' },
+      document: {} as any,
       documentId: '',
       priorities: ['Low', 'Medium', 'High'],
       templates: [],

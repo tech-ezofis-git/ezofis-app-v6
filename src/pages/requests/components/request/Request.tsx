@@ -1,23 +1,16 @@
 import { useEffect, useMemo, useState } from 'react'
-// Import your custom animation components
-import {
-  // AnimateSlideUp,
-  AnimateFadeIn,
-  // AnimateSlideLeft,
-  // AnimateStagger,
-} from '@/components/common/animations'
-// import IconButton from '@/components/base/button/IconButton';
-// import Icon from '@/components/base/icon/Icon';
-import workflowApi from '../../../../api/workflow/workflow'
-// import Tabs from '@/components/base/tabs/Tabs';
-// import Tab from '@/components/base/tabs/Tab';
-import { useRequestDetail } from '../../hooks/useRequestDetails'
-// import Attachments from './components/sections/attachment/Attachments';
-// import Comments from './components/sections/comment/Comments';
-// import History from './components/sections/history/History';
-import requestStore from '../../stores/useRequestStore'
 import workflowsApiV6 from '@/api/v6/workflows'
+// Import your custom animation components
+import { AnimateFadeIn } from '@/components/common/animations'
 import authUserStore from '@/stores/authUserStore'
+import workflowApi from '../../../../api/workflow/workflow'
+import { useRequestDetail } from '../../hooks/useRequestDetails'
+import requestStore from '../../stores/useRequestStore'
+import {
+  isDecorativeFieldType,
+  isMatrixFieldType,
+  isTableType,
+} from '../../utils/dynamicTable.utils'
 import Header from './components/Header'
 import Overview from './components/sections/overview/Overview'
 
@@ -125,83 +118,316 @@ const extractPONumber = (
   return ''
 }
 
-export const buildFieldMetaMap = (
-  workflow: any,
-  fallbackFormJson?: any,
-): Map<string, { label: string; type: string; originalId?: string }> => {
-  const metaMap = new Map<string, { label: string; type: string; originalId?: string }>()
-  let formJson = workflow?.formJson || fallbackFormJson
-  if (!formJson) return metaMap
-
-  let form = formJson
-  if (typeof form === 'string' && form !== '') {
+const safeJsonParse = (val: any, fallback: any = null) => {
+  if (typeof val === 'string' && val !== '') {
     try {
-      form = JSON.parse(form)
+      return JSON.parse(val)
     } catch {
-      return metaMap
+      return fallback
     }
   }
+  return val
+}
 
-  if (form && typeof form === 'object' && 'formJson' in form) {
-    let inner = form.formJson
-    if (typeof inner === 'string' && inner !== '') {
-      try {
-        inner = JSON.parse(inner)
-      } catch {
-        // keep as is
-      }
-    }
+const parseFormJson = (formJson: any): any => {
+  if (!formJson) return null
+
+  let form = safeJsonParse(formJson, null)
+  if (!form) return null
+
+  if (typeof form === 'object' && 'formJson' in form) {
+    const inner = safeJsonParse(form.formJson, form.formJson)
     if (inner && typeof inner === 'object') {
       form = inner
     }
   }
 
+  return form
+}
+
+export const buildFieldMetaMap = (
+  workflow: any,
+  fallbackFormJson?: any,
+): Map<string, { label: string; originalId?: string; type: string }> => {
+  const metaMap = new Map<
+    string,
+    { label: string; originalId?: string; type: string }
+  >()
+  const formJson = workflow?.formJson || fallbackFormJson
+  const form = parseFormJson(formJson)
+  if (!form) return metaMap
+
   const addControl = (c: any) => {
-    if (c) {
-      const id = c.id
-      const jsonId = c.jsonId
-      const name = c.name
-      const label = c.label || c.name || jsonId || id || ''
-      const type = c.type || c.control || c.controlType || ''
-      const originalId = jsonId || id || name || ''
+    if (!c) return
+    if (c.matrixTypeSettings) return
 
-      if (jsonId) {
-        metaMap.set(String(jsonId).toLowerCase(), { label, type, originalId })
-      }
-      if (id) {
-        metaMap.set(String(id).toLowerCase(), { label, type, originalId })
-      }
-      if (name) {
-        metaMap.set(String(name).toLowerCase(), { label, type, originalId })
-      }
+    const id = c.id
+    const jsonId = c.jsonId
+    const name = c.name
+    const label = c.label || c.name || jsonId || id || ''
+    const type = c.type || c.control || c.controlType || ''
+
+    if (isDecorativeFieldType(type) || isMatrixFieldType(type)) return
+
+    const originalId = jsonId || id || name || ''
+
+    if (!jsonId && !id && !name) return
+
+    const entry = { label, originalId, type }
+    const registerKey = (key: string) => {
+      if (!key) return
+      metaMap.set(String(key).toLowerCase(), entry)
+      metaMap.set(normalizeFieldKey(key), entry)
     }
+
+    registerKey(jsonId)
+    registerKey(id)
+    registerKey(name)
+    registerKey(label)
   }
 
-  const traverse = (obj: any) => {
-    if (!obj || typeof obj !== 'object') return
+  const collectFormControls = (formObj: any): any[] => {
+    if (!formObj || typeof formObj !== 'object') return []
 
-    if (Array.isArray(obj)) {
-      obj.forEach(traverse)
-      return
+    const controls: any[] = []
+    const append = (list: unknown) => {
+      if (Array.isArray(list)) controls.push(...list)
     }
 
-    const hasId = obj.id || obj.jsonId
-    const hasType = obj.type || obj.control || obj.controlType
-    if (hasId && hasType) {
-      addControl(obj)
-    }
+    append(formObj.controllist)
+    append(formObj.controlList)
 
-    Object.keys(obj).forEach((k) => {
-      const val = obj[k]
-      if (typeof val === 'object' && val !== null) {
-        traverse(val)
-      }
+    const panels = [
+      ...(Array.isArray(formObj.panels) ? formObj.panels : []),
+      ...(Array.isArray(formObj.secondaryPanels)
+        ? formObj.secondaryPanels
+        : []),
+    ]
+
+    panels.forEach((panel) => {
+      append(panel?.controlList)
+      append(panel?.controllist)
+      append(panel?.fields)
     })
+
+    return controls
   }
 
-  traverse(form)
+  collectFormControls(form).forEach(addControl)
 
   return metaMap
+}
+
+export const normalizeFieldKey = (key: string): string =>
+  String(key)
+    .toLowerCase()
+    .replace(/[\s-_]+/g, '')
+
+export const resolveFieldMeta = (
+  metaMap: Map<string, { label: string; originalId?: string; type: string }>,
+  key: string,
+) => {
+  if (!key) return undefined
+
+  return (
+    metaMap.get(String(key).toLowerCase()) ||
+    metaMap.get(normalizeFieldKey(key))
+  )
+}
+
+export const getFieldValueFromSource = (
+  fieldsSource: Record<string, unknown>,
+  key: string,
+): unknown => {
+  if (!key || !fieldsSource) return undefined
+
+  if (fieldsSource[key] !== undefined) return fieldsSource[key]
+
+  const normalizedKey = normalizeFieldKey(key)
+  for (const sourceKey of Object.keys(fieldsSource)) {
+    if (normalizeFieldKey(sourceKey) === normalizedKey) {
+      return fieldsSource[sourceKey]
+    }
+  }
+
+  return undefined
+}
+
+const isFormScalarField = (
+  meta: { label: string; originalId?: string; type: string },
+  val: unknown,
+) => {
+  const fieldType = String(meta.type || '').toUpperCase()
+  if (isDecorativeFieldType(fieldType) || isMatrixFieldType(fieldType))
+    return false
+
+  const isFileUpload = fieldType === 'FILE_UPLOAD' || fieldType === 'FILEUPLOAD'
+
+  if (isFileUpload) return false
+  return !isTableFieldValue(fieldType, val)
+}
+
+const appendMissingFormScalarFields = (
+  target: Record<string, unknown>,
+  fieldsSource: Record<string, unknown>,
+  metaMap: Map<string, { label: string; originalId?: string; type: string }>,
+) => {
+  const seenOriginalIds = new Set<string>()
+
+  metaMap.forEach((meta) => {
+    const originalId = meta.originalId
+    if (!originalId || seenOriginalIds.has(originalId)) return
+    seenOriginalIds.add(originalId)
+
+    const val = getFieldValueFromSource(fieldsSource, originalId)
+    if (!isFormScalarField(meta, val)) return
+    if (target[meta.label] !== undefined) return
+
+    target[meta.label] = val ?? ''
+  })
+}
+
+export const hasMeaningfulScalarValue = (val: unknown): boolean => {
+  if (typeof val === 'string') {
+    const str = val.trim()
+    return str !== '' && str !== '-'
+  }
+  if (typeof val === 'number' || typeof val === 'boolean') {
+    const str = String(val).trim()
+    return str !== '' && str !== '-'
+  }
+  return false
+}
+
+const isTableFieldValue = (fieldType: string, val: unknown): boolean => {
+  const normalizedType = fieldType.toUpperCase()
+  const isTableType =
+    normalizedType === 'TABLE' ||
+    normalizedType === 'DYNAMIC_TABLE' ||
+    normalizedType === 'DYNAMIC TABLE' ||
+    normalizedType.includes('TABLE')
+
+  if (isTableType) return true
+  if (Array.isArray(val)) return true
+  if (typeof val === 'string') {
+    const trimmed = val.trim()
+    return trimmed.startsWith('[') && trimmed.endsWith(']')
+  }
+  return false
+}
+
+export const shouldIncludeExtractedField = (
+  metaMap: Map<string, { label: string; originalId?: string; type: string }>,
+  key: string,
+  val: unknown,
+): boolean => {
+  const meta = resolveFieldMeta(metaMap, key)
+  const fieldType = String(meta?.type || '').toUpperCase()
+
+  if (isDecorativeFieldType(fieldType) || isMatrixFieldType(fieldType))
+    return false
+
+  const isFileUpload = fieldType === 'FILE_UPLOAD' || fieldType === 'FILEUPLOAD'
+
+  if (isFileUpload || isTableFieldValue(fieldType, val)) return false
+  if (meta) return true
+  if (metaMap.size === 0) return hasMeaningfulScalarValue(val)
+  return hasMeaningfulScalarValue(val)
+}
+
+export const getExtractedFieldLabel = (
+  metaMap: Map<string, { label: string; originalId?: string; type: string }>,
+  key: string,
+): string => resolveFieldMeta(metaMap, key)?.label || key
+
+export const parseTableFieldValue = (val: unknown): any[] => {
+  if (Array.isArray(val)) return val
+  if (typeof val === 'string') {
+    const trimmed = val.trim()
+    if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+      try {
+        const parsed = JSON.parse(trimmed)
+        return Array.isArray(parsed) ? parsed : []
+      } catch {
+        return []
+      }
+    }
+  }
+  return []
+}
+
+const getLineItemsTablePriority = (meta: {
+  label: string
+  originalId?: string
+  type: string
+}) => {
+  const label = meta.label.toLowerCase()
+  let priority = 0
+
+  if (String(meta.type || '').toUpperCase() === 'DYNAMIC_TABLE') priority += 10
+  if (label.includes('invoice') && label.includes('line')) priority += 30
+  if (label.includes('extracted')) priority += 10
+  if (label.includes('line item')) priority += 5
+
+  return priority
+}
+
+export const appendTableFieldsToFormModel = (
+  target: Record<string, unknown>,
+  fieldsSource: Record<string, unknown>,
+  metaMap: Map<string, { label: string; originalId?: string; type: string }>,
+) => {
+  const seenOriginalIds = new Set<string>()
+
+  metaMap.forEach((meta) => {
+    const originalId = meta.originalId
+    if (!originalId || seenOriginalIds.has(originalId)) return
+    if (!isTableType(meta.type)) return
+
+    seenOriginalIds.add(originalId)
+
+    const label = meta.label
+    if (target[label] !== undefined) return
+
+    const raw = getFieldValueFromSource(fieldsSource, originalId)
+    const rows = parseTableFieldValue(raw)
+    if (rows.length > 0) {
+      target[label] = rows
+    }
+  })
+}
+
+export const findPreferredLineItemsTable = (
+  metaMap: Map<string, { label: string; originalId?: string; type: string }>,
+  formModel: Record<string, unknown>,
+) => {
+  const candidates: Array<{
+    label: string
+    priority: number
+    rows: any[]
+  }> = []
+
+  const seenOriginalIds = new Set<string>()
+
+  metaMap.forEach((meta) => {
+    const originalId = meta.originalId
+    if (!originalId || seenOriginalIds.has(originalId)) return
+    if (!isTableType(meta.type)) return
+
+    seenOriginalIds.add(originalId)
+
+    const rows = parseTableFieldValue(formModel[meta.label])
+    if (rows.length === 0) return
+
+    candidates.push({
+      label: meta.label,
+      priority: getLineItemsTablePriority(meta),
+      rows,
+    })
+  })
+
+  candidates.sort((a, b) => b.priority - a.priority)
+  return candidates[0] ?? null
 }
 
 export const buildFieldLabelMap = (
@@ -242,13 +468,205 @@ const mapFormModelToPayloadFields = (
 
   Object.keys(formModel).forEach((key) => {
     const val = formModel[key]
-    const originalId = labelToIdMap.get(key)
-    if (originalId) {
-      fieldsPayload[originalId] = val
-    }
+    const originalId = labelToIdMap.get(key) || key
+    fieldsPayload[originalId] = val
   })
 
   return fieldsPayload
+}
+
+const updateProcessInStore = (apAgentJobId: string | number, jobData: any) => {
+  requestStore.setState((state) => {
+    if (
+      state.selectedItem &&
+      String(state.selectedItem.apAgentJobId) === String(apAgentJobId)
+    ) {
+      const jobKey = `job-${apAgentJobId}`
+      const hasJobProcess = state.processingProcesses.some(
+        (p) => String(p.processId || p.id) === jobKey,
+      )
+      const updatedProcesses = hasJobProcess
+        ? state.processingProcesses.map((p) =>
+            String(p.processId || p.id) === jobKey
+              ? {
+                  ...p,
+                  apAgentJobId: null,
+                  id: jobData.instanceId,
+                  processId: jobData.instanceId,
+                }
+              : p,
+          )
+        : state.processingProcesses
+
+      return {
+        processingProcesses: updatedProcesses,
+        selectedItem: {
+          ...state.selectedItem,
+          apAgentJobId: null,
+          id: jobData.instanceId,
+          processId: jobData.instanceId,
+        },
+      }
+    }
+    return {}
+  })
+}
+
+const handleJobData = (
+  apAgentJobId: string | number,
+  jobData: any,
+  setJobStatus: (status: any) => void,
+  stopPolling: () => void,
+) => {
+  const percentRaw =
+    jobData.percent === undefined ? jobData.Percent : jobData.percent
+  const percentNum =
+    percentRaw !== undefined && percentRaw !== null
+      ? Number(percentRaw)
+      : Number.NaN
+  const percent = Number.isNaN(percentNum) ? undefined : percentNum
+
+  setJobStatus({
+    hangfireStatus: jobData.hangfireStatus || '',
+    message: jobData.message || '',
+    percent,
+    stage: jobData.stage || '',
+  })
+
+  requestStore
+    .getState()
+    .updateProcessingProcess(String(`job-${apAgentJobId}`), {
+      percent,
+      stage: jobData.stage || 'Initiating...',
+    })
+
+  const isFinished =
+    jobData.isTerminal ||
+    jobData.stage === 'COMPLETED' ||
+    jobData.hangfireStatus === 'Succeeded'
+
+  if (isFinished) {
+    stopPolling()
+    if (jobData.instanceId) {
+      updateProcessInStore(apAgentJobId, jobData)
+    }
+  }
+}
+
+const useJobPolling = (apAgentJobId: string | number | undefined) => {
+  const [jobStatus, setJobStatus] = useState<{
+    hangfireStatus: string
+    message: string
+    percent?: number
+    stage: string
+  } | null>(null)
+
+  useEffect(() => {
+    if (!apAgentJobId) return
+
+    let intervalId: any = null
+
+    const pollJob = async () => {
+      try {
+        const res = await workflowsApiV6.getApAgentJobStatus(
+          String(apAgentJobId),
+        )
+        if (res.data) {
+          handleJobData(apAgentJobId, res.data, setJobStatus, () => {
+            if (intervalId) clearInterval(intervalId)
+          })
+        }
+      } catch (err) {
+        console.error('Error polling AP Agent job:', err)
+      }
+    }
+
+    pollJob()
+    intervalId = setInterval(pollJob, 5000)
+
+    return () => {
+      if (intervalId) clearInterval(intervalId)
+    }
+  }, [apAgentJobId])
+
+  return jobStatus
+}
+
+const parseFieldsSource = (formData: any): any => {
+  if (!formData) return {}
+  if (typeof formData === 'string') {
+    try {
+      const parsed = JSON.parse(formData)
+      return parsed?.fields || parsed || {}
+    } catch {
+      return {}
+    }
+  }
+  if (typeof formData === 'object') {
+    return formData.fields || formData || {}
+  }
+  return {}
+}
+
+const mergeInvoiceHeader = (cleanFields: any, invoiceHeader: any) => {
+  if (!invoiceHeader) return
+  for (const key of Object.keys(invoiceHeader)) {
+    const existingKey = Object.keys(cleanFields).find((k) =>
+      matchKeysLoosely(k, key),
+    )
+    if (existingKey) {
+      const val = cleanFields[existingKey]
+      if (!val || val === '-' || val === '') {
+        cleanFields[existingKey] = invoiceHeader[key]
+      }
+    }
+  }
+}
+
+const parseCleanFields = (
+  activeItem: any,
+  selectedWorkflow: any,
+  formDefinition: any,
+  invoiceHeader: any,
+): any => {
+  if (!activeItem) return {}
+
+  const metaMap = buildFieldMetaMap(selectedWorkflow, formDefinition)
+  const cleanFields: any = {}
+  const fieldsSource = parseFieldsSource(activeItem.formData)
+
+  const parseIfJsonString = (val: any) => {
+    if (typeof val === 'string') {
+      const trimmed = val.trim()
+      if (
+        (trimmed.startsWith('[') && trimmed.endsWith(']')) ||
+        (trimmed.startsWith('{') && trimmed.endsWith('}'))
+      ) {
+        try {
+          return JSON.parse(trimmed)
+        } catch {
+          // Keep original
+        }
+      }
+    }
+    return val
+  }
+
+  Object.keys(fieldsSource).forEach((key) => {
+    let val = getFieldValueFromSource(fieldsSource, key) ?? fieldsSource[key]
+    val = parseIfJsonString(val)
+
+    if (!shouldIncludeExtractedField(metaMap, key, val)) return
+
+    const label = getExtractedFieldLabel(metaMap, key)
+    cleanFields[label] = val
+  })
+
+  appendMissingFormScalarFields(cleanFields, fieldsSource, metaMap)
+  appendTableFieldsToFormModel(cleanFields, fieldsSource, metaMap)
+  mergeInvoiceHeader(cleanFields, invoiceHeader)
+
+  return cleanFields
 }
 
 const Request = ({
@@ -258,6 +676,7 @@ const Request = ({
   onBack,
   onNext,
   onPrev,
+  isFourthItem,
 }: {
   hideActions?: boolean
   item?: any
@@ -265,25 +684,29 @@ const Request = ({
   onBack?: () => void
   onNext?: () => void
   onPrev?: () => void
+  isFourthItem?: boolean
 }) => {
   const {
     activeTabValue,
     closeRequest,
+    processingProcesses,
     rawWorkflowData,
     requestListTab,
     selectedItem: storeSelectedItem,
     selectedWorkflow,
     selectedWorkflowId,
     workflowRefresh,
-    processingProcesses,
   } = requestStore((state) => state)
 
   const selectedItem = item || storeSelectedItem
-  const resolvedWorkflowId = selectedWorkflow?.id || workflowId || selectedWorkflowId
+  const resolvedWorkflowId =
+    selectedWorkflow?.id || workflowId || selectedWorkflowId
 
   const [activeTab, setActiveTab] = useState<string>(
-    activeTabValue ? activeTabValue : 'Overview',
+    activeTabValue || 'Overview',
   )
+  const apAgentJobId = selectedItem?.apAgentJobId
+  const jobStatus = useJobPolling(apAgentJobId)
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState<boolean>(false)
   const [rightView, setRightView] = useState<
@@ -292,7 +715,12 @@ const Request = ({
   const [isEditing, setIsEditing] = useState<boolean>(false)
 
   // Determine if it was known to be processing initially
-  const initialProcessing = processingProcesses.some((p) => String(p.processId || p.id) === String(selectedItem?.processId || selectedItem?.id)) || selectedItem?.isProcessing
+  const initialProcessing =
+    processingProcesses.some(
+      (p) =>
+        String(p.processId || p.id) ===
+        String(selectedItem?.processId || selectedItem?.id),
+    ) || selectedItem?.isProcessing
 
   const { data: request, isLoading } = useRequestDetail(
     resolvedWorkflowId,
@@ -301,56 +729,26 @@ const Request = ({
     initialProcessing,
   )
 
-  const hasAgentDecision = request ? !!(request.review || request._agentData?.[0]?.decision || request.completedAtUtc) : false
+  const hasAgentDecision = request
+    ? !!(
+        request.review ||
+        request._agentData?.[0]?.decision ||
+        request.completedAtUtc
+      )
+    : false
   const isCurrentlyProcessing = !hasAgentDecision && initialProcessing
-
-  const resolvedItem = useMemo(() => {
-    if (!request) return selectedItem
-    return {
-      ...request,
-      processId: selectedItem?.processId || request?.processId,
-      transactionId: selectedItem?.transactionId || request?.transactionId,
-      id: selectedItem?.id || request?.id,
-      _localFileUrl: selectedItem?._localFileUrl || request?._localFileUrl,
-      localUrl: selectedItem?.localUrl || request?.localUrl,
-      type: selectedItem?.type || request?.type,
-    }
-  }, [request, selectedItem])
   const actions =
-    resolvedItem?.stageType === 'AP_AGENT'
-      ? []
-      : (resolvedItem?._actions || [])
-
-  const workflowRules = useMemo(() => {
-    let flow = rawWorkflowData?.flowJson || rawWorkflowData?.workflowJson
-    if (!flow) return []
-    try {
-      if (typeof flow === 'string') {
-        flow = JSON.parse(flow)
-      }
-      if (Array.isArray(flow)) {
-        return flow
-      }
-      if (flow && typeof flow === 'object') {
-        if (Array.isArray(flow.rules)) return flow.rules
-        if (flow.flowJson && Array.isArray(flow.flowJson.rules)) return flow.flowJson.rules
-        if (flow.flowJson && typeof flow.flowJson === 'string') {
-          const parsedInner = JSON.parse(flow.flowJson)
-          if (Array.isArray(parsedInner?.rules)) return parsedInner.rules
-          if (Array.isArray(parsedInner)) return parsedInner
-        }
-      }
-    } catch (e) {
-      console.error('Error parsing rules in Request.tsx:', e)
-    }
-    return []
-  }, [rawWorkflowData])
+    request?._actions ||
+    selectedItem?._actions ||
+    storeSelectedItem?._actions ||
+    []
 
   const dynamicRules = useMemo(() => {
-    const currentActivityId = resolvedItem?.activityId
+    const rules = rawWorkflowData?.workflowJson?.rules || []
+    const currentActivityId = selectedItem?.activityId
     if (!currentActivityId) return []
-    return workflowRules.filter((rule: any) => rule.fromBlockId === currentActivityId)
-  }, [workflowRules, resolvedItem?.activityId])
+    return rules.filter((rule: any) => rule.fromBlockId === currentActivityId)
+  }, [rawWorkflowData, selectedItem?.activityId])
 
   const ruleActions = useMemo(() => {
     return dynamicRules.map((rule: any) => {
@@ -363,9 +761,8 @@ const Request = ({
   }, [dynamicRules])
 
   const headerActions = useMemo(() => {
-    if (resolvedItem?.stageType === 'AP_AGENT') return []
     return ruleActions.length > 0 ? ruleActions : actions
-  }, [ruleActions, actions, resolvedItem?.stageType])
+  }, [ruleActions, actions])
 
   const agentDataList = request?._agentData || selectedItem?._agentData || []
   const hasAgentData = agentDataList.length > 0
@@ -373,56 +770,38 @@ const Request = ({
   const [formModel, setFormModel] = useState<any>({})
 
   const allowedLabels = useMemo(() => {
-    const activeItem = resolvedItem
+    const activeItem = request || selectedItem
     if (!activeItem) return new Set<string>()
-    const metaMap = buildFieldMetaMap(selectedWorkflow, request?._formDefinition)
-    
-    let fieldsSource: any = {}
-    const rawFormData = activeItem.formData
-    if (rawFormData) {
-      if (typeof rawFormData === 'string') {
-        try {
-          const parsed = JSON.parse(rawFormData)
-          fieldsSource = parsed?.fields || parsed || {}
-        } catch {}
-      } else if (typeof rawFormData === 'object') {
-        fieldsSource = rawFormData.fields || rawFormData || {}
-      }
-    }
+    const metaMap = buildFieldMetaMap(
+      selectedWorkflow,
+      request?._formDefinition,
+    )
 
+    const fieldsSource = parseFieldsSource(activeItem.formData)
     const labels = new Set<string>()
-    Object.keys(fieldsSource).forEach((key) => {
-      const meta = metaMap.get(String(key).toLowerCase())
-      const fieldType = String(meta?.type || '').toUpperCase()
-      const val = fieldsSource[key]
-      let isTable =
-        fieldType === 'TABLE' ||
-        fieldType === 'DYNAMIC_TABLE' ||
-        fieldType === 'DYNAMIC TABLE' ||
-        fieldType.includes('TABLE')
-      if (!isTable && val) {
-        if (Array.isArray(val)) {
-          isTable = true
-        } else if (typeof val === 'string') {
-          const trimmed = val.trim()
-          if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
-            isTable = true
-          }
-        }
-      }
-      const isFileUpload =
-        fieldType === 'FILE_UPLOAD' || fieldType === 'FILEUPLOAD'
+    const labelRecord: Record<string, unknown> = {}
 
-      if (!isTable && !isFileUpload) {
-        if (metaMap.size > 0 && !meta) {
-          return // Skip fields not defined in the form
-        }
-        const label = meta?.label || key
-        labels.add(label)
-      }
+    Object.keys(fieldsSource).forEach((key) => {
+      const val =
+        getFieldValueFromSource(fieldsSource, key) ?? fieldsSource[key]
+      if (!shouldIncludeExtractedField(metaMap, key, val)) return
+
+      const label = getExtractedFieldLabel(metaMap, key)
+      labels.add(label)
+      labelRecord[label] = val
     })
+
+    appendMissingFormScalarFields(labelRecord, fieldsSource, metaMap)
+    Object.keys(labelRecord).forEach((label) => labels.add(label))
+
     return labels
-  }, [selectedItem, selectedWorkflow, request?._formDefinition, request?.formData, request, resolvedItem])
+  }, [
+    selectedItem,
+    selectedWorkflow,
+    request?._formDefinition,
+    request?.formData,
+    request,
+  ])
 
   useEffect(() => {
     if (hasAgentData && agentDataList.length > 0) {
@@ -436,65 +815,18 @@ const Request = ({
     return agentDataList.find((a: any) => a.id === selectedAgentId) || {}
   }, [agentDataList, selectedAgentId])
 
-  const invoiceHeader = currentAgentData?.['Extracted Invoice JSON']?.invoice_header as any
+  const invoiceHeader =
+    currentAgentData?.['Extracted Invoice JSON']?.invoice_header
 
   useEffect(() => {
-    const activeItem = resolvedItem
+    const activeItem = request || selectedItem
     if (activeItem) {
-      const metaMap = buildFieldMetaMap(selectedWorkflow, request?._formDefinition)
-      const cleanFields: any = {}
-
-      let fieldsSource: any = {}
-      const rawFormData = activeItem.formData
-      if (rawFormData) {
-        if (typeof rawFormData === 'string') {
-          try {
-            const parsed = JSON.parse(rawFormData)
-            fieldsSource = parsed?.fields || parsed || {}
-          } catch {
-            fieldsSource = {}
-          }
-        } else if (typeof rawFormData === 'object') {
-          fieldsSource = rawFormData.fields || rawFormData || {}
-        }
-      }
-
-      Object.keys(fieldsSource).forEach((key) => {
-        let val = fieldsSource[key]
-        if (
-          typeof val === 'string' &&
-          ((val.trim().startsWith('[') && val.trim().endsWith(']')) ||
-            (val.trim().startsWith('{') && val.trim().endsWith('}')))
-        ) {
-          try {
-            val = JSON.parse(val)
-          } catch {
-            // Keep original
-          }
-        }
-        const meta = metaMap.get(String(key).toLowerCase())
-        if (metaMap.size > 0 && !meta) {
-          return // Skip fields not defined in the form
-        }
-        const label = meta?.label || key
-        cleanFields[label] = val
-      })
-
-      // Merge invoiceHeader values if present to resolve race condition
-      if (invoiceHeader) {
-        for (const key of Object.keys(invoiceHeader)) {
-          const existingKey = Object.keys(cleanFields).find((k) =>
-            matchKeysLoosely(k, key)
-          )
-          if (existingKey) {
-            const val = cleanFields[existingKey]
-            if (!val || val === '-' || val === '') {
-              cleanFields[existingKey] = invoiceHeader[key]
-            }
-          }
-        }
-      }
-
+      const cleanFields = parseCleanFields(
+        activeItem,
+        selectedWorkflow,
+        request?._formDefinition,
+        invoiceHeader,
+      )
       setFormModel(cleanFields)
     } else {
       setFormModel({})
@@ -506,7 +838,6 @@ const Request = ({
     request?.formData,
     invoiceHeader,
     request,
-    resolvedItem,
   ])
 
   console.log('=== REQUEST COMPONENT DEBUG LOGS ===')
@@ -529,52 +860,51 @@ const Request = ({
     }
   }, [hasAgentData, activeTabValue])
 
-
-  // const handleActivetab = (tabValue: string) => {
-  //   if (tabValue === 'close') {
-  //     setActiveTab("");
-  //     closeRequest();
-  //     return;
-  //   }
-  //   setActiveTab(tabValue);
-  // };
-
   const handleMoveNext = async (action: string) => {
     try {
       setSubmitting(true)
-      
-      const fields =
-        Object.keys(formModel).length > 0
-          ? mapFormModelToPayloadFields(
-              formModel,
-              selectedWorkflow,
-              request?._formDefinition,
-            )
-          : (typeof selectedItem?.formData === 'string'
-              ? JSON.parse(selectedItem?.formData || '{}')
-              : selectedItem?.formData?.fields || selectedItem?.formData || {})
+
+      let fields: any = {}
+      if (Object.keys(formModel).length > 0) {
+        fields = mapFormModelToPayloadFields(
+          formModel,
+          selectedWorkflow,
+          request?._formDefinition,
+        )
+      } else if (typeof selectedItem?.formData === 'string') {
+        fields = JSON.parse(selectedItem.formData || '{}')
+      } else {
+        fields = selectedItem?.formData?.fields || selectedItem?.formData || {}
+      }
 
       const formDataStr = JSON.stringify(fields)
 
       const payload = {
         activityid: selectedItem?.activityId || '',
-        review: action,
-        comments: '',
-        activityUserId: selectedItem?.userId || authUserStore.getState().session?.id || null,
-        workflowId: selectedItem?.workflowId || rawWorkflowData?.id || null,
-        transactionId: selectedItem?.transactionId || null,
-        instanceId: selectedItem?.workflowInstanceId || null,
-        processId: selectedItem?.processId || selectedItem?.id || null,
-        AIAGENTResponse: typeof selectedItem?.agentResponse === 'string'
-          ? selectedItem.agentResponse
-          : JSON.stringify(selectedItem?.agentResponse || {}),
+        activityUserId:
+          selectedItem?.userId || authUserStore.getState().session?.id || null,
         AIAGENTHtml: selectedItem?.agentHtml || '',
-        itemId: selectedItem?.itemId || null,
-        repositoryId: selectedItem?.repositoryId || rawWorkflowData?.repositoryId || null,
+        AIAGENTResponse:
+          typeof selectedItem?.agentResponse === 'string'
+            ? selectedItem.agentResponse
+            : JSON.stringify(selectedItem?.agentResponse || {}),
+        comments: '',
         formData: formDataStr,
-        formId: selectedItem?.formId || rawWorkflowData?.formId || rawWorkflowData?.wFormId || null,
         formEntryId: Number(selectedItem?.formEntryId || 0),
+        formId:
+          selectedItem?.formId ||
+          rawWorkflowData?.formId ||
+          rawWorkflowData?.wFormId ||
+          null,
+        instanceId: selectedItem?.workflowInstanceId || null,
         isItemTable: true,
+        itemId: selectedItem?.itemId || null,
+        processId: selectedItem?.processId || selectedItem?.id || null,
+        repositoryId:
+          selectedItem?.repositoryId || rawWorkflowData?.repositoryId || null,
+        review: action,
+        transactionId: selectedItem?.transactionId || null,
+        workflowId: selectedItem?.workflowId || rawWorkflowData?.id || null,
       }
 
       console.log('MoveNext Payload:', payload)
@@ -586,7 +916,7 @@ const Request = ({
 
       const response = await workflowsApiV6.moveNext(instanceId, payload)
       console.log('MoveNext Response:', response)
-      
+
       workflowRefresh()
       closeRequest()
     } catch (e) {
@@ -609,7 +939,11 @@ const Request = ({
         formData: {
           fields:
             Object.keys(formModel).length > 0
-              ? mapFormModelToPayloadFields(formModel, selectedWorkflow, request?._formDefinition)
+              ? mapFormModelToPayloadFields(
+                  formModel,
+                  selectedWorkflow,
+                  request?._formDefinition,
+                )
               : selectedItem?.formData?.fields || {},
           formEntryId: selectedItem?.formData?.formEntryId,
           formId: rawWorkflowData?.wFormId,
@@ -649,8 +983,7 @@ const Request = ({
       currentAgentData?.debug?.['Side-by-side Field Matching'] || []
     const totalField = fieldMatching.find(
       (f: any) =>
-        f &&
-        f.Field &&
+        f?.Field &&
         (f.Field.toLowerCase().includes('total') ||
           f.Field.toLowerCase().includes('amount')),
     )
@@ -685,33 +1018,45 @@ const Request = ({
     currentAgentData,
   )
 
-  const hasValidPO =
-    poVal &&
-    poVal !== '-' &&
-    poVal.toUpperCase() !== 'N/A' &&
-    poVal.trim() !== ''
-  const matchingStatus = hasValidPO ? 'Matched' : 'Not Matched'
   const currency = invoiceHeader?.['Currency'] || selectedItem?.currency
 
-  const rawStatus =
-    currentAgentData?.decision ||
-    selectedItem?.decision ||
-    selectedItem?.status ||
-    selectedItem?.stage ||
-    'Pending Review'
+  const agentDecision = currentAgentData?.decision || selectedItem?.decision
 
-  const normalizedStatus = String(rawStatus).toUpperCase()
+  let finalStatusBadge = ''
+  if (agentDecision) {
+    const decUpper = String(agentDecision).toUpperCase()
+    if (decUpper === 'APPROVED') {
+      finalStatusBadge = 'Approved'
+    } else if (
+      decUpper === 'PARTIALLY APPROVED' ||
+      decUpper === 'PARTIALLY_APPROVED'
+    ) {
+      finalStatusBadge = 'Partially Approved'
+    } else if (decUpper === 'REJECTED') {
+      finalStatusBadge = 'Rejected'
+    } else {
+      finalStatusBadge = String(agentDecision)
+    }
+  } else {
+    finalStatusBadge = selectedItem?.stage || selectedItem?.status || ''
+  }
 
-  const statusBadge =
-    normalizedStatus === 'APPROVED' ||
-      normalizedStatus === 'COMPLETED' ||
-      normalizedStatus === 'VERIFIER' ||
-      normalizedStatus === 'MATCHED' ||
-      normalizedStatus === 'VERIFIED'
-      ? matchingStatus
-      : normalizedStatus === 'REJECTED'
-        ? 'Rejected'
-        : 'Pending Review'
+  let displayMessage = jobStatus?.message || jobStatus?.hangfireStatus || ''
+  if (displayMessage === 'AP Agent finished') {
+    displayMessage = 'AP Agent'
+  }
+
+  let statusBadge = ''
+  if (apAgentJobId && jobStatus) {
+    statusBadge = jobStatus.stage
+    if (displayMessage) {
+      statusBadge += ` - ${displayMessage}`
+    }
+  } else if (apAgentJobId) {
+    statusBadge = 'Initiating...'
+  } else {
+    statusBadge = finalStatusBadge
+  }
 
   return (
     <div
@@ -724,12 +1069,13 @@ const Request = ({
           approveLoading={submitting}
           attachmentCount={selectedItem?.attachmentCount || 0}
           commentsCount={selectedItem?.commentsCount || 0}
-          isProcessing={isCurrentlyProcessing}
           currency={currency}
           enableAIInsights={requestListTab !== 'Processed'}
           hideActions={hideActions}
           isEditing={isEditing}
           isLoading={isLoading}
+          isProcessing={isCurrentlyProcessing}
+          percent={jobStatus?.percent}
           poNumber={poVal}
           poValue={poValue}
           raisedAt={request?.createdAt}
@@ -742,11 +1088,21 @@ const Request = ({
             formModel?.['Invoice No'] ||
             formModel?.['invoice_number'] ||
             formModel?.['invoice_no'] ||
-            currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.['Invoice No'] ||
-            currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.['invoice_no'] ||
-            currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.['Invoice Number'] ||
-            currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.['invoice_number'] ||
-            currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.['invoice_num'] ||
+            currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
+              'Invoice No'
+            ] ||
+            currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
+              'invoice_no'
+            ] ||
+            currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
+              'Invoice Number'
+            ] ||
+            currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
+              'invoice_number'
+            ] ||
+            currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
+              'invoice_num'
+            ] ||
             currentAgentData?.['kvcYuknkDumkTenjvrVLj'] ||
             selectedItem?.reqNo ||
             selectedItem?.['kvcYuknkDumkTenjvrVLj'] ||
@@ -761,29 +1117,6 @@ const Request = ({
           onNext={onNext}
           onPrev={onPrev}
         />
-
-        {/* <div className="border-b border-gray-3 bg-surface">
-          <Tabs color='primary' value={activeTab} onChange={(val) => handleActivetab(val as string)}>
-            <Tab label={
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleActivetab("close");
-                }}
-                className="inline-flex items-center"
-              >
-                <IconButton aria-label="Back" variant='ghost' color='gray'>
-                  <Icon name="tabler:arrow-left" className="size-4 text-gray-10" />
-                </IconButton>
-              </button>
-            } value="close" />
-            <Tab label="Overview" value="Overview" />
-            <Tab label={`Attachment `} value="Attachments" />
-            <Tab label={`Comment`} value="Comments" />
-            <Tab label="History" value="History" />
-          </Tabs>
-        </div> */}
       </div>
 
       {/* Tab Content */}
@@ -795,18 +1128,19 @@ const Request = ({
         <Overview
           agentData={currentAgentData}
           allowedLabels={allowedLabels}
-          formModel={formModel}
           formDefinition={request?._formDefinition}
-          processId={selectedItem?.processId}
+          formModel={formModel}
+          isProcessing={isCurrentlyProcessing || isLoading}
+          processId={Number(selectedItem?.processId)}
           repositoryId={Number(rawWorkflowData?.repositoryId)}
           rightView={rightView}
-          selectedItem={resolvedItem}
+          selectedItem={request || selectedItem}
           selectedWorkflow={selectedWorkflow}
-          transactionId={selectedItem?.transactionId}
+          transactionId={Number(selectedItem?.transactionId)}
           workflowId={resolvedWorkflowId}
           setFormModel={setFormModel}
           setRightView={setRightView}
-          isProcessing={isCurrentlyProcessing || isLoading}
+          isFourthItem={isFourthItem}
         />
       </AnimateFadeIn>
     </div>

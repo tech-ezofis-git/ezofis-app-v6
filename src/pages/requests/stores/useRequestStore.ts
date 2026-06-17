@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { create } from 'zustand'
 
 export const getProcessingStatusText = (startTime?: string) => {
@@ -7,17 +7,17 @@ export const getProcessingStatusText = (startTime?: string) => {
   const now = Date.now()
   const elapsed = (now - start) / 1000
 
-  if (elapsed < 15) {
+  if (elapsed < 5) {
     return 'We are processing your file...'
-  } else if (elapsed < 30) {
+  } else if (elapsed < 10) {
     return 'Extracting OCR data...'
-  } else if (elapsed < 45) {
+  } else if (elapsed < 15) {
     return 'Extracting invoice fields...'
-  } else if (elapsed < 60) {
+  } else if (elapsed < 20) {
     return 'Matching fields with Purchase Order...'
-  } else if (elapsed < 75) {
+  } else if (elapsed < 25) {
     return 'Matching fields with GL Accounts...'
-  } else if (elapsed < 90) {
+  } else if (elapsed < 30) {
     return 'Verifying supplier details...'
   } else {
     return 'Making the decision...'
@@ -52,12 +52,12 @@ type Store = {
   pendingNav: any
   pendingOpenNewRequest: boolean
   processingProcesses: any[]
-  rawWorkflowData: any | null
+  rawWorkflowData: any
   reloadMeta: boolean
   repoData: any
   requestListTab: string // New state for main list tabs
   // Data State (Added these)
-  selectedItem: any | null
+  selectedItem: any
   // Actions
   selectedWorkflow: any
   selectedWorkflowId: number | string | null

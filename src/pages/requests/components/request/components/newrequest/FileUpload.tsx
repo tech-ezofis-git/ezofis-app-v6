@@ -479,12 +479,15 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
     const parsedData = typeof data === 'string' ? JSON.parse(data) : data
     const processId = parsedData?.instanceId
     const transactionId = parsedData?.startPayload?.transactionId
+    const apAgentJobId = parsedData?.apAgentJobId
 
-    if (!processId) {
-      throw new Error('Workflow started but did not return a valid instanceId.')
+    if (!processId && !apAgentJobId) {
+      throw new Error(
+        'Workflow started but did not return a valid instanceId or apAgentJobId.',
+      )
     }
 
-    return { processId, transactionId }
+    return { apAgentJobId, processId, transactionId }
   }
 
   const fetchWorkflowStageDetails = async (
@@ -568,15 +571,18 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
     setUploadStatus('uploading')
 
     try {
-      const { processId, transactionId } = await startWorkflowInstance(
-        validFiles[0],
-      )
+      const { apAgentJobId, processId, transactionId } =
+        await startWorkflowInstance(validFiles[0])
       setUploadStatus('success')
 
-      let requestNo = 'New Request'
-      let stage = 'Start'
+      const isJobBased = !!apAgentJobId
+      const resolvedProcessId = processId || `job-${apAgentJobId}`
+      const resolvedTransactionId = transactionId || null
 
-      if (transactionId) {
+      let requestNo = 'New Request'
+      let stage = isJobBased ? 'Initiating...' : 'Start'
+
+      if (transactionId && processId) {
         const details = await fetchWorkflowStageDetails(
           processId,
           transactionId,
@@ -587,47 +593,64 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
 
       const localUrl = URL.createObjectURL(validFiles[0])
       const startTime = new Date().toISOString()
-      
+
       // Add to background processing
       requestStore.getState().addProcessingProcess({
-        id: processId,
+        apAgentJobId: apAgentJobId || null,
+        id: resolvedProcessId,
         name: validFiles[0].name,
-        processId,
+        processId: resolvedProcessId,
         repositoryId: rawWorkflow?.repositoryId,
         requestNo,
         stage,
-        transactionId,
-        workflowId: rawWorkflow?.id,
         startTime,
+        transactionId: resolvedTransactionId,
+        workflowId: rawWorkflow?.id,
       })
 
       // Resolve workflow metadata stub
-      const wFormId = rawWorkflow?.formId ?? rawWorkflow?.wFormId ?? rawWorkflow?.settings?.general?.initiateUsing?.formId ?? ''
+      const wFormId =
+        rawWorkflow?.formId ??
+        rawWorkflow?.wFormId ??
+        rawWorkflow?.settings?.general?.initiateUsing?.formId ??
+        ''
       const selectedWorkflowStub = {
-        flowJson: typeof rawWorkflow?.flowJson === 'string' ? rawWorkflow.flowJson : JSON.stringify(rawWorkflow?.flowJson || {}),
-        formJson: typeof rawWorkflow?.formJson === 'string' ? rawWorkflow.formJson : JSON.stringify(rawWorkflow?.formJson || ''),
+        flowJson:
+          typeof rawWorkflow?.flowJson === 'string'
+            ? rawWorkflow.flowJson
+            : JSON.stringify(rawWorkflow?.flowJson || {}),
+        formJson:
+          typeof rawWorkflow?.formJson === 'string'
+            ? rawWorkflow.formJson
+            : JSON.stringify(rawWorkflow?.formJson || ''),
         id: rawWorkflow?.id,
-        name: rawWorkflow?.name ?? rawWorkflow?.settings?.general?.name ?? 'Workflow',
+        name:
+          rawWorkflow?.name ??
+          rawWorkflow?.settings?.general?.name ??
+          'Workflow',
         wFormId: wFormId || '',
       }
 
       const stubItem = {
-        id: processId,
-        processId,
-        transactionId,
-        isProcessing: true,
-        stageType: 'AP_AGENT',
-        stage: 'Start',
         _localFileUrl: localUrl,
+        apAgentJobId: apAgentJobId || null,
+        createdAt: startTime,
+        documentNumber: 'Analyzing Invoice...',
+        id: resolvedProcessId,
+        isProcessing: true,
+        processId: resolvedProcessId,
         reqNo: requestNo,
         requestNo: requestNo,
+        stage: stage,
+        stageType: 'AP_AGENT',
+        transactionId: resolvedTransactionId,
         vendor: 'Analyzing Supplier...',
-        documentNumber: 'Analyzing Invoice...',
-        createdAt: startTime,
       }
 
       // Transition straight to detail overview
-      requestStore.getState().openRequest(stubItem, selectedWorkflowStub, 'Overview')
+      requestStore
+        .getState()
+        .openRequest(stubItem, selectedWorkflowStub, 'Overview')
 
       // Trigger list refresh
       workflowRefresh()

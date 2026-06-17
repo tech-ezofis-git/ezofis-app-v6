@@ -1,9 +1,9 @@
-import { useMatches, useParams } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
+import { useMatches, useParams } from '@tanstack/react-router'
+import formApi from '@/api/form/form'
 import Badge from '@/components/base/Badge'
 import Icon from '@/components/base/icon/Icon'
 import Title from '@/components/base/Title'
-import formApi from '@/api/form/form'
 import requestStore from '@/pages/requests/stores/useRequestStore'
 import useWorkflowStore from '@/pages/workflows/stores/useWorkflowStore'
 
@@ -18,20 +18,20 @@ const PageTitle = () => {
 
   const { formId } = useParams({ strict: false }) as any
   const { data: formData } = useQuery({
+    enabled: !!formId && isFormEntriesRoute,
     queryKey: ['forms', 'detail', formId],
     queryFn: async () => {
       const { data, error } = await formApi.getFormDataById(formId)
       if (error) throw new Error(error)
       return data
     },
-    enabled: !!formId && isFormEntriesRoute,
   })
 
   const formName = formData?._json?.settings?.general?.name || formData?.name
-  const pageTitle = (isFormEntriesRoute && formName)
-    ? formName
-    : (current?.staticData?.pageTitle ?? 'Untitled')
-
+  const pageTitle =
+    isFormEntriesRoute && formName
+      ? formName
+      : (current?.staticData?.pageTitle ?? 'Untitled')
 
   const renderContent = () => {
     if (isBuilderOpen) {

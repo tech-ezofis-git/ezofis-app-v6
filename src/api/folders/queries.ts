@@ -10,7 +10,7 @@ export const getRepositoriesQueryOptions = () => {
   return queryOptions({
     queryKey: folderQueries.repositories(),
     queryFn: async () => {
-      const { data, error } = await authApiV6.repositories()
+      const { data, error } = await authApiV6.getRepositorys()
       if (error) throw new Error(String(error))
 
       const extractData = (obj: any): any[] => {

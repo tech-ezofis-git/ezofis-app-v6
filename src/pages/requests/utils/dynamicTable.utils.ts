@@ -5,9 +5,19 @@ export const isTableType = (fieldType: any) => {
   return t === 'DYNAMIC_TABLE' || t === 'TABLE'
 }
 
+export const isDecorativeFieldType = (fieldType: unknown) => {
+  const type = String(fieldType ?? '').toUpperCase()
+  return type === 'DIVIDER' || type === 'LABEL' || type === 'PARAGRAPH'
+}
+
+export const isMatrixFieldType = (fieldType: unknown) => {
+  return String(fieldType ?? '').toUpperCase() === 'MATRIX'
+}
+
 export const isIgnorableField = (field: any) => {
   if (!field) return true
-  if (['DIVIDER', 'LABEL', 'PARAGRAPH'].includes(field.type)) return true
+  if (isDecorativeFieldType(field.type)) return true
+  if (isMatrixFieldType(field.type)) return true
   if (field.settings?.general?.visibility === 'DISABLE') return true
   return false
 }

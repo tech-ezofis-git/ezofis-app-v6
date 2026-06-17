@@ -20,7 +20,7 @@ interface Props<TData> extends ComponentProps<'th'> {
   table: TanstackTable<TData>
 }
 
-const TableHeaderCell = <TData,>({ header, table }: Props<TData>) => {
+const TableHeaderCell = <TData,>({ header, style, table }: Props<TData>) => {
   const [opened, setOpened] = useState(false)
 
   const column = header.column
@@ -79,7 +79,7 @@ const TableHeaderCell = <TData,>({ header, table }: Props<TData>) => {
     <Th
       className='h-10 p-0.5'
       key={header.id}
-      style={getColumnPinnedStyles(column, table)}
+      style={{ ...getColumnPinnedStyles(column, table), ...style }}
     >
       <div className='flex items-center justify-center'>
         {/* display column */}

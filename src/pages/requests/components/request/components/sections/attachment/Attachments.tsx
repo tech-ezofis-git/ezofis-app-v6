@@ -13,12 +13,12 @@ type FileLike = AttachmentItem
 type Props = {
   canUpload?: boolean
   enabled?: boolean
-  processId?: number | string
+  processId?: number
   repositoryDetails?: { fieldsType?: string }
   repositoryId?: number | string
   selectedChecklistName?: string | null
   transactionId?: number | string
-  workflowId?: number | string
+  workflowId?: number
   onClose?: () => void
   onOpenComments?: (file: AttachmentItem) => void
   onOpenHistory?: (file: AttachmentItem) => void

@@ -477,112 +477,112 @@ export default function PoSetupFlowPage({ onClose }: Props) {
               </AnimateSlideUp>
 
               {/* Download template button centered */}
-              <AnimateSlideUp className='w-full flex justify-end' delay={0.05}>
+              <AnimateSlideUp className='flex w-full justify-end' delay={0.05}>
                 <button
                   className='mb-2 flex cursor-pointer items-center gap-2 self-end rounded-lg border border-border-default bg-surface-primary px-4 py-2 text-[12px] font-bold text-gray-11 shadow-2xs transition-all duration-300 hover:scale-[1.02] hover:bg-surface-secondary active:scale-[0.98]'
                   disabled={isDownloading}
                   onClick={handleDownload}
                 >
-                {isDownloading ? (
-                  <span className='size-3.5 animate-spin rounded-full border-2 border-gray-10 border-t-transparent' />
-                ) : (
-                  <Icon
-                    className='size-4 text-primary-9'
-                    name='tabler:download'
-                  />
-                )}
-                <span>
-                  {isDownloading ? 'Preparing...' : 'Download PO template'}
-                </span>
-              </button>
-            </AnimateSlideUp>
+                  {isDownloading ? (
+                    <span className='size-3.5 animate-spin rounded-full border-2 border-gray-10 border-t-transparent' />
+                  ) : (
+                    <Icon
+                      className='size-4 text-primary-9'
+                      name='tabler:download'
+                    />
+                  )}
+                  <span>
+                    {isDownloading ? 'Preparing...' : 'Download PO template'}
+                  </span>
+                </button>
+              </AnimateSlideUp>
 
               {/* Drop Zone / Selection state */}
               <AnimateSlideUp className='w-full' delay={0.1}>
                 {uploadState === 'idle' ? (
                   <div className='group relative w-full overflow-hidden rounded-xl border border-border-default bg-surface-primary p-2 shadow-2xs transition-all duration-500 hover:shadow-xs'>
-                  {/* Scan Animation effect */}
-                  <div className='pointer-events-none absolute inset-0 z-0 overflow-hidden rounded-xl opacity-0 transition-opacity duration-700 group-hover:opacity-100'>
-                    <div className='absolute inset-0 h-1/2 w-full animate-[scan_3s_linear_infinite] bg-gradient-to-b from-transparent via-accent-soft/20 to-transparent' />
-                  </div>
+                    {/* Scan Animation effect */}
+                    <div className='pointer-events-none absolute inset-0 z-0 overflow-hidden rounded-xl opacity-0 transition-opacity duration-700 group-hover:opacity-100'>
+                      <div className='absolute inset-0 h-1/2 w-full animate-[scan_3s_linear_infinite] bg-gradient-to-b from-transparent via-accent-soft/20 to-transparent' />
+                    </div>
 
-                  <div
-                    className={cn(
-                      'relative z-10 flex min-h-[150px] cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border-[1.5px] border-dashed border-border-default px-6 py-6 text-center transition-all duration-500 ease-out',
-                      isDragOver
-                        ? 'scale-[0.99] border-primary-9 bg-accent-soft/10 shadow-inner'
-                        : 'bg-surface-primary hover:border-primary-9 hover:bg-accent-soft/5',
-                    )}
-                    onClick={() => fileInputRef.current?.click()}
-                    onDragLeave={() => setIsDragOver(false)}
-                    onDragOver={(e) => {
-                      e.preventDefault()
-                      setIsDragOver(true)
-                    }}
-                    onDrop={(e) => {
-                      e.preventDefault()
-                      setIsDragOver(false)
-                      onFileChange(e.dataTransfer.files?.[0])
-                    }}
-                  >
-                    <div className='flex size-14 items-center justify-center rounded-full bg-accent-soft transition-all duration-300 group-hover:scale-105'>
-                      <Icon
-                        className='size-6 text-primary-9'
-                        name='tabler:cloud-upload'
-                      />
-                    </div>
-                    <div className='text-center'>
-                      <h3 className='text-[14px] font-medium tracking-tight text-gray-12'>
-                        Drop your PO file here, or{' '}
-                        <span className='font-medium text-primary-9 group-hover:underline'>
-                          browse
-                        </span>
-                      </h3>
-                      <p className='mt-1.5 text-[12px] text-gray-8'>
-                        Supports CSV, XLSX · Max 4 MB
-                      </p>
-                    </div>
-                  </div>
-
-                  <input
-                    accept={PO_ACCEPT}
-                    className='hidden'
-                    ref={fileInputRef}
-                    type='file'
-                    onChange={(e) => onFileChange(e.target.files?.[0])}
-                  />
-                </div>
-              ) : (
-                /* FILE PREVIEW CARD DURING PARSING */
-                <div className='animate-in fade-in flex w-full flex-col gap-3 rounded-xl border border-border-default bg-surface-primary p-4 shadow-2xs duration-300'>
-                  <div className='flex items-center gap-3'>
-                    <div className='flex size-10 items-center justify-center rounded-lg bg-green-3 text-green-11'>
-                      <Icon
-                        className='size-5 text-green-11'
-                        name='tabler:file-text'
-                      />
-                    </div>
-                    <div className='min-w-0 flex-1'>
-                      <h4 className='truncate text-[13px] font-medium text-gray-12'>
-                        {uploadedFile?.name}
-                      </h4>
-                      <p className='text-[11px] text-gray-8'>
-                        {uploadedFile
-                          ? `${(uploadedFile.size / 1024).toFixed(1)} KB`
-                          : 'Processing...'}
-                      </p>
-                    </div>
-                  </div>
-                  {/* Progress bar */}
-                  <div className='h-1 w-full overflow-hidden rounded-full bg-gray-2'>
                     <div
-                      className='h-full bg-primary-9 transition-all duration-150 ease-out'
-                      style={{ width: `${uploadProgress}%` }}
+                      className={cn(
+                        'relative z-10 flex min-h-[150px] cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border-[1.5px] border-dashed border-border-default px-6 py-6 text-center transition-all duration-500 ease-out',
+                        isDragOver
+                          ? 'scale-[0.99] border-primary-9 bg-accent-soft/10 shadow-inner'
+                          : 'bg-surface-primary hover:border-primary-9 hover:bg-accent-soft/5',
+                      )}
+                      onClick={() => fileInputRef.current?.click()}
+                      onDragLeave={() => setIsDragOver(false)}
+                      onDragOver={(e) => {
+                        e.preventDefault()
+                        setIsDragOver(true)
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault()
+                        setIsDragOver(false)
+                        onFileChange(e.dataTransfer.files?.[0])
+                      }}
+                    >
+                      <div className='flex size-14 items-center justify-center rounded-full bg-accent-soft transition-all duration-300 group-hover:scale-105'>
+                        <Icon
+                          className='size-6 text-primary-9'
+                          name='tabler:cloud-upload'
+                        />
+                      </div>
+                      <div className='text-center'>
+                        <h3 className='text-[14px] font-medium tracking-tight text-gray-12'>
+                          Drop your PO file here, or{' '}
+                          <span className='font-medium text-primary-9 group-hover:underline'>
+                            browse
+                          </span>
+                        </h3>
+                        <p className='mt-1.5 text-[12px] text-gray-8'>
+                          Supports CSV, XLSX · Max 4 MB
+                        </p>
+                      </div>
+                    </div>
+
+                    <input
+                      accept={PO_ACCEPT}
+                      className='hidden'
+                      ref={fileInputRef}
+                      type='file'
+                      onChange={(e) => onFileChange(e.target.files?.[0])}
                     />
                   </div>
-                </div>
-              )}
-            </AnimateSlideUp>
+                ) : (
+                  /* FILE PREVIEW CARD DURING PARSING */
+                  <div className='animate-in fade-in flex w-full flex-col gap-3 rounded-xl border border-border-default bg-surface-primary p-4 shadow-2xs duration-300'>
+                    <div className='flex items-center gap-3'>
+                      <div className='flex size-10 items-center justify-center rounded-lg bg-green-3 text-green-11'>
+                        <Icon
+                          className='size-5 text-green-11'
+                          name='tabler:file-text'
+                        />
+                      </div>
+                      <div className='min-w-0 flex-1'>
+                        <h4 className='truncate text-[13px] font-medium text-gray-12'>
+                          {uploadedFile?.name}
+                        </h4>
+                        <p className='text-[11px] text-gray-8'>
+                          {uploadedFile
+                            ? `${(uploadedFile.size / 1024).toFixed(1)} KB`
+                            : 'Processing...'}
+                        </p>
+                      </div>
+                    </div>
+                    {/* Progress bar */}
+                    <div className='h-1 w-full overflow-hidden rounded-full bg-gray-2'>
+                      <div
+                        className='h-full bg-primary-9 transition-all duration-150 ease-out'
+                        style={{ width: `${uploadProgress}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </AnimateSlideUp>
 
               {/* Three Context Cards Grid */}
               <AnimateSlideUp className='w-full' delay={0.15}>

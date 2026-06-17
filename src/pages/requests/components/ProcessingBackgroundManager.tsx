@@ -18,7 +18,6 @@ const findItemInResponse = (data: any, processId: any) => {
   )
 }
 
-
 const POLLING_INTERVAL = 60000 // 1 minute (60 seconds)
 
 export const ProcessingBackgroundManager = () => {

@@ -1,20 +1,20 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { SpecialZoomLevel, Viewer, Worker } from '@react-pdf-viewer/core'
 import {
+  Briefcase,
+  Calendar,
   CreditCard,
   FileText,
   HistoryIcon,
   Layers,
   ListFilter,
   MessageCircle,
-  Package,
+  PackageX,
   Paperclip,
   Plus,
   Store,
   Trash2,
   Wallet,
 } from 'lucide-react'
-import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import fileApi from '@/api/file/file'
 import BarLoader from '@/components/base/BarLoader'
@@ -25,14 +25,27 @@ import { useAttachments } from '@/pages/requests/hooks/useAttachments'
 import { useComments } from '@/pages/requests/hooks/useComments'
 import requestStore from '@/pages/requests/stores/useRequestStore'
 import '@react-pdf-viewer/core/lib/styles/index.css'
+import { searchPlugin } from '@react-pdf-viewer/search'
+import '@react-pdf-viewer/search/lib/styles/index.css'
 import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
-import { buildFieldMetaMap } from '../../../Request'
+import {
+  buildFieldMetaMap,
+  findPreferredLineItemsTable,
+  hasMeaningfulScalarValue,
+} from '../../../Request'
 import Attachments from '../attachment/Attachments'
 import Comments from '../comment/Comments'
 import History from '../history/History'
 
 // --- Helpers ---
+
+const isUuid = (val: string | number | undefined | null): boolean => {
+  if (typeof val !== 'string') return false
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+    val,
+  )
+}
 
 const getStatusStyles = (statusType: string) => {
   switch (statusType) {
@@ -40,6 +53,10 @@ const getStatusStyles = (statusType: string) => {
       return 'bg-[var(--green-1)] text-[var(--green-9)]'
     case 'warning':
       return 'bg-[var(--orange-1)] text-[var(--orange-9)]'
+    case 'danger':
+      return 'bg-[var(--red-1)] text-[var(--red-9)]'
+    case 'info':
+      return 'bg-[var(--blue-1)] text-[var(--blue-9)]'
     default:
       return 'bg-[var(--gray-1)] text-[var(--gray-11)]'
   }
@@ -51,6 +68,10 @@ const getStatusBorderStyles = (statusType: string) => {
       return 'border-[var(--green-3)] bg-[var(--green-1)] text-[var(--green-9)]'
     case 'warning':
       return 'border-[var(--orange-3)] bg-[var(--orange-1)] text-[var(--orange-9)]'
+    case 'danger':
+      return 'border-[var(--red-3)] bg-[var(--red-1)] text-[var(--red-9)]'
+    case 'info':
+      return 'border-[var(--blue-3)] bg-[var(--blue-1)] text-[var(--blue-9)]'
     default:
       return 'border-[var(--gray-3)] bg-[var(--gray-1)] text-[var(--gray-11)]'
   }
@@ -92,58 +113,84 @@ const matchKeysLoosely = (key1: string, key2: string): boolean => {
   return cleanKey(key1) === cleanKey(key2)
 }
 
-const getFieldMatch = (key: string, sideBySideFields: any[]) => {
-  if (!sideBySideFields || !Array.isArray(sideBySideFields)) return null
-
-  const k = cleanKey(key)
-
-  // 1. Exact clean match
-  let match = sideBySideFields.find((f: any) => cleanKey(f.Field || '') === k)
-  if (match) return match
-
-  // 2. Specific close alias mapping
-  const mappings: Record<string, string[]> = {
-    currency: ['currency'],
-    invoiceamount: [
-      'totaldue',
-      'invoiceamount',
-      'totalamount',
-      'amount',
-      'total_due',
-    ],
-    ponumber: ['ponumber', 'pono', 'purchaseorder'],
-    suppliername: ['suppliername', 'vendorname', 'supplier', 'vendor'],
-    totaldue: [
-      'totaldue',
-      'invoiceamount',
-      'totalamount',
-      'amount',
-      'total_due',
-    ],
-    vendorname: ['suppliername', 'vendorname', 'supplier', 'vendor'],
-  }
-
-  const targets = mappings[k]
-  if (targets) {
-    match = sideBySideFields.find((f: any) => {
-      const fk = cleanKey(f.Field || '')
-      return targets.includes(fk)
-    })
-    if (match) return match
-  }
-
-  return null
-}
-
 const getLineItemAmount = (item: any): any => {
-  return item.Amount?.['Invoice Value'] ?? item.total ?? item.amount ?? 0
+  return (
+    item.Amount?.['Invoice Value'] ??
+    item.total ??
+    item.amount ??
+    item.line_amount ??
+    item.lineAmount ??
+    0
+  )
 }
 
 const FIELD_KEYS_MAP: Record<string, string[]> = {
-  amount: ['Amount', 'total', 'amount'],
-  description: ['Description', 'description'],
-  price: ['Price', 'rate', 'unit_price'],
+  amount: ['Amount', 'total', 'amount', 'line_amount', 'lineAmount'],
+  description: ['Description', 'description', 'item_no', 'itemNo'],
+  price: ['Price', 'rate', 'unit_price', 'price'],
   quantity: ['Quantity', 'quantity'],
+}
+
+const getFieldValueWithFallback = (item: any, keys: string[]) => {
+  for (const k of keys) {
+    const val = item[k]
+    if (val && typeof val === 'object' && 'Invoice Value' in val) {
+      const inner = val['Invoice Value']
+      if (inner !== null && inner !== undefined && inner !== '') return inner
+    } else if (val !== null && val !== undefined && val !== '') {
+      return val
+    }
+  }
+  return undefined
+}
+
+const updateFieldIfValid = (
+  normalized: any,
+  mainKey: string,
+  fallbackKey: string,
+  value: any,
+) => {
+  if (value !== undefined && value !== null && value !== '') {
+    if (mainKey in normalized) {
+      updateValueInStructure(normalized, mainKey, value)
+    } else if (!normalized[fallbackKey]) {
+      normalized[fallbackKey] = value
+    }
+  }
+}
+
+const normalizeExtractedLineItem = (item: any) => {
+  const normalized = { ...item }
+
+  const descVal = getFieldValueWithFallback(normalized, [
+    'Description',
+    'description',
+    'item_no',
+    'itemNo',
+  ])
+  updateFieldIfValid(normalized, 'Description', 'description', descVal)
+
+  const qtyVal = getFieldValueWithFallback(normalized, ['Quantity', 'quantity'])
+  updateFieldIfValid(normalized, 'Quantity', 'quantity', qtyVal)
+
+  const priceVal = getFieldValueWithFallback(normalized, [
+    'Price',
+    'rate',
+    'unit_price',
+    'price',
+  ])
+  updateFieldIfValid(normalized, 'Price', 'rate', priceVal)
+
+  const amtVal = getFieldValueWithFallback(normalized, [
+    'Amount',
+    'total',
+    'amount',
+    'line_amount',
+    'lineAmount',
+  ])
+  updateFieldIfValid(normalized, 'Amount', 'amount', amtVal)
+
+  return normalized
 }
 
 const updateItemField = (item: any, fieldKey: string, value: any) => {
@@ -186,6 +233,371 @@ const formatBase64Url = (base64: string, mimeType: string): string => {
     : `data:${mimeType};base64,${base64}`
 }
 
+const formatAgentStatusLabel = (status?: string | null) => {
+  if (!status) return '---'
+  return status
+    .replaceAll('_', ' ')
+    .toLowerCase()
+    .replace(/\b\w/g, (char) => char.toUpperCase())
+}
+
+const getAgentStatusType = (
+  status?: string | null,
+  positiveValues: string[] = [],
+  warningValues: string[] = [],
+): 'success' | 'warning' | 'default' => {
+  const normalized = String(status || '').toUpperCase()
+  if (!normalized) return 'default'
+  if (
+    positiveValues.some((value) => normalized.includes(value)) ||
+    ['MATCHED', 'ACTIVE', 'VALID', 'VERIFIED', 'APPROVED', 'PRESENT'].some(
+      (value) => normalized.includes(value),
+    )
+  ) {
+    return 'success'
+  }
+  if (
+    warningValues.some((value) => normalized.includes(value)) ||
+    [
+      'NOT_PRESENT',
+      'REVIEW',
+      'PARTIAL',
+      'PENDING',
+      'MANUAL',
+      'DETECTED',
+      'MISMATCH',
+      'NOT_MATCHED',
+      'INVALID',
+      'FAILED',
+    ].some((value) => normalized.includes(value))
+  ) {
+    return 'warning'
+  }
+  return 'default'
+}
+
+const getGlValidationDisplay = (agentData: any) => {
+  const glValidation = agentData?.gl_validation
+  const legacyGlMatching = agentData?.gl_matching
+  const status =
+    glValidation?.status || legacyGlMatching?.status || 'Not Available'
+  const account =
+    glValidation?.account ||
+    glValidation?.gl_account ||
+    glValidation?.matched_account ||
+    legacyGlMatching?.account ||
+    ''
+
+  return {
+    account,
+    status: formatAgentStatusLabel(status),
+    statusType: getAgentStatusType(status, ['MATCHED', 'VERIFIED', 'VALID']),
+  }
+}
+
+const getBackOrderDisplay = (agentData: any) => {
+  const backOrder = agentData?.back_order || agentData?.backorder
+  const detected = backOrder?.detected === true
+  const missingCount = backOrder?.missing_qty_by_item?.length || 0
+  const recommendation = backOrder?.recommendation
+
+  if (detected) {
+    let valueStr = 'Back order detected'
+    if (missingCount > 0) {
+      valueStr = `${missingCount} item${missingCount === 1 ? '' : 's'} affected`
+    } else if (recommendation) {
+      valueStr = formatAgentStatusLabel(recommendation)
+    }
+
+    return {
+      status: 'Detected',
+      statusType: 'warning' as const,
+      value: valueStr,
+    }
+  }
+
+  return {
+    status: 'None',
+    statusType: 'success' as const,
+    value: recommendation
+      ? formatAgentStatusLabel(recommendation)
+      : 'No back order',
+  }
+}
+
+const hasGlValidationData = (agentData: any) => {
+  const glValidation = agentData?.gl_validation
+  const legacyGlMatching = agentData?.gl_matching
+  return (
+    (!!glValidation && typeof glValidation === 'object') ||
+    (!!legacyGlMatching && typeof legacyGlMatching === 'object')
+  )
+}
+
+const hasBackOrderData = (agentData: any) => {
+  const backOrder = agentData?.back_order || agentData?.backorder
+  return !!backOrder && typeof backOrder === 'object'
+}
+
+const getParsedFormData = (row: any): any => {
+  if (!row || !row.formData) return {}
+  if (typeof row.formData === 'object') {
+    return row.formData.fields || row.formData || {}
+  }
+  if (typeof row.formData === 'string') {
+    try {
+      const parsed = JSON.parse(row.formData)
+      return parsed.fields || parsed || {}
+    } catch {
+      return {}
+    }
+  }
+  return {}
+}
+
+const getFromObjectOrVal = (obj: any): string | null => {
+  if (!obj) return null
+  if (typeof obj !== 'object') return String(obj)
+  const val = obj.payment_terms ?? obj.terms ?? obj.payment_term ?? obj.term
+  return val ? String(val) : null
+}
+
+const getFromFields = (fields: any): string | null => {
+  if (!fields) return null
+  return (
+    fields['Payment Terms'] ??
+    fields['payment_terms'] ??
+    fields['Terms'] ??
+    fields['terms']
+  )
+}
+
+const extractPaymentTerms = (row: any, agentData: any): string => {
+  if (!row) return '-'
+  const parsedForm = getParsedFormData(row)
+
+  if (
+    parsedForm['vxnKCXsXkz8_acPogKe'] &&
+    parsedForm['vxnKCXsXkz8_acPogKe'] !== '-'
+  ) {
+    return String(parsedForm['vxnKCXsXkz8_acPogKe'])
+  }
+
+  const fromRow = getFromObjectOrVal(row.payment_terms ?? row.paymentTerms)
+  if (fromRow && fromRow !== '-') return fromRow
+
+  const rowTerms = row.terms ?? row.payment_term ?? row.paymentTerms
+  if (rowTerms && typeof rowTerms !== 'object' && rowTerms !== '-')
+    return String(rowTerms)
+
+  const fromForm =
+    getFromFields(row.formData?.fields) ?? getFromFields(row.formData)
+  if (fromForm && fromForm !== '-') return String(fromForm)
+
+  const fromAgent = getFromObjectOrVal(agentData?.payment_terms)
+  if (fromAgent && fromAgent !== '-') return fromAgent
+
+  const header = agentData?.['Extracted Invoice JSON']?.invoice_header
+  const fromHeader = getFromFields(header)
+  if (fromHeader && fromHeader !== '-') return String(fromHeader)
+
+  return '-'
+}
+
+const extractDueDate = (row: any, agentData: any): string => {
+  if (!row) return '-'
+  const parsedForm = getParsedFormData(row)
+
+  let val =
+    parsedForm['Due Date'] ||
+    parsedForm['due_date'] ||
+    parsedForm['Due_Date'] ||
+    row.dueDate ||
+    row.due_date ||
+    row.payment_terms?.due_date ||
+    row.paymentTerms?.due_date ||
+    row.paymentTerms?.dueDate ||
+    row.formData?.fields?.['Due Date'] ||
+    row.formData?.fields?.['due_date'] ||
+    row.formData?.fields?.['Due_Date'] ||
+    row.formData?.['Due Date'] ||
+    row.formData?.['due_date'] ||
+    row.formData?.['Due_Date'] ||
+    agentData?.payment_terms?.due_date ||
+    agentData?.['Extracted Invoice JSON']?.invoice_header?.['Due Date'] ||
+    agentData?.['Extracted Invoice JSON']?.invoice_header?.['due_date'] ||
+    agentData?.po_matching?.due_date
+
+  if ((!val || val === '-') && parsedForm['9F6tPVHoRnmONGx3kYJu2']) {
+    const invDateStr = parsedForm['9F6tPVHoRnmONGx3kYJu2']
+    const termsStr = parsedForm['vxnKCXsXkz8_acPogKe'] || ''
+    const numMatch = /\d+/.exec(termsStr)
+    if (numMatch) {
+      const days = parseInt(numMatch[0], 10)
+      try {
+        const d = new Date(invDateStr)
+        if (!isNaN(d.getTime())) {
+          d.setDate(d.getDate() + days)
+          val = d.toISOString().split('T')[0]
+        }
+      } catch (e) {}
+    }
+  }
+
+  if (!val || val === '-') return '-'
+  return String(val)
+}
+
+const calculateDaysDifference = (
+  invoiceDateStr: any,
+  dueDateStr: any,
+): number | null => {
+  if (!invoiceDateStr || !dueDateStr || dueDateStr === '-') return null
+  try {
+    const invDate = new Date(invoiceDateStr)
+    const dueDate = new Date(dueDateStr)
+    if (Number.isNaN(invDate.getTime()) || Number.isNaN(dueDate.getTime()))
+      return null
+    const diffTime = dueDate.getTime() - invDate.getTime()
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    return diffDays
+  } catch {
+    return null
+  }
+}
+
+const computeDueDateInfo = (
+  row: any,
+  terms: string,
+  dueDate: string,
+): {
+  calculationText: string
+  statusType: 'success' | 'warning' | 'danger' | 'info' | 'default'
+  termsDisplay: string
+} => {
+  const parsedForm = getParsedFormData(row)
+  const raisedAt =
+    parsedForm['9F6tPVHoRnmONGx3kYJu2'] ||
+    row?.raisedAt ||
+    row?.transaction_createdAt
+  const daysDiff = calculateDaysDifference(raisedAt, dueDate)
+
+  let termsDisplay = terms === '-' ? 'Immediate' : terms
+  if (termsDisplay.toLowerCase() === 'immediate') {
+    termsDisplay = '0 Days'
+  } else {
+    const numMatch = /\d+/.exec(termsDisplay)
+    if (numMatch) {
+      termsDisplay = `${numMatch[0]} Days`
+    }
+  }
+
+  let calculationText = 'Immediate'
+  let statusType: 'success' | 'warning' | 'danger' | 'info' | 'default' = 'danger'
+
+  if (daysDiff === null) {
+    const numMatch = /\d+/.exec(terms)
+    if (numMatch) {
+      const days = Number.parseInt(numMatch[0], 10)
+      const type = days <= 15 ? 'warning' : 'info'
+      return {
+        calculationText: `In ${days} days`,
+        statusType: type,
+        termsDisplay,
+      }
+    }
+  } else if (daysDiff > 0) {
+    const type = daysDiff <= 15 ? 'warning' : 'info'
+    return {
+      calculationText: `In ${daysDiff} days`,
+      statusType: type,
+      termsDisplay,
+    }
+  } else if (daysDiff < 0) {
+    calculationText = `${Math.abs(daysDiff)}d Overdue`
+  }
+
+  return { calculationText, statusType, termsDisplay }
+}
+
+const hasMatterValidationData = (agentData: any) => {
+  const matterValidation = agentData?.matter_validation
+  if (!matterValidation || typeof matterValidation !== 'object') return false
+
+  const status = String(matterValidation.status || '')
+    .trim()
+    .toUpperCase()
+  if (!status || status === 'NOT_PRESENT') return false
+
+  return true
+}
+
+const getMatterValidationDisplay = (agentData: any) => {
+  const matterValidation = agentData?.matter_validation
+  if (!matterValidation || typeof matterValidation !== 'object') {
+    return {
+      status: '---',
+      statusType: 'default' as const,
+      value: '---',
+    }
+  }
+
+  const status = matterValidation.status || 'Unknown'
+  const matterId = matterValidation.matter_id
+  const clientName = matterValidation.client_name
+  const reason =
+    matterValidation.validation_details?.reason ||
+    (matterValidation.needs_manual_entry ? 'Manual entry required' : '')
+
+  const value =
+    matterId || clientName
+      ? [matterId, clientName].filter(Boolean).join(' · ')
+      : reason || '---'
+
+  return {
+    status: formatAgentStatusLabel(status),
+    statusType: getAgentStatusType(status, ['VALID', 'MATCHED', 'VERIFIED']),
+    value,
+  }
+}
+
+const getSupplierValidationDisplay = (agentData: any, formModel: any) => {
+  const supplierValidation = agentData?.supplier_validation
+  const supplierId =
+    formModel?.['Supplier ID'] ||
+    formModel?.['SupplierCode'] ||
+    formModel?.['Supplier Code'] ||
+    formModel?.['supplier_id'] ||
+    formModel?.['Vendor ID'] ||
+    formModel?.['vendor_id'] ||
+    ''
+
+  if (supplierValidation?.status) {
+    let valueStr = 'Supplier verified'
+    if (supplierId) {
+      valueStr = supplierId
+    } else if (supplierValidation.mismatch?.length) {
+      const mismatchLen = supplierValidation.mismatch.length
+      valueStr = `${mismatchLen} mismatch${mismatchLen === 1 ? '' : 'es'}`
+    }
+
+    return {
+      status: formatAgentStatusLabel(supplierValidation.status),
+      statusType: getAgentStatusType(supplierValidation.status, [
+        'ACTIVE',
+        'VERIFIED',
+      ]),
+      value: valueStr,
+    }
+  }
+
+  return {
+    status: supplierId ? 'Verified' : 'Not Verified',
+    statusType: supplierId ? ('success' as const) : ('warning' as const),
+    value: supplierId || 'No supplier ID found',
+  }
+}
+
 // --- Components ---
 
 const AnalysisCard = ({
@@ -195,8 +607,15 @@ const AnalysisCard = ({
   statusType = 'success',
   title,
   value,
+  onClick,
 }: any) => (
-  <div className='flex min-w-0 flex-1 flex-col gap-1.5 rounded-xl border border-[var(--gray-3)] bg-surface p-2.5 transition-colors hover:bg-[var(--gray-1)]'>
+  <div
+    onClick={onClick}
+    className={cn(
+      'flex min-w-0 flex-1 flex-col gap-1.5 rounded-xl border border-[var(--gray-3)] bg-surface p-2.5 transition-colors hover:bg-[var(--gray-1)]',
+      onClick && 'cursor-pointer'
+    )}
+  >
     <div className='flex items-center justify-between'>
       <div
         className={cn(
@@ -237,137 +656,16 @@ const AnalysisCard = ({
   </div>
 )
 
-const getRecommendationMeta = (rec?: string) => {
-  const r = String(rec || '').toUpperCase()
-  if (r === 'APPROVE_TRANSACTION' || r === 'APPROVE') {
-    return {
-      bg: 'bg-[var(--green-1)]/50',
-      chip: 'border-[var(--green-3)] bg-[var(--green-1)] text-[var(--green-9)]',
-      icon: 'tabler:check',
-      label: 'Approve',
-    }
-  }
-  if (r === 'REJECT_TRANSACTION' || r === 'REJECT') {
-    return {
-      bg: 'bg-[var(--red-1)]/50',
-      chip: 'border-[var(--red-3)] bg-[var(--red-1)] text-[var(--red-9)]',
-      icon: 'tabler:x',
-      label: 'Reject Transaction',
-    }
-  }
-  return {
-    bg: 'bg-[var(--gray-1)]/50',
-    chip: 'border-[var(--gray-3)] bg-[var(--gray-1)] text-[var(--gray-11)]',
-    icon: 'tabler:dots',
-    label: 'No Action',
-  }
-}
-
-const BackOrderCard = ({
-  backOrder,
-  isLoading,
-  onClick,
-}: {
-  backOrder: any
-  isLoading?: boolean
-  onClick: () => void
-}) => {
-  const [isHovered, setIsHovered] = useState(false)
-
-  const missingCount = backOrder?.missing_qty_by_item?.length || 0
-  const recommendation = backOrder?.recommendation || 'NO_ACTION'
-  const recMeta = getRecommendationMeta(recommendation)
-
-  return (
-    <div
-      className='relative flex min-w-0 flex-1 cursor-pointer flex-col gap-1.5 rounded-xl border border-[var(--orange-3)] bg-[var(--orange-1)]/30 p-2.5 transition-all hover:bg-[var(--orange-1)]/50'
-      onClick={onClick}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      <div className='flex items-center justify-between'>
-        <div className='shrink-0 rounded bg-[var(--orange-2)] p-1.5 text-[var(--orange-9)]'>
-          <Icon className='h-3.5 w-3.5' name='tabler:truck-delivery' />
-        </div>
-        {isLoading ? (
-          <div className='h-5 w-14 animate-pulse rounded bg-[var(--orange-3)]' />
-        ) : (
-          <div className='shrink-0 rounded-md border border-[var(--orange-3)] bg-[var(--orange-1)] px-2 py-0.5 text-[9px] font-semibold text-[var(--orange-10)]'>
-            Shortage Risk
-          </div>
-        )}
-      </div>
-      <div className='mt-0.5 flex min-w-0 flex-col gap-0.5'>
-        <span className='text-[11px] leading-none font-semibold tracking-tight text-[var(--orange-10)]'>
-          Back Order Detected
-        </span>
-        {isLoading ? (
-          <div className='mt-1 h-4 w-24 animate-pulse rounded bg-[var(--orange-3)]' />
-        ) : (
-          <span className='text-[13px] leading-tight font-semibold text-[var(--orange-11)]'>
-            {missingCount} item{missingCount !== 1 ? 's' : ''} short
-          </span>
-        )}
-      </div>
-
-      {/* Hover reason popup */}
-      <AnimatePresence>
-        {isHovered && (
-          <motion.div
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            className='absolute top-full left-0 z-[100] mt-2 w-[280px] rounded-xl border border-[var(--orange-3)] bg-surface p-3 shadow-xl backdrop-blur-md'
-            exit={{ opacity: 0, scale: 0.95, y: 5 }}
-            initial={{ opacity: 0, scale: 0.95, y: 5 }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className='flex flex-col gap-2'>
-              <div className='flex items-center gap-1.5 border-b border-[var(--gray-2)] pb-1.5'>
-                <Icon
-                  className='h-4 w-4 animate-pulse text-[var(--orange-9)]'
-                  name='tabler:alert-triangle'
-                />
-                <span className='text-[12px] font-bold text-[var(--gray-13)]'>
-                  Back Order Recommendation
-                </span>
-              </div>
-              <div className='flex flex-col gap-1.5 text-left'>
-                <div className='flex items-center gap-1.5'>
-                  <span className='text-[10px] font-semibold text-[var(--gray-11)]'>
-                    Recommendation:
-                  </span>
-                  <span
-                    className={cn(
-                      'rounded px-1.5 py-0.5 text-[9px] font-bold',
-                      recMeta.chip,
-                    )}
-                  >
-                    {recMeta.label}
-                  </span>
-                </div>
-                <p className='text-[11px] leading-relaxed text-[var(--gray-12)]'>
-                  Orchestrator flagged shortage risk on {missingCount} line item
-                  {missingCount !== 1 ? 's' : ''}. Verification matching is
-                  below threshold.
-                </p>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  )
-}
-
 const FormCard = ({
   highlight = false,
   icon: Icon,
   label,
-  matchScore,
   options = [],
-  poValue,
+  score,
   type = 'text',
   value,
   onChange,
+  onFocus,
 }: any) => {
   const [isEditing, setIsEditing] = useState(false)
   const [localValue, setLocalValue] = useState(value)
@@ -397,7 +695,10 @@ const FormCard = ({
       <InputDate
         className='w-full font-semibold'
         value={localValue}
-        onChange={(val: any) => setLocalValue(val)}
+        onChange={(val: any) => {
+          setLocalValue(val)
+          onFocus?.(val)
+        }}
       />
     )
   } else if (type === 'dropdown') {
@@ -408,6 +709,7 @@ const FormCard = ({
         value={localValue}
         onChange={(val: any) => {
           setLocalValue(val)
+          onFocus?.(val)
           setTimeout(handleBlur, 0)
         }}
       />
@@ -421,7 +723,11 @@ const FormCard = ({
         value={localValue === '-' ? '' : localValue}
         autoFocus
         onBlur={handleBlur}
-        onChange={(e) => setLocalValue(e.target.value)}
+        onChange={(e) => {
+          setLocalValue(e.target.value)
+          onFocus?.(e.target.value)
+        }}
+        onFocus={() => onFocus?.(localValue)}
         onKeyDown={handleKeyDown}
       />
     )
@@ -443,31 +749,27 @@ const FormCard = ({
           <Icon className='h-3.5 w-3.5' />
         </div>
         <div className='min-w-0 flex-1'>
-          <p className='mb-0.5 text-[10px] font-semibold text-[var(--gray-11)]'>
-            {label}
-          </p>
+          <div className='mb-0.5 flex items-center justify-between gap-2'>
+            <p className='text-[10px] font-semibold text-[var(--gray-11)]'>
+              {label}
+            </p>
+            {score !== undefined && score !== null && (
+              <span
+                className={cn(
+                  'shrink-0 rounded border px-1.5 py-0.5 text-[9px] font-bold transition-colors',
+                  Number(score) >= 90
+                    ? 'border-[var(--green-3)] bg-[var(--green-1)] text-[var(--green-9)]'
+                    : Number(score) >= 70
+                      ? 'border-[var(--orange-3)] bg-[var(--orange-1)] text-[var(--orange-9)]'
+                      : 'border-[var(--red-3)] bg-[var(--red-1)] text-[var(--red-9)]',
+                )}
+              >
+                {Math.round(Number(score))}% match
+              </span>
+            )}
+          </div>
           <div className='animate-in fade-in zoom-in-95 duration-200'>
             {inputElement}
-            {matchScore !== undefined && (
-              <div className='mt-1.5 flex flex-wrap items-center gap-1.5'>
-                {matchScore === 100 ? (
-                  <span className='inline-flex items-center gap-1 rounded border border-[var(--green-3)] bg-[var(--green-1)] px-1.5 py-0.5 text-[9px] font-bold tracking-wider text-[var(--green-9)] uppercase'>
-                    ✓ PO Match
-                  </span>
-                ) : (
-                  <span
-                    className={cn(
-                      'inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[9px] font-bold tracking-wider uppercase',
-                      matchScore >= 50
-                        ? 'border-[var(--orange-3)] bg-[var(--orange-1)] text-[var(--orange-9)]'
-                        : 'border-[var(--red-3)] bg-[var(--red-1)] text-[var(--red-9)]',
-                    )}
-                  >
-                    ⚠ PO: {poValue || 'N/A'} ({matchScore}% match)
-                  </span>
-                )}
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -480,7 +782,10 @@ const FormCard = ({
       className={cn(
         'group flex w-full cursor-pointer items-start gap-3 rounded-lg border border-none border-transparent bg-transparent p-3 text-left transition-all hover:border-[var(--gray-3)] hover:bg-surface hover:shadow-sm focus:ring-1 focus:ring-[var(--primary-3)]/50 focus:outline-none',
       )}
-      onClick={() => setIsEditing(true)}
+      onClick={() => {
+        setIsEditing(true)
+        onFocus?.(localValue)
+      }}
     >
       <div
         className={cn(
@@ -491,38 +796,38 @@ const FormCard = ({
         <Icon className='h-3.5 w-3.5' />
       </div>
       <div className='min-w-0 flex-1'>
-        <p className='mb-0.5 text-[10px] font-semibold text-[var(--gray-11)]'>
-          {label}
-        </p>
+        <div className='mb-0.5 flex items-center justify-between gap-2'>
+          <p className='text-[10px] font-semibold text-[var(--gray-11)]'>
+            {label}
+          </p>
+          {score !== undefined && score !== null && (
+            <span
+              className={cn(
+                'shrink-0 rounded border px-1.5 py-0.5 text-[9px] font-bold transition-colors',
+                Number(score) >= 90
+                  ? 'border-[var(--green-3)] bg-[var(--green-1)] text-[var(--green-9)]'
+                  : Number(score) >= 70
+                    ? 'border-[var(--orange-3)] bg-[var(--orange-1)] text-[var(--orange-9)]'
+                    : 'border-[var(--red-3)] bg-[var(--red-1)] text-[var(--red-9)]',
+              )}
+            >
+              {Math.round(Number(score))}% match
+            </span>
+          )}
+        </div>
         <p
           className={cn(
             'text-[13px] leading-tight font-semibold text-[var(--gray-13)] transition-colors group-hover:text-[var(--primary-9)]',
             highlight && 'text-[var(--green-9)]',
-            value === '-' && 'font-medium text-[var(--gray-9)]',
+            (value === '-' ||
+              value === null ||
+              value === undefined ||
+              value === '') &&
+              'font-medium text-[var(--gray-9)]',
           )}
         >
-          {value}
+          {value === null || value === undefined || value === '' ? '-' : value}
         </p>
-        {matchScore !== undefined && (
-          <div className='mt-1 flex flex-wrap items-center gap-1.5'>
-            {matchScore === 100 ? (
-              <span className='inline-flex items-center gap-1 rounded border border-[var(--green-3)] bg-[var(--green-1)] px-1.5 py-0.5 text-[9px] font-bold tracking-wider text-[var(--green-9)] uppercase'>
-                ✓ PO Match
-              </span>
-            ) : (
-              <span
-                className={cn(
-                  'inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[9px] font-bold tracking-wider uppercase',
-                  matchScore >= 50
-                    ? 'border-[var(--orange-3)] bg-[var(--orange-1)] text-[var(--orange-9)]'
-                    : 'border-[var(--red-3)] bg-[var(--red-1)] text-[var(--red-9)]',
-                )}
-              >
-                ⚠ PO: {poValue || 'N/A'} ({matchScore}% match)
-              </span>
-            )}
-          </div>
-        )}
       </div>
     </button>
   )
@@ -559,6 +864,145 @@ const SummarySkeleton = () => (
 
 // --- Main App ---
 
+const skeletonRows = ['skeleton-row-0', 'skeleton-row-1', 'skeleton-row-2']
+
+const formatValueToTwoDecimals = (val: any) => {
+  if (val === undefined || val === null || val === '') return ''
+  const num = Number.parseFloat(String(val).replace(/[^0-9.-]+/g, ''))
+  return Number.isNaN(num) ? val : num.toFixed(2)
+}
+
+const formatLineItemFields = (item: any, counter: number) => {
+  const normalizedItem = normalizeExtractedLineItem(item)
+  if (!normalizedItem._id) {
+    normalizedItem._id = `li-${Date.now()}-${counter}`
+  }
+
+  // Format Price/Rate
+  if ('Price' in normalizedItem)
+    updateValueInStructure(
+      normalizedItem,
+      'Price',
+      formatValueToTwoDecimals(getRawVal(normalizedItem, 'Price')),
+    )
+  if ('rate' in normalizedItem)
+    updateValueInStructure(
+      normalizedItem,
+      'rate',
+      formatValueToTwoDecimals(getRawVal(normalizedItem, 'rate')),
+    )
+  if ('unit_price' in normalizedItem)
+    updateValueInStructure(
+      normalizedItem,
+      'unit_price',
+      formatValueToTwoDecimals(getRawVal(normalizedItem, 'unit_price')),
+    )
+  if ('price' in normalizedItem && !normalizedItem.rate)
+    normalizedItem.rate = formatValueToTwoDecimals(
+      getRawVal(normalizedItem, 'price'),
+    )
+
+  // Format Amount
+  if ('Amount' in normalizedItem)
+    updateValueInStructure(
+      normalizedItem,
+      'Amount',
+      formatValueToTwoDecimals(getRawVal(normalizedItem, 'Amount')),
+    )
+  if ('total' in normalizedItem)
+    updateValueInStructure(
+      normalizedItem,
+      'total',
+      formatValueToTwoDecimals(getRawVal(normalizedItem, 'total')),
+    )
+  if ('amount' in normalizedItem)
+    updateValueInStructure(
+      normalizedItem,
+      'amount',
+      formatValueToTwoDecimals(getRawVal(normalizedItem, 'amount')),
+    )
+  if ('line_amount' in normalizedItem && !normalizedItem.amount)
+    normalizedItem.amount = formatValueToTwoDecimals(
+      getRawVal(normalizedItem, 'line_amount'),
+    )
+
+  return normalizedItem
+}
+
+// --- Mock Data & Helpers for Backorder History Flow ---
+const MOCK_PREVIOUS_BACKORDERS: Record<string, any> = {
+  'MSP-REQ-55': {
+    detected: true,
+    missing_qty_by_item: [
+      {
+        po_line_id: '1',
+        po_qty: 10,
+        invoice_qty: 3,
+        remaining: 7,
+        description: 'Office Chair - Ergonomic',
+        price: 150.0,
+        amount: 1050.0,
+        reason: 'SHORT_SHIP',
+      },
+      {
+        po_line_id: '2',
+        po_qty: 1,
+        invoice_qty: 0,
+        remaining: 1,
+        description: 'Delivery Charges',
+        price: 45.0,
+        amount: 45.0,
+        reason: 'SHORT_SHIP',
+      }
+    ],
+    recommendation: 'WAIT_FOR_BALANCE',
+    full_filled: false,
+    reason: 'PO #00026648: Initial shipment of Office Chairs had 3 units invoiced, leaving 7 remaining. Ticket MSP-REQ-55 created to track balance.',
+  }
+}
+
+const getRecommendationMeta = (rec?: string) => {
+  const r = String(rec || '').toUpperCase()
+  if (r === 'REJECT_TRANSACTION' || r === 'REJECT') {
+    return {
+      bg: 'bg-[var(--red-1)]/50',
+      chip: 'border border-[var(--red-3)] bg-[var(--red-1)] text-[var(--red-9)]',
+      icon: 'tabler:x',
+      label: 'Reject Transaction',
+    }
+  }
+  if (r.includes('WAIT')) {
+    return {
+      bg: 'bg-[var(--blue-1)]/50',
+      chip: 'border border-[var(--blue-3)] bg-[var(--blue-1)] text-[var(--blue-9)]',
+      icon: 'tabler:hourglass-high',
+      label: 'Wait for Balance',
+    }
+  }
+  if (r.includes('CONTACT')) {
+    return {
+      bg: 'bg-[var(--purple-1)]/50',
+      chip: 'border border-[var(--purple-3)] bg-[var(--purple-1)] text-[var(--purple-9)]',
+      icon: 'tabler:message-circle',
+      label: 'Contact Vendor',
+    }
+  }
+  if (r.includes('CANCEL')) {
+    return {
+      bg: 'bg-[var(--red-1)]/50',
+      chip: 'border border-[var(--red-3)] bg-[var(--red-1)] text-[var(--red-9)]',
+      icon: 'tabler:ban',
+      label: 'Cancel Remaining',
+    }
+  }
+  return {
+    bg: 'bg-[var(--gray-1)]/50',
+    chip: 'border border-[var(--gray-3)] bg-[var(--gray-1)] text-[var(--gray-11)]',
+    icon: 'tabler:dots',
+    label: rec || 'No Action',
+  }
+}
+
 const Overview = (props: any) => {
   const {
     agentData,
@@ -573,47 +1017,8 @@ const Overview = (props: any) => {
     transactionId,
     workflowId,
     setFormModel,
+    isFourthItem,
   } = props
-
-  // Mock backorder data for design preview
-  const mockBackOrder = useMemo(
-    () => ({
-      detected: true,
-      missing_qty_by_item: [
-        {
-          amount: 573.0,
-          description: 'Phone (Shortage)',
-          invoice_qty: 7,
-          po_line_id: 'POL-1002-4',
-          po_qty: 10,
-          price: 191.0,
-          reason: 'BACKORDER',
-          remaining: 3,
-        },
-        {
-          amount: 300.0,
-          description: 'Router (Shortage)',
-          invoice_qty: 4,
-          po_line_id: 'POL-1002-1',
-          po_qty: 6,
-          price: 150.0,
-          reason: 'BACKORDER',
-          remaining: 2,
-        },
-      ],
-      recommendation: 'REJECT_TRANSACTION',
-    }),
-    [],
-  )
-
-  const backOrder = useMemo(() => {
-    return agentData?.back_order || agentData?.backorder || mockBackOrder
-  }, [agentData, mockBackOrder])
-
-  const hasBackOrder =
-    !!backOrder &&
-    backOrder.detected === true &&
-    (backOrder.missing_qty_by_item?.length ?? 0) > 0
 
   const processingProcesses = requestStore((state) => state.processingProcesses)
   const matchingProc = useMemo(() => {
@@ -625,13 +1030,103 @@ const Overview = (props: any) => {
   }, [processingProcesses, selectedItem])
 
   const isCurrentlyProcessing =
-    isProcessing !== undefined
-      ? isProcessing
-      : !!matchingProc || selectedItem?.isProcessing
+    isProcessing === undefined
+      ? !!matchingProc || selectedItem?.isProcessing
+      : isProcessing
 
-  const [activeTab, setActiveTab] = useState(
-    hasBackOrder ? 'back_order' : 'summary',
+  const getFieldScore = (key: string) => {
+    const normalizeName = (name: string) => {
+      const normalized = name.toLowerCase().trim()
+      if (
+        normalized === 'vendor name' ||
+        normalized === 'supplier name' ||
+        normalized === 'supplier' ||
+        normalized === 'vendor'
+      ) {
+        return 'supplier name'
+      }
+      if (
+        normalized === 'total due' ||
+        normalized === 'invoice amount' ||
+        normalized === 'invoice value' ||
+        normalized === 'amount' ||
+        normalized === 'total amount'
+      ) {
+        return 'total due'
+      }
+      if (
+        normalized === 'invoice number' ||
+        normalized === 'invoice no' ||
+        normalized === 'invoice no.'
+      ) {
+        return 'invoice number'
+      }
+      return normalized
+    }
+
+    const cleanK = normalizeName(key)
+    const matchingFields =
+      agentData?.debug?.['Side-by-side Field Matching'] || []
+    for (const field of matchingFields) {
+      if (field?.Field && normalizeName(field.Field) === cleanK) {
+        return Number(field.Score)
+      }
+    }
+    return undefined
+  }
+
+  const glValidationDisplay = useMemo(
+    () =>
+      hasGlValidationData(agentData) ? getGlValidationDisplay(agentData) : null,
+    [agentData],
   )
+  const backOrderDisplay = useMemo(() => {
+    if (isFourthItem) {
+      return {
+        status: 'Detected',
+        statusType: 'warning' as const,
+        value: '1 item affected',
+      }
+    }
+    return hasBackOrderData(agentData) ? getBackOrderDisplay(agentData) : null
+  }, [agentData, isFourthItem])
+  const paymentTermsDisplay = useMemo(() => {
+    const terms = extractPaymentTerms(selectedItem, agentData)
+    const dueDate = extractDueDate(selectedItem, agentData)
+    return computeDueDateInfo(selectedItem, terms, dueDate)
+  }, [selectedItem, agentData])
+  const matterValidationDisplay = useMemo(
+    () =>
+      hasMatterValidationData(agentData)
+        ? getMatterValidationDisplay(agentData)
+        : null,
+    [agentData],
+  )
+  const supplierValidationDisplay = useMemo(
+    () => getSupplierValidationDisplay(agentData, formModel),
+    [agentData, formModel],
+  )
+  const showGlValidation = useMemo(
+    () => hasGlValidationData(agentData),
+    [agentData],
+  )
+  const showBackOrder = useMemo(
+    () => isFourthItem || hasBackOrderData(agentData),
+    [agentData, isFourthItem],
+  )
+  const showMatterValidation = useMemo(
+    () => hasMatterValidationData(agentData),
+    [agentData],
+  )
+  const analysisCardCount =
+    3 +
+    (showGlValidation ? 1 : 0) +
+    1 + // Either Back Order or Payment Terms is always shown
+    (showMatterValidation ? 1 : 0)
+
+  const [activeTab, setActiveTab] = useState('summary')
+  const [showBackOrderDetailFull, setShowBackOrderDetailFull] = useState(false)
+  const [activeBackOrderTab, setActiveBackOrderTab] = useState<'current' | string>('current')
   const [selectedFile, setSelectedFile] = useState<any>(null)
   const { data: attachmentData } = useAttachments(workflowId, processId, true)
   const {
@@ -642,92 +1137,72 @@ const Overview = (props: any) => {
 
   const [lineItems, setLineItems] = useState<any[]>([])
 
-  const tableFieldKey = useMemo(() => {
-    const metaMap = buildFieldMetaMap(selectedWorkflow, formDefinition)
-    const foundEntry = Object.entries(formModel || {}).find(([key, _]) => {
-      const meta = Array.from(metaMap.values()).find((m) => m.label === key)
-      if (meta) {
-        const type = String(meta.type).toUpperCase()
-        return type === 'TABLE' || type === 'DYNAMIC_TABLE'
+  const searchPluginInstance = searchPlugin()
+  const { highlight, clearHighlights } = searchPluginInstance
+
+  const handleFieldFocus = (value: any) => {
+    const stringVal = String(value || '').trim()
+    if (stringVal && stringVal !== '-') {
+      highlight([stringVal])
+    } else {
+      clearHighlights()
+    }
+  }
+
+  const backOrder = useMemo(() => {
+    if (isFourthItem) {
+      return {
+        detected: true,
+        previous_id: ['MSP-REQ-55'],
+        recommendation: 'WAIT_FOR_BALANCE',
+        missing_qty_by_item: [
+          {
+            po_line_id: '1',
+            po_qty: 10,
+            invoice_qty: 3,
+            remaining: 7,
+            description: 'Office Chair - Ergonomic',
+            price: 150.0,
+            amount: 1050.0,
+            reason: 'SHORT_SHIP',
+          }
+        ]
       }
-      return false
-    })
-    return foundEntry ? foundEntry[0] : null
-  }, [formModel, selectedWorkflow, formDefinition])
+    }
+    return agentData?.back_order || agentData?.backorder
+  }, [agentData, isFourthItem])
+
+  const fieldMetaMap = useMemo(
+    () => buildFieldMetaMap(selectedWorkflow, formDefinition),
+    [selectedWorkflow, formDefinition],
+  )
+
+  const lineItemsTable = useMemo(
+    () => findPreferredLineItemsTable(fieldMetaMap, formModel || {}),
+    [fieldMetaMap, formModel],
+  )
+
+  const tableFieldKey = lineItemsTable?.label ?? null
 
   const rawLineItems = useMemo(() => {
-    if (
-      tableFieldKey &&
-      Array.isArray(formModel[tableFieldKey]) &&
-      formModel[tableFieldKey].length > 0
-    ) {
-      return formModel[tableFieldKey]
+    if (lineItemsTable?.rows?.length) {
+      return lineItemsTable.rows
     }
+
     return (
       agentData?.debug?.['Side-by-side Line Item matching'] ||
       agentData?.line_items ||
       agentData?.['Extracted Invoice JSON']?.invoice_items ||
       []
     )
-  }, [agentData, formModel, tableFieldKey])
+  }, [agentData, lineItemsTable])
 
   useEffect(() => {
     if (rawLineItems && rawLineItems.length > 0) {
       const cloned = structuredClone(rawLineItems)
-      let counter = 0
-      const formatted = cloned.map((item: any) => {
-        if (!item._id) {
-          item._id = `li-${Date.now()}-${counter++}`
-        }
-
-        const formatVal2Dec = (val: any) => {
-          if (val === undefined || val === null || val === '') return ''
-          const num = Number.parseFloat(String(val).replace(/[^0-9.-]+/g, ''))
-          return Number.isNaN(num) ? val : num.toFixed(2)
-        }
-
-        // Format Price/Rate
-        if ('Price' in item)
-          updateValueInStructure(
-            item,
-            'Price',
-            formatVal2Dec(getRawVal(item, 'Price')),
-          )
-        if ('rate' in item)
-          updateValueInStructure(
-            item,
-            'rate',
-            formatVal2Dec(getRawVal(item, 'rate')),
-          )
-        if ('unit_price' in item)
-          updateValueInStructure(
-            item,
-            'unit_price',
-            formatVal2Dec(getRawVal(item, 'unit_price')),
-          )
-
-        // Format Amount
-        if ('Amount' in item)
-          updateValueInStructure(
-            item,
-            'Amount',
-            formatVal2Dec(getRawVal(item, 'Amount')),
-          )
-        if ('total' in item)
-          updateValueInStructure(
-            item,
-            'total',
-            formatVal2Dec(getRawVal(item, 'total')),
-          )
-        if ('amount' in item)
-          updateValueInStructure(
-            item,
-            'amount',
-            formatVal2Dec(getRawVal(item, 'amount')),
-          )
-
-        return item
-      })
+      const formatted = cloned.map((item: any, idx: number) =>
+        formatLineItemFields(item, idx),
+      )
       setLineItems(formatted)
     } else {
       setLineItems([])
@@ -849,6 +1324,11 @@ const Overview = (props: any) => {
   const [isViewerLoading, setIsViewerLoading] = useState(false)
   const [scale, setScale] = useState(1)
   const viewerRef = useRef<any>(null)
+  const lastFetchedRef = useRef<{
+    itemId: string
+    localUrl?: string
+    repoId: string
+  } | null>(null)
 
   const toolbarPluginInstance = useMemo(
     () => ({
@@ -889,14 +1369,52 @@ const Overview = (props: any) => {
     // Reset viewer state when request changes
     setSelectedFile(null)
     setPreviewUrl(null)
-    setActiveTab(hasBackOrder ? 'back_order' : 'summary')
-  }, [processId, transactionId, hasBackOrder])
+    lastFetchedRef.current = null
+  }, [processId, transactionId])
 
   useEffect(() => {
     if (attachmentData && attachmentData.length > 0 && !selectedFile) {
       setSelectedFile(attachmentData[0])
     }
   }, [attachmentData, selectedFile])
+
+  const fetchFileBinaryData = async (
+    repoId: string,
+    itemId: string,
+    tenantId: any,
+    userId: any,
+    selectedFileId: any,
+  ) => {
+    if (isUuid(repoId) && isUuid(itemId)) {
+      const response = await fileApi.viewBinaryV6(repoId, itemId)
+      if (response?.data instanceof Blob) {
+        const mimeType = response.data.type || 'application/pdf'
+        const url = URL.createObjectURL(response.data)
+        return { isBlob: true, mimeType, url }
+      }
+    } else {
+      const rId = Number(repoId)
+      if (!Number.isNaN(rId) && rId > 0) {
+        const tId = tenantId ? Number(tenantId) : 2
+        const uId = userId ? String(userId) : '2'
+        const response = await fileApi.viewBinary(
+          tId,
+          uId,
+          rId,
+          Number(itemId) || selectedFileId,
+          2,
+        )
+
+        const base64 = response?.data?.file || response?.data
+        if (typeof base64 === 'string') {
+          const mimeType = getMimeTypeFromBase64(base64)
+          const url = formatBase64Url(base64, mimeType)
+          return { isBlob: false, mimeType, url }
+        }
+      }
+    }
+    return null
+  }
 
   useEffect(() => {
     let activeUrl: string | null = null
@@ -907,6 +1425,10 @@ const Overview = (props: any) => {
         selectedFile?.localUrl ||
         selectedItem?.localUrl
       if (localUrl) {
+        if (lastFetchedRef.current?.localUrl === localUrl) {
+          return
+        }
+        lastFetchedRef.current = { itemId: '', localUrl, repoId: '' }
         setPreviewUrl(localUrl)
         setFileType(
           selectedFile?.type || selectedItem?.type || 'application/pdf',
@@ -933,46 +1455,33 @@ const Overview = (props: any) => {
       )
         return
 
+      if (
+        lastFetchedRef.current?.repoId === repoId &&
+        lastFetchedRef.current?.itemId === itemId
+      ) {
+        return
+      }
+      lastFetchedRef.current = { itemId, repoId }
+
       setIsViewerLoading(true)
       try {
-        const isUuid = (val: string) =>
-          /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(
-            val,
-          )
-
-        if (isUuid(repoId) && isUuid(itemId)) {
-          const response = await fileApi.viewBinaryV6(repoId, itemId)
-          if (response?.data instanceof Blob) {
-            const mimeType = response.data.type || 'application/pdf'
-            const url = URL.createObjectURL(response.data)
-            activeUrl = url
-            setPreviewUrl(url)
-            setFileType(mimeType)
+        const res = await fetchFileBinaryData(
+          repoId,
+          itemId,
+          tenantId,
+          userId,
+          selectedFile?.id,
+        )
+        if (res) {
+          if (res.isBlob) {
+            activeUrl = res.url
           }
-        } else {
-          const rId = Number(repoId)
-          if (!Number.isNaN(rId) && rId > 0) {
-            const tId = tenantId ? Number(tenantId) : 2
-            const uId = userId ? String(userId) : '2'
-            const response = await fileApi.viewBinary(
-              tId,
-              uId,
-              rId,
-              Number(itemId) || selectedFile?.id,
-              2,
-            )
-
-            const base64 = response?.data?.file || response?.data
-            if (typeof base64 === 'string') {
-              const mimeType = getMimeTypeFromBase64(base64)
-              const url = formatBase64Url(base64, mimeType)
-              setPreviewUrl(url)
-              setFileType(mimeType)
-            }
-          }
+          setPreviewUrl(res.url)
+          setFileType(res.mimeType)
         }
       } catch (error) {
         console.error('Error fetching file:', error)
+        lastFetchedRef.current = null
       } finally {
         setIsViewerLoading(false)
       }
@@ -1029,7 +1538,7 @@ const Overview = (props: any) => {
             <Viewer
               defaultScale={SpecialZoomLevel.PageWidth}
               fileUrl={previewUrl}
-              plugins={[toolbarPluginInstance]}
+              plugins={[toolbarPluginInstance, searchPluginInstance]}
             />
             <div className='absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 items-center gap-4 rounded-xl border border-[var(--gray-3)] bg-surface/90 px-4 py-2 opacity-0 shadow-2xl backdrop-blur-sm transition-all duration-300 group-hover:opacity-100'>
               <button
@@ -1094,245 +1603,375 @@ const Overview = (props: any) => {
         </div>
 
         {/* Right Side - Analysis & Data (60% Width) */}
-        <div className='flex flex-1 flex-col bg-[var(--gray-1)]'>
+        <div className='flex min-h-0 flex-1 flex-col bg-[var(--gray-1)] overflow-hidden'>
           <div className='flex min-h-0 flex-1 flex-col overflow-hidden'>
             {!selectedItem || Object.keys(selectedItem).length === 0 ? (
               <SummarySkeleton />
-            ) : (
-              <div className='flex h-full flex-col overflow-hidden'>
-                <div className='shrink-0 space-y-4 p-4'>
-                  {(() => {
-                    const poVal =
-                      formModel?.['PO Number'] ||
-                      formModel?.['PO No'] ||
-                      formModel?.['po_number'] ||
-                      formModel?.['poNumber'] ||
-                      formModel?.['po_no'] ||
-                      formModel?.['pono'] ||
-                      formModel?.['Purchase Order'] ||
-                      formModel?.['RXwLGHILLrreMmRqlk9mj']
-                    const poCard = (
-                      <AnalysisCard
-                        icon={Paperclip}
-                        isLoading={isCurrentlyProcessing}
-                        title='PO Matching'
-                        status={
-                          poVal && poVal !== '-' && poVal !== 'N/A'
-                            ? 'Matched'
-                            : 'Not Matched'
-                        }
-                        statusType={
-                          poVal && poVal !== '-' && poVal !== 'N/A'
-                            ? 'success'
-                            : 'warning'
-                        }
-                        value={
-                          poVal && poVal !== '-' && poVal !== 'N/A'
-                            ? `${poVal}`
-                            : 'No PO Found'
-                        }
-                      />
-                    )
+            ) : showBackOrderDetailFull ? (
+              <div className='flex min-h-0 flex-1 flex-col overflow-hidden bg-surface animate-in fade-in slide-in-from-left-4 duration-300'>
+                {/* Header with list icon and dot-actions */}
+                <div className='flex items-center justify-between border-b border-[var(--gray-3)] bg-[var(--gray-1)] px-6 py-3 shrink-0'>
+                  <div className='flex items-center gap-2.5'>
+                    <Icon className='h-4 w-4 text-[var(--gray-11)]' name='tabler:list-check' />
+                    <h3 className='text-sm font-bold text-[var(--gray-13)]'>PO line items vs invoices</h3>
+                  </div>
+                  <div className='flex items-center gap-2'>
+                    {/* Recommendation badge in header */}
+                    {(() => {
+                      const currentRec = activeBackOrderTab === 'current'
+                        ? backOrder?.recommendation
+                        : MOCK_PREVIOUS_BACKORDERS[activeBackOrderTab]?.recommendation
+                      const recMeta = getRecommendationMeta(currentRec)
+                      return (
+                        <span className={cn('inline-flex items-center gap-1 rounded px-2 py-0.5 text-[9px] font-bold shadow-xs border mr-2', recMeta.chip)}>
+                          <Icon className='h-3 w-3 animate-pulse' name={recMeta.icon} />
+                          {recMeta.label}
+                        </span>
+                      )
+                    })()}
+                    <button className='rounded-lg p-1.5 text-[var(--gray-11)] hover:bg-[var(--gray-2)] hover:text-[var(--gray-13)] active:scale-95 transition-all'>
+                      <Icon className='h-4 w-4' name='tabler:dots' />
+                    </button>
+                  </div>
+                </div>
 
-                    const duplicateCard = (
-                      <AnalysisCard
-                        icon={Layers}
-                        isLoading={isCurrentlyProcessing}
-                        title='Duplicate Detection'
-                        status={
-                          agentData?.duplicate_check?.status || 'No Duplicate'
-                        }
-                        statusType={
-                          agentData?.duplicate_check?.status === 'Duplicate'
-                            ? 'warning'
-                            : 'success'
-                        }
-                        value={
-                          agentData?.duplicate_check?.message ||
-                          'No duplicates detected'
-                        }
-                      />
-                    )
-
-                    const glDetails = agentData?.gl_matching?.account || ''
-                    const glCard = (
-                      <AnalysisCard
-                        icon={ListFilter}
-                        isLoading={isCurrentlyProcessing}
-                        status={agentData?.gl_matching?.status || 'Matched'}
-                        statusType='success'
-                        title='GL Account Matching'
-                        value={glDetails}
-                      />
-                    )
-
-                    const supplierDetails =
-                      formModel?.['Supplier ID'] ||
-                      formModel?.['SupplierCode'] ||
-                      formModel?.['Supplier Code'] ||
-                      formModel?.['supplier_id'] ||
-                      formModel?.['Vendor ID'] ||
-                      formModel?.['vendor_id'] ||
-                      ''
-
-                    const supplierCard = (
-                      <AnalysisCard
-                        icon={Store}
-                        isLoading={isCurrentlyProcessing}
-                        status={supplierDetails ? 'Verified' : 'Not Verified'}
-                        statusType='success'
-                        title='Supplier Verification'
-                        value={supplierDetails}
-                      />
-                    )
-
-                    const backOrderCard = (
-                      <BackOrderCard
-                        backOrder={backOrder}
-                        isLoading={isCurrentlyProcessing}
-                        onClick={() => setActiveTab('back_order')}
-                      />
-                    )
-
-                    const cardsToRender = []
-                    cardsToRender.push(poCard)
-                    cardsToRender.push(duplicateCard)
-
-                    const otherCards = []
-                    if (glDetails) {
-                      otherCards.push(glCard)
-                    }
-                    if (supplierDetails) {
-                      otherCards.push(supplierCard)
-                    }
-                    if (hasBackOrder) {
-                      otherCards.push(backOrderCard)
-                    }
-
-                    // Fill remaining slots up to 4 total cards with extra summary cards from JSON if we have space!
-                    if (otherCards.length < 2) {
-                      if (agentData?.payment_terms?.raw) {
-                        const termsMeta = agentData.payment_terms
-                        const termsStatus = termsMeta.normalized?.net_days
-                          ? `Net ${termsMeta.normalized.net_days}`
-                          : 'Terms'
-                        const termsValue = termsMeta.due_date
-                          ? `Due ${termsMeta.due_date}`
-                          : termsMeta.raw
-                        otherCards.push(
-                          <AnalysisCard
-                            icon={CreditCard}
-                            isLoading={isCurrentlyProcessing}
-                            status={termsStatus}
-                            statusType='success'
-                            title='Payment Terms'
-                            value={termsValue}
-                          />,
-                        )
-                      }
-                    }
-
-                    if (otherCards.length < 2) {
-                      if (agentData?.supplier_validation?.status) {
-                        const sVal = agentData.supplier_validation
-                        const sStatus = sVal.status
-                        const sValMsg =
-                          sVal.mismatch?.length > 0
-                            ? sVal.mismatch.join(', ')
-                            : 'Active Vendor'
-                        otherCards.push(
-                          <AnalysisCard
-                            icon={Store}
-                            isLoading={isCurrentlyProcessing}
-                            status={sStatus}
-                            title='Supplier Status'
-                            value={sValMsg}
-                            statusType={
-                              sStatus === 'ACTIVE' ? 'success' : 'warning'
-                            }
-                          />,
-                        )
-                      }
-                    }
-
-                    if (otherCards.length < 2) {
-                      if (agentData?.matter_validation?.status) {
-                        const mVal = agentData.matter_validation
-                        const mStatus =
-                          mVal.status === 'NOT_PRESENT'
-                            ? 'Missing'
-                            : mVal.status
-                        const mReason =
-                          mVal.validation_details?.reason || 'No Matter ID'
-                        otherCards.push(
-                          <AnalysisCard
-                            icon={FileText}
-                            isLoading={isCurrentlyProcessing}
-                            status={mStatus}
-                            title='Matter Validation'
-                            value={mReason}
-                            statusType={
-                              mVal.status === 'NOT_PRESENT'
-                                ? 'warning'
-                                : 'success'
-                            }
-                          />,
-                        )
-                      }
-                    }
-
-                    // Fallbacks if we still have less than 2 other cards (e.g. GL and Supplier are empty, and no extra API data)
-                    if (otherCards.length < 2) {
-                      if (
-                        !otherCards.some(
-                          (c) => c.props.title === 'GL Account Matching',
-                        )
-                      ) {
-                        otherCards.push(glCard)
-                      }
-                    }
-                    if (otherCards.length < 2) {
-                      if (
-                        !otherCards.some(
-                          (c) => c.props.title === 'Supplier Verification',
-                        )
-                      ) {
-                        otherCards.push(supplierCard)
-                      }
-                    }
-
-                    // Push the top 2 (or more) other cards to cardsToRender
-                    otherCards
-                      .slice(0, Math.max(2, otherCards.length))
-                      .forEach((c) => cardsToRender.push(c))
-
-                    return (
-                      <div
+                {/* Sub-header with back button and active tabs */}
+                <div className='shrink-0 border-b border-[var(--gray-3)] bg-[var(--gray-1)] px-6 flex items-center gap-4'>
+                  <button
+                    onClick={() => {
+                      setShowBackOrderDetailFull(false)
+                      setActiveTab('summary')
+                    }}
+                    className='group flex items-center gap-1 py-3 text-xs font-semibold text-[var(--gray-11)] hover:text-[var(--gray-13)] active:scale-95 transition-all'
+                    title='Back to Overview'
+                  >
+                    <Icon className='h-4 w-4 transition-transform group-hover:-translate-x-0.5' name='tabler:arrow-left' />
+                    <span>Back</span>
+                  </button>
+                  <div className='h-4 w-[1px] bg-[var(--gray-3)]' />
+                  <div className='flex items-center gap-4'>
+                    {/* Current Invoice tab */}
+                    <button
+                      onClick={() => setActiveBackOrderTab('current')}
+                      className={cn(
+                        'border-b-2 pb-2.5 pt-2 px-1 text-xs font-semibold transition-all -mb-[1px]',
+                        activeBackOrderTab === 'current'
+                          ? 'border-[var(--teal-9)] text-[var(--teal-9)] font-bold'
+                          : 'border-transparent text-[var(--gray-11)] hover:text-[var(--gray-13)]'
+                      )}
+                    >
+                      INV-4402 (Current)
+                    </button>
+                    {/* Previous tickets mapped as tabs */}
+                    {backOrder?.previous_id?.map((prevId: string) => (
+                      <button
+                        key={prevId}
+                        onClick={() => setActiveBackOrderTab(prevId)}
                         className={cn(
-                          'grid gap-3',
-                          cardsToRender.length === 5
-                            ? 'grid-cols-5'
-                            : 'grid-cols-4',
+                          'border-b-2 pb-2.5 pt-2 px-1 text-xs font-semibold transition-all -mb-[1px]',
+                          activeBackOrderTab === prevId
+                            ? 'border-[var(--teal-9)] text-[var(--teal-9)] font-bold'
+                            : 'border-transparent text-[var(--gray-11)] hover:text-[var(--gray-13)]'
                         )}
                       >
-                        {cardsToRender}
+                        INV-4401 ({prevId})
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Metrics Summary Row - 4 equal columns split by lines */}
+                {(() => {
+                  const currentData = activeBackOrderTab === 'current'
+                    ? backOrder
+                    : MOCK_PREVIOUS_BACKORDERS[activeBackOrderTab] || {}
+                  const items = currentData?.missing_qty_by_item || []
+
+                  const currencySymbol = agentData?.po_row?.Currency || '$'
+                  const invoiceAmount = items.reduce((sum: number, r: any) => sum + ((r.invoice_qty || 0) * (r.price || 0)), 0)
+                  const linesReceivedCount = items.filter((r: any) => (r.invoice_qty || 0) > 0).length
+                  const totalLines = items.length
+                  const pendingItemsCount = items.filter((r: any) => (r.remaining || 0) > 0).length
+                  const stillPendingVal = items.reduce((sum: number, r: any) => sum + ((r.remaining || 0) * (r.price || 0)), 0)
+
+                  return (
+                    <div className='grid grid-cols-4 border-b border-[var(--gray-3)] bg-surface text-xs shrink-0 divide-x divide-[var(--gray-3)]'>
+                      <div className='p-4 space-y-1'>
+                        <p className='text-[10px] font-bold text-[var(--gray-10)] uppercase tracking-wider'>INVOICE AMOUNT</p>
+                        <p className='text-base font-extrabold text-[var(--gray-13)]'>{currencySymbol}{invoiceAmount.toFixed(2)}</p>
+                      </div>
+                      <div className='p-4 space-y-1'>
+                        <p className='text-[10px] font-bold text-[var(--gray-10)] uppercase tracking-wider'>LINES RECEIVED</p>
+                        <p className='text-base font-extrabold text-[var(--teal-9)]'>{linesReceivedCount} of {totalLines}</p>
+                      </div>
+                      <div className='p-4 space-y-1'>
+                        <p className='text-[10px] font-bold text-[var(--gray-10)] uppercase tracking-wider'>PENDING ITEMS</p>
+                        <p className='text-base font-extrabold text-[var(--orange-9)]'>{pendingItemsCount} item{pendingItemsCount !== 1 ? 's' : ''}</p>
+                      </div>
+                      <div className='p-4 space-y-1'>
+                        <p className='text-[10px] font-bold text-[var(--gray-10)] uppercase tracking-wider'>STILL PENDING</p>
+                        <p className='text-base font-extrabold text-[var(--orange-9)]'>{currencySymbol}{stillPendingVal.toFixed(2)}</p>
+                      </div>
+                    </div>
+                  )
+                })()}
+
+                {/* Main Content Area */}
+                <div className='scrollbar flex-1 overflow-y-auto p-6 space-y-5 bg-[var(--gray-1)]'>
+                  {/* Status/Explanation banner */}
+                  {(() => {
+                    const currentData = activeBackOrderTab === 'current'
+                      ? backOrder
+                      : MOCK_PREVIOUS_BACKORDERS[activeBackOrderTab] || {}
+
+                    return (
+                      <div className='rounded-xl border border-[var(--orange-3)] bg-[var(--orange-1)]/30 p-4 animate-in fade-in slide-in-from-top-2 duration-300 shadow-xs'>
+                        <div className='flex items-start gap-3'>
+                          <div className='mt-0.5 rounded bg-[var(--orange-2)] p-1.5 text-[var(--orange-9)] shrink-0'>
+                            <Icon className='h-4 w-4' name='tabler:info-circle' />
+                          </div>
+                          <div className='space-y-1'>
+                            <h4 className='text-xs font-bold text-[var(--orange-10)]'>
+                              {activeBackOrderTab === 'current' ? 'Current Invoice Back Order Status' : `Prior Ticket ${activeBackOrderTab} Details`}
+                            </h4>
+                            <p className='text-xs leading-relaxed text-[var(--gray-12)] font-medium'>
+                              {currentData?.reason}
+                            </p>
+                          </div>
+                        </div>
                       </div>
                     )
                   })()}
+
+                  {/* Items Table with Circular progress matching percentage */}
+                  {(() => {
+                    const currentData = activeBackOrderTab === 'current'
+                      ? backOrder
+                      : MOCK_PREVIOUS_BACKORDERS[activeBackOrderTab] || {}
+
+                    const items = currentData?.missing_qty_by_item || []
+                    const currencySymbol = agentData?.po_row?.Currency || '$'
+
+                    // Totals
+                    const totalRemaining = items.reduce((sum: number, r: any) => sum + (r.remaining || 0), 0)
+                    const totalInvoiceAmt = items.reduce((sum: number, r: any) => sum + ((r.invoice_qty || 0) * (r.price || 0)), 0)
+
+                    return (
+                      <div className='overflow-hidden rounded-xl border border-[var(--gray-3)] bg-surface shadow-xs animate-in fade-in duration-300'>
+                        <div className='overflow-x-auto'>
+                          <table className='w-full border-collapse text-left text-xs'>
+                            <thead className='border-b border-[var(--gray-3)] bg-[var(--gray-1)]'>
+                              <tr className='text-[10px] font-bold tracking-wider text-[var(--gray-9)] uppercase'>
+                                <th className='px-4 py-3.5'>LINE ITEM</th>
+                                <th className='px-4 py-3.5 text-center'>PO QTY</th>
+                                <th className='px-4 py-3.5 text-center'>RECV QTY</th>
+                                <th className='px-4 py-3.5 text-center'>BALANCE QTY</th>
+                                <th className='px-4 py-3.5 text-right'>INV AMOUNT</th>
+                              </tr>
+                            </thead>
+                            <tbody className='divide-y divide-[var(--gray-2)] bg-surface'>
+                              {items.map((row: any, idx: number) => {
+                                const desc = row.description?.trim() || 'Unmapped item'
+                                const invQty = row.invoice_qty ?? 0
+                                const poQty = row.po_qty ?? 1
+                                const price = row.price ?? 0
+                                const receivedVal = invQty * price
+                                const remaining = row.remaining ?? 0
+
+                                // Dynamic percent calculation
+                                const totalReceived = poQty - remaining
+                                const pct = Math.max(0, Math.min(100, Math.round((totalReceived / poQty) * 100)))
+
+                                return (
+                                  <tr className='transition-colors hover:bg-[var(--gray-1)]/50' key={idx}>
+                                    <td className='px-4 py-3 font-semibold text-[var(--gray-13)] flex items-center gap-3.5'>
+                                      {/* Circular Progress Badge */}
+                                      <div className={cn(
+                                        'h-8 w-8 rounded-full border-2 flex items-center justify-center text-[9px] font-black shrink-0 transition-colors',
+                                        pct === 100
+                                          ? 'border-[var(--green-5)] bg-[var(--green-1)]/30 text-[var(--green-10)]'
+                                          : pct > 0
+                                            ? 'border-[var(--orange-5)] bg-[var(--orange-1)]/30 text-[var(--orange-10)]'
+                                            : 'border-[var(--gray-4)] bg-[var(--gray-1)]/30 text-[var(--gray-11)]'
+                                      )}>
+                                        {pct}%
+                                      </div>
+                                      <div>
+                                        <div className='font-bold text-[var(--gray-13)] text-xs'>{desc}</div>
+                                        <div className='text-[10px] font-medium text-[var(--gray-9)] mt-0.5'>
+                                          PO Line: {row.po_line_id || '—'} • Price: {currencySymbol}{price.toFixed(2)}
+                                        </div>
+                                      </div>
+                                    </td>
+                                    <td className='px-4 py-3 text-center font-bold text-[var(--gray-13)]'>
+                                      {poQty}
+                                    </td>
+                                    <td className={cn(
+                                      'px-4 py-3 text-center font-bold',
+                                      invQty > 0 ? 'text-[var(--teal-9)]' : 'text-[var(--gray-9)] font-medium'
+                                    )}>
+                                      {invQty > 0 ? invQty : '—'}
+                                    </td>
+                                    <td className='px-4 py-3 text-center font-bold'>
+                                      {remaining > 0 ? (
+                                        <span className='text-[var(--orange-9)]'>{remaining} pending</span>
+                                      ) : (
+                                        <span className='text-[var(--gray-11)]'>0</span>
+                                      )}
+                                    </td>
+                                    <td className={cn(
+                                      'px-4 py-3 text-right font-bold',
+                                      receivedVal > 0 ? 'text-[var(--teal-10)]' : 'text-[var(--gray-9)] font-medium'
+                                    )}>
+                                      {receivedVal > 0 ? `${currencySymbol}${receivedVal.toFixed(2)}` : '—'}
+                                    </td>
+                                  </tr>
+                                )
+                              })}
+                            </tbody>
+                            <tfoot className='border-t border-[var(--gray-3)] bg-[var(--gray-1)] font-semibold text-[var(--gray-11)] text-[11px]'>
+                              <tr className='h-11'>
+                                <td className='px-4 py-3 font-medium'>{items.length} line items</td>
+                                <td className='px-4 py-3' colSpan={2} />
+                                <td className='px-4 py-3 text-center font-bold text-[var(--orange-10)]'>
+                                  Total pending qty: <span className='underline underline-offset-4 decoration-2 decoration-[var(--orange-4)]'>{totalRemaining}</span>
+                                </td>
+                                <td className='px-4 py-3 text-right font-black text-[var(--gray-13)]'>
+                                  Inv total: {currencySymbol}{totalInvoiceAmt.toFixed(2)}
+                                </td>
+                              </tr>
+                            </tfoot>
+                          </table>
+                        </div>
+                      </div>
+                    )
+                  })()}
+                </div>
+              </div>
+            ) : (
+              <div className='flex h-full flex-col overflow-hidden'>
+                <div className='shrink-0 space-y-4 p-4'>
+                  <div
+                    className={cn(
+                      'grid gap-3',
+                      analysisCardCount <= 3 && 'grid-cols-1 sm:grid-cols-3',
+                      analysisCardCount === 4 && 'grid-cols-2 lg:grid-cols-4',
+                      analysisCardCount === 5 &&
+                        'grid-cols-2 lg:grid-cols-3 xl:grid-cols-5',
+                      analysisCardCount >= 6 &&
+                        'grid-cols-2 lg:grid-cols-3 xl:grid-cols-6',
+                    )}
+                  >
+                    {(() => {
+                      const poVal =
+                        formModel?.['PO Number'] ||
+                        formModel?.['PO No'] ||
+                        formModel?.['po_number'] ||
+                        formModel?.['poNumber'] ||
+                        formModel?.['po_no'] ||
+                        formModel?.['pono'] ||
+                        formModel?.['Purchase Order'] ||
+                        formModel?.['RXwLGHILLrreMmRqlk9mj']
+                      return (
+                        <AnalysisCard
+                          icon={Paperclip}
+                          isLoading={isCurrentlyProcessing}
+                          title='PO Matching'
+                          status={
+                            poVal && poVal !== '-' && poVal !== 'N/A'
+                              ? 'Matched'
+                              : 'Not Matched'
+                          }
+                          statusType={
+                            poVal && poVal !== '-' && poVal !== 'N/A'
+                              ? 'success'
+                              : 'warning'
+                          }
+                          value={
+                            poVal && poVal !== '-' && poVal !== 'N/A'
+                              ? `${poVal}`
+                              : 'No PO Found'
+                          }
+                        />
+                      )
+                    })()}
+                    <AnalysisCard
+                      icon={Layers}
+                      isLoading={isCurrentlyProcessing}
+                      title='Duplicate Detection'
+                      status={
+                        agentData?.duplicate_check?.status || 'No Duplicate'
+                      }
+                      statusType={
+                        agentData?.duplicate_check?.status === 'Duplicate'
+                          ? 'warning'
+                          : 'success'
+                      }
+                      value={
+                        agentData?.duplicate_check?.message ||
+                        'No duplicates detected'
+                      }
+                    />
+                    <AnalysisCard
+                      icon={Store}
+                      isLoading={isCurrentlyProcessing}
+                      status={supplierValidationDisplay.status}
+                      statusType={supplierValidationDisplay.statusType}
+                      title='Supplier Verification'
+                      value={supplierValidationDisplay.value}
+                    />
+                    {showGlValidation && glValidationDisplay && (
+                      <AnalysisCard
+                        icon={ListFilter}
+                        isLoading={isCurrentlyProcessing}
+                        status={glValidationDisplay.status}
+                        statusType={glValidationDisplay.statusType}
+                        title='GL Account Matching'
+                        value={
+                          glValidationDisplay.account ||
+                          glValidationDisplay.status
+                        }
+                      />
+                    )}
+                    {showBackOrder && backOrderDisplay && backOrderDisplay.status === 'Detected' ? (
+                      <AnalysisCard
+                        icon={PackageX}
+                        isLoading={isCurrentlyProcessing}
+                        status={backOrderDisplay.status}
+                        statusType={backOrderDisplay.statusType}
+                        title='Back Order'
+                        value={backOrderDisplay.value}
+                        onClick={() => {
+                          setShowBackOrderDetailFull(true)
+                          setActiveBackOrderTab('current')
+                        }}
+                      />
+                    ) : (
+                      <AnalysisCard
+                        icon={Calendar}
+                        isLoading={isCurrentlyProcessing}
+                        status={paymentTermsDisplay.calculationText}
+                        statusType={paymentTermsDisplay.statusType}
+                        title='Payment Terms'
+                        value={paymentTermsDisplay.termsDisplay}
+                      />
+                    )}
+                    {showMatterValidation && matterValidationDisplay && (
+                      <AnalysisCard
+                        icon={Briefcase}
+                        isLoading={isCurrentlyProcessing}
+                        status={matterValidationDisplay.status}
+                        statusType={matterValidationDisplay.statusType}
+                        title='Matter Validation'
+                        value={matterValidationDisplay.value}
+                      />
+                    )}
+                  </div>
                 </div>
 
                 <div className='sticky top-0 z-10 shrink-0 border-b border-[var(--gray-3)] px-6 pt-2'>
                   <div className='flex items-center gap-8'>
                     {[
-                      ...(hasBackOrder
-                        ? [
-                            {
-                              icon: Package,
-                              id: 'back_order',
-                              label: 'Back Order',
-                            },
-                          ]
-                        : []),
                       {
                         icon: FileText,
                         id: 'summary',
@@ -1370,15 +2009,18 @@ const Overview = (props: any) => {
                             </span>
                           )}
                         {tab.id === 'line_items' &&
-                          (agentData?.debug?.['Side-by-side Line Item matching']
-                            ?.length > 0 ||
+                          (lineItems.length > 0 ||
+                            agentData?.debug?.[
+                              'Side-by-side Line Item matching'
+                            ]?.length > 0 ||
                             agentData?.line_items?.length > 0 ||
                             agentData?.['Extracted Invoice JSON']?.invoice_items
                               ?.length > 0) && (
                             <span className='rounded bg-[var(--gray-2)] px-1.5 py-0.5 text-[10px] text-[var(--gray-11)]'>
-                              {agentData?.debug?.[
-                                'Side-by-side Line Item matching'
-                              ]?.length ||
+                              {lineItems.length ||
+                                agentData?.debug?.[
+                                  'Side-by-side Line Item matching'
+                                ]?.length ||
                                 agentData?.line_items?.length ||
                                 agentData?.['Extracted Invoice JSON']
                                   ?.invoice_items?.length}
@@ -1397,108 +2039,6 @@ const Overview = (props: any) => {
                 </div>
 
                 <div className='flex min-h-0 flex-1 flex-col'>
-                  {activeTab === 'back_order' && hasBackOrder && (
-                    <div className='animate-in fade-in slide-in-from-left-4 flex-1 space-y-4 overflow-y-auto p-4 duration-300'>
-                      {/* 2. Items Table */}
-                      <div className='overflow-hidden rounded-xl border border-[var(--gray-3)] bg-surface shadow-sm'>
-                        <div className='flex items-center justify-between border-b border-[var(--gray-3)] bg-[var(--gray-1)] px-4 py-3'>
-                          <div className='flex items-center gap-2'>
-                            <Icon
-                              className='size-4 text-[var(--orange-9)]'
-                              name='tabler:package'
-                            />
-                            <span className='text-xs font-bold text-[var(--gray-12)]'>
-                              Missing Quantities Details
-                            </span>
-                          </div>
-                          <span className='rounded border border-[var(--orange-3)] bg-[var(--orange-1)] px-2 py-0.5 text-[10px] font-bold text-[var(--orange-10)]'>
-                            {backOrder?.missing_qty_by_item?.length || 0} Line
-                            Items Impacted
-                          </span>
-                        </div>
-
-                        <div className='overflow-x-auto'>
-                          <table className='w-full border-collapse text-left text-xs'>
-                            <thead className='border-b border-[var(--gray-3)] bg-[var(--gray-1)]'>
-                              <tr className='text-[10px] font-bold tracking-wider text-[var(--gray-9)] uppercase'>
-                                <th className='px-4 py-3'>Description</th>
-                                <th className='px-4 py-3 text-center'>
-                                  PO Qty
-                                </th>
-                                <th className='px-4 py-3 text-center'>
-                                  Inv Qty
-                                </th>
-                                <th className='px-4 py-3 text-center'>
-                                  Missing
-                                </th>
-                                <th className='px-4 py-3 text-center'>Price</th>
-                                <th className='px-4 py-3 text-center'>
-                                  Remaining Value
-                                </th>
-                                <th className='px-4 py-3 text-center'>
-                                  Reason
-                                </th>
-                              </tr>
-                            </thead>
-                            <tbody className='divide-y divide-[var(--gray-2)] bg-surface'>
-                              {backOrder?.missing_qty_by_item?.map(
-                                (row: any, idx: number) => {
-                                  const desc =
-                                    row.description?.trim() || 'Unmapped item'
-                                  const invQty = row.invoice_qty ?? '-'
-                                  const price = row.price ?? 0
-                                  const remainingVal =
-                                    row.amount ?? price * row.remaining
-                                  const reason = row.reason || 'BACKORDER'
-
-                                  return (
-                                    <tr
-                                      className='transition-colors hover:bg-[var(--gray-1)]'
-                                      key={idx}
-                                    >
-                                      <td className='px-4 py-3 font-semibold text-[var(--gray-13)]'>
-                                        <div>{desc}</div>
-                                        {row.po_line_id && (
-                                          <div className='text-[10px] font-medium text-[var(--gray-9)]'>
-                                            PO Line: {row.po_line_id}
-                                          </div>
-                                        )}
-                                      </td>
-                                      <td className='px-4 py-3 text-center font-medium text-[var(--gray-11)]'>
-                                        {row.po_qty}
-                                      </td>
-                                      <td className='px-4 py-3 text-center font-medium text-[var(--gray-11)]'>
-                                        {invQty}
-                                      </td>
-                                      <td className='px-4 py-3 text-center font-bold text-[var(--orange-10)]'>
-                                        {row.remaining}
-                                      </td>
-                                      <td className='px-4 py-3 text-center font-medium text-[var(--gray-11)]'>
-                                        {typeof price === 'number'
-                                          ? `$${price.toFixed(2)}`
-                                          : '-'}
-                                      </td>
-                                      <td className='px-4 py-3 text-center font-bold text-[var(--teal-9)]'>
-                                        {typeof remainingVal === 'number'
-                                          ? `$${remainingVal.toFixed(2)}`
-                                          : '-'}
-                                      </td>
-                                      <td className='px-4 py-3 text-center'>
-                                        <span className='inline-flex items-center gap-1 rounded border border-[var(--orange-3)] bg-[var(--orange-1)] px-2 py-0.5 text-[9px] font-bold text-[var(--orange-10)]'>
-                                          {reason}
-                                        </span>
-                                      </td>
-                                    </tr>
-                                  )
-                                },
-                              )}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
                   {activeTab === 'summary' && (
                     <div className='grid flex-1 grid-cols-2 gap-x-4 gap-y-2 overflow-y-auto p-4'>
                       {isCurrentlyProcessing
@@ -1528,7 +2068,7 @@ const Overview = (props: any) => {
                             return (
                               <div
                                 className='flex w-full items-start gap-3 rounded-lg border border-transparent p-3 text-left'
-                                key={idx}
+                                key={label}
                               >
                                 <div className='mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--gray-2)] text-[var(--gray-11)]'>
                                   <IconComp className='h-3.5 w-3.5' />
@@ -1559,29 +2099,41 @@ const Overview = (props: any) => {
                                 )
                                   return false
                               }
-                              return !allowedLabels || allowedLabels.has(key)
+
+                              if (!allowedLabels || allowedLabels.size === 0) {
+                                return hasMeaningfulScalarValue(val)
+                              }
+
+                              return (
+                                allowedLabels.has(key) ||
+                                hasMeaningfulScalarValue(val)
+                              )
                             })
                             .map(([key, val]) => {
-                              const fieldMatch = getFieldMatch(
-                                key,
-                                agentData?.debug?.[
-                                  'Side-by-side Field Matching'
-                                ] || [],
-                              )
+                              const fieldType = getFieldType(key)
+                              const displayValue =
+                                fieldType === 'date' &&
+                                (val === null ||
+                                  val === undefined ||
+                                  val === '' ||
+                                  val === '-')
+                                  ? null
+                                  : val || '-'
+
                               return (
                                 <FormCard
                                   icon={getFieldIcon(key)}
                                   key={key}
                                   label={key}
-                                  matchScore={fieldMatch?.Score}
                                   options={getOptions(key)}
-                                  poValue={fieldMatch?.['PO Value']}
-                                  type={getFieldType(key)}
-                                  value={val || '-'}
+                                  score={getFieldScore(key)}
+                                  type={fieldType}
+                                  value={displayValue}
                                   highlight={
                                     key.toLowerCase().includes('total') ||
                                     key.toLowerCase().includes('due')
                                   }
+                                  onFocus={handleFieldFocus}
                                   onChange={(newVal: string) =>
                                     handleFieldChange(key, newVal)
                                   }
@@ -1590,24 +2142,26 @@ const Overview = (props: any) => {
                             })}
                     </div>
                   )}
-
                   {activeTab === 'line_items' && (
                     <div className='flex-1 overflow-y-auto p-4'>
-                      <div className='overflow-hidden rounded-xl border border-[var(--gray-3)] bg-surface shadow-sm'>
+                      <div className='overflow-x-auto overflow-y-hidden rounded-xl border border-[var(--gray-3)] bg-surface shadow-sm'>
                         <table className='w-full border-collapse text-left text-xs'>
                           <thead className='border-b border-[var(--gray-3)] bg-[var(--gray-1)]'>
                             <tr>
                               <th className='px-3 py-2 text-[11px] font-semibold text-[var(--gray-11)]'>
                                 Description
                               </th>
-                              <th className='w-[70px] px-3 py-2 text-right text-[11px] font-semibold text-[var(--gray-11)]'>
+                              <th className='w-[100px] px-3 py-2 text-right text-[11px] font-semibold text-[var(--gray-11)]'>
                                 Qty
                               </th>
-                              <th className='w-[100px] px-3 py-2 text-right text-[11px] font-semibold text-[var(--gray-11)]'>
+                              <th className='w-[140px] px-3 py-2 text-right text-[11px] font-semibold text-[var(--gray-11)]'>
                                 Rate
                               </th>
-                              <th className='w-[120px] px-3 py-2 text-right text-[11px] font-semibold text-[var(--gray-11)]'>
+                              <th className='w-[160px] px-3 py-2 text-right text-[11px] font-semibold text-[var(--gray-11)]'>
                                 Total Amount
+                              </th>
+                              <th className='w-[100px] px-3 py-2 text-right text-[11px] font-semibold text-[var(--gray-11)]'>
+                                Match Score
                               </th>
                               <th className='w-[44px] p-1 text-center'>
                                 <button
@@ -1623,30 +2177,49 @@ const Overview = (props: any) => {
                           </thead>
                           <tbody className='divide-y divide-[var(--gray-2)]'>
                             {isCurrentlyProcessing
-                              ? Array.from({ length: 3 }).map((_, idx) => (
+                              ? skeletonRows.map((rowKey) => (
                                   <tr
                                     className='group transition-colors'
-                                    key={idx}
+                                    key={rowKey}
                                   >
                                     <td className='px-3 py-3'>
                                       <div className='h-4 w-5/6 animate-pulse rounded bg-[var(--gray-3)]' />
                                     </td>
-                                    <td className='w-[70px] px-3 py-3'>
+                                    <td className='w-[100px] px-3 py-3'>
                                       <div className='ml-auto h-4 w-8 animate-pulse rounded bg-[var(--gray-3)]' />
+                                    </td>
+                                    <td className='w-[140px] px-3 py-3'>
+                                      <div className='ml-auto h-4 w-12 animate-pulse rounded bg-[var(--gray-3)]' />
+                                    </td>
+                                    <td className='w-[160px] px-3 py-3'>
+                                      <div className='ml-auto h-4 w-16 animate-pulse rounded bg-[var(--gray-3)]' />
                                     </td>
                                     <td className='w-[100px] px-3 py-3'>
                                       <div className='ml-auto h-4 w-12 animate-pulse rounded bg-[var(--gray-3)]' />
-                                    </td>
-                                    <td className='w-[120px] px-3 py-3'>
-                                      <div className='ml-auto h-4 w-16 animate-pulse rounded bg-[var(--gray-3)]' />
                                     </td>
                                     <td className='w-[44px]' />
                                   </tr>
                                 ))
                               : lineItems.map((item: any, index: number) => {
+                                  const matchData =
+                                    agentData?.debug?.[
+                                      'Side-by-side Line Item matching'
+                                    ]?.[index]
+                                  const lineScore =
+                                    matchData?.['Line Score'] ??
+                                    item['Line Score'] ??
+                                    item?.score
+                                  const isMatch =
+                                    (lineScore !== undefined &&
+                                    lineScore !== null
+                                      ? Number(lineScore) >= 90
+                                      : false) || item?.status === 'MATCH'
+
                                   const descVal =
                                     item.Description?.['Invoice Value'] ??
                                     item.description ??
+                                    item.item_no ??
+                                    item.itemNo ??
                                     ''
                                   const qtyVal =
                                     item.Quantity?.['Invoice Value'] ??
@@ -1656,56 +2229,15 @@ const Overview = (props: any) => {
                                     item.Price?.['Invoice Value'] ??
                                     item.rate ??
                                     item.unit_price ??
+                                    item.price ??
                                     ''
                                   const amountVal =
                                     item.Amount?.['Invoice Value'] ??
                                     item.total ??
                                     item.amount ??
+                                    item.line_amount ??
+                                    item.lineAmount ??
                                     ''
-
-                                  const sideBySideItem = (() => {
-                                    const matches =
-                                      agentData?.debug?.[
-                                        'Side-by-side Line Item matching'
-                                      ]
-                                    if (!matches || matches.length === 0)
-                                      return null
-
-                                    // Try matching by index first if description is similar
-                                    const byIndex = matches[index]
-                                    if (byIndex) {
-                                      const byIndexDesc =
-                                        byIndex.Description?.[
-                                          'Invoice Value'
-                                        ] ||
-                                        byIndex.description ||
-                                        ''
-                                      if (
-                                        matchKeysLoosely(byIndexDesc, descVal)
-                                      ) {
-                                        return byIndex
-                                      }
-                                    }
-
-                                    // Fallback: match by description
-                                    return matches.find((m: any) => {
-                                      const mDesc =
-                                        m.Description?.['Invoice Value'] ||
-                                        m.description ||
-                                        ''
-                                      return matchKeysLoosely(mDesc, descVal)
-                                    })
-                                  })()
-
-                                  const lineScore =
-                                    sideBySideItem?.['Line Score'] ??
-                                    sideBySideItem?.score ??
-                                    item?.['Line Score'] ??
-                                    item?.score ??
-                                    100
-
-                                  const isMatch =
-                                    lineScore >= 90 || item?.status === 'MATCH'
 
                                   return (
                                     <tr
@@ -1718,10 +2250,11 @@ const Overview = (props: any) => {
                                       )}
                                     >
                                       {/* Description Cell */}
-                                      <td className='px-2 py-1.5 font-semibold text-[var(--gray-13)]'>
+                                      <td className='px-2 py-0.5 font-semibold text-[var(--gray-13)]'>
                                         <input
                                           className='w-full rounded border-none bg-transparent px-1.5 py-1 text-xs font-semibold text-[var(--gray-13)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
                                           value={descVal}
+                                          onFocus={() => handleFieldFocus?.(descVal)}
                                           onChange={(e) =>
                                             handleLineItemChange(
                                               index,
@@ -1730,56 +2263,14 @@ const Overview = (props: any) => {
                                             )
                                           }
                                         />
-                                        {sideBySideItem && (
-                                          <div className='mt-0.5 flex flex-wrap items-center gap-1.5 px-1.5'>
-                                            <span
-                                              className={cn(
-                                                'py-0.2 inline-flex items-center rounded px-1 text-[9px] font-bold tracking-wider uppercase',
-                                                lineScore >= 90
-                                                  ? 'border border-[var(--green-3)] bg-[var(--green-1)] text-[var(--green-9)]'
-                                                  : lineScore >= 50
-                                                    ? 'border border-[var(--orange-3)] bg-[var(--orange-1)] text-[var(--orange-9)]'
-                                                    : 'border border-[var(--red-3)] bg-[var(--red-1)] text-[var(--red-9)]',
-                                              )}
-                                            >
-                                              Line Score: {lineScore}%
-                                            </span>
-                                            {sideBySideItem.Description?.[
-                                              'PO Value'
-                                            ] &&
-                                              sideBySideItem.Description?.[
-                                                'PO Value'
-                                              ] !== descVal && (
-                                                <span
-                                                  className='truncate text-[10px] text-[var(--gray-11)]'
-                                                  title={`PO Desc: ${sideBySideItem.Description['PO Value']}`}
-                                                >
-                                                  PO:{' '}
-                                                  <span className='font-semibold text-[var(--gray-12)]'>
-                                                    {
-                                                      sideBySideItem
-                                                        .Description['PO Value']
-                                                    }
-                                                  </span>
-                                                  <span className='ml-1 opacity-80'>
-                                                    (
-                                                    {
-                                                      sideBySideItem.Description
-                                                        .Score
-                                                    }
-                                                    % match)
-                                                  </span>
-                                                </span>
-                                              )}
-                                          </div>
-                                        )}
                                       </td>
 
                                       {/* Quantity Cell */}
-                                      <td className='w-[70px] px-2 py-1.5 text-right font-semibold text-[var(--gray-11)]'>
+                                      <td className='w-[100px] px-2 py-0.5 text-right font-semibold text-[var(--gray-11)]'>
                                         <input
                                           className='w-full rounded border-none bg-transparent px-1.5 py-1 text-right text-xs font-semibold text-[var(--gray-11)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
                                           value={qtyVal}
+                                          onFocus={() => handleFieldFocus?.(qtyVal)}
                                           onChange={(e) =>
                                             handleLineItemChange(
                                               index,
@@ -1788,42 +2279,14 @@ const Overview = (props: any) => {
                                             )
                                           }
                                         />
-                                        {sideBySideItem?.Quantity &&
-                                          sideBySideItem.Quantity.Score <
-                                            100 && (
-                                            <div className='mt-0.5 px-1.5 text-right text-[10px] text-[var(--gray-11)]'>
-                                              <span className='opacity-80'>
-                                                PO:{' '}
-                                              </span>
-                                              <span className='font-semibold text-[var(--gray-12)]'>
-                                                {sideBySideItem.Quantity[
-                                                  'PO Value'
-                                                ] ?? '-'}
-                                              </span>
-                                              <span
-                                                className={cn(
-                                                  'ml-1 text-[9px] font-bold',
-                                                  sideBySideItem.Quantity
-                                                    .Score >= 90
-                                                    ? 'text-[var(--green-9)]'
-                                                    : sideBySideItem.Quantity
-                                                          .Score >= 50
-                                                      ? 'text-[var(--orange-9)]'
-                                                      : 'text-[var(--red-9)]',
-                                                )}
-                                              >
-                                                ({sideBySideItem.Quantity.Score}
-                                                %)
-                                              </span>
-                                            </div>
-                                          )}
                                       </td>
 
                                       {/* Rate/Price Cell */}
-                                      <td className='w-[100px] px-2 py-1.5 text-right font-semibold text-[var(--gray-11)]'>
+                                      <td className='w-[140px] px-2 py-0.5 text-right font-semibold text-[var(--gray-11)]'>
                                         <input
                                           className='w-full rounded border-none bg-transparent px-1.5 py-1 text-right text-xs font-semibold text-[var(--gray-11)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
                                           value={priceVal}
+                                          onFocus={() => handleFieldFocus?.(priceVal)}
                                           onBlur={(e) => {
                                             const num = Number.parseFloat(
                                               e.target.value.replace(
@@ -1847,51 +2310,14 @@ const Overview = (props: any) => {
                                             )
                                           }
                                         />
-                                        {(() => {
-                                          const priceMatch =
-                                            sideBySideItem?.Price ??
-                                            sideBySideItem?.Rate
-                                          if (
-                                            !priceMatch ||
-                                            priceMatch.Score === 100
-                                          )
-                                            return null
-                                          return (
-                                            <div className='mt-0.5 px-1.5 text-right text-[10px] text-[var(--gray-11)]'>
-                                              <span className='opacity-80'>
-                                                PO:{' '}
-                                              </span>
-                                              <span className='font-semibold text-[var(--gray-12)]'>
-                                                {priceMatch['PO Value'] !==
-                                                  null &&
-                                                priceMatch['PO Value'] !==
-                                                  undefined &&
-                                                priceMatch['PO Value'] !== ''
-                                                  ? `$${Number(priceMatch['PO Value']).toFixed(2)}`
-                                                  : '-'}
-                                              </span>
-                                              <span
-                                                className={cn(
-                                                  'ml-1 text-[9px] font-bold',
-                                                  priceMatch.Score >= 90
-                                                    ? 'text-[var(--green-9)]'
-                                                    : priceMatch.Score >= 50
-                                                      ? 'text-[var(--orange-9)]'
-                                                      : 'text-[var(--red-9)]',
-                                                )}
-                                              >
-                                                ({priceMatch.Score}%)
-                                              </span>
-                                            </div>
-                                          )
-                                        })()}
                                       </td>
 
                                       {/* Total Amount Cell */}
-                                      <td className='w-[120px] px-2 py-1.5 text-right font-semibold text-[var(--gray-13)]'>
+                                      <td className='w-[160px] px-2 py-0.5 text-right font-semibold text-[var(--gray-13)]'>
                                         <input
                                           className='w-full rounded border-none bg-transparent px-1.5 py-1 text-right text-xs font-semibold text-[var(--gray-13)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
                                           value={amountVal}
+                                          onFocus={() => handleFieldFocus?.(amountVal)}
                                           onBlur={(e) => {
                                             const num = Number.parseFloat(
                                               e.target.value.replace(
@@ -1915,41 +2341,40 @@ const Overview = (props: any) => {
                                             )
                                           }
                                         />
-                                        {sideBySideItem?.Amount &&
-                                          sideBySideItem.Amount.Score < 100 && (
-                                            <div className='mt-0.5 px-1.5 text-right text-[10px] text-[var(--gray-11)]'>
-                                              <span className='opacity-80'>
-                                                PO:{' '}
+                                      </td>
+
+                                      {/* Match Score Cell */}
+                                      <td className='w-[100px] px-3 py-2 text-right font-semibold'>
+                                        {(() => {
+                                          if (
+                                            lineScore === undefined ||
+                                            lineScore === null
+                                          )
+                                            return (
+                                              <span className='text-[11px] text-gray-9'>
+                                                -
                                               </span>
-                                              <span className='font-semibold text-[var(--gray-12)]'>
-                                                {sideBySideItem.Amount[
-                                                  'PO Value'
-                                                ] !== null &&
-                                                sideBySideItem.Amount[
-                                                  'PO Value'
-                                                ] !== undefined &&
-                                                sideBySideItem.Amount[
-                                                  'PO Value'
-                                                ] !== ''
-                                                  ? `$${Number(sideBySideItem.Amount['PO Value']).toFixed(2)}`
-                                                  : '-'}
-                                              </span>
-                                              <span
-                                                className={cn(
-                                                  'ml-1 text-[9px] font-bold',
-                                                  sideBySideItem.Amount.Score >=
-                                                    90
-                                                    ? 'text-[var(--green-9)]'
-                                                    : sideBySideItem.Amount
-                                                          .Score >= 50
-                                                      ? 'text-[var(--orange-9)]'
-                                                      : 'text-[var(--red-9)]',
-                                                )}
-                                              >
-                                                ({sideBySideItem.Amount.Score}%)
-                                              </span>
-                                            </div>
-                                          )}
+                                            )
+                                          const scoreNum = Number(lineScore)
+                                          return (
+                                            <span
+                                              className={cn(
+                                                'text-xs font-bold',
+                                                {
+                                                  'text-[var(--green-9)]':
+                                                    scoreNum >= 90,
+                                                  'text-[var(--orange-9)]':
+                                                    scoreNum >= 70 &&
+                                                    scoreNum < 90,
+                                                  'text-[var(--red-9)]':
+                                                    scoreNum < 70,
+                                                },
+                                              )}
+                                            >
+                                              {scoreNum.toFixed(0)}%
+                                            </span>
+                                          )
+                                        })()}
                                       </td>
 
                                       {/* Action Cell */}
@@ -2006,6 +2431,7 @@ const Overview = (props: any) => {
                                     : formattedTotal
                                 })()}
                               </td>
+                              <td className='w-[100px] bg-[var(--gray-1)]' />
                               <td className='w-[44px] bg-[var(--gray-1)]' />
                             </tr>
                           </tfoot>

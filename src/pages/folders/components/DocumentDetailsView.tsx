@@ -1,3 +1,4 @@
+import { ArrowLeft } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import authUserStore from '@/stores/authUserStore'
 import { folderApi } from '../api/folderApi'
@@ -116,9 +117,9 @@ const buildInfoCards = (data: WorkspaceDocumentDetail | null): DetailCard[] => {
 export function DocumentDetailsView({
   id,
   repositoryId,
+  // onEdit,
   onAiSummary,
   onBack,
-  onEdit,
   onShare,
   onWorkflow,
 }: {
@@ -301,7 +302,7 @@ export function DocumentDetailsView({
           className='mb-4 h-8 border-transparent px-3 text-[13px] shadow-none'
           onClick={onBack}
         >
-          ← Back
+          <ArrowLeft size={12} /> Back
         </Button>
         <div className='rounded-xl border border-red-4 bg-red-1 p-4 text-sm font-semibold text-red-10'>
           {error}
@@ -319,16 +320,10 @@ export function DocumentDetailsView({
           className='h-8 border-transparent px-3 text-[13px] shadow-none'
           onClick={onBack}
         >
-          ← Back
+          <ArrowLeft size={12} /> Back
         </Button>
-        <PrimaryButton className='h-8 px-3 text-[13px]'>
-          <DynamicIcon className='h-4 w-4' name='download' />
-          Download
-        </PrimaryButton>
-        <Button className='h-8 px-3 text-[13px]' onClick={onEdit}>
-          <DynamicIcon className='h-4 w-4' name='edit' />
-          Edit Metadata
-        </Button>
+        {/* <PrimaryButton className="h-8 px-3 text-[13px]"><DynamicIcon name="download" className="h-4 w-4" />Download</PrimaryButton>
+        <Button onClick={onEdit} className="h-8 px-3 text-[13px]"><DynamicIcon name="edit" className="h-4 w-4" />Edit Metadata</Button> */}
         <Button className='h-8 px-3 text-[13px]' onClick={onAiSummary}>
           <DynamicIcon className='h-4 w-4 text-violet-9' name='bot' />
           AI Summary

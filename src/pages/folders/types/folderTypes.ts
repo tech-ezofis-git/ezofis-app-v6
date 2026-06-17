@@ -17,6 +17,7 @@ export type AppView =
   | 'aiSummary'
   | 'share'
   | 'workflow'
+  | 'Upload'
 
 export interface DocumentDetail {
   documentId: string
@@ -34,7 +35,7 @@ export interface DocumentDetail {
     relatedDocs: Array<{ name: string; status: string; type: string }>
     timeline: Array<{ iconKey: string; subtitle: string; title: string }>
   }
-  alert?: { badge: string; subtitle: string; title: string }
+  alert?: { badge: string; subtitle: string; title: string } | null
   fileUrl?: string
 }
 
@@ -80,6 +81,34 @@ export interface MetadataSection {
   title: string
 }
 
+export interface RepositoryDetail {
+  [key: string]: any
+  id: string
+  name: string
+  createdAtUtc?: any
+  createdBy?: any
+  createdByName?: any
+  description?: string
+  fields?: RepositoryFieldDetail[]
+  itemsTableName?: string
+  modifiedBy?: any
+  modifiedByName?: any
+  stageTableName?: string
+  storageDrive?: string
+  storageProviderId?: string
+}
+
+export interface RepositoryFieldDetail {
+  [key: string]: any
+  dataType: string
+  id: string
+  includeInFolderStructure: boolean
+  isMandatory: boolean
+  level: number
+  name: string
+  sqlColumnName: string
+}
+
 export interface RepositoryFilePage {
   hasMore: boolean
   page: number
@@ -104,15 +133,24 @@ export interface ShareData {
 }
 
 export interface TreeNode {
+  [key: string]: any
   iconKey: string
   id: string
   title: string
   children?: TreeNode[]
+  createdAtUtc?: any
+  createdBy?: any
+  createdByName?: any
+  description?: string
   filePage?: RepositoryFilePage
   hasChildren?: boolean
   isLoaded?: boolean
   isLoading?: boolean
   isStatic?: boolean
+  itemsTableName?: string
+  modifiedBy?: any
+  modifiedByName?: any
+  storageProviderId?: string
 }
 
 export interface WorkflowData {

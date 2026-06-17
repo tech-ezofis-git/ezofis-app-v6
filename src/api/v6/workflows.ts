@@ -458,7 +458,8 @@ const moveNext = async (instanceId: string, payload: any) => {
       method: 'POST',
       url: `/Workflows/instances/${instanceId}/move-next`,
     })
-    if (status !== 200 && status !== 201 && status !== 204) throw new Error('invalid status code')
+    if (status !== 200 && status !== 201 && status !== 204)
+      throw new Error('invalid status code')
     response.data = data
   } catch (e: unknown) {
     console.error(e)
@@ -469,19 +470,41 @@ const moveNext = async (instanceId: string, payload: any) => {
   return response
 }
 
+const getApAgentJobStatus = async (jobId: string) => {
+  const response: { data: any; error: string } = { data: null, error: '' }
+  try {
+    const { data, status } = await axiosV6({
+      headers: getTenantHeaders(),
+      method: 'GET',
+      url: `/Workflows/ap-agent/jobs/${jobId}`,
+    })
+    if (status !== 200) throw new Error('invalid status code')
+    response.data = data
+  } catch (e: unknown) {
+    console.error(e)
+    const err = e as { message?: string; response?: { data?: string } }
+    response.error =
+      err?.response?.data ||
+      err?.message ||
+      'error fetching ap agent job status'
+  }
+  return response
+}
+
 export const workflowsApiV6 = {
   createWorkflow,
   deleteWorkflow,
+  moveNext,
   startWorkflow,
   updateWorkflow,
   getAllWorkflows,
+  getApAgentJobStatus,
   getCompletedList,
   getInboxList,
   getInstanceCount,
   getSentList,
   getWorkflowById,
   getWorkflows,
-  moveNext,
 }
 
 export default workflowsApiV6

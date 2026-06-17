@@ -12,11 +12,12 @@ const PaginationSummary = ({
   totalItems,
 }: Props) => {
   const isAll = pageSize === 0
-  const from = isAll
-    ? totalItems > 0
-      ? 1
-      : 0
-    : (currentPage - 1) * pageSize + 1
+  let from = 0
+  if (isAll) {
+    from = totalItems > 0 ? 1 : 0
+  } else {
+    from = (currentPage - 1) * pageSize + 1
+  }
   const to = isAll ? totalItems : Math.min(from + pageSize - 1, totalItems)
 
   return (

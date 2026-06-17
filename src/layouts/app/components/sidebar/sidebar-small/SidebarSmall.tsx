@@ -22,9 +22,6 @@ const SidebarSmall = ({ menus }: Props) => {
               <nav className='space-y-1.5'>
                 {menus.map((group) => (
                   <div key={group.label}>
-                    {/* {index !== 0 && (
-                      <Divider className='mx-auto my-3 w-6 border-gray-4' />
-                    )} */}
                     <ul className='m-0 list-none space-y-1.5 px-2.5'>
                       {group.items.map((item) => (
                         <MenuItem key={item.label} {...item} />

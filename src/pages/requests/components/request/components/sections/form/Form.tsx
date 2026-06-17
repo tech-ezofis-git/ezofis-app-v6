@@ -172,7 +172,7 @@ const Form = (props: any) => {
           </label>
           <InputDate
             className='w-full'
-            value={formModel[control.id] || null}
+            value={formModel[control.id] ? formModel[control.id] : null}
             styles={{
               input: {
                 backgroundColor: 'white',

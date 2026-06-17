@@ -6,6 +6,18 @@ import ClearButton from './ClearButton'
 import InputLabel from './InputLabel'
 import { classNames, inputWrapperOrder } from './shared/constants'
 
+const normalizeDateInputValue = (
+  value: string | null | undefined,
+): string | null => {
+  if (value === null || value === undefined) return null
+
+  const str = String(value).trim()
+  if (!str || str === '-') return null
+  if (str.toLowerCase() === 'invalid date') return null
+
+  return str
+}
+
 interface Props extends Omit<
   InputProps,
   | 'leftSection'
@@ -48,7 +60,8 @@ const InputDate = forwardRef<HTMLInputElement, Props>(
       />
     ) : undefined
 
-    const _clearable = clearable && value
+    const normalizedValue = normalizeDateInputValue(value)
+    const _clearable = clearable && normalizedValue
     const _rightSection = _clearable ? (
       <ClearButton onClick={() => onChange(null)} />
     ) : (
@@ -72,7 +85,7 @@ const InputDate = forwardRef<HTMLInputElement, Props>(
         rightSection={_rightSection}
         rightSectionPointerEvents={_clearable ? 'auto' : 'none'}
         type='default'
-        value={value}
+        value={normalizedValue}
         valueFormat={valueFormat}
         allowDeselect
         classNames={{

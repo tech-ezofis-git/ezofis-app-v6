@@ -287,7 +287,7 @@ const findInvoiceNumber = (row: any): string | null => {
       'Invoice_No',
       'Invoice_Number',
       'InvoiceNo',
-      'InvoiceNumber'
+      'InvoiceNumber',
     ]
     for (const key of directKeys) {
       if (obj[key] !== undefined && obj[key] !== null) {
@@ -297,10 +297,18 @@ const findInvoiceNumber = (row: any): string | null => {
     }
 
     for (const key of Object.keys(obj)) {
-      const k = key.toLowerCase().replace(/[^a-z0-9]/g, '').trim()
+      const k = key
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '')
+        .trim()
       if (k === 'invoiceno' || k === 'invoicenumber' || k === 'invoicenum') {
         const val = obj[key]
-        if (val && typeof val !== 'object' && String(val).trim() !== '' && String(val).trim() !== '-') {
+        if (
+          val &&
+          typeof val !== 'object' &&
+          String(val).trim() !== '' &&
+          String(val).trim() !== '-'
+        ) {
           return String(val).trim()
         }
       }
@@ -353,13 +361,17 @@ const findInvoiceAmount = (row: any): string | null => {
       'PO Value',
       'Amount',
       'total',
-      'amount'
+      'amount',
     ]
     for (const key of directKeys) {
       if (obj[key] !== undefined && obj[key] !== null) {
         let val = obj[key]
         if (val && typeof val === 'object') {
-          val = val['Invoice Value'] || val['InvoiceValue'] || val['value'] || val['val']
+          val =
+            val['Invoice Value'] ||
+            val['InvoiceValue'] ||
+            val['value'] ||
+            val['val']
         }
         if (val !== undefined && val !== null) {
           const strVal = String(val).trim()
@@ -369,7 +381,10 @@ const findInvoiceAmount = (row: any): string | null => {
     }
 
     for (const key of Object.keys(obj)) {
-      const k = key.toLowerCase().replace(/[^a-z0-9]/g, '').trim()
+      const k = key
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '')
+        .trim()
       if (
         k === 'invoiceamount' ||
         k === 'totalamount' ||
@@ -380,7 +395,11 @@ const findInvoiceAmount = (row: any): string | null => {
       ) {
         let val = obj[key]
         if (val && typeof val === 'object') {
-          val = val['Invoice Value'] || val['InvoiceValue'] || val['value'] || val['val']
+          val =
+            val['Invoice Value'] ||
+            val['InvoiceValue'] ||
+            val['value'] ||
+            val['val']
         }
         if (val !== undefined && val !== null) {
           const strVal = String(val).trim()
@@ -396,7 +415,8 @@ const findInvoiceAmount = (row: any): string | null => {
   if (fromForm) return fromForm
 
   // 2. Priority: Agent Data
-  const agentData = row._agentResponse || row._agentData?.[0] || row._agentData || {}
+  const agentData =
+    row._agentResponse || row._agentData?.[0] || row._agentData || {}
   const fromAgent = searchInObj(agentData)
   if (fromAgent) return fromAgent
 
@@ -433,7 +453,7 @@ const findSupplierName = (row: any): string | null => {
       'Supplier_Name',
       'Vendor_Name',
       'SupplierName',
-      'VendorName'
+      'VendorName',
     ]
     for (const key of directKeys) {
       if (obj[key] !== undefined && obj[key] !== null) {
@@ -443,10 +463,23 @@ const findSupplierName = (row: any): string | null => {
     }
 
     for (const key of Object.keys(obj)) {
-      const k = key.toLowerCase().replace(/[^a-z0-9]/g, '').trim()
-      if (k === 'suppliername' || k === 'vendorname' || k === 'supplier' || k === 'vendor') {
+      const k = key
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '')
+        .trim()
+      if (
+        k === 'suppliername' ||
+        k === 'vendorname' ||
+        k === 'supplier' ||
+        k === 'vendor'
+      ) {
         const val = obj[key]
-        if (val && typeof val !== 'object' && String(val).trim() !== '' && String(val).trim() !== '-') {
+        if (
+          val &&
+          typeof val !== 'object' &&
+          String(val).trim() !== '' &&
+          String(val).trim() !== '-'
+        ) {
           return String(val).trim()
         }
       }
@@ -481,9 +514,19 @@ const findGLNumber = (row: any): string | null => {
     if (!obj || typeof obj !== 'object') return null
     for (const key of Object.keys(obj)) {
       const k = key.toLowerCase().replace(/_/g, ' ').trim()
-      if (k === 'gl number' || k === 'gl account' || k === 'gl account code' || k === 'gl code') {
+      if (
+        k === 'gl number' ||
+        k === 'gl account' ||
+        k === 'gl account code' ||
+        k === 'gl code'
+      ) {
         const val = obj[key]
-        if (val && typeof val !== 'object' && String(val).trim() !== '' && String(val).trim() !== '-') {
+        if (
+          val &&
+          typeof val !== 'object' &&
+          String(val).trim() !== '' &&
+          String(val).trim() !== '-'
+        ) {
           return String(val).trim()
         }
       }
@@ -525,7 +568,12 @@ const findCategory = (row: any): string | null => {
       const k = key.toLowerCase().replace(/_/g, ' ').trim()
       if (k === 'category' || k === 'supplier category') {
         const val = obj[key]
-        if (val && typeof val !== 'object' && String(val).trim() !== '' && String(val).trim() !== '-') {
+        if (
+          val &&
+          typeof val !== 'object' &&
+          String(val).trim() !== '' &&
+          String(val).trim() !== '-'
+        ) {
           return String(val).trim()
         }
       }
@@ -631,7 +679,10 @@ const extractPaymentTerms = (row: any): string => {
   const agentData = row._agentData?.[0] ?? row._agentData ?? {}
   const parsedForm = getParsedFormData(row)
 
-  if (parsedForm['vxnKCXsXkz8_acPogKe'] && parsedForm['vxnKCXsXkz8_acPogKe'] !== '-') {
+  if (
+    parsedForm['vxnKCXsXkz8_acPogKe'] &&
+    parsedForm['vxnKCXsXkz8_acPogKe'] !== '-'
+  ) {
     return String(parsedForm['vxnKCXsXkz8_acPogKe'])
   }
 
@@ -660,7 +711,10 @@ const extractInvoiceDate = (row: any): string => {
   const agentData = row._agentData?.[0] || row._agentData || {}
   const parsedForm = getParsedFormData(row)
 
-  if (parsedForm['9F6tPVHoRnmONGx3kYJu2'] && parsedForm['9F6tPVHoRnmONGx3kYJu2'] !== '-') {
+  if (
+    parsedForm['9F6tPVHoRnmONGx3kYJu2'] &&
+    parsedForm['9F6tPVHoRnmONGx3kYJu2'] !== '-'
+  ) {
     return String(parsedForm['9F6tPVHoRnmONGx3kYJu2']).trim()
   }
 
@@ -713,7 +767,7 @@ const extractInvoiceDate = (row: any): string => {
 
 const extractInvoiceNumber = (row: any): string => {
   if (!row) return '-'
-  
+
   const fromResolved = findInvoiceNumber(row)
   if (fromResolved) return fromResolved
 
@@ -904,14 +958,15 @@ const StatusCell = ({
   const parsedForm = getParsedFormData(row)
   const rawDecision = String(
     parsedForm['2MH_BMDFEVKsU0uAQjoI1'] ||
-    agentData?.decision ||
-    row.decision ||
-    row.status ||
-    ''
+      agentData?.decision ||
+      row.decision ||
+      row.status ||
+      '',
   ).toUpperCase()
 
   let iconName = 'tabler:clock'
-  let iconColorClass = 'bg-[var(--gray-2)] border-[var(--gray-2)] text-[var(--gray-9)]'
+  let iconColorClass =
+    'bg-[var(--gray-2)] border-[var(--gray-2)] text-[var(--gray-9)]'
 
   if (row.isProcessing) {
     iconName = 'tabler:loader-2'
@@ -929,7 +984,10 @@ const StatusCell = ({
     iconName = 'tabler:stack-2'
     iconColorClass =
       'bg-[var(--purple-2)] border-[var(--purple-2)] text-[var(--purple-9)]'
-  } else if (rawDecision === 'PARTIALLY APPROVED' || rawDecision === 'PARTIAL MATCH') {
+  } else if (
+    rawDecision === 'PARTIALLY APPROVED' ||
+    rawDecision === 'PARTIAL MATCH'
+  ) {
     iconName = 'tabler:alert-triangle'
     iconColorClass =
       'bg-[var(--orange-2)] border-[var(--orange-2)] text-[var(--orange-9)]'
@@ -1113,8 +1171,6 @@ const StatusCell = ({
     </div>
   )
 }
-
-
 
 const isPOField = (label: string) =>
   label.includes('po number') || label === 'po' || label === 'po_number'
@@ -1322,7 +1378,7 @@ const getBaseColumns = (
 
         if (row.isProcessing) {
           return (
-            <span className='flex items-center gap-1 rounded-md border border-[var(--orange-4)] bg-[var(--orange-2)] px-2 py-0.5 text-[11px] font-semibold text-[var(--orange-11)] animate-pulse'>
+            <span className='flex animate-pulse items-center gap-1 rounded-md border border-[var(--orange-4)] bg-[var(--orange-2)] px-2 py-0.5 text-[11px] font-semibold text-[var(--orange-11)]'>
               <Icon className='size-3.5 animate-spin' name='tabler:loader-2' />
               Processing
             </span>
@@ -1344,7 +1400,10 @@ const getBaseColumns = (
 
         const formatted = formatDecision(String(rawDecision))
 
-        if (formatted.toLowerCase() === 'approved' || formatted.toLowerCase() === 'matched') {
+        if (
+          formatted.toLowerCase() === 'approved' ||
+          formatted.toLowerCase() === 'matched'
+        ) {
           return (
             <span className='flex items-center gap-1 rounded-md border border-[var(--green-4)] bg-[var(--green-2)] px-2 py-0.5 text-[11px] font-semibold text-[var(--green-11)]'>
               <Icon className='size-3.5' name='tabler:circle-check' />
@@ -1353,7 +1412,10 @@ const getBaseColumns = (
           )
         }
 
-        if (formatted.toLowerCase() === 'rejected' || formatted.toLowerCase() === 'no match') {
+        if (
+          formatted.toLowerCase() === 'rejected' ||
+          formatted.toLowerCase() === 'no match'
+        ) {
           return (
             <span className='flex items-center gap-1 rounded-md border border-[var(--red-4)] bg-[var(--red-2)] px-2 py-0.5 text-[11px] font-semibold text-[var(--red-11)]'>
               <Icon className='size-3.5' name='tabler:alert-circle' />
@@ -1427,10 +1489,19 @@ const getBaseColumns = (
       label: 'AI Insight',
       size: 260,
       renderCell: (_row: any) => {
-        const agentData = _row._agentResponse || _row._agentData?.[0] || _row._agentData || {}
-        const aiInsight = agentData?.ai_insight || agentData?.aiInsight || agentData?.ai_insect || ''
+        const agentData =
+          _row._agentResponse || _row._agentData?.[0] || _row._agentData || {}
+        const aiInsight =
+          agentData?.ai_insight ||
+          agentData?.aiInsight ||
+          agentData?.ai_insect ||
+          ''
         if (!aiInsight) {
-          return <span className='text-[13px] font-semibold text-[var(--gray-9)]'>N/A</span>
+          return (
+            <span className='text-[13px] font-semibold text-[var(--gray-9)]'>
+              N/A
+            </span>
+          )
         }
         return (
           <div className='flex min-w-0 items-center gap-1.5'>
@@ -1506,7 +1577,9 @@ const getBaseColumns = (
                 minimumFractionDigits: 2,
               })}`
             ) : (
-              <span className='text-[13px] text-[var(--gray-9)] font-semibold'>N/A</span>
+              <span className='text-[13px] font-semibold text-[var(--gray-9)]'>
+                N/A
+              </span>
             )}
           </span>
         )

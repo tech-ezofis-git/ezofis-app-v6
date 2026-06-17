@@ -22,10 +22,10 @@ type Props = {
   comments?: any[]
   enabled?: boolean
   isLoading?: boolean
-  processId?: number | string
+  processId?: number
   repositoryId?: string | number
   transactionId?: number | string
-  workflowId?: number | string
+  workflowId?: number
   refetch?: () => Promise<void>
 }
 

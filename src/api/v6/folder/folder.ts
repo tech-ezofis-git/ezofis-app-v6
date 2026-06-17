@@ -36,9 +36,14 @@ export interface PagedDto<T> {
 export interface RepositoryDto {
   id: string
   name: string
+  createdAtUtc?: any
+  createdBy?: any
+  createdByName?: any
   description?: string
   fields?: RepositoryFieldDto[]
   itemsTableName?: string
+  modifiedBy?: any
+  modifiedByName?: any
   stageTableName?: string
   storageDrive?: string
   storageProviderId?: string
@@ -82,7 +87,7 @@ const signUp = async (payload: V6SignupPayload) => {
       url: `/Signup`,
     })
 
-    if (status !== 201 && status !== 200) throw new Error('invalid status code')
+    if (status !== 201 && status !== 200) throw 'invalid status code'
 
     if (data) {
       setToLocalStorage(data, 'identity')
@@ -114,7 +119,7 @@ export const sendMailOTP = async (payload: {
     })
 
     if (status !== 201 && status !== 200 && status !== 400)
-      throw new Error('invalid status code')
+      throw 'invalid status code'
 
     if (data === 'OTP sent succeeded' || data === 'success') {
       response.data = 'success'
@@ -144,7 +149,7 @@ export const verifyMailOTP = async (payload: {
       url: `/tenant/validateOTP`,
     })
 
-    if (status !== 201 && status !== 200) throw new Error('invalid status code')
+    if (status !== 201 && status !== 200) throw 'invalid status code'
     response.data = data === 'success' ? 'Success' : ''
     response.error = data === 'success' ? '' : 'error in verify mail'
   } catch (e: any) {
@@ -155,7 +160,7 @@ export const verifyMailOTP = async (payload: {
   return response
 }
 
-export const repositories = async () => {
+export const getRepositorys = async () => {
   const response: any = { data: null, error: '' }
 
   try {
@@ -164,7 +169,7 @@ export const repositories = async () => {
       url: `/repositories`,
     })
 
-    if (status !== 200) throw new Error('invalid status code')
+    if (status !== 200) throw 'invalid status code'
     response.data = unwrap(data)
   } catch (e: any) {
     console.error(e)
@@ -183,7 +188,7 @@ export const getRepositoryById = async (id: string) => {
       url: `/repositories/${id}`,
     })
 
-    if (status !== 200) throw new Error('invalid status code')
+    if (status !== 200) throw 'invalid status code'
     response.data = unwrap(data)
   } catch (e: any) {
     console.error(e)
@@ -226,7 +231,7 @@ export const getRepositoryBrowseChildren = async (payload: {
       url: `/repositories/${payload.id}/browse/children`,
     })
 
-    if (status !== 200) throw new Error('invalid status code')
+    if (status !== 200) throw 'invalid status code'
     response.data = unwrap(data)
   } catch (e: any) {
     console.error(e)
@@ -254,7 +259,7 @@ export const login = async (payload: {
       url: `/auth/ezofis/login`,
     })
 
-    if (status !== 200) throw new Error('invalid status code')
+    if (status !== 200) throw 'invalid status code'
 
     if (data) {
       setToLocalStorage(data, 'identity')
@@ -274,12 +279,12 @@ export const login = async (payload: {
 
 export const authApiV6 = {
   login,
-  repositories,
   sendMailOTP,
   signUp,
   verifyMailOTP,
   getRepositoryBrowseChildren,
   getRepositoryById,
+  getRepositorys,
 }
 
 export default authApiV6
@@ -295,7 +300,7 @@ export interface RepositoryItemsQuery {
   search?: string
   skipTotal?: boolean
   sortBy?: string
-  sortOrder?: 'asc' | 'desc' | (string & {})
+  sortOrder?: 'asc' | 'desc' | string
 }
 
 export interface RepositoryItemWorkspaceDto {
@@ -330,6 +335,7 @@ export const getRepositoryItems = async (payload: RepositoryItemsQuery) => {
     if (payload.dateTo) params.DateTo = payload.dateTo
     if (payload.sortBy) params.SortBy = payload.sortBy
     if (payload.sortOrder) params.SortOrder = payload.sortOrder
+    // if (payload.cursor) params.Cursor = payload.cursor
 
     const { data, status } = await axiosV6({
       method: 'GET',
@@ -337,7 +343,7 @@ export const getRepositoryItems = async (payload: RepositoryItemsQuery) => {
       url: `/repositories/${payload.id}/items`,
     })
 
-    if (status !== 200) throw new Error('invalid status code')
+    if (status !== 200) throw 'invalid status code'
     response.data = unwrap(data)
   } catch (e: any) {
     console.error(e)
@@ -359,7 +365,7 @@ export const getRepositoryItemWorkspace = async (payload: {
       url: `/repositories/${payload.repositoryId}/items/${payload.itemId}/workspace`,
     })
 
-    if (status !== 200) throw new Error('invalid status code')
+    if (status !== 200) throw 'invalid status code'
     response.data = unwrap(data)
   } catch (e: any) {
     console.error(e)
@@ -406,7 +412,7 @@ export const getRepositoryItemTimeline = async (payload: {
       url: `/repositories/${payload.repositoryId}/items/${payload.itemId}/timeline`,
     })
 
-    if (status !== 200) throw new Error('invalid status code')
+    if (status !== 200) throw 'invalid status code'
     response.data = unwrap(data)
   } catch (e: any) {
     console.error(e)
@@ -434,7 +440,7 @@ export const getRepositoryItemComments = async (payload: {
       url: `/repositories/${payload.repositoryId}/items/${payload.itemId}/comments`,
     })
 
-    if (status !== 200) throw new Error('invalid status code')
+    if (status !== 200) throw 'invalid status code'
     response.data = unwrap(data)
   } catch (e: any) {
     console.error(e)
@@ -458,7 +464,7 @@ export const addRepositoryItemComment = async (payload: {
       url: `/repositories/${payload.repositoryId}/items/${payload.itemId}/comments`,
     })
 
-    if (status !== 200 && status !== 201) throw new Error('invalid status code')
+    if (status !== 200 && status !== 201) throw 'invalid status code'
     response.data = data
   } catch (e: any) {
     response.error = e?.response?.data || 'error posting comment'
@@ -466,6 +472,38 @@ export const addRepositoryItemComment = async (payload: {
 
   return response
 }
+
+export const UploadFiles = async (repositoryId: string, formData: FormData) => {
+  const response: any = { data: null, error: '' }
+
+  try {
+    const { data, status } = await axiosV6({
+      data: formData,
+      // important
+      headers: {
+        'Content-Type': undefined,
+      },
+      method: 'POST',
+
+      // important if axiosV6 has JSON transform/interceptor
+      transformRequest: [(data) => data],
+
+      url: `/repositories/${repositoryId}/items/upload`,
+    })
+
+    if (status !== 200 && status !== 201) {
+      throw new Error('invalid status code')
+    }
+
+    response.data = data
+  } catch (e: any) {
+    console.error(e)
+    response.error = e?.response?.data || 'error uploading file'
+  }
+
+  return response
+}
 ;(authApiV6 as any).getRepositoryItemTimeline = getRepositoryItemTimeline
 ;(authApiV6 as any).getRepositoryItemComments = getRepositoryItemComments
 ;(authApiV6 as any).addRepositoryItemComment = addRepositoryItemComment
+;(authApiV6 as any).UploadFiles = UploadFiles
