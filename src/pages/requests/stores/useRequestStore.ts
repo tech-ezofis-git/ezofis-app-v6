@@ -40,6 +40,24 @@ export const useProcessingStatusText = (startTime?: string) => {
   return text
 }
 
+const getInitialJobMappings = () => {
+  try {
+    const data = localStorage.getItem('v6_job_mappings')
+    return data ? JSON.parse(data) : {}
+  } catch {
+    return {}
+  }
+}
+
+const getInitialJobStatuses = () => {
+  try {
+    const data = localStorage.getItem('v6_job_statuses')
+    return data ? JSON.parse(data) : {}
+  } catch {
+    return {}
+  }
+}
+
 type Store = {
   activeTabValue: string | null
   isClosed: boolean
@@ -62,6 +80,8 @@ type Store = {
   selectedWorkflow: any
   selectedWorkflowId: number | string | null
   summaryCache: Record<string, any>
+  jobStatuses: Record<string, any>
+  jobMappings: Record<string, string>
   addProcessingProcess: (process: any) => void
   cacheSummaryData: (reqNo: string, data: any) => void
   clearPendingNav: () => void
@@ -81,6 +101,8 @@ type Store = {
   toggleMaximize: () => void
   updateProcessingProcess: (id: string | number, updates: any) => void
   workflowRefresh: () => void
+  setJobStatus: (id: string, status: any) => void
+  setJobMapping: (jobId: string | number, instanceId: string) => void
 }
 
 const requestStore = create<Store>((set) => ({
@@ -101,6 +123,8 @@ const requestStore = create<Store>((set) => ({
   selectedWorkflow: null,
   selectedWorkflowId: null,
   summaryCache: {},
+  jobStatuses: getInitialJobStatuses(),
+  jobMappings: getInitialJobMappings(),
   addProcessingProcess: (process) =>
     set((state) => ({
       processingProcesses: [
@@ -162,6 +186,34 @@ const requestStore = create<Store>((set) => ({
     set({ pendingOpenNewRequest: value }),
   setRawWorkflowData: (data) => set({ rawWorkflowData: data }),
   setRequestListTab: (tab) => set({ requestListTab: tab }),
+  setJobStatus: (id, status) =>
+    set((state) => {
+      const nextStatuses = { ...state.jobStatuses, [id]: status }
+      try {
+        localStorage.setItem('v6_job_statuses', JSON.stringify(nextStatuses))
+      } catch {}
+      return { jobStatuses: nextStatuses }
+    }),
+  setJobMapping: (jobId, instanceId) =>
+    set((state) => {
+      const stringJobId = String(jobId)
+      const nextMappings = { ...state.jobMappings, [stringJobId]: instanceId }
+      const jobKey = `job-${stringJobId}`
+      const existingStatus = state.jobStatuses[jobKey]
+      const nextStatuses = existingStatus
+        ? { ...state.jobStatuses, [instanceId]: existingStatus }
+        : state.jobStatuses
+      try {
+        localStorage.setItem('v6_job_mappings', JSON.stringify(nextMappings))
+        if (existingStatus) {
+          localStorage.setItem('v6_job_statuses', JSON.stringify(nextStatuses))
+        }
+      } catch {}
+      return {
+        jobMappings: nextMappings,
+        jobStatuses: nextStatuses,
+      }
+    }),
 }))
 
 export default requestStore

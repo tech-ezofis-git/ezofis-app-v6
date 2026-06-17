@@ -12,17 +12,17 @@ const NewRequestSheet = ({ onClose }: Props) => {
 
   return (
     <div className='flex h-full flex-1 flex-col overflow-hidden bg-surface-muted'>
-      {newRequestMeta != 'po' && (
+      {newRequestMeta !== 'po' && (
         <Header
-          title={newRequestMeta === 'po1x`' ? 'PO Setup' : 'New Request'}
+          title='New Request'
           onClose={onClose}
         />
       )}
 
-      {newRequestMeta === 'request' ? (
-        <NewRequestFileUpload onClose={onClose} />
-      ) : (
+      {newRequestMeta === 'po' ? (
         <PoSetupFlowPage onClose={onClose} />
+      ) : (
+        <NewRequestFileUpload onClose={onClose} />
       )}
     </div>
   )

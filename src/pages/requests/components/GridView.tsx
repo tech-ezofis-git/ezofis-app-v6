@@ -924,19 +924,34 @@ const GridRowItem = ({
     typeof row?._originalIndex === 'number' ? row._originalIndex : index
   const rowId = row?.id || row?.processId || `item-${originalIndex}`
 
-  const processingProcesses = requestStore((state) => state.processingProcesses)
+  const { processingProcesses, jobStatuses, jobMappings } = requestStore((state) => state)
   const matchingProc = useMemo(() => {
     return processingProcesses.find(
       (p) => String(p.processId || p.id) === String(row.processId || row.id),
     )
   }, [processingProcesses, row.processId, row.id])
 
-  const statusText = useProcessingStatusText(
+  let matchedJobStatus = jobStatuses[String(rowId)]
+  if (!matchedJobStatus) {
+    const mappedJobId = Object.keys(jobMappings).find(key => String(jobMappings[key]) === String(rowId))
+    if (mappedJobId) {
+      matchedJobStatus = jobStatuses[`job-${mappedJobId}`]
+    }
+  }
+  if (!matchedJobStatus && row.apAgentJobId) {
+    matchedJobStatus = jobStatuses[`job-${row.apAgentJobId}`]
+  }
+
+  const defaultStatusText = useProcessingStatusText(
     matchingProc?.startTime ||
       row?.raisedAt ||
       row?.transaction_createdAt ||
       row?.createdAt,
   )
+
+  const statusText = matchedJobStatus && !matchedJobStatus.isCompleted
+    ? `${matchedJobStatus.stage}${matchedJobStatus.message ? ` - ${matchedJobStatus.message}` : ''}`
+    : defaultStatusText
 
   const parsedForm = getParsedFormData(row)
   const invoiceNo =

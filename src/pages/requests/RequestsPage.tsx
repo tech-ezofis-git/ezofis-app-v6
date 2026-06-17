@@ -146,7 +146,7 @@ const RequestsPage = () => {
           }
         }
 
-        setRawWorflow({ ...wf, formJson })
+        setRawWorflow({ ...wf, id: workflowId, formJson })
 
         let flowJson = ''
         if (typeof wf.flowJson === 'string') {

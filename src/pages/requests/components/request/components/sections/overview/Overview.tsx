@@ -1875,7 +1875,7 @@ const Overview = (props: any) => {
                       return (
                         <AnalysisCard
                           icon={Paperclip}
-                          isLoading={isCurrentlyProcessing}
+                          isLoading={isCurrentlyProcessing && (!poVal || poVal === '-' || poVal === 'N/A')}
                           title='PO Matching'
                           status={
                             poVal && poVal !== '-' && poVal !== 'N/A'
@@ -1897,7 +1897,7 @@ const Overview = (props: any) => {
                     })()}
                     <AnalysisCard
                       icon={Layers}
-                      isLoading={isCurrentlyProcessing}
+                      isLoading={isCurrentlyProcessing && !agentData?.duplicate_check}
                       title='Duplicate Detection'
                       status={
                         agentData?.duplicate_check?.status || 'No Duplicate'
@@ -1914,7 +1914,7 @@ const Overview = (props: any) => {
                     />
                     <AnalysisCard
                       icon={Store}
-                      isLoading={isCurrentlyProcessing}
+                      isLoading={isCurrentlyProcessing && (!supplierValidationDisplay?.value || supplierValidationDisplay.value === 'No supplier ID found')}
                       status={supplierValidationDisplay.status}
                       statusType={supplierValidationDisplay.statusType}
                       title='Supplier Verification'
@@ -1923,7 +1923,7 @@ const Overview = (props: any) => {
                     {showGlValidation && glValidationDisplay && (
                       <AnalysisCard
                         icon={ListFilter}
-                        isLoading={isCurrentlyProcessing}
+                        isLoading={isCurrentlyProcessing && (!glValidationDisplay?.account || glValidationDisplay.account === 'Not Available')}
                         status={glValidationDisplay.status}
                         statusType={glValidationDisplay.statusType}
                         title='GL Account Matching'
@@ -1936,7 +1936,7 @@ const Overview = (props: any) => {
                     {showBackOrder && backOrderDisplay && backOrderDisplay.status === 'Detected' ? (
                       <AnalysisCard
                         icon={PackageX}
-                        isLoading={isCurrentlyProcessing}
+                        isLoading={isCurrentlyProcessing && (!backOrderDisplay?.value || backOrderDisplay.value === '---')}
                         status={backOrderDisplay.status}
                         statusType={backOrderDisplay.statusType}
                         title='Back Order'
@@ -1949,7 +1949,7 @@ const Overview = (props: any) => {
                     ) : (
                       <AnalysisCard
                         icon={Calendar}
-                        isLoading={isCurrentlyProcessing}
+                        isLoading={isCurrentlyProcessing && (!paymentTermsDisplay?.termsDisplay || paymentTermsDisplay.termsDisplay === '-')}
                         status={paymentTermsDisplay.calculationText}
                         statusType={paymentTermsDisplay.statusType}
                         title='Payment Terms'
@@ -1959,7 +1959,7 @@ const Overview = (props: any) => {
                     {showMatterValidation && matterValidationDisplay && (
                       <AnalysisCard
                         icon={Briefcase}
-                        isLoading={isCurrentlyProcessing}
+                        isLoading={isCurrentlyProcessing && (!matterValidationDisplay?.value || matterValidationDisplay.value === '---')}
                         status={matterValidationDisplay.status}
                         statusType={matterValidationDisplay.statusType}
                         title='Matter Validation'
@@ -2041,7 +2041,7 @@ const Overview = (props: any) => {
                 <div className='flex min-h-0 flex-1 flex-col'>
                   {activeTab === 'summary' && (
                     <div className='grid flex-1 grid-cols-2 gap-x-4 gap-y-2 overflow-y-auto p-4'>
-                      {isCurrentlyProcessing
+                      {isCurrentlyProcessing && Object.keys(formModel || {}).length === 0
                         ? Array.from({ length: 8 }).map((_, idx) => {
                             const labels = [
                               'Supplier Name',
@@ -2176,7 +2176,7 @@ const Overview = (props: any) => {
                             </tr>
                           </thead>
                           <tbody className='divide-y divide-[var(--gray-2)]'>
-                            {isCurrentlyProcessing
+                            {isCurrentlyProcessing && lineItems.length === 0
                               ? skeletonRows.map((rowKey) => (
                                   <tr
                                     className='group transition-colors'

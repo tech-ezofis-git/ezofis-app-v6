@@ -22,6 +22,7 @@ import { safeParse } from '@/pages/requests/utils/workflow.utils'
 import cn from '@/utils/cn'
 import { formatDatetime } from '@/utils/dayjs'
 import type { WorkflowOption } from '../../types'
+import requestStore from '../../stores/useRequestStore'
 import HoverExpandableText from '../HoverExpandableText'
 import DynamicTableCell from './components/DynamicTableCell'
 // ✅ Your generic FileSheet (React version)
@@ -1376,11 +1377,30 @@ const getBaseColumns = (
           }
         }
 
+        const rowId = row.processId || row.id
+        const storeState = requestStore.getState()
+        const jobStatuses = storeState.jobStatuses || {}
+        const jobMappings = storeState.jobMappings || {}
+        
+        let matchedJobStatus = jobStatuses[String(rowId)]
+        if (!matchedJobStatus) {
+          const mappedJobId = Object.keys(jobMappings).find(key => String(jobMappings[key]) === String(rowId))
+          if (mappedJobId) {
+            matchedJobStatus = jobStatuses[`job-${mappedJobId}`]
+          }
+        }
+        if (!matchedJobStatus && row.apAgentJobId) {
+          matchedJobStatus = jobStatuses[`job-${row.apAgentJobId}`]
+        }
+
         if (row.isProcessing) {
+          const statusText = matchedJobStatus && !matchedJobStatus.isCompleted
+            ? `${matchedJobStatus.stage}${matchedJobStatus.message ? ` - ${matchedJobStatus.message}` : ''}`
+            : 'Processing'
           return (
-            <span className='flex animate-pulse items-center gap-1 rounded-md border border-[var(--orange-4)] bg-[var(--orange-2)] px-2 py-0.5 text-[11px] font-semibold text-[var(--orange-11)]'>
+            <span className='flex animate-pulse items-center gap-1 rounded-md border border-[var(--orange-4)] bg-[var(--orange-2)] px-2 py-0.5 text-[11px] font-semibold text-[var(--orange-11)]' title={statusText}>
               <Icon className='size-3.5 animate-spin' name='tabler:loader-2' />
-              Processing
+              {statusText}
             </span>
           )
         }

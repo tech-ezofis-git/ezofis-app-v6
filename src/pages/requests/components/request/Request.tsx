@@ -526,12 +526,40 @@ const handleJobData = (
       : Number.NaN
   const percent = Number.isNaN(percentNum) ? undefined : percentNum
 
+  const stage = jobData.stage || 'OCR Extraction'
+  const message = jobData.message || jobData.hangfireStatus || ''
+  const isCompleted =
+    jobData.isTerminal ||
+    jobData.stage === 'COMPLETED' ||
+    jobData.hangfireStatus === 'Succeeded'
+
   setJobStatus({
     hangfireStatus: jobData.hangfireStatus || '',
     message: jobData.message || '',
     percent,
-    stage: jobData.stage || '',
+    stage,
   })
+
+  // Sync to global store
+  const jobKey = `job-${apAgentJobId}`
+  requestStore.getState().setJobStatus(jobKey, {
+    stage,
+    message,
+    percent,
+    isCompleted,
+    apAgentJobId,
+  })
+
+  if (jobData.instanceId) {
+    requestStore.getState().setJobMapping(apAgentJobId, jobData.instanceId)
+    requestStore.getState().setJobStatus(String(jobData.instanceId), {
+      stage,
+      message,
+      percent,
+      isCompleted,
+      apAgentJobId,
+    })
+  }
 
   requestStore
     .getState()
@@ -540,12 +568,7 @@ const handleJobData = (
       stage: jobData.stage || 'Initiating...',
     })
 
-  const isFinished =
-    jobData.isTerminal ||
-    jobData.stage === 'COMPLETED' ||
-    jobData.hangfireStatus === 'Succeeded'
-
-  if (isFinished) {
+  if (isCompleted) {
     stopPolling()
     if (jobData.instanceId) {
       updateProcessInStore(apAgentJobId, jobData)

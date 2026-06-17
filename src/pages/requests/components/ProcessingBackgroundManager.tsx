@@ -36,11 +36,66 @@ export const ProcessingBackgroundManager = () => {
       const processId = process.processId || process.id
       const transactionId = process.transactionId
       const workflowId = process.workflowId || rawWorkflowData?.id
+      const apAgentJobId = process.apAgentJobId
 
       if (!processId || !workflowId) return null
 
       const poll = async () => {
         try {
+          if (apAgentJobId) {
+            const res = await workflowsApiV6.getApAgentJobStatus(String(apAgentJobId))
+            if (res.data) {
+              const jobData = res.data
+              const percentRaw = jobData.percent === undefined ? jobData.Percent : jobData.percent
+              const percentNum = percentRaw !== undefined && percentRaw !== null ? Number(percentRaw) : Number.NaN
+              const percent = Number.isNaN(percentNum) ? undefined : percentNum
+              
+              const stage = jobData.stage || 'OCR Extraction'
+              const message = jobData.message || jobData.hangfireStatus || ''
+              const isCompleted = jobData.isTerminal || jobData.stage === 'COMPLETED' || jobData.hangfireStatus === 'Succeeded'
+
+              // Update job status in store
+              const jobKey = `job-${apAgentJobId}`
+              requestStore.getState().setJobStatus(jobKey, {
+                stage,
+                message,
+                percent,
+                isCompleted,
+                apAgentJobId,
+              })
+
+              // If we have an instanceId, map it and transition the process ID
+              if (jobData.instanceId) {
+                requestStore.getState().setJobMapping(apAgentJobId, jobData.instanceId)
+                requestStore.getState().setJobStatus(String(jobData.instanceId), {
+                  stage,
+                  message,
+                  percent,
+                  isCompleted,
+                  apAgentJobId,
+                })
+
+                // Update processingProcess ID in store
+                requestStore.getState().updateProcessingProcess(String(processId), {
+                  id: jobData.instanceId,
+                  processId: jobData.instanceId,
+                  apAgentJobId: null, // Clear job ID once resolved
+                })
+              }
+
+              if (isCompleted) {
+                if (jobData.instanceId) {
+                  removeProcessingProcess(jobData.instanceId)
+                } else {
+                  removeProcessingProcess(processId)
+                }
+                queryClient.invalidateQueries({ queryKey: ['inbox'] })
+                queryClient.invalidateQueries({ queryKey: ['request-detail'] })
+              }
+            }
+            return
+          }
+
           let response = await workflowsApiV6.getSentList(
             String(workflowId),
             1,
@@ -114,7 +169,8 @@ export const ProcessingBackgroundManager = () => {
       // Initial poll
       poll()
 
-      const intervalId = setInterval(poll, POLLING_INTERVAL)
+      const intervalMs = apAgentJobId ? 5000 : POLLING_INTERVAL
+      const intervalId = setInterval(poll, intervalMs)
       return { id: processId, intervalId }
     })
 

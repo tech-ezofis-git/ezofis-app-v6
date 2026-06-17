@@ -27,8 +27,14 @@ type Props = {
 type StepState = 'waiting' | 'active' | 'done'
 
 export default function PoSetupFlowPage({ onClose }: Props) {
-  const { closeNewRequest } = requestStore((state) => state)
+  const { closeNewRequest, rawWorkflowData } = requestStore((state) => state)
   const tenantId = authUserStore.getState()?.session?.tenantId
+
+  const workflowId = rawWorkflowData?.id
+  const wFormId =
+    rawWorkflowData?.formId ??
+    rawWorkflowData?.wFormId ??
+    rawWorkflowData?.settings?.general?.initiateUsing?.formId
 
   // Upload & Pipeline State
   const [uploadState, setUploadState] = useState<UploadState>('idle')
@@ -354,7 +360,8 @@ export default function PoSetupFlowPage({ onClose }: Props) {
   const sendUpdatedFile = async (file: File) => {
     const payload = {
       file: file,
-      formId: 3,
+      formId: wFormId ? Number(wFormId) : undefined,
+      workflowId: workflowId ? Number(workflowId) : undefined,
     }
 
     try {
