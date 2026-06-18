@@ -312,6 +312,7 @@ const RequestsPage = () => {
           onNext={onNext}
           onPrev={onPrev}
           isFourthItem={selectedIndex === 3}
+          isThirdItem={selectedIndex === 2}
         />
       )}
       {showWorkflowEmpty && !selectedItem ? (

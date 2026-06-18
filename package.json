@@ -47,6 +47,7 @@
     "@mantine/tiptap": "^8.3.11",
     "@react-oauth/google": "^0.13.4",
     "@react-pdf-viewer/core": "^3.12.0",
+    "@react-pdf-viewer/highlight": "^3.12.0",
     "@react-pdf-viewer/search": "^3.12.0",
     "@react-pdf-viewer/thumbnail": "^3.12.0",
     "@t3-oss/env-core": "^0.13.10",

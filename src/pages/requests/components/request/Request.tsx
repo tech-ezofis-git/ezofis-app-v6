@@ -700,6 +700,7 @@ const Request = ({
   onNext,
   onPrev,
   isFourthItem,
+  isThirdItem,
 }: {
   hideActions?: boolean
   item?: any
@@ -708,6 +709,7 @@ const Request = ({
   onNext?: () => void
   onPrev?: () => void
   isFourthItem?: boolean
+  isThirdItem?: boolean
 }) => {
   const {
     activeTabValue,
@@ -1164,6 +1166,7 @@ const Request = ({
           setFormModel={setFormModel}
           setRightView={setRightView}
           isFourthItem={isFourthItem}
+          isThirdItem={isThirdItem}
         />
       </AnimateFadeIn>
     </div>

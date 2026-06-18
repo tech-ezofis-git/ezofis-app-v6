@@ -27,6 +27,10 @@ import requestStore from '@/pages/requests/stores/useRequestStore'
 import '@react-pdf-viewer/core/lib/styles/index.css'
 import { searchPlugin } from '@react-pdf-viewer/search'
 import '@react-pdf-viewer/search/lib/styles/index.css'
+import jsPDF from 'jspdf'
+import { highlightPlugin } from '@react-pdf-viewer/highlight'
+import '@react-pdf-viewer/highlight/lib/styles/index.css'
+import type { HighlightArea } from '@react-pdf-viewer/highlight'
 import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
 import {
@@ -1003,6 +1007,32 @@ const getRecommendationMeta = (rec?: string) => {
   }
 }
 
+const OCR_COORDINATES: Record<string, { left: number; top: number; width: number; height: number }> = {
+  'vendor': { left: 28.57, top: 12.12, width: 19.05, height: 2.02 },
+  'supplier': { left: 28.57, top: 12.12, width: 19.05, height: 2.02 },
+  'supplier name': { left: 28.57, top: 12.12, width: 19.05, height: 2.02 },
+  'vendor name': { left: 28.57, top: 12.12, width: 19.05, height: 2.02 },
+  'documentnumber': { left: 28.57, top: 17.17, width: 16.67, height: 2.02 },
+  'document number': { left: 28.57, top: 17.17, width: 16.67, height: 2.02 },
+  'invoice number': { left: 28.57, top: 17.17, width: 16.67, height: 2.02 },
+  'documentdate': { left: 28.57, top: 22.22, width: 14.28, height: 2.02 },
+  'document date': { left: 28.57, top: 22.22, width: 14.28, height: 2.02 },
+  'invoice date': { left: 28.57, top: 22.22, width: 14.28, height: 2.02 },
+  'purchaseordernumber': { left: 28.57, top: 27.27, width: 14.28, height: 2.02 },
+  'purchase order number': { left: 28.57, top: 27.27, width: 14.28, height: 2.02 },
+  'po number': { left: 28.57, top: 27.27, width: 14.28, height: 2.02 },
+  'amount': { left: 28.57, top: 32.32, width: 9.52, height: 2.02 },
+  'total due': { left: 28.57, top: 32.32, width: 9.52, height: 2.02 },
+  'total amount': { left: 28.57, top: 32.32, width: 9.52, height: 2.02 },
+  'description': { left: 7.14, top: 45.79, width: 23.8, height: 2.02 },
+  'qty': { left: 57.14, top: 45.79, width: 4.76, height: 2.02 },
+  'quantity': { left: 57.14, top: 45.79, width: 4.76, height: 2.02 },
+  'price': { left: 69.05, top: 45.79, width: 9.52, height: 2.02 },
+  'rate': { left: 69.05, top: 45.79, width: 9.52, height: 2.02 },
+  'unit price': { left: 69.05, top: 45.79, width: 9.52, height: 2.02 },
+  'line_amount': { left: 83.33, top: 45.79, width: 9.52, height: 2.02 },
+}
+
 const Overview = (props: any) => {
   const {
     agentData,
@@ -1018,6 +1048,7 @@ const Overview = (props: any) => {
     workflowId,
     setFormModel,
     isFourthItem,
+    isThirdItem,
   } = props
 
   const processingProcesses = requestStore((state) => state.processingProcesses)
@@ -1140,8 +1171,47 @@ const Overview = (props: any) => {
   const searchPluginInstance = searchPlugin()
   const { highlight, clearHighlights } = searchPluginInstance
 
-  const handleFieldFocus = (value: any) => {
+  const [activeHighlight, setActiveHighlight] = useState<HighlightArea | null>(null)
+
+  const highlightPluginInstance = highlightPlugin({
+    renderHighlights: (renderProps: any) => (
+      <div>
+        {activeHighlight && activeHighlight.pageIndex === renderProps.pageIndex && (
+          <div
+            style={{
+              background: 'rgba(255, 235, 59, 0.4)',
+              border: '2px solid rgb(251, 192, 45)',
+              left: `${activeHighlight.left}%`,
+              top: `${activeHighlight.top}%`,
+              width: `${activeHighlight.width}%`,
+              height: `${activeHighlight.height}%`,
+              position: 'absolute',
+              pointerEvents: 'none',
+            }}
+          />
+        )}
+      </div>
+    ),
+  })
+
+  const handleFieldFocus = (value: any, fieldKey?: string) => {
     const stringVal = String(value || '').trim()
+    if (isThirdItem && fieldKey) {
+      const normalizedKey = fieldKey.toLowerCase().trim()
+      const coords = OCR_COORDINATES[normalizedKey]
+      if (coords) {
+        setActiveHighlight({
+          pageIndex: 0,
+          left: coords.left,
+          top: coords.top,
+          width: coords.width,
+          height: coords.height,
+        })
+        return
+      }
+    }
+
+    setActiveHighlight(null)
     if (stringVal && stringVal !== '-') {
       highlight([stringVal])
     } else {
@@ -1419,6 +1489,73 @@ const Overview = (props: any) => {
   useEffect(() => {
     let activeUrl: string | null = null
     const fetchFile = async () => {
+      if (isThirdItem) {
+        try {
+          const doc = new jsPDF()
+          doc.setFont('helvetica', 'bold')
+          doc.setFontSize(16)
+          doc.setTextColor(33, 37, 41)
+          doc.text("INVOICE DOCUMENT (AI OCR Simulated)", 15, 20)
+
+          doc.setLineWidth(0.5)
+          doc.setDrawColor(206, 212, 218)
+          doc.line(15, 25, 195, 25)
+
+          doc.setFont('helvetica', 'normal')
+          doc.setFontSize(10)
+          doc.setTextColor(73, 80, 87)
+
+          doc.setFont('helvetica', 'bold')
+          doc.text("Vendor Name:", 15, 40)
+          doc.setFont('helvetica', 'normal')
+          doc.text("Vendor Gamma", 60, 40)
+
+          doc.setFont('helvetica', 'bold')
+          doc.text("Invoice Number:", 15, 55)
+          doc.setFont('helvetica', 'normal')
+          doc.text("DOC-2025-0003", 60, 55)
+
+          doc.setFont('helvetica', 'bold')
+          doc.text("Invoice Date:", 15, 70)
+          doc.setFont('helvetica', 'normal')
+          doc.text("2025-01-07", 60, 70)
+
+          doc.setFont('helvetica', 'bold')
+          doc.text("PO Number:", 15, 85)
+          doc.setFont('helvetica', 'normal')
+          doc.text("PO-2025-1003", 60, 85)
+
+          doc.setFont('helvetica', 'bold')
+          doc.text("Total Amount:", 15, 100)
+          doc.setFont('helvetica', 'normal')
+          doc.text("$975.00", 60, 100)
+
+          // Line items
+          doc.setFont('helvetica', 'bold')
+          doc.text("Line Items:", 15, 120)
+          doc.line(15, 123, 195, 123)
+
+          doc.text("Description", 15, 130)
+          doc.text("Qty", 120, 130)
+          doc.text("Unit Price", 145, 130)
+          doc.text("Total", 175, 130)
+
+          doc.setFont('helvetica', 'normal')
+          doc.text("Office Chair - Ergonomic", 15, 140)
+          doc.text("3", 120, 140)
+          doc.text("$325.00", 145, 140)
+          doc.text("$975.00", 175, 140)
+
+          const url = URL.createObjectURL(doc.output('blob'))
+          setPreviewUrl(url)
+          setFileType('application/pdf')
+          setIsViewerLoading(false)
+          return
+        } catch (e) {
+          console.error("Failed to generate dynamic PDF", e)
+        }
+      }
+
       const localUrl =
         selectedFile?._localFileUrl ||
         selectedItem?._localFileUrl ||
@@ -1538,7 +1675,11 @@ const Overview = (props: any) => {
             <Viewer
               defaultScale={SpecialZoomLevel.PageWidth}
               fileUrl={previewUrl}
-              plugins={[toolbarPluginInstance, searchPluginInstance]}
+              plugins={
+                isThirdItem
+                  ? [toolbarPluginInstance, highlightPluginInstance]
+                  : [toolbarPluginInstance, searchPluginInstance]
+              }
             />
             <div className='absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 items-center gap-4 rounded-xl border border-[var(--gray-3)] bg-surface/90 px-4 py-2 opacity-0 shadow-2xl backdrop-blur-sm transition-all duration-300 group-hover:opacity-100'>
               <button
@@ -2133,7 +2274,7 @@ const Overview = (props: any) => {
                                     key.toLowerCase().includes('total') ||
                                     key.toLowerCase().includes('due')
                                   }
-                                  onFocus={handleFieldFocus}
+                                  onFocus={(val: any) => handleFieldFocus(val, key)}
                                   onChange={(newVal: string) =>
                                     handleFieldChange(key, newVal)
                                   }
@@ -2254,7 +2395,7 @@ const Overview = (props: any) => {
                                         <input
                                           className='w-full rounded border-none bg-transparent px-1.5 py-1 text-xs font-semibold text-[var(--gray-13)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
                                           value={descVal}
-                                          onFocus={() => handleFieldFocus?.(descVal)}
+                                          onFocus={() => handleFieldFocus?.(descVal, 'description')}
                                           onChange={(e) =>
                                             handleLineItemChange(
                                               index,
@@ -2270,7 +2411,7 @@ const Overview = (props: any) => {
                                         <input
                                           className='w-full rounded border-none bg-transparent px-1.5 py-1 text-right text-xs font-semibold text-[var(--gray-11)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
                                           value={qtyVal}
-                                          onFocus={() => handleFieldFocus?.(qtyVal)}
+                                          onFocus={() => handleFieldFocus?.(qtyVal, 'qty')}
                                           onChange={(e) =>
                                             handleLineItemChange(
                                               index,
@@ -2286,7 +2427,7 @@ const Overview = (props: any) => {
                                         <input
                                           className='w-full rounded border-none bg-transparent px-1.5 py-1 text-right text-xs font-semibold text-[var(--gray-11)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
                                           value={priceVal}
-                                          onFocus={() => handleFieldFocus?.(priceVal)}
+                                          onFocus={() => handleFieldFocus?.(priceVal, 'price')}
                                           onBlur={(e) => {
                                             const num = Number.parseFloat(
                                               e.target.value.replace(
@@ -2317,7 +2458,7 @@ const Overview = (props: any) => {
                                         <input
                                           className='w-full rounded border-none bg-transparent px-1.5 py-1 text-right text-xs font-semibold text-[var(--gray-13)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
                                           value={amountVal}
-                                          onFocus={() => handleFieldFocus?.(amountVal)}
+                                          onFocus={() => handleFieldFocus?.(amountVal, 'line_amount')}
                                           onBlur={(e) => {
                                             const num = Number.parseFloat(
                                               e.target.value.replace(
