@@ -1152,6 +1152,117 @@ const Overview = (props: any) => {
     }
   }
 
+  const [selectedText, setSelectedText] = useState<string | null>(null)
+  const [menuPosition, setMenuPosition] = useState<{ x: number; y: number } | null>(null)
+  const [searchFilter, setSearchFilter] = useState<string>('')
+
+  const viewerContainerRef = useRef<HTMLDivElement>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  const eligibleFields = useMemo(() => {
+    if (!formModel) return []
+    return Object.entries(formModel)
+      .filter(([key, val]) => {
+        if (typeof val === 'object' && val !== null) return false
+        if (typeof val === 'string') {
+          const trimmed = val.trim()
+          if (trimmed.startsWith('[') && trimmed.endsWith(']')) return false
+          if (trimmed.startsWith('{') && trimmed.endsWith('}')) return false
+        }
+        if (!allowedLabels || allowedLabels.size === 0) {
+          return hasMeaningfulScalarValue(val)
+        }
+        return allowedLabels.has(key) || hasMeaningfulScalarValue(val)
+      })
+      .map(([key]) => key)
+  }, [formModel, allowedLabels])
+
+  const handleMouseUp = () => {
+    const selection = window.getSelection()
+    if (!selection) return
+    const text = selection.toString().trim()
+    if (!text) {
+      setSelectedText(null)
+      setMenuPosition(null)
+      setSearchFilter('')
+      return
+    }
+
+    try {
+      const range = selection.getRangeAt(0)
+      const rect = range.getBoundingClientRect()
+
+      if (viewerContainerRef.current) {
+        const containerRect = viewerContainerRef.current.getBoundingClientRect()
+        const x = rect.left - containerRect.left
+        const y = rect.bottom - containerRect.top
+
+        // Position boundary check to keep dropdown inside the 40% PDF viewer
+        const menuWidth = 224
+        const menuHeight = 240
+        let leftPos = x
+        let topPos = y + 10
+
+        if (leftPos + menuWidth > containerRect.width) {
+          leftPos = containerRect.width - menuWidth - 8
+        }
+        if (leftPos < 8) {
+          leftPos = 8
+        }
+
+        if (topPos + menuHeight > containerRect.height) {
+          topPos = rect.top - containerRect.top - menuHeight - 10
+        }
+        if (topPos < 8) {
+          topPos = 8
+        }
+
+        setSelectedText(text)
+        setMenuPosition({ x: leftPos, y: topPos })
+      }
+    } catch (err) {
+      console.error('Error getting selection range:', err)
+    }
+  }
+
+  const handleFieldSelect = (fieldKey: string) => {
+    if (selectedText) {
+      handleFieldChange(fieldKey, selectedText)
+    }
+    setSelectedText(null)
+    setMenuPosition(null)
+    setSearchFilter('')
+    window.getSelection()?.removeAllRanges()
+  }
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setSelectedText(null)
+        setMenuPosition(null)
+        setSearchFilter('')
+      }
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setSelectedText(null)
+        setMenuPosition(null)
+        setSearchFilter('')
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [])
+
   const backOrder = useMemo(() => {
     if (isFourthItem) {
       return {
@@ -1592,7 +1703,11 @@ const Overview = (props: any) => {
     <div className='flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden font-sans'>
       <div className='flex min-h-0 flex-1 overflow-hidden'>
         {/* Left Side - Document Viewer (40% Width) */}
-        <div className='relative flex w-[40%] flex-col overflow-hidden border-r border-[var(--gray-3)]'>
+        <div
+          ref={viewerContainerRef}
+          onMouseUp={handleMouseUp}
+          className='relative flex w-[40%] flex-col overflow-hidden border-r border-[var(--gray-3)]'
+        >
           {isViewerLoading && (
             <div className='absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 bg-[var(--gray-1)]'>
               <BarLoader />
@@ -1603,6 +1718,58 @@ const Overview = (props: any) => {
           )}
 
           {previewContent}
+
+          {menuPosition && selectedText && (
+            <div
+              ref={dropdownRef}
+              style={{
+                top: `${menuPosition.y}px`,
+                left: `${menuPosition.x}px`,
+              }}
+              className='absolute z-50 flex max-h-60 w-56 flex-col rounded-lg border border-[var(--gray-3)] bg-surface py-1 shadow-lg animate-in fade-in slide-in-from-top-1 duration-200'
+            >
+              {/* Assign Header */}
+              <div className='border-b border-[var(--gray-3)] px-3 py-1.5 text-[10px] font-semibold text-[var(--gray-11)] bg-[var(--gray-1)]/50'>
+                Assign "<span className='font-bold text-[var(--gray-13)] truncate inline-block max-w-[140px] align-bottom'>{selectedText}</span>" to:
+              </div>
+
+              {/* Search Filter Input */}
+              <div className='px-2 py-1.5 border-b border-[var(--gray-3)]'>
+                <input
+                  type='text'
+                  placeholder='Filter fields...'
+                  value={searchFilter}
+                  onChange={(e) => setSearchFilter(e.target.value)}
+                  className='w-full rounded border border-[var(--gray-3)] bg-transparent px-2 py-1 text-xs text-[var(--gray-13)] placeholder:font-normal focus:border-[var(--primary-3)] focus:outline-none'
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </div>
+
+              {/* Fields List */}
+              <div className='flex-1 overflow-y-auto max-h-40 min-h-[40px] px-1 py-1'>
+                {eligibleFields
+                  .filter((key) => key.toLowerCase().includes(searchFilter.toLowerCase()))
+                  .map((key) => (
+                    <button
+                      key={key}
+                      type='button'
+                      className='w-full rounded px-2.5 py-1.5 text-left text-xs font-semibold text-[var(--gray-12)] hover:bg-[var(--primary-3)] hover:text-[var(--primary-9)] transition-colors active:scale-95'
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleFieldSelect(key)
+                      }}
+                    >
+                      {key}
+                    </button>
+                  ))}
+                {eligibleFields.filter((key) => key.toLowerCase().includes(searchFilter.toLowerCase())).length === 0 && (
+                  <div className='px-3 py-2 text-center text-xs text-[var(--gray-9)] font-medium'>
+                    No matching fields
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Right Side - Analysis & Data (60% Width) */}
