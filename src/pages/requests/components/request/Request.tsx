@@ -577,7 +577,28 @@ const handleJobData = (
   }
 }
 
-const useJobPolling = (apAgentJobId: string | number | undefined) => {
+const isFormDataEmpty = (formData: any): boolean => {
+  if (!formData) return true
+  if (typeof formData === 'string') {
+    try {
+      const parsed = JSON.parse(formData)
+      const fields = parsed?.fields || parsed || {}
+      return Object.keys(fields).length === 0
+    } catch {
+      return true
+    }
+  }
+  if (typeof formData === 'object') {
+    const fields = formData.fields || formData || {}
+    return Object.keys(fields).length === 0
+  }
+  return true
+}
+
+const useJobPolling = (
+  apAgentJobId: string | number | undefined,
+  onJobData?: (jobData: any) => void,
+) => {
   const [jobStatus, setJobStatus] = useState<{
     hangfireStatus: string
     message: string
@@ -600,6 +621,9 @@ const useJobPolling = (apAgentJobId: string | number | undefined) => {
           handleJobData(apAgentJobId, res.data, setJobStatus, () => {
             if (intervalId) clearInterval(intervalId)
           })
+          if (onJobData) {
+            onJobData(res.data)
+          }
         }
       } catch (err) {
         console.error('Error polling AP Agent job:', err)
@@ -753,7 +777,6 @@ const Request = ({
       }
     }
   }
-  const jobStatus = useJobPolling(apAgentJobId)
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState<boolean>(false)
   const [rightView, setRightView] = useState<
@@ -775,6 +798,33 @@ const Request = ({
     selectedItem?.transactionId,
     initialProcessing,
   )
+
+  const agentDataList = request?._agentData || selectedItem?._agentData || []
+  const hasAgentData = agentDataList.length > 0
+
+  const currentAgentData = useMemo(() => {
+    return agentDataList.find((a: any) => a.id === selectedAgentId) || {}
+  }, [agentDataList, selectedAgentId])
+
+  const invoiceHeader =
+    currentAgentData?.['Extracted Invoice JSON']?.invoice_header
+
+  const jobStatus = useJobPolling(apAgentJobId, (jobData) => {
+    if (jobData && jobData.formData) {
+      const isEmpty = isFormDataEmpty(jobData.formData)
+      if (!isEmpty) {
+        const cleanFields = parseCleanFields(
+          { formData: jobData.formData },
+          selectedWorkflow,
+          request?._formDefinition,
+          invoiceHeader,
+        )
+        if (cleanFields && Object.keys(cleanFields).length > 0) {
+          setFormModel(cleanFields)
+        }
+      }
+    }
+  })
 
   const hasAgentDecision = request
     ? !!(
@@ -827,9 +877,6 @@ const Request = ({
   }, [isApAgentStage, ruleActions, actions])
 
 
-  const agentDataList = request?._agentData || selectedItem?._agentData || []
-  const hasAgentData = agentDataList.length > 0
-
   const [formModel, setFormModel] = useState<any>({})
 
   const allowedLabels = useMemo(() => {
@@ -874,12 +921,6 @@ const Request = ({
     }
   }, [request?._agentData, hasAgentData])
 
-  const currentAgentData = useMemo(() => {
-    return agentDataList.find((a: any) => a.id === selectedAgentId) || {}
-  }, [agentDataList, selectedAgentId])
-
-  const invoiceHeader =
-    currentAgentData?.['Extracted Invoice JSON']?.invoice_header
 
   useEffect(() => {
     const activeItem = request || selectedItem
