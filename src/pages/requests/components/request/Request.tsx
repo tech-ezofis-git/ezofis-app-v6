@@ -2,10 +2,10 @@ import { useEffect, useMemo, useState } from 'react'
 import workflowsApiV6 from '@/api/v6/workflows'
 // Import your custom animation components
 import { AnimateFadeIn } from '@/components/common/animations'
-import authUserStore from '@/stores/authUserStore'
 import workflowApi from '../../../../api/workflow/workflow'
 import { useRequestDetail } from '../../hooks/useRequestDetails'
 import requestStore from '../../stores/useRequestStore'
+import authUserStore from '@/stores/authUserStore'
 import {
   isDecorativeFieldType,
   isMatrixFieldType,
@@ -784,18 +784,32 @@ const Request = ({
       )
     : false
   const isCurrentlyProcessing = !hasAgentDecision && initialProcessing && !jobStatus?.isCompleted
-  const actions =
-    request?._actions ||
-    selectedItem?._actions ||
-    storeSelectedItem?._actions ||
-    []
+
+  const actions = useMemo(() => {
+    const list =
+      request?._actions ||
+      selectedItem?._actions ||
+      storeSelectedItem?._actions ||
+      []
+    if (list.length === 0 && selectedItem?._actions) {
+      return selectedItem._actions
+    }
+    if (list.length === 0 && storeSelectedItem?._actions) {
+      return storeSelectedItem._actions
+    }
+    return list
+  }, [request?._actions, selectedItem?._actions, storeSelectedItem?._actions])
+
+  const isApAgentStage =
+    selectedItem?.stageType === 'AP_AGENT' ||
+    request?.stageType === 'AP_AGENT'
 
   const dynamicRules = useMemo(() => {
     const rules = rawWorkflowData?.workflowJson?.rules || []
-    const currentActivityId = selectedItem?.activityId
+    const currentActivityId = request?.activityId || selectedItem?.activityId
     if (!currentActivityId) return []
     return rules.filter((rule: any) => rule.fromBlockId === currentActivityId)
-  }, [rawWorkflowData, selectedItem?.activityId])
+  }, [rawWorkflowData, request?.activityId, selectedItem?.activityId])
 
   const ruleActions = useMemo(() => {
     return dynamicRules.map((rule: any) => {
@@ -808,8 +822,10 @@ const Request = ({
   }, [dynamicRules])
 
   const headerActions = useMemo(() => {
+    if (isApAgentStage) return []
     return ruleActions.length > 0 ? ruleActions : actions
-  }, [ruleActions, actions])
+  }, [isApAgentStage, ruleActions, actions])
+
 
   const agentDataList = request?._agentData || selectedItem?._agentData || []
   const hasAgentData = agentDataList.length > 0
@@ -907,6 +923,8 @@ const Request = ({
     }
   }, [hasAgentData, activeTabValue])
 
+
+
   const handleMoveNext = async (action: string) => {
     try {
       setSubmitting(true)
@@ -919,7 +937,11 @@ const Request = ({
           request?._formDefinition,
         )
       } else if (typeof selectedItem?.formData === 'string') {
-        fields = JSON.parse(selectedItem.formData || '{}')
+        try {
+          fields = JSON.parse(selectedItem.formData || '{}')
+        } catch {
+          fields = {}
+        }
       } else {
         fields = selectedItem?.formData?.fields || selectedItem?.formData || {}
       }
@@ -927,36 +949,43 @@ const Request = ({
       const formDataStr = JSON.stringify(fields)
 
       const payload = {
-        activityid: selectedItem?.activityId || '',
+        activityid: selectedItem?.activityId || request?.activityId || '',
         activityUserId:
-          selectedItem?.userId || authUserStore.getState().session?.id || null,
-        AIAGENTHtml: selectedItem?.agentHtml || '',
+          selectedItem?.userId ||
+          request?.userId ||
+          authUserStore.getState().session?.id ||
+          null,
+        AIAGENTHtml: selectedItem?.agentHtml || request?.agentHtml || '',
         AIAGENTResponse:
           typeof selectedItem?.agentResponse === 'string'
             ? selectedItem.agentResponse
-            : JSON.stringify(selectedItem?.agentResponse || {}),
+            : JSON.stringify(selectedItem?.agentResponse || request?.agentResponse || {}),
         comments: '',
         formData: formDataStr,
-        formEntryId: Number(selectedItem?.formEntryId || 0),
+        formEntryId: Number(selectedItem?.formEntryId || request?.formEntryId || 0),
         formId:
           selectedItem?.formId ||
+          request?.formId ||
           rawWorkflowData?.formId ||
           rawWorkflowData?.wFormId ||
           null,
-        instanceId: selectedItem?.workflowInstanceId || null,
+        instanceId: selectedItem?.workflowInstanceId || request?.workflowInstanceId || null,
         isItemTable: true,
-        itemId: selectedItem?.itemId || null,
-        processId: selectedItem?.processId || selectedItem?.id || null,
+        itemId: selectedItem?.itemId || request?.itemId || null,
+        processId: selectedItem?.processId || selectedItem?.id || request?.processId || request?.id || null,
         repositoryId:
-          selectedItem?.repositoryId || rawWorkflowData?.repositoryId || null,
+          selectedItem?.repositoryId ||
+          request?.repositoryId ||
+          rawWorkflowData?.repositoryId ||
+          null,
         review: action,
-        transactionId: selectedItem?.transactionId || null,
-        workflowId: selectedItem?.workflowId || rawWorkflowData?.id || null,
+        transactionId: selectedItem?.transactionId || request?.transactionId || null,
+        workflowId: selectedItem?.workflowId || request?.workflowId || rawWorkflowData?.id || null,
       }
 
       console.log('MoveNext Payload:', payload)
 
-      const instanceId = selectedItem?.workflowInstanceId
+      const instanceId = selectedItem?.workflowInstanceId || request?.workflowInstanceId
       if (!instanceId) {
         throw new Error('Instance ID is missing')
       }
@@ -1011,6 +1040,7 @@ const Request = ({
       setSubmitting(false)
     }
   }
+
 
   const totalAmount =
     formModel?.['Invoice Amount'] ||
