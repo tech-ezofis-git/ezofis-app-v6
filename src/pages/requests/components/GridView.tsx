@@ -949,8 +949,12 @@ const GridRowItem = ({
       row?.createdAt,
   )
 
+  const percentText = matchedJobStatus && matchedJobStatus.percent !== undefined
+    ? `${matchedJobStatus.percent}% `
+    : ''
+
   const statusText = matchedJobStatus && !matchedJobStatus.isCompleted
-    ? `${matchedJobStatus.stage}${matchedJobStatus.message ? ` - ${matchedJobStatus.message}` : ''}`
+    ? `${percentText}${matchedJobStatus.stage}${matchedJobStatus.message ? ` - ${matchedJobStatus.message}` : ''}`
     : defaultStatusText
 
   const parsedForm = getParsedFormData(row)
@@ -1145,7 +1149,7 @@ const GridRowItem = ({
       <div className='ml-auto flex shrink-0 items-center gap-6 select-none'>
         {row.isProcessing ? (
           <div className='relative flex w-[249px] items-center justify-end gap-2 pr-4'>
-            <span className='animate-pulse text-[12px] font-semibold text-[var(--orange-9)]'>
+            <span className='animate-pulse whitespace-nowrap text-[12px] font-semibold text-[var(--orange-9)]'>
               {statusText}
             </span>
           </div>

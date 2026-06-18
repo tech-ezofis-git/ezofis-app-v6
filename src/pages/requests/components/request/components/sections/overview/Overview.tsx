@@ -2182,7 +2182,10 @@ const Overview = (props: any) => {
                 <div className='flex min-h-0 flex-1 flex-col'>
                   {activeTab === 'summary' && (
                     <div className='grid flex-1 grid-cols-2 gap-x-4 gap-y-2 overflow-y-auto p-4'>
-                      {isCurrentlyProcessing && Object.keys(formModel || {}).length === 0
+                      {isCurrentlyProcessing &&
+                      (!formModel ||
+                        Object.keys(formModel).length === 0 ||
+                        !Object.values(formModel).some(hasMeaningfulScalarValue))
                         ? Array.from({ length: 8 }).map((_, idx) => {
                             const labels = [
                               'Supplier Name',

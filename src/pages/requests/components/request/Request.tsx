@@ -538,6 +538,7 @@ const handleJobData = (
     message: jobData.message || '',
     percent,
     stage,
+    isCompleted,
   })
 
   // Sync to global store
@@ -582,6 +583,7 @@ const useJobPolling = (apAgentJobId: string | number | undefined) => {
     message: string
     percent?: number
     stage: string
+    isCompleted?: boolean
   } | null>(null)
 
   useEffect(() => {
@@ -721,6 +723,8 @@ const Request = ({
     selectedWorkflow,
     selectedWorkflowId,
     workflowRefresh,
+    jobMappings,
+    jobStatuses,
   } = requestStore((state) => state)
 
   const selectedItem = item || storeSelectedItem
@@ -730,7 +734,25 @@ const Request = ({
   const [activeTab, setActiveTab] = useState<string>(
     activeTabValue || 'Overview',
   )
-  const apAgentJobId = selectedItem?.apAgentJobId
+  const rowId = selectedItem?.processId || selectedItem?.id
+  let apAgentJobId = selectedItem?.apAgentJobId
+  if (!apAgentJobId && rowId) {
+    const mappedJobId = Object.keys(jobMappings || {}).find(
+      (key) => String(jobMappings[key]) === String(rowId)
+    )
+    if (mappedJobId) {
+      apAgentJobId = mappedJobId
+    } else {
+      const statusObj = Object.values(jobStatuses || {}).find(
+        (status: any) =>
+          String(status?.apAgentJobId) === String(rowId) ||
+          String(status?.instanceId) === String(rowId)
+      ) as any
+      if (statusObj?.apAgentJobId) {
+        apAgentJobId = statusObj.apAgentJobId
+      }
+    }
+  }
   const jobStatus = useJobPolling(apAgentJobId)
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState<boolean>(false)
@@ -761,7 +783,7 @@ const Request = ({
         request.completedAtUtc
       )
     : false
-  const isCurrentlyProcessing = !hasAgentDecision && initialProcessing
+  const isCurrentlyProcessing = !hasAgentDecision && initialProcessing && !jobStatus?.isCompleted
   const actions =
     request?._actions ||
     selectedItem?._actions ||
@@ -1072,12 +1094,12 @@ const Request = ({
   }
 
   let statusBadge = ''
-  if (apAgentJobId && jobStatus) {
+  if (apAgentJobId && jobStatus && !jobStatus.isCompleted) {
     statusBadge = jobStatus.stage
     if (displayMessage) {
       statusBadge += ` - ${displayMessage}`
     }
-  } else if (apAgentJobId) {
+  } else if (apAgentJobId && (!jobStatus || !jobStatus.isCompleted)) {
     statusBadge = 'Initiating...'
   } else {
     statusBadge = finalStatusBadge
