@@ -491,6 +491,28 @@ const getApAgentJobStatus = async (jobId: string) => {
   return response
 }
 
+const getInstanceHistory = async (
+  workflowId: number | string,
+  instanceId: number | string,
+) => {
+  const response: { data: any; error: string } = { data: null, error: '' }
+  try {
+    const { data, status } = await axiosV6({
+      headers: getTenantHeaders(),
+      method: 'GET',
+      url: `/workflows/${workflowId}/instances/${instanceId}/history`,
+    })
+    if (status !== 200) throw new Error('invalid status code')
+    response.data = data
+  } catch (e: unknown) {
+    console.error(e)
+    const err = e as { message?: string; response?: { data?: string } }
+    response.error =
+      err?.response?.data || err?.message || 'error fetching instance history'
+  }
+  return response
+}
+
 export const workflowsApiV6 = {
   createWorkflow,
   deleteWorkflow,
@@ -502,9 +524,11 @@ export const workflowsApiV6 = {
   getCompletedList,
   getInboxList,
   getInstanceCount,
+  getInstanceHistory,
   getSentList,
   getWorkflowById,
   getWorkflows,
 }
 
 export default workflowsApiV6
+

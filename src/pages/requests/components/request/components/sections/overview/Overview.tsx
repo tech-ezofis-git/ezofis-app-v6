@@ -2678,6 +2678,7 @@ const Overview = (props: any) => {
                       ) : (
                         <History
                           enabled={true}
+                          instanceId={selectedItem?.workflowInstanceId || selectedItem?.instanceId || processId}
                           processId={processId}
                           workflowId={workflowId}
                         />
