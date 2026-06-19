@@ -1,5 +1,4 @@
 // @/pages/requests/components/request/components/sections/history/History.tsx
-import { useMemo } from 'react'
 import Icon from '@/components/base/icon/Icon'
 import { useHistory } from '@/pages/requests/hooks/useHistory'
 import cn from '@/utils/cn'
@@ -19,6 +18,14 @@ type HistoryRow = {
   receivedOn?: string | number | Date | null
   stage?: string
   status?: string
+
+  // V6 Real-time properties
+  title?: string
+  description?: string
+  stageName?: string
+  stageType?: string
+  performedByUserName?: string
+  review?: string
 }
 
 type Props = {
@@ -50,6 +57,7 @@ const toDate = (value: any): Date | null => {
 
 // Helper to determine the actor name
 const pickActor = (h: HistoryRow) => {
+  if (h.performedByUserName) return h.performedByUserName
   if (h.agentType) {
     return h.agentType === 'ocr' ? 'AI Engine' : h.agentType
   }
@@ -259,24 +267,11 @@ export default function History({
   processId,
   workflowId,
 }: Props) {
-  const { data, error, isLoading } = useHistory(
+  const { data: flows = [], error, isLoading } = useHistory(
     workflowId,
     instanceId || processId,
     enabled,
   )
-
-  const stageRollup = useMemo(() => {
-    const seen = new Set<string>()
-    const out: HistoryRow[] = []
-    for (const r of (data || []) as HistoryRow[]) {
-      const key = String(r.activityId ?? r.stage ?? '')
-      if (!key) continue
-      if (seen.has(key)) continue
-      seen.add(key)
-      out.push(r)
-    }
-    return out
-  }, [data])
 
   if (isLoading) {
     return (
@@ -300,7 +295,7 @@ export default function History({
     )
   }
 
-  if (!stageRollup.length) {
+  if (!flows.length) {
     return (
       <div className='py-8 text-center text-gray-10'>
         <Icon
@@ -315,21 +310,27 @@ export default function History({
   return (
     <div className='animate-in fade-in slide-in-from-left-4 relative flex flex-col gap-5 pl-2 pr-1 py-2 duration-300'>
       {/* Timeline Connecting Line */}
-      {stageRollup.length > 1 && (
-        <div className='absolute bottom-7 left-[27px] top-7 w-[2px] bg-[var(--gray-3)]' />
+      {flows.length > 1 && (
+        <div className='absolute bottom-7 left-[27px] top-7 w-[2px] bg-gray-3' />
       )}
 
-      {stageRollup.map((h, idx) => {
+      {flows.map((h, idx) => {
         const isStart = idx === 0
         const config = getStepConfig(h, isStart)
-        const title = getTitle(h)
+        const title = h.title || getTitle(h)
         const actor = pickActor(h)
         const date = getFormattedTimestamp(h)
+        const showDesc =
+          h.description &&
+          h.description.trim() &&
+          h.description !== h.activityId &&
+          h.description !== h.stage &&
+          safeLower(title).includes('ap agent')
 
         return (
           <div
             className='relative flex items-start gap-4 transition-all duration-200 hover:translate-x-1'
-            key={`${h.activityId ?? idx}`}
+            key={`${h.activityId ?? idx}-${idx}`}
           >
             <div
               className={cn(
@@ -340,11 +341,16 @@ export default function History({
               <Icon className='size-5' name={config.icon} />
             </div>
 
-            <div className='flex min-w-0 flex-col gap-0.5 pt-0.5'>
+            <div className='flex min-w-0 flex-1 flex-col gap-0.5 pt-0.5'>
               <div className='text-13 leading-snug font-semibold text-gray-13'>
                 {title}
               </div>
-              <div className='text-11 font-medium text-gray-9'>
+              {showDesc && (
+                <div className='text-11 leading-normal font-normal text-gray-11 whitespace-pre-wrap mt-1 bg-gray-2/50 rounded-lg px-2.5 py-1.5 border border-gray-3/30 max-w-md'>
+                  {h.description}
+                </div>
+              )}
+              <div className='text-11 font-medium text-gray-9 mt-1'>
                 {actor} <span className='mx-1 text-gray-6'>·</span> {date}
               </div>
             </div>

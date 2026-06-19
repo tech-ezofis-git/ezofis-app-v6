@@ -7,6 +7,7 @@ import Icon from '@/components/base/icon/Icon'
 import { useComments } from '@/pages/requests/hooks/useComments'
 import authUserStore from '@/stores/authUserStore'
 import { formatDatetime } from '@/utils/dayjs'
+import cn from '@/utils/cn'
 // import IconButton from '@/components/base/button/IconButton'
 
 dayjs.extend(relativeTime)
@@ -265,13 +266,13 @@ export default function Comments({
 
             {/* Post Button */}
             <button
-              className='flex h-[36px] items-center justify-center rounded-xl px-5 text-13 font-bold text-white transition-all active:scale-95'
+              className={cn(
+                'flex h-[36px] items-center justify-center rounded-xl px-5 text-13 font-bold transition-all active:scale-95',
+                canSend
+                  ? 'bg-primary-9 text-text-on-accent cursor-pointer hover:opacity-90'
+                  : 'bg-gray-3 text-gray-9 cursor-not-allowed',
+              )}
               disabled={!canSend}
-              style={{
-                background: canSend ? 'var(--primary-9)' : 'var(--gray-3)',
-                color: canSend ? 'var(--text-on-accent)' : 'var(--gray-9)',
-                cursor: canSend ? 'pointer' : 'not-allowed',
-              }}
               onClick={onPost}
             >
               {posting ? (

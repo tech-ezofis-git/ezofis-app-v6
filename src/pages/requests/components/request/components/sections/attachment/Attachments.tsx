@@ -283,23 +283,23 @@ export default function Attachments({
             onClick={() => fileInputRef.current?.click()}
             disabled={isUploading}
             className={cn(
-              'flex w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[var(--gray-4)] bg-surface py-5 px-4 text-center transition-all hover:border-[var(--primary-4)] hover:bg-[var(--primary-2)]/10 active:scale-98',
+              'flex w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-4 bg-surface py-5 px-4 text-center transition-all hover:border-primary-4 hover:bg-primary-2/10 active:scale-98',
               isUploading && 'pointer-events-none opacity-60',
             )}
           >
             {isUploading ? (
               <Icon
-                className='size-6 animate-spin text-[var(--primary-9)]'
+                className='size-6 animate-spin text-primary-9'
                 name='tabler:loader'
               />
             ) : (
-              <Icon className='size-6 text-[var(--gray-9)]' name='tabler:upload' />
+              <Icon className='size-6 text-gray-9' name='tabler:upload' />
             )}
             <div className='flex flex-col gap-0.5'>
-              <span className='text-13 font-bold text-[var(--gray-12)]'>
+              <span className='text-13 font-bold text-gray-12'>
                 {isUploading ? 'Uploading...' : 'Upload attachment'}
               </span>
-              <span className='text-11 text-[var(--gray-8)]'>Select file here</span>
+              <span className='text-11 text-gray-8'>Select file here</span>
             </div>
           </button>
         </div>
@@ -308,19 +308,19 @@ export default function Attachments({
       {/* List */}
       <div className='flex flex-col gap-2'>
         {isLoading ? (
-          <div className='flex flex-col items-center justify-center py-10 text-[var(--gray-8)]'>
+          <div className='flex flex-col items-center justify-center py-10 text-gray-8'>
             <Icon className='mb-2 size-6 animate-spin' name='tabler:loader' />
             <span className='text-12'>Loading attachments...</span>
           </div>
         ) : files.length === 0 ? (
-          <div className='flex flex-col items-center justify-center py-10 text-[var(--gray-8)]'>
-            <div className='mb-3 flex size-12 items-center justify-center rounded-full bg-[var(--gray-2)]'>
+          <div className='flex flex-col items-center justify-center py-10 text-gray-8'>
+            <div className='mb-3 flex size-12 items-center justify-center rounded-full bg-gray-2'>
               <Icon
-                className='size-6 text-[var(--gray-7)]'
+                className='size-6 text-gray-7'
                 name='tabler:file-off'
               />
             </div>
-            <span className='text-13 font-medium text-[var(--gray-10)]'>
+            <span className='text-13 font-medium text-gray-10'>
               No attachments found
             </span>
           </div>
@@ -332,7 +332,7 @@ export default function Attachments({
 
             return (
               <div
-                className='group flex cursor-pointer items-start gap-3 rounded-xl border border-[var(--gray-1)] bg-surface p-3 transition-all hover:border-[var(--blue-4)] hover:shadow-sm'
+                className='group flex cursor-pointer items-start gap-3 rounded-xl border border-gray-1 bg-surface p-3 transition-all hover:border-blue-4 hover:shadow-sm'
                 key={file.id}
                 onClick={() => onSelect?.(file)}
               >
@@ -347,17 +347,17 @@ export default function Attachments({
 
                 <div className='min-w-0 flex-1'>
                   <div
-                    className='line-clamp-1 text-13 font-semibold break-all text-[var(--gray-12)] transition-all group-hover:line-clamp-none hover:underline'
+                    className='line-clamp-1 text-13 font-semibold break-all text-gray-12 transition-all group-hover:line-clamp-none hover:underline'
                     title={file.name}
                   >
                     {file.name || 'Untitled'}
                   </div>
                   <div className='mt-0.5 flex items-center gap-2'>
-                    <span className='text-[11px] font-medium tracking-wide text-[var(--gray-9)] uppercase'>
+                    <span className='text-[11px] font-medium tracking-wide text-gray-9 uppercase'>
                       {ext}
                     </span>
-                    <span className='size-0.5 rounded-full bg-[var(--gray-4)]' />
-                    <span className='text-[11px] text-[var(--gray-8)]'>
+                    <span className='size-0.5 rounded-full bg-gray-4' />
+                    <span className='text-[11px] text-gray-8'>
                       {file.createdAt
                         ? new Date(file.createdAt).toLocaleDateString()
                         : 'Unknown date'}
@@ -366,7 +366,7 @@ export default function Attachments({
                 </div>
 
                 <button
-                  className='flex size-8 shrink-0 items-center justify-center rounded-lg text-[var(--gray-8)] opacity-0 transition-colors group-hover:opacity-100 hover:bg-[var(--gray-2)] hover:text-[var(--blue-9)]'
+                  className='flex size-8 shrink-0 items-center justify-center rounded-lg text-gray-8 opacity-0 transition-colors group-hover:opacity-100 hover:bg-gray-2 hover:text-blue-9'
                   title='Download'
                   onClick={(e) => handleDownload(e, file)}
                 >

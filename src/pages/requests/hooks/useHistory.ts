@@ -17,6 +17,14 @@ export type HistoryRow = {
   stage?: string
   status?: string
   subWorkflowHistory?: any
+  
+  // V6 Real-time properties
+  title?: string
+  description?: string
+  stageName?: string
+  stageType?: string
+  performedByUserName?: string
+  review?: string
 }
 
 export function useHistory(
@@ -85,6 +93,12 @@ export function useHistory(
           receivedOn: item.occurredAtUtc || null,
           stage,
           status,
+          title: item.title || '',
+          description: item.description || '',
+          stageName: item.stageName || '',
+          stageType: item.stageType || '',
+          performedByUserName: item.performedByUserName || '',
+          review: item.review || '',
         }
       })
 
