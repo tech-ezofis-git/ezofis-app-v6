@@ -944,13 +944,17 @@ const GridRowItem = ({
 
   const defaultStatusText = useProcessingStatusText(
     matchingProc?.startTime ||
-      row?.raisedAt ||
-      row?.transaction_createdAt ||
-      row?.createdAt,
+    row?.raisedAt ||
+    row?.transaction_createdAt ||
+    row?.createdAt,
   )
 
+  const percentText = matchedJobStatus && matchedJobStatus.percent !== undefined
+    ? `${matchedJobStatus.percent}% `
+    : ''
+
   const statusText = matchedJobStatus && !matchedJobStatus.isCompleted
-    ? `${matchedJobStatus.stage}${matchedJobStatus.message ? ` - ${matchedJobStatus.message}` : ''}`
+    ? `${percentText}${matchedJobStatus.stage}${matchedJobStatus.message ? ` - ${matchedJobStatus.message}` : ''}`
     : defaultStatusText
 
   const parsedForm = getParsedFormData(row)
@@ -977,10 +981,10 @@ const GridRowItem = ({
     row._agentResponse || row._agentData?.[0] || row._agentData || {}
   const rawDecision = String(
     parsedForm['2MH_BMDFEVKsU0uAQjoI1'] ||
-      agentData?.decision ||
-      row.decision ||
-      row.status ||
-      '',
+    agentData?.decision ||
+    row.decision ||
+    row.status ||
+    '',
   ).toUpperCase()
   const aiInsight =
     agentData?.ai_insight || agentData?.aiInsight || agentData?.ai_insect || ''
@@ -1006,11 +1010,11 @@ const GridRowItem = ({
           ? 'border-r border-l border-r-[var(--primary-3)] border-b-[var(--primary-3)] border-l-[var(--primary-3)] bg-[var(--primary-1)] shadow-sm'
           : 'bg-[var(--surface)]',
         !isSelected &&
-          !row.isProcessing &&
-          'hover:z-10 hover:border-r hover:border-l hover:border-r-[var(--primary-4)] hover:border-b-[var(--primary-4)] hover:border-l-[var(--primary-4)] hover:bg-[var(--gray-1)] hover:shadow-sm',
+        !row.isProcessing &&
+        'hover:z-10 hover:border-r hover:border-l hover:border-r-[var(--primary-4)] hover:border-b-[var(--primary-4)] hover:border-l-[var(--primary-4)] hover:bg-[var(--gray-1)] hover:shadow-sm',
         !isSelected &&
-          row.isProcessing &&
-          'hover:border-r hover:border-l hover:border-r-[var(--orange-4)] hover:border-b-[var(--orange-4)] hover:border-l-[var(--orange-4)] hover:bg-[var(--orange-1)]/40 hover:shadow-sm',
+        row.isProcessing &&
+        'hover:border-r hover:border-l hover:border-r-[var(--orange-4)] hover:border-b-[var(--orange-4)] hover:border-l-[var(--orange-4)] hover:bg-[var(--orange-1)]/40 hover:shadow-sm',
       )}
       onClick={() => {
         onRowClick(row, 'Overview')
@@ -1031,7 +1035,7 @@ const GridRowItem = ({
               checked={isSelected}
               className='absolute inset-0 z-10 cursor-pointer opacity-0'
               type='checkbox'
-              onChange={() => {}}
+              onChange={() => { }}
               onClick={(e) => {
                 e.stopPropagation()
                 toggleRowSelection(rowId, e)
@@ -1145,7 +1149,7 @@ const GridRowItem = ({
       <div className='ml-auto flex shrink-0 items-center gap-6 select-none'>
         {row.isProcessing ? (
           <div className='relative flex w-[249px] items-center justify-end gap-2 pr-4'>
-            <span className='animate-pulse text-[12px] font-semibold text-[var(--orange-9)]'>
+            <span className='animate-pulse whitespace-nowrap text-[12px] font-semibold text-[var(--orange-9)]'>
               {statusText}
             </span>
           </div>
@@ -1463,7 +1467,7 @@ const GridView = <TData,>({
                 <TableExport table={table} />
                 <TableReload
                   isReloading={isReloading || false}
-                  onReload={onReload || (() => {})}
+                  onReload={onReload || (() => { })}
                 />
 
                 {/* Custom Actions */}
@@ -1476,7 +1480,7 @@ const GridView = <TData,>({
                     className={cn(
                       'inline-flex cursor-pointer items-center gap-2 rounded-lg bg-[var(--secondary-9)] px-3 py-1.5 text-12 font-semibold text-white shadow-sm transition-all hover:bg-[var(--secondary-10)] hover:shadow-md active:scale-95',
                       a.disabled &&
-                        'cursor-not-allowed opacity-60 hover:bg-[var(--secondary-9)]',
+                      'cursor-not-allowed opacity-60 hover:bg-[var(--secondary-9)]',
                       a.className,
                     )}
                     onClick={a.onClick}

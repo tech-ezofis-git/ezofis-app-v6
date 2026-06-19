@@ -23,15 +23,28 @@ type HistoryRow = {
 
 type Props = {
   enabled?: boolean
-  processId?: number
-  workflowId?: number
+  instanceId?: string | number
+  processId?: number | string
+  workflowId?: number | string
 }
 
 const safeLower = (v?: string) => (v || '').toLowerCase()
 
 const toDate = (value: any): Date | null => {
   if (!value) return null
-  const d = value instanceof Date ? value : new Date(value)
+  if (value instanceof Date) return value
+  if (typeof value === 'string') {
+    const clean = value.trim()
+    if (
+      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(clean) &&
+      !clean.endsWith('Z') &&
+      !/[+-]\d{2}(:?\d{2})?$/.test(clean)
+    ) {
+      const d = new Date(clean + 'Z')
+      if (!Number.isNaN(d.getTime())) return d
+    }
+  }
+  const d = new Date(value)
   return Number.isNaN(d.getTime()) ? null : d
 }
 
@@ -51,11 +64,11 @@ const pickActor = (h: HistoryRow) => {
   return rawUser
 }
 
-// Formats timestamp matching user's layout: YYYY-MM-DD HH:mm
+// Formats timestamp matching user's layout: YYYY-MM-DD hh:mm A
 const getFormattedTimestamp = (h: HistoryRow) => {
   const d = toDate(h.processedOn) || toDate(h.receivedOn) || toDate(h.actionAt)
   if (!d) return ''
-  return formatDatetime(d, 'YYYY-MM-DD HH:mm')
+  return formatDatetime(d, 'YYYY-MM-DD hh:mm A')
 }
 
 // Config for Icons and Badge Colors based on status matching sample layout
@@ -240,8 +253,17 @@ const getTitle = (h: HistoryRow) => {
   return stage || status || h.action || 'Stage processed'
 }
 
-export default function History({ enabled, processId, workflowId }: Props) {
-  const { data, error, isLoading } = useHistory(workflowId, processId, enabled)
+export default function History({
+  enabled,
+  instanceId,
+  processId,
+  workflowId,
+}: Props) {
+  const { data, error, isLoading } = useHistory(
+    workflowId,
+    instanceId || processId,
+    enabled,
+  )
 
   const stageRollup = useMemo(() => {
     const seen = new Set<string>()
@@ -285,13 +307,18 @@ export default function History({ enabled, processId, workflowId }: Props) {
           className='mx-auto mb-2 size-8 opacity-50'
           name='tabler:history-off'
         />
-        <div className='text-xs'>No history items available</div>
+        <div className='text-xs'>No history found</div>
       </div>
     )
   }
 
   return (
-    <div className='animate-in fade-in slide-in-from-left-4 flex flex-col gap-5 px-1 py-2 duration-300'>
+    <div className='animate-in fade-in slide-in-from-left-4 relative flex flex-col gap-5 pl-2 pr-1 py-2 duration-300'>
+      {/* Timeline Connecting Line */}
+      {stageRollup.length > 1 && (
+        <div className='absolute bottom-7 left-[27px] top-7 w-[2px] bg-[var(--gray-3)]' />
+      )}
+
       {stageRollup.map((h, idx) => {
         const isStart = idx === 0
         const config = getStepConfig(h, isStart)
@@ -301,12 +328,12 @@ export default function History({ enabled, processId, workflowId }: Props) {
 
         return (
           <div
-            className='flex items-start gap-4 transition-all duration-200 hover:translate-x-1'
+            className='relative flex items-start gap-4 transition-all duration-200 hover:translate-x-1'
             key={`${h.activityId ?? idx}`}
           >
             <div
               className={cn(
-                'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl shadow-sm transition-all active:scale-95',
+                'relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl shadow-sm transition-all active:scale-95 bg-surface border border-surface',
                 config.bulletBg,
               )}
             >

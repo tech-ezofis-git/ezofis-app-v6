@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
+import { queryClient } from '@/lib/tanstack-query/queryClient'
 import workflowsApiV6 from '@/api/v6/workflows'
 // Import your custom animation components
 import { AnimateFadeIn } from '@/components/common/animations'
-import authUserStore from '@/stores/authUserStore'
 import workflowApi from '../../../../api/workflow/workflow'
 import { useRequestDetail } from '../../hooks/useRequestDetails'
 import requestStore from '../../stores/useRequestStore'
+import authUserStore from '@/stores/authUserStore'
 import {
   isDecorativeFieldType,
   isMatrixFieldType,
@@ -538,6 +539,7 @@ const handleJobData = (
     message: jobData.message || '',
     percent,
     stage,
+    isCompleted,
   })
 
   // Sync to global store
@@ -576,12 +578,34 @@ const handleJobData = (
   }
 }
 
-const useJobPolling = (apAgentJobId: string | number | undefined) => {
+const isFormDataEmpty = (formData: any): boolean => {
+  if (!formData) return true
+  if (typeof formData === 'string') {
+    try {
+      const parsed = JSON.parse(formData)
+      const fields = parsed?.fields || parsed || {}
+      return Object.keys(fields).length === 0
+    } catch {
+      return true
+    }
+  }
+  if (typeof formData === 'object') {
+    const fields = formData.fields || formData || {}
+    return Object.keys(fields).length === 0
+  }
+  return true
+}
+
+const useJobPolling = (
+  apAgentJobId: string | number | undefined,
+  onJobData?: (jobData: any) => void,
+) => {
   const [jobStatus, setJobStatus] = useState<{
     hangfireStatus: string
     message: string
     percent?: number
     stage: string
+    isCompleted?: boolean
   } | null>(null)
 
   useEffect(() => {
@@ -598,6 +622,9 @@ const useJobPolling = (apAgentJobId: string | number | undefined) => {
           handleJobData(apAgentJobId, res.data, setJobStatus, () => {
             if (intervalId) clearInterval(intervalId)
           })
+          if (onJobData) {
+            onJobData(res.data)
+          }
         }
       } catch (err) {
         console.error('Error polling AP Agent job:', err)
@@ -629,6 +656,27 @@ const parseFieldsSource = (formData: any): any => {
     return formData.fields || formData || {}
   }
   return {}
+}
+
+const mergeFormData = (base: any, override: any): any => {
+  const baseParsed = parseFieldsSource(base)
+  const overrideParsed = parseFieldsSource(override)
+
+  const merged = { ...baseParsed }
+  Object.keys(overrideParsed).forEach((key) => {
+    const val = overrideParsed[key]
+    if (val !== undefined && val !== null && val !== '' && val !== '-') {
+      merged[key] = val
+    } else if (
+      merged[key] === undefined ||
+      merged[key] === null ||
+      merged[key] === '' ||
+      merged[key] === '-'
+    ) {
+      merged[key] = val
+    }
+  })
+  return merged
 }
 
 const mergeInvoiceHeader = (cleanFields: any, invoiceHeader: any) => {
@@ -700,6 +748,7 @@ const Request = ({
   onNext,
   onPrev,
   isFourthItem,
+  isThirdItem,
 }: {
   hideActions?: boolean
   item?: any
@@ -708,6 +757,7 @@ const Request = ({
   onNext?: () => void
   onPrev?: () => void
   isFourthItem?: boolean
+  isThirdItem?: boolean
 }) => {
   const {
     activeTabValue,
@@ -719,6 +769,8 @@ const Request = ({
     selectedWorkflow,
     selectedWorkflowId,
     workflowRefresh,
+    jobMappings,
+    jobStatuses,
   } = requestStore((state) => state)
 
   const selectedItem = item || storeSelectedItem
@@ -728,8 +780,25 @@ const Request = ({
   const [activeTab, setActiveTab] = useState<string>(
     activeTabValue || 'Overview',
   )
-  const apAgentJobId = selectedItem?.apAgentJobId
-  const jobStatus = useJobPolling(apAgentJobId)
+  const rowId = selectedItem?.processId || selectedItem?.id
+  let apAgentJobId = selectedItem?.apAgentJobId
+  if (!apAgentJobId && rowId) {
+    const mappedJobId = Object.keys(jobMappings || {}).find(
+      (key) => String(jobMappings[key]) === String(rowId)
+    )
+    if (mappedJobId) {
+      apAgentJobId = mappedJobId
+    } else {
+      const statusObj = Object.values(jobStatuses || {}).find(
+        (status: any) =>
+          String(status?.apAgentJobId) === String(rowId) ||
+          String(status?.instanceId) === String(rowId)
+      ) as any
+      if (statusObj?.apAgentJobId) {
+        apAgentJobId = statusObj.apAgentJobId
+      }
+    }
+  }
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState<boolean>(false)
   const [rightView, setRightView] = useState<
@@ -752,6 +821,38 @@ const Request = ({
     initialProcessing,
   )
 
+  const agentDataList = request?._agentData || selectedItem?._agentData || []
+  const hasAgentData = agentDataList.length > 0
+
+  const currentAgentData = useMemo(() => {
+    return agentDataList.find((a: any) => a.id === selectedAgentId) || {}
+  }, [agentDataList, selectedAgentId])
+
+  const invoiceHeader =
+    currentAgentData?.['Extracted Invoice JSON']?.invoice_header
+
+  const jobStatus = useJobPolling(apAgentJobId, (jobData) => {
+    const isCompleted =
+      jobData.isTerminal ||
+      jobData.stage === 'COMPLETED' ||
+      jobData.hangfireStatus === 'Succeeded'
+
+    if (!isCompleted && jobData && jobData.formData) {
+      const isEmpty = isFormDataEmpty(jobData.formData)
+      if (!isEmpty) {
+        const cleanFields = parseCleanFields(
+          { formData: jobData.formData },
+          selectedWorkflow,
+          request?._formDefinition,
+          invoiceHeader,
+        )
+        if (cleanFields && Object.keys(cleanFields).length > 0) {
+          setFormModel(cleanFields)
+        }
+      }
+    }
+  })
+
   const hasAgentDecision = request
     ? !!(
         request.review ||
@@ -759,19 +860,33 @@ const Request = ({
         request.completedAtUtc
       )
     : false
-  const isCurrentlyProcessing = !hasAgentDecision && initialProcessing
-  const actions =
-    request?._actions ||
-    selectedItem?._actions ||
-    storeSelectedItem?._actions ||
-    []
+  const isCurrentlyProcessing = !hasAgentDecision && initialProcessing && !jobStatus?.isCompleted
+
+  const actions = useMemo(() => {
+    const list =
+      request?._actions ||
+      selectedItem?._actions ||
+      storeSelectedItem?._actions ||
+      []
+    if (list.length === 0 && selectedItem?._actions) {
+      return selectedItem._actions
+    }
+    if (list.length === 0 && storeSelectedItem?._actions) {
+      return storeSelectedItem._actions
+    }
+    return list
+  }, [request?._actions, selectedItem?._actions, storeSelectedItem?._actions])
+
+  const isApAgentStage =
+    selectedItem?.stageType === 'AP_AGENT' ||
+    request?.stageType === 'AP_AGENT'
 
   const dynamicRules = useMemo(() => {
     const rules = rawWorkflowData?.workflowJson?.rules || []
-    const currentActivityId = selectedItem?.activityId
+    const currentActivityId = request?.activityId || selectedItem?.activityId
     if (!currentActivityId) return []
     return rules.filter((rule: any) => rule.fromBlockId === currentActivityId)
-  }, [rawWorkflowData, selectedItem?.activityId])
+  }, [rawWorkflowData, request?.activityId, selectedItem?.activityId])
 
   const ruleActions = useMemo(() => {
     return dynamicRules.map((rule: any) => {
@@ -784,11 +899,10 @@ const Request = ({
   }, [dynamicRules])
 
   const headerActions = useMemo(() => {
+    if (isApAgentStage) return []
     return ruleActions.length > 0 ? ruleActions : actions
-  }, [ruleActions, actions])
+  }, [isApAgentStage, ruleActions, actions])
 
-  const agentDataList = request?._agentData || selectedItem?._agentData || []
-  const hasAgentData = agentDataList.length > 0
 
   const [formModel, setFormModel] = useState<any>({})
 
@@ -800,7 +914,7 @@ const Request = ({
       request?._formDefinition,
     )
 
-    const fieldsSource = parseFieldsSource(activeItem.formData)
+    const fieldsSource = mergeFormData(request?.formData, selectedItem?.formData)
     const labels = new Set<string>()
     const labelRecord: Record<string, unknown> = {}
 
@@ -820,6 +934,7 @@ const Request = ({
     return labels
   }, [
     selectedItem,
+    selectedItem?.formData,
     selectedWorkflow,
     request?._formDefinition,
     request?.formData,
@@ -834,18 +949,15 @@ const Request = ({
     }
   }, [request?._agentData, hasAgentData])
 
-  const currentAgentData = useMemo(() => {
-    return agentDataList.find((a: any) => a.id === selectedAgentId) || {}
-  }, [agentDataList, selectedAgentId])
-
-  const invoiceHeader =
-    currentAgentData?.['Extracted Invoice JSON']?.invoice_header
 
   useEffect(() => {
     const activeItem = request || selectedItem
     if (activeItem) {
       const cleanFields = parseCleanFields(
-        activeItem,
+        {
+          ...activeItem,
+          formData: mergeFormData(request?.formData, selectedItem?.formData),
+        },
         selectedWorkflow,
         request?._formDefinition,
         invoiceHeader,
@@ -856,6 +968,7 @@ const Request = ({
     }
   }, [
     selectedItem?.transactionId,
+    selectedItem?.formData,
     selectedWorkflow,
     request?._formDefinition,
     request?.formData,
@@ -883,6 +996,8 @@ const Request = ({
     }
   }, [hasAgentData, activeTabValue])
 
+
+
   const handleMoveNext = async (action: string) => {
     try {
       setSubmitting(true)
@@ -895,7 +1010,11 @@ const Request = ({
           request?._formDefinition,
         )
       } else if (typeof selectedItem?.formData === 'string') {
-        fields = JSON.parse(selectedItem.formData || '{}')
+        try {
+          fields = JSON.parse(selectedItem.formData || '{}')
+        } catch {
+          fields = {}
+        }
       } else {
         fields = selectedItem?.formData?.fields || selectedItem?.formData || {}
       }
@@ -903,36 +1022,43 @@ const Request = ({
       const formDataStr = JSON.stringify(fields)
 
       const payload = {
-        activityid: selectedItem?.activityId || '',
+        activityid: selectedItem?.activityId || request?.activityId || '',
         activityUserId:
-          selectedItem?.userId || authUserStore.getState().session?.id || null,
-        AIAGENTHtml: selectedItem?.agentHtml || '',
+          selectedItem?.userId ||
+          request?.userId ||
+          authUserStore.getState().session?.id ||
+          null,
+        AIAGENTHtml: selectedItem?.agentHtml || request?.agentHtml || '',
         AIAGENTResponse:
           typeof selectedItem?.agentResponse === 'string'
             ? selectedItem.agentResponse
-            : JSON.stringify(selectedItem?.agentResponse || {}),
+            : JSON.stringify(selectedItem?.agentResponse || request?.agentResponse || {}),
         comments: '',
         formData: formDataStr,
-        formEntryId: Number(selectedItem?.formEntryId || 0),
+        formEntryId: Number(selectedItem?.formEntryId || request?.formEntryId || 0),
         formId:
           selectedItem?.formId ||
+          request?.formId ||
           rawWorkflowData?.formId ||
           rawWorkflowData?.wFormId ||
           null,
-        instanceId: selectedItem?.workflowInstanceId || null,
+        instanceId: selectedItem?.workflowInstanceId || request?.workflowInstanceId || null,
         isItemTable: true,
-        itemId: selectedItem?.itemId || null,
-        processId: selectedItem?.processId || selectedItem?.id || null,
+        itemId: selectedItem?.itemId || request?.itemId || null,
+        processId: selectedItem?.processId || selectedItem?.id || request?.processId || request?.id || null,
         repositoryId:
-          selectedItem?.repositoryId || rawWorkflowData?.repositoryId || null,
+          selectedItem?.repositoryId ||
+          request?.repositoryId ||
+          rawWorkflowData?.repositoryId ||
+          null,
         review: action,
-        transactionId: selectedItem?.transactionId || null,
-        workflowId: selectedItem?.workflowId || rawWorkflowData?.id || null,
+        transactionId: selectedItem?.transactionId || request?.transactionId || null,
+        workflowId: selectedItem?.workflowId || request?.workflowId || rawWorkflowData?.id || null,
       }
 
       console.log('MoveNext Payload:', payload)
 
-      const instanceId = selectedItem?.workflowInstanceId
+      const instanceId = selectedItem?.workflowInstanceId || request?.workflowInstanceId
       if (!instanceId) {
         throw new Error('Instance ID is missing')
       }
@@ -940,6 +1066,14 @@ const Request = ({
       const response = await workflowsApiV6.moveNext(instanceId, payload)
       console.log('MoveNext Response:', response)
 
+      queryClient.invalidateQueries({
+        queryKey: [
+          'request-detail',
+          resolvedWorkflowId,
+          selectedItem?.processId,
+          selectedItem?.transactionId,
+        ],
+      })
       workflowRefresh()
       closeRequest()
     } catch (e) {
@@ -979,6 +1113,14 @@ const Request = ({
 
       const response = await workflowApi?.createProcessTransaction(payload)
       console.log(response)
+      queryClient.invalidateQueries({
+        queryKey: [
+          'request-detail',
+          resolvedWorkflowId,
+          selectedItem?.processId,
+          selectedItem?.transactionId,
+        ],
+      })
       workflowRefresh()
       closeRequest()
     } catch (e) {
@@ -987,6 +1129,7 @@ const Request = ({
       setSubmitting(false)
     }
   }
+
 
   const totalAmount =
     formModel?.['Invoice Amount'] ||
@@ -1070,12 +1213,12 @@ const Request = ({
   }
 
   let statusBadge = ''
-  if (apAgentJobId && jobStatus) {
+  if (apAgentJobId && jobStatus && !jobStatus.isCompleted) {
     statusBadge = jobStatus.stage
     if (displayMessage) {
       statusBadge += ` - ${displayMessage}`
     }
-  } else if (apAgentJobId) {
+  } else if (apAgentJobId && (!jobStatus || !jobStatus.isCompleted)) {
     statusBadge = 'Initiating...'
   } else {
     statusBadge = finalStatusBadge
@@ -1164,6 +1307,7 @@ const Request = ({
           setFormModel={setFormModel}
           setRightView={setRightView}
           isFourthItem={isFourthItem}
+          isThirdItem={isThirdItem}
         />
       </AnimateFadeIn>
     </div>

@@ -79,7 +79,6 @@ export const ProcessingBackgroundManager = () => {
                 requestStore.getState().updateProcessingProcess(String(processId), {
                   id: jobData.instanceId,
                   processId: jobData.instanceId,
-                  apAgentJobId: null, // Clear job ID once resolved
                 })
               }
 

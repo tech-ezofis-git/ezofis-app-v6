@@ -1394,11 +1394,14 @@ const getBaseColumns = (
         }
 
         if (row.isProcessing) {
+          const percentText = matchedJobStatus && matchedJobStatus.percent !== undefined
+            ? `${matchedJobStatus.percent}% `
+            : ''
           const statusText = matchedJobStatus && !matchedJobStatus.isCompleted
-            ? `${matchedJobStatus.stage}${matchedJobStatus.message ? ` - ${matchedJobStatus.message}` : ''}`
+            ? `${percentText}${matchedJobStatus.stage}${matchedJobStatus.message ? ` - ${matchedJobStatus.message}` : ''}`
             : 'Processing'
           return (
-            <span className='flex animate-pulse items-center gap-1 rounded-md border border-[var(--orange-4)] bg-[var(--orange-2)] px-2 py-0.5 text-[11px] font-semibold text-[var(--orange-11)]' title={statusText}>
+            <span className='flex animate-pulse items-center gap-1 rounded-md border border-[var(--orange-4)] bg-[var(--orange-2)] px-2 py-0.5 text-[11px] font-semibold text-[var(--orange-11)] whitespace-nowrap' title={statusText}>
               <Icon className='size-3.5 animate-spin' name='tabler:loader-2' />
               {statusText}
             </span>

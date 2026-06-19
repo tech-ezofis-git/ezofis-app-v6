@@ -100,18 +100,6 @@ const getRawVal = (obj: any, pathKey: string) => {
   return obj[pathKey]
 }
 
-const cleanKey = (s: string) =>
-  s
-    .toLowerCase()
-    .replace(/[^a-z0-9]/g, '')
-    .replace('number', 'no')
-    .replace('num', 'no')
-    .replace('amt', 'amount')
-    .replace('val', 'value')
-
-const matchKeysLoosely = (key1: string, key2: string): boolean => {
-  return cleanKey(key1) === cleanKey(key2)
-}
 
 const getLineItemAmount = (item: any): any => {
   return (
@@ -702,15 +690,21 @@ const FormCard = ({
       />
     )
   } else if (type === 'dropdown') {
+    const selectedOption = typeof localValue === 'string' && localValue !== '-'
+      ? options.find((opt: any) => String(opt.id).toLowerCase() === localValue.toLowerCase()) || (localValue ? { id: localValue, name: localValue } : null)
+      : null
+
     inputElement = (
       <InputSelect
         className='w-full font-semibold'
         options={options}
-        value={localValue}
+        value={selectedOption}
         onChange={(val: any) => {
-          setLocalValue(val)
-          onFocus?.(val)
-          setTimeout(handleBlur, 0)
+          const stringVal = val?.id ? String(val.id) : ''
+          setLocalValue(stringVal)
+          onFocus?.(stringVal)
+          onChange?.(stringVal)
+          setTimeout(() => setIsEditing(false), 0)
         }}
       />
     )
@@ -1003,6 +997,8 @@ const getRecommendationMeta = (rec?: string) => {
   }
 }
 
+
+
 const Overview = (props: any) => {
   const {
     agentData,
@@ -1018,6 +1014,7 @@ const Overview = (props: any) => {
     workflowId,
     setFormModel,
     isFourthItem,
+    isThirdItem: _isThirdItem,
   } = props
 
   const processingProcesses = requestStore((state) => state.processingProcesses)
@@ -1128,6 +1125,12 @@ const Overview = (props: any) => {
   const [showBackOrderDetailFull, setShowBackOrderDetailFull] = useState(false)
   const [activeBackOrderTab, setActiveBackOrderTab] = useState<'current' | string>('current')
   const [selectedFile, setSelectedFile] = useState<any>(null)
+
+  useEffect(() => {
+    console.log('=== OVERVIEW COMPONENT RENDER ===')
+    console.log('formModel:', formModel)
+    console.log('allowedLabels:', allowedLabels)
+  }, [formModel, allowedLabels])
   const { data: attachmentData } = useAttachments(workflowId, processId, true)
   const {
     data: commentsData,
@@ -1140,7 +1143,7 @@ const Overview = (props: any) => {
   const searchPluginInstance = searchPlugin()
   const { highlight, clearHighlights } = searchPluginInstance
 
-  const handleFieldFocus = (value: any) => {
+  const handleFieldFocus = (value: any, _fieldKey?: string) => {
     const stringVal = String(value || '').trim()
     if (stringVal && stringVal !== '-') {
       highlight([stringVal])
@@ -1148,6 +1151,117 @@ const Overview = (props: any) => {
       clearHighlights()
     }
   }
+
+  const [selectedText, setSelectedText] = useState<string | null>(null)
+  const [menuPosition, setMenuPosition] = useState<{ x: number; y: number } | null>(null)
+  const [searchFilter, setSearchFilter] = useState<string>('')
+
+  const viewerContainerRef = useRef<HTMLDivElement>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  const eligibleFields = useMemo(() => {
+    if (!formModel) return []
+    return Object.entries(formModel)
+      .filter(([key, val]) => {
+        if (typeof val === 'object' && val !== null) return false
+        if (typeof val === 'string') {
+          const trimmed = val.trim()
+          if (trimmed.startsWith('[') && trimmed.endsWith(']')) return false
+          if (trimmed.startsWith('{') && trimmed.endsWith('}')) return false
+        }
+        if (!allowedLabels || allowedLabels.size === 0) {
+          return hasMeaningfulScalarValue(val)
+        }
+        return allowedLabels.has(key) || hasMeaningfulScalarValue(val)
+      })
+      .map(([key]) => key)
+  }, [formModel, allowedLabels])
+
+  const handleMouseUp = () => {
+    const selection = window.getSelection()
+    if (!selection) return
+    const text = selection.toString().trim()
+    if (!text) {
+      setSelectedText(null)
+      setMenuPosition(null)
+      setSearchFilter('')
+      return
+    }
+
+    try {
+      const range = selection.getRangeAt(0)
+      const rect = range.getBoundingClientRect()
+
+      if (viewerContainerRef.current) {
+        const containerRect = viewerContainerRef.current.getBoundingClientRect()
+        const x = rect.left - containerRect.left
+        const y = rect.bottom - containerRect.top
+
+        // Position boundary check to keep dropdown inside the 40% PDF viewer
+        const menuWidth = 224
+        const menuHeight = 240
+        let leftPos = x
+        let topPos = y + 10
+
+        if (leftPos + menuWidth > containerRect.width) {
+          leftPos = containerRect.width - menuWidth - 8
+        }
+        if (leftPos < 8) {
+          leftPos = 8
+        }
+
+        if (topPos + menuHeight > containerRect.height) {
+          topPos = rect.top - containerRect.top - menuHeight - 10
+        }
+        if (topPos < 8) {
+          topPos = 8
+        }
+
+        setSelectedText(text)
+        setMenuPosition({ x: leftPos, y: topPos })
+      }
+    } catch (err) {
+      console.error('Error getting selection range:', err)
+    }
+  }
+
+  const handleFieldSelect = (fieldKey: string) => {
+    if (selectedText) {
+      handleFieldChange(fieldKey, selectedText)
+    }
+    setSelectedText(null)
+    setMenuPosition(null)
+    setSearchFilter('')
+    window.getSelection()?.removeAllRanges()
+  }
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setSelectedText(null)
+        setMenuPosition(null)
+        setSearchFilter('')
+      }
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setSelectedText(null)
+        setMenuPosition(null)
+        setSearchFilter('')
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [])
 
   const backOrder = useMemo(() => {
     if (isFourthItem) {
@@ -1342,28 +1456,7 @@ const Overview = (props: any) => {
     [],
   )
 
-  const invoiceHeader = agentData?.['Extracted Invoice JSON']?.invoice_header
 
-  useEffect(() => {
-    if (invoiceHeader) {
-      setFormModel?.((prev: any) => {
-        const merged = { ...prev }
-
-        for (const key of Object.keys(invoiceHeader)) {
-          const existingKey = Object.keys(prev).find((k) =>
-            matchKeysLoosely(k, key),
-          )
-          if (existingKey) {
-            const val = prev[existingKey]
-            if (!val || val === '-' || val === '') {
-              merged[existingKey] = invoiceHeader[key]
-            }
-          }
-        }
-        return merged
-      })
-    }
-  }, [invoiceHeader, setFormModel])
 
   useEffect(() => {
     // Reset viewer state when request changes
@@ -1495,7 +1588,11 @@ const Overview = (props: any) => {
   }, [selectedFile, repositoryId, selectedItem, tenantId, userId])
 
   const handleFieldChange = (key: string, value: string) => {
-    setFormModel?.((prev: any) => ({ ...prev, [key]: value }))
+    setFormModel?.((prev: any) => {
+      const next = { ...prev }
+      updateValueInStructure(next, key, value)
+      return next
+    })
   }
 
   const getFieldType = (label: string) => {
@@ -1509,11 +1606,11 @@ const Overview = (props: any) => {
     const l = label.toLowerCase()
     if (l.includes('currency'))
       return [
-        { label: 'USD', value: 'USD' },
-        { label: 'EUR', value: 'EUR' },
-        { label: 'GBP', value: 'GBP' },
-        { label: 'INR', value: 'INR' },
-        { label: 'AED', value: 'AED' },
+        { id: 'USD', name: 'USD' },
+        { id: 'EUR', name: 'EUR' },
+        { id: 'GBP', name: 'GBP' },
+        { id: 'INR', name: 'INR' },
+        { id: 'AED', name: 'AED' },
       ]
     return []
   }
@@ -1589,7 +1686,11 @@ const Overview = (props: any) => {
     <div className='flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden font-sans'>
       <div className='flex min-h-0 flex-1 overflow-hidden'>
         {/* Left Side - Document Viewer (40% Width) */}
-        <div className='relative flex w-[40%] flex-col overflow-hidden border-r border-[var(--gray-3)]'>
+        <div
+          ref={viewerContainerRef}
+          onMouseUp={handleMouseUp}
+          className='relative flex w-[40%] flex-col overflow-hidden border-r border-[var(--gray-3)]'
+        >
           {isViewerLoading && (
             <div className='absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 bg-[var(--gray-1)]'>
               <BarLoader />
@@ -1600,6 +1701,58 @@ const Overview = (props: any) => {
           )}
 
           {previewContent}
+
+          {menuPosition && selectedText && (
+            <div
+              ref={dropdownRef}
+              style={{
+                top: `${menuPosition.y}px`,
+                left: `${menuPosition.x}px`,
+              }}
+              className='absolute z-50 flex max-h-60 w-56 flex-col rounded-lg border border-[var(--gray-3)] bg-surface py-1 shadow-lg animate-in fade-in slide-in-from-top-1 duration-200'
+            >
+              {/* Assign Header */}
+              <div className='border-b border-[var(--gray-3)] px-3 py-1.5 text-[10px] font-semibold text-[var(--gray-11)] bg-[var(--gray-1)]/50'>
+                Assign "<span className='font-bold text-[var(--gray-13)] truncate inline-block max-w-[140px] align-bottom'>{selectedText}</span>" to:
+              </div>
+
+              {/* Search Filter Input */}
+              <div className='px-2 py-1.5 border-b border-[var(--gray-3)]'>
+                <input
+                  type='text'
+                  placeholder='Filter fields...'
+                  value={searchFilter}
+                  onChange={(e) => setSearchFilter(e.target.value)}
+                  className='w-full rounded border border-[var(--gray-3)] bg-transparent px-2 py-1 text-xs text-[var(--gray-13)] placeholder:font-normal focus:border-[var(--primary-3)] focus:outline-none'
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </div>
+
+              {/* Fields List */}
+              <div className='flex-1 overflow-y-auto max-h-40 min-h-[40px] px-1 py-1'>
+                {eligibleFields
+                  .filter((key) => key.toLowerCase().includes(searchFilter.toLowerCase()))
+                  .map((key) => (
+                    <button
+                      key={key}
+                      type='button'
+                      className='w-full rounded px-2.5 py-1.5 text-left text-xs font-semibold text-[var(--gray-12)] hover:bg-[var(--primary-3)] hover:text-[var(--primary-9)] transition-colors active:scale-95'
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleFieldSelect(key)
+                      }}
+                    >
+                      {key}
+                    </button>
+                  ))}
+                {eligibleFields.filter((key) => key.toLowerCase().includes(searchFilter.toLowerCase())).length === 0 && (
+                  <div className='px-3 py-2 text-center text-xs text-[var(--gray-9)] font-medium'>
+                    No matching fields
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Right Side - Analysis & Data (60% Width) */}
@@ -2041,7 +2194,10 @@ const Overview = (props: any) => {
                 <div className='flex min-h-0 flex-1 flex-col'>
                   {activeTab === 'summary' && (
                     <div className='grid flex-1 grid-cols-2 gap-x-4 gap-y-2 overflow-y-auto p-4'>
-                      {isCurrentlyProcessing && Object.keys(formModel || {}).length === 0
+                      {isCurrentlyProcessing &&
+                      (!formModel ||
+                        Object.keys(formModel).length === 0 ||
+                        !Object.values(formModel).some(hasMeaningfulScalarValue))
                         ? Array.from({ length: 8 }).map((_, idx) => {
                             const labels = [
                               'Supplier Name',
@@ -2084,8 +2240,12 @@ const Overview = (props: any) => {
                           })
                         : Object.entries(formModel || {})
                             .filter(([key, val]) => {
-                              if (typeof val === 'object' && val !== null)
+                              if (typeof val === 'object' && val !== null) {
+                                if ('Invoice Value' in val) {
+                                  return true
+                                }
                                 return false
+                              }
                               if (typeof val === 'string') {
                                 const trimmed = val.trim()
                                 if (
@@ -2110,15 +2270,19 @@ const Overview = (props: any) => {
                               )
                             })
                             .map(([key, val]) => {
+                              const rawVal = val && typeof val === 'object' && 'Invoice Value' in val
+                                ? val['Invoice Value']
+                                : val
+
                               const fieldType = getFieldType(key)
                               const displayValue =
                                 fieldType === 'date' &&
-                                (val === null ||
-                                  val === undefined ||
-                                  val === '' ||
-                                  val === '-')
+                                (rawVal === null ||
+                                  rawVal === undefined ||
+                                  rawVal === '' ||
+                                  rawVal === '-')
                                   ? null
-                                  : val || '-'
+                                  : rawVal || '-'
 
                               return (
                                 <FormCard
@@ -2133,7 +2297,7 @@ const Overview = (props: any) => {
                                     key.toLowerCase().includes('total') ||
                                     key.toLowerCase().includes('due')
                                   }
-                                  onFocus={handleFieldFocus}
+                                  onFocus={(val: any) => handleFieldFocus(val, key)}
                                   onChange={(newVal: string) =>
                                     handleFieldChange(key, newVal)
                                   }
@@ -2254,7 +2418,7 @@ const Overview = (props: any) => {
                                         <input
                                           className='w-full rounded border-none bg-transparent px-1.5 py-1 text-xs font-semibold text-[var(--gray-13)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
                                           value={descVal}
-                                          onFocus={() => handleFieldFocus?.(descVal)}
+                                          onFocus={() => handleFieldFocus?.(descVal, 'description')}
                                           onChange={(e) =>
                                             handleLineItemChange(
                                               index,
@@ -2270,7 +2434,7 @@ const Overview = (props: any) => {
                                         <input
                                           className='w-full rounded border-none bg-transparent px-1.5 py-1 text-right text-xs font-semibold text-[var(--gray-11)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
                                           value={qtyVal}
-                                          onFocus={() => handleFieldFocus?.(qtyVal)}
+                                          onFocus={() => handleFieldFocus?.(qtyVal, 'qty')}
                                           onChange={(e) =>
                                             handleLineItemChange(
                                               index,
@@ -2286,7 +2450,7 @@ const Overview = (props: any) => {
                                         <input
                                           className='w-full rounded border-none bg-transparent px-1.5 py-1 text-right text-xs font-semibold text-[var(--gray-11)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
                                           value={priceVal}
-                                          onFocus={() => handleFieldFocus?.(priceVal)}
+                                          onFocus={() => handleFieldFocus?.(priceVal, 'price')}
                                           onBlur={(e) => {
                                             const num = Number.parseFloat(
                                               e.target.value.replace(
@@ -2317,7 +2481,7 @@ const Overview = (props: any) => {
                                         <input
                                           className='w-full rounded border-none bg-transparent px-1.5 py-1 text-right text-xs font-semibold text-[var(--gray-13)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
                                           value={amountVal}
-                                          onFocus={() => handleFieldFocus?.(amountVal)}
+                                          onFocus={() => handleFieldFocus?.(amountVal, 'line_amount')}
                                           onBlur={(e) => {
                                             const num = Number.parseFloat(
                                               e.target.value.replace(
@@ -2514,6 +2678,7 @@ const Overview = (props: any) => {
                       ) : (
                         <History
                           enabled={true}
+                          instanceId={selectedItem?.workflowInstanceId || selectedItem?.instanceId || processId}
                           processId={processId}
                           workflowId={workflowId}
                         />

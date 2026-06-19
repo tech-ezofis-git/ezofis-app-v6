@@ -1,15 +1,19 @@
 // @/pages/requests/hooks/useHistory.ts
 import { useCallback, useEffect, useState } from 'react'
-import requestApi from '@/api/requests/requests'
+import { workflowsApiV6 } from '@/api/v6/workflows'
 
 export type HistoryRow = {
   action?: string
-  actionAt?: string
+  actionAt?: string | number | Date | null
   actionStatus?: number
-  actionUser?: string
-  actionUserEmail?: string
+  actionUser?: string | null
+  actionUserEmail?: string | null
   activityId?: string | number
-  requestNo?: string
+  agentResponse?: string | null
+  agentType?: string | null
+  processedBy?: string | null
+  processedOn?: string | number | Date | null
+  receivedOn?: string | number | Date | null
   stage?: string
   status?: string
   subWorkflowHistory?: any
@@ -17,7 +21,7 @@ export type HistoryRow = {
 
 export function useHistory(
   workflowId?: number | string,
-  processId?: number | string,
+  instanceId?: number | string,
   enabled?: boolean,
 ) {
   const [data, setData] = useState<HistoryRow[]>([])
@@ -25,25 +29,74 @@ export function useHistory(
   const [error, setError] = useState<any>(null)
 
   const refetch = useCallback(async () => {
-    if (!workflowId || !processId) return
+    if (!workflowId || !instanceId) return
     setIsLoading(true)
     setError(null)
 
     try {
-      // v5: workflow.processHistory(workflowId, processId) :contentReference[oaicite:9]{index=9}
-      const res = await (requestApi as any).processHistory(
+      const res = await workflowsApiV6.getInstanceHistory(
         workflowId,
-        processId,
+        instanceId,
       )
-      const payload = res.length > 0 ? res : []
-      setData(Array.isArray(payload) ? payload : [])
+      if (res.error) {
+        throw new Error(res.error)
+      }
+
+      const list = res.data && Array.isArray(res.data.flows)
+        ? res.data.flows
+        : Array.isArray(res.data)
+          ? res.data
+          : []
+      const mapped: HistoryRow[] = list.map((item: any, idx: number) => {
+        const milestoneLower = String(item.milestone || item.stageType || item.step || '').toLowerCase()
+
+        let stage = item.stageName || item.step || ''
+        let status = item.review || item.milestone || item.step || ''
+        let agentType = undefined
+
+        if (milestoneLower === 'submitted' || milestoneLower === 'start') {
+          stage = 'start'
+          status = 'ingested'
+        } else if (milestoneLower === 'ap_agent') {
+          stage = 'ocr'
+          status = 'extraction'
+          agentType = 'ocr'
+        } else if (milestoneLower === 'verified') {
+          stage = 'validate'
+          status = 'verified'
+        } else if (milestoneLower === 'approved') {
+          stage = 'Approval'
+          status = 'approved'
+        } else if (milestoneLower === 'completed') {
+          stage = 'Completed'
+          status = ''
+        }
+
+        return {
+          action: item.action || item.step || '',
+          actionAt: item.occurredAtUtc || null,
+          actionStatus: item.actionStatus ?? 1,
+          actionUser: item.performedByUserName || null,
+          actionUserEmail: item.performedByUserName || null,
+          activityId: item.activityId || `v6-step-${idx}`,
+          agentType,
+          processedBy: item.performedByUserName || null,
+          processedOn: item.occurredAtUtc || null,
+          receivedOn: item.occurredAtUtc || null,
+          stage,
+          status,
+        }
+      })
+
+      setData(mapped)
     } catch (e) {
+      console.error('Error fetching V6 instance history:', e)
       setError(e)
       setData([])
     } finally {
       setIsLoading(false)
     }
-  }, [workflowId, processId])
+  }, [workflowId, instanceId])
 
   useEffect(() => {
     if (!enabled) return
