@@ -1,6 +1,6 @@
 // @/pages/requests/hooks/useAttachments.ts
 import { useCallback, useEffect, useState } from 'react'
-import requestApi from '@/api/requests/requests'
+import { workflowsApiV6 } from '@/api/v6/workflows'
 
 export type AttachmentItem = {
   createdAt?: string
@@ -10,7 +10,6 @@ export type AttachmentItem = {
   fileName?: string
   id?: number | string
 
-  // Vue had "initiate" for upload-and-index initiated files
   initiate?: boolean
   itemId?: number | string
   name?: string
@@ -21,7 +20,7 @@ export type AttachmentItem = {
 
 export function useAttachments(
   workflowId?: number | string,
-  processId?: number | string,
+  instanceId?: number | string,
   enabled?: boolean,
 ) {
   const [data, setData] = useState<AttachmentItem[]>([])
@@ -29,37 +28,43 @@ export function useAttachments(
   const [error, setError] = useState<any>(null)
 
   const refetch = useCallback(async () => {
-    if (!workflowId || !processId) return
+    if (!workflowId || !instanceId) return
     setIsLoading(true)
     setError(null)
 
     try {
-      // v5: workflow.getAttachments(workflowId, processId) :contentReference[oaicite:3]{index=3}
-      // v6: you mentioned same API names inside requestApi
-      const res = await (requestApi as any).getAttachments(
+      const res = await workflowsApiV6.getInstanceAttachments(
         workflowId,
-        processId,
+        instanceId,
       )
+      if (res.error) {
+        throw new Error(res.error)
+      }
 
-      const payload = res.length > 0 ? res : []
-      console.log(payload)
-      const list: AttachmentItem[] = Array.isArray(payload) ? payload : []
+      const list = Array.isArray(res.data)
+        ? res.data
+        : Array.isArray(res.data?.attachments)
+          ? res.data.attachments
+          : Array.isArray(res.data?.items)
+            ? res.data.items
+            : []
 
-      // Make sure UI always has id + name fields even if backend uses fileId/fileName
-      const normalized = list.map((x) => ({
+      const normalized = list.map((x: any) => ({
         ...x,
-        id: normalizeId(x),
-        name: normalizeName(x),
+        id: x.id ?? x.itemId ?? x.fileId ?? '',
+        name: x.name ?? x.fileName ?? '-',
+        createdAt: x.createdAt ?? x.createdAtUtc ?? x.occurredAtUtc ?? '',
       }))
 
       setData(normalized)
     } catch (e) {
+      console.error('Error fetching V6 instance attachments:', e)
       setError(e)
       setData([])
     } finally {
       setIsLoading(false)
     }
-  }, [workflowId, processId])
+  }, [workflowId, instanceId])
 
   useEffect(() => {
     if (!enabled) return
@@ -67,11 +72,4 @@ export function useAttachments(
   }, [enabled, refetch])
 
   return { data, error, isLoading, refetch }
-}
-function normalizeId(a: AttachmentItem) {
-  return a.id ?? a.itemId ?? a.fileId ?? ''
-}
-
-function normalizeName(a: AttachmentItem) {
-  return a.name ?? a.fileName ?? '-'
 }

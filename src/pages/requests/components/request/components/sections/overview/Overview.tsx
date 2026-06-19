@@ -1135,7 +1135,7 @@ const Overview = (props: any) => {
     console.log('formModel:', formModel)
     console.log('allowedLabels:', allowedLabels)
   }, [formModel, allowedLabels])
-  const { data: attachmentData } = useAttachments(workflowId, processId, true)
+  const { data: attachmentData } = useAttachments(workflowId, resolvedInstanceId, true)
   const {
     data: commentsData,
     isLoading: isLoadingComments,
@@ -2623,7 +2623,9 @@ const Overview = (props: any) => {
                       ) : (
                         <Attachments
                           enabled={true}
+                          instanceId={resolvedInstanceId}
                           processId={processId}
+                          repositoryId={repositoryId || selectedItem?.repositoryId}
                           workflowId={workflowId}
                           onSelect={(file) =>
                             selectedFile?.id === file.id

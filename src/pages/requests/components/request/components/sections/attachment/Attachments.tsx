@@ -1,4 +1,4 @@
-// import { useState } from 'react'
+import { useRef, useState } from 'react'
 import clsx, { type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 import Icon from '@/components/base/icon/Icon'
@@ -7,12 +7,14 @@ import {
   useAttachments,
 } from '@/pages/requests/hooks/useAttachments'
 import authUserStore from '@/stores/authUserStore'
+import { workflowsApiV6 } from '@/api/v6/workflows'
 
 type FileLike = AttachmentItem
 
 type Props = {
   canUpload?: boolean
   enabled?: boolean
+  instanceId?: string | number
   processId?: number
   repositoryDetails?: { fieldsType?: string }
   repositoryId?: number | string
@@ -30,6 +32,19 @@ type Props = {
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
+}
+
+const fileToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.readAsDataURL(file)
+    reader.onload = () => {
+      const result = reader.result as string
+      const base64 = result.split(',')[1]
+      resolve(base64)
+    }
+    reader.onerror = (error) => reject(error)
+  })
 }
 
 // function TooltipButton({
@@ -170,21 +185,82 @@ const getFileIconClasses = (ext: string) => {
 }
 
 export default function Attachments({
+  canUpload = true,
   enabled = true,
+  instanceId,
   processId,
+  repositoryId,
   workflowId,
   onSelect,
-  // onClose
 }: Props) {
-  const { data: files, isLoading } = useAttachments(
+  const targetInstanceId = instanceId || processId
+  const { data: files = [], isLoading, refetch } = useAttachments(
     workflowId,
-    processId,
+    targetInstanceId,
     enabled,
   )
   const { session } = authUserStore.getState()
   const tenantId = session?.tenantId || ''
   const userId = session?.id || ''
   const apiBaseUrl = resolveApiBaseUrl()
+
+  const [isUploading, setIsUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    console.log('[Attachments] Selected file:', file?.name, 'Size:', file?.size, 'Type:', file?.type)
+    console.log('[Attachments] Upload Context:', { workflowId, targetInstanceId, repositoryId })
+
+    if (
+      !file ||
+      !workflowId ||
+      !targetInstanceId ||
+      repositoryId === undefined ||
+      repositoryId === null ||
+      repositoryId === ''
+    ) {
+      console.warn('[Attachments] Upload prevented: missing required parameters.', {
+        hasFile: !!file,
+        workflowId,
+        targetInstanceId,
+        repositoryId,
+      })
+      return
+    }
+
+    setIsUploading(true)
+    try {
+      const base64 = await fileToBase64(file)
+      console.log('[Attachments] Converted file to base64, payload length:', base64.length)
+      
+      const res = await workflowsApiV6.addInstanceAttachment(
+        workflowId,
+        targetInstanceId,
+        {
+          fileName: file.name,
+          repositoryId: repositoryId,
+          file: base64,
+          fileSize: file.size,
+          contentType: file.type || 'application/octet-stream',
+        }
+      )
+      
+      console.log('[Attachments] Upload response:', res)
+      if (res.error) {
+        console.error('[Attachments] Upload failed with response error:', res.error)
+      } else {
+        console.log('[Attachments] Upload succeeded, refetching...')
+      }
+      
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      await refetch()
+    } catch (err) {
+      console.error('Error uploading file:', err)
+    } finally {
+      setIsUploading(false)
+    }
+  }
 
   const handleDownload = (e: React.MouseEvent, file: FileLike) => {
     e.stopPropagation()
@@ -194,24 +270,40 @@ export default function Attachments({
 
   return (
     <div className='relative mx-auto mt-0 flex h-full w-full flex-col font-sans transition-all duration-300'>
-      {/* Header */}
-      {/* <div className="flex items-center gap-3 px-4 py-3 border-b border-[var(--gray-3)] shrink-0">
-                <button 
-                    onClick={onClose}
-                    className="flex items-center justify-center size-8 rounded-lg hover:bg-[var(--gray-2)] text-[var(--gray-9)] transition-colors"
-                >
-                    <Icon name="tabler:arrow-left" className="size-5" />
-                </button>
-                <div className="flex items-center gap-2">
-                    <div className="flex items-center justify-center size-8 rounded-lg bg-[var(--blue-1)] text-[var(--blue-9)]">
-                        <Icon name="tabler:paperclip" className="size-5" />
-                    </div>
-                    <span className="font-bold text-[var(--gray-12)]">Attachments</span>
-                    <span className="px-2 py-0.5 rounded-full bg-[var(--gray-2)] text-[11px] font-bold text-[var(--gray-9)]">
-                        {files.length}
-                    </span>
-                </div>
-            </div> */}
+      {/* Upload Zone */}
+      {canUpload && (
+        <div className='mb-4 shrink-0'>
+          <input
+            type='file'
+            className='hidden'
+            ref={fileInputRef}
+            onChange={onFileChange}
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
+            className={cn(
+              'flex w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[var(--gray-4)] bg-surface py-5 px-4 text-center transition-all hover:border-[var(--primary-4)] hover:bg-[var(--primary-2)]/10 active:scale-98',
+              isUploading && 'pointer-events-none opacity-60',
+            )}
+          >
+            {isUploading ? (
+              <Icon
+                className='size-6 animate-spin text-[var(--primary-9)]'
+                name='tabler:loader'
+              />
+            ) : (
+              <Icon className='size-6 text-[var(--gray-9)]' name='tabler:upload' />
+            )}
+            <div className='flex flex-col gap-0.5'>
+              <span className='text-13 font-bold text-[var(--gray-12)]'>
+                {isUploading ? 'Uploading...' : 'Upload attachment'}
+              </span>
+              <span className='text-11 text-[var(--gray-8)]'>Select file here</span>
+            </div>
+          </button>
+        </div>
+      )}
 
       {/* List */}
       <div className='flex flex-col gap-2'>

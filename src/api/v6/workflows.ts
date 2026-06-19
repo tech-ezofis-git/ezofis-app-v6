@@ -560,6 +560,63 @@ const addInstanceComment = async (
   return response
 }
 
+const getInstanceAttachments = async (
+  workflowId: number | string,
+  instanceId: number | string,
+) => {
+  const response: { data: any; error: string } = { data: null, error: '' }
+  try {
+    const { data, status } = await axiosV6({
+      headers: getTenantHeaders(),
+      method: 'GET',
+      url: `/workflows/${workflowId}/instances/${instanceId}/attachments`,
+    })
+    if (status !== 200) throw new Error('invalid status code')
+    response.data = data
+  } catch (e: unknown) {
+    console.error(e)
+    const err = e as { message?: string; response?: { data?: string } }
+    response.error =
+      err?.response?.data || err?.message || 'error fetching attachments'
+  }
+  return response
+}
+
+const addInstanceAttachment = async (
+  workflowId: number | string,
+  instanceId: number | string,
+  payload: {
+    fileName: string
+    repositoryId: number | string
+    file: string
+    fileSize: number
+    contentType: string
+  },
+) => {
+  const response: { data: any; error: string } = { data: null, error: '' }
+  try {
+    const { repositoryId, ...rest } = payload
+    const { data, status } = await axiosV6({
+      data: JSON.stringify({
+        ...rest,
+        repositoryid: repositoryId,
+      }),
+      headers: getTenantHeaders(),
+      method: 'POST',
+      url: `/workflows/${workflowId}/instances/${instanceId}/attachments`,
+    })
+    if (status !== 200 && status !== 201 && status !== 204)
+      throw new Error('invalid status code')
+    response.data = data
+  } catch (e: unknown) {
+    console.error(e)
+    const err = e as { message?: string; response?: { data?: string } }
+    response.error =
+      err?.response?.data || err?.message || 'error adding attachment'
+  }
+  return response
+}
+
 export const workflowsApiV6 = {
   createWorkflow,
   deleteWorkflow,
@@ -574,11 +631,14 @@ export const workflowsApiV6 = {
   getInstanceHistory,
   getInstanceComments,
   addInstanceComment,
+  getInstanceAttachments,
+  addInstanceAttachment,
   getSentList,
   getWorkflowById,
   getWorkflows,
 }
 
 export default workflowsApiV6
+
 
 
