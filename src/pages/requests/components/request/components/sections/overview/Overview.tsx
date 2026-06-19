@@ -100,18 +100,6 @@ const getRawVal = (obj: any, pathKey: string) => {
   return obj[pathKey]
 }
 
-const cleanKey = (s: string) =>
-  s
-    .toLowerCase()
-    .replace(/[^a-z0-9]/g, '')
-    .replace('number', 'no')
-    .replace('num', 'no')
-    .replace('amt', 'amount')
-    .replace('val', 'value')
-
-const matchKeysLoosely = (key1: string, key2: string): boolean => {
-  return cleanKey(key1) === cleanKey(key2)
-}
 
 const getLineItemAmount = (item: any): any => {
   return (
@@ -702,15 +690,21 @@ const FormCard = ({
       />
     )
   } else if (type === 'dropdown') {
+    const selectedOption = typeof localValue === 'string' && localValue !== '-'
+      ? options.find((opt: any) => String(opt.id).toLowerCase() === localValue.toLowerCase()) || (localValue ? { id: localValue, name: localValue } : null)
+      : null
+
     inputElement = (
       <InputSelect
         className='w-full font-semibold'
         options={options}
-        value={localValue}
+        value={selectedOption}
         onChange={(val: any) => {
-          setLocalValue(val)
-          onFocus?.(val)
-          setTimeout(handleBlur, 0)
+          const stringVal = val?.id ? String(val.id) : ''
+          setLocalValue(stringVal)
+          onFocus?.(stringVal)
+          onChange?.(stringVal)
+          setTimeout(() => setIsEditing(false), 0)
         }}
       />
     )
@@ -1131,6 +1125,12 @@ const Overview = (props: any) => {
   const [showBackOrderDetailFull, setShowBackOrderDetailFull] = useState(false)
   const [activeBackOrderTab, setActiveBackOrderTab] = useState<'current' | string>('current')
   const [selectedFile, setSelectedFile] = useState<any>(null)
+
+  useEffect(() => {
+    console.log('=== OVERVIEW COMPONENT RENDER ===')
+    console.log('formModel:', formModel)
+    console.log('allowedLabels:', allowedLabels)
+  }, [formModel, allowedLabels])
   const { data: attachmentData } = useAttachments(workflowId, processId, true)
   const {
     data: commentsData,
@@ -1456,28 +1456,7 @@ const Overview = (props: any) => {
     [],
   )
 
-  const invoiceHeader = agentData?.['Extracted Invoice JSON']?.invoice_header
 
-  useEffect(() => {
-    if (invoiceHeader) {
-      setFormModel?.((prev: any) => {
-        const merged = { ...prev }
-
-        for (const key of Object.keys(invoiceHeader)) {
-          const existingKey = Object.keys(prev).find((k) =>
-            matchKeysLoosely(k, key),
-          )
-          if (existingKey) {
-            const val = prev[existingKey]
-            if (!val || val === '-' || val === '') {
-              merged[existingKey] = invoiceHeader[key]
-            }
-          }
-        }
-        return merged
-      })
-    }
-  }, [invoiceHeader, setFormModel])
 
   useEffect(() => {
     // Reset viewer state when request changes
@@ -1609,7 +1588,11 @@ const Overview = (props: any) => {
   }, [selectedFile, repositoryId, selectedItem, tenantId, userId])
 
   const handleFieldChange = (key: string, value: string) => {
-    setFormModel?.((prev: any) => ({ ...prev, [key]: value }))
+    setFormModel?.((prev: any) => {
+      const next = { ...prev }
+      updateValueInStructure(next, key, value)
+      return next
+    })
   }
 
   const getFieldType = (label: string) => {
@@ -1623,11 +1606,11 @@ const Overview = (props: any) => {
     const l = label.toLowerCase()
     if (l.includes('currency'))
       return [
-        { label: 'USD', value: 'USD' },
-        { label: 'EUR', value: 'EUR' },
-        { label: 'GBP', value: 'GBP' },
-        { label: 'INR', value: 'INR' },
-        { label: 'AED', value: 'AED' },
+        { id: 'USD', name: 'USD' },
+        { id: 'EUR', name: 'EUR' },
+        { id: 'GBP', name: 'GBP' },
+        { id: 'INR', name: 'INR' },
+        { id: 'AED', name: 'AED' },
       ]
     return []
   }
@@ -2257,8 +2240,12 @@ const Overview = (props: any) => {
                           })
                         : Object.entries(formModel || {})
                             .filter(([key, val]) => {
-                              if (typeof val === 'object' && val !== null)
+                              if (typeof val === 'object' && val !== null) {
+                                if ('Invoice Value' in val) {
+                                  return true
+                                }
                                 return false
+                              }
                               if (typeof val === 'string') {
                                 const trimmed = val.trim()
                                 if (
@@ -2283,15 +2270,19 @@ const Overview = (props: any) => {
                               )
                             })
                             .map(([key, val]) => {
+                              const rawVal = val && typeof val === 'object' && 'Invoice Value' in val
+                                ? val['Invoice Value']
+                                : val
+
                               const fieldType = getFieldType(key)
                               const displayValue =
                                 fieldType === 'date' &&
-                                (val === null ||
-                                  val === undefined ||
-                                  val === '' ||
-                                  val === '-')
+                                (rawVal === null ||
+                                  rawVal === undefined ||
+                                  rawVal === '' ||
+                                  rawVal === '-')
                                   ? null
-                                  : val || '-'
+                                  : rawVal || '-'
 
                               return (
                                 <FormCard

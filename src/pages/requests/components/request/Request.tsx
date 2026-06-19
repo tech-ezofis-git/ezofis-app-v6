@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import workflowsApiV6 from '@/api/v6/workflows'
 // Import your custom animation components
 import { AnimateFadeIn } from '@/components/common/animations'
@@ -657,6 +658,27 @@ const parseFieldsSource = (formData: any): any => {
   return {}
 }
 
+const mergeFormData = (base: any, override: any): any => {
+  const baseParsed = parseFieldsSource(base)
+  const overrideParsed = parseFieldsSource(override)
+
+  const merged = { ...baseParsed }
+  Object.keys(overrideParsed).forEach((key) => {
+    const val = overrideParsed[key]
+    if (val !== undefined && val !== null && val !== '' && val !== '-') {
+      merged[key] = val
+    } else if (
+      merged[key] === undefined ||
+      merged[key] === null ||
+      merged[key] === '' ||
+      merged[key] === '-'
+    ) {
+      merged[key] = val
+    }
+  })
+  return merged
+}
+
 const mergeInvoiceHeader = (cleanFields: any, invoiceHeader: any) => {
   if (!invoiceHeader) return
   for (const key of Object.keys(invoiceHeader)) {
@@ -737,6 +759,7 @@ const Request = ({
   isFourthItem?: boolean
   isThirdItem?: boolean
 }) => {
+  const queryClient = useQueryClient()
   const {
     activeTabValue,
     closeRequest,
@@ -810,7 +833,12 @@ const Request = ({
     currentAgentData?.['Extracted Invoice JSON']?.invoice_header
 
   const jobStatus = useJobPolling(apAgentJobId, (jobData) => {
-    if (jobData && jobData.formData) {
+    const isCompleted =
+      jobData.isTerminal ||
+      jobData.stage === 'COMPLETED' ||
+      jobData.hangfireStatus === 'Succeeded'
+
+    if (!isCompleted && jobData && jobData.formData) {
       const isEmpty = isFormDataEmpty(jobData.formData)
       if (!isEmpty) {
         const cleanFields = parseCleanFields(
@@ -887,7 +915,7 @@ const Request = ({
       request?._formDefinition,
     )
 
-    const fieldsSource = parseFieldsSource(activeItem.formData)
+    const fieldsSource = mergeFormData(request?.formData, selectedItem?.formData)
     const labels = new Set<string>()
     const labelRecord: Record<string, unknown> = {}
 
@@ -907,6 +935,7 @@ const Request = ({
     return labels
   }, [
     selectedItem,
+    selectedItem?.formData,
     selectedWorkflow,
     request?._formDefinition,
     request?.formData,
@@ -926,7 +955,10 @@ const Request = ({
     const activeItem = request || selectedItem
     if (activeItem) {
       const cleanFields = parseCleanFields(
-        activeItem,
+        {
+          ...activeItem,
+          formData: mergeFormData(request?.formData, selectedItem?.formData),
+        },
         selectedWorkflow,
         request?._formDefinition,
         invoiceHeader,
@@ -937,6 +969,7 @@ const Request = ({
     }
   }, [
     selectedItem?.transactionId,
+    selectedItem?.formData,
     selectedWorkflow,
     request?._formDefinition,
     request?.formData,
@@ -1034,6 +1067,14 @@ const Request = ({
       const response = await workflowsApiV6.moveNext(instanceId, payload)
       console.log('MoveNext Response:', response)
 
+      queryClient.invalidateQueries({
+        queryKey: [
+          'request-detail',
+          resolvedWorkflowId,
+          selectedItem?.processId,
+          selectedItem?.transactionId,
+        ],
+      })
       workflowRefresh()
       closeRequest()
     } catch (e) {
@@ -1073,6 +1114,14 @@ const Request = ({
 
       const response = await workflowApi?.createProcessTransaction(payload)
       console.log(response)
+      queryClient.invalidateQueries({
+        queryKey: [
+          'request-detail',
+          resolvedWorkflowId,
+          selectedItem?.processId,
+          selectedItem?.transactionId,
+        ],
+      })
       workflowRefresh()
       closeRequest()
     } catch (e) {
