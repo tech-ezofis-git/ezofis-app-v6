@@ -513,6 +513,53 @@ const getInstanceHistory = async (
   return response
 }
 
+const getInstanceComments = async (
+  workflowId: number | string,
+  instanceId: number | string,
+) => {
+  const response: { data: any; error: string } = { data: null, error: '' }
+  try {
+    const { data, status } = await axiosV6({
+      headers: getTenantHeaders(),
+      method: 'GET',
+      url: `/workflows/${workflowId}/instances/${instanceId}/comments`,
+    })
+    if (status !== 200) throw new Error('invalid status code')
+    response.data = data
+  } catch (e: unknown) {
+    console.error(e)
+    const err = e as { message?: string; response?: { data?: string } }
+    response.error =
+      err?.response?.data || err?.message || 'error fetching comments'
+  }
+  return response
+}
+
+const addInstanceComment = async (
+  workflowId: number | string,
+  instanceId: number | string,
+  payload: { comments: string; showTo: number },
+) => {
+  const response: { data: any; error: string } = { data: null, error: '' }
+  try {
+    const { data, status } = await axiosV6({
+      data: JSON.stringify(payload),
+      headers: getTenantHeaders(),
+      method: 'POST',
+      url: `/workflows/${workflowId}/instances/${instanceId}/comments`,
+    })
+    if (status !== 200 && status !== 201 && status !== 204)
+      throw new Error('invalid status code')
+    response.data = data
+  } catch (e: unknown) {
+    console.error(e)
+    const err = e as { message?: string; response?: { data?: string } }
+    response.error =
+      err?.response?.data || err?.message || 'error adding comment'
+  }
+  return response
+}
+
 export const workflowsApiV6 = {
   createWorkflow,
   deleteWorkflow,
@@ -525,10 +572,13 @@ export const workflowsApiV6 = {
   getInboxList,
   getInstanceCount,
   getInstanceHistory,
+  getInstanceComments,
+  addInstanceComment,
   getSentList,
   getWorkflowById,
   getWorkflows,
 }
 
 export default workflowsApiV6
+
 

@@ -1026,6 +1026,10 @@ const Overview = (props: any) => {
     )
   }, [processingProcesses, selectedItem])
 
+  const resolvedInstanceId = useMemo(() => {
+    return String(selectedItem?.workflowInstanceId || selectedItem?.instanceId || processId || '')
+  }, [selectedItem, processId])
+
   const isCurrentlyProcessing =
     isProcessing === undefined
       ? !!matchingProc || selectedItem?.isProcessing
@@ -1136,7 +1140,7 @@ const Overview = (props: any) => {
     data: commentsData,
     isLoading: isLoadingComments,
     refetch: refetchComments,
-  } = useComments(workflowId, processId, true)
+  } = useComments(workflowId, resolvedInstanceId, true)
 
   const [lineItems, setLineItems] = useState<any[]>([])
 
@@ -2652,6 +2656,7 @@ const Overview = (props: any) => {
                           attachments={selectedItem?.attachments || []}
                           comments={commentsData}
                           enabled={true}
+                          instanceId={resolvedInstanceId}
                           isLoading={isLoadingComments}
                           processId={processId}
                           refetch={refetchComments}

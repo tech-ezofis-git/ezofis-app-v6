@@ -1,12 +1,13 @@
 // @/pages/requests/hooks/useComments.ts
 import { useCallback, useEffect, useState } from 'react'
-import requestApi from '@/api/requests/requests'
+import { workflowsApiV6 } from '@/api/v6/workflows'
 
 export type CommentItem = {
   comments?: string
   createdAt?: string
   createdByEmail?: string
   createdByName?: string
+  createdBy?: string
   fileIds?: Array<string | number>
   hasNotifytoInitiated?: boolean
   id?: string | number
@@ -15,7 +16,7 @@ export type CommentItem = {
 
 export function useComments(
   workflowId?: number | string,
-  processId?: number | string,
+  instanceId?: number | string,
   enabled?: boolean,
 ) {
   const [data, setData] = useState<CommentItem[]>([])
@@ -23,25 +24,48 @@ export function useComments(
   const [error, setError] = useState<any>(null)
 
   const refetch = useCallback(async () => {
-    if (!workflowId || !processId) return
+    if (!workflowId || !instanceId) return
     setIsLoading(true)
     setError(null)
 
     try {
-      // v5: workflow.getProcessComments(workflowId, processId) :contentReference[oaicite:4]{index=4}
-      const res = await (requestApi as any).getProcessComments(
+      const res = await workflowsApiV6.getInstanceComments(
         workflowId,
-        processId,
+        instanceId,
       )
-      const payload = res.length > 0 ? res : []
-      setData(Array.isArray(payload) ? payload : [])
+      if (res.error) {
+        throw new Error(res.error)
+      }
+
+      const list = Array.isArray(res.data)
+        ? res.data
+        : Array.isArray(res.data?.comments)
+          ? res.data.comments
+          : Array.isArray(res.data?.items)
+            ? res.data.items
+            : []
+
+      const mapped: CommentItem[] = list.map((c: any) => ({
+        comments: c.comments || c.text || c.comment || '',
+        createdAt: c.createdAt || c.createdAtUtc || c.occurredAtUtc || c.createdOn || '',
+        createdByEmail: c.createdByEmail || c.createdByUserName || c.performedByUserName || '',
+        createdByName: c.createdByName || c.createdByUserName || c.performedByUserName || '',
+        createdBy: c.createdBy || '',
+        fileIds: c.fileIds || [],
+        hasNotifytoInitiated: c.hasNotifytoInitiated || false,
+        id: c.id || c._id || '',
+        showTo: c.showTo ?? 2,
+      }))
+
+      setData(mapped)
     } catch (e) {
+      console.error('Error fetching V6 instance comments:', e)
       setError(e)
       setData([])
     } finally {
       setIsLoading(false)
     }
-  }, [workflowId, processId])
+  }, [workflowId, instanceId])
 
   useEffect(() => {
     if (!enabled) return

@@ -2,7 +2,7 @@ import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 // @/pages/requests/components/request/components/sections/comments/Comments.tsx
 import { useEffect, useMemo, useRef, useState } from 'react'
-import requestApi from '@/api/requests/requests'
+import { workflowsApiV6 } from '@/api/v6/workflows'
 import Icon from '@/components/base/icon/Icon'
 import { useComments } from '@/pages/requests/hooks/useComments'
 import authUserStore from '@/stores/authUserStore'
@@ -21,6 +21,7 @@ type Props = {
   }>
   comments?: any[]
   enabled?: boolean
+  instanceId?: string | number
   isLoading?: boolean
   processId?: number
   repositoryId?: string | number
@@ -33,11 +34,10 @@ export default function Comments({
   attachments = [],
   comments: propComments,
   enabled = true,
+  instanceId,
   isLoading: propIsLoading,
   processId,
   refetch: propRefetch,
-  repositoryId,
-  transactionId,
   workflowId,
 }: Props) {
   const { session } = authUserStore.getState()
@@ -47,13 +47,12 @@ export default function Comments({
     data,
     isLoading: hookIsLoading,
     refetch: hookRefetch,
-  } = useComments(workflowId, processId, enabled && !propComments)
+  } = useComments(workflowId, instanceId || processId, enabled && !propComments)
   const comments = (propComments ?? data ?? []) as any[]
   const isLoading = propComments ? (propIsLoading ?? false) : hookIsLoading
   const refetch = propRefetch ?? hookRefetch
 
   const [posting, setPosting] = useState(false)
-  const [notifyInitiator, setNotifyInitiator] = useState(false)
   const [attachFileId, setAttachFileId] = useState<string | number | ''>('')
   const [draft, setDraft] = useState('')
 
@@ -83,38 +82,29 @@ export default function Comments({
       .filter((x) => x.id)
   }, [attachments])
 
+  const targetInstanceId = instanceId || processId
   const onPost = async () => {
     const cleanText = draft.trim()
-    if (!workflowId || !processId || !transactionId || !cleanText) return
+    if (!workflowId || !targetInstanceId || !cleanText) return
 
     setPosting(true)
     try {
-      const body: any = {
-        comments: cleanText,
-        hasNotifytoInitiated: notifyInitiator,
-        showTo: 2,
-      }
-
-      if (attachFileId && repositoryId) {
-        body.embedJson = JSON.stringify({
-          itemIds: [attachFileId],
-          repositoryId,
-        })
-      }
-
-      await (requestApi as any).insertProcessComment(
+      await workflowsApiV6.addInstanceComment(
         workflowId,
-        processId,
-        transactionId,
-        body,
+        targetInstanceId,
+        {
+          comments: cleanText,
+          showTo: 2,
+        }
       )
 
       setDraft('')
       setAttachFileId('')
-      setNotifyInitiator(false)
 
       await refetch()
       setTimeout(scrollToBottom, 60)
+    } catch (error) {
+      console.error('Error posting comment:', error)
     } finally {
       setPosting(false)
     }
@@ -123,8 +113,7 @@ export default function Comments({
   const canSend =
     !posting &&
     !!workflowId &&
-    !!processId &&
-    !!transactionId &&
+    !!targetInstanceId &&
     draft.trim().length > 0
 
   return (
@@ -148,17 +137,25 @@ export default function Comments({
         )}
 
         {comments.map((c, idx) => {
-          const isMe = c?.createdByEmail === currentUserEmail
+          const isMe =
+            c?.createdByEmail === currentUserEmail ||
+            (c?.createdBy && c.createdBy === session?.id)
           const name = isMe
             ? 'You'
-            : (c?.createdByName ?? c?.createdByEmail ?? 'User')
+            : isUuid(c?.createdByName || '')
+              ? 'User'
+              : (c?.createdByName ?? c?.createdByEmail ?? 'User')
           const fileIds = extractFileIds(c)
           const timeDisplay = c?.createdAt
-            ? formatDatetime(c.createdAt, 'YYYY-MM-DD HH:mm')
+            ? formatDatetime(parseCommentDate(c.createdAt), 'YYYY-MM-DD hh:mm A')
             : ''
-          const initial = (c?.createdByName ?? c?.createdByEmail ?? 'U')
-            .charAt(0)
-            .toUpperCase()
+          const initial = isMe
+            ? 'Y'
+            : isUuid(c?.createdByName || '')
+              ? 'U'
+              : (c?.createdByName ?? c?.createdByEmail ?? 'U')
+                  .charAt(0)
+                  .toUpperCase()
 
           return (
             <div
@@ -182,7 +179,7 @@ export default function Comments({
 
                 {/* Text */}
                 <div className='text-13 leading-relaxed font-medium whitespace-pre-wrap text-gray-11'>
-                  {c?.comments}
+                  {formatCommentText(c?.comments)}
                 </div>
 
                 {/* File Attachments */}
@@ -309,4 +306,40 @@ function pickFileId(x: any) {
 
 function pickFileName(x: any) {
   return x?.name ?? x?.fileName ?? '-'
+}
+
+const isUuid = (val: string): boolean => {
+  if (typeof val !== 'string') return false
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val)
+}
+
+const parseCommentDate = (val: any): Date | string => {
+  if (!val) return ''
+  if (typeof val === 'string') {
+    const clean = val.trim()
+    if (
+      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(clean) &&
+      !clean.endsWith('Z') &&
+      !/[+-]\d{2}(:?\d{2})?$/.test(clean)
+    ) {
+      const d = new Date(clean + 'Z')
+      if (!Number.isNaN(d.getTime())) return d
+    }
+  }
+  return val
+}
+
+const formatCommentText = (text: string): string => {
+  const clean = String(text || '').trim()
+  if (clean.startsWith('{') && clean.endsWith('}')) {
+    try {
+      const parsed = JSON.parse(clean)
+      return Object.entries(parsed)
+        .map(([key, val]) => `${key}: ${val}`)
+        .join('\n')
+    } catch {
+      // fallback
+    }
+  }
+  return text
 }
