@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
+import { queryClient } from '@/lib/tanstack-query/queryClient'
 import workflowsApiV6 from '@/api/v6/workflows'
 // Import your custom animation components
 import { AnimateFadeIn } from '@/components/common/animations'
@@ -759,7 +759,6 @@ const Request = ({
   isFourthItem?: boolean
   isThirdItem?: boolean
 }) => {
-  const queryClient = useQueryClient()
   const {
     activeTabValue,
     closeRequest,
