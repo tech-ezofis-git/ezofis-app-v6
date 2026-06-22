@@ -699,8 +699,13 @@ const FormCard = ({
         className='w-full font-semibold'
         options={options}
         value={selectedOption}
+        searchable
+        creatable
+        searchPlaceholder="Search or add custom value..."
         onChange={(val: any) => {
-          const stringVal = val?.id ? String(val.id) : ''
+          const stringVal = val?.name && (typeof val.id === 'number' && val.id < 0)
+            ? String(val.name)
+            : String(val?.id || val?.name || '')
           setLocalValue(stringVal)
           onFocus?.(stringVal)
           onChange?.(stringVal)
