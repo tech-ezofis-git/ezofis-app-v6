@@ -17,13 +17,16 @@ export const useRequestDetail = (
       // 1. Fetch Basic Process Data from V6 API instead of discontinued rowInfo
       let processData: any = null
       try {
+        // Do not filter list calls by transactionId in detail view to ensure we always fetch the latest active transaction (e.g. Inbox transaction after AP Agent finishes)
+        const txId = undefined
+
         // Try Inbox
         const inboxRes = await workflowsApiV6.getInboxList(
           String(workflowId),
           1,
           5,
           String(processId),
-          String(transactionId),
+          txId,
         )
         const inboxItems = inboxRes.data?.items || []
         processData = inboxItems.find((i: any) => {
@@ -38,7 +41,7 @@ export const useRequestDetail = (
             1,
             5,
             String(processId),
-            String(transactionId),
+            txId,
           )
           const sentItems = sentRes.data?.items || []
           processData = sentItems.find((i: any) => {
@@ -54,7 +57,7 @@ export const useRequestDetail = (
             1,
             5,
             String(processId),
-            String(transactionId),
+            txId,
           )
           const completedItems = completedRes.data?.items || []
           processData = completedItems.find((i: any) => {
