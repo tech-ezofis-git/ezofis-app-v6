@@ -1709,6 +1709,8 @@ const Overview = (props: any) => {
           {menuPosition && selectedText && (
             <div
               ref={dropdownRef}
+              onMouseDown={(e) => e.stopPropagation()}
+              onMouseUp={(e) => e.stopPropagation()}
               style={{
                 top: `${menuPosition.y}px`,
                 left: `${menuPosition.x}px`,

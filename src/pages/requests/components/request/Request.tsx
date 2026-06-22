@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useRef } from 'react'
 import { queryClient } from '@/lib/tanstack-query/queryClient'
+import formApi from '@/api/form/form'
 import workflowsApiV6 from '@/api/v6/workflows'
 // Import your custom animation components
 import { AnimateFadeIn } from '@/components/common/animations'
@@ -488,15 +489,15 @@ const updateProcessInStore = (apAgentJobId: string | number, jobData: any) => {
       )
       const updatedProcesses = hasJobProcess
         ? state.processingProcesses.map((p) =>
-            String(p.processId || p.id) === jobKey
-              ? {
-                  ...p,
-                  apAgentJobId: null,
-                  id: jobData.instanceId,
-                  processId: jobData.instanceId,
-                }
-              : p,
-          )
+          String(p.processId || p.id) === jobKey
+            ? {
+              ...p,
+              apAgentJobId: null,
+              id: jobData.instanceId,
+              processId: jobData.instanceId,
+            }
+            : p,
+        )
         : state.processingProcesses
 
       return {
@@ -608,6 +609,11 @@ const useJobPolling = (
     isCompleted?: boolean
   } | null>(null)
 
+  const onJobDataRef = useRef(onJobData)
+  useEffect(() => {
+    onJobDataRef.current = onJobData
+  }, [onJobData])
+
   useEffect(() => {
     if (!apAgentJobId) return
 
@@ -622,8 +628,8 @@ const useJobPolling = (
           handleJobData(apAgentJobId, res.data, setJobStatus, () => {
             if (intervalId) clearInterval(intervalId)
           })
-          if (onJobData) {
-            onJobData(res.data)
+          if (onJobDataRef.current) {
+            onJobDataRef.current(res.data)
           }
         }
       } catch (err) {
@@ -821,6 +827,70 @@ const Request = ({
     initialProcessing,
   )
 
+  // Fetch workflow data if rawWorkflowData is missing or mismatched
+  useEffect(() => {
+    if (
+      resolvedWorkflowId &&
+      (!rawWorkflowData ||
+        String(rawWorkflowData.id) !== String(resolvedWorkflowId))
+    ) {
+      const fetchWorkflow = async () => {
+        try {
+          const res = await workflowsApiV6.getWorkflowById(
+            String(resolvedWorkflowId),
+          )
+          if (res?.data) {
+            const wf = res.data
+            const wFormId =
+              wf.formId ??
+              wf.wFormId ??
+              wf.settings?.general?.initiateUsing?.formId ??
+              ''
+            let formJson = wf.formJson
+            if (wFormId) {
+              const formRes = await formApi.getFormDataById(String(wFormId))
+              if (formRes?.data) {
+                formJson = formRes.data.formJson ?? formRes.data
+              }
+            }
+            requestStore
+              .getState()
+              .setRawWorkflowData({ ...wf, id: resolvedWorkflowId, formJson })
+          }
+        } catch (e) {
+          console.error(
+            'Error loading raw workflow data in Request detail view:',
+            e,
+          )
+        }
+      }
+      fetchWorkflow()
+    }
+  }, [resolvedWorkflowId, rawWorkflowData?.id])
+
+  // Synchronize store's selectedItem with the loaded request data
+  useEffect(() => {
+    if (request && selectedItem) {
+      const hasChanges =
+        request.stageType !== selectedItem.stageType ||
+        request.stage !== selectedItem.stage ||
+        request.status !== selectedItem.status ||
+        request.decision !== selectedItem.decision ||
+        request.activityId !== selectedItem.activityId ||
+        request.attachmentCount !== selectedItem.attachmentCount ||
+        request.commentsCount !== selectedItem.commentsCount
+
+      if (hasChanges) {
+        requestStore.setState({
+          selectedItem: {
+            ...selectedItem,
+            ...request,
+          },
+        })
+      }
+    }
+  }, [request, selectedItem])
+
   const agentDataList = request?._agentData || selectedItem?._agentData || []
   const hasAgentData = agentDataList.length > 0
 
@@ -851,14 +921,23 @@ const Request = ({
         }
       }
     }
+
+    if (isCompleted) {
+      setTimeout(() => {
+        queryClient.invalidateQueries({
+          queryKey: ['request-detail', resolvedWorkflowId],
+        })
+        requestStore.getState().workflowRefresh()
+      }, 1000)
+    }
   })
 
   const hasAgentDecision = request
     ? !!(
-        request.review ||
-        request._agentData?.[0]?.decision ||
-        request.completedAtUtc
-      )
+      request.review ||
+      request._agentData?.[0]?.decision ||
+      request.completedAtUtc
+    )
     : false
   const isCurrentlyProcessing = !hasAgentDecision && initialProcessing && !jobStatus?.isCompleted
 
@@ -877,9 +956,10 @@ const Request = ({
     return list
   }, [request?._actions, selectedItem?._actions, storeSelectedItem?._actions])
 
-  const isApAgentStage =
-    selectedItem?.stageType === 'AP_AGENT' ||
-    request?.stageType === 'AP_AGENT'
+  const isApAgentStage = request
+    ? request.stageType === 'AP_AGENT'
+    : selectedItem?.stageType === 'AP_AGENT'
+
 
   const dynamicRules = useMemo(() => {
     const rules = rawWorkflowData?.workflowJson?.rules || []
@@ -899,9 +979,17 @@ const Request = ({
   }, [dynamicRules])
 
   const headerActions = useMemo(() => {
+    console.log('[RULE_ACTIONS_DEBUG] --- headerActions recalculating ---')
+    console.log('[RULE_ACTIONS_DEBUG] isApAgentStage:', isApAgentStage)
+    console.log('[RULE_ACTIONS_DEBUG] request activityId:', request?.activityId)
+    console.log('[RULE_ACTIONS_DEBUG] selectedItem activityId:', selectedItem?.activityId)
+    console.log('[RULE_ACTIONS_DEBUG] rawWorkflowData rules:', rawWorkflowData?.workflowJson?.rules)
+    console.log('[RULE_ACTIONS_DEBUG] dynamicRules (matching fromBlockId):', dynamicRules)
+    console.log('[RULE_ACTIONS_DEBUG] ruleActions:', ruleActions)
+    console.log('[RULE_ACTIONS_DEBUG] fallback actions:', actions)
     if (isApAgentStage) return []
     return ruleActions.length > 0 ? ruleActions : actions
-  }, [isApAgentStage, ruleActions, actions])
+  }, [isApAgentStage, ruleActions, actions, request?.activityId, selectedItem?.activityId, rawWorkflowData])
 
 
   const [formModel, setFormModel] = useState<any>({})
@@ -1097,10 +1185,10 @@ const Request = ({
           fields:
             Object.keys(formModel).length > 0
               ? mapFormModelToPayloadFields(
-                  formModel,
-                  selectedWorkflow,
-                  request?._formDefinition,
-                )
+                formModel,
+                selectedWorkflow,
+                request?._formDefinition,
+              )
               : selectedItem?.formData?.fields || {},
           formEntryId: selectedItem?.formData?.formEntryId,
           formId: rawWorkflowData?.wFormId,
@@ -1255,19 +1343,19 @@ const Request = ({
             formModel?.['invoice_number'] ||
             formModel?.['invoice_no'] ||
             currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-              'Invoice No'
+            'Invoice No'
             ] ||
             currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-              'invoice_no'
+            'invoice_no'
             ] ||
             currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-              'Invoice Number'
+            'Invoice Number'
             ] ||
             currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-              'invoice_number'
+            'invoice_number'
             ] ||
             currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-              'invoice_num'
+            'invoice_num'
             ] ||
             currentAgentData?.['kvcYuknkDumkTenjvrVLj'] ||
             selectedItem?.reqNo ||
