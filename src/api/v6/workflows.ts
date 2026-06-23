@@ -585,23 +585,38 @@ const getInstanceAttachments = async (
 const addInstanceAttachment = async (
   workflowId: number | string,
   instanceId: number | string,
-  payload: {
-    fileName: string
+  payload: FormData | {
+    fileName?: string
     repositoryId: number | string
     file: string
-    fileSize: number
-    contentType: string
+    fileSize?: number
+    contentType?: string
+    transactionId?: number | string
+    [key: string]: any
   },
 ) => {
   const response: { data: any; error: string } = { data: null, error: '' }
   try {
-    const { repositoryId, ...rest } = payload
-    const { data, status } = await axiosV6({
-      data: JSON.stringify({
+    let requestData: any
+    let contentTypeHeader: string | undefined
+
+    if (payload instanceof FormData) {
+      requestData = payload
+      contentTypeHeader = 'multipart/form-data'
+    } else {
+      const { repositoryId, ...rest } = payload
+      requestData = JSON.stringify({
         ...rest,
         repositoryid: repositoryId,
-      }),
-      headers: getTenantHeaders(),
+      })
+    }
+
+    const { data, status } = await axiosV6({
+      data: requestData,
+      headers: {
+        ...getTenantHeaders(),
+        ...(contentTypeHeader ? { 'Content-Type': contentTypeHeader } : {}),
+      },
       method: 'POST',
       url: `/workflows/${workflowId}/instances/${instanceId}/attachments`,
     })
