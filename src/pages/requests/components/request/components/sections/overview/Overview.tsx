@@ -1476,7 +1476,7 @@ const Overview = (props: any) => {
 
   useEffect(() => {
     if (attachmentData && attachmentData.length > 0 && !selectedFile) {
-      setSelectedFile(attachmentData[0])
+      setSelectedFile(attachmentData[attachmentData.length - 1])
     }
   }, [attachmentData, selectedFile])
 
