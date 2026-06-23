@@ -21,11 +21,15 @@ const viewBinary = async (
   return response
 }
 
-const viewBinaryV6 = async (repositoryId: string, itemId: string) => {
+const viewBinaryV6 = async (
+  repositoryId: string,
+  itemId: string,
+  disposition: string = 'inline',
+) => {
   const response: any = { data: null, error: '' }
   try {
     const { data, status } = await axiosV6.get(
-      `/repositories/${repositoryId}/items/${itemId}/file?disposition=inline`,
+      `/repositories/${repositoryId}/items/${itemId}/file?disposition=${disposition}`,
       {
         responseType: 'blob',
       },

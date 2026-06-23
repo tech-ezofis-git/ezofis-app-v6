@@ -8,6 +8,7 @@ import {
 } from '@/pages/requests/hooks/useAttachments'
 import authUserStore from '@/stores/authUserStore'
 import { workflowsApiV6 } from '@/api/v6/workflows'
+import fileApi from '@/api/file/file'
 
 type FileLike = AttachmentItem
 
@@ -21,6 +22,8 @@ type Props = {
   selectedChecklistName?: string | null
   transactionId?: number | string
   workflowId?: number
+  formModel?: any
+  selectedItem?: any
   onClose?: () => void
   onOpenComments?: (file: AttachmentItem) => void
   onOpenHistory?: (file: AttachmentItem) => void
@@ -34,18 +37,6 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-const fileToBase64 = (file: File): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.readAsDataURL(file)
-    reader.onload = () => {
-      const result = reader.result as string
-      const base64 = result.split(',')[1]
-      resolve(base64)
-    }
-    reader.onerror = (error) => reject(error)
-  })
-}
 
 // function TooltipButton({
 //     icon,
@@ -191,6 +182,8 @@ export default function Attachments({
   processId,
   repositoryId,
   workflowId,
+  formModel,
+  selectedItem,
   onSelect,
 }: Props) {
   const targetInstanceId = instanceId || processId
@@ -231,28 +224,56 @@ export default function Attachments({
 
     setIsUploading(true)
     try {
-      const base64 = await fileToBase64(file)
-      console.log('[Attachments] Converted file to base64, payload length:', base64.length)
-      
+      const getValueFromKeys = (obj: any, keys: string[]): string => {
+        if (!obj) return ''
+        for (const k of keys) {
+          const val = obj[k]
+          if (val !== undefined && val !== null) {
+            if (typeof val === 'object' && 'Invoice Value' in val) {
+              return String(val['Invoice Value'] ?? '')
+            }
+            return String(val)
+          }
+        }
+        return ''
+      }
+
+      const rawAmount = getValueFromKeys(formModel, ['Invoice Amount', 'invoice_amount', 'Amount', 'amount', 'Total', 'total'])
+      const parsedAmount = Number(rawAmount.replace(/[^0-9.-]+/g, ''))
+      const amountVal = Number.isNaN(parsedAmount) ? 0 : parsedAmount
+
+      const metadataObj = {
+        amount: amountVal,
+        department: getValueFromKeys(formModel, ['Department', 'department']),
+        documentDate: getValueFromKeys(formModel, ['Invoice Date', 'invoice_date', 'Document Date', 'document_date', 'Date', 'date']),
+        documentType: getValueFromKeys(formModel, ['Document Type', 'document_type', 'Doc Type', 'doc_type']) || 'Invoice',
+        invoiceNumber: getValueFromKeys(formModel, ['Invoice Number', 'invoice_number', 'Invoice No', 'invoice_no', 'Inv Number']),
+        poNumber: getValueFromKeys(formModel, ['PO Number', 'po_number', 'PO No', 'po_no', 'Purchase Order', 'pono', 'poNumber', 'PO No.']),
+        riskLevel: getValueFromKeys(formModel, ['Risk Level', 'risk_level', 'Risk', 'risk']),
+        source: getValueFromKeys(formModel, ['Source', 'source']) || 'Upload',
+        status: getValueFromKeys(formModel, ['Status', 'status']) || selectedItem?.status || selectedItem?.state || '',
+        supplierName: getValueFromKeys(formModel, ['Supplier Name', 'supplier_name', 'Vendor Name', 'vendor_name', 'Supplier', 'Vendor']),
+      }
+
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('repositoryId', String(repositoryId))
+      formData.append('repositoryld', String(repositoryId)) // Support backend field typo
+      formData.append('metadata', JSON.stringify(metadataObj))
+
       const res = await workflowsApiV6.addInstanceAttachment(
         workflowId,
         targetInstanceId,
-        {
-          fileName: file.name,
-          repositoryId: repositoryId,
-          file: base64,
-          fileSize: file.size,
-          contentType: file.type || 'application/octet-stream',
-        }
+        formData
       )
-      
+
       console.log('[Attachments] Upload response:', res)
       if (res.error) {
         console.error('[Attachments] Upload failed with response error:', res.error)
       } else {
         console.log('[Attachments] Upload succeeded, refetching...')
       }
-      
+
       if (fileInputRef.current) fileInputRef.current.value = ''
       await refetch()
     } catch (err) {
@@ -262,10 +283,37 @@ export default function Attachments({
     }
   }
 
-  const handleDownload = (e: React.MouseEvent, file: FileLike) => {
+  const handleDownload = async (e: React.MouseEvent, file: FileLike) => {
     e.stopPropagation()
-    const url = buildDownloadUrl({ apiBaseUrl, file, tenantId, userId })
-    window.open(url, '_blank')
+    const repoId = String(file.repositoryId || repositoryId || '').trim()
+    const itemId = String(file.itemId || file.id || '').trim()
+
+    const isUuid = (val: string): boolean => {
+      return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val)
+    }
+
+    if (isUuid(repoId) && isUuid(itemId)) {
+      try {
+        const response = await fileApi.viewBinaryV6(repoId, itemId, 'download')
+        if (response?.data instanceof Blob) {
+          const url = window.URL.createObjectURL(response.data)
+          const a = document.createElement('a')
+          a.href = url
+          a.download = file.name || 'download'
+          document.body.appendChild(a)
+          a.click()
+          a.remove()
+          window.URL.revokeObjectURL(url)
+        } else {
+          console.error('File binary data not found or invalid format.')
+        }
+      } catch (err) {
+        console.error('Error downloading attachment:', err)
+      }
+    } else {
+      const url = buildDownloadUrl({ apiBaseUrl, file, tenantId, userId })
+      window.open(url, '_blank')
+    }
   }
 
   return (

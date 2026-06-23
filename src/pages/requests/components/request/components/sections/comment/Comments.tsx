@@ -50,6 +50,18 @@ export default function Comments({
     refetch: hookRefetch,
   } = useComments(workflowId, instanceId || processId, enabled && !propComments)
   const comments = (propComments ?? data ?? []) as any[]
+  const sortedComments = useMemo(() => {
+    return [...comments].sort((a, b) => {
+      const getCommentTime = (createdAt: any): number => {
+        if (!createdAt) return 0
+        const parsed = parseCommentDate(createdAt)
+        if (parsed instanceof Date) return parsed.getTime()
+        const d = new Date(parsed)
+        return isNaN(d.getTime()) ? 0 : d.getTime()
+      }
+      return getCommentTime(a.createdAt) - getCommentTime(b.createdAt)
+    })
+  }, [comments])
   const isLoading = propComments ? (propIsLoading ?? false) : hookIsLoading
   const refetch = propRefetch ?? hookRefetch
 
@@ -75,7 +87,7 @@ export default function Comments({
   useEffect(() => {
     if (!enabled) return
     if (!isLoading) setTimeout(scrollToBottom, 80)
-  }, [isLoading, comments.length, enabled])
+  }, [isLoading, sortedComments.length, enabled])
 
   const fileOptions = useMemo(() => {
     return attachments
@@ -127,7 +139,7 @@ export default function Comments({
         ref={listRef}
         style={{ minHeight: 0 }}
       >
-        {comments.length === 0 && !isLoading && (
+        {sortedComments.length === 0 && !isLoading && (
           <div className='text-gray-400 flex h-full flex-col items-center justify-center'>
             <Icon
               className='mb-2 size-8 opacity-50'
@@ -137,7 +149,7 @@ export default function Comments({
           </div>
         )}
 
-        {comments.map((c, idx) => {
+        {sortedComments.map((c, idx) => {
           const isMe =
             c?.createdByEmail === currentUserEmail ||
             (c?.createdBy && c.createdBy === session?.id)

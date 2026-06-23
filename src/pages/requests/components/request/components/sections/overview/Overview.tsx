@@ -1476,7 +1476,7 @@ const Overview = (props: any) => {
 
   useEffect(() => {
     if (attachmentData && attachmentData.length > 0 && !selectedFile) {
-      setSelectedFile(attachmentData[0])
+      setSelectedFile(attachmentData[attachmentData.length - 1])
     }
   }, [attachmentData, selectedFile])
 
@@ -1546,7 +1546,7 @@ const Overview = (props: any) => {
           '',
       ).trim()
       const itemId = String(
-        selectedFile?.id || selectedItem?.itemId || '',
+        selectedFile?.itemId || selectedFile?.id || selectedItem?.itemId || '',
       ).trim()
 
       if (
@@ -2634,6 +2634,9 @@ const Overview = (props: any) => {
                           processId={processId}
                           repositoryId={repositoryId || selectedItem?.repositoryId}
                           workflowId={workflowId}
+                          formModel={formModel}
+                          selectedItem={selectedItem}
+                          transactionId={transactionId}
                           onSelect={(file) =>
                             selectedFile?.id === file.id
                               ? (setIsViewerLoading(true),
