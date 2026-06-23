@@ -1,32 +1,31 @@
 import { useEffect, useMemo, useState } from 'react'
-import InputCheckbox from '@/components/base/inputs/InputCheckbox'
 import InputDate from '@/components/base/inputs/InputDate'
-import InputRadioIndicator from '@/components/base/inputs/InputRadioIndicator'
-import InputSelect from '@/components/base/inputs/InputSelect'
 import InputText from '@/components/base/inputs/InputText'
+import InputRadioIndicator from '@/components/base/inputs/InputRadioIndicator'
+import InputCheckbox from '@/components/base/inputs/InputCheckbox'
+import InputSelect from '@/components/base/inputs/InputSelect'
 import type { DynamicRepositoryColumn } from '../api/folderApi'
-import { DynamicIcon } from './icons'
 import { Button, Card, PrimaryButton } from './Ui'
-
-type EditMetadataViewProps = {
-  fileColumns: DynamicRepositoryColumn[]
-  fileData?: MetadataRow
-  onBack: () => void
-  onSave?: (values: Record<string, any>) => void | Promise<void>
-}
+import { DynamicIcon } from './icons'
 
 type MetadataRow = Record<string, any>
 
 type SelectOption = {
-  description?: string
-  disabled?: boolean
   id: string | number
   name: string
+  description?: string
+  disabled?: boolean
   value?: string
 }
 
-const normalizeType = (dataType?: string) =>
-  String(dataType || 'text').toLowerCase()
+type EditMetadataViewProps = {
+  onBack: () => void
+  fileColumns: DynamicRepositoryColumn[]
+  fileData?: MetadataRow
+  onSave?: (values: Record<string, any>) => void | Promise<void>
+}
+
+const normalizeType = (dataType?: string) => String(dataType || 'text').toLowerCase()
 
 const normalizeDateForInput = (value: any) => {
   if (!value) return ''
@@ -111,19 +110,16 @@ const getSelectOptions = (field: DynamicRepositoryColumn): SelectOption[] => {
       `Option ${index + 1}`
 
     return {
-      description: option?.description,
-      disabled: Boolean(option?.disabled),
       id: String(optionId),
       name: String(optionName),
       value: String(option?.value ?? optionName),
+      description: option?.description,
+      disabled: Boolean(option?.disabled),
     }
   })
 }
 
-const findSelectedOption = (
-  options: SelectOption[],
-  value: string,
-): SelectOption | null => {
+const findSelectedOption = (options: SelectOption[], value: string): SelectOption | null => {
   if (!value) return null
 
   const normalizedValue = value.toLowerCase()
@@ -139,9 +135,9 @@ const findSelectedOption = (
 }
 
 export function EditMetadataView({
+  onBack,
   fileColumns,
   fileData,
-  onBack,
   onSave,
 }: EditMetadataViewProps) {
   const [formValues, setFormValues] = useState<Record<string, any>>({})
@@ -164,11 +160,7 @@ export function EditMetadataView({
         return
       }
 
-      if (
-        fieldType === 'boolean' ||
-        fieldType === 'bool' ||
-        fieldType === 'checkbox'
-      ) {
+      if (fieldType === 'boolean' || fieldType === 'bool' || fieldType === 'checkbox') {
         nextValues[field.key] = toBooleanValue(rawValue)
         return
       }
@@ -195,11 +187,7 @@ export function EditMetadataView({
         return
       }
 
-      if (
-        fieldType === 'boolean' ||
-        fieldType === 'bool' ||
-        fieldType === 'checkbox'
-      ) {
+      if (fieldType === 'boolean' || fieldType === 'bool' || fieldType === 'checkbox') {
         nextValues[field.key] = toBooleanValue(rawValue)
         return
       }
@@ -234,18 +222,12 @@ export function EditMetadataView({
           className='w-full'
           label={label}
           value={value || ''}
-          onChange={(nextValue: any) =>
-            updateFieldValue(field.key, nextValue || '')
-          }
+          onChange={(nextValue: any) => updateFieldValue(field.key, nextValue || '')}
         />
       )
     }
 
-    if (
-      fieldType === 'select' ||
-      fieldType === 'dropdown' ||
-      options.length > 0
-    ) {
+    if (fieldType === 'select' || fieldType === 'dropdown' || options.length > 0) {
       return (
         <InputSelect
           label={label}
@@ -261,11 +243,7 @@ export function EditMetadataView({
       )
     }
 
-    if (
-      fieldType === 'boolean' ||
-      fieldType === 'bool' ||
-      fieldType === 'checkbox'
-    ) {
+    if (fieldType === 'boolean' || fieldType === 'bool' || fieldType === 'checkbox') {
       return (
         <div className='rounded-xl border border-gray-2 bg-white px-4 py-3'>
           <div className='mb-2 text-xs font-bold tracking-wider text-gray-9 uppercase'>
@@ -275,12 +253,7 @@ export function EditMetadataView({
           <InputCheckbox
             checked={Boolean(value)}
             indeterminate={false}
-            onChange={(event: any) =>
-              updateFieldValue(
-                field.key,
-                Boolean(event?.target?.checked ?? !value),
-              )
-            }
+            onChange={(event: any) => updateFieldValue(field.key, Boolean(event?.target?.checked ?? !value))}
           />
         </div>
       )
@@ -295,15 +268,13 @@ export function EditMetadataView({
           </div>
           <div className='flex flex-wrap gap-4'>
             {options.map((option) => {
-              const optionValue = String(
-                option.value ?? option.name ?? option.id,
-              )
+              const optionValue = String(option.value ?? option.name ?? option.id)
               return (
                 <button
-                  className='inline-flex items-center gap-2 text-sm font-semibold text-gray-12'
                   key={optionValue}
                   type='button'
                   onClick={() => updateFieldValue(field.key, optionValue)}
+                  className='inline-flex items-center gap-2 text-sm font-semibold text-gray-12'
                 >
                   <InputRadioIndicator
                     aria-label={option.name}
@@ -323,8 +294,8 @@ export function EditMetadataView({
         className='w-full'
         label={label}
         placeholder={`Enter ${label}`}
-        required={required}
         value={toTextValue(value)}
+        required={required}
         type={
           fieldType === 'decimal' ||
           fieldType === 'number' ||
@@ -333,23 +304,21 @@ export function EditMetadataView({
             ? 'number'
             : 'text'
         }
-        onChange={(event: any) =>
-          updateFieldValue(field.key, event?.target?.value ?? event ?? '')
-        }
+        onChange={(event: any) => updateFieldValue(field.key, event?.target?.value ?? event ?? '')}
       />
     )
   }
 
   return (
-    <div className='animate-in fade-in flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-surface-secondary duration-300'>
+    <div className='flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-surface-secondary animate-in fade-in duration-300'>
       <div className='flex h-[72px] shrink-0 items-center justify-between border-b border-gray-3 bg-white px-6'>
         <div className='flex min-w-0 items-center gap-4'>
           <button
-            className='inline-flex h-9 shrink-0 items-center gap-2 rounded-lg px-2 text-[14px] font-semibold text-gray-13 hover:bg-gray-2'
             type='button'
             onClick={onBack}
+            className='inline-flex h-9 shrink-0 items-center gap-2 rounded-lg px-2 text-[14px] font-semibold text-gray-13 hover:bg-gray-2'
           >
-            <DynamicIcon className='h-4 w-4' name='arrowLeft' />
+            <DynamicIcon name='arrowLeft' className='h-4 w-4' />
             Back
           </button>
 
@@ -367,21 +336,21 @@ export function EditMetadataView({
 
         <div className='flex items-center gap-3'>
           <Button
-            className='h-10 px-4 text-[14px] font-semibold'
             type='button'
             onClick={resetValues}
+            className='h-10 px-4 text-[14px] font-semibold'
           >
-            <DynamicIcon className='h-4 w-4' name='refresh' />
+            <DynamicIcon name='refresh' className='h-4 w-4' />
             Reset
           </Button>
 
           <PrimaryButton
-            className='h-10 px-4 text-[14px] font-semibold disabled:cursor-not-allowed disabled:opacity-50'
-            disabled={saving || !onSave}
             type='button'
+            disabled={saving || !onSave}
             onClick={saveValues}
+            className='h-10 px-4 text-[14px] font-semibold disabled:cursor-not-allowed disabled:opacity-50'
           >
-            <DynamicIcon className='h-4 w-4' name='save' />
+            <DynamicIcon name='save' className='h-4 w-4' />
             {saving ? 'Saving...' : 'Save Changes'}
           </PrimaryButton>
         </div>
@@ -392,8 +361,8 @@ export function EditMetadataView({
           <div className='flex items-center justify-between gap-4 rounded-xl border border-violet-5 bg-violet-3 p-4 text-violet-11'>
             <p className='text-[13px] leading-5'>
               <b>Metadata Workspace:</b> Controls are generated from repository
-              field definitions only. Empty or missing values remain blank in
-              edit mode and display as “-” in grid/list view.
+              field definitions only. Empty or missing values remain blank in edit
+              mode and display as “-” in grid/list view.
             </p>
           </div>
 
@@ -410,7 +379,7 @@ export function EditMetadataView({
             {editableFields.length ? (
               <div className='mt-5 grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3'>
                 {editableFields.map((field) => (
-                  <div className='block' key={field.key}>
+                  <div key={field.key} className='block'>
                     {renderFieldControl(field)}
                     {/* <span className='mt-1 block text-[11px] font-medium text-gray-8'>
                       Column: {field.key}
@@ -421,7 +390,7 @@ export function EditMetadataView({
               </div>
             ) : (
               <div className='flex min-h-[260px] flex-col items-center justify-center gap-2 px-6 py-10 text-center'>
-                <DynamicIcon className='h-8 w-8 text-gray-8' name='fileText' />
+                <DynamicIcon name='fileText' className='h-8 w-8 text-gray-8' />
                 <b className='text-gray-13'>No metadata fields available</b>
                 <p className='max-w-[480px] text-sm text-gray-10'>
                   The selected repository did not return editable metadata

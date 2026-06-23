@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { BreadcrumbItem } from '../components/Breadcrumbs'
+import {
+  decodeRepositoryNodeId,
+  folderApi,
+  foldersToTreeNodes,
+  type DynamicRepositoryColumn,
+} from '../api/folderApi'
 import type {
   AppView,
   ExplorerView,
@@ -9,19 +14,13 @@ import type {
   RepositoryFilePage,
   TreeNode,
 } from '../types/folderTypes'
-import {
-  decodeRepositoryNodeId,
-  type DynamicRepositoryColumn,
-  folderApi,
-  foldersToTreeNodes,
-} from '../api/folderApi'
+import type { BreadcrumbItem } from '../components/Breadcrumbs'
 import {
   DEFAULT_FOLDER_PAGE_SIZE,
   DEFAULT_PAGE_SIZE,
+  FOLDER_SEARCH_DEBOUNCE_MS,
   findNodeById,
   findPathToNode,
-  FOLDER_SEARCH_DEBOUNCE_MS,
-  type FolderPageMeta,
   getChildIds,
   getFileId,
   getFolderPageMeta,
@@ -30,9 +29,8 @@ import {
   mergeFoldersById,
   syncTreeChildren,
   updateTreeNode,
+  type FolderPageMeta,
 } from '../utils/folderExplorerUtils'
-
-export type UseFolderExplorerReturn = ReturnType<typeof useFolderExplorer>
 
 export function useFolderExplorer() {
   const [tree, setTree] = useState<TreeNode[]>([])
@@ -56,10 +54,8 @@ export function useFolderExplorer() {
   const [error, setError] = useState('')
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
   const [folderSearch, setFolderSearch] = useState('')
-  const [refreshing, setRefreshing] = useState(false)
-  const cursorByFolderRef = useRef<
-    Record<string, Record<number, string | null>>
-  >({})
+const [refreshing, setRefreshing] = useState(false)
+  const cursorByFolderRef = useRef<Record<string, Record<number, string | null>>>({})
   const requestSeqRef = useRef(0)
   const folderLoadLockRef = useRef(false)
   const lastRequestedFolderPageRef = useRef<Record<string, number>>({})
@@ -92,23 +88,23 @@ export function useFolderExplorer() {
   }
 
   const loadFolderContent = async ({
-    appendFolders = false,
-    cursor = null,
     folderId,
-    folderPageOnly = false,
     page = 1,
-    pageOnly = false,
     pageSizeValue = pageSize,
+    cursor = null,
     syncTree = true,
+    pageOnly = false,
+    appendFolders = false,
+    folderPageOnly = false,
   }: {
-    appendFolders?: boolean
-    cursor?: string | null
     folderId: string
-    folderPageOnly?: boolean
     page?: number
-    pageOnly?: boolean
     pageSizeValue?: number
+    cursor?: string | null
     syncTree?: boolean
+    pageOnly?: boolean
+    appendFolders?: boolean
+    folderPageOnly?: boolean
   }) => {
     const requestId = ++requestSeqRef.current
 
@@ -120,9 +116,9 @@ export function useFolderExplorer() {
 
     try {
       const response = await folderApi.getFolderContent(folderId, {
-        cursor,
         page,
         pageSize: pageSizeValue,
+        cursor,
       })
 
       if (requestId !== requestSeqRef.current) return response
@@ -135,7 +131,9 @@ export function useFolderExplorer() {
           ? mergeFoldersById(previous, response.folders || [])
           : response.folders || [],
       )
-      setFiles((previous) => (folderPageOnly ? previous : response.files || []))
+      setFiles((previous) =>
+        folderPageOnly ? previous : response.files || [],
+      )
       setFileColumns(response.fileColumns || [])
       setFilePage(response.filePage)
       setFolderPage(nextFolderPage)
@@ -412,12 +410,12 @@ export function useFolderExplorer() {
     const cachedCursor = cursorByFolderRef.current[activeFolder]?.[safePage]
 
     await loadFolderContent({
-      cursor: cursor ?? cachedCursor ?? null,
       folderId: activeFolder,
       page: safePage,
-      pageOnly: true,
       pageSizeValue: filePage?.pageSize || pageSize,
+      cursor: cursor ?? cachedCursor ?? null,
       syncTree: false,
+      pageOnly: true,
     }).catch(() => undefined)
   }
 
@@ -487,36 +485,43 @@ export function useFolderExplorer() {
     [tree],
   )
 
-  const refreshData = useCallback(async () => {
-    if (!activeFolder || refreshing) return
 
-    setRefreshing(true)
-    setLoading(true)
-    setError('')
+const refreshData = useCallback(async () => {
+  if (!activeFolder || refreshing) return
 
-    try {
-      cursorByFolderRef.current[activeFolder] = { 1: null }
-      folderLoadLockRef.current = false
-      lastRequestedFolderPageRef.current[activeFolder] = 1
+  setRefreshing(true)
+  setLoading(true)
+  setError('')
 
-      await loadSelectedRepository(activeFolder)
+  try {
+    cursorByFolderRef.current[activeFolder] = { 1: null }
+    folderLoadLockRef.current = false
+    lastRequestedFolderPageRef.current[activeFolder] = 1
 
-      await loadFolderContent({
-        appendFolders: false,
-        cursor: null,
-        folderId: activeFolder,
-        folderPageOnly: false,
-        page: filePage?.page || 1,
-        pageOnly: false,
-        pageSizeValue: filePage?.pageSize || pageSize,
-        syncTree: true,
-      })
-    } catch {
-      // error already handled inside loadFolderContent
-    } finally {
-      setRefreshing(false)
-    }
-  }, [activeFolder, refreshing, filePage?.page, filePage?.pageSize, pageSize])
+    await loadSelectedRepository(activeFolder)
+
+    await loadFolderContent({
+      folderId: activeFolder,
+      page: filePage?.page || 1,
+      pageSizeValue: filePage?.pageSize || pageSize,
+      cursor: null,
+      syncTree: true,
+      pageOnly: false,
+      appendFolders: false,
+      folderPageOnly: false,
+    })
+  } catch {
+    // error already handled inside loadFolderContent
+  } finally {
+    setRefreshing(false)
+  }
+}, [
+  activeFolder,
+  refreshing,
+  filePage?.page,
+  filePage?.pageSize,
+  pageSize,
+])
   return {
     activeFolder,
     appView,
@@ -533,31 +538,33 @@ export function useFolderExplorer() {
     files,
     folderHasMore,
     folderPage,
-    folders,
     folderSearch,
+    folders,
+    getRepositoryIdFromFolder,
+    getSelectedFileRow,
     goBackInExplorer,
+    loadMoreFolders,
+    loadSelectedRepository,
     loading,
     loadingFolders,
     loadingPage,
-    loadMoreFolders,
-    loadSelectedRepository,
     openFile,
     openFileAction,
     openFolder,
     pageSize,
-    refreshData,
-    refreshing,
     repositoryNodes,
     selectedFile,
     selectedRepository,
+    setAppView,
+    setFolderSearch,
+    setSelectedFile,
     toggleFolder,
     tree,
     treeLoadingId,
     viewMode,
-    getRepositoryIdFromFolder,
-    getSelectedFileRow,
-    setAppView,
-    setFolderSearch,
-    setSelectedFile,
+    refreshData,
+    refreshing,
   }
 }
+
+export type UseFolderExplorerReturn = ReturnType<typeof useFolderExplorer>

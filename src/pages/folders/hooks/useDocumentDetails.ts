@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import authUserStore from '@/stores/authUserStore'
 import { folderApi } from '../api/folderApi'
+import authUserStore from '@/stores/authUserStore'
 import {
   buildInfoCards,
   type CommentItem,
@@ -12,9 +12,7 @@ export function useDocumentDetails(repositoryId: string, id: string) {
   const [data, setData] = useState<WorkspaceDocumentDetail | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [tab, setTab] = useState<'timeline' | 'comments' | 'relatedDocs'>(
-    'timeline',
-  )
+  const [tab, setTab] = useState<'timeline' | 'comments' | 'relatedDocs'>('timeline')
   const [fileLoadFailed, setFileLoadFailed] = useState(false)
 
   const [timeline, setTimeline] = useState<TimelineEvent[]>([])
@@ -104,9 +102,7 @@ export function useDocumentDetails(repositoryId: string, id: string) {
           pageSize: 50,
         })
         if (mounted) {
-          setComments(
-            Array.isArray(response?.comments) ? response.comments : [],
-          )
+          setComments(Array.isArray(response?.comments) ? response.comments : [])
           setCommentsLoaded(true)
         }
       } catch {
@@ -148,9 +144,9 @@ export function useDocumentDetails(repositoryId: string, id: string) {
   const hasValidFileUrl = Boolean(data?.fileUrl) && !fileLoadFailed
 
   return {
+    commentText,
     comments,
     commentsLoading,
-    commentText,
     currentUserEmail,
     data,
     error,
@@ -162,11 +158,11 @@ export function useDocumentDetails(repositoryId: string, id: string) {
     loading,
     saveComment,
     savingComment,
-    tab,
-    timeline,
-    timelineLoading,
     setCommentText,
     setFileLoadFailed,
     setTab,
+    tab,
+    timeline,
+    timelineLoading,
   }
 }

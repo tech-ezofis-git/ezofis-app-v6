@@ -1,65 +1,65 @@
-export type CommentItem = {
-  actorName?: string
-  author?: string
-  authorName?: string
-  authorUserId?: string
-  body?: string
-  comment?: string
-  createdAtUtc?: string
-  date?: string
-  id?: string
-  message?: string
-  text?: string
-}
-export type DetailCard = {
-  iconKey: string
-  id: string
-  rows: Array<{ label: string; value: string }>
-  title: string
-}
 export type DetailField = { key?: string; label?: string; value?: any }
-
 export type DetailSection = {
-  fields?: DetailField[] | null
   sectionKey?: string
   title?: string
+  fields?: DetailField[] | null
 }
-
-export type TimelineEvent = {
-  actorName?: string
-  actorType?: string
-  createdAtUtc?: string
-  description?: string | null
-  eventType?: string
-  id?: string
-  isDerived?: boolean
+export type DetailCard = {
+  id: string
   title: string
+  iconKey: string
+  rows: Array<{ label: string; value: string }>
 }
 
 export type WorkspaceDocumentDetail = {
-  alert?: { badge: string; subtitle: string; title: string } | null
-  DetailsRow?: DetailSection[] | null
   documentId?: string
   fileName: string
   fileType: string
   fileUrl?: string
+  DetailsRow?: DetailSection[] | null
   infoCards?: DetailCard[]
   lineItems?: Array<Record<string, any>> | null
+  alert?: { title: string; subtitle: string; badge: string } | null
+}
+
+export type TimelineEvent = {
+  id?: string
+  eventType?: string
+  title: string
+  description?: string | null
+  actorType?: string
+  actorName?: string
+  createdAtUtc?: string
+  isDerived?: boolean
+}
+
+export type CommentItem = {
+  id?: string
+  author?: string
+  authorName?: string
+  actorName?: string
+  createdAtUtc?: string
+  date?: string
+  message?: string
+  comment?: string
+  text?: string
+  body?: string
+  authorUserId?: string
 }
 
 const sectionIconMap: Record<string, string> = {
-  aiAnalysis: 'bot',
   documentInfo: 'fileText',
   supplierDetails: 'fileText',
+  aiAnalysis: 'bot',
   systemInfo: 'clock',
 }
 
 export const eventIconMap: Record<string, string> = {
-  ai: 'bot',
-  comment: 'messageSquare',
   system: 'fileText',
-  user: 'clock',
+  ai: 'bot',
   workflow: 'check',
+  comment: 'messageSquare',
+  user: 'clock',
 }
 
 export const toDisplayValue = (value: any) => {
@@ -84,12 +84,11 @@ export const buildInfoCards = (
   const sections = Array.isArray(data.DetailsRow) ? data.DetailsRow : []
 
   return sections
-    .filter(
-      (section) => Array.isArray(section.fields) && section.fields.length > 0,
-    )
+    .filter((section) => Array.isArray(section.fields) && section.fields.length > 0)
     .map((section, index) => ({
-      iconKey: sectionIconMap[section.sectionKey || ''] || 'fileText',
       id: section.sectionKey || `section-${index}`,
+      title: section.title || section.sectionKey || `Section ${index + 1}`,
+      iconKey: sectionIconMap[section.sectionKey || ''] || 'fileText',
       rows: (section.fields || [])
         .filter(
           (field) =>
@@ -102,7 +101,6 @@ export const buildInfoCards = (
           label: field.label || field.key || '-',
           value: toDisplayValue(field.value),
         })),
-      title: section.title || section.sectionKey || `Section ${index + 1}`,
     }))
     .filter((card) => card.rows.length > 0)
 }

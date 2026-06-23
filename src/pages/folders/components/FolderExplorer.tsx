@@ -1,13 +1,13 @@
-import { useFolderExplorer } from '../hooks/useFolderExplorer'
-import { AiSummaryView } from './AiSummaryView'
-import { DocumentDetailsView } from './DocumentDetailsView'
-import { DocumentsListView } from './DocumentsListView'
-import { EditMetadataView } from './EditMetadataView'
 import { ExplorerToolbar } from './ExplorerToolbar'
+import { TreeSidebar } from './TreeSidebar'
 import FolderTable from './FolderTable'
+import { DocumentsListView } from './DocumentsListView'
+import { DocumentDetailsView } from './DocumentDetailsView'
+import { EditMetadataView } from './EditMetadataView'
+import { AiSummaryView } from './AiSummaryView'
 import { ShareView } from './ShareView'
 import { StartWorkflowView } from './StartWorkflowView'
-import { TreeSidebar } from './TreeSidebar'
+import { useFolderExplorer } from '../hooks/useFolderExplorer'
 import Upload from './Upload/Upload'
 
 export function FolderExplorer() {
@@ -25,26 +25,26 @@ export function FolderExplorer() {
     files,
     folderHasMore,
     folderPage,
-    folders,
     folderSearch,
+    folders,
+    getRepositoryIdFromFolder,
+    getSelectedFileRow,
+    loadMoreFolders,
     loading,
     loadingFolders,
     loadingPage,
-    loadMoreFolders,
     openFile,
     openFileAction,
     openFolder,
-    refreshData,
-    refreshing,
     selectedFile,
-    selectedRepository,
+    setAppView,
+    setFolderSearch,
     toggleFolder,
     tree,
     viewMode,
-    getRepositoryIdFromFolder,
-    getSelectedFileRow,
-    setAppView,
-    setFolderSearch,
+    selectedRepository,
+    refreshData,
+    refreshing,
   } = useFolderExplorer()
 
   const isBusy = loading || loadingPage || refreshing
@@ -75,11 +75,11 @@ export function FolderExplorer() {
   if (appView === 'details') {
     return (
       <DocumentDetailsView
-        id={selectedFile}
         repositoryId={getRepositoryIdFromFolder(activeFolder)}
-        onAiSummary={() => setAppView('aiSummary')}
+        id={selectedFile}
         onBack={() => setAppView('explorer')}
         onEdit={() => setAppView('editMetadata')}
+        onAiSummary={() => setAppView('aiSummary')}
         onShare={() => setAppView('share')}
         onWorkflow={() => setAppView('workflow')}
       />
@@ -89,13 +89,13 @@ export function FolderExplorer() {
   if (appView === 'editMetadata') {
     return (
       <EditMetadataView
+        onBack={() => setAppView(selectedFile ? 'details' : 'explorer')}
         fileColumns={fileColumns}
         fileData={getSelectedFileRow(selectedFile)}
-        onBack={() => setAppView(selectedFile ? 'details' : 'explorer')}
         onSave={(values) => {
           console.log('save metadata', {
-            itemId: selectedFile,
             repositoryId: getRepositoryIdFromFolder(activeFolder),
+            itemId: selectedFile,
             values,
           })
         }}
@@ -107,8 +107,8 @@ export function FolderExplorer() {
     return (
       <Upload
         folderId={activeFolder}
-        repositoryData={selectedRepository}
         repositoryId={selectedRepository?.id || 0}
+        repositoryData={selectedRepository}
         onBack={() => setAppView('explorer')}
       />
     )
@@ -128,37 +128,37 @@ export function FolderExplorer() {
 
   if (viewMode === 'list') {
     return (
-      <div className='flex h-full min-h-0 flex-col bg-surface-secondary text-sm text-gray-11'>
+      <div className="flex h-full min-h-0 flex-col bg-surface-secondary text-sm text-gray-11">
         <ExplorerToolbar
-          disabled={isBusy}
-          folderSearch={folderSearch}
-          items={breadcrumbs}
-          refreshing={refreshing}
           view={viewMode}
           setView={changeViewMode}
-          onFolderSearchChange={setFolderSearch}
-          onRefresh={handleRefresh}
+          items={breadcrumbs}
           onSelect={openFolder}
           onUpload={handleUpload}
+          folderSearch={folderSearch}
+          onFolderSearchChange={setFolderSearch}
+          onRefresh={handleRefresh}
+          refreshing={refreshing}
+          disabled={isBusy}
         />
 
         <DocumentsListView
-          breadcrumbs={breadcrumbs}
-          error={error}
-          fileColumns={fileColumns}
-          filePage={filePage}
           files={files}
-          folderSearch={folderSearch}
+          fileColumns={fileColumns}
+          breadcrumbs={breadcrumbs}
+          filePage={filePage}
           loading={loading}
-          loadingPage={loadingPage}
           refreshing={refreshing}
-          onAiSummary={(id) => openFileAction(id, 'aiSummary')}
-          onBreadcrumbSelect={openFolder}
-          onEdit={(id) => openFileAction(id, 'editMetadata')}
+          loadingPage={loadingPage}
+          error={error}
+          folderSearch={folderSearch}
           onFolderSearchChange={setFolderSearch}
+          onBreadcrumbSelect={openFolder}
           onOpenFile={openFile}
           onPageChange={changeServerPage}
           onPageSizeChange={changePageSize}
+          onEdit={(id) => openFileAction(id, 'editMetadata')}
+          onAiSummary={(id) => openFileAction(id, 'aiSummary')}
           onShare={(id) => openFileAction(id, 'share')}
           onWorkflow={(id) => openFileAction(id, 'workflow')}
         />
@@ -167,50 +167,50 @@ export function FolderExplorer() {
   }
 
   return (
-    <div className='flex h-full min-h-0 flex-col bg-surface-secondary text-sm text-gray-11'>
+    <div className="flex h-full min-h-0 flex-col bg-surface-secondary text-sm text-gray-11">
       <ExplorerToolbar
-        disabled={isBusy}
-        folderSearch={folderSearch}
-        items={breadcrumbs}
-        refreshing={refreshing}
         view={viewMode}
         setView={changeViewMode}
-        onFolderSearchChange={setFolderSearch}
-        onRefresh={handleRefresh}
+        items={breadcrumbs}
         onSelect={openFolder}
         onUpload={handleUpload}
+        folderSearch={folderSearch}
+        onFolderSearchChange={setFolderSearch}
+        onRefresh={handleRefresh}
+        refreshing={refreshing}
+        disabled={isBusy}
       />
 
-      <div className='flex min-h-0 flex-1 overflow-hidden'>
+      <div className="flex min-h-0 flex-1 overflow-hidden">
         <TreeSidebar
+          tree={tree}
           activeId={activeFolder}
           expandedIds={expandedIds}
-          tree={tree}
-          onSelect={openFolder}
           onToggle={toggleFolder}
+          onSelect={openFolder}
         />
 
-        <main className='flex min-w-0 flex-1 flex-col overflow-hidden bg-surface-secondary'>
-          <div className='ez-scrollbar min-h-0 flex-1 overflow-y-auto'>
+        <main className="flex min-w-0 flex-1 flex-col overflow-hidden bg-surface-secondary">
+          <div className="ez-scrollbar min-h-0 flex-1 overflow-y-auto">
             <FolderTable
+              folders={folders}
+              files={files}
               fileColumns={fileColumns}
               filePage={filePage}
-              files={files}
-              folderHasMore={folderHasMore}
-              folders={folders}
-              folderSearch={folderSearch}
-              folderTotalCount={folderPage?.totalCount}
               loading={loading}
-              loadingFolders={loadingFolders}
-              loadingPage={loadingPage}
               refreshing={refreshing}
-              onAiSummary={(id) => openFileAction(id, 'aiSummary')}
-              onEditMetadata={(id) => openFileAction(id, 'editMetadata')}
-              onLoadMoreFolders={loadMoreFolders}
-              onOpenFile={openFile}
+              loadingPage={loadingPage}
+              loadingFolders={loadingFolders}
+              folderTotalCount={folderPage?.totalCount}
+              folderSearch={folderSearch}
+              folderHasMore={folderHasMore}
               onOpenFolder={openFolder}
+              onOpenFile={openFile}
               onPageChange={changeServerPage}
               onPageSizeChange={changePageSize}
+              onLoadMoreFolders={loadMoreFolders}
+              onEditMetadata={(id) => openFileAction(id, 'editMetadata')}
+              onAiSummary={(id) => openFileAction(id, 'aiSummary')}
               onShare={(id) => openFileAction(id, 'share')}
               onWorkflow={(id) => openFileAction(id, 'workflow')}
             />

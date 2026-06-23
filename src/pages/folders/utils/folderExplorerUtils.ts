@@ -1,21 +1,21 @@
-import type { FolderItem, TreeNode } from '../types/folderTypes'
 import {
   decodeRepositoryNodeId,
   encodeRepositoryNodeId,
   foldersToTreeNodes,
 } from '../api/folderApi'
+import type { FolderItem, TreeNode } from '../types/folderTypes'
 
 export const DEFAULT_PAGE_SIZE = 50
 export const DEFAULT_FOLDER_PAGE_SIZE = 100
 export const FOLDER_SEARCH_DEBOUNCE_MS = 350
 
 export type FolderPageMeta = {
-  hasMore: boolean
-  nextCursor?: string | null
   page: number
   pageSize: number
   totalCount: number
   totalPages: number
+  hasMore: boolean
+  nextCursor?: string | null
 }
 
 export const updateTreeNode = (
@@ -82,8 +82,8 @@ export const getRepositoryRootNodeId = (folderId: string, tree: TreeNode[]) => {
   if (decoded?.kind === 'browse') {
     return encodeRepositoryNodeId({
       kind: 'repository',
-      label: decoded.repositoryName,
       repositoryId: decoded.repositoryId,
+      label: decoded.repositoryName,
     })
   }
 
@@ -109,14 +109,14 @@ export const getFolderPageMeta = (response: any): FolderPageMeta => {
   )
 
   return {
-    hasMore:
-      folderCount < totalCount &&
-      (page < totalPages || Boolean(candidate?.hasMore)),
-    nextCursor: candidate?.nextCursor ?? null,
     page,
     pageSize,
     totalCount,
     totalPages,
+    nextCursor: candidate?.nextCursor ?? null,
+    hasMore:
+      folderCount < totalCount &&
+      (page < totalPages || Boolean(candidate?.hasMore)),
   }
 }
 
@@ -127,7 +127,7 @@ export const mergeFoldersById = (current: FolderItem[], next: FolderItem[]) => {
   return Array.from(map.values())
 }
 
-export const getFileId = (file: { [key: string]: any; id?: string }) =>
+export const getFileId = (file: { id?: string; [key: string]: any }) =>
   String(
     file.id ||
       file.fileId ||

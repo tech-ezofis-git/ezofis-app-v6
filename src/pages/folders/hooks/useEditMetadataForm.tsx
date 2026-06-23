@@ -1,20 +1,20 @@
 import { useEffect, useMemo, useState } from 'react'
-import InputCheckbox from '@/components/base/inputs/InputCheckbox'
 import InputDate from '@/components/base/inputs/InputDate'
-import InputRadioIndicator from '@/components/base/inputs/InputRadioIndicator'
-import InputSelect from '@/components/base/inputs/InputSelect'
 import InputText from '@/components/base/inputs/InputText'
+import InputRadioIndicator from '@/components/base/inputs/InputRadioIndicator'
+import InputCheckbox from '@/components/base/inputs/InputCheckbox'
+import InputSelect from '@/components/base/inputs/InputSelect'
 import type { DynamicRepositoryColumn } from '../api/folderApi'
 
+type MetadataRow = Record<string, any>
+
 export type SelectOption = {
-  description?: string
-  disabled?: boolean
   id: string | number
   name: string
+  description?: string
+  disabled?: boolean
   value?: string
 }
-
-type MetadataRow = Record<string, any>
 
 export const normalizeType = (dataType?: string) =>
   String(dataType || 'text').toLowerCase()
@@ -26,10 +26,7 @@ export const normalizeDateForInput = (value: any) => {
   return date.toISOString().slice(0, 10)
 }
 
-export const getRawValue = (
-  row: MetadataRow | undefined,
-  sqlColumnName: string,
-) => {
+export const getRawValue = (row: MetadataRow | undefined, sqlColumnName: string) => {
   if (!row || !sqlColumnName) return ''
   const matchedKey = Object.keys(row).find(
     (key) => key.toLowerCase() === sqlColumnName.toLowerCase(),
@@ -63,9 +60,7 @@ export const toBooleanValue = (value: any) => {
   return text === 'true' || text === '1' || text === 'yes'
 }
 
-export const getSelectOptions = (
-  field: DynamicRepositoryColumn,
-): SelectOption[] => {
+export const getSelectOptions = (field: DynamicRepositoryColumn): SelectOption[] => {
   const rawOptions =
     (field as any).options ||
     (field as any).values ||
@@ -99,11 +94,11 @@ export const getSelectOptions = (
       `Option ${index + 1}`
 
     return {
-      description: option?.description,
-      disabled: Boolean(option?.disabled),
       id: String(optionId),
       name: String(optionName),
       value: String(option?.value ?? optionName),
+      description: option?.description,
+      disabled: Boolean(option?.disabled),
     }
   })
 }
@@ -121,127 +116,6 @@ export const findSelectedOption = (
         String(option.name).toLowerCase() === normalizedValue ||
         String(option.id).toLowerCase() === normalizedValue,
     ) || null
-  )
-}
-
-export function renderMetadataFieldControl(
-  field: DynamicRepositoryColumn,
-  formValues: Record<string, any>,
-  updateFieldValue: (key: string, value: any) => void,
-) {
-  const fieldType = normalizeType(field.dataType)
-  const value = formValues[field.key]
-  const label = field.label || field.key
-  const required = Boolean(field.isMandatory)
-  const options = getSelectOptions(field)
-
-  if (fieldType === 'date' || fieldType === 'datetime') {
-    return (
-      <InputDate
-        className='w-full'
-        label={label}
-        value={value || ''}
-        onChange={(nextValue: any) =>
-          updateFieldValue(field.key, nextValue || '')
-        }
-      />
-    )
-  }
-
-  if (
-    fieldType === 'select' ||
-    fieldType === 'dropdown' ||
-    options.length > 0
-  ) {
-    return (
-      <InputSelect
-        label={label}
-        options={options}
-        value={findSelectedOption(options, toTextValue(value))}
-        onChange={(selected: SelectOption | null) =>
-          updateFieldValue(
-            field.key,
-            selected?.value ?? selected?.name ?? selected?.id ?? '',
-          )
-        }
-      />
-    )
-  }
-
-  if (
-    fieldType === 'boolean' ||
-    fieldType === 'bool' ||
-    fieldType === 'checkbox'
-  ) {
-    return (
-      <div className='rounded-xl border border-gray-3 bg-surface px-4 py-3'>
-        <div className='mb-2 text-xs font-semibold tracking-wide text-gray-9 uppercase'>
-          {label}
-          {required ? <span className='ml-1 text-red-9'>*</span> : null}
-        </div>
-        <InputCheckbox
-          checked={Boolean(value)}
-          indeterminate={false}
-          onChange={(event: any) =>
-            updateFieldValue(
-              field.key,
-              Boolean(event?.target?.checked ?? !value),
-            )
-          }
-        />
-      </div>
-    )
-  }
-
-  if (fieldType === 'radio') {
-    return (
-      <div className='rounded-xl border border-gray-3 bg-surface px-4 py-3'>
-        <div className='mb-3 text-xs font-semibold tracking-wide text-gray-9 uppercase'>
-          {label}
-          {required ? <span className='ml-1 text-red-9'>*</span> : null}
-        </div>
-        <div className='flex flex-col gap-3'>
-          {options.map((option) => {
-            const optionValue = String(option.value ?? option.name ?? option.id)
-            return (
-              <button
-                className='inline-flex items-center gap-2 text-sm font-medium text-gray-12'
-                key={optionValue}
-                type='button'
-                onClick={() => updateFieldValue(field.key, optionValue)}
-              >
-                <InputRadioIndicator
-                  aria-label={option.name}
-                  checked={toTextValue(value) === optionValue}
-                />
-                {option.name}
-              </button>
-            )
-          })}
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <InputText
-      className='w-full'
-      label={label}
-      placeholder={`Enter ${label}`}
-      required={required}
-      value={toTextValue(value)}
-      type={
-        fieldType === 'decimal' ||
-        fieldType === 'number' ||
-        fieldType === 'int' ||
-        fieldType === 'integer'
-          ? 'number'
-          : 'text'
-      }
-      onChange={(event: any) =>
-        updateFieldValue(field.key, event?.target?.value ?? event ?? '')
-      }
-    />
   )
 }
 
@@ -267,11 +141,7 @@ export function useEditMetadataForm(
         nextValues[field.key] = normalizeDateForInput(rawValue)
         return
       }
-      if (
-        fieldType === 'boolean' ||
-        fieldType === 'bool' ||
-        fieldType === 'checkbox'
-      ) {
+      if (fieldType === 'boolean' || fieldType === 'bool' || fieldType === 'checkbox') {
         nextValues[field.key] = toBooleanValue(rawValue)
         return
       }
@@ -291,9 +161,7 @@ export function useEditMetadataForm(
 
   const resetValues = () => setFormValues(buildInitialValues())
 
-  const saveValues = async (
-    onSave?: (values: Record<string, any>) => void | Promise<void>,
-  ) => {
+  const saveValues = async (onSave?: (values: Record<string, any>) => void | Promise<void>) => {
     if (!onSave) return
     setSaving(true)
     try {
@@ -311,4 +179,112 @@ export function useEditMetadataForm(
     saving,
     updateFieldValue,
   }
+}
+
+export function renderMetadataFieldControl(
+  field: DynamicRepositoryColumn,
+  formValues: Record<string, any>,
+  updateFieldValue: (key: string, value: any) => void,
+) {
+  const fieldType = normalizeType(field.dataType)
+  const value = formValues[field.key]
+  const label = field.label || field.key
+  const required = Boolean(field.isMandatory)
+  const options = getSelectOptions(field)
+
+  if (fieldType === 'date' || fieldType === 'datetime') {
+    return (
+      <InputDate
+        className='w-full'
+        label={label}
+        value={value || ''}
+        onChange={(nextValue: any) => updateFieldValue(field.key, nextValue || '')}
+      />
+    )
+  }
+
+  if (fieldType === 'select' || fieldType === 'dropdown' || options.length > 0) {
+    return (
+      <InputSelect
+        label={label}
+        options={options}
+        value={findSelectedOption(options, toTextValue(value))}
+        onChange={(selected: SelectOption | null) =>
+          updateFieldValue(
+            field.key,
+            selected?.value ?? selected?.name ?? selected?.id ?? '',
+          )
+        }
+      />
+    )
+  }
+
+  if (fieldType === 'boolean' || fieldType === 'bool' || fieldType === 'checkbox') {
+    return (
+      <div className='rounded-xl border border-gray-3 bg-surface px-4 py-3'>
+        <div className='mb-2 text-xs font-semibold uppercase tracking-wide text-gray-9'>
+          {label}
+          {required ? <span className='ml-1 text-red-9'>*</span> : null}
+        </div>
+        <InputCheckbox
+          checked={Boolean(value)}
+          indeterminate={false}
+          onChange={(event: any) =>
+            updateFieldValue(field.key, Boolean(event?.target?.checked ?? !value))
+          }
+        />
+      </div>
+    )
+  }
+
+  if (fieldType === 'radio') {
+    return (
+      <div className='rounded-xl border border-gray-3 bg-surface px-4 py-3'>
+        <div className='mb-3 text-xs font-semibold uppercase tracking-wide text-gray-9'>
+          {label}
+          {required ? <span className='ml-1 text-red-9'>*</span> : null}
+        </div>
+        <div className='flex flex-col gap-3'>
+          {options.map((option) => {
+            const optionValue = String(option.value ?? option.name ?? option.id)
+            return (
+              <button
+                key={optionValue}
+                type='button'
+                className='inline-flex items-center gap-2 text-sm font-medium text-gray-12'
+                onClick={() => updateFieldValue(field.key, optionValue)}
+              >
+                <InputRadioIndicator
+                  aria-label={option.name}
+                  checked={toTextValue(value) === optionValue}
+                />
+                {option.name}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <InputText
+      className='w-full'
+      label={label}
+      placeholder={`Enter ${label}`}
+      value={toTextValue(value)}
+      required={required}
+      type={
+        fieldType === 'decimal' ||
+        fieldType === 'number' ||
+        fieldType === 'int' ||
+        fieldType === 'integer'
+          ? 'number'
+          : 'text'
+      }
+      onChange={(event: any) =>
+        updateFieldValue(field.key, event?.target?.value ?? event ?? '')
+      }
+    />
+  )
 }

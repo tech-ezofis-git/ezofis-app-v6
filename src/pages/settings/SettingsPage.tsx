@@ -1,6 +1,8 @@
 import SettingsMain from './SettingsMain'
 const SettingsPage = () => {
-  return <SettingsMain />
+  return (
+    <SettingsMain/>
+  )
 }
 
 SettingsPage.displayName = 'SettingsPage'

@@ -1,58 +1,64 @@
 import {
-  type ColumnDef,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MouseEvent,
+} from 'react'
+import {
   getCoreRowModel,
   useReactTable,
+  type ColumnDef,
 } from '@tanstack/react-table'
-import { type MouseEvent, useEffect, useMemo, useRef, useState } from 'react'
-import DataTable from '@/components/base/data-table/DataTable'
-import InputSelect from '@/components/base/inputs/InputSelect'
-import Pagination from '@/components/base/pagination/Pagination'
-import type { DynamicRepositoryColumn } from '../api/folderApi'
 import type { FileItem, RepositoryFilePage } from '../types/folderTypes'
-import type { BreadcrumbItem } from './Breadcrumbs'
+import type { DynamicRepositoryColumn } from '../api/folderApi'
+import { Breadcrumbs, type BreadcrumbItem } from './Breadcrumbs'
+import DataTable from '@/components/base/data-table/DataTable'
 import { DynamicIcon } from './icons'
 import { Button } from './Ui'
-
-type ActionMenuPosition = {
-  left: number
-  placement: 'top' | 'bottom'
-  top: number
-}
+import InputSelect from '@/components/base/inputs/InputSelect'
+import Pagination from '@/components/base/pagination/Pagination'
 
 type AnyFileItem = FileItem & Record<string, any>
 
-type DocumentsListViewProps = {
-  breadcrumbs: BreadcrumbItem[]
-  error?: string
-  fileColumns?: DynamicRepositoryColumn[]
-  filePage?: RepositoryFilePage
-  files: FileItem[]
-  folderSearch?: string
-  loading?: boolean
-  loadingPage?: boolean
-  refreshing?: boolean
-  onAiSummary: (id: string) => void
-  onBreadcrumbSelect: (id: string) => void
-  onEdit: (id: string) => void
-  onFolderSearchChange?: (value: string) => void
-  onOpenFile: (id: string) => void
-  onPageChange?: (page: number, cursor?: string | null) => void
-  onPageSizeChange?: (pageSize: number) => void
-  onRefresh?: () => void
-  onShare: (id: string) => void
-  onWorkflow: (id: string) => void
-}
-
 type DynamicColumn = {
-  dataType?: string
   key: string
   label: string
   minWidth?: number
+  dataType?: string
+}
+
+type ActionMenuPosition = {
+  top: number
+  left: number
+  placement: 'top' | 'bottom'
 }
 
 type SelectOption = {
   id: string
   name: string
+}
+
+type DocumentsListViewProps = {
+  files: FileItem[]
+  fileColumns?: DynamicRepositoryColumn[]
+  breadcrumbs: BreadcrumbItem[]
+  filePage?: RepositoryFilePage
+  loading?: boolean
+  loadingPage?: boolean
+  refreshing?: boolean
+  error?: string
+  folderSearch?: string
+  onFolderSearchChange?: (value: string) => void
+  onRefresh?: () => void
+  onBreadcrumbSelect: (id: string) => void
+  onOpenFile: (id: string) => void
+  onPageChange?: (page: number, cursor?: string | null) => void
+  onPageSizeChange?: (pageSize: number) => void
+  onEdit: (id: string) => void
+  onAiSummary: (id: string) => void
+  onShare: (id: string) => void
+  onWorkflow: (id: string) => void
 }
 
 const HIDDEN_FILE_KEYS = new Set([
@@ -64,7 +70,9 @@ const HIDDEN_FILE_KEYS = new Set([
 const ACTION_MENU_WIDTH = 220
 const ACTION_MENU_HEIGHT = 274
 
-const isHiddenFileKey = (key: string) => HIDDEN_FILE_KEYS.has(key.toLowerCase())
+const isHiddenFileKey = (key: string) =>
+  HIDDEN_FILE_KEYS.has(key.toLowerCase())
+
 
 const PRIMARY_NAME_KEYS = new Set([
   'filename',
@@ -107,16 +115,10 @@ const getPrimaryFileName = (file: AnyFileItem) => {
     return String(directValue)
   }
 
-  const matchedKey = Object.keys(file || {}).find((key) =>
-    isPrimaryNameKey(key),
-  )
+  const matchedKey = Object.keys(file || {}).find((key) => isPrimaryNameKey(key))
   const matchedValue = matchedKey ? file[matchedKey] : undefined
 
-  if (
-    matchedValue !== undefined &&
-    matchedValue !== null &&
-    matchedValue !== ''
-  ) {
+  if (matchedValue !== undefined && matchedValue !== null && matchedValue !== '') {
     return String(matchedValue)
   }
 
@@ -126,7 +128,7 @@ const getPrimaryFileName = (file: AnyFileItem) => {
 const toTitle = (key: string) =>
   key
     .replace(/([A-Z])/g, ' $1')
-    .replaceAll('_', ' ')
+    .replace(/_/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
     .replace(/^./, (value) => value.toUpperCase())
@@ -149,10 +151,7 @@ const formatAmountValue = (value: any) => {
   return numericValue.toLocaleString('en-IN', { maximumFractionDigits: 2 })
 }
 
-const getRepositoryFieldRawValue = (
-  row: AnyFileItem,
-  sqlColumnName: string,
-) => {
+const getRepositoryFieldRawValue = (row: AnyFileItem, sqlColumnName: string) => {
   if (!row || !sqlColumnName) return undefined
 
   const matchedKey = Object.keys(row).find(
@@ -226,64 +225,35 @@ const buildRepositoryColumns = (
       minWidth: 220,
     },
     ...normalColumns.map((column) => ({
-      dataType: column.dataType,
       key: column.key,
       label: column.label || toTitle(column.key),
+      dataType: column.dataType,
       minWidth: getColumnWidth(column.key, column.dataType),
     })),
   ]
 }
 
-type ActionsCellProps = {
-  isBusy: boolean
-  row: AnyFileItem
-  onOpenFile: (id: string) => void
-  openActionMenu: (event: MouseEvent<HTMLButtonElement>, fileId: string) => void
-}
-
-type FileCellProps = {
-  columnKey: string
-  isBusy: boolean
-  row: AnyFileItem
-  value: string
-  onOpenFile: (id: string) => void
-}
-
-type SelectionCellProps = {
-  isBusy: boolean
-  row: AnyFileItem
-  selectedIds: string[]
-  selectionEnabled: boolean
-  toggleSelect: (id: string) => void
-}
-
-type SelectionHeaderProps = {
-  allVisibleSelected: boolean
-  selectionEnabled: boolean
-  toggleSelectAllVisible: () => void
-}
-
 export function DocumentsListView({
-  breadcrumbs: _breadcrumbs,
-  error = '',
-  fileColumns = [],
-  filePage,
   files,
-  folderSearch = '',
+  fileColumns = [],
+  breadcrumbs,
+  filePage,
   loading = false,
   loadingPage = false,
   refreshing = false,
-  onAiSummary,
-  onBreadcrumbSelect: _onBreadcrumbSelect,
-  onEdit,
+  error = '',
+  folderSearch = '',
   onFolderSearchChange,
+  onRefresh,
+  onBreadcrumbSelect,
   onOpenFile,
   onPageChange,
   onPageSizeChange,
-  onRefresh,
+  onEdit,
+  onAiSummary,
   onShare,
   onWorkflow,
-}: Readonly<DocumentsListViewProps>) {
+}: DocumentsListViewProps) {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   const [actionMenuPosition, setActionMenuPosition] =
     useState<ActionMenuPosition | null>(null)
@@ -310,9 +280,7 @@ export function DocumentsListView({
 
     return normalizedFiles.filter((file) =>
       Object.values(file).some((value) =>
-        String(value ?? '')
-          .toLowerCase()
-          .includes(searchValue),
+        String(value ?? '').toLowerCase().includes(searchValue),
       ),
     )
   }, [normalizedFiles, folderSearch])
@@ -340,6 +308,8 @@ export function DocumentsListView({
     .filter(([, value]) => value)
     .map(([key, value]) => ({ key, label: toTitle(key), value }))
 
+  
+
   const selectedVisibleCount = visibleFiles.filter((file) =>
     selectedIds.includes(getFileId(file)),
   ).length
@@ -362,8 +332,11 @@ export function DocumentsListView({
 
   const toggleSelectAllVisible = () => {
     if (allVisibleSelected) {
-      const visibleIds = new Set(visibleFiles.map(getFileId))
-      setSelectedIds((prev) => prev.filter((id) => !visibleIds.has(id)))
+      setSelectedIds((prev) =>
+        prev.filter(
+          (id) => !visibleFiles.some((file) => getFileId(file) === id),
+        ),
+      )
       return
     }
 
@@ -438,68 +411,133 @@ export function DocumentsListView({
         : Math.max(16, rect.top - ACTION_MENU_HEIGHT - 8)
 
     setOpenMenuId(fileId)
-    setActionMenuPosition({ left, placement, top })
+    setActionMenuPosition({ top, left, placement })
   }
 
   const dataTableColumns = useMemo<ColumnDef<AnyFileItem>[]>(() => {
     const selectColumn: ColumnDef<AnyFileItem> = {
       id: 'selection',
-      maxSize: 44,
-      minSize: 44,
-      size: 44,
-      cell: ({ row }) => (
-        <SelectionCell
-          isBusy={isBusy}
-          row={row.original}
-          selectedIds={selectedIds}
-          selectionEnabled={selectionEnabled}
-          toggleSelect={toggleSelect}
-        />
-      ),
       header: () => (
-        <SelectionHeader
-          allVisibleSelected={allVisibleSelected}
-          selectionEnabled={selectionEnabled}
-          toggleSelectAllVisible={toggleSelectAllVisible}
-        />
+        <div className="flex justify-center">
+          {selectionEnabled && (
+            <CheckBoxButton
+              checked={allVisibleSelected}
+              onClick={toggleSelectAllVisible}
+            />
+          )}
+        </div>
       ),
+      cell: ({ row }) => {
+        const fileId = getFileId(row.original)
+        const isSelected = selectedIds.includes(fileId)
+
+        return (
+          <div className="flex justify-center">
+            {selectionEnabled ? (
+              <CheckBoxButton
+                checked={isSelected}
+                onClick={() => toggleSelect(fileId)}
+              />
+            ) : (
+              <button
+                type="button"
+                disabled={isBusy}
+                onClick={() => toggleSelect(fileId)}
+                className="h-5 w-5 rounded-md border border-transparent transition-all hover:border-blue-9 hover:bg-blue-1 disabled:cursor-not-allowed disabled:opacity-40"
+                title="Select"
+              />
+            )}
+          </div>
+        )
+      },
+      size: 44,
+      minSize: 44,
+      maxSize: 44,
     }
 
-    const dynamicColumns: ColumnDef<AnyFileItem, string>[] = columns.map(
-      (column) => ({
-        header: column.label,
-        id: column.key,
-        minSize: column.minWidth || 180,
-        size: column.minWidth || 180,
-        accessorFn: (row) =>
-          column.key === '__name'
-            ? getPrimaryFileName(row)
-            : getDisplayValue(row, column.key, column.dataType),
-        cell: ({ row, getValue }) => (
-          <FileCell
-            columnKey={column.key}
-            isBusy={isBusy}
-            row={row.original}
-            value={getValue() ?? '-'}
-            onOpenFile={onOpenFile}
-          />
-        ),
-      }),
-    )
+    const dynamicColumns: ColumnDef<AnyFileItem>[] = columns.map((column) => ({
+      id: column.key,
+      accessorFn: (row) =>
+        column.key === '__name'
+          ? getPrimaryFileName(row)
+          : getDisplayValue(row, column.key, column.dataType),
+      header: column.label,
+      cell: ({ row, getValue }) => {
+        const value = String(getValue() ?? '-')
+
+        if (column.key === '__name') {
+          const fileId = getFileId(row.original)
+
+          return (
+            <button
+              type="button"
+              disabled={isBusy}
+              onClick={() => onOpenFile(fileId)}
+              className="flex min-w-0 max-w-full items-center gap-3 text-left disabled:cursor-not-allowed disabled:opacity-40"
+              title={value}
+            >
+              <DynamicIcon name="fileText" className="h-5 w-5 shrink-0 text-[#4f5b88]" />
+              <span className="block max-w-full truncate font-semibold text-gray-13">
+                {value}
+              </span>
+            </button>
+          )
+        }
+
+        return (
+          <span
+            className="block max-w-full truncate text-gray-10 hover:whitespace-normal hover:break-words hover:leading-5 hover:[overflow:visible] hover:[text-overflow:clip]"
+            title={value}
+          >
+            {value}
+          </span>
+        )
+      },
+      size: column.minWidth || 180,
+      minSize: column.minWidth || 180,
+    }))
 
     const actionColumn: ColumnDef<AnyFileItem> = {
-      header: 'Actions',
       id: 'actions',
-      minSize: 120,
+      header: 'Actions',
+      cell: ({ row }) => {
+        const fileId = getFileId(row.original)
+
+        return (
+          <div className="flex items-center gap-3 text-gray-13">
+            <button
+              type="button"
+              disabled={isBusy}
+              onClick={() => onOpenFile(fileId)}
+              className="hover:text-accent-primary disabled:cursor-not-allowed disabled:opacity-40"
+              title="View"
+            >
+              <DynamicIcon name="eye" />
+            </button>
+
+            <button
+              type="button"
+              disabled={isBusy}
+              className="hover:text-accent-primary disabled:cursor-not-allowed disabled:opacity-40"
+              title="Download"
+            >
+              <DynamicIcon name="download" />
+            </button>
+
+            <button
+              type="button"
+              disabled={isBusy}
+              onClick={(event) => openActionMenu(event, fileId)}
+              className="hover:text-accent-primary disabled:cursor-not-allowed disabled:opacity-40"
+              title="More actions"
+            >
+              <DynamicIcon name="more" />
+            </button>
+          </div>
+        )
+      },
       size: 120,
-      cell: ({ row }) => (
-        <ActionsCell
-          isBusy={isBusy}
-          openActionMenu={openActionMenu}
-          row={row.original}
-          onOpenFile={onOpenFile}
-        />
-      ),
+      minSize: 120,
     }
 
     return [selectColumn, ...dynamicColumns, actionColumn]
@@ -508,25 +546,23 @@ export function DocumentsListView({
     columns,
     isBusy,
     onOpenFile,
-    openActionMenu,
     selectedIds,
     selectionEnabled,
-    toggleSelect,
-    toggleSelectAllVisible,
+    visibleFiles,
   ])
 
   const table = useReactTable({
-    columns: dataTableColumns,
     data: visibleFiles,
+    columns: dataTableColumns,
+    getCoreRowModel: getCoreRowModel(),
+    getRowId: (row) => getFileId(row),
+    manualPagination: true,
     initialState: {
       columnPinning: {
-        left: ['selection', columns[0]?.key].filter(Boolean),
+        left: ['selection', columns[0]?.key].filter(Boolean) as string[],
         right: ['actions'],
       },
     },
-    manualPagination: true,
-    getCoreRowModel: getCoreRowModel(),
-    getRowId: (row) => getFileId(row),
   })
 
   useEffect(() => {
@@ -560,61 +596,60 @@ export function DocumentsListView({
 
   if (error) {
     return (
-      <div className='m-4 rounded-xl border border-red-4 bg-red-1 p-4 text-sm font-semibold text-red-10'>
+      <div className="m-4 rounded-xl border border-red-4 bg-red-1 p-4 text-sm font-semibold text-red-10">
         {error}
       </div>
     )
   }
 
   return (
-    <div className='animate-in fade-in flex min-h-0 flex-1 flex-col bg-surface text-sm text-gray-11 duration-300'>
-      {/* <Breadcrumbs items={breadcrumbs} onSelect={onBreadcrumbSelect} /> */}
+    <div className="flex min-h-0 flex-1 flex-col bg-surface text-sm text-gray-11 animate-in fade-in duration-300">
+      {false && <Breadcrumbs items={breadcrumbs} onSelect={onBreadcrumbSelect} />}
 
-      <div className='ez-scrollbar min-h-0 flex-1 overflow-y-auto'>
-        <div className='min-w-0 space-y-5 p-6'>
-          <section className='rounded-2xl border border-gray-3 bg-surface-primary p-4 shadow-sm'>
-            <div className='flex flex-wrap items-center justify-between gap-3'>
-              <div className='flex items-center gap-3'>
-                <div className='flex h-9 w-9 items-center justify-center rounded-xl bg-gray-2'>
-                  <DynamicIcon className='h-5 w-5 text-gray-11' name='filter' />
+      <div className="ez-scrollbar min-h-0 flex-1 overflow-y-auto">
+        <div className="min-w-0 space-y-5 p-6">
+          <section className="rounded-2xl border border-gray-3 bg-surface-primary p-4 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gray-2">
+                  <DynamicIcon name="filter" className="h-5 w-5 text-gray-11" />
                 </div>
 
                 <div>
-                  <div className='flex items-center gap-2'>
-                    <b className='text-sm text-gray-13'>Filters</b>
-                    <span className='rounded-full bg-primary-2 px-2.5 py-0.5 text-xs font-semibold text-primary-10'>
+                  <div className="flex items-center gap-2">
+                    <b className="text-sm text-gray-13">Filters</b>
+                    <span className="rounded-full bg-primary-2 px-2.5 py-0.5 text-xs font-semibold text-primary-10">
                       {activeFilters.length} active
                     </span>
                   </div>
-                  <p className='text-xs text-gray-9'>
+                  <p className="text-xs text-gray-9">
                     Refine documents without expanding the page height.
                   </p>
                 </div>
               </div>
 
-              <div className='flex items-center gap-2'>
-                {activeFilters.length > 0 && (
-                  <button
-                    className='inline-flex h-9 items-center gap-2 rounded-xl border border-gray-3 bg-surface px-3 text-sm font-semibold text-gray-13 shadow-sm hover:bg-gray-2 disabled:cursor-not-allowed disabled:opacity-50'
-                    disabled={isBusy}
-                    type='button'
-                    onClick={resetFilters}
-                  >
-                    <DynamicIcon className='h-4 w-4' name='refresh' />
-                    Clear
-                  </button>
-                )}
+              <div className="flex items-center gap-2">
+                
+                {activeFilters.length > 0 &&<button
+                  type="button"
+                  disabled={isBusy}
+                  onClick={resetFilters}
+                  className="inline-flex h-9 items-center gap-2 rounded-xl border border-gray-3 bg-surface px-3 text-sm font-semibold text-gray-13 shadow-sm hover:bg-gray-2 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <DynamicIcon name="refresh" className="h-4 w-4" />
+                  Clear
+                </button>}
               </div>
             </div>
 
-            <div className='ez-scrollbar mt-4 flex gap-3 overflow-x-auto pb-2'>
+            <div className="mt-4 flex gap-3 overflow-x-auto pb-2 ez-scrollbar">
               {filterColumns.map((column) => (
-                <div className='min-w-[210px] shrink-0' key={column.key}>
+                <div key={column.key} className="min-w-[210px] shrink-0">
                   <FilterSelect
-                    disabled={isBusy}
                     label={column.label}
-                    options={getUniqueOptions(column.key)}
                     value={filters[column.key] || ''}
+                    options={getUniqueOptions(column.key)}
+                    disabled={isBusy}
                     onChange={(value) => updateFilter(column.key, value)}
                   />
                 </div>
@@ -622,67 +657,63 @@ export function DocumentsListView({
             </div>
 
             {activeFilters.length > 0 ? (
-              <div className='mt-3 flex flex-wrap gap-2'>
+              <div className="mt-3 flex flex-wrap gap-2">
                 {activeFilters.map((item) => (
                   <button
-                    className='inline-flex items-center rounded-full bg-gray-2 px-3 py-1 text-xs font-semibold text-gray-13 hover:bg-gray-3 disabled:cursor-not-allowed disabled:opacity-50'
-                    disabled={isBusy}
                     key={item.key}
-                    type='button'
+                    type="button"
+                    disabled={isBusy}
                     onClick={() => removeFilter(item.key)}
+                    className="inline-flex items-center rounded-full bg-gray-2 px-3 py-1 text-xs font-semibold text-gray-13 hover:bg-gray-3 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {item.label}: {item.value}
-                    <span className='ml-2 text-gray-9'>×</span>
+                    <span className="ml-2 text-gray-9">×</span>
                   </button>
                 ))}
               </div>
             ) : null}
           </section>
 
-          <section className='min-w-0 overflow-hidden'>
-            {visibleFiles.length === 0 &&
-            !loading &&
-            !loadingPage &&
-            !refreshing ? (
-              <div className='flex min-h-[320px] flex-col items-center justify-center gap-2 px-6 py-10 text-center'>
-                <DynamicIcon className='h-8 w-8 text-gray-8' name='search' />
-                <b className='text-gray-13'>No documents found</b>
-                <p className='text-sm text-gray-10'>
-                  Try changing the file search or resetting the selected
-                  filters.
+          <section className="min-w-0 overflow-hidden">
+            {visibleFiles.length === 0 && !loading && !loadingPage && !refreshing ? (
+              <div className="flex min-h-[320px] flex-col items-center justify-center gap-2 px-6 py-10 text-center">
+                <DynamicIcon name="search" className="h-8 w-8 text-gray-8" />
+                <b className="text-gray-13">No documents found</b>
+                <p className="text-sm text-gray-10">
+                  Try changing the file search or resetting the selected filters.
                 </p>
                 <Button
-                  className='mt-2 h-9 px-4 text-sm'
                   onClick={resetSearchAndFilters}
+                  className="mt-2 h-9 px-4 text-sm"
                 >
-                  <DynamicIcon className='h-4 w-4' name='refresh' />
+                  <DynamicIcon name="refresh" className="h-4 w-4" />
                   Reset Search
                 </Button>
               </div>
             ) : (
               <DataTable
-                component={<div />}
-                isLoading={loading || loadingPage || refreshing}
-                pageSize={Math.max(5, visibleFiles.length || pageSize)}
                 table={table}
-                tableBodyMaxHeight={500}
-                isSticky
-                stickyHeader
+                isLoading={loading || loadingPage||refreshing}
                 isReLoading={
                   refreshing ||
                   loadingPage ||
                   (loading && visibleFiles.length > 0)
                 }
+                pageSize={Math.max(5, visibleFiles.length || pageSize)}
+                stickyHeader
+                isSticky
+                component={<div />}
                 onReload={handleRefresh}
+                tableBodyMaxHeight={500}
               />
             )}
           </section>
         </div>
       </div>
 
-      <div className='sticky bottom-0 z-50 shrink-0 border-t border-gray-3 bg-surface px-6 py-1 shadow-[0_-6px_18px_rgba(15,23,42,0.08)]'>
+      <div className="sticky bottom-0 z-50 shrink-0 border-t border-gray-3 bg-surface px-6 py-1 shadow-[0_-6px_18px_rgba(15,23,42,0.08)]">
         <Pagination
-          itemLabel='Files'
+          itemLabel="Files"
           page={currentPage}
           pageSize={pageSize}
           showPageNumbers={false}
@@ -708,52 +739,52 @@ export function DocumentsListView({
 
       {openMenuId && actionMenuPosition ? (
         <div
-          className='fixed z-[9999] w-[220px] overflow-hidden rounded-xl border border-gray-3 bg-surface py-2 shadow-[0_18px_45px_rgba(15,23,42,0.22)] ring-1 ring-black/5'
           ref={menuRef}
+          className="fixed z-[9999] w-[220px] overflow-hidden rounded-xl border border-gray-3 bg-surface py-2 shadow-[0_18px_45px_rgba(15,23,42,0.22)] ring-1 ring-black/5"
           style={{
-            left: actionMenuPosition.left,
             top: actionMenuPosition.top,
+            left: actionMenuPosition.left,
           }}
         >
           <span
             className={`absolute right-7 h-3 w-3 rotate-45 border-gray-3 bg-surface ${
               actionMenuPosition.placement === 'bottom'
-                ? '-top-1.5 border-t border-l'
-                : '-bottom-1.5 border-r border-b'
+                ? '-top-1.5 border-l border-t'
+                : '-bottom-1.5 border-b border-r'
             }`}
           />
 
           <MenuItem
-            icon='eye'
-            label='View Details'
+            icon="eye"
+            label="View Details"
             onClick={() => closeAndRun(() => onOpenFile(openMenuId))}
           />
           <MenuItem
-            icon='edit'
-            label='Edit Metadata'
+            icon="edit"
+            label="Edit Metadata"
             onClick={() => closeAndRun(() => onEdit(openMenuId))}
           />
           <MenuItem
-            icon='bot'
-            label='AI Summary'
+            icon="bot"
+            label="AI Summary"
             onClick={() => closeAndRun(() => onAiSummary(openMenuId))}
           />
           <MenuItem
-            icon='share'
-            label='Share'
+            icon="share"
+            label="Share"
             onClick={() => closeAndRun(() => onShare(openMenuId))}
           />
           <MenuItem
-            icon='clock'
-            label='Start Workflow'
+            icon="clock"
+            label="Start Workflow"
             onClick={() => closeAndRun(() => onWorkflow(openMenuId))}
           />
 
-          <div className='my-2 border-t border-gray-3' />
+          <div className="my-2 border-t border-gray-3" />
 
           <MenuItem
-            icon='trash'
-            label='Delete'
+            icon="trash"
+            label="Delete"
             danger
             onClick={() =>
               closeAndRun(() => console.log('delete file:', openMenuId))
@@ -765,125 +796,44 @@ export function DocumentsListView({
   )
 }
 
-function ActionsCell({
-  isBusy,
-  openActionMenu,
-  row,
-  onOpenFile,
-}: Readonly<ActionsCellProps>) {
-  const fileId = getFileId(row)
-
-  return (
-    <div className='flex items-center gap-3 text-gray-13'>
-      <button
-        className='hover:text-accent-primary disabled:cursor-not-allowed disabled:opacity-40'
-        disabled={isBusy}
-        title='View'
-        type='button'
-        onClick={() => onOpenFile(fileId)}
-      >
-        <DynamicIcon name='eye' />
-      </button>
-
-      <button
-        className='hover:text-accent-primary disabled:cursor-not-allowed disabled:opacity-40'
-        disabled={isBusy}
-        title='Download'
-        type='button'
-      >
-        <DynamicIcon name='download' />
-      </button>
-
-      <button
-        className='hover:text-accent-primary disabled:cursor-not-allowed disabled:opacity-40'
-        disabled={isBusy}
-        title='More actions'
-        type='button'
-        onClick={(event) => openActionMenu(event, fileId)}
-      >
-        <DynamicIcon name='more' />
-      </button>
-    </div>
-  )
-}
-
 function CheckBoxButton({
   checked,
   onClick,
-}: Readonly<{
+}: {
   checked: boolean
   onClick: () => void
-}>) {
+}) {
   return (
     <button
-      type='button'
-      className={`flex h-5 w-5 items-center justify-center rounded-[6px] border transition-all focus:ring-2 focus:ring-blue-3 focus:outline-none ${
-        checked
-          ? 'border-[#2196f3] bg-[#2196f3] text-white'
-          : 'border-[#2196f3] bg-surface text-transparent'
-      }`}
+      type="button"
       onClick={(event) => {
         event.stopPropagation()
         onClick()
       }}
+      className={`flex h-5 w-5 items-center justify-center rounded-[6px] border transition-all focus:outline-none focus:ring-2 focus:ring-blue-3 ${
+        checked
+          ? 'border-[#2196f3] bg-[#2196f3] text-white'
+          : 'border-[#2196f3] bg-surface text-transparent'
+      }`}
     >
-      <span className='text-[10px] leading-none'>✓</span>
+      <span className="text-[10px] leading-none">✓</span>
     </button>
   )
 }
 
-function FileCell({
-  columnKey,
-  isBusy,
-  row,
-  value,
-  onOpenFile,
-}: Readonly<FileCellProps>) {
-  if (columnKey === '__name') {
-    const fileId = getFileId(row)
-
-    return (
-      <button
-        className='flex max-w-full min-w-0 items-center gap-3 text-left disabled:cursor-not-allowed disabled:opacity-40'
-        disabled={isBusy}
-        title={value}
-        type='button'
-        onClick={() => onOpenFile(fileId)}
-      >
-        <DynamicIcon
-          className='h-5 w-5 shrink-0 text-[#4f5b88]'
-          name='fileText'
-        />
-        <span className='block max-w-full truncate font-semibold text-gray-13'>
-          {value}
-        </span>
-      </button>
-    )
-  }
-
-  return (
-    <span
-      className='block max-w-full truncate text-gray-10 hover:[overflow:visible] hover:leading-5 hover:break-words hover:[text-overflow:clip] hover:whitespace-normal'
-      title={value}
-    >
-      {value}
-    </span>
-  )
-}
-
 function FilterSelect({
-  disabled = false,
   label,
-  options,
   value,
+  options,
+  disabled = false,
   onChange,
-}: Readonly<{
-  disabled?: boolean
+}: {
   label: string
-  options: string[]
   value: string
+  options: string[]
+  disabled?: boolean
   onChange: (value: string) => void
-}>) {
+}) {
   const selectOptions: SelectOption[] = [
     { id: '', name: label },
     ...options.map((option) => ({
@@ -897,84 +847,37 @@ function FilterSelect({
 
   return (
     <InputSelect
-      disabled={disabled}
-      options={selectOptions}
       placeholder={label}
+      options={selectOptions}
       value={selectedValue}
       width={210}
+      disabled={disabled}
       onChange={(val) => onChange(val ? String(val.id) : '')}
     />
   )
 }
 
 function MenuItem({
-  danger = false,
   icon,
   label,
+  danger = false,
   onClick,
-}: Readonly<{
-  danger?: boolean
+}: {
   icon: string
   label: string
+  danger?: boolean
   onClick: () => void
-}>) {
+}) {
   return (
     <button
-      type='button'
+      type="button"
+      onClick={onClick}
       className={`flex w-full items-center gap-3 px-4 py-2.5 text-left text-[14px] hover:bg-gray-2 ${
         danger ? 'text-red-9' : 'text-gray-13'
       }`}
-      onClick={onClick}
     >
-      <DynamicIcon className='h-4 w-4 text-current' name={icon} />
+      <DynamicIcon name={icon} className="h-4 w-4 text-current" />
       <span>{label}</span>
     </button>
-  )
-}
-
-function SelectionCell({
-  isBusy,
-  row,
-  selectedIds,
-  selectionEnabled,
-  toggleSelect,
-}: Readonly<SelectionCellProps>) {
-  const fileId = getFileId(row)
-  const isSelected = selectedIds.includes(fileId)
-
-  return (
-    <div className='flex justify-center'>
-      {selectionEnabled ? (
-        <CheckBoxButton
-          checked={isSelected}
-          onClick={() => toggleSelect(fileId)}
-        />
-      ) : (
-        <button
-          className='h-5 w-5 rounded-md border border-transparent transition-all hover:border-blue-9 hover:bg-blue-1 disabled:cursor-not-allowed disabled:opacity-40'
-          disabled={isBusy}
-          title='Select'
-          type='button'
-          onClick={() => toggleSelect(fileId)}
-        />
-      )}
-    </div>
-  )
-}
-
-function SelectionHeader({
-  allVisibleSelected,
-  selectionEnabled,
-  toggleSelectAllVisible,
-}: Readonly<SelectionHeaderProps>) {
-  if (!selectionEnabled) return null
-
-  return (
-    <div className='flex justify-center'>
-      <CheckBoxButton
-        checked={allVisibleSelected}
-        onClick={toggleSelectAllVisible}
-      />
-    </div>
   )
 }
