@@ -1,4 +1,4 @@
-import { Search, Plus, UsersRound, UserPlus, Pencil } from 'lucide-react';
+import { Search, UsersRound, UserPlus, Pencil } from 'lucide-react';
 import IconButton from '@/components/base/button/IconButton'
 import Button from '@/components/base/button/Button'
 const groups = [

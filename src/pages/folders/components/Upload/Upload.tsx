@@ -20,15 +20,10 @@ import {
   PDF_ACCEPT,
 } from '../../../requests/components/request/components/newrequest/utils'
 import {
-  ArrowLeft,
   CheckCircle2,
   Copy,
   FileText,
-  RefreshCw,
   UploadCloud,
-  X,
-  ZoomIn,
-  ZoomOut,
 } from 'lucide-react'
 import InputText from '@/components/base/inputs/InputText'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
@@ -94,10 +89,9 @@ export default function Upload({
   const [fileData, setFileData] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [uploadStatus, setUploadStatus] = useState<UploadStatus>('idle')
-  const [fileId, setFileId] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<ResultTab>('fields')
-  const [zoom, setZoom] = useState(100)
-    const [scale, setScale] = useState(1)
+  const zoom = 100
+  const [scale, setScale] = useState(1)
 
   const viewerRef = useRef<any>(null)
 
@@ -176,7 +170,6 @@ export default function Upload({
       setFileData(selectedFile)
       setPreviewUrl(URL.createObjectURL(selectedFile))
       setUploadStatus('idle')
-      setFileId(null)
       setActiveTab('fields')
     }
 
@@ -259,12 +252,6 @@ export default function Upload({
         return null
       }
 
-      const parsedData = typeof data === 'string' ? JSON.parse(data) : data
-      const uploadedFileId =
-        parsedData?.fileId || parsedData?.id || parsedData?.itemId || parsedData?.ItemId
-
-      if (uploadedFileId) setFileId(String(uploadedFileId))
-
       setUploadStatus('success')
       showToast({ message: 'File uploaded successfully.', variant: 'success' })
       onBack()
@@ -277,19 +264,6 @@ export default function Upload({
       })
       return null
     }
-  }
-
-  const handleCancelSelectedFile = () => {
-    if (previewUrl) URL.revokeObjectURL(previewUrl)
-    setFileData(null)
-    setPreviewUrl(null)
-    setFileId(null)
-    setUploadStatus('idle')
-    setIsDragOver(false)
-    setActiveTab('fields')
-    setZoom(100)
-    setFieldValues(getInitialValues(repositoryFields))
-    resetInput()
   }
 
   const renderFieldControl = (field: RepositoryField) => {

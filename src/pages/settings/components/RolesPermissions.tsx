@@ -6,7 +6,6 @@ import {
   ChevronUp,
   Edit3,
   Grid2X2,
-  Plus,
   Shield,
   ShieldCheck,
   UserRound,
