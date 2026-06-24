@@ -1359,6 +1359,8 @@ const getBaseColumns = (
       size: 140,
       renderCell: (row: any, index = 0) => {
         if (activeTab === 'Processed') {
+          return null
+          /*
           const isPaid = index % 2 === 0
           if (isPaid) {
             return (
@@ -1375,6 +1377,7 @@ const getBaseColumns = (
               </span>
             )
           }
+          */
         }
 
         const rowId = row.processId || row.id

@@ -770,6 +770,8 @@ const RowStatusBadge = ({
   if (isProcessing) return null
 
   if (activeTab === 'Processed') {
+    return null
+    /*
     if (originalIndex % 2 === 0) {
       return (
         <span className='flex items-center gap-1 rounded-md border border-[var(--green-4)] bg-[var(--green-2)] px-2 py-0.5 text-[11px] font-semibold text-[var(--green-11)]'>
@@ -784,6 +786,7 @@ const RowStatusBadge = ({
         Pending for Payment
       </span>
     )
+    */
   }
 
   // Retrieve decision from agentResponse
