@@ -360,7 +360,22 @@ const getFromFields = (fields: any): string | null => {
   )
 }
 
-const extractPaymentTerms = (row: any, agentData: any): string => {
+const extractPaymentTerms = (row: any, agentData: any, formModel?: any): string => {
+  if (formModel) {
+    if (
+      formModel['vxnKCXsXkz8_acPogKe'] &&
+      formModel['vxnKCXsXkz8_acPogKe'] !== '-'
+    ) {
+      return String(formModel['vxnKCXsXkz8_acPogKe'])
+    }
+    const keys = ['Payment Terms', 'payment_terms', 'Terms', 'terms']
+    for (const k of keys) {
+      if (formModel[k] && formModel[k] !== '-') {
+        return String(formModel[k])
+      }
+    }
+  }
+
   if (!row) return '-'
   const parsedForm = getParsedFormData(row)
 
@@ -392,7 +407,16 @@ const extractPaymentTerms = (row: any, agentData: any): string => {
   return '-'
 }
 
-const extractDueDate = (row: any, agentData: any): string => {
+const extractDueDate = (row: any, agentData: any, formModel?: any): string => {
+  if (formModel) {
+    const val =
+      formModel['Due Date'] ||
+      formModel['due_date'] ||
+      formModel['Due_Date'] ||
+      formModel['DueDate']
+    if (val && val !== '-') return String(val)
+  }
+
   if (!row) return '-'
   const parsedForm = getParsedFormData(row)
 
@@ -416,10 +440,10 @@ const extractDueDate = (row: any, agentData: any): string => {
     agentData?.['Extracted Invoice JSON']?.invoice_header?.['due_date'] ||
     agentData?.po_matching?.due_date
 
-  if ((!val || val === '-') && parsedForm['9F6tPVHoRnmONGx3kYJu2']) {
-    const invDateStr = parsedForm['9F6tPVHoRnmONGx3kYJu2']
-    const termsStr = parsedForm['vxnKCXsXkz8_acPogKe'] || ''
-    const numMatch = /\d+/.exec(termsStr)
+  if ((!val || val === '-') && (parsedForm['9F6tPVHoRnmONGx3kYJu2'] || formModel?.['9F6tPVHoRnmONGx3kYJu2'])) {
+    const invDateStr = formModel?.['9F6tPVHoRnmONGx3kYJu2'] || parsedForm['9F6tPVHoRnmONGx3kYJu2']
+    const termsStr = formModel?.['vxnKCXsXkz8_acPogKe'] || parsedForm['vxnKCXsXkz8_acPogKe'] || ''
+    const numMatch = /\d+/.exec(String(termsStr))
     if (numMatch) {
       const days = parseInt(numMatch[0], 10)
       try {
@@ -458,13 +482,16 @@ const computeDueDateInfo = (
   row: any,
   terms: string,
   dueDate: string,
+  formModel?: any,
 ): {
   calculationText: string
   statusType: 'success' | 'warning' | 'danger' | 'info' | 'default'
   termsDisplay: string
+  daysText: string
 } => {
   const parsedForm = getParsedFormData(row)
   const raisedAt =
+    formModel?.['9F6tPVHoRnmONGx3kYJu2'] ||
     parsedForm['9F6tPVHoRnmONGx3kYJu2'] ||
     row?.raisedAt ||
     row?.transaction_createdAt
@@ -480,32 +507,37 @@ const computeDueDateInfo = (
     }
   }
 
-  let calculationText = 'Immediate'
+  let calculationText = 'immediate'
   let statusType: 'success' | 'warning' | 'danger' | 'info' | 'default' = 'danger'
+  let daysText = '0 days'
 
   if (daysDiff === null) {
     const numMatch = /\d+/.exec(terms)
     if (numMatch) {
       const days = Number.parseInt(numMatch[0], 10)
-      const type = days <= 15 ? 'warning' : 'info'
-      return {
-        calculationText: `In ${days} days`,
-        statusType: type,
-        termsDisplay,
-      }
+      daysText = `${days} days`
+      calculationText = 'in due'
+      statusType = days <= 15 ? 'warning' : 'info'
+    } else {
+      daysText = '0 days'
+      calculationText = 'immediate'
+      statusType = 'danger'
     }
   } else if (daysDiff > 0) {
-    const type = daysDiff <= 15 ? 'warning' : 'info'
-    return {
-      calculationText: `In ${daysDiff} days`,
-      statusType: type,
-      termsDisplay,
-    }
+    daysText = `${daysDiff} days`
+    calculationText = 'in due'
+    statusType = daysDiff <= 15 ? 'warning' : 'info'
   } else if (daysDiff < 0) {
-    calculationText = `${Math.abs(daysDiff)}d Overdue`
+    daysText = `${Math.abs(daysDiff)} days`
+    calculationText = 'overdue'
+    statusType = 'danger'
+  } else {
+    daysText = '0 days'
+    calculationText = 'immediate'
+    statusType = 'danger'
   }
 
-  return { calculationText, statusType, termsDisplay }
+  return { calculationText, statusType, termsDisplay, daysText }
 }
 
 const hasMatterValidationData = (agentData: any) => {
@@ -633,12 +665,12 @@ const AnalysisCard = ({
       {isLoading ? (
         <div className='mt-1 h-4 w-24 animate-pulse rounded bg-[var(--gray-3)]' />
       ) : (
-        <span
+        <div
           className='text-[13px] leading-tight font-semibold text-[var(--gray-13)]'
-          title={value}
+          title={typeof value === 'string' ? value : undefined}
         >
           {value || '---'}
-        </span>
+        </div>
       )}
     </div>
   </div>
@@ -1097,10 +1129,10 @@ const Overview = (props: any) => {
     return hasBackOrderData(agentData) ? getBackOrderDisplay(agentData) : null
   }, [agentData, isFourthItem])
   const paymentTermsDisplay = useMemo(() => {
-    const terms = extractPaymentTerms(selectedItem, agentData)
-    const dueDate = extractDueDate(selectedItem, agentData)
-    return computeDueDateInfo(selectedItem, terms, dueDate)
-  }, [selectedItem, agentData])
+    const terms = extractPaymentTerms(selectedItem, agentData, formModel)
+    const dueDate = extractDueDate(selectedItem, agentData, formModel)
+    return computeDueDateInfo(selectedItem, terms, dueDate, formModel)
+  }, [selectedItem, agentData, formModel])
   const matterValidationDisplay = useMemo(
     () =>
       hasMatterValidationData(agentData)
@@ -2117,7 +2149,16 @@ const Overview = (props: any) => {
                         status={paymentTermsDisplay.calculationText}
                         statusType={paymentTermsDisplay.statusType}
                         title='Payment Terms'
-                        value={paymentTermsDisplay.termsDisplay}
+                        value={
+                          <div className='flex flex-col gap-0.5'>
+                            <div>{paymentTermsDisplay.termsDisplay}</div>
+                            {paymentTermsDisplay.termsDisplay.trim().toLowerCase() !== paymentTermsDisplay.daysText.trim().toLowerCase() && (
+                              <div className='text-[11px] font-normal text-[var(--gray-11)]'>
+                                {paymentTermsDisplay.daysText}
+                              </div>
+                            )}
+                          </div>
+                        }
                       />
                     )}
                     {showMatterValidation && matterValidationDisplay && (
