@@ -86,6 +86,15 @@ const getStepConfig = (h: HistoryRow, isStart: boolean) => {
   const actor = safeLower(
     h.processedBy || h.actionUser || h.actionUserEmail || h.agentType || '',
   )
+  const action = safeLower(h.action)
+
+  // If action contains 'move', prioritize orange clock theme
+  if (action === 'move' || action.includes('move')) {
+    return {
+      bulletBg: 'bg-orange-3/30 text-orange-11',
+      icon: 'tabler:clock',
+    }
+  }
 
   // 1. Ingestion / Start (Blue theme with File icon)
   if (
