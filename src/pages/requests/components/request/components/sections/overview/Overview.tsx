@@ -1067,6 +1067,14 @@ const Overview = (props: any) => {
       ? !!matchingProc || selectedItem?.isProcessing
       : isProcessing
 
+  const isScanning = useMemo(() => {
+    const hasData =
+      formModel &&
+      Object.keys(formModel).length > 0 &&
+      Object.values(formModel).some(hasMeaningfulScalarValue)
+    return !!isCurrentlyProcessing && !hasData
+  }, [isCurrentlyProcessing, formModel])
+
   const getFieldScore = (key: string) => {
     const normalizeName = (name: string) => {
       const normalized = name.toLowerCase().trim()
@@ -1737,6 +1745,16 @@ const Overview = (props: any) => {
           )}
 
           {previewContent}
+
+          {isScanning && (
+            <div className='absolute inset-0 pointer-events-none z-10 overflow-hidden'>
+              {/* Ambient scanning tint overlay */}
+              <div className='absolute inset-0 bg-[color-mix(in srgb,var(--primary-9)_3%,transparent)]' />
+              
+              {/* Scanning line moving up and down */}
+              <div className='absolute left-0 right-0 h-[2px] bg-[var(--primary-9)] shadow-[0_0_8px_var(--primary-9),_0_0_16px_var(--primary-9)] animate-scan' />
+            </div>
+          )}
 
           {menuPosition && selectedText && (
             <div
