@@ -1184,7 +1184,14 @@ const Overview = (props: any) => {
 
   const [lineItems, setLineItems] = useState<any[]>([])
 
-  const searchPluginInstance = searchPlugin()
+  const currentSearchPluginInstance = searchPlugin()
+  const searchPluginInstanceRef = useRef<any>(null)
+  if (!searchPluginInstanceRef.current) {
+    searchPluginInstanceRef.current = { ...currentSearchPluginInstance }
+  } else {
+    Object.assign(searchPluginInstanceRef.current, currentSearchPluginInstance)
+  }
+  const searchPluginInstance = searchPluginInstanceRef.current
   const { highlight, clearHighlights } = searchPluginInstance
 
   const handleFieldFocus = (value: any, _fieldKey?: string) => {
