@@ -871,14 +871,19 @@ const Request = ({
   // Synchronize store's selectedItem with the loaded request data
   useEffect(() => {
     if (request && selectedItem) {
-      const hasChanges =
-        request.stageType !== selectedItem.stageType ||
-        request.stage !== selectedItem.stage ||
-        request.status !== selectedItem.status ||
-        request.decision !== selectedItem.decision ||
-        request.activityId !== selectedItem.activityId ||
-        request.attachmentCount !== selectedItem.attachmentCount ||
-        request.commentsCount !== selectedItem.commentsCount
+      const keysToSync = [
+        'stageType',
+        'stage',
+        'status',
+        'decision',
+        'activityId',
+        'attachmentCount',
+        'commentsCount',
+      ] as const
+
+      const hasChanges = keysToSync.some(
+        (key) => key in request && request[key] !== selectedItem[key],
+      )
 
       if (hasChanges) {
         requestStore.setState({
