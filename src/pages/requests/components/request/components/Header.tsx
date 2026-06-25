@@ -73,16 +73,7 @@ const Header: React.FC<HeaderProps> = ({
   const containerRef = React.useRef<HTMLDivElement>(null)
 
   const getProgressStyles = (pct: number) => {
-    if (pct < 30) {
-      return {
-        badge: 'border-[var(--red-3)] bg-[var(--red-1)] text-[var(--red-9)]',
-        bullet: 'bg-[var(--red-4)]',
-        fill: 'bg-[var(--red-3)]/30',
-        icon: 'text-[var(--red-9)]',
-        text: 'text-[var(--red-11)]',
-      }
-    }
-    if (pct < 70) {
+    if (pct < 100) {
       return {
         badge:
           'border-[var(--orange-3)] bg-[var(--orange-1)] text-[var(--orange-9)]',
@@ -247,20 +238,6 @@ const Header: React.FC<HeaderProps> = ({
                               )}
                             />
                           )}
-                          <span
-                            className={cn(
-                              'font-bold tabular-nums',
-                              styles.text,
-                            )}
-                          >
-                            {percent}%
-                          </span>
-                          <span
-                            className={cn(
-                              'h-1.5 w-1.5 rounded-full',
-                              styles.bullet,
-                            )}
-                          />
                           <span>{status}</span>
                         </span>
                       </div>
@@ -296,6 +273,9 @@ const Header: React.FC<HeaderProps> = ({
                       badgeColorClass =
                         'border-[var(--orange-4)] bg-[var(--orange-2)] text-[var(--orange-11)]'
                     } else {
+                      if (_showApprove) {
+                        return null
+                      }
                       iconName = 'tabler:clock'
                       badgeColorClass =
                         'border-[var(--orange-4)] bg-[var(--orange-2)] text-[var(--orange-11)]'

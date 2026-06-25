@@ -790,7 +790,7 @@ const FormCard = ({
                       : 'border-[var(--red-3)] bg-[var(--red-1)] text-[var(--red-9)]',
                 )}
               >
-                {Math.round(Number(score))}% match
+                {Math.round(Number(score))}%
               </span>
             )}
           </div>
@@ -837,7 +837,7 @@ const FormCard = ({
                     : 'border-[var(--red-3)] bg-[var(--red-1)] text-[var(--red-9)]',
               )}
             >
-              {Math.round(Number(score))}% match
+              {Math.round(Number(score))}%
             </span>
           )}
         </div>
