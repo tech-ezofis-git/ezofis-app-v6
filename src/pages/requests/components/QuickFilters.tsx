@@ -68,9 +68,6 @@ const QuickFilters: React.FC<QuickFiltersProps> = ({ counts }) => {
 
   return (
     <div className='flex flex-wrap items-center gap-2 border-b border-[var(--gray-2)] bg-surface/50 py-2 pr-4 pl-7 backdrop-blur-sm select-none'>
-      <span className='mr-2 text-[10px] font-bold uppercase tracking-wider text-[var(--gray-10)]'>
-        Quick Filters:
-      </span>
       {filters.map((f) => {
         const isActive = activeQuickFilters.includes(f.id)
         return (
