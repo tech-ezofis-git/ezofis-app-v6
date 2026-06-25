@@ -22,8 +22,8 @@ import {
 import {
   CheckCircle2,
   Copy,
+  ArrowUpFromLine ,
   FileText,
-  UploadCloud,
 } from 'lucide-react'
 import InputText from '@/components/base/inputs/InputText'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
@@ -50,10 +50,20 @@ type UploadProps = {
     fields?: RepositoryField[]
   } | null
   onBack: () => void
+  onSuccess?: () => void | Promise<void>
 }
 
 type UploadStatus = 'idle' | 'uploading' | 'success' | 'error'
 type ResultTab = 'fields' | 'json'
+
+const PROCESS_STEPS = ['Received', 'Analysis', 'Fields', 'Done'] as const
+
+const getActiveStepIndex = (status: UploadStatus, hasFile: boolean) => {
+  if (status === 'success') return 3
+  if (status === 'uploading') return 2
+  if (hasFile) return 2
+  return -1
+}
 
 const getFieldKey = (field: RepositoryField) => field.sqlColumnName || field.id
 
@@ -82,6 +92,7 @@ export default function Upload({
   repositoryId,
   repositoryData,
   onBack,
+  onSuccess,
 }: UploadProps) {
   const invoiceInputRef = useRef<HTMLInputElement>(null)
 
@@ -176,6 +187,14 @@ export default function Upload({
     resetInput()
   }
 
+  const buildUploadMetadata = () => {
+    return repositoryFields.reduce<Record<string, string>>((acc, field) => {
+      const key = field.sqlColumnName || field.name
+      acc[key] = fieldValues[getFieldKey(field)] ?? ''
+      return acc
+    }, {})
+  }
+
   const buildMetadata = () => {
     const fields = repositoryFields.map((field) => {
       const value = fieldValues[getFieldKey(field)] ?? ''
@@ -242,7 +261,7 @@ export default function Upload({
 
       const formData = new FormData()
       formData.append('file', fileData, fileData.name)
-      // formData.append('metadata', JSON.stringify(buildMetadata()))
+      formData.append('metadata', JSON.stringify(buildUploadMetadata()))
 
       const { data, error } = await UploadFiles(String(activeRepositoryId), formData)
 
@@ -253,7 +272,8 @@ export default function Upload({
       }
 
       setUploadStatus('success')
-      showToast({ message: 'File uploaded successfully.', variant: 'success' })
+      showToast({ message: 'File exported successfully.', variant: 'success' })
+      await onSuccess?.()
       onBack()
       return data
     } catch (error: any) {
@@ -265,6 +285,8 @@ export default function Upload({
       return null
     }
   }
+
+  const activeStepIndex = getActiveStepIndex(uploadStatus, Boolean(fileData))
 
   const renderFieldControl = (field: RepositoryField) => {
     const value = fieldValues[getFieldKey(field)] ?? ''
@@ -450,26 +472,57 @@ export default function Upload({
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-4">
       
         <div className="flex items-center justify-between gap-4 rounded-2xl border border-[var(--gray-3)] bg-surface px-5 py-4 shadow-sm">
-  {['Received', 'Analysis', 'Fields', 'Done'].map((step, index, list) => (
+  {PROCESS_STEPS.map((step, index, list) => {
+    const isComplete =
+      uploadStatus === 'success' ? true : index < activeStepIndex
+    const isActive =
+      uploadStatus !== 'success' && index === activeStepIndex
+
+    return (
     <div
       key={step}
       className="flex min-w-0 flex-1 items-center gap-3 last:flex-none"
     >
       <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#10B981] text-white shadow-sm">
-          <CheckCircle2 size={18} strokeWidth={2.5} />
+        <div
+          className={[
+            'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white shadow-sm transition-colors',
+            isComplete
+              ? 'bg-[#10B981]'
+              : isActive
+                ? 'bg-[var(--primary-9)]'
+                : 'bg-[var(--gray-4)] text-[var(--gray-9)]',
+          ].join(' ')}
+        >
+          {isComplete ? (
+            <CheckCircle2 size={18} strokeWidth={2.5} />
+          ) : (
+            <span className="text-sm font-bold">{index + 1}</span>
+          )}
         </div>
 
-        <span className="whitespace-nowrap text-sm font-bold text-[var(--gray-13)]">
+        <span
+          className={[
+            'whitespace-nowrap text-sm font-bold',
+            isComplete || isActive
+              ? 'text-[var(--gray-13)]'
+              : 'text-[var(--gray-9)]',
+          ].join(' ')}
+        >
           {step}
         </span>
       </div>
 
       {index < list.length - 1 ? (
-        <div className="h-[2px] min-w-[60px] flex-1 rounded-full bg-[#10B981]" />
+        <div
+          className={[
+            'h-[2px] min-w-[60px] flex-1 rounded-full transition-colors',
+            isComplete ? 'bg-[#10B981]' : 'bg-[var(--gray-4)]',
+          ].join(' ')}
+        />
       ) : null}
     </div>
-  ))}
+  )})}
 </div>
 
         <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(470px,0.95fr)]">
@@ -595,7 +648,7 @@ export default function Upload({
 >
             <div className="flex h-[72px] shrink-0 items-center justify-between border-b border-[var(--gray-3)] px-5">
               <div className="flex min-w-0 items-center gap-3">
-                <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--primary-1)] text-[var(--primary-9)]">
                   <Icon className="size-5" name="tabler:code" />
                 </div>
                 <div>
@@ -676,19 +729,19 @@ export default function Upload({
             <div className="flex shrink-0 items-center justify-between gap-3 border-t border-[var(--gray-3)] bg-surface px-5 py-4">
               <div className="text-xs font-medium text-[var(--gray-9)]">
                 {isUploading
-                  ? 'Uploading document...'
+                  ? 'Exporting document...'
                   : uploadStatus === 'success'
-                    ? 'Uploaded successfully'
-                    : 'Ready to upload'}
+                    ? 'Exported successfully'
+                    : 'Ready to export'}
               </div>
 
               <Button className="h-10 px-5 text-sm" disabled={isUploading} onClick={uploadFile}>
                 {isUploading ? (
                   <Icon className="size-4 animate-spin" name="tabler:loader-2" />
                 ) : (
-                  <UploadCloud size={15} />
+                  <ArrowUpFromLine  size={15} />
                 )}
-                {isUploading ? 'Uploading...' : 'Upload'}
+                {isUploading ? 'Exporting...' : 'Export'}
               </Button>
             </div>
           </AnimateSlideUp>

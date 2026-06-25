@@ -110,6 +110,7 @@ export function FolderExplorer() {
         repositoryId={selectedRepository?.id || 0}
         repositoryData={selectedRepository}
         onBack={() => setAppView('explorer')}
+        onSuccess={refreshData}
       />
     )
   }

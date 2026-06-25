@@ -2,6 +2,23 @@ import authUserStore from '../../../stores/authUserStore'
 import { setToLocalStorage } from '../../../utils/local-storage'
 import { axiosV6 } from '../../axios'
 
+export interface BrowseFolderFieldDto {
+  level: number
+  name: string
+  sqlColumnName: string
+}
+
+export interface BrowsePathDto {
+  fieldOrder: string[]
+  id: string
+  label: string
+}
+
+export interface BrowseStructureDto {
+  browsePaths: BrowsePathDto[]
+  folderFields: BrowseFolderFieldDto[]
+}
+
 export interface BrowseChildGroupDto {
   name: string
   dateModified?: string | null
@@ -198,6 +215,25 @@ export const getRepositoryById = async (id: string) => {
   return response
 }
 
+export const getRepositoryBrowseStructure = async (id: string) => {
+  const response: any = { data: null, error: '' }
+
+  try {
+    const { data, status } = await axiosV6({
+      method: 'GET',
+      url: `/repositories/${id}/browse/structure`,
+    })
+
+    if (status !== 200) throw 'invalid status code'
+    response.data = unwrap(data)
+  } catch (e: any) {
+    console.error(e)
+    response.error = e?.response?.data || 'error fetching repository browse structure'
+  }
+
+  return response
+}
+
 export const getRepositoryBrowseChildren = async (payload: {
   id: string
   page?: number
@@ -283,6 +319,7 @@ export const authApiV6 = {
   signUp,
   verifyMailOTP,
   getRepositoryBrowseChildren,
+  getRepositoryBrowseStructure,
   getRepositoryById,
   getRepositorys,
 }
@@ -488,7 +525,7 @@ export const UploadFiles = async (repositoryId: string, formData: FormData) => {
       // important if axiosV6 has JSON transform/interceptor
       transformRequest: [(data) => data],
 
-      url: `/repositories/${repositoryId}/items/upload`,
+      url: `/repositories/${repositoryId}/items/upload-archive`,
     })
 
     if (status !== 200 && status !== 201) {

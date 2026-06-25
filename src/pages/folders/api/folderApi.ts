@@ -6,6 +6,7 @@ import {
   getRepositoryItemComments,
   addRepositoryItemComment,
   type BrowseChildrenDto,
+  type BrowseStructureDto,
   type PagedDto,
   type RepositoryDto,
   type RepositoryFieldDto,
@@ -40,6 +41,10 @@ export interface FolderContentRequest {
   search?: string;
   sortBy?: string;
   sortOrder?: "asc" | "desc" | string;
+  /** List view: load all repository files without folder filters */
+  listAllFiles?: boolean;
+  /** Grid tree sync: skip file fetch when only loading folder children */
+  includeFiles?: boolean;
 }
 
 type RepositoryFolderNode = {
@@ -47,16 +52,25 @@ type RepositoryFolderNode = {
   repositoryId: string;
   label: string;
 };
+type BrowsePathFolderNode = {
+  kind: "browsePath";
+  repositoryId: string;
+  repositoryName: string;
+  pathId: string;
+  label: string;
+};
 type BrowseFolderNode = {
   kind: "browse";
   repositoryId: string;
   repositoryName: string;
   pathId: string;
+  pathLabel?: string;
   label: string;
   level: number;
   groupField: string;
   groupValue: string;
   parentFilters: Record<string, string>;
+  isLeaf?: boolean;
 };
 type StaticFolderNode = {
   kind: "static";
@@ -65,8 +79,27 @@ type StaticFolderNode = {
 };
 type FolderNodePayload =
   | RepositoryFolderNode
+  | BrowsePathFolderNode
   | BrowseFolderNode
   | StaticFolderNode;
+
+const structureCache = new Map<string, BrowseStructureDto>();
+
+const getBrowseFolderFieldCount = (structure?: BrowseStructureDto | null) =>
+  structure?.folderFields?.length ?? 0;
+
+const isBrowseLeafNode = (
+  payload: FolderNodePayload,
+  structure?: BrowseStructureDto | null,
+) => {
+  if (payload.kind !== "browse") return false;
+  if (payload.isLeaf) return true;
+
+  const folderFieldCount = getBrowseFolderFieldCount(structure);
+  if (!folderFieldCount) return false;
+
+  return Object.keys(payload.parentFilters).length >= folderFieldCount;
+};
 
 const nodePrefix = "repo-node:";
 const defaultPage = 1;
@@ -103,6 +136,7 @@ export const decodeRepositoryNodeId = (
 const getPagedData = <T>(paged: any): T[] => {
   if (Array.isArray(paged)) return paged;
   if (Array.isArray(paged?.data)) return paged.data;
+  if (Array.isArray(paged?.items)) return paged.items;
   return [];
 };
 
@@ -213,6 +247,44 @@ const toFileItem = (row: Record<string, any>, index: number): FileItem => {
   } as FileItem;
 };
 
+const getRepositoryBrowseStructure = async (repositoryId: string) => {
+  if (structureCache.has(repositoryId)) {
+    return structureCache.get(repositoryId)!;
+  }
+
+  const result = await authApiV6.getRepositoryBrowseStructure(repositoryId);
+  if (result.error) throw new Error(String(result.error));
+
+  const structure = (result.data || {
+    browsePaths: [],
+    folderFields: [],
+  }) as BrowseStructureDto;
+
+  structureCache.set(repositoryId, structure);
+  return structure;
+};
+
+const toBrowsePathItem = (args: {
+  repositoryId: string;
+  repositoryName: string;
+  pathId: string;
+  label: string;
+}): FolderItem => ({
+  id: encodeRepositoryNodeId({
+    kind: "browsePath",
+    repositoryId: args.repositoryId,
+    repositoryName: args.repositoryName,
+    pathId: args.pathId,
+    label: args.label,
+  }),
+  title: args.label,
+  iconKey: "folder",
+  itemsText: "-",
+  modifiedText: "-",
+  sizeText: "-",
+  hasChildren: true,
+});
+
 const toFolderItem = (args: {
   repositoryId: string;
   repositoryName: string;
@@ -220,10 +292,12 @@ const toFolderItem = (args: {
   groupValue: string;
   level: number;
   pathId: string;
+  pathLabel?: string;
   parentFilters: Record<string, string>;
   itemCount?: number;
   dateModified?: string | null;
   hasChildren?: boolean;
+  isLeaf?: boolean;
 }): FolderItem => {
   const nextFilters = {
     ...args.parentFilters,
@@ -236,11 +310,13 @@ const toFolderItem = (args: {
       repositoryId: args.repositoryId,
       repositoryName: args.repositoryName,
       pathId: args.pathId,
+      pathLabel: args.pathLabel,
       label: args.groupValue,
       level: args.level,
       groupField: args.groupField,
       groupValue: args.groupValue,
       parentFilters: nextFilters,
+      isLeaf: args.isLeaf,
     }),
     title: args.groupValue,
     iconKey: "folder",
@@ -271,6 +347,23 @@ const buildBreadcrumbs = (payload: FolderNodePayload): BreadcrumbItem[] => {
     ];
   }
 
+  if (payload.kind === "browsePath") {
+    return [
+      {
+        id: encodeRepositoryNodeId({
+          kind: "repository",
+          repositoryId: payload.repositoryId,
+          label: payload.repositoryName,
+        }),
+        label: payload.repositoryName,
+      },
+      {
+        id: encodeRepositoryNodeId(payload),
+        label: payload.label,
+      },
+    ];
+  }
+
   const crumbs: BreadcrumbItem[] = [
     {
       id: encodeRepositoryNodeId({
@@ -282,6 +375,19 @@ const buildBreadcrumbs = (payload: FolderNodePayload): BreadcrumbItem[] => {
     },
   ];
 
+  if (payload.pathLabel) {
+    crumbs.push({
+      id: encodeRepositoryNodeId({
+        kind: "browsePath",
+        repositoryId: payload.repositoryId,
+        repositoryName: payload.repositoryName,
+        pathId: payload.pathId,
+        label: payload.pathLabel,
+      }),
+      label: payload.pathLabel,
+    });
+  }
+
   Object.entries(payload.parentFilters).forEach(
     ([field, value], index, entries) => {
       const filters = Object.fromEntries(entries.slice(0, index + 1));
@@ -291,11 +397,13 @@ const buildBreadcrumbs = (payload: FolderNodePayload): BreadcrumbItem[] => {
           repositoryId: payload.repositoryId,
           repositoryName: payload.repositoryName,
           pathId: payload.pathId,
+          pathLabel: payload.pathLabel,
           label: value,
           level: index + 1,
           groupField: field,
           groupValue: value,
           parentFilters: filters,
+          isLeaf: index === entries.length - 1 ? payload.isLeaf : false,
         }),
         label: value,
       });
@@ -308,11 +416,12 @@ const buildBreadcrumbs = (payload: FolderNodePayload): BreadcrumbItem[] => {
 const normalizeChildren = (
   response: BrowseChildrenDto,
   payload: FolderNodePayload,
+  folderFieldCount = 0,
 ) => {
   const repositoryId =
     payload.kind === "repository"
       ? payload.repositoryId
-      : payload.kind === "browse"
+      : payload.kind === "browse" || payload.kind === "browsePath"
         ? payload.repositoryId
         : "";
   const repositoryName =
@@ -320,27 +429,52 @@ const normalizeChildren = (
       ? payload.label
       : payload.kind === "browse"
         ? payload.repositoryName
-        : "";
+        : payload.kind === "browsePath"
+          ? payload.repositoryName
+          : "";
   const currentFilters = payload.kind === "browse" ? payload.parentFilters : {};
   const pathId =
-    response.pathId || (payload.kind === "browse" ? payload.pathId : "default");
+    response.pathId ||
+    (payload.kind === "browse"
+      ? payload.pathId
+      : payload.kind === "browsePath"
+        ? payload.pathId
+        : "default");
+  const pathLabel =
+    payload.kind === "browse"
+      ? payload.pathLabel
+      : payload.kind === "browsePath"
+        ? payload.label
+        : undefined;
   const groups = getPagedData<any>(response.groups);
   const groupField = response.groupField || response.groupFieldName || "Folder";
+  const childIsLeaf = response.isLeafLevel === true;
 
-  return groups.map((group) =>
-    toFolderItem({
+  return groups.map((group) => {
+    const nextFilters = {
+      ...currentFilters,
+      [groupField]: String(group.name),
+    };
+    const isLeaf =
+      childIsLeaf ||
+      (folderFieldCount > 0 &&
+        Object.keys(nextFilters).length >= folderFieldCount);
+
+    return toFolderItem({
       repositoryId,
       repositoryName,
       groupField,
       groupValue: String(group.name),
       level: response.level ?? Object.keys(currentFilters).length + 1,
       pathId,
+      pathLabel,
       parentFilters: currentFilters,
       itemCount: group.itemCount,
       dateModified: group.dateModified,
-      hasChildren: !response.isLeafLevel,
-    }),
-  );
+      hasChildren: !isLeaf,
+      isLeaf,
+    });
+  });
 };
 
 const getDecodedRepositoryInfo = (payload: FolderNodePayload) => {
@@ -349,7 +483,14 @@ const getDecodedRepositoryInfo = (payload: FolderNodePayload) => {
       repositoryId: payload.repositoryId,
       repositoryName: payload.label,
       filters: {} as Record<string, string>,
-      pathId: "default",
+      pathId: "",
+    };
+  if (payload.kind === "browsePath")
+    return {
+      repositoryId: payload.repositoryId,
+      repositoryName: payload.repositoryName,
+      filters: {} as Record<string, string>,
+      pathId: payload.pathId,
     };
   if (payload.kind === "browse")
     return {
@@ -486,48 +627,115 @@ export const folderApi = {
         : decoded.repositoryId,
       repository,
     );
+    const structure =
+      decoded.kind === "repository" ||
+      decoded.kind === "browsePath" ||
+      decoded.kind === "browse"
+        ? await getRepositoryBrowseStructure(
+            decoded.kind === "repository"
+              ? decoded.repositoryId
+              : decoded.repositoryId,
+          )
+        : null;
     const { repositoryId, filters, pathId } = getDecodedRepositoryInfo(decoded);
 
+    const fetchRepositoryFiles = async (itemFilters: Record<string, string>) => {
+      const itemResult = await getRepositoryItems({
+        id: repositoryId,
+        filters: itemFilters,
+        search: request.search,
+        sortBy: request.sortBy || "DocumentDate",
+        sortOrder: request.sortOrder || "desc",
+        page: request.page ?? defaultPage,
+        pageSize: request.pageSize ?? defaultItemPageSize,
+        cursor: request.cursor ?? null,
+        skipTotal: true,
+      });
+
+      if (itemResult.error) throw new Error(String(itemResult.error));
+
+      const rawFiles = getPagedData<Record<string, any>>(itemResult.data);
+      return {
+        files: rawFiles.map(toFileItem),
+        filePage: toPage(itemResult.data),
+      };
+    };
+
+    const includeFiles = request.includeFiles !== false;
+    const listAllFiles = request.listAllFiles === true;
+
     let folders: FolderItem[] = [];
+    let folderPage = toPage(null);
+    let files: FileItem[] = [];
+    let filePageResult = toPage(null);
 
-    // Children API powers the tree/folder hierarchy.
-    const childrenResult = await authApiV6.getRepositoryBrowseChildren({
-      id: repositoryId,
-      pathId,
-      page: defaultPage,
-      pageSize: defaultGroupPageSize,
-      parentFilters: filters,
-      search: request.search?.trim() || undefined,
-    } as any);
+    if (listAllFiles) {
+      const fileResult = await fetchRepositoryFiles({});
+      files = fileResult.files;
+      filePageResult = fileResult.filePage;
+    } else if (decoded.kind === "repository") {
+      folders = (structure?.browsePaths || []).map((browsePath) =>
+        toBrowsePathItem({
+          repositoryId,
+          repositoryName: decoded.label,
+          pathId: browsePath.id,
+          label: browsePath.label,
+        }),
+      );
+      folderPage = {
+        page: 1,
+        pageSize: folders.length || defaultGroupPageSize,
+        totalCount: folders.length,
+        totalPages: 1,
+        hasMore: false,
+        nextCursor: null,
+      };
+    } else if (isBrowseLeafNode(decoded, structure)) {
+      const fileResult = await fetchRepositoryFiles(filters);
+      files = fileResult.files;
+      filePageResult = fileResult.filePage;
+    } else {
+      const childrenResult = await authApiV6.getRepositoryBrowseChildren({
+        id: repositoryId,
+        pathId,
+        page: defaultPage,
+        pageSize: defaultGroupPageSize,
+        parentFilters: filters,
+        search: request.search?.trim() || undefined,
+      } as any);
 
-    if (childrenResult.error) throw new Error(String(childrenResult.error));
-    folders = normalizeChildren(childrenResult.data, decoded);
-    const folderPage = toPage(childrenResult.data?.groups);
+      if (childrenResult.error) throw new Error(String(childrenResult.error));
+      folders = normalizeChildren(
+        childrenResult.data,
+        decoded,
+        getBrowseFolderFieldCount(structure),
+      );
+      folderPage = toPage(childrenResult.data?.groups);
 
-    // Items API powers the file list. Same filters as the clicked folder.
-    const itemResult = await getRepositoryItems({
-      id: repositoryId,
-      filters,
-      search: request.search,
-      sortBy: request.sortBy || "DocumentDate",
-      sortOrder: request.sortOrder || "desc",
-      page: request.page ?? defaultPage,
-      pageSize: request.pageSize ?? defaultItemPageSize,
-      cursor: request.cursor ?? null,
-      skipTotal: true, // required so UI can show totalCount / totalPages from API
-    });
-
-    if (itemResult.error) throw new Error(String(itemResult.error));
-
-    const rawFiles = getPagedData<Record<string, any>>(itemResult.data);
-    const files = rawFiles.map(toFileItem);
+      if (
+        includeFiles &&
+        (decoded.kind === "browse" || decoded.kind === "browsePath")
+      ) {
+        const fileResult = await fetchRepositoryFiles(filters);
+        files = fileResult.files;
+        filePageResult = fileResult.filePage;
+      } else if (
+        decoded.kind === "browse" &&
+        !folders.length &&
+        Object.keys(filters).length >= getBrowseFolderFieldCount(structure)
+      ) {
+        const fileResult = await fetchRepositoryFiles(filters);
+        files = fileResult.files;
+        filePageResult = fileResult.filePage;
+      }
+    }
 
     return {
       breadcrumbs: buildBreadcrumbs(decoded),
       folders,
       files,
       fileColumns: toFileColumns(fields),
-      filePage: toPage(itemResult.data),
+      filePage: filePageResult,
       folderPage,
     };
   },
@@ -547,6 +755,36 @@ export const folderApi = {
 
     const { repositoryId, filters, pathId } = getDecodedRepositoryInfo(decoded);
 
+    if (decoded.kind === "repository") {
+      const structure = await getRepositoryBrowseStructure(repositoryId);
+      const folders = (structure.browsePaths || []).map((browsePath) =>
+        toBrowsePathItem({
+          repositoryId,
+          repositoryName: decoded.label,
+          pathId: browsePath.id,
+          label: browsePath.label,
+        }),
+      );
+
+      return {
+        folders,
+        folderPage: {
+          page: 1,
+          pageSize: folders.length || defaultGroupPageSize,
+          totalCount: folders.length,
+          totalPages: 1,
+          hasMore: false,
+          nextCursor: null,
+        },
+      };
+    }
+
+    const structure = await getRepositoryBrowseStructure(repositoryId);
+
+    if (isBrowseLeafNode(decoded, structure)) {
+      return { folders: [], folderPage: toPage(null) };
+    }
+
     const childrenResult = await authApiV6.getRepositoryBrowseChildren({
       id: repositoryId,
       pathId,
@@ -558,7 +796,11 @@ export const folderApi = {
 
     if (childrenResult.error) throw new Error(String(childrenResult.error));
 
-    const folders = normalizeChildren(childrenResult.data, decoded);
+    const folders = normalizeChildren(
+      childrenResult.data,
+      decoded,
+      getBrowseFolderFieldCount(structure),
+    );
     const folderPage = toPage(childrenResult.data?.groups);
 
     return {

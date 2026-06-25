@@ -144,19 +144,28 @@ const getRepositoryFieldValue = (row: any, sqlColumnName: string) => {
 
   if (!row || !sqlColumnName) return '-'
 
+  const sources = [
+    row,
+    row.metadata,
+    row.Metadata,
+    row.fields,
+    row.Fields,
+    row.values,
+    row.Values,
+  ].filter((source) => source && typeof source === 'object')
 
+  for (const source of sources) {
+    const matchedKey = Object.keys(source).find(
+      (key) => key.toLowerCase() === sqlColumnName.toLowerCase(),
+    )
 
-  const matchedKey = Object.keys(row).find(
+    const value = matchedKey ? source[matchedKey] : undefined
+    if (value !== undefined && value !== null && value !== '') {
+      return String(value)
+    }
+  }
 
-    (key) => key.toLowerCase() === sqlColumnName.toLowerCase(),
-
-  )
-
-
-
-  const value = matchedKey ? row[matchedKey] : undefined
-
-  return value === undefined || value === null || value === '' ? '-' : String(value)
+  return '-'
 
 }
 

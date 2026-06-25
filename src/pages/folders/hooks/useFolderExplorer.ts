@@ -96,6 +96,9 @@ const [refreshing, setRefreshing] = useState(false)
     pageOnly = false,
     appendFolders = false,
     folderPageOnly = false,
+    listAllFiles,
+    includeFiles,
+    search,
   }: {
     folderId: string
     page?: number
@@ -105,6 +108,9 @@ const [refreshing, setRefreshing] = useState(false)
     pageOnly?: boolean
     appendFolders?: boolean
     folderPageOnly?: boolean
+    listAllFiles?: boolean
+    includeFiles?: boolean
+    search?: string
   }) => {
     const requestId = ++requestSeqRef.current
 
@@ -119,6 +125,9 @@ const [refreshing, setRefreshing] = useState(false)
         page,
         pageSize: pageSizeValue,
         cursor,
+        listAllFiles: listAllFiles ?? viewMode === 'list',
+        includeFiles,
+        search,
       })
 
       if (requestId !== requestSeqRef.current) return response
@@ -200,6 +209,7 @@ const [refreshing, setRefreshing] = useState(false)
       const response = await folderApi.getFolderContent(folderId, {
         page: 1,
         pageSize: DEFAULT_FOLDER_PAGE_SIZE,
+        includeFiles: false,
       })
       setTree((previous) =>
         syncTreeChildren(previous, folderId, response.folders),
@@ -261,15 +271,35 @@ const [refreshing, setRefreshing] = useState(false)
       folderId: activeFolder,
       page: 1,
       pageSizeValue: DEFAULT_FOLDER_PAGE_SIZE,
+      listAllFiles: viewMode === 'list',
     }).catch(() => undefined)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeFolder, pageSize])
+  }, [activeFolder, pageSize, viewMode])
 
   useEffect(() => {
     if (!activeFolder) return
 
     const searchText = folderSearch.trim()
     const timer = window.setTimeout(async () => {
+      if (viewMode === 'list') {
+        setLoadingPage(true)
+        try {
+          await loadFolderContent({
+            folderId: activeFolder,
+            page: 1,
+            pageSizeValue: pageSize,
+            listAllFiles: true,
+            search: searchText,
+            syncTree: false,
+          })
+        } catch (exception: any) {
+          setError(exception?.message || 'Unable to search files')
+        } finally {
+          setLoadingPage(false)
+        }
+        return
+      }
+
       folderLoadLockRef.current = false
       lastRequestedFolderPageRef.current[activeFolder] = 1
       setLoadingFolders(true)
@@ -416,6 +446,7 @@ const [refreshing, setRefreshing] = useState(false)
       cursor: cursor ?? cachedCursor ?? null,
       syncTree: false,
       pageOnly: true,
+      listAllFiles: viewMode === 'list',
     }).catch(() => undefined)
   }
 
@@ -509,6 +540,7 @@ const refreshData = useCallback(async () => {
       pageOnly: false,
       appendFolders: false,
       folderPageOnly: false,
+      listAllFiles: viewMode === 'list',
     })
   } catch {
     // error already handled inside loadFolderContent
@@ -521,6 +553,7 @@ const refreshData = useCallback(async () => {
   filePage?.page,
   filePage?.pageSize,
   pageSize,
+  viewMode,
 ])
   return {
     activeFolder,

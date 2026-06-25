@@ -6,28 +6,36 @@
     "storageDrive": null,
     "fields": [
       {
-        "name": "PO Number",
+        "name": "Supplier",
         "dataType": "text",
-        "level": 2,
+        "level": 1,
         "isMandatory": true,
         "includeInFolderStructure": true,
         "orderId": 1
       },
       {
-        "name": "Invoice No",
+        "name": "Document Type",
         "dataType": "text",
-        "level": 3,
+        "level": 2,
         "isMandatory": true,
         "includeInFolderStructure": true,
         "orderId": 2
       },
       {
-        "name": "Vendor Name",
+        "name": "PO Number",
         "dataType": "text",
-        "level": 1,
-        "isMandatory": false,
-        "includeInFolderStructure": false,
+        "level": 3,
+        "isMandatory": true,
+        "includeInFolderStructure": true,
         "orderId": 3
+      },
+      {
+        "name": "Invoice No",
+        "dataType": "text",
+        "level": 4,
+        "isMandatory": true,
+        "includeInFolderStructure": false,
+        "orderId": 4
       },
       {
         "name": "Ship To Address",
@@ -35,7 +43,7 @@
         "level": 0,
         "isMandatory": false,
         "includeInFolderStructure": false,
-        "orderId": 4
+        "orderId": 5
       },
       {
         "name": "PO Date",
@@ -43,7 +51,7 @@
         "level": 0,
         "isMandatory": false,
         "includeInFolderStructure": false,
-        "orderId": 5
+        "orderId": 6
       },
       {
         "name": "Buyer",
@@ -51,7 +59,7 @@
         "level": 0,
         "isMandatory": false,
         "includeInFolderStructure": false,
-        "orderId": 6
+        "orderId": 7
       },
       {
         "name": "Terms",
@@ -59,7 +67,7 @@
         "level": 0,
         "isMandatory": false,
         "includeInFolderStructure": false,
-        "orderId": 7
+        "orderId": 8
       },
       {
         "name": "PO Amount",
@@ -67,7 +75,7 @@
         "level": 0,
         "isMandatory": false,
         "includeInFolderStructure": false,
-        "orderId": 8
+        "orderId": 9
       },
       {
         "name": "Invoice Date",
@@ -75,7 +83,7 @@
         "level": 0,
         "isMandatory": false,
         "includeInFolderStructure": false,
-        "orderId": 9
+        "orderId": 10
       },
       {
         "name": "Invoice Amount",
@@ -83,7 +91,7 @@
         "level": 0,
         "isMandatory": false,
         "includeInFolderStructure": false,
-        "orderId": 10
+        "orderId": 11
       },
       {
         "name": "Invoice Tax Amount",
@@ -91,18 +99,10 @@
         "level": 0,
         "isMandatory": false,
         "includeInFolderStructure": false,
-        "orderId": 11
-      },
-      {
-        "name": "Vendor Address",
-        "dataType": "text",
-        "level": 0,
-        "isMandatory": false,
-        "includeInFolderStructure": false,
         "orderId": 12
       },
       {
-        "name": "Matched Status",
+        "name": "Supplier Address",
         "dataType": "text",
         "level": 0,
         "isMandatory": false,
@@ -110,7 +110,7 @@
         "orderId": 13
       },
       {
-        "name": "Pay To Address",
+        "name": "Matched Status",
         "dataType": "text",
         "level": 0,
         "isMandatory": false,
@@ -118,12 +118,20 @@
         "orderId": 14
       },
       {
-        "name": "Currency",
+        "name": "Pay To Address",
         "dataType": "text",
         "level": 0,
         "isMandatory": false,
         "includeInFolderStructure": false,
         "orderId": 15
+      },
+      {
+        "name": "Currency",
+        "dataType": "text",
+        "level": 0,
+        "isMandatory": false,
+        "includeInFolderStructure": false,
+        "orderId": 16
       }
     ]
   },
@@ -4151,7 +4159,7 @@
           },
           {
             "id": "UtfgJy6Z0qyfRC5Bclf-c",
-            "label": "Vendor Name",
+            "label": "Supplier",
             "type": "SHORT_TEXT",
             "settings": {
               "general": {
@@ -4369,7 +4377,7 @@
           },
           {
             "id": "XYZPyBGrGt4dKVDrDnkNl",
-            "label": "Vendor Address",
+            "label": "Supplier Address",
             "type": "SHORT_TEXT",
             "settings": {
               "general": {

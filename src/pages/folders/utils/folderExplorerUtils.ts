@@ -70,6 +70,7 @@ export const getChildIds = (node: TreeNode): string[] => {
 export const getRepositoryIdFromFolder = (folderId: string) => {
   const decoded = decodeRepositoryNodeId(folderId)
   if (decoded?.kind === 'repository') return decoded.repositoryId
+  if (decoded?.kind === 'browsePath') return decoded.repositoryId
   if (decoded?.kind === 'browse') return decoded.repositoryId
   return ''
 }
@@ -79,7 +80,7 @@ export const getRepositoryRootNodeId = (folderId: string, tree: TreeNode[]) => {
 
   if (decoded?.kind === 'repository') return folderId
 
-  if (decoded?.kind === 'browse') {
+  if (decoded?.kind === 'browsePath' || decoded?.kind === 'browse') {
     return encodeRepositoryNodeId({
       kind: 'repository',
       repositoryId: decoded.repositoryId,
