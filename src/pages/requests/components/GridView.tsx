@@ -1248,11 +1248,11 @@ const getProceedAction = (item: any, rawWorkflowData: any) => {
 
 const getActionText = (label: string) => {
   const lower = (label || '').toLowerCase()
-  if (lower === 'approve') return 'Mark as Approved'
-  if (lower === 'verify') return 'Mark as Verified'
-  if (lower === 'complete') return 'Mark as Completed'
-  if (lower === 'submit') return 'Mark as Submitted'
-  return `Mark as ${label}`
+  if (lower === 'approve') return 'Approved'
+  if (lower === 'verify') return 'Verified'
+  if (lower === 'complete') return 'Completed'
+  if (lower === 'submit') return 'Submitted'
+  return `${label}`
 }
 
 interface GridViewProps<TData> {
@@ -1495,23 +1495,32 @@ const GridView = <TData,>({
                 ) : (
                   <>
                     {actionValidation.isValid && actionValidation.action ? (
-                      <button
-                        className='inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-[var(--green-9)] px-3 py-1.5 text-12 font-semibold text-white shadow-sm transition-all hover:bg-[var(--green-10)] hover:shadow-md active:scale-95 animate-in fade-in slide-in-from-right-4 duration-300'
-                        type='button'
-                        onClick={() => {
-                          showToast({
-                            message: `Bulk action "${actionValidation.action.label}" applied to ${selectedIds.size} requests successfully!`,
-                            variant: 'success',
-                          })
-                          exitSelectionMode()
-                        }}
-                      >
-                        <Icon
-                          className='size-4 text-white'
-                          name='tabler:circle-check'
-                        />
-                        {getActionText(actionValidation.action.label)}
-                      </button>
+                      (() => {
+                        // const isVerify = actionValidation.action.label.toLowerCase() === 'verify'
+                        return (
+                          <button
+                            className='inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[var(--green-3)] bg-[var(--green-2)] px-3 py-1.5 text-12 font-semibold text-[var(--green-11)] shadow-sm transition-all hover:bg-[var(--green-3)] hover:shadow-md active:scale-95'
+
+                            type='button'
+                            onClick={() => {
+                              showToast({
+                                message: `Bulk action "${actionValidation.action.label}" applied to ${selectedIds.size} requests successfully!`,
+                                variant: 'success',
+                              })
+                              exitSelectionMode()
+                            }}
+                          >
+                            {/* <Icon
+                              className={cn(
+                                'size-4',
+                                isVerify ? 'text-[var(--green-9)]' : 'text-white'
+                              )}
+                              name='tabler:circle-check'
+                            /> */}
+                            {getActionText(actionValidation.action.label)}
+                          </button>
+                        )
+                      })()
                     ) : null}
 
                     {!actionValidation.isValid && (
