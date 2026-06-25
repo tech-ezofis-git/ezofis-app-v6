@@ -100,6 +100,13 @@ axiosCrypto.interceptors.response.use(
       }
     }
 
+    if (error.response?.status === 401) {
+      store.resetAuthState()
+      if (globalThis.window !== undefined) {
+        window.location.href = '/sign-in'
+      }
+    }
+
     return Promise.reject(error)
   },
 )
@@ -116,5 +123,27 @@ axiosV6.interceptors.request.use(
     return config
   },
   (error) => Promise.reject(error),
+)
+
+// --- Shared 401 Response Error Interceptor for unencrypted instances ---
+const handleResponseError = (error: AxiosError) => {
+  if (error.response?.status === 401) {
+    const store = authUserStore.getState()
+    store.resetAuthState()
+    if (globalThis.window !== undefined) {
+      window.location.href = '/sign-in'
+    }
+  }
+  return Promise.reject(error)
+}
+
+_axios.interceptors.response.use(
+  (response) => response,
+  handleResponseError,
+)
+
+axiosV6.interceptors.response.use(
+  (response) => response,
+  handleResponseError,
 )
 
