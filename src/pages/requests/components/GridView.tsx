@@ -2,7 +2,7 @@
 import { type Table as TanstackTable } from '@tanstack/react-table'
 // ✅ Motion
 import { motion, useReducedMotion } from 'framer-motion'
-import { useEffect, useMemo, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useState } from 'react'
 import type { TableActionButton } from '@/components/base/data-table/TableActionBar'
 import type { RowSize } from '@/components/base/data-table/types'
 import TableExport from '@/components/base/data-table/actions/TableExport'
@@ -914,7 +914,7 @@ interface GridRowItemProps {
   onRowClick: (item: any, tab: string) => void
 }
 
-const GridRowItem = ({
+const GridRowItem = memo(({
   activeTab,
   hasSelectionActive,
   index,
@@ -1206,7 +1206,7 @@ const GridRowItem = ({
       </div>
     </motion.div>
   )
-}
+})
 
 const getProceedAction = (item: any, rawWorkflowData: any) => {
   if (!item) return null
@@ -1254,6 +1254,15 @@ const getInvoiceNo = (row: any) => {
     row?.invoiceNo ||
     row?.requestNo ||
     `INV-${rowId}`
+}
+
+const getActionText = (label: string) => {
+  const lower = (label || '').toLowerCase()
+  if (lower === 'approve') return 'Mark as Approved'
+  if (lower === 'verify') return 'Mark as Verified'
+  if (lower === 'complete') return 'Mark as Completed'
+  if (lower === 'submit') return 'Mark as Submitted'
+  return `Mark as ${label}`
 }
 
 interface GridViewProps<TData> {
@@ -1341,16 +1350,18 @@ const GridView = <TData,>({
     return { isValid: true, action: firstAction, mismatchItem: null, mismatchAction: null }
   }, [selectedItems, rawWorkflowData])
 
-  const toggleRowSelection = (id: string | number, e: React.MouseEvent) => {
+  const toggleRowSelection = useCallback((id: string | number, e: React.MouseEvent) => {
     e.stopPropagation()
-    const next = new Set(selectedIds)
-    if (next.has(id)) {
-      next.delete(id)
-    } else {
-      next.add(id)
-    }
-    setSelectedIds(next)
-  }
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+      }
+      return next
+    })
+  }, [])
 
   const toggleAllSelection = () => {
     if (selectedIds.size === allItems.length && allItems.length > 0) {
@@ -1495,7 +1506,7 @@ const GridView = <TData,>({
                   <>
                     {actionValidation.isValid && actionValidation.action ? (
                       <button
-                        className='inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[var(--green-3)] bg-[var(--green-2)] px-3 py-1.5 text-12 font-semibold text-[var(--green-11)] shadow-sm transition-all hover:bg-[var(--green-3)] hover:shadow-md active:scale-95 animate-in fade-in slide-in-from-right-4 duration-300'
+                        className='inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-[var(--green-9)] px-3 py-1.5 text-12 font-semibold text-white shadow-sm transition-all hover:bg-[var(--green-10)] hover:shadow-md active:scale-95 animate-in fade-in slide-in-from-right-4 duration-300'
                         type='button'
                         onClick={() => {
                           showToast({
@@ -1506,10 +1517,10 @@ const GridView = <TData,>({
                         }}
                       >
                         <Icon
-                          className='size-4 text-[var(--green-9)]'
+                          className='size-4 text-white'
                           name='tabler:circle-check'
                         />
-                        {actionValidation.action.label} Selected
+                        {getActionText(actionValidation.action.label)}
                       </button>
                     ) : null}
 
