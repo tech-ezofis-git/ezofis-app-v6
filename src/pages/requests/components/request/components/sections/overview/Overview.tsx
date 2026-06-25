@@ -2144,16 +2144,7 @@ const Overview = (props: any) => {
                         status={paymentTermsDisplay.calculationText}
                         statusType={paymentTermsDisplay.statusType}
                         title='Payment Terms'
-                        value={
-                          <div className='flex flex-col gap-0.5'>
-                            <div>{paymentTermsDisplay.termsDisplay}</div>
-                            {paymentTermsDisplay.termsDisplay.trim().toLowerCase() !== paymentTermsDisplay.daysText.trim().toLowerCase() && (
-                              <div className='text-[11px] font-normal text-[var(--gray-11)]'>
-                                {paymentTermsDisplay.daysText}
-                              </div>
-                            )}
-                          </div>
-                        }
+                        value={paymentTermsDisplay.daysText.replace(/days/i, 'Days')}
                       />
                     )}
                     {showMatterValidation && matterValidationDisplay && (
