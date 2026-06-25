@@ -804,7 +804,7 @@ const calculateDaysDifference = (
 }
 
 const computeDueDateInfo = (
-  row: any,
+  _row: any,
   terms: string,
   dueDate: string,
 ): {
@@ -812,12 +812,8 @@ const computeDueDateInfo = (
   calculationTheme: string
   termsDisplay: string
 } => {
-  const parsedForm = getParsedFormData(row)
-  const raisedAt =
-    parsedForm['9F6tPVHoRnmONGx3kYJu2'] ||
-    row?.raisedAt ||
-    row?.transaction_createdAt
-  const daysDiff = calculateDaysDifference(raisedAt, dueDate)
+  const todayStr = new Date().toISOString().split('T')[0]
+  const daysDiff = calculateDaysDifference(todayStr, dueDate)
 
   let termsDisplay = terms === '-' ? 'Immediate' : terms
   if (termsDisplay.toLowerCase() === 'immediate') {
@@ -1357,7 +1353,7 @@ const getBaseColumns = (
       id: 'matchStatus',
       label: activeTab === 'Processed' ? 'Payment Status' : 'Match Status',
       size: 140,
-      renderCell: (row: any) => {
+      renderCell: (row: any, _index = 0) => {
         if (activeTab === 'Processed') {
           return null
           /*

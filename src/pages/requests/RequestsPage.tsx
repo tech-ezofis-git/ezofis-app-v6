@@ -185,6 +185,9 @@ const RequestsPage = () => {
     if (workflow?.id) {
       const isNewWorkflow =
         !selectedWorkflow || String(workflow.id) !== String(selectedWorkflow.id)
+      if (isNewWorkflow) {
+        requestStore.getState().clearQuickFilters()
+      }
       if (isNewWorkflow && !reloadMeta) {
         loadSelectedWorkflow(String(workflow.id), workflow.name)
       } else if (reloadMeta) {
@@ -208,6 +211,7 @@ const RequestsPage = () => {
   const handleTabChange = (tab: string) => {
     setActiveTab(tab)
     setRequestListTab(tab) // Sync to store
+    requestStore.getState().clearQuickFilters()
 
     // Only grouping for Inbox
     if (tab !== 'Inbox') {

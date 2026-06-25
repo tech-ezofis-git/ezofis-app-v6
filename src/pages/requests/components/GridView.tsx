@@ -749,6 +749,7 @@ interface RowStatusBadgeProps {
   isProcessing: boolean
   row: any
   activeTab?: string
+  originalIndex: number
 }
 
 const formatDecision = (decision: string) => {
@@ -763,6 +764,7 @@ const formatDecision = (decision: string) => {
 const RowStatusBadge = ({
   activeTab,
   isProcessing,
+  originalIndex: _originalIndex,
   row,
 }: RowStatusBadgeProps) => {
   if (isProcessing) return null
@@ -836,14 +838,14 @@ const RowStatusBadge = ({
 }
 
 interface TermsColumnProps {
-  raisedAt: any
   row: any
 }
 
-const TermsColumn = ({ raisedAt, row }: TermsColumnProps) => {
+const TermsColumn = ({ row }: TermsColumnProps) => {
   const terms = extractPaymentTerms(row)
   const dueDate = extractDueDate(row)
-  const daysDiff = calculateDaysDifference(raisedAt, dueDate)
+  const todayStr = new Date().toISOString().split('T')[0]
+  const daysDiff = calculateDaysDifference(todayStr, dueDate)
 
   let topText = ''
   let bottomText = ''
@@ -972,10 +974,6 @@ const GridRowItem = ({
     row?.['UtfgJy6Z0qyfRC5Bclf-c'] ||
     row?.raisedBy ||
     'Unknown Supplier'
-  const raisedAt =
-    parsedForm['9F6tPVHoRnmONGx3kYJu2'] ||
-    row?.raisedAt ||
-    row?.transaction_createdAt
   const amtStr = findInvoiceAmount(row)
   const amount = amtStr ? Number(amtStr.replace(/[^0-9.-]/g, '')) : null
   const agentData =
@@ -1091,6 +1089,7 @@ const GridRowItem = ({
           )}
           <RowStatusBadge
             activeTab={activeTab}
+            originalIndex={originalIndex}
             isProcessing={row.isProcessing}
             row={row}
           />
@@ -1157,7 +1156,7 @@ const GridRowItem = ({
           <>
             {/* Column 3: Terms & Due Calculation */}
             <div className='flex w-[110px] shrink-0 flex-col items-center justify-center text-center'>
-              <TermsColumn raisedAt={raisedAt} row={row} />
+              <TermsColumn row={row} />
             </div>
 
             {/* Column 4: Invoice Value & Date */}

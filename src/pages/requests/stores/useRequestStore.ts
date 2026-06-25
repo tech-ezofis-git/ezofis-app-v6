@@ -74,6 +74,9 @@ type Store = {
   reloadMeta: boolean
   repoData: any
   requestListTab: string // New state for main list tabs
+  activeQuickFilters: string[]
+  toggleQuickFilter: (filter: string) => void
+  clearQuickFilters: () => void
   // Data State (Added these)
   selectedItem: any
   // Actions
@@ -119,6 +122,7 @@ const requestStore = create<Store>((set) => ({
   reloadMeta: false,
   repoData: null,
   requestListTab: 'Inbox', // Default
+  activeQuickFilters: [],
   selectedItem: null,
   selectedWorkflow: null,
   selectedWorkflowId: null,
@@ -186,6 +190,13 @@ const requestStore = create<Store>((set) => ({
     set({ pendingOpenNewRequest: value }),
   setRawWorkflowData: (data) => set({ rawWorkflowData: data }),
   setRequestListTab: (tab) => set({ requestListTab: tab }),
+  toggleQuickFilter: (filter) =>
+    set((state) => ({
+      activeQuickFilters: state.activeQuickFilters.includes(filter)
+        ? state.activeQuickFilters.filter((f) => f !== filter)
+        : [...state.activeQuickFilters, filter],
+    })),
+  clearQuickFilters: () => set({ activeQuickFilters: [] }),
   setJobStatus: (id, status) =>
     set((state) => {
       const nextStatuses = { ...state.jobStatuses, [id]: status }

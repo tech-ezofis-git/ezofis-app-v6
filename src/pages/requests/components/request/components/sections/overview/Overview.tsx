@@ -479,23 +479,18 @@ const calculateDaysDifference = (
 }
 
 const computeDueDateInfo = (
-  row: any,
+  _row: any,
   terms: string,
   dueDate: string,
-  formModel?: any,
+  _formModel?: any,
 ): {
   calculationText: string
   statusType: 'success' | 'warning' | 'danger' | 'info' | 'default'
   termsDisplay: string
   daysText: string
 } => {
-  const parsedForm = getParsedFormData(row)
-  const raisedAt =
-    formModel?.['9F6tPVHoRnmONGx3kYJu2'] ||
-    parsedForm['9F6tPVHoRnmONGx3kYJu2'] ||
-    row?.raisedAt ||
-    row?.transaction_createdAt
-  const daysDiff = calculateDaysDifference(raisedAt, dueDate)
+  const todayStr = new Date().toISOString().split('T')[0]
+  const daysDiff = calculateDaysDifference(todayStr, dueDate)
 
   let termsDisplay = terms === '-' ? 'Immediate' : terms
   if (termsDisplay.toLowerCase() === 'immediate') {
