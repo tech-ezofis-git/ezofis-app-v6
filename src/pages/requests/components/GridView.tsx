@@ -1245,16 +1245,6 @@ const getProceedAction = (item: any, rawWorkflowData: any) => {
   }) || null
 }
 
-// const getInvoiceNo = (row: any) => {
-//   if (!row) return 'Unknown'
-//   const rowId = row?.id || row?.processId
-//   return findInvoiceNumber(row) ||
-//     row?.documentNumber ||
-//     row?.['kvcYuknkDumkTenjvrVLj'] ||
-//     row?.invoiceNo ||
-//     row?.requestNo ||
-//     `INV-${rowId}`
-// }
 
 const getActionText = (label: string) => {
   const lower = (label || '').toLowerCase()
