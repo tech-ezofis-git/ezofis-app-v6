@@ -1357,7 +1357,7 @@ const getBaseColumns = (
       id: 'matchStatus',
       label: activeTab === 'Processed' ? 'Payment Status' : 'Match Status',
       size: 140,
-      renderCell: (row: any, index = 0) => {
+      renderCell: (row: any) => {
         if (activeTab === 'Processed') {
           return null
           /*

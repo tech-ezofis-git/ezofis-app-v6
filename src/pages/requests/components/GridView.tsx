@@ -747,7 +747,6 @@ const extractInvoiceDate = (row: any): string => {
 
 interface RowStatusBadgeProps {
   isProcessing: boolean
-  originalIndex: number
   row: any
   activeTab?: string
 }
@@ -764,7 +763,6 @@ const formatDecision = (decision: string) => {
 const RowStatusBadge = ({
   activeTab,
   isProcessing,
-  originalIndex,
   row,
 }: RowStatusBadgeProps) => {
   if (isProcessing) return null
@@ -1094,7 +1092,6 @@ const GridRowItem = ({
           <RowStatusBadge
             activeTab={activeTab}
             isProcessing={row.isProcessing}
-            originalIndex={originalIndex}
             row={row}
           />
         </div>
@@ -1212,6 +1209,54 @@ const GridRowItem = ({
   )
 }
 
+const getProceedAction = (item: any, rawWorkflowData: any) => {
+  if (!item) return null
+
+  // 1. Resolve actions using the exact overview component logic
+  const isApAgentStage = item.stageType === 'AP_AGENT'
+  let actionsList: any[] = []
+
+  if (!isApAgentStage) {
+    const rules = rawWorkflowData?.workflowJson?.rules || []
+    const currentActivityId = item.activityId
+    const dynamicRules = currentActivityId
+      ? rules.filter((rule: any) => rule.fromBlockId === currentActivityId)
+      : []
+
+    const ruleActions = dynamicRules.map((rule: any) => {
+      const actionName = rule.proceedAction || rule.action || 'Submit'
+      return {
+        label: actionName,
+        value: actionName,
+        color: 'green' as const,
+        icon: 'tabler:check',
+      }
+    })
+
+    const fallbackActions = item._actions || []
+    actionsList = ruleActions.length > 0 ? ruleActions : fallbackActions
+  }
+
+  // 2. Find the positive proceed action
+  return actionsList.find((act: any) => {
+    const label = String(act.label || '').toLowerCase()
+    const value = String(act.value || '').toLowerCase()
+    return !label.includes('reject') && !label.includes('cancel') && !label.includes('deny') &&
+      !value.includes('reject') && !value.includes('cancel') && !value.includes('deny')
+  }) || null
+}
+
+const getInvoiceNo = (row: any) => {
+  if (!row) return 'Unknown'
+  const rowId = row?.id || row?.processId
+  return findInvoiceNumber(row) ||
+    row?.documentNumber ||
+    row?.['kvcYuknkDumkTenjvrVLj'] ||
+    row?.invoiceNo ||
+    row?.requestNo ||
+    `INV-${rowId}`
+}
+
 interface GridViewProps<TData> {
   data: any[]
   isLoading: boolean
@@ -1246,6 +1291,8 @@ const GridView = <TData,>({
     new Set(),
   )
 
+  const rawWorkflowData = requestStore((state) => state.rawWorkflowData)
+
   useEffect(() => {
     setSelectedIds(new Set())
   }, [activeTab])
@@ -1263,6 +1310,37 @@ const GridView = <TData,>({
     })
     return items
   }, [data])
+
+  const selectedItems = useMemo(() => {
+    return allItems.filter((item, index) => {
+      const rowId = item?.id || item?.processId || `item-${index}`
+      return selectedIds.has(rowId)
+    })
+  }, [allItems, selectedIds])
+
+  const actionValidation = useMemo(() => {
+    if (selectedItems.length === 0) {
+      return { isValid: true, action: null, mismatchItem: null, mismatchAction: null }
+    }
+
+    const firstAction = getProceedAction(selectedItems[0], rawWorkflowData)
+    const refAction = firstAction || { label: 'No action', value: 'none' }
+
+    for (let i = 1; i < selectedItems.length; i++) {
+      const currentAct = getProceedAction(selectedItems[i], rawWorkflowData)
+      const currentAction = currentAct || { label: 'No action', value: 'none' }
+      if (currentAction.value !== refAction.value) {
+        return {
+          isValid: false,
+          action: firstAction,
+          mismatchItem: selectedItems[i],
+          mismatchAction: currentAct
+        }
+      }
+    }
+
+    return { isValid: true, action: firstAction, mismatchItem: null, mismatchAction: null }
+  }, [selectedItems, rawWorkflowData])
 
   const toggleRowSelection = (id: string | number, e: React.MouseEvent) => {
     e.stopPropagation()
@@ -1416,41 +1494,37 @@ const GridView = <TData,>({
                   </button>
                 ) : (
                   <>
-                    <button
-                      className='inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[var(--green-3)] bg-[var(--green-2)] px-3 py-1.5 text-12 font-semibold text-[var(--green-11)] shadow-sm transition-all hover:bg-[var(--green-3)] hover:shadow-md active:scale-95'
-                      type='button'
-                      onClick={() => {
-                        showToast({
-                          message: `Bulk approved ${selectedIds.size} requests successfully!`,
-                          variant: 'success',
-                        })
-                        exitSelectionMode()
-                      }}
-                    >
-                      <Icon
-                        className='size-4 text-[var(--green-9)]'
-                        name='tabler:circle-check'
-                      />
-                      Approve
-                    </button>
+                    {actionValidation.isValid && actionValidation.action ? (
+                      <button
+                        className='inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[var(--green-3)] bg-[var(--green-2)] px-3 py-1.5 text-12 font-semibold text-[var(--green-11)] shadow-sm transition-all hover:bg-[var(--green-3)] hover:shadow-md active:scale-95 animate-in fade-in slide-in-from-right-4 duration-300'
+                        type='button'
+                        onClick={() => {
+                          showToast({
+                            message: `Bulk action "${actionValidation.action.label}" applied to ${selectedIds.size} requests successfully!`,
+                            variant: 'success',
+                          })
+                          exitSelectionMode()
+                        }}
+                      >
+                        <Icon
+                          className='size-4 text-[var(--green-9)]'
+                          name='tabler:circle-check'
+                        />
+                        {actionValidation.action.label} Selected
+                      </button>
+                    ) : null}
 
-                    <button
-                      className='inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[var(--red-3)] bg-[var(--red-2)] px-3 py-1.5 text-12 font-semibold text-[var(--red-11)] shadow-sm transition-all hover:bg-[var(--red-3)] hover:shadow-md active:scale-95'
-                      type='button'
-                      onClick={() => {
-                        showToast({
-                          message: `Bulk rejected ${selectedIds.size} requests successfully!`,
-                          variant: 'warning',
-                        })
-                        exitSelectionMode()
-                      }}
-                    >
-                      <Icon
-                        className='size-4 text-[var(--red-9)]'
-                        name='tabler:trash-2'
-                      />
-                      Reject
-                    </button>
+                    {!actionValidation.isValid && (
+                      <div className='flex items-center gap-2 rounded-lg border border-[var(--orange-3)] bg-[var(--orange-2)] px-3 py-1.5 text-12 font-medium text-[var(--orange-11)] max-w-lg md:max-w-xl lg:max-w-2xl animate-in fade-in slide-in-from-right-4 duration-300'>
+                        <Icon
+                          className='size-4 shrink-0 text-[var(--orange-9)]'
+                          name='tabler:alert-triangle'
+                        />
+                        <span className='truncate'>
+                          Bulk action unavailable: Action mismatch detected.
+                        </span>
+                      </div>
+                    )}
                   </>
                 )}
 
