@@ -146,7 +146,7 @@ const RequestsPage = () => {
           }
         }
 
-        setRawWorflow({ ...wf, id: workflowId, formJson })
+        setRawWorflow({ ...wf, formJson, id: workflowId })
 
         let flowJson = ''
         if (typeof wf.flowJson === 'string') {
@@ -310,13 +310,13 @@ const RequestsPage = () => {
       )}
       {selectedItem && (
         <Request
+          isFourthItem={selectedIndex === 3}
+          isThirdItem={selectedIndex === 2}
           item={selectedItem}
           workflowId={selectedWorkflow?.id}
           onBack={closeRequest}
           onNext={onNext}
           onPrev={onPrev}
-          isFourthItem={selectedIndex === 3}
-          isThirdItem={selectedIndex === 2}
         />
       )}
       {showWorkflowEmpty && !selectedItem ? (

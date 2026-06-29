@@ -747,9 +747,9 @@ const extractInvoiceDate = (row: any): string => {
 
 interface RowStatusBadgeProps {
   isProcessing: boolean
+  originalIndex: number
   row: any
   activeTab?: string
-  originalIndex: number
 }
 
 const formatDecision = (decision: string) => {
@@ -914,299 +914,305 @@ interface GridRowItemProps {
   onRowClick: (item: any, tab: string) => void
 }
 
-const GridRowItem = memo(({
-  activeTab,
-  hasSelectionActive,
-  index,
-  isSelected,
-  row,
-  toggleRowSelection,
-  onRowClick,
-}: GridRowItemProps) => {
-  const originalIndex =
-    typeof row?._originalIndex === 'number' ? row._originalIndex : index
-  const rowId = row?.id || row?.processId || `item-${originalIndex}`
+const GridRowItem = memo(
+  ({
+    activeTab,
+    hasSelectionActive,
+    index,
+    isSelected,
+    row,
+    toggleRowSelection,
+    onRowClick,
+  }: GridRowItemProps) => {
+    const originalIndex =
+      typeof row?._originalIndex === 'number' ? row._originalIndex : index
+    const rowId = row?.id || row?.processId || `item-${originalIndex}`
 
-  const { processingProcesses, jobStatuses, jobMappings } = requestStore((state) => state)
-  const matchingProc = useMemo(() => {
-    return processingProcesses.find(
-      (p) => String(p.processId || p.id) === String(row.processId || row.id),
+    const { jobMappings, jobStatuses, processingProcesses } = requestStore(
+      (state) => state,
     )
-  }, [processingProcesses, row.processId, row.id])
+    const matchingProc = useMemo(() => {
+      return processingProcesses.find(
+        (p) => String(p.processId || p.id) === String(row.processId || row.id),
+      )
+    }, [processingProcesses, row.processId, row.id])
 
-  let matchedJobStatus = jobStatuses[String(rowId)]
-  if (!matchedJobStatus) {
-    const mappedJobId = Object.keys(jobMappings).find(key => String(jobMappings[key]) === String(rowId))
-    if (mappedJobId) {
-      matchedJobStatus = jobStatuses[`job-${mappedJobId}`]
+    let matchedJobStatus = jobStatuses[String(rowId)]
+    if (!matchedJobStatus) {
+      const mappedJobId = Object.keys(jobMappings).find(
+        (key) => String(jobMappings[key]) === String(rowId),
+      )
+      if (mappedJobId) {
+        matchedJobStatus = jobStatuses[`job-${mappedJobId}`]
+      }
     }
-  }
-  if (!matchedJobStatus && row.apAgentJobId) {
-    matchedJobStatus = jobStatuses[`job-${row.apAgentJobId}`]
-  }
+    if (!matchedJobStatus && row.apAgentJobId) {
+      matchedJobStatus = jobStatuses[`job-${row.apAgentJobId}`]
+    }
 
-  const defaultStatusText = useProcessingStatusText(
-    matchingProc?.startTime ||
-    row?.raisedAt ||
-    row?.transaction_createdAt ||
-    row?.createdAt,
-  )
+    const defaultStatusText = useProcessingStatusText(
+      matchingProc?.startTime ||
+        row?.raisedAt ||
+        row?.transaction_createdAt ||
+        row?.createdAt,
+    )
 
-  const percentText = matchedJobStatus && matchedJobStatus.percent !== undefined
-    ? `${matchedJobStatus.percent}% `
-    : ''
+    const statusText =
+      matchedJobStatus && !matchedJobStatus.isCompleted
+        ? `${matchedJobStatus.stage}${matchedJobStatus.message ? ` - ${matchedJobStatus.message}` : ''}`
+        : defaultStatusText
 
-  const statusText = matchedJobStatus && !matchedJobStatus.isCompleted
-    ? `${percentText}${matchedJobStatus.stage}${matchedJobStatus.message ? ` - ${matchedJobStatus.message}` : ''}`
-    : defaultStatusText
+    const parsedForm = getParsedFormData(row)
+    const invoiceNo =
+      findInvoiceNumber(row) ||
+      row?.documentNumber ||
+      row?.['kvcYuknkDumkTenjvrVLj'] ||
+      row?.invoiceNo ||
+      row?.requestNo ||
+      `INV-${rowId}`
+    const supplierName =
+      findSupplierName(row) ||
+      row?.vendor ||
+      row?.['UtfgJy6Z0qyfRC5Bclf-c'] ||
+      row?.raisedBy ||
+      'Unknown Supplier'
+    const amtStr = findInvoiceAmount(row)
+    const amount = amtStr ? Number(amtStr.replace(/[^0-9.-]/g, '')) : null
+    const agentData =
+      row._agentResponse || row._agentData?.[0] || row._agentData || {}
+    const rawDecision = String(
+      parsedForm['2MH_BMDFEVKsU0uAQjoI1'] ||
+        agentData?.decision ||
+        row.decision ||
+        row.status ||
+        '',
+    ).toUpperCase()
+    const aiInsight =
+      agentData?.ai_insight ||
+      agentData?.aiInsight ||
+      agentData?.ai_insect ||
+      ''
 
-  const parsedForm = getParsedFormData(row)
-  const invoiceNo =
-    findInvoiceNumber(row) ||
-    row?.documentNumber ||
-    row?.['kvcYuknkDumkTenjvrVLj'] ||
-    row?.invoiceNo ||
-    row?.requestNo ||
-    `INV-${rowId}`
-  const supplierName =
-    findSupplierName(row) ||
-    row?.vendor ||
-    row?.['UtfgJy6Z0qyfRC5Bclf-c'] ||
-    row?.raisedBy ||
-    'Unknown Supplier'
-  const amtStr = findInvoiceAmount(row)
-  const amount = amtStr ? Number(amtStr.replace(/[^0-9.-]/g, '')) : null
-  const agentData =
-    row._agentResponse || row._agentData?.[0] || row._agentData || {}
-  const rawDecision = String(
-    parsedForm['2MH_BMDFEVKsU0uAQjoI1'] ||
-    agentData?.decision ||
-    row.decision ||
-    row.status ||
-    '',
-  ).toUpperCase()
-  const aiInsight =
-    agentData?.ai_insight || agentData?.aiInsight || agentData?.ai_insect || ''
+    const { iconColorClass, iconName } = getRowIconAndColor(
+      !!row.isProcessing,
+      rawDecision,
+      !!row?.isDuplicateInvoice,
+    )
 
-  const { iconColorClass, iconName } = getRowIconAndColor(
-    !!row.isProcessing,
-    rawDecision,
-    !!row?.isDuplicateInvoice,
-  )
-
-  return (
-    <motion.div
-      animate='show'
-      exit='exit'
-      initial='hidden'
-      key={rowId}
-      transition={{ damping: 30, stiffness: 400, type: 'spring' }}
-      variants={itemVariantSet() as any}
-      className={cn(
-        'group relative flex w-full items-center gap-4 rounded-xl border-0 border-b border-b-[var(--gray-2)] px-5 py-3 transition-colors transition-shadow duration-200',
-        'cursor-pointer',
-        isSelected
-          ? 'border-r border-l border-r-[var(--primary-3)] border-b-[var(--primary-3)] border-l-[var(--primary-3)] bg-[var(--primary-1)] shadow-sm'
-          : 'bg-[var(--surface)]',
-        !isSelected &&
-        !row.isProcessing &&
-        'hover:z-10 hover:border-r hover:border-l hover:border-r-[var(--primary-4)] hover:border-b-[var(--primary-4)] hover:border-l-[var(--primary-4)] hover:bg-[var(--gray-1)] hover:shadow-sm',
-        !isSelected &&
-        row.isProcessing &&
-        'hover:border-r hover:border-l hover:border-r-[var(--orange-4)] hover:border-b-[var(--orange-4)] hover:border-l-[var(--orange-4)] hover:bg-[var(--orange-1)]/40 hover:shadow-sm',
-      )}
-      onClick={() => {
-        onRowClick(row, 'Overview')
-      }}
-    >
-      {/* Checkbox & Status Icon */}
-      <div className='flex shrink-0 items-center'>
-        {!row.isProcessing && (
-          <div
-            className={cn(
-              'relative flex items-center overflow-hidden transition-all duration-200',
-              isSelected || hasSelectionActive
-                ? 'mr-4 w-5 opacity-100'
-                : 'mr-0 w-0 opacity-0 group-hover:mr-4 group-hover:w-5 group-hover:opacity-100',
-            )}
-          >
-            <input
-              checked={isSelected}
-              className='absolute inset-0 z-10 cursor-pointer opacity-0'
-              type='checkbox'
-              onChange={() => { }}
-              onClick={(e) => {
-                e.stopPropagation()
-                toggleRowSelection(rowId, e)
-              }}
-            />
+    return (
+      <motion.div
+        animate='show'
+        exit='exit'
+        initial='hidden'
+        key={rowId}
+        transition={{ damping: 30, stiffness: 400, type: 'spring' }}
+        variants={itemVariantSet() as any}
+        className={cn(
+          'group relative flex w-full items-center gap-4 rounded-xl border-0 border-b border-b-[var(--gray-2)] px-5 py-3 transition-colors transition-shadow duration-200',
+          'cursor-pointer',
+          isSelected
+            ? 'border-r border-l border-r-[var(--primary-3)] border-b-[var(--primary-3)] border-l-[var(--primary-3)] bg-[var(--primary-1)] shadow-sm'
+            : 'bg-[var(--surface)]',
+          !isSelected &&
+            !row.isProcessing &&
+            'hover:z-10 hover:border-r hover:border-l hover:border-r-[var(--primary-4)] hover:border-b-[var(--primary-4)] hover:border-l-[var(--primary-4)] hover:bg-[var(--gray-1)] hover:shadow-sm',
+          !isSelected &&
+            row.isProcessing &&
+            'hover:border-r hover:border-l hover:border-r-[var(--orange-4)] hover:border-b-[var(--orange-4)] hover:border-l-[var(--orange-4)] hover:bg-[var(--orange-1)]/40 hover:shadow-sm',
+        )}
+        onClick={() => {
+          onRowClick(row, 'Overview')
+        }}
+      >
+        {/* Checkbox & Status Icon */}
+        <div className='flex shrink-0 items-center'>
+          {!row.isProcessing && (
             <div
               className={cn(
-                'flex size-5 items-center justify-center rounded-md border-2 transition-all',
-                isSelected
-                  ? 'border-[var(--primary-9)] bg-surface'
-                  : 'border-[var(--gray-3)] bg-surface group-hover:border-[var(--primary-9)]',
+                'relative flex items-center overflow-hidden transition-all duration-200',
+                isSelected || hasSelectionActive
+                  ? 'mr-4 w-5 opacity-100'
+                  : 'mr-0 w-0 opacity-0 group-hover:mr-4 group-hover:w-5 group-hover:opacity-100',
               )}
             >
-              {isSelected && (
-                <Icon
-                  className='size-3.5 stroke-[3px] text-[var(--primary-9)]'
-                  name='tabler:check'
-                />
-              )}
-            </div>
-          </div>
-        )}
-        <div
-          className={cn(
-            'flex size-9 shrink-0 items-center justify-center rounded-lg border transition-all duration-300',
-            iconColorClass,
-          )}
-        >
-          <Icon
-            className={cn('size-5', row.isProcessing && 'animate-spin')}
-            name={iconName}
-          />
-        </div>
-      </div>
-
-      {/* Main Content: Identity & Metadata */}
-      <div className='flex min-w-0 flex-1 flex-col gap-1.5'>
-        <div className='flex items-center gap-3'>
-          <h3
-            className='truncate text-[15px] tracking-tight text-[var(--text-primary)] transition-colors group-hover:text-[var(--primary-9)] group-hover:underline'
-            style={{ fontWeight: 500 }}
-          >
-            {invoiceNo}
-          </h3>
-          {!row.isProcessing && (
-            <HoverExpandableText
-              className='align-bottom text-[12px] font-medium text-[var(--gray-10)]'
-              fallbackText='Unknown Supplier'
-              normalMaxWidthClass='max-w-[120px] sm:max-w-[160px] md:max-w-[200px] lg:max-w-[260px]'
-              text={supplierName}
-            />
-          )}
-          <RowStatusBadge
-            activeTab={activeTab}
-            originalIndex={originalIndex}
-            isProcessing={row.isProcessing}
-            row={row}
-          />
-        </div>
-
-        {/* Sub-metadata row */}
-        <div className='flex items-center gap-4 text-[12px] font-medium text-[var(--gray-10)]'>
-          {!row.isProcessing && (
-            <div className='flex items-center gap-1.5'>
-              <Icon className='size-3.5' name='tabler:hash' />
-              <span>{extractPONumber(row)}</span>
-            </div>
-          )}
-          {!row.isProcessing &&
-            (() => {
-              const glNumber = findGLNumber(row)
-              const category = findCategory(row)
-              return (
-                <>
-                  {glNumber && (
-                    <div className='flex items-center gap-1.5 text-[var(--gray-8)]'>
-                      <Icon className='size-3.5' name='tabler:stack' />
-                      <span>{glNumber}</span>
-                    </div>
-                  )}
-                  {category && (
-                    <div className='flex items-center gap-1.5 text-[var(--gray-8)]'>
-                      <Icon className='size-3.5' name='tabler:tag' />
-                      <span>{category}</span>
-                    </div>
-                  )}
-                </>
-              )
-            })()}
-        </div>
-      </div>
-
-      {/* AI Insight Line - Centered in middle of row */}
-      {!row.isProcessing && activeTab !== 'Processed' && aiInsight && (
-        <div className='flex min-w-0 flex-1 items-center justify-center px-4'>
-          <div className='flex min-w-0 items-center gap-1.5'>
-            <Icon
-              className='size-3.5 shrink-0 text-[var(--primary-9)]'
-              name='tabler:sparkles'
-            />
-            <HoverExpandableText
-              className='text-[13px] font-medium text-[var(--gray-11)]'
-              normalMaxWidthClass='max-w-[180px] sm:max-w-[240px] md:max-w-[320px] lg:max-w-[450px]'
-              text={aiInsight}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Columns 1-4 perfectly aligned across all rows */}
-      <div className='ml-auto flex shrink-0 items-center gap-6 select-none'>
-        {row.isProcessing ? (
-          <div className='relative flex w-[249px] items-center justify-end gap-2 pr-4'>
-            <span className='animate-pulse whitespace-nowrap text-[12px] font-semibold text-[var(--orange-9)]'>
-              {statusText}
-            </span>
-          </div>
-        ) : (
-          <>
-            {/* Column 3: Terms & Due Calculation */}
-            <div className='flex w-[110px] shrink-0 flex-col items-center justify-center text-center'>
-              <TermsColumn row={row} />
-            </div>
-
-            {/* Column 4: Invoice Value & Date */}
-            <div className='flex w-[115px] shrink-0 flex-col items-end'>
-              <span className='text-[15px] leading-none font-semibold tracking-tight text-[var(--text-primary)] tabular-nums'>
-                {amount !== null && !Number.isNaN(amount) ? (
-                  `$${amount.toLocaleString(undefined, {
-                    maximumFractionDigits: 2,
-                    minimumFractionDigits: 2,
-                  })}`
-                ) : (
-                  <span className='text-[14px] font-semibold text-[var(--gray-9)]'>
-                    N/A
-                  </span>
+              <input
+                checked={isSelected}
+                className='absolute inset-0 z-10 cursor-pointer opacity-0'
+                type='checkbox'
+                onChange={() => {}}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  toggleRowSelection(rowId, e)
+                }}
+              />
+              <div
+                className={cn(
+                  'flex size-5 items-center justify-center rounded-md border-2 transition-all',
+                  isSelected
+                    ? 'border-[var(--primary-9)] bg-surface'
+                    : 'border-[var(--gray-3)] bg-surface group-hover:border-[var(--primary-9)]',
                 )}
-              </span>
-              <span className='mt-1.5 text-[12px] font-medium text-[var(--gray-10)]'>
-                {(() => {
-                  const rawDate = extractInvoiceDate(row)
-                  if (rawDate && rawDate !== '-') {
-                    try {
-                      return new Date(rawDate).toLocaleDateString('en-US', {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric',
-                      })
-                    } catch {
-                      return 'May 19, 2026'
-                    }
-                  }
-                  return 'May 19, 2026'
-                })()}
+              >
+                {isSelected && (
+                  <Icon
+                    className='size-3.5 stroke-[3px] text-[var(--primary-9)]'
+                    name='tabler:check'
+                  />
+                )}
+              </div>
+            </div>
+          )}
+          <div
+            className={cn(
+              'flex size-9 shrink-0 items-center justify-center rounded-lg border transition-all duration-300',
+              iconColorClass,
+            )}
+          >
+            <Icon
+              className={cn('size-5', row.isProcessing && 'animate-spin')}
+              name={iconName}
+            />
+          </div>
+        </div>
+
+        {/* Main Content: Identity & Metadata */}
+        <div className='flex min-w-0 flex-1 flex-col gap-1.5'>
+          <div className='flex items-center gap-3'>
+            <h3
+              className='truncate text-[15px] tracking-tight text-[var(--text-primary)] transition-colors group-hover:text-[var(--primary-9)] group-hover:underline'
+              style={{ fontWeight: 500 }}
+            >
+              {invoiceNo}
+            </h3>
+            {!row.isProcessing && (
+              <HoverExpandableText
+                className='align-bottom text-[12px] font-medium text-[var(--gray-10)]'
+                fallbackText='Unknown Supplier'
+                normalMaxWidthClass='max-w-[120px] sm:max-w-[160px] md:max-w-[200px] lg:max-w-[260px]'
+                text={supplierName}
+              />
+            )}
+            <RowStatusBadge
+              activeTab={activeTab}
+              isProcessing={row.isProcessing}
+              originalIndex={originalIndex}
+              row={row}
+            />
+          </div>
+
+          {/* Sub-metadata row */}
+          <div className='flex items-center gap-4 text-[12px] font-medium text-[var(--gray-10)]'>
+            {!row.isProcessing && (
+              <div className='flex items-center gap-1.5'>
+                <Icon className='size-3.5' name='tabler:hash' />
+                <span>{extractPONumber(row)}</span>
+              </div>
+            )}
+            {!row.isProcessing &&
+              (() => {
+                const glNumber = findGLNumber(row)
+                const category = findCategory(row)
+                return (
+                  <>
+                    {glNumber && (
+                      <div className='flex items-center gap-1.5 text-[var(--gray-8)]'>
+                        <Icon className='size-3.5' name='tabler:stack' />
+                        <span>{glNumber}</span>
+                      </div>
+                    )}
+                    {category && (
+                      <div className='flex items-center gap-1.5 text-[var(--gray-8)]'>
+                        <Icon className='size-3.5' name='tabler:tag' />
+                        <span>{category}</span>
+                      </div>
+                    )}
+                  </>
+                )
+              })()}
+          </div>
+        </div>
+
+        {/* AI Insight Line - Centered in middle of row */}
+        {!row.isProcessing && activeTab !== 'Processed' && aiInsight && (
+          <div className='flex min-w-0 flex-1 items-center justify-center px-4'>
+            <div className='flex min-w-0 items-center gap-1.5'>
+              <Icon
+                className='size-3.5 shrink-0 text-[var(--primary-9)]'
+                name='tabler:sparkles'
+              />
+              <HoverExpandableText
+                className='text-[13px] font-medium text-[var(--gray-11)]'
+                normalMaxWidthClass='max-w-[180px] sm:max-w-[240px] md:max-w-[320px] lg:max-w-[450px]'
+                text={aiInsight}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Columns 1-4 perfectly aligned across all rows */}
+        <div className='ml-auto flex shrink-0 items-center gap-6 select-none'>
+          {row.isProcessing ? (
+            <div className='relative flex w-[249px] items-center justify-end gap-2 pr-4'>
+              <span className='animate-pulse text-[12px] font-semibold whitespace-nowrap text-[var(--orange-9)]'>
+                {statusText}
               </span>
             </div>
-          </>
-        )}
-      </div>
+          ) : (
+            <>
+              {/* Column 3: Terms & Due Calculation */}
+              <div className='flex w-[110px] shrink-0 flex-col items-center justify-center text-center'>
+                <TermsColumn row={row} />
+              </div>
 
-      {/* Navigation Arrow */}
-      <div className='flex w-6 shrink-0 items-center justify-end select-none'>
-        {!row.isProcessing && (
-          <Icon
-            className='size-5 translate-x-[-4px] text-[var(--gray-8)] opacity-0 transition-all duration-200 group-hover:translate-x-0 group-hover:text-[var(--gray-8)] group-hover:opacity-100'
-            name='tabler:arrow-right'
-          />
-        )}
-      </div>
-    </motion.div>
-  )
-})
+              {/* Column 4: Invoice Value & Date */}
+              <div className='flex w-[115px] shrink-0 flex-col items-end'>
+                <span className='text-[15px] leading-none font-semibold tracking-tight text-[var(--text-primary)] tabular-nums'>
+                  {amount !== null && !Number.isNaN(amount) ? (
+                    `$${amount.toLocaleString(undefined, {
+                      maximumFractionDigits: 2,
+                      minimumFractionDigits: 2,
+                    })}`
+                  ) : (
+                    <span className='text-[14px] font-semibold text-[var(--gray-9)]'>
+                      N/A
+                    </span>
+                  )}
+                </span>
+                <span className='mt-1.5 text-[12px] font-medium text-[var(--gray-10)]'>
+                  {(() => {
+                    const rawDate = extractInvoiceDate(row)
+                    if (rawDate && rawDate !== '-') {
+                      try {
+                        return new Date(rawDate).toLocaleDateString('en-US', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
+                        })
+                      } catch {
+                        return 'May 19, 2026'
+                      }
+                    }
+                    return 'May 19, 2026'
+                  })()}
+                </span>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Navigation Arrow */}
+        <div className='flex w-6 shrink-0 items-center justify-end select-none'>
+          {!row.isProcessing && (
+            <Icon
+              className='size-5 translate-x-[-4px] text-[var(--gray-8)] opacity-0 transition-all duration-200 group-hover:translate-x-0 group-hover:text-[var(--gray-8)] group-hover:opacity-100'
+              name='tabler:arrow-right'
+            />
+          )}
+        </div>
+      </motion.div>
+    )
+  },
+)
 
 const getProceedAction = (item: any, rawWorkflowData: any) => {
   if (!item) return null
@@ -1225,10 +1231,10 @@ const getProceedAction = (item: any, rawWorkflowData: any) => {
     const ruleActions = dynamicRules.map((rule: any) => {
       const actionName = rule.proceedAction || rule.action || 'Submit'
       return {
-        label: actionName,
-        value: actionName,
         color: 'green' as const,
         icon: 'tabler:check',
+        label: actionName,
+        value: actionName,
       }
     })
 
@@ -1237,22 +1243,29 @@ const getProceedAction = (item: any, rawWorkflowData: any) => {
   }
 
   // 2. Find the positive proceed action
-  return actionsList.find((act: any) => {
-    const label = String(act.label || '').toLowerCase()
-    const value = String(act.value || '').toLowerCase()
-    return !label.includes('reject') && !label.includes('cancel') && !label.includes('deny') &&
-      !value.includes('reject') && !value.includes('cancel') && !value.includes('deny')
-  }) || null
+  return (
+    actionsList.find((act: any) => {
+      const label = String(act.label || '').toLowerCase()
+      const value = String(act.value || '').toLowerCase()
+      return (
+        !label.includes('reject') &&
+        !label.includes('cancel') &&
+        !label.includes('deny') &&
+        !value.includes('reject') &&
+        !value.includes('cancel') &&
+        !value.includes('deny')
+      )
+    }) || null
+  )
 }
-
 
 const getActionText = (label: string) => {
   const lower = (label || '').toLowerCase()
-  if (lower === 'approve') return 'Mark as Approved'
-  if (lower === 'verify') return 'Mark as Verified'
-  if (lower === 'complete') return 'Mark as Completed'
-  if (lower === 'submit') return 'Mark as Submitted'
-  return `Mark as ${label}`
+  if (lower === 'approve') return 'Approved'
+  if (lower === 'verify') return 'Verified'
+  if (lower === 'complete') return 'Completed'
+  if (lower === 'submit') return 'Submitted'
+  return `${label}`
 }
 
 interface GridViewProps<TData> {
@@ -1318,7 +1331,12 @@ const GridView = <TData,>({
 
   const actionValidation = useMemo(() => {
     if (selectedItems.length === 0) {
-      return { isValid: true, action: null, mismatchItem: null, mismatchAction: null }
+      return {
+        action: null,
+        isValid: true,
+        mismatchAction: null,
+        mismatchItem: null,
+      }
     }
 
     const firstAction = getProceedAction(selectedItems[0], rawWorkflowData)
@@ -1329,29 +1347,37 @@ const GridView = <TData,>({
       const currentAction = currentAct || { label: 'No action', value: 'none' }
       if (currentAction.value !== refAction.value) {
         return {
-          isValid: false,
           action: firstAction,
+          isValid: false,
+          mismatchAction: currentAct,
           mismatchItem: selectedItems[i],
-          mismatchAction: currentAct
         }
       }
     }
 
-    return { isValid: true, action: firstAction, mismatchItem: null, mismatchAction: null }
+    return {
+      action: firstAction,
+      isValid: true,
+      mismatchAction: null,
+      mismatchItem: null,
+    }
   }, [selectedItems, rawWorkflowData])
 
-  const toggleRowSelection = useCallback((id: string | number, e: React.MouseEvent) => {
-    e.stopPropagation()
-    setSelectedIds((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) {
-        next.delete(id)
-      } else {
-        next.add(id)
-      }
-      return next
-    })
-  }, [])
+  const toggleRowSelection = useCallback(
+    (id: string | number, e: React.MouseEvent) => {
+      e.stopPropagation()
+      setSelectedIds((prev) => {
+        const next = new Set(prev)
+        if (next.has(id)) {
+          next.delete(id)
+        } else {
+          next.add(id)
+        }
+        return next
+      })
+    },
+    [],
+  )
 
   const toggleAllSelection = () => {
     if (selectedIds.size === allItems.length && allItems.length > 0) {
@@ -1494,28 +1520,36 @@ const GridView = <TData,>({
                   </button>
                 ) : (
                   <>
-                    {actionValidation.isValid && actionValidation.action ? (
-                      <button
-                        className='inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-[var(--green-9)] px-3 py-1.5 text-12 font-semibold text-white shadow-sm transition-all hover:bg-[var(--green-10)] hover:shadow-md active:scale-95 animate-in fade-in slide-in-from-right-4 duration-300'
-                        type='button'
-                        onClick={() => {
-                          showToast({
-                            message: `Bulk action "${actionValidation.action.label}" applied to ${selectedIds.size} requests successfully!`,
-                            variant: 'success',
-                          })
-                          exitSelectionMode()
-                        }}
-                      >
-                        <Icon
-                          className='size-4 text-white'
-                          name='tabler:circle-check'
-                        />
-                        {getActionText(actionValidation.action.label)}
-                      </button>
-                    ) : null}
+                    {actionValidation.isValid && actionValidation.action
+                      ? (() => {
+                          // const isVerify = actionValidation.action.label.toLowerCase() === 'verify'
+                          return (
+                            <button
+                              className='inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[var(--green-3)] bg-[var(--green-2)] px-3 py-1.5 text-12 font-semibold text-[var(--green-11)] shadow-sm transition-all hover:bg-[var(--green-3)] hover:shadow-md active:scale-95'
+                              type='button'
+                              onClick={() => {
+                                showToast({
+                                  message: `Bulk action "${actionValidation.action.label}" applied to ${selectedIds.size} requests successfully!`,
+                                  variant: 'success',
+                                })
+                                exitSelectionMode()
+                              }}
+                            >
+                              {/* <Icon
+                              className={cn(
+                                'size-4',
+                                isVerify ? 'text-[var(--green-9)]' : 'text-white'
+                              )}
+                              name='tabler:circle-check'
+                            /> */}
+                              {getActionText(actionValidation.action.label)}
+                            </button>
+                          )
+                        })()
+                      : null}
 
                     {!actionValidation.isValid && (
-                      <div className='flex items-center gap-2 rounded-lg border border-[var(--orange-3)] bg-[var(--orange-2)] px-3 py-1.5 text-12 font-medium text-[var(--orange-11)] max-w-lg md:max-w-xl lg:max-w-2xl animate-in fade-in slide-in-from-right-4 duration-300'>
+                      <div className='animate-in fade-in slide-in-from-right-4 flex max-w-lg items-center gap-2 rounded-lg border border-[var(--orange-3)] bg-[var(--orange-2)] px-3 py-1.5 text-12 font-medium text-[var(--orange-11)] duration-300 md:max-w-xl lg:max-w-2xl'>
                         <Icon
                           className='size-4 shrink-0 text-[var(--orange-9)]'
                           name='tabler:alert-triangle'
@@ -1544,7 +1578,7 @@ const GridView = <TData,>({
                 <TableExport table={table} />
                 <TableReload
                   isReloading={isReloading || false}
-                  onReload={onReload || (() => { })}
+                  onReload={onReload || (() => {})}
                 />
 
                 {/* Custom Actions */}
@@ -1557,7 +1591,7 @@ const GridView = <TData,>({
                     className={cn(
                       'inline-flex cursor-pointer items-center gap-2 rounded-lg bg-[var(--secondary-9)] px-3 py-1.5 text-12 font-semibold text-white shadow-sm transition-all hover:bg-[var(--secondary-10)] hover:shadow-md active:scale-95',
                       a.disabled &&
-                      'cursor-not-allowed opacity-60 hover:bg-[var(--secondary-9)]',
+                        'cursor-not-allowed opacity-60 hover:bg-[var(--secondary-9)]',
                       a.className,
                     )}
                     onClick={a.onClick}

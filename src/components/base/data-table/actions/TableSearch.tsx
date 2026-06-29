@@ -8,6 +8,7 @@ import InputRadioIndicator from '@/components/base/inputs/InputRadioIndicator'
 import Menu from '@/components/base/menu/Menu'
 import MenuItem from '@/components/base/menu/MenuItem'
 import MenuLabel from '@/components/base/menu/MenuLabel'
+import Tooltip from '@/components/base/Tooltip'
 import cn from '@/utils/cn'
 import type { SearchState } from '../types'
 
@@ -24,6 +25,8 @@ const TableSearch = <TData,>({ table }: Props<TData>) => {
   })
 
   const searchState = table.getState().globalFilter as SearchState
+  const [inputValue, setInputValue] = useState(searchState?.value || '')
+
   const columns = table
     .getAllLeafColumns()
     .filter((c) => c.accessorFn && c.getIsVisible() && c.getCanFilter())
@@ -39,6 +42,10 @@ const TableSearch = <TData,>({ table }: Props<TData>) => {
     }
   }, [columns, searchState, table])
 
+  useEffect(() => {
+    setInputValue(searchState?.value || '')
+  }, [searchState?.value])
+
   const handleIdChange = useCallback(
     (id: string) => table.setGlobalFilter({ id, value: searchState.value }),
     [searchState, table],
@@ -49,77 +56,117 @@ const TableSearch = <TData,>({ table }: Props<TData>) => {
     300,
   )
 
-  return (
+  const isExpanded = focused || !!searchState?.value
+
+  const handleContainerClick = () => {
+    if (!isExpanded) {
+      document.getElementById('table-search-input')?.focus()
+    }
+  }
+
+  const containerClasses = cn(
+    'flex h-8 items-center rounded border outline-primary-8 transition-all duration-300 select-none focus-visible:outline-2',
+    isExpanded
+      ? 'focus-within:border-primary w-72 justify-start border-gray-6 bg-surface pr-1 pl-3'
+      : 'w-8 cursor-pointer justify-center border-gray-6 bg-surface text-gray-11 hover:bg-gray-4 hover:text-gray-12 active:scale-95',
+  )
+
+  const searchContent = (
     <div
       aria-label='Table search'
-      className='focus-within:border-primary flex h-8 items-center rounded border border-gray-6 pr-1 pl-3'
+      className={containerClasses}
       ref={ref}
       role='search'
+      onClick={handleContainerClick}
     >
-      <Icon className='text-gray' name='tabler:search' />
+      <Icon
+        name='lucide:search'
+        className={cn(
+          'size-4 shrink-0 transition-colors',
+          isExpanded ? 'text-gray-11' : 'text-gray-11 hover:text-gray-12',
+        )}
+      />
 
-      <div className='h-full flex-1'>
+      <div
+        className={cn(
+          'h-full transition-[width] duration-300',
+          isExpanded ? 'w-full flex-1' : 'w-0 flex-none overflow-hidden',
+        )}
+      >
         <input
           id='table-search-input'
           placeholder='Search'
           type='text'
+          value={inputValue}
           className={cn(
-            'text-gray h-full px-2 text-13 font-medium outline-0 transition-[width] placeholder:text-gray-11',
-            focused ? 'w-56' : 'w-16',
+            'h-full w-full border-0 bg-transparent px-2 text-13 font-medium text-gray-12 outline-0 placeholder:text-gray-11',
+            isExpanded ? 'opacity-100' : 'pointer-events-none opacity-0',
           )}
-          onChange={(e) => handleValueChange(e.target.value)}
+          onChange={(e) => {
+            setInputValue(e.target.value)
+            handleValueChange(e.target.value)
+          }}
           onFocus={() => setFocused(true)}
         />
       </div>
 
-      <Menu
-        offset={{ crossAxis: 4, mainAxis: 8 }}
-        opened={opened}
-        position='bottom-end'
-        width={160}
-        withinPortal={false}
-        target={
-          <IconButton
-            aria-label='Select a column'
-            color='gray'
-            icon='lucide:settings-2'
-            size='sm'
-            variant='ghost'
-            className={cn(
-              'transition-opacity',
-              focused ? 'flex opacity-100' : 'hidden opacity-0',
-            )}
-          />
-        }
-        onChange={() => setOpened(!opened)}
-      >
-        <MenuLabel>Choose column</MenuLabel>
-        <MenuItem
-          label='All'
-          leftSection={
-            <InputRadioIndicator
-              aria-label='Search in all'
-              checked={searchState.id === ''}
+      {isExpanded && (
+        <Menu
+          offset={{ crossAxis: 4, mainAxis: 8 }}
+          opened={opened}
+          position='bottom-end'
+          width={160}
+          withinPortal={false}
+          target={
+            <IconButton
+              aria-label='Select a column'
+              className='transition-opacity duration-300'
+              color='gray'
+              icon='lucide:settings-2'
+              size='sm'
+              variant='ghost'
             />
           }
-          onClick={() => handleIdChange('')}
-        />
-        {columns.map((column) => (
+          onChange={() => setOpened(!opened)}
+        >
+          <MenuLabel>Choose column</MenuLabel>
           <MenuItem
-            key={column.id}
-            label={column.columnDef.meta?.label ?? column.id}
+            label='All'
             leftSection={
               <InputRadioIndicator
-                aria-label={`Search in ${column.columnDef.meta?.label ?? column.id}`}
-                checked={searchState?.id === column.id}
+                aria-label='Search in all'
+                checked={searchState.id === ''}
               />
             }
-            onClick={() => handleIdChange(column.id)}
+            onClick={() => handleIdChange('')}
           />
-        ))}
-      </Menu>
+          {columns.map((column) => (
+            <MenuItem
+              key={column.id}
+              label={column.columnDef.meta?.label ?? column.id}
+              leftSection={
+                <InputRadioIndicator
+                  aria-label={`Search in ${column.columnDef.meta?.label ?? column.id}`}
+                  checked={searchState?.id === column.id}
+                />
+              }
+              onClick={() => handleIdChange(column.id)}
+            />
+          ))}
+        </Menu>
+      )}
     </div>
   )
+
+  if (!isExpanded) {
+    return (
+      <Tooltip content='Search' position='top'>
+        {searchContent}
+      </Tooltip>
+    )
+  }
+
+  return searchContent
 }
 
 TableSearch.displayName = 'TableSearch'

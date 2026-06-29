@@ -1,4 +1,5 @@
 import { SpecialZoomLevel, Viewer, Worker } from '@react-pdf-viewer/core'
+import { searchPlugin } from '@react-pdf-viewer/search'
 import {
   Briefcase,
   Calendar,
@@ -23,9 +24,8 @@ import InputDate from '@/components/base/inputs/InputDate'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import { useAttachments } from '@/pages/requests/hooks/useAttachments'
 import { useComments } from '@/pages/requests/hooks/useComments'
-import requestStore from '@/pages/requests/stores/useRequestStore'
 import '@react-pdf-viewer/core/lib/styles/index.css'
-import { searchPlugin } from '@react-pdf-viewer/search'
+import requestStore from '@/pages/requests/stores/useRequestStore'
 import '@react-pdf-viewer/search/lib/styles/index.css'
 import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
@@ -99,7 +99,6 @@ const getRawVal = (obj: any, pathKey: string) => {
   }
   return obj[pathKey]
 }
-
 
 const getLineItemAmount = (item: any): any => {
   return (
@@ -360,7 +359,11 @@ const getFromFields = (fields: any): string | null => {
   )
 }
 
-const extractPaymentTerms = (row: any, agentData: any, formModel?: any): string => {
+const extractPaymentTerms = (
+  row: any,
+  agentData: any,
+  formModel?: any,
+): string => {
   if (formModel) {
     if (
       formModel['vxnKCXsXkz8_acPogKe'] &&
@@ -440,9 +443,18 @@ const extractDueDate = (row: any, agentData: any, formModel?: any): string => {
     agentData?.['Extracted Invoice JSON']?.invoice_header?.['due_date'] ||
     agentData?.po_matching?.due_date
 
-  if ((!val || val === '-') && (parsedForm['9F6tPVHoRnmONGx3kYJu2'] || formModel?.['9F6tPVHoRnmONGx3kYJu2'])) {
-    const invDateStr = formModel?.['9F6tPVHoRnmONGx3kYJu2'] || parsedForm['9F6tPVHoRnmONGx3kYJu2']
-    const termsStr = formModel?.['vxnKCXsXkz8_acPogKe'] || parsedForm['vxnKCXsXkz8_acPogKe'] || ''
+  if (
+    (!val || val === '-') &&
+    (parsedForm['9F6tPVHoRnmONGx3kYJu2'] ||
+      formModel?.['9F6tPVHoRnmONGx3kYJu2'])
+  ) {
+    const invDateStr =
+      formModel?.['9F6tPVHoRnmONGx3kYJu2'] ||
+      parsedForm['9F6tPVHoRnmONGx3kYJu2']
+    const termsStr =
+      formModel?.['vxnKCXsXkz8_acPogKe'] ||
+      parsedForm['vxnKCXsXkz8_acPogKe'] ||
+      ''
     const numMatch = /\d+/.exec(String(termsStr))
     if (numMatch) {
       const days = parseInt(numMatch[0], 10)
@@ -485,9 +497,9 @@ const computeDueDateInfo = (
   _formModel?: any,
 ): {
   calculationText: string
+  daysText: string
   statusType: 'success' | 'warning' | 'danger' | 'info' | 'default'
   termsDisplay: string
-  daysText: string
 } => {
   const todayStr = new Date().toISOString().split('T')[0]
   const daysDiff = calculateDaysDifference(todayStr, dueDate)
@@ -503,7 +515,8 @@ const computeDueDateInfo = (
   }
 
   let calculationText = 'immediate'
-  let statusType: 'success' | 'warning' | 'danger' | 'info' | 'default' = 'danger'
+  let statusType: 'success' | 'warning' | 'danger' | 'info' | 'default' =
+    'danger'
   let daysText = '0 days'
 
   if (daysDiff === null) {
@@ -532,7 +545,7 @@ const computeDueDateInfo = (
     statusType = 'danger'
   }
 
-  return { calculationText, statusType, termsDisplay, daysText }
+  return { calculationText, daysText, statusType, termsDisplay }
 }
 
 const hasMatterValidationData = (agentData: any) => {
@@ -625,11 +638,11 @@ const AnalysisCard = ({
   onClick,
 }: any) => (
   <div
-    onClick={onClick}
     className={cn(
       'flex min-w-0 flex-1 flex-col gap-1.5 rounded-xl border border-[var(--gray-3)] bg-surface p-2.5 transition-colors hover:bg-[var(--gray-1)]',
-      onClick && 'cursor-pointer'
+      onClick && 'cursor-pointer',
     )}
+    onClick={onClick}
   >
     <div className='flex items-center justify-between'>
       <div
@@ -717,22 +730,27 @@ const FormCard = ({
       />
     )
   } else if (type === 'dropdown') {
-    const selectedOption = typeof localValue === 'string' && localValue !== '-'
-      ? options.find((opt: any) => String(opt.id).toLowerCase() === localValue.toLowerCase()) || (localValue ? { id: localValue, name: localValue } : null)
-      : null
+    const selectedOption =
+      typeof localValue === 'string' && localValue !== '-'
+        ? options.find(
+            (opt: any) =>
+              String(opt.id).toLowerCase() === localValue.toLowerCase(),
+          ) || (localValue ? { id: localValue, name: localValue } : null)
+        : null
 
     inputElement = (
       <InputSelect
         className='w-full font-semibold'
         options={options}
+        searchPlaceholder='Search or add custom value...'
         value={selectedOption}
-        searchable
         creatable
-        searchPlaceholder="Search or add custom value..."
+        searchable
         onChange={(val: any) => {
-          const stringVal = val?.name && (typeof val.id === 'number' && val.id < 0)
-            ? String(val.name)
-            : String(val?.id || val?.name || '')
+          const stringVal =
+            val?.name && typeof val.id === 'number' && val.id < 0
+              ? String(val.name)
+              : String(val?.id || val?.name || '')
           setLocalValue(stringVal)
           onFocus?.(stringVal)
           onChange?.(stringVal)
@@ -790,7 +808,7 @@ const FormCard = ({
                       : 'border-[var(--red-3)] bg-[var(--red-1)] text-[var(--red-9)]',
                 )}
               >
-                {Math.round(Number(score))}% match
+                {Math.round(Number(score))}%
               </span>
             )}
           </div>
@@ -837,7 +855,7 @@ const FormCard = ({
                     : 'border-[var(--red-3)] bg-[var(--red-1)] text-[var(--red-9)]',
               )}
             >
-              {Math.round(Number(score))}% match
+              {Math.round(Number(score))}%
             </span>
           )}
         </div>
@@ -959,32 +977,33 @@ const formatLineItemFields = (item: any, counter: number) => {
 const MOCK_PREVIOUS_BACKORDERS: Record<string, any> = {
   'MSP-REQ-55': {
     detected: true,
+    full_filled: false,
     missing_qty_by_item: [
       {
+        amount: 1050.0,
+        description: 'Office Chair - Ergonomic',
+        invoice_qty: 3,
         po_line_id: '1',
         po_qty: 10,
-        invoice_qty: 3,
-        remaining: 7,
-        description: 'Office Chair - Ergonomic',
         price: 150.0,
-        amount: 1050.0,
         reason: 'SHORT_SHIP',
+        remaining: 7,
       },
       {
+        amount: 45.0,
+        description: 'Delivery Charges',
+        invoice_qty: 0,
         po_line_id: '2',
         po_qty: 1,
-        invoice_qty: 0,
-        remaining: 1,
-        description: 'Delivery Charges',
         price: 45.0,
-        amount: 45.0,
         reason: 'SHORT_SHIP',
-      }
+        remaining: 1,
+      },
     ],
+    reason:
+      'PO #00026648: Initial shipment of Office Chairs had 3 units invoiced, leaving 7 remaining. Ticket MSP-REQ-55 created to track balance.',
     recommendation: 'WAIT_FOR_BALANCE',
-    full_filled: false,
-    reason: 'PO #00026648: Initial shipment of Office Chairs had 3 units invoiced, leaving 7 remaining. Ticket MSP-REQ-55 created to track balance.',
-  }
+  },
 }
 
 const getRecommendationMeta = (rec?: string) => {
@@ -1029,15 +1048,15 @@ const getRecommendationMeta = (rec?: string) => {
   }
 }
 
-
-
 const Overview = (props: any) => {
   const {
     agentData,
     allowedLabels,
     formDefinition,
     formModel,
+    isFourthItem,
     isProcessing,
+    isThirdItem: _isThirdItem,
     processId,
     repositoryId,
     selectedItem,
@@ -1045,8 +1064,6 @@ const Overview = (props: any) => {
     transactionId,
     workflowId,
     setFormModel,
-    isFourthItem,
-    isThirdItem: _isThirdItem,
   } = props
 
   const processingProcesses = requestStore((state) => state.processingProcesses)
@@ -1059,7 +1076,12 @@ const Overview = (props: any) => {
   }, [processingProcesses, selectedItem])
 
   const resolvedInstanceId = useMemo(() => {
-    return String(selectedItem?.workflowInstanceId || selectedItem?.instanceId || processId || '')
+    return String(
+      selectedItem?.workflowInstanceId ||
+        selectedItem?.instanceId ||
+        processId ||
+        '',
+    )
   }, [selectedItem, processId])
 
   const isCurrentlyProcessing =
@@ -1167,7 +1189,9 @@ const Overview = (props: any) => {
 
   const [activeTab, setActiveTab] = useState('summary')
   const [showBackOrderDetailFull, setShowBackOrderDetailFull] = useState(false)
-  const [activeBackOrderTab, setActiveBackOrderTab] = useState<'current' | string>('current')
+  const [activeBackOrderTab, setActiveBackOrderTab] = useState<
+    'current' | string
+  >('current')
   const [selectedFile, setSelectedFile] = useState<any>(null)
 
   useEffect(() => {
@@ -1175,7 +1199,11 @@ const Overview = (props: any) => {
     console.log('formModel:', formModel)
     console.log('allowedLabels:', allowedLabels)
   }, [formModel, allowedLabels])
-  const { data: attachmentData } = useAttachments(workflowId, resolvedInstanceId, true)
+  const { data: attachmentData } = useAttachments(
+    workflowId,
+    resolvedInstanceId,
+    true,
+  )
   const {
     data: commentsData,
     isLoading: isLoadingComments,
@@ -1184,8 +1212,15 @@ const Overview = (props: any) => {
 
   const [lineItems, setLineItems] = useState<any[]>([])
 
-  const searchPluginInstance = searchPlugin()
-  const { highlight, clearHighlights } = searchPluginInstance
+  const currentSearchPluginInstance = searchPlugin()
+  const searchPluginInstanceRef = useRef<any>(null)
+  if (!searchPluginInstanceRef.current) {
+    searchPluginInstanceRef.current = { ...currentSearchPluginInstance }
+  } else {
+    Object.assign(searchPluginInstanceRef.current, currentSearchPluginInstance)
+  }
+  const searchPluginInstance = searchPluginInstanceRef.current
+  const { clearHighlights, highlight } = searchPluginInstance
 
   const handleFieldFocus = (value: any, _fieldKey?: string) => {
     const stringVal = String(value || '').trim()
@@ -1197,7 +1232,10 @@ const Overview = (props: any) => {
   }
 
   const [selectedText, setSelectedText] = useState<string | null>(null)
-  const [menuPosition, setMenuPosition] = useState<{ x: number; y: number } | null>(null)
+  const [menuPosition, setMenuPosition] = useState<{
+    x: number
+    y: number
+  } | null>(null)
   const [searchFilter, setSearchFilter] = useState<string>('')
 
   const viewerContainerRef = useRef<HTMLDivElement>(null)
@@ -1311,20 +1349,20 @@ const Overview = (props: any) => {
     if (isFourthItem) {
       return {
         detected: true,
-        previous_id: ['MSP-REQ-55'],
-        recommendation: 'WAIT_FOR_BALANCE',
         missing_qty_by_item: [
           {
+            amount: 1050.0,
+            description: 'Office Chair - Ergonomic',
+            invoice_qty: 3,
             po_line_id: '1',
             po_qty: 10,
-            invoice_qty: 3,
-            remaining: 7,
-            description: 'Office Chair - Ergonomic',
             price: 150.0,
-            amount: 1050.0,
             reason: 'SHORT_SHIP',
-          }
-        ]
+            remaining: 7,
+          },
+        ],
+        previous_id: ['MSP-REQ-55'],
+        recommendation: 'WAIT_FOR_BALANCE',
       }
     }
     return agentData?.back_order || agentData?.backorder
@@ -1499,8 +1537,6 @@ const Overview = (props: any) => {
     }),
     [],
   )
-
-
 
   useEffect(() => {
     // Reset viewer state when request changes
@@ -1731,9 +1767,9 @@ const Overview = (props: any) => {
       <div className='flex min-h-0 flex-1 overflow-hidden'>
         {/* Left Side - Document Viewer (40% Width) */}
         <div
+          className='relative flex w-[40%] flex-col overflow-hidden border-r border-[var(--gray-3)]'
           ref={viewerContainerRef}
           onMouseUp={handleMouseUp}
-          className='relative flex w-[40%] flex-col overflow-hidden border-r border-[var(--gray-3)]'
         >
           {isViewerLoading && (
             <div className='absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 bg-[var(--gray-1)]'>
@@ -1747,52 +1783,58 @@ const Overview = (props: any) => {
           {previewContent}
 
           {isScanning && (
-            <div className='absolute inset-0 pointer-events-none z-10 overflow-hidden'>
+            <div className='pointer-events-none absolute inset-0 z-10 overflow-hidden'>
               {/* Ambient scanning tint overlay */}
-              <div className='absolute inset-0 bg-[color-mix(in srgb,var(--primary-9)_3%,transparent)]' />
-              
+              <div className='bg-[color-mix(in srgb,var(--primary-9)_3%,transparent)] absolute inset-0' />
+
               {/* Scanning line moving up and down */}
-              <div className='absolute left-0 right-0 h-[2px] bg-[var(--primary-9)] shadow-[0_0_8px_var(--primary-9),_0_0_16px_var(--primary-9)] animate-scan' />
+              <div className='animate-scan absolute right-0 left-0 h-[2px] bg-[var(--primary-9)] shadow-[0_0_8px_var(--primary-9),_0_0_16px_var(--primary-9)]' />
             </div>
           )}
 
           {menuPosition && selectedText && (
             <div
+              className='animate-in fade-in slide-in-from-top-1 absolute z-50 flex max-h-60 w-56 flex-col rounded-lg border border-[var(--gray-3)] bg-surface py-1 shadow-lg duration-200'
               ref={dropdownRef}
+              style={{
+                left: `${menuPosition.x}px`,
+                top: `${menuPosition.y}px`,
+              }}
               onMouseDown={(e) => e.stopPropagation()}
               onMouseUp={(e) => e.stopPropagation()}
-              style={{
-                top: `${menuPosition.y}px`,
-                left: `${menuPosition.x}px`,
-              }}
-              className='absolute z-50 flex max-h-60 w-56 flex-col rounded-lg border border-[var(--gray-3)] bg-surface py-1 shadow-lg animate-in fade-in slide-in-from-top-1 duration-200'
             >
               {/* Assign Header */}
-              <div className='border-b border-[var(--gray-3)] px-3 py-1.5 text-[10px] font-semibold text-[var(--gray-11)] bg-[var(--gray-1)]/50'>
-                Assign "<span className='font-bold text-[var(--gray-13)] truncate inline-block max-w-[140px] align-bottom'>{selectedText}</span>" to:
+              <div className='border-b border-[var(--gray-3)] bg-[var(--gray-1)]/50 px-3 py-1.5 text-[10px] font-semibold text-[var(--gray-11)]'>
+                Assign "
+                <span className='inline-block max-w-[140px] truncate align-bottom font-bold text-[var(--gray-13)]'>
+                  {selectedText}
+                </span>
+                " to:
               </div>
 
               {/* Search Filter Input */}
-              <div className='px-2 py-1.5 border-b border-[var(--gray-3)]'>
+              <div className='border-b border-[var(--gray-3)] px-2 py-1.5'>
                 <input
-                  type='text'
+                  className='w-full rounded border border-[var(--gray-3)] bg-transparent px-2 py-1 text-xs text-[var(--gray-13)] placeholder:font-normal focus:border-[var(--primary-3)] focus:outline-none'
                   placeholder='Filter fields...'
+                  type='text'
                   value={searchFilter}
                   onChange={(e) => setSearchFilter(e.target.value)}
-                  className='w-full rounded border border-[var(--gray-3)] bg-transparent px-2 py-1 text-xs text-[var(--gray-13)] placeholder:font-normal focus:border-[var(--primary-3)] focus:outline-none'
                   onClick={(e) => e.stopPropagation()}
                 />
               </div>
 
               {/* Fields List */}
-              <div className='flex-1 overflow-y-auto max-h-40 min-h-[40px] px-1 py-1'>
+              <div className='max-h-40 min-h-[40px] flex-1 overflow-y-auto px-1 py-1'>
                 {eligibleFields
-                  .filter((key) => key.toLowerCase().includes(searchFilter.toLowerCase()))
+                  .filter((key) =>
+                    key.toLowerCase().includes(searchFilter.toLowerCase()),
+                  )
                   .map((key) => (
                     <button
+                      className='w-full rounded px-2.5 py-1.5 text-left text-xs font-semibold text-[var(--gray-12)] transition-colors hover:bg-[var(--primary-3)] hover:text-[var(--primary-9)] active:scale-95'
                       key={key}
                       type='button'
-                      className='w-full rounded px-2.5 py-1.5 text-left text-xs font-semibold text-[var(--gray-12)] hover:bg-[var(--primary-3)] hover:text-[var(--primary-9)] transition-colors active:scale-95'
                       onClick={(e) => {
                         e.stopPropagation()
                         handleFieldSelect(key)
@@ -1801,8 +1843,10 @@ const Overview = (props: any) => {
                       {key}
                     </button>
                   ))}
-                {eligibleFields.filter((key) => key.toLowerCase().includes(searchFilter.toLowerCase())).length === 0 && (
-                  <div className='px-3 py-2 text-center text-xs text-[var(--gray-9)] font-medium'>
+                {eligibleFields.filter((key) =>
+                  key.toLowerCase().includes(searchFilter.toLowerCase()),
+                ).length === 0 && (
+                  <div className='px-3 py-2 text-center text-xs font-medium text-[var(--gray-9)]'>
                     No matching fields
                   </div>
                 )}
@@ -1812,62 +1856,80 @@ const Overview = (props: any) => {
         </div>
 
         {/* Right Side - Analysis & Data (60% Width) */}
-        <div className='flex min-h-0 flex-1 flex-col bg-[var(--gray-1)] overflow-hidden'>
+        <div className='flex min-h-0 flex-1 flex-col overflow-hidden bg-[var(--gray-1)]'>
           <div className='flex min-h-0 flex-1 flex-col overflow-hidden'>
             {!selectedItem || Object.keys(selectedItem).length === 0 ? (
               <SummarySkeleton />
             ) : showBackOrderDetailFull ? (
-              <div className='flex min-h-0 flex-1 flex-col overflow-hidden bg-surface animate-in fade-in slide-in-from-left-4 duration-300'>
+              <div className='animate-in fade-in slide-in-from-left-4 flex min-h-0 flex-1 flex-col overflow-hidden bg-surface duration-300'>
                 {/* Header with list icon and dot-actions */}
-                <div className='flex items-center justify-between border-b border-[var(--gray-3)] bg-[var(--gray-1)] px-6 py-3 shrink-0'>
+                <div className='flex shrink-0 items-center justify-between border-b border-[var(--gray-3)] bg-[var(--gray-1)] px-6 py-3'>
                   <div className='flex items-center gap-2.5'>
-                    <Icon className='h-4 w-4 text-[var(--gray-11)]' name='tabler:list-check' />
-                    <h3 className='text-sm font-bold text-[var(--gray-13)]'>PO line items vs invoices</h3>
+                    <Icon
+                      className='h-4 w-4 text-[var(--gray-11)]'
+                      name='tabler:list-check'
+                    />
+                    <h3 className='text-sm font-bold text-[var(--gray-13)]'>
+                      PO line items vs invoices
+                    </h3>
                   </div>
                   <div className='flex items-center gap-2'>
                     {/* Recommendation badge in header */}
                     {(() => {
-                      const currentRec = activeBackOrderTab === 'current'
-                        ? backOrder?.recommendation
-                        : MOCK_PREVIOUS_BACKORDERS[activeBackOrderTab]?.recommendation
+                      const currentRec =
+                        activeBackOrderTab === 'current'
+                          ? backOrder?.recommendation
+                          : MOCK_PREVIOUS_BACKORDERS[activeBackOrderTab]
+                              ?.recommendation
                       const recMeta = getRecommendationMeta(currentRec)
                       return (
-                        <span className={cn('inline-flex items-center gap-1 rounded px-2 py-0.5 text-[9px] font-bold shadow-xs border mr-2', recMeta.chip)}>
-                          <Icon className='h-3 w-3 animate-pulse' name={recMeta.icon} />
+                        <span
+                          className={cn(
+                            'mr-2 inline-flex items-center gap-1 rounded border px-2 py-0.5 text-[9px] font-bold shadow-xs',
+                            recMeta.chip,
+                          )}
+                        >
+                          <Icon
+                            className='h-3 w-3 animate-pulse'
+                            name={recMeta.icon}
+                          />
                           {recMeta.label}
                         </span>
                       )
                     })()}
-                    <button className='rounded-lg p-1.5 text-[var(--gray-11)] hover:bg-[var(--gray-2)] hover:text-[var(--gray-13)] active:scale-95 transition-all'>
+                    <button className='rounded-lg p-1.5 text-[var(--gray-11)] transition-all hover:bg-[var(--gray-2)] hover:text-[var(--gray-13)] active:scale-95'>
                       <Icon className='h-4 w-4' name='tabler:dots' />
                     </button>
                   </div>
                 </div>
 
                 {/* Sub-header with back button and active tabs */}
-                <div className='shrink-0 border-b border-[var(--gray-3)] bg-[var(--gray-1)] px-6 flex items-center gap-4'>
+                <div className='flex shrink-0 items-center gap-4 border-b border-[var(--gray-3)] bg-[var(--gray-1)] px-6'>
                   <button
+                    className='group flex items-center gap-1 py-3 text-xs font-semibold text-[var(--gray-11)] transition-all hover:text-[var(--gray-13)] active:scale-95'
+                    title='Back to Overview'
                     onClick={() => {
                       setShowBackOrderDetailFull(false)
                       setActiveTab('summary')
                     }}
-                    className='group flex items-center gap-1 py-3 text-xs font-semibold text-[var(--gray-11)] hover:text-[var(--gray-13)] active:scale-95 transition-all'
-                    title='Back to Overview'
                   >
-                    <Icon className='h-4 w-4 transition-transform group-hover:-translate-x-0.5' name='tabler:arrow-left' />
+                    <Icon
+                      className='h-4 w-4 transition-transform group-hover:-translate-x-0.5'
+                      name='tabler:arrow-left'
+                    />
                     <span>Back</span>
                   </button>
                   <div className='h-4 w-[1px] bg-[var(--gray-3)]' />
                   <div className='flex items-center gap-4'>
                     {/* Current Invoice tab */}
                     <button
-                      onClick={() => setActiveBackOrderTab('current')}
                       className={cn(
-                        'border-b-2 pb-2.5 pt-2 px-1 text-xs font-semibold transition-all -mb-[1px]',
+                        '-mb-[1px] border-b-2 px-1 pt-2 pb-2.5 text-xs font-semibold transition-all',
                         activeBackOrderTab === 'current'
-                          ? 'border-[var(--teal-9)] text-[var(--teal-9)] font-bold'
-                          : 'border-transparent text-[var(--gray-11)] hover:text-[var(--gray-13)]'
+                          ? 'border-[var(--teal-9)] font-bold text-[var(--teal-9)]'
+                          : 'border-transparent text-[var(--gray-11)] hover:text-[var(--gray-13)]',
                       )}
+                      onClick={() => setActiveBackOrderTab('current')}
                     >
                       INV-4402 (Current)
                     </button>
@@ -1875,13 +1937,13 @@ const Overview = (props: any) => {
                     {backOrder?.previous_id?.map((prevId: string) => (
                       <button
                         key={prevId}
-                        onClick={() => setActiveBackOrderTab(prevId)}
                         className={cn(
-                          'border-b-2 pb-2.5 pt-2 px-1 text-xs font-semibold transition-all -mb-[1px]',
+                          '-mb-[1px] border-b-2 px-1 pt-2 pb-2.5 text-xs font-semibold transition-all',
                           activeBackOrderTab === prevId
-                            ? 'border-[var(--teal-9)] text-[var(--teal-9)] font-bold'
-                            : 'border-transparent text-[var(--gray-11)] hover:text-[var(--gray-13)]'
+                            ? 'border-[var(--teal-9)] font-bold text-[var(--teal-9)]'
+                            : 'border-transparent text-[var(--gray-11)] hover:text-[var(--gray-13)]',
                         )}
+                        onClick={() => setActiveBackOrderTab(prevId)}
                       >
                         INV-4401 ({prevId})
                       </button>
@@ -1891,59 +1953,97 @@ const Overview = (props: any) => {
 
                 {/* Metrics Summary Row - 4 equal columns split by lines */}
                 {(() => {
-                  const currentData = activeBackOrderTab === 'current'
-                    ? backOrder
-                    : MOCK_PREVIOUS_BACKORDERS[activeBackOrderTab] || {}
+                  const currentData =
+                    activeBackOrderTab === 'current'
+                      ? backOrder
+                      : MOCK_PREVIOUS_BACKORDERS[activeBackOrderTab] || {}
                   const items = currentData?.missing_qty_by_item || []
 
                   const currencySymbol = agentData?.po_row?.Currency || '$'
-                  const invoiceAmount = items.reduce((sum: number, r: any) => sum + ((r.invoice_qty || 0) * (r.price || 0)), 0)
-                  const linesReceivedCount = items.filter((r: any) => (r.invoice_qty || 0) > 0).length
+                  const invoiceAmount = items.reduce(
+                    (sum: number, r: any) =>
+                      sum + (r.invoice_qty || 0) * (r.price || 0),
+                    0,
+                  )
+                  const linesReceivedCount = items.filter(
+                    (r: any) => (r.invoice_qty || 0) > 0,
+                  ).length
                   const totalLines = items.length
-                  const pendingItemsCount = items.filter((r: any) => (r.remaining || 0) > 0).length
-                  const stillPendingVal = items.reduce((sum: number, r: any) => sum + ((r.remaining || 0) * (r.price || 0)), 0)
+                  const pendingItemsCount = items.filter(
+                    (r: any) => (r.remaining || 0) > 0,
+                  ).length
+                  const stillPendingVal = items.reduce(
+                    (sum: number, r: any) =>
+                      sum + (r.remaining || 0) * (r.price || 0),
+                    0,
+                  )
 
                   return (
-                    <div className='grid grid-cols-4 border-b border-[var(--gray-3)] bg-surface text-xs shrink-0 divide-x divide-[var(--gray-3)]'>
-                      <div className='p-4 space-y-1'>
-                        <p className='text-[10px] font-bold text-[var(--gray-10)] uppercase tracking-wider'>INVOICE AMOUNT</p>
-                        <p className='text-base font-extrabold text-[var(--gray-13)]'>{currencySymbol}{invoiceAmount.toFixed(2)}</p>
+                    <div className='grid shrink-0 grid-cols-4 divide-x divide-[var(--gray-3)] border-b border-[var(--gray-3)] bg-surface text-xs'>
+                      <div className='space-y-1 p-4'>
+                        <p className='text-[10px] font-bold tracking-wider text-[var(--gray-10)] uppercase'>
+                          INVOICE AMOUNT
+                        </p>
+                        <p className='text-base font-extrabold text-[var(--gray-13)]'>
+                          {currencySymbol}
+                          {invoiceAmount.toFixed(2)}
+                        </p>
                       </div>
-                      <div className='p-4 space-y-1'>
-                        <p className='text-[10px] font-bold text-[var(--gray-10)] uppercase tracking-wider'>LINES RECEIVED</p>
-                        <p className='text-base font-extrabold text-[var(--teal-9)]'>{linesReceivedCount} of {totalLines}</p>
+                      <div className='space-y-1 p-4'>
+                        <p className='text-[10px] font-bold tracking-wider text-[var(--gray-10)] uppercase'>
+                          LINES RECEIVED
+                        </p>
+                        <p className='text-base font-extrabold text-[var(--teal-9)]'>
+                          {linesReceivedCount} of {totalLines}
+                        </p>
                       </div>
-                      <div className='p-4 space-y-1'>
-                        <p className='text-[10px] font-bold text-[var(--gray-10)] uppercase tracking-wider'>PENDING ITEMS</p>
-                        <p className='text-base font-extrabold text-[var(--orange-9)]'>{pendingItemsCount} item{pendingItemsCount !== 1 ? 's' : ''}</p>
+                      <div className='space-y-1 p-4'>
+                        <p className='text-[10px] font-bold tracking-wider text-[var(--gray-10)] uppercase'>
+                          PENDING ITEMS
+                        </p>
+                        <p className='text-base font-extrabold text-[var(--orange-9)]'>
+                          {pendingItemsCount} item
+                          {pendingItemsCount !== 1 ? 's' : ''}
+                        </p>
                       </div>
-                      <div className='p-4 space-y-1'>
-                        <p className='text-[10px] font-bold text-[var(--gray-10)] uppercase tracking-wider'>STILL PENDING</p>
-                        <p className='text-base font-extrabold text-[var(--orange-9)]'>{currencySymbol}{stillPendingVal.toFixed(2)}</p>
+                      <div className='space-y-1 p-4'>
+                        <p className='text-[10px] font-bold tracking-wider text-[var(--gray-10)] uppercase'>
+                          STILL PENDING
+                        </p>
+                        <p className='text-base font-extrabold text-[var(--orange-9)]'>
+                          {currencySymbol}
+                          {stillPendingVal.toFixed(2)}
+                        </p>
                       </div>
                     </div>
                   )
                 })()}
 
                 {/* Main Content Area */}
-                <div className='scrollbar flex-1 overflow-y-auto p-6 space-y-5 bg-[var(--gray-1)]'>
+                <div className='scrollbar flex-1 space-y-5 overflow-y-auto bg-[var(--gray-1)] p-6'>
                   {/* Status/Explanation banner */}
                   {(() => {
-                    const currentData = activeBackOrderTab === 'current'
-                      ? backOrder
-                      : MOCK_PREVIOUS_BACKORDERS[activeBackOrderTab] || {}
+                    const currentData =
+                      activeBackOrderTab === 'current'
+                        ? backOrder
+                        : MOCK_PREVIOUS_BACKORDERS[activeBackOrderTab] || {}
 
                     return (
-                      <div className='rounded-xl border border-[var(--orange-3)] bg-[var(--orange-1)]/30 p-4 animate-in fade-in slide-in-from-top-2 duration-300 shadow-xs'>
+                      <div className='animate-in fade-in slide-in-from-top-2 rounded-xl border border-[var(--orange-3)] bg-[var(--orange-1)]/30 p-4 shadow-xs duration-300'>
                         <div className='flex items-start gap-3'>
-                          <div className='mt-0.5 rounded bg-[var(--orange-2)] p-1.5 text-[var(--orange-9)] shrink-0'>
-                            <Icon className='h-4 w-4' name='tabler:info-circle' />
+                          <div className='mt-0.5 shrink-0 rounded bg-[var(--orange-2)] p-1.5 text-[var(--orange-9)]'>
+                            <Icon
+                              className='h-4 w-4'
+                              name='tabler:info-circle'
+                            />
                           </div>
                           <div className='space-y-1'>
                             <h4 className='text-xs font-bold text-[var(--orange-10)]'>
-                              {activeBackOrderTab === 'current' ? 'Current Invoice Back Order Status' : `Prior Ticket ${activeBackOrderTab} Details`}
+                              {activeBackOrderTab === 'current'
+                                ? 'Current Invoice Back Order Status'
+                                : `Prior Ticket ${activeBackOrderTab} Details`}
                             </h4>
-                            <p className='text-xs leading-relaxed text-[var(--gray-12)] font-medium'>
+                            <p className='text-xs leading-relaxed font-medium text-[var(--gray-12)]'>
                               {currentData?.reason}
                             </p>
                           </div>
@@ -1954,33 +2054,50 @@ const Overview = (props: any) => {
 
                   {/* Items Table with Circular progress matching percentage */}
                   {(() => {
-                    const currentData = activeBackOrderTab === 'current'
-                      ? backOrder
-                      : MOCK_PREVIOUS_BACKORDERS[activeBackOrderTab] || {}
+                    const currentData =
+                      activeBackOrderTab === 'current'
+                        ? backOrder
+                        : MOCK_PREVIOUS_BACKORDERS[activeBackOrderTab] || {}
 
                     const items = currentData?.missing_qty_by_item || []
                     const currencySymbol = agentData?.po_row?.Currency || '$'
 
                     // Totals
-                    const totalRemaining = items.reduce((sum: number, r: any) => sum + (r.remaining || 0), 0)
-                    const totalInvoiceAmt = items.reduce((sum: number, r: any) => sum + ((r.invoice_qty || 0) * (r.price || 0)), 0)
+                    const totalRemaining = items.reduce(
+                      (sum: number, r: any) => sum + (r.remaining || 0),
+                      0,
+                    )
+                    const totalInvoiceAmt = items.reduce(
+                      (sum: number, r: any) =>
+                        sum + (r.invoice_qty || 0) * (r.price || 0),
+                      0,
+                    )
 
                     return (
-                      <div className='overflow-hidden rounded-xl border border-[var(--gray-3)] bg-surface shadow-xs animate-in fade-in duration-300'>
+                      <div className='animate-in fade-in overflow-hidden rounded-xl border border-[var(--gray-3)] bg-surface shadow-xs duration-300'>
                         <div className='overflow-x-auto'>
                           <table className='w-full border-collapse text-left text-xs'>
                             <thead className='border-b border-[var(--gray-3)] bg-[var(--gray-1)]'>
                               <tr className='text-[10px] font-bold tracking-wider text-[var(--gray-9)] uppercase'>
                                 <th className='px-4 py-3.5'>LINE ITEM</th>
-                                <th className='px-4 py-3.5 text-center'>PO QTY</th>
-                                <th className='px-4 py-3.5 text-center'>RECV QTY</th>
-                                <th className='px-4 py-3.5 text-center'>BALANCE QTY</th>
-                                <th className='px-4 py-3.5 text-right'>INV AMOUNT</th>
+                                <th className='px-4 py-3.5 text-center'>
+                                  PO QTY
+                                </th>
+                                <th className='px-4 py-3.5 text-center'>
+                                  RECV QTY
+                                </th>
+                                <th className='px-4 py-3.5 text-center'>
+                                  BALANCE QTY
+                                </th>
+                                <th className='px-4 py-3.5 text-right'>
+                                  INV AMOUNT
+                                </th>
                               </tr>
                             </thead>
                             <tbody className='divide-y divide-[var(--gray-2)] bg-surface'>
                               {items.map((row: any, idx: number) => {
-                                const desc = row.description?.trim() || 'Unmapped item'
+                                const desc =
+                                  row.description?.trim() || 'Unmapped item'
                                 const invQty = row.invoice_qty ?? 0
                                 const poQty = row.po_qty ?? 1
                                 const price = row.price ?? 0
@@ -1989,64 +2106,99 @@ const Overview = (props: any) => {
 
                                 // Dynamic percent calculation
                                 const totalReceived = poQty - remaining
-                                const pct = Math.max(0, Math.min(100, Math.round((totalReceived / poQty) * 100)))
+                                const pct = Math.max(
+                                  0,
+                                  Math.min(
+                                    100,
+                                    Math.round((totalReceived / poQty) * 100),
+                                  ),
+                                )
 
                                 return (
-                                  <tr className='transition-colors hover:bg-[var(--gray-1)]/50' key={idx}>
-                                    <td className='px-4 py-3 font-semibold text-[var(--gray-13)] flex items-center gap-3.5'>
+                                  <tr
+                                    className='transition-colors hover:bg-[var(--gray-1)]/50'
+                                    key={idx}
+                                  >
+                                    <td className='flex items-center gap-3.5 px-4 py-3 font-semibold text-[var(--gray-13)]'>
                                       {/* Circular Progress Badge */}
-                                      <div className={cn(
-                                        'h-8 w-8 rounded-full border-2 flex items-center justify-center text-[9px] font-black shrink-0 transition-colors',
-                                        pct === 100
-                                          ? 'border-[var(--green-5)] bg-[var(--green-1)]/30 text-[var(--green-10)]'
-                                          : pct > 0
-                                            ? 'border-[var(--orange-5)] bg-[var(--orange-1)]/30 text-[var(--orange-10)]'
-                                            : 'border-[var(--gray-4)] bg-[var(--gray-1)]/30 text-[var(--gray-11)]'
-                                      )}>
+                                      <div
+                                        className={cn(
+                                          'flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 text-[9px] font-black transition-colors',
+                                          pct === 100
+                                            ? 'border-[var(--green-5)] bg-[var(--green-1)]/30 text-[var(--green-10)]'
+                                            : pct > 0
+                                              ? 'border-[var(--orange-5)] bg-[var(--orange-1)]/30 text-[var(--orange-10)]'
+                                              : 'border-[var(--gray-4)] bg-[var(--gray-1)]/30 text-[var(--gray-11)]',
+                                        )}
+                                      >
                                         {pct}%
                                       </div>
                                       <div>
-                                        <div className='font-bold text-[var(--gray-13)] text-xs'>{desc}</div>
-                                        <div className='text-[10px] font-medium text-[var(--gray-9)] mt-0.5'>
-                                          PO Line: {row.po_line_id || '—'} • Price: {currencySymbol}{price.toFixed(2)}
+                                        <div className='text-xs font-bold text-[var(--gray-13)]'>
+                                          {desc}
+                                        </div>
+                                        <div className='mt-0.5 text-[10px] font-medium text-[var(--gray-9)]'>
+                                          PO Line: {row.po_line_id || '—'} •
+                                          Price: {currencySymbol}
+                                          {price.toFixed(2)}
                                         </div>
                                       </div>
                                     </td>
                                     <td className='px-4 py-3 text-center font-bold text-[var(--gray-13)]'>
                                       {poQty}
                                     </td>
-                                    <td className={cn(
-                                      'px-4 py-3 text-center font-bold',
-                                      invQty > 0 ? 'text-[var(--teal-9)]' : 'text-[var(--gray-9)] font-medium'
-                                    )}>
+                                    <td
+                                      className={cn(
+                                        'px-4 py-3 text-center font-bold',
+                                        invQty > 0
+                                          ? 'text-[var(--teal-9)]'
+                                          : 'font-medium text-[var(--gray-9)]',
+                                      )}
+                                    >
                                       {invQty > 0 ? invQty : '—'}
                                     </td>
                                     <td className='px-4 py-3 text-center font-bold'>
                                       {remaining > 0 ? (
-                                        <span className='text-[var(--orange-9)]'>{remaining} pending</span>
+                                        <span className='text-[var(--orange-9)]'>
+                                          {remaining} pending
+                                        </span>
                                       ) : (
-                                        <span className='text-[var(--gray-11)]'>0</span>
+                                        <span className='text-[var(--gray-11)]'>
+                                          0
+                                        </span>
                                       )}
                                     </td>
-                                    <td className={cn(
-                                      'px-4 py-3 text-right font-bold',
-                                      receivedVal > 0 ? 'text-[var(--teal-10)]' : 'text-[var(--gray-9)] font-medium'
-                                    )}>
-                                      {receivedVal > 0 ? `${currencySymbol}${receivedVal.toFixed(2)}` : '—'}
+                                    <td
+                                      className={cn(
+                                        'px-4 py-3 text-right font-bold',
+                                        receivedVal > 0
+                                          ? 'text-[var(--teal-10)]'
+                                          : 'font-medium text-[var(--gray-9)]',
+                                      )}
+                                    >
+                                      {receivedVal > 0
+                                        ? `${currencySymbol}${receivedVal.toFixed(2)}`
+                                        : '—'}
                                     </td>
                                   </tr>
                                 )
                               })}
                             </tbody>
-                            <tfoot className='border-t border-[var(--gray-3)] bg-[var(--gray-1)] font-semibold text-[var(--gray-11)] text-[11px]'>
+                            <tfoot className='border-t border-[var(--gray-3)] bg-[var(--gray-1)] text-[11px] font-semibold text-[var(--gray-11)]'>
                               <tr className='h-11'>
-                                <td className='px-4 py-3 font-medium'>{items.length} line items</td>
+                                <td className='px-4 py-3 font-medium'>
+                                  {items.length} line items
+                                </td>
                                 <td className='px-4 py-3' colSpan={2} />
                                 <td className='px-4 py-3 text-center font-bold text-[var(--orange-10)]'>
-                                  Total pending qty: <span className='underline underline-offset-4 decoration-2 decoration-[var(--orange-4)]'>{totalRemaining}</span>
+                                  Total pending qty:{' '}
+                                  <span className='underline decoration-[var(--orange-4)] decoration-2 underline-offset-4'>
+                                    {totalRemaining}
+                                  </span>
                                 </td>
                                 <td className='px-4 py-3 text-right font-black text-[var(--gray-13)]'>
-                                  Inv total: {currencySymbol}{totalInvoiceAmt.toFixed(2)}
+                                  Inv total: {currencySymbol}
+                                  {totalInvoiceAmt.toFixed(2)}
                                 </td>
                               </tr>
                             </tfoot>
@@ -2084,8 +2236,11 @@ const Overview = (props: any) => {
                       return (
                         <AnalysisCard
                           icon={Paperclip}
-                          isLoading={isCurrentlyProcessing && (!poVal || poVal === '-' || poVal === 'N/A')}
                           title='PO Matching'
+                          isLoading={
+                            isCurrentlyProcessing &&
+                            (!poVal || poVal === '-' || poVal === 'N/A')
+                          }
                           status={
                             poVal && poVal !== '-' && poVal !== 'N/A'
                               ? 'Matched'
@@ -2106,8 +2261,10 @@ const Overview = (props: any) => {
                     })()}
                     <AnalysisCard
                       icon={Layers}
-                      isLoading={isCurrentlyProcessing && !agentData?.duplicate_check}
                       title='Duplicate Detection'
+                      isLoading={
+                        isCurrentlyProcessing && !agentData?.duplicate_check
+                      }
                       status={
                         agentData?.duplicate_check?.status || 'No Duplicate'
                       }
@@ -2123,33 +2280,48 @@ const Overview = (props: any) => {
                     />
                     <AnalysisCard
                       icon={Store}
-                      isLoading={isCurrentlyProcessing && (!supplierValidationDisplay?.value || supplierValidationDisplay.value === 'No supplier ID found')}
                       status={supplierValidationDisplay.status}
                       statusType={supplierValidationDisplay.statusType}
                       title='Supplier Verification'
                       value={supplierValidationDisplay.value}
+                      isLoading={
+                        isCurrentlyProcessing &&
+                        (!supplierValidationDisplay?.value ||
+                          supplierValidationDisplay.value ===
+                            'No supplier ID found')
+                      }
                     />
                     {showGlValidation && glValidationDisplay && (
                       <AnalysisCard
                         icon={ListFilter}
-                        isLoading={isCurrentlyProcessing && (!glValidationDisplay?.account || glValidationDisplay.account === 'Not Available')}
                         status={glValidationDisplay.status}
                         statusType={glValidationDisplay.statusType}
                         title='GL Account Matching'
+                        isLoading={
+                          isCurrentlyProcessing &&
+                          (!glValidationDisplay?.account ||
+                            glValidationDisplay.account === 'Not Available')
+                        }
                         value={
                           glValidationDisplay.account ||
                           glValidationDisplay.status
                         }
                       />
                     )}
-                    {showBackOrder && backOrderDisplay && backOrderDisplay.status === 'Detected' ? (
+                    {showBackOrder &&
+                    backOrderDisplay &&
+                    backOrderDisplay.status === 'Detected' ? (
                       <AnalysisCard
                         icon={PackageX}
-                        isLoading={isCurrentlyProcessing && (!backOrderDisplay?.value || backOrderDisplay.value === '---')}
                         status={backOrderDisplay.status}
                         statusType={backOrderDisplay.statusType}
                         title='Back Order'
                         value={backOrderDisplay.value}
+                        isLoading={
+                          isCurrentlyProcessing &&
+                          (!backOrderDisplay?.value ||
+                            backOrderDisplay.value === '---')
+                        }
                         onClick={() => {
                           setShowBackOrderDetailFull(true)
                           setActiveBackOrderTab('current')
@@ -2158,21 +2330,32 @@ const Overview = (props: any) => {
                     ) : (
                       <AnalysisCard
                         icon={Calendar}
-                        isLoading={isCurrentlyProcessing && (!paymentTermsDisplay?.termsDisplay || paymentTermsDisplay.termsDisplay === '-')}
                         status={paymentTermsDisplay.calculationText}
                         statusType={paymentTermsDisplay.statusType}
                         title='Payment Terms'
-                        value={paymentTermsDisplay.daysText.replace(/days/i, 'Days')}
+                        isLoading={
+                          isCurrentlyProcessing &&
+                          (!paymentTermsDisplay?.termsDisplay ||
+                            paymentTermsDisplay.termsDisplay === '-')
+                        }
+                        value={paymentTermsDisplay.daysText.replace(
+                          /days/i,
+                          'Days',
+                        )}
                       />
                     )}
                     {showMatterValidation && matterValidationDisplay && (
                       <AnalysisCard
                         icon={Briefcase}
-                        isLoading={isCurrentlyProcessing && (!matterValidationDisplay?.value || matterValidationDisplay.value === '---')}
                         status={matterValidationDisplay.status}
                         statusType={matterValidationDisplay.statusType}
                         title='Matter Validation'
                         value={matterValidationDisplay.value}
+                        isLoading={
+                          isCurrentlyProcessing &&
+                          (!matterValidationDisplay?.value ||
+                            matterValidationDisplay.value === '---')
+                        }
                       />
                     )}
                   </div>
@@ -2253,7 +2436,9 @@ const Overview = (props: any) => {
                       {isCurrentlyProcessing &&
                       (!formModel ||
                         Object.keys(formModel).length === 0 ||
-                        !Object.values(formModel).some(hasMeaningfulScalarValue))
+                        !Object.values(formModel).some(
+                          hasMeaningfulScalarValue,
+                        ))
                         ? Array.from({ length: 8 }).map((_, idx) => {
                             const labels = [
                               'Supplier Name',
@@ -2326,9 +2511,12 @@ const Overview = (props: any) => {
                               )
                             })
                             .map(([key, val]) => {
-                              const rawVal = val && typeof val === 'object' && 'Invoice Value' in val
-                                ? val['Invoice Value']
-                                : val
+                              const rawVal =
+                                val &&
+                                typeof val === 'object' &&
+                                'Invoice Value' in val
+                                  ? val['Invoice Value']
+                                  : val
 
                               const fieldType = getFieldType(key)
                               const displayValue =
@@ -2353,9 +2541,11 @@ const Overview = (props: any) => {
                                     key.toLowerCase().includes('total') ||
                                     key.toLowerCase().includes('due')
                                   }
-                                  onFocus={(val: any) => handleFieldFocus(val, key)}
                                   onChange={(newVal: string) =>
                                     handleFieldChange(key, newVal)
+                                  }
+                                  onFocus={(val: any) =>
+                                    handleFieldFocus(val, key)
                                   }
                                 />
                               )
@@ -2474,12 +2664,17 @@ const Overview = (props: any) => {
                                         <input
                                           className='w-full rounded border-none bg-transparent px-1.5 py-1 text-xs font-semibold text-[var(--gray-13)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
                                           value={descVal}
-                                          onFocus={() => handleFieldFocus?.(descVal, 'description')}
                                           onChange={(e) =>
                                             handleLineItemChange(
                                               index,
                                               'description',
                                               e.target.value,
+                                            )
+                                          }
+                                          onFocus={() =>
+                                            handleFieldFocus?.(
+                                              descVal,
+                                              'description',
                                             )
                                           }
                                         />
@@ -2490,13 +2685,15 @@ const Overview = (props: any) => {
                                         <input
                                           className='w-full rounded border-none bg-transparent px-1.5 py-1 text-right text-xs font-semibold text-[var(--gray-11)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
                                           value={qtyVal}
-                                          onFocus={() => handleFieldFocus?.(qtyVal, 'qty')}
                                           onChange={(e) =>
                                             handleLineItemChange(
                                               index,
                                               'quantity',
                                               e.target.value,
                                             )
+                                          }
+                                          onFocus={() =>
+                                            handleFieldFocus?.(qtyVal, 'qty')
                                           }
                                         />
                                       </td>
@@ -2506,7 +2703,6 @@ const Overview = (props: any) => {
                                         <input
                                           className='w-full rounded border-none bg-transparent px-1.5 py-1 text-right text-xs font-semibold text-[var(--gray-11)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
                                           value={priceVal}
-                                          onFocus={() => handleFieldFocus?.(priceVal, 'price')}
                                           onBlur={(e) => {
                                             const num = Number.parseFloat(
                                               e.target.value.replace(
@@ -2529,6 +2725,12 @@ const Overview = (props: any) => {
                                               e.target.value,
                                             )
                                           }
+                                          onFocus={() =>
+                                            handleFieldFocus?.(
+                                              priceVal,
+                                              'price',
+                                            )
+                                          }
                                         />
                                       </td>
 
@@ -2537,7 +2739,6 @@ const Overview = (props: any) => {
                                         <input
                                           className='w-full rounded border-none bg-transparent px-1.5 py-1 text-right text-xs font-semibold text-[var(--gray-13)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
                                           value={amountVal}
-                                          onFocus={() => handleFieldFocus?.(amountVal, 'line_amount')}
                                           onBlur={(e) => {
                                             const num = Number.parseFloat(
                                               e.target.value.replace(
@@ -2558,6 +2759,12 @@ const Overview = (props: any) => {
                                               index,
                                               'amount',
                                               e.target.value,
+                                            )
+                                          }
+                                          onFocus={() =>
+                                            handleFieldFocus?.(
+                                              amountVal,
+                                              'line_amount',
                                             )
                                           }
                                         />
@@ -2675,13 +2882,15 @@ const Overview = (props: any) => {
                       ) : (
                         <Attachments
                           enabled={true}
+                          formModel={formModel}
                           instanceId={resolvedInstanceId}
                           processId={processId}
-                          repositoryId={repositoryId || selectedItem?.repositoryId}
-                          workflowId={workflowId}
-                          formModel={formModel}
                           selectedItem={selectedItem}
                           transactionId={transactionId}
+                          workflowId={workflowId}
+                          repositoryId={
+                            repositoryId || selectedItem?.repositoryId
+                          }
                           onSelect={(file) =>
                             selectedFile?.id === file.id
                               ? (setIsViewerLoading(true),
@@ -2740,9 +2949,13 @@ const Overview = (props: any) => {
                       ) : (
                         <History
                           enabled={true}
-                          instanceId={selectedItem?.workflowInstanceId || selectedItem?.instanceId || processId}
                           processId={processId}
                           workflowId={workflowId}
+                          instanceId={
+                            selectedItem?.workflowInstanceId ||
+                            selectedItem?.instanceId ||
+                            processId
+                          }
                         />
                       )}
                     </div>

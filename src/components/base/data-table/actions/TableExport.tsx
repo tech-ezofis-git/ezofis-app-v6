@@ -1,30 +1,39 @@
 import { type Table as TanstackTable } from '@tanstack/react-table'
 import Button from '@/components/base/button/Button'
+import IconButton from '@/components/base/button/IconButton'
 import InputRadioIndicator from '@/components/base/inputs/InputRadioIndicator'
 import Menu from '@/components/base/menu/Menu'
 import MenuDivider from '@/components/base/menu/MenuDivider'
 import MenuItem from '@/components/base/menu/MenuItem'
 import MenuLabel from '@/components/base/menu/MenuLabel'
+import Tooltip from '@/components/base/Tooltip'
 
 interface Props<TData> {
   table: TanstackTable<TData>
+  iconOnly?: boolean
 }
 
-const TableExport = <TData,>({ table }: Props<TData>) => {
+const TableExport = <TData,>({ iconOnly = true, table }: Props<TData>) => {
+  const trigger = iconOnly ? (
+    <Tooltip content='Export' position='top'>
+      <IconButton color='gray' icon='lucide:download' variant='outline' />
+    </Tooltip>
+  ) : (
+    <Button
+      color='gray'
+      icon='lucide:download'
+      label='Export'
+      variant='outline'
+    />
+  )
+
   return (
     <Menu
       className='px-2 pt-3'
       closeOnItemClick={false}
       position='bottom-end'
+      target={trigger}
       width={200}
-      target={
-        <Button
-          color='gray'
-          icon='lucide:download'
-          label='Export'
-          variant='outline'
-        />
-      }
     >
       <MenuLabel>Columns to export</MenuLabel>
       <MenuItem label='Visible columns' leftSection={<InputRadioIndicator />} />

@@ -11,20 +11,20 @@ export type HistoryRow = {
   activityId?: string | number
   agentResponse?: string | null
   agentType?: string | null
+  description?: string
+  performedByUserName?: string
   processedBy?: string | null
   processedOn?: string | number | Date | null
   receivedOn?: string | number | Date | null
+  review?: string
+
   stage?: string
-  status?: string
-  subWorkflowHistory?: any
-  
-  // V6 Real-time properties
-  title?: string
-  description?: string
   stageName?: string
   stageType?: string
-  performedByUserName?: string
-  review?: string
+  status?: string
+  subWorkflowHistory?: any
+  // V6 Real-time properties
+  title?: string
 }
 
 export function useHistory(
@@ -50,13 +50,16 @@ export function useHistory(
         throw new Error(res.error)
       }
 
-      const list = res.data && Array.isArray(res.data.flows)
-        ? res.data.flows
-        : Array.isArray(res.data)
-          ? res.data
-          : []
+      const list =
+        res.data && Array.isArray(res.data.flows)
+          ? res.data.flows
+          : Array.isArray(res.data)
+            ? res.data
+            : []
       const mapped: HistoryRow[] = list.map((item: any, idx: number) => {
-        const milestoneLower = String(item.milestone || item.stageType || item.step || '').toLowerCase()
+        const milestoneLower = String(
+          item.milestone || item.stageType || item.step || '',
+        ).toLowerCase()
 
         let stage = item.stageName || item.step || ''
         let status = item.review || item.milestone || item.step || ''
@@ -88,17 +91,17 @@ export function useHistory(
           actionUserEmail: item.performedByUserName || null,
           activityId: item.activityId || `v6-step-${idx}`,
           agentType,
+          description: item.description || '',
+          performedByUserName: item.performedByUserName || '',
           processedBy: item.performedByUserName || null,
           processedOn: item.occurredAtUtc || null,
           receivedOn: item.occurredAtUtc || null,
+          review: item.review || '',
           stage,
-          status,
-          title: item.title || '',
-          description: item.description || '',
           stageName: item.stageName || '',
           stageType: item.stageType || '',
-          performedByUserName: item.performedByUserName || '',
-          review: item.review || '',
+          status,
+          title: item.title || '',
         }
       })
 

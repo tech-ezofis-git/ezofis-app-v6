@@ -51,9 +51,9 @@ export function useAttachments(
 
       const normalized = list.map((x: any) => ({
         ...x,
+        createdAt: x.createdAt ?? x.createdAtUtc ?? x.occurredAtUtc ?? '',
         id: x.id ?? x.itemId ?? x.fileId ?? '',
         name: x.name ?? x.fileName ?? '-',
-        createdAt: x.createdAt ?? x.createdAtUtc ?? x.occurredAtUtc ?? '',
       }))
 
       setData(normalized)

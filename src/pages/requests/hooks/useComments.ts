@@ -5,9 +5,9 @@ import { workflowsApiV6 } from '@/api/v6/workflows'
 export type CommentItem = {
   comments?: string
   createdAt?: string
+  createdBy?: string
   createdByEmail?: string
   createdByName?: string
-  createdBy?: string
   fileIds?: Array<string | number>
   hasNotifytoInitiated?: boolean
   id?: string | number
@@ -47,10 +47,16 @@ export function useComments(
 
       const mapped: CommentItem[] = list.map((c: any) => ({
         comments: c.comments || c.text || c.comment || '',
-        createdAt: c.createdAt || c.createdAtUtc || c.occurredAtUtc || c.createdOn || '',
-        createdByEmail: c.createdByEmail || c.createdByUserName || c.performedByUserName || '',
-        createdByName: c.createdByName || c.createdByUserName || c.performedByUserName || '',
+        createdAt:
+          c.createdAt || c.createdAtUtc || c.occurredAtUtc || c.createdOn || '',
         createdBy: c.createdBy || '',
+        createdByEmail:
+          c.createdByEmail ||
+          c.createdByUserName ||
+          c.performedByUserName ||
+          '',
+        createdByName:
+          c.createdByName || c.createdByUserName || c.performedByUserName || '',
         fileIds: c.fileIds || [],
         hasNotifytoInitiated: c.hasNotifytoInitiated || false,
         id: c.id || c._id || '',

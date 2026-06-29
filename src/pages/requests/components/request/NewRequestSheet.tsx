@@ -13,10 +13,7 @@ const NewRequestSheet = ({ onClose }: Props) => {
   return (
     <div className='flex h-full flex-1 flex-col overflow-hidden bg-surface-muted'>
       {newRequestMeta !== 'po' && (
-        <Header
-          title='New Request'
-          onClose={onClose}
-        />
+        <Header title='New Request' onClose={onClose} />
       )}
 
       {newRequestMeta === 'po' ? (

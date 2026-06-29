@@ -43,43 +43,60 @@ export const ProcessingBackgroundManager = () => {
       const poll = async () => {
         try {
           if (apAgentJobId) {
-            const res = await workflowsApiV6.getApAgentJobStatus(String(apAgentJobId))
+            const res = await workflowsApiV6.getApAgentJobStatus(
+              String(apAgentJobId),
+            )
             if (res.data) {
               const jobData = res.data
-              const percentRaw = jobData.percent === undefined ? jobData.Percent : jobData.percent
-              const percentNum = percentRaw !== undefined && percentRaw !== null ? Number(percentRaw) : Number.NaN
+              const percentRaw =
+                jobData.percent === undefined
+                  ? jobData.Percent
+                  : jobData.percent
+              const percentNum =
+                percentRaw !== undefined && percentRaw !== null
+                  ? Number(percentRaw)
+                  : Number.NaN
               const percent = Number.isNaN(percentNum) ? undefined : percentNum
-              
+
               const stage = jobData.stage || 'OCR Extraction'
               const message = jobData.message || jobData.hangfireStatus || ''
-              const isCompleted = jobData.isTerminal || jobData.stage === 'COMPLETED' || jobData.hangfireStatus === 'Succeeded'
+              const isCompleted =
+                jobData.isTerminal ||
+                jobData.stage === 'COMPLETED' ||
+                jobData.hangfireStatus === 'Succeeded'
 
               // Update job status in store
               const jobKey = `job-${apAgentJobId}`
               requestStore.getState().setJobStatus(jobKey, {
-                stage,
+                apAgentJobId,
+                isCompleted,
                 message,
                 percent,
-                isCompleted,
-                apAgentJobId,
+                stage,
               })
 
               // If we have an instanceId, map it and transition the process ID
               if (jobData.instanceId) {
-                requestStore.getState().setJobMapping(apAgentJobId, jobData.instanceId)
-                requestStore.getState().setJobStatus(String(jobData.instanceId), {
-                  stage,
-                  message,
-                  percent,
-                  isCompleted,
-                  apAgentJobId,
-                })
+                requestStore
+                  .getState()
+                  .setJobMapping(apAgentJobId, jobData.instanceId)
+                requestStore
+                  .getState()
+                  .setJobStatus(String(jobData.instanceId), {
+                    apAgentJobId,
+                    isCompleted,
+                    message,
+                    percent,
+                    stage,
+                  })
 
                 // Update processingProcess ID in store
-                requestStore.getState().updateProcessingProcess(String(processId), {
-                  id: jobData.instanceId,
-                  processId: jobData.instanceId,
-                })
+                requestStore
+                  .getState()
+                  .updateProcessingProcess(String(processId), {
+                    id: jobData.instanceId,
+                    processId: jobData.instanceId,
+                  })
               }
 
               if (isCompleted) {

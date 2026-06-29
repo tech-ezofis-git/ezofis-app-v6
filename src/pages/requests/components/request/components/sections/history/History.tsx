@@ -13,19 +13,19 @@ type HistoryRow = {
   activityId?: number | string
   agentResponse?: string | null
   agentType?: string | null
+  description?: string
+  performedByUserName?: string
   processedBy?: string | null
   processedOn?: string | number | Date | null
   receivedOn?: string | number | Date | null
-  stage?: string
-  status?: string
 
-  // V6 Real-time properties
-  title?: string
-  description?: string
+  review?: string
+  stage?: string
   stageName?: string
   stageType?: string
-  performedByUserName?: string
-  review?: string
+  status?: string
+  // V6 Real-time properties
+  title?: string
 }
 
 type Props = {
@@ -120,7 +120,7 @@ const getStepConfig = (h: HistoryRow, isStart: boolean) => {
   ) {
     return {
       bulletBg: 'bg-purple-3/30 text-purple-11',
-      icon: 'tabler:robot',
+      icon: 'lucide:bot',
     }
   }
 
@@ -276,11 +276,11 @@ export default function History({
   processId,
   workflowId,
 }: Props) {
-  const { data: flows = [], error, isLoading } = useHistory(
-    workflowId,
-    instanceId || processId,
-    enabled,
-  )
+  const {
+    data: flows = [],
+    error,
+    isLoading,
+  } = useHistory(workflowId, instanceId || processId, enabled)
 
   if (isLoading) {
     return (
@@ -317,10 +317,10 @@ export default function History({
   }
 
   return (
-    <div className='animate-in fade-in slide-in-from-left-4 relative flex flex-col gap-5 pl-2 pr-1 py-2 duration-300'>
+    <div className='animate-in fade-in slide-in-from-left-4 relative flex flex-col gap-5 py-2 pr-1 pl-2 duration-300'>
       {/* Timeline Connecting Line */}
       {flows.length > 1 && (
-        <div className='absolute bottom-7 left-[27px] top-7 w-[2px] bg-gray-3' />
+        <div className='absolute top-7 bottom-7 left-[27px] w-[2px] bg-gray-3' />
       )}
 
       {flows.map((h, idx) => {
@@ -343,7 +343,7 @@ export default function History({
           >
             <div
               className={cn(
-                'relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl shadow-sm transition-all active:scale-95 bg-surface border border-surface',
+                'relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-surface bg-surface shadow-sm transition-all active:scale-95',
                 config.bulletBg,
               )}
             >
@@ -355,11 +355,11 @@ export default function History({
                 {title}
               </div>
               {showDesc && (
-                <div className='text-11 leading-normal font-normal text-gray-11 whitespace-pre-wrap mt-1 bg-gray-2/50 rounded-lg px-2.5 py-1.5 border border-gray-3/30 max-w-md'>
+                <div className='mt-1 max-w-md rounded-lg border border-gray-3/30 bg-gray-2/50 px-2.5 py-1.5 text-11 leading-normal font-normal whitespace-pre-wrap text-gray-11'>
                   {h.description}
                 </div>
               )}
-              <div className='text-11 font-medium text-gray-9 mt-1'>
+              <div className='mt-1 text-11 font-medium text-gray-9'>
                 {actor} <span className='mx-1 text-gray-6'>·</span> {date}
               </div>
             </div>
