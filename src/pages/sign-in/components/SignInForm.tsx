@@ -121,11 +121,15 @@ const SignInForm = ({ onChangeView }: Props) => {
   }
 
   // === EMAIL + PASSWORD LOGIN (with tenant + social support) ===
-  const signInSocial = async (tenantId?: number | string) => {
+  const signInSocial = async (
+    tenantId?: number | string,
+    sEmail = socialEmail,
+    sType = loginType,
+  ) => {
     const payload = {
-      email: socialEmail,
+      email: sEmail,
       loggedFrom: 'WEB',
-      loginType,
+      loginType: sType,
     }
 
     const { data, error, status } = await authApi.socialLogin(payload, tenantId)
@@ -156,14 +160,19 @@ const SignInForm = ({ onChangeView }: Props) => {
     }
   }
 
-  const signIn = async (tenantId?: number | string) => {
+  const signIn = async (
+    tenantId?: number | string,
+    isSocialFlow = socialLogged,
+    sEmail = socialEmail,
+    sType = loginType,
+  ) => {
     try {
       setError(null)
       setLoading(true)
 
       // SOCIAL BRANCH (Google / Microsoft)
-      if (socialLogged) {
-        await signInSocial(tenantId)
+      if (isSocialFlow) {
+        await signInSocial(tenantId, sEmail, sType)
         return
       }
 
@@ -300,7 +309,7 @@ const SignInForm = ({ onChangeView }: Props) => {
         setLoginType('Google')
 
         // same pattern as Vue: mark social & run signIn()
-        await signIn()
+        await signIn(undefined, true, gEmail, 'Google')
       } catch (e: any) {
         console.error(e)
         setError(e?.message ?? 'Google sign-in failed')
@@ -336,10 +345,15 @@ const SignInForm = ({ onChangeView }: Props) => {
       setSocialLogged(true)
       setLoginType('Microsoft')
 
-      await signIn()
+      await signIn(undefined, true, msEmail, 'Microsoft')
     } catch (e: any) {
       console.error(e)
-      setError(e?.message ?? 'Microsoft sign-in failed')
+      const errorMsg = e?.message || ''
+      if (errorMsg.includes('user_cancelled') || errorMsg.includes('User cancelled the flow')) {
+        setError('Microsoft sign-in was cancelled.')
+      } else {
+        setError(errorMsg || 'Microsoft sign-in failed')
+      }
     } finally {
       setLoading(false)
     }

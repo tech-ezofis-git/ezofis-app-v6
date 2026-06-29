@@ -192,7 +192,13 @@ const SignUpForm = ({ email, setEmail, onChangeView }: Props) => {
 
       navigate({ to: '/reset-password' })
     } catch (e: any) {
-      setError(e?.message ?? 'Microsoft sign-up failed')
+      console.error(e)
+      const errorMsg = e?.message || ''
+      if (errorMsg.includes('user_cancelled') || errorMsg.includes('User cancelled the flow')) {
+        setError('Microsoft sign-up was cancelled.')
+      } else {
+        setError(errorMsg || 'Microsoft sign-up failed')
+      }
     } finally {
       setLoading(false)
     }

@@ -87,11 +87,52 @@ export const login = async (payload: any, tenantId?: string | number) => {
   })
 }
 
+export const socialLogin = async (payload: any, tenantId?: string | number) => {
+  // If tenantId is already provided, go straight to social login
+  if (tenantId) {
+    return await authApiV6.socialLogin({
+      email: payload.email,
+      provider: (payload.loginType || payload.provider || '').toUpperCase(),
+      tenantId: String(tenantId),
+    })
+  }
+
+  // Otherwise, first fetch tenants for this email
+  const tenantRes = await authApiV6.getTenants(payload.email)
+  if (tenantRes.error) return tenantRes
+
+  const tenants = tenantRes.data?.tenants || []
+
+  if (tenants.length === 0) {
+    return { data: null, error: 'No organizations found for this email.' }
+  }
+
+  if (tenants.length > 1) {
+    // Return 300 to trigger the tenant selection UI in SignInForm.tsx
+    return {
+      data: tenants.map((t: any) => ({
+        email: payload.email,
+        id: t.tenantId,
+        name: t.name,
+      })),
+      status: 300,
+    }
+  }
+
+  // Only one tenant, proceed to social login automatically
+  return await authApiV6.socialLogin({
+    email: payload.email,
+    provider: (payload.loginType || payload.provider || '').toUpperCase(),
+    tenantId: tenants[0].tenantId,
+  })
+}
+
 export const apiRouter = {
   login,
   sendMailOTP,
   signUp,
   verifyMailOTP,
+  socialLogin,
   getApiVersion,
 }
 

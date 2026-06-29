@@ -208,6 +208,45 @@ export const getSession = async () => {
   return response
 }
 
+export const socialLogin = async (payload: {
+  email: string
+  provider: string
+  tenantId: string
+}) => {
+  const response: any = { data: null, error: '' }
+  try {
+    const { data, status } = await axiosV6({
+      data: JSON.stringify({
+        email: payload.email,
+        provider: payload.provider,
+      }),
+      headers: {
+        'X-Tenant-Id': payload.tenantId,
+      },
+      method: 'POST',
+      url: `/auth/social/login`,
+    })
+
+    if (status !== 200) throw new Error('invalid status code')
+
+    if (data) {
+      setToLocalStorage(data, 'identity')
+      const { setIdentity } = authUserStore.getState()
+      setIdentity(data)
+      response.data = 'Success'
+    } else {
+      response.error = 'No data returned'
+    }
+  } catch (e: any) {
+    console.error(e)
+    response.error = getV6ApiErrorMessage(
+      e?.response?.data,
+      'error in social login',
+    )
+  }
+  return response
+}
+
 export const authApiV6 = {
   login,
   sendMailOTP,
@@ -215,6 +254,7 @@ export const authApiV6 = {
   verifyMailOTP,
   getSession,
   getTenants,
+  socialLogin,
 }
 
 export default authApiV6

@@ -4,6 +4,7 @@ import { setToLocalStorage } from '../utils/local-storage'
 // src/api/authApi.ts
 import { _axios, axiosCrypto } from './axios'
 import { authApiV6 } from './v6/auth'
+import apiRouter from './apiRouter'
 
 // Vite-style env (adjust name to your setup)
 const API_URL = import.meta.env.VITE_API_URL || ''
@@ -181,50 +182,7 @@ const authentication = async (payload: any) => {
 }
 
 const socialLogin = async (payload: any, tenantId?: number | string) => {
-  const response: any = {
-    data: '',
-    error: '',
-  }
-
-  try {
-    const { data, status } = await _axios({
-      data: JSON.stringify(payload),
-      headers: {
-        Token: tenantId ? `tenantId ${tenantId}` : `email ${payload.email}`,
-      },
-      method: 'POST',
-      url: `${API_URL}/authentication/socialLogin`,
-    })
-
-    if (status !== 200) {
-      throw new Error('invalid status code')
-    }
-
-    const identity = decodeBase64Json(data)
-    setToLocalStorage(identity, 'identity')
-    const { setIdentity } = authUserStore.getState()
-    setIdentity(identity)
-    response.data = 'Success'
-
-    const { error } = await getSession()
-    response.error = error
-  } catch (e: any) {
-    console.error(e)
-
-    if (e?.response?.status === 300) {
-      response.data = e.response.data
-      response.status = e.response.status
-    } else if (e?.response?.status === 404) {
-      response.error = 'user account not found'
-    } else if (typeof e?.response?.data === 'string') {
-      response.error = e.response.data
-      response.status = e.response.status
-    } else {
-      response.error = 'error logging in'
-    }
-  }
-
-  return response
+  return await apiRouter.socialLogin(payload, tenantId)
 }
 
 const portalLogin = async (payload: any) => {
