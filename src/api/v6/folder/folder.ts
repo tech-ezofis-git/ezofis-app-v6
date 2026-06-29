@@ -2,23 +2,6 @@ import authUserStore from '../../../stores/authUserStore'
 import { setToLocalStorage } from '../../../utils/local-storage'
 import { axiosV6 } from '../../axios'
 
-export interface BrowseFolderFieldDto {
-  level: number
-  name: string
-  sqlColumnName: string
-}
-
-export interface BrowsePathDto {
-  fieldOrder: string[]
-  id: string
-  label: string
-}
-
-export interface BrowseStructureDto {
-  browsePaths: BrowsePathDto[]
-  folderFields: BrowseFolderFieldDto[]
-}
-
 export interface BrowseChildGroupDto {
   name: string
   dateModified?: string | null
@@ -37,6 +20,23 @@ export interface BrowseChildrenDto {
   parentFilters?: Record<string, string>
   pathId?: string
   pathLabel?: string
+}
+
+export interface BrowseFolderFieldDto {
+  level: number
+  name: string
+  sqlColumnName: string
+}
+
+export interface BrowsePathDto {
+  fieldOrder: string[]
+  id: string
+  label: string
+}
+
+export interface BrowseStructureDto {
+  browsePaths: BrowsePathDto[]
+  folderFields: BrowseFolderFieldDto[]
 }
 
 export interface PagedDto<T> {
@@ -228,7 +228,8 @@ export const getRepositoryBrowseStructure = async (id: string) => {
     response.data = unwrap(data)
   } catch (e: any) {
     console.error(e)
-    response.error = e?.response?.data || 'error fetching repository browse structure'
+    response.error =
+      e?.response?.data || 'error fetching repository browse structure'
   }
 
   return response

@@ -585,15 +585,17 @@ const getInstanceAttachments = async (
 const addInstanceAttachment = async (
   workflowId: number | string,
   instanceId: number | string,
-  payload: FormData | {
-    fileName?: string
-    repositoryId: number | string
-    file: string
-    fileSize?: number
-    contentType?: string
-    transactionId?: number | string
-    [key: string]: any
-  },
+  payload:
+    | FormData
+    | {
+        [key: string]: any
+        contentType?: string
+        file: string
+        fileName?: string
+        fileSize?: number
+        repositoryId: number | string
+        transactionId?: number | string
+      },
 ) => {
   const response: { data: any; error: string } = { data: null, error: '' }
   try {
@@ -633,6 +635,8 @@ const addInstanceAttachment = async (
 }
 
 export const workflowsApiV6 = {
+  addInstanceAttachment,
+  addInstanceComment,
   createWorkflow,
   deleteWorkflow,
   moveNext,
@@ -642,18 +646,13 @@ export const workflowsApiV6 = {
   getApAgentJobStatus,
   getCompletedList,
   getInboxList,
+  getInstanceAttachments,
+  getInstanceComments,
   getInstanceCount,
   getInstanceHistory,
-  getInstanceComments,
-  addInstanceComment,
-  getInstanceAttachments,
-  addInstanceAttachment,
   getSentList,
   getWorkflowById,
   getWorkflows,
 }
 
 export default workflowsApiV6
-
-
-

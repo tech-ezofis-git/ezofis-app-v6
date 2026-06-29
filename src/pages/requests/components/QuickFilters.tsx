@@ -1,14 +1,14 @@
 import React from 'react'
 import Icon from '@/components/base/icon/Icon'
-import requestStore from '../stores/useRequestStore'
 import cn from '@/utils/cn'
+import requestStore from '../stores/useRequestStore'
 
 interface QuickFiltersProps {
   counts: {
-    overdue: number
-    matched: number
     discrepancies: number
     highValue: number
+    matched: number
+    overdue: number
   }
 }
 
@@ -72,18 +72,18 @@ const QuickFilters: React.FC<QuickFiltersProps> = ({ counts }) => {
         const isActive = activeQuickFilters.includes(f.id)
         return (
           <button
+            key={f.id}
             className={cn(
               'flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold transition-all duration-200 active:scale-95',
               isActive ? f.activeClass : f.inactiveClass,
             )}
-            key={f.id}
             onClick={() => toggleQuickFilter(f.id)}
           >
             <Icon className='size-3.5' name={f.icon} />
             <span>{f.label}</span>
             <span
               className={cn(
-                'flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[10px] font-bold leading-none',
+                'flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[10px] leading-none font-bold',
                 isActive ? f.activeBadgeClass : f.inactiveBadgeClass,
               )}
             >

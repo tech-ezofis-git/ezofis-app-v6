@@ -6,15 +6,17 @@ import { workflowsApiV6 } from '@/api/v6/workflows'
 import Icon from '@/components/base/icon/Icon'
 import { useComments } from '@/pages/requests/hooks/useComments'
 import authUserStore from '@/stores/authUserStore'
-import { formatDatetime } from '@/utils/dayjs'
 import cn from '@/utils/cn'
+import { formatDatetime } from '@/utils/dayjs'
 // import IconButton from '@/components/base/button/IconButton'
 
 dayjs.extend(relativeTime)
 
 const isUuid = (val: string): boolean => {
   if (typeof val !== 'string') return false
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val)
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+    val,
+  )
 }
 
 const getInitials = (fullNameOrEmail: string): string => {
@@ -24,7 +26,9 @@ const getInitials = (fullNameOrEmail: string): string => {
     const part = clean.split('@')[0]
     const parts = part.split(/[._-]/).filter(Boolean)
     if (parts.length >= 2) {
-      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase().slice(0, 2)
+      return (parts[0][0] + parts[parts.length - 1][0])
+        .toUpperCase()
+        .slice(0, 2)
     }
     return part.substring(0, Math.min(2, part.length)).toUpperCase()
   }
@@ -39,7 +43,9 @@ const getAvatarColors = (initials: string, isMe: boolean) => {
   if (isMe) {
     return 'bg-[var(--primary-3)] text-[var(--primary-9)] border border-[var(--primary-4)]'
   }
-  const charCodeSum = initials.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0)
+  const charCodeSum = initials
+    .split('')
+    .reduce((sum, char) => sum + char.charCodeAt(0), 0)
   const variants = [
     'bg-[var(--blue-1)] text-[var(--blue-9)] border border-[var(--blue-3)]',
     'bg-[var(--green-1)] text-[var(--green-9)] border border-[var(--green-3)]',
@@ -82,7 +88,10 @@ export default function Comments({
   const currentUserEmail = session?.email ?? 'me@app.com'
 
   const myFullName = session
-    ? session.name || (session.firstName ? `${session.firstName} ${session.lastName || ''}`.trim() : '')
+    ? session.name ||
+      (session.firstName
+        ? `${session.firstName} ${session.lastName || ''}`.trim()
+        : '')
     : ''
   const myDisplayName = myFullName || currentUserEmail
   const myInitials = getInitials(myDisplayName)
@@ -145,14 +154,10 @@ export default function Comments({
 
     setPosting(true)
     try {
-      await workflowsApiV6.addInstanceComment(
-        workflowId,
-        targetInstanceId,
-        {
-          comments: cleanText,
-          showTo: 2,
-        }
-      )
+      await workflowsApiV6.addInstanceComment(workflowId, targetInstanceId, {
+        comments: cleanText,
+        showTo: 2,
+      })
 
       setDraft('')
       setAttachFileId('')
@@ -167,10 +172,7 @@ export default function Comments({
   }
 
   const canSend =
-    !posting &&
-    !!workflowId &&
-    !!targetInstanceId &&
-    draft.trim().length > 0
+    !posting && !!workflowId && !!targetInstanceId && draft.trim().length > 0
 
   return (
     <div className='relative mx-auto mt-0 flex h-full w-full flex-col overflow-hidden font-sans transition-all duration-300'>
@@ -203,7 +205,10 @@ export default function Comments({
               : (c?.createdByName ?? c?.createdByEmail ?? 'User')
           const fileIds = extractFileIds(c)
           const timeDisplay = c?.createdAt
-            ? formatDatetime(parseCommentDate(c.createdAt), 'YYYY-MM-DD hh:mm A')
+            ? formatDatetime(
+                parseCommentDate(c.createdAt),
+                'YYYY-MM-DD hh:mm A',
+              )
             : ''
           const initials = isMe
             ? myInitials
@@ -215,7 +220,12 @@ export default function Comments({
               key={`${c?.id ?? idx}`}
             >
               {/* Avatar */}
-              <div className={cn('flex size-8 shrink-0 items-center justify-center rounded-full text-13 font-bold', getAvatarColors(initials, isMe))}>
+              <div
+                className={cn(
+                  'flex size-8 shrink-0 items-center justify-center rounded-full text-13 font-bold',
+                  getAvatarColors(initials, isMe),
+                )}
+              >
                 {initials}
               </div>
 
@@ -292,7 +302,12 @@ export default function Comments({
           {/* Textarea & Send Button */}
           <div className='flex items-center gap-3'>
             {/* Current User Avatar */}
-            <div className={cn('flex size-8 shrink-0 items-center justify-center rounded-full text-13 font-bold', getAvatarColors(myInitials, true))}>
+            <div
+              className={cn(
+                'flex size-8 shrink-0 items-center justify-center rounded-full text-13 font-bold',
+                getAvatarColors(myInitials, true),
+              )}
+            >
               {myInitials}
             </div>
 
@@ -317,15 +332,15 @@ export default function Comments({
 
             {/* Send Button */}
             <button
+              disabled={!canSend}
+              title='Send comment'
               className={cn(
-                'flex h-[36px] w-[36px] shrink-0 items-center justify-center rounded-xl text-13 font-bold transition-all active:scale-95 bg-primary-9 text-text-on-accent',
+                'flex h-[36px] w-[36px] shrink-0 items-center justify-center rounded-xl bg-primary-9 text-13 font-bold text-text-on-accent transition-all active:scale-95',
                 canSend
                   ? 'cursor-pointer hover:opacity-90'
-                  : 'opacity-45 cursor-not-allowed',
+                  : 'cursor-not-allowed opacity-45',
               )}
-              disabled={!canSend}
               onClick={onPost}
-              title="Send comment"
             >
               {posting ? (
                 <div className='size-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white' />

@@ -65,10 +65,10 @@ const TableSearch = <TData,>({ table }: Props<TData>) => {
   }
 
   const containerClasses = cn(
-    'flex h-8 items-center rounded border transition-all duration-300 select-none outline-primary-8 focus-visible:outline-2',
+    'flex h-8 items-center rounded border outline-primary-8 transition-all duration-300 select-none focus-visible:outline-2',
     isExpanded
-      ? 'w-72 border-gray-6 pr-1 pl-3 justify-start focus-within:border-primary bg-surface'
-      : 'w-8 border-gray-6 hover:bg-gray-4 text-gray-11 hover:text-gray-12 justify-center cursor-pointer bg-surface active:scale-95',
+      ? 'focus-within:border-primary w-72 justify-start border-gray-6 bg-surface pr-1 pl-3'
+      : 'w-8 cursor-pointer justify-center border-gray-6 bg-surface text-gray-11 hover:bg-gray-4 hover:text-gray-12 active:scale-95',
   )
 
   const searchContent = (
@@ -80,28 +80,28 @@ const TableSearch = <TData,>({ table }: Props<TData>) => {
       onClick={handleContainerClick}
     >
       <Icon
+        name='lucide:search'
         className={cn(
           'size-4 shrink-0 transition-colors',
           isExpanded ? 'text-gray-11' : 'text-gray-11 hover:text-gray-12',
         )}
-        name='lucide:search'
       />
 
       <div
         className={cn(
           'h-full transition-[width] duration-300',
-          isExpanded ? 'flex-1 w-full' : 'flex-none w-0 overflow-hidden',
+          isExpanded ? 'w-full flex-1' : 'w-0 flex-none overflow-hidden',
         )}
       >
         <input
           id='table-search-input'
           placeholder='Search'
           type='text'
-          className={cn(
-            'text-gray-12 h-full w-full px-2 text-13 font-medium outline-0 placeholder:text-gray-11 bg-transparent border-0',
-            isExpanded ? 'opacity-100' : 'opacity-0 pointer-events-none',
-          )}
           value={inputValue}
+          className={cn(
+            'h-full w-full border-0 bg-transparent px-2 text-13 font-medium text-gray-12 outline-0 placeholder:text-gray-11',
+            isExpanded ? 'opacity-100' : 'pointer-events-none opacity-0',
+          )}
           onChange={(e) => {
             setInputValue(e.target.value)
             handleValueChange(e.target.value)
@@ -120,11 +120,11 @@ const TableSearch = <TData,>({ table }: Props<TData>) => {
           target={
             <IconButton
               aria-label='Select a column'
+              className='transition-opacity duration-300'
               color='gray'
               icon='lucide:settings-2'
               size='sm'
               variant='ghost'
-              className='transition-opacity duration-300'
             />
           }
           onChange={() => setOpened(!opened)}

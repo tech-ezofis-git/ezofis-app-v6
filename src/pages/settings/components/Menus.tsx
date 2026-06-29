@@ -1,146 +1,279 @@
-import { useMemo, useState } from 'react';
+import type { DragEndEvent } from '@dnd-kit/core'
 import {
-  DndContext,
   closestCenter,
+  DndContext,
   PointerSensor,
   useSensor,
   useSensors,
-} from '@dnd-kit/core';
-
-import type { DragEndEvent } from '@dnd-kit/core';
+} from '@dnd-kit/core'
 import {
-  SortableContext,
-  verticalListSortingStrategy,
-  useSortable,
   arrayMove,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import {
-  LayoutDashboard,
-  Inbox,
-  FileCheck2,
-  ScanLine,
-  CheckSquare,
   Building2,
-  ShoppingCart,
+  CheckSquare,
+  FileCheck2,
   GripVertical,
   Home,
-} from 'lucide-react';
-
-import InputSelect from '@/components/base/inputs/InputSelect';
-import IconButton from '@/components/base/button/IconButton';
-
-type SelectOption = {
-  id: string | number;
-  name: string;
-  description?: string;
-  disabled?: boolean;
-  value?: string;
-};
+  Inbox,
+  LayoutDashboard,
+  ScanLine,
+  ShoppingCart,
+} from 'lucide-react'
+import { useMemo, useState } from 'react'
+import IconButton from '@/components/base/button/IconButton'
+import InputSelect from '@/components/base/inputs/InputSelect'
 
 type MenuItem = {
-  id: string;
-  name: string;
-  icon: React.ElementType;
-  visible: boolean;
-  isDefault?: boolean;
-  disabled?: boolean;
-};
+  disabled?: boolean
+  icon: React.ElementType
+  id: string
+  isDefault?: boolean
+  name: string
+  visible: boolean
+}
 
-const roles = ['AP Manager', 'AP Officer', 'Business User', 'Auditor'];
-const landingPages = ['Dashboard', 'Inbox', 'OCR Review', 'Vendors'];
+type SelectOption = {
+  description?: string
+  disabled?: boolean
+  id: string | number
+  name: string
+  value?: string
+}
+
+const roles = ['AP Manager', 'AP Officer', 'Business User', 'Auditor']
+const landingPages = ['Dashboard', 'Inbox', 'OCR Review', 'Vendors']
 
 const initialMenus: MenuItem[] = [
-  { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard, visible: true },
-  { id: 'inbox', name: 'Inbox', icon: Inbox, visible: true, isDefault: true },
-  { id: 'processed', name: 'Processed Invoices', icon: FileCheck2, visible: false, disabled: true },
-  { id: 'ocr', name: 'OCR Review', icon: ScanLine, visible: true },
-  { id: 'approval', name: 'Approval Queue', icon: CheckSquare, visible: false, disabled: true },
-  { id: 'vendors', name: 'Vendors', icon: Building2, visible: true },
-  { id: 'po', name: 'Purchase Orders', icon: ShoppingCart, visible: true },
-];
+  { icon: LayoutDashboard, id: 'dashboard', name: 'Dashboard', visible: true },
+  { icon: Inbox, id: 'inbox', isDefault: true, name: 'Inbox', visible: true },
+  {
+    disabled: true,
+    icon: FileCheck2,
+    id: 'processed',
+    name: 'Processed Invoices',
+    visible: false,
+  },
+  { icon: ScanLine, id: 'ocr', name: 'OCR Review', visible: true },
+  {
+    disabled: true,
+    icon: CheckSquare,
+    id: 'approval',
+    name: 'Approval Queue',
+    visible: false,
+  },
+  { icon: Building2, id: 'vendors', name: 'Vendors', visible: true },
+  { icon: ShoppingCart, id: 'po', name: 'Purchase Orders', visible: true },
+]
 
-function toSelectOptions(options: string[]): SelectOption[] {
-  return options.map((option) => ({
-    id: option,
-    name: option,
-    value: option,
-  }));
+type MenuProps = {
+  onBack?: () => void
+}
+
+export default function MenuProfileManagement({ onBack }: MenuProps) {
+  const [selectedRole, setSelectedRole] = useState('AP Manager')
+  const [defaultPage, setDefaultPage] = useState('Inbox')
+  const [menus, setMenus] = useState<MenuItem[]>(initialMenus)
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 6,
+      },
+    }),
+  )
+
+  const visibleCount = useMemo(
+    () => menus.filter((menu) => menu.visible).length,
+    [menus],
+  )
+
+  const toggleMenu = (id: string) => {
+    setMenus((current) =>
+      current.map((menu) =>
+        menu.id === id && !menu.disabled
+          ? { ...menu, visible: !menu.visible }
+          : menu,
+      ),
+    )
+  }
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+
+    if (!over || active.id === over.id) return
+
+    setMenus((current) => {
+      const oldIndex = current.findIndex((item) => item.id === active.id)
+      const newIndex = current.findIndex((item) => item.id === over.id)
+
+      return arrayMove(current, oldIndex, newIndex)
+    })
+  }
+
+  return (
+    <main className=''>
+      <section className=''>
+        <div className='mb-4 flex items-center justify-between gap-6 border-b border-gray-3 bg-surface px-6 py-4 md:px-8'>
+          <div className='flex min-w-0 items-start gap-3'>
+            <IconButton
+              ariaLabel='Back'
+              color='gray'
+              icon='lucide:arrow-left'
+              size='sm'
+              variant='ghost'
+              onClick={onBack}
+            />
+
+            <div className='min-w-0'>
+              <h1 className='text-18/6 font-semibold tracking-tight text-gray-13'>
+                Menu &amp; Profile Management
+              </h1>
+              <p className='text-13/5 text-gray-11'>
+                Control role-based menu access, ordering, and default landing
+                experience.
+              </p>
+            </div>
+          </div>
+
+          <div className='grid w-full max-w-[620px] grid-cols-2 gap-4'>
+            <EzSelectField
+              label='Select Role'
+              options={roles}
+              value={selectedRole}
+              onChange={setSelectedRole}
+            />
+
+            <EzSelectField
+              label='Default Landing Page'
+              options={landingPages}
+              value={defaultPage}
+              onChange={setDefaultPage}
+            />
+          </div>
+        </div>
+
+        <div className='max-h-[calc(100vh-180px)] overflow-y-auto px-6 py-2'>
+          <div className='mt-8 overflow-hidden rounded-[14px] border border-[var(--border-default)] bg-white shadow-[var(--shadow-sm)]'>
+            <div className='flex items-center justify-between border-b border-[var(--border-default)] px-5 py-5'>
+              <div>
+                <h2 className='text-md font-semibold text-[var(--gray-13)]'>
+                  Menu Configuration
+                </h2>
+                <p className='mt-1 text-sm text-[var(--gray-11)]'>
+                  Drag to reorder menus and toggle visibility for this role.
+                </p>
+              </div>
+
+              <span className='rounded-[8px] bg-[var(--gray-2)] px-4 py-1 text-sm font-semibold text-[var(--gray-13)]'>
+                {visibleCount} / {menus.length} visible
+              </span>
+            </div>
+
+            <DndContext
+              collisionDetection={closestCenter}
+              sensors={sensors}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={menus.map((menu) => menu.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                {menus.map((menu) => (
+                  <SortableMenuRow
+                    defaultPage={defaultPage}
+                    key={menu.id}
+                    menu={menu}
+                    toggleMenu={toggleMenu}
+                  />
+                ))}
+              </SortableContext>
+            </DndContext>
+          </div>
+        </div>
+      </section>
+    </main>
+  )
 }
 
 function EzSelectField({
   label,
-  value,
   options,
-  onChange,
   placeholder = 'Select',
+  value,
+  onChange,
 }: {
-  label: string;
-  value: string;
-  options: string[];
-  onChange: (value: string) => void;
-  placeholder?: string;
+  label: string
+  options: string[]
+  placeholder?: string
+  value: string
+  onChange: (value: string) => void
 }) {
-  const selectOptions = toSelectOptions(options);
+  const selectOptions = toSelectOptions(options)
   const selectedOption =
-    selectOptions.find((option) => option.value === value || option.name === value) || null;
+    selectOptions.find(
+      (option) => option.value === value || option.name === value,
+    ) || null
 
   return (
     <InputSelect
       label={label}
       options={selectOptions}
-      value={selectedOption}
       placeholder={placeholder}
+      value={selectedOption}
       onChange={(selected: SelectOption | null) => {
-        if (!selected) return;
-        onChange(selected.value || selected.name);
+        if (!selected) return
+        onChange(selected.value || selected.name)
       }}
     />
-  );
+  )
 }
 
 function SortableMenuRow({
-  menu,
   defaultPage,
+  menu,
   toggleMenu,
 }: {
-  menu: MenuItem;
-  defaultPage: string;
-  toggleMenu: (id: string) => void;
+  defaultPage: string
+  menu: MenuItem
+  toggleMenu: (id: string) => void
 }) {
-  const Icon = menu.icon;
+  const Icon = menu.icon
 
   const {
     attributes,
+    isDragging,
     listeners,
-    setNodeRef,
     transform,
     transition,
-    isDragging,
+    setNodeRef,
   } = useSortable({
-    id: menu.id,
     disabled: menu.disabled,
-  });
+    id: menu.id,
+  })
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-  };
+  }
 
   return (
     <div
       ref={setNodeRef}
       style={style}
       className={[
-        'flex min-h-[62px] items-center justify-between border-b border-[var(--border-default)] px-5 last:border-b-0 bg-white',
-        isDragging ? 'z-50 shadow-[var(--shadow-md)] opacity-95' : '',
+        'flex min-h-[62px] items-center justify-between border-b border-[var(--border-default)] bg-white px-5 last:border-b-0',
+        isDragging ? 'z-50 opacity-95 shadow-[var(--shadow-md)]' : '',
       ].join(' ')}
     >
-      <div className="flex items-center gap-5">
+      <div className='flex items-center gap-5'>
         <button
-          type="button"
           disabled={menu.disabled}
+          type='button'
           {...attributes}
           {...listeners}
           className={[
@@ -172,22 +305,22 @@ function SortableMenuRow({
         </span>
       </div>
 
-      <div className="flex items-center gap-5">
+      <div className='flex items-center gap-5'>
         {menu.name === defaultPage && (
-          <span className="inline-flex items-center gap-1 rounded-[8px] bg-[var(--primary-3)] px-3 py-1 text-xs font-semibold text-[var(--primary-10)] shadow-[var(--shadow-sm)]">
+          <span className='inline-flex items-center gap-1 rounded-[8px] bg-[var(--primary-3)] px-3 py-1 text-xs font-semibold text-[var(--primary-10)] shadow-[var(--shadow-sm)]'>
             <Home size={13} />
             Default
           </span>
         )}
 
         <button
-          type="button"
           disabled={menu.disabled}
-          onClick={() => toggleMenu(menu.id)}
+          type='button'
           className={[
             'relative h-5 w-10 rounded-full transition disabled:cursor-not-allowed',
             menu.visible ? 'bg-[var(--primary-9)]' : 'bg-[var(--gray-3)]',
           ].join(' ')}
+          onClick={() => toggleMenu(menu.id)}
         >
           <span
             className={[
@@ -198,135 +331,13 @@ function SortableMenuRow({
         </button>
       </div>
     </div>
-  );
+  )
 }
 
-type MenuProps = {
-  onBack?: () => void;
-};
-
-export default function MenuProfileManagement({ onBack }: MenuProps) {
-  const [selectedRole, setSelectedRole] = useState('AP Manager');
-  const [defaultPage, setDefaultPage] = useState('Inbox');
-  const [menus, setMenus] = useState<MenuItem[]>(initialMenus);
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 6,
-      },
-    }),
-  );
-
-  const visibleCount = useMemo(
-    () => menus.filter((menu) => menu.visible).length,
-    [menus],
-  );
-
-  const toggleMenu = (id: string) => {
-    setMenus((current) =>
-      current.map((menu) =>
-        menu.id === id && !menu.disabled
-          ? { ...menu, visible: !menu.visible }
-          : menu,
-      ),
-    );
-  };
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-
-    if (!over || active.id === over.id) return;
-
-    setMenus((current) => {
-      const oldIndex = current.findIndex((item) => item.id === active.id);
-      const newIndex = current.findIndex((item) => item.id === over.id);
-
-      return arrayMove(current, oldIndex, newIndex);
-    });
-  };
-
-  return (
-    <main className="">
-      <section className="">
-        <div className="mb-4 flex items-center justify-between gap-6 border-b border-gray-3 bg-surface px-6 py-4 md:px-8">
-  <div className="flex min-w-0 items-start gap-3">
-    <IconButton
-      ariaLabel="Back"
-      color="gray"
-      icon="lucide:arrow-left"
-      size="sm"
-      variant="ghost"
-      onClick={onBack}
-    />
-
-    <div className="min-w-0">
-      <h1 className="text-18/6 font-semibold tracking-tight text-gray-13">
-        Menu &amp; Profile Management
-      </h1>
-      <p className="text-13/5 text-gray-11">
-        Control role-based menu access, ordering, and default landing experience.
-      </p>
-    </div>
-  </div>
-
-  <div className="grid w-full max-w-[620px] grid-cols-2 gap-4">
-    <EzSelectField
-      label="Select Role"
-      value={selectedRole}
-      options={roles}
-      onChange={setSelectedRole}
-    />
-
-    <EzSelectField
-      label="Default Landing Page"
-      value={defaultPage}
-      options={landingPages}
-      onChange={setDefaultPage}
-    />
-  </div>
-</div>
-
-       
-<div className='px-6 py-2 max-h-[calc(100vh-180px)] overflow-y-auto'>
-        <div className="mt-8 overflow-hidden rounded-[14px] border border-[var(--border-default)] bg-white shadow-[var(--shadow-sm)] ">
-          <div className="flex items-center justify-between border-b border-[var(--border-default)] px-5 py-5">
-            <div>
-              <h2 className="text-md font-semibold text-[var(--gray-13)]">
-                Menu Configuration
-              </h2>
-              <p className="mt-1 text-sm text-[var(--gray-11)]">
-                Drag to reorder menus and toggle visibility for this role.
-              </p>
-            </div>
-
-            <span className="rounded-[8px] bg-[var(--gray-2)] px-4 py-1 text-sm font-semibold text-[var(--gray-13)]">
-              {visibleCount} / {menus.length} visible
-            </span>
-          </div>
-
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-          >
-            <SortableContext
-              items={menus.map((menu) => menu.id)}
-              strategy={verticalListSortingStrategy}
-            >
-              {menus.map((menu) => (
-                <SortableMenuRow
-                  key={menu.id}
-                  menu={menu}
-                  defaultPage={defaultPage}
-                  toggleMenu={toggleMenu}
-                />
-              ))}
-            </SortableContext>
-          </DndContext>
-        </div>
-        </div>
-      </section>
-    </main>
-  );
+function toSelectOptions(options: string[]): SelectOption[] {
+  return options.map((option) => ({
+    id: option,
+    name: option,
+    value: option,
+  }))
 }

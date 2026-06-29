@@ -163,7 +163,7 @@ const Header: React.FC<HeaderProps> = ({
     return 'border-[var(--red-3)] bg-[var(--red-1)] text-[var(--red-9)]'
   }
 
-  console.log("Action value", actions)
+  console.log('Action value', actions)
 
   return (
     <OverlayHeaderWrapper className='h-14 justify-between gap-4 px-4'>
@@ -210,89 +210,89 @@ const Header: React.FC<HeaderProps> = ({
               {status &&
                 (isProcessing && percent !== undefined
                   ? (() => {
-                    const styles = getProgressStyles(percent)
-                    return (
-                      <div
-                        className={cn(
-                          'animate-in fade-in zoom-in-95 relative overflow-hidden rounded-full border px-3 py-1 text-[11px] font-semibold transition-all duration-300',
-                          styles.badge,
-                        )}
-                      >
-                        {/* Progress Fill Layer */}
+                      const styles = getProgressStyles(percent)
+                      return (
                         <div
-                          style={{ width: `${percent}%` }}
                           className={cn(
-                            'absolute inset-y-0 left-0 transition-all duration-500 ease-out',
-                            styles.fill,
+                            'animate-in fade-in zoom-in-95 relative overflow-hidden rounded-full border px-3 py-1 text-[11px] font-semibold transition-all duration-300',
+                            styles.badge,
                           )}
-                        />
+                        >
+                          {/* Progress Fill Layer */}
+                          <div
+                            style={{ width: `${percent}%` }}
+                            className={cn(
+                              'absolute inset-y-0 left-0 transition-all duration-500 ease-out',
+                              styles.fill,
+                            )}
+                          />
 
-                        {/* Content Layer */}
-                        <span className='relative z-10 flex items-center gap-1.5'>
-                          {percent < 100 && (
-                            <Icon
-                              name='tabler:loader-2'
-                              className={cn(
-                                'h-3.5 w-3.5 animate-spin',
-                                styles.icon,
-                              )}
-                            />
+                          {/* Content Layer */}
+                          <span className='relative z-10 flex items-center gap-1.5'>
+                            {percent < 100 && (
+                              <Icon
+                                name='tabler:loader-2'
+                                className={cn(
+                                  'h-3.5 w-3.5 animate-spin',
+                                  styles.icon,
+                                )}
+                              />
+                            )}
+                            <span>{status}</span>
+                          </span>
+                        </div>
+                      )
+                    })()
+                  : (() => {
+                      const dec = String(status || '').toUpperCase()
+                      let iconName = ''
+                      let badgeColorClass = ''
+
+                      if (
+                        dec === 'APPROVED' ||
+                        dec === 'MATCHED' ||
+                        dec === 'VERIFIED'
+                      ) {
+                        iconName = 'tabler:circle-check'
+                        badgeColorClass =
+                          'border-[var(--green-4)] bg-[var(--green-2)] text-[var(--green-11)]'
+                      } else if (
+                        dec === 'REJECTED' ||
+                        dec === 'NO MATCH' ||
+                        dec === 'NOT MATCHED'
+                      ) {
+                        iconName = 'tabler:alert-circle'
+                        badgeColorClass =
+                          'border-[var(--red-4)] bg-[var(--red-2)] text-[var(--red-11)]'
+                      } else if (
+                        dec === 'PARTIALLY APPROVED' ||
+                        dec === 'PARTIALLY_APPROVED' ||
+                        dec === 'PARTIAL MATCH'
+                      ) {
+                        iconName = 'tabler:alert-triangle'
+                        badgeColorClass =
+                          'border-[var(--orange-4)] bg-[var(--orange-2)] text-[var(--orange-11)]'
+                      } else {
+                        if (_showApprove) {
+                          return null
+                        }
+                        iconName = 'tabler:clock'
+                        badgeColorClass =
+                          'border-[var(--orange-4)] bg-[var(--orange-2)] text-[var(--orange-11)]'
+                      }
+
+                      return (
+                        <span
+                          className={cn(
+                            'animate-in fade-in zoom-in-95 flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-semibold transition-all duration-300',
+                            badgeColorClass,
                           )}
+                        >
+                          <Icon className='h-3.5 w-3.5' name={iconName} />
                           <span>{status}</span>
                         </span>
-                      </div>
-                    )
-                  })()
-                  : (() => {
-                    const dec = String(status || '').toUpperCase()
-                    let iconName = ''
-                    let badgeColorClass = ''
-
-                    if (
-                      dec === 'APPROVED' ||
-                      dec === 'MATCHED' ||
-                      dec === 'VERIFIED'
-                    ) {
-                      iconName = 'tabler:circle-check'
-                      badgeColorClass =
-                        'border-[var(--green-4)] bg-[var(--green-2)] text-[var(--green-11)]'
-                    } else if (
-                      dec === 'REJECTED' ||
-                      dec === 'NO MATCH' ||
-                      dec === 'NOT MATCHED'
-                    ) {
-                      iconName = 'tabler:alert-circle'
-                      badgeColorClass =
-                        'border-[var(--red-4)] bg-[var(--red-2)] text-[var(--red-11)]'
-                    } else if (
-                      dec === 'PARTIALLY APPROVED' ||
-                      dec === 'PARTIALLY_APPROVED' ||
-                      dec === 'PARTIAL MATCH'
-                    ) {
-                      iconName = 'tabler:alert-triangle'
-                      badgeColorClass =
-                        'border-[var(--orange-4)] bg-[var(--orange-2)] text-[var(--orange-11)]'
-                    } else {
-                      if (_showApprove) {
-                        return null
-                      }
-                      iconName = 'tabler:clock'
-                      badgeColorClass =
-                        'border-[var(--orange-4)] bg-[var(--orange-2)] text-[var(--orange-11)]'
-                    }
-
-                    return (
-                      <span
-                        className={cn(
-                          'animate-in fade-in zoom-in-95 flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-semibold transition-all duration-300',
-                          badgeColorClass,
-                        )}
-                      >
-                        <Icon className='h-3.5 w-3.5' name={iconName} />
-                        <span>{status}</span>
-                      </span>
-                    )
-                  })())}
+                      )
+                    })())}
             </div>
           </div>
         </div>
@@ -330,9 +330,9 @@ const Header: React.FC<HeaderProps> = ({
               return Number.isNaN(num)
                 ? '0.00'
                 : num.toLocaleString(undefined, {
-                  maximumFractionDigits: 2,
-                  minimumFractionDigits: 2,
-                })
+                    maximumFractionDigits: 2,
+                    minimumFractionDigits: 2,
+                  })
             }
 
             const currDisplay = getCurrencyDisplay(currency || '')

@@ -289,13 +289,14 @@ const InboxList: React.FC<InboxListProps> = ({
       if (isOverdue(row)) overdue++
 
       const parsedForm = getParsedFormData(row)
-      const agentData = row._agentResponse || row._agentData?.[0] || row._agentData || {}
+      const agentData =
+        row._agentResponse || row._agentData?.[0] || row._agentData || {}
       const rawDecision = String(
         parsedForm['2MH_BMDFEVKsU0uAQjoI1'] ||
-        agentData?.decision ||
-        row.decision ||
-        row.status ||
-        '',
+          agentData?.decision ||
+          row.decision ||
+          row.status ||
+          '',
       ).toUpperCase()
 
       if (rawDecision === 'APPROVED' || rawDecision === 'MATCHED') {
@@ -318,7 +319,7 @@ const InboxList: React.FC<InboxListProps> = ({
       }
     })
 
-    return { overdue, matched, discrepancies, highValue }
+    return { discrepancies, highValue, matched, overdue }
   }, [flatRows])
 
   const quickFilteredRows = useMemo(() => {
@@ -330,13 +331,14 @@ const InboxList: React.FC<InboxListProps> = ({
       const isOvr = isOverdue(row)
 
       const parsedForm = getParsedFormData(row)
-      const agentData = row._agentResponse || row._agentData?.[0] || row._agentData || {}
+      const agentData =
+        row._agentResponse || row._agentData?.[0] || row._agentData || {}
       const rawDecision = String(
         parsedForm['2MH_BMDFEVKsU0uAQjoI1'] ||
-        agentData?.decision ||
-        row.decision ||
-        row.status ||
-        '',
+          agentData?.decision ||
+          row.decision ||
+          row.status ||
+          '',
       ).toUpperCase()
 
       const isMtc = rawDecision === 'APPROVED' || rawDecision === 'MATCHED'

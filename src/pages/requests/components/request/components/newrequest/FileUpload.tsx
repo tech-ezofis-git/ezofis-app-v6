@@ -448,6 +448,11 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
   const [selectedSampleName, setSelectedSampleName] = useState<string | null>(
     null,
   )
+  const [uploadProgressText, setUploadProgressText] = useState<{
+    current: number
+    fileName: string
+    total: number
+  } | null>(null)
 
   const resetInput = (ref: React.RefObject<HTMLInputElement | null>) => {
     if (ref.current) ref.current.value = ''
@@ -502,9 +507,16 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
         processId,
         transactionId,
       )
-      const items = inboxRes.data?.items || []
+      const items = (inboxRes.data?.items || []) as Array<{
+        id?: string | number
+        processId?: string | number
+        referenceNumber?: string
+        requestNo?: string
+        stage?: string
+        workflowInstanceId?: string | number
+      }>
       const foundItem =
-        items.find((i: any) => {
+        items.find((i) => {
           const id = i.workflowInstanceId || i.processId || i.id
           return String(id) === String(processId)
         }) || items[0]
@@ -568,101 +580,148 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
       setSelectedSampleName(null)
     }
 
+    let filesToProcess = validFiles
+    if (validFiles.length > 5) {
+      showToast({
+        message:
+          'A maximum of 5 files can be processed at once. Only the first 5 will be processed.',
+        variant: 'warning',
+      })
+      filesToProcess = validFiles.slice(0, 5)
+    }
+
     setUploadStatus('uploading')
 
+    let lastStubItem: {
+      _localFileUrl: string
+      apAgentJobId: string | number | null
+      createdAt: string
+      documentNumber: string
+      id: string
+      isProcessing: boolean
+      processId: string
+      reqNo: string
+      requestNo: string
+      stage: string
+      stageType: string
+      transactionId: string | null
+      vendor: string
+    } | null = null
+    let selectedWorkflowStub: {
+      flowJson: string
+      formJson: string
+      id: number | string | undefined
+      name: string
+      wFormId: number | string
+    } | null = null
+
     try {
-      const { apAgentJobId, processId, transactionId } =
-        await startWorkflowInstance(validFiles[0])
+      for (let i = 0; i < filesToProcess.length; i++) {
+        const file = filesToProcess[i]
+        setUploadProgressText({
+          current: i + 1,
+          fileName: file.name,
+          total: filesToProcess.length,
+        })
+
+        const { apAgentJobId, processId, transactionId } =
+          await startWorkflowInstance(file)
+
+        const isJobBased = !!apAgentJobId
+        const resolvedProcessId = processId || `job-${apAgentJobId}`
+        const resolvedTransactionId = transactionId || null
+
+        let requestNo = 'New Request'
+        let stage = isJobBased ? 'Initiating...' : 'Start'
+
+        if (transactionId && processId) {
+          const details = await fetchWorkflowStageDetails(
+            processId,
+            transactionId,
+          )
+          requestNo = details.requestNo
+          stage = details.stage
+        }
+
+        const localUrl = URL.createObjectURL(file)
+        const startTime = new Date().toISOString()
+
+        // Add to background processing
+        requestStore.getState().addProcessingProcess({
+          apAgentJobId: apAgentJobId || null,
+          id: resolvedProcessId,
+          name: file.name,
+          processId: resolvedProcessId,
+          repositoryId: rawWorkflow?.repositoryId,
+          requestNo,
+          stage,
+          startTime,
+          transactionId: resolvedTransactionId,
+          workflowId: rawWorkflow?.id,
+        })
+
+        const wFormId =
+          rawWorkflow?.formId ??
+          rawWorkflow?.wFormId ??
+          rawWorkflow?.settings?.general?.initiateUsing?.formId ??
+          ''
+        selectedWorkflowStub = {
+          flowJson:
+            typeof rawWorkflow?.flowJson === 'string'
+              ? rawWorkflow.flowJson
+              : JSON.stringify(rawWorkflow?.flowJson || {}),
+          formJson:
+            typeof rawWorkflow?.formJson === 'string'
+              ? rawWorkflow.formJson
+              : JSON.stringify(rawWorkflow?.formJson || ''),
+          id: rawWorkflow?.id,
+          name:
+            rawWorkflow?.name ??
+            rawWorkflow?.settings?.general?.name ??
+            'Workflow',
+          wFormId: wFormId || '',
+        }
+
+        lastStubItem = {
+          _localFileUrl: localUrl,
+          apAgentJobId: apAgentJobId || null,
+          createdAt: startTime,
+          documentNumber: 'Analyzing Invoice...',
+          id: resolvedProcessId,
+          isProcessing: true,
+          processId: resolvedProcessId,
+          reqNo: requestNo,
+          requestNo: requestNo,
+          stage: stage,
+          stageType: 'AP_AGENT',
+          transactionId: resolvedTransactionId,
+          vendor: 'Analyzing Supplier...',
+        }
+      }
+
       setUploadStatus('success')
+      setUploadProgressText(null)
 
-      const isJobBased = !!apAgentJobId
-      const resolvedProcessId = processId || `job-${apAgentJobId}`
-      const resolvedTransactionId = transactionId || null
-
-      let requestNo = 'New Request'
-      let stage = isJobBased ? 'Initiating...' : 'Start'
-
-      if (transactionId && processId) {
-        const details = await fetchWorkflowStageDetails(
-          processId,
-          transactionId,
-        )
-        requestNo = details.requestNo
-        stage = details.stage
+      // Transition straight to detail overview for the last created request
+      if (lastStubItem && selectedWorkflowStub) {
+        requestStore
+          .getState()
+          .openRequest(lastStubItem, selectedWorkflowStub, 'Overview')
       }
-
-      const localUrl = URL.createObjectURL(validFiles[0])
-      const startTime = new Date().toISOString()
-
-      // Add to background processing
-      requestStore.getState().addProcessingProcess({
-        apAgentJobId: apAgentJobId || null,
-        id: resolvedProcessId,
-        name: validFiles[0].name,
-        processId: resolvedProcessId,
-        repositoryId: rawWorkflow?.repositoryId,
-        requestNo,
-        stage,
-        startTime,
-        transactionId: resolvedTransactionId,
-        workflowId: rawWorkflow?.id,
-      })
-
-      // Resolve workflow metadata stub
-      const wFormId =
-        rawWorkflow?.formId ??
-        rawWorkflow?.wFormId ??
-        rawWorkflow?.settings?.general?.initiateUsing?.formId ??
-        ''
-      const selectedWorkflowStub = {
-        flowJson:
-          typeof rawWorkflow?.flowJson === 'string'
-            ? rawWorkflow.flowJson
-            : JSON.stringify(rawWorkflow?.flowJson || {}),
-        formJson:
-          typeof rawWorkflow?.formJson === 'string'
-            ? rawWorkflow.formJson
-            : JSON.stringify(rawWorkflow?.formJson || ''),
-        id: rawWorkflow?.id,
-        name:
-          rawWorkflow?.name ??
-          rawWorkflow?.settings?.general?.name ??
-          'Workflow',
-        wFormId: wFormId || '',
-      }
-
-      const stubItem = {
-        _localFileUrl: localUrl,
-        apAgentJobId: apAgentJobId || null,
-        createdAt: startTime,
-        documentNumber: 'Analyzing Invoice...',
-        id: resolvedProcessId,
-        isProcessing: true,
-        processId: resolvedProcessId,
-        reqNo: requestNo,
-        requestNo: requestNo,
-        stage: stage,
-        stageType: 'AP_AGENT',
-        transactionId: resolvedTransactionId,
-        vendor: 'Analyzing Supplier...',
-      }
-
-      // Transition straight to detail overview
-      requestStore
-        .getState()
-        .openRequest(stubItem, selectedWorkflowStub, 'Overview')
 
       // Trigger list refresh
       workflowRefresh()
 
       // Close the upload sheet immediately
       if (onClose) onClose()
-    } catch (error: any) {
-      console.error('Workflow start error:', error)
+    } catch (error) {
+      const err = error as Error
+      console.error('Workflow start error:', err)
       setUploadStatus('error')
+      setUploadProgressText(null)
       setSelectedSampleName(null)
       showToast({
-        message: error.message || 'Error starting workflow',
+        message: err.message || 'Error starting workflow',
         variant: 'error',
       })
     }
@@ -747,10 +806,17 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
                   </div>
                   <div className='text-center'>
                     <h2 className='text-base font-bold text-[var(--gray-13)]'>
-                      Uploading & Processing...
+                      {uploadProgressText
+                        ? `Uploading & Processing (${uploadProgressText.current}/${uploadProgressText.total})...`
+                        : 'Uploading & Processing...'}
                     </h2>
-                    <p className='text-sm font-medium text-[var(--gray-10)]'>
-                      Please wait while we process your document
+                    <p
+                      className='mt-1 max-w-[280px] truncate text-xs font-semibold text-[var(--gray-10)]'
+                      title={uploadProgressText?.fileName}
+                    >
+                      {uploadProgressText
+                        ? `Processing "${uploadProgressText.fileName}"`
+                        : 'Please wait while we process your document'}
                     </p>
                   </div>
                 </div>

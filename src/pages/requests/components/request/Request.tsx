@@ -1,13 +1,13 @@
-import { useEffect, useMemo, useState, useRef } from 'react'
-import { queryClient } from '@/lib/tanstack-query/queryClient'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import formApi from '@/api/form/form'
 import workflowsApiV6 from '@/api/v6/workflows'
 // Import your custom animation components
 import { AnimateFadeIn } from '@/components/common/animations'
+import { queryClient } from '@/lib/tanstack-query/queryClient'
+import authUserStore from '@/stores/authUserStore'
 import workflowApi from '../../../../api/workflow/workflow'
 import { useRequestDetail } from '../../hooks/useRequestDetails'
 import requestStore from '../../stores/useRequestStore'
-import authUserStore from '@/stores/authUserStore'
 import {
   isDecorativeFieldType,
   isMatrixFieldType,
@@ -489,15 +489,15 @@ const updateProcessInStore = (apAgentJobId: string | number, jobData: any) => {
       )
       const updatedProcesses = hasJobProcess
         ? state.processingProcesses.map((p) =>
-          String(p.processId || p.id) === jobKey
-            ? {
-              ...p,
-              apAgentJobId: null,
-              id: jobData.instanceId,
-              processId: jobData.instanceId,
-            }
-            : p,
-        )
+            String(p.processId || p.id) === jobKey
+              ? {
+                  ...p,
+                  apAgentJobId: null,
+                  id: jobData.instanceId,
+                  processId: jobData.instanceId,
+                }
+              : p,
+          )
         : state.processingProcesses
 
       return {
@@ -537,30 +537,30 @@ const handleJobData = (
 
   setJobStatus({
     hangfireStatus: jobData.hangfireStatus || '',
+    isCompleted,
     message: jobData.message || '',
     percent,
     stage,
-    isCompleted,
   })
 
   // Sync to global store
   const jobKey = `job-${apAgentJobId}`
   requestStore.getState().setJobStatus(jobKey, {
-    stage,
+    apAgentJobId,
+    isCompleted,
     message,
     percent,
-    isCompleted,
-    apAgentJobId,
+    stage,
   })
 
   if (jobData.instanceId) {
     requestStore.getState().setJobMapping(apAgentJobId, jobData.instanceId)
     requestStore.getState().setJobStatus(String(jobData.instanceId), {
-      stage,
+      apAgentJobId,
+      isCompleted,
       message,
       percent,
-      isCompleted,
-      apAgentJobId,
+      stage,
     })
   }
 
@@ -603,10 +603,10 @@ const useJobPolling = (
 ) => {
   const [jobStatus, setJobStatus] = useState<{
     hangfireStatus: string
+    isCompleted?: boolean
     message: string
     percent?: number
     stage: string
-    isCompleted?: boolean
   } | null>(null)
 
   const onJobDataRef = useRef(onJobData)
@@ -748,26 +748,28 @@ const parseCleanFields = (
 
 const Request = ({
   hideActions,
+  isFourthItem,
+  isThirdItem,
   item,
   workflowId,
   onBack,
   onNext,
   onPrev,
-  isFourthItem,
-  isThirdItem,
 }: {
   hideActions?: boolean
+  isFourthItem?: boolean
+  isThirdItem?: boolean
   item?: any
   workflowId?: number | string
   onBack?: () => void
   onNext?: () => void
   onPrev?: () => void
-  isFourthItem?: boolean
-  isThirdItem?: boolean
 }) => {
   const {
     activeTabValue,
     closeRequest,
+    jobMappings,
+    jobStatuses,
     processingProcesses,
     rawWorkflowData,
     requestListTab,
@@ -775,8 +777,6 @@ const Request = ({
     selectedWorkflow,
     selectedWorkflowId,
     workflowRefresh,
-    jobMappings,
-    jobStatuses,
   } = requestStore((state) => state)
 
   const selectedItem = item || storeSelectedItem
@@ -790,7 +790,7 @@ const Request = ({
   let apAgentJobId = selectedItem?.apAgentJobId
   if (!apAgentJobId && rowId) {
     const mappedJobId = Object.keys(jobMappings || {}).find(
-      (key) => String(jobMappings[key]) === String(rowId)
+      (key) => String(jobMappings[key]) === String(rowId),
     )
     if (mappedJobId) {
       apAgentJobId = mappedJobId
@@ -798,7 +798,7 @@ const Request = ({
       const statusObj = Object.values(jobStatuses || {}).find(
         (status: any) =>
           String(status?.apAgentJobId) === String(rowId) ||
-          String(status?.instanceId) === String(rowId)
+          String(status?.instanceId) === String(rowId),
       ) as any
       if (statusObj?.apAgentJobId) {
         apAgentJobId = statusObj.apAgentJobId
@@ -855,7 +855,7 @@ const Request = ({
             }
             requestStore
               .getState()
-              .setRawWorkflowData({ ...wf, id: resolvedWorkflowId, formJson })
+              .setRawWorkflowData({ ...wf, formJson, id: resolvedWorkflowId })
           }
         } catch (e) {
           console.error(
@@ -939,12 +939,13 @@ const Request = ({
 
   const hasAgentDecision = request
     ? !!(
-      request.review ||
-      request._agentData?.[0]?.decision ||
-      request.completedAtUtc
-    )
+        request.review ||
+        request._agentData?.[0]?.decision ||
+        request.completedAtUtc
+      )
     : false
-  const isCurrentlyProcessing = !hasAgentDecision && initialProcessing && !jobStatus?.isCompleted
+  const isCurrentlyProcessing =
+    !hasAgentDecision && initialProcessing && !jobStatus?.isCompleted
 
   const actions = useMemo(() => {
     const list =
@@ -964,7 +965,6 @@ const Request = ({
   const isApAgentStage = request
     ? request.stageType === 'AP_AGENT'
     : selectedItem?.stageType === 'AP_AGENT'
-
 
   const dynamicRules = useMemo(() => {
     const rules = rawWorkflowData?.workflowJson?.rules || []
@@ -987,15 +987,30 @@ const Request = ({
     console.log('[RULE_ACTIONS_DEBUG] --- headerActions recalculating ---')
     console.log('[RULE_ACTIONS_DEBUG] isApAgentStage:', isApAgentStage)
     console.log('[RULE_ACTIONS_DEBUG] request activityId:', request?.activityId)
-    console.log('[RULE_ACTIONS_DEBUG] selectedItem activityId:', selectedItem?.activityId)
-    console.log('[RULE_ACTIONS_DEBUG] rawWorkflowData rules:', rawWorkflowData?.workflowJson?.rules)
-    console.log('[RULE_ACTIONS_DEBUG] dynamicRules (matching fromBlockId):', dynamicRules)
+    console.log(
+      '[RULE_ACTIONS_DEBUG] selectedItem activityId:',
+      selectedItem?.activityId,
+    )
+    console.log(
+      '[RULE_ACTIONS_DEBUG] rawWorkflowData rules:',
+      rawWorkflowData?.workflowJson?.rules,
+    )
+    console.log(
+      '[RULE_ACTIONS_DEBUG] dynamicRules (matching fromBlockId):',
+      dynamicRules,
+    )
     console.log('[RULE_ACTIONS_DEBUG] ruleActions:', ruleActions)
     console.log('[RULE_ACTIONS_DEBUG] fallback actions:', actions)
     if (isApAgentStage) return []
     return ruleActions.length > 0 ? ruleActions : actions
-  }, [isApAgentStage, ruleActions, actions, request?.activityId, selectedItem?.activityId, rawWorkflowData])
-
+  }, [
+    isApAgentStage,
+    ruleActions,
+    actions,
+    request?.activityId,
+    selectedItem?.activityId,
+    rawWorkflowData,
+  ])
 
   const [formModel, setFormModel] = useState<any>({})
 
@@ -1007,7 +1022,10 @@ const Request = ({
       request?._formDefinition,
     )
 
-    const fieldsSource = mergeFormData(request?.formData, selectedItem?.formData)
+    const fieldsSource = mergeFormData(
+      request?.formData,
+      selectedItem?.formData,
+    )
     const labels = new Set<string>()
     const labelRecord: Record<string, unknown> = {}
 
@@ -1041,7 +1059,6 @@ const Request = ({
       setSelectedAgentId(null)
     }
   }, [request?._agentData, hasAgentData])
-
 
   useEffect(() => {
     const activeItem = request || selectedItem
@@ -1089,8 +1106,6 @@ const Request = ({
     }
   }, [hasAgentData, activeTabValue])
 
-
-
   const handleMoveNext = async (action: string) => {
     try {
       setSubmitting(true)
@@ -1125,33 +1140,51 @@ const Request = ({
         AIAGENTResponse:
           typeof selectedItem?.agentResponse === 'string'
             ? selectedItem.agentResponse
-            : JSON.stringify(selectedItem?.agentResponse || request?.agentResponse || {}),
+            : JSON.stringify(
+                selectedItem?.agentResponse || request?.agentResponse || {},
+              ),
         comments: '',
         formData: formDataStr,
-        formEntryId: Number(selectedItem?.formEntryId || request?.formEntryId || 0),
+        formEntryId: Number(
+          selectedItem?.formEntryId || request?.formEntryId || 0,
+        ),
         formId:
           selectedItem?.formId ||
           request?.formId ||
           rawWorkflowData?.formId ||
           rawWorkflowData?.wFormId ||
           null,
-        instanceId: selectedItem?.workflowInstanceId || request?.workflowInstanceId || null,
+        instanceId:
+          selectedItem?.workflowInstanceId ||
+          request?.workflowInstanceId ||
+          null,
         isItemTable: true,
         itemId: selectedItem?.itemId || request?.itemId || null,
-        processId: selectedItem?.processId || selectedItem?.id || request?.processId || request?.id || null,
+        processId:
+          selectedItem?.processId ||
+          selectedItem?.id ||
+          request?.processId ||
+          request?.id ||
+          null,
         repositoryId:
           selectedItem?.repositoryId ||
           request?.repositoryId ||
           rawWorkflowData?.repositoryId ||
           null,
         review: action,
-        transactionId: selectedItem?.transactionId || request?.transactionId || null,
-        workflowId: selectedItem?.workflowId || request?.workflowId || rawWorkflowData?.id || null,
+        transactionId:
+          selectedItem?.transactionId || request?.transactionId || null,
+        workflowId:
+          selectedItem?.workflowId ||
+          request?.workflowId ||
+          rawWorkflowData?.id ||
+          null,
       }
 
       console.log('MoveNext Payload:', payload)
 
-      const instanceId = selectedItem?.workflowInstanceId || request?.workflowInstanceId
+      const instanceId =
+        selectedItem?.workflowInstanceId || request?.workflowInstanceId
       if (!instanceId) {
         throw new Error('Instance ID is missing')
       }
@@ -1190,10 +1223,10 @@ const Request = ({
           fields:
             Object.keys(formModel).length > 0
               ? mapFormModelToPayloadFields(
-                formModel,
-                selectedWorkflow,
-                request?._formDefinition,
-              )
+                  formModel,
+                  selectedWorkflow,
+                  request?._formDefinition,
+                )
               : selectedItem?.formData?.fields || {},
           formEntryId: selectedItem?.formData?.formEntryId,
           formId: rawWorkflowData?.wFormId,
@@ -1222,7 +1255,6 @@ const Request = ({
       setSubmitting(false)
     }
   }
-
 
   const totalAmount =
     formModel?.['Invoice Amount'] ||
@@ -1348,19 +1380,19 @@ const Request = ({
             formModel?.['invoice_number'] ||
             formModel?.['invoice_no'] ||
             currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-            'Invoice No'
+              'Invoice No'
             ] ||
             currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-            'invoice_no'
+              'invoice_no'
             ] ||
             currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-            'Invoice Number'
+              'Invoice Number'
             ] ||
             currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-            'invoice_number'
+              'invoice_number'
             ] ||
             currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-            'invoice_num'
+              'invoice_num'
             ] ||
             currentAgentData?.['kvcYuknkDumkTenjvrVLj'] ||
             selectedItem?.reqNo ||
@@ -1389,7 +1421,9 @@ const Request = ({
           allowedLabels={allowedLabels}
           formDefinition={request?._formDefinition}
           formModel={formModel}
+          isFourthItem={isFourthItem}
           isProcessing={isCurrentlyProcessing || isLoading}
+          isThirdItem={isThirdItem}
           processId={Number(selectedItem?.processId)}
           repositoryId={Number(rawWorkflowData?.repositoryId)}
           rightView={rightView}
@@ -1399,8 +1433,6 @@ const Request = ({
           workflowId={resolvedWorkflowId}
           setFormModel={setFormModel}
           setRightView={setRightView}
-          isFourthItem={isFourthItem}
-          isThirdItem={isThirdItem}
         />
       </AnimateFadeIn>
     </div>
