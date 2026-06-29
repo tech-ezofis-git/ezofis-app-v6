@@ -114,7 +114,29 @@ const StepFour = () => {
         return
       }
 
-      // 3. Prepare Workflow payload with dynamic folderId, formId, and userId placeholders replacement
+      // 3. Create Master Form
+      const masterFormPayload = apSetupPayloads.masterFormPayload
+      const masterFormRes = await formApi.createForm(JSON.stringify(masterFormPayload))
+      if (masterFormRes.error) {
+        showToast({
+          message: `Failed to create Master Form: ${masterFormRes.error}`,
+          variant: 'error',
+        })
+        setIsSaving(false)
+        return
+      }
+
+      const masterFormId = masterFormRes.data?.id ?? masterFormRes.data?.formId ?? masterFormRes.data
+      if (!masterFormId) {
+        showToast({
+          message: 'Master Form created but did not return a valid form ID.',
+          variant: 'error',
+        })
+        setIsSaving(false)
+        return
+      }
+
+      // 4. Prepare Workflow payload with dynamic folderId, formId, masterFormId, and userId placeholders replacement
       const session = authUserStore.getState().session
       const userId = session?.id || ''
 
@@ -123,6 +145,7 @@ const StepFour = () => {
         {
           folderId,
           formId,
+          masterFormId,
           userId,
         },
       )
