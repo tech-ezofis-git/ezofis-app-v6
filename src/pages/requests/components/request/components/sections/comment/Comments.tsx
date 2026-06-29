@@ -12,6 +12,43 @@ import cn from '@/utils/cn'
 
 dayjs.extend(relativeTime)
 
+const isUuid = (val: string): boolean => {
+  if (typeof val !== 'string') return false
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val)
+}
+
+const getInitials = (fullNameOrEmail: string): string => {
+  const clean = String(fullNameOrEmail || '').trim()
+  if (!clean || isUuid(clean)) return 'U'
+  if (clean.includes('@')) {
+    const part = clean.split('@')[0]
+    const parts = part.split(/[._-]/).filter(Boolean)
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase().slice(0, 2)
+    }
+    return part.substring(0, Math.min(2, part.length)).toUpperCase()
+  }
+  const parts = clean.split(/\s+/).filter(Boolean)
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase().slice(0, 2)
+  }
+  return clean.substring(0, Math.min(2, clean.length)).toUpperCase()
+}
+
+const getAvatarColors = (initials: string, isMe: boolean) => {
+  if (isMe) {
+    return 'bg-[var(--primary-3)] text-[var(--primary-9)] border border-[var(--primary-4)]'
+  }
+  const charCodeSum = initials.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0)
+  const variants = [
+    'bg-[var(--blue-1)] text-[var(--blue-9)] border border-[var(--blue-3)]',
+    'bg-[var(--green-1)] text-[var(--green-9)] border border-[var(--green-3)]',
+    'bg-[var(--orange-1)] text-[var(--orange-9)] border border-[var(--orange-3)]',
+    'bg-[var(--gray-2)] text-[var(--gray-12)] border border-[var(--gray-3)]',
+  ]
+  return variants[charCodeSum % variants.length]
+}
+
 type Props = {
   attachments?: Array<{
     fileId?: any
@@ -43,6 +80,12 @@ export default function Comments({
 }: Props) {
   const { session } = authUserStore.getState()
   const currentUserEmail = session?.email ?? 'me@app.com'
+
+  const myFullName = session
+    ? session.name || (session.firstName ? `${session.firstName} ${session.lastName || ''}`.trim() : '')
+    : ''
+  const myDisplayName = myFullName || currentUserEmail
+  const myInitials = getInitials(myDisplayName)
 
   const {
     data,
@@ -162,13 +205,9 @@ export default function Comments({
           const timeDisplay = c?.createdAt
             ? formatDatetime(parseCommentDate(c.createdAt), 'YYYY-MM-DD hh:mm A')
             : ''
-          const initial = isMe
-            ? 'Y'
-            : isUuid(c?.createdByName || '')
-              ? 'U'
-              : (c?.createdByName ?? c?.createdByEmail ?? 'U')
-                  .charAt(0)
-                  .toUpperCase()
+          const initials = isMe
+            ? myInitials
+            : getInitials(c?.createdByName ?? c?.createdByEmail ?? 'User')
 
           return (
             <div
@@ -176,8 +215,8 @@ export default function Comments({
               key={`${c?.id ?? idx}`}
             >
               {/* Avatar */}
-              <div className='flex size-8 shrink-0 items-center justify-center rounded-full bg-blue-2 text-13 font-bold text-blue-9'>
-                {initial}
+              <div className={cn('flex size-8 shrink-0 items-center justify-center rounded-full text-13 font-bold', getAvatarColors(initials, isMe))}>
+                {initials}
               </div>
 
               {/* Comment Body */}
@@ -253,8 +292,8 @@ export default function Comments({
           {/* Textarea & Send Button */}
           <div className='flex items-center gap-3'>
             {/* Current User Avatar */}
-            <div className='flex size-8 shrink-0 items-center justify-center rounded-full bg-blue-2 text-13 font-bold text-blue-9'>
-              {currentUserEmail.charAt(0).toUpperCase()}
+            <div className={cn('flex size-8 shrink-0 items-center justify-center rounded-full text-13 font-bold', getAvatarColors(myInitials, true))}>
+              {myInitials}
             </div>
 
             {/* Input Box */}
@@ -276,21 +315,22 @@ export default function Comments({
               />
             </div>
 
-            {/* Post Button */}
+            {/* Send Button */}
             <button
               className={cn(
-                'flex h-[36px] items-center justify-center rounded-xl px-5 text-13 font-bold transition-all active:scale-95',
+                'flex h-[36px] w-[36px] shrink-0 items-center justify-center rounded-xl text-13 font-bold transition-all active:scale-95 bg-primary-9 text-text-on-accent',
                 canSend
-                  ? 'bg-primary-9 text-text-on-accent cursor-pointer hover:opacity-90'
-                  : 'bg-gray-3 text-gray-9 cursor-not-allowed',
+                  ? 'cursor-pointer hover:opacity-90'
+                  : 'opacity-45 cursor-not-allowed',
               )}
               disabled={!canSend}
               onClick={onPost}
+              title="Send comment"
             >
               {posting ? (
                 <div className='size-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white' />
               ) : (
-                'Post'
+                <Icon className='size-4.5' name='tabler:send' />
               )}
             </button>
           </div>
@@ -321,10 +361,7 @@ function pickFileName(x: any) {
   return x?.name ?? x?.fileName ?? '-'
 }
 
-const isUuid = (val: string): boolean => {
-  if (typeof val !== 'string') return false
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val)
-}
+// isUuid already declared at top
 
 const parseCommentDate = (val: any): Date | string => {
   if (!val) return ''
