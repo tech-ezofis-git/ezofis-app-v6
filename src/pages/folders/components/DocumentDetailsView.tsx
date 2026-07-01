@@ -1,5 +1,7 @@
 import { ArrowLeft } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
+import fileApi from '@/api/file/file'
+import DocumentPreviewViewer from '@/components/common/document-preview/DocumentPreviewViewer'
 import authUserStore from '@/stores/authUserStore'
 import { folderApi } from '../api/folderApi'
 import { DynamicIcon } from './icons'
@@ -148,7 +150,9 @@ export function DocumentDetailsView({
   const [commentsLoaded, setCommentsLoaded] = useState(false)
   const [commentText, setCommentText] = useState('')
   const [savingComment, setSavingComment] = useState(false)
-  const fileUrl = 'https://demo.ezofis.com/v6api'
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [previewMimeType, setPreviewMimeType] = useState<string | null>(null)
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false)
   const relatedDocs: RelatedDoc[] = []
   const { session } = authUserStore.getState()
   const currentUserEmail = session?.email ?? 'me@app.com'
@@ -161,6 +165,8 @@ export function DocumentDetailsView({
       setError('')
       setData(null)
       setFileLoadFailed(false)
+      setPreviewUrl(null)
+      setPreviewMimeType(null)
       setTimeline([])
       setComments([])
       setTimelineLoaded(false)
@@ -247,6 +253,46 @@ export function DocumentDetailsView({
     }
   }, [tab, repositoryId, id, commentsLoaded])
 
+  useEffect(() => {
+    let activeUrl: string | null = null
+    let mounted = true
+
+    const loadPreview = async () => {
+      if (!repositoryId || !id) return
+
+      setIsPreviewLoading(true)
+      setFileLoadFailed(false)
+      setPreviewUrl(null)
+      setPreviewMimeType(null)
+
+      try {
+        const response = await fileApi.viewBinaryV6(repositoryId, id)
+        if (!mounted) return
+
+        if (response?.data instanceof Blob) {
+          const mimeType = response.data.type || 'application/pdf'
+          activeUrl = URL.createObjectURL(response.data)
+          setPreviewUrl(activeUrl)
+          setPreviewMimeType(mimeType)
+          return
+        }
+
+        setFileLoadFailed(true)
+      } catch {
+        if (mounted) setFileLoadFailed(true)
+      } finally {
+        if (mounted) setIsPreviewLoading(false)
+      }
+    }
+
+    void loadPreview()
+
+    return () => {
+      mounted = false
+      if (activeUrl) URL.revokeObjectURL(activeUrl)
+    }
+  }, [repositoryId, id])
+
   const saveComment = async () => {
     const value = commentText.trim()
     if (!value || savingComment) return
@@ -267,7 +313,15 @@ export function DocumentDetailsView({
   const infoCards = useMemo(() => buildInfoCards(data), [data])
   const lineItems = Array.isArray(data?.lineItems) ? data.lineItems : []
   const hasLineItems = lineItems.length > 0
-  const hasValidFileUrl = Boolean(data?.fileUrl) && !fileLoadFailed
+  const hasValidFileUrl = Boolean(previewUrl) && !fileLoadFailed
+  const isPdfPreview = previewMimeType === 'application/pdf'
+  const isImagePreview = Boolean(
+    previewMimeType?.startsWith('image/') ||
+      data?.fileType?.toLowerCase().includes('image') ||
+      data?.fileType?.toLowerCase().includes('png') ||
+      data?.fileType?.toLowerCase().includes('jpg') ||
+      data?.fileType?.toLowerCase().includes('jpeg'),
+  )
 
   const tabs = [
     {
@@ -381,13 +435,15 @@ export function DocumentDetailsView({
                 </div>
               </div>
 
-              <div className='ez-detail-scroll h-[560px] overflow-y-auto bg-gray-1'>
-                {hasValidFileUrl ? (
-                  <iframe
-                    className='h-full min-h-[560px] w-full border-0'
-                    src={`${fileUrl}${data.fileUrl}#zoom=120`}
-                    title={data.fileName}
-                    onError={() => setFileLoadFailed(true)}
+              <div className='ez-detail-scroll h-[560px] overflow-hidden bg-gray-1'>
+                {hasValidFileUrl || isPreviewLoading ? (
+                  <DocumentPreviewViewer
+                    className='h-full min-h-[560px]'
+                    fileName={data.fileName}
+                    fileUrl={previewUrl}
+                    isImage={isImagePreview}
+                    isLoading={isPreviewLoading}
+                    isPdf={isPdfPreview}
                   />
                 ) : (
                   <DummyDocumentPreview

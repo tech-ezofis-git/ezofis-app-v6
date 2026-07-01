@@ -1,0 +1,43 @@
+import React from "react";
+
+type PieItem = {
+  label: string;
+  value: number;
+};
+
+type ChartpieProps = {
+  value: PieItem[];
+};
+
+const palette = ["#8b5cf6", "#06b6d4", "#22c55e", "#f59e0b", "#ef4444", "#64748b"];
+
+const Chartpie: React.FC<ChartpieProps> = ({ value }) => {
+  const total = value.reduce((sum, item) => sum + item.value, 0);
+  let cumulative = 0;
+
+  const gradient = value
+    .map((item, index) => {
+      const start = total ? (cumulative / total) * 100 : 0;
+      cumulative += item.value;
+      const end = total ? (cumulative / total) * 100 : 0;
+      return `${palette[index % palette.length]} ${start}% ${end}%`;
+    })
+    .join(", ");
+
+  return (
+    <div className="pie-chart-card">
+      <div className="pie-chart" style={{ background: `conic-gradient(${gradient})` }} />
+      <div className="pie-legend">
+        {value.map((item, index) => (
+          <div className="pie-legend-row" key={item.label}>
+            <span className="legend-dot" style={{ backgroundColor: palette[index % palette.length] }} />
+            <span>{item.label}</span>
+            <strong>{item.value.toLocaleString()}</strong>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export default Chartpie;

@@ -180,6 +180,31 @@ const deleteForm = async (id: string) => {
   return response
 }
 
+const uploadMasterFile = async (payload: any) => {
+  const response: any = { data: null, error: '' }
+  try {
+    const store = authUserStore.getState()
+    const tenantId = store.session?.tenantId || ''
+    const { data, status } = await axiosV6.post(
+      '/form/uploadMasterFile',
+      payload,
+      {
+        headers: {
+          'Accept': 'text/plain',
+          'Content-Type': 'multipart/form-data',
+          'X-Tenant-Id': tenantId,
+        },
+      },
+    )
+    if (status !== 200) throw new Error('Invalid status code')
+    response.data = data
+  } catch (e: any) {
+    console.error(e)
+    response.error = e.message || 'Error uploading master file'
+  }
+  return response
+}
+
 const formApi = {
   createForm,
   deleteForm,
@@ -188,6 +213,7 @@ const formApi = {
   updateForm,
   getFormDataById,
   getForms,
+  uploadMasterFile,
 }
 
 export default formApi

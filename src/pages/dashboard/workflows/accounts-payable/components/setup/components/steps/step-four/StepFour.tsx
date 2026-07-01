@@ -7,6 +7,7 @@ import Button from '@/components/base/button/Button'
 import showToast from '@/components/base/toast/showToast'
 import { AnimateFadeIn } from '@/components/common/animations'
 import apSetupPayloads from '@/pages/dashboard/workflows/accounts-payable/constants/apSetupPayloads.json'
+import poMasterUrl from '@/assets/PO Master.xlsx?url'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import requestStore from '@/pages/requests/stores/useRequestStore'
 import authUserStore from '@/stores/authUserStore'
@@ -130,6 +131,46 @@ const StepFour = () => {
       if (!masterFormId) {
         showToast({
           message: 'Master Form created but did not return a valid form ID.',
+          variant: 'error',
+        })
+        setIsSaving(false)
+        return
+      }
+
+      // 3.5. Upload Master File (PO Master.xlsx)
+      try {
+        const fileResponse = await fetch(poMasterUrl)
+        if (!fileResponse.ok) {
+          throw new Error(`Failed to fetch PO Master asset: ${fileResponse.statusText}`)
+        }
+        const fileBlob = await fileResponse.blob()
+        if (!fileBlob) {
+          throw new Error('Failed to parse PO Master blob')
+        }
+        const file = new File([fileBlob], 'PO Master.xlsx', {
+          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        })
+
+        const uploadPayload = {
+          file,
+          formId: masterFormId,
+          workflowId: '',
+          instanceId: '',
+        }
+
+        const uploadRes = await formApi.uploadMasterFile(uploadPayload)
+        if (uploadRes.error) {
+          showToast({
+            message: `Failed to upload PO Master file: ${uploadRes.error}`,
+            variant: 'error',
+          })
+          setIsSaving(false)
+          return
+        }
+      } catch (uploadError: any) {
+        console.error('Error uploading master file:', uploadError)
+        showToast({
+          message: `Error uploading PO Master file: ${uploadError.message || uploadError}`,
           variant: 'error',
         })
         setIsSaving(false)

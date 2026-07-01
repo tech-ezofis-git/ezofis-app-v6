@@ -3,6 +3,7 @@ import formApi from '@/api/form/form'
 import workflowsApiV6 from '@/api/v6/workflows'
 // Import your custom animation components
 import { AnimateFadeIn } from '@/components/common/animations'
+import showToast from '@/components/base/toast/showToast'
 import { queryClient } from '@/lib/tanstack-query/queryClient'
 import authUserStore from '@/stores/authUserStore'
 import workflowApi from '../../../../api/workflow/workflow'
@@ -1192,6 +1193,22 @@ const Request = ({
       const response = await workflowsApiV6.moveNext(instanceId, payload)
       console.log('MoveNext Response:', response)
 
+      if (response?.error) {
+        showToast({
+          message: `Failed to proceed request: ${response.error}`,
+          variant: 'error',
+        })
+        return
+      }
+
+      showToast({
+        message:
+          action.toLowerCase() === 'submit'
+            ? 'Request submitted successfully'
+            : `Request action "${action}" completed successfully`,
+        variant: 'success',
+      })
+
       queryClient.invalidateQueries({
         queryKey: [
           'request-detail',
@@ -1239,6 +1256,26 @@ const Request = ({
 
       const response = await workflowApi?.createProcessTransaction(payload)
       console.log(response)
+
+      if (response?.error) {
+        showToast({
+          message:
+            action === 'Save'
+              ? `Failed to save request: ${response.error}`
+              : `Failed to submit request: ${response.error}`,
+          variant: 'error',
+        })
+        return
+      }
+
+      showToast({
+        message:
+          action === 'Save'
+            ? 'Request saved successfully'
+            : 'Request submitted successfully',
+        variant: 'success',
+      })
+
       queryClient.invalidateQueries({
         queryKey: [
           'request-detail',
@@ -1249,8 +1286,12 @@ const Request = ({
       })
       workflowRefresh()
       closeRequest()
-    } catch (e) {
+    } catch (e: any) {
       console.error(e)
+      showToast({
+        message: `An error occurred: ${e.message || e}`,
+        variant: 'error',
+      })
     } finally {
       setSubmitting(false)
     }

@@ -14,7 +14,6 @@ interface Props {
   viewMode: 'table' | 'grid'
   workflow: Option | null
   exceptionsCount?: number
-  inboxTabCount?: number
   metaData?: IRequestMeta
   setActiveTab: (val: string) => void
   setViewMode: (mode: 'table' | 'grid') => void
@@ -25,7 +24,6 @@ const Header = ({
   activeTab,
   allWorkflows,
   exceptionsCount,
-  inboxTabCount,
   isLoading,
   metaData,
   viewMode,
@@ -41,7 +39,7 @@ const Header = ({
   }
   const processedCount =
     Number(metaData?.completedCount ?? 0) + Number(metaData?.sentCount ?? 0)
-  const inboxCount = inboxTabCount ?? metaData?.inboxCount ?? 0
+  const inboxCount = Number(metaData?.inboxCount ?? 0)
   const resolvedExceptionsCount = exceptionsCount ?? 0
 
   return (

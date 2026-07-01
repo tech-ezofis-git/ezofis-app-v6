@@ -298,7 +298,6 @@ const RequestsPage = () => {
           activeTab={activeTab}
           allWorkflows={allWorkflow}
           exceptionsCount={inboxResult?.exceptionsCount}
-          inboxTabCount={inboxResult?.inboxTabCount}
           isLoading={isLoading}
           metaData={metaData}
           viewMode={viewMode}

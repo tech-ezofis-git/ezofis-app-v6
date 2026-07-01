@@ -2336,7 +2336,8 @@ const Overview = (props: any) => {
                         isLoading={
                           isCurrentlyProcessing &&
                           (!paymentTermsDisplay?.termsDisplay ||
-                            paymentTermsDisplay.termsDisplay === '-')
+                            paymentTermsDisplay.termsDisplay === '-' ||
+                            extractPaymentTerms(selectedItem, agentData, formModel) === '-')
                         }
                         value={paymentTermsDisplay.daysText.replace(
                           /days/i,

@@ -5,7 +5,7 @@ import {
   PanelsTopLeft,
   Shield,
   UserRoundCheck,
-  Users,
+  Users,Code2,BadgeDollarSign,
 } from 'lucide-react'
 import React, { useState } from 'react'
 import AuditMonitoring from './components/AuditMonitoring'
@@ -14,7 +14,7 @@ import GroupManagement from './components/GroupManagement'
 import ManageUser from './components/ManageUser'
 import Menu from './components/Menus'
 import RolesPermissions from './components/RolesPermissions'
-
+import Credits from './components/credits/Credits'
 type SettingsItem = {
   description: string
   icon: React.ElementType
@@ -72,6 +72,20 @@ const settingsItems: SettingsItem[] = [
     key: 'audit-monitoring',
     title: 'Audit & Monitoring',
   },
+  {
+   description:
+  'Explore, test, and debug API endpoints with live requests and sample responses.',
+    icon: Code2,
+    key: 'playground',
+    title: 'Playground API',
+  },
+  {
+    description:
+      'Monitor credit consumption, usage trends, and module-wise activity across the platform.',
+    icon: BadgeDollarSign,
+    key: 'credit',
+    title: 'Credit Usage',
+  },
 ]
 
 export default function SettingsMain() {
@@ -97,9 +111,16 @@ export default function SettingsMain() {
   if (activePage === 'audit-monitoring') {
     return <AuditMonitoring onBack={() => setActivePage('settings')} />
   }
+ if (activePage === "playground") {
+  window.open("https://ezagentplayground.onrender.com/apikey.html?id=2", "_blank");
+  setActivePage('settings')
+}
+  if (activePage === 'credit') {
+    return <Credits onBack={() => setActivePage('settings')} />
+  }
 
   return (
-    <main className='overflow-y-auto bg-[var(--surface-secondary)]'>
+    <main className='overflow-y-auto bg-[var(--surface)]'>
       <section className='mb-4 flex items-center justify-between border-b border-gray-3 bg-surface px-6 py-4 md:px-8'>
         <div className='flex flex-col gap-1'>
           <h1 className='text-18/6 font-semibold tracking-tight text-gray-13'>

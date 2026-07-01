@@ -116,7 +116,7 @@ export default function MenuProfileManagement({ onBack }: MenuProps) {
   }
 
   return (
-    <main className=''>
+    <main className='bg-[var(--surface)]'>
       <section className=''>
         <div className='mb-4 flex items-center justify-between gap-6 border-b border-gray-3 bg-surface px-6 py-4 md:px-8'>
           <div className='flex min-w-0 items-start gap-3'>

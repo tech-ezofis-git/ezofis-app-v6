@@ -335,8 +335,8 @@ export default function DmsFolderConfiguration({
   }
 
   return (
-    <div className='min-h-[90vh]'>
-      <div className='flex items-center justify-between gap-6 border-b border-gray-3 bg-surface px-6 py-4 md:px-8'>
+    <div className='min-h-[90vh] bg-[var(--surface)]'>
+      <div className='flex items-center justify-between gap-6 border-b border-gray-3 bg-surface px-6 py-4 md:px-8 bg-[var(--surface)]'>
         <div className='flex items-start gap-3'>
           <IconButton
             ariaLabel='Back'

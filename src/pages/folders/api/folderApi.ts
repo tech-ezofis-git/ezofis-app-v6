@@ -162,8 +162,16 @@ const toFileColumns = (
   fields: RepositoryFieldDto[] = [],
 ): DynamicRepositoryColumn[] =>
   fields
-    .filter((field) => field.sqlColumnName || field.name)
-    .map((field) => ({
+    .map((field, index) => ({ field, index }))
+    .filter(({ field }) => field.sqlColumnName || field.name)
+    .sort((a, b) => {
+      const mandatoryDiff =
+        Number(Boolean(b.field.isMandatory)) -
+        Number(Boolean(a.field.isMandatory))
+      if (mandatoryDiff !== 0) return mandatoryDiff
+      return a.index - b.index
+    })
+    .map(({ field }) => ({
       dataType: field.dataType,
       fieldId: field.id,
       includeInFolderStructure: field.includeInFolderStructure,

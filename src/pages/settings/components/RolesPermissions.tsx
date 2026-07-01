@@ -366,7 +366,7 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
   }
 
   return (
-    <main className='min-h-full bg-[var(--surface-secondary)]'>
+    <main className='min-h-full bg-[var(--surface)]'>
       <section>
         <div className='mb-4 flex items-center justify-between border-b border-gray-3 bg-surface px-6 py-4 md:px-8'>
           <div className='flex items-start gap-3'>
@@ -1083,32 +1083,36 @@ function Tabs({
   activeTab,
   onChange,
 }: {
-  activeTab: TabKey
-  onChange: (tab: TabKey) => void
+  activeTab: TabKey;
+  onChange: (tab: TabKey) => void;
 }) {
   return (
-    <div className='inline-flex flex-wrap rounded-[10px] bg-gray-3 p-1'>
+    <div className="flex h-14 items-center border-b border-gray-3 bg-white px-6">
       {tabs.map((tab) => {
-        const isActive = activeTab === tab.key
+        const isActive = activeTab === tab.key;
 
         return (
           <button
             key={tab.key}
-            type='button'
-            className={[
-              'h-9 rounded-[8px] px-5 text-sm font-medium transition',
-              isActive
-                ? 'bg-white text-[var(--gray-13)] shadow-[var(--shadow-sm)]'
-                : 'text-[var(--gray-10)] hover:text-[var(--gray-13)]',
-            ].join(' ')}
+            type="button"
             onClick={() => onChange(tab.key)}
+            className={[
+              "relative mr-9 flex h-14 items-center text-sm font-medium transition",
+              isActive
+                ? "text-[#7C5CFF]"
+                : "text-[#1F2A44] hover:text-[#7C5CFF]",
+            ].join(" ")}
           >
             {tab.label}
+
+            {isActive && (
+              <span className="absolute bottom-0 left-0 h-[2px] w-full bg-[#7C5CFF]" />
+            )}
           </button>
-        )
+        );
       })}
     </div>
-  )
+  );
 }
 
 function toggleCategory(rows: PermissionRow[], category: string) {

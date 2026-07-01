@@ -1,11 +1,20 @@
-import { SpecialZoomLevel, Viewer, Worker } from '@react-pdf-viewer/core'
 import { ArrowUpFromLine, CheckCircle2, Copy, FileText } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { UploadFiles } from '@/api/v6/folder/folder'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { uploadForOcr, UploadFiles } from '@/api/v6/folder/folder'
 import IconButton from '@/components/base/button/IconButton'
+import InputDate from '@/components/base/inputs/InputDate'
+import InputSelect from '@/components/base/inputs/InputSelect'
 import InputText from '@/components/base/inputs/InputText'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
 import showToast from '@/components/base/toast/showToast'
+import DocumentPreviewViewer from '@/components/common/document-preview/DocumentPreviewViewer'
+import type { DynamicRepositoryColumn } from '../../api/folderApi'
+import {
+  findSelectedOption,
+  getSelectOptions,
+  normalizeType,
+  toTextValue,
+} from '../../hooks/useEditMetadataForm'
 import {
   IMAGE_ACCEPT,
   isImage,
@@ -48,16 +57,11 @@ type UploadProps = {
   onBack: () => void
   onSuccess?: () => void | Promise<void>
 }
-type UploadStatus = 'idle' | 'uploading' | 'success' | 'error'
+
+type OcrStatus = 'idle' | 'analyzing' | 'complete' | 'error'
+type ExportStatus = 'idle' | 'exporting' | 'success' | 'error'
 
 const PROCESS_STEPS = ['Received', 'Analysis', 'Fields', 'Done'] as const
-
-const getActiveStepIndex = (status: UploadStatus, hasFile: boolean) => {
-  if (status === 'success') return 3
-  if (status === 'uploading') return 2
-  if (hasFile) return 2
-  return -1
-}
 
 const getFieldKey = (field: RepositoryField) => field.sqlColumnName || field.id
 
@@ -74,12 +78,224 @@ const formatFileSize = (size?: number) => {
   return `${(size / (1024 * 1024)).toFixed(2)} MB`
 }
 
-const getInputValue = (eventOrValue: any) => {
-  if (eventOrValue?.target) return eventOrValue.target.value ?? ''
-  return eventOrValue ?? ''
+const safeJson = (value: unknown) => JSON.stringify(value, null, 2)
+
+const formatOcrFieldDescriptor = (field: RepositoryField) => {
+  const fieldName = field.sqlColumnName || field.name
+  const fieldType = String(field.dataType || 'text').trim()
+  return `${fieldName}, ${fieldType}`
 }
 
-const safeJson = (value: unknown) => JSON.stringify(value, null, 2)
+const toDynamicColumn = (field: RepositoryField): DynamicRepositoryColumn => {
+  const column: DynamicRepositoryColumn & Record<string, unknown> = {
+    dataType: field.dataType,
+    fieldId: field.id,
+    includeInFolderStructure: field.includeInFolderStructure,
+    isMandatory: field.isMandatory,
+    key: getFieldKey(field),
+    label: field.name,
+    level: field.level,
+  }
+
+  if (field.optionsJson) {
+    try {
+      column.options = JSON.parse(field.optionsJson)
+    } catch {
+      // ignore invalid options JSON
+    }
+  }
+
+  return column
+}
+
+const getActiveStepIndex = (
+  hasFile: boolean,
+  ocrStatus: OcrStatus,
+  exportStatus: ExportStatus,
+) => {
+  if (exportStatus === 'success') return 3
+  if (exportStatus === 'exporting') return 3
+  if (ocrStatus === 'complete' || ocrStatus === 'error') return 2
+  if (ocrStatus === 'analyzing') return 1
+  if (hasFile) return 0
+  return -1
+}
+
+const isStepComplete = (
+  stepIndex: number,
+  activeStepIndex: number,
+  exportStatus: ExportStatus,
+) => {
+  if (exportStatus === 'success') return true
+  return stepIndex < activeStepIndex
+}
+
+type OcrFieldItem = {
+  name?: string
+  value?: unknown
+}
+
+const normalizeFieldKey = (key: string) =>
+  key.toLowerCase().replace(/[_\s-]/g, '')
+
+const fieldKeysMatch = (left: string, right: string) => {
+  const normalizedLeft = normalizeFieldKey(left)
+  const normalizedRight = normalizeFieldKey(right)
+
+  if (!normalizedLeft || !normalizedRight) return false
+  if (normalizedLeft === normalizedRight) return true
+
+  const minLength = Math.min(normalizedLeft.length, normalizedRight.length)
+  if (minLength < 4) return false
+
+  return (
+    normalizedLeft.includes(normalizedRight) ||
+    normalizedRight.includes(normalizedLeft)
+  )
+}
+
+const findOcrValue = (
+  ocrFieldMap: Map<string, string>,
+  candidates: string[],
+) => {
+  for (const candidate of candidates) {
+    const directValue = ocrFieldMap.get(normalizeFieldKey(candidate))
+    if (directValue !== undefined && directValue.trim()) {
+      return directValue
+    }
+  }
+
+  const ocrEntries = Array.from(ocrFieldMap.entries())
+
+  for (const candidate of candidates) {
+    for (const [ocrKey, ocrValue] of ocrEntries) {
+      if (!ocrValue.trim()) continue
+      if (fieldKeysMatch(candidate, ocrKey)) return ocrValue
+    }
+  }
+
+  return ''
+}
+
+const appendOcrFieldItems = (
+  target: Map<string, string>,
+  items: unknown,
+) => {
+  if (!Array.isArray(items)) return
+
+  items.forEach((item) => {
+    if (!item || typeof item !== 'object') return
+    const field = item as OcrFieldItem
+    const name = field.name ? String(field.name).trim() : ''
+    if (!name) return
+
+    const value =
+      field.value === null || field.value === undefined
+        ? ''
+        : String(field.value)
+
+    target.set(normalizeFieldKey(name), value)
+  })
+}
+
+const extractOcrFieldMap = (response: unknown) => {
+  const fieldMap = new Map<string, string>()
+  if (!response || typeof response !== 'object') return fieldMap
+
+  const payload = response as Record<string, unknown>
+  const sources = [
+    payload,
+    payload.data,
+    payload.result,
+    payload.fields,
+    payload.values,
+    payload.metadata,
+  ].filter(
+    (source): source is Record<string, unknown> =>
+      Boolean(source) && typeof source === 'object' && !Array.isArray(source),
+  )
+
+  sources.forEach((source) => {
+    appendOcrFieldItems(fieldMap, source.ocrFieldList)
+    appendOcrFieldItems(fieldMap, source.ocrResult)
+
+    const ocrJson = source.ocrJson
+    if (typeof ocrJson !== 'string' || !ocrJson.trim()) return
+
+    try {
+      const parsed = JSON.parse(ocrJson) as Record<string, unknown>
+      appendOcrFieldItems(fieldMap, parsed.ocrResult)
+      appendOcrFieldItems(fieldMap, parsed.fields)
+    } catch {
+      // ignore invalid OCR JSON payload
+    }
+  })
+
+  return fieldMap
+}
+
+const mapOcrResponseToFieldValues = (
+  response: unknown,
+  repositoryFields: RepositoryField[],
+) => {
+  const result = getInitialValues(repositoryFields)
+  if (!response || typeof response !== 'object') return result
+
+  const ocrFieldMap = extractOcrFieldMap(response)
+
+  const payload = response as Record<string, unknown>
+  const flatData =
+    (payload.data as Record<string, unknown> | undefined) ??
+    (payload.fields as Record<string, unknown> | undefined) ??
+    (payload.values as Record<string, unknown> | undefined) ??
+    (payload.metadata as Record<string, unknown> | undefined) ??
+    payload
+
+  const readFlatValue = (source: Record<string, unknown>, key: string) => {
+    const direct = source[key]
+    if (direct !== null && direct !== undefined) {
+      if (typeof direct === 'object' && 'value' in direct) {
+        return String((direct as { value?: unknown }).value ?? '')
+      }
+      return String(direct)
+    }
+
+    const matchedKey = Object.keys(source).find(
+      (sourceKey) => normalizeFieldKey(sourceKey) === normalizeFieldKey(key),
+    )
+    if (!matchedKey) return ''
+
+    const value = source[matchedKey]
+    if (value === null || value === undefined) return ''
+    if (typeof value === 'object' && value !== null && 'value' in value) {
+      return String((value as { value?: unknown }).value ?? '')
+    }
+    return String(value)
+  }
+
+  repositoryFields.forEach((field) => {
+    const fieldKey = getFieldKey(field)
+    const candidates = [field.sqlColumnName, field.name, field.id].filter(
+      Boolean,
+    ) as string[]
+
+    for (const candidate of candidates) {
+      const ocrValue = findOcrValue(ocrFieldMap, [candidate])
+      if (ocrValue.trim()) {
+        result[fieldKey] = ocrValue
+        return
+      }
+
+      const flatValue = readFlatValue(flatData, candidate)
+      if (flatValue.trim()) {
+        result[fieldKey] = flatValue
+        return
+      }
+    }
+  })
+
+  return result
+}
 
 export default function Upload({
   folderId,
@@ -89,43 +305,38 @@ export default function Upload({
   onSuccess,
 }: UploadProps) {
   const invoiceInputRef = useRef<HTMLInputElement>(null)
+  const ocrRequestIdRef = useRef(0)
+  const lastFileSelectionRef = useRef<{ at: number; fingerprint: string } | null>(
+    null,
+  )
 
   const [isDragOver, setIsDragOver] = useState(false)
   const [fileData, setFileData] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
-  const [uploadStatus, setUploadStatus] = useState<UploadStatus>('idle')
+  const [ocrStatus, setOcrStatus] = useState<OcrStatus>('idle')
+  const [exportStatus, setExportStatus] = useState<ExportStatus>('idle')
   const [activeTab, setActiveTab] = useState<ResultTab>('fields')
-  const zoom = 100
-  const [scale, setScale] = useState(1)
+  const [focusedFieldKey, setFocusedFieldKey] = useState<string | null>(null)
 
-  const viewerRef = useRef<any>(null)
-
-  const toolbarPluginInstance = useMemo(
-    () => ({
-      install: (pluginFunctions: any) => {
-        viewerRef.current = pluginFunctions
-      },
-      onZoom: (e: any) => {
-        setScale(e.scale)
-      },
-    }),
-    [],
-  )
   const repositoryFields = useMemo(() => {
-    return [...(repositoryData?.fields ?? [])].sort(
-      (a, b) => (a.orderId ?? 0) - (b.orderId ?? 0),
-    )
+    return [...(repositoryData?.fields ?? [])].sort((a, b) => {
+      const mandatoryDiff =
+        Number(Boolean(b.isMandatory)) - Number(Boolean(a.isMandatory))
+      if (mandatoryDiff !== 0) return mandatoryDiff
+      return (a.orderId ?? 0) - (b.orderId ?? 0)
+    })
   }, [repositoryData?.fields])
 
   const [fieldValues, setFieldValues] = useState<Record<string, string>>(() =>
     getInitialValues(repositoryFields),
   )
 
-  const isUploading = uploadStatus === 'uploading'
-
-  useEffect(() => {
-    setFieldValues(getInitialValues(repositoryFields))
-  }, [repositoryFields])
+  const isAnalyzing = ocrStatus === 'analyzing'
+  const isExporting = exportStatus === 'exporting'
+  const isFieldsPhase =
+    ocrStatus === 'complete' &&
+    exportStatus === 'idle' &&
+    Boolean(fileData)
 
   useEffect(() => {
     return () => {
@@ -133,8 +344,70 @@ export default function Upload({
     }
   }, [previewUrl])
 
+  const runOcrExtraction = useCallback(
+    async (selectedFile: File, activeRepositoryId: string) => {
+      const requestId = ++ocrRequestIdRef.current
+      setOcrStatus('analyzing')
+      setExportStatus('idle')
+      setFieldValues(getInitialValues(repositoryFields))
+      setFocusedFieldKey(null)
+
+      const ocrFields = repositoryFields
+        .map((field) => formatOcrFieldDescriptor(field))
+        .filter(Boolean)
+
+      try {
+        const { data, error } = await uploadForOcr(
+          activeRepositoryId,
+          selectedFile,
+          ocrFields,
+        )
+
+        if (requestId !== ocrRequestIdRef.current) return
+
+        if (error) {
+          setOcrStatus('error')
+          showToast({
+            message: `OCR extraction failed: ${error}`,
+            variant: 'error',
+          })
+          return
+        }
+
+        setFieldValues(mapOcrResponseToFieldValues(data, repositoryFields))
+        setOcrStatus('complete')
+      } catch (error: any) {
+        if (requestId !== ocrRequestIdRef.current) return
+        setOcrStatus('error')
+        showToast({
+          message: `OCR extraction failed: ${error?.message || error}`,
+          variant: 'error',
+        })
+      }
+    },
+    [repositoryFields],
+  )
+
   const resetInput = () => {
     if (invoiceInputRef.current) invoiceInputRef.current.value = ''
+  }
+
+  const handleCancelUpload = () => {
+    if (isExporting) return
+
+    ocrRequestIdRef.current += 1
+    lastFileSelectionRef.current = null
+
+    if (previewUrl) URL.revokeObjectURL(previewUrl)
+
+    setFileData(null)
+    setPreviewUrl(null)
+    setOcrStatus('idle')
+    setExportStatus('idle')
+    setActiveTab('fields')
+    setFocusedFieldKey(null)
+    setFieldValues(getInitialValues(repositoryFields))
+    resetInput()
   }
 
   const updateFieldValue = (field: RepositoryField, value: string) => {
@@ -169,13 +442,39 @@ export default function Upload({
 
     if (validFiles.length) {
       const selectedFile = validFiles[0]
+      const fileFingerprint = `${selectedFile.name}:${selectedFile.size}:${selectedFile.lastModified}`
+      const now = Date.now()
+      const lastSelection = lastFileSelectionRef.current
+
+      if (
+        lastSelection?.fingerprint === fileFingerprint &&
+        now - lastSelection.at < 800
+      ) {
+        resetInput()
+        return
+      }
+
+      lastFileSelectionRef.current = { at: now, fingerprint: fileFingerprint }
+      const activeRepositoryId = String(repositoryId || repositoryData?.id || '')
 
       if (previewUrl) URL.revokeObjectURL(previewUrl)
 
       setFileData(selectedFile)
       setPreviewUrl(URL.createObjectURL(selectedFile))
-      setUploadStatus('idle')
       setActiveTab('fields')
+      setExportStatus('idle')
+
+      if (!activeRepositoryId) {
+        setOcrStatus('error')
+        showToast({
+          message: 'Repository ID is missing. Cannot run OCR.',
+          variant: 'error',
+        })
+        resetInput()
+        return
+      }
+
+      void runOcrExtraction(selectedFile, activeRepositoryId)
     }
 
     resetInput()
@@ -251,7 +550,7 @@ export default function Upload({
     if (!validateMandatoryFields()) return null
 
     try {
-      setUploadStatus('uploading')
+      setExportStatus('exporting')
 
       const formData = new FormData()
       formData.append('file', fileData, fileData.name)
@@ -263,7 +562,7 @@ export default function Upload({
       )
 
       if (error) {
-        setUploadStatus('error')
+        setExportStatus('error')
         showToast({
           message: `Error uploading file: ${error}`,
           variant: 'error',
@@ -271,13 +570,13 @@ export default function Upload({
         return null
       }
 
-      setUploadStatus('success')
+      setExportStatus('success')
       showToast({ message: 'File exported successfully.', variant: 'success' })
       await onSuccess?.()
       onBack()
       return data
     } catch (error: any) {
-      setUploadStatus('error')
+      setExportStatus('error')
       showToast({
         message: `Exception uploading file: ${error?.message || error}`,
         variant: 'error',
@@ -286,36 +585,114 @@ export default function Upload({
     }
   }
 
-  const activeStepIndex = getActiveStepIndex(uploadStatus, Boolean(fileData))
+  const activeStepIndex = getActiveStepIndex(
+    Boolean(fileData),
+    ocrStatus,
+    exportStatus,
+  )
+
+  const highlightTerms = useMemo(() => {
+    if (!focusedFieldKey) return []
+    const value = fieldValues[focusedFieldKey]
+    return value ? [value] : []
+  }, [focusedFieldKey, fieldValues])
+
+  const handleFieldFocus = useCallback((field: RepositoryField) => {
+    setFocusedFieldKey(getFieldKey(field))
+  }, [])
 
   const renderFieldControl = (field: RepositoryField) => {
-    const value = fieldValues[getFieldKey(field)] ?? ''
-    const dataType = field.dataType?.toLowerCase()
-    const disabled = Boolean(field.isReadOnly || isUploading)
+    const column = toDynamicColumn(field)
+    const fieldKey = getFieldKey(field)
+    const fieldType = normalizeType(field.dataType)
+    const value = isAnalyzing ? '' : (fieldValues[fieldKey] ?? '')
+    const disabled = Boolean(field.isReadOnly || isExporting || isAnalyzing)
+    const label = field.name
+    const required = Boolean(field.isMandatory)
+    const options = getSelectOptions(column)
 
-    const commonProps = {
-      disabled,
-      placeholder: `Enter ${field.name}`,
-      value,
-      onChange: (eventOrValue: any) =>
-        updateFieldValue(field, String(getInputValue(eventOrValue))),
+    const focusProps = {
+      onFocus: () => handleFieldFocus(field),
     }
 
-    if (dataType === 'date') return <InputText type='date' {...commonProps} />
+    if (fieldType === 'date' || fieldType === 'datetime') {
+      return (
+        <InputDate
+          className='w-full'
+          disabled={disabled}
+          label={label}
+          required={required}
+          value={value || ''}
+          onChange={(nextValue: string | null) =>
+            updateFieldValue(field, nextValue || '')
+          }
+          {...focusProps}
+        />
+      )
+    }
 
     if (
-      dataType === 'decimal' ||
-      dataType === 'number' ||
-      dataType === 'currency'
+      fieldType === 'select' ||
+      fieldType === 'dropdown' ||
+      options.length > 0
     ) {
-      return <InputText type='number' {...commonProps} />
+      return (
+        <InputSelect
+          disabled={disabled}
+          label={label}
+          options={options}
+          required={required}
+          value={findSelectedOption(options, toTextValue(value))}
+          onChange={(selected) =>
+            updateFieldValue(
+              field,
+              String(
+                selected?.value ?? selected?.name ?? selected?.id ?? '',
+              ),
+            )
+          }
+          {...focusProps}
+        />
+      )
     }
 
-    if (field.name.toLowerCase().includes('address')) {
-      return <InputTextarea rows={3} {...commonProps} />
+    if (fieldType === 'long_text' || fieldType === 'textarea' || label.toLowerCase().includes('address')) {
+      return (
+        <InputTextarea
+          className='w-full'
+          disabled={disabled}
+          label={label}
+          placeholder={isAnalyzing ? 'Extracting...' : `Enter ${label}`}
+          required={required}
+          rows={3}
+          value={toTextValue(value)}
+          onChange={(nextValue: string) => updateFieldValue(field, nextValue)}
+          {...focusProps}
+        />
+      )
     }
 
-    return <InputText type='text' {...commonProps} />
+    return (
+      <InputText
+        className='w-full'
+        disabled={disabled}
+        label={label}
+        placeholder={isAnalyzing ? 'Extracting...' : `Enter ${label}`}
+        required={required}
+        value={toTextValue(value)}
+        type={
+          fieldType === 'decimal' ||
+          fieldType === 'number' ||
+          fieldType === 'int' ||
+          fieldType === 'integer' ||
+          fieldType === 'currency'
+            ? 'number'
+            : 'text'
+        }
+        onChange={(nextValue: string) => updateFieldValue(field, nextValue)}
+        {...focusProps}
+      />
+    )
   }
 
   const copyMetadata = async () => {
@@ -326,7 +703,6 @@ export default function Upload({
   if (!fileData) {
     return (
       <>
-        {' '}
         <div className='flex items-center justify-between border-b border-gray-3 bg-surface px-6 py-4 md:px-8'>
           <div className='flex items-start gap-3'>
             <IconButton
@@ -483,17 +859,26 @@ export default function Upload({
       <div className='mx-auto flex w-full max-w-7xl flex-col gap-4'>
         <div className='flex items-center justify-between gap-4 rounded-2xl border border-[var(--gray-3)] bg-surface px-5 py-4 shadow-sm'>
           {PROCESS_STEPS.map((step, index, list) => {
-            const isComplete =
-              uploadStatus === 'success' ? true : index < activeStepIndex
-            const isActive =
-              uploadStatus !== 'success' && index === activeStepIndex
+            const isComplete = isStepComplete(
+              index,
+              activeStepIndex,
+              exportStatus,
+            )
+            const isActive = index === activeStepIndex && !isComplete
+            const isAnalysisStep = step === 'Analysis'
+            const isFieldsStep = step === 'Fields'
+            const isDoneStep = step === 'Done'
+            const showStepSpinner =
+              (isAnalysisStep && isAnalyzing) ||
+              (isFieldsStep && isFieldsPhase) ||
+              (isDoneStep && isExporting)
 
             return (
               <div
                 className='flex min-w-0 flex-1 items-center gap-3 last:flex-none'
                 key={step}
               >
-                <div className='flex items-center gap-3'>
+                <div className='flex min-w-0 items-center gap-3'>
                   <div
                     className={[
                       'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white shadow-sm transition-colors',
@@ -506,21 +891,46 @@ export default function Upload({
                   >
                     {isComplete ? (
                       <CheckCircle2 size={18} strokeWidth={2.5} />
+                    ) : showStepSpinner ? (
+                      <Icon
+                        className='size-4 animate-spin text-white'
+                        name='tabler:loader-2'
+                      />
                     ) : (
                       <span className='text-sm font-bold'>{index + 1}</span>
                     )}
                   </div>
 
-                  <span
-                    className={[
-                      'text-sm font-bold whitespace-nowrap',
-                      isComplete || isActive
-                        ? 'text-[var(--gray-13)]'
-                        : 'text-[var(--gray-9)]',
-                    ].join(' ')}
-                  >
-                    {step}
-                  </span>
+                  <div className='min-w-0'>
+                    <span
+                      className={[
+                        'block text-sm font-bold whitespace-nowrap',
+                        isComplete || isActive
+                          ? 'text-[var(--gray-13)]'
+                          : 'text-[var(--gray-9)]',
+                      ].join(' ')}
+                    >
+                      {step}
+                    </span>
+
+                    {isAnalysisStep && isAnalyzing ? (
+                      <span className='mt-1 block text-[11px] font-medium text-[var(--gray-10)]'>
+                        Analyzing document...
+                      </span>
+                    ) : null}
+
+                    {isFieldsStep && isFieldsPhase ? (
+                      <span className='mt-1 block text-[11px] font-medium text-[var(--gray-10)]'>
+                        Review fields before export...
+                      </span>
+                    ) : null}
+
+                    {isDoneStep && isExporting ? (
+                      <span className='mt-1 block text-[11px] font-medium text-[var(--gray-10)]'>
+                        Exporting...
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
 
                 {index < list.length - 1 ? (
@@ -538,7 +948,6 @@ export default function Upload({
 
         <div className='grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(470px,0.95fr)]'>
           <AnimateSlideUp className='flex h-[560px] max-h-[calc(100vh-100px)] min-h-0 flex-col overflow-hidden rounded-2xl border border-[var(--gray-3)] bg-surface shadow-sm'>
-            {' '}
             <div className='flex h-[72px] shrink-0 items-center justify-between border-b border-[var(--gray-3)] px-5'>
               <div className='flex min-w-0 items-center gap-3'>
                 <div className='flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--primary-1)] text-[var(--primary-9)]'>
@@ -553,36 +962,11 @@ export default function Upload({
                   </p>
                 </div>
               </div>
-
-              <div className='flex items-center gap-4 text-[var(--gray-11)]'>
-                {/* <button
-                  className="rounded-lg p-2 hover:bg-[var(--gray-2)]"
-                  type="button"
-                  onClick={() => setZoom((prev) => Math.max(50, prev - 10))}
-                >
-                  <ZoomOut size={18} />
-                </button>
-                <span className="min-w-12 text-center text-sm font-medium">{zoom}%</span>
-                <button
-                  className="rounded-lg p-2 hover:bg-[var(--gray-2)]"
-                  type="button"
-                  onClick={() => setZoom((prev) => Math.min(150, prev + 10))}
-                >
-                  <ZoomIn size={18} />
-                </button> */}
-                {/* <span className="h-6 w-px bg-[var(--gray-3)]" />
-                <button
-                  className="rounded-lg p-2 hover:bg-[var(--gray-2)]"
-                  type="button"
-                  onClick={() => setZoom(100)}
-                >
-                  <RefreshCw size={18} />
-                </button> */}
-              </div>
             </div>
+
             <div
               className={[
-                'm-6 min-h-0 flex-1 overflow-x-auto overflow-y-auto rounded-xl border transition-all',
+                'm-6 min-h-0 flex-1 overflow-hidden rounded-xl border transition-all',
                 isDragOver
                   ? 'border-[var(--primary-6)] bg-[var(--primary-1)]'
                   : 'border-[var(--gray-4)] bg-[var(--gray-1)]',
@@ -598,52 +982,17 @@ export default function Upload({
                 handleInvoiceFiles(event.dataTransfer.files)
               }}
             >
-              {isPdf(fileData) && previewUrl ? (
-                <Worker workerUrl='https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js'>
-                  <div className='group relative h-full w-full overflow-hidden'>
-                    <Viewer
-                      defaultScale={SpecialZoomLevel.PageWidth}
-                      fileUrl={previewUrl}
-                      plugins={[toolbarPluginInstance]}
-                    />
-                    <div className='absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 items-center gap-4 rounded-xl border border-[var(--gray-3)] bg-surface/90 px-4 py-2 opacity-0 shadow-2xl backdrop-blur-sm transition-all duration-300 group-hover:opacity-100'>
-                      <button
-                        className='p-1 hover:text-[var(--primary-9)]'
-                        onClick={() => viewerRef.current?.zoom(scale - 0.1)}
-                      >
-                        <Icon className='size-5' name='lucide:zoom-out' />
-                      </button>
-                      <span className='min-w-[40px] text-center text-[12px] font-semibold'>
-                        {Math.round(scale * 100)}%
-                      </span>
-                      <button
-                        className='p-1 hover:text-[var(--primary-9)]'
-                        onClick={() => viewerRef.current?.zoom(scale + 0.1)}
-                      >
-                        <Icon className='size-5' name='lucide:zoom-in' />
-                      </button>
-                    </div>
-                  </div>
-                </Worker>
-              ) : isImage(fileData) && previewUrl ? (
-                <img
-                  alt={fileData.name}
-                  className='max-h-full max-w-full object-contain transition-transform'
-                  src={previewUrl}
-                  style={{
-                    transform: `scale(${zoom / 100})`,
-                    transformOrigin: 'center center',
-                  }}
-                />
-              ) : (
-                <div className='flex flex-col items-center gap-2 text-center'>
-                  <FileText className='text-[var(--primary-9)]' size={40} />
-                  <p className='text-sm font-semibold text-[var(--gray-13)]'>
-                    Preview not available
-                  </p>
-                </div>
-              )}
+              <DocumentPreviewViewer
+                enableHighlight
+                fileName={fileData.name}
+                fileUrl={previewUrl}
+                highlightTerms={highlightTerms}
+                isImage={isImage(fileData)}
+                isPdf={isPdf(fileData)}
+                showScanOverlay={isAnalyzing}
+              />
             </div>
+
             <input
               accept={`${PDF_ACCEPT},${IMAGE_ACCEPT}`}
               className='hidden'
@@ -667,62 +1016,59 @@ export default function Upload({
                     Extracted Data
                   </h2>
                   <p className='text-xs font-medium text-[var(--gray-9)]'>
-                    {repositoryFields.length} fields ready
+                    {isAnalyzing
+                      ? 'Extracting fields...'
+                      : `${repositoryFields.length} fields ready`}
                   </p>
                 </div>
               </div>
 
-              <div className='flex items-center gap-2'>
-                <div className='flex rounded-xl bg-[var(--gray-2)] p-1'>
-                  <button
-                    type='button'
-                    className={[
-                      'rounded-lg px-4 py-2 text-xs font-semibold transition',
-                      activeTab === 'fields'
-                        ? 'bg-surface text-[var(--gray-13)] shadow-sm'
-                        : 'text-[var(--gray-10)] hover:text-[var(--gray-13)]',
-                    ].join(' ')}
-                    onClick={() => setActiveTab('fields')}
-                  >
-                    Fields
-                  </button>
-                  <button
-                    type='button'
-                    className={[
-                      'rounded-lg px-4 py-2 text-xs font-semibold transition',
-                      activeTab === 'json'
-                        ? 'bg-surface text-[var(--gray-13)] shadow-sm'
-                        : 'text-[var(--gray-10)] hover:text-[var(--gray-13)]',
-                    ].join(' ')}
-                    onClick={() => setActiveTab('json')}
-                  >
-                    JSON
-                  </button>
-                </div>
-
+              <div className='flex rounded-xl bg-[var(--gray-2)] p-1'>
                 <button
-                  className='flex items-center gap-1 rounded-lg px-3 py-2 text-xs font-semibold text-[var(--gray-11)] hover:bg-[var(--gray-2)]'
                   type='button'
-                  onClick={copyMetadata}
+                  className={[
+                    'rounded-lg px-4 py-2 text-xs font-semibold transition',
+                    activeTab === 'fields'
+                      ? 'bg-surface text-[var(--gray-13)] shadow-sm'
+                      : 'text-[var(--gray-10)] hover:text-[var(--gray-13)]',
+                  ].join(' ')}
+                  onClick={() => setActiveTab('fields')}
                 >
-                  <Copy size={15} />
-                  Copy
+                  Fields
+                </button>
+                <button
+                  type='button'
+                  className={[
+                    'rounded-lg px-4 py-2 text-xs font-semibold transition',
+                    activeTab === 'json'
+                      ? 'bg-surface text-[var(--gray-13)] shadow-sm'
+                      : 'text-[var(--gray-10)] hover:text-[var(--gray-13)]',
+                  ].join(' ')}
+                  onClick={() => setActiveTab('json')}
+                >
+                  JSON
                 </button>
               </div>
             </div>
 
-            <div className='min-h-0 flex-1 overflow-hidden p-5'>
+            <div className='relative min-h-0 flex-1 overflow-hidden p-5'>
+              {isAnalyzing ? (
+                <div className='absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-surface/80 backdrop-blur-[1px]'>
+                  <Icon
+                    className='size-8 animate-spin text-[var(--primary-9)]'
+                    name='tabler:loader-2'
+                  />
+                  <p className='text-sm font-medium text-[var(--gray-11)]'>
+                    Extracting fields from document...
+                  </p>
+                </div>
+              ) : null}
+
               {activeTab === 'fields' ? (
                 <div className='h-full max-h-full overflow-y-auto pr-2'>
                   <div className='m-4 grid grid-cols-1 gap-4'>
                     {repositoryFields.map((field) => (
                       <div className='space-y-1.5' key={field.id}>
-                        <label className='flex items-center gap-1 text-xs font-semibold text-[var(--gray-12)]'>
-                          {field.name}
-                          {field.isMandatory ? (
-                            <span className='text-red-500'>*</span>
-                          ) : null}
-                        </label>
                         {renderFieldControl(field)}
                       </div>
                     ))}
@@ -735,27 +1081,53 @@ export default function Upload({
                   </div>
                 </div>
               ) : (
-                <pre className='h-full max-h-full overflow-auto rounded-xl bg-[var(--gray-1)] p-4 text-xs leading-6 text-[var(--gray-12)]'>
-                  {safeJson(buildMetadata())}
-                </pre>
+                <div className='relative h-full max-h-full'>
+                  <button
+                    aria-label='Copy JSON'
+                    className='absolute top-3 right-3 z-10 flex items-center gap-1 rounded-lg border border-[var(--gray-3)] bg-surface/95 px-2.5 py-1.5 text-xs font-semibold text-[var(--gray-11)] shadow-sm backdrop-blur-sm hover:bg-[var(--gray-2)]'
+                    type='button'
+                    onClick={copyMetadata}
+                  >
+                    <Copy size={14} />
+                    Copy
+                  </button>
+                  <pre className='h-full max-h-full overflow-auto rounded-xl bg-[var(--gray-1)] p-4 pt-12 text-xs leading-6 text-[var(--gray-12)]'>
+                    {safeJson(buildMetadata())}
+                  </pre>
+                </div>
               )}
             </div>
 
             <div className='flex shrink-0 items-center justify-between gap-3 border-t border-[var(--gray-3)] bg-surface px-5 py-4'>
-              <div className='text-xs font-medium text-[var(--gray-9)]'>
-                {isUploading
-                  ? 'Exporting document...'
-                  : uploadStatus === 'success'
-                    ? 'Exported successfully'
-                    : 'Ready to export'}
+              <div className='flex min-w-0 flex-1 items-center gap-3'>
+                {/* <span className='text-xs font-medium text-[var(--gray-9)]'>
+                  {isExporting
+                    ? 'Exporting document...'
+                    : exportStatus === 'success'
+                      ? 'Exported successfully'
+                      : isAnalyzing
+                        ? 'Analyzing document...'
+                        : 'Ready to export'}
+                </span> */}
+
+                {!isExporting ? (
+                  <button
+                    className='text-xs font-semibold text-[var(--gray-9)] transition-colors hover:text-[var(--primary-11)] disabled:cursor-not-allowed disabled:opacity-50'
+                    disabled={isExporting}
+                    type='button'
+                    onClick={handleCancelUpload}
+                  >
+                    Cancel
+                  </button>
+                ) : null}
               </div>
 
               <Button
-                className='h-10 px-5 text-sm'
-                disabled={isUploading}
-                onClick={uploadFile}
-              >
-                {isUploading ? (
+  className="!h-10 shrink-0 !border-[var(--gray-3)] !bg-[var(--primary-10)] !px-5 !text-sm !text-[var(--surface)] hover:!bg-[var(--primary-9)] disabled:!opacity-50"
+  disabled={isExporting || isAnalyzing}
+  onClick={uploadFile}
+>
+                {isExporting ? (
                   <Icon
                     className='size-4 animate-spin'
                     name='tabler:loader-2'
@@ -763,7 +1135,7 @@ export default function Upload({
                 ) : (
                   <ArrowUpFromLine size={15} />
                 )}
-                {isUploading ? 'Exporting...' : 'Export'}
+                {isExporting ? 'Exporting...' : 'Export'}
               </Button>
             </div>
           </AnimateSlideUp>

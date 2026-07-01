@@ -198,7 +198,7 @@ export default function AuditMonitoring({ onBack }: AuditUserProps) {
   ).length
 
   return (
-    <div className=''>
+    <div className='bg-[var(--surface)]'>
       <div className='mb-4 flex items-center justify-between border-b border-gray-3 bg-surface px-6 py-4 md:px-8'>
         <div className='flex items-start gap-3'>
           <IconButton

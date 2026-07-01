@@ -511,6 +511,55 @@ export const addRepositoryItemComment = async (payload: {
   return response
 }
 
+export const uploadForOcr = async (
+  repositoryId: string,
+  file: File,
+  fields: string[],
+) => {
+  const response: any = { data: null, error: '' }
+
+  const formData = new FormData()
+  formData.append('file', file, file.name)
+  formData.append('repositoryId', repositoryId)
+  formData.append('fields', JSON.stringify(fields))
+
+  const parseError = (e: any) => {
+    const errorPayload = e?.response?.data
+    return (
+      (typeof errorPayload === 'string' ? errorPayload : null) ||
+      errorPayload?.message ||
+      errorPayload?.title ||
+      errorPayload?.error ||
+      e?.message ||
+      'error running OCR extraction'
+    )
+  }
+
+  try {
+    const { data, status } = await axiosV6({
+      data: formData,
+      headers: {
+        'Content-Type': undefined,
+      },
+      method: 'POST',
+      transformRequest: [(payload) => payload],
+      url: '/uploadAndIndex/uploadForOcr',
+    })
+
+    if (status !== 200 && status !== 201) {
+      response.error = 'invalid status code'
+      return response
+    }
+
+    response.data = typeof data === 'string' ? JSON.parse(data) : data
+  } catch (e: any) {
+    console.error(e)
+    response.error = parseError(e)
+  }
+
+  return response
+}
+
 export const UploadFiles = async (repositoryId: string, formData: FormData) => {
   const response: any = { data: null, error: '' }
 
@@ -544,4 +593,5 @@ export const UploadFiles = async (repositoryId: string, formData: FormData) => {
 ;(authApiV6 as any).getRepositoryItemTimeline = getRepositoryItemTimeline
 ;(authApiV6 as any).getRepositoryItemComments = getRepositoryItemComments
 ;(authApiV6 as any).addRepositoryItemComment = addRepositoryItemComment
+;(authApiV6 as any).uploadForOcr = uploadForOcr
 ;(authApiV6 as any).UploadFiles = UploadFiles

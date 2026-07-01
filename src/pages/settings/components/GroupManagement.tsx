@@ -57,12 +57,11 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
 
             <div>
               <h1 className='text-18/6 font-semibold tracking-tight text-gray-13'>
-                Upload Files
+                Group Management
               </h1>
 
               <p className='text-13/5 text-gray-11'>
-                Add documents to your repository and manage them with custom
-                metadata and folder organization.
+                Create logical groups to organize users by team, department, or function.
               </p>
             </div>
           </div>
