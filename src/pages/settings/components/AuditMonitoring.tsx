@@ -1,6 +1,5 @@
 import {
   createColumnHelper,
-  getCoreRowModel,
   useReactTable,
 } from '@tanstack/react-table'
 import {
@@ -8,7 +7,6 @@ import {
   Database,
   Download,
   LogIn,
-  Search,
   Settings,
   Shield,
   UserCog,
@@ -17,6 +15,11 @@ import { useMemo, useState } from 'react'
 import IconButton from '@/components/base/button/IconButton'
 import DataTable from '@/components/base/data-table/DataTable'
 import InputSelect from '@/components/base/inputs/InputSelect'
+import {
+  settingsHeaderMeta,
+  settingsTableCoreOptions,
+} from '../helpers/settingsDataTable'
+import SettingsSearchInput from './SettingsSearchInput'
 type AuditEvent = {
   category:
     | 'Authentication'
@@ -223,7 +226,7 @@ export default function AuditMonitoring({ onBack }: AuditUserProps) {
         </div>
 
         <button
-          className='inline-flex h-10 items-center gap-2 rounded-[10px] border border-[#DEE5EE] bg-white px-4 text-sm font-semibold text-[#07142B] shadow-sm transition hover:bg-[#F8FAFC]'
+          className='inline-flex h-10 items-center gap-2 rounded-[10px] border border-[var(--border-default)] bg-surface px-4 text-sm font-semibold text-gray-13 shadow-sm transition hover:bg-surface-muted'
           type='button'
         >
           <Download size={16} />
@@ -252,18 +255,11 @@ export default function AuditMonitoring({ onBack }: AuditUserProps) {
         </div>
 
         <div className='mt-6 grid grid-cols-[1fr_176px_144px] gap-3'>
-          <div className='relative'>
-            <Search
-              className='absolute top-1/2 left-4 -translate-y-1/2 text-[#526987]'
-              size={18}
-            />
-            <input
-              className='h-10 w-full rounded-[10px] border border-[#DEE5EE] bg-white pr-4 pl-11 text-sm shadow-sm transition outline-none focus:border-[#7C5CFF]'
-              placeholder='Search events...'
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-            />
-          </div>
+          <SettingsSearchInput
+            placeholder='Search events...'
+            value={search}
+            onChange={setSearch}
+          />
 
           <InputSelect
             options={categoryOptions}
@@ -298,51 +294,75 @@ function AuditEventsTable({ rows }: { rows: AuditEvent[] }) {
   const columns = useMemo(
     () => [
       columnHelper.accessor('event', {
+        enableSorting: false,
         header: 'Event',
+        meta: settingsHeaderMeta.start,
+        minSize: 200,
+        size: 240,
         cell: ({ row }) => (
-          <div>
-            <div className='font-semibold text-[#07142B]'>
+          <div className='min-w-0'>
+            <div className='truncate font-semibold text-gray-13'>
               {row.original.event}
             </div>
-            <div className='mt-1 text-xs text-[#526987]'>
+            <div className='truncate text-xs text-gray-11'>
               {row.original.eventType}
             </div>
           </div>
         ),
       }),
       columnHelper.accessor('user', {
+        enableSorting: false,
         header: 'User',
+        meta: settingsHeaderMeta.start,
+        minSize: 200,
+        size: 240,
         cell: ({ row }) => (
-          <div>
-            <div className='font-medium text-[#07142B]'>
+          <div className='min-w-0'>
+            <div className='truncate font-medium text-gray-13'>
               {row.original.user}
             </div>
-            <div className='mt-1 text-xs text-[#526987]'>
+            <div className='truncate text-xs text-gray-11'>
               {row.original.email}
             </div>
           </div>
         ),
       }),
       columnHelper.accessor('category', {
+        enableSorting: false,
         header: 'Category',
+        meta: settingsHeaderMeta.start,
+        minSize: 140,
+        size: 160,
         cell: (info) => <CategoryCell category={info.getValue()} />,
       }),
       columnHelper.accessor('severity', {
+        enableSorting: false,
         header: 'Severity',
+        meta: settingsHeaderMeta.start,
+        minSize: 110,
+        size: 120,
         cell: (info) => <SeverityBadge severity={info.getValue()} />,
       }),
       columnHelper.accessor('ipAddress', {
+        enableSorting: false,
         header: 'IP Address',
+        meta: settingsHeaderMeta.start,
+        minSize: 130,
+        size: 150,
         cell: (info) => (
-          <span className='font-mono text-xs text-[#526987]'>
+          <span className='font-mono text-xs text-gray-11'>
             {info.getValue()}
           </span>
         ),
       }),
       columnHelper.accessor('timestamp', {
+        enableSorting: false,
         header: 'Timestamp',
+        meta: settingsHeaderMeta.start,
+        minSize: 150,
+        size: 170,
         cell: (info) => (
-          <span className='text-sm text-[#526987]'>{info.getValue()}</span>
+          <span className='text-sm text-gray-11'>{info.getValue()}</span>
         ),
       }),
     ],
@@ -350,9 +370,9 @@ function AuditEventsTable({ rows }: { rows: AuditEvent[] }) {
   )
 
   const table = useReactTable({
+    ...settingsTableCoreOptions,
     columns,
     data: rows,
-    getCoreRowModel: getCoreRowModel(),
   })
 
   return (
@@ -380,8 +400,8 @@ function CategoryCell({ category }: { category: AuditEvent['category'] }) {
             : Database
 
   return (
-    <div className='flex items-center gap-2 text-[#07142B]'>
-      <Icon className='shrink-0 text-[#526987]' size={15} />
+    <div className='flex items-center gap-2 text-gray-13'>
+      <Icon className='shrink-0 text-gray-11' size={15} />
       <span className='leading-tight'>{category}</span>
     </div>
   )
@@ -396,11 +416,9 @@ function SeverityBadge({ severity }: { severity: Severity }) {
     <span
       className={cn(
         'inline-flex rounded-[8px] border px-3 py-1 text-xs font-medium capitalize shadow-sm',
-        severity === 'info' && 'border-[#B8D7FF] bg-[#EFF6FF] text-[#1D5FD1]',
-        severity === 'warning' &&
-          'border-[#FFD77A] bg-[#FFF8E6] text-[#A75A00]',
-        severity === 'critical' &&
-          'border-[#FFB7B7] bg-[#FFF1F1] text-[#C51F1F]',
+        severity === 'info' && 'border-blue-5 bg-blue-2 text-blue-11',
+        severity === 'warning' && 'border-orange-5 bg-orange-2 text-orange-11',
+        severity === 'critical' && 'border-red-5 bg-red-2 text-red-11',
       )}
     >
       {severity}
@@ -410,17 +428,17 @@ function SeverityBadge({ severity }: { severity: Severity }) {
 
 function StatCard({ icon: Icon, label, meta, value }: StatCardProps) {
   return (
-    <div className='relative rounded-[12px] border border-[#DEE5EE] bg-white p-6 shadow-sm'>
+    <div className='relative rounded-[12px] border border-[var(--border-default)] bg-surface p-6 shadow-[var(--shadow-sm)]'>
       {meta && (
-        <div className='absolute top-7 right-6 text-xs font-medium text-[#8A98AA]'>
+        <div className='absolute top-7 right-6 text-xs font-medium text-gray-10'>
           {meta}
         </div>
       )}
-      <Icon className='mb-7 text-[#7C5CFF]' size={18} />
-      <div className='text-[28px] leading-none font-bold text-[#07142B]'>
+      <Icon className='mb-7 text-primary-9' size={18} />
+      <div className='text-[28px] leading-none font-bold text-gray-13'>
         {value}
       </div>
-      <div className='mt-2 text-sm text-[#526987]'>{label}</div>
+      <div className='mt-2 text-sm text-gray-11'>{label}</div>
     </div>
   )
 }

@@ -1,4 +1,5 @@
 import React from "react";
+import { settingsChartPalette } from "../../../helpers/settingsTheme";
 
 type PieItem = {
   label: string;
@@ -9,7 +10,7 @@ type ChartpieProps = {
   value: PieItem[];
 };
 
-const palette = ["#8b5cf6", "#06b6d4", "#22c55e", "#f59e0b", "#ef4444", "#64748b"];
+const palette = [...settingsChartPalette];
 
 const Chartpie: React.FC<ChartpieProps> = ({ value }) => {
   const total = value.reduce((sum, item) => sum + item.value, 0);

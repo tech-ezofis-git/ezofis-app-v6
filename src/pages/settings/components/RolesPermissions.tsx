@@ -1,7 +1,5 @@
-import { useQuery } from '@tanstack/react-query'
 import {
   createColumnHelper,
-  getCoreRowModel,
   useReactTable,
 } from '@tanstack/react-table'
 import {
@@ -15,14 +13,18 @@ import {
   UserRound,
 } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import {
-  getGroupListQueryOptions,
-  getUserListQueryOptions,
-} from '@/api/userQueries'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
 import DataTable from '@/components/base/data-table/DataTable'
+import InputSelect from '@/components/base/inputs/InputSelect'
 import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
+import InputText from '@/components/base/inputs/InputText'
+import InputTextarea from '@/components/base/inputs/InputTextarea'
+import { getDummyUserOptions } from '../data/settingsDummyData'
+import {
+  settingsHeaderMeta,
+  settingsTableCoreOptions,
+} from '../helpers/settingsDataTable'
 
 type AssignedUser = {
   email: string
@@ -233,19 +235,7 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
   const [newPermissionRows, setNewPermissionRows] =
     useState<PermissionRow[]>(emptyPermissionRows)
 
-  const { data: userData } = useQuery(getUserListQueryOptions())
-  const { data: groupData } = useQuery(getGroupListQueryOptions())
-  void groupData
-
-  const userOptions: Option[] = useMemo(() => {
-    const users = userData as any[]
-    if (!users || !Array.isArray(users)) return []
-
-    return users.map((user: any) => ({
-      id: String(user.id || user.value),
-      name: String(user.value || user.loginName || user.name || 'Unknown User'),
-    }))
-  }, [userData])
+  const userOptions: Option[] = useMemo(() => getDummyUserOptions(), [])
 
   const selectedRole = useMemo(
     () => roles.find((role) => role.id === selectedRoleId) || roles[0],
@@ -454,7 +444,7 @@ function CheckBox({
         'inline-flex h-5 w-5 items-center justify-center rounded-[6px] border shadow-[var(--shadow-sm)] transition',
         checked
           ? 'border-[var(--primary-9)] bg-[var(--primary-9)] text-white'
-          : 'border-[var(--primary-8)] bg-white text-transparent hover:bg-[var(--primary-2)]',
+          : 'border-[var(--primary-8)] bg-surface text-transparent hover:bg-[var(--primary-2)]',
       ].join(' ')}
       onClick={(event) => {
         event.stopPropagation()
@@ -488,8 +478,10 @@ function CreatePermissionMatrix({
   const permissionColumns = useMemo(
     () => [
       permissionColumnHelper.accessor('category', {
+        enableSorting: false,
         header: 'Category',
         id: 'category',
+        meta: settingsHeaderMeta.start,
         size: 290,
         cell: ({ row }) => {
           const isRowEnabled = actions.some(
@@ -514,7 +506,9 @@ function CreatePermissionMatrix({
       }),
       ...actions.map((action) =>
         permissionColumnHelper.display({
+          enableSorting: false,
           id: action,
+          meta: settingsHeaderMeta.center,
           size: 112,
           cell: ({ row }) => (
             <div className='flex justify-center'>
@@ -544,9 +538,9 @@ function CreatePermissionMatrix({
   )
 
   const permissionTable = useReactTable({
+    ...settingsTableCoreOptions,
     columns: permissionColumns,
     data: rows,
-    getCoreRowModel: getCoreRowModel(),
     getRowId: (row) => row.category,
   })
 
@@ -682,7 +676,7 @@ function CreateRolePage({
 
       <div className='sticky bottom-0 flex justify-end gap-3 border-t border-[var(--border-default)] bg-surface px-6 py-4 shadow-[var(--shadow-sm)] md:px-8'>
         <button
-          className='h-10 rounded-[10px] border border-[var(--border-default)] bg-white px-5 text-sm font-semibold text-[var(--gray-13)] shadow-[var(--shadow-sm)] transition hover:bg-[var(--gray-2)]'
+          className='h-10 rounded-[10px] border border-[var(--border-default)] bg-surface px-5 text-sm font-semibold text-[var(--gray-13)] shadow-[var(--shadow-sm)] transition hover:bg-[var(--gray-2)]'
           type='button'
           onClick={onCancel}
         >
@@ -736,7 +730,7 @@ function MenuProfiles({
         selectedRoleId={selectedRoleId}
         onRoleChange={onRoleChange}
       />
-      <div className='mt-5 overflow-hidden rounded-[14px] border border-[var(--border-default)] bg-white shadow-[var(--shadow-sm)]'>
+      <div className='mt-5 overflow-hidden rounded-[14px] border border-[var(--border-default)] bg-surface shadow-[var(--shadow-sm)]'>
         <div className='flex items-center gap-3 border-b border-[var(--border-default)] px-5 py-4'>
           <Grid2X2 className='text-[var(--primary-9)]' size={18} />
           <h2 className='text-md font-semibold text-[var(--gray-13)]'>
@@ -777,7 +771,7 @@ function MenuProfiles({
                     <ChevronDown size={18} />
                   </button>
                 </div>
-                <span className='flex h-7 min-w-7 items-center justify-center rounded-[8px] border border-[var(--border-default)] bg-white px-2 text-xs font-semibold text-[var(--gray-13)]'>
+                <span className='flex h-7 min-w-7 items-center justify-center rounded-[8px] border border-[var(--border-default)] bg-surface px-2 text-xs font-semibold text-[var(--gray-13)]'>
                   {item.order}
                 </span>
               </div>
@@ -805,8 +799,12 @@ function PermissionMatrix({
   const permissionColumns = useMemo(
     () => [
       permissionColumnHelper.accessor('category', {
+        enableSorting: false,
         header: 'Category',
         id: 'category',
+        meta: settingsHeaderMeta.start,
+        minSize: 200,
+        size: 240,
         cell: ({ getValue }) => (
           <span className='text-sm font-semibold text-[var(--gray-13)]'>
             {getValue()}
@@ -815,8 +813,12 @@ function PermissionMatrix({
       }),
       ...actions.map((action) =>
         permissionColumnHelper.display({
+          enableSorting: false,
           header: action,
           id: action,
+          meta: settingsHeaderMeta.center,
+          minSize: 100,
+          size: 112,
           cell: ({ row }) => (
             <div className='flex justify-center'>
               <CheckBox
@@ -832,9 +834,9 @@ function PermissionMatrix({
   )
 
   const permissionTable = useReactTable({
+    ...settingsTableCoreOptions,
     columns: permissionColumns,
     data: rows,
-    getCoreRowModel: getCoreRowModel(),
     getRowId: (row) => row.category,
   })
 
@@ -879,46 +881,33 @@ function RoleDetailsForm({
 }) {
   return (
     <div className='max-w-[980px] space-y-5'>
-      <label className='block'>
-        <span className='mb-2 block text-sm font-medium text-[var(--gray-13)]'>
-          Role Name <span className='text-red-500'>*</span>
-        </span>
-        <input
-          className='h-11 w-full rounded-[10px] border border-[var(--border-default)] bg-white px-4 text-sm text-[var(--gray-13)] shadow-[var(--shadow-sm)] transition outline-none placeholder:text-[var(--gray-9)] focus:border-[var(--primary-8)] focus:ring-2 focus:ring-[var(--primary-4)]'
-          placeholder='e.g. AP Supervisor'
-          value={roleName}
-          onChange={(event) => onRoleNameChange(event.target.value)}
-        />
-      </label>
+      <InputText
+        label='Role Name'
+        placeholder='e.g. AP Supervisor'
+        required
+        value={roleName}
+        onChange={onRoleNameChange}
+      />
 
-      <label className='block'>
-        <span className='mb-2 block text-sm font-medium text-[var(--gray-13)]'>
-          Select Users <span className='text-red-500'>*</span>
-        </span>
-        <InputSelectMultiple
-          className='bg-white'
-          options={userOptions}
-          placeholder='Select users...'
-          value={selectedUsers}
-          clearable
-          required
-          searchable
-          onChange={(value) => onSelectedUsersChange(value as Option[])}
-        />
-      </label>
+      <InputSelectMultiple
+        className='bg-surface'
+        label='Select Users'
+        options={userOptions}
+        placeholder='Select users...'
+        required
+        searchable
+        value={selectedUsers}
+        clearable
+        onChange={(value) => onSelectedUsersChange(value as Option[])}
+      />
 
-      <label className='block'>
-        <span className='mb-2 block text-sm font-medium text-[var(--gray-13)]'>
-          Description
-        </span>
-        <textarea
-          className='w-full resize-y rounded-[10px] border border-[var(--border-default)] bg-white px-4 py-3 text-sm text-[var(--gray-13)] shadow-[var(--shadow-sm)] transition outline-none placeholder:text-[var(--gray-9)] focus:border-[var(--primary-8)] focus:ring-2 focus:ring-[var(--primary-4)]'
-          placeholder="Describe this role's responsibilities and scope..."
-          rows={5}
-          value={description}
-          onChange={(event) => onDescriptionChange(event.target.value)}
-        />
-      </label>
+      <InputTextarea
+        label='Description'
+        minRows={5}
+        placeholder="Describe this role's responsibilities and scope..."
+        value={description}
+        onChange={onDescriptionChange}
+      />
     </div>
   )
 }
@@ -933,43 +922,63 @@ function RoleList({
   const roleColumns = useMemo(
     () => [
       roleColumnHelper.display({
+        enableResizing: false,
+        enableSorting: false,
+        header: '',
+        id: 'icon',
+        maxSize: 64,
+        meta: settingsHeaderMeta.center,
+        minSize: 64,
+        size: 64,
+        cell: () => (
+          <div className='flex justify-center'>
+            <div className='flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] bg-[var(--primary-3)] text-[var(--primary-9)]'>
+              <Shield size={22} />
+            </div>
+          </div>
+        ),
+      }),
+      roleColumnHelper.display({
+        enableSorting: false,
         header: 'Role',
         id: 'role',
-        size: 420,
+        meta: settingsHeaderMeta.start,
+        minSize: 280,
+        size: 360,
         cell: ({ row }) => {
           const role = row.original
 
           return (
-            <div className='flex min-w-0 items-center gap-5'>
-              <div className='flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] bg-[var(--primary-3)] text-[var(--primary-9)]'>
-                <Shield size={22} />
+            <div className='min-w-0'>
+              <div className='truncate text-sm font-semibold text-[var(--gray-13)]'>
+                {role.name}
               </div>
-
-              <div className='min-w-0'>
-                <div className='truncate text-sm font-semibold text-[var(--gray-13)]'>
-                  {role.name}
-                </div>
-                <div className='mt-1 truncate text-sm text-[var(--gray-11)]'>
-                  {role.description}
-                </div>
+              <div className='mt-1 truncate text-sm text-[var(--gray-11)]'>
+                {role.description}
               </div>
             </div>
           )
         },
       }),
       roleColumnHelper.accessor('type', {
+        enableSorting: false,
         header: 'Type',
         id: 'type',
+        meta: settingsHeaderMeta.start,
+        minSize: 140,
         size: 180,
         cell: ({ getValue }) => (
-          <span className='rounded-[8px] border border-[var(--border-default)] bg-white px-3 py-1 text-xs font-semibold text-[var(--gray-13)]'>
+          <span className='rounded-[8px] border border-[var(--border-default)] bg-surface px-3 py-1 text-xs font-semibold text-[var(--gray-13)]'>
             {getValue()}
           </span>
         ),
       }),
       roleColumnHelper.accessor('users', {
+        enableSorting: false,
         header: 'Users',
         id: 'users',
+        meta: settingsHeaderMeta.start,
+        minSize: 120,
         size: 160,
         cell: ({ getValue }) => (
           <span className='rounded-[8px] bg-[var(--gray-2)] px-4 py-1 text-sm font-semibold text-[var(--gray-13)]'>
@@ -978,11 +987,15 @@ function RoleList({
         ),
       }),
       roleColumnHelper.display({
+        enableResizing: false,
+        enableSorting: false,
         header: 'Actions',
         id: 'actions',
+        meta: settingsHeaderMeta.end,
+        minSize: 80,
         size: 100,
         cell: ({ row }) => (
-          <div className='flex justify-end pr-4'>
+          <div className='flex justify-end'>
             <button
               className='rounded-[8px] p-2 text-[var(--gray-13)] hover:bg-[var(--gray-2)]'
               type='button'
@@ -998,9 +1011,9 @@ function RoleList({
   )
 
   const roleTable = useReactTable({
+    ...settingsTableCoreOptions,
     columns: roleColumns,
     data: roles,
-    getCoreRowModel: getCoreRowModel(),
     getRowId: (row) => row.id,
   })
 
@@ -1041,7 +1054,7 @@ function RolePills({
               'h-10 rounded-[10px] border px-4 text-sm font-semibold transition',
               selected
                 ? 'border-[var(--primary-9)] bg-[var(--primary-9)] text-white shadow-[var(--shadow-sm)]'
-                : 'border-[var(--border-default)] bg-white text-[var(--gray-13)] hover:border-[var(--primary-6)]',
+                : 'border-[var(--border-default)] bg-surface text-[var(--gray-13)] hover:border-[var(--primary-6)]',
             ].join(' ')}
             onClick={() => onRoleChange(role.id)}
           >
@@ -1071,7 +1084,7 @@ function Switch({
     >
       <span
         className={[
-          'absolute top-1 h-5 w-5 rounded-full bg-white shadow transition',
+          'absolute top-1 h-5 w-5 rounded-full bg-[var(--control-thumb)] shadow transition',
           checked ? 'left-6' : 'left-1',
         ].join(' ')}
       />
@@ -1087,7 +1100,7 @@ function Tabs({
   onChange: (tab: TabKey) => void;
 }) {
   return (
-    <div className="flex h-14 items-center border-b border-gray-3 bg-white px-6">
+    <div className="flex h-14 items-center border-b border-gray-3 bg-surface px-6">
       {tabs.map((tab) => {
         const isActive = activeTab === tab.key;
 
@@ -1099,14 +1112,14 @@ function Tabs({
             className={[
               "relative mr-9 flex h-14 items-center text-sm font-medium transition",
               isActive
-                ? "text-[#7C5CFF]"
-                : "text-[#1F2A44] hover:text-[#7C5CFF]",
+                ? "text-primary-9"
+                : "text-gray-12 hover:text-primary-9",
             ].join(" ")}
           >
             {tab.label}
 
             {isActive && (
-              <span className="absolute bottom-0 left-0 h-[2px] w-full bg-[#7C5CFF]" />
+              <span className="absolute bottom-0 left-0 h-[2px] w-full bg-primary-9" />
             )}
           </button>
         );
@@ -1171,30 +1184,54 @@ function UserAssignments({
 }) {
   const userAssignmentColumns = useMemo(
     () => [
-      userAssignmentColumnHelper.accessor('name', {
-        header: 'User',
-        id: 'name',
-        cell: ({ row }) => (
-          <div className='flex items-center gap-3'>
-            <div className='flex h-9 w-9 items-center justify-center rounded-full bg-[var(--primary-3)] text-[var(--primary-9)]'>
+      userAssignmentColumnHelper.display({
+        enableResizing: false,
+        enableSorting: false,
+        header: '',
+        id: 'avatar',
+        maxSize: 56,
+        meta: settingsHeaderMeta.center,
+        minSize: 56,
+        size: 56,
+        cell: () => (
+          <div className='flex justify-center'>
+            <div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--primary-3)] text-[var(--primary-9)]'>
               <UserRound size={18} />
             </div>
-            <span className='text-sm font-semibold text-[var(--gray-13)]'>
-              {row.original.name}
-            </span>
           </div>
         ),
       }),
+      userAssignmentColumnHelper.accessor('name', {
+        enableSorting: false,
+        header: 'User',
+        id: 'name',
+        meta: settingsHeaderMeta.start,
+        minSize: 160,
+        size: 200,
+        cell: ({ getValue }) => (
+          <span className='text-sm font-semibold text-[var(--gray-13)]'>
+            {getValue()}
+          </span>
+        ),
+      }),
       userAssignmentColumnHelper.accessor('email', {
+        enableSorting: false,
         header: 'Email',
         id: 'email',
+        meta: settingsHeaderMeta.start,
+        minSize: 200,
+        size: 240,
         cell: ({ getValue }) => (
           <span className='text-sm text-[var(--gray-11)]'>{getValue()}</span>
         ),
       }),
       userAssignmentColumnHelper.accessor('role', {
+        enableSorting: false,
         header: 'Current Role',
         id: 'role',
+        meta: settingsHeaderMeta.start,
+        minSize: 140,
+        size: 160,
         cell: ({ getValue }) => (
           <span className='rounded-[8px] bg-[var(--gray-2)] px-3 py-1 text-xs font-semibold text-[var(--gray-13)]'>
             {getValue()}
@@ -1202,32 +1239,43 @@ function UserAssignments({
         ),
       }),
       userAssignmentColumnHelper.display({
+        enableSorting: false,
         header: 'Change Role',
         id: 'changeRole',
-        cell: ({ row }) => (
-          <select
-            className='h-10 w-[200px] rounded-[8px] border border-[var(--border-default)] bg-white px-3 text-sm transition outline-none focus:border-[var(--primary-8)] focus:ring-2 focus:ring-[var(--primary-4)]'
-            value={row.original.role}
-            onChange={(event) =>
-              onChangeRole(row.original.id, event.target.value)
-            }
-          >
-            {roleNames.map((role) => (
-              <option key={role} value={role}>
-                {role}
-              </option>
-            ))}
-          </select>
-        ),
+        meta: settingsHeaderMeta.start,
+        minSize: 220,
+        size: 240,
+        cell: ({ row }) => {
+          const roleOptions = roleNames.map((role) => ({
+            id: role,
+            name: role,
+            value: role,
+          }))
+          const selectedRole =
+            roleOptions.find((option) => option.name === row.original.role) ||
+            null
+
+          return (
+            <InputSelect
+              options={roleOptions}
+              value={selectedRole}
+              width={200}
+              onChange={(selected) => {
+                if (!selected) return
+                onChangeRole(row.original.id, selected.name)
+              }}
+            />
+          )
+        },
       }),
     ],
     [onChangeRole, roleNames],
   )
 
   const userAssignmentTable = useReactTable({
+    ...settingsTableCoreOptions,
     columns: userAssignmentColumns,
     data: users,
-    getCoreRowModel: getCoreRowModel(),
     getRowId: (row) => String(row.id),
   })
 

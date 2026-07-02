@@ -5,6 +5,7 @@ import CreditsHeader from "./components/CreditsHeader";
 import CreditsChart from "./components/CreditsChart";
 import Chartpie from "./components/Chartpie";
 import IconButton from '@/components/base/button/IconButton'
+import SettingsSearchInput from '../SettingsSearchInput'
 
 import {
   activityCredits,
@@ -110,7 +111,11 @@ const Credits: React.FC<CreditsProps> = ({ onBack }) => {  const [searchContent,
         <section className="card monthly-breakdown-card">
           <div className="card-header-with-actions">
             <div className="title">Monthly Credit Consumption - {defaultYear}</div>
-            <input className="search-input" value={monthlySearch} onChange={(event) => setMonthlySearch(event.target.value)} placeholder="Search month" />
+            <SettingsSearchInput
+              placeholder='Search month'
+              value={monthlySearch}
+              onChange={setMonthlySearch}
+            />
           </div>
           <div className="card-content scroll-area">
             {filteredMonthlyData.map((month) => {
@@ -140,7 +145,11 @@ const Credits: React.FC<CreditsProps> = ({ onBack }) => {  const [searchContent,
         <section className="card activity-card">
           <div className="card-header-with-actions">
             <div className="title">Credit Usage Details - {defaultMonth}</div>
-            <input className="search-input" value={searchContent} onChange={(event) => setSearchContent(event.target.value)} placeholder="Search type" />
+            <SettingsSearchInput
+              placeholder='Search type'
+              value={searchContent}
+              onChange={setSearchContent}
+            />
           </div>
           <div className="card-content scroll-area"><CreditsChart data={activityCredits} search={searchContent} /></div>
         </section>
