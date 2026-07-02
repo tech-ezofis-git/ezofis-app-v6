@@ -1787,17 +1787,32 @@ const Overview = (props: any) => {
                 <Icon className='size-5' name='lucide:zoom-in' />
               </button>
             </div>
+
+            {/* Scanner overlay (restricted to PDF viewer) */}
+            {isScanning && (
+              <div className='pointer-events-none absolute inset-x-0 bottom-0 top-12 z-10 overflow-hidden'>
+                <div className='bg-[color-mix(in srgb,var(--primary-9)_3%,transparent)] absolute inset-0' />
+                <div className='animate-scan absolute right-0 left-0 h-[2px] bg-[var(--primary-9)] shadow-[0_0_8px_var(--primary-9),_0_0_16px_var(--primary-9)]' />
+              </div>
+            )}
           </div>
         </Worker>
       )
     } else {
       previewContent = (
-        <div className='flex h-full w-full items-center justify-center p-4'>
+        <div className='relative flex h-full w-full items-center justify-center p-4'>
           <img
             alt='Preview'
             className='max-h-full max-w-full rounded-xl border object-contain shadow-2xl'
             src={previewUrl}
           />
+          {/* Scanner overlay (restricted to Image) */}
+          {isScanning && (
+            <div className='pointer-events-none absolute inset-x-4 bottom-4 top-12 z-10 overflow-hidden rounded-xl'>
+              <div className='bg-[color-mix(in srgb,var(--primary-9)_3%,transparent)] absolute inset-0' />
+              <div className='animate-scan absolute right-0 left-0 h-[2px] bg-[var(--primary-9)] shadow-[0_0_8px_var(--primary-9),_0_0_16px_var(--primary-9)]' />
+            </div>
+          )}
         </div>
       )
     }
@@ -1835,15 +1850,7 @@ const Overview = (props: any) => {
 
           {previewContent}
 
-          {isScanning && (
-            <div className='pointer-events-none absolute inset-0 z-10 overflow-hidden'>
-              {/* Ambient scanning tint overlay */}
-              <div className='bg-[color-mix(in srgb,var(--primary-9)_3%,transparent)] absolute inset-0' />
 
-              {/* Scanning line moving up and down */}
-              <div className='animate-scan absolute right-0 left-0 h-[2px] bg-[var(--primary-9)] shadow-[0_0_8px_var(--primary-9),_0_0_16px_var(--primary-9)]' />
-            </div>
-          )}
 
           {menuPosition && selectedText && (
             <div

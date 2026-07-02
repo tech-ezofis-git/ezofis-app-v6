@@ -361,7 +361,38 @@ const InboxList: React.FC<InboxListProps> = ({
         if (filter === 'matched') return isMtc
         if (filter === 'discrepancies') return isDisc
         if (filter === 'highValue') return isHigh
-        return true
+
+        if (filter.startsWith('status:')) {
+          const val = filter.split(':')[1].toUpperCase()
+          if (val === 'APPROVED' || val === 'MATCHED') {
+            return rawDecision === 'APPROVED' || rawDecision === 'MATCHED'
+          }
+          if (val === 'PARTIALLY APPROVED' || val === 'PARTIALLY MATCHED') {
+            return (
+              rawDecision === 'PARTIALLY APPROVED' ||
+              rawDecision === 'PARTIALLY MATCHED' ||
+              rawDecision === 'PARTIALLY_APPROVED'
+            )
+          }
+          if (val === 'NOT MATCHED') {
+            return (
+              rawDecision === 'NOT MATCHED' ||
+              rawDecision === 'NO MATCH' ||
+              rawDecision === 'NO_MATCH'
+            )
+          }
+          return rawDecision === val
+        }
+
+        if (filter.startsWith('amount:')) {
+          const val = filter.split(':')[1]
+          if (val === 'lt1k') return amount > 0 && amount < 1000
+          if (val === '1k_5k') return amount >= 1000 && amount < 5000
+          if (val === '5k_10k') return amount >= 5000 && amount < 10000
+          if (val === 'ge10k') return amount >= 10000
+        }
+
+        return false
       })
     })
   }, [flatRows, activeQuickFilters, activeTab])

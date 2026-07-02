@@ -387,15 +387,16 @@ export default function Attachments({
 
   return (
     <div className='relative mx-auto mt-0 flex h-full w-full flex-col font-sans transition-all duration-300'>
-      {/* Upload Zone */}
-      {canUpload && (
+      <input
+        className='hidden'
+        ref={fileInputRef}
+        type='file'
+        onChange={onFileChange}
+      />
+
+      {/* Upload Zone (Large dashed container when no files exist) */}
+      {canUpload && !isLoading && files.length === 0 && (
         <div className='mb-4 shrink-0'>
-          <input
-            className='hidden'
-            ref={fileInputRef}
-            type='file'
-            onChange={onFileChange}
-          />
           <button
             disabled={isUploading}
             className={cn(
@@ -418,6 +419,33 @@ export default function Attachments({
               </span>
               <span className='text-11 text-gray-8'>Select file here</span>
             </div>
+          </button>
+        </div>
+      )}
+
+      {/* Header Row (Small top-right button when attachments exist) */}
+      {canUpload && !isLoading && files.length > 0 && (
+        <div className='flex items-center justify-between mb-3 shrink-0'>
+          <h4 className='text-xs font-bold uppercase tracking-wider text-[var(--gray-10)]'>
+            All Attachments
+          </h4>
+          <button
+            disabled={isUploading}
+            onClick={() => fileInputRef.current?.click()}
+            className={cn(
+              'flex cursor-pointer items-center gap-1.5 rounded-lg border border-[var(--gray-3)] bg-surface px-2.5 py-1 text-[11px] font-semibold text-[var(--gray-12)] hover:bg-[var(--gray-2)] transition-all active:scale-95',
+              isUploading && 'pointer-events-none opacity-60',
+            )}
+          >
+            {isUploading ? (
+              <Icon
+                className='size-3.5 animate-spin text-[var(--primary-9)]'
+                name='tabler:loader'
+              />
+            ) : (
+              <Icon className='size-3.5 text-[var(--gray-9)]' name='tabler:upload' />
+            )}
+            <span>{isUploading ? 'Uploading...' : 'Upload attachment'}</span>
           </button>
         </div>
       )}

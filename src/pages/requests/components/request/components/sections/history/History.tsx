@@ -316,6 +316,32 @@ export default function History({
     )
   }
 
+  // Dynamic Sorting / Chronological check
+  const getStepDate = (item: HistoryRow): Date | null => {
+    return toDate(item.processedOn) || toDate(item.receivedOn) || toDate(item.actionAt)
+  }
+
+  const firstDate = flows.length > 0 ? getStepDate(flows[0]) : null
+  const lastDate = flows.length > 1 ? getStepDate(flows[flows.length - 1]) : null
+  const isChronological = firstDate && lastDate ? firstDate.getTime() <= lastDate.getTime() : true
+
+  const formatDuration = (ms: number): string => {
+    if (ms < 0) ms = Math.abs(ms)
+    const secs = Math.floor(ms / 1000)
+    if (secs < 60) return `${secs}s`
+    const mins = Math.floor(secs / 60)
+    if (mins < 60) {
+      const remainingSecs = secs % 60
+      return remainingSecs > 0 ? `${mins}m ${remainingSecs}s` : `${mins}m`
+    }
+    const hours = Math.floor(mins / 60)
+    if (hours < 24) {
+      return `${hours}h ${mins % 60}m`
+    }
+    const days = Math.floor(hours / 24)
+    return `${days}d ${hours % 24}h`
+  }
+
   return (
     <div className='animate-in fade-in slide-in-from-left-4 relative flex flex-col gap-5 py-2 pr-1 pl-2 duration-300'>
       {/* Timeline Connecting Line */}
@@ -335,6 +361,32 @@ export default function History({
           h.description !== h.activityId &&
           h.description !== h.stage &&
           safeLower(title).includes('ap agent')
+
+        // Duration calculation
+        let durationText = ''
+        const currentDate = getStepDate(h)
+        if (currentDate) {
+          let nextStep: HistoryRow | undefined
+          if (isChronological) {
+            if (idx + 1 < flows.length) {
+              nextStep = flows[idx + 1]
+            }
+          } else {
+            if (idx - 1 >= 0) {
+              nextStep = flows[idx - 1]
+            }
+          }
+
+          if (nextStep) {
+            const nextDate = getStepDate(nextStep)
+            if (nextDate) {
+              const diffMs = Math.abs(nextDate.getTime() - currentDate.getTime())
+              if (diffMs > 0) {
+                durationText = formatDuration(diffMs)
+              }
+            }
+          }
+        }
 
         return (
           <div
@@ -359,8 +411,19 @@ export default function History({
                   {h.description}
                 </div>
               )}
-              <div className='mt-1 text-11 font-medium text-gray-9'>
-                {actor} <span className='mx-1 text-gray-6'>·</span> {date}
+              <div className='mt-1 text-11 font-medium text-gray-9 flex items-center gap-1.5 flex-wrap'>
+                <span>{actor}</span>
+                <span className='text-gray-6'>·</span>
+                <span>{date}</span>
+                {durationText && (
+                  <>
+                    <span className='text-gray-6'>·</span>
+                    <span className='inline-flex items-center gap-1 rounded bg-[var(--primary-2)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--primary-11)]'>
+                      <Icon className='size-3' name='tabler:arrow-right' />
+                      <span>{durationText}</span>
+                    </span>
+                  </>
+                )}
               </div>
             </div>
           </div>

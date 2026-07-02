@@ -1379,7 +1379,11 @@ const Request = ({
       finalStatusBadge = String(agentDecision)
     }
   } else {
-    finalStatusBadge = selectedItem?.stage || selectedItem?.status || ''
+    if (isCurrentlyProcessing || isLoading) {
+      finalStatusBadge = 'Fetching Agent Decision...'
+    } else {
+      finalStatusBadge = selectedItem?.stage || selectedItem?.status || 'Analyzing Agent Decision...'
+    }
   }
 
   let displayMessage = jobStatus?.message || jobStatus?.hangfireStatus || ''
@@ -1396,7 +1400,12 @@ const Request = ({
   } else if (apAgentJobId && (!jobStatus || !jobStatus.isCompleted)) {
     statusBadge = 'Initiating...'
   } else {
-    statusBadge = finalStatusBadge
+    // If job completed but we don't have agentDecision yet, show a loader status
+    if (apAgentJobId && jobStatus && !agentDecision) {
+      statusBadge = 'Analyzing Agent Decision...'
+    } else {
+      statusBadge = finalStatusBadge
+    }
   }
 
   return (

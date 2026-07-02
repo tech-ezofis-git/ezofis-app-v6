@@ -76,20 +76,20 @@ const Header: React.FC<HeaderProps> = ({
     if (pct < 100) {
       return {
         badge:
-          'border-[var(--orange-3)] bg-[var(--orange-1)] text-[var(--orange-9)]',
-        bullet: 'bg-[var(--orange-4)]',
-        fill: 'bg-[var(--orange-3)]/30',
-        icon: 'text-[var(--orange-9)]',
-        text: 'text-[var(--orange-11)]',
+          'border-[var(--orange-9)] bg-[var(--orange-9)] text-white',
+        bullet: 'bg-white',
+        fill: 'bg-white/20',
+        icon: 'text-white',
+        text: 'text-white',
       }
     }
     return {
       badge:
-        'border-[var(--green-3)] bg-[var(--green-1)] text-[var(--green-9)]',
-      bullet: 'bg-[var(--green-4)]',
-      fill: 'bg-[var(--green-3)]/30',
-      icon: 'text-[var(--green-9)]',
-      text: 'text-[var(--green-11)]',
+        'border-[var(--green-9)] bg-[var(--green-9)] text-white',
+      bullet: 'bg-white',
+      fill: 'bg-white/20',
+      icon: 'text-white',
+      text: 'text-white',
     }
   }
 
@@ -251,6 +251,7 @@ const Header: React.FC<HeaderProps> = ({
                       const dec = String(status || '').toUpperCase()
                       let iconName = ''
                       let badgeColorClass = ''
+                      let isLoaderIcon = false
 
                       if (
                         dec === 'APPROVED' ||
@@ -259,7 +260,7 @@ const Header: React.FC<HeaderProps> = ({
                       ) {
                         iconName = 'tabler:circle-check'
                         badgeColorClass =
-                          'border-[var(--green-4)] bg-[var(--green-2)] text-[var(--green-11)]'
+                          'border-[var(--green-9)] bg-[var(--green-9)] text-white'
                       } else if (
                         dec === 'REJECTED' ||
                         dec === 'NO MATCH' ||
@@ -267,7 +268,7 @@ const Header: React.FC<HeaderProps> = ({
                       ) {
                         iconName = 'tabler:alert-circle'
                         badgeColorClass =
-                          'border-[var(--red-4)] bg-[var(--red-2)] text-[var(--red-11)]'
+                          'border-[var(--red-9)] bg-[var(--red-9)] text-white'
                       } else if (
                         dec === 'PARTIALLY APPROVED' ||
                         dec === 'PARTIALLY_APPROVED' ||
@@ -276,14 +277,25 @@ const Header: React.FC<HeaderProps> = ({
                       ) {
                         iconName = 'tabler:alert-triangle'
                         badgeColorClass =
-                          'border-[var(--orange-4)] bg-[var(--orange-2)] text-[var(--orange-11)]'
+                          'border-[var(--orange-9)] bg-[var(--orange-9)] text-white'
+                      } else if (
+                        dec.includes('FETCHING') ||
+                        dec.includes('ANALYZING') ||
+                        dec.includes('COMPLETED') ||
+                        dec.includes('PROCESSING') ||
+                        dec.includes('INITIATING')
+                      ) {
+                        iconName = 'tabler:loader-2'
+                        badgeColorClass =
+                          'border-[var(--orange-9)] bg-[var(--orange-9)] text-white'
+                        isLoaderIcon = true
                       } else {
                         if (_showApprove) {
                           return null
                         }
                         iconName = 'tabler:clock'
                         badgeColorClass =
-                          'border-[var(--orange-4)] bg-[var(--orange-2)] text-[var(--orange-11)]'
+                          'border-[var(--orange-9)] bg-[var(--orange-9)] text-white'
                       }
 
                       return (
@@ -293,7 +305,7 @@ const Header: React.FC<HeaderProps> = ({
                             badgeColorClass,
                           )}
                         >
-                          <Icon className='h-3.5 w-3.5' name={iconName} />
+                          <Icon className={cn('h-3.5 w-3.5', isLoaderIcon && 'animate-spin')} name={iconName} />
                           <span>{status}</span>
                         </span>
                       )
