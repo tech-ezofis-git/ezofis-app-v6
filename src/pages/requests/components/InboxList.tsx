@@ -228,6 +228,296 @@ const findInvoiceAmount = (row: any): string | null => {
   return null
 }
 
+const findPONumberInObject = (obj: any): string | null => {
+  if (!obj || typeof obj !== 'object') return null
+
+  const extractStringValue = (val: any): string | null => {
+    if (val == null) return null
+    if (typeof val === 'object') {
+      const innerVal =
+        val['Invoice Value'] ||
+        val['InvoiceValue'] ||
+        val['PO Value'] ||
+        val['POValue'] ||
+        val['value'] ||
+        val['val']
+      if (innerVal !== undefined) return extractStringValue(innerVal)
+      return null
+    }
+    const str = String(val).trim()
+    return str !== '' && str !== '-' && str.toUpperCase() !== 'N/A' ? str : null
+  }
+
+  for (const key of Object.keys(obj)) {
+    const lowerKey = key.toLowerCase()
+    const isStrictPOKey =
+      lowerKey === 'po' ||
+      lowerKey === 'po_number' ||
+      lowerKey === 'ponumber' ||
+      lowerKey === 'po number' ||
+      lowerKey === 'po_no' ||
+      lowerKey === 'pono' ||
+      lowerKey === 'po no' ||
+      lowerKey === 'purchase_order' ||
+      lowerKey === 'purchaseorder' ||
+      lowerKey === 'purchase_order_number' ||
+      lowerKey === 'purchaseorder_number' ||
+      lowerKey === 'purchase order number' ||
+      lowerKey === 'purchase_order_no' ||
+      lowerKey === 'purchaseorder_no' ||
+      lowerKey === 'purchase order no' ||
+      lowerKey === 'rxwlghillrremmrqlk9mj' ||
+      lowerKey.includes('purchase order') ||
+      lowerKey.includes('purchase_order') ||
+      lowerKey.includes('purchaseorder')
+
+    if (isStrictPOKey) {
+      if (
+        !lowerKey.includes('value') &&
+        !lowerKey.includes('amount') &&
+        !lowerKey.includes('total') &&
+        !lowerKey.includes('date') &&
+        !lowerKey.includes('price')
+      ) {
+        const extracted = extractStringValue(obj[key])
+        if (extracted && extracted !== '-' && extracted !== '') {
+          return extracted
+        }
+      }
+    }
+  }
+
+  return null
+}
+
+const extractPONumber = (row: any): string => {
+  if (!row) return 'N/A'
+  const agentData = row._agentResponse || row._agentData?.[0] || row._agentData || {}
+  const parsedForm = getParsedFormData(row)
+
+  if (parsedForm['RXwLGHILLrreMmRqlk9mj']) {
+    return String(parsedForm['RXwLGHILLrreMmRqlk9mj'])
+  }
+
+  const fromForm =
+    findPONumberInObject(row.formData?.fields) ||
+    findPONumberInObject(row.formData) ||
+    findPONumberInObject(parsedForm)
+  if (fromForm) return fromForm
+
+  const fromAgentHeader = findPONumberInObject(
+    agentData?.['Extracted Invoice JSON']?.invoice_header,
+  )
+  if (fromAgentHeader) return fromAgentHeader
+
+  const fromPOMatching = findPONumberInObject(agentData?.po_matching)
+  if (fromPOMatching) return fromPOMatching
+
+  const fromAgent = findPONumberInObject(agentData)
+  if (fromAgent) return fromAgent
+
+  const fromSelected = findPONumberInObject(row)
+  if (fromSelected) return fromSelected
+
+  return 'N/A'
+}
+
+const findInvoiceNumber = (row: any): string | null => {
+  if (!row) return null
+  const parsedForm = getParsedFormData(row)
+
+  const searchInObj = (obj: any): string | null => {
+    if (!obj || typeof obj !== 'object') return null
+
+    const directKeys = [
+      'kvcYuknkDumkTenjvrVLj',
+      'Invoice No',
+      'Invoice No.',
+      'Invoice Number',
+      'Invoice_No',
+      'Invoice_Number',
+      'InvoiceNo',
+      'InvoiceNumber',
+    ]
+    for (const key of directKeys) {
+      if (obj[key] !== undefined && obj[key] !== null) {
+        const val = String(obj[key]).trim()
+        if (val !== '' && val !== '-') return val
+      }
+    }
+
+    for (const key of Object.keys(obj)) {
+      const k = key
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '')
+        .trim()
+      if (k === 'invoiceno' || k === 'invoicenumber' || k === 'invoicenum') {
+        const val = obj[key]
+        if (
+          val &&
+          typeof val !== 'object' &&
+          String(val).trim() !== '' &&
+          String(val).trim() !== '-'
+        ) {
+          return String(val).trim()
+        }
+      }
+    }
+    return null
+  }
+
+  const fromForm = searchInObj(parsedForm)
+  if (fromForm) return fromForm
+
+  const agentData = row._agentResponse || row._agentData?.[0] || row._agentData || {}
+  const fromAgent = searchInObj(agentData)
+  if (fromAgent) return fromAgent
+
+  const invoiceHeader = agentData?.['Extracted Invoice JSON']?.invoice_header
+  if (invoiceHeader) {
+    const fromHeader = searchInObj(invoiceHeader)
+    if (fromHeader) return fromHeader
+  }
+
+  return null
+}
+
+const findSupplierName = (row: any): string | null => {
+  if (!row) return null
+  const parsedForm = getParsedFormData(row)
+
+  const searchInObj = (obj: any): string | null => {
+    if (!obj || typeof obj !== 'object') return null
+
+    const directKeys = [
+      'UtfgJy6Z0qyfRC5Bclfc',
+      'UtfgJy6Z0qyfRC5Bclf-c',
+      'UtfgJy6Z0qyfRC5Bclf_c',
+      'Supplier Name',
+      'Vendor Name',
+      'Supplier_Name',
+      'Vendor_Name',
+      'SupplierName',
+      'VendorName',
+    ]
+    for (const key of directKeys) {
+      if (obj[key] !== undefined && obj[key] !== null) {
+        const val = String(obj[key]).trim()
+        if (val !== '' && val !== '-') return val
+      }
+    }
+
+    for (const key of Object.keys(obj)) {
+      const k = key
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '')
+        .trim()
+      if (
+        k === 'suppliername' ||
+        k === 'vendorname' ||
+        k === 'supplier' ||
+        k === 'vendor'
+      ) {
+        const val = obj[key]
+        if (
+          val &&
+          typeof val !== 'object' &&
+          String(val).trim() !== '' &&
+          String(val).trim() !== '-'
+        ) {
+          return String(val).trim()
+        }
+      }
+    }
+    return null
+  }
+
+  const fromForm = searchInObj(parsedForm)
+  if (fromForm) return fromForm
+
+  const agentData = row._agentResponse || row._agentData?.[0] || row._agentData || {}
+  const fromAgent = searchInObj(agentData)
+  if (fromAgent) return fromAgent
+
+  const invoiceHeader = agentData?.['Extracted Invoice JSON']?.invoice_header
+  if (invoiceHeader) {
+    const fromHeader = searchInObj(invoiceHeader)
+    if (fromHeader) return fromHeader
+  }
+
+  return null
+}
+
+const getRowColumnValue = (row: any, colId: string): string => {
+  if (!row) return ''
+  const id = colId.toLowerCase()
+
+  if (id === 'requestno' || id === 'invoicenumber') {
+    const val = findInvoiceNumber(row)
+    if (val && val !== '-') return val
+    const fallback =
+      row.documentNumber ||
+      row.invoiceNo ||
+      row.invoiceNumber ||
+      row.reqNo ||
+      row.requestNo ||
+      row.document_number ||
+      ''
+    return String(fallback)
+  }
+
+  if (id === 'amount' || id === 'invoiceamount') {
+    return String(findInvoiceAmount(row) || '')
+  }
+
+  if (id === 'vendor' || id === 'supplier' || id === 'suppliername') {
+    const val = findSupplierName(row)
+    if (val && val !== '-') return val
+    const fallback =
+      row.vendor ||
+      row.supplier ||
+      row.supplierName ||
+      row.vendorName ||
+      ''
+    return String(fallback)
+  }
+
+  if (id === 'ponumber') {
+    const val = extractPONumber(row)
+    if (val && val !== 'N/A' && val !== '-') return val
+    const fallback =
+      row.poNumber ||
+      row.poNo ||
+      ''
+    return String(fallback)
+  }
+
+  if (id === 'invoicedate') {
+    const agentData = row._agentResponse || row._agentData?.[0] || row._agentData || {}
+    const fromAgent = agentData?.['Extracted Invoice JSON']?.invoice_header?.['Invoice Date'] ||
+      agentData?.['Extracted Invoice JSON']?.invoice_header?.['Invoice_Date'] ||
+      agentData?.['Extracted Invoice JSON']?.invoice_header?.['InvoiceDate']
+    if (fromAgent) return String(fromAgent)
+
+    return String(row.invoiceDate || row.documentDate || row.raisedAt || row.createdAt || '')
+  }
+
+  if (id === 'raisedby' || id === 'createdby') {
+    return String(row.raisedBy || row.createdBy || row.performedByUserName || '')
+  }
+
+  if (id === 'status' || id === 'matchstatus' || id === 'decision') {
+    return String(row.decision || row.status || row.stage || '')
+  }
+
+  const parsedForm = getParsedFormData(row)
+  if (parsedForm[colId] !== undefined) {
+    return String(parsedForm[colId] || '')
+  }
+
+  return String(row[colId] || '')
+}
+
 const InboxList: React.FC<InboxListProps> = ({
   activeTab,
   data,
@@ -258,10 +548,12 @@ const InboxList: React.FC<InboxListProps> = ({
 
   const {
     expandState,
+    filtersState,
     groupState,
     searchState,
     sortState,
     setExpandState,
+    setFiltersState,
     ...rest
   } = useDataTableState({
     initialVisibilityState,
@@ -409,29 +701,52 @@ const InboxList: React.FC<InboxListProps> = ({
     return quickFilteredRows.filter((row: any) => {
       // If searching in a specific column
       if (searchColumnId) {
-        const cellValue = row[searchColumnId]
-        if (cellValue == null) return false
-        return String(cellValue).toLowerCase().includes(searchValue)
+        const valStr = getRowColumnValue(row, searchColumnId)
+        return valStr.toLowerCase().includes(searchValue)
       }
 
-      // Search across all columns
-      return Object.entries(row).some(([key, value]) => {
-        if (value == null || key === 'id') return false
+      // If searching globally (all columns)
+      const searchableStrings = [
+        getRowColumnValue(row, 'requestNo'),
+        getRowColumnValue(row, 'amount'),
+        getRowColumnValue(row, 'vendor'),
+        getRowColumnValue(row, 'poNumber'),
+        getRowColumnValue(row, 'invoiceDate'),
+        getRowColumnValue(row, 'raisedBy'),
+        getRowColumnValue(row, 'status'),
+      ]
 
-        if (
-          typeof value === 'string' ||
-          typeof value === 'number' ||
-          typeof value === 'boolean'
-        ) {
-          return String(value).toLowerCase().includes(searchValue)
+      const parsedForm = getParsedFormData(row)
+      Object.values(parsedForm).forEach((val) => {
+        if (val != null && typeof val !== 'object') {
+          searchableStrings.push(String(val))
         }
-        if (typeof value === 'object') {
-          return JSON.stringify(value).toLowerCase().includes(searchValue)
-        }
-        return false
       })
+
+      return searchableStrings.some((str) =>
+        str.toLowerCase().includes(searchValue)
+      )
     })
   }, [quickFilteredRows, searchState])
+
+  // ✅ Filter rows based on columnFilters
+  const columnFilteredRows = useMemo(() => {
+    if (!filtersState || filtersState.length === 0) {
+      return filteredFlatRows
+    }
+
+    return filteredFlatRows.filter((row: any) => {
+      // All column filters must match
+      return filtersState.every((filter: any) => {
+        if (!filter.id || filter.value === undefined || filter.value === null) return true
+        const filterVal = String(filter.value).toLowerCase().trim()
+        if (filterVal === '') return true
+
+        const rowVal = getRowColumnValue(row, filter.id)
+        return rowVal.toLowerCase().includes(filterVal)
+      })
+    })
+  }, [filteredFlatRows, filtersState])
 
   // ✅ Rebuild grouped data structure with filtered rows
   const filteredData = useMemo(() => {
@@ -439,14 +754,15 @@ const InboxList: React.FC<InboxListProps> = ({
 
     const hasSearch = searchState?.value && searchState.value.trim() !== ''
     const hasQuickFilters = activeQuickFilters && activeQuickFilters.length > 0
+    const hasColumnFilters = filtersState && filtersState.length > 0
 
-    if (!hasSearch && !hasQuickFilters) {
+    if (!hasSearch && !hasQuickFilters && !hasColumnFilters) {
       return data
     }
 
     // Create a Set of filtered row IDs for fast lookup
     const filteredIds = new Set(
-      filteredFlatRows.map(
+      columnFilteredRows.map(
         (row: any) => row.id || row.transactionId || row.processId,
       ),
     )
@@ -464,7 +780,7 @@ const InboxList: React.FC<InboxListProps> = ({
         }
       })
       .filter((group: any) => !group.items || group.items.length > 0)
-  }, [data, searchState, activeQuickFilters, filteredFlatRows])
+  }, [data, searchState, activeQuickFilters, filtersState, columnFilteredRows])
 
   // Inject processing processes from store
   const processingProcesses = requestStore((state) => state.processingProcesses)
@@ -545,10 +861,12 @@ const InboxList: React.FC<InboxListProps> = ({
 
     state: {
       expandState,
+      filtersState,
       groupState,
       searchState,
       sortState,
       setExpandState,
+      setFiltersState,
       ...rest,
     },
   })
