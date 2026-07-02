@@ -69,7 +69,14 @@ const Steps = () => {
     })
   }, [step])
 
-  const progress = Math.round(((step + 1) / steps.length) * 100)
+  const isApSetUpCompleted = setupStore((state) => state.isApSetUpCompleted)
+
+  const progress =
+    step === 3
+      ? isApSetUpCompleted
+        ? 100
+        : 90
+      : Math.round(((step + 1) / steps.length) * 100)
 
   // Color mapping based on progress percentage
   const getProgressStyles = () => {

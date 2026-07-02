@@ -113,7 +113,7 @@ const getRowIconAndColor = (
       iconName: 'tabler:circle-check',
     }
   }
-  if (dec === 'REJECTED' || dec === 'NO MATCH') {
+  if (dec === 'REJECTED' || dec === 'NOT MATCHED' || dec === 'NO MATCH') {
     return {
       iconColorClass:
         'bg-[var(--red-2)] border-[var(--red-2)] text-[var(--red-9)]',
@@ -127,7 +127,11 @@ const getRowIconAndColor = (
       iconName: 'tabler:stack-2',
     }
   }
-  if (dec === 'PARTIALLY APPROVED' || dec === 'PARTIAL MATCH') {
+  if (
+    dec === 'PARTIALLY APPROVED' ||
+    dec === 'PARTIALLY MATCHED' ||
+    dec === 'PARTIAL MATCH'
+  ) {
     return {
       iconColorClass:
         'bg-[var(--orange-2)] border-[var(--orange-2)] text-[var(--orange-9)]',

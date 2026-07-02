@@ -119,7 +119,7 @@ const Header: React.FC<HeaderProps> = ({
 
     // Highlight percentages, scores, and statuses
     const parts = text.split(
-      /(\d+%|Approved|Partially Approved|Matched|Discrepancy|Aligned|Threshold)/gi,
+      /(\d+%|Approved|Partially Approved|Partially Matched|Matched|Discrepancy|Aligned|Threshold|Not Matched)/gi,
     )
     return parts.map((part, i) => {
       const lower = part.toLowerCase()
@@ -136,13 +136,17 @@ const Header: React.FC<HeaderProps> = ({
             {part}
           </span>
         )
-      if (lower === 'partially approved' || lower === 'threshold')
+      if (
+        lower === 'partially approved' ||
+        lower === 'partially matched' ||
+        lower === 'threshold'
+      )
         return (
           <span className='font-bold text-[var(--orange-9)]' key={itemKey}>
             {part}
           </span>
         )
-      if (lower === 'discrepancy')
+      if (lower === 'discrepancy' || lower === 'not matched')
         return (
           <span className='font-bold text-[var(--red-9)]' key={itemKey}>
             {part}
@@ -267,6 +271,7 @@ const Header: React.FC<HeaderProps> = ({
                       } else if (
                         dec === 'PARTIALLY APPROVED' ||
                         dec === 'PARTIALLY_APPROVED' ||
+                        dec === 'PARTIALLY MATCHED' ||
                         dec === 'PARTIAL MATCH'
                       ) {
                         iconName = 'tabler:alert-triangle'

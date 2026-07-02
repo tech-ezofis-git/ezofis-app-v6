@@ -50,7 +50,7 @@ const WorkflowPreview = () => {
   ]
 
   return (
-    <div className='dark:bg-gray-950 relative w-full overflow-hidden rounded-xl border border-gray-3 bg-gray-1 py-10'>
+    <div className='dark:bg-gray-950 relative w-full overflow-hidden rounded-xl border border-gray-3 bg-white py-10'>
       {/* Grid Background */}
       <div
         className='absolute inset-0 opacity-[0.02] dark:opacity-[0.05]'

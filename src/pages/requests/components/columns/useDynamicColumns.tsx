@@ -973,7 +973,11 @@ const StatusCell = ({
     iconName = 'tabler:circle-check'
     iconColorClass =
       'bg-[var(--green-2)] border-[var(--green-2)] text-[var(--green-9)]'
-  } else if (rawDecision === 'REJECTED' || rawDecision === 'NO MATCH') {
+  } else if (
+    rawDecision === 'REJECTED' ||
+    rawDecision === 'NOT MATCHED' ||
+    rawDecision === 'NO MATCH'
+  ) {
     iconName = 'tabler:alert-circle'
     iconColorClass =
       'bg-[var(--red-2)] border-[var(--red-2)] text-[var(--red-9)]'
@@ -983,6 +987,7 @@ const StatusCell = ({
       'bg-[var(--purple-2)] border-[var(--purple-2)] text-[var(--purple-9)]'
   } else if (
     rawDecision === 'PARTIALLY APPROVED' ||
+    rawDecision === 'PARTIALLY MATCHED' ||
     rawDecision === 'PARTIAL MATCH'
   ) {
     iconName = 'tabler:alert-triangle'

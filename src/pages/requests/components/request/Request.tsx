@@ -1359,13 +1359,22 @@ const Request = ({
     const decUpper = String(agentDecision).toUpperCase()
     if (decUpper === 'APPROVED') {
       finalStatusBadge = 'Approved'
+    } else if (decUpper === 'MATCHED') {
+      finalStatusBadge = 'Matched'
     } else if (
       decUpper === 'PARTIALLY APPROVED' ||
       decUpper === 'PARTIALLY_APPROVED'
     ) {
       finalStatusBadge = 'Partially Approved'
+    } else if (
+      decUpper === 'PARTIALLY MATCHED' ||
+      decUpper === 'PARTIAL MATCH'
+    ) {
+      finalStatusBadge = 'Partially Matched'
     } else if (decUpper === 'REJECTED') {
       finalStatusBadge = 'Rejected'
+    } else if (decUpper === 'NOT MATCHED') {
+      finalStatusBadge = 'Not Matched'
     } else {
       finalStatusBadge = String(agentDecision)
     }

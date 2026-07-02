@@ -305,7 +305,9 @@ const InboxList: React.FC<InboxListProps> = ({
 
       if (
         rawDecision === 'PARTIALLY APPROVED' ||
+        rawDecision === 'PARTIALLY MATCHED' ||
         rawDecision === 'REJECTED' ||
+        rawDecision === 'NOT MATCHED' ||
         rawDecision === 'NO MATCH' ||
         row.isDuplicateInvoice === true
       ) {
@@ -344,7 +346,9 @@ const InboxList: React.FC<InboxListProps> = ({
       const isMtc = rawDecision === 'APPROVED' || rawDecision === 'MATCHED'
       const isDisc =
         rawDecision === 'PARTIALLY APPROVED' ||
+        rawDecision === 'PARTIALLY MATCHED' ||
         rawDecision === 'REJECTED' ||
+        rawDecision === 'NOT MATCHED' ||
         rawDecision === 'NO MATCH' ||
         row.isDuplicateInvoice === true
 

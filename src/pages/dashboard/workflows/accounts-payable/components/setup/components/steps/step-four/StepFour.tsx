@@ -202,8 +202,12 @@ const StepFour = () => {
 
       // Proceed with setup completion after all V6 APIs run successfully
       setPendingOpenNewRequest(true)
-      setIsActivatingAutomation(true)
       apComplete(true)
+
+      // Allow 1.5 seconds for the progress bar to animate to 100%
+      await new Promise((resolve) => setTimeout(resolve, 1500))
+
+      setIsActivatingAutomation(true)
       clearNavigationLock(false)
       navigate({ replace: true, to: '/requests' })
       closeSetup()

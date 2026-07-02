@@ -15,6 +15,7 @@ import {
   AnimateSlideUp,
 } from '@/components/common/animations'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
+import poMasterUrl from '@/assets/PO Master.xlsx?url'
 import BrandCard from '../../components/BrandCard'
 import SectionHeader from '../../components/SectionHeader'
 import { OrDivider } from '../../components/StepLayout'
@@ -39,6 +40,15 @@ const ErpSystem = () => {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const isFileBasedImportSelected = erpSettings.system === 'FILE_BASED_IMPORT'
+
+  const handleDownloadPredefinedMaster = () => {
+    const link = document.createElement('a')
+    link.href = poMasterUrl
+    link.download = 'PO Master.xlsx'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -127,6 +137,30 @@ const ErpSystem = () => {
           type='file'
           onChange={handleFileUpload}
         />
+
+        {erpSettings.system === 'PREDEFINED' && (
+          <AnimateFadeIn delay={0.2}>
+            <div className='mt-4 rounded-xl border border-gray-3 bg-surface p-5 shadow-sm md:p-6'>
+              <h3 className='text-15/5 font-semibold text-gray-13'>
+                PO Master File
+              </h3>
+
+              <p className='mt-1.5 mb-4 text-13/5.5 text-pretty text-gray-11'>
+                Download the predefined PO Master Data template file to view reference records. Use this file to understand the default schema structure and sample values used for matching.
+              </p>
+
+              {/* Download button */}
+              <div className='mb-4 flex justify-start'>
+                <Button
+                  icon='tabler:download'
+                  size='sm'
+                  label='Download PO Master Template'
+                  onClick={handleDownloadPredefinedMaster}
+                />
+              </div>
+            </div>
+          </AnimateFadeIn>
+        )}
 
         {isFileBasedImportSelected && (
           <AnimateFadeIn delay={0.2}>

@@ -28904,7 +28904,7 @@
         "passwordAccess": false,
         "confirm": false,
         "signature": false,
-        "proceedAction": "APPROVED",
+        "proceedAction": "MATCHED",
         "addCondition": false,
         "settings": {}
       },
@@ -28918,7 +28918,7 @@
         "passwordAccess": false,
         "confirm": false,
         "signature": false,
-        "proceedAction": "REJECTED",
+        "proceedAction": "NOT MATCHED",
         "addCondition": false,
         "settings": {}
       },
@@ -28960,7 +28960,7 @@
         "passwordAccess": false,
         "confirm": false,
         "signature": false,
-        "proceedAction": "PARTIALLY APPROVED",
+        "proceedAction": "PARTIALLY MATCHED",
         "addCondition": false,
         "settings": {}
       },

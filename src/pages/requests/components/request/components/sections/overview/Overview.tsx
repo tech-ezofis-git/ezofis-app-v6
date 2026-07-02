@@ -33,6 +33,7 @@ import {
   buildFieldMetaMap,
   findPreferredLineItemsTable,
   hasMeaningfulScalarValue,
+  resolveFieldMeta,
 } from '../../../Request'
 import Attachments from '../attachment/Attachments'
 import Comments from '../comment/Comments'
@@ -182,17 +183,20 @@ const normalizeExtractedLineItem = (item: any) => {
 
 const updateItemField = (item: any, fieldKey: string, value: any) => {
   const fields = FIELD_KEYS_MAP[fieldKey]
-  if (!fields) return
-  for (const key of fields) {
-    if (key in item) {
-      updateValueInStructure(item, key, value)
+  if (fields) {
+    for (const key of fields) {
+      if (key in item) {
+        updateValueInStructure(item, key, value)
+      }
     }
+  } else {
+    updateValueInStructure(item, fieldKey, value)
   }
 }
 
 const recalculateItemAmount = (item: any) => {
   const qtyVal = item.Quantity?.['Invoice Value'] ?? item.quantity
-  const priceVal = item.Price?.['Invoice Value'] ?? item.rate ?? item.unit_price
+  const priceVal = item.Price?.['Invoice Value'] ?? item.rate ?? item.unit_price ?? item.price
 
   const qtyNum = Number.parseFloat(String(qtyVal).replace(/[^0-9.-]+/g, ''))
   const priceNum = Number.parseFloat(String(priceVal).replace(/[^0-9.-]+/g, ''))
@@ -205,6 +209,10 @@ const recalculateItemAmount = (item: any) => {
     if ('total' in item) updateValueInStructure(item, 'total', formattedAmount)
     if ('amount' in item)
       updateValueInStructure(item, 'amount', formattedAmount)
+    if ('line_amount' in item)
+      updateValueInStructure(item, 'line_amount', formattedAmount)
+    if ('lineAmount' in item)
+      updateValueInStructure(item, 'lineAmount', formattedAmount)
   }
 }
 
@@ -1393,6 +1401,44 @@ const Overview = (props: any) => {
     )
   }, [agentData, lineItemsTable])
 
+  const tableFieldMeta = useMemo(() => {
+    if (!tableFieldKey) return null
+    return resolveFieldMeta(fieldMetaMap, tableFieldKey)
+  }, [fieldMetaMap, tableFieldKey])
+
+  const isDynamicTable = useMemo(() => {
+    return String(tableFieldMeta?.type || '').toUpperCase() === 'DYNAMIC_TABLE'
+  }, [tableFieldMeta])
+
+  const dynamicColumns = useMemo(() => {
+    if (!rawLineItems || rawLineItems.length === 0) return []
+    const keys = new Set<string>()
+    rawLineItems.forEach((item: any) => {
+      if (item && typeof item === 'object') {
+        Object.keys(item).forEach((k) => {
+          if (
+            k !== '_id' &&
+            k !== '_localFileUrl' &&
+            k !== 'localUrl' &&
+            k !== 'score' &&
+            k !== 'Line Score' &&
+            k !== 'status'
+          ) {
+            keys.add(k)
+          }
+        })
+      }
+    })
+    return Array.from(keys)
+  }, [rawLineItems])
+
+  const formatHeaderLabel = (key: string) => {
+    return key
+      .replace(/[_-]+/g, ' ')
+      .trim()
+      .replace(/\b\w/g, (char) => char.toUpperCase())
+  }
+
   useEffect(() => {
     if (rawLineItems && rawLineItems.length > 0) {
       const cloned = structuredClone(rawLineItems)
@@ -1482,18 +1528,25 @@ const Overview = (props: any) => {
   }
 
   const handleAddItem = () => {
-    const newItem = {
+    const newItem: any = {
       _id: `li-${Date.now()}-${Math.random()}`,
-      Amount: { 'Invoice Value': '' },
-      amount: '',
-      Description: { 'Invoice Value': '' },
-      description: '',
-      Price: { 'Invoice Value': '' },
-      Quantity: { 'Invoice Value': '' },
-      quantity: '',
-      rate: '',
-      total: '',
-      unit_price: '',
+    }
+
+    if (isDynamicTable) {
+      dynamicColumns.forEach((col) => {
+        newItem[col] = ''
+      })
+    } else {
+      newItem.Amount = { 'Invoice Value': '' }
+      newItem.amount = ''
+      newItem.Description = { 'Invoice Value': '' }
+      newItem.description = ''
+      newItem.Price = { 'Invoice Value': '' }
+      newItem.Quantity = { 'Invoice Value': '' }
+      newItem.quantity = ''
+      newItem.rate = ''
+      newItem.total = ''
+      newItem.unit_price = ''
     }
 
     setLineItems((prev) => {
@@ -2559,18 +2612,40 @@ const Overview = (props: any) => {
                         <table className='w-full border-collapse text-left text-xs'>
                           <thead className='border-b border-[var(--gray-3)] bg-[var(--gray-1)]'>
                             <tr>
-                              <th className='px-3 py-2 text-[11px] font-semibold text-[var(--gray-11)]'>
-                                Description
-                              </th>
-                              <th className='w-[100px] px-3 py-2 text-right text-[11px] font-semibold text-[var(--gray-11)]'>
-                                Qty
-                              </th>
-                              <th className='w-[140px] px-3 py-2 text-right text-[11px] font-semibold text-[var(--gray-11)]'>
-                                Rate
-                              </th>
-                              <th className='w-[160px] px-3 py-2 text-right text-[11px] font-semibold text-[var(--gray-11)]'>
-                                Total Amount
-                              </th>
+                              {isDynamicTable ? (
+                                dynamicColumns.map((colKey) => (
+                                  <th
+                                    key={colKey}
+                                    className={cn(
+                                      'px-3 py-2 text-[11px] font-semibold text-[var(--gray-11)]',
+                                      (colKey.toLowerCase().includes('qty') ||
+                                        colKey.toLowerCase().includes('quantity') ||
+                                        colKey.toLowerCase().includes('rate') ||
+                                        colKey.toLowerCase().includes('price') ||
+                                        colKey.toLowerCase().includes('amount') ||
+                                        colKey.toLowerCase().includes('total')) &&
+                                        'text-right',
+                                    )}
+                                  >
+                                    {formatHeaderLabel(colKey)}
+                                  </th>
+                                ))
+                              ) : (
+                                <>
+                                  <th className='px-3 py-2 text-[11px] font-semibold text-[var(--gray-11)]'>
+                                    Description
+                                  </th>
+                                  <th className='w-[100px] px-3 py-2 text-right text-[11px] font-semibold text-[var(--gray-11)]'>
+                                    Qty
+                                  </th>
+                                  <th className='w-[140px] px-3 py-2 text-right text-[11px] font-semibold text-[var(--gray-11)]'>
+                                    Rate
+                                  </th>
+                                  <th className='w-[160px] px-3 py-2 text-right text-[11px] font-semibold text-[var(--gray-11)]'>
+                                    Total Amount
+                                  </th>
+                                </>
+                              )}
                               <th className='w-[100px] px-3 py-2 text-right text-[11px] font-semibold text-[var(--gray-11)]'>
                                 Match Score
                               </th>
@@ -2593,18 +2668,45 @@ const Overview = (props: any) => {
                                     className='group transition-colors'
                                     key={rowKey}
                                   >
-                                    <td className='px-3 py-3'>
-                                      <div className='h-4 w-5/6 animate-pulse rounded bg-[var(--gray-3)]' />
-                                    </td>
-                                    <td className='w-[100px] px-3 py-3'>
-                                      <div className='ml-auto h-4 w-8 animate-pulse rounded bg-[var(--gray-3)]' />
-                                    </td>
-                                    <td className='w-[140px] px-3 py-3'>
-                                      <div className='ml-auto h-4 w-12 animate-pulse rounded bg-[var(--gray-3)]' />
-                                    </td>
-                                    <td className='w-[160px] px-3 py-3'>
-                                      <div className='ml-auto h-4 w-16 animate-pulse rounded bg-[var(--gray-3)]' />
-                                    </td>
+                                    {isDynamicTable ? (
+                                      dynamicColumns.map((colKey, index) => (
+                                        <td
+                                          key={colKey}
+                                          className={cn(
+                                            'px-3 py-3',
+                                            (colKey.toLowerCase().includes('qty') ||
+                                              colKey.toLowerCase().includes('quantity') ||
+                                              colKey.toLowerCase().includes('rate') ||
+                                              colKey.toLowerCase().includes('price') ||
+                                              colKey.toLowerCase().includes('amount') ||
+                                              colKey.toLowerCase().includes('total')) &&
+                                              'text-right',
+                                          )}
+                                        >
+                                          <div
+                                            className={cn(
+                                              'h-4 animate-pulse rounded bg-[var(--gray-3)]',
+                                              index === 0 ? 'w-5/6' : 'w-12 ml-auto',
+                                            )}
+                                          />
+                                        </td>
+                                      ))
+                                    ) : (
+                                      <>
+                                        <td className='px-3 py-3'>
+                                          <div className='h-4 w-5/6 animate-pulse rounded bg-[var(--gray-3)]' />
+                                        </td>
+                                        <td className='w-[100px] px-3 py-3'>
+                                          <div className='ml-auto h-4 w-8 animate-pulse rounded bg-[var(--gray-3)]' />
+                                        </td>
+                                        <td className='w-[140px] px-3 py-3'>
+                                          <div className='ml-auto h-4 w-12 animate-pulse rounded bg-[var(--gray-3)]' />
+                                        </td>
+                                        <td className='w-[160px] px-3 py-3'>
+                                          <div className='ml-auto h-4 w-16 animate-pulse rounded bg-[var(--gray-3)]' />
+                                        </td>
+                                      </>
+                                    )}
                                     <td className='w-[100px] px-3 py-3'>
                                       <div className='ml-auto h-4 w-12 animate-pulse rounded bg-[var(--gray-3)]' />
                                     </td>
@@ -2626,30 +2728,6 @@ const Overview = (props: any) => {
                                       ? Number(lineScore) >= 90
                                       : false) || item?.status === 'MATCH'
 
-                                  const descVal =
-                                    item.Description?.['Invoice Value'] ??
-                                    item.description ??
-                                    item.item_no ??
-                                    item.itemNo ??
-                                    ''
-                                  const qtyVal =
-                                    item.Quantity?.['Invoice Value'] ??
-                                    item.quantity ??
-                                    ''
-                                  const priceVal =
-                                    item.Price?.['Invoice Value'] ??
-                                    item.rate ??
-                                    item.unit_price ??
-                                    item.price ??
-                                    ''
-                                  const amountVal =
-                                    item.Amount?.['Invoice Value'] ??
-                                    item.total ??
-                                    item.amount ??
-                                    item.line_amount ??
-                                    item.lineAmount ??
-                                    ''
-
                                   return (
                                     <tr
                                       key={item._id}
@@ -2660,116 +2738,231 @@ const Overview = (props: any) => {
                                           : 'bg-[var(--red-1)]/30 hover:bg-[var(--red-1)]/50',
                                       )}
                                     >
-                                      {/* Description Cell */}
-                                      <td className='px-2 py-0.5 font-semibold text-[var(--gray-13)]'>
-                                        <input
-                                          className='w-full rounded border-none bg-transparent px-1.5 py-1 text-xs font-semibold text-[var(--gray-13)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
-                                          value={descVal}
-                                          onChange={(e) =>
-                                            handleLineItemChange(
-                                              index,
-                                              'description',
-                                              e.target.value,
-                                            )
-                                          }
-                                          onFocus={() =>
-                                            handleFieldFocus?.(
-                                              descVal,
-                                              'description',
-                                            )
-                                          }
-                                        />
-                                      </td>
+                                      {isDynamicTable ? (
+                                        dynamicColumns.map((colKey) => {
+                                          const cellVal = getRawVal(item, colKey) ?? ''
+                                          const isNumeric =
+                                            colKey.toLowerCase().includes('qty') ||
+                                            colKey.toLowerCase().includes('quantity') ||
+                                            colKey.toLowerCase().includes('rate') ||
+                                            colKey.toLowerCase().includes('price') ||
+                                            colKey.toLowerCase().includes('amount') ||
+                                            colKey.toLowerCase().includes('total')
 
-                                      {/* Quantity Cell */}
-                                      <td className='w-[100px] px-2 py-0.5 text-right font-semibold text-[var(--gray-11)]'>
-                                        <input
-                                          className='w-full rounded border-none bg-transparent px-1.5 py-1 text-right text-xs font-semibold text-[var(--gray-11)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
-                                          value={qtyVal}
-                                          onChange={(e) =>
-                                            handleLineItemChange(
-                                              index,
-                                              'quantity',
-                                              e.target.value,
-                                            )
-                                          }
-                                          onFocus={() =>
-                                            handleFieldFocus?.(qtyVal, 'qty')
-                                          }
-                                        />
-                                      </td>
+                                          return (
+                                            <td
+                                              key={colKey}
+                                              className={cn(
+                                                'px-2 py-0.5 font-semibold text-[var(--gray-13)]',
+                                                isNumeric && 'text-right'
+                                              )}
+                                            >
+                                              <input
+                                                className={cn(
+                                                  'w-full rounded border-none bg-transparent px-1.5 py-1 text-xs font-semibold transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none',
+                                                  isNumeric ? 'text-right text-[var(--gray-11)]' : 'text-[var(--gray-13)]'
+                                                )}
+                                                value={cellVal}
+                                                onBlur={(e) => {
+                                                  if (
+                                                    colKey.toLowerCase().includes('price') ||
+                                                    colKey.toLowerCase().includes('rate') ||
+                                                    colKey.toLowerCase().includes('amount') ||
+                                                    colKey.toLowerCase().includes('total')
+                                                  ) {
+                                                    const num = Number.parseFloat(
+                                                      e.target.value.replace(
+                                                        /[^0-9.-]+/g,
+                                                        '',
+                                                      ),
+                                                    )
+                                                    if (!Number.isNaN(num)) {
+                                                      handleLineItemChange(
+                                                        index,
+                                                        colKey,
+                                                        num.toFixed(2),
+                                                      )
+                                                      return
+                                                    }
+                                                  }
+                                                  handleLineItemChange(
+                                                    index,
+                                                    colKey,
+                                                    e.target.value,
+                                                  )
+                                                }}
+                                                onChange={(e) =>
+                                                  handleLineItemChange(
+                                                    index,
+                                                    colKey,
+                                                    e.target.value,
+                                                  )
+                                                }
+                                                onFocus={() =>
+                                                  handleFieldFocus?.(
+                                                    cellVal,
+                                                    colKey,
+                                                  )
+                                                }
+                                              />
+                                            </td>
+                                          )
+                                        })
+                                      ) : (
+                                        <>
+                                          {/* Description Cell */}
+                                          <td className='px-2 py-0.5 font-semibold text-[var(--gray-13)]'>
+                                            <input
+                                              className='w-full rounded border-none bg-transparent px-1.5 py-1 text-xs font-semibold text-[var(--gray-13)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
+                                              value={
+                                                item.Description?.['Invoice Value'] ??
+                                                item.description ??
+                                                item.item_no ??
+                                                item.itemNo ??
+                                                ''
+                                              }
+                                              onChange={(e) =>
+                                                handleLineItemChange(
+                                                  index,
+                                                  'description',
+                                                  e.target.value,
+                                                )
+                                              }
+                                              onFocus={() =>
+                                                handleFieldFocus?.(
+                                                  item.Description?.['Invoice Value'] ??
+                                                    item.description ??
+                                                    item.item_no ??
+                                                    item.itemNo ??
+                                                    '',
+                                                  'description',
+                                                )
+                                              }
+                                            />
+                                          </td>
 
-                                      {/* Rate/Price Cell */}
-                                      <td className='w-[140px] px-2 py-0.5 text-right font-semibold text-[var(--gray-11)]'>
-                                        <input
-                                          className='w-full rounded border-none bg-transparent px-1.5 py-1 text-right text-xs font-semibold text-[var(--gray-11)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
-                                          value={priceVal}
-                                          onBlur={(e) => {
-                                            const num = Number.parseFloat(
-                                              e.target.value.replace(
-                                                /[^0-9.-]+/g,
-                                                '',
-                                              ),
-                                            )
-                                            if (!Number.isNaN(num)) {
-                                              handleLineItemChange(
-                                                index,
-                                                'price',
-                                                num.toFixed(2),
-                                              )
-                                            }
-                                          }}
-                                          onChange={(e) =>
-                                            handleLineItemChange(
-                                              index,
-                                              'price',
-                                              e.target.value,
-                                            )
-                                          }
-                                          onFocus={() =>
-                                            handleFieldFocus?.(
-                                              priceVal,
-                                              'price',
-                                            )
-                                          }
-                                        />
-                                      </td>
+                                          {/* Quantity Cell */}
+                                          <td className='w-[100px] px-2 py-0.5 text-right font-semibold text-[var(--gray-11)]'>
+                                            <input
+                                              className='w-full rounded border-none bg-transparent px-1.5 py-1 text-right text-xs font-semibold text-[var(--gray-11)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
+                                              value={
+                                                item.Quantity?.['Invoice Value'] ??
+                                                item.quantity ??
+                                                ''
+                                              }
+                                              onChange={(e) =>
+                                                handleLineItemChange(
+                                                  index,
+                                                  'quantity',
+                                                  e.target.value,
+                                                )
+                                              }
+                                              onFocus={() =>
+                                                handleFieldFocus?.(
+                                                  item.Quantity?.['Invoice Value'] ??
+                                                    item.quantity ??
+                                                    '',
+                                                  'qty',
+                                                )
+                                              }
+                                            />
+                                          </td>
 
-                                      {/* Total Amount Cell */}
-                                      <td className='w-[160px] px-2 py-0.5 text-right font-semibold text-[var(--gray-13)]'>
-                                        <input
-                                          className='w-full rounded border-none bg-transparent px-1.5 py-1 text-right text-xs font-semibold text-[var(--gray-13)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
-                                          value={amountVal}
-                                          onBlur={(e) => {
-                                            const num = Number.parseFloat(
-                                              e.target.value.replace(
-                                                /[^0-9.-]+/g,
-                                                '',
-                                              ),
-                                            )
-                                            if (!Number.isNaN(num)) {
-                                              handleLineItemChange(
-                                                index,
-                                                'amount',
-                                                num.toFixed(2),
-                                              )
-                                            }
-                                          }}
-                                          onChange={(e) =>
-                                            handleLineItemChange(
-                                              index,
-                                              'amount',
-                                              e.target.value,
-                                            )
-                                          }
-                                          onFocus={() =>
-                                            handleFieldFocus?.(
-                                              amountVal,
-                                              'line_amount',
-                                            )
-                                          }
-                                        />
-                                      </td>
+                                          {/* Rate/Price Cell */}
+                                          <td className='w-[140px] px-2 py-0.5 text-right font-semibold text-[var(--gray-11)]'>
+                                            <input
+                                              className='w-full rounded border-none bg-transparent px-1.5 py-1 text-right text-xs font-semibold text-[var(--gray-11)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
+                                              value={
+                                                item.Price?.['Invoice Value'] ??
+                                                item.rate ??
+                                                item.unit_price ??
+                                                item.price ??
+                                                ''
+                                              }
+                                              onBlur={(e) => {
+                                                const num = Number.parseFloat(
+                                                  e.target.value.replace(
+                                                    /[^0-9.-]+/g,
+                                                    '',
+                                                  ),
+                                                )
+                                                if (!Number.isNaN(num)) {
+                                                  handleLineItemChange(
+                                                    index,
+                                                    'price',
+                                                    num.toFixed(2),
+                                                  )
+                                                }
+                                              }}
+                                              onChange={(e) =>
+                                                handleLineItemChange(
+                                                  index,
+                                                  'price',
+                                                  e.target.value,
+                                                )
+                                              }
+                                              onFocus={() =>
+                                                handleFieldFocus?.(
+                                                  item.Price?.['Invoice Value'] ??
+                                                    item.rate ??
+                                                    item.unit_price ??
+                                                    item.price ??
+                                                    '',
+                                                  'price',
+                                                )
+                                              }
+                                            />
+                                          </td>
+
+                                          {/* Total Amount Cell */}
+                                          <td className='w-[160px] px-2 py-0.5 text-right font-semibold text-[var(--gray-13)]'>
+                                            <input
+                                              className='w-full rounded border-none bg-transparent px-1.5 py-1 text-right text-xs font-semibold text-[var(--gray-13)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
+                                              value={
+                                                item.Amount?.['Invoice Value'] ??
+                                                item.total ??
+                                                item.amount ??
+                                                item.line_amount ??
+                                                item.lineAmount ??
+                                                ''
+                                              }
+                                              onBlur={(e) => {
+                                                const num = Number.parseFloat(
+                                                  e.target.value.replace(
+                                                    /[^0-9.-]+/g,
+                                                    '',
+                                                  ),
+                                                )
+                                                if (!Number.isNaN(num)) {
+                                                  handleLineItemChange(
+                                                    index,
+                                                    'amount',
+                                                    num.toFixed(2),
+                                                  )
+                                                }
+                                              }}
+                                              onChange={(e) =>
+                                                handleLineItemChange(
+                                                  index,
+                                                  'amount',
+                                                  e.target.value,
+                                                )
+                                              }
+                                              onFocus={() =>
+                                                handleFieldFocus?.(
+                                                  item.Amount?.['Invoice Value'] ??
+                                                    item.total ??
+                                                    item.amount ??
+                                                    item.line_amount ??
+                                                    item.lineAmount ??
+                                                    '',
+                                                  'line_amount',
+                                                )
+                                              }
+                                            />
+                                          </td>
+                                        </>
+                                      )}
 
                                       {/* Match Score Cell */}
                                       <td className='w-[100px] px-3 py-2 text-right font-semibold'>
@@ -2826,7 +3019,11 @@ const Overview = (props: any) => {
                             <tr className='font-bold'>
                               <td
                                 className='px-3 py-2 text-right text-[11px] text-[var(--gray-11)]'
-                                colSpan={3}
+                                colSpan={
+                                  isDynamicTable
+                                    ? Math.max(1, dynamicColumns.length - 1)
+                                    : 3
+                                }
                               >
                                 Grand Total
                               </td>
