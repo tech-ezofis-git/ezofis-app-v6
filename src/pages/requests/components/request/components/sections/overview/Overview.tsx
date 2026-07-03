@@ -18,6 +18,12 @@ import {
 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import fileApi from '@/api/file/file'
+import showToast from '@/components/base/toast/showToast'
+import {
+  getMockDB,
+  startSupplierVerification,
+  startRelatedDocuments,
+} from '@/services/mockBackend'
 import BarLoader from '@/components/base/BarLoader'
 import Icon from '@/components/base/icon/Icon'
 import InputDate from '@/components/base/inputs/InputDate'
@@ -1239,6 +1245,127 @@ const Overview = (props: any) => {
     (showMatterValidation ? 1 : 0)
 
   const [activeTab, setActiveTab] = useState('summary')
+
+  // Document ID resolver
+  const docId = useMemo(() => {
+    const rawId = resolvedInstanceId || selectedItem?.workflowInstanceId || selectedItem?.instanceId || processId
+    if (!rawId || String(rawId) === 'NaN') {
+      return String(selectedItem?.id || '')
+    }
+    return String(rawId)
+  }, [resolvedInstanceId, selectedItem, processId])
+
+  // Supplier Name resolver
+  const supplierName = useMemo(() => {
+    const name =
+      formModel?.['Supplier Name'] ||
+      formModel?.['Vendor Name'] ||
+      formModel?.['SupplierName'] ||
+      formModel?.['VendorName'] ||
+      formModel?.['Supplier'] ||
+      formModel?.['Vendor'] ||
+      agentData?.po_row?.['Vendor Name'] ||
+      ''
+    return String(name).trim() || 'the supplier'
+  }, [formModel, agentData])
+
+  // Supplier Verification Check State
+  const [supplierCheckState, setSupplierCheckState] = useState<{
+    status: 'not_run' | 'pending' | 'complete'
+    data?: any
+  }>(() => {
+    if (!docId) return { status: 'not_run' }
+    const db = getMockDB()
+    return db.documents[docId]?.supplierVerification || { status: 'not_run' }
+  })
+
+  // Related Documents Check State
+  const [relatedDocsState, setRelatedDocsState] = useState<{
+    status: 'not_run' | 'pending' | 'complete'
+    data?: any
+  }>(() => {
+    if (!docId) return { status: 'not_run' }
+    const db = getMockDB()
+    return db.documents[docId]?.relatedDocuments || { status: 'not_run' }
+  })
+
+  // Synchronize state when document ID changes
+  useEffect(() => {
+    if (!docId) return
+    const db = getMockDB()
+    setSupplierCheckState(db.documents[docId]?.supplierVerification || { status: 'not_run' })
+    setRelatedDocsState(db.documents[docId]?.relatedDocuments || { status: 'not_run' })
+  }, [docId])
+
+  // Tab sync for external updates (e.g. cross-tab events)
+  useEffect(() => {
+    const handleStorageChange = () => {
+      if (!docId) return
+      const db = getMockDB()
+      setSupplierCheckState(db.documents[docId]?.supplierVerification || { status: 'not_run' })
+      setRelatedDocsState(db.documents[docId]?.relatedDocuments || { status: 'not_run' })
+    }
+    window.addEventListener('storage', handleStorageChange)
+    return () => window.removeEventListener('storage', handleStorageChange)
+  }, [docId])
+
+  // Supplier Verification Handler
+  const handleVerifySupplierClick = async () => {
+    if (!docId) return
+    try {
+      const realResult = {
+        status: supplierValidationDisplay.status,
+        statusType: supplierValidationDisplay.statusType,
+        value: supplierValidationDisplay.value,
+      }
+
+      setSupplierCheckState({ status: 'pending' })
+
+      const result = await startSupplierVerification(docId, realResult)
+
+      setSupplierCheckState({
+        status: 'complete',
+        data: result,
+      })
+
+      showToast({
+        message: `Supplier verification completed: ${result.value}`,
+        variant: 'success',
+      })
+    } catch (error: any) {
+      setSupplierCheckState({ status: 'not_run' })
+      showToast({
+        message: error?.message || 'Verification failed. 1 credit has been refunded.',
+        variant: 'error',
+      })
+    }
+  }
+
+  // Related Documents Handler
+  const handleFindRelatedDocumentsClick = async () => {
+    if (!docId) return
+    try {
+      setRelatedDocsState({ status: 'pending' })
+
+      const result = await startRelatedDocuments(docId, supplierName)
+
+      setRelatedDocsState({
+        status: 'complete',
+        data: result,
+      })
+
+      showToast({
+        message: 'Successfully located related purchase orders and invoices.',
+        variant: 'success',
+      })
+    } catch (error: any) {
+      setRelatedDocsState({ status: 'not_run' })
+      showToast({
+        message: error?.message || 'Search failed. 1 credit has been refunded.',
+        variant: 'error',
+      })
+    }
+  }
 
   const poVal = useMemo(() => {
     return (
@@ -2610,21 +2737,51 @@ const Overview = (props: any) => {
                       hoverContent={duplicateHover}
                       align='left'
                     />
-                    <AnalysisCard
-                      icon={Store}
-                      status={supplierValidationDisplay.status}
-                      statusType={supplierValidationDisplay.statusType}
-                      title='Supplier Verification'
-                      value={supplierValidationDisplay.value}
-                      isLoading={
-                        isCurrentlyProcessing &&
-                        (!supplierValidationDisplay?.value ||
-                          supplierValidationDisplay.value ===
-                            'No supplier ID found')
-                      }
-                      hoverContent={supplierHover}
-                      align='left'
-                    />
+                    {supplierCheckState.status === 'not_run' && (
+                      <AnalysisCard
+                        icon={Store}
+                        status='Locked'
+                        statusType='default'
+                        title='Supplier Verification'
+                        value={
+                          <span className='inline-flex items-center gap-1 text-[11px] font-bold text-[var(--primary-9)] hover:text-[var(--primary-10)] transition-colors'>
+                            <Icon className='h-3.5 w-3.5' name='tabler:shield-check' />
+                            Verify Supplier
+                          </span>
+                        }
+                        isLoading={false}
+                        onClick={handleVerifySupplierClick}
+                        align='left'
+                      />
+                    )}
+                    {supplierCheckState.status === 'pending' && (
+                      <AnalysisCard
+                        icon={Store}
+                        status='Verifying...'
+                        statusType='info'
+                        title='Supplier Verification'
+                        value={
+                          <span className='inline-flex items-center gap-1.5 text-xs text-[var(--gray-10)] font-medium animate-pulse'>
+                            <Icon className='h-3.5 w-3.5 animate-spin text-[var(--primary-9)]' name='tabler:loader-2' />
+                            Verifying...
+                          </span>
+                        }
+                        isLoading={false}
+                        align='left'
+                      />
+                    )}
+                    {supplierCheckState.status === 'complete' && (
+                      <AnalysisCard
+                        icon={Store}
+                        status={supplierCheckState.data?.status || 'Verified'}
+                        statusType={supplierCheckState.data?.statusType || 'success'}
+                        title='Supplier Verification'
+                        value={supplierCheckState.data?.value || 'Verified'}
+                        isLoading={false}
+                        hoverContent={supplierHover}
+                        align='left'
+                      />
+                    )}
                     {showGlValidation && glValidationDisplay && (
                       <AnalysisCard
                         icon={ListFilter}
@@ -3367,27 +3524,98 @@ const Overview = (props: any) => {
                           </p>
                         </div>
                       ) : (
-                        <Attachments
-                          enabled={true}
-                          formModel={formModel}
-                          instanceId={resolvedInstanceId}
-                          processId={processId}
-                          selectedItem={selectedItem}
-                          transactionId={transactionId}
-                          workflowId={workflowId}
-                          repositoryId={
-                            repositoryId || selectedItem?.repositoryId
-                          }
-                          onSelect={(file) =>
-                            selectedFile?.id === file.id
-                              ? (setIsViewerLoading(true),
-                                setTimeout(
-                                  () => setIsViewerLoading(false),
-                                  500,
-                                ))
-                              : setSelectedFile(file)
-                          }
-                        />
+                        <>
+                          {/* Related Documents Gated Section */}
+                          {relatedDocsState.status === 'not_run' && (
+                            <div className='mb-4 rounded-xl border border-[var(--gray-3)] bg-surface p-4 shadow-sm animate-in fade-in duration-300'>
+                              <div className='flex flex-col md:flex-row md:items-center justify-between gap-4'>
+                                <div className='flex-1 space-y-1'>
+                                  <h4 className='text-xs font-bold text-[var(--gray-13)] flex items-center gap-1.5'>
+                                    <Icon className='h-4 w-4 text-[var(--gray-10)]' name='tabler:files' />
+                                    Related Documents
+                                  </h4>
+                                  <p className='text-[11px] text-[var(--gray-10)] leading-normal'>
+                                    Run a check to surface similar POs and prior invoices from this supplier.
+                                  </p>
+                                </div>
+                                <button
+                                  onClick={handleFindRelatedDocumentsClick}
+                                  className='inline-flex items-center justify-center gap-1.5 rounded-lg bg-[var(--primary-9)] hover:bg-[var(--primary-10)] active:scale-95 text-white px-4 py-2 text-xs font-bold transition-all cursor-pointer shadow-sm border-none shrink-0 self-start md:self-center'
+                                >
+                                  <Icon className='h-4 w-4' name='tabler:search' />
+                                  Find Documents
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                          {relatedDocsState.status === 'pending' && (
+                            <div className='mb-4 rounded-xl border border-[var(--gray-3)] bg-surface p-4 shadow-sm animate-in fade-in duration-300'>
+                              <div className='flex items-center gap-3'>
+                                <Icon className='h-5 w-5 animate-spin text-[var(--primary-9)]' name='tabler:loader-2' />
+                                <div className='space-y-1'>
+                                  <h4 className='text-xs font-bold text-[var(--gray-13)]'>Related Documents</h4>
+                                  <p className='text-[11px] text-[var(--gray-10)] font-medium animate-pulse'>
+                                    Searching related documents...
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                          {relatedDocsState.status === 'complete' && (
+                            <div className='mb-4 rounded-xl border border-[var(--gray-3)] bg-surface p-4 shadow-sm animate-in fade-in duration-300'>
+                              <div className='space-y-3'>
+                                <div className='flex items-center justify-between border-b border-[var(--gray-3)] pb-2'>
+                                  <h4 className='text-xs font-bold text-[var(--gray-13)] flex items-center gap-1.5'>
+                                    <Icon className='h-4 w-4 text-[var(--green-9)]' name='tabler:circle-check' />
+                                    Related Documents
+                                  </h4>
+                                  <span className='rounded bg-[var(--green-1)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--green-9)] border border-[var(--green-3)]'>
+                                    Completed
+                                  </span>
+                                </div>
+                                
+                                <p className='text-xs text-[var(--gray-12)] font-medium leading-relaxed'>
+                                  {relatedDocsState.data?.summary}
+                                </p>
+                                
+                                <div className='flex flex-wrap gap-2 pt-1'>
+                                  {relatedDocsState.data?.chips?.map((chip: any, idx: number) => (
+                                    <div 
+                                      key={idx}
+                                      className='inline-flex items-center gap-1.5 rounded-md bg-[var(--gray-2)] border border-[var(--gray-3)] px-2 py-1 text-[11px] font-semibold text-[var(--gray-12)]'
+                                    >
+                                      <Icon className='h-3 w-3 text-[var(--gray-10)]' name='tabler:file-text' />
+                                      <span>{chip.id}</span>
+                                      <span className='text-[10px] text-[var(--gray-9)] font-normal'>({chip.date})</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          <Attachments
+                            enabled={true}
+                            formModel={formModel}
+                            instanceId={resolvedInstanceId}
+                            processId={processId}
+                            selectedItem={selectedItem}
+                            transactionId={transactionId}
+                            workflowId={workflowId}
+                            repositoryId={
+                              repositoryId || selectedItem?.repositoryId
+                            }
+                            onSelect={(file) =>
+                              selectedFile?.id === file.id
+                                ? (setIsViewerLoading(true),
+                                  setTimeout(
+                                    () => setIsViewerLoading(false),
+                                    500,
+                                  ))
+                                : setSelectedFile(file)
+                            }
+                          />
+                        </>
                       )}
                     </div>
                   )}
