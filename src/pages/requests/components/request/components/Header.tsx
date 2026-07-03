@@ -354,13 +354,39 @@ const Header: React.FC<HeaderProps> = ({
 
             const currDisplay = getCurrencyDisplay(currency || '')
 
+            const parseVal = (val: any) => {
+              if (!val) return 0
+              const num = Number.parseFloat(String(val).replace(/[^0-9.-]+/g, ''))
+              return Number.isNaN(num) ? 0 : num
+            }
+
+            const invoiceNum = parseVal(totalAmount)
+            const poNum = parseVal(poValue)
+
+            let invoiceValueColorClass = 'text-[var(--gray-13)]'
+            if (invoiceNum > 0 && poNum > 0) {
+              if (invoiceNum === poNum) {
+                invoiceValueColorClass = 'text-[var(--green-9)]'
+              } else if (invoiceNum < poNum) {
+                invoiceValueColorClass = 'text-[var(--red-9)]'
+              }
+            }
+            if (
+              invoiceValueColorClass === 'text-[var(--gray-13)]' &&
+              poNumber &&
+              poNumber !== '-' &&
+              poNumber !== 'N/A'
+            ) {
+              invoiceValueColorClass = 'text-[var(--green-9)]'
+            }
+
             return (
               <div className='flex items-center gap-3 pr-3'>
                 <div className='flex flex-col border-[var(--gray-3)] pl-3 text-right'>
                   <span className='mb-1 text-[10px] leading-none font-semibold text-[var(--gray-11)]'>
                     Invoice Value
                   </span>
-                  <span className='text-[13px] leading-none font-semibold text-[var(--gray-13)]'>
+                  <span className={cn('text-[13px] leading-none font-semibold', invoiceValueColorClass)}>
                     {currDisplay} {formatAmount(totalAmount)}
                   </span>
                 </div>

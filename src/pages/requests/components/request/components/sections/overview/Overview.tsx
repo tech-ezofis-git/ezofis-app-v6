@@ -644,53 +644,73 @@ const AnalysisCard = ({
   title,
   value,
   onClick,
-}: any) => (
-  <div
-    className={cn(
-      'flex min-w-0 flex-1 flex-col gap-1.5 rounded-xl border border-[var(--gray-3)] bg-surface p-2.5 transition-colors hover:bg-[var(--gray-1)]',
-      onClick && 'cursor-pointer',
-    )}
-    onClick={onClick}
-  >
-    <div className='flex items-center justify-between'>
-      <div
-        className={cn(
-          'shrink-0 rounded p-1.5 transition-colors',
-          getStatusStyles(statusType),
-        )}
-      >
-        <Icon className='h-3.5 w-3.5' />
-      </div>
-      {isLoading ? (
-        <div className='h-5 w-14 animate-pulse rounded bg-[var(--gray-3)]' />
-      ) : (
+  hoverContent,
+  align = 'left',
+}: any) => {
+  const [isHovered, setIsHovered] = useState(false)
+
+  return (
+    <div
+      className={cn(
+        'relative flex min-w-0 flex-1 flex-col gap-1.5 rounded-xl border border-[var(--gray-3)] bg-surface p-2.5 transition-colors hover:bg-[var(--gray-1)]',
+        onClick && 'cursor-pointer',
+      )}
+      onClick={onClick}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <div className='flex items-center justify-between'>
         <div
           className={cn(
-            'shrink-0 rounded-md border px-2 py-0.5 text-[9px] font-semibold',
-            getStatusBorderStyles(statusType),
+            'shrink-0 rounded p-1.5 transition-colors',
+            getStatusStyles(statusType),
           )}
         >
-          {status}
+          <Icon className='h-3.5 w-3.5' />
         </div>
-      )}
-    </div>
-    <div className='mt-0.5 flex min-w-0 flex-col gap-0.5'>
-      <span className='text-[11px] leading-none font-semibold tracking-tight text-[var(--gray-11)]'>
-        {title}
-      </span>
-      {isLoading ? (
-        <div className='mt-1 h-4 w-24 animate-pulse rounded bg-[var(--gray-3)]' />
-      ) : (
+        {isLoading ? (
+          <div className='h-5 w-14 animate-pulse rounded bg-[var(--gray-3)]' />
+        ) : (
+          <div
+            className={cn(
+              'shrink-0 rounded-md border px-2 py-0.5 text-[9px] font-semibold',
+              getStatusBorderStyles(statusType),
+            )}
+          >
+            {status}
+          </div>
+        )}
+      </div>
+      <div className='mt-0.5 flex min-w-0 flex-col gap-0.5'>
+        <span className='text-[11px] leading-none font-semibold tracking-tight text-[var(--gray-11)]'>
+          {title}
+        </span>
+        {isLoading ? (
+          <div className='mt-1 h-4 w-24 animate-pulse rounded bg-[var(--gray-3)]' />
+        ) : (
+          <div
+            className='text-[13px] leading-tight font-semibold text-[var(--gray-13)]'
+            title={typeof value === 'string' ? value : undefined}
+          >
+            {value || '---'}
+          </div>
+        )}
+      </div>
+
+      {/* Hover details popover */}
+      {isHovered && hoverContent && (
         <div
-          className='text-[13px] leading-tight font-semibold text-[var(--gray-13)]'
-          title={typeof value === 'string' ? value : undefined}
+          className={cn(
+            'absolute top-full z-[100] mt-2 w-72 rounded-xl border border-[var(--gray-3)] bg-surface/98 p-4 shadow-2xl backdrop-blur-md animate-in fade-in zoom-in-95 duration-200 pointer-events-none text-left',
+            align === 'right' ? 'right-0 origin-top-right' : 'left-0 origin-top-left',
+          )}
         >
-          {value || '---'}
+          {hoverContent}
         </div>
       )}
     </div>
-  </div>
-)
+  )
+}
 
 const FormCard = ({
   highlight = false,
@@ -1151,6 +1171,29 @@ const Overview = (props: any) => {
       hasGlValidationData(agentData) ? getGlValidationDisplay(agentData) : null,
     [agentData],
   )
+  const backOrder = useMemo(() => {
+    if (isFourthItem) {
+      return {
+        detected: true,
+        missing_qty_by_item: [
+          {
+            amount: 1050.0,
+            description: 'Office Chair - Ergonomic',
+            invoice_qty: 3,
+            po_line_id: '1',
+            po_qty: 10,
+            price: 150.0,
+            reason: 'SHORT_SHIP',
+            remaining: 7,
+          },
+        ],
+        previous_id: ['MSP-REQ-55'],
+        recommendation: 'WAIT_FOR_BALANCE',
+      }
+    }
+    return agentData?.back_order || agentData?.backorder
+  }, [agentData, isFourthItem])
+
   const backOrderDisplay = useMemo(() => {
     if (isFourthItem) {
       return {
@@ -1196,6 +1239,254 @@ const Overview = (props: any) => {
     (showMatterValidation ? 1 : 0)
 
   const [activeTab, setActiveTab] = useState('summary')
+
+  const poVal = useMemo(() => {
+    return (
+      formModel?.['PO Number'] ||
+      formModel?.['PO No'] ||
+      formModel?.['po_number'] ||
+      formModel?.['poNumber'] ||
+      formModel?.['po_no'] ||
+      formModel?.['pono'] ||
+      formModel?.['Purchase Order'] ||
+      formModel?.['RXwLGHILLrreMmRqlk9mj']
+    )
+  }, [formModel])
+
+  const poMatchingHover = useMemo(() => (
+    <div className='flex flex-col gap-2.5'>
+      <div className='flex items-center gap-2 border-b border-[var(--gray-3)] pb-2'>
+        <Icon className='h-4 w-4 text-[var(--primary-9)]' name='tabler:clipboard-check' />
+        <span className='text-xs font-bold text-[var(--gray-13)]'>PO Matching Insights</span>
+      </div>
+      <div className='space-y-1.5 text-[11px]'>
+        <div className='flex justify-between gap-2'>
+          <span className='font-medium text-[var(--gray-10)]'>PO Number:</span>
+          <span className='font-bold text-[var(--gray-13)]'>{poVal || 'No PO matched'}</span>
+        </div>
+        <div className='flex justify-between gap-2'>
+          <span className='font-medium text-[var(--gray-10)]'>Matching Status:</span>
+          <span className={cn('font-bold', poVal && poVal !== '-' && poVal !== 'N/A' ? 'text-[var(--green-9)]' : 'text-[var(--orange-9)]')}>
+            {poVal && poVal !== '-' && poVal !== 'N/A' ? 'Matched' : 'Not Matched'}
+          </span>
+        </div>
+        {agentData?.po_matching?.po_amount && (
+          <div className='flex justify-between gap-2'>
+            <span className='font-medium text-[var(--gray-10)]'>PO Amount:</span>
+            <span className='font-bold text-[var(--gray-13)]'>{agentData?.po_matching?.po_amount}</span>
+          </div>
+        )}
+        {agentData?.po_row?.['Vendor Name'] && (
+          <div className='flex flex-col gap-0.5'>
+            <span className='font-medium text-[var(--gray-10)]'>PO Vendor:</span>
+            <span className='font-semibold text-[var(--gray-12)] truncate'>{agentData?.po_row?.['Vendor Name']}</span>
+          </div>
+        )}
+        <div className='mt-1 border-t border-[var(--gray-3)] pt-1.5 text-[10px] italic text-[var(--gray-10)] leading-normal'>
+          {poVal && poVal !== '-' && poVal !== 'N/A'
+            ? 'System has successfully matched this transaction with the corresponding purchase order details.'
+            : 'No valid purchase order reference could be automatically resolved from the invoice header.'}
+        </div>
+      </div>
+    </div>
+  ), [poVal, agentData])
+
+  const duplicateHover = useMemo(() => (
+    <div className='flex flex-col gap-2.5'>
+      <div className='flex items-center gap-2 border-b border-[var(--gray-3)] pb-2'>
+        <Icon className='h-4 w-4 text-[var(--primary-9)]' name='tabler:copy-off' />
+        <span className='text-xs font-bold text-[var(--gray-13)]'>Duplicate Check Insights</span>
+      </div>
+      <div className='space-y-1.5 text-[11px]'>
+        <div className='flex justify-between gap-2'>
+          <span className='font-medium text-[var(--gray-10)]'>Duplicate Status:</span>
+          <span className={cn('font-bold', agentData?.duplicate_check?.status === 'Duplicate' ? 'text-[var(--red-9)]' : 'text-[var(--green-9)]')}>
+            {agentData?.duplicate_check?.status || 'Passed'}
+          </span>
+        </div>
+        <div className='flex flex-col gap-0.5'>
+          <span className='font-medium text-[var(--gray-10)]'>Analysis Result:</span>
+          <span className='font-semibold text-[var(--gray-12)] leading-normal'>
+            {agentData?.duplicate_check?.message || 'No duplicate records found.'}
+          </span>
+        </div>
+        <div className='mt-1 border-t border-[var(--gray-3)] pt-1.5 text-[10px] italic text-[var(--gray-10)] leading-normal'>
+          The system cross-checks supplier identity, invoice number, and final values against historical transactions to prevent double-payment.
+        </div>
+      </div>
+    </div>
+  ), [agentData])
+
+  const supplierHover = useMemo(() => (
+    <div className='flex flex-col gap-2.5'>
+      <div className='flex items-center gap-2 border-b border-[var(--gray-3)] pb-2'>
+        <Icon className='h-4 w-4 text-[var(--primary-9)]' name='tabler:id' />
+        <span className='text-xs font-bold text-[var(--gray-13)]'>Supplier Verification Insights</span>
+      </div>
+      <div className='space-y-1.5 text-[11px]'>
+        <div className='flex justify-between gap-2'>
+          <span className='font-medium text-[var(--gray-10)]'>Verification Status:</span>
+          <span className={cn('font-bold', supplierValidationDisplay.statusType === 'success' ? 'text-[var(--green-9)]' : 'text-[var(--orange-9)]')}>
+            {supplierValidationDisplay.status}
+          </span>
+        </div>
+        <div className='flex justify-between gap-2'>
+          <span className='font-medium text-[var(--gray-10)]'>Supplier ID/Code:</span>
+          <span className='font-bold text-[var(--gray-13)]'>
+            {formModel?.['Supplier ID'] || formModel?.['SupplierCode'] || formModel?.['Supplier Code'] || formModel?.['supplier_id'] || formModel?.['Vendor ID'] || formModel?.['vendor_id'] || 'Not Found'}
+          </span>
+        </div>
+        <div className='flex flex-col gap-0.5'>
+          <span className='font-medium text-[var(--gray-10)]'>Result:</span>
+          <span className='font-semibold text-[var(--gray-12)] leading-normal'>{supplierValidationDisplay.value}</span>
+        </div>
+        {agentData?.supplier_validation?.mismatch && agentData.supplier_validation.mismatch.length > 0 && (
+          <div className='flex flex-col gap-0.5'>
+            <span className='font-medium text-[var(--gray-10)] text-[var(--red-9)]'>Discrepancies:</span>
+            <ul className='list-disc pl-4 text-[10px] text-[var(--gray-12)] space-y-0.5'>
+              {agentData.supplier_validation.mismatch.map((m: any, idx: number) => (
+                <li key={idx}>{String(m)}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+        <div className='mt-1 border-t border-[var(--gray-3)] pt-1.5 text-[10px] italic text-[var(--gray-10)] leading-normal'>
+          Checks vendor registration status, payment instructions, and verifies matches against our procurement accounts system.
+        </div>
+      </div>
+    </div>
+  ), [supplierValidationDisplay, formModel, agentData])
+
+  const glHover = useMemo(() => (
+    <div className='flex flex-col gap-2.5'>
+      <div className='flex items-center gap-2 border-b border-[var(--gray-3)] pb-2'>
+        <Icon className='h-4 w-4 text-[var(--primary-9)]' name='tabler:list-check' />
+        <span className='text-xs font-bold text-[var(--gray-13)]'>GL Account Matching Insights</span>
+      </div>
+      <div className='space-y-1.5 text-[11px]'>
+        <div className='flex justify-between gap-2'>
+          <span className='font-medium text-[var(--gray-10)]'>Status:</span>
+          <span className={cn('font-bold', glValidationDisplay?.statusType === 'success' ? 'text-[var(--green-9)]' : 'text-[var(--orange-9)]')}>
+            {glValidationDisplay?.status}
+          </span>
+        </div>
+        <div className='flex flex-col gap-0.5'>
+          <span className='font-medium text-[var(--gray-10)]'>Suggested GL Account:</span>
+          <span className='font-bold text-[var(--gray-13)] leading-normal'>{glValidationDisplay?.account || 'No account matched'}</span>
+        </div>
+        {(agentData?.gl_validation?.reason || agentData?.gl_matching?.reason) && (
+          <div className='flex flex-col gap-0.5'>
+            <span className='font-medium text-[var(--gray-10)]'>Matching Logic:</span>
+            <span className='font-semibold text-[var(--gray-12)] leading-normal text-[10px]'>
+              {agentData?.gl_validation?.reason || agentData?.gl_matching?.reason}
+            </span>
+          </div>
+        )}
+        <div className='mt-1 border-t border-[var(--gray-3)] pt-1.5 text-[10px] italic text-[var(--gray-10)] leading-normal'>
+          Automatically maps description strings to the correct financial chart-of-accounts segment.
+        </div>
+      </div>
+    </div>
+  ), [glValidationDisplay, agentData])
+
+  const backOrderHover = useMemo(() => (
+    <div className='flex flex-col gap-2.5'>
+      <div className='flex items-center gap-2 border-b border-[var(--gray-3)] pb-2'>
+        <Icon className='h-4 w-4 text-[var(--primary-9)]' name='tabler:package-off' />
+        <span className='text-xs font-bold text-[var(--gray-13)]'>Back Order Insights</span>
+      </div>
+      <div className='space-y-1.5 text-[11px]'>
+        <div className='flex justify-between gap-2'>
+          <span className='font-medium text-[var(--gray-10)]'>Status:</span>
+          <span className='font-bold text-[var(--orange-9)]'>{backOrderDisplay?.status}</span>
+        </div>
+        <div className='flex justify-between gap-2'>
+          <span className='font-medium text(--gray-10)'>Pending Lines:</span>
+          <span className='font-bold text-[var(--gray-13)]'>{backOrder?.missing_qty_by_item?.length || 0} items</span>
+        </div>
+        {backOrder?.recommendation && (
+          <div className='flex justify-between gap-2'>
+            <span className='font-medium text-[var(--gray-10)]'>Action Recommended:</span>
+            <span className='font-bold text-[var(--blue-9)]'>{formatAgentStatusLabel(backOrder.recommendation)}</span>
+          </div>
+        )}
+        {backOrder?.reason && (
+          <div className='flex flex-col gap-0.5 border-t border-[var(--gray-3)] pt-1 mt-1'>
+            <span className='font-medium text-[var(--gray-10)]'>Explanation:</span>
+            <span className='font-semibold text-[var(--gray-12)] leading-normal text-[10px]'>{backOrder.reason}</span>
+          </div>
+        )}
+        <div className='mt-1 border-t border-[var(--gray-3)] pt-1.5 text-[10px] italic text-[var(--gray-10)] leading-normal'>
+          Triggers when a quantity mismatch is detected between shipped/invoiced quantities and purchase order authorization.
+        </div>
+      </div>
+    </div>
+  ), [backOrderDisplay, backOrder])
+
+  const paymentTermsHover = useMemo(() => (
+    <div className='flex flex-col gap-2.5'>
+      <div className='flex items-center gap-2 border-b border-[var(--gray-3)] pb-2'>
+        <Icon className='h-4 w-4 text-[var(--primary-9)]' name='tabler:calendar-time' />
+        <span className='text-xs font-bold text-[var(--gray-13)]'>Payment Terms Insights</span>
+      </div>
+      <div className='space-y-1.5 text-[11px]'>
+        <div className='flex justify-between gap-2'>
+          <span className='font-medium text-[var(--gray-10)]'>Status:</span>
+          <span className={cn('font-bold', paymentTermsDisplay.statusType === 'danger' ? 'text-[var(--red-9)]' : paymentTermsDisplay.statusType === 'warning' ? 'text-[var(--orange-9)]' : 'text-[var(--green-9)]')}>
+            {formatAgentStatusLabel(paymentTermsDisplay.calculationText)}
+          </span>
+        </div>
+        <div className='flex justify-between gap-2'>
+          <span className='font-medium text-[var(--gray-10)]'>Net Terms:</span>
+          <span className='font-bold text-[var(--gray-13)]'>{paymentTermsDisplay.termsDisplay}</span>
+        </div>
+        <div className='flex justify-between gap-2'>
+          <span className='font-medium text-[var(--gray-10)]'>Due Date:</span>
+          <span className='font-bold text-[var(--gray-13)]'>{extractDueDate(selectedItem, agentData, formModel)}</span>
+        </div>
+        <div className='flex justify-between gap-2'>
+          <span className='font-medium text-[var(--gray-10)]'>Timeline:</span>
+          <span className='font-bold text-[var(--gray-13)]'>{paymentTermsDisplay.daysText}</span>
+        </div>
+        <div className='mt-1 border-t border-[var(--gray-3)] pt-1.5 text-[10px] italic text-[var(--gray-10)] leading-normal'>
+          Calculated dynamically by analyzing supplier profile rules combined with dates extracted from the document header.
+        </div>
+      </div>
+    </div>
+  ), [paymentTermsDisplay, selectedItem, agentData, formModel])
+
+  const matterHover = useMemo(() => (
+    <div className='flex flex-col gap-2.5'>
+      <div className='flex items-center gap-2 border-b border-[var(--gray-3)] pb-2'>
+        <Icon className='h-4 w-4 text-[var(--primary-9)]' name='tabler:briefcase' />
+        <span className='text-xs font-bold text-[var(--gray-13)]'>Matter Validation Insights</span>
+      </div>
+      <div className='space-y-1.5 text-[11px]'>
+        <div className='flex justify-between gap-2'>
+          <span className='font-medium text-[var(--gray-10)]'>Status:</span>
+          <span className={cn('font-bold', matterValidationDisplay?.statusType === 'success' ? 'text-[var(--green-9)]' : 'text-[var(--orange-9)]')}>
+            {matterValidationDisplay?.status}
+          </span>
+        </div>
+        <div className='flex flex-col gap-0.5'>
+          <span className='font-medium text-[var(--gray-10)]'>Associated Matter:</span>
+          <span className='font-bold text-[var(--gray-13)] leading-normal'>{matterValidationDisplay?.value}</span>
+        </div>
+        {agentData?.matter_validation?.client_name && (
+          <div className='flex justify-between gap-2'>
+            <span className='font-medium text-[var(--gray-10)]'>Client:</span>
+            <span className='font-semibold text-[var(--gray-12)]'>{agentData.matter_validation.client_name}</span>
+          </div>
+        )}
+        {agentData?.matter_validation?.validation_details?.reason && (
+          <div className='flex flex-col gap-0.5 border-t border-[var(--gray-3)] pt-1 mt-1'>
+            <span className='font-medium text-[var(--gray-10)] text-[10px]'>Details:</span>
+            <span className='font-semibold text-[var(--gray-12)] text-[10px] leading-normal'>{agentData.matter_validation.validation_details.reason}</span>
+          </div>
+        )}
+      </div>
+    </div>
+  ), [matterValidationDisplay, agentData])
   const [showBackOrderDetailFull, setShowBackOrderDetailFull] = useState(false)
   const [activeBackOrderTab, setActiveBackOrderTab] = useState<
     'current' | string
@@ -1352,29 +1643,6 @@ const Overview = (props: any) => {
       document.removeEventListener('keydown', handleKeyDown)
     }
   }, [])
-
-  const backOrder = useMemo(() => {
-    if (isFourthItem) {
-      return {
-        detected: true,
-        missing_qty_by_item: [
-          {
-            amount: 1050.0,
-            description: 'Office Chair - Ergonomic',
-            invoice_qty: 3,
-            po_line_id: '1',
-            po_qty: 10,
-            price: 150.0,
-            reason: 'SHORT_SHIP',
-            remaining: 7,
-          },
-        ],
-        previous_id: ['MSP-REQ-55'],
-        recommendation: 'WAIT_FOR_BALANCE',
-      }
-    }
-    return agentData?.back_order || agentData?.backorder
-  }, [agentData, isFourthItem])
 
   const fieldMetaMap = useMemo(
     () => buildFieldMetaMap(selectedWorkflow, formDefinition),
@@ -2316,6 +2584,8 @@ const Overview = (props: any) => {
                               ? `${poVal}`
                               : 'No PO Found'
                           }
+                          hoverContent={poMatchingHover}
+                          align='left'
                         />
                       )
                     })()}
@@ -2337,6 +2607,8 @@ const Overview = (props: any) => {
                         agentData?.duplicate_check?.message ||
                         'No duplicates detected'
                       }
+                      hoverContent={duplicateHover}
+                      align='left'
                     />
                     <AnalysisCard
                       icon={Store}
@@ -2350,6 +2622,8 @@ const Overview = (props: any) => {
                           supplierValidationDisplay.value ===
                             'No supplier ID found')
                       }
+                      hoverContent={supplierHover}
+                      align='left'
                     />
                     {showGlValidation && glValidationDisplay && (
                       <AnalysisCard
@@ -2366,6 +2640,8 @@ const Overview = (props: any) => {
                           glValidationDisplay.account ||
                           glValidationDisplay.status
                         }
+                        hoverContent={glHover}
+                        align='right'
                       />
                     )}
                     {showBackOrder &&
@@ -2386,6 +2662,8 @@ const Overview = (props: any) => {
                           setShowBackOrderDetailFull(true)
                           setActiveBackOrderTab('current')
                         }}
+                        hoverContent={backOrderHover}
+                        align='right'
                       />
                     ) : (
                       <AnalysisCard
@@ -2403,6 +2681,8 @@ const Overview = (props: any) => {
                           /days/i,
                           'Days',
                         )}
+                        hoverContent={paymentTermsHover}
+                        align='right'
                       />
                     )}
                     {showMatterValidation && matterValidationDisplay && (
@@ -2417,6 +2697,8 @@ const Overview = (props: any) => {
                           (!matterValidationDisplay?.value ||
                             matterValidationDisplay.value === '---')
                         }
+                        hoverContent={matterHover}
+                        align='right'
                       />
                     )}
                   </div>
