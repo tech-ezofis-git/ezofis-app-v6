@@ -15,7 +15,6 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import {
   createColumnHelper,
-  getCoreRowModel,
   useReactTable,
 } from '@tanstack/react-table'
 import {
@@ -29,7 +28,6 @@ import {
   Link2,
   Plus,
   RefreshCw,
-  Search,
 } from 'lucide-react'
 import {
   type Dispatch,
@@ -39,9 +37,18 @@ import {
   useState,
 } from 'react'
 import IconButton from '@/components/base/button/IconButton'
+import Button from '@/components/base/button/Button'
 import DataTable from '@/components/base/data-table/DataTable'
 import InputSelect from '@/components/base/inputs/InputSelect'
+import InputSwitch from '@/components/base/inputs/InputSwitch'
 import InputText from '@/components/base/inputs/InputText'
+import InputTextarea from '@/components/base/inputs/InputTextarea'
+import {
+  settingsHeaderMeta,
+  settingsTableCoreOptions,
+} from '../../helpers/settingsDataTable'
+import SettingsSearchInput from '../SettingsSearchInput'
+import SettingsSortableDataTable from '../SettingsSortableDataTable'
 
 type DmsFolderConfigurationProps = {
   onBack?: () => void
@@ -275,6 +282,33 @@ const integrations = [
 ]
 const defaultHierarchy = ['Root', 'Year', 'Month', 'Vendor']
 
+const fieldColumnHelper = createColumnHelper<FieldRow>()
+
+const toggleFieldKeys = [
+  'mandatory',
+  'searchable',
+  'showInList',
+  'ocrExtract',
+  'syncField',
+] as const satisfies ReadonlyArray<keyof FieldRow>
+
+type ToggleFieldKey = (typeof toggleFieldKeys)[number]
+
+const toggleFieldLabels: Record<ToggleFieldKey, string> = {
+  mandatory: 'Mandatory',
+  ocrExtract: 'OCR Extract',
+  searchable: 'Searchable',
+  showInList: 'Show in List',
+  syncField: 'Sync Field',
+}
+
+const fieldTypeOptions: SelectOption[] = [
+  { id: 'Alphanumeric', name: 'Alphanumeric', value: 'Alphanumeric' },
+  { id: 'Date', name: 'Date', value: 'Date' },
+  { id: 'Currency', name: 'Currency', value: 'Currency' },
+  { id: 'Text', name: 'Text', value: 'Text' },
+]
+
 type SortableHierarchyItemProps = {
   item: string
 }
@@ -360,7 +394,7 @@ export default function DmsFolderConfiguration({
 
         {!showWizard && (
           <button
-            className='ml-auto inline-flex items-center gap-2 rounded-[10px] bg-[#7C5CFF] px-5 py-3 font-semibold text-white shadow-md'
+            className='ml-auto inline-flex items-center gap-2 rounded-[10px] bg-primary-9 px-5 py-3 font-semibold text-white shadow-md'
             type='button'
             onClick={() => setShowWizard(true)}
           >
@@ -373,16 +407,11 @@ export default function DmsFolderConfiguration({
       {!showWizard ? (
         <div className='px-6 py-4'>
           <div className='mt-4 mb-4 flex justify-end'>
-            <div className='relative w-full max-w-xl'>
-              <Search
-                className='absolute top-1/2 left-4 -translate-y-1/2 text-[#526987]'
-                size={20}
-              />
-              <input
-                className='h-11 w-full rounded-[10px] border border-gray-3 bg-white pr-4 pl-12 text-sm shadow-sm outline-none'
+            <div className='w-full max-w-xl'>
+              <SettingsSearchInput
                 placeholder='Search repositories...'
                 value={search}
-                onChange={(event) => setSearch(event.target.value)}
+                onChange={setSearch}
               />
             </div>
           </div>
@@ -445,9 +474,9 @@ export default function DmsFolderConfiguration({
             )}
 
             <div className='flex items-center gap-4'>
-              <span className='text-sm text-[#526987]'>Step {step} of 5</span>
+              <span className='text-sm text-gray-11'>Step {step} of 5</span>
               <button
-                className='inline-flex items-center gap-2 rounded-[8px] bg-[#7C5CFF] px-5 py-2 font-semibold text-white'
+                className='inline-flex items-center gap-2 rounded-[8px] bg-primary-9 px-5 py-2 font-semibold text-white'
                 type='button'
                 onClick={step === 5 ? handleCreateRepository : goNext}
               >
@@ -473,7 +502,7 @@ function FieldsTable({
   fields: FieldRow[]
   setFields: Dispatch<SetStateAction<FieldRow[]>>
 }) {
-  const updateField = (id: string, key: keyof FieldRow) => {
+  const updateField = (id: string, key: ToggleFieldKey) => {
     setFields((prev) =>
       prev.map((field) =>
         field.id === id ? { ...field, [key]: !field[key] } : field,
@@ -481,59 +510,85 @@ function FieldsTable({
     )
   }
 
+  const columns = useMemo(
+    () => [
+      fieldColumnHelper.display({
+        enableResizing: false,
+        enableSorting: false,
+        header: '',
+        id: 'drag',
+        maxSize: 44,
+        meta: settingsHeaderMeta.center,
+        minSize: 44,
+        size: 44,
+        cell: () => null,
+      }),
+      fieldColumnHelper.accessor('fieldName', {
+        enableSorting: false,
+        header: 'Field Name',
+        id: 'fieldName',
+        meta: settingsHeaderMeta.start,
+        minSize: 200,
+        size: 240,
+        cell: ({ row }) => (
+          <div className='min-w-0'>
+            <div className='font-semibold text-gray-13'>
+              {row.original.fieldName}
+            </div>
+            {row.original.system ? (
+              <span className='mt-1 inline-flex rounded-md border border-gray-3 px-2 py-0.5 text-[11px]'>
+                System
+              </span>
+            ) : null}
+          </div>
+        ),
+      }),
+      fieldColumnHelper.accessor('type', {
+        enableSorting: false,
+        header: 'Type',
+        id: 'type',
+        meta: settingsHeaderMeta.start,
+        minSize: 100,
+        size: 120,
+        cell: ({ getValue }) => (
+          <span className='text-gray-11'>{String(getValue())}</span>
+        ),
+      }),
+      ...toggleFieldKeys.map((key) =>
+        fieldColumnHelper.display({
+          enableResizing: false,
+          enableSorting: false,
+          header: toggleFieldLabels[key],
+          id: key,
+          meta: settingsHeaderMeta.center,
+          minSize: 110,
+          size: 120,
+          cell: ({ row }) => (
+            <div className='flex justify-center'>
+              <InputSwitch
+                checked={Boolean(row.original[key])}
+                onChange={() => updateField(row.original.id, key)}
+              />
+            </div>
+          ),
+        }),
+      ),
+    ],
+    [setFields],
+  )
+
+  const table = useReactTable({
+    ...settingsTableCoreOptions,
+    columns,
+    data: fields,
+    getRowId: (row) => row.id,
+  })
+
   return (
-    <div className='overflow-x-auto rounded-[12px] border border-gray-3 bg-white'>
-      <table className='w-full min-w-[850px] text-sm'>
-        <thead className='bg-[#F8FAFC] text-left text-[#07142B]'>
-          <tr>
-            <th className='w-10 px-4 py-4' />
-            <th className='px-4 py-4'>Field Name</th>
-            <th className='px-4 py-4'>Type</th>
-            <th className='px-4 py-4 text-center'>Mandatory</th>
-            <th className='px-4 py-4 text-center'>Searchable</th>
-            <th className='px-4 py-4 text-center'>Show in List</th>
-            <th className='px-4 py-4 text-center'>OCR Extract</th>
-            <th className='px-4 py-4 text-center'>Sync Field</th>
-          </tr>
-        </thead>
-        <tbody>
-          {fields.map((field) => (
-            <tr className='border-t border-gray-3' key={field.id}>
-              <td className='px-4 py-4 text-[#A8B3C2]'>
-                <GripVertical size={16} />
-              </td>
-              <td className='px-4 py-4'>
-                <div className='font-semibold text-[#07142B]'>
-                  {field.fieldName}
-                </div>
-                {field.system && (
-                  <span className='mt-1 inline-flex rounded-md border border-gray-3 px-2 py-0.5 text-[11px]'>
-                    System
-                  </span>
-                )}
-              </td>
-              <td className='px-4 py-4 text-[#526987]'>{field.type}</td>
-              {(
-                [
-                  'mandatory',
-                  'searchable',
-                  'showInList',
-                  'ocrExtract',
-                  'syncField',
-                ] as Array<keyof FieldRow>
-              ).map((key) => (
-                <td className='px-4 py-4 text-center' key={key}>
-                  <Toggle
-                    checked={Boolean(field[key])}
-                    onChange={() => updateField(field.id, key)}
-                  />
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <SettingsSortableDataTable
+      table={table}
+      onReorder={(nextRows) => setFields(nextRows)}
+    />
   )
 }
 function RepositoryTable({ rows }: { rows: RepositoryRow[] }) {
@@ -541,26 +596,46 @@ function RepositoryTable({ rows }: { rows: RepositoryRow[] }) {
 
   const columns = useMemo(
     () => [
-      columnHelper.accessor('name', {
-        header: 'Repository',
-        cell: ({ row }) => (
-          <div className='flex items-center gap-3'>
-            <div className='flex h-11 w-11 items-center justify-center rounded-[12px] bg-[#F0E8FF] text-[#7C5CFF]'>
+      columnHelper.display({
+        enableResizing: false,
+        enableSorting: false,
+        header: '',
+        id: 'icon',
+        maxSize: 64,
+        meta: settingsHeaderMeta.center,
+        minSize: 64,
+        size: 64,
+        cell: () => (
+          <div className='flex justify-center'>
+            <div className='flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] bg-primary-3 text-primary-9'>
               <Folder size={21} />
             </div>
-            <div>
-              <div className='font-semibold text-[#07142B]'>
-                {row.original.name}
-              </div>
-              <div className='text-xs text-[#526987]'>
-                Owner: {row.original.owner}
-              </div>
+          </div>
+        ),
+      }),
+      columnHelper.accessor('name', {
+        enableSorting: false,
+        header: 'Repository',
+        meta: settingsHeaderMeta.start,
+        minSize: 220,
+        size: 260,
+        cell: ({ row }) => (
+          <div className='min-w-0'>
+            <div className='truncate font-semibold text-gray-13'>
+              {row.original.name}
+            </div>
+            <div className='truncate text-xs text-gray-11'>
+              Owner: {row.original.owner}
             </div>
           </div>
         ),
       }),
       columnHelper.accessor('category', {
+        enableSorting: false,
         header: 'Category',
+        meta: settingsHeaderMeta.start,
+        minSize: 120,
+        size: 140,
         cell: (info) => (
           <span className='rounded-lg border border-gray-3 px-3 py-1 text-xs font-medium'>
             {info.getValue()}
@@ -568,7 +643,11 @@ function RepositoryTable({ rows }: { rows: RepositoryRow[] }) {
         ),
       }),
       columnHelper.accessor('storage', {
+        enableSorting: false,
         header: 'Storage',
+        meta: settingsHeaderMeta.start,
+        minSize: 120,
+        size: 140,
         cell: (info) => (
           <span className='rounded-lg border border-gray-3 px-3 py-1 text-xs font-medium'>
             {info.getValue()}
@@ -576,21 +655,33 @@ function RepositoryTable({ rows }: { rows: RepositoryRow[] }) {
         ),
       }),
       columnHelper.accessor('documents', {
+        enableSorting: false,
         header: 'Documents',
+        meta: settingsHeaderMeta.start,
+        minSize: 130,
+        size: 150,
         cell: (info) => `${info.getValue().toLocaleString()} documents`,
       }),
       columnHelper.accessor('versioning', {
+        enableSorting: false,
         header: 'Versioning',
+        meta: settingsHeaderMeta.start,
+        minSize: 110,
+        size: 120,
       }),
       columnHelper.accessor('status', {
+        enableSorting: false,
         header: 'Status',
+        meta: settingsHeaderMeta.start,
+        minSize: 100,
+        size: 110,
         cell: (info) => (
           <span
             className={cn(
               'rounded-lg px-3 py-1 text-xs font-semibold capitalize',
               info.getValue() === 'active'
-                ? 'bg-[#7C5CFF] text-white'
-                : 'bg-[#F1F4F8] text-[#07142B]',
+                ? 'bg-primary-9 text-white'
+                : 'bg-gray-2 text-gray-13',
             )}
           >
             {info.getValue()}
@@ -602,9 +693,9 @@ function RepositoryTable({ rows }: { rows: RepositoryRow[] }) {
   )
 
   const table = useReactTable({
+    ...settingsTableCoreOptions,
     columns,
     data: rows,
-    getCoreRowModel: getCoreRowModel(),
   })
 
   return (
@@ -633,7 +724,7 @@ function SortableHierarchyItem({ item }: SortableHierarchyItemProps) {
     <div
       ref={setNodeRef}
       className={cn(
-        'flex items-center gap-2 rounded-[9px] border border-[#EEF2F7] bg-[var(--surface-secondary)] px-3 py-2 text-sm text-[#07142B] shadow-sm transition',
+        'flex items-center gap-2 rounded-[9px] border border-gray-3 bg-[var(--surface-secondary)] px-3 py-2 text-sm text-gray-13 shadow-sm transition',
         isDragging && 'z-50 opacity-80 shadow-lg',
       )}
       style={{
@@ -643,7 +734,7 @@ function SortableHierarchyItem({ item }: SortableHierarchyItemProps) {
     >
       <button
         aria-label={`Drag ${item}`}
-        className='flex cursor-grab items-center text-[#71839B] outline-none active:cursor-grabbing'
+        className='flex cursor-grab items-center text-gray-10 outline-none active:cursor-grabbing'
         type='button'
         {...attributes}
         {...listeners}
@@ -739,7 +830,7 @@ function StepNav({
                   className={cn(
                     'z-10 flex h-8 w-8 items-center justify-center rounded-full transition',
                     isCompleted
-                      ? 'bg-[#EFEAFF] text-[#7C5CFF]'
+                      ? 'bg-primary-3 text-primary-9'
                       : 'bg-[var(--gray-3)] text-[var(--gray-10)]',
                   )}
                 >
@@ -755,7 +846,7 @@ function StepNav({
                 <div className='text-sm font-semibold text-[var(--indigo-12)]'>
                   {item.title}
                 </div>
-                <div className='mt-0.5 truncate text-xs text-[#526987]'>
+                <div className='mt-0.5 truncate text-xs text-gray-11'>
                   {item.description}
                 </div>
               </div>
@@ -765,7 +856,7 @@ function StepNav({
       </div>
 
       <div className='mt-5 border-t border-gray-3 pt-4 pb-5'>
-        <div className='mb-3 text-xs font-bold text-[#526987] uppercase'>
+        <div className='mb-3 text-xs font-bold text-gray-11 uppercase'>
           Folder Hierarchy
         </div>
 
@@ -778,7 +869,7 @@ function StepNav({
             items={folderHierarchy}
             strategy={verticalListSortingStrategy}
           >
-            <div className='bg-gray-50/50 space-y-2 rounded-md'>
+            <div className='bg-surface-muted/60 space-y-2 rounded-md'>
               {folderHierarchy.map((item) => (
                 <SortableHierarchyItem item={item} key={item} />
               ))}
@@ -786,12 +877,13 @@ function StepNav({
           </SortableContext>
         </DndContext>
 
-        <div className='mt-2 flex gap-1'>
-          <input
-            className='h-8 flex-1 rounded-md border border-gray-3 px-2 text-xs outline-none'
+        <div className='mt-2 flex items-end gap-2'>
+          <InputText
+            className='flex-1'
+            label='Add level'
             placeholder='Add level...'
             value={newLevel}
-            onChange={(event) => setNewLevel(event.target.value)}
+            onChange={setNewLevel}
             onKeyDown={(event) => {
               if (event.key === 'Enter') {
                 event.preventDefault()
@@ -799,42 +891,17 @@ function StepNav({
               }
             }}
           />
-          <button
-            className='h-8 w-8 rounded-md bg-[#7C5CFF] text-white'
-            type='button'
+          <Button
+            aria-label='Add hierarchy level'
+            className='mb-0.5'
+            icon='lucide:plus'
+            size='sm'
+            variant='solid'
             onClick={handleAddLevel}
-          >
-            +
-          </button>
+          />
         </div>
       </div>
     </div>
-  )
-}
-
-function Toggle({
-  checked,
-  onChange,
-}: {
-  checked: boolean
-  onChange: () => void
-}) {
-  return (
-    <button
-      type='button'
-      className={cn(
-        'relative h-5 w-9 rounded-full transition',
-        checked ? 'bg-[#7C5CFF]' : 'bg-[#E6EAF0]',
-      )}
-      onClick={onChange}
-    >
-      <span
-        className={cn(
-          'absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition',
-          checked ? 'left-[18px]' : 'left-0.5',
-        )}
-      />
-    </button>
   )
 }
 
@@ -906,7 +973,7 @@ function WizardContent({
   if (step === 1) {
     return (
       <div className='space-y-5'>
-        <p className='text-sm text-[#526987]'>
+        <p className='text-sm text-gray-11'>
           Define the basic information for your document repository.
         </p>
 
@@ -917,20 +984,16 @@ function WizardContent({
           onChange={(value: string) => setFolderName(value)}
         />
 
-        <div>
-          <label className='mb-2 block text-sm font-semibold text-[#07142B]'>
-            Description
-          </label>
-          <textarea
-            className='min-h-[72px] w-full rounded-[10px] border border-gray-3 px-3 py-2 text-sm outline-none'
-            placeholder='Describe the purpose of this repository...'
-            value={description}
-            onChange={(event) => setDescription(event.target.value)}
-          />
-        </div>
+        <InputTextarea
+          label='Description'
+          minRows={3}
+          placeholder='Describe the purpose of this repository...'
+          value={description}
+          onChange={setDescription}
+        />
 
         <div>
-          <label className='mb-2 block text-sm font-semibold text-[#07142B]'>
+          <label className='mb-2 block text-sm font-semibold text-gray-13'>
             Category
           </label>
           <InputSelect
@@ -965,7 +1028,7 @@ function WizardContent({
   if (step === 2) {
     return (
       <div>
-        <p className='mb-5 text-sm text-[#526987]'>
+        <p className='mb-5 text-sm text-gray-11'>
           Choose where documents in this repository will be stored.
         </p>
         <div className='grid grid-cols-1 gap-3 md:grid-cols-2'>
@@ -978,19 +1041,19 @@ function WizardContent({
                 className={cn(
                   'flex items-center gap-4 rounded-[12px] border p-4 text-left transition',
                   storage === item.id
-                    ? 'border-[#7C5CFF] bg-[#F7F3FF]'
-                    : 'border-gray-3 bg-white hover:bg-[#FAFBFD]',
+                    ? 'border-primary-9 bg-primary-2'
+                    : 'border-gray-3 bg-surface hover:bg-surface-muted',
                 )}
                 onClick={() => setStorage(item.id)}
               >
-                <span className='flex h-10 w-10 items-center justify-center rounded-[10px] bg-[#EEF2F7] text-[#526987]'>
+                <span className='flex h-10 w-10 items-center justify-center rounded-[10px] bg-gray-2 text-gray-11'>
                   <Icon size={20} />
                 </span>
                 <span>
-                  <span className='block font-semibold text-[#07142B]'>
+                  <span className='block font-semibold text-gray-13'>
                     {item.title}
                   </span>
-                  <span className='text-sm text-[#526987]'>
+                  <span className='text-sm text-gray-11'>
                     {item.subtitle}
                   </span>
                 </span>
@@ -1007,14 +1070,14 @@ function WizardContent({
       <div className='space-y-5'>
         <div className='flex flex-wrap items-center justify-between gap-4'>
           <div>
-            <h3 className='font-bold text-[#07142B]'>
+            <h3 className='font-bold text-gray-13'>
               Document Fields Configuration
             </h3>
-            <p className='text-sm text-[#526987]'>
+            <p className='text-sm text-gray-11'>
               Configure metadata fields. Mark each as OCR Extract or Sync field.
             </p>
           </div>
-          <div className='flex gap-4 text-sm text-[#526987]'>
+          <div className='flex gap-4 text-sm text-gray-11'>
             <span>
               <RefreshCw className='inline' size={13} /> OCR Extract
             </span>
@@ -1024,33 +1087,34 @@ function WizardContent({
           </div>
         </div>
 
-        <div className='rounded-[12px] border border-gray-3 bg-[#FAFBFD] p-4'>
-          <div className='mb-3 text-xs font-bold text-[#526987] uppercase'>
+        <div className='rounded-[12px] border border-gray-3 bg-surface-muted p-4'>
+          <div className='mb-3 text-xs font-bold text-gray-11 uppercase'>
             Add New Field
           </div>
           <div className='grid grid-cols-1 gap-3 md:grid-cols-[1fr_160px_160px]'>
-            <input
-              className='h-10 rounded-[10px] border border-gray-3 px-3 text-sm outline-none'
+            <InputText
               placeholder='e.g. Cost Center'
               value={newFieldName}
-              onChange={(event) => setNewFieldName(event.target.value)}
+              onChange={setNewFieldName}
             />
-            <select
-              className='h-10 rounded-[10px] border border-gray-3 px-3 text-sm outline-none'
-              value={newFieldType}
-              onChange={(event) => setNewFieldType(event.target.value)}
-            >
-              <option>Alphanumeric</option>
-              <option>Date</option>
-              <option>Currency</option>
-            </select>
-            <button
-              className='rounded-[10px] bg-[#7C5CFF] font-semibold text-white'
-              type='button'
+            <InputSelect
+              options={fieldTypeOptions}
+              placeholder='Field type'
+              value={
+                fieldTypeOptions.find((option) => option.name === newFieldType) ||
+                fieldTypeOptions[0]
+              }
+              onChange={(selected) => {
+                if (!selected) return
+                setNewFieldType(selected.name)
+              }}
+            />
+            <Button
+              className='self-end'
+              icon='lucide:plus'
+              label='Add Field'
               onClick={addField}
-            >
-              <Plus className='inline' size={16} /> Add Field
-            </button>
+            />
           </div>
         </div>
 
@@ -1062,10 +1126,10 @@ function WizardContent({
   if (step === 4) {
     return (
       <div className='space-y-5'>
-        <p className='text-sm text-[#526987]'>
+        <p className='text-sm text-gray-11'>
           Choose how document versions are managed in this repository.
         </p>
-        <h3 className='font-bold text-[#07142B]'>Version Strategy</h3>
+        <h3 className='font-bold text-gray-13'>Version Strategy</h3>
         {versionOptions.map((item) => (
           <button
             key={item.id}
@@ -1073,20 +1137,20 @@ function WizardContent({
             className={cn(
               'block w-full rounded-[12px] border p-4 text-left transition',
               versioning === item.id
-                ? 'border-[#7C5CFF] bg-[#F7F3FF]'
-                : 'border-gray-3 hover:bg-[#FAFBFD]',
+                ? 'border-primary-9 bg-primary-2'
+                : 'border-gray-3 hover:bg-surface-muted',
             )}
             onClick={() => setVersioning(item.id)}
           >
-            <div className='font-semibold text-[#07142B]'>{item.title}</div>
-            <div className='text-sm text-[#526987]'>{item.subtitle}</div>
-            <code className='mt-2 inline-block rounded bg-[#F1F4F8] px-2 py-1 text-xs'>
+            <div className='font-semibold text-gray-13'>{item.title}</div>
+            <div className='text-sm text-gray-11'>{item.subtitle}</div>
+            <code className='mt-2 inline-block rounded bg-gray-2 px-2 py-1 text-xs'>
               {item.sample}
             </code>
           </button>
         ))}
 
-        <h3 className='font-bold text-[#07142B]'>Display Settings</h3>
+        <h3 className='font-bold text-gray-13'>Display Settings</h3>
         {[
           'Show Latest Version Only',
           'Show All Versions',
@@ -1098,8 +1162,8 @@ function WizardContent({
             className={cn(
               'flex w-full items-center gap-3 rounded-[10px] border p-3 text-left transition',
               displayMode === item
-                ? 'border-[#7C5CFF] bg-[#F7F3FF]'
-                : 'border-gray-3 hover:bg-[#FAFBFD]',
+                ? 'border-primary-9 bg-primary-2'
+                : 'border-gray-3 hover:bg-surface-muted',
             )}
             onClick={() => setDisplayMode(item)}
           >
@@ -1107,8 +1171,8 @@ function WizardContent({
               className={cn(
                 'h-4 w-4 rounded-full border',
                 displayMode === item
-                  ? 'border-[#7C5CFF] bg-[#7C5CFF]'
-                  : 'border-[#7C5CFF] bg-white',
+                  ? 'border-primary-9 bg-primary-9'
+                  : 'border-primary-9 bg-surface',
               )}
             />
             {item}
@@ -1120,19 +1184,19 @@ function WizardContent({
 
   return (
     <div>
-      <p className='mb-5 text-sm text-[#526987]'>
+      <p className='mb-5 text-sm text-gray-11'>
         Connect external ERP or business systems and map repository fields for
         synchronization.
       </p>
-      <div className='mb-3 text-xs font-bold text-[#526987] uppercase'>
+      <div className='mb-3 text-xs font-bold text-gray-11 uppercase'>
         Available Connections
       </div>
       <div className='grid grid-cols-1 gap-3 md:grid-cols-3'>
         {integrations.map((item) => (
           <div className='rounded-[10px] border border-gray-3 p-3' key={item}>
-            <div className='mb-3 font-semibold text-[#07142B]'>{item}</div>
+            <div className='mb-3 font-semibold text-gray-13'>{item}</div>
             <button
-              className='flex h-8 w-full items-center justify-center gap-2 rounded-[8px] border border-gray-3 text-sm font-semibold hover:bg-[#FAFBFD]'
+              className='flex h-8 w-full items-center justify-center gap-2 rounded-[8px] border border-gray-3 text-sm font-semibold hover:bg-surface-muted'
               type='button'
             >
               <Link2 size={14} /> Connect

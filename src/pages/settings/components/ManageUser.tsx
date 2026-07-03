@@ -1,6 +1,5 @@
 import {
   createColumnHelper,
-  getCoreRowModel,
   useReactTable,
 } from '@tanstack/react-table'
 import {
@@ -9,7 +8,6 @@ import {
   Edit3,
   MoreHorizontal,
   Plus,
-  Search,
   ShieldCheck,
   Trash2,
   UserRound,
@@ -20,31 +18,20 @@ import IconButton from '@/components/base/button/IconButton'
 import DataTable from '@/components/base/data-table/DataTable'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import InputText from '@/components/base/inputs/InputText'
+import {
+  dummySettingsUsers,
+  getDummyGroupOptions,
+} from '../data/settingsDummyData'
+import {
+  settingsHeaderMeta,
+  settingsTableCoreOptions,
+} from '../helpers/settingsDataTable'
+import { calculateUserSetupProgress } from '../helpers/settingsSetupProgress'
+import type { SettingsUser } from '../helpers/userGroupMappers'
+import SettingsSearchInput from './SettingsSearchInput'
+import SetupProgressBar from './SetupProgressBar'
 
-type AppUser = {
-  accountExpiryDate: string
-  businessUnit: string
-  created: string
-  department: string
-  email: string
-  employeeId: string
-  firstName: string
-  forcePasswordReset: boolean
-  groups: string[]
-  id: number
-  jobTitle: string
-  lastLogin: string
-  lastName: string
-  location: string
-  loginType: LoginType
-  manager: string
-  mfaEnabled: boolean
-  mfaMethods: string[]
-  passwordExpiryDays: number
-  role: string
-  status: UserStatus
-  username: string
-}
+type AppUser = SettingsUser
 type LoginType = 'Password' | 'Google SSO' | 'MS Entra ID' | 'LDAP / AD'
 
 type Step = {
@@ -63,81 +50,6 @@ const steps: Step[] = [
   { caption: 'Step 3', key: 'groups', title: 'Group Assignment' },
   { caption: 'Step 4', key: 'authentication', title: 'Authentication' },
   { caption: 'Step 5', key: 'review', title: 'Review' },
-]
-
-const initialUsers: AppUser[] = [
-  {
-    accountExpiryDate: '',
-    businessUnit: 'Corporate',
-    created: 'Jun 6, 2026',
-    department: 'Finance',
-    email: 'john.smith@company.com',
-    employeeId: 'EMP-001',
-    firstName: 'John',
-    forcePasswordReset: false,
-    groups: ['Finance', 'AP Team'],
-    id: 1,
-    jobTitle: 'AP Manager',
-    lastLogin: 'Jun 6, 2026',
-    lastName: 'Smith',
-    location: 'New York, NY',
-    loginType: 'Password',
-    manager: 'Sarah Miller',
-    mfaEnabled: true,
-    mfaMethods: ['Email OTP'],
-    passwordExpiryDays: 90,
-    role: 'AP Manager',
-    status: 'active',
-    username: 'john.smith',
-  },
-  {
-    accountExpiryDate: '',
-    businessUnit: 'Technology',
-    created: 'Jun 6, 2026',
-    department: 'IT',
-    email: 'sarah.miller@company.com',
-    employeeId: 'EMP-002',
-    firstName: 'Sarah',
-    forcePasswordReset: false,
-    groups: ['Management'],
-    id: 2,
-    jobTitle: 'System Administrator',
-    lastLogin: 'Jun 6, 2026',
-    lastName: 'Miller',
-    location: 'Toronto, CA',
-    loginType: 'MS Entra ID',
-    manager: 'John Smith',
-    mfaEnabled: true,
-    mfaMethods: ['Authenticator App'],
-    passwordExpiryDays: 90,
-    role: 'System Admin',
-    status: 'active',
-    username: 'sarah.miller',
-  },
-  {
-    accountExpiryDate: '',
-    businessUnit: 'Finance Ops',
-    created: 'Jun 6, 2026',
-    department: 'Finance',
-    email: 'mike.johnson@company.com',
-    employeeId: 'EMP-003',
-    firstName: 'Mike',
-    forcePasswordReset: true,
-    groups: ['Finance', 'AP Team'],
-    id: 3,
-    jobTitle: 'AP Specialist',
-    lastLogin: 'Jun 5, 2026',
-    lastName: 'Johnson',
-    location: 'New York, NY',
-    loginType: 'Password',
-    manager: 'John Smith',
-    mfaEnabled: false,
-    mfaMethods: [],
-    passwordExpiryDays: 90,
-    role: 'AP Officer',
-    status: 'active',
-    username: 'mike.johnson',
-  },
 ]
 
 const emptyUser: AppUser = {
@@ -180,14 +92,6 @@ const loginTypes: LoginType[] = [
   'LDAP / AD',
 ]
 
-const groups = [
-  { caption: 'Access to finance resources', name: 'Finance' },
-  { caption: 'Access to AP team resources', name: 'AP Team' },
-  { caption: 'Access to shared services resources', name: 'Shared Services' },
-  { caption: 'Access to auditors resources', name: 'Auditors' },
-  { caption: 'Access to management resources', name: 'Management' },
-]
-
 const mfaMethods = ['Email OTP', 'Mobile OTP', 'Authenticator App']
 
 const userColumnHelper = createColumnHelper<AppUser>()
@@ -210,16 +114,25 @@ type SelectOption = {
 }
 
 export default function ManageUser({ onBack }: ManageUserProps) {
-  const [users, setUsers] = useState<AppUser[]>(initialUsers)
+  const groupOptions = useMemo(() => getDummyGroupOptions(), [])
+
+  const [users, setUsers] = useState<AppUser[]>(dummySettingsUsers)
   const [query, setQuery] = useState('')
   const [roleFilter, setRoleFilter] = useState('All Roles')
   const [statusFilter, setStatusFilter] = useState('All Status')
-  const [openMenuId, setOpenMenuId] = useState<number | null>(null)
+  const [openMenuId, setOpenMenuId] = useState<string | number | null>(null)
 
   const [isSetupOpen, setIsSetupOpen] = useState(false)
-  const [editingUserId, setEditingUserId] = useState<number | null>(null)
+  const [editingUserId, setEditingUserId] = useState<string | number | null>(
+    null,
+  )
   const [activeStep, setActiveStep] = useState(0)
   const [draftUser, setDraftUser] = useState<AppUser>(emptyUser)
+
+  const roleOptions = useMemo(() => {
+    const uniqueRoles = Array.from(new Set(users.map((user) => user.role).filter(Boolean)))
+    return ['All Roles', ...uniqueRoles]
+  }, [users])
 
   const filteredUsers = useMemo(() => {
     return users.filter((user) => {
@@ -250,7 +163,7 @@ export default function ManageUser({ onBack }: ManageUserProps) {
     setIsSetupOpen(true)
   }
 
-  const deleteUser = (userId: number) => {
+  const deleteUser = (userId: string | number) => {
     const confirmed = window.confirm(
       'Are you sure you want to delete this user?',
     )
@@ -286,71 +199,120 @@ export default function ManageUser({ onBack }: ManageUserProps) {
   const userColumns = useMemo(
     () => [
       userColumnHelper.display({
-        header: 'User',
-        id: 'user',
+        enableResizing: false,
+        enableSorting: false,
+        header: '',
+        id: 'avatar',
+        maxSize: 64,
+        meta: settingsHeaderMeta.center,
+        minSize: 64,
+        size: 64,
         cell: ({ row }) => {
           const user = row.original
 
           return (
-            <div className='flex items-center gap-4'>
-              <div className='flex h-11 w-11 items-center justify-center rounded-full bg-[var(--primary-3)] text-[16px] font-semibold text-[var(--primary-9)]'>
+            <div className='flex justify-center'>
+              <div className='flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--primary-3)] text-[16px] font-semibold text-[var(--primary-9)]'>
                 {getInitials(user.firstName, user.lastName)}
-              </div>
-
-              <div>
-                <div className='font-semibold text-[var(--gray-13)]'>
-                  {user.firstName} {user.lastName}
-                </div>
-                <div className='text-[var(--gray-10)]'>{user.email}</div>
               </div>
             </div>
           )
         },
       }),
 
+      userColumnHelper.display({
+        enableSorting: false,
+        header: 'Name',
+        id: 'name',
+        meta: settingsHeaderMeta.start,
+        minSize: 200,
+        size: 260,
+        cell: ({ row }) => {
+          const user = row.original
+
+          return (
+            <div className='min-w-0'>
+              <div className='truncate font-semibold text-[var(--gray-13)]'>
+                {user.firstName} {user.lastName}
+              </div>
+              <div className='truncate text-[var(--gray-10)]'>{user.email}</div>
+            </div>
+          )
+        },
+      }),
+
       userColumnHelper.accessor('department', {
+        enableSorting: false,
         header: 'Department',
         id: 'department',
+        meta: settingsHeaderMeta.start,
+        minSize: 120,
+        size: 140,
         cell: ({ getValue }) => <span>{String(getValue() || '—')}</span>,
       }),
 
       userColumnHelper.accessor('role', {
+        enableSorting: false,
         header: 'Role',
         id: 'role',
+        meta: settingsHeaderMeta.start,
+        minSize: 130,
+        size: 150,
         cell: ({ getValue }) => (
-          <span className='rounded-[10px] border border-[var(--border-default)] bg-white px-3 py-1 font-medium text-[var(--gray-13)]'>
+          <span className='rounded-[10px] border border-[var(--border-default)] bg-surface px-3 py-1 font-medium text-[var(--gray-13)]'>
             {String(getValue())}
           </span>
         ),
       }),
 
       userColumnHelper.accessor('status', {
+        enableSorting: false,
         header: 'Status',
         id: 'status',
+        meta: settingsHeaderMeta.start,
+        minSize: 100,
+        size: 110,
         cell: ({ getValue }) => <StatusBadge status={getValue()} />,
       }),
 
       userColumnHelper.accessor('loginType', {
+        enableSorting: false,
         header: 'Login Type',
         id: 'loginType',
+        meta: settingsHeaderMeta.start,
+        minSize: 120,
+        size: 140,
         cell: ({ getValue }) => <span>{String(getValue() || '—')}</span>,
       }),
 
       userColumnHelper.accessor('lastLogin', {
+        enableSorting: false,
         header: 'Last Login',
         id: 'lastLogin',
+        meta: settingsHeaderMeta.start,
+        minSize: 110,
+        size: 120,
         cell: ({ getValue }) => <span>{String(getValue() || '—')}</span>,
       }),
 
       userColumnHelper.accessor('created', {
+        enableSorting: false,
         header: 'Created',
         id: 'created',
+        meta: settingsHeaderMeta.start,
+        minSize: 110,
+        size: 120,
         cell: ({ getValue }) => <span>{String(getValue() || '—')}</span>,
       }),
 
       userColumnHelper.display({
+        enableResizing: false,
+        enableSorting: false,
         header: 'Actions',
         id: 'actions',
+        meta: settingsHeaderMeta.end,
+        minSize: 72,
+        size: 72,
         cell: ({ row }) => {
           const user = row.original
 
@@ -368,7 +330,7 @@ export default function ManageUser({ onBack }: ManageUserProps) {
               </button>
 
               {openMenuId === user.id ? (
-                <div className='absolute top-10 right-0 z-50 w-36 overflow-hidden rounded-[10px] border border-[var(--border-default)] bg-white py-1 text-left shadow-[var(--shadow-lg)]'>
+                <div className='absolute top-10 right-0 z-50 w-36 overflow-hidden rounded-[10px] border border-[var(--border-default)] bg-surface py-1 text-left shadow-[var(--shadow-lg)]'>
                   <button
                     className='flex w-full items-center gap-2 px-3 py-2 text-[var(--gray-13)] hover:bg-[var(--gray-2)]'
                     type='button'
@@ -396,9 +358,9 @@ export default function ManageUser({ onBack }: ManageUserProps) {
     [openMenuId, setOpenMenuId, openEditUser, deleteUser],
   )
   const userTable = useReactTable({
+    ...settingsTableCoreOptions,
     columns: userColumns,
     data: filteredUsers,
-    getCoreRowModel: getCoreRowModel(),
     getRowId: (row) => String(row.id),
   })
 
@@ -408,6 +370,7 @@ export default function ManageUser({ onBack }: ManageUserProps) {
         activeStep={activeStep}
         draftUser={draftUser}
         editingUserId={editingUserId}
+        groupOptions={groupOptions}
         onBack={() => setActiveStep((step) => Math.max(step - 1, 0))}
         onCancel={() => setIsSetupOpen(false)}
         onChange={setDraftUser}
@@ -445,7 +408,7 @@ export default function ManageUser({ onBack }: ManageUserProps) {
           </div>
 
           <div className='flex items-center gap-3'>
-            <button className='inline-flex h-7 items-center gap-3 rounded-[5px] border border-[var(--border-default)] bg-white px-4 text-[12px] font-medium text-[var(--gray-13)] shadow-[var(--shadow-sm)] transition hover:bg-[var(--gray-2)]'>
+            <button className='inline-flex h-7 items-center gap-3 rounded-[5px] border border-[var(--border-default)] bg-surface px-4 text-[12px] font-medium text-[var(--gray-13)] shadow-[var(--shadow-sm)] transition hover:bg-[var(--gray-2)]'>
               <Download size={14} />
               Export
             </button>
@@ -460,18 +423,14 @@ export default function ManageUser({ onBack }: ManageUserProps) {
         </div>
 
         <div className='mb-8 grid grid-cols-1 gap-4 px-6 py-4 lg:grid-cols-[1fr_220px_180px]'>
-          <div className='flex h-[35px] items-center gap-3 rounded-[5px] border border-[var(--border-default)] bg-white px-2 shadow-[var(--shadow-sm)]'>
-            <Search className='text-[var(--gray-10)]' size={15} />
-            <input
-              className='h-full w-full bg-transparent text-sm text-[var(--gray-13)] outline-none placeholder:text-[var(--gray-10)]'
-              placeholder='Search users by name or email...'
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-            />
-          </div>
+          <SettingsSearchInput
+            placeholder='Search users by name or email...'
+            value={query}
+            onChange={setQuery}
+          />
 
           <SelectField
-            options={['All Roles', ...roles]}
+            options={roleOptions}
             value={roleFilter}
             onChange={setRoleFilter}
           />
@@ -492,7 +451,7 @@ export default function ManageUser({ onBack }: ManageUserProps) {
             tableBodyMaxHeight='calc(100vh - 320px)'
             hideGrouping
             stickyHeader
-            onReload={() => undefined}
+            onReload={() => setUsers(dummySettingsUsers)}
           />
         </div>
       </section>
@@ -515,7 +474,7 @@ function Authentication({ user, onChange }: FormSectionProps) {
       description='Govern multi-factor verification for secure user access.'
       title='Authentication'
     >
-      <div className='mb-7 rounded-[14px] border border-[var(--border-default)] bg-white p-5'>
+      <div className='mb-7 rounded-[14px] border border-[var(--border-default)] bg-surface p-5'>
         <div className='flex items-center justify-between gap-4'>
           <div>
             <h3 className='text-sm font-semibold text-[var(--gray-13)]'>
@@ -544,7 +503,7 @@ function Authentication({ user, onChange }: FormSectionProps) {
               disabled={!user.mfaEnabled}
               key={method}
               className={[
-                'flex h-[66px] w-full items-center gap-4 rounded-[10px] border bg-white px-5 text-left transition disabled:cursor-not-allowed disabled:opacity-50',
+                'flex h-[66px] w-full items-center gap-4 rounded-[10px] border bg-surface px-5 text-left transition disabled:cursor-not-allowed disabled:opacity-50',
                 selected
                   ? 'border-[var(--primary-6)] bg-[var(--primary-2)]'
                   : 'border-[var(--border-default)] hover:border-[var(--primary-5)]',
@@ -556,7 +515,7 @@ function Authentication({ user, onChange }: FormSectionProps) {
                   'flex h-5 w-5 items-center justify-center rounded-[6px] border',
                   selected
                     ? 'border-[var(--primary-9)] bg-[var(--primary-9)] text-white'
-                    : 'border-[var(--primary-8)] bg-white',
+                    : 'border-[var(--primary-8)] bg-surface',
                 ].join(' ')}
               >
                 {selected && <Check size={12} />}
@@ -658,7 +617,6 @@ function EzSelectField({
       options={selectOptions}
       placeholder={placeholder}
       value={selectedOption}
-      width='100%'
       onChange={(selected: SelectOption | null) => {
         if (!selected) return
         onChange(selected.value || selected.name)
@@ -727,7 +685,13 @@ function getInitials(firstName: string, lastName: string) {
   return `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase() || 'U'
 }
 
-function GroupAssignment({ user, onChange }: FormSectionProps) {
+function GroupAssignment({
+  groupOptions,
+  user,
+  onChange,
+}: FormSectionProps & {
+  groupOptions: Array<{ caption: string; name: string }>
+}) {
   const toggleGroup = (name: string) => {
     const exists = user.groups.includes(name)
     const nextGroups = exists
@@ -741,43 +705,49 @@ function GroupAssignment({ user, onChange }: FormSectionProps) {
       description='Assign this user to one or more groups. Groups determine shared folder and workflow access.'
       title='Group Assignment'
     >
-      <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-        {groups.map((group) => {
-          const selected = user.groups.includes(group.name)
+      {groupOptions.length ? (
+        <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+          {groupOptions.map((group) => {
+            const selected = user.groups.includes(group.name)
 
-          return (
-            <button
-              key={group.name}
-              className={[
-                'flex min-h-[60px] items-center gap-4 rounded-[10px] border bg-white px-5 text-left transition',
-                selected
-                  ? 'border-[var(--primary-6)] bg-[var(--primary-2)] shadow-[0_0_0_1px_var(--primary-5)]'
-                  : 'border-[var(--border-default)] hover:border-[var(--primary-5)]',
-              ].join(' ')}
-              onClick={() => toggleGroup(group.name)}
-            >
-              <span
+            return (
+              <button
+                key={group.name}
                 className={[
-                  'flex h-5 w-5 items-center justify-center rounded-[6px] border',
+                  'flex min-h-[60px] items-center gap-4 rounded-[10px] border bg-surface px-5 text-left transition',
                   selected
-                    ? 'border-[var(--primary-9)] bg-[var(--primary-9)] text-white'
-                    : 'border-[var(--primary-8)] bg-white',
+                    ? 'border-[var(--primary-6)] bg-[var(--primary-2)] shadow-[0_0_0_1px_var(--primary-5)]'
+                    : 'border-[var(--border-default)] hover:border-[var(--primary-5)]',
                 ].join(' ')}
+                onClick={() => toggleGroup(group.name)}
               >
-                {selected && <Check size={12} />}
-              </span>
-              <span>
-                <span className='block text-sm font-semibold text-[var(--gray-13)]'>
-                  {group.name}
+                <span
+                  className={[
+                    'flex h-5 w-5 items-center justify-center rounded-[6px] border',
+                    selected
+                      ? 'border-[var(--primary-9)] bg-[var(--primary-9)] text-white'
+                      : 'border-[var(--primary-8)] bg-surface',
+                  ].join(' ')}
+                >
+                  {selected && <Check size={12} />}
                 </span>
-                <span className='mt-1 block text-xs text-[var(--gray-11)]'>
-                  {group.caption}
+                <span>
+                  <span className='block text-sm font-semibold text-[var(--gray-13)]'>
+                    {group.name}
+                  </span>
+                  <span className='mt-1 block text-xs text-[var(--gray-11)]'>
+                    {group.caption}
+                  </span>
                 </span>
-              </span>
-            </button>
-          )
-        })}
-      </div>
+              </button>
+            )
+          })}
+        </div>
+      ) : (
+        <div className='rounded-[10px] border border-dashed border-[var(--border-default)] bg-surface px-5 py-8 text-center text-sm text-[var(--gray-10)]'>
+          No groups available from the API yet.
+        </div>
+      )}
     </FormCard>
   )
 }
@@ -867,7 +837,7 @@ function Review({ user }: { user: AppUser }) {
       description='Validate the user profile before provisioning access.'
       title='Review'
     >
-      <div className='rounded-[14px] border border-[var(--border-default)] bg-white p-6'>
+      <div className='rounded-[14px] border border-[var(--border-default)] bg-surface p-6'>
         <h3 className='text-md mb-6 font-semibold text-[var(--gray-13)]'>
           User Summary
         </h3>
@@ -982,7 +952,7 @@ function Switch({
     >
       <span
         className={[
-          'absolute top-1 h-5 w-5 rounded-full bg-white shadow transition',
+          'absolute top-1 h-5 w-5 rounded-full bg-[var(--control-thumb)] shadow transition',
           checked ? 'left-6' : 'left-1',
         ].join(' ')}
       />
@@ -1019,6 +989,7 @@ function UserSetup({
   activeStep,
   draftUser,
   editingUserId,
+  groupOptions,
   onBack,
   onCancel,
   onChange,
@@ -1028,7 +999,8 @@ function UserSetup({
 }: {
   activeStep: number
   draftUser: AppUser
-  editingUserId: number | null
+  editingUserId: string | number | null
+  groupOptions: Array<{ caption: string; name: string }>
   onBack: () => void
   onCancel: () => void
   onChange: (user: AppUser) => void
@@ -1036,11 +1008,14 @@ function UserSetup({
   onSave: () => void
   onStepChange: (step: number) => void
 }) {
-  const progress = Math.round(((activeStep + 1) / steps.length) * 100)
+  const progress = useMemo(
+    () => calculateUserSetupProgress(draftUser),
+    [draftUser],
+  )
 
   return (
     <main className='min-h-screen bg-[var(--surface-muted)] text-[var(--text-primary)]'>
-      <header className='border-b border-[var(--border-default)] bg-white px-6 py-4'>
+      <header className='border-b border-[var(--border-default)] bg-surface px-6 py-4'>
         <div className='flex items-start justify-between gap-5'>
           <div className='flex items-start gap-3'>
             <IconButton
@@ -1064,17 +1039,7 @@ function UserSetup({
             </div>
           </div>
 
-          <div className='w-44'>
-            <div className='mb-2 text-right text-[12px] font-semibold text-[var(--orange-10)]'>
-              {progress}% Complete
-            </div>
-            <div className='h-1.5 overflow-hidden rounded-full bg-[var(--gray-3)]'>
-              <div
-                className='h-full rounded-full bg-[var(--orange-10)] transition-all'
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-          </div>
+          <SetupProgressBar progress={progress} />
         </div>
       </header>
 
@@ -1087,7 +1052,7 @@ function UserSetup({
 
               return (
                 <button
-                  className='group flex w-full items-center gap-5 rounded-[14px] px-3 py-2 text-left transition hover:bg-white'
+                  className='group flex w-full items-center gap-5 rounded-[14px] px-3 py-2 text-left transition hover:bg-surface-raised'
                   key={step.key}
                   onClick={() => onStepChange(index)}
                 >
@@ -1134,7 +1099,11 @@ function UserSetup({
               <BusinessDetails user={draftUser} onChange={onChange} />
             )}
             {activeStep === 2 && (
-              <GroupAssignment user={draftUser} onChange={onChange} />
+              <GroupAssignment
+                groupOptions={groupOptions}
+                user={draftUser}
+                onChange={onChange}
+              />
             )}
             {activeStep === 3 && (
               <Authentication user={draftUser} onChange={onChange} />
@@ -1144,13 +1113,13 @@ function UserSetup({
             <div className='mt-8 flex items-center justify-between border-t border-[var(--border-default)] pt-6'>
               {/* <button
                 onClick={onCancel}
-                className="inline-flex h-10 items-center gap-2 rounded-[10px] border border-[var(--border-default)] bg-white px-4 text-[15px] font-medium text-[var(--gray-13)] transition hover:bg-[var(--gray-2)]"
+                className="inline-flex h-10 items-center gap-2 rounded-[10px] border border-[var(--border-default)] bg-surface px-4 text-[15px] font-medium text-[var(--gray-13)] transition hover:bg-[var(--gray-2)]"
               >
                 <X size={17} />
                 Cancel
               </button> */}
               <button
-                className='inline-flex h-10 items-center rounded-[5px] border border-[var(--border-default)] bg-white px-5 text-[15px] font-semibold text-[var(--gray-13)] transition hover:bg-[var(--gray-2)] disabled:cursor-not-allowed disabled:opacity-50'
+                className='inline-flex h-10 items-center rounded-[5px] border border-[var(--border-default)] bg-surface px-5 text-[15px] font-semibold text-[var(--gray-13)] transition hover:bg-[var(--gray-2)] disabled:cursor-not-allowed disabled:opacity-50'
                 disabled={activeStep === 0}
                 onClick={onBack}
               >

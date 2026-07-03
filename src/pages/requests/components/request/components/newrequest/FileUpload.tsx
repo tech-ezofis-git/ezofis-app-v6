@@ -78,106 +78,106 @@ const TAG_COLOR_STYLES: Record<
 
 const SAMPLE_DOCUMENTS: SampleDocument[] = [
   {
-    description: 'Perfect PO match.',
-    fileName: 'inv-1.pdf',
+    description: 'Perfect PO validation.',
+    fileName: 'INV-2026-6001',
     icon: 'tabler:file-invoice',
     label: 'invoice1',
-    tag: 'PO Match',
+    tag: 'PO Verified',
     tagColor: 'green',
     thumbnail: sample1Img,
     url: sample1,
   },
   {
-    description: 'Partial line match.',
-    fileName: 'inv-2.pdf',
+    description: 'Complete document match.',
+    fileName: 'INV-2026-3101',
     icon: 'tabler:file-invoice',
     label: 'invoice2',
-    tag: 'Partial PO',
-    tagColor: 'orange',
+    tag: 'Fully Matched',
+    tagColor: 'green',
     thumbnail: sample2Img,
     url: sample2,
   },
   {
-    description: 'Duplicate detection.',
-    fileName: 'inv-3.pdf',
+    description: 'Supplier details differ.',
+    fileName: 'INV-2026-3005',
     icon: 'tabler:file-invoice',
     label: 'invoice3',
-    tag: 'Duplicate',
-    tagColor: 'red',
+    tag: 'Supplier Conflict',
+    tagColor: 'orange',
     thumbnail: sample3Img,
     url: sample3,
   },
   {
-    description: 'Missing PO reference.',
-    fileName: 'inv-4.pdf',
+    description: 'Scanned handwritten bill.',
+    fileName: 'Handwritten Invoice',
     icon: 'tabler:file-invoice',
     label: 'invoice4',
-    tag: 'Missing PO',
-    tagColor: 'red',
+    tag: 'Handwritten',
+    tagColor: 'blue',
     thumbnail: sample4Img,
     url: sample4,
   },
   {
-    description: 'PO total mismatch.',
-    fileName: 'inv-5.pdf',
+    description: 'Pending delivery items.',
+    fileName: 'INV-2026-1001',
     icon: 'tabler:file-invoice',
     label: 'invoice5',
-    tag: 'Mismatch',
+    tag: 'Backorder',
     tagColor: 'orange',
     thumbnail: sample5Img,
     url: sample5,
   },
   {
-    description: 'Multi-currency VAT.',
-    fileName: 'inv-6.pdf',
+    description: 'Vendor identity mismatch.',
+    fileName: 'INV-2026-3001',
     icon: 'tabler:file-invoice',
     label: 'invoice6',
-    tag: 'International',
-    tagColor: 'blue',
+    tag: 'Vendor Check',
+    tagColor: 'orange',
     thumbnail: sample6Img,
     url: sample6,
   },
   {
-    description: 'Credit note case.',
-    fileName: 'inv-7.pdf',
+    description: 'Invoice value reduced.',
+    fileName: 'INV-2026-5001',
     icon: 'tabler:file-invoice',
     label: 'invoice7',
-    tag: 'Credit Note',
-    tagColor: 'blue',
+    tag: 'Undercharged',
+    tagColor: 'red',
     thumbnail: sample7Img,
     url: sample7,
   },
   {
-    description: 'Mixed tax lines.',
-    fileName: 'inv-8.pdf',
+    description: 'Multiple pricing differences.',
+    fileName: 'INV-2026-5004',
     icon: 'tabler:file-invoice',
     label: 'invoice8',
-    tag: 'Multi-tax',
-    tagColor: 'orange',
+    tag: 'Price Variance',
+    tagColor: 'red',
     thumbnail: sample8Img,
     url: sample8,
   },
   {
-    description: 'Vendor validation.',
-    fileName: 'inv-9.pdf',
+    description: 'Quantity line discrepancy.',
+    fileName: 'INV-2026-1004',
     icon: 'tabler:file-invoice',
     label: 'invoice9',
-    tag: 'Vendor Check',
-    tagColor: 'green',
+    tag: 'Line Variance',
+    tagColor: 'orange',
     thumbnail: sample9Img,
     url: sample9,
   },
   {
-    description: 'Low OCR scan.',
-    fileName: 'inv-10.pdf',
+    description: 'Invoice exceeds PO value.',
+    fileName: 'INV-2026-5003',
     icon: 'tabler:file-invoice',
     label: 'invoice10',
-    tag: 'Low OCR',
+    tag: 'Overcharged',
     tagColor: 'red',
     thumbnail: sample10Img,
     url: sample10,
   },
-]
+];
 
 const SampleThumbnailPreview = ({
   doc,
@@ -878,11 +878,10 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
                     disabled={uploadStatus === 'uploading'}
                     key={doc.fileName}
                     type='button'
-                    className={`group/card relative z-10 flex w-[156px] shrink-0 flex-col overflow-visible rounded-lg border bg-surface text-left shadow-sm transition-all duration-300 hover:z-50 ${
-                      isSelected
-                        ? 'scale-[1.02] border-green-8 ring-2 ring-green-3 ring-offset-0'
-                        : 'border-[var(--gray-3)] hover:-translate-y-1.5 hover:scale-[1.02] hover:border-[var(--primary-6)] hover:shadow-md active:translate-y-0 active:scale-98'
-                    } disabled:cursor-not-allowed disabled:opacity-50`}
+                    className={`group/card relative z-10 flex w-[156px] shrink-0 flex-col overflow-visible rounded-lg border bg-surface text-left shadow-sm transition-all duration-300 hover:z-50 ${isSelected
+                      ? 'scale-[1.02] border-green-8 ring-2 ring-green-3 ring-offset-0'
+                      : 'border-[var(--gray-3)] hover:-translate-y-1.5 hover:scale-[1.02] hover:border-[var(--primary-6)] hover:shadow-md active:translate-y-0 active:scale-98'
+                      } disabled:cursor-not-allowed disabled:opacity-50`}
                     onClick={() => handleSampleSelect(doc)}
                   >
                     <SampleThumbnail

@@ -13,6 +13,7 @@ import MenuDivider from '@/components/base/menu/MenuDivider'
 import MenuItem from '@/components/base/menu/MenuItem'
 import MenuSub from '@/components/base/menu/MenuSub'
 import Th from '@/components/base/table/Th'
+import cn from '@/utils/cn'
 import getColumnPinnedStyles from './helpers/getColumnPinnedStyles'
 
 interface Props<TData> extends ComponentProps<'th'> {
@@ -24,6 +25,7 @@ const TableHeaderCell = <TData,>({ header, style, table }: Props<TData>) => {
   const [opened, setOpened] = useState(false)
 
   const column = header.column
+  const headerAlign = column.columnDef.meta?.headerAlign ?? 'left'
   const showMenu = column.columnDef.meta?.showMenu
   const columns = table.getAllLeafColumns()
   const isAccessorColumn = !!column.accessorFn
@@ -75,13 +77,20 @@ const TableHeaderCell = <TData,>({ header, style, table }: Props<TData>) => {
     setTimeout(() => column.pin(position), 100)
   }
 
+  const headerAlignClassName =
+    headerAlign === 'center'
+      ? 'justify-center'
+      : headerAlign === 'right'
+        ? 'justify-end'
+        : 'justify-start'
+
   return (
     <Th
-      className='h-10 p-0.5'
+      className='h-10 py-0'
       key={header.id}
       style={{ ...getColumnPinnedStyles(column, table), ...style }}
     >
-      <div className='flex items-center justify-center'>
+      <div className={cn('flex h-10 min-w-0 items-center', headerAlignClassName)}>
         {/* display column */}
         {!isAccessorColumn &&
           flexRender(column.columnDef.header, header.getContext())}
@@ -89,12 +98,12 @@ const TableHeaderCell = <TData,>({ header, style, table }: Props<TData>) => {
         {/* sortable accessor column */}
         {canSort && (
           <Button
-            className='flex-1 px-3.5'
+            className='h-full min-w-0 flex-1 justify-start px-0'
             color='gray'
             variant='ghost'
             onClick={column.getToggleSortingHandler()}
           >
-            <div className='flex items-center gap-2'>
+            <div className='flex min-w-0 items-center gap-2'>
               {flexRender(column.columnDef.header, header.getContext())}
               <div className='flex size-5 shrink-0 items-center justify-center'>
                 {isSorted && (
@@ -114,7 +123,7 @@ const TableHeaderCell = <TData,>({ header, style, table }: Props<TData>) => {
 
         {/* non-sortable accessor column (e.g. display-only headers) */}
         {isAccessorColumn && !canSort && (
-          <div className='flex flex-1 items-center px-3.5'>
+          <div className='flex min-w-0 flex-1 items-center'>
             {flexRender(column.columnDef.header, header.getContext())}
           </div>
         )}

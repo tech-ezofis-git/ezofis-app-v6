@@ -158,7 +158,7 @@ export default function MenuProfileManagement({ onBack }: MenuProps) {
         </div>
 
         <div className='max-h-[calc(100vh-180px)] overflow-y-auto px-6 py-2'>
-          <div className='mt-8 overflow-hidden rounded-[14px] border border-[var(--border-default)] bg-white shadow-[var(--shadow-sm)]'>
+          <div className='mt-8 overflow-hidden rounded-[14px] border border-[var(--border-default)] bg-surface shadow-[var(--shadow-sm)]'>
             <div className='flex items-center justify-between border-b border-[var(--border-default)] px-5 py-5'>
               <div>
                 <h2 className='text-md font-semibold text-[var(--gray-13)]'>
@@ -266,7 +266,7 @@ function SortableMenuRow({
       ref={setNodeRef}
       style={style}
       className={[
-        'flex min-h-[62px] items-center justify-between border-b border-[var(--border-default)] bg-white px-5 last:border-b-0',
+        'flex min-h-[62px] items-center justify-between border-b border-[var(--border-default)] bg-surface px-5 last:border-b-0',
         isDragging ? 'z-50 opacity-95 shadow-[var(--shadow-md)]' : '',
       ].join(' ')}
     >
@@ -324,7 +324,7 @@ function SortableMenuRow({
         >
           <span
             className={[
-              'absolute top-1 h-3 w-3 rounded-full bg-white shadow transition',
+              'absolute top-1 h-3 w-3 rounded-full bg-[var(--control-thumb)] shadow transition',
               menu.visible ? 'left-6' : 'left-1',
             ].join(' ')}
           />
