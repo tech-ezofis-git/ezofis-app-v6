@@ -1356,6 +1356,39 @@ const Request = ({
 
   const currency = invoiceHeader?.['Currency'] || selectedItem?.currency
 
+  // Auto-open API Playground if navigation request came from the plug icon in the inbox list
+  useEffect(() => {
+    if (sessionStorage.getItem('autoOpenPlayground') === 'true') {
+      sessionStorage.removeItem('autoOpenPlayground')
+      const actionStr = sessionStorage.getItem('autoOpenPlaygroundAction')
+      sessionStorage.removeItem('autoOpenPlaygroundAction')
+
+      try {
+        const action = actionStr ? JSON.parse(actionStr) : null
+        if (action) {
+          const docInfo = {
+            amount: selectedItem?.amount || formModel?.['Invoice Amount'] || 0,
+            currency: currency || formModel?.['Currency'] || 'USD',
+            invoiceNumber: formModel?.['Invoice Number'] || formModel?.['Invoice No'] || selectedItem?.invoiceNumber || '',
+            poNumber: poVal || selectedItem?.purchaseOrderNumber || '',
+            requestNo: selectedItem?.requestNo || selectedItem?.reqNo || '',
+            vendor: formModel?.['Supplier Name'] || formModel?.['Vendor Name'] || selectedItem?.vendor || '',
+          }
+          setPlaygroundContext({
+            actionName: action?.label || 'Paid',
+            endpoint: action?.endpoint || 'https://ezagentplayground.onrender.com/apikey.html?id=2',
+            model: action?.model || 'gemini-2.0-flash-exp',
+            provider: action?.provider || 'gemini',
+            document: docInfo,
+          })
+          setIsPlaygroundOpen(true)
+        }
+      } catch (err) {
+        console.error('Error parsing autoOpenPlaygroundAction:', err)
+      }
+    }
+  }, [selectedItem, formModel, currency, poVal])
+
   const agentDecision = currentAgentData?.decision || selectedItem?.decision
 
   let finalStatusBadge = ''

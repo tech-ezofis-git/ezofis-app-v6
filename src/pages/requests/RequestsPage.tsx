@@ -13,6 +13,8 @@ import { ProcessingBackgroundManager } from './components/ProcessingBackgroundMa
 import Request from './components/request/Request'
 import { useInboxData } from './hooks/useInboxData'
 import requestStore from './stores/useRequestStore'
+import ApiPlayground from '@/components/playground/ApiPlayground'
+import cn from '@/utils/cn'
 
 type WorkflowLoadStatus = 'loading' | 'ready' | 'empty'
 
@@ -54,6 +56,9 @@ const RequestsPage = () => {
     setPendingOpenNewRequest,
     setRawWorkflowData: setRawWorflow,
     setRequestListTab,
+    isPlaygroundOpen,
+    playgroundContext,
+    setIsPlaygroundOpen,
   } = requestStore()
 
   const [page, setPage] = useState(1)
@@ -292,53 +297,74 @@ const RequestsPage = () => {
 
   return (
     <>
-      {!selectedItem && (
-        <Header
-          // Pass state and setter to Header
-          activeTab={activeTab}
-          allWorkflows={allWorkflow}
-          exceptionsCount={inboxResult?.exceptionsCount}
-          isLoading={isLoading}
-          metaData={metaData}
-          viewMode={viewMode}
-          workflow={workflow}
-          setActiveTab={handleTabChange}
-          setViewMode={setViewMode}
-          setWorkflow={setWorkflow}
-        />
-      )}
-      {selectedItem && (
-        <Request
-          isFourthItem={selectedIndex === 3}
-          isThirdItem={selectedIndex === 2}
-          item={selectedItem}
-          workflowId={selectedWorkflow?.id}
-          onBack={closeRequest}
-          onNext={onNext}
-          onPrev={onPrev}
-        />
-      )}
-      {showWorkflowEmpty && !selectedItem ? (
-        <PageEmptyState page='requests' variant='unavailable' />
-      ) : (
-        <InboxList
-          activeTab={activeTab}
-          data={inboxResult?.data || []}
-          isLoading={inboxIsLoading}
-          isRefetching={isWorkflowReady && isFetching}
-          page={page}
-          pageSize={pageSize}
-          selectedItem={selectedItem}
-          totalItems={inboxResult?.totalItems || 0}
-          viewMode={viewMode}
-          workflow={selectedWorkflow}
-          setPage={setPage}
-          setPageSize={setPageSize}
-          onGroupByChange={setGroupBy}
-          onRefresh={refetch}
-          onRowClick={handleRowClick}
-        />
-      )}
+      <div className='flex h-full min-h-0 w-full overflow-hidden'>
+        <div
+          className={cn(
+            'flex flex-1 min-h-0 flex-col overflow-hidden transition-all duration-300 ease-in-out',
+            isPlaygroundOpen && !selectedItem ? 'w-full lg:w-[75%]' : 'w-full'
+          )}
+        >
+          {!selectedItem && (
+            <Header
+              // Pass state and setter to Header
+              activeTab={activeTab}
+              allWorkflows={allWorkflow}
+              exceptionsCount={inboxResult?.exceptionsCount}
+              isLoading={isLoading}
+              metaData={metaData}
+              viewMode={viewMode}
+              workflow={workflow}
+              setActiveTab={handleTabChange}
+              setViewMode={setViewMode}
+              setWorkflow={setWorkflow}
+            />
+          )}
+          {selectedItem && (
+            <Request
+              isFourthItem={selectedIndex === 3}
+              isThirdItem={selectedIndex === 2}
+              item={selectedItem}
+              workflowId={selectedWorkflow?.id}
+              onBack={closeRequest}
+              onNext={onNext}
+              onPrev={onPrev}
+            />
+          )}
+          {!selectedItem && (
+            showWorkflowEmpty ? (
+              <PageEmptyState page='requests' variant='unavailable' />
+            ) : (
+              <InboxList
+                activeTab={activeTab}
+                data={inboxResult?.data || []}
+                isLoading={inboxIsLoading}
+                isRefetching={isWorkflowReady && isFetching}
+                page={page}
+                pageSize={pageSize}
+                selectedItem={selectedItem}
+                totalItems={inboxResult?.totalItems || 0}
+                viewMode={viewMode}
+                workflow={selectedWorkflow}
+                setPage={setPage}
+                setPageSize={setPageSize}
+                onGroupByChange={setGroupBy}
+                onRefresh={refetch}
+                onRowClick={handleRowClick}
+              />
+            )
+          )}
+        </div>
+
+        {/* API Playground Drawer for Inbox List page */}
+        {isPlaygroundOpen && !selectedItem && (
+          <div className='w-full lg:w-[25%] border-l border-[var(--gray-3)] bg-surface animate-in slide-in-from-right duration-300'>
+            <ApiPlayground
+              context={playgroundContext}
+              onClose={() => setIsPlaygroundOpen(false)}
+            />
+          </div>
+        )}
+      </div>
       <ProcessingBackgroundManager />
     </>
   )

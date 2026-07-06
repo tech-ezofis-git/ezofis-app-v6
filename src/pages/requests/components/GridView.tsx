@@ -23,6 +23,8 @@ import requestStore, {
 import cn from '@/utils/cn'
 import { formatDatetime } from '@/utils/dayjs'
 import HoverExpandableText from './HoverExpandableText'
+import IconButton from '@/components/base/button/IconButton'
+import Tooltip from '@/components/base/Tooltip'
 
 const GridRowSkeleton = ({ index }: { index: number }) => {
   const prefersReducedMotion = useReducedMotion()
@@ -932,7 +934,7 @@ const GridRowItem = memo(
       typeof row?._originalIndex === 'number' ? row._originalIndex : index
     const rowId = row?.id || row?.processId || `item-${originalIndex}`
 
-    const { jobMappings, jobStatuses, processingProcesses } = requestStore(
+    const { jobMappings, jobStatuses, processingProcesses, rawWorkflowData } = requestStore(
       (state) => state,
     )
     const matchingProc = useMemo(() => {
@@ -956,9 +958,9 @@ const GridRowItem = memo(
 
     const defaultStatusText = useProcessingStatusText(
       matchingProc?.startTime ||
-        row?.raisedAt ||
-        row?.transaction_createdAt ||
-        row?.createdAt,
+      row?.raisedAt ||
+      row?.transaction_createdAt ||
+      row?.createdAt,
     )
 
     const statusText =
@@ -986,10 +988,10 @@ const GridRowItem = memo(
       row._agentResponse || row._agentData?.[0] || row._agentData || {}
     const rawDecision = String(
       parsedForm['2MH_BMDFEVKsU0uAQjoI1'] ||
-        agentData?.decision ||
-        row.decision ||
-        row.status ||
-        '',
+      agentData?.decision ||
+      row.decision ||
+      row.status ||
+      '',
     ).toUpperCase()
     const aiInsight =
       agentData?.ai_insight ||
@@ -1002,6 +1004,34 @@ const GridRowItem = memo(
       rawDecision,
       !!row?.isDuplicateInvoice,
     )
+
+    const isApAgentStage = row.stageType === 'AP_AGENT'
+    let actionsList = row?._actions || row?.actions || []
+
+    if (!isApAgentStage) {
+      const rules = rawWorkflowData?.workflowJson?.rules || []
+      const currentActivityId = row.activityId
+      const dynamicRules = currentActivityId
+        ? rules.filter((rule: any) => rule.fromBlockId === currentActivityId)
+        : []
+
+      const ruleActions = dynamicRules.map((rule: any) => {
+        const actionName = rule.proceedAction || rule.action || 'Submit'
+        return {
+          label: actionName,
+          value: actionName,
+        }
+      })
+
+      if (ruleActions.length > 0) {
+        actionsList = ruleActions
+      }
+    }
+
+    const paidAction = actionsList.find(
+      (act: any) => String(act?.label || '').toLowerCase() === 'paid'
+    )
+    const hasPaidAction = !!paidAction
 
     return (
       <motion.div
@@ -1018,11 +1048,11 @@ const GridRowItem = memo(
             ? 'border-r border-l border-r-[var(--primary-3)] border-b-[var(--primary-3)] border-l-[var(--primary-3)] bg-[var(--primary-1)] shadow-sm'
             : 'bg-[var(--surface)]',
           !isSelected &&
-            !row.isProcessing &&
-            'hover:z-10 hover:border-r hover:border-l hover:border-r-[var(--primary-4)] hover:border-b-[var(--primary-4)] hover:border-l-[var(--primary-4)] hover:bg-[var(--gray-1)] hover:shadow-sm',
+          !row.isProcessing &&
+          'hover:z-10 hover:border-r hover:border-l hover:border-r-[var(--primary-4)] hover:border-b-[var(--primary-4)] hover:border-l-[var(--primary-4)] hover:bg-[var(--gray-1)] hover:shadow-sm',
           !isSelected &&
-            row.isProcessing &&
-            'hover:border-r hover:border-l hover:border-r-[var(--orange-4)] hover:border-b-[var(--orange-4)] hover:border-l-[var(--orange-4)] hover:bg-[var(--orange-1)]/40 hover:shadow-sm',
+          row.isProcessing &&
+          'hover:border-r hover:border-l hover:border-r-[var(--orange-4)] hover:border-b-[var(--orange-4)] hover:border-l-[var(--orange-4)] hover:bg-[var(--orange-1)]/40 hover:shadow-sm',
         )}
         onClick={() => {
           onRowClick(row, 'Overview')
@@ -1043,7 +1073,7 @@ const GridRowItem = memo(
                 checked={isSelected}
                 className='absolute inset-0 z-10 cursor-pointer opacity-0'
                 type='checkbox'
-                onChange={() => {}}
+                onChange={() => { }}
                 onClick={(e) => {
                   e.stopPropagation()
                   toggleRowSelection(rowId, e)
@@ -1102,6 +1132,36 @@ const GridRowItem = memo(
               originalIndex={originalIndex}
               row={row}
             />
+            {hasPaidAction && (
+              <Tooltip content='Open Playground API' position='top'>
+                <IconButton
+                  color='primary'
+                  icon='tabler:plug'
+                  size='xs'
+                  variant='subtle'
+                  className='animate-pulse'
+                  onClick={(e: React.MouseEvent) => {
+                    e.stopPropagation()
+                    const docInfo = {
+                      amount: row?.amount || row?.['Invoice Amount'] || 0,
+                      currency: row?.currency || row?.['Currency'] || 'USD',
+                      invoiceNumber: row?.invoiceNumber || row?.['Invoice Number'] || row?.['Invoice No'] || '',
+                      poNumber: extractPONumber(row) || row?.purchaseOrderNumber || '',
+                      requestNo: row?.requestNo || row?.reqNo || '',
+                      vendor: row?.vendor || row?.['Supplier Name'] || row?.['Vendor Name'] || '',
+                    }
+                    requestStore.getState().setPlaygroundContext({
+                      actionName: paidAction?.label || 'Paid',
+                      endpoint: paidAction?.endpoint || 'https://ezagentplayground.onrender.com/apikey.html?id=2',
+                      model: paidAction?.model || 'gemini-2.0-flash-exp',
+                      provider: paidAction?.provider || 'gemini',
+                      document: docInfo,
+                    })
+                    requestStore.getState().setIsPlaygroundOpen(true)
+                  }}
+                />
+              </Tooltip>
+            )}
           </div>
 
           {/* Sub-metadata row */}
@@ -1526,30 +1586,30 @@ const GridView = <TData,>({
                   <>
                     {actionValidation.isValid && actionValidation.action
                       ? (() => {
-                          // const isVerify = actionValidation.action.label.toLowerCase() === 'verify'
-                          return (
-                            <button
-                              className='inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[var(--green-3)] bg-[var(--green-2)] px-3 py-1.5 text-12 font-semibold text-[var(--green-11)] shadow-sm transition-all hover:bg-[var(--green-3)] hover:shadow-md active:scale-95'
-                              type='button'
-                              onClick={() => {
-                                showToast({
-                                  message: `Bulk action "${actionValidation.action.label}" applied to ${selectedIds.size} requests successfully!`,
-                                  variant: 'success',
-                                })
-                                exitSelectionMode()
-                              }}
-                            >
-                              {/* <Icon
+                        // const isVerify = actionValidation.action.label.toLowerCase() === 'verify'
+                        return (
+                          <button
+                            className='inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[var(--green-3)] bg-[var(--green-2)] px-3 py-1.5 text-12 font-semibold text-[var(--green-11)] shadow-sm transition-all hover:bg-[var(--green-3)] hover:shadow-md active:scale-95'
+                            type='button'
+                            onClick={() => {
+                              showToast({
+                                message: `Bulk action "${actionValidation.action.label}" applied to ${selectedIds.size} requests successfully!`,
+                                variant: 'success',
+                              })
+                              exitSelectionMode()
+                            }}
+                          >
+                            {/* <Icon
                               className={cn(
                                 'size-4',
                                 isVerify ? 'text-[var(--green-9)]' : 'text-white'
                               )}
                               name='tabler:circle-check'
                             /> */}
-                              {getActionText(actionValidation.action.label)}
-                            </button>
-                          )
-                        })()
+                            {getActionText(actionValidation.action.label)}
+                          </button>
+                        )
+                      })()
                       : null}
 
                     {!actionValidation.isValid && (
@@ -1582,7 +1642,7 @@ const GridView = <TData,>({
                 <TableExport table={table} />
                 <TableReload
                   isReloading={isReloading || false}
-                  onReload={onReload || (() => {})}
+                  onReload={onReload || (() => { })}
                 />
 
                 {/* Custom Actions */}
@@ -1595,7 +1655,7 @@ const GridView = <TData,>({
                     className={cn(
                       'inline-flex cursor-pointer items-center gap-2 rounded-lg bg-[var(--secondary-9)] px-3 py-1.5 text-12 font-semibold text-white shadow-sm transition-all hover:bg-[var(--secondary-10)] hover:shadow-md active:scale-95',
                       a.disabled &&
-                        'cursor-not-allowed opacity-60 hover:bg-[var(--secondary-9)]',
+                      'cursor-not-allowed opacity-60 hover:bg-[var(--secondary-9)]',
                       a.className,
                     )}
                     onClick={a.onClick}

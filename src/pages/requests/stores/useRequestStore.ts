@@ -83,6 +83,10 @@ type Store = {
   selectedWorkflow: any
   selectedWorkflowId: number | string | null
   summaryCache: Record<string, any>
+  isPlaygroundOpen: boolean
+  playgroundContext: any
+  setIsPlaygroundOpen: (open: boolean) => void
+  setPlaygroundContext: (context: any) => void
   addProcessingProcess: (process: any) => void
   cacheSummaryData: (reqNo: string, data: any) => void
   clearPendingNav: () => void
@@ -129,6 +133,10 @@ const requestStore = create<Store>((set) => ({
   selectedWorkflow: null,
   selectedWorkflowId: null,
   summaryCache: {},
+  isPlaygroundOpen: false,
+  playgroundContext: null,
+  setIsPlaygroundOpen: (open) => set({ isPlaygroundOpen: open }),
+  setPlaygroundContext: (context) => set({ playgroundContext: context }),
   addProcessingProcess: (process) =>
     set((state) => ({
       processingProcesses: [

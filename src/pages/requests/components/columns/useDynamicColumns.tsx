@@ -25,6 +25,7 @@ import type { WorkflowOption } from '../../types'
 import requestStore from '../../stores/useRequestStore'
 import HoverExpandableText from '../HoverExpandableText'
 import DynamicTableCell from './components/DynamicTableCell'
+import Tooltip from '@/components/base/Tooltip'
 // ✅ Your generic FileSheet (React version)
 // import FileSheet from '@/components/common/file-sheet/FileSheet'
 // add this import near the top
@@ -1728,7 +1729,7 @@ function makeActionsColumn(
     id: 'actions',
     isDisplayColumn: true,
     label: 'Actions',
-    size: 40,
+    size: 80,
     renderCell: (row: any) => {
       const attachmentCount = Number(row?.attachmentCount ?? 0)
       const commentsCount = Number(row?.commentsCount ?? 0)
@@ -1738,8 +1739,65 @@ function makeActionsColumn(
       const commentsLabel =
         commentsCount > 0 ? `Comments (${commentsCount})` : 'Comments'
 
+      const rawWorkflowData = requestStore.getState().rawWorkflowData
+      const isApAgentStage = row.stageType === 'AP_AGENT'
+      let actionsList = row?._actions || row?.actions || []
+
+      if (!isApAgentStage) {
+        const rules = rawWorkflowData?.workflowJson?.rules || []
+        const currentActivityId = row.activityId
+        const dynamicRules = currentActivityId
+          ? rules.filter((rule: any) => rule.fromBlockId === currentActivityId)
+          : []
+
+        const ruleActions = dynamicRules.map((rule: any) => {
+          const actionName = rule.proceedAction || rule.action || 'Submit'
+          return {
+            label: actionName,
+            value: actionName,
+          }
+        })
+
+        if (ruleActions.length > 0) {
+          actionsList = ruleActions
+        }
+      }
+
+      const paidAction = actionsList.find(
+        (act: any) => String(act?.label || '').toLowerCase() === 'paid'
+      )
+
       return (
-        <div className='flex items-center justify-center'>
+        <div className='flex items-center justify-center gap-1.5' onClick={(e) => e.stopPropagation()}>
+          {paidAction && (
+            <Tooltip content='Open Playground API' position='top'>
+              <IconButton
+                color='primary'
+                icon='tabler:plug'
+                variant='ghost'
+                className='h-8 w-8 text-[var(--primary-9)] animate-pulse'
+                onClick={(e: React.MouseEvent) => {
+                  e.stopPropagation()
+                  const docInfo = {
+                    amount: row?.amount || row?.['Invoice Amount'] || 0,
+                    currency: row?.currency || row?.['Currency'] || 'USD',
+                    invoiceNumber: row?.invoiceNumber || row?.['Invoice Number'] || row?.['Invoice No'] || '',
+                    poNumber: extractPONumber(row) || row?.purchaseOrderNumber || '',
+                    requestNo: row?.requestNo || row?.reqNo || '',
+                    vendor: row?.vendor || row?.['Supplier Name'] || row?.['Vendor Name'] || '',
+                  }
+                  requestStore.getState().setPlaygroundContext({
+                    actionName: paidAction?.label || 'Paid',
+                    endpoint: paidAction?.endpoint || 'https://ezagentplayground.onrender.com/apikey.html?id=2',
+                    model: paidAction?.model || 'gemini-2.0-flash-exp',
+                    provider: paidAction?.provider || 'gemini',
+                    document: docInfo,
+                  })
+                  requestStore.getState().setIsPlaygroundOpen(true)
+                }}
+              />
+            </Tooltip>
+          )}
           <Menu
             position='bottom-end'
             width={200}
