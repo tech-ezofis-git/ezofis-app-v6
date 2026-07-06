@@ -1,5 +1,6 @@
 import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
+import * as XLSX from 'xlsx'
 import { createRepository } from '@/api/createFolder'
 import formApi from '@/api/form/form'
 import workflowApi from '@/api/workflow/workflow'
@@ -73,7 +74,92 @@ const replacePlaceholders = (
   return obj
 }
 
+const updateFileHeaders = async (
+  file: File,
+  mapping: Record<string, string>,
+): Promise<File> => {
+  const fileName = file.name
+  const fileExtension = fileName.split('.').pop()?.toLowerCase()
+
+  return new Promise<File>((resolve, reject) => {
+    // Invert mapping: sourceField -> masterField
+    const invertedMapping: Record<string, string> = {}
+    Object.entries(mapping).forEach(([masterKey, sourceVal]) => {
+      if (sourceVal && sourceVal !== 'Skip to Import') {
+        invertedMapping[sourceVal.trim()] = masterKey
+      }
+    })
+
+    const translateHeader = (header: string) => {
+      const trimmed = header.trim()
+      return invertedMapping[trimmed] || trimmed
+    }
+
+    if (fileExtension === 'csv') {
+      const reader = new FileReader()
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          const csvData = event.target.result as string
+          const lines = csvData.split('\n')
+          if (lines.length > 0) {
+            const headers = lines[0].split(',')
+            const updatedHeaders = headers.map(translateHeader)
+            lines[0] = updatedHeaders.join(',')
+          }
+          const updatedCsv = new Blob([lines.join('\n')], {
+            type: 'text/csv',
+          })
+          resolve(new File([updatedCsv], fileName, { type: 'text/csv' }))
+        }
+      }
+      reader.onerror = (error) => reject(error)
+      reader.readAsText(file)
+    } else if (fileExtension === 'xlsx' || fileExtension === 'xls') {
+      const reader = new FileReader()
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          const data = event.target.result as ArrayBuffer
+          const wb = XLSX.read(data, { type: 'array' })
+          const sheetName = wb.SheetNames[0]
+          const sheet = wb.Sheets[sheetName]
+          const rows: any = XLSX.utils.sheet_to_json(sheet, { header: 1 })
+
+          if (rows.length > 0) {
+            const updatedHeaders = rows[0].map((h: string) =>
+              translateHeader(h),
+            )
+            rows[0] = updatedHeaders
+          }
+
+          const updatedSheet = XLSX.utils.aoa_to_sheet(rows)
+          const updatedWb = XLSX.utils.book_new()
+          XLSX.utils.book_append_sheet(
+            updatedWb,
+            updatedSheet,
+            sheetName || 'Sheet1',
+          )
+
+          const updatedBlob = XLSX.write(updatedWb, {
+            bookType: 'xlsx',
+            type: 'array',
+          })
+          resolve(
+            new File([updatedBlob], fileName, {
+              type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            }),
+          )
+        }
+      }
+      reader.onerror = (error) => reject(error)
+      reader.readAsArrayBuffer(file)
+    } else {
+      reject(new Error('Unsupported file extension'))
+    }
+  })
+}
+
 const StepFour = () => {
+  const erpSettings = setupStore((state) => state.erpSettings)
   const setStep = setupStore((state) => state.setStep)
   const closeSetup = setupStore((state) => state.closeSetup)
   const isApSetUpCompleted = setupStore((state) => state.isApSetUpCompleted)
@@ -169,19 +255,32 @@ const StepFour = () => {
         return
       }
 
-      // 3.5. Upload Master File (PO Master.xlsx)
+      // 3.5. Upload Master File (PO Master.xlsx or custom file)
       try {
-        const fileResponse = await fetch(poMasterUrl)
-        if (!fileResponse.ok) {
-          throw new Error(`Failed to fetch PO Master asset: ${fileResponse.statusText}`)
+        let file: File
+
+        if (
+          erpSettings.system === 'FILE_BASED_IMPORT' &&
+          erpSettings.uploadedTemplate &&
+          erpSettings.mapping
+        ) {
+          file = await updateFileHeaders(
+            erpSettings.uploadedTemplate,
+            erpSettings.mapping,
+          )
+        } else {
+          const fileResponse = await fetch(poMasterUrl)
+          if (!fileResponse.ok) {
+            throw new Error(`Failed to fetch PO Master asset: ${fileResponse.statusText}`)
+          }
+          const fileBlob = await fileResponse.blob()
+          if (!fileBlob) {
+            throw new Error('Failed to parse PO Master blob')
+          }
+          file = new File([fileBlob], 'PO Master.xlsx', {
+            type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          })
         }
-        const fileBlob = await fileResponse.blob()
-        if (!fileBlob) {
-          throw new Error('Failed to parse PO Master blob')
-        }
-        const file = new File([fileBlob], 'PO Master.xlsx', {
-          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        })
 
         const uploadPayload = {
           file,
@@ -253,8 +352,6 @@ const StepFour = () => {
       setIsSaving(false)
     }
   }
-
-  const erpSettings = setupStore((state) => state.erpSettings)
 
   const getErpName = () => {
     if (erpSettings.system === 'PREDEFINED') {

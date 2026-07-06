@@ -6,6 +6,7 @@ import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useS
 import authUserStore from '@/stores/authUserStore'
 import { StepFooter, StepLayout } from '../components/StepLayout'
 import ErpSystem from './components/ErpSystem'
+import { SYSTEM_TEMPLATE_COLUMNS } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/templateSchema'
 
 const OAUTH_ERP_SYSTEMS = ['QuickBooks'] as const
 
@@ -68,9 +69,20 @@ const StepTwo = () => {
     window.open(url, '_blank')
   }
 
+  const requiredColumns = SYSTEM_TEMPLATE_COLUMNS.filter((c) => c.required)
+  const isMappingComplete =
+    requiredColumns.length > 0 &&
+    requiredColumns.every(
+      (col) =>
+        !!erpSettings.mapping?.[col.key] &&
+        erpSettings.mapping[col.key] !== 'Skip to Import',
+    )
+
   const canContinue =
     erpSettings.system === 'PREDEFINED' ||
-    erpSettings.templateUploaded ||
+    (erpSettings.system === 'FILE_BASED_IMPORT' &&
+      erpSettings.templateUploaded &&
+      isMappingComplete) ||
     (erpSettings.isConnected &&
       erpSettings.system !== 'FILE_BASED_IMPORT' &&
       erpSettings.system !== 'PREDEFINED')

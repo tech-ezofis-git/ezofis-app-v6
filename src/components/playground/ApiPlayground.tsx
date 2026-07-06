@@ -86,7 +86,7 @@ export const ApiPlayground = ({ context, onClose }: ApiPlaygroundProps) => {
             Need to test prompts or explore models in a sandbox environment?
           </div>
           <a
-            href='https://aistudio.google.com/'
+            href={context?.endpoint || 'https://ezagentplayground.onrender.com/apikey.html?id=2'}
             target='_blank'
             rel='noopener noreferrer'
             className='inline-flex items-center justify-center gap-1.5 rounded-lg bg-[var(--primary-9)] hover:bg-[var(--primary-10)] active:scale-95 text-white px-4 py-2 text-xs font-bold transition-all shadow-md decoration-none cursor-pointer border-none'

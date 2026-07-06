@@ -21,6 +21,9 @@ type ErpSettings = {
   templateUploaded?: boolean
   uploadedTemplate?: File | null
   wantsFileBasedImport?: boolean
+  mapping?: Record<string, string>
+  uploadedColumns?: string[]
+  previewRows?: any[]
 }
 
 type StorageSettings = {
@@ -77,6 +80,9 @@ const initialErpSettings: ErpSettings = {
   templateUploaded: false,
   uploadedTemplate: null,
   wantsFileBasedImport: false,
+  mapping: {},
+  uploadedColumns: [],
+  previewRows: [],
 }
 
 const initialStorageSettings: StorageSettings = {
