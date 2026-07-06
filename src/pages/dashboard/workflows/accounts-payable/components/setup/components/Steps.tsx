@@ -18,28 +18,28 @@ import StepTwo from './steps/step-two/StepTwo'
 
 const steps = [
   {
-    description: 'Invoice Capture',
+    description: 'Configure invoice ingestion',
     icon: 'tabler:file-upload',
     id: 1,
-    label: 'Step 1',
+    label: 'Scan & Upload',
   },
   {
-    description: 'ERP & Import',
+    description: 'Connect your accounting software',
     icon: 'tabler:database',
     id: 2,
-    label: 'Step 2',
+    label: 'Sync ERP',
   },
   {
-    description: 'Connect Storage',
+    description: 'Archive and store backups',
     icon: 'tabler:cloud',
     id: 3,
-    label: 'Step 3',
+    label: 'Cloud Storage',
   },
   {
-    description: 'Review & Complete',
+    description: 'Review and launch workflow',
     icon: 'tabler:check',
     id: 4,
-    label: 'Step 4',
+    label: 'Ready to Go',
   },
 ]
 
@@ -141,9 +141,9 @@ const Steps = () => {
           </div>
         </div>
       </AnimateSlideRight>
-      <div className='grid min-h-0 flex-1 grid-cols-1 gap-0 xl:grid-cols-[240px_1fr]'>
+      <div className='grid min-h-0 flex-1 grid-cols-1 gap-0 xl:grid-cols-[290px_1fr]'>
         <AnimateSlideUp delay={0.2}>
-          <div className='hidden h-full border-r border-gray-3 bg-gray-1/30 px-4 py-3 xl:block'>
+          <div className='hidden h-full border-r border-gray-3 bg-gray-1/30 pb-3 pl-3.5 pr-2 pt-3 xl:block'>
             <Stepper
               active={step}
               orientation='vertical'

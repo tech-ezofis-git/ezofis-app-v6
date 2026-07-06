@@ -1,7 +1,6 @@
 import { useNavigate } from '@tanstack/react-router'
 import { useEffect, useMemo, useState } from 'react'
 import { apiRouter } from '@/api/apiRouter'
-import authApi from '@/api/auth'
 import Button from '@/components/base/button/Button'
 import IconIllustrated from '@/components/base/icon/IconIllustrated'
 import InputText from '@/components/base/inputs/InputText'
@@ -111,7 +110,7 @@ const ResetPasswordPage = () => {
             loggedFrom: 'WEB',
             loginType,
           }
-          const loginRes = await authApi.socialLogin(socialPayload)
+          const loginRes = await apiRouter.socialLogin(socialPayload)
           if (loginRes.error) {
             setError(loginRes.error)
             setLoading(false)
@@ -128,9 +127,10 @@ const ResetPasswordPage = () => {
             setLoading(false)
             return
           }
-          // then call the user session
-          await authApi.getSession()
         }
+
+        // fetch the user session details in both cases to populate user picture/name
+        await apiRouter.userSession()
 
         const {
           setisApSetUpCompleted,
@@ -141,12 +141,15 @@ const ResetPasswordPage = () => {
         setisApSetUpCompleted(false)
         setIsSetupStarted(true)
 
+        const identity = authUserStore.getState().identity
+        const token = identity?.token || identity?.accessToken || 'token'
+
         showToast({
           message: 'Account Setup Completed Successfully',
           variant: 'success',
         })
         setLoading(false)
-        navigate({ to: '/' })
+        navigate({ params: { token }, to: '/on-boarding/$token' })
       } else {
         setError(
           'Failed to complete account setup. Please contact the EZOFIS team.',
@@ -155,7 +158,7 @@ const ResetPasswordPage = () => {
       }
 
       console.log(data)
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err)
       setError(
         'Failed to complete account setup. Please contact the EZOFIS team.',

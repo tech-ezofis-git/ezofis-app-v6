@@ -24,8 +24,8 @@ const WorkflowPreview = () => {
       default:
         return {
           icon: 'tabler:user-up',
-          subtitle: 'Quick Drop',
-          title: 'Manual',
+          subtitle: 'Inbox, Scan, API',
+          title: 'Manual / Upload',
         }
     }
   }
@@ -50,8 +50,23 @@ const WorkflowPreview = () => {
   ]
 
   return (
-    <div className='dark:bg-gray-950 relative w-full overflow-hidden rounded-xl border border-gray-3 bg-white py-10'>
-      {/* Grid Background */}
+    <div className='dark:bg-gray-950 relative w-full overflow-hidden rounded-xl border border-gray-3 bg-white'>
+      {/* Header */}
+      <div className='flex items-center justify-between border-b border-gray-3 bg-gray-50/50 dark:bg-gray-900/50 px-5 py-3.5'>
+        <div className='flex items-center gap-2'>
+          <Icon className='size-4 text-purple-9' name='tabler:git-fork' />
+          <span className='text-13/5 font-semibold text-gray-13'>
+            Automated Invoice Pipeline
+          </span>
+        </div>
+        <div className='flex items-center gap-1.5 rounded-full border border-green-3 bg-green-1 px-2.5 py-0.5 text-11 font-medium text-green-11'>
+          <span className='size-1.5 rounded-full bg-green-9 animate-pulse' />
+          Validation Ready
+        </div>
+      </div>
+
+      <div className='relative py-10'>
+        {/* Grid Background */}
       <div
         className='absolute inset-0 opacity-[0.02] dark:opacity-[0.05]'
         style={{
@@ -150,8 +165,8 @@ const WorkflowPreview = () => {
           <AnimateFadeIn delay={0.4}>
             <NodeCard
               icon='noto:robot'
-              subtitle='Automation'
-              title='AP AGENT 1'
+              subtitle='Extraction & Matching'
+              title='AI Automation'
             />
           </AnimateFadeIn>
         </div>
@@ -161,8 +176,8 @@ const WorkflowPreview = () => {
           <AnimateFadeIn delay={0.7}>
             <NodeCard
               icon='flat-color-icons:signature'
-              subtitle='Manual Review'
-              title='Approver'
+              subtitle='Manual Sign-off'
+              title='Approver Review'
             />
           </AnimateFadeIn>
         </div>
@@ -172,11 +187,12 @@ const WorkflowPreview = () => {
           <AnimateFadeIn delay={1.0}>
             <NodeCard
               icon='flat-color-icons:ok'
-              subtitle='Process End'
-              title='End'
+              subtitle='ERP Synced'
+              title='Process End'
             />
           </AnimateFadeIn>
         </div>
+      </div>
       </div>
     </div>
   )

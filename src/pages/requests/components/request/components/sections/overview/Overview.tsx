@@ -54,6 +54,55 @@ const isUuid = (val: string | number | undefined | null): boolean => {
   )
 }
 
+const getPctColorClass = (pct: number): string => {
+  if (pct === 100) {
+    return 'border-[var(--green-5)] bg-[var(--green-1)]/30 text-[var(--green-10)]'
+  }
+  if (pct > 0) {
+    return 'border-[var(--orange-5)] bg-[var(--orange-1)]/30 text-[var(--orange-10)]'
+  }
+  return 'border-[var(--gray-4)] bg-[var(--gray-1)]/30 text-[var(--gray-11)]'
+}
+
+const fetchV6Binary = async (repoId: string, itemId: string) => {
+  const response = await fileApi.viewBinaryV6(repoId, itemId)
+  if (response?.data instanceof Blob) {
+    const mimeType = response.data.type || 'application/pdf'
+    const url = URL.createObjectURL(response.data)
+    return { isBlob: true, mimeType, url }
+  }
+  return null
+}
+
+const fetchLegacyBinary = async (
+  repoId: string,
+  itemId: string,
+  tenantId: any,
+  userId: any,
+  selectedFileId: any,
+) => {
+  const rId = Number(repoId)
+  if (!Number.isNaN(rId) && rId > 0) {
+    const tId = tenantId ? Number(tenantId) : 2
+    const uId = userId ? String(userId) : '2'
+    const response = await fileApi.viewBinary(
+      tId,
+      uId,
+      rId,
+      Number(itemId) || selectedFileId,
+      2,
+    )
+
+    const base64 = response?.data?.file || response?.data
+    if (typeof base64 === 'string') {
+      const mimeType = getMimeTypeFromBase64(base64)
+      const url = formatBase64Url(base64, mimeType)
+      return { isBlob: false, mimeType, url }
+    }
+  }
+  return null
+}
+
 const getStatusStyles = (statusType: string) => {
   switch (statusType) {
     case 'success':
@@ -341,7 +390,7 @@ const hasBackOrderData = (agentData: any) => {
 }
 
 const getParsedFormData = (row: any): any => {
-  if (!row || !row.formData) return {}
+  if (!row?.formData) return {}
   if (typeof row.formData === 'object') {
     return row.formData.fields || row.formData || {}
   }
@@ -1615,9 +1664,7 @@ const Overview = (props: any) => {
     </div>
   ), [matterValidationDisplay, agentData])
   const [showBackOrderDetailFull, setShowBackOrderDetailFull] = useState(false)
-  const [activeBackOrderTab, setActiveBackOrderTab] = useState<
-    'current' | string
-  >('current')
+  const [activeBackOrderTab, setActiveBackOrderTab] = useState<string>('current')
   const [selectedFile, setSelectedFile] = useState<any>(null)
 
   useEffect(() => {
@@ -1640,10 +1687,10 @@ const Overview = (props: any) => {
 
   const currentSearchPluginInstance = searchPlugin()
   const searchPluginInstanceRef = useRef<any>(null)
-  if (!searchPluginInstanceRef.current) {
-    searchPluginInstanceRef.current = { ...currentSearchPluginInstance }
-  } else {
+  if (searchPluginInstanceRef.current) {
     Object.assign(searchPluginInstanceRef.current, currentSearchPluginInstance)
+  } else {
+    searchPluginInstanceRef.current = { ...currentSearchPluginInstance }
   }
   const searchPluginInstance = searchPluginInstanceRef.current
   const { clearHighlights, highlight } = searchPluginInstance
@@ -1686,7 +1733,7 @@ const Overview = (props: any) => {
   }, [formModel, allowedLabels])
 
   const handleMouseUp = () => {
-    const selection = window.getSelection()
+    const selection = globalThis.getSelection()
     if (!selection) return
     const text = selection.toString().trim()
     if (!text) {
@@ -1740,7 +1787,7 @@ const Overview = (props: any) => {
     setSelectedText(null)
     setMenuPosition(null)
     setSearchFilter('')
-    window.getSelection()?.removeAllRanges()
+    globalThis.getSelection()?.removeAllRanges()
   }
 
   useEffect(() => {
@@ -1995,9 +2042,18 @@ const Overview = (props: any) => {
 
   useEffect(() => {
     if (attachmentData && attachmentData.length > 0 && !selectedFile) {
-      setSelectedFile(attachmentData[attachmentData.length - 1])
+      setSelectedFile(attachmentData.at(-1))
     }
   }, [attachmentData, selectedFile])
+
+  useEffect(() => {
+    const el = viewerContainerRef.current
+    if (!el) return
+    el.addEventListener('mouseup', handleMouseUp)
+    return () => {
+      el.removeEventListener('mouseup', handleMouseUp)
+    }
+  }, [handleMouseUp])
 
   const fetchFileBinaryData = async (
     repoId: string,
@@ -2007,34 +2063,9 @@ const Overview = (props: any) => {
     selectedFileId: any,
   ) => {
     if (isUuid(repoId) && isUuid(itemId)) {
-      const response = await fileApi.viewBinaryV6(repoId, itemId)
-      if (response?.data instanceof Blob) {
-        const mimeType = response.data.type || 'application/pdf'
-        const url = URL.createObjectURL(response.data)
-        return { isBlob: true, mimeType, url }
-      }
-    } else {
-      const rId = Number(repoId)
-      if (!Number.isNaN(rId) && rId > 0) {
-        const tId = tenantId ? Number(tenantId) : 2
-        const uId = userId ? String(userId) : '2'
-        const response = await fileApi.viewBinary(
-          tId,
-          uId,
-          rId,
-          Number(itemId) || selectedFileId,
-          2,
-        )
-
-        const base64 = response?.data?.file || response?.data
-        if (typeof base64 === 'string') {
-          const mimeType = getMimeTypeFromBase64(base64)
-          const url = formatBase64Url(base64, mimeType)
-          return { isBlob: false, mimeType, url }
-        }
-      }
+      return fetchV6Binary(repoId, itemId)
     }
-    return null
+    return fetchLegacyBinary(repoId, itemId, tenantId, userId, selectedFileId)
   }
 
   useEffect(() => {
@@ -2232,7 +2263,6 @@ const Overview = (props: any) => {
         <div
           className='relative flex w-[40%] flex-col overflow-hidden border-r border-[var(--gray-3)]'
           ref={viewerContainerRef}
-          onMouseUp={handleMouseUp}
         >
           {isViewerLoading && (
             <div className='absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 bg-[var(--gray-1)]'>
@@ -2248,7 +2278,7 @@ const Overview = (props: any) => {
 
 
           {menuPosition && selectedText && (
-            <div
+            <menu
               className='animate-in fade-in slide-in-from-top-1 absolute z-50 flex max-h-60 w-56 flex-col rounded-lg border border-[var(--gray-3)] bg-surface py-1 shadow-lg duration-200'
               ref={dropdownRef}
               style={{
@@ -2260,11 +2290,11 @@ const Overview = (props: any) => {
             >
               {/* Assign Header */}
               <div className='border-b border-[var(--gray-3)] bg-[var(--gray-1)]/50 px-3 py-1.5 text-[10px] font-semibold text-[var(--gray-11)]'>
-                Assign "
+                {'Assign "'}
                 <span className='inline-block max-w-[140px] truncate align-bottom font-bold text-[var(--gray-13)]'>
                   {selectedText}
                 </span>
-                " to:
+                {'" to:'}
               </div>
 
               {/* Search Filter Input */}
@@ -2306,7 +2336,7 @@ const Overview = (props: any) => {
                   </div>
                 )}
               </div>
-            </div>
+            </menu>
           )}
         </div>
 
@@ -2458,7 +2488,7 @@ const Overview = (props: any) => {
                         </p>
                         <p className='text-base font-extrabold text-[var(--orange-9)]'>
                           {pendingItemsCount} item
-                          {pendingItemsCount !== 1 ? 's' : ''}
+                          {pendingItemsCount === 1 ? '' : 's'}
                         </p>
                       </div>
                       <div className='space-y-1 p-4'>
@@ -2550,7 +2580,7 @@ const Overview = (props: any) => {
                               </tr>
                             </thead>
                             <tbody className='divide-y divide-[var(--gray-2)] bg-surface'>
-                              {items.map((row: any, idx: number) => {
+                              {items.map((row: any) => {
                                 const desc =
                                   row.description?.trim() || 'Unmapped item'
                                 const invQty = row.invoice_qty ?? 0
@@ -2572,18 +2602,14 @@ const Overview = (props: any) => {
                                 return (
                                   <tr
                                     className='transition-colors hover:bg-[var(--gray-1)]/50'
-                                    key={idx}
+                                    key={`${row.po_line_id || 'line'}-${desc}`}
                                   >
                                     <td className='flex items-center gap-3.5 px-4 py-3 font-semibold text-[var(--gray-13)]'>
                                       {/* Circular Progress Badge */}
                                       <div
                                         className={cn(
                                           'flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 text-[9px] font-black transition-colors',
-                                          pct === 100
-                                            ? 'border-[var(--green-5)] bg-[var(--green-1)]/30 text-[var(--green-10)]'
-                                            : pct > 0
-                                              ? 'border-[var(--orange-5)] bg-[var(--orange-1)]/30 text-[var(--orange-10)]'
-                                              : 'border-[var(--gray-4)] bg-[var(--gray-1)]/30 text-[var(--gray-11)]',
+                                          getPctColorClass(pct),
                                         )}
                                       >
                                         {pct}%
@@ -2802,8 +2828,7 @@ const Overview = (props: any) => {
                       />
                     )}
                     {showBackOrder &&
-                    backOrderDisplay &&
-                    backOrderDisplay.status === 'Detected' ? (
+                    backOrderDisplay?.status === 'Detected' ? (
                       <AnalysisCard
                         icon={PackageX}
                         status={backOrderDisplay.status}

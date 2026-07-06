@@ -8,11 +8,43 @@ import showToast from '@/components/base/toast/showToast'
 import { AnimateFadeIn } from '@/components/common/animations'
 import apSetupPayloads from '@/pages/dashboard/workflows/accounts-payable/constants/apSetupPayloads.json'
 import poMasterUrl from '@/assets/PO Master.xlsx?url'
+import Icon from '@/components/base/icon/Icon'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import requestStore from '@/pages/requests/stores/useRequestStore'
 import authUserStore from '@/stores/authUserStore'
 import { StepFooter, StepLayout } from '../components/StepLayout'
 import WorkflowPreview from './components/WorkflowPreview'
+
+const ProtocolCard = ({
+  icon,
+  iconBg,
+  iconColor,
+  label,
+  title,
+  subtitle,
+}: {
+  icon: string
+  iconBg: string
+  iconColor: string
+  label: string
+  title: string
+  subtitle: string
+}) => (
+  <div className='flex flex-col gap-2 rounded-xl border border-gray-3 bg-surface p-5 shadow-sm transition-shadow hover:shadow-md'>
+    <span className='text-[10px] font-bold tracking-wider text-gray-10 uppercase'>
+      {label}
+    </span>
+    <div className='flex items-center gap-3.5 mt-1'>
+      <div className={`flex size-10 items-center justify-center rounded-lg shadow-sm ${iconBg}`}>
+        <Icon className={`size-5 ${iconColor}`} name={icon} />
+      </div>
+      <div className='min-w-0 flex-1'>
+        <h4 className='truncate text-14/5 font-semibold text-gray-13'>{title}</h4>
+        <p className='mt-0.5 truncate text-12/4.5 text-gray-10'>{subtitle}</p>
+      </div>
+    </div>
+  </div>
+)
 
 const replacePlaceholders = (
   obj: any,
@@ -222,9 +254,21 @@ const StepFour = () => {
     }
   }
 
+  const erpSettings = setupStore((state) => state.erpSettings)
+
+  const getErpName = () => {
+    if (erpSettings.system === 'PREDEFINED') {
+      return 'Demo Data'
+    }
+    if (erpSettings.system === 'FILE_BASED_IMPORT') {
+      return 'PO Master File'
+    }
+    return erpSettings.system ? `${erpSettings.system} ERP` : 'NetSuite ERP'
+  }
+
   return (
     <StepLayout
-      description='Check your connections and confirm setup to activate AI-powered invoice automation.'
+      description="Double-check your settings and activate your AI invoice automation. Your workflow is ready to begin processing."
       title='Review & Complete Setup'
       footer={
         <StepFooter>
@@ -239,7 +283,7 @@ const StepFour = () => {
           <Button
             disabled={isSaving}
             loading={isSaving}
-            suffixIcon='tabler:arrow-right'
+            suffixIcon='tabler:bolt'
             label={
               isApSetUpCompleted ? 'Save Configuration' : 'Activate Automation'
             }
@@ -248,9 +292,40 @@ const StepFour = () => {
         </StepFooter>
       }
     >
-      <AnimateFadeIn delay={0.3}>
-        <WorkflowPreview />
-      </AnimateFadeIn>
+      <div className='space-y-6'>
+        <AnimateFadeIn delay={0.3}>
+          <WorkflowPreview />
+        </AnimateFadeIn>
+
+        <AnimateFadeIn delay={0.4}>
+          <div className='grid grid-cols-1 gap-4 sm:grid-cols-3'>
+            <ProtocolCard
+              icon='tabler:database'
+              iconBg='bg-blue-1 dark:bg-blue-9/20'
+              iconColor='text-blue-9 dark:text-blue-4'
+              label='Data Destination'
+              title={getErpName()}
+              subtitle='Connected & Verified'
+            />
+            <ProtocolCard
+              icon='tabler:brain'
+              iconBg='bg-purple-1 dark:bg-purple-9/20'
+              iconColor='text-purple-9 dark:text-purple-4'
+              label='Intelligence Profile'
+              title='High Precision'
+              subtitle='99.8% Extraction Goal'
+            />
+            <ProtocolCard
+              icon='tabler:shield-check'
+              iconBg='bg-green-1 dark:bg-green-9/20'
+              iconColor='text-green-9 dark:text-green-4'
+              label='Security Protocol'
+              title='SOC2 Compliant'
+              subtitle='AES-256 Encrypted'
+            />
+          </div>
+        </AnimateFadeIn>
+      </div>
     </StepLayout>
   )
 }

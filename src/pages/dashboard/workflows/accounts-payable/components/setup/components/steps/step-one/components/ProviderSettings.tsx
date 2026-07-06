@@ -17,9 +17,9 @@ import SectionHeader from '../../components/SectionHeader'
 import { OrDivider } from '../../components/StepLayout'
 
 const directUploadItem = {
-  description: 'Quickly upload any document saved to your current device.',
+  description: 'Quick Drop',
   icon: 'tabler:upload',
-  name: 'Quick Drop',
+  name: 'I will manually upload invoices from my computer.',
   value: 'DIRECT_UPLOAD',
 }
 
@@ -80,7 +80,7 @@ const ProviderSettings = () => {
       <div>
         <AnimateSlideUp delay={0.2}>
           <SectionHeader
-            description='Connect your email account to automatically capture and process invoices. Select from popular providers or choose Custom to enter your own settings.'
+            description='Automatically sync invoices sent to your billing address.'
             title='Email Integration'
           />
         </AnimateSlideUp>

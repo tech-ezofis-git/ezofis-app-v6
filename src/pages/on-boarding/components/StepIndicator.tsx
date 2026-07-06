@@ -1,16 +1,11 @@
 import { Progress } from '@mantine/core'
-import authUserStore from '@/stores/authUserStore'
 import onBoardingStore from '../stores/onBoardingStore'
 
 const StepIndicator = () => {
-  const authUser = authUserStore((state) => state.user)
   const step = onBoardingStore((state) => state.step)
   const totalSteps = onBoardingStore((state) => state.totalSteps)
-  const newStep = authUser.signUpMethod === 'email' ? step : step - 1
-  const newTotalSteps =
-    authUser.signUpMethod === 'email' ? totalSteps : totalSteps - 1
 
-  const progress = Math.round((newStep / newTotalSteps) * 100)
+  const progress = Math.round((step / totalSteps) * 100)
 
   return (
     <Progress

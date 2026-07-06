@@ -35,12 +35,12 @@ const Stepper = ({
       classNames={{
         separator: 'rounded-full bg-gray-3',
         step: 'disabled:opacity-50',
-        stepBody: 'ml-4',
+        stepBody: 'ml-3',
         stepCompletedIcon: 'text-primary-11 [&>svg]:!size-3.5',
-        stepDescription: 'm-0 text-13/6 font-medium text-gray-12',
+        stepDescription: 'text-xs/5 text-gray-10',
         stepIcon:
           'border-0 bg-gray-3 text-13 font-semibold text-gray-11 data-[completed]:bg-primary-4 data-[progress]:bg-primary-9 data-[progress]:text-white',
-        stepLabel: 'text-xs/5 text-gray-10',
+        stepLabel: 'm-0 text-13/6 font-medium text-gray-12',
         stepLoader: 'after:border-gray-11 after:border-t-transparent',
         verticalSeparator: 'rounded-full border-gray-3 bg-gray-3',
       }}

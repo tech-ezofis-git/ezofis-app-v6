@@ -93,9 +93,9 @@ const ErpSystem = () => {
           <AnimateSlideUp delay={0.15}>
             <BrandCard
               checked={erpSettings.system === 'PREDEFINED'}
-              description='Use the system’s predefined master records to validate invoices.'
+              description='Try the platform with sample invoices and records.'
               icon='tabler:database-search'
-              name='Predefined Master Data'
+              name='Use demo data'
               value='PREDEFINED'
               onClick={() => {
                 setErpSettings({
@@ -111,9 +111,9 @@ const ErpSystem = () => {
           <AnimateSlideUp delay={0.2}>
             <BrandCard
               checked={erpSettings.system === 'FILE_BASED_IMPORT'}
-              description='Upload your custom PO Master Data file (Excel/CSV) from your device.'
+              description='Import your records via CSV or Excel.'
               icon='tabler:table-import'
-              name='Upload Master File'
+              name='Upload PO master file'
               value='FILE_BASED_IMPORT'
               onClick={() => {
                 setErpSettings({
@@ -229,8 +229,8 @@ const ErpSystem = () => {
       <div>
         <AnimateSlideUp delay={0.2}>
           <SectionHeader
-            description='Connect your ERP provider to synchronize invoices and payments seamlessly.'
-            title='ERP Integration'
+            description='Connect your provider to automate data matching.'
+            title='Direct Integration'
           />
         </AnimateSlideUp>
         <div className='grid grid-cols-1 gap-3'>
