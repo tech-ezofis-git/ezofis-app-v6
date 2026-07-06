@@ -12,6 +12,7 @@ import cn from '@/utils/cn'
 import { downloadTemplate, PO_ACCEPT } from '../utils'
 import { compareHeaderSimilarity } from './utils/headerSimilarity'
 import { SYSTEM_TEMPLATE_COLUMNS } from './utils/templateSchema'
+import EditFieldMappings from './components/EditFieldMappings'
 
 export type UploadState =
   | 'idle'
@@ -45,6 +46,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
   const [uploadedColumns, setUploadedColumns] = useState<string[]>([])
   const [rowCount, setRowCount] = useState<number | null>(null)
   const [mapping, setMapping] = useState<Record<string, string>>({})
+  const [previewRows, setPreviewRows] = useState<any[]>([])
 
   // Custom dropdown open state
   const [openFieldDropdown, setOpenFieldDropdown] = useState<string | null>(
@@ -169,6 +171,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
 
     try {
       const result = await extractHeadersAndData(file)
+      setPreviewRows(result.previewRows || [])
 
       // Simulate upload/parse progress bar smoothly
       let currentProgress = 0
@@ -212,63 +215,48 @@ export default function PoSetupFlowPage({ onClose }: Props) {
     setStep3State('waiting')
     setStep4State('waiting')
 
-    // After 600ms, Step 1 Done, Step 2 Active
+    // At 800ms, Step 1 completes, line starts drawing
     setTimeout(() => {
       setStep1State('done')
-      setStep2State('active')
 
-      // After 900ms, Step 2 Done, Step 3 Active
+      // At 1600ms (800ms later), line reaches Step 2, Step 2 starts loading
       setTimeout(() => {
-        setStep2State('done')
-        setStep3State('active')
+        setStep2State('active')
 
-        // After 1200ms, Auto-Mapping simulation maps fields and decides to ingest or resolve
+        // At 2600ms (1000ms later), Step 2 completes, line starts drawing
         setTimeout(() => {
-          const initialMapping: Record<string, string> = {}
+          setStep2State('done')
 
-          // Map system columns based on similarity
-          systemColumns.forEach((col) => {
-            const match = headers.find((u) =>
-              compareHeaderSimilarity(u, col.key),
-            )
-            if (match) {
-              initialMapping[col.key] = match
-            }
-          })
+          // At 3400ms (800ms later), line reaches Step 3, Step 3 starts loading
+          setTimeout(() => {
+            setStep3State('active')
 
-          setMapping(initialMapping)
+            // At 4600ms (1200ms later), Step 3 completes, mapping initialized
+            setTimeout(() => {
+              const initialMapping: Record<string, string> = {}
 
-          // Check if all required fields are mapped
-          const missingRequired = requiredFields.filter(
-            (f) => !initialMapping[f],
-          )
-
-          if (missingRequired.length === 0) {
-            // Success: Proceed to Stage 4 Ingestion & Confirmation automatically!
-            setStep3State('done')
-            setStep4State('active')
-
-            setTimeout(async () => {
-              try {
-                const updatedFile = await updateFileHeaders(
-                  file,
-                  initialMapping,
+              // Map system columns based on similarity
+              systemColumns.forEach((col) => {
+                const match = headers.find((u) =>
+                  compareHeaderSimilarity(u, col.key),
                 )
-                await sendUpdatedFile(updatedFile)
-                setStep4State('done')
-              } catch (err) {
-                setUploadState('error')
-                setStep3State('active')
-                setStep4State('waiting')
-              }
+                if (match) {
+                  initialMapping[col.key] = match
+                }
+              })
+
+              setMapping(initialMapping)
+              setStep3State('done')
+
+              // At 5000ms (400ms later), transition to verify mappings UI
+              setTimeout(() => {
+                setUploadState('ready')
+              }, 400)
             }, 1200)
-          } else {
-            // Missing required fields: Switch to Field Resolution Screen (Screen 3)
-            setUploadState('ready')
-          }
-        }, 1200)
-      }, 900)
-    }, 600)
+          }, 800)
+        }, 1000)
+      }, 800)
+    }, 800)
   }
 
   // Inverted header translator to replace source file headers with master system columns
@@ -283,7 +271,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
       // Invert mapping: sourceField -> masterField
       const invertedMapping: Record<string, string> = {}
       Object.entries(mapping).forEach(([masterKey, sourceVal]) => {
-        if (sourceVal) {
+        if (sourceVal && sourceVal !== 'Skip to Import') {
           invertedMapping[sourceVal.trim()] = masterKey
         }
       })
@@ -368,7 +356,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
       const { data, error } = await folderApi.uploadMasterFile(payload)
       if (data) {
         showToast({
-          message: 'PO data file ingested successfully',
+          message: 'Master fields mapped and saved successfully.',
           variant: 'success',
         })
         setUploadState('completed')
@@ -669,20 +657,26 @@ export default function PoSetupFlowPage({ onClose }: Props) {
           {/* Timeline Layout */}
           <main className='custom-scrollbar flex min-h-0 flex-1 flex-col items-center overflow-y-auto p-6'>
             <AnimateSlideUp className='relative my-auto w-full max-w-xl space-y-6 py-4 pl-8'>
-              {/* Vertical connector line */}
-              <div className='absolute top-3 bottom-3 left-3.5 z-0 w-[1.5px] bg-border-default' />
 
               {/* STEP 1: FILE INGESTION & PARSING */}
               <div className='relative z-10 flex flex-col gap-2'>
+                {/* Line segment from Step 1 to Step 2 */}
+                <div className="absolute left-[-18px] top-7 -bottom-9 w-[1.5px] bg-border-default z-0" />
+                <div
+                  className={cn(
+                    'absolute left-[-18px] top-7 -bottom-9 w-[1.5px] bg-green-11 origin-top transition-transform duration-700 ease-in-out z-0',
+                    step1State === 'done' ? 'scale-y-100' : 'scale-y-0'
+                  )}
+                />
                 <div className='flex items-start gap-4'>
                   <div
                     className={cn(
-                      'absolute -left-8 flex size-7 items-center justify-center rounded-full border-4 border-surface-muted transition-all duration-300',
+                      'absolute -left-8 flex size-7 items-center justify-center rounded-full transition-all duration-300 z-10',
                       step1State === 'done'
-                        ? 'border-green-3 bg-green-3 text-green-11'
+                        ? 'border-2 border-green-11 bg-white text-green-11'
                         : step1State === 'active'
-                          ? 'border-accent-soft bg-accent-soft text-primary-9'
-                          : 'border-gray-2 bg-gray-2 text-gray-8',
+                          ? 'border-4 border-accent-soft bg-accent-soft text-primary-9'
+                          : 'border-4 border-gray-2 bg-gray-2 text-gray-8',
                     )}
                   >
                     {step1State === 'done' ? (
@@ -752,15 +746,23 @@ export default function PoSetupFlowPage({ onClose }: Props) {
 
               {/* STEP 2: COLUMN & ROW EXTRACTION */}
               <div className='relative z-10 flex flex-col gap-2'>
+                {/* Line segment from Step 2 to Step 3 */}
+                <div className="absolute left-[-18px] top-7 -bottom-9 w-[1.5px] bg-border-default z-0" />
+                <div
+                  className={cn(
+                    'absolute left-[-18px] top-7 -bottom-9 w-[1.5px] bg-green-11 origin-top transition-transform duration-700 ease-in-out z-0',
+                    step2State === 'done' ? 'scale-y-100' : 'scale-y-0'
+                  )}
+                />
                 <div className='flex items-start gap-4'>
                   <div
                     className={cn(
-                      'absolute -left-8 flex size-7 items-center justify-center rounded-full border-4 border-surface-muted transition-all duration-300',
+                      'absolute -left-8 flex size-7 items-center justify-center rounded-full transition-all duration-300 z-10',
                       step2State === 'done'
-                        ? 'border-green-3 bg-green-3 text-green-11'
+                        ? 'border-2 border-green-11 bg-white text-green-11'
                         : step2State === 'active'
-                          ? 'border-accent-soft bg-accent-soft text-primary-9'
-                          : 'border-gray-2 bg-gray-2 text-gray-8',
+                          ? 'border-4 border-accent-soft bg-accent-soft text-primary-9'
+                          : 'border-4 border-gray-2 bg-gray-2 text-gray-8',
                     )}
                   >
                     {step2State === 'done' ? (
@@ -825,15 +827,23 @@ export default function PoSetupFlowPage({ onClose }: Props) {
 
               {/* STEP 3: SCHEMA AUTO-MAPPING */}
               <div className='relative z-10 flex flex-col gap-2'>
+                {/* Line segment from Step 3 to Step 4 */}
+                <div className="absolute left-[-18px] top-7 -bottom-9 w-[1.5px] bg-border-default z-0" />
+                <div
+                  className={cn(
+                    'absolute left-[-18px] top-7 -bottom-9 w-[1.5px] bg-green-11 origin-top transition-transform duration-700 ease-in-out z-0',
+                    step3State === 'done' ? 'scale-y-100' : 'scale-y-0'
+                  )}
+                />
                 <div className='flex items-start gap-4'>
                   <div
                     className={cn(
-                      'absolute -left-8 flex size-7 items-center justify-center rounded-full border-4 border-surface-muted transition-all duration-300',
+                      'absolute -left-8 flex size-7 items-center justify-center rounded-full transition-all duration-300 z-10',
                       step3State === 'done'
-                        ? 'border-green-3 bg-green-3 text-green-11'
+                        ? 'border-2 border-green-11 bg-white text-green-11'
                         : step3State === 'active'
-                          ? 'border-accent-soft bg-accent-soft text-primary-9'
-                          : 'border-gray-2 bg-gray-2 text-gray-8',
+                          ? 'border-4 border-accent-soft bg-accent-soft text-primary-9'
+                          : 'border-4 border-gray-2 bg-gray-2 text-gray-8',
                     )}
                   >
                     {step3State === 'done' ? (
@@ -901,12 +911,12 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                 <div className='flex items-start gap-4'>
                   <div
                     className={cn(
-                      'absolute -left-8 flex size-7 items-center justify-center rounded-full border-4 border-surface-muted transition-all duration-300',
+                      'absolute -left-8 flex size-7 items-center justify-center rounded-full transition-all duration-300 z-10',
                       step4State === 'done'
-                        ? 'border-green-3 bg-green-3 text-green-11'
+                        ? 'border-2 border-green-11 bg-white text-green-11'
                         : step4State === 'active'
-                          ? 'border-accent-soft bg-accent-soft text-primary-9'
-                          : 'border-gray-2 bg-gray-2 text-gray-8',
+                          ? 'border-4 border-accent-soft bg-accent-soft text-primary-9'
+                          : 'border-4 border-gray-2 bg-gray-2 text-gray-8',
                     )}
                   >
                     {step4State === 'done' ? (
@@ -941,381 +951,21 @@ export default function PoSetupFlowPage({ onClose }: Props) {
 
       {/* SCREEN 3: VERIFY FIELDS SCREEN */}
       {uploadState === 'ready' && (
-        <AnimateFadeIn className='flex h-full w-full flex-col overflow-hidden'>
-          {/* Header */}
-          <div className='flex h-13 shrink-0 items-center gap-2 border-b border-border-default bg-gradient-to-b from-gray-1 to-gray-2 px-4'>
-            <button
-              className='cursor-pointer rounded-md p-1.5 text-gray-9 transition-colors hover:bg-surface-hover hover:text-gray-12'
-              onClick={() => setUploadState('processing')}
-            >
-              <Icon className='size-4' name='tabler:arrow-left' />
-            </button>
-            <div className='flex items-center gap-2'>
-              <div className='flex size-7 items-center justify-center rounded-lg bg-accent-soft text-primary-9'>
-                <Icon
-                  className='size-4 text-primary-9'
-                  name='tabler:list-check'
-                />
-              </div>
-              <h1 className='text-[16px] font-medium text-gray-12'>
-                Verify Fields
-              </h1>
-            </div>
-          </div>
-
-          {/* Body Content */}
-          <main className='custom-scrollbar flex min-h-0 flex-1 flex-col items-center justify-start overflow-y-auto p-6'>
-            <AnimateSlideUp className='w-full max-w-xl space-y-5 py-4'>
-              {/* Progress Indicator */}
-              <div className='space-y-2 rounded-xl border border-border-default bg-surface-primary p-4 shadow-2xs'>
-                <div className='flex items-center justify-between text-[12px]'>
-                  <span className='font-medium text-gray-8'>
-                    Map your file columns to PO fields
-                  </span>
-                  <span className='rounded-full bg-accent-soft px-2 py-0.5 font-bold text-primary-9'>
-                    {mappedCount}/6 mapped
-                  </span>
-                </div>
-                <div className='h-1 w-full overflow-hidden rounded-full bg-gray-2'>
-                  <div
-                    className='h-full bg-primary-9 transition-all duration-300 ease-out'
-                    style={{ width: `${(mappedCount / 6) * 100}%` }}
-                  />
-                </div>
-              </div>
-
-              {/* REQUIRED FIELDS SECTION */}
-              <div className='space-y-3.5'>
-                <div className='pl-1 text-[11px] font-bold tracking-wider text-gray-8 uppercase'>
-                  Required Fields
-                </div>
-
-                {requiredFields.map((fieldKey) => {
-                  const selectedCol = mapping[fieldKey]
-                  const isMapped = !!selectedCol
-                  const isConflict =
-                    fieldKey === 'Vendor Address' && !selectedCol
-                  const isOpen = openFieldDropdown === fieldKey
-
-                  return (
-                    <div
-                      key={fieldKey}
-                      className={cn(
-                        'flex flex-col gap-2.5 rounded-xl border p-4 transition-all duration-300',
-                        isMapped
-                          ? 'border-green-11/30 bg-green-3/25'
-                          : isConflict
-                            ? 'border-red-11/30 bg-red-3/25'
-                            : 'border-border-default bg-surface-primary',
-                      )}
-                    >
-                      <div className='flex items-center justify-between'>
-                        <div className='flex items-center gap-1.5'>
-                          {isMapped && (
-                            <Icon
-                              className='size-4 text-green-11'
-                              name='tabler:circle-check'
-                            />
-                          )}
-                          {isConflict && (
-                            <Icon
-                              className='size-4 text-red-11'
-                              name='tabler:alert-triangle'
-                            />
-                          )}
-                          <span
-                            className={cn(
-                              'text-[13px] font-semibold',
-                              isMapped
-                                ? 'text-green-11'
-                                : isConflict
-                                  ? 'text-red-11'
-                                  : 'text-gray-12',
-                            )}
-                          >
-                            {fieldKey}
-                          </span>
-                        </div>
-                        <span
-                          className={cn(
-                            'rounded px-1.5 py-0.5 text-[10px] font-bold uppercase',
-                            isMapped
-                              ? 'bg-green-3 text-green-11'
-                              : isConflict
-                                ? 'bg-red-3 text-red-11'
-                                : 'bg-gray-2 text-gray-8',
-                          )}
-                        >
-                          Required
-                        </span>
-                      </div>
-
-                      {/* Dropdown Selector Button */}
-                      <div className='relative'>
-                        <button
-                          className={cn(
-                            'flex w-full cursor-pointer items-center justify-between rounded-lg border bg-surface-primary px-3 py-2 text-[12px] font-medium transition-all',
-                            isMapped
-                              ? 'border-green-11/30 font-medium text-green-11'
-                              : isConflict
-                                ? 'border-red-11/30 font-medium text-red-11'
-                                : 'border-border-default text-gray-8',
-                          )}
-                          onClick={() =>
-                            setOpenFieldDropdown(isOpen ? null : fieldKey)
-                          }
-                        >
-                          <span>
-                            {selectedCol || 'Select matching column...'}
-                          </span>
-                          <Icon
-                            className={cn(
-                              'size-4 transition-transform duration-200',
-                              isMapped
-                                ? 'text-green-11'
-                                : isConflict
-                                  ? 'text-red-11'
-                                  : 'text-gray-9',
-                            )}
-                            name={
-                              isOpen
-                                ? 'tabler:chevron-up'
-                                : 'tabler:chevron-down'
-                            }
-                          />
-                        </button>
-
-                        {/* Inline selector options (Reflowing Page Layout) */}
-                        {isOpen && (
-                          <div className='animate-in slide-in-from-top-2 relative z-10 mt-1.5 space-y-1 rounded-lg border border-border-default bg-surface-primary p-2 shadow-sm duration-200'>
-                            <div className='border-b border-border-default/40 px-2 py-1 text-[10px] font-semibold text-gray-8'>
-                              Select File Column
-                            </div>
-                            <div className='custom-scrollbar max-h-36 overflow-y-auto'>
-                              {availableColumnsList.map((col) => (
-                                <button
-                                  key={col}
-                                  className={cn(
-                                    'flex w-full cursor-pointer items-center justify-between rounded px-2 py-1.5 text-left text-[12px] transition-colors duration-150 hover:bg-accent-soft hover:text-primary-9',
-                                    selectedCol === col
-                                      ? 'bg-accent-soft font-bold text-primary-9'
-                                      : 'text-gray-12',
-                                  )}
-                                  onClick={() => {
-                                    setMapping((prev) => ({
-                                      ...prev,
-                                      [fieldKey]: col,
-                                    }))
-                                    setOpenFieldDropdown(null)
-                                  }}
-                                >
-                                  <span>{col}</span>
-                                  {selectedCol === col && (
-                                    <Icon
-                                      className='size-3.5 font-bold text-primary-9'
-                                      name='tabler:check'
-                                    />
-                                  )}
-                                </button>
-                              ))}
-                            </div>
-                            {selectedCol && (
-                              <button
-                                className='mt-1 w-full cursor-pointer rounded border-t border-border-default/45 py-1.5 text-center text-[11px] font-bold text-red-11 transition-colors duration-150 hover:bg-red-3/50'
-                                onClick={() => {
-                                  setMapping((prev) => {
-                                    const next = { ...prev }
-                                    delete next[fieldKey]
-                                    return next
-                                  })
-                                  setOpenFieldDropdown(null)
-                                }}
-                              >
-                                Clear mapping
-                              </button>
-                            )}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Score Indicator or Conflict Message */}
-                      {isMapped &&
-                        (fieldKey === 'PO Number' ||
-                          fieldKey === 'Vendor Name') && (
-                          <div className='mt-1 flex items-center justify-between pl-1 text-[11px]'>
-                            <div className='mr-3 h-1 max-w-[80px] flex-1 overflow-hidden rounded-full bg-gray-2'>
-                              <div
-                                className='h-full bg-green-11'
-                                style={{
-                                  width:
-                                    fieldKey === 'PO Number' ? '94%' : '87%',
-                                }}
-                              />
-                            </div>
-                            <span className='text-[11px] font-bold text-green-11'>
-                              {fieldKey === 'PO Number'
-                                ? '94% match'
-                                : '87% match'}
-                            </span>
-                          </div>
-                        )}
-
-                      {isConflict && (
-                        <div className='mt-1 flex animate-pulse items-center gap-1.5 pl-1 text-[11px] font-bold text-red-11'>
-                          <Icon
-                            className='size-3.5 shrink-0 text-red-11'
-                            name='tabler:alert-triangle'
-                          />
-                          <span>
-                            2 possible matches — select the correct one
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-
-              {/* OPTIONAL FIELDS SECTION */}
-              <div className='space-y-3.5 pt-2'>
-                <div className='pl-1 text-[11px] font-bold tracking-wider text-gray-8 uppercase'>
-                  Optional Fields
-                </div>
-
-                {optionalFields.map((fieldKey) => {
-                  const selectedCol = mapping[fieldKey]
-                  const isMapped = !!selectedCol
-                  const isOpen = openFieldDropdown === fieldKey
-
-                  return (
-                    <div
-                      key={fieldKey}
-                      className={cn(
-                        'flex flex-col gap-2.5 rounded-xl border bg-surface-primary p-4 transition-all duration-300',
-                        isMapped
-                          ? 'border-green-11/30'
-                          : 'border-border-default',
-                      )}
-                    >
-                      <div className='flex items-center justify-between'>
-                        <span className='text-[13px] font-semibold text-gray-12'>
-                          {fieldKey}
-                        </span>
-                        <span className='rounded bg-accent-soft px-1.5 py-0.5 text-[10px] font-bold text-primary-9 uppercase'>
-                          Optional
-                        </span>
-                      </div>
-
-                      {/* Dropdown Selector Button */}
-                      <div className='relative'>
-                        <button
-                          className={cn(
-                            'flex w-full cursor-pointer items-center justify-between rounded-lg border bg-surface-primary px-3 py-2 text-[12px] font-medium transition-all',
-                            isMapped
-                              ? 'border-green-11/30 text-green-11'
-                              : 'border-border-default text-gray-8',
-                          )}
-                          onClick={() =>
-                            setOpenFieldDropdown(isOpen ? null : fieldKey)
-                          }
-                        >
-                          <span>
-                            {selectedCol || 'Select matching column...'}
-                          </span>
-                          <Icon
-                            className='size-4 text-gray-9'
-                            name={
-                              isOpen
-                                ? 'tabler:chevron-up'
-                                : 'tabler:chevron-down'
-                            }
-                          />
-                        </button>
-
-                        {/* Inline Options (Reflowing) */}
-                        {isOpen && (
-                          <div className='animate-in slide-in-from-top-2 relative z-10 mt-1.5 space-y-1 rounded-lg border border-border-default bg-surface-primary p-2 shadow-sm duration-200'>
-                            <div className='border-b border-border-default/40 px-2 py-1 text-[10px] font-semibold text-gray-8'>
-                              Select File Column
-                            </div>
-                            <div className='custom-scrollbar max-h-36 overflow-y-auto'>
-                              {availableColumnsList.map((col) => (
-                                <button
-                                  key={col}
-                                  className={cn(
-                                    'flex w-full cursor-pointer items-center justify-between rounded px-2 py-1.5 text-left text-[12px] transition-colors duration-150 hover:bg-accent-soft hover:text-primary-9',
-                                    selectedCol === col
-                                      ? 'bg-accent-soft font-bold text-primary-9'
-                                      : 'text-gray-12',
-                                  )}
-                                  onClick={() => {
-                                    setMapping((prev) => ({
-                                      ...prev,
-                                      [fieldKey]: col,
-                                    }))
-                                    setOpenFieldDropdown(null)
-                                  }}
-                                >
-                                  <span>{col}</span>
-                                  {selectedCol === col && (
-                                    <Icon
-                                      className='size-3.5 font-bold text-primary-9'
-                                      name='tabler:check'
-                                    />
-                                  )}
-                                </button>
-                              ))}
-                            </div>
-                            {selectedCol && (
-                              <button
-                                className='mt-1 w-full cursor-pointer rounded border-t border-border-default/45 py-1.5 text-center text-[11px] font-bold text-red-11 transition-colors duration-150 hover:bg-red-3/50'
-                                onClick={() => {
-                                  setMapping((prev) => {
-                                    const next = { ...prev }
-                                    delete next[fieldKey]
-                                    return next
-                                  })
-                                  setOpenFieldDropdown(null)
-                                }}
-                              >
-                                Clear mapping
-                              </button>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-
-              {/* Confirm Ingestion Actions */}
-              <div className='mt-6 border-t border-border-default pt-4'>
-                <button
-                  disabled={mappedCount < 6 || isSubmitting}
-                  className={cn(
-                    'flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl py-3 text-[14px] font-bold shadow-2xs transition-all',
-                    mappedCount === 6 && !isSubmitting
-                      ? 'bg-primary-9 text-white hover:bg-primary-10 hover:shadow-xs active:scale-[0.99]'
-                      : 'cursor-not-allowed bg-gray-2 text-gray-8 opacity-40',
-                  )}
-                  onClick={handleManualConfirm}
-                >
-                  {isSubmitting ? (
-                    <span className='size-4 animate-spin rounded-full border-2 border-white border-t-transparent' />
-                  ) : (
-                    <Icon className='size-4' name='tabler:checks' />
-                  )}
-                  <span>
-                    {isSubmitting
-                      ? 'Ingesting records...'
-                      : 'Confirm mapping & ingest'}
-                  </span>
-                </button>
-              </div>
-            </AnimateSlideUp>
-          </main>
-        </AnimateFadeIn>
+        <EditFieldMappings
+          uploadedColumns={uploadedColumns}
+          previewRows={previewRows}
+          mapping={mapping}
+          onChangeMapping={setMapping}
+          fileName={uploadedFile?.name || ''}
+          fileSize={uploadedFile?.size || 0}
+          onSave={handleManualConfirm}
+          onCancel={() => {
+            setUploadState('idle')
+            setUploadedFile(null)
+            setMapping({})
+            setPreviewRows([])
+          }}
+        />
       )}
 
       {/* COMPLETED SUCCESS SCREEN */}
