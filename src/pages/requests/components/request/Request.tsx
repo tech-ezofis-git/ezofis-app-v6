@@ -14,6 +14,8 @@ import {
   isMatrixFieldType,
   isTableType,
 } from '../../utils/dynamicTable.utils'
+import ApiPlayground from '@/components/playground/ApiPlayground'
+import cn from '@/utils/cn'
 import Header from './components/Header'
 import Overview from './components/sections/overview/Overview'
 
@@ -812,6 +814,8 @@ const Request = ({
     'analysis' | 'comments' | 'attachments' | 'forms'
   >('analysis')
   const [isEditing, setIsEditing] = useState<boolean>(false)
+  const [isPlaygroundOpen, setIsPlaygroundOpen] = useState(false)
+  const [playgroundContext, setPlaygroundContext] = useState<any>(null)
 
   // Determine if it was known to be processing initially
   const initialProcessing =
@@ -1466,34 +1470,66 @@ const Request = ({
           onManualCorrection={() => setIsEditing(!isEditing)}
           onNext={onNext}
           onPrev={onPrev}
+          onOpenPlayground={(ctx) => {
+            const docInfo = {
+              amount: selectedItem?.amount || formModel?.['Invoice Amount'] || 0,
+              currency: currency || formModel?.['Currency'] || 'USD',
+              invoiceNumber: formModel?.['Invoice Number'] || formModel?.['Invoice No'] || selectedItem?.invoiceNumber || '',
+              poNumber: poVal || selectedItem?.purchaseOrderNumber || '',
+              requestNo: selectedItem?.requestNo || selectedItem?.reqNo || '',
+              vendor: formModel?.['Supplier Name'] || formModel?.['Vendor Name'] || selectedItem?.vendor || '',
+            }
+            setPlaygroundContext({
+              ...ctx,
+              document: docInfo,
+            })
+            setIsPlaygroundOpen(true)
+          }}
         />
       </div>
 
-      {/* Tab Content */}
+      {/* Tab Content + Playground Drawer */}
+      <div className='flex flex-1 min-h-0 w-full overflow-hidden'>
+        <div
+          className={cn(
+            'flex flex-1 min-h-0 flex-col overflow-hidden transition-all duration-300 ease-in-out',
+            isPlaygroundOpen ? 'w-full lg:w-[75%]' : 'w-full'
+          )}
+        >
+          <AnimateFadeIn
+            className='mt-0 flex min-h-0 flex-1 flex-col overflow-hidden px-0 pb-0'
+            delay={0.6}
+          >
+            <Overview
+              agentData={currentAgentData}
+              allowedLabels={allowedLabels}
+              formDefinition={request?._formDefinition}
+              formModel={formModel}
+              isFourthItem={isFourthItem}
+              isProcessing={isCurrentlyProcessing || isLoading}
+              isThirdItem={isThirdItem}
+              processId={Number(selectedItem?.processId)}
+              repositoryId={Number(rawWorkflowData?.repositoryId)}
+              rightView={rightView}
+              selectedItem={request || selectedItem}
+              selectedWorkflow={selectedWorkflow}
+              transactionId={selectedItem?.transactionId as any}
+              workflowId={resolvedWorkflowId}
+              setFormModel={setFormModel}
+              setRightView={setRightView}
+            />
+          </AnimateFadeIn>
+        </div>
 
-      <AnimateFadeIn
-        className='mt-0 flex min-h-0 flex-1 flex-col overflow-hidden px-0 pb-0'
-        delay={0.6}
-      >
-        <Overview
-          agentData={currentAgentData}
-          allowedLabels={allowedLabels}
-          formDefinition={request?._formDefinition}
-          formModel={formModel}
-          isFourthItem={isFourthItem}
-          isProcessing={isCurrentlyProcessing || isLoading}
-          isThirdItem={isThirdItem}
-          processId={Number(selectedItem?.processId)}
-          repositoryId={Number(rawWorkflowData?.repositoryId)}
-          rightView={rightView}
-          selectedItem={request || selectedItem}
-          selectedWorkflow={selectedWorkflow}
-          transactionId={selectedItem?.transactionId as any}
-          workflowId={resolvedWorkflowId}
-          setFormModel={setFormModel}
-          setRightView={setRightView}
-        />
-      </AnimateFadeIn>
+        {isPlaygroundOpen && (
+          <div className='w-full lg:w-[25%] min-w-[320px] h-full border-l border-[var(--gray-3)] bg-surface flex flex-col shrink-0 overflow-hidden animate-in slide-in-from-right duration-300 ease-in-out'>
+            <ApiPlayground
+              context={playgroundContext}
+              onClose={() => setIsPlaygroundOpen(false)}
+            />
+          </div>
+        )}
+      </div>
     </div>
   )
 }

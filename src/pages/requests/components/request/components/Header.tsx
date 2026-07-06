@@ -4,6 +4,7 @@ import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
 import OverlayHeaderWrapper from '@/components/base/overlay/OverlayHeaderWrapper'
+import PaidActionApiTrigger from '@/components/playground/PaidActionApiTrigger'
 import cn from '@/utils/cn'
 
 interface HeaderProps {
@@ -37,6 +38,7 @@ interface HeaderProps {
   onManualCorrection?: () => void
   onNext?: () => void
   onPrev?: () => void
+  onOpenPlayground?: (context: any) => void
 }
 
 const Header: React.FC<HeaderProps> = ({
@@ -68,6 +70,7 @@ const Header: React.FC<HeaderProps> = ({
   onManualCorrection: _onManualCorrection,
   onNext,
   onPrev,
+  onOpenPlayground,
 }) => {
   const [showAIInsights, setShowAIInsights] = React.useState(false)
   const containerRef = React.useRef<HTMLDivElement>(null)
@@ -511,18 +514,27 @@ const Header: React.FC<HeaderProps> = ({
                   'border-red-4 hover:border-red-6 shadow-sm hover:shadow-md transition-shadow'
               }
 
+              const isPaid = label === 'paid'
+
               return (
-                <Button
-                  className={borderClass}
-                  color={btnColor}
-                  icon={action?.icon}
-                  key={action?.value}
-                  label={action?.label}
-                  loading={approveLoading}
-                  size='lg'
-                  variant={btnVariant}
-                  onClick={() => onApprove?.(action?.value)}
-                />
+                <div key={action?.value} className='flex items-center gap-1.5'>
+                  <Button
+                    className={borderClass}
+                    color={btnColor}
+                    icon={action?.icon}
+                    label={action?.label}
+                    loading={approveLoading}
+                    size='lg'
+                    variant={btnVariant}
+                    onClick={() => onApprove?.(action?.value)}
+                  />
+                  {isPaid && onOpenPlayground && (
+                    <PaidActionApiTrigger
+                      action={action}
+                      onTrigger={onOpenPlayground}
+                    />
+                  )}
+                </div>
               )
             })}
           </div>
