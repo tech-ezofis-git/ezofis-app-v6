@@ -1,7 +1,10 @@
 import { useState } from 'react'
 import InputRadioCard from '@/components/base/inputs/InputRadioCard'
+import onBoardingStore from '../stores/onBoardingStore'
 import StepFooter from './StepFooter'
 import StepHeader from './StepHeader'
+
+const question = "What's Your Automation Experience?"
 
 const experienceOptions = [
   {
@@ -27,7 +30,24 @@ const experienceOptions = [
 ]
 
 const StepFive = () => {
-  const [experience, setExperience] = useState<number | null>(null)
+  const answers = onBoardingStore((state) => state.answers)
+  const setAnswer = onBoardingStore((state) => state.setAnswer)
+  const next = onBoardingStore((state) => state.next)
+
+  const savedValue = answers[question] || ''
+  const initialOption = savedValue
+    ? experienceOptions.find((o) => o.name === savedValue)?.id || null
+    : null
+
+  const [experience, setExperience] = useState<number | null>(initialOption)
+
+  const handleSelect = (option: (typeof experienceOptions)[number]) => {
+    setExperience(option.id)
+    setAnswer(question, option.name)
+    setTimeout(() => {
+      next()
+    }, 250)
+  }
 
   return (
     <>
@@ -44,12 +64,12 @@ const StepFive = () => {
             description={option.description}
             key={option.id}
             label={option.name}
-            onClick={() => setExperience(option.id)}
+            onClick={() => handleSelect(option)}
           />
         ))}
       </div>
 
-      <StepFooter />
+      <StepFooter disabled={experience === null} />
     </>
   )
 }

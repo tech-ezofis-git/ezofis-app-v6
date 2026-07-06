@@ -127,12 +127,18 @@ export const socialLogin = async (payload: any, tenantId?: string | number) => {
   })
 }
 
+export const userSession = async () => {
+  const { authApi } = await import('./auth')
+  return await authApi.getSession()
+}
+
 export const apiRouter = {
   login,
   sendMailOTP,
   signUp,
-  verifyMailOTP,
   socialLogin,
+  userSession,
+  verifyMailOTP,
   getApiVersion,
 }
 

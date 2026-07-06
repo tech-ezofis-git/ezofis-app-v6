@@ -1,40 +1,100 @@
 import { useState } from 'react'
-import InputPassword from '@/components/base/inputs/password/InputPassword'
-import PasswordRequirements from '@/layouts/auth/components/PasswordRequirements'
+import InputRadioCard from '@/components/base/inputs/InputRadioCard'
+import InputText from '@/components/base/inputs/InputText'
 import onBoardingStore from '../stores/onBoardingStore'
 import StepFooter from './StepFooter'
 import StepHeader from './StepHeader'
 
+const question = "What's Your Role?"
+
+const roles = [
+  { id: 1, name: 'Manager' },
+  { id: 2, name: 'Supervisor' },
+  { id: 3, name: 'Team Lead' },
+  { id: 4, name: 'Executive' },
+  { id: 5, name: 'Coordinator' },
+  { id: 7, name: 'Specialist' },
+  { id: 8, name: 'Consultant' },
+  { id: 9, name: 'Director' },
+  { id: 10, name: 'Administrator' },
+  { id: 6, name: 'Other' },
+]
+
 const StepOne = () => {
-  const password = onBoardingStore((state) => state.password)
-  const setPassword = onBoardingStore((state) => state.setPassword)
-  const [confirmPassword, setConfirmPassword] = useState('')
+  const answers = onBoardingStore((state) => state.answers)
+  const setAnswer = onBoardingStore((state) => state.setAnswer)
+  const next = onBoardingStore((state) => state.next)
+
+  const savedValue = answers[question] || ''
+  const isPredefined = roles.some(
+    (r) => r.name === savedValue && r.name !== 'Other',
+  )
+
+  const initialOption = savedValue
+    ? isPredefined
+      ? roles.find((r) => r.name === savedValue)?.id || null
+      : 6
+    : null
+
+  const initialOtherText = savedValue && !isPredefined ? savedValue : ''
+
+  const [roleOption, setRoleOption] = useState<number | null>(initialOption)
+  const [otherText, setOtherText] = useState(initialOtherText)
+
+  const handleSelect = (option: (typeof roles)[number]) => {
+    setRoleOption(option.id)
+    if (option.name === 'Other') {
+      setAnswer(question, otherText)
+    } else {
+      setAnswer(question, option.name)
+      setTimeout(() => {
+        next()
+      }, 250)
+    }
+  }
+
+  const handleOtherChange = (val: string) => {
+    setOtherText(val)
+    setAnswer(question, val)
+  }
 
   return (
     <>
       <StepHeader
-        description="Let's create a strong password to keep your account safe."
-        icon='lucide:lock'
-        title='Secure Your Account'
+        description='Different roles have different needs. Knowing your position helps us show you the most relevant tools and insights first.'
+        icon='lucide:user-star'
+        title="What's Your Role?"
       />
 
-      <div className='space-y-4'>
-        <InputPassword
-          label='Password'
-          value={password}
-          onChange={setPassword}
-        />
+      <div className='flex flex-col gap-4'>
+        <div className='grid grid-cols-2 gap-3'>
+          {roles.map((option) => (
+            <InputRadioCard
+              checked={roleOption === option.id}
+              key={option.id}
+              label={option.name}
+              onClick={() => handleSelect(option)}
+            />
+          ))}
+        </div>
 
-        <PasswordRequirements password={password} />
-
-        <InputPassword
-          label='Confirm password'
-          value={confirmPassword}
-          onChange={setConfirmPassword}
-        />
+        {roleOption === 6 && (
+          <InputText
+            className='animate-in fade-in slide-in-from-top-2 duration-300'
+            label='Please specify your role'
+            placeholder='e.g. Principal Engineer'
+            value={otherText}
+            required
+            onChange={handleOtherChange}
+          />
+        )}
       </div>
 
-      <StepFooter />
+      <StepFooter
+        disabled={
+          roleOption === null || (roleOption === 6 && !otherText.trim())
+        }
+      />
     </>
   )
 }

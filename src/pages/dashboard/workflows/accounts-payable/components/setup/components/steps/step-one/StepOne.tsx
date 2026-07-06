@@ -60,8 +60,8 @@ const StepOne = () => {
 
   return (
     <StepLayout
-      description='Choose how you want to capture invoices. Upload files manually or connect an email account for automatic processing.'
-      title='Select the primary source for invoice processing'
+      description="Pick how you'll import invoices to get started. You can change this later in settings."
+      title="Let's set up your AP workflow"
       footer={
         <StepFooter align='end'>
           {emailSettings.isConnected ? (
@@ -104,8 +104,8 @@ const StepOne = () => {
       {emailSettings.provider === 'DIRECT_UPLOAD' && (
         <AnimateSlideUp delay={0.4}>
           <Alert
-            text='Quick Drop selected. You can upload files directly in the next step.'
-            variant='green'
+            text="Quick Drop selected. You'll be able to upload your first invoices once your setup is complete."
+            variant='primary'
           />
         </AnimateSlideUp>
       )}

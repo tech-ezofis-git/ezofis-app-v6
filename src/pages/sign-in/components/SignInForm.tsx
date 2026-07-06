@@ -109,7 +109,7 @@ const SignInForm = ({ onChangeView }: Props) => {
     setisApSetUpCompleted(true)
 
     try {
-      await authApi.getSession()
+      await apiRouter.userSession()
     } catch (err) {
       console.error('Failed to load session details:', err)
     }
@@ -349,7 +349,10 @@ const SignInForm = ({ onChangeView }: Props) => {
     } catch (e: any) {
       console.error(e)
       const errorMsg = e?.message || ''
-      if (errorMsg.includes('user_cancelled') || errorMsg.includes('User cancelled the flow')) {
+      if (
+        errorMsg.includes('user_cancelled') ||
+        errorMsg.includes('User cancelled the flow')
+      ) {
         setError('Microsoft sign-in was cancelled.')
       } else {
         setError(errorMsg || 'Microsoft sign-in failed')

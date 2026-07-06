@@ -18,8 +18,9 @@ import SectionHeader from '../../components/SectionHeader'
 import { OrDivider } from '../../components/StepLayout'
 
 const includedStorageItem = {
+  description: 'Default storage option provided with your account for immediate access.',
   logo: StorageLogo,
-  name: 'Default Storage',
+  name: 'Use secure cloud storage',
   value: 'Included storage',
 }
 
@@ -75,6 +76,7 @@ const StorageSystem = () => {
         <AnimateSlideUp delay={0.15}>
           <BrandCard
             checked={storageSettings.system === includedStorageItem.value}
+            description={includedStorageItem.description}
             logo={includedStorageItem.logo}
             name={includedStorageItem.name}
             value={includedStorageItem.value}
@@ -95,8 +97,8 @@ const StorageSystem = () => {
       <div>
         <AnimateSlideUp delay={0.2}>
           <SectionHeader
-            description='Connect your preferred cloud storage provider to securely store and manage invoice documents.'
-            title='Cloud Storage'
+            description='Connect your provider to securely store and manage invoice documents.'
+            title='Cloud Integrations'
           />
         </AnimateSlideUp>
         <div className='grid grid-cols-1 gap-3'>

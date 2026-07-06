@@ -80,8 +80,8 @@ const StepTwo = () => {
   const selectionAlert = (() => {
     if (erpSettings.system === 'PREDEFINED') {
       return {
-        text: 'Predefined Master Data selected. You can proceed to the next step.',
-        variant: 'green' as const,
+        text: 'ERP selected. Data will sync once setup is complete.',
+        variant: 'primary' as const,
       }
     }
     if (
@@ -104,8 +104,8 @@ const StepTwo = () => {
 
   return (
     <StepLayout
-      description='Import your PO Master Data to ensure accurate matching. Upload a spreadsheet or connect your ERP system to synchronize records automatically.'
-      title='Configure PO Master Data'
+      description='ERP data will be used to validate incoming invoices to match with PO information and supplier data.'
+      title='Connect your accounting software'
       footer={
         <StepFooter>
           <Button

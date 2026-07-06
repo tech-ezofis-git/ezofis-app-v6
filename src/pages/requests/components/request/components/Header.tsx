@@ -259,7 +259,7 @@ const Header: React.FC<HeaderProps> = ({
                       ) {
                         iconName = 'tabler:circle-check'
                         badgeColorClass =
-                          'border-[var(--green-4)] bg-[var(--green-2)] text-[var(--green-11)]'
+                          'border-transparent bg-[var(--green-9)] text-white'
                       } else if (
                         dec === 'REJECTED' ||
                         dec === 'NO MATCH' ||
@@ -267,7 +267,7 @@ const Header: React.FC<HeaderProps> = ({
                       ) {
                         iconName = 'tabler:alert-circle'
                         badgeColorClass =
-                          'border-[var(--red-4)] bg-[var(--red-2)] text-[var(--red-11)]'
+                          'border-transparent bg-[var(--red-9)] text-white'
                       } else if (
                         dec === 'PARTIALLY APPROVED' ||
                         dec === 'PARTIALLY_APPROVED' ||
@@ -276,14 +276,14 @@ const Header: React.FC<HeaderProps> = ({
                       ) {
                         iconName = 'tabler:alert-triangle'
                         badgeColorClass =
-                          'border-[var(--orange-4)] bg-[var(--orange-2)] text-[var(--orange-11)]'
+                          'border-transparent bg-[var(--orange-9)] text-white'
                       } else {
                         if (_showApprove) {
                           return null
                         }
                         iconName = 'tabler:clock'
                         badgeColorClass =
-                          'border-[var(--orange-4)] bg-[var(--orange-2)] text-[var(--orange-11)]'
+                          'border-transparent bg-[var(--orange-9)] text-white'
                       }
 
                       return (
@@ -342,13 +342,31 @@ const Header: React.FC<HeaderProps> = ({
 
             const currDisplay = getCurrencyDisplay(currency || '')
 
+            const parseToNumber = (val: any) => {
+              if (!val) return 0
+              const num =
+                typeof val === 'number'
+                  ? val
+                  : Number.parseFloat(String(val).replace(/[^0-9.-]+/g, ''))
+              return Number.isNaN(num) ? 0 : num
+            }
+
+            const invoiceNum = parseToNumber(totalAmount)
+            const poNum = parseToNumber(poValue)
+            const isMatched = invoiceNum !== 0 && poNum !== 0 && Math.abs(invoiceNum - poNum) < 0.01
+
             return (
               <div className='flex items-center gap-3 pr-3'>
                 <div className='flex flex-col border-[var(--gray-3)] pl-3 text-right'>
                   <span className='mb-1 text-[10px] leading-none font-semibold text-[var(--gray-11)]'>
                     Invoice Value
                   </span>
-                  <span className='text-[13px] leading-none font-semibold text-[var(--gray-13)]'>
+                  <span
+                    className={cn(
+                      'text-[13px] leading-none font-semibold transition-colors duration-300',
+                      isMatched ? 'text-[var(--green-9)]' : 'text-[var(--gray-13)]',
+                    )}
+                  >
                     {currDisplay} {formatAmount(totalAmount)}
                   </span>
                 </div>

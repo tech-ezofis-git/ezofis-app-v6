@@ -6,15 +6,13 @@ import AnimateEntrancePop from '@/components/common/animations/AnimateEntrancePo
 import PageEmptyState from '@/components/common/PageEmptyState'
 import AuthFooter from '@/layouts/auth/components/AuthFooter'
 import PageHeader from './components/PageHeader'
-import StepFive from './components/StepFive'
-import StepFour from './components/StepFour'
 import StepIndicator from './components/StepIndicator'
 import StepOne from './components/StepOne'
-import StepSeven from './components/StepSeven'
-import StepSix from './components/StepSix'
-import StepThree from './components/StepThree'
 import StepTwo from './components/StepTwo'
-import StepZero from './components/StepZero'
+import StepThree from './components/StepThree'
+import StepFour from './components/StepFour'
+import StepFive from './components/StepFive'
+import StepSix from './components/StepSix'
 import onBoardingStore from './stores/onBoardingStore'
 
 const OnBoardingPage = () => {
@@ -26,15 +24,17 @@ const OnBoardingPage = () => {
   const [isTokenValid, setIsTokenValid] = useState(false)
 
   const step = onBoardingStore((state) => state.step)
+  const reset = onBoardingStore((state) => state.reset)
 
   useEffect(() => {
+    reset()
     const timerId = setTimeout(() => {
       setIsLoading(false)
       setIsTokenValid(true)
     }, 1500)
 
     return () => clearTimeout(timerId)
-  }, [])
+  }, [reset])
 
   return (
     <div className='relative bg-surface p-6'>
@@ -67,14 +67,12 @@ const OnBoardingPage = () => {
                     className='flex flex-col gap-6'
                     key={step}
                   >
-                    {step === 0 && <StepZero />}
                     {step === 1 && <StepOne />}
                     {step === 2 && <StepTwo />}
                     {step === 3 && <StepThree />}
                     {step === 4 && <StepFour />}
                     {step === 5 && <StepFive />}
                     {step === 6 && <StepSix />}
-                    {step === 7 && <StepSeven />}
                   </AnimateEntrancePop>
                 </AnimatePresence>
               </div>

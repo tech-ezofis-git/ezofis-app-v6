@@ -28,7 +28,7 @@ const StepThree = () => {
 
   return (
     <StepLayout
-      description='Select where to store your invoice documents. Use included storage or connect a cloud provider.'
+      description='Choose where to store your invoice documents. Data is securely encrypted and accessible 24/7.'
       title='Select Storage'
       footer={
         <StepFooter>
@@ -74,8 +74,8 @@ const StepThree = () => {
       {storageSettings.system === 'Included storage' && (
         <AnimateSlideUp delay={0.4}>
           <Alert
-            text='Your default storage is connected successfully.'
-            variant='green'
+            text='Storage selected. Documents will be saved here once you begin processing.'
+            variant='primary'
           />
         </AnimateSlideUp>
       )}

@@ -6,7 +6,11 @@ const User = () => {
   const API_URI = import.meta.env?.VITE_BASE_URL
   const session = authUserStore((state) => state.session)
 
-  const name = session?.firstName
+  const name =
+    session?.firstName ||
+    session?.name ||
+    session?.email?.split('@')[0] ||
+    'User'
   const imageUrl = session
     ? `${API_URI}/user/avatar/${session.tenantId}/${session.id}`
     : ''
