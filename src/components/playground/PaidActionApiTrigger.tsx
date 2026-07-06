@@ -14,16 +14,16 @@ export const PaidActionApiTrigger = ({
     e.stopPropagation()
     onTrigger({
       actionName: action?.label || 'Paid',
-      endpoint: action?.endpoint || 'https://api.google.com/gemini',
+      endpoint: action?.endpoint || 'https://ezagentplayground.onrender.com/apikey.html?id=2',
       model: action?.model || 'gemini-2.0-flash-exp',
       provider: action?.provider || 'gemini',
     })
   }
 
   return (
-    <Tooltip content='External API' position='top'>
+    <Tooltip content='Playground API' position='top'>
       <button
-        aria-label='External API'
+        aria-label='Playground Api'
         className='flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-[var(--gray-3)] bg-surface text-[var(--gray-11)] transition-all hover:bg-[var(--gray-2)] hover:text-[var(--primary-9)] active:scale-95 focus:outline-none focus:ring-2 focus:ring-[var(--primary-9)]'
         type='button'
         onClick={handleClick}

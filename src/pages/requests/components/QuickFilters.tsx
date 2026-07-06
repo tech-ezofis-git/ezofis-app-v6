@@ -1,7 +1,10 @@
-import React, { useState } from 'react'
+import React from 'react'
 import Icon from '@/components/base/icon/Icon'
 import cn from '@/utils/cn'
 import requestStore from '../stores/useRequestStore'
+import Menu from '@/components/base/menu/Menu'
+import MenuItem from '@/components/base/menu/MenuItem'
+import MenuSub from '@/components/base/menu/MenuSub'
 
 interface QuickFiltersProps {
   counts: {
@@ -14,9 +17,6 @@ interface QuickFiltersProps {
 
 const QuickFilters: React.FC<QuickFiltersProps> = ({ counts }) => {
   const { activeQuickFilters, toggleQuickFilter } = requestStore()
-
-  const [isAddingFilter, setIsAddingFilter] = useState(false)
-  const [selectedFilterField, setSelectedFilterField] = useState<string | null>(null)
 
   const filters = [
     {
@@ -74,8 +74,6 @@ const QuickFilters: React.FC<QuickFiltersProps> = ({ counts }) => {
     if (!activeQuickFilters.includes(filterId)) {
       toggleQuickFilter(filterId)
     }
-    setIsAddingFilter(false)
-    setSelectedFilterField(null)
   }
 
   return (
@@ -137,22 +135,45 @@ const QuickFilters: React.FC<QuickFiltersProps> = ({ counts }) => {
           )
         })}
 
-        {/* Add Filter Button */}
-        <button
-          onClick={() => {
-            setIsAddingFilter(!isAddingFilter)
-            setSelectedFilterField(null)
-          }}
-          className={cn(
-            'flex cursor-pointer items-center gap-1 rounded-full border border-dashed px-3 py-1 text-[11px] font-semibold transition-all duration-200 active:scale-95',
-            isAddingFilter
-              ? 'border-[var(--primary-6)] bg-[var(--primary-2)] text-[var(--primary-11)]'
-              : 'border-[var(--gray-4)] text-[var(--gray-10)] hover:border-[var(--gray-6)] hover:bg-[var(--gray-2)]',
-          )}
+        {/* Add Filter Menu */}
+        <Menu
+          target={
+            <button
+              className={cn(
+                'flex cursor-pointer items-center gap-1 rounded-full border border-dashed px-3 py-1 text-[11px] font-semibold transition-all duration-200 active:scale-95',
+                'border-[var(--gray-4)] text-[var(--gray-10)] hover:border-[var(--gray-6)] hover:bg-[var(--gray-2)]',
+              )}
+            >
+              <Icon className='size-3.5' name='tabler:plus' />
+              <span>Add Filter</span>
+            </button>
+          }
+          width={180}
         >
-          <Icon className='size-3.5' name='tabler:plus' />
-          <span>Add Filter</span>
-        </button>
+          <MenuSub label="Request Status" icon="tabler:circle-dot">
+            {['Approved', 'Partially Approved', 'Rejected'].map((statusVal) => (
+              <MenuItem
+                key={statusVal}
+                label={statusVal}
+                onClick={() => handleAddCustomFilter('status', statusVal)}
+              />
+            ))}
+          </MenuSub>
+          <MenuSub label="PO Amount" icon="tabler:currency-dollar">
+            {[
+              { label: '< $1k', val: 'lt1k' },
+              { label: '$1k - $5k', val: '1k_5k' },
+              { label: '$5k - $10k', val: '5k_10k' },
+              { label: '≥ $10k', val: 'ge10k' },
+            ].map((amountOpt) => (
+              <MenuItem
+                key={amountOpt.val}
+                label={amountOpt.label}
+                onClick={() => handleAddCustomFilter('amount', amountOpt.val)}
+              />
+            ))}
+          </MenuSub>
+        </Menu>
 
         {activeQuickFilters.length > 0 && (
           <button
@@ -164,88 +185,6 @@ const QuickFilters: React.FC<QuickFiltersProps> = ({ counts }) => {
           </button>
         )}
       </div>
-
-      {/* Inline Filter Selection Panel */}
-      {isAddingFilter && (
-        <div className='flex flex-wrap items-center gap-3 bg-[var(--gray-1)] border border-[var(--gray-3)] rounded-lg p-2.5 mt-1 w-full animate-in fade-in duration-200'>
-          <div className='text-[10px] font-bold text-[var(--gray-10)] uppercase tracking-wider'>
-            Select Filter:
-          </div>
-
-          {!selectedFilterField ? (
-            <div className='flex gap-2'>
-              <button
-                onClick={() => setSelectedFilterField('status')}
-                className='flex items-center gap-1 rounded border border-[var(--gray-4)] bg-surface px-2.5 py-1 text-[11px] font-semibold text-[var(--gray-12)] hover:bg-[var(--gray-2)] cursor-pointer'
-              >
-                <Icon className='size-3.5 text-[var(--gray-9)]' name='tabler:circle-dot' />
-                <span>Request Status</span>
-              </button>
-              <button
-                onClick={() => setSelectedFilterField('amount')}
-                className='flex items-center gap-1 rounded border border-[var(--gray-4)] bg-surface px-2.5 py-1 text-[11px] font-semibold text-[var(--gray-12)] hover:bg-[var(--gray-2)] cursor-pointer'
-              >
-                <Icon className='size-3.5 text-[var(--gray-9)]' name='tabler:currency-dollar' />
-                <span>PO Amount</span>
-              </button>
-            </div>
-          ) : (
-            <div className='flex items-center gap-2'>
-              <span className='text-[11px] text-[var(--gray-11)] font-bold'>
-                {selectedFilterField === 'status' ? 'Status matches:' : 'Amount range:'}
-              </span>
-              <div className='flex flex-wrap gap-1.5'>
-                {selectedFilterField === 'status' && [
-                  'Approved',
-                  // 'Matched',
-                  'Partially Approved',
-                  // 'Partially Matched',
-                  'Rejected',
-                  // 'Not Matched',
-                ].map((statusVal) => (
-                  <button
-                    key={statusVal}
-                    onClick={() => handleAddCustomFilter('status', statusVal)}
-                    className='rounded-full bg-surface border border-[var(--gray-3)] hover:bg-[var(--gray-2)] px-2.5 py-0.5 text-[11px] font-medium text-[var(--gray-12)] cursor-pointer'
-                  >
-                    {statusVal}
-                  </button>
-                ))}
-                {selectedFilterField === 'amount' && [
-                  { label: '< $1k', val: 'lt1k' },
-                  { label: '$1k - $5k', val: '1k_5k' },
-                  { label: '$5k - $10k', val: '5k_10k' },
-                  { label: '≥ $10k', val: 'ge10k' },
-                ].map((amountOpt) => (
-                  <button
-                    key={amountOpt.val}
-                    onClick={() => handleAddCustomFilter('amount', amountOpt.val)}
-                    className='rounded-full bg-surface border border-[var(--gray-3)] hover:bg-[var(--gray-2)] px-2.5 py-0.5 text-[11px] font-medium text-[var(--gray-12)] cursor-pointer'
-                  >
-                    {amountOpt.label}
-                  </button>
-                ))}
-              </div>
-              <button
-                onClick={() => setSelectedFilterField(null)}
-                className='text-[11px] font-semibold text-[var(--gray-9)] hover:text-[var(--gray-12)] ml-2 cursor-pointer'
-              >
-                Back
-              </button>
-            </div>
-          )}
-
-          <button
-            onClick={() => {
-              setIsAddingFilter(false)
-              setSelectedFilterField(null)
-            }}
-            className='ml-auto text-[11px] font-bold text-red-11 hover:underline cursor-pointer'
-          >
-            Cancel
-          </button>
-        </div>
-      )}
     </div>
   )
 }

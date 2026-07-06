@@ -228,6 +228,114 @@ const findInvoiceAmount = (row: any): string | null => {
   return null
 }
 
+const filterRowsByQuickFilters = (
+  rows: any[],
+  activeQuickFilters: string[],
+  excludeCategory?: 'status' | 'amount' | 'overdue',
+) => {
+  const activeStatus = activeQuickFilters.filter(
+    (f) => f === 'matched' || f === 'discrepancies' || f.startsWith('status:'),
+  )
+  const activeAmount = activeQuickFilters.filter(
+    (f) => f === 'highValue' || f.startsWith('amount:'),
+  )
+  const activeOverdue = activeQuickFilters.filter((f) => f === 'overdue')
+
+  if (
+    (excludeCategory === 'status' || activeStatus.length === 0) &&
+    (excludeCategory === 'amount' || activeAmount.length === 0) &&
+    (excludeCategory === 'overdue' || activeOverdue.length === 0)
+  ) {
+    return rows
+  }
+
+  return rows.filter((row: any) => {
+    const isOvr = isOverdue(row)
+
+    const parsedForm = getParsedFormData(row)
+    const agentData =
+      row._agentResponse || row._agentData?.[0] || row._agentData || {}
+    const rawDecision = String(
+      parsedForm['2MH_BMDFEVKsU0uAQjoI1'] ||
+        agentData?.decision ||
+        row.decision ||
+        row.status ||
+        '',
+    ).toUpperCase()
+
+    const isMtc = rawDecision === 'APPROVED' || rawDecision === 'MATCHED'
+    const isDisc =
+      rawDecision === 'PARTIALLY APPROVED' ||
+      rawDecision === 'PARTIALLY MATCHED' ||
+      rawDecision === 'REJECTED' ||
+      rawDecision === 'NOT MATCHED' ||
+      rawDecision === 'NO MATCH' ||
+      row.isDuplicateInvoice === true
+
+    const amtStr = findInvoiceAmount(row)
+    const amount = amtStr ? Number(amtStr.replace(/[^0-9.-]/g, '')) : 0
+    const isHigh = amount >= 10000
+
+    // 1. Check Status filters (OR within category)
+    let matchesStatus = true
+    if (excludeCategory !== 'status' && activeStatus.length > 0) {
+      matchesStatus = activeStatus.some((filter) => {
+        if (filter === 'matched') return isMtc
+        if (filter === 'discrepancies') return isDisc
+        if (filter.startsWith('status:')) {
+          const val = filter.split(':')[1].toUpperCase()
+          if (val === 'APPROVED' || val === 'MATCHED') {
+            return rawDecision === 'APPROVED' || rawDecision === 'MATCHED'
+          }
+          if (val === 'PARTIALLY APPROVED' || val === 'PARTIALLY MATCHED') {
+            return (
+              rawDecision === 'PARTIALLY APPROVED' ||
+              rawDecision === 'PARTIALLY MATCHED' ||
+              rawDecision === 'PARTIALLY_APPROVED'
+            )
+          }
+          if (val === 'NOT MATCHED') {
+            return (
+              rawDecision === 'NOT MATCHED' ||
+              rawDecision === 'NO MATCH' ||
+              rawDecision === 'NO_MATCH'
+            )
+          }
+          return rawDecision === val
+        }
+        return false
+      })
+    }
+
+    // 2. Check Amount filters (OR within category)
+    let matchesAmount = true
+    if (excludeCategory !== 'amount' && activeAmount.length > 0) {
+      matchesAmount = activeAmount.some((filter) => {
+        if (filter === 'highValue') return isHigh
+        if (filter.startsWith('amount:')) {
+          const val = filter.split(':')[1]
+          if (val === 'lt1k') return amount > 0 && amount < 1000
+          if (val === '1k_5k') return amount >= 1000 && amount < 5000
+          if (val === '5k_10k') return amount >= 5000 && amount < 10000
+          if (val === 'ge10k') return amount >= 10000
+        }
+        return false
+      })
+    }
+
+    // 3. Check Overdue filters (OR within category)
+    let matchesOverdue = true
+    if (excludeCategory !== 'overdue' && activeOverdue.length > 0) {
+      matchesOverdue = activeOverdue.some((filter) => {
+        if (filter === 'overdue') return isOvr
+        return false
+      })
+    }
+
+    return matchesStatus && matchesAmount && matchesOverdue
+  })
+}
+
 const findPONumberInObject = (obj: any): string | null => {
   if (!obj || typeof obj !== 'object') return null
 
@@ -572,14 +680,18 @@ const InboxList: React.FC<InboxListProps> = ({
   const activeQuickFilters = requestStore((state) => state.activeQuickFilters)
 
   const counts = useMemo(() => {
+    // For overdue count, filter by Status and Amount (ignore Overdue)
+    const overdueRows = filterRowsByQuickFilters(flatRows, activeQuickFilters, 'overdue')
     let overdue = 0
+    overdueRows.forEach((row) => {
+      if (isOverdue(row)) overdue++
+    })
+
+    // For status counts, filter by Amount and Overdue (ignore Status)
+    const statusRows = filterRowsByQuickFilters(flatRows, activeQuickFilters, 'status')
     let matched = 0
     let discrepancies = 0
-    let highValue = 0
-
-    flatRows.forEach((row) => {
-      if (isOverdue(row)) overdue++
-
+    statusRows.forEach((row) => {
       const parsedForm = getParsedFormData(row)
       const agentData =
         row._agentResponse || row._agentData?.[0] || row._agentData || {}
@@ -605,7 +717,12 @@ const InboxList: React.FC<InboxListProps> = ({
       ) {
         discrepancies++
       }
+    })
 
+    // For amount counts, filter by Status and Overdue (ignore Amount)
+    const amountRows = filterRowsByQuickFilters(flatRows, activeQuickFilters, 'amount')
+    let highValue = 0
+    amountRows.forEach((row) => {
       const amtStr = findInvoiceAmount(row)
       const amount = amtStr ? Number(amtStr.replace(/[^0-9.-]/g, '')) : 0
       if (amount >= 10000) {
@@ -614,79 +731,14 @@ const InboxList: React.FC<InboxListProps> = ({
     })
 
     return { discrepancies, highValue, matched, overdue }
-  }, [flatRows])
+  }, [flatRows, activeQuickFilters])
 
   const quickFilteredRows = useMemo(() => {
     if (activeTab !== 'Inbox' || activeQuickFilters.length === 0) {
       return flatRows
     }
 
-    return flatRows.filter((row: any) => {
-      const isOvr = isOverdue(row)
-
-      const parsedForm = getParsedFormData(row)
-      const agentData =
-        row._agentResponse || row._agentData?.[0] || row._agentData || {}
-      const rawDecision = String(
-        parsedForm['2MH_BMDFEVKsU0uAQjoI1'] ||
-          agentData?.decision ||
-          row.decision ||
-          row.status ||
-          '',
-      ).toUpperCase()
-
-      const isMtc = rawDecision === 'APPROVED' || rawDecision === 'MATCHED'
-      const isDisc =
-        rawDecision === 'PARTIALLY APPROVED' ||
-        rawDecision === 'PARTIALLY MATCHED' ||
-        rawDecision === 'REJECTED' ||
-        rawDecision === 'NOT MATCHED' ||
-        rawDecision === 'NO MATCH' ||
-        row.isDuplicateInvoice === true
-
-      const amtStr = findInvoiceAmount(row)
-      const amount = amtStr ? Number(amtStr.replace(/[^0-9.-]/g, '')) : 0
-      const isHigh = amount >= 10000
-
-      return activeQuickFilters.some((filter) => {
-        if (filter === 'overdue') return isOvr
-        if (filter === 'matched') return isMtc
-        if (filter === 'discrepancies') return isDisc
-        if (filter === 'highValue') return isHigh
-
-        if (filter.startsWith('status:')) {
-          const val = filter.split(':')[1].toUpperCase()
-          if (val === 'APPROVED' || val === 'MATCHED') {
-            return rawDecision === 'APPROVED' || rawDecision === 'MATCHED'
-          }
-          if (val === 'PARTIALLY APPROVED' || val === 'PARTIALLY MATCHED') {
-            return (
-              rawDecision === 'PARTIALLY APPROVED' ||
-              rawDecision === 'PARTIALLY MATCHED' ||
-              rawDecision === 'PARTIALLY_APPROVED'
-            )
-          }
-          if (val === 'NOT MATCHED') {
-            return (
-              rawDecision === 'NOT MATCHED' ||
-              rawDecision === 'NO MATCH' ||
-              rawDecision === 'NO_MATCH'
-            )
-          }
-          return rawDecision === val
-        }
-
-        if (filter.startsWith('amount:')) {
-          const val = filter.split(':')[1]
-          if (val === 'lt1k') return amount > 0 && amount < 1000
-          if (val === '1k_5k') return amount >= 1000 && amount < 5000
-          if (val === '5k_10k') return amount >= 5000 && amount < 10000
-          if (val === 'ge10k') return amount >= 10000
-        }
-
-        return false
-      })
-    })
+    return filterRowsByQuickFilters(flatRows, activeQuickFilters)
   }, [flatRows, activeQuickFilters, activeTab])
 
   // ✅ Filter rows based on search state
