@@ -527,7 +527,7 @@ const extractDueDate = (row: any, agentData: any, formModel?: any): string => {
           d.setDate(d.getDate() + days)
           val = d.toISOString().split('T')[0]
         }
-      } catch (e) {}
+      } catch (e) { }
     }
   }
 
@@ -699,12 +699,8 @@ const AnalysisCard = ({
   title,
   value,
   onClick,
-  hoverContent,
-  align = 'left',
   isPulsing = false,
 }: any) => {
-  const [isHovered, setIsHovered] = useState(false)
-
   return (
     <div
       className={cn(
@@ -712,8 +708,6 @@ const AnalysisCard = ({
         onClick && 'cursor-pointer',
       )}
       onClick={onClick}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
     >
       {isPulsing && (
         <div className='absolute inset-0 rounded-xl ring-2 ring-[var(--orange-6)]/50 animate-pulse pointer-events-none' />
@@ -755,18 +749,6 @@ const AnalysisCard = ({
           </div>
         )}
       </div>
-
-      {/* Hover details popover */}
-      {isHovered && hoverContent && (
-        <div
-          className={cn(
-            'absolute top-full z-[100] mt-2 w-72 rounded-xl border border-[var(--gray-3)] bg-surface/98 p-4 shadow-2xl backdrop-blur-md animate-in fade-in zoom-in-95 duration-200 pointer-events-none text-left',
-            align === 'right' ? 'right-0 origin-top-right' : 'left-0 origin-top-left',
-          )}
-        >
-          {hoverContent}
-        </div>
-      )}
     </div>
   )
 }
@@ -869,9 +851,9 @@ const FormCard = ({
     const selectedOption =
       typeof localValue === 'string' && localValue !== '-'
         ? options.find(
-            (opt: any) =>
-              String(opt.id).toLowerCase() === localValue.toLowerCase(),
-          ) || (localValue ? { id: localValue, name: localValue } : null)
+          (opt: any) =>
+            String(opt.id).toLowerCase() === localValue.toLowerCase(),
+        ) || (localValue ? { id: localValue, name: localValue } : null)
         : null
 
     inputElement = (
@@ -1003,7 +985,7 @@ const FormCard = ({
               value === null ||
               value === undefined ||
               value === '') &&
-              'font-medium text-[var(--gray-9)]',
+            'font-medium text-[var(--gray-9)]',
           )}
         >
           {value === null || value === undefined || value === '' ? '-' : value}
@@ -1214,9 +1196,9 @@ const Overview = (props: any) => {
   const resolvedInstanceId = useMemo(() => {
     return String(
       selectedItem?.workflowInstanceId ||
-        selectedItem?.instanceId ||
-        processId ||
-        '',
+      selectedItem?.instanceId ||
+      processId ||
+      '',
     )
   }, [selectedItem, processId])
 
@@ -1483,240 +1465,6 @@ const Overview = (props: any) => {
     )
   }, [formModel])
 
-  const poMatchingHover = useMemo(() => (
-    <div className='flex flex-col gap-3'>
-      <div className='flex items-center gap-2 border-b border-[var(--gray-3)] pb-2.5'>
-        <Icon className='h-5 w-5 text-[var(--primary-9)]' name='tabler:clipboard-check' />
-        <span className='text-sm font-bold text-[var(--gray-13)]'>PO Matching Insights</span>
-      </div>
-      <div className='space-y-2 text-xs'>
-        <div className='flex justify-between gap-2'>
-          <span className='font-medium text-[var(--gray-10)]'>PO Number:</span>
-          <span className='font-bold text-[var(--gray-13)]'>{poVal || 'No PO matched'}</span>
-        </div>
-        <div className='flex justify-between gap-2'>
-          <span className='font-medium text-[var(--gray-10)]'>Matching Status:</span>
-          <span className={cn('font-bold', poVal && poVal !== '-' && poVal !== 'N/A' ? 'text-[var(--green-9)]' : 'text-[var(--orange-9)]')}>
-            {poVal && poVal !== '-' && poVal !== 'N/A' ? 'Matched' : 'Not Matched'}
-          </span>
-        </div>
-        {agentData?.po_matching?.po_amount && (
-          <div className='flex justify-between gap-2'>
-            <span className='font-medium text-[var(--gray-10)]'>PO Amount:</span>
-            <span className='font-bold text-[var(--gray-13)]'>{agentData?.po_matching?.po_amount}</span>
-          </div>
-        )}
-        {agentData?.po_row?.['Vendor Name'] && (
-          <div className='flex flex-col gap-1'>
-            <span className='font-medium text-[var(--gray-10)]'>PO Vendor:</span>
-            <span className='font-semibold text-[var(--gray-12)] truncate'>{agentData?.po_row?.['Vendor Name']}</span>
-          </div>
-        )}
-        <div className='mt-2 border-t border-[var(--gray-3)] pt-2 text-[11px] italic text-[var(--gray-10)] leading-normal'>
-          {poVal && poVal !== '-' && poVal !== 'N/A'
-            ? 'System has successfully matched this transaction with the corresponding purchase order details.'
-            : 'No valid purchase order reference could be automatically resolved from the invoice header.'}
-        </div>
-      </div>
-    </div>
-  ), [poVal, agentData])
-
-  const duplicateHover = useMemo(() => (
-    <div className='flex flex-col gap-3'>
-      <div className='flex items-center gap-2 border-b border-[var(--gray-3)] pb-2.5'>
-        <Icon className='h-5 w-5 text-[var(--primary-9)]' name='tabler:copy-off' />
-        <span className='text-sm font-bold text-[var(--gray-13)]'>Duplicate Check Insights</span>
-      </div>
-      <div className='space-y-2 text-xs'>
-        <div className='flex justify-between gap-2'>
-          <span className='font-medium text-[var(--gray-10)]'>Duplicate Status:</span>
-          <span className={cn('font-bold', agentData?.duplicate_check?.status === 'Duplicate' ? 'text-[var(--red-9)]' : 'text-[var(--green-9)]')}>
-            {agentData?.duplicate_check?.status || 'Passed'}
-          </span>
-        </div>
-        <div className='flex flex-col gap-1'>
-          <span className='font-medium text-[var(--gray-10)]'>Analysis Result:</span>
-          <span className='font-semibold text-[var(--gray-12)] leading-normal'>
-            {agentData?.duplicate_check?.message || 'No duplicate records found.'}
-          </span>
-        </div>
-        <div className='mt-2 border-t border-[var(--gray-3)] pt-2 text-[11px] italic text-[var(--gray-10)] leading-normal'>
-          The system cross-checks supplier identity, invoice number, and final values against historical transactions to prevent double-payment.
-        </div>
-      </div>
-    </div>
-  ), [agentData])
-
-  const supplierHover = useMemo(() => (
-    <div className='flex flex-col gap-3'>
-      <div className='flex items-center gap-2 border-b border-[var(--gray-3)] pb-2.5'>
-        <Icon className='h-5 w-5 text-[var(--primary-9)]' name='tabler:id' />
-        <span className='text-sm font-bold text-[var(--gray-13)]'>Supplier Verification Insights</span>
-      </div>
-      <div className='space-y-2 text-xs'>
-        <div className='flex justify-between gap-2'>
-          <span className='font-medium text-[var(--gray-10)]'>Verification Status:</span>
-          <span className={cn('font-bold', supplierValidationDisplay.statusType === 'success' ? 'text-[var(--green-9)]' : 'text-[var(--orange-9)]')}>
-            {supplierValidationDisplay.status}
-          </span>
-        </div>
-        <div className='flex justify-between gap-2'>
-          <span className='font-medium text-[var(--gray-10)]'>Supplier ID/Code:</span>
-          <span className='font-bold text-[var(--gray-13)]'>
-            {formModel?.['Supplier ID'] || formModel?.['SupplierCode'] || formModel?.['Supplier Code'] || formModel?.['supplier_id'] || formModel?.['Vendor ID'] || formModel?.['vendor_id'] || 'Not Found'}
-          </span>
-        </div>
-        <div className='flex flex-col gap-1'>
-          <span className='font-medium text-[var(--gray-10)]'>Result:</span>
-          <span className='font-semibold text-[var(--gray-12)] leading-normal'>{supplierValidationDisplay.value}</span>
-        </div>
-        {agentData?.supplier_validation?.mismatch && agentData.supplier_validation.mismatch.length > 0 && (
-          <div className='flex flex-col gap-1'>
-            <span className='font-medium text-[var(--red-9)]'>Discrepancies:</span>
-            <ul className='list-disc pl-4 text-[11px] text-[var(--gray-12)] space-y-1'>
-              {agentData.supplier_validation.mismatch.map((m: any, idx: number) => (
-                <li key={idx}>{String(m)}</li>
-              ))}
-            </ul>
-          </div>
-        )}
-        <div className='mt-2 border-t border-[var(--gray-3)] pt-2 text-[11px] italic text-[var(--gray-10)] leading-normal'>
-          Checks vendor registration status, payment instructions, and verifies matches against our procurement accounts system.
-        </div>
-      </div>
-    </div>
-  ), [supplierValidationDisplay, formModel, agentData])
-
-  const glHover = useMemo(() => (
-    <div className='flex flex-col gap-3'>
-      <div className='flex items-center gap-2 border-b border-[var(--gray-3)] pb-2.5'>
-        <Icon className='h-5 w-5 text-[var(--primary-9)]' name='tabler:list-check' />
-        <span className='text-sm font-bold text-[var(--gray-13)]'>GL Account Matching Insights</span>
-      </div>
-      <div className='space-y-2 text-xs'>
-        <div className='flex justify-between gap-2'>
-          <span className='font-medium text-[var(--gray-10)]'>Status:</span>
-          <span className={cn('font-bold', glValidationDisplay?.statusType === 'success' ? 'text-[var(--green-9)]' : 'text-[var(--orange-9)]')}>
-            {glValidationDisplay?.status}
-          </span>
-        </div>
-        <div className='flex flex-col gap-1'>
-          <span className='font-medium text-[var(--gray-10)]'>Suggested GL Account:</span>
-          <span className='font-bold text-[var(--gray-13)] leading-normal'>{glValidationDisplay?.account || 'No account matched'}</span>
-        </div>
-        {(agentData?.gl_validation?.reason || agentData?.gl_matching?.reason) && (
-          <div className='flex flex-col gap-1'>
-            <span className='font-medium text-[var(--gray-10)]'>Matching Logic:</span>
-            <span className='font-semibold text-[var(--gray-12)] leading-normal text-[11px]'>
-              {agentData?.gl_validation?.reason || agentData?.gl_matching?.reason}
-            </span>
-          </div>
-        )}
-        <div className='mt-2 border-t border-[var(--gray-3)] pt-2 text-[11px] italic text-[var(--gray-10)] leading-normal'>
-          Automatically maps description strings to the correct financial chart-of-accounts segment.
-        </div>
-      </div>
-    </div>
-  ), [glValidationDisplay, agentData])
-
-  const backOrderHover = useMemo(() => (
-    <div className='flex flex-col gap-3'>
-      <div className='flex items-center gap-2 border-b border-[var(--gray-3)] pb-2.5'>
-        <Icon className='h-5 w-5 text-[var(--primary-9)]' name='tabler:package-off' />
-        <span className='text-sm font-bold text-[var(--gray-13)]'>Back Order Insights</span>
-      </div>
-      <div className='space-y-2 text-xs'>
-        <div className='flex justify-between gap-2'>
-          <span className='font-medium text-[var(--gray-10)]'>Status:</span>
-          <span className='font-bold text-[var(--orange-9)]'>{backOrderDisplay?.status}</span>
-        </div>
-        <div className='flex justify-between gap-2'>
-          <span className='font-medium text-[var(--gray-10)]'>Pending Lines:</span>
-          <span className='font-bold text-[var(--gray-13)]'>{backOrder?.missing_qty_by_item?.length || 0} items</span>
-        </div>
-        {backOrder?.recommendation && (
-          <div className='flex justify-between gap-2'>
-            <span className='font-medium text-[var(--gray-10)]'>Action Recommended:</span>
-            <span className='font-bold text-[var(--blue-9)]'>{formatAgentStatusLabel(backOrder.recommendation)}</span>
-          </div>
-        )}
-        {backOrder?.reason && (
-          <div className='flex flex-col gap-1 border-t border-[var(--gray-3)] pt-2 mt-2'>
-            <span className='font-medium text-[var(--gray-10)]'>Explanation:</span>
-            <span className='font-semibold text-[var(--gray-12)] leading-normal text-[11px]'>{backOrder.reason}</span>
-          </div>
-        )}
-        <div className='mt-2 border-t border-[var(--gray-3)] pt-2 text-[11px] italic text-[var(--gray-10)] leading-normal'>
-          Triggers when a quantity mismatch is detected between shipped/invoiced quantities and purchase order authorization.
-        </div>
-      </div>
-    </div>
-  ), [backOrderDisplay, backOrder])
-
-  const paymentTermsHover = useMemo(() => (
-    <div className='flex flex-col gap-3'>
-      <div className='flex items-center gap-2 border-b border-[var(--gray-3)] pb-2.5'>
-        <Icon className='h-5 w-5 text-[var(--primary-9)]' name='tabler:calendar-time' />
-        <span className='text-sm font-bold text-[var(--gray-13)]'>Payment Terms Insights</span>
-      </div>
-      <div className='space-y-2 text-xs'>
-        <div className='flex justify-between gap-2'>
-          <span className='font-medium text-[var(--gray-10)]'>Status:</span>
-          <span className={cn('font-bold', paymentTermsDisplay.statusType === 'danger' ? 'text-[var(--red-9)]' : paymentTermsDisplay.statusType === 'warning' ? 'text-[var(--orange-9)]' : 'text-[var(--green-9)]')}>
-            {formatAgentStatusLabel(paymentTermsDisplay.calculationText)}
-          </span>
-        </div>
-        <div className='flex justify-between gap-2'>
-          <span className='font-medium text-[var(--gray-10)]'>Net Terms:</span>
-          <span className='font-bold text-[var(--gray-13)]'>{paymentTermsDisplay.termsDisplay}</span>
-        </div>
-        <div className='flex justify-between gap-2'>
-          <span className='font-medium text-[var(--gray-10)]'>Due Date:</span>
-          <span className='font-bold text-[var(--gray-13)]'>{extractDueDate(selectedItem, agentData, formModel)}</span>
-        </div>
-        <div className='flex justify-between gap-2'>
-          <span className='font-medium text-[var(--gray-10)]'>Timeline:</span>
-          <span className='font-bold text-[var(--gray-13)]'>{paymentTermsDisplay.daysText}</span>
-        </div>
-        <div className='mt-2 border-t border-[var(--gray-3)] pt-2 text-[11px] italic text-[var(--gray-10)] leading-normal'>
-          Calculated dynamically by analyzing supplier profile rules combined with dates extracted from the document header.
-        </div>
-      </div>
-    </div>
-  ), [paymentTermsDisplay, selectedItem, agentData, formModel])
-
-  const matterHover = useMemo(() => (
-    <div className='flex flex-col gap-3'>
-      <div className='flex items-center gap-2 border-b border-[var(--gray-3)] pb-2.5'>
-        <Icon className='h-5 w-5 text-[var(--primary-9)]' name='tabler:briefcase' />
-        <span className='text-sm font-bold text-[var(--gray-13)]'>Matter Validation Insights</span>
-      </div>
-      <div className='space-y-2 text-xs'>
-        <div className='flex justify-between gap-2'>
-          <span className='font-medium text-[var(--gray-10)]'>Status:</span>
-          <span className={cn('font-bold', matterValidationDisplay?.statusType === 'success' ? 'text-[var(--green-9)]' : 'text-[var(--orange-9)]')}>
-            {matterValidationDisplay?.status}
-          </span>
-        </div>
-        <div className='flex flex-col gap-1'>
-          <span className='font-medium text-[var(--gray-10)]'>Associated Matter:</span>
-          <span className='font-bold text-[var(--gray-13)] leading-normal'>{matterValidationDisplay?.value}</span>
-        </div>
-        {agentData?.matter_validation?.client_name && (
-          <div className='flex justify-between gap-2'>
-            <span className='font-medium text-[var(--gray-10)]'>Client:</span>
-            <span className='font-semibold text-[var(--gray-12)]'>{agentData.matter_validation.client_name}</span>
-          </div>
-        )}
-        {agentData?.matter_validation?.validation_details?.reason && (
-          <div className='flex flex-col gap-1 border-t border-[var(--gray-3)] pt-2 mt-2'>
-            <span className='font-medium text-[var(--gray-10)]'>Details:</span>
-            <span className='font-semibold text-[var(--gray-12)] text-[11px] leading-normal'>{agentData.matter_validation.validation_details.reason}</span>
-          </div>
-        )}
-      </div>
-    </div>
-  ), [matterValidationDisplay, agentData])
   const [activeBackOrderTab, setActiveBackOrderTab] = useState<string>('current')
   const [selectedFile, setSelectedFile] = useState<any>(null)
 
@@ -2144,9 +1892,9 @@ const Overview = (props: any) => {
 
       const repoId = String(
         selectedFile?.repositoryId ||
-          selectedItem?.repositoryId ||
-          repositoryId ||
-          '',
+        selectedItem?.repositoryId ||
+        repositoryId ||
+        '',
       ).trim()
       const itemId = String(
         selectedFile?.itemId || selectedFile?.id || selectedItem?.itemId || '',
@@ -2384,10 +2132,10 @@ const Overview = (props: any) => {
                 {eligibleFields.filter((key) =>
                   key.toLowerCase().includes(searchFilter.toLowerCase()),
                 ).length === 0 && (
-                  <div className='px-3 py-2 text-center text-xs font-medium text-[var(--gray-9)]'>
-                    No matching fields
-                  </div>
-                )}
+                    <div className='px-3 py-2 text-center text-xs font-medium text-[var(--gray-9)]'>
+                      No matching fields
+                    </div>
+                  )}
               </div>
             </menu>
           )}
@@ -2407,9 +2155,9 @@ const Overview = (props: any) => {
                       analysisCardCount <= 3 && 'grid-cols-1 sm:grid-cols-3',
                       analysisCardCount === 4 && 'grid-cols-2 lg:grid-cols-4',
                       analysisCardCount === 5 &&
-                        'grid-cols-2 lg:grid-cols-3 xl:grid-cols-5',
+                      'grid-cols-2 lg:grid-cols-3 xl:grid-cols-5',
                       analysisCardCount >= 6 &&
-                        'grid-cols-2 lg:grid-cols-3 xl:grid-cols-6',
+                      'grid-cols-2 lg:grid-cols-3 xl:grid-cols-6',
                     )}
                   >
                     {(() => {
@@ -2545,7 +2293,7 @@ const Overview = (props: any) => {
                       />
                     )}
                     {showBackOrder &&
-                    backOrderDisplay?.status === 'Detected' ? (
+                      backOrderDisplay?.status === 'Detected' ? (
                       <AnalysisCard
                         icon={PackageX}
                         status={backOrderDisplay.status}
@@ -2624,54 +2372,54 @@ const Overview = (props: any) => {
                         },
                         { icon: HistoryIcon, id: 'history', label: 'History' },
                       ].map((tab) => (
-                      <button
-                        key={tab.id}
-                        className={cn(
-                          '-mb-[2px] flex items-center gap-2 border-b-2 pb-4 text-[11px] font-semibold transition-all',
-                          activeTab === tab.id
-                            ? 'border-[var(--primary-9)] text-[var(--primary-9)]'
-                            : 'border-transparent text-[var(--gray-11)]',
-                        )}
-                        onClick={() => setActiveTab(tab.id)}
-                      >
-                        <tab.icon className='h-4 w-4' />
-                        {tab.label}
-                        {tab.id === 'attachments' &&
-                          attachmentData?.length > 0 && (
-                            <span className='rounded bg-[var(--gray-2)] px-1.5 py-0.5 text-[10px] text-[var(--gray-11)]'>
-                              {attachmentData.length}
-                            </span>
+                        <button
+                          key={tab.id}
+                          className={cn(
+                            '-mb-[2px] flex items-center gap-2 border-b-2 pb-4 text-[11px] font-semibold transition-all',
+                            activeTab === tab.id
+                              ? 'border-[var(--primary-9)] text-[var(--primary-9)]'
+                              : 'border-transparent text-[var(--gray-11)]',
                           )}
-                        {tab.id === 'line_items' &&
-                          (lineItems.length > 0 ||
-                            agentData?.debug?.[
-                              'Side-by-side Line Item matching'
-                            ]?.length > 0 ||
-                            agentData?.line_items?.length > 0 ||
-                            agentData?.['Extracted Invoice JSON']?.invoice_items
-                              ?.length > 0) && (
-                            <span className='rounded bg-[var(--gray-2)] px-1.5 py-0.5 text-[10px] text-[var(--gray-11)]'>
-                              {lineItems.length ||
-                                agentData?.debug?.[
-                                  'Side-by-side Line Item matching'
-                                ]?.length ||
-                                agentData?.line_items?.length ||
-                                agentData?.['Extracted Invoice JSON']
-                                  ?.invoice_items?.length}
-                            </span>
-                          )}
-                        {tab.id === 'comments' &&
-                          commentsData &&
-                          commentsData.length > 0 && (
-                            <span className='rounded bg-[var(--gray-2)] px-1.5 py-0.5 text-[10px] text-[var(--gray-11)]'>
-                              {commentsData.length}
-                            </span>
-                          )}
-                      </button>
-                    ))}
+                          onClick={() => setActiveTab(tab.id)}
+                        >
+                          <tab.icon className='h-4 w-4' />
+                          {tab.label}
+                          {tab.id === 'attachments' &&
+                            attachmentData?.length > 0 && (
+                              <span className='rounded bg-[var(--gray-2)] px-1.5 py-0.5 text-[10px] text-[var(--gray-11)]'>
+                                {attachmentData.length}
+                              </span>
+                            )}
+                          {tab.id === 'line_items' &&
+                            (lineItems.length > 0 ||
+                              agentData?.debug?.[
+                                'Side-by-side Line Item matching'
+                              ]?.length > 0 ||
+                              agentData?.line_items?.length > 0 ||
+                              agentData?.['Extracted Invoice JSON']?.invoice_items
+                                ?.length > 0) && (
+                              <span className='rounded bg-[var(--gray-2)] px-1.5 py-0.5 text-[10px] text-[var(--gray-11)]'>
+                                {lineItems.length ||
+                                  agentData?.debug?.[
+                                    'Side-by-side Line Item matching'
+                                  ]?.length ||
+                                  agentData?.line_items?.length ||
+                                  agentData?.['Extracted Invoice JSON']
+                                    ?.invoice_items?.length}
+                              </span>
+                            )}
+                          {tab.id === 'comments' &&
+                            commentsData &&
+                            commentsData.length > 0 && (
+                              <span className='rounded bg-[var(--gray-2)] px-1.5 py-0.5 text-[10px] text-[var(--gray-11)]'>
+                                {commentsData.length}
+                              </span>
+                            )}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
                 <div className='flex min-h-0 flex-1 flex-col'>
                   {activeDetailView ? (
@@ -2949,7 +2697,7 @@ const Overview = (props: any) => {
                                   activeBackOrderTab === 'current'
                                     ? backOrder?.recommendation
                                     : MOCK_PREVIOUS_BACKORDERS[activeBackOrderTab]
-                                        ?.recommendation
+                                      ?.recommendation
                                 const recMeta = getRecommendationMeta(currentRec)
                                 return (
                                   <span
@@ -3261,749 +3009,749 @@ const Overview = (props: any) => {
                   ) : (
                     <>
                       {activeTab === 'summary' && (
-                    <div className='grid flex-1 grid-cols-2 gap-x-4 gap-y-2 overflow-y-auto p-4'>
-                      {isCurrentlyProcessing &&
-                      (!formModel ||
-                        Object.keys(formModel).length === 0 ||
-                        !Object.values(formModel).some(
-                          hasMeaningfulScalarValue,
-                        ))
-                        ? Array.from({ length: 8 }).map((_, idx) => {
-                            const labels = [
-                              'Supplier Name',
-                              'Invoice Number',
-                              'Invoice Date',
-                              'Invoice Amount',
-                              'PO Number',
-                              'Payment Terms',
-                              'Currency',
-                              'Tax Amount',
-                            ]
-                            const icons = [
-                              Store,
-                              ListFilter,
-                              HistoryIcon,
-                              Wallet,
-                              Paperclip,
-                              HistoryIcon,
-                              CreditCard,
-                              Wallet,
-                            ]
-                            const label = labels[idx]
-                            const IconComp = icons[idx]
-                            return (
-                              <div
-                                className='flex w-full items-start gap-3 rounded-lg border border-transparent p-3 text-left'
-                                key={label}
-                              >
-                                <div className='mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--gray-2)] text-[var(--gray-11)]'>
-                                  <IconComp className='h-3.5 w-3.5' />
-                                </div>
-                                <div className='min-w-0 flex-1 space-y-1.5'>
-                                  <p className='text-[10px] leading-none font-semibold text-[var(--gray-11)]'>
-                                    {label}
-                                  </p>
-                                  <div className='h-4 w-28 animate-pulse rounded bg-[var(--gray-3)]' />
-                                </div>
-                              </div>
-                            )
-                          })
-                        : Object.entries(formModel || {})
-                            .filter(([key, val]) => {
-                              if (typeof val === 'object' && val !== null) {
-                                if ('Invoice Value' in val) {
-                                  return true
-                                }
-                                return false
-                              }
-                              if (typeof val === 'string') {
-                                const trimmed = val.trim()
-                                if (
-                                  trimmed.startsWith('[') &&
-                                  trimmed.endsWith(']')
-                                )
-                                  return false
-                                if (
-                                  trimmed.startsWith('{') &&
-                                  trimmed.endsWith('}')
-                                )
-                                  return false
-                              }
-
-                              if (!allowedLabels || allowedLabels.size === 0) {
-                                return hasMeaningfulScalarValue(val)
-                              }
-
+                        <div className='grid flex-1 grid-cols-2 gap-x-4 gap-y-2 overflow-y-auto p-4'>
+                          {isCurrentlyProcessing &&
+                            (!formModel ||
+                              Object.keys(formModel).length === 0 ||
+                              !Object.values(formModel).some(
+                                hasMeaningfulScalarValue,
+                              ))
+                            ? Array.from({ length: 8 }).map((_, idx) => {
+                              const labels = [
+                                'Supplier Name',
+                                'Invoice Number',
+                                'Invoice Date',
+                                'Invoice Amount',
+                                'PO Number',
+                                'Payment Terms',
+                                'Currency',
+                                'Tax Amount',
+                              ]
+                              const icons = [
+                                Store,
+                                ListFilter,
+                                HistoryIcon,
+                                Wallet,
+                                Paperclip,
+                                HistoryIcon,
+                                CreditCard,
+                                Wallet,
+                              ]
+                              const label = labels[idx]
+                              const IconComp = icons[idx]
                               return (
-                                allowedLabels.has(key) ||
-                                hasMeaningfulScalarValue(val)
+                                <div
+                                  className='flex w-full items-start gap-3 rounded-lg border border-transparent p-3 text-left'
+                                  key={label}
+                                >
+                                  <div className='mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--gray-2)] text-[var(--gray-11)]'>
+                                    <IconComp className='h-3.5 w-3.5' />
+                                  </div>
+                                  <div className='min-w-0 flex-1 space-y-1.5'>
+                                    <p className='text-[10px] leading-none font-semibold text-[var(--gray-11)]'>
+                                      {label}
+                                    </p>
+                                    <div className='h-4 w-28 animate-pulse rounded bg-[var(--gray-3)]' />
+                                  </div>
+                                </div>
                               )
                             })
-                            .map(([key, val]) => {
-                              const rawVal =
-                                val &&
-                                typeof val === 'object' &&
-                                'Invoice Value' in val
-                                  ? val['Invoice Value']
-                                  : val
-
-                              const fieldType = getFieldType(key)
-                              const displayValue =
-                                fieldType === 'date' &&
-                                (rawVal === null ||
-                                  rawVal === undefined ||
-                                  rawVal === '' ||
-                                  rawVal === '-')
-                                  ? null
-                                  : rawVal || '-'
-
-                              return (
-                                <FormCard
-                                  icon={getFieldIcon(key)}
-                                  key={key}
-                                  label={key}
-                                  options={getOptions(key)}
-                                  score={getFieldScore(key)}
-                                  type={fieldType}
-                                  value={displayValue}
-                                  highlight={
-                                    key.toLowerCase().includes('total') ||
-                                    key.toLowerCase().includes('due')
+                            : Object.entries(formModel || {})
+                              .filter(([key, val]) => {
+                                if (typeof val === 'object' && val !== null) {
+                                  if ('Invoice Value' in val) {
+                                    return true
                                   }
-                                  onChange={(newVal: string) =>
-                                    handleFieldChange(key, newVal)
-                                  }
-                                  onFocus={(val: any) =>
-                                    handleFieldFocus(val, key)
-                                  }
-                                />
-                              )
-                            })}
-                    </div>
-                  )}
-                  {activeTab === 'line_items' && (
-                    <div className='flex-1 overflow-y-auto p-4'>
-                      <div className='overflow-x-auto overflow-y-hidden rounded-xl border border-[var(--gray-3)] bg-surface shadow-sm'>
-                        <table className='w-full border-collapse text-left text-xs'>
-                          <thead className='border-b border-[var(--gray-3)] bg-[var(--gray-1)]'>
-                            <tr>
-                              {isDynamicTable ? (
-                                dynamicColumns.map((colKey) => (
-                                  <th
-                                    key={colKey}
-                                    className={cn(
-                                      'px-3 py-2 text-[11px] font-semibold text-[var(--gray-11)]',
-                                      (colKey.toLowerCase().includes('qty') ||
-                                        colKey.toLowerCase().includes('quantity') ||
-                                        colKey.toLowerCase().includes('rate') ||
-                                        colKey.toLowerCase().includes('price') ||
-                                        colKey.toLowerCase().includes('amount') ||
-                                        colKey.toLowerCase().includes('total')) &&
-                                        'text-right',
-                                    )}
-                                  >
-                                    {formatHeaderLabel(colKey)}
-                                  </th>
-                                ))
-                              ) : (
-                                <>
-                                  <th className='px-3 py-2 text-[11px] font-semibold text-[var(--gray-11)]'>
-                                    Description
-                                  </th>
-                                  <th className='w-[100px] px-3 py-2 text-right text-[11px] font-semibold text-[var(--gray-11)]'>
-                                    Qty
-                                  </th>
-                                  <th className='w-[140px] px-3 py-2 text-right text-[11px] font-semibold text-[var(--gray-11)]'>
-                                    Rate
-                                  </th>
-                                  <th className='w-[160px] px-3 py-2 text-right text-[11px] font-semibold text-[var(--gray-11)]'>
-                                    Total Amount
-                                  </th>
-                                </>
-                              )}
-                              <th className='w-[100px] px-3 py-2 text-right text-[11px] font-semibold text-[var(--gray-11)]'>
-                                Match Score
-                              </th>
-                              <th className='w-[44px] p-1 text-center'>
-                                <button
-                                  className='inline-flex cursor-pointer items-center justify-center rounded border border-[var(--primary-4)] bg-[var(--primary-2)] p-1 text-[var(--primary-11)] transition-all hover:bg-[var(--primary-3)] hover:text-[var(--primary-12)] active:scale-95'
-                                  title='Add New Item'
-                                  type='button'
-                                  onClick={handleAddItem}
-                                >
-                                  <Plus className='h-3.5 w-3.5' />
-                                </button>
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody className='divide-y divide-[var(--gray-2)]'>
-                            {isCurrentlyProcessing && lineItems.length === 0
-                              ? skeletonRows.map((rowKey) => (
-                                  <tr
-                                    className='group transition-colors'
-                                    key={rowKey}
-                                  >
-                                    {isDynamicTable ? (
-                                      dynamicColumns.map((colKey, index) => (
-                                        <td
-                                          key={colKey}
-                                          className={cn(
-                                            'px-3 py-3',
-                                            (colKey.toLowerCase().includes('qty') ||
-                                              colKey.toLowerCase().includes('quantity') ||
-                                              colKey.toLowerCase().includes('rate') ||
-                                              colKey.toLowerCase().includes('price') ||
-                                              colKey.toLowerCase().includes('amount') ||
-                                              colKey.toLowerCase().includes('total')) &&
-                                              'text-right',
-                                          )}
-                                        >
-                                          <div
-                                            className={cn(
-                                              'h-4 animate-pulse rounded bg-[var(--gray-3)]',
-                                              index === 0 ? 'w-5/6' : 'w-12 ml-auto',
-                                            )}
-                                          />
-                                        </td>
-                                      ))
-                                    ) : (
-                                      <>
-                                        <td className='px-3 py-3'>
-                                          <div className='h-4 w-5/6 animate-pulse rounded bg-[var(--gray-3)]' />
-                                        </td>
-                                        <td className='w-[100px] px-3 py-3'>
-                                          <div className='ml-auto h-4 w-8 animate-pulse rounded bg-[var(--gray-3)]' />
-                                        </td>
-                                        <td className='w-[140px] px-3 py-3'>
-                                          <div className='ml-auto h-4 w-12 animate-pulse rounded bg-[var(--gray-3)]' />
-                                        </td>
-                                        <td className='w-[160px] px-3 py-3'>
-                                          <div className='ml-auto h-4 w-16 animate-pulse rounded bg-[var(--gray-3)]' />
-                                        </td>
-                                      </>
-                                    )}
-                                    <td className='w-[100px] px-3 py-3'>
-                                      <div className='ml-auto h-4 w-12 animate-pulse rounded bg-[var(--gray-3)]' />
-                                    </td>
-                                    <td className='w-[44px]' />
-                                  </tr>
-                                ))
-                              : lineItems.map((item: any, index: number) => {
-                                  const matchData =
-                                    agentData?.debug?.[
-                                      'Side-by-side Line Item matching'
-                                    ]?.[index]
-                                  const lineScore =
-                                    matchData?.['Line Score'] ??
-                                    item['Line Score'] ??
-                                    item?.score
-                                  const isMatch =
-                                    (lineScore !== undefined &&
-                                    lineScore !== null
-                                      ? Number(lineScore) >= 90
-                                      : false) || item?.status === 'MATCH'
+                                  return false
+                                }
+                                if (typeof val === 'string') {
+                                  const trimmed = val.trim()
+                                  if (
+                                    trimmed.startsWith('[') &&
+                                    trimmed.endsWith(']')
+                                  )
+                                    return false
+                                  if (
+                                    trimmed.startsWith('{') &&
+                                    trimmed.endsWith('}')
+                                  )
+                                    return false
+                                }
 
-                                  return (
-                                    <tr
-                                      key={item._id}
-                                      className={cn(
-                                        'group transition-colors',
-                                        isMatch
-                                          ? 'hover:bg-[var(--gray-1)]'
-                                          : 'bg-[var(--red-1)]/30 hover:bg-[var(--red-1)]/50',
-                                      )}
-                                    >
-                                      {isDynamicTable ? (
-                                        dynamicColumns.map((colKey) => {
-                                          const cellVal = getRawVal(item, colKey) ?? ''
-                                          const isNumeric =
-                                            colKey.toLowerCase().includes('qty') ||
+                                if (!allowedLabels || allowedLabels.size === 0) {
+                                  return hasMeaningfulScalarValue(val)
+                                }
+
+                                return (
+                                  allowedLabels.has(key) ||
+                                  hasMeaningfulScalarValue(val)
+                                )
+                              })
+                              .map(([key, val]) => {
+                                const rawVal =
+                                  val &&
+                                    typeof val === 'object' &&
+                                    'Invoice Value' in val
+                                    ? val['Invoice Value']
+                                    : val
+
+                                const fieldType = getFieldType(key)
+                                const displayValue =
+                                  fieldType === 'date' &&
+                                    (rawVal === null ||
+                                      rawVal === undefined ||
+                                      rawVal === '' ||
+                                      rawVal === '-')
+                                    ? null
+                                    : rawVal || '-'
+
+                                return (
+                                  <FormCard
+                                    icon={getFieldIcon(key)}
+                                    key={key}
+                                    label={key}
+                                    options={getOptions(key)}
+                                    score={getFieldScore(key)}
+                                    type={fieldType}
+                                    value={displayValue}
+                                    highlight={
+                                      key.toLowerCase().includes('total') ||
+                                      key.toLowerCase().includes('due')
+                                    }
+                                    onChange={(newVal: string) =>
+                                      handleFieldChange(key, newVal)
+                                    }
+                                    onFocus={(val: any) =>
+                                      handleFieldFocus(val, key)
+                                    }
+                                  />
+                                )
+                              })}
+                        </div>
+                      )}
+                      {activeTab === 'line_items' && (
+                        <div className='flex-1 overflow-y-auto p-4'>
+                          <div className='overflow-x-auto overflow-y-hidden rounded-xl border border-[var(--gray-3)] bg-surface shadow-sm'>
+                            <table className='w-full border-collapse text-left text-xs'>
+                              <thead className='border-b border-[var(--gray-3)] bg-[var(--gray-1)]'>
+                                <tr>
+                                  {isDynamicTable ? (
+                                    dynamicColumns.map((colKey) => (
+                                      <th
+                                        key={colKey}
+                                        className={cn(
+                                          'px-3 py-2 text-[11px] font-semibold text-[var(--gray-11)]',
+                                          (colKey.toLowerCase().includes('qty') ||
                                             colKey.toLowerCase().includes('quantity') ||
                                             colKey.toLowerCase().includes('rate') ||
                                             colKey.toLowerCase().includes('price') ||
                                             colKey.toLowerCase().includes('amount') ||
-                                            colKey.toLowerCase().includes('total')
-
-                                          return (
-                                            <td
-                                              key={colKey}
+                                            colKey.toLowerCase().includes('total')) &&
+                                          'text-right',
+                                        )}
+                                      >
+                                        {formatHeaderLabel(colKey)}
+                                      </th>
+                                    ))
+                                  ) : (
+                                    <>
+                                      <th className='px-3 py-2 text-[11px] font-semibold text-[var(--gray-11)]'>
+                                        Description
+                                      </th>
+                                      <th className='w-[100px] px-3 py-2 text-right text-[11px] font-semibold text-[var(--gray-11)]'>
+                                        Qty
+                                      </th>
+                                      <th className='w-[140px] px-3 py-2 text-right text-[11px] font-semibold text-[var(--gray-11)]'>
+                                        Rate
+                                      </th>
+                                      <th className='w-[160px] px-3 py-2 text-right text-[11px] font-semibold text-[var(--gray-11)]'>
+                                        Total Amount
+                                      </th>
+                                    </>
+                                  )}
+                                  <th className='w-[100px] px-3 py-2 text-right text-[11px] font-semibold text-[var(--gray-11)]'>
+                                    Match Score
+                                  </th>
+                                  <th className='w-[44px] p-1 text-center'>
+                                    <button
+                                      className='inline-flex cursor-pointer items-center justify-center rounded border border-[var(--primary-4)] bg-[var(--primary-2)] p-1 text-[var(--primary-11)] transition-all hover:bg-[var(--primary-3)] hover:text-[var(--primary-12)] active:scale-95'
+                                      title='Add New Item'
+                                      type='button'
+                                      onClick={handleAddItem}
+                                    >
+                                      <Plus className='h-3.5 w-3.5' />
+                                    </button>
+                                  </th>
+                                </tr>
+                              </thead>
+                              <tbody className='divide-y divide-[var(--gray-2)]'>
+                                {isCurrentlyProcessing && lineItems.length === 0
+                                  ? skeletonRows.map((rowKey) => (
+                                    <tr
+                                      className='group transition-colors'
+                                      key={rowKey}
+                                    >
+                                      {isDynamicTable ? (
+                                        dynamicColumns.map((colKey, index) => (
+                                          <td
+                                            key={colKey}
+                                            className={cn(
+                                              'px-3 py-3',
+                                              (colKey.toLowerCase().includes('qty') ||
+                                                colKey.toLowerCase().includes('quantity') ||
+                                                colKey.toLowerCase().includes('rate') ||
+                                                colKey.toLowerCase().includes('price') ||
+                                                colKey.toLowerCase().includes('amount') ||
+                                                colKey.toLowerCase().includes('total')) &&
+                                              'text-right',
+                                            )}
+                                          >
+                                            <div
                                               className={cn(
-                                                'px-2 py-0.5 font-semibold text-[var(--gray-13)]',
-                                                isNumeric && 'text-right'
+                                                'h-4 animate-pulse rounded bg-[var(--gray-3)]',
+                                                index === 0 ? 'w-5/6' : 'w-12 ml-auto',
                                               )}
-                                            >
-                                              <input
+                                            />
+                                          </td>
+                                        ))
+                                      ) : (
+                                        <>
+                                          <td className='px-3 py-3'>
+                                            <div className='h-4 w-5/6 animate-pulse rounded bg-[var(--gray-3)]' />
+                                          </td>
+                                          <td className='w-[100px] px-3 py-3'>
+                                            <div className='ml-auto h-4 w-8 animate-pulse rounded bg-[var(--gray-3)]' />
+                                          </td>
+                                          <td className='w-[140px] px-3 py-3'>
+                                            <div className='ml-auto h-4 w-12 animate-pulse rounded bg-[var(--gray-3)]' />
+                                          </td>
+                                          <td className='w-[160px] px-3 py-3'>
+                                            <div className='ml-auto h-4 w-16 animate-pulse rounded bg-[var(--gray-3)]' />
+                                          </td>
+                                        </>
+                                      )}
+                                      <td className='w-[100px] px-3 py-3'>
+                                        <div className='ml-auto h-4 w-12 animate-pulse rounded bg-[var(--gray-3)]' />
+                                      </td>
+                                      <td className='w-[44px]' />
+                                    </tr>
+                                  ))
+                                  : lineItems.map((item: any, index: number) => {
+                                    const matchData =
+                                      agentData?.debug?.[
+                                      'Side-by-side Line Item matching'
+                                      ]?.[index]
+                                    const lineScore =
+                                      matchData?.['Line Score'] ??
+                                      item['Line Score'] ??
+                                      item?.score
+                                    const isMatch =
+                                      (lineScore !== undefined &&
+                                        lineScore !== null
+                                        ? Number(lineScore) >= 90
+                                        : false) || item?.status === 'MATCH'
+
+                                    return (
+                                      <tr
+                                        key={item._id}
+                                        className={cn(
+                                          'group transition-colors',
+                                          isMatch
+                                            ? 'hover:bg-[var(--gray-1)]'
+                                            : 'bg-[var(--red-1)]/30 hover:bg-[var(--red-1)]/50',
+                                        )}
+                                      >
+                                        {isDynamicTable ? (
+                                          dynamicColumns.map((colKey) => {
+                                            const cellVal = getRawVal(item, colKey) ?? ''
+                                            const isNumeric =
+                                              colKey.toLowerCase().includes('qty') ||
+                                              colKey.toLowerCase().includes('quantity') ||
+                                              colKey.toLowerCase().includes('rate') ||
+                                              colKey.toLowerCase().includes('price') ||
+                                              colKey.toLowerCase().includes('amount') ||
+                                              colKey.toLowerCase().includes('total')
+
+                                            return (
+                                              <td
+                                                key={colKey}
                                                 className={cn(
-                                                  'w-full rounded border-none bg-transparent px-1.5 py-1 text-xs font-semibold transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none',
-                                                  isNumeric ? 'text-right text-[var(--gray-11)]' : 'text-[var(--gray-13)]'
+                                                  'px-2 py-0.5 font-semibold text-[var(--gray-13)]',
+                                                  isNumeric && 'text-right'
                                                 )}
-                                                value={cellVal}
-                                                onBlur={(e) => {
-                                                  if (
-                                                    colKey.toLowerCase().includes('price') ||
-                                                    colKey.toLowerCase().includes('rate') ||
-                                                    colKey.toLowerCase().includes('amount') ||
-                                                    colKey.toLowerCase().includes('total')
-                                                  ) {
-                                                    const num = Number.parseFloat(
-                                                      e.target.value.replace(
-                                                        /[^0-9.-]+/g,
-                                                        '',
-                                                      ),
-                                                    )
-                                                    if (!Number.isNaN(num)) {
-                                                      handleLineItemChange(
-                                                        index,
-                                                        colKey,
-                                                        num.toFixed(2),
+                                              >
+                                                <input
+                                                  className={cn(
+                                                    'w-full rounded border-none bg-transparent px-1.5 py-1 text-xs font-semibold transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none',
+                                                    isNumeric ? 'text-right text-[var(--gray-11)]' : 'text-[var(--gray-13)]'
+                                                  )}
+                                                  value={cellVal}
+                                                  onBlur={(e) => {
+                                                    if (
+                                                      colKey.toLowerCase().includes('price') ||
+                                                      colKey.toLowerCase().includes('rate') ||
+                                                      colKey.toLowerCase().includes('amount') ||
+                                                      colKey.toLowerCase().includes('total')
+                                                    ) {
+                                                      const num = Number.parseFloat(
+                                                        e.target.value.replace(
+                                                          /[^0-9.-]+/g,
+                                                          '',
+                                                        ),
                                                       )
-                                                      return
+                                                      if (!Number.isNaN(num)) {
+                                                        handleLineItemChange(
+                                                          index,
+                                                          colKey,
+                                                          num.toFixed(2),
+                                                        )
+                                                        return
+                                                      }
                                                     }
+                                                    handleLineItemChange(
+                                                      index,
+                                                      colKey,
+                                                      e.target.value,
+                                                    )
+                                                  }}
+                                                  onChange={(e) =>
+                                                    handleLineItemChange(
+                                                      index,
+                                                      colKey,
+                                                      e.target.value,
+                                                    )
                                                   }
-                                                  handleLineItemChange(
-                                                    index,
-                                                    colKey,
-                                                    e.target.value,
-                                                  )
-                                                }}
+                                                  onFocus={() =>
+                                                    handleFieldFocus?.(
+                                                      cellVal,
+                                                      colKey,
+                                                    )
+                                                  }
+                                                />
+                                              </td>
+                                            )
+                                          })
+                                        ) : (
+                                          <>
+                                            {/* Description Cell */}
+                                            <td className='px-2 py-0.5 font-semibold text-[var(--gray-13)]'>
+                                              <input
+                                                className='w-full rounded border-none bg-transparent px-1.5 py-1 text-xs font-semibold text-[var(--gray-13)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
+                                                value={
+                                                  item.Description?.['Invoice Value'] ??
+                                                  item.description ??
+                                                  item.item_no ??
+                                                  item.itemNo ??
+                                                  ''
+                                                }
                                                 onChange={(e) =>
                                                   handleLineItemChange(
                                                     index,
-                                                    colKey,
+                                                    'description',
                                                     e.target.value,
                                                   )
                                                 }
                                                 onFocus={() =>
                                                   handleFieldFocus?.(
-                                                    cellVal,
-                                                    colKey,
-                                                  )
-                                                }
-                                              />
-                                            </td>
-                                          )
-                                        })
-                                      ) : (
-                                        <>
-                                          {/* Description Cell */}
-                                          <td className='px-2 py-0.5 font-semibold text-[var(--gray-13)]'>
-                                            <input
-                                              className='w-full rounded border-none bg-transparent px-1.5 py-1 text-xs font-semibold text-[var(--gray-13)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
-                                              value={
-                                                item.Description?.['Invoice Value'] ??
-                                                item.description ??
-                                                item.item_no ??
-                                                item.itemNo ??
-                                                ''
-                                              }
-                                              onChange={(e) =>
-                                                handleLineItemChange(
-                                                  index,
-                                                  'description',
-                                                  e.target.value,
-                                                )
-                                              }
-                                              onFocus={() =>
-                                                handleFieldFocus?.(
-                                                  item.Description?.['Invoice Value'] ??
+                                                    item.Description?.['Invoice Value'] ??
                                                     item.description ??
                                                     item.item_no ??
                                                     item.itemNo ??
                                                     '',
-                                                  'description',
-                                                )
-                                              }
-                                            />
-                                          </td>
+                                                    'description',
+                                                  )
+                                                }
+                                              />
+                                            </td>
 
-                                          {/* Quantity Cell */}
-                                          <td className='w-[100px] px-2 py-0.5 text-right font-semibold text-[var(--gray-11)]'>
-                                            <input
-                                              className='w-full rounded border-none bg-transparent px-1.5 py-1 text-right text-xs font-semibold text-[var(--gray-11)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
-                                              value={
-                                                item.Quantity?.['Invoice Value'] ??
-                                                item.quantity ??
-                                                ''
-                                              }
-                                              onChange={(e) =>
-                                                handleLineItemChange(
-                                                  index,
-                                                  'quantity',
-                                                  e.target.value,
-                                                )
-                                              }
-                                              onFocus={() =>
-                                                handleFieldFocus?.(
+                                            {/* Quantity Cell */}
+                                            <td className='w-[100px] px-2 py-0.5 text-right font-semibold text-[var(--gray-11)]'>
+                                              <input
+                                                className='w-full rounded border-none bg-transparent px-1.5 py-1 text-right text-xs font-semibold text-[var(--gray-11)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
+                                                value={
                                                   item.Quantity?.['Invoice Value'] ??
+                                                  item.quantity ??
+                                                  ''
+                                                }
+                                                onChange={(e) =>
+                                                  handleLineItemChange(
+                                                    index,
+                                                    'quantity',
+                                                    e.target.value,
+                                                  )
+                                                }
+                                                onFocus={() =>
+                                                  handleFieldFocus?.(
+                                                    item.Quantity?.['Invoice Value'] ??
                                                     item.quantity ??
                                                     '',
-                                                  'qty',
-                                                )
-                                              }
-                                            />
-                                          </td>
+                                                    'qty',
+                                                  )
+                                                }
+                                              />
+                                            </td>
 
-                                          {/* Rate/Price Cell */}
-                                          <td className='w-[140px] px-2 py-0.5 text-right font-semibold text-[var(--gray-11)]'>
-                                            <input
-                                              className='w-full rounded border-none bg-transparent px-1.5 py-1 text-right text-xs font-semibold text-[var(--gray-11)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
-                                              value={
-                                                item.Price?.['Invoice Value'] ??
-                                                item.rate ??
-                                                item.unit_price ??
-                                                item.price ??
-                                                ''
-                                              }
-                                              onBlur={(e) => {
-                                                const num = Number.parseFloat(
-                                                  e.target.value.replace(
-                                                    /[^0-9.-]+/g,
-                                                    '',
-                                                  ),
-                                                )
-                                                if (!Number.isNaN(num)) {
+                                            {/* Rate/Price Cell */}
+                                            <td className='w-[140px] px-2 py-0.5 text-right font-semibold text-[var(--gray-11)]'>
+                                              <input
+                                                className='w-full rounded border-none bg-transparent px-1.5 py-1 text-right text-xs font-semibold text-[var(--gray-11)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
+                                                value={
+                                                  item.Price?.['Invoice Value'] ??
+                                                  item.rate ??
+                                                  item.unit_price ??
+                                                  item.price ??
+                                                  ''
+                                                }
+                                                onBlur={(e) => {
+                                                  const num = Number.parseFloat(
+                                                    e.target.value.replace(
+                                                      /[^0-9.-]+/g,
+                                                      '',
+                                                    ),
+                                                  )
+                                                  if (!Number.isNaN(num)) {
+                                                    handleLineItemChange(
+                                                      index,
+                                                      'price',
+                                                      num.toFixed(2),
+                                                    )
+                                                  }
+                                                }}
+                                                onChange={(e) =>
                                                   handleLineItemChange(
                                                     index,
                                                     'price',
-                                                    num.toFixed(2),
+                                                    e.target.value,
                                                   )
                                                 }
-                                              }}
-                                              onChange={(e) =>
-                                                handleLineItemChange(
-                                                  index,
-                                                  'price',
-                                                  e.target.value,
-                                                )
-                                              }
-                                              onFocus={() =>
-                                                handleFieldFocus?.(
-                                                  item.Price?.['Invoice Value'] ??
+                                                onFocus={() =>
+                                                  handleFieldFocus?.(
+                                                    item.Price?.['Invoice Value'] ??
                                                     item.rate ??
                                                     item.unit_price ??
                                                     item.price ??
                                                     '',
-                                                  'price',
-                                                )
-                                              }
-                                            />
-                                          </td>
+                                                    'price',
+                                                  )
+                                                }
+                                              />
+                                            </td>
 
-                                          {/* Total Amount Cell */}
-                                          <td className='w-[160px] px-2 py-0.5 text-right font-semibold text-[var(--gray-13)]'>
-                                            <input
-                                              className='w-full rounded border-none bg-transparent px-1.5 py-1 text-right text-xs font-semibold text-[var(--gray-13)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
-                                              value={
-                                                item.Amount?.['Invoice Value'] ??
-                                                item.total ??
-                                                item.amount ??
-                                                item.line_amount ??
-                                                item.lineAmount ??
-                                                ''
-                                              }
-                                              onBlur={(e) => {
-                                                const num = Number.parseFloat(
-                                                  e.target.value.replace(
-                                                    /[^0-9.-]+/g,
-                                                    '',
-                                                  ),
-                                                )
-                                                if (!Number.isNaN(num)) {
+                                            {/* Total Amount Cell */}
+                                            <td className='w-[160px] px-2 py-0.5 text-right font-semibold text-[var(--gray-13)]'>
+                                              <input
+                                                className='w-full rounded border-none bg-transparent px-1.5 py-1 text-right text-xs font-semibold text-[var(--gray-13)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
+                                                value={
+                                                  item.Amount?.['Invoice Value'] ??
+                                                  item.total ??
+                                                  item.amount ??
+                                                  item.line_amount ??
+                                                  item.lineAmount ??
+                                                  ''
+                                                }
+                                                onBlur={(e) => {
+                                                  const num = Number.parseFloat(
+                                                    e.target.value.replace(
+                                                      /[^0-9.-]+/g,
+                                                      '',
+                                                    ),
+                                                  )
+                                                  if (!Number.isNaN(num)) {
+                                                    handleLineItemChange(
+                                                      index,
+                                                      'amount',
+                                                      num.toFixed(2),
+                                                    )
+                                                  }
+                                                }}
+                                                onChange={(e) =>
                                                   handleLineItemChange(
                                                     index,
                                                     'amount',
-                                                    num.toFixed(2),
+                                                    e.target.value,
                                                   )
                                                 }
-                                              }}
-                                              onChange={(e) =>
-                                                handleLineItemChange(
-                                                  index,
-                                                  'amount',
-                                                  e.target.value,
-                                                )
-                                              }
-                                              onFocus={() =>
-                                                handleFieldFocus?.(
-                                                  item.Amount?.['Invoice Value'] ??
+                                                onFocus={() =>
+                                                  handleFieldFocus?.(
+                                                    item.Amount?.['Invoice Value'] ??
                                                     item.total ??
                                                     item.amount ??
                                                     item.line_amount ??
                                                     item.lineAmount ??
                                                     '',
-                                                  'line_amount',
-                                                )
-                                              }
-                                            />
-                                          </td>
-                                        </>
-                                      )}
+                                                    'line_amount',
+                                                  )
+                                                }
+                                              />
+                                            </td>
+                                          </>
+                                        )}
 
-                                      {/* Match Score Cell */}
-                                      <td className='w-[100px] px-3 py-2 text-right font-semibold'>
-                                        {(() => {
-                                          if (
-                                            lineScore === undefined ||
-                                            lineScore === null
-                                          )
+                                        {/* Match Score Cell */}
+                                        <td className='w-[100px] px-3 py-2 text-right font-semibold'>
+                                          {(() => {
+                                            if (
+                                              lineScore === undefined ||
+                                              lineScore === null
+                                            )
+                                              return (
+                                                <span className='text-[11px] text-gray-9'>
+                                                  -
+                                                </span>
+                                              )
+                                            const scoreNum = Number(lineScore)
                                             return (
-                                              <span className='text-[11px] text-gray-9'>
-                                                -
+                                              <span
+                                                className={cn(
+                                                  'text-xs font-bold',
+                                                  {
+                                                    'text-[var(--green-9)]':
+                                                      scoreNum >= 90,
+                                                    'text-[var(--orange-9)]':
+                                                      scoreNum >= 70 &&
+                                                      scoreNum < 90,
+                                                    'text-[var(--red-9)]':
+                                                      scoreNum < 70,
+                                                  },
+                                                )}
+                                              >
+                                                {scoreNum.toFixed(0)}%
                                               </span>
                                             )
-                                          const scoreNum = Number(lineScore)
-                                          return (
-                                            <span
-                                              className={cn(
-                                                'text-xs font-bold',
-                                                {
-                                                  'text-[var(--green-9)]':
-                                                    scoreNum >= 90,
-                                                  'text-[var(--orange-9)]':
-                                                    scoreNum >= 70 &&
-                                                    scoreNum < 90,
-                                                  'text-[var(--red-9)]':
-                                                    scoreNum < 70,
-                                                },
-                                              )}
-                                            >
-                                              {scoreNum.toFixed(0)}%
-                                            </span>
+                                          })()}
+                                        </td>
+
+                                        {/* Action Cell */}
+                                        <td className='w-[44px] px-2 py-0.5 text-center'>
+                                          <button
+                                            className='rounded p-1 text-[var(--red-9)] transition-all hover:bg-[var(--red-2)] hover:text-[var(--red-11)] active:scale-95'
+                                            title='Remove Item'
+                                            type='button'
+                                            onClick={() =>
+                                              handleRemoveItem(index)
+                                            }
+                                          >
+                                            <Trash2 className='h-3.5 w-3.5' />
+                                          </button>
+                                        </td>
+                                      </tr>
+                                    )
+                                  })}
+                              </tbody>
+                              <tfoot className='border-t border-[var(--gray-3)] bg-[var(--gray-1)]'>
+                                <tr className='font-bold'>
+                                  <td
+                                    className='px-3 py-2 text-right text-[11px] text-[var(--gray-11)]'
+                                    colSpan={
+                                      isDynamicTable
+                                        ? Math.max(1, dynamicColumns.length - 1)
+                                        : 3
+                                    }
+                                  >
+                                    Grand Total
+                                  </td>
+                                  <td className='px-3 py-2 text-right text-[13px] text-[var(--gray-13)]'>
+                                    {(() => {
+                                      const currencyCode =
+                                        formModel?.['Currency'] ||
+                                        agentData?.['Extracted Invoice JSON']
+                                          ?.invoice_header?.['Currency'] ||
+                                        ''
+                                      const total = lineItems.reduce(
+                                        (sum: number, item: any) => {
+                                          const val = getLineItemAmount(item)
+                                          const num = Number.parseFloat(
+                                            String(val).replace(/[^0-9.-]+/g, ''),
                                           )
-                                        })()}
-                                      </td>
-
-                                      {/* Action Cell */}
-                                      <td className='w-[44px] px-2 py-0.5 text-center'>
-                                        <button
-                                          className='rounded p-1 text-[var(--red-9)] transition-all hover:bg-[var(--red-2)] hover:text-[var(--red-11)] active:scale-95'
-                                          title='Remove Item'
-                                          type='button'
-                                          onClick={() =>
-                                            handleRemoveItem(index)
-                                          }
-                                        >
-                                          <Trash2 className='h-3.5 w-3.5' />
-                                        </button>
-                                      </td>
-                                    </tr>
-                                  )
-                                })}
-                          </tbody>
-                          <tfoot className='border-t border-[var(--gray-3)] bg-[var(--gray-1)]'>
-                            <tr className='font-bold'>
-                              <td
-                                className='px-3 py-2 text-right text-[11px] text-[var(--gray-11)]'
-                                colSpan={
-                                  isDynamicTable
-                                    ? Math.max(1, dynamicColumns.length - 1)
-                                    : 3
-                                }
-                              >
-                                Grand Total
-                              </td>
-                              <td className='px-3 py-2 text-right text-[13px] text-[var(--gray-13)]'>
-                                {(() => {
-                                  const currencyCode =
-                                    formModel?.['Currency'] ||
-                                    agentData?.['Extracted Invoice JSON']
-                                      ?.invoice_header?.['Currency'] ||
-                                    ''
-                                  const total = lineItems.reduce(
-                                    (sum: number, item: any) => {
-                                      const val = getLineItemAmount(item)
-                                      const num = Number.parseFloat(
-                                        String(val).replace(/[^0-9.-]+/g, ''),
+                                          return sum + (Number.isNaN(num) ? 0 : num)
+                                        },
+                                        0,
                                       )
-                                      return sum + (Number.isNaN(num) ? 0 : num)
-                                    },
-                                    0,
-                                  )
-                                  const formattedTotal = total.toLocaleString(
-                                    undefined,
-                                    {
-                                      maximumFractionDigits: 2,
-                                      minimumFractionDigits: 2,
-                                    },
-                                  )
-                                  return currencyCode
-                                    ? `${currencyCode} ${formattedTotal}`
-                                    : formattedTotal
-                                })()}
-                              </td>
-                              <td className='w-[100px] bg-[var(--gray-1)]' />
-                              <td className='w-[44px] bg-[var(--gray-1)]' />
-                            </tr>
-                          </tfoot>
-                        </table>
-                      </div>
-                    </div>
-                  )}
-
-                  {activeTab === 'attachments' && (
-                    <div className='flex-1 overflow-y-auto p-4'>
-                      {isCurrentlyProcessing ? (
-                        <div className='flex h-48 flex-col items-center justify-center text-center'>
-                          <Icon
-                            className='mb-2 size-8 animate-spin text-[var(--primary-9)]'
-                            name='tabler:loader-2'
-                          />
-                          <p className='text-xs font-semibold text-[var(--gray-10)]'>
-                            Loading Attachments...
-                          </p>
+                                      const formattedTotal = total.toLocaleString(
+                                        undefined,
+                                        {
+                                          maximumFractionDigits: 2,
+                                          minimumFractionDigits: 2,
+                                        },
+                                      )
+                                      return currencyCode
+                                        ? `${currencyCode} ${formattedTotal}`
+                                        : formattedTotal
+                                    })()}
+                                  </td>
+                                  <td className='w-[100px] bg-[var(--gray-1)]' />
+                                  <td className='w-[44px] bg-[var(--gray-1)]' />
+                                </tr>
+                              </tfoot>
+                            </table>
+                          </div>
                         </div>
-                      ) : (
-                        <>
-                          {/* Related Documents Gated Section */}
-                          {relatedDocsState.status === 'not_run' && (
-                            <div className='mb-4 rounded-xl border border-[var(--gray-3)] bg-surface p-4 shadow-sm animate-in fade-in duration-300'>
-                              <div className='flex flex-col md:flex-row md:items-center justify-between gap-4'>
-                                <div className='flex-1 space-y-1'>
-                                  <h4 className='text-xs font-bold text-[var(--gray-13)] flex items-center gap-1.5'>
-                                    <Icon className='h-4 w-4 text-[var(--gray-10)]' name='tabler:files' />
-                                    Related Documents
-                                  </h4>
-                                  <p className='text-[11px] text-[var(--gray-10)] leading-normal'>
-                                    Run a check to surface similar POs and prior invoices from this supplier.
-                                  </p>
-                                </div>
-                                <button
-                                  onClick={handleFindRelatedDocumentsClick}
-                                  className='inline-flex items-center justify-center gap-1.5 rounded-lg bg-[var(--primary-9)] hover:bg-[var(--primary-10)] active:scale-95 text-white px-4 py-2 text-xs font-bold transition-all cursor-pointer shadow-sm border-none shrink-0 self-start md:self-center'
-                                >
-                                  <Icon className='h-4 w-4' name='tabler:search' />
-                                  Find Documents
-                                </button>
-                              </div>
+                      )}
+
+                      {activeTab === 'attachments' && (
+                        <div className='flex-1 overflow-y-auto p-4'>
+                          {isCurrentlyProcessing ? (
+                            <div className='flex h-48 flex-col items-center justify-center text-center'>
+                              <Icon
+                                className='mb-2 size-8 animate-spin text-[var(--primary-9)]'
+                                name='tabler:loader-2'
+                              />
+                              <p className='text-xs font-semibold text-[var(--gray-10)]'>
+                                Loading Attachments...
+                              </p>
                             </div>
-                          )}
-                          {relatedDocsState.status === 'pending' && (
-                            <div className='mb-4 rounded-xl border border-[var(--gray-3)] bg-surface p-4 shadow-sm animate-in fade-in duration-300'>
-                              <div className='flex items-center gap-3'>
-                                <Icon className='h-5 w-5 animate-spin text-[var(--primary-9)]' name='tabler:loader-2' />
-                                <div className='space-y-1'>
-                                  <h4 className='text-xs font-bold text-[var(--gray-13)]'>Related Documents</h4>
-                                  <p className='text-[11px] text-[var(--gray-10)] font-medium animate-pulse'>
-                                    Searching related documents...
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                          {relatedDocsState.status === 'complete' && (
-                            <div className='mb-4 rounded-xl border border-[var(--gray-3)] bg-surface p-4 shadow-sm animate-in fade-in duration-300'>
-                              <div className='space-y-3'>
-                                <div className='flex items-center justify-between border-b border-[var(--gray-3)] pb-2'>
-                                  <h4 className='text-xs font-bold text-[var(--gray-13)] flex items-center gap-1.5'>
-                                    <Icon className='h-4 w-4 text-[var(--green-9)]' name='tabler:circle-check' />
-                                    Related Documents
-                                  </h4>
-                                  <span className='rounded bg-[var(--green-1)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--green-9)] border border-[var(--green-3)]'>
-                                    Completed
-                                  </span>
-                                </div>
-                                
-                                <p className='text-xs text-[var(--gray-12)] font-medium leading-relaxed'>
-                                  {relatedDocsState.data?.summary}
-                                </p>
-                                
-                                <div className='flex flex-wrap gap-2 pt-1'>
-                                  {relatedDocsState.data?.chips?.map((chip: any, idx: number) => (
-                                    <div 
-                                      key={idx}
-                                      className='inline-flex items-center gap-1.5 rounded-md bg-[var(--gray-2)] border border-[var(--gray-3)] px-2 py-1 text-[11px] font-semibold text-[var(--gray-12)]'
-                                    >
-                                      <Icon className='h-3 w-3 text-[var(--gray-10)]' name='tabler:file-text' />
-                                      <span>{chip.id}</span>
-                                      <span className='text-[10px] text-[var(--gray-9)] font-normal'>({chip.date})</span>
+                          ) : (
+                            <>
+                              {/* Related Documents Gated Section */}
+                              {relatedDocsState.status === 'not_run' && (
+                                <div className='mb-4 rounded-xl border border-[var(--gray-3)] bg-surface p-4 shadow-sm animate-in fade-in duration-300'>
+                                  <div className='flex flex-col md:flex-row md:items-center justify-between gap-4'>
+                                    <div className='flex-1 space-y-1'>
+                                      <h4 className='text-xs font-bold text-[var(--gray-13)] flex items-center gap-1.5'>
+                                        <Icon className='h-4 w-4 text-[var(--gray-10)]' name='tabler:files' />
+                                        Related Documents
+                                      </h4>
+                                      <p className='text-[11px] text-[var(--gray-10)] leading-normal'>
+                                        Run a check to surface similar POs and prior invoices from this supplier.
+                                      </p>
                                     </div>
-                                  ))}
+                                    <button
+                                      onClick={handleFindRelatedDocumentsClick}
+                                      className='inline-flex items-center justify-center gap-1.5 rounded-lg bg-[var(--primary-9)] hover:bg-[var(--primary-10)] active:scale-95 text-white px-4 py-2 text-xs font-bold transition-all cursor-pointer shadow-sm border-none shrink-0 self-start md:self-center'
+                                    >
+                                      <Icon className='h-4 w-4' name='tabler:search' />
+                                      Find Documents
+                                    </button>
+                                  </div>
                                 </div>
-                              </div>
-                            </div>
+                              )}
+                              {relatedDocsState.status === 'pending' && (
+                                <div className='mb-4 rounded-xl border border-[var(--gray-3)] bg-surface p-4 shadow-sm animate-in fade-in duration-300'>
+                                  <div className='flex items-center gap-3'>
+                                    <Icon className='h-5 w-5 animate-spin text-[var(--primary-9)]' name='tabler:loader-2' />
+                                    <div className='space-y-1'>
+                                      <h4 className='text-xs font-bold text-[var(--gray-13)]'>Related Documents</h4>
+                                      <p className='text-[11px] text-[var(--gray-10)] font-medium animate-pulse'>
+                                        Searching related documents...
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                              {relatedDocsState.status === 'complete' && (
+                                <div className='mb-4 rounded-xl border border-[var(--gray-3)] bg-surface p-4 shadow-sm animate-in fade-in duration-300'>
+                                  <div className='space-y-3'>
+                                    <div className='flex items-center justify-between border-b border-[var(--gray-3)] pb-2'>
+                                      <h4 className='text-xs font-bold text-[var(--gray-13)] flex items-center gap-1.5'>
+                                        <Icon className='h-4 w-4 text-[var(--green-9)]' name='tabler:circle-check' />
+                                        Related Documents
+                                      </h4>
+                                      <span className='rounded bg-[var(--green-1)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--green-9)] border border-[var(--green-3)]'>
+                                        Completed
+                                      </span>
+                                    </div>
+
+                                    <p className='text-xs text-[var(--gray-12)] font-medium leading-relaxed'>
+                                      {relatedDocsState.data?.summary}
+                                    </p>
+
+                                    <div className='flex flex-wrap gap-2 pt-1'>
+                                      {relatedDocsState.data?.chips?.map((chip: any, idx: number) => (
+                                        <div
+                                          key={idx}
+                                          className='inline-flex items-center gap-1.5 rounded-md bg-[var(--gray-2)] border border-[var(--gray-3)] px-2 py-1 text-[11px] font-semibold text-[var(--gray-12)]'
+                                        >
+                                          <Icon className='h-3 w-3 text-[var(--gray-10)]' name='tabler:file-text' />
+                                          <span>{chip.id}</span>
+                                          <span className='text-[10px] text-[var(--gray-9)] font-normal'>({chip.date})</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+
+                              <Attachments
+                                enabled={true}
+                                formModel={formModel}
+                                instanceId={resolvedInstanceId}
+                                processId={processId}
+                                selectedItem={selectedItem}
+                                transactionId={transactionId}
+                                workflowId={workflowId}
+                                repositoryId={
+                                  repositoryId || selectedItem?.repositoryId
+                                }
+                                onSelect={(file) =>
+                                  selectedFile?.id === file.id
+                                    ? (setIsViewerLoading(true),
+                                      setTimeout(
+                                        () => setIsViewerLoading(false),
+                                        500,
+                                      ))
+                                    : setSelectedFile(file)
+                                }
+                              />
+                            </>
                           )}
-
-                          <Attachments
-                            enabled={true}
-                            formModel={formModel}
-                            instanceId={resolvedInstanceId}
-                            processId={processId}
-                            selectedItem={selectedItem}
-                            transactionId={transactionId}
-                            workflowId={workflowId}
-                            repositoryId={
-                              repositoryId || selectedItem?.repositoryId
-                            }
-                            onSelect={(file) =>
-                              selectedFile?.id === file.id
-                                ? (setIsViewerLoading(true),
-                                  setTimeout(
-                                    () => setIsViewerLoading(false),
-                                    500,
-                                  ))
-                                : setSelectedFile(file)
-                            }
-                          />
-                        </>
-                      )}
-                    </div>
-                  )}
-
-                  {activeTab === 'comments' && (
-                    <div className='flex min-h-0 flex-1 flex-col pt-4 pb-0'>
-                      {isCurrentlyProcessing ? (
-                        <div className='flex h-48 flex-col items-center justify-center text-center'>
-                          <Icon
-                            className='mb-2 size-8 animate-spin text-[var(--primary-9)]'
-                            name='tabler:loader-2'
-                          />
-                          <p className='text-xs font-semibold text-[var(--gray-10)]'>
-                            Loading Comments...
-                          </p>
                         </div>
-                      ) : (
-                        <Comments
-                          attachments={selectedItem?.attachments || []}
-                          comments={commentsData}
-                          enabled={true}
-                          instanceId={resolvedInstanceId}
-                          isLoading={isLoadingComments}
-                          processId={processId}
-                          refetch={refetchComments}
-                          repositoryId={repositoryId}
-                          transactionId={transactionId}
-                          workflowId={workflowId}
-                        />
                       )}
-                    </div>
-                  )}
 
-                  {activeTab === 'history' && (
-                    <div className='flex-1 overflow-y-auto p-4'>
-                      {isCurrentlyProcessing ? (
-                        <div className='flex h-48 flex-col items-center justify-center text-center'>
-                          <Icon
-                            className='mb-2 size-8 animate-spin text-[var(--primary-9)]'
-                            name='tabler:loader-2'
-                          />
-                          <p className='text-xs font-semibold text-[var(--gray-10)]'>
-                            Loading History...
-                          </p>
+                      {activeTab === 'comments' && (
+                        <div className='flex min-h-0 flex-1 flex-col pt-4 pb-0'>
+                          {isCurrentlyProcessing ? (
+                            <div className='flex h-48 flex-col items-center justify-center text-center'>
+                              <Icon
+                                className='mb-2 size-8 animate-spin text-[var(--primary-9)]'
+                                name='tabler:loader-2'
+                              />
+                              <p className='text-xs font-semibold text-[var(--gray-10)]'>
+                                Loading Comments...
+                              </p>
+                            </div>
+                          ) : (
+                            <Comments
+                              attachments={selectedItem?.attachments || []}
+                              comments={commentsData}
+                              enabled={true}
+                              instanceId={resolvedInstanceId}
+                              isLoading={isLoadingComments}
+                              processId={processId}
+                              refetch={refetchComments}
+                              repositoryId={repositoryId}
+                              transactionId={transactionId}
+                              workflowId={workflowId}
+                            />
+                          )}
                         </div>
-                      ) : (
-                        <History
-                          enabled={true}
-                          processId={processId}
-                          workflowId={workflowId}
-                          instanceId={
-                            selectedItem?.workflowInstanceId ||
-                            selectedItem?.instanceId ||
-                            processId
-                          }
-                        />
                       )}
-                    </div>
-                  )}
+
+                      {activeTab === 'history' && (
+                        <div className='flex-1 overflow-y-auto p-4'>
+                          {isCurrentlyProcessing ? (
+                            <div className='flex h-48 flex-col items-center justify-center text-center'>
+                              <Icon
+                                className='mb-2 size-8 animate-spin text-[var(--primary-9)]'
+                                name='tabler:loader-2'
+                              />
+                              <p className='text-xs font-semibold text-[var(--gray-10)]'>
+                                Loading History...
+                              </p>
+                            </div>
+                          ) : (
+                            <History
+                              enabled={true}
+                              processId={processId}
+                              workflowId={workflowId}
+                              instanceId={
+                                selectedItem?.workflowInstanceId ||
+                                selectedItem?.instanceId ||
+                                processId
+                              }
+                            />
+                          )}
+                        </div>
+                      )}
                     </>
                   )}
                 </div>

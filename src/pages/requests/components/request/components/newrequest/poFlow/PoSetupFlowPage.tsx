@@ -1,8 +1,7 @@
 import Papa from 'papaparse'
 import { useMemo, useRef, useState } from 'react'
 import * as XLSX from 'xlsx'
-import { Select } from '@mantine/core'
-import folderApi from '@/api/folders/folders'
+import formApi from '@/api/form/form'
 import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
 import showToast from '@/components/base/toast/showToast'
@@ -13,6 +12,7 @@ import cn from '@/utils/cn'
 import { downloadTemplate, PO_ACCEPT } from '../utils'
 import { compareHeaderSimilarity } from './utils/headerSimilarity'
 import { SYSTEM_TEMPLATE_COLUMNS } from './utils/templateSchema'
+import ColumnMapping from '@/components/common/ColumnMapping'
 
 export type UploadState =
   | 'idle'
@@ -48,10 +48,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
   const [mapping, setMapping] = useState<Record<string, string>>({})
   const [previewRows, setPreviewRows] = useState<any[]>([])
 
-  // Custom dropdown open state
-  const [openFieldDropdown, setOpenFieldDropdown] = useState<string | null>(
-    null,
-  )
+
 
   // Timeline step states
   const [step1State, setStep1State] = useState<StepState>('waiting')
@@ -68,31 +65,9 @@ export default function PoSetupFlowPage({ onClose }: Props) {
   // System Template columns schema
   const systemColumns = useMemo(() => SYSTEM_TEMPLATE_COLUMNS, [])
 
-  const requiredFields = useMemo(
-    () => [
-      'PO Number',
-      'Vendor Name',
-      'Vendor Address',
-      'Ship To Address',
-      'PO Date',
-      'PO Amount',
-    ],
-    [],
-  )
-  const optionalFields = useMemo(() => ['Terms'], [])
 
-  const mappedCount = requiredFields.filter((f) => !!mapping[f]).length
 
-  const defaultMockColumns = [
-    'PO_No',
-    'Supplier_Name',
-    'Billing_Address',
-    'Vendor_Loc',
-    'Shipping_Address',
-    'PO_Date',
-    'PO_Amount',
-    'Payment_Terms',
-  ]
+
 
   // CSV Normalization helper
   const normalizeHeader = (h: unknown) => {
@@ -183,7 +158,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
 
           setTimeout(() => {
             setUploadState('processing')
-            runTimelineSimulation(result.headers, result.rowCount, file)
+            runTimelineSimulation(result.headers, result.rowCount)
           }, 300)
         } else {
           setUploadProgress(currentProgress)
@@ -204,7 +179,6 @@ export default function PoSetupFlowPage({ onClose }: Props) {
   const runTimelineSimulation = (
     headers: string[],
     rowsCount: number,
-    file: File,
   ) => {
     setUploadedColumns(headers)
     setRowCount(rowsCount)
@@ -348,12 +322,13 @@ export default function PoSetupFlowPage({ onClose }: Props) {
   const sendUpdatedFile = async (file: File) => {
     const payload = {
       file: file,
-      formId: wFormId ? Number(wFormId) : undefined,
-      workflowId: workflowId ? Number(workflowId) : undefined,
+      formId: wFormId ? String(wFormId) : '',
+      workflowId: workflowId ? String(workflowId) : '',
+      instanceId: '',
     }
 
     try {
-      const { data, error } = await folderApi.uploadMasterFile(payload)
+      const { data, error } = await formApi.uploadMasterFile(payload)
       if (data) {
         showToast({
           message: 'Master fields mapped and saved successfully.',
@@ -429,10 +404,6 @@ export default function PoSetupFlowPage({ onClose }: Props) {
     startPipeline(file)
   }
 
-  // Dropdown list options mapping
-  const availableColumnsList = uploadedColumns.length
-    ? uploadedColumns
-    : defaultMockColumns
 
   return (
     <div className='animate-in fade-in flex h-full w-full flex-1 flex-col overflow-hidden bg-surface-muted font-inter text-gray-13 duration-300'>
@@ -662,33 +633,32 @@ export default function PoSetupFlowPage({ onClose }: Props) {
           {/* Timeline Layout */}
           <main className='custom-scrollbar flex min-h-0 flex-1 flex-col items-center overflow-y-auto p-6'>
             <AnimateSlideUp className={cn(
-              'relative my-auto w-full space-y-6 py-4 pl-8 transition-all duration-300',
-              uploadState === 'ready' ? 'max-w-3xl' : 'max-w-xl'
+              'relative my-auto w-full max-w-3xl space-y-6 py-4 pl-8 transition-all duration-300'
             )}>
 
               {/* STEP 1: FILE INGESTION & PARSING */}
-              <div className='relative z-10 flex flex-col gap-2'>
+              <div className='relative z-10 flex flex-col gap-3.5 pl-10'>
                 {/* Line segment from Step 1 to Step 2 */}
-                <div className="absolute left-[-18px] top-7 -bottom-9 w-[1.5px] bg-border-default z-0" />
+                <div className="absolute left-[13px] top-8 -bottom-[18px] w-[1.5px] bg-border-default z-0" />
                 <div
                   className={cn(
-                    'absolute left-[-18px] top-7 -bottom-9 w-[1.5px] bg-green-11 origin-top transition-transform duration-700 ease-in-out z-0',
+                    'absolute left-[13px] top-8 -bottom-[18px] w-[1.5px] bg-green-11 origin-top transition-transform duration-700 ease-in-out z-0',
                     step1State === 'done' ? 'scale-y-100' : 'scale-y-0'
                   )}
                 />
                 <div className='flex items-start gap-4'>
                   <div
                     className={cn(
-                      'absolute -left-8 flex size-7 items-center justify-center rounded-full transition-all duration-300 z-10',
+                      'absolute left-0 top-0.5 flex size-7 items-center justify-center rounded-full transition-all duration-300 z-10 shadow-xs',
                       step1State === 'done'
-                        ? 'border-2 border-green-11 bg-white text-green-11'
+                        ? 'bg-green-9 text-white border border-green-9'
                         : step1State === 'active'
-                          ? 'border-4 border-accent-soft bg-accent-soft text-primary-9'
-                          : 'border-4 border-gray-2 bg-gray-2 text-gray-8',
+                          ? 'border-2 border-primary-9 bg-white text-primary-9'
+                          : 'border-2 border-gray-3 bg-white text-gray-4',
                     )}
                   >
                     {step1State === 'done' ? (
-                      <Icon className='size-4 font-bold' name='tabler:check' />
+                      <Icon className='size-4 stroke-[3px]' name='tabler:check' />
                     ) : step1State === 'active' ? (
                       <Icon
                         className='size-4 animate-spin'
@@ -714,7 +684,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                         </span>
                       )}
                     </div>
-                    <p className='mt-0.5 text-[11px] font-medium text-gray-8'>
+                    <p className='mt-1.5 text-[11px] font-medium text-gray-8'>
                       Ingesting raw file payload and validating structure.
                     </p>
                   </div>
@@ -722,7 +692,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
 
                 {/* Step 1 Detail Card */}
                 {(step1State === 'active' || step1State === 'done') && (
-                  <div className='animate-in fade-in slide-in-from-top-2 ml-3 grid grid-cols-2 gap-x-6 gap-y-2 rounded-xl border border-border-default bg-surface-primary p-4 text-[12px] shadow-2xs duration-300'>
+                  <div className='animate-in fade-in slide-in-from-top-2 grid grid-cols-2 gap-x-6 gap-y-2 rounded-xl border border-border-default bg-surface-primary p-4 text-[12px] shadow-2xs duration-300'>
                     <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
                       <span className='text-gray-8'>File size</span>
                       <span className='font-bold text-gray-12'>
@@ -753,28 +723,28 @@ export default function PoSetupFlowPage({ onClose }: Props) {
               </div>
 
               {/* STEP 2: COLUMN & ROW EXTRACTION */}
-              <div className='relative z-10 flex flex-col gap-2'>
+              <div className='relative z-10 flex flex-col gap-3.5 pl-10'>
                 {/* Line segment from Step 2 to Step 3 */}
-                <div className="absolute left-[-18px] top-7 -bottom-9 w-[1.5px] bg-border-default z-0" />
+                <div className="absolute left-[13px] top-8 -bottom-[18px] w-[1.5px] bg-border-default z-0" />
                 <div
                   className={cn(
-                    'absolute left-[-18px] top-7 -bottom-9 w-[1.5px] bg-green-11 origin-top transition-transform duration-700 ease-in-out z-0',
+                    'absolute left-[13px] top-8 -bottom-[18px] w-[1.5px] bg-green-11 origin-top transition-transform duration-700 ease-in-out z-0',
                     step2State === 'done' ? 'scale-y-100' : 'scale-y-0'
                   )}
                 />
                 <div className='flex items-start gap-4'>
                   <div
                     className={cn(
-                      'absolute -left-8 flex size-7 items-center justify-center rounded-full transition-all duration-300 z-10',
+                      'absolute left-0 top-0.5 flex size-7 items-center justify-center rounded-full transition-all duration-300 z-10 shadow-xs',
                       step2State === 'done'
-                        ? 'border-2 border-green-11 bg-white text-green-11'
+                        ? 'bg-green-9 text-white border border-green-9'
                         : step2State === 'active'
-                          ? 'border-4 border-accent-soft bg-accent-soft text-primary-9'
-                          : 'border-4 border-gray-2 bg-gray-2 text-gray-8',
+                          ? 'border-2 border-primary-9 bg-white text-primary-9'
+                          : 'border-2 border-gray-3 bg-white text-gray-4',
                     )}
                   >
                     {step2State === 'done' ? (
-                      <Icon className='size-4 font-bold' name='tabler:check' />
+                      <Icon className='size-4 stroke-[3px]' name='tabler:check' />
                     ) : step2State === 'active' ? (
                       <Icon
                         className='size-4 animate-spin'
@@ -800,7 +770,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                         </span>
                       )}
                     </div>
-                    <p className='mt-0.5 text-[11px] font-medium text-gray-8'>
+                    <p className='mt-1.5 text-[11px] font-medium text-gray-8'>
                       Extracting grid fields and filtering metadata records.
                     </p>
                   </div>
@@ -808,7 +778,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
 
                 {/* Step 2 Detail Card */}
                 {(step2State === 'active' || step2State === 'done') && (
-                  <div className='animate-in fade-in slide-in-from-top-2 ml-3 grid grid-cols-2 gap-x-6 gap-y-2 rounded-xl border border-border-default bg-surface-primary p-4 text-[12px] shadow-2xs duration-300'>
+                  <div className='animate-in fade-in slide-in-from-top-2 grid grid-cols-2 gap-x-6 gap-y-2 rounded-xl border border-border-default bg-surface-primary p-4 text-[12px] shadow-2xs duration-300'>
                     <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
                       <span className='text-gray-8'>Columns found</span>
                       <span className='font-bold text-gray-12'>
@@ -834,28 +804,28 @@ export default function PoSetupFlowPage({ onClose }: Props) {
               </div>
 
               {/* STEP 3: SCHEMA AUTO-MAPPING */}
-              <div className='relative z-10 flex flex-col gap-2'>
+              <div className='relative z-10 flex flex-col gap-3.5 pl-10'>
                 {/* Line segment from Step 3 to Step 4 */}
-                <div className="absolute left-[-18px] top-7 -bottom-9 w-[1.5px] bg-border-default z-0" />
+                <div className="absolute left-[13px] top-8 -bottom-[18px] w-[1.5px] bg-border-default z-0" />
                 <div
                   className={cn(
-                    'absolute left-[-18px] top-7 -bottom-9 w-[1.5px] bg-green-11 origin-top transition-transform duration-700 ease-in-out z-0',
+                    'absolute left-[13px] top-8 -bottom-[18px] w-[1.5px] bg-green-11 origin-top transition-transform duration-700 ease-in-out z-0',
                     step3State === 'done' ? 'scale-y-100' : 'scale-y-0'
                   )}
                 />
                 <div className='flex items-start gap-4'>
                   <div
                     className={cn(
-                      'absolute -left-8 flex size-7 items-center justify-center rounded-full transition-all duration-300 z-10',
+                      'absolute left-0 top-0.5 flex size-7 items-center justify-center rounded-full transition-all duration-300 z-10 shadow-xs',
                       step3State === 'done'
-                        ? 'border-2 border-green-11 bg-white text-green-11'
+                        ? 'bg-green-9 text-white border border-green-9'
                         : step3State === 'active'
-                          ? 'border-4 border-accent-soft bg-accent-soft text-primary-9'
-                          : 'border-4 border-gray-2 bg-gray-2 text-gray-8',
+                          ? 'border-2 border-primary-9 bg-white text-primary-9'
+                          : 'border-2 border-gray-3 bg-white text-gray-4',
                     )}
                   >
                     {step3State === 'done' ? (
-                      <Icon className='size-4 font-bold' name='tabler:check' />
+                      <Icon className='size-4 stroke-[3px]' name='tabler:check' />
                     ) : step3State === 'active' ? (
                       <Icon
                         className='size-4 animate-spin'
@@ -881,7 +851,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                         </span>
                       )}
                     </div>
-                    <p className='mt-0.5 text-[11px] font-medium text-gray-8'>
+                    <p className='mt-1.5 text-[11px] font-medium text-gray-8'>
                       Aligning CSV/XLSX headers with database mapping schema.
                     </p>
                   </div>
@@ -889,7 +859,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
 
                 {/* Step 3 Detail Card */}
                 {(step3State === 'active' || step3State === 'done') && (
-                  <div className='animate-in fade-in slide-in-from-top-2 ml-3 grid grid-cols-2 gap-x-6 gap-y-2 rounded-xl border border-border-default bg-surface-primary p-4 text-[12px] shadow-2xs duration-300'>
+                  <div className='animate-in fade-in slide-in-from-top-2 grid grid-cols-2 gap-x-6 gap-y-2 rounded-xl border border-border-default bg-surface-primary p-4 text-[12px] shadow-2xs duration-300'>
                     <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
                       <span className='text-gray-8'>Fields matched</span>
                       <span className='font-bold text-gray-12'>
@@ -914,159 +884,39 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                 )}
 
                 {uploadState === 'ready' && (
-                  <div className='animate-in fade-in slide-in-from-top-2 ml-3 mt-4 space-y-4 rounded-xl border border-border-default bg-surface-primary p-5 shadow-sm duration-300'>
-                    <div className='flex items-center justify-between border-b border-border-default pb-3'>
-                      <div>
-                        <h4 className='text-[14px] font-bold text-gray-12'>Confirm Column Mapping</h4>
-                        <p className='text-[11px] text-gray-8 mt-0.5'>Align uploaded columns with master system fields.</p>
-                      </div>
-                      <button
-                        type='button'
-                        onClick={() => {
-                          const initialMapping: Record<string, string> = {}
-                          systemColumns.forEach((col) => {
-                            const match = uploadedColumns.find((u) => compareHeaderSimilarity(u, col.key))
-                            if (match) initialMapping[col.key] = match
-                          })
-                          setMapping(initialMapping)
-                          showToast({ message: 'Reset to initial suggestions.', variant: 'default' })
-                        }}
-                        className='flex items-center gap-1 text-[11px] font-bold text-primary-9 hover:underline'
-                      >
-                        <Icon className='size-3.5' name='tabler:rotate' />
-                        <span>Reset</span>
-                      </button>
-                    </div>
-
-                    {/* Three-column Mapping Table */}
-                    <div className='flex flex-col gap-2'>
-                      {/* Table Header */}
-                      <div className='grid grid-cols-[1fr_1.2fr_1fr] pb-2 text-[10px] font-extrabold tracking-wider text-gray-8 uppercase border-b border-border-default'>
-                        <div>System Field</div>
-                        <div>Your Field</div>
-                        <div>Preview</div>
-                      </div>
-
-                      {/* Scrollable Mapping Rows Container */}
-                      <div className='max-h-[300px] overflow-y-auto divide-y divide-border-default/60 custom-scrollbar pr-1'>
-                        {[...systemColumns]
-                          .sort((a, b) => {
-                            if (a.required === b.required) return 0
-                            return a.required ? -1 : 1
-                          })
-                          .map((col) => {
-                            const selectedVal = mapping[col.key] || ''
-                            const isMapped = !!selectedVal
-                            const previewVal = (selectedVal && selectedVal !== 'Skip to Import')
-                              ? String(previewRows[0]?.[selectedVal] ?? '')
-                              : ''
-
-                            return (
-                              <div key={col.key} className='grid grid-cols-[1fr_1.2fr_1fr] items-center py-2.5 gap-4 first:pt-1'>
-                                {/* Column 1: System Field */}
-                                <div className='flex items-center gap-1.5 min-w-0'>
-                                  <span className='truncate text-[13px] font-semibold text-gray-12'>{col.key}</span>
-                                  {col.required && (
-                                    <Icon className='size-2 shrink-0 text-red-11 animate-pulse' name='tabler:asterisk' title='Required Field' />
-                                  )}
-                                </div>
-
-                                {/* Column 2: Your Field (Dropdown Selector) */}
-                                <div>
-                                  <Select
-                                    data={[
-                                      { label: 'Skip to Import', value: 'Skip to Import' },
-                                      ...uploadedColumns.map(c => ({ label: c, value: c }))
-                                    ]}
-                                    placeholder='Select column...'
-                                    value={selectedVal || null}
-                                    clearable
-                                    searchable
-                                    onChange={(v) => setMapping({ ...mapping, [col.key]: v ?? '' })}
-                                    className='w-full'
-                                    size='xs'
-                                    radius='md'
-                                    styles={{
-                                      dropdown: {
-                                        border: '1px solid var(--gray-3)',
-                                        borderRadius: '12px',
-                                        boxShadow: 'var(--shadow-md)',
-                                        zIndex: 1000,
-                                      },
-                                      input: {
-                                        fontSize: '12px',
-                                        fontWeight: 500,
-                                        height: '32px',
-                                        border: isMapped ? '1px solid var(--primary-9)' : '1px solid var(--gray-4)',
-                                        backgroundColor: isMapped ? 'var(--primary-2)' : 'var(--surface-primary)',
-                                        color: isMapped ? 'var(--primary-12)' : 'var(--gray-12)',
-                                      }
-                                    }}
-                                  />
-                                </div>
-
-                                {/* Column 3: Preview Value */}
-                                <div className='text-[12px] font-medium text-gray-8 truncate' title={previewVal}>
-                                  {selectedVal === 'Skip to Import' ? (
-                                    <span className='text-gray-5 italic'>Skipped</span>
-                                  ) : previewVal ? (
-                                    <span className='text-gray-12 font-semibold'>"{previewVal}"</span>
-                                  ) : (
-                                    <span className='text-gray-5 italic'>No data</span>
-                                  )}
-                                </div>
-                              </div>
-                            )
-                          })}
-                      </div>
-                    </div>
-
-                    {/* Actions Row */}
-                    <div className='flex items-center justify-between border-t border-border-default pt-4 mt-2'>
-                      <span className='text-[11px] font-semibold text-gray-8'>
-                        {systemColumns.filter((col) => col.required && !!mapping[col.key]).length} of {systemColumns.filter((col) => col.required).length} required fields mapped
-                      </span>
-                      <div className='flex gap-2.5'>
-                        <Button
-                          variant='outline'
-                          size='xs'
-                          onClick={() => {
-                            setUploadState('idle')
-                            setUploadedFile(null)
-                            setMapping({})
-                            setPreviewRows([])
-                          }}
-                        >
-                          Cancel
-                        </Button>
-                        <Button
-                          disabled={systemColumns.some((col) => col.required && !mapping[col.key])}
-                          onClick={handleManualConfirm}
-                          size='xs'
-                        >
-                          Confirm & Ingest
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
+                  <ColumnMapping
+                    uploadedColumns={uploadedColumns}
+                    previewRows={previewRows}
+                    mapping={mapping}
+                    onChangeMapping={setMapping}
+                    showActionsRow={true}
+                    onConfirm={handleManualConfirm}
+                    onCancel={() => {
+                      setUploadState('idle')
+                      setUploadedFile(null)
+                      setMapping({})
+                      setPreviewRows([])
+                    }}
+                    isConfirmLoading={isSubmitting}
+                  />
                 )}
               </div>
 
               {/* STEP 4: INGESTION & CONFIRMATION */}
-              <div className='relative z-10 flex flex-col gap-2'>
+              <div className='relative z-10 flex flex-col gap-3.5 pl-10'>
                 <div className='flex items-start gap-4'>
                   <div
                     className={cn(
-                      'absolute -left-8 flex size-7 items-center justify-center rounded-full transition-all duration-300 z-10',
+                      'absolute left-0 top-0.5 flex size-7 items-center justify-center rounded-full transition-all duration-300 z-10 shadow-xs',
                       step4State === 'done'
-                        ? 'border-2 border-green-11 bg-white text-green-11'
+                        ? 'bg-green-9 text-white border border-green-9'
                         : step4State === 'active'
-                          ? 'border-4 border-accent-soft bg-accent-soft text-primary-9'
-                          : 'border-4 border-gray-2 bg-gray-2 text-gray-8',
+                          ? 'border-2 border-primary-9 bg-white text-primary-9'
+                          : 'border-2 border-gray-3 bg-white text-gray-4',
                     )}
                   >
                     {step4State === 'done' ? (
-                      <Icon className='size-4 font-bold' name='tabler:check' />
+                      <Icon className='size-4 stroke-[3px]' name='tabler:check' />
                     ) : step4State === 'active' ? (
                       <Icon
                         className='size-4 animate-spin'
@@ -1080,7 +930,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                     <h3 className='text-[13px] font-bold text-gray-12'>
                       Ingestion & Confirmation
                     </h3>
-                    <p className='mt-0.5 text-[11px] font-semibold text-gray-8'>
+                    <p className='mt-1.5 text-[11px] font-semibold text-gray-8'>
                       {step4State === 'active'
                         ? 'Finalizing record ingestion...'
                         : step4State === 'done'

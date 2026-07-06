@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import Icon from '@/components/base/icon/Icon'
-import cn from '@/utils/cn'
+// import cn from '@/utils/cn'
 
 interface ApiPlaygroundProps {
   context?: {

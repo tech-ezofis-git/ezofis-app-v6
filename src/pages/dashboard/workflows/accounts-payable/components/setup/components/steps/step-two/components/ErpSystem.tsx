@@ -20,7 +20,7 @@ import BrandCard from '../../components/BrandCard'
 import SectionHeader from '../../components/SectionHeader'
 import { OrDivider } from '../../components/StepLayout'
 import { extractHeadersAndData } from '../utils/fileParser'
-import ColumnMapping from './ColumnMapping'
+import ColumnMapping from '@/components/common/ColumnMapping'
 import showToast from '@/components/base/toast/showToast'
 import { compareHeaderSimilarity } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/headerSimilarity'
 import { SYSTEM_TEMPLATE_COLUMNS } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/templateSchema'
@@ -249,7 +249,20 @@ const ErpSystem = () => {
                 )}
               </div>
             </AnimateFadeIn>
-            {erpSettings.templateUploaded && <ColumnMapping />}
+            {erpSettings.templateUploaded && (
+              <ColumnMapping
+                uploadedColumns={erpSettings.uploadedColumns || []}
+                previewRows={erpSettings.previewRows || []}
+                mapping={erpSettings.mapping || {}}
+                onChangeMapping={(m) =>
+                  setErpSettings({
+                    ...erpSettings,
+                    mapping: m,
+                  })
+                }
+                showActionsRow={false}
+              />
+            )}
           </>
         )}
       </div>

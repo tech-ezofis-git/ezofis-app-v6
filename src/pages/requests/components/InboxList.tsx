@@ -201,6 +201,72 @@ const searchInvoiceAmountInObj = (obj: any): string | null => {
   return null
 }
 
+const findSupplierName = (row: any): string | null => {
+  if (!row) return null
+  const parsedForm = getParsedFormData(row)
+
+  const searchInObj = (obj: any): string | null => {
+    if (!obj || typeof obj !== 'object') return null
+
+    const directKeys = [
+      'UtfgJy6Z0qyfRC5Bclfc',
+      'UtfgJy6Z0qyfRC5Bclf-c',
+      'UtfgJy6Z0qyfRC5Bclf_c',
+      'Supplier Name',
+      'Vendor Name',
+      'Supplier_Name',
+      'Vendor_Name',
+      'SupplierName',
+      'VendorName',
+    ]
+    for (const key of directKeys) {
+      if (obj[key] !== undefined && obj[key] !== null) {
+        const val = String(obj[key]).trim()
+        if (val !== '' && val !== '-') return val
+      }
+    }
+
+    for (const key of Object.keys(obj)) {
+      const k = key
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '')
+        .trim()
+      if (
+        k === 'suppliername' ||
+        k === 'vendorname' ||
+        k === 'supplier' ||
+        k === 'vendor'
+      ) {
+        const val = obj[key]
+        if (
+          val &&
+          typeof val !== 'object' &&
+          String(val).trim() !== '' &&
+          String(val).trim() !== '-'
+        ) {
+          return String(val).trim()
+        }
+      }
+    }
+    return null
+  }
+
+  const fromForm = searchInObj(parsedForm)
+  if (fromForm) return fromForm
+
+  const agentData = row._agentResponse || row._agentData?.[0] || row._agentData || {}
+  const fromAgent = searchInObj(agentData)
+  if (fromAgent) return fromAgent
+
+  const invoiceHeader = agentData?.['Extracted Invoice JSON']?.invoice_header
+  if (invoiceHeader) {
+    const fromHeader = searchInObj(invoiceHeader)
+    if (fromHeader) return fromHeader
+  }
+
+  return null
+}
+
 const findInvoiceAmount = (row: any): string | null => {
   if (!row) return null
   const parsedForm = getParsedFormData(row)
@@ -240,11 +306,13 @@ const filterRowsByQuickFilters = (
     (f) => f === 'highValue' || f.startsWith('amount:'),
   )
   const activeOverdue = activeQuickFilters.filter((f) => f === 'overdue')
+  const activeSupplier = activeQuickFilters.filter((f) => f.startsWith('supplier:'))
 
   if (
     (excludeCategory === 'status' || activeStatus.length === 0) &&
     (excludeCategory === 'amount' || activeAmount.length === 0) &&
-    (excludeCategory === 'overdue' || activeOverdue.length === 0)
+    (excludeCategory === 'overdue' || activeOverdue.length === 0) &&
+    activeSupplier.length === 0
   ) {
     return rows
   }
@@ -332,7 +400,23 @@ const filterRowsByQuickFilters = (
       })
     }
 
-    return matchesStatus && matchesAmount && matchesOverdue
+    // 4. Check Supplier filters (OR within category)
+    let matchesSupplier = true
+    if (activeSupplier.length > 0) {
+      matchesSupplier = activeSupplier.some((filter) => {
+        const val = filter.split(':')[1].toUpperCase()
+        const supplierName = String(
+          findSupplierName(row) ||
+          row?.vendor ||
+          row?.['UtfgJy6Z0qyfRC5Bclf-c'] ||
+          row?.raisedBy ||
+          'Unknown Supplier'
+        ).toUpperCase()
+        return supplierName === val
+      })
+    }
+
+    return matchesStatus && matchesAmount && matchesOverdue && matchesSupplier
   })
 }
 
@@ -460,72 +544,6 @@ const findInvoiceNumber = (row: any): string | null => {
         .replace(/[^a-z0-9]/g, '')
         .trim()
       if (k === 'invoiceno' || k === 'invoicenumber' || k === 'invoicenum') {
-        const val = obj[key]
-        if (
-          val &&
-          typeof val !== 'object' &&
-          String(val).trim() !== '' &&
-          String(val).trim() !== '-'
-        ) {
-          return String(val).trim()
-        }
-      }
-    }
-    return null
-  }
-
-  const fromForm = searchInObj(parsedForm)
-  if (fromForm) return fromForm
-
-  const agentData = row._agentResponse || row._agentData?.[0] || row._agentData || {}
-  const fromAgent = searchInObj(agentData)
-  if (fromAgent) return fromAgent
-
-  const invoiceHeader = agentData?.['Extracted Invoice JSON']?.invoice_header
-  if (invoiceHeader) {
-    const fromHeader = searchInObj(invoiceHeader)
-    if (fromHeader) return fromHeader
-  }
-
-  return null
-}
-
-const findSupplierName = (row: any): string | null => {
-  if (!row) return null
-  const parsedForm = getParsedFormData(row)
-
-  const searchInObj = (obj: any): string | null => {
-    if (!obj || typeof obj !== 'object') return null
-
-    const directKeys = [
-      'UtfgJy6Z0qyfRC5Bclfc',
-      'UtfgJy6Z0qyfRC5Bclf-c',
-      'UtfgJy6Z0qyfRC5Bclf_c',
-      'Supplier Name',
-      'Vendor Name',
-      'Supplier_Name',
-      'Vendor_Name',
-      'SupplierName',
-      'VendorName',
-    ]
-    for (const key of directKeys) {
-      if (obj[key] !== undefined && obj[key] !== null) {
-        const val = String(obj[key]).trim()
-        if (val !== '' && val !== '-') return val
-      }
-    }
-
-    for (const key of Object.keys(obj)) {
-      const k = key
-        .toLowerCase()
-        .replace(/[^a-z0-9]/g, '')
-        .trim()
-      if (
-        k === 'suppliername' ||
-        k === 'vendorname' ||
-        k === 'supplier' ||
-        k === 'vendor'
-      ) {
         const val = obj[key]
         if (
           val &&
@@ -932,7 +950,7 @@ const InboxList: React.FC<InboxListProps> = ({
   return (
     <div className='bg-primary flex min-h-0 flex-1 flex-col overflow-hidden px-6 py-2 md:px-6'>
       {!selectedItem && activeTab === 'Inbox' && (
-        <QuickFilters counts={counts} />
+        <QuickFilters counts={counts} data={flatRows} />
       )}
       <div className='relative flex min-h-0 w-full flex-1 flex-col'>
         <div className='flex h-full w-full gap-3'>
