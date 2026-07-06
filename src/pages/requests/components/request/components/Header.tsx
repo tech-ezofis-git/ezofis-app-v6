@@ -281,6 +281,17 @@ const Header: React.FC<HeaderProps> = ({
                         iconName = 'tabler:alert-triangle'
                         badgeColorClass =
                           'border-transparent bg-[var(--orange-9)] text-white'
+                      } else if (
+                        dec.includes('ANALYZING') ||
+                        dec.includes('FINALIZING') ||
+                        dec.includes('FETCHING') ||
+                        dec.includes('INITIATING') ||
+                        dec.includes('SETTING UP')
+                      ) {
+                        iconName = 'tabler:loader-2'
+                        badgeColorClass =
+                          'border-[var(--orange-9)] bg-[var(--orange-9)] text-white'
+                        isLoaderIcon = true
                       } else {
                         if (_showApprove) {
                           return null

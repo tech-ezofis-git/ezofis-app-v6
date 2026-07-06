@@ -701,6 +701,7 @@ const AnalysisCard = ({
   onClick,
   hoverContent,
   align = 'left',
+  isPulsing = false,
 }: any) => {
   const [isHovered, setIsHovered] = useState(false)
 
@@ -714,6 +715,9 @@ const AnalysisCard = ({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
+      {isPulsing && (
+        <div className='absolute inset-0 rounded-xl ring-2 ring-[var(--orange-6)]/50 animate-pulse pointer-events-none' />
+      )}
       <div className='flex items-center justify-between'>
         <div
           className={cn(
@@ -763,6 +767,55 @@ const AnalysisCard = ({
           {hoverContent}
         </div>
       )}
+    </div>
+  )
+}
+
+const DetailReportView = ({
+  title,
+  icon: IconComponent,
+  status,
+  statusType = 'success',
+  onClose,
+  children,
+}: any) => {
+  return (
+    <div className='flex flex-col flex-1 min-h-0 bg-surface animate-in fade-in slide-in-from-bottom-2 duration-300'>
+      {/* Header */}
+      <div className='flex shrink-0 items-center justify-between border-b border-[var(--gray-3)] bg-[var(--gray-1)] px-6 py-3.5'>
+        <div className='flex items-center gap-3'>
+          <button
+            onClick={onClose}
+            className='group flex items-center gap-1 text-xs font-semibold text-[var(--gray-11)] transition-all hover:text-[var(--gray-13)] active:scale-95'
+          >
+            <Icon
+              className='h-4 w-4 transition-transform group-hover:-translate-x-0.5'
+              name='tabler:arrow-left'
+            />
+            <span>Back</span>
+          </button>
+          <div className='h-4 w-[1px] bg-[var(--gray-3)] mx-1' />
+          <div className='flex items-center gap-2'>
+            <div className={cn('rounded-md p-1', getStatusStyles(statusType))}>
+              <IconComponent className='h-4 w-4' />
+            </div>
+            <h3 className='text-sm font-bold text-[var(--gray-13)]'>{title}</h3>
+          </div>
+        </div>
+        <span
+          className={cn(
+            'rounded-md border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider',
+            getStatusBorderStyles(statusType),
+          )}
+        >
+          {status}
+        </span>
+      </div>
+
+      {/* Content */}
+      <div className='flex-1 overflow-y-auto p-6 space-y-6'>
+        {children}
+      </div>
     </div>
   )
 }
@@ -1294,6 +1347,7 @@ const Overview = (props: any) => {
     (showMatterValidation ? 1 : 0)
 
   const [activeTab, setActiveTab] = useState('summary')
+  const [activeDetailView, setActiveDetailView] = useState<string | null>(null)
 
   // Document ID resolver
   const docId = useMemo(() => {
@@ -1430,12 +1484,12 @@ const Overview = (props: any) => {
   }, [formModel])
 
   const poMatchingHover = useMemo(() => (
-    <div className='flex flex-col gap-2.5'>
-      <div className='flex items-center gap-2 border-b border-[var(--gray-3)] pb-2'>
-        <Icon className='h-4 w-4 text-[var(--primary-9)]' name='tabler:clipboard-check' />
-        <span className='text-xs font-bold text-[var(--gray-13)]'>PO Matching Insights</span>
+    <div className='flex flex-col gap-3'>
+      <div className='flex items-center gap-2 border-b border-[var(--gray-3)] pb-2.5'>
+        <Icon className='h-5 w-5 text-[var(--primary-9)]' name='tabler:clipboard-check' />
+        <span className='text-sm font-bold text-[var(--gray-13)]'>PO Matching Insights</span>
       </div>
-      <div className='space-y-1.5 text-[11px]'>
+      <div className='space-y-2 text-xs'>
         <div className='flex justify-between gap-2'>
           <span className='font-medium text-[var(--gray-10)]'>PO Number:</span>
           <span className='font-bold text-[var(--gray-13)]'>{poVal || 'No PO matched'}</span>
@@ -1453,12 +1507,12 @@ const Overview = (props: any) => {
           </div>
         )}
         {agentData?.po_row?.['Vendor Name'] && (
-          <div className='flex flex-col gap-0.5'>
+          <div className='flex flex-col gap-1'>
             <span className='font-medium text-[var(--gray-10)]'>PO Vendor:</span>
             <span className='font-semibold text-[var(--gray-12)] truncate'>{agentData?.po_row?.['Vendor Name']}</span>
           </div>
         )}
-        <div className='mt-1 border-t border-[var(--gray-3)] pt-1.5 text-[10px] italic text-[var(--gray-10)] leading-normal'>
+        <div className='mt-2 border-t border-[var(--gray-3)] pt-2 text-[11px] italic text-[var(--gray-10)] leading-normal'>
           {poVal && poVal !== '-' && poVal !== 'N/A'
             ? 'System has successfully matched this transaction with the corresponding purchase order details.'
             : 'No valid purchase order reference could be automatically resolved from the invoice header.'}
@@ -1468,25 +1522,25 @@ const Overview = (props: any) => {
   ), [poVal, agentData])
 
   const duplicateHover = useMemo(() => (
-    <div className='flex flex-col gap-2.5'>
-      <div className='flex items-center gap-2 border-b border-[var(--gray-3)] pb-2'>
-        <Icon className='h-4 w-4 text-[var(--primary-9)]' name='tabler:copy-off' />
-        <span className='text-xs font-bold text-[var(--gray-13)]'>Duplicate Check Insights</span>
+    <div className='flex flex-col gap-3'>
+      <div className='flex items-center gap-2 border-b border-[var(--gray-3)] pb-2.5'>
+        <Icon className='h-5 w-5 text-[var(--primary-9)]' name='tabler:copy-off' />
+        <span className='text-sm font-bold text-[var(--gray-13)]'>Duplicate Check Insights</span>
       </div>
-      <div className='space-y-1.5 text-[11px]'>
+      <div className='space-y-2 text-xs'>
         <div className='flex justify-between gap-2'>
           <span className='font-medium text-[var(--gray-10)]'>Duplicate Status:</span>
           <span className={cn('font-bold', agentData?.duplicate_check?.status === 'Duplicate' ? 'text-[var(--red-9)]' : 'text-[var(--green-9)]')}>
             {agentData?.duplicate_check?.status || 'Passed'}
           </span>
         </div>
-        <div className='flex flex-col gap-0.5'>
+        <div className='flex flex-col gap-1'>
           <span className='font-medium text-[var(--gray-10)]'>Analysis Result:</span>
           <span className='font-semibold text-[var(--gray-12)] leading-normal'>
             {agentData?.duplicate_check?.message || 'No duplicate records found.'}
           </span>
         </div>
-        <div className='mt-1 border-t border-[var(--gray-3)] pt-1.5 text-[10px] italic text-[var(--gray-10)] leading-normal'>
+        <div className='mt-2 border-t border-[var(--gray-3)] pt-2 text-[11px] italic text-[var(--gray-10)] leading-normal'>
           The system cross-checks supplier identity, invoice number, and final values against historical transactions to prevent double-payment.
         </div>
       </div>
@@ -1494,12 +1548,12 @@ const Overview = (props: any) => {
   ), [agentData])
 
   const supplierHover = useMemo(() => (
-    <div className='flex flex-col gap-2.5'>
-      <div className='flex items-center gap-2 border-b border-[var(--gray-3)] pb-2'>
-        <Icon className='h-4 w-4 text-[var(--primary-9)]' name='tabler:id' />
-        <span className='text-xs font-bold text-[var(--gray-13)]'>Supplier Verification Insights</span>
+    <div className='flex flex-col gap-3'>
+      <div className='flex items-center gap-2 border-b border-[var(--gray-3)] pb-2.5'>
+        <Icon className='h-5 w-5 text-[var(--primary-9)]' name='tabler:id' />
+        <span className='text-sm font-bold text-[var(--gray-13)]'>Supplier Verification Insights</span>
       </div>
-      <div className='space-y-1.5 text-[11px]'>
+      <div className='space-y-2 text-xs'>
         <div className='flex justify-between gap-2'>
           <span className='font-medium text-[var(--gray-10)]'>Verification Status:</span>
           <span className={cn('font-bold', supplierValidationDisplay.statusType === 'success' ? 'text-[var(--green-9)]' : 'text-[var(--orange-9)]')}>
@@ -1512,21 +1566,21 @@ const Overview = (props: any) => {
             {formModel?.['Supplier ID'] || formModel?.['SupplierCode'] || formModel?.['Supplier Code'] || formModel?.['supplier_id'] || formModel?.['Vendor ID'] || formModel?.['vendor_id'] || 'Not Found'}
           </span>
         </div>
-        <div className='flex flex-col gap-0.5'>
+        <div className='flex flex-col gap-1'>
           <span className='font-medium text-[var(--gray-10)]'>Result:</span>
           <span className='font-semibold text-[var(--gray-12)] leading-normal'>{supplierValidationDisplay.value}</span>
         </div>
         {agentData?.supplier_validation?.mismatch && agentData.supplier_validation.mismatch.length > 0 && (
-          <div className='flex flex-col gap-0.5'>
-            <span className='font-medium text-[var(--gray-10)] text-[var(--red-9)]'>Discrepancies:</span>
-            <ul className='list-disc pl-4 text-[10px] text-[var(--gray-12)] space-y-0.5'>
+          <div className='flex flex-col gap-1'>
+            <span className='font-medium text-[var(--red-9)]'>Discrepancies:</span>
+            <ul className='list-disc pl-4 text-[11px] text-[var(--gray-12)] space-y-1'>
               {agentData.supplier_validation.mismatch.map((m: any, idx: number) => (
                 <li key={idx}>{String(m)}</li>
               ))}
             </ul>
           </div>
         )}
-        <div className='mt-1 border-t border-[var(--gray-3)] pt-1.5 text-[10px] italic text-[var(--gray-10)] leading-normal'>
+        <div className='mt-2 border-t border-[var(--gray-3)] pt-2 text-[11px] italic text-[var(--gray-10)] leading-normal'>
           Checks vendor registration status, payment instructions, and verifies matches against our procurement accounts system.
         </div>
       </div>
@@ -1534,31 +1588,31 @@ const Overview = (props: any) => {
   ), [supplierValidationDisplay, formModel, agentData])
 
   const glHover = useMemo(() => (
-    <div className='flex flex-col gap-2.5'>
-      <div className='flex items-center gap-2 border-b border-[var(--gray-3)] pb-2'>
-        <Icon className='h-4 w-4 text-[var(--primary-9)]' name='tabler:list-check' />
-        <span className='text-xs font-bold text-[var(--gray-13)]'>GL Account Matching Insights</span>
+    <div className='flex flex-col gap-3'>
+      <div className='flex items-center gap-2 border-b border-[var(--gray-3)] pb-2.5'>
+        <Icon className='h-5 w-5 text-[var(--primary-9)]' name='tabler:list-check' />
+        <span className='text-sm font-bold text-[var(--gray-13)]'>GL Account Matching Insights</span>
       </div>
-      <div className='space-y-1.5 text-[11px]'>
+      <div className='space-y-2 text-xs'>
         <div className='flex justify-between gap-2'>
           <span className='font-medium text-[var(--gray-10)]'>Status:</span>
           <span className={cn('font-bold', glValidationDisplay?.statusType === 'success' ? 'text-[var(--green-9)]' : 'text-[var(--orange-9)]')}>
             {glValidationDisplay?.status}
           </span>
         </div>
-        <div className='flex flex-col gap-0.5'>
+        <div className='flex flex-col gap-1'>
           <span className='font-medium text-[var(--gray-10)]'>Suggested GL Account:</span>
           <span className='font-bold text-[var(--gray-13)] leading-normal'>{glValidationDisplay?.account || 'No account matched'}</span>
         </div>
         {(agentData?.gl_validation?.reason || agentData?.gl_matching?.reason) && (
-          <div className='flex flex-col gap-0.5'>
+          <div className='flex flex-col gap-1'>
             <span className='font-medium text-[var(--gray-10)]'>Matching Logic:</span>
-            <span className='font-semibold text-[var(--gray-12)] leading-normal text-[10px]'>
+            <span className='font-semibold text-[var(--gray-12)] leading-normal text-[11px]'>
               {agentData?.gl_validation?.reason || agentData?.gl_matching?.reason}
             </span>
           </div>
         )}
-        <div className='mt-1 border-t border-[var(--gray-3)] pt-1.5 text-[10px] italic text-[var(--gray-10)] leading-normal'>
+        <div className='mt-2 border-t border-[var(--gray-3)] pt-2 text-[11px] italic text-[var(--gray-10)] leading-normal'>
           Automatically maps description strings to the correct financial chart-of-accounts segment.
         </div>
       </div>
@@ -1566,18 +1620,18 @@ const Overview = (props: any) => {
   ), [glValidationDisplay, agentData])
 
   const backOrderHover = useMemo(() => (
-    <div className='flex flex-col gap-2.5'>
-      <div className='flex items-center gap-2 border-b border-[var(--gray-3)] pb-2'>
-        <Icon className='h-4 w-4 text-[var(--primary-9)]' name='tabler:package-off' />
-        <span className='text-xs font-bold text-[var(--gray-13)]'>Back Order Insights</span>
+    <div className='flex flex-col gap-3'>
+      <div className='flex items-center gap-2 border-b border-[var(--gray-3)] pb-2.5'>
+        <Icon className='h-5 w-5 text-[var(--primary-9)]' name='tabler:package-off' />
+        <span className='text-sm font-bold text-[var(--gray-13)]'>Back Order Insights</span>
       </div>
-      <div className='space-y-1.5 text-[11px]'>
+      <div className='space-y-2 text-xs'>
         <div className='flex justify-between gap-2'>
           <span className='font-medium text-[var(--gray-10)]'>Status:</span>
           <span className='font-bold text-[var(--orange-9)]'>{backOrderDisplay?.status}</span>
         </div>
         <div className='flex justify-between gap-2'>
-          <span className='font-medium text(--gray-10)'>Pending Lines:</span>
+          <span className='font-medium text-[var(--gray-10)]'>Pending Lines:</span>
           <span className='font-bold text-[var(--gray-13)]'>{backOrder?.missing_qty_by_item?.length || 0} items</span>
         </div>
         {backOrder?.recommendation && (
@@ -1587,12 +1641,12 @@ const Overview = (props: any) => {
           </div>
         )}
         {backOrder?.reason && (
-          <div className='flex flex-col gap-0.5 border-t border-[var(--gray-3)] pt-1 mt-1'>
+          <div className='flex flex-col gap-1 border-t border-[var(--gray-3)] pt-2 mt-2'>
             <span className='font-medium text-[var(--gray-10)]'>Explanation:</span>
-            <span className='font-semibold text-[var(--gray-12)] leading-normal text-[10px]'>{backOrder.reason}</span>
+            <span className='font-semibold text-[var(--gray-12)] leading-normal text-[11px]'>{backOrder.reason}</span>
           </div>
         )}
-        <div className='mt-1 border-t border-[var(--gray-3)] pt-1.5 text-[10px] italic text-[var(--gray-10)] leading-normal'>
+        <div className='mt-2 border-t border-[var(--gray-3)] pt-2 text-[11px] italic text-[var(--gray-10)] leading-normal'>
           Triggers when a quantity mismatch is detected between shipped/invoiced quantities and purchase order authorization.
         </div>
       </div>
@@ -1600,12 +1654,12 @@ const Overview = (props: any) => {
   ), [backOrderDisplay, backOrder])
 
   const paymentTermsHover = useMemo(() => (
-    <div className='flex flex-col gap-2.5'>
-      <div className='flex items-center gap-2 border-b border-[var(--gray-3)] pb-2'>
-        <Icon className='h-4 w-4 text-[var(--primary-9)]' name='tabler:calendar-time' />
-        <span className='text-xs font-bold text-[var(--gray-13)]'>Payment Terms Insights</span>
+    <div className='flex flex-col gap-3'>
+      <div className='flex items-center gap-2 border-b border-[var(--gray-3)] pb-2.5'>
+        <Icon className='h-5 w-5 text-[var(--primary-9)]' name='tabler:calendar-time' />
+        <span className='text-sm font-bold text-[var(--gray-13)]'>Payment Terms Insights</span>
       </div>
-      <div className='space-y-1.5 text-[11px]'>
+      <div className='space-y-2 text-xs'>
         <div className='flex justify-between gap-2'>
           <span className='font-medium text-[var(--gray-10)]'>Status:</span>
           <span className={cn('font-bold', paymentTermsDisplay.statusType === 'danger' ? 'text-[var(--red-9)]' : paymentTermsDisplay.statusType === 'warning' ? 'text-[var(--orange-9)]' : 'text-[var(--green-9)]')}>
@@ -1624,7 +1678,7 @@ const Overview = (props: any) => {
           <span className='font-medium text-[var(--gray-10)]'>Timeline:</span>
           <span className='font-bold text-[var(--gray-13)]'>{paymentTermsDisplay.daysText}</span>
         </div>
-        <div className='mt-1 border-t border-[var(--gray-3)] pt-1.5 text-[10px] italic text-[var(--gray-10)] leading-normal'>
+        <div className='mt-2 border-t border-[var(--gray-3)] pt-2 text-[11px] italic text-[var(--gray-10)] leading-normal'>
           Calculated dynamically by analyzing supplier profile rules combined with dates extracted from the document header.
         </div>
       </div>
@@ -1632,19 +1686,19 @@ const Overview = (props: any) => {
   ), [paymentTermsDisplay, selectedItem, agentData, formModel])
 
   const matterHover = useMemo(() => (
-    <div className='flex flex-col gap-2.5'>
-      <div className='flex items-center gap-2 border-b border-[var(--gray-3)] pb-2'>
-        <Icon className='h-4 w-4 text-[var(--primary-9)]' name='tabler:briefcase' />
-        <span className='text-xs font-bold text-[var(--gray-13)]'>Matter Validation Insights</span>
+    <div className='flex flex-col gap-3'>
+      <div className='flex items-center gap-2 border-b border-[var(--gray-3)] pb-2.5'>
+        <Icon className='h-5 w-5 text-[var(--primary-9)]' name='tabler:briefcase' />
+        <span className='text-sm font-bold text-[var(--gray-13)]'>Matter Validation Insights</span>
       </div>
-      <div className='space-y-1.5 text-[11px]'>
+      <div className='space-y-2 text-xs'>
         <div className='flex justify-between gap-2'>
           <span className='font-medium text-[var(--gray-10)]'>Status:</span>
           <span className={cn('font-bold', matterValidationDisplay?.statusType === 'success' ? 'text-[var(--green-9)]' : 'text-[var(--orange-9)]')}>
             {matterValidationDisplay?.status}
           </span>
         </div>
-        <div className='flex flex-col gap-0.5'>
+        <div className='flex flex-col gap-1'>
           <span className='font-medium text-[var(--gray-10)]'>Associated Matter:</span>
           <span className='font-bold text-[var(--gray-13)] leading-normal'>{matterValidationDisplay?.value}</span>
         </div>
@@ -1655,15 +1709,14 @@ const Overview = (props: any) => {
           </div>
         )}
         {agentData?.matter_validation?.validation_details?.reason && (
-          <div className='flex flex-col gap-0.5 border-t border-[var(--gray-3)] pt-1 mt-1'>
-            <span className='font-medium text-[var(--gray-10)] text-[10px]'>Details:</span>
-            <span className='font-semibold text-[var(--gray-12)] text-[10px] leading-normal'>{agentData.matter_validation.validation_details.reason}</span>
+          <div className='flex flex-col gap-1 border-t border-[var(--gray-3)] pt-2 mt-2'>
+            <span className='font-medium text-[var(--gray-10)]'>Details:</span>
+            <span className='font-semibold text-[var(--gray-12)] text-[11px] leading-normal'>{agentData.matter_validation.validation_details.reason}</span>
           </div>
         )}
       </div>
     </div>
   ), [matterValidationDisplay, agentData])
-  const [showBackOrderDetailFull, setShowBackOrderDetailFull] = useState(false)
   const [activeBackOrderTab, setActiveBackOrderTab] = useState<string>('current')
   const [selectedFile, setSelectedFile] = useState<any>(null)
 
@@ -2345,351 +2398,6 @@ const Overview = (props: any) => {
           <div className='flex min-h-0 flex-1 flex-col overflow-hidden'>
             {!selectedItem || Object.keys(selectedItem).length === 0 ? (
               <SummarySkeleton />
-            ) : showBackOrderDetailFull ? (
-              <div className='animate-in fade-in slide-in-from-left-4 flex min-h-0 flex-1 flex-col overflow-hidden bg-surface duration-300'>
-                {/* Header with list icon and dot-actions */}
-                <div className='flex shrink-0 items-center justify-between border-b border-[var(--gray-3)] bg-[var(--gray-1)] px-6 py-3'>
-                  <div className='flex items-center gap-2.5'>
-                    <Icon
-                      className='h-4 w-4 text-[var(--gray-11)]'
-                      name='tabler:list-check'
-                    />
-                    <h3 className='text-sm font-bold text-[var(--gray-13)]'>
-                      PO line items vs invoices
-                    </h3>
-                  </div>
-                  <div className='flex items-center gap-2'>
-                    {/* Recommendation badge in header */}
-                    {(() => {
-                      const currentRec =
-                        activeBackOrderTab === 'current'
-                          ? backOrder?.recommendation
-                          : MOCK_PREVIOUS_BACKORDERS[activeBackOrderTab]
-                              ?.recommendation
-                      const recMeta = getRecommendationMeta(currentRec)
-                      return (
-                        <span
-                          className={cn(
-                            'mr-2 inline-flex items-center gap-1 rounded border px-2 py-0.5 text-[9px] font-bold shadow-xs',
-                            recMeta.chip,
-                          )}
-                        >
-                          <Icon
-                            className='h-3 w-3 animate-pulse'
-                            name={recMeta.icon}
-                          />
-                          {recMeta.label}
-                        </span>
-                      )
-                    })()}
-                    <button className='rounded-lg p-1.5 text-[var(--gray-11)] transition-all hover:bg-[var(--gray-2)] hover:text-[var(--gray-13)] active:scale-95'>
-                      <Icon className='h-4 w-4' name='tabler:dots' />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Sub-header with back button and active tabs */}
-                <div className='flex shrink-0 items-center gap-4 border-b border-[var(--gray-3)] bg-[var(--gray-1)] px-6'>
-                  <button
-                    className='group flex items-center gap-1 py-3 text-xs font-semibold text-[var(--gray-11)] transition-all hover:text-[var(--gray-13)] active:scale-95'
-                    title='Back to Overview'
-                    onClick={() => {
-                      setShowBackOrderDetailFull(false)
-                      setActiveTab('summary')
-                    }}
-                  >
-                    <Icon
-                      className='h-4 w-4 transition-transform group-hover:-translate-x-0.5'
-                      name='tabler:arrow-left'
-                    />
-                    <span>Back</span>
-                  </button>
-                  <div className='h-4 w-[1px] bg-[var(--gray-3)]' />
-                  <div className='flex items-center gap-4'>
-                    {/* Current Invoice tab */}
-                    <button
-                      className={cn(
-                        '-mb-[1px] border-b-2 px-1 pt-2 pb-2.5 text-xs font-semibold transition-all',
-                        activeBackOrderTab === 'current'
-                          ? 'border-[var(--teal-9)] font-bold text-[var(--teal-9)]'
-                          : 'border-transparent text-[var(--gray-11)] hover:text-[var(--gray-13)]',
-                      )}
-                      onClick={() => setActiveBackOrderTab('current')}
-                    >
-                      INV-4402 (Current)
-                    </button>
-                    {/* Previous tickets mapped as tabs */}
-                    {backOrder?.previous_id?.map((prevId: string) => (
-                      <button
-                        key={prevId}
-                        className={cn(
-                          '-mb-[1px] border-b-2 px-1 pt-2 pb-2.5 text-xs font-semibold transition-all',
-                          activeBackOrderTab === prevId
-                            ? 'border-[var(--teal-9)] font-bold text-[var(--teal-9)]'
-                            : 'border-transparent text-[var(--gray-11)] hover:text-[var(--gray-13)]',
-                        )}
-                        onClick={() => setActiveBackOrderTab(prevId)}
-                      >
-                        INV-4401 ({prevId})
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Metrics Summary Row - 4 equal columns split by lines */}
-                {(() => {
-                  const currentData =
-                    activeBackOrderTab === 'current'
-                      ? backOrder
-                      : MOCK_PREVIOUS_BACKORDERS[activeBackOrderTab] || {}
-                  const items = currentData?.missing_qty_by_item || []
-
-                  const currencySymbol = agentData?.po_row?.Currency || '$'
-                  const invoiceAmount = items.reduce(
-                    (sum: number, r: any) =>
-                      sum + (r.invoice_qty || 0) * (r.price || 0),
-                    0,
-                  )
-                  const linesReceivedCount = items.filter(
-                    (r: any) => (r.invoice_qty || 0) > 0,
-                  ).length
-                  const totalLines = items.length
-                  const pendingItemsCount = items.filter(
-                    (r: any) => (r.remaining || 0) > 0,
-                  ).length
-                  const stillPendingVal = items.reduce(
-                    (sum: number, r: any) =>
-                      sum + (r.remaining || 0) * (r.price || 0),
-                    0,
-                  )
-
-                  return (
-                    <div className='grid shrink-0 grid-cols-4 divide-x divide-[var(--gray-3)] border-b border-[var(--gray-3)] bg-surface text-xs'>
-                      <div className='space-y-1 p-4'>
-                        <p className='text-[10px] font-bold tracking-wider text-[var(--gray-10)] uppercase'>
-                          INVOICE AMOUNT
-                        </p>
-                        <p className='text-base font-extrabold text-[var(--gray-13)]'>
-                          {currencySymbol}
-                          {invoiceAmount.toFixed(2)}
-                        </p>
-                      </div>
-                      <div className='space-y-1 p-4'>
-                        <p className='text-[10px] font-bold tracking-wider text-[var(--gray-10)] uppercase'>
-                          LINES RECEIVED
-                        </p>
-                        <p className='text-base font-extrabold text-[var(--teal-9)]'>
-                          {linesReceivedCount} of {totalLines}
-                        </p>
-                      </div>
-                      <div className='space-y-1 p-4'>
-                        <p className='text-[10px] font-bold tracking-wider text-[var(--gray-10)] uppercase'>
-                          PENDING ITEMS
-                        </p>
-                        <p className='text-base font-extrabold text-[var(--orange-9)]'>
-                          {pendingItemsCount} item
-                          {pendingItemsCount === 1 ? '' : 's'}
-                        </p>
-                      </div>
-                      <div className='space-y-1 p-4'>
-                        <p className='text-[10px] font-bold tracking-wider text-[var(--gray-10)] uppercase'>
-                          STILL PENDING
-                        </p>
-                        <p className='text-base font-extrabold text-[var(--orange-9)]'>
-                          {currencySymbol}
-                          {stillPendingVal.toFixed(2)}
-                        </p>
-                      </div>
-                    </div>
-                  )
-                })()}
-
-                {/* Main Content Area */}
-                <div className='scrollbar flex-1 space-y-5 overflow-y-auto bg-[var(--gray-1)] p-6'>
-                  {/* Status/Explanation banner */}
-                  {(() => {
-                    const currentData =
-                      activeBackOrderTab === 'current'
-                        ? backOrder
-                        : MOCK_PREVIOUS_BACKORDERS[activeBackOrderTab] || {}
-
-                    return (
-                      <div className='animate-in fade-in slide-in-from-top-2 rounded-xl border border-[var(--orange-3)] bg-[var(--orange-1)]/30 p-4 shadow-xs duration-300'>
-                        <div className='flex items-start gap-3'>
-                          <div className='mt-0.5 shrink-0 rounded bg-[var(--orange-2)] p-1.5 text-[var(--orange-9)]'>
-                            <Icon
-                              className='h-4 w-4'
-                              name='tabler:info-circle'
-                            />
-                          </div>
-                          <div className='space-y-1'>
-                            <h4 className='text-xs font-bold text-[var(--orange-10)]'>
-                              {activeBackOrderTab === 'current'
-                                ? 'Current Invoice Back Order Status'
-                                : `Prior Ticket ${activeBackOrderTab} Details`}
-                            </h4>
-                            <p className='text-xs leading-relaxed font-medium text-[var(--gray-12)]'>
-                              {currentData?.reason}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  })()}
-
-                  {/* Items Table with Circular progress matching percentage */}
-                  {(() => {
-                    const currentData =
-                      activeBackOrderTab === 'current'
-                        ? backOrder
-                        : MOCK_PREVIOUS_BACKORDERS[activeBackOrderTab] || {}
-
-                    const items = currentData?.missing_qty_by_item || []
-                    const currencySymbol = agentData?.po_row?.Currency || '$'
-
-                    // Totals
-                    const totalRemaining = items.reduce(
-                      (sum: number, r: any) => sum + (r.remaining || 0),
-                      0,
-                    )
-                    const totalInvoiceAmt = items.reduce(
-                      (sum: number, r: any) =>
-                        sum + (r.invoice_qty || 0) * (r.price || 0),
-                      0,
-                    )
-
-                    return (
-                      <div className='animate-in fade-in overflow-hidden rounded-xl border border-[var(--gray-3)] bg-surface shadow-xs duration-300'>
-                        <div className='overflow-x-auto'>
-                          <table className='w-full border-collapse text-left text-xs'>
-                            <thead className='border-b border-[var(--gray-3)] bg-[var(--gray-1)]'>
-                              <tr className='text-[10px] font-bold tracking-wider text-[var(--gray-9)] uppercase'>
-                                <th className='px-4 py-3.5'>LINE ITEM</th>
-                                <th className='px-4 py-3.5 text-center'>
-                                  PO QTY
-                                </th>
-                                <th className='px-4 py-3.5 text-center'>
-                                  RECV QTY
-                                </th>
-                                <th className='px-4 py-3.5 text-center'>
-                                  BALANCE QTY
-                                </th>
-                                <th className='px-4 py-3.5 text-right'>
-                                  INV AMOUNT
-                                </th>
-                              </tr>
-                            </thead>
-                            <tbody className='divide-y divide-[var(--gray-2)] bg-surface'>
-                              {items.map((row: any) => {
-                                const desc =
-                                  row.description?.trim() || 'Unmapped item'
-                                const invQty = row.invoice_qty ?? 0
-                                const poQty = row.po_qty ?? 1
-                                const price = row.price ?? 0
-                                const receivedVal = invQty * price
-                                const remaining = row.remaining ?? 0
-
-                                // Dynamic percent calculation
-                                const totalReceived = poQty - remaining
-                                const pct = Math.max(
-                                  0,
-                                  Math.min(
-                                    100,
-                                    Math.round((totalReceived / poQty) * 100),
-                                  ),
-                                )
-
-                                return (
-                                  <tr
-                                    className='transition-colors hover:bg-[var(--gray-1)]/50'
-                                    key={`${row.po_line_id || 'line'}-${desc}`}
-                                  >
-                                    <td className='flex items-center gap-3.5 px-4 py-3 font-semibold text-[var(--gray-13)]'>
-                                      {/* Circular Progress Badge */}
-                                      <div
-                                        className={cn(
-                                          'flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 text-[9px] font-black transition-colors',
-                                          getPctColorClass(pct),
-                                        )}
-                                      >
-                                        {pct}%
-                                      </div>
-                                      <div>
-                                        <div className='text-xs font-bold text-[var(--gray-13)]'>
-                                          {desc}
-                                        </div>
-                                        <div className='mt-0.5 text-[10px] font-medium text-[var(--gray-9)]'>
-                                          PO Line: {row.po_line_id || '—'} •
-                                          Price: {currencySymbol}
-                                          {price.toFixed(2)}
-                                        </div>
-                                      </div>
-                                    </td>
-                                    <td className='px-4 py-3 text-center font-bold text-[var(--gray-13)]'>
-                                      {poQty}
-                                    </td>
-                                    <td
-                                      className={cn(
-                                        'px-4 py-3 text-center font-bold',
-                                        invQty > 0
-                                          ? 'text-[var(--teal-9)]'
-                                          : 'font-medium text-[var(--gray-9)]',
-                                      )}
-                                    >
-                                      {invQty > 0 ? invQty : '—'}
-                                    </td>
-                                    <td className='px-4 py-3 text-center font-bold'>
-                                      {remaining > 0 ? (
-                                        <span className='text-[var(--orange-9)]'>
-                                          {remaining} pending
-                                        </span>
-                                      ) : (
-                                        <span className='text-[var(--gray-11)]'>
-                                          0
-                                        </span>
-                                      )}
-                                    </td>
-                                    <td
-                                      className={cn(
-                                        'px-4 py-3 text-right font-bold',
-                                        receivedVal > 0
-                                          ? 'text-[var(--teal-10)]'
-                                          : 'font-medium text-[var(--gray-9)]',
-                                      )}
-                                    >
-                                      {receivedVal > 0
-                                        ? `${currencySymbol}${receivedVal.toFixed(2)}`
-                                        : '—'}
-                                    </td>
-                                  </tr>
-                                )
-                              })}
-                            </tbody>
-                            <tfoot className='border-t border-[var(--gray-3)] bg-[var(--gray-1)] text-[11px] font-semibold text-[var(--gray-11)]'>
-                              <tr className='h-11'>
-                                <td className='px-4 py-3 font-medium'>
-                                  {items.length} line items
-                                </td>
-                                <td className='px-4 py-3' colSpan={2} />
-                                <td className='px-4 py-3 text-center font-bold text-[var(--orange-10)]'>
-                                  Total pending qty:{' '}
-                                  <span className='underline decoration-[var(--orange-4)] decoration-2 underline-offset-4'>
-                                    {totalRemaining}
-                                  </span>
-                                </td>
-                                <td className='px-4 py-3 text-right font-black text-[var(--gray-13)]'>
-                                  Inv total: {currencySymbol}
-                                  {totalInvoiceAmt.toFixed(2)}
-                                </td>
-                              </tr>
-                            </tfoot>
-                          </table>
-                        </div>
-                      </div>
-                    )
-                  })()}
-                </div>
-              </div>
             ) : (
               <div className='flex h-full flex-col overflow-hidden'>
                 <div className='shrink-0 space-y-4 p-4'>
@@ -2737,7 +2445,7 @@ const Overview = (props: any) => {
                               ? `${poVal}`
                               : 'No PO Found'
                           }
-                          hoverContent={poMatchingHover}
+                          onClick={() => setActiveDetailView('po_matching')}
                           align='left'
                         />
                       )
@@ -2760,24 +2468,33 @@ const Overview = (props: any) => {
                         agentData?.duplicate_check?.message ||
                         'No duplicates detected'
                       }
-                      hoverContent={duplicateHover}
+                      onClick={() => setActiveDetailView('duplicate_check')}
                       align='left'
                     />
                     {supplierCheckState.status === 'not_run' && (
                       <AnalysisCard
                         icon={Store}
-                        status='Locked'
-                        statusType='default'
+                        status={
+                          <span className='flex items-center gap-1'>
+                            <span className='relative flex h-1.5 w-1.5'>
+                              <span className='animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--orange-9)] opacity-75'></span>
+                              <span className='relative inline-flex rounded-full h-1.5 w-1.5 bg-[var(--orange-9)]'></span>
+                            </span>
+                            Verify
+                          </span>
+                        }
+                        statusType='warning'
                         title='Supplier Verification'
                         value={
-                          <span className='inline-flex items-center gap-1 text-[11px] font-bold text-[var(--primary-9)] hover:text-[var(--primary-10)] transition-colors'>
-                            <Icon className='h-3.5 w-3.5' name='tabler:shield-check' />
+                          <span className='inline-flex items-center gap-1.5 rounded-lg bg-[var(--primary-2)] px-2.5 py-1 text-xs font-bold text-[var(--primary-9)] border border-[var(--primary-4)] hover:bg-[var(--primary-3)] hover:text-[var(--primary-10)] hover:scale-[1.02] transition-all active:scale-95 shadow-sm mt-0.5'>
+                            <Icon className='h-4 w-4 text-[var(--primary-9)]' name='tabler:shield-check' />
                             Verify Supplier
                           </span>
                         }
-                        isLoading={false}
+                        isLoading={isCurrentlyProcessing}
                         onClick={handleVerifySupplierClick}
                         align='left'
+                        isPulsing={true}
                       />
                     )}
                     {supplierCheckState.status === 'pending' && (
@@ -2804,7 +2521,7 @@ const Overview = (props: any) => {
                         title='Supplier Verification'
                         value={supplierCheckState.data?.value || 'Verified'}
                         isLoading={false}
-                        hoverContent={supplierHover}
+                        onClick={() => setActiveDetailView('supplier_verification')}
                         align='left'
                       />
                     )}
@@ -2823,7 +2540,7 @@ const Overview = (props: any) => {
                           glValidationDisplay.account ||
                           glValidationDisplay.status
                         }
-                        hoverContent={glHover}
+                        onClick={() => setActiveDetailView('gl_matching')}
                         align='right'
                       />
                     )}
@@ -2841,10 +2558,9 @@ const Overview = (props: any) => {
                             backOrderDisplay.value === '---')
                         }
                         onClick={() => {
-                          setShowBackOrderDetailFull(true)
+                          setActiveDetailView('back_order')
                           setActiveBackOrderTab('current')
                         }}
-                        hoverContent={backOrderHover}
                         align='right'
                       />
                     ) : (
@@ -2863,7 +2579,7 @@ const Overview = (props: any) => {
                           /days/i,
                           'Days',
                         )}
-                        hoverContent={paymentTermsHover}
+                        onClick={() => setActiveDetailView('payment_terms')}
                         align='right'
                       />
                     )}
@@ -2879,34 +2595,35 @@ const Overview = (props: any) => {
                           (!matterValidationDisplay?.value ||
                             matterValidationDisplay.value === '---')
                         }
-                        hoverContent={matterHover}
+                        onClick={() => setActiveDetailView('matter_validation')}
                         align='right'
                       />
                     )}
                   </div>
                 </div>
 
-                <div className='sticky top-0 z-10 shrink-0 border-b border-[var(--gray-3)] px-6 pt-2'>
-                  <div className='flex items-center gap-8'>
-                    {[
-                      {
-                        icon: FileText,
-                        id: 'summary',
-                        label: 'Extracted Data',
-                      },
-                      { icon: Layers, id: 'line_items', label: 'Line Items' },
-                      {
-                        icon: Paperclip,
-                        id: 'attachments',
-                        label: 'Attachments',
-                      },
-                      {
-                        icon: MessageCircle,
-                        id: 'comments',
-                        label: 'Comments',
-                      },
-                      { icon: HistoryIcon, id: 'history', label: 'History' },
-                    ].map((tab) => (
+                {!activeDetailView && (
+                  <div className='sticky top-0 z-10 shrink-0 border-b border-[var(--gray-3)] px-6 pt-2 bg-surface'>
+                    <div className='flex items-center gap-8'>
+                      {[
+                        {
+                          icon: FileText,
+                          id: 'summary',
+                          label: 'Extracted Data',
+                        },
+                        { icon: Layers, id: 'line_items', label: 'Line Items' },
+                        {
+                          icon: Paperclip,
+                          id: 'attachments',
+                          label: 'Attachments',
+                        },
+                        {
+                          icon: MessageCircle,
+                          id: 'comments',
+                          label: 'Comments',
+                        },
+                        { icon: HistoryIcon, id: 'history', label: 'History' },
+                      ].map((tab) => (
                       <button
                         key={tab.id}
                         className={cn(
@@ -2954,9 +2671,596 @@ const Overview = (props: any) => {
                     ))}
                   </div>
                 </div>
+              )}
 
                 <div className='flex min-h-0 flex-1 flex-col'>
-                  {activeTab === 'summary' && (
+                  {activeDetailView ? (
+                    <>
+                      {activeDetailView === 'po_matching' && (
+                        <DetailReportView
+                          title="PO Matching Analysis"
+                          icon={Paperclip}
+                          status={poVal && poVal !== '-' && poVal !== 'N/A' ? 'Matched' : 'Not Matched'}
+                          statusType={poVal && poVal !== '-' && poVal !== 'N/A' ? 'success' : 'warning'}
+                          onClose={() => setActiveDetailView(null)}
+                        >
+                          <div className='grid grid-cols-2 gap-6'>
+                            <div className='space-y-4'>
+                              <h4 className='text-xs font-bold uppercase tracking-wider text-[var(--gray-10)]'>Document Mapping</h4>
+                              <div className='rounded-xl border border-[var(--gray-3)] bg-[var(--gray-2)] p-4 space-y-3 text-xs'>
+                                <div className='flex justify-between border-b border-[var(--gray-3)] pb-2'>
+                                  <span className='font-semibold text-[var(--gray-11)]'>PO Number (Extracted)</span>
+                                  <span className='font-bold text-[var(--gray-13)]'>{poVal || 'N/A'}</span>
+                                </div>
+                                <div className='flex justify-between border-b border-[var(--gray-3)] pb-2'>
+                                  <span className='font-semibold text-[var(--gray-11)]'>Vendor Name</span>
+                                  <span className='font-bold text-[var(--gray-13)]'>{agentData?.po_row?.['Vendor Name'] || 'N/A'}</span>
+                                </div>
+                                <div className='flex justify-between'>
+                                  <span className='font-semibold text-[var(--gray-11)]'>Authorized Amount</span>
+                                  <span className='font-bold text-[var(--gray-13)]'>{agentData?.po_matching?.po_amount || 'N/A'}</span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className='space-y-4'>
+                              <h4 className='text-xs font-bold uppercase tracking-wider text-[var(--gray-10)]'>Validation Log</h4>
+                              <div className='rounded-xl border border-[var(--gray-3)] bg-[var(--gray-2)] p-4 space-y-3 text-xs leading-relaxed'>
+                                <p className='text-[var(--gray-12)] font-medium'>
+                                  {poVal && poVal !== '-' && poVal !== 'N/A'
+                                    ? 'The extraction engine resolved the PO reference block in the document header and verified its presence in the procurement ledger database.'
+                                    : 'No purchase order barcode, ID, or header reference matches could be resolved automatically. Manual association may be required if this is a PO-backed invoice.'}
+                                </p>
+                                <div className='flex items-center gap-2 rounded-lg bg-[var(--primary-2)] text-[var(--primary-9)] p-3 border border-[var(--primary-3)]'>
+                                  <Icon className='h-4 w-4 shrink-0' name='tabler:info-circle' />
+                                  <span className='text-[11px] leading-tight font-medium'>System automatically performs two-way and three-way checks on verified purchase orders.</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </DetailReportView>
+                      )}
+                      {activeDetailView === 'duplicate_check' && (
+                        <DetailReportView
+                          title="Duplicate Payment Check"
+                          icon={Layers}
+                          status={agentData?.duplicate_check?.status || 'No Duplicate'}
+                          statusType={agentData?.duplicate_check?.status === 'Duplicate' ? 'danger' : 'success'}
+                          onClose={() => setActiveDetailView(null)}
+                        >
+                          <div className='grid grid-cols-2 gap-6'>
+                            <div className='space-y-4'>
+                              <h4 className='text-xs font-bold uppercase tracking-wider text-[var(--gray-10)]'>Historical Match Results</h4>
+                              <div className='rounded-xl border border-[var(--gray-3)] bg-[var(--gray-2)] p-4 space-y-3 text-xs'>
+                                <div className='flex justify-between border-b border-[var(--gray-3)] pb-2'>
+                                  <span className='font-semibold text-[var(--gray-11)]'>Cross-Check Status</span>
+                                  <span className={cn('font-bold', agentData?.duplicate_check?.status === 'Duplicate' ? 'text-[var(--red-9)]' : 'text-[var(--green-9)]')}>
+                                    {agentData?.duplicate_check?.status || 'Passed'}
+                                  </span>
+                                </div>
+                                <div className='flex flex-col gap-1'>
+                                  <span className='font-semibold text-[var(--gray-11)]'>System Response</span>
+                                  <span className='font-medium text-[var(--gray-13)] leading-normal'>{agentData?.duplicate_check?.message || 'No duplicate records found.'}</span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className='space-y-4'>
+                              <h4 className='text-xs font-bold uppercase tracking-wider text-[var(--gray-10)]'>Security & Auditing Policy</h4>
+                              <div className='rounded-xl border border-[var(--gray-3)] bg-[var(--gray-2)] p-4 space-y-3 text-xs leading-relaxed'>
+                                <p className='text-[var(--gray-11)]'>
+                                  Double-payment prevention checks analyze historical invoices by combining:
+                                </p>
+                                <ul className='list-disc pl-4 space-y-1.5 text-[var(--gray-11)]'>
+                                  <li>Supplier tax identity and banking details.</li>
+                                  <li>Exact Invoice Number string similarity.</li>
+                                  <li>Grand Total and individual line-item value mapping.</li>
+                                </ul>
+                              </div>
+                            </div>
+                          </div>
+                        </DetailReportView>
+                      )}
+                      {activeDetailView === 'supplier_verification' && (
+                        <DetailReportView
+                          title="Supplier Verification Registry"
+                          icon={Store}
+                          status={supplierCheckState.data?.status || 'Verified'}
+                          statusType={supplierCheckState.data?.statusType || 'success'}
+                          onClose={() => setActiveDetailView(null)}
+                        >
+                          <div className='grid grid-cols-2 gap-6'>
+                            <div className='space-y-4'>
+                              <h4 className='text-xs font-bold uppercase tracking-wider text-[var(--gray-10)]'>Supplier Details</h4>
+                              <div className='rounded-xl border border-[var(--gray-3)] bg-[var(--gray-2)] p-4 space-y-3 text-xs'>
+                                <div className='flex justify-between border-b border-[var(--gray-3)] pb-2'>
+                                  <span className='font-semibold text-[var(--gray-11)]'>Supplier Code</span>
+                                  <span className='font-bold text-[var(--gray-13)]'>
+                                    {formModel?.['Supplier ID'] || formModel?.['SupplierCode'] || formModel?.['Supplier Code'] || formModel?.['supplier_id'] || formModel?.['Vendor ID'] || formModel?.['vendor_id'] || 'Not Available'}
+                                  </span>
+                                </div>
+                                <div className='flex justify-between border-b border-[var(--gray-3)] pb-2'>
+                                  <span className='font-semibold text-[var(--gray-11)]'>Verification Result</span>
+                                  <span className='font-bold text-[var(--gray-13)]'>{supplierCheckState.data?.value || 'Verified'}</span>
+                                </div>
+                                {agentData?.supplier_validation?.mismatch && agentData.supplier_validation.mismatch.length > 0 && (
+                                  <div className='flex flex-col gap-1 border-t border-[var(--gray-3)] pt-2 mt-1'>
+                                    <span className='font-semibold text-[var(--red-9)]'>Discrepancy Details</span>
+                                    <ul className='list-disc pl-4 text-[11px] text-[var(--gray-12)] space-y-1'>
+                                      {agentData.supplier_validation.mismatch.map((m: any, idx: number) => (
+                                        <li key={idx}>{String(m)}</li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            <div className='space-y-4'>
+                              <h4 className='text-xs font-bold uppercase tracking-wider text-[var(--gray-10)]'>Registry Verification Log</h4>
+                              <div className='rounded-xl border border-[var(--gray-3)] bg-[var(--gray-2)] p-4 space-y-3 text-xs leading-relaxed'>
+                                <p className='text-[var(--gray-12)]'>
+                                  Verification checks supplier address registry, bank details, and business license status against corporate supplier directories and compliance watchlists.
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </DetailReportView>
+                      )}
+                      {activeDetailView === 'gl_matching' && (
+                        <DetailReportView
+                          title="GL Account Matching Report"
+                          icon={ListFilter}
+                          status={glValidationDisplay?.status || 'Not Available'}
+                          statusType={glValidationDisplay?.statusType || 'default'}
+                          onClose={() => setActiveDetailView(null)}
+                        >
+                          <div className='grid grid-cols-2 gap-6'>
+                            <div className='space-y-4'>
+                              <h4 className='text-xs font-bold uppercase tracking-wider text-[var(--gray-10)]'>Suggested Allocation</h4>
+                              <div className='rounded-xl border border-[var(--gray-3)] bg-[var(--gray-2)] p-4 space-y-3 text-xs'>
+                                <div className='flex justify-between border-b border-[var(--gray-3)] pb-2'>
+                                  <span className='font-semibold text-[var(--gray-11)]'>Matched GL Account</span>
+                                  <span className='font-bold text-[var(--gray-13)]'>{glValidationDisplay?.account || 'No account matched'}</span>
+                                </div>
+                                {(agentData?.gl_validation?.reason || agentData?.gl_matching?.reason) && (
+                                  <div className='flex flex-col gap-1 border-t border-[var(--gray-3)] pt-2 mt-1'>
+                                    <span className='font-semibold text-[var(--gray-11)]'>Matching Rationale</span>
+                                    <span className='font-medium text-[var(--gray-12)] leading-normal'>{agentData?.gl_validation?.reason || agentData?.gl_matching?.reason}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            <div className='space-y-4'>
+                              <h4 className='text-xs font-bold uppercase tracking-wider text-[var(--gray-10)]'>Allocation Rules</h4>
+                              <div className='rounded-xl border border-[var(--gray-3)] bg-[var(--gray-2)] p-4 space-y-3 text-xs leading-relaxed'>
+                                <p className='text-[var(--gray-11)]'>
+                                  GL matching translates plain-text line-item descriptions into numerical corporate chart-of-account segments based on historical vendor spend patterns and machine learning classifications.
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </DetailReportView>
+                      )}
+                      {activeDetailView === 'payment_terms' && (
+                        <DetailReportView
+                          title="Payment Terms Analysis"
+                          icon={Calendar}
+                          status={paymentTermsDisplay.calculationText}
+                          statusType={paymentTermsDisplay.statusType}
+                          onClose={() => setActiveDetailView(null)}
+                        >
+                          <div className='grid grid-cols-2 gap-6'>
+                            <div className='space-y-4'>
+                              <h4 className='text-xs font-bold uppercase tracking-wider text-[var(--gray-10)]'>Payment Deadlines</h4>
+                              <div className='rounded-xl border border-[var(--gray-3)] bg-[var(--gray-2)] p-4 space-y-3 text-xs'>
+                                <div className='flex justify-between border-b border-[var(--gray-3)] pb-2'>
+                                  <span className='font-semibold text-[var(--gray-11)]'>Billing Terms</span>
+                                  <span className='font-bold text-[var(--gray-13)]'>{paymentTermsDisplay.termsDisplay}</span>
+                                </div>
+                                <div className='flex justify-between border-b border-[var(--gray-3)] pb-2'>
+                                  <span className='font-semibold text-[var(--gray-11)]'>Due Date</span>
+                                  <span className='font-bold text-[var(--gray-13)]'>{extractDueDate(selectedItem, agentData, formModel)}</span>
+                                </div>
+                                <div className='flex justify-between'>
+                                  <span className='font-semibold text-[var(--gray-11)]'>Time Remaining</span>
+                                  <span className='font-bold text-[var(--gray-13)]'>{paymentTermsDisplay.daysText}</span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className='space-y-4'>
+                              <h4 className='text-xs font-bold uppercase tracking-wider text-[var(--gray-10)]'>Deadlines & Penalty Insights</h4>
+                              <div className='rounded-xl border border-[var(--gray-3)] bg-[var(--gray-2)] p-4 space-y-3 text-xs leading-relaxed'>
+                                <p className='text-[var(--gray-12)]'>
+                                  Payments terms are verified by cross-referencing values extracted from invoice headers against agreed vendor contract parameters. Late fees may apply if settlement exceeds due date boundaries.
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </DetailReportView>
+                      )}
+                      {activeDetailView === 'matter_validation' && (
+                        <DetailReportView
+                          title="Legal Matter Association Check"
+                          icon={Briefcase}
+                          status={matterValidationDisplay?.status || 'Unknown'}
+                          statusType={matterValidationDisplay?.statusType || 'default'}
+                          onClose={() => setActiveDetailView(null)}
+                        >
+                          <div className='grid grid-cols-2 gap-6'>
+                            <div className='space-y-4'>
+                              <h4 className='text-xs font-bold uppercase tracking-wider text-[var(--gray-10)]'>Associated Entity</h4>
+                              <div className='rounded-xl border border-[var(--gray-3)] bg-[var(--gray-2)] p-4 space-y-3 text-xs'>
+                                <div className='flex justify-between border-b border-[var(--gray-3)] pb-2'>
+                                  <span className='font-semibold text-[var(--gray-11)]'>Matter Reference</span>
+                                  <span className='font-bold text-[var(--gray-13)]'>{matterValidationDisplay?.value}</span>
+                                </div>
+                                {agentData?.matter_validation?.client_name && (
+                                  <div className='flex justify-between border-b border-[var(--gray-3)] pb-2'>
+                                    <span className='font-semibold text-[var(--gray-11)]'>Client</span>
+                                    <span className='font-bold text-[var(--gray-13)]'>{agentData.matter_validation.client_name}</span>
+                                  </div>
+                                )}
+                                {agentData?.matter_validation?.validation_details?.reason && (
+                                  <div className='flex flex-col gap-1 border-t border-[var(--gray-3)] pt-2 mt-1'>
+                                    <span className='font-semibold text-[var(--gray-11)]'>Compliance Note</span>
+                                    <span className='font-medium text-[var(--gray-12)] text-[11px] leading-normal'>{agentData.matter_validation.validation_details.reason}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            <div className='space-y-4'>
+                              <h4 className='text-xs font-bold uppercase tracking-wider text-[var(--gray-10)]'>Matter Validation Rules</h4>
+                              <div className='rounded-xl border border-[var(--gray-3)] bg-[var(--gray-2)] p-4 space-y-3 text-xs leading-relaxed'>
+                                <p className='text-[var(--gray-11)]'>
+                                  Corporate legal invoices are checked for compliance against corporate billing guidelines, valid client matter IDs, and active legal budgets.
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </DetailReportView>
+                      )}
+                      {activeDetailView === 'back_order' && (
+                        <div className='flex flex-col flex-1 min-h-0 bg-surface animate-in fade-in slide-in-from-bottom-2 duration-300'>
+                          {/* Header */}
+                          <div className='flex shrink-0 items-center justify-between border-b border-[var(--gray-3)] bg-[var(--gray-1)] px-6 py-3.5'>
+                            <div className='flex items-center gap-3'>
+                              <button
+                                onClick={() => setActiveDetailView(null)}
+                                className='group flex items-center gap-1 text-xs font-semibold text-[var(--gray-11)] transition-all hover:text-[var(--gray-13)] active:scale-95'
+                              >
+                                <Icon
+                                  className='h-4 w-4 transition-transform group-hover:-translate-x-0.5'
+                                  name='tabler:arrow-left'
+                                />
+                                <span>Back</span>
+                              </button>
+                              <div className='h-4 w-[1px] bg-[var(--gray-3)] mx-1' />
+                              <div className='flex items-center gap-2'>
+                                <div className='rounded-md p-1 bg-[var(--orange-1)] text-[var(--orange-9)] border border-[var(--orange-3)]'>
+                                  <Icon className='h-4 w-4' name='tabler:list-check' />
+                                </div>
+                                <h3 className='text-sm font-bold text-[var(--gray-13)]'>
+                                  PO line items vs invoices
+                                </h3>
+                              </div>
+                            </div>
+                            <div className='flex items-center gap-2'>
+                              {/* Recommendation badge in header */}
+                              {(() => {
+                                const currentRec =
+                                  activeBackOrderTab === 'current'
+                                    ? backOrder?.recommendation
+                                    : MOCK_PREVIOUS_BACKORDERS[activeBackOrderTab]
+                                        ?.recommendation
+                                const recMeta = getRecommendationMeta(currentRec)
+                                return (
+                                  <span
+                                    className={cn(
+                                      'mr-2 inline-flex items-center gap-1 rounded border px-2 py-0.5 text-[9px] font-bold shadow-xs',
+                                      recMeta.chip,
+                                    )}
+                                  >
+                                    <Icon
+                                      className='h-3 w-3 animate-pulse'
+                                      name={recMeta.icon}
+                                    />
+                                    {recMeta.label}
+                                  </span>
+                                )
+                              })()}
+                            </div>
+                          </div>
+
+                          {/* Sub-header with active tabs */}
+                          <div className='flex shrink-0 items-center gap-4 border-b border-[var(--gray-3)] bg-[var(--gray-1)] px-6'>
+                            <div className='flex items-center gap-4'>
+                              {/* Current Invoice tab */}
+                              <button
+                                className={cn(
+                                  '-mb-[1px] border-b-2 px-1 pt-2 pb-2.5 text-xs font-semibold transition-all',
+                                  activeBackOrderTab === 'current'
+                                    ? 'border-[var(--teal-9)] font-bold text-[var(--teal-9)]'
+                                    : 'border-transparent text-[var(--gray-11)] hover:text-[var(--gray-13)]',
+                                )}
+                                onClick={() => setActiveBackOrderTab('current')}
+                              >
+                                INV-4402 (Current)
+                              </button>
+                              {/* Previous tickets mapped as tabs */}
+                              {backOrder?.previous_id?.map((prevId: string) => (
+                                <button
+                                  key={prevId}
+                                  className={cn(
+                                    '-mb-[1px] border-b-2 px-1 pt-2 pb-2.5 text-xs font-semibold transition-all',
+                                    activeBackOrderTab === prevId
+                                      ? 'border-[var(--teal-9)] font-bold text-[var(--teal-9)]'
+                                      : 'border-transparent text-[var(--gray-11)] hover:text-[var(--gray-13)]',
+                                  )}
+                                  onClick={() => setActiveBackOrderTab(prevId)}
+                                >
+                                  INV-4401 ({prevId})
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Metrics Summary Row - 4 equal columns split by lines */}
+                          {(() => {
+                            const currentData =
+                              activeBackOrderTab === 'current'
+                                ? backOrder
+                                : MOCK_PREVIOUS_BACKORDERS[activeBackOrderTab] || {}
+                            const items = currentData?.missing_qty_by_item || []
+
+                            const currencySymbol = agentData?.po_row?.Currency || '$'
+                            const invoiceAmount = items.reduce(
+                              (sum: number, r: any) =>
+                                sum + (r.invoice_qty || 0) * (r.price || 0),
+                              0,
+                            )
+                            const linesReceivedCount = items.filter(
+                              (r: any) => (r.invoice_qty || 0) > 0,
+                            ).length
+                            const totalLines = items.length
+                            const pendingItemsCount = items.filter(
+                              (r: any) => (r.remaining || 0) > 0,
+                            ).length
+                            const stillPendingVal = items.reduce(
+                              (sum: number, r: any) =>
+                                sum + (r.remaining || 0) * (r.price || 0),
+                              0,
+                            )
+
+                            return (
+                              <div className='grid shrink-0 grid-cols-4 divide-x divide-[var(--gray-3)] border-b border-[var(--gray-3)] bg-surface text-xs'>
+                                <div className='space-y-1 p-4'>
+                                  <p className='text-[10px] font-bold tracking-wider text-[var(--gray-10)] uppercase'>
+                                    INVOICE AMOUNT
+                                  </p>
+                                  <p className='text-base font-extrabold text-[var(--gray-13)]'>
+                                    {currencySymbol}
+                                    {invoiceAmount.toFixed(2)}
+                                  </p>
+                                </div>
+                                <div className='space-y-1 p-4'>
+                                  <p className='text-[10px] font-bold tracking-wider text-[var(--gray-10)] uppercase'>
+                                    LINES RECEIVED
+                                  </p>
+                                  <p className='text-base font-extrabold text-[var(--teal-9)]'>
+                                    {linesReceivedCount} of {totalLines}
+                                  </p>
+                                </div>
+                                <div className='space-y-1 p-4'>
+                                  <p className='text-[10px] font-bold tracking-wider text-[var(--gray-10)] uppercase'>
+                                    PENDING ITEMS
+                                  </p>
+                                  <p className='text-base font-extrabold text-[var(--orange-9)]'>
+                                    {pendingItemsCount} item
+                                    {pendingItemsCount === 1 ? '' : 's'}
+                                  </p>
+                                </div>
+                                <div className='space-y-1 p-4'>
+                                  <p className='text-[10px] font-bold tracking-wider text-[var(--gray-10)] uppercase'>
+                                    STILL PENDING
+                                  </p>
+                                  <p className='text-base font-extrabold text-[var(--orange-9)]'>
+                                    {currencySymbol}
+                                    {stillPendingVal.toFixed(2)}
+                                  </p>
+                                </div>
+                              </div>
+                            )
+                          })()}
+
+                          {/* Main Content Area */}
+                          <div className='scrollbar flex-1 space-y-5 overflow-y-auto bg-[var(--gray-1)] p-6'>
+                            {/* Status/Explanation banner */}
+                            {(() => {
+                              const currentData =
+                                activeBackOrderTab === 'current'
+                                  ? backOrder
+                                  : MOCK_PREVIOUS_BACKORDERS[activeBackOrderTab] || {}
+
+                              return (
+                                <div className='animate-in fade-in slide-in-from-top-2 rounded-xl border border-[var(--orange-3)] bg-[var(--orange-1)]/30 p-4 shadow-xs duration-300'>
+                                  <div className='flex items-start gap-3'>
+                                    <div className='mt-0.5 shrink-0 rounded bg-[var(--orange-2)] p-1.5 text-[var(--orange-9)]'>
+                                      <Icon
+                                        className='h-4 w-4'
+                                        name='tabler:info-circle'
+                                      />
+                                    </div>
+                                    <div className='space-y-1'>
+                                      <h4 className='text-xs font-bold text-[var(--orange-10)]'>
+                                        {activeBackOrderTab === 'current'
+                                          ? 'Current Invoice Back Order Status'
+                                          : `Prior Ticket ${activeBackOrderTab} Details`}
+                                      </h4>
+                                      <p className='text-xs leading-relaxed font-medium text-[var(--gray-12)]'>
+                                        {currentData?.reason}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+                              )
+                            })()}
+
+                            {/* Items Table */}
+                            {(() => {
+                              const currentData =
+                                activeBackOrderTab === 'current'
+                                  ? backOrder
+                                  : MOCK_PREVIOUS_BACKORDERS[activeBackOrderTab] || {}
+
+                              const items = currentData?.missing_qty_by_item || []
+                              const currencySymbol = agentData?.po_row?.Currency || '$'
+
+                              // Totals
+                              const totalRemaining = items.reduce(
+                                (sum: number, r: any) => sum + (r.remaining || 0),
+                                0,
+                              )
+                              const totalInvoiceAmt = items.reduce(
+                                (sum: number, r: any) =>
+                                  sum + (r.invoice_qty || 0) * (r.price || 0),
+                                0,
+                              )
+
+                              return (
+                                <div className='animate-in fade-in overflow-hidden rounded-xl border border-[var(--gray-3)] bg-surface shadow-xs duration-300'>
+                                  <div className='overflow-x-auto'>
+                                    <table className='w-full border-collapse text-left text-xs'>
+                                      <thead className='border-b border-[var(--gray-3)] bg-[var(--gray-1)]'>
+                                        <tr className='text-[10px] font-bold tracking-wider text-[var(--gray-9)] uppercase'>
+                                          <th className='px-4 py-3.5'>LINE ITEM</th>
+                                          <th className='px-4 py-3.5 text-center'>
+                                            PO QTY
+                                          </th>
+                                          <th className='px-4 py-3.5 text-center'>
+                                            RECV QTY
+                                          </th>
+                                          <th className='px-4 py-3.5 text-center'>
+                                            BALANCE QTY
+                                          </th>
+                                          <th className='px-4 py-3.5 text-right'>
+                                            INV AMOUNT
+                                          </th>
+                                        </tr>
+                                      </thead>
+                                      <tbody className='divide-y divide-[var(--gray-2)] bg-surface'>
+                                        {items.map((row: any) => {
+                                          const desc =
+                                            row.description?.trim() || 'Unmapped item'
+                                          const invQty = row.invoice_qty ?? 0
+                                          const poQty = row.po_qty ?? 1
+                                          const price = row.price ?? 0
+                                          const receivedVal = invQty * price
+                                          const remaining = row.remaining ?? 0
+
+                                          // Dynamic percent calculation
+                                          const totalReceived = poQty - remaining
+                                          const pct = Math.max(
+                                            0,
+                                            Math.min(
+                                              100,
+                                              Math.round((totalReceived / poQty) * 100),
+                                            ),
+                                          )
+
+                                          return (
+                                            <tr
+                                              className='transition-colors hover:bg-[var(--gray-1)]/50'
+                                              key={`${row.po_line_id || 'line'}-${desc}`}
+                                            >
+                                              <td className='flex items-center gap-3.5 px-4 py-3 font-semibold text-[var(--gray-13)]'>
+                                                {/* Circular Progress Badge */}
+                                                <div
+                                                  className={cn(
+                                                    'flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 text-[9px] font-black transition-colors',
+                                                    getPctColorClass(pct),
+                                                  )}
+                                                >
+                                                  {pct}%
+                                                </div>
+                                                <div>
+                                                  <div className='text-xs font-bold text-[var(--gray-13)]'>
+                                                    {desc}
+                                                  </div>
+                                                  <div className='mt-0.5 text-[10px] font-medium text-[var(--gray-9)]'>
+                                                    PO Line: {row.po_line_id || '—'} •
+                                                    Price: {currencySymbol}
+                                                    {price.toFixed(2)}
+                                                  </div>
+                                                </div>
+                                              </td>
+                                              <td className='px-4 py-3 text-center font-bold text-[var(--gray-13)]'>
+                                                {poQty}
+                                              </td>
+                                              <td
+                                                className={cn(
+                                                  'px-4 py-3 text-center font-bold',
+                                                  invQty > 0
+                                                    ? 'text-[var(--teal-9)]'
+                                                    : 'font-medium text-[var(--gray-9)]',
+                                                )}
+                                              >
+                                                {invQty > 0 ? invQty : '—'}
+                                              </td>
+                                              <td className='px-4 py-3 text-center font-bold'>
+                                                {remaining > 0 ? (
+                                                  <span className='text-[var(--orange-9)]'>
+                                                    {remaining} pending
+                                                  </span>
+                                                ) : (
+                                                  <span className='text-[var(--gray-11)]'>
+                                                    0
+                                                  </span>
+                                                )}
+                                              </td>
+                                              <td
+                                                className={cn(
+                                                  'px-4 py-3 text-right font-bold',
+                                                  receivedVal > 0
+                                                    ? 'text-[var(--teal-10)]'
+                                                    : 'font-medium text-[var(--gray-9)]',
+                                                )}
+                                              >
+                                                {receivedVal > 0
+                                                  ? `${currencySymbol}${receivedVal.toFixed(2)}`
+                                                  : '—'}
+                                              </td>
+                                            </tr>
+                                          )
+                                        })}
+                                      </tbody>
+                                      <tfoot className='border-t border-[var(--gray-3)] bg-[var(--gray-1)] text-[11px] font-semibold text-[var(--gray-11)]'>
+                                        <tr className='h-11'>
+                                          <td className='px-4 py-3 font-medium'>
+                                            {items.length} line items
+                                          </td>
+                                          <td className='px-4 py-3' colSpan={2} />
+                                          <td className='px-4 py-3 text-center font-bold text-[var(--orange-10)]'>
+                                            Total pending qty:{' '}
+                                            <span className='underline decoration-[var(--orange-4)] decoration-2 underline-offset-4'>
+                                              {totalRemaining}
+                                            </span>
+                                          </td>
+                                          <td className='px-4 py-3 text-right font-black text-[var(--gray-13)]'>
+                                            Inv total: {currencySymbol}
+                                            {totalInvoiceAmt.toFixed(2)}
+                                          </td>
+                                        </tr>
+                                      </tfoot>
+                                    </table>
+                                  </div>
+                                </div>
+                              )
+                            })()}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      {activeTab === 'summary' && (
                     <div className='grid flex-1 grid-cols-2 gap-x-4 gap-y-2 overflow-y-auto p-4'>
                       {isCurrentlyProcessing &&
                       (!formModel ||
@@ -3699,6 +4003,8 @@ const Overview = (props: any) => {
                         />
                       )}
                     </div>
+                  )}
+                    </>
                   )}
                 </div>
               </div>

@@ -1384,9 +1384,9 @@ const Request = ({
     }
   } else {
     if (isCurrentlyProcessing || isLoading) {
-      finalStatusBadge = 'Fetching Agent Decision...'
+      finalStatusBadge = 'Setting up...'
     } else {
-      finalStatusBadge = selectedItem?.stage || selectedItem?.status || 'Analyzing Agent Decision...'
+      finalStatusBadge = selectedItem?.stage || selectedItem?.status || 'Finalizing Results...'
     }
   }
 
@@ -1406,7 +1406,7 @@ const Request = ({
   } else {
     // If job completed but we don't have agentDecision yet, show a loader status
     if (apAgentJobId && jobStatus && !agentDecision) {
-      statusBadge = 'Analyzing Agent Decision...'
+      statusBadge = 'Finalizing Results...'
     } else {
       statusBadge = finalStatusBadge
     }
