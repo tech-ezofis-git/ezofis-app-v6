@@ -1,6 +1,7 @@
 import Papa from 'papaparse'
 import { useMemo, useRef, useState } from 'react'
 import * as XLSX from 'xlsx'
+import { Select } from '@mantine/core'
 import folderApi from '@/api/folders/folders'
 import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
@@ -12,7 +13,6 @@ import cn from '@/utils/cn'
 import { downloadTemplate, PO_ACCEPT } from '../utils'
 import { compareHeaderSimilarity } from './utils/headerSimilarity'
 import { SYSTEM_TEMPLATE_COLUMNS } from './utils/templateSchema'
-import EditFieldMappings from './components/EditFieldMappings'
 
 export type UploadState =
   | 'idle'
@@ -634,13 +634,18 @@ export default function PoSetupFlowPage({ onClose }: Props) {
       )}
 
       {/* SCREEN 2: INGESTION TIMELINE SCREEN */}
-      {uploadState === 'processing' && (
+      {(uploadState === 'processing' || uploadState === 'ready') && (
         <AnimateFadeIn className='flex h-full w-full flex-col overflow-hidden'>
           {/* Header */}
           <div className='flex h-13 shrink-0 items-center gap-2 border-b border-border-default bg-gradient-to-b from-gray-1 to-gray-2 px-4'>
             <button
               className='cursor-pointer rounded-md p-1.5 text-gray-9 transition-colors hover:bg-surface-hover hover:text-gray-12'
-              onClick={() => setUploadState('idle')}
+              onClick={() => {
+                setUploadState('idle')
+                setUploadedFile(null)
+                setMapping({})
+                setPreviewRows([])
+              }}
             >
               <Icon className='size-4' name='tabler:arrow-left' />
             </button>
@@ -656,7 +661,10 @@ export default function PoSetupFlowPage({ onClose }: Props) {
 
           {/* Timeline Layout */}
           <main className='custom-scrollbar flex min-h-0 flex-1 flex-col items-center overflow-y-auto p-6'>
-            <AnimateSlideUp className='relative my-auto w-full max-w-xl space-y-6 py-4 pl-8'>
+            <AnimateSlideUp className={cn(
+              'relative my-auto w-full space-y-6 py-4 pl-8 transition-all duration-300',
+              uploadState === 'ready' ? 'max-w-3xl' : 'max-w-xl'
+            )}>
 
               {/* STEP 1: FILE INGESTION & PARSING */}
               <div className='relative z-10 flex flex-col gap-2'>
@@ -904,6 +912,144 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                     </div>
                   </div>
                 )}
+
+                {uploadState === 'ready' && (
+                  <div className='animate-in fade-in slide-in-from-top-2 ml-3 mt-4 space-y-4 rounded-xl border border-border-default bg-surface-primary p-5 shadow-sm duration-300'>
+                    <div className='flex items-center justify-between border-b border-border-default pb-3'>
+                      <div>
+                        <h4 className='text-[14px] font-bold text-gray-12'>Confirm Column Mapping</h4>
+                        <p className='text-[11px] text-gray-8 mt-0.5'>Align uploaded columns with master system fields.</p>
+                      </div>
+                      <button
+                        type='button'
+                        onClick={() => {
+                          const initialMapping: Record<string, string> = {}
+                          systemColumns.forEach((col) => {
+                            const match = uploadedColumns.find((u) => compareHeaderSimilarity(u, col.key))
+                            if (match) initialMapping[col.key] = match
+                          })
+                          setMapping(initialMapping)
+                          showToast({ message: 'Reset to initial suggestions.', variant: 'default' })
+                        }}
+                        className='flex items-center gap-1 text-[11px] font-bold text-primary-9 hover:underline'
+                      >
+                        <Icon className='size-3.5' name='tabler:rotate' />
+                        <span>Reset</span>
+                      </button>
+                    </div>
+
+                    {/* Three-column Mapping Table */}
+                    <div className='flex flex-col gap-2'>
+                      {/* Table Header */}
+                      <div className='grid grid-cols-[1fr_1.2fr_1fr] pb-2 text-[10px] font-extrabold tracking-wider text-gray-8 uppercase border-b border-border-default'>
+                        <div>System Field</div>
+                        <div>Your Field</div>
+                        <div>Preview</div>
+                      </div>
+
+                      {/* Scrollable Mapping Rows Container */}
+                      <div className='max-h-[300px] overflow-y-auto divide-y divide-border-default/60 custom-scrollbar pr-1'>
+                        {[...systemColumns]
+                          .sort((a, b) => {
+                            if (a.required === b.required) return 0
+                            return a.required ? -1 : 1
+                          })
+                          .map((col) => {
+                            const selectedVal = mapping[col.key] || ''
+                            const isMapped = !!selectedVal
+                            const previewVal = (selectedVal && selectedVal !== 'Skip to Import')
+                              ? String(previewRows[0]?.[selectedVal] ?? '')
+                              : ''
+
+                            return (
+                              <div key={col.key} className='grid grid-cols-[1fr_1.2fr_1fr] items-center py-2.5 gap-4 first:pt-1'>
+                                {/* Column 1: System Field */}
+                                <div className='flex items-center gap-1.5 min-w-0'>
+                                  <span className='truncate text-[13px] font-semibold text-gray-12'>{col.key}</span>
+                                  {col.required && (
+                                    <Icon className='size-2 shrink-0 text-red-11 animate-pulse' name='tabler:asterisk' title='Required Field' />
+                                  )}
+                                </div>
+
+                                {/* Column 2: Your Field (Dropdown Selector) */}
+                                <div>
+                                  <Select
+                                    data={[
+                                      { label: 'Skip to Import', value: 'Skip to Import' },
+                                      ...uploadedColumns.map(c => ({ label: c, value: c }))
+                                    ]}
+                                    placeholder='Select column...'
+                                    value={selectedVal || null}
+                                    clearable
+                                    searchable
+                                    onChange={(v) => setMapping({ ...mapping, [col.key]: v ?? '' })}
+                                    className='w-full'
+                                    size='xs'
+                                    radius='md'
+                                    styles={{
+                                      dropdown: {
+                                        border: '1px solid var(--gray-3)',
+                                        borderRadius: '12px',
+                                        boxShadow: 'var(--shadow-md)',
+                                        zIndex: 1000,
+                                      },
+                                      input: {
+                                        fontSize: '12px',
+                                        fontWeight: 500,
+                                        height: '32px',
+                                        border: isMapped ? '1px solid var(--primary-9)' : '1px solid var(--gray-4)',
+                                        backgroundColor: isMapped ? 'var(--primary-2)' : 'var(--surface-primary)',
+                                        color: isMapped ? 'var(--primary-12)' : 'var(--gray-12)',
+                                      }
+                                    }}
+                                  />
+                                </div>
+
+                                {/* Column 3: Preview Value */}
+                                <div className='text-[12px] font-medium text-gray-8 truncate' title={previewVal}>
+                                  {selectedVal === 'Skip to Import' ? (
+                                    <span className='text-gray-5 italic'>Skipped</span>
+                                  ) : previewVal ? (
+                                    <span className='text-gray-12 font-semibold'>"{previewVal}"</span>
+                                  ) : (
+                                    <span className='text-gray-5 italic'>No data</span>
+                                  )}
+                                </div>
+                              </div>
+                            )
+                          })}
+                      </div>
+                    </div>
+
+                    {/* Actions Row */}
+                    <div className='flex items-center justify-between border-t border-border-default pt-4 mt-2'>
+                      <span className='text-[11px] font-semibold text-gray-8'>
+                        {systemColumns.filter((col) => col.required && !!mapping[col.key]).length} of {systemColumns.filter((col) => col.required).length} required fields mapped
+                      </span>
+                      <div className='flex gap-2.5'>
+                        <Button
+                          variant='outline'
+                          size='xs'
+                          onClick={() => {
+                            setUploadState('idle')
+                            setUploadedFile(null)
+                            setMapping({})
+                            setPreviewRows([])
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          disabled={systemColumns.some((col) => col.required && !mapping[col.key])}
+                          onClick={handleManualConfirm}
+                          size='xs'
+                        >
+                          Confirm & Ingest
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* STEP 4: INGESTION & CONFIRMATION */}
@@ -949,24 +1095,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
         </AnimateFadeIn>
       )}
 
-      {/* SCREEN 3: VERIFY FIELDS SCREEN */}
-      {uploadState === 'ready' && (
-        <EditFieldMappings
-          uploadedColumns={uploadedColumns}
-          previewRows={previewRows}
-          mapping={mapping}
-          onChangeMapping={setMapping}
-          fileName={uploadedFile?.name || ''}
-          fileSize={uploadedFile?.size || 0}
-          onSave={handleManualConfirm}
-          onCancel={() => {
-            setUploadState('idle')
-            setUploadedFile(null)
-            setMapping({})
-            setPreviewRows([])
-          }}
-        />
-      )}
+
 
       {/* COMPLETED SUCCESS SCREEN */}
       {uploadState === 'completed' && (
