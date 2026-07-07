@@ -6,13 +6,13 @@ import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
 import showToast from '@/components/base/toast/showToast'
 import { AnimateFadeIn, AnimateSlideUp } from '@/components/common/animations'
+import ColumnMapping from '@/components/common/ColumnMapping'
 import requestStore from '@/pages/requests/stores/useRequestStore'
 import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
 import { downloadTemplate, PO_ACCEPT } from '../utils'
 import { compareHeaderSimilarity } from './utils/headerSimilarity'
 import { SYSTEM_TEMPLATE_COLUMNS } from './utils/templateSchema'
-import ColumnMapping from '@/components/common/ColumnMapping'
 
 export type UploadState =
   | 'idle'
@@ -55,8 +55,6 @@ export default function PoSetupFlowPage({ onClose }: Props) {
   const [mapping, setMapping] = useState<Record<string, string>>({})
   const [previewRows, setPreviewRows] = useState<any[]>([])
 
-
-
   // Timeline step states
   const [step1State, setStep1State] = useState<StepState>('waiting')
   const [step2State, setStep2State] = useState<StepState>('waiting')
@@ -71,10 +69,6 @@ export default function PoSetupFlowPage({ onClose }: Props) {
 
   // System Template columns schema
   const systemColumns = useMemo(() => SYSTEM_TEMPLATE_COLUMNS, [])
-
-
-
-
 
   // CSV Normalization helper
   const normalizeHeader = (h: unknown) => {
@@ -183,10 +177,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
   }
 
   // Simulation run for Stage 2 Ingestion timeline
-  const runTimelineSimulation = (
-    headers: string[],
-    rowsCount: number,
-  ) => {
+  const runTimelineSimulation = (headers: string[], rowsCount: number) => {
     setUploadedColumns(headers)
     setRowCount(rowsCount)
 
@@ -240,6 +231,17 @@ export default function PoSetupFlowPage({ onClose }: Props) {
     }, 800)
   }
 
+  const downloadFile = (file: File) => {
+    const url = URL.createObjectURL(file)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = file.name
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
+
   // Inverted header translator to replace source file headers with master system columns
   const updateFileHeaders = async (
     file: File,
@@ -276,12 +278,16 @@ export default function PoSetupFlowPage({ onClose }: Props) {
             const updatedCsv = new Blob([lines.join('\n')], {
               type: 'text/csv',
             })
-            resolve(new File([updatedCsv], fileName, { type: 'text/csv' }))
+            const updatedFile = new File([updatedCsv], fileName, {
+              type: 'text/csv',
+            })
+            downloadFile(updatedFile)
+            resolve(updatedFile)
           }
         }
         reader.onerror = (error) => reject(error)
         reader.readAsText(file)
-      } else if (fileExtension === 'xlsx') {
+      } else if (fileExtension === 'xlsx' || fileExtension === 'xls') {
         const reader = new FileReader()
         reader.onload = (event) => {
           if (event.target?.result) {
@@ -289,6 +295,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
             const wb = XLSX.read(data, { type: 'array' })
             const sheetName = wb.SheetNames[0]
             const sheet = wb.Sheets[sheetName]
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const rows: any = XLSX.utils.sheet_to_json(sheet, { header: 1 })
 
             if (rows.length > 0) {
@@ -299,22 +306,18 @@ export default function PoSetupFlowPage({ onClose }: Props) {
             }
 
             const updatedSheet = XLSX.utils.aoa_to_sheet(rows)
-            const updatedWb = XLSX.utils.book_new()
-            XLSX.utils.book_append_sheet(
-              updatedWb,
-              updatedSheet,
-              sheetName || 'Sheet1',
-            )
+            // Update the first sheet in place to preserve other sheets in the workbook
+            wb.Sheets[sheetName] = updatedSheet
 
-            const updatedBlob = XLSX.write(updatedWb, {
+            const updatedBlob = XLSX.write(wb, {
               bookType: 'xlsx',
               type: 'array',
             })
-            resolve(
-              new File([updatedBlob], fileName, {
-                type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-              }),
-            )
+            const updatedFile = new File([updatedBlob], fileName, {
+              type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            })
+            downloadFile(updatedFile)
+            resolve(updatedFile)
           }
         }
         reader.onerror = (error) => reject(error)
@@ -330,8 +333,8 @@ export default function PoSetupFlowPage({ onClose }: Props) {
     const payload = {
       file: file,
       formId: masterFormId ? String(masterFormId) : '',
-      workflowId: workflowId ? String(workflowId) : '',
       instanceId: '',
+      workflowId: workflowId ? String(workflowId) : '',
     }
 
     try {
@@ -410,7 +413,6 @@ export default function PoSetupFlowPage({ onClose }: Props) {
     }
     startPipeline(file)
   }
-
 
   return (
     <div className='animate-in fade-in flex h-full w-full flex-1 flex-col overflow-hidden bg-surface-muted font-inter text-gray-13 duration-300'>
@@ -639,33 +641,37 @@ export default function PoSetupFlowPage({ onClose }: Props) {
 
           {/* Timeline Layout */}
           <main className='custom-scrollbar flex min-h-0 flex-1 flex-col items-center overflow-y-auto p-6'>
-            <AnimateSlideUp className={cn(
-              'relative my-auto w-full max-w-3xl space-y-6 py-4 pl-8 transition-all duration-300'
-            )}>
-
+            <AnimateSlideUp
+              className={cn(
+                'relative my-auto w-full max-w-3xl space-y-6 py-4 pl-8 transition-all duration-300',
+              )}
+            >
               {/* STEP 1: FILE INGESTION & PARSING */}
               <div className='relative z-10 flex flex-col gap-3.5 pl-10'>
                 {/* Line segment from Step 1 to Step 2 */}
-                <div className="absolute left-[13px] top-8 -bottom-[18px] w-[1.5px] bg-border-default z-0" />
+                <div className='absolute top-8 -bottom-[18px] left-[13px] z-0 w-[1.5px] bg-border-default' />
                 <div
                   className={cn(
-                    'absolute left-[13px] top-8 -bottom-[18px] w-[1.5px] bg-green-11 origin-top transition-transform duration-700 ease-in-out z-0',
-                    step1State === 'done' ? 'scale-y-100' : 'scale-y-0'
+                    'absolute top-8 -bottom-[18px] left-[13px] z-0 w-[1.5px] origin-top bg-green-11 transition-transform duration-700 ease-in-out',
+                    step1State === 'done' ? 'scale-y-100' : 'scale-y-0',
                   )}
                 />
                 <div className='flex items-start gap-4'>
                   <div
                     className={cn(
-                      'absolute left-0 top-0.5 flex size-7 items-center justify-center rounded-full transition-all duration-300 z-10 shadow-xs',
+                      'absolute top-0.5 left-0 z-10 flex size-7 items-center justify-center rounded-full shadow-xs transition-all duration-300',
                       step1State === 'done'
-                        ? 'bg-green-9 text-white border border-green-9'
+                        ? 'border border-green-9 bg-green-9 text-white'
                         : step1State === 'active'
                           ? 'border-2 border-primary-9 bg-white text-primary-9'
                           : 'border-2 border-gray-3 bg-white text-gray-4',
                     )}
                   >
                     {step1State === 'done' ? (
-                      <Icon className='size-4 stroke-[3px]' name='tabler:check' />
+                      <Icon
+                        className='size-4 stroke-[3px]'
+                        name='tabler:check'
+                      />
                     ) : step1State === 'active' ? (
                       <Icon
                         className='size-4 animate-spin'
@@ -732,26 +738,29 @@ export default function PoSetupFlowPage({ onClose }: Props) {
               {/* STEP 2: COLUMN & ROW EXTRACTION */}
               <div className='relative z-10 flex flex-col gap-3.5 pl-10'>
                 {/* Line segment from Step 2 to Step 3 */}
-                <div className="absolute left-[13px] top-8 -bottom-[18px] w-[1.5px] bg-border-default z-0" />
+                <div className='absolute top-8 -bottom-[18px] left-[13px] z-0 w-[1.5px] bg-border-default' />
                 <div
                   className={cn(
-                    'absolute left-[13px] top-8 -bottom-[18px] w-[1.5px] bg-green-11 origin-top transition-transform duration-700 ease-in-out z-0',
-                    step2State === 'done' ? 'scale-y-100' : 'scale-y-0'
+                    'absolute top-8 -bottom-[18px] left-[13px] z-0 w-[1.5px] origin-top bg-green-11 transition-transform duration-700 ease-in-out',
+                    step2State === 'done' ? 'scale-y-100' : 'scale-y-0',
                   )}
                 />
                 <div className='flex items-start gap-4'>
                   <div
                     className={cn(
-                      'absolute left-0 top-0.5 flex size-7 items-center justify-center rounded-full transition-all duration-300 z-10 shadow-xs',
+                      'absolute top-0.5 left-0 z-10 flex size-7 items-center justify-center rounded-full shadow-xs transition-all duration-300',
                       step2State === 'done'
-                        ? 'bg-green-9 text-white border border-green-9'
+                        ? 'border border-green-9 bg-green-9 text-white'
                         : step2State === 'active'
                           ? 'border-2 border-primary-9 bg-white text-primary-9'
                           : 'border-2 border-gray-3 bg-white text-gray-4',
                     )}
                   >
                     {step2State === 'done' ? (
-                      <Icon className='size-4 stroke-[3px]' name='tabler:check' />
+                      <Icon
+                        className='size-4 stroke-[3px]'
+                        name='tabler:check'
+                      />
                     ) : step2State === 'active' ? (
                       <Icon
                         className='size-4 animate-spin'
@@ -813,26 +822,29 @@ export default function PoSetupFlowPage({ onClose }: Props) {
               {/* STEP 3: SCHEMA AUTO-MAPPING */}
               <div className='relative z-10 flex flex-col gap-3.5 pl-10'>
                 {/* Line segment from Step 3 to Step 4 */}
-                <div className="absolute left-[13px] top-8 -bottom-[18px] w-[1.5px] bg-border-default z-0" />
+                <div className='absolute top-8 -bottom-[18px] left-[13px] z-0 w-[1.5px] bg-border-default' />
                 <div
                   className={cn(
-                    'absolute left-[13px] top-8 -bottom-[18px] w-[1.5px] bg-green-11 origin-top transition-transform duration-700 ease-in-out z-0',
-                    step3State === 'done' ? 'scale-y-100' : 'scale-y-0'
+                    'absolute top-8 -bottom-[18px] left-[13px] z-0 w-[1.5px] origin-top bg-green-11 transition-transform duration-700 ease-in-out',
+                    step3State === 'done' ? 'scale-y-100' : 'scale-y-0',
                   )}
                 />
                 <div className='flex items-start gap-4'>
                   <div
                     className={cn(
-                      'absolute left-0 top-0.5 flex size-7 items-center justify-center rounded-full transition-all duration-300 z-10 shadow-xs',
+                      'absolute top-0.5 left-0 z-10 flex size-7 items-center justify-center rounded-full shadow-xs transition-all duration-300',
                       step3State === 'done'
-                        ? 'bg-green-9 text-white border border-green-9'
+                        ? 'border border-green-9 bg-green-9 text-white'
                         : step3State === 'active'
                           ? 'border-2 border-primary-9 bg-white text-primary-9'
                           : 'border-2 border-gray-3 bg-white text-gray-4',
                     )}
                   >
                     {step3State === 'done' ? (
-                      <Icon className='size-4 stroke-[3px]' name='tabler:check' />
+                      <Icon
+                        className='size-4 stroke-[3px]'
+                        name='tabler:check'
+                      />
                     ) : step3State === 'active' ? (
                       <Icon
                         className='size-4 animate-spin'
@@ -892,19 +904,19 @@ export default function PoSetupFlowPage({ onClose }: Props) {
 
                 {uploadState === 'ready' && (
                   <ColumnMapping
-                    uploadedColumns={uploadedColumns}
-                    previewRows={previewRows}
+                    isConfirmLoading={isSubmitting}
                     mapping={mapping}
-                    onChangeMapping={setMapping}
+                    previewRows={previewRows}
                     showActionsRow={true}
-                    onConfirm={handleManualConfirm}
+                    uploadedColumns={uploadedColumns}
                     onCancel={() => {
                       setUploadState('idle')
                       setUploadedFile(null)
                       setMapping({})
                       setPreviewRows([])
                     }}
-                    isConfirmLoading={isSubmitting}
+                    onChangeMapping={setMapping}
+                    onConfirm={handleManualConfirm}
                   />
                 )}
               </div>
@@ -914,16 +926,19 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                 <div className='flex items-start gap-4'>
                   <div
                     className={cn(
-                      'absolute left-0 top-0.5 flex size-7 items-center justify-center rounded-full transition-all duration-300 z-10 shadow-xs',
+                      'absolute top-0.5 left-0 z-10 flex size-7 items-center justify-center rounded-full shadow-xs transition-all duration-300',
                       step4State === 'done'
-                        ? 'bg-green-9 text-white border border-green-9'
+                        ? 'border border-green-9 bg-green-9 text-white'
                         : step4State === 'active'
                           ? 'border-2 border-primary-9 bg-white text-primary-9'
                           : 'border-2 border-gray-3 bg-white text-gray-4',
                     )}
                   >
                     {step4State === 'done' ? (
-                      <Icon className='size-4 stroke-[3px]' name='tabler:check' />
+                      <Icon
+                        className='size-4 stroke-[3px]'
+                        name='tabler:check'
+                      />
                     ) : step4State === 'active' ? (
                       <Icon
                         className='size-4 animate-spin'
@@ -951,8 +966,6 @@ export default function PoSetupFlowPage({ onClose }: Props) {
           </main>
         </AnimateFadeIn>
       )}
-
-
 
       {/* COMPLETED SUCCESS SCREEN */}
       {uploadState === 'completed' && (

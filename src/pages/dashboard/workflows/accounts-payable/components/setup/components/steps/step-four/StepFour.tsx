@@ -4,12 +4,12 @@ import * as XLSX from 'xlsx'
 import { createRepository } from '@/api/createFolder'
 import formApi from '@/api/form/form'
 import workflowApi from '@/api/workflow/workflow'
+import poMasterUrl from '@/assets/PO Master.xlsx?url'
 import Button from '@/components/base/button/Button'
+import Icon from '@/components/base/icon/Icon'
 import showToast from '@/components/base/toast/showToast'
 import { AnimateFadeIn } from '@/components/common/animations'
 import apSetupPayloads from '@/pages/dashboard/workflows/accounts-payable/constants/apSetupPayloads.json'
-import poMasterUrl from '@/assets/PO Master.xlsx?url'
-import Icon from '@/components/base/icon/Icon'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import requestStore from '@/pages/requests/stores/useRequestStore'
 import authUserStore from '@/stores/authUserStore'
@@ -21,26 +21,30 @@ const ProtocolCard = ({
   iconBg,
   iconColor,
   label,
-  title,
   subtitle,
+  title,
 }: {
   icon: string
   iconBg: string
   iconColor: string
   label: string
-  title: string
   subtitle: string
+  title: string
 }) => (
   <div className='flex flex-col gap-2 rounded-xl border border-gray-3 bg-surface p-5 shadow-sm transition-shadow hover:shadow-md'>
     <span className='text-[10px] font-bold tracking-wider text-gray-10 uppercase'>
       {label}
     </span>
-    <div className='flex items-center gap-3.5 mt-1'>
-      <div className={`flex size-10 items-center justify-center rounded-lg shadow-sm ${iconBg}`}>
+    <div className='mt-1 flex items-center gap-3.5'>
+      <div
+        className={`flex size-10 items-center justify-center rounded-lg shadow-sm ${iconBg}`}
+      >
         <Icon className={`size-5 ${iconColor}`} name={icon} />
       </div>
       <div className='min-w-0 flex-1'>
-        <h4 className='truncate text-14/5 font-semibold text-gray-13'>{title}</h4>
+        <h4 className='truncate text-14/5 font-semibold text-gray-13'>
+          {title}
+        </h4>
         <p className='mt-0.5 truncate text-12/4.5 text-gray-10'>{subtitle}</p>
       </div>
     </div>
@@ -72,6 +76,17 @@ const replacePlaceholders = (
     return newObj
   }
   return obj
+}
+
+const downloadFile = (file: File) => {
+  const url = URL.createObjectURL(file)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = file.name
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
 }
 
 const updateFileHeaders = async (
@@ -109,7 +124,11 @@ const updateFileHeaders = async (
           const updatedCsv = new Blob([lines.join('\n')], {
             type: 'text/csv',
           })
-          resolve(new File([updatedCsv], fileName, { type: 'text/csv' }))
+          const updatedFile = new File([updatedCsv], fileName, {
+            type: 'text/csv',
+          })
+          downloadFile(updatedFile)
+          resolve(updatedFile)
         }
       }
       reader.onerror = (error) => reject(error)
@@ -122,6 +141,7 @@ const updateFileHeaders = async (
           const wb = XLSX.read(data, { type: 'array' })
           const sheetName = wb.SheetNames[0]
           const sheet = wb.Sheets[sheetName]
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const rows: any = XLSX.utils.sheet_to_json(sheet, { header: 1 })
 
           if (rows.length > 0) {
@@ -132,22 +152,18 @@ const updateFileHeaders = async (
           }
 
           const updatedSheet = XLSX.utils.aoa_to_sheet(rows)
-          const updatedWb = XLSX.utils.book_new()
-          XLSX.utils.book_append_sheet(
-            updatedWb,
-            updatedSheet,
-            sheetName || 'Sheet1',
-          )
+          // Update the first sheet in place to preserve other sheets in the workbook
+          wb.Sheets[sheetName] = updatedSheet
 
-          const updatedBlob = XLSX.write(updatedWb, {
+          const updatedBlob = XLSX.write(wb, {
             bookType: 'xlsx',
             type: 'array',
           })
-          resolve(
-            new File([updatedBlob], fileName, {
-              type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            }),
-          )
+          const updatedFile = new File([updatedBlob], fileName, {
+            type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          })
+          downloadFile(updatedFile)
+          resolve(updatedFile)
         }
       }
       reader.onerror = (error) => reject(error)
@@ -235,7 +251,9 @@ const StepFour = () => {
 
       // 3. Create Master Form
       const masterFormPayload = apSetupPayloads.masterFormPayload
-      const masterFormRes = await formApi.createForm(JSON.stringify(masterFormPayload))
+      const masterFormRes = await formApi.createForm(
+        JSON.stringify(masterFormPayload),
+      )
       if (masterFormRes.error) {
         showToast({
           message: `Failed to create Master Form: ${masterFormRes.error}`,
@@ -245,7 +263,10 @@ const StepFour = () => {
         return
       }
 
-      const masterFormId = masterFormRes.data?.id ?? masterFormRes.data?.formId ?? masterFormRes.data
+      const masterFormId =
+        masterFormRes.data?.id ??
+        masterFormRes.data?.formId ??
+        masterFormRes.data
       if (!masterFormId) {
         showToast({
           message: 'Master Form created but did not return a valid form ID.',
@@ -271,7 +292,9 @@ const StepFour = () => {
         } else {
           const fileResponse = await fetch(poMasterUrl)
           if (!fileResponse.ok) {
-            throw new Error(`Failed to fetch PO Master asset: ${fileResponse.statusText}`)
+            throw new Error(
+              `Failed to fetch PO Master asset: ${fileResponse.statusText}`,
+            )
           }
           const fileBlob = await fileResponse.blob()
           if (!fileBlob) {
@@ -285,8 +308,8 @@ const StepFour = () => {
         const uploadPayload = {
           file,
           formId: masterFormId,
-          workflowId: '',
           instanceId: '',
+          workflowId: '',
         }
 
         const uploadRes = await formApi.uploadMasterFile(uploadPayload)
@@ -365,7 +388,7 @@ const StepFour = () => {
 
   return (
     <StepLayout
-      description="Double-check your settings and activate your AI invoice automation. Your workflow is ready to begin processing."
+      description='Double-check your settings and activate your AI invoice automation. Your workflow is ready to begin processing.'
       title='Review & Complete Setup'
       footer={
         <StepFooter>
@@ -401,24 +424,24 @@ const StepFour = () => {
               iconBg='bg-blue-1 dark:bg-blue-9/20'
               iconColor='text-blue-9 dark:text-blue-4'
               label='Data Destination'
-              title={getErpName()}
               subtitle='Connected & Verified'
+              title={getErpName()}
             />
             <ProtocolCard
               icon='tabler:brain'
               iconBg='bg-purple-1 dark:bg-purple-9/20'
               iconColor='text-purple-9 dark:text-purple-4'
               label='Intelligence Profile'
-              title='High Precision'
               subtitle='99.8% Extraction Goal'
+              title='High Precision'
             />
             <ProtocolCard
               icon='tabler:shield-check'
               iconBg='bg-green-1 dark:bg-green-9/20'
               iconColor='text-green-9 dark:text-green-4'
               label='Security Protocol'
-              title='SOC2 Compliant'
               subtitle='AES-256 Encrypted'
+              title='SOC2 Compliant'
             />
           </div>
         </AnimateFadeIn>
