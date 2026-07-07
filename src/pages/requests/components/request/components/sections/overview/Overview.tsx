@@ -45,6 +45,7 @@ import {
 import Attachments from '../attachment/Attachments'
 import Comments from '../comment/Comments'
 import History from '../history/History'
+import PaidActionApiTrigger from '@/components/playground/PaidActionApiTrigger'
 
 // --- Helpers ---
 
@@ -1187,6 +1188,8 @@ const Overview = (props: any) => {
     transactionId,
     workflowId,
     setFormModel,
+    actions,
+    onOpenPlayground,
   } = props
 
   const processingProcesses = requestStore((state) => state.processingProcesses)
@@ -1327,6 +1330,14 @@ const Overview = (props: any) => {
     () => hasMatterValidationData(agentData),
     [agentData],
   )
+  const paidAction = useMemo(() => {
+    return actions?.find((act: any) => String(act?.label || '').toLowerCase() === 'paid') || {
+      label: 'Paid',
+      endpoint: 'https://ezagentplayground.onrender.com/apikey.html?id=2',
+      model: 'gemini-2.0-flash-exp',
+      provider: 'gemini',
+    }
+  }, [actions])
   const analysisCardCount =
     3 +
     (showGlValidation ? 1 : 0) +
@@ -2063,7 +2074,7 @@ const Overview = (props: any) => {
   }
 
   return (
-    <div className='flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden font-sans'>
+    <div className='relative flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden font-sans'>
       <div className='flex min-h-0 flex-1 overflow-hidden'>
         {/* Left Side - Document Viewer (40% Width) */}
         <div
@@ -3774,6 +3785,14 @@ const Overview = (props: any) => {
           </div>
         </div>
       </div>
+      {onOpenPlayground && (
+        <div className='absolute bottom-20 right-10 z-[90] animate-in fade-in slide-in-from-bottom-2 duration-300'>
+          <PaidActionApiTrigger
+            action={paidAction}
+            onTrigger={onOpenPlayground}
+          />
+        </div>
+      )}
     </div>
   )
 }

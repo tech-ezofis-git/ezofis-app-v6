@@ -1389,6 +1389,22 @@ const Request = ({
     }
   }, [selectedItem, formModel, currency, poVal])
 
+  const handleOpenPlayground = (ctx: any) => {
+    const docInfo = {
+      amount: selectedItem?.amount || formModel?.['Invoice Amount'] || 0,
+      currency: currency || formModel?.['Currency'] || 'USD',
+      invoiceNumber: formModel?.['Invoice Number'] || formModel?.['Invoice No'] || selectedItem?.invoiceNumber || '',
+      poNumber: poVal || selectedItem?.purchaseOrderNumber || '',
+      requestNo: selectedItem?.requestNo || selectedItem?.reqNo || '',
+      vendor: formModel?.['Supplier Name'] || formModel?.['Vendor Name'] || selectedItem?.vendor || '',
+    }
+    setPlaygroundContext({
+      ...ctx,
+      document: docInfo,
+    })
+    setIsPlaygroundOpen(true)
+  }
+
   const agentDecision = currentAgentData?.decision || selectedItem?.decision
 
   let finalStatusBadge = ''
@@ -1503,21 +1519,7 @@ const Request = ({
           onManualCorrection={() => setIsEditing(!isEditing)}
           onNext={onNext}
           onPrev={onPrev}
-          onOpenPlayground={(ctx) => {
-            const docInfo = {
-              amount: selectedItem?.amount || formModel?.['Invoice Amount'] || 0,
-              currency: currency || formModel?.['Currency'] || 'USD',
-              invoiceNumber: formModel?.['Invoice Number'] || formModel?.['Invoice No'] || selectedItem?.invoiceNumber || '',
-              poNumber: poVal || selectedItem?.purchaseOrderNumber || '',
-              requestNo: selectedItem?.requestNo || selectedItem?.reqNo || '',
-              vendor: formModel?.['Supplier Name'] || formModel?.['Vendor Name'] || selectedItem?.vendor || '',
-            }
-            setPlaygroundContext({
-              ...ctx,
-              document: docInfo,
-            })
-            setIsPlaygroundOpen(true)
-          }}
+          onOpenPlayground={handleOpenPlayground}
         />
       </div>
 
@@ -1550,6 +1552,8 @@ const Request = ({
               workflowId={resolvedWorkflowId}
               setFormModel={setFormModel}
               setRightView={setRightView}
+              actions={headerActions}
+              onOpenPlayground={handleOpenPlayground}
             />
           </AnimateFadeIn>
         </div>

@@ -4,7 +4,6 @@ import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
 import OverlayHeaderWrapper from '@/components/base/overlay/OverlayHeaderWrapper'
-import PaidActionApiTrigger from '@/components/playground/PaidActionApiTrigger'
 import cn from '@/utils/cn'
 
 interface HeaderProps {
@@ -70,7 +69,6 @@ const Header: React.FC<HeaderProps> = ({
   onManualCorrection: _onManualCorrection,
   onNext,
   onPrev,
-  onOpenPlayground,
 }) => {
   const [showAIInsights, setShowAIInsights] = React.useState(false)
   const containerRef = React.useRef<HTMLDivElement>(null)
@@ -514,8 +512,6 @@ const Header: React.FC<HeaderProps> = ({
                   'border-red-4 hover:border-red-6 shadow-sm hover:shadow-md transition-shadow'
               }
 
-              const isPaid = label === 'paid'
-
               return (
                 <div key={action?.value} className='flex items-center gap-1.5'>
                   <Button
@@ -528,12 +524,6 @@ const Header: React.FC<HeaderProps> = ({
                     variant={btnVariant}
                     onClick={() => onApprove?.(action?.value)}
                   />
-                  {isPaid && onOpenPlayground && (
-                    <PaidActionApiTrigger
-                      action={action}
-                      onTrigger={onOpenPlayground}
-                    />
-                  )}
                 </div>
               )
             })}

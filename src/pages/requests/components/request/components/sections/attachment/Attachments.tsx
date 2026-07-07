@@ -567,7 +567,7 @@ export default function Attachments({
                       <>
                         <span className='size-0.5 rounded-full bg-gray-4' />
                         <span className='text-[11px] text-gray-8 truncate max-w-[250px]' title={`Uploaded by: ${file.uploadedBy}`}>
-                          Uploaded by: {file.uploadedBy}
+                          {file.uploadedBy}
                         </span>
                       </>
                     )}
