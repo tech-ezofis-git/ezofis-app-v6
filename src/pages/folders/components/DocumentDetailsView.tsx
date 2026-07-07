@@ -317,10 +317,10 @@ export function DocumentDetailsView({
   const isPdfPreview = previewMimeType === 'application/pdf'
   const isImagePreview = Boolean(
     previewMimeType?.startsWith('image/') ||
-      data?.fileType?.toLowerCase().includes('image') ||
-      data?.fileType?.toLowerCase().includes('png') ||
-      data?.fileType?.toLowerCase().includes('jpg') ||
-      data?.fileType?.toLowerCase().includes('jpeg'),
+    data?.fileType?.toLowerCase().includes('image') ||
+    data?.fileType?.toLowerCase().includes('png') ||
+    data?.fileType?.toLowerCase().includes('jpg') ||
+    data?.fileType?.toLowerCase().includes('jpeg'),
   )
 
   const tabs = [

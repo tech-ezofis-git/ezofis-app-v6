@@ -1,4 +1,3 @@
-/* eslint-disable prettier/prettier */
 import axios, {
   type AxiosError,
   type AxiosResponse,
@@ -9,7 +8,8 @@ import { decrypt, encrypt } from '../utils/crypto'
 
 // Environment variable handling (Vite uses import.meta.env, CRA uses process.env)
 const API_URL = import.meta.env?.VITE_BASE_URL || process.env.REACT_APP_API_URL
-const V6_API_URL = import.meta.env?.VITE_V6_BASE_URL || 'https://demo.ezofis.com/v6api/api'
+const V6_API_URL =
+  import.meta.env?.VITE_V6_BASE_URL || 'https://demo.ezofis.com/v6api/api'
 
 // --- 1. Standard Axios Instance (No Crypto) ---
 export const _axios = axios.create({
@@ -67,7 +67,12 @@ axiosCrypto.interceptors.response.use(
     const key = store?.identity?.key
     const iv = store?.identity?.iv
 
-    if (typeof response.data === 'string' && key && iv && !config.skipDecryption) {
+    if (
+      typeof response.data === 'string' &&
+      key &&
+      iv &&
+      !config.skipDecryption
+    ) {
       try {
         const decryptedString = await decrypt(response.data, key, iv)
         try {
@@ -87,7 +92,12 @@ axiosCrypto.interceptors.response.use(
     const key = store?.identity?.key
     const iv = store?.identity?.iv
 
-    if (error.response?.data && typeof error.response.data === 'string' && key && iv) {
+    if (
+      error.response?.data &&
+      typeof error.response.data === 'string' &&
+      key &&
+      iv
+    ) {
       try {
         const decryptedString = await decrypt(error.response.data, key, iv)
         try {
@@ -102,7 +112,10 @@ axiosCrypto.interceptors.response.use(
 
     if (error.response?.status === 401) {
       store.resetAuthState()
-      if (globalThis.window !== undefined && window.location.pathname !== '/sign-in') {
+      if (
+        globalThis.window !== undefined &&
+        window.location.pathname !== '/sign-in'
+      ) {
         window.location.href = '/sign-in'
       }
     }
@@ -130,20 +143,16 @@ const handleResponseError = (error: AxiosError) => {
   if (error.response?.status === 401) {
     const store = authUserStore.getState()
     store.resetAuthState()
-    if (globalThis.window !== undefined && window.location.pathname !== '/sign-in') {
+    if (
+      globalThis.window !== undefined &&
+      window.location.pathname !== '/sign-in'
+    ) {
       window.location.href = '/sign-in'
     }
   }
   return Promise.reject(error)
 }
 
-_axios.interceptors.response.use(
-  (response) => response,
-  handleResponseError,
-)
+_axios.interceptors.response.use((response) => response, handleResponseError)
 
-axiosV6.interceptors.response.use(
-  (response) => response,
-  handleResponseError,
-)
-
+axiosV6.interceptors.response.use((response) => response, handleResponseError)

@@ -1,4 +1,3 @@
-/* eslint-disable prettier/prettier */
 const base64ToBytes = (base64: string): Uint8Array => {
   const binaryString = window.atob(base64)
   const len = binaryString.length
@@ -47,7 +46,6 @@ export const encrypt = async (
 
     return bytesToBase64(encryptedBuffer)
   } catch (error: unknown) {
-     
     console.error('Encryption failed:', error)
     throw new Error('Encryption failed')
   }
@@ -71,7 +69,6 @@ export const decrypt = async (
 
     return new TextDecoder().decode(decryptedBuffer)
   } catch (error: unknown) {
-     
     console.error('Decryption failed:', error)
     throw new Error('Decryption failed')
   }

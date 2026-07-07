@@ -1,20 +1,20 @@
 import { create } from 'zustand'
 
 type Store = {
+  answers: Record<string, string>
   step: number
   totalSteps: number
-  answers: Record<string, string>
   back: () => void
   next: () => void
+  reset: () => void
   setAnswer: (question: string, answer: string) => void
   setStep: (step: number) => void
-  reset: () => void
 }
 
 const onBoardingStore = create<Store>()((set) => ({
+  answers: {},
   step: 1,
   totalSteps: 6,
-  answers: {},
 
   back: () =>
     set((state) => ({
@@ -26,6 +26,8 @@ const onBoardingStore = create<Store>()((set) => ({
       step: Math.min(state.step + 1, state.totalSteps),
     })),
 
+  reset: () => set(() => ({ answers: {}, step: 1 })),
+
   setAnswer: (question: string, answer: string) =>
     set((state) => ({
       answers: {
@@ -35,8 +37,6 @@ const onBoardingStore = create<Store>()((set) => ({
     })),
 
   setStep: (step: number) => set(() => ({ step })),
-
-  reset: () => set(() => ({ step: 1, answers: {} })),
 }))
 
 export default onBoardingStore

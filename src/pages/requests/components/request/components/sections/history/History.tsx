@@ -318,12 +318,18 @@ export default function History({
 
   // Dynamic Sorting / Chronological check
   const getStepDate = (item: HistoryRow): Date | null => {
-    return toDate(item.processedOn) || toDate(item.receivedOn) || toDate(item.actionAt)
+    return (
+      toDate(item.processedOn) ||
+      toDate(item.receivedOn) ||
+      toDate(item.actionAt)
+    )
   }
 
   const firstDate = flows.length > 0 ? getStepDate(flows[0]) : null
-  const lastDate = flows.length > 1 ? getStepDate(flows[flows.length - 1]) : null
-  const isChronological = firstDate && lastDate ? firstDate.getTime() <= lastDate.getTime() : true
+  const lastDate =
+    flows.length > 1 ? getStepDate(flows[flows.length - 1]) : null
+  const isChronological =
+    firstDate && lastDate ? firstDate.getTime() <= lastDate.getTime() : true
 
   const formatDuration = (ms: number): string => {
     if (ms < 0) ms = Math.abs(ms)
@@ -380,7 +386,9 @@ export default function History({
           if (nextStep) {
             const nextDate = getStepDate(nextStep)
             if (nextDate) {
-              const diffMs = Math.abs(nextDate.getTime() - currentDate.getTime())
+              const diffMs = Math.abs(
+                nextDate.getTime() - currentDate.getTime(),
+              )
               if (diffMs > 0) {
                 durationText = formatDuration(diffMs)
               }
@@ -411,7 +419,7 @@ export default function History({
                   {h.description}
                 </div>
               )}
-              <div className='mt-1 text-11 font-medium text-gray-9 flex items-center gap-1.5 flex-wrap'>
+              <div className='mt-1 flex flex-wrap items-center gap-1.5 text-11 font-medium text-gray-9'>
                 <span>{actor}</span>
                 <span className='text-gray-6'>·</span>
                 <span>{date}</span>

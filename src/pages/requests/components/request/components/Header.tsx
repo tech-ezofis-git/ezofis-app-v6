@@ -1,9 +1,12 @@
+import { useQuery } from '@tanstack/react-query'
 import { AnimatePresence, motion } from 'motion/react'
 import React from 'react'
+import { getUserListQueryOptions } from '@/api/userQueries'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
 import OverlayHeaderWrapper from '@/components/base/overlay/OverlayHeaderWrapper'
+import showToast from '@/components/base/toast/showToast'
 import cn from '@/utils/cn'
 
 interface HeaderProps {
@@ -36,9 +39,61 @@ interface HeaderProps {
   onBack?: () => void
   onManualCorrection?: () => void
   onNext?: () => void
-  onPrev?: () => void
   onOpenPlayground?: (context: any) => void
+  onPrev?: () => void
 }
+
+// Generates a consistent color from a string (name/email)
+const getAvatarColor = (str: string) => {
+  const colors = [
+    'bg-[var(--violet-9)] text-white',
+    'bg-[var(--blue-9)] text-white',
+    'bg-[var(--green-9)] text-white',
+    'bg-[var(--orange-9)] text-white',
+    'bg-[var(--pink-9)] text-white',
+    'bg-[var(--cyan-9)] text-white',
+    'bg-[var(--teal-9)] text-white',
+    'bg-[var(--indigo-9)] text-white',
+  ]
+  let hash = 0
+  for (let i = 0; i < str.length; i++)
+    hash = str.charCodeAt(i) + ((hash << 5) - hash)
+  return colors[Math.abs(hash) % colors.length]
+}
+
+const getInitials = (user: any): string => {
+  const first = user.firstName || user.FirstName || ''
+  const last = user.lastName || user.LastName || ''
+  if (first && last) return `${first[0]}${last[0]}`.toUpperCase()
+  const name =
+    user.name ||
+    user.value ||
+    user.loginName ||
+    user.displayName ||
+    user.email ||
+    ''
+  const parts = name.trim().split(' ')
+  if (parts.length >= 2)
+    return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
+  return name.slice(0, 2).toUpperCase()
+}
+
+const getDisplayName = (user: any): string => {
+  const first = user.firstName || user.FirstName || ''
+  const last = user.lastName || user.LastName || ''
+  if (first && last) return `${first} ${last}`
+  return (
+    user.name ||
+    user.value ||
+    user.loginName ||
+    user.displayName ||
+    user.email ||
+    'Unknown'
+  )
+}
+
+const getEmail = (user: any): string =>
+  user.email || user.Email || user.loginName || ''
 
 const Header: React.FC<HeaderProps> = ({
   actions,
@@ -71,13 +126,30 @@ const Header: React.FC<HeaderProps> = ({
   onPrev,
 }) => {
   const [showAIInsights, setShowAIInsights] = React.useState(false)
+  const [showShare, setShowShare] = React.useState(false)
+  const [shareSearch, setShareSearch] = React.useState('')
+  const [sharedUsers, setSharedUsers] = React.useState<Set<string>>(new Set())
   const containerRef = React.useRef<HTMLDivElement>(null)
+  const shareRef = React.useRef<HTMLDivElement>(null)
+
+  // Fetch users from API
+  const { data: rawUsers = [], isLoading: usersLoading } = useQuery(
+    getUserListQueryOptions(),
+  )
+
+  const users = React.useMemo(() => {
+    return (rawUsers as any[]).filter((u) => {
+      const name = getDisplayName(u).toLowerCase()
+      const email = getEmail(u).toLowerCase()
+      const q = shareSearch.toLowerCase()
+      return name.includes(q) || email.includes(q)
+    })
+  }, [rawUsers, shareSearch])
 
   const getProgressStyles = (pct: number) => {
     if (pct < 100) {
       return {
-        badge:
-          'border-[var(--orange-9)] bg-[var(--orange-9)] text-white',
+        badge: 'border-[var(--orange-9)] bg-[var(--orange-9)] text-white',
         bullet: 'bg-white',
         fill: 'bg-white/20',
         icon: 'text-white',
@@ -85,8 +157,7 @@ const Header: React.FC<HeaderProps> = ({
       }
     }
     return {
-      badge:
-        'border-[var(--green-9)] bg-[var(--green-9)] text-white',
+      badge: 'border-[var(--green-9)] bg-[var(--green-9)] text-white',
       bullet: 'bg-white',
       fill: 'bg-white/20',
       icon: 'text-white',
@@ -94,7 +165,7 @@ const Header: React.FC<HeaderProps> = ({
     }
   }
 
-  // Close on outside click
+  // Close AI Insights on outside click
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -108,17 +179,39 @@ const Header: React.FC<HeaderProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  // Close Share on outside click
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        shareRef.current &&
+        !shareRef.current.contains(event.target as Node)
+      ) {
+        setShowShare(false)
+        setShareSearch('')
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const handleShareUser = (user: any) => {
+    const id = String(user.id || user.value || user.loginName)
+    const name = getDisplayName(user)
+    setSharedUsers((prev) => new Set([...prev, id]))
+    showToast({
+      message: `Request shared with ${name} successfully`,
+      variant: 'success',
+    })
+  }
+
   const insightContent =
     agentData?.reason ||
     agentData?.summary ||
     agentData?.['Extracted Invoice JSON']?.reason ||
     ''
 
-  // Simple highlighting logic for common terms
   const renderHighlightedContent = (text: string) => {
     if (!text) return null
-
-    // Highlight percentages, scores, and statuses
     const parts = text.split(
       /(\d+%|Approved|Partially Approved|Partially Matched|Matched|Discrepancy|Aligned|Threshold|Not Matched)/gi,
     )
@@ -306,7 +399,13 @@ const Header: React.FC<HeaderProps> = ({
                             badgeColorClass,
                           )}
                         >
-                          <Icon className={cn('h-3.5 w-3.5', isLoaderIcon && 'animate-spin')} name={iconName} />
+                          <Icon
+                            name={iconName}
+                            className={cn(
+                              'h-3.5 w-3.5',
+                              isLoaderIcon && 'animate-spin',
+                            )}
+                          />
                           <span>{status}</span>
                         </span>
                       )
@@ -357,7 +456,9 @@ const Header: React.FC<HeaderProps> = ({
 
             const parseVal = (val: any) => {
               if (!val) return 0
-              const num = Number.parseFloat(String(val).replace(/[^0-9.-]+/g, ''))
+              const num = Number.parseFloat(
+                String(val).replace(/[^0-9.-]+/g, ''),
+              )
               return Number.isNaN(num) ? 0 : num
             }
 
@@ -387,7 +488,12 @@ const Header: React.FC<HeaderProps> = ({
                   <span className='mb-1 text-[10px] leading-none font-semibold text-[var(--gray-11)]'>
                     Invoice Value
                   </span>
-                  <span className={cn('text-[13px] leading-none font-semibold', invoiceValueColorClass)}>
+                  <span
+                    className={cn(
+                      'text-[13px] leading-none font-semibold',
+                      invoiceValueColorClass,
+                    )}
+                  >
                     {currDisplay} {formatAmount(totalAmount)}
                   </span>
                 </div>
@@ -472,6 +578,174 @@ const Header: React.FC<HeaderProps> = ({
           </div>
         )}
 
+        {/* Share Button — Canva-style user picker */}
+        {!isProcessing && (
+          <div className='relative' ref={shareRef}>
+            <button
+              type='button'
+              className={cn(
+                'flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-1.5 text-[13px] font-semibold transition-all hover:shadow-sm active:scale-95',
+                showShare
+                  ? 'border-[var(--primary-6)] bg-[var(--primary-1)] text-[var(--primary-9)]'
+                  : 'border-[var(--gray-3)] bg-surface text-[var(--gray-11)] hover:border-[var(--gray-5)] hover:text-[var(--gray-13)]',
+              )}
+              onClick={() => {
+                setShowShare(!showShare)
+                setShareSearch('')
+              }}
+            >
+              <Icon className='size-4' name='tabler:user-share' />
+              <span>Share</span>
+              {sharedUsers.size > 0 && (
+                <span className='flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[var(--primary-9)] px-1 text-[10px] font-bold text-white'>
+                  {sharedUsers.size}
+                </span>
+              )}
+            </button>
+
+            <AnimatePresence>
+              {showShare && (
+                <motion.div
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  className='absolute top-full right-0 z-[100] mt-3 w-[340px] overflow-hidden rounded-xl border border-[var(--gray-3)] bg-surface shadow-2xl backdrop-blur-md'
+                  exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                  initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                  transition={{ duration: 0.15 }}
+                >
+                  {/* Header */}
+                  <div className='flex items-center justify-between border-b border-[var(--gray-2)] px-4 py-3'>
+                    <div className='flex items-center gap-2'>
+                      <Icon
+                        className='size-4 text-[var(--primary-9)]'
+                        name='tabler:user-share'
+                      />
+                      <span className='text-[13px] font-semibold text-[var(--gray-13)]'>
+                        Share Request
+                      </span>
+                    </div>
+                    <button
+                      className='flex cursor-pointer items-center justify-center rounded-md p-1 text-[var(--gray-8)] transition-all hover:bg-[var(--gray-2)] hover:text-[var(--gray-12)] active:scale-95'
+                      onClick={() => {
+                        setShowShare(false)
+                        setShareSearch('')
+                      }}
+                    >
+                      <Icon className='size-3.5' name='lucide:x' />
+                    </button>
+                  </div>
+
+                  {/* Search */}
+                  <div className='px-3 pt-3 pb-2'>
+                    <div className='flex items-center gap-2 rounded-lg border border-[var(--gray-3)] bg-[var(--gray-1)] px-3 py-2 transition-all focus-within:border-[var(--primary-7)] focus-within:bg-surface focus-within:ring-1 focus-within:ring-[var(--primary-4)]'>
+                      <Icon
+                        className='size-3.5 shrink-0 text-[var(--gray-9)]'
+                        name='tabler:search'
+                      />
+                      <input
+                        className='flex-1 bg-transparent text-[12px] font-medium text-[var(--gray-13)] placeholder:text-[var(--gray-8)] focus:outline-none'
+                        placeholder='Search people...'
+                        type='text'
+                        value={shareSearch}
+                        autoFocus
+                        onChange={(e) => setShareSearch(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  {/* User List */}
+                  <div className='max-h-[260px] overflow-y-auto px-2 pb-3'>
+                    {usersLoading ? (
+                      <div className='flex flex-col gap-2 px-2 py-2'>
+                        {[1, 2, 3].map((i) => (
+                          <div
+                            className='flex items-center gap-3 rounded-lg px-2 py-2'
+                            key={i}
+                          >
+                            <div className='h-8 w-8 animate-pulse rounded-full bg-[var(--gray-3)]' />
+                            <div className='flex flex-1 flex-col gap-1.5'>
+                              <div className='h-3 w-28 animate-pulse rounded bg-[var(--gray-3)]' />
+                              <div className='h-2.5 w-40 animate-pulse rounded bg-[var(--gray-3)]' />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : users.length === 0 ? (
+                      <div className='flex flex-col items-center justify-center py-8 text-center'>
+                        <Icon
+                          className='mb-2 size-8 text-[var(--gray-5)]'
+                          name='tabler:users-group'
+                        />
+                        <p className='text-[12px] font-medium text-[var(--gray-9)]'>
+                          {shareSearch
+                            ? 'No users found'
+                            : 'No users available'}
+                        </p>
+                      </div>
+                    ) : (
+                      users.map((user: any) => {
+                        const id = String(
+                          user.id || user.value || user.loginName,
+                        )
+                        const name = getDisplayName(user)
+                        const email = getEmail(user)
+                        const initials = getInitials(user)
+                        const avatarColor = getAvatarColor(email || name)
+                        const isShared = sharedUsers.has(id)
+
+                        return (
+                          <button
+                            key={id}
+                            type='button'
+                            className={cn(
+                              'group flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left transition-all hover:bg-[var(--primary-2)]/60 active:scale-[0.98]',
+                              isShared && 'bg-[var(--primary-1)]',
+                            )}
+                            onClick={() => !isShared && handleShareUser(user)}
+                          >
+                            {/* Avatar */}
+                            <div
+                              className={cn(
+                                'flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold shadow-sm',
+                                avatarColor,
+                              )}
+                            >
+                              {initials}
+                            </div>
+
+                            {/* Name & Email */}
+                            <div className='min-w-0 flex-1'>
+                              <p className='truncate text-[12px] font-semibold text-[var(--gray-13)]'>
+                                {name}
+                              </p>
+                              {email && (
+                                <p className='truncate text-[11px] text-[var(--gray-9)]'>
+                                  {email}
+                                </p>
+                              )}
+                            </div>
+
+                            {/* Invite / Shared indicator */}
+                            {isShared ? (
+                              <span className='flex shrink-0 items-center gap-1 rounded-full bg-[var(--green-2)] px-2 py-0.5 text-[10px] font-semibold text-[var(--green-9)]'>
+                                <Icon className='size-3' name='tabler:check' />
+                                Shared
+                              </span>
+                            ) : (
+                              <span className='shrink-0 rounded-full border border-[var(--primary-4)] bg-[var(--primary-2)] px-2 py-0.5 text-[10px] font-semibold text-[var(--primary-9)] opacity-0 transition-opacity group-hover:opacity-100'>
+                                Invite
+                              </span>
+                            )}
+                          </button>
+                        )
+                      })
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
+
         {!isProcessing && (
           <div className='flex items-center gap-2'>
             {isEditing && (
@@ -513,7 +787,7 @@ const Header: React.FC<HeaderProps> = ({
               }
 
               return (
-                <div key={action?.value} className='flex items-center gap-1.5'>
+                <div className='flex items-center gap-1.5' key={action?.value}>
                   <Button
                     className={borderClass}
                     color={btnColor}

@@ -16,14 +16,14 @@ type ErpSettings = {
   importMethod?: 'upload' | 'import'
   isConnected: boolean
   isConnecting: boolean
+  mapping?: Record<string, string>
+  previewRows?: any[]
   selectedFormName?: string | null
   system: string
   templateUploaded?: boolean
+  uploadedColumns?: string[]
   uploadedTemplate?: File | null
   wantsFileBasedImport?: boolean
-  mapping?: Record<string, string>
-  uploadedColumns?: string[]
-  previewRows?: any[]
 }
 
 type StorageSettings = {
@@ -75,14 +75,14 @@ const initialErpSettings: ErpSettings = {
   importMethod: 'upload',
   isConnected: true,
   isConnecting: false,
+  mapping: {},
+  previewRows: [],
   selectedFormName: null,
   system: 'PREDEFINED',
   templateUploaded: false,
+  uploadedColumns: [],
   uploadedTemplate: null,
   wantsFileBasedImport: false,
-  mapping: {},
-  uploadedColumns: [],
-  previewRows: [],
 }
 
 const initialStorageSettings: StorageSettings = {

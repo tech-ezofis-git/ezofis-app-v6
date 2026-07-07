@@ -94,8 +94,18 @@ const getExt = (file?: AttachmentItem) => {
     if (mime.includes('csv')) return 'csv'
     if (mime.includes('text/plain') || mime.includes('txt')) return 'txt'
     if (mime.includes('word') || mime.includes('doc')) return 'docx'
-    if (mime.includes('excel') || mime.includes('sheet') || mime.includes('xls')) return 'xlsx'
-    if (mime.includes('powerpoint') || mime.includes('presentation') || mime.includes('ppt')) return 'pptx'
+    if (
+      mime.includes('excel') ||
+      mime.includes('sheet') ||
+      mime.includes('xls')
+    )
+      return 'xlsx'
+    if (
+      mime.includes('powerpoint') ||
+      mime.includes('presentation') ||
+      mime.includes('ppt')
+    )
+      return 'pptx'
   }
 
   // 3. Try to extract from name (if it contains a dot)
@@ -469,17 +479,17 @@ export default function Attachments({
 
       {/* Header Row (Small top-right button when attachments exist) */}
       {canUpload && !isLoading && files.length > 0 && (
-        <div className='flex items-center justify-between mb-3 shrink-0'>
-          <h4 className='text-xs font-bold uppercase tracking-wider text-[var(--gray-10)]'>
+        <div className='mb-3 flex shrink-0 items-center justify-between'>
+          <h4 className='text-xs font-bold tracking-wider text-[var(--gray-10)] uppercase'>
             All Attachments
           </h4>
           <button
             disabled={isUploading}
-            onClick={() => fileInputRef.current?.click()}
             className={cn(
-              'flex cursor-pointer items-center gap-1.5 rounded-lg border border-[var(--gray-3)] bg-surface px-2.5 py-1 text-[11px] font-semibold text-[var(--gray-12)] hover:bg-[var(--gray-2)] transition-all active:scale-95',
+              'flex cursor-pointer items-center gap-1.5 rounded-lg border border-[var(--gray-3)] bg-surface px-2.5 py-1 text-[11px] font-semibold text-[var(--gray-12)] transition-all hover:bg-[var(--gray-2)] active:scale-95',
               isUploading && 'pointer-events-none opacity-60',
             )}
+            onClick={() => fileInputRef.current?.click()}
           >
             {isUploading ? (
               <Icon
@@ -487,7 +497,10 @@ export default function Attachments({
                 name='tabler:loader'
               />
             ) : (
-              <Icon className='size-3.5 text-[var(--gray-9)]' name='tabler:upload' />
+              <Icon
+                className='size-3.5 text-[var(--gray-9)]'
+                name='tabler:upload'
+              />
             )}
             <span>{isUploading ? 'Uploading...' : 'Upload attachment'}</span>
           </button>
@@ -517,8 +530,10 @@ export default function Attachments({
             const styles = getFileIconClasses(ext)
             const sizeStr = formatBytes(file.fileSize)
             const displayName = file.name || file.fileName || 'Untitled'
-            const hasExt = ext && displayName.toLowerCase().endsWith('.' + ext.toLowerCase())
-            const displayTitle = ext && !hasExt ? `${displayName}.${ext}` : displayName
+            const hasExt =
+              ext && displayName.toLowerCase().endsWith('.' + ext.toLowerCase())
+            const displayTitle =
+              ext && !hasExt ? `${displayName}.${ext}` : displayName
 
             return (
               <div
@@ -536,7 +551,7 @@ export default function Attachments({
                 </div>
 
                 <div className='min-w-0 flex-1'>
-                  <div className='flex items-baseline gap-1.5 flex-wrap'>
+                  <div className='flex flex-wrap items-baseline gap-1.5'>
                     <span
                       className='line-clamp-1 text-13 font-semibold break-all text-gray-12 transition-all group-hover:line-clamp-none hover:underline'
                       title={displayTitle}
@@ -544,7 +559,7 @@ export default function Attachments({
                       {displayTitle}
                     </span>
                     {sizeStr && (
-                      <span className='text-[11px] font-normal text-gray-8 shrink-0'>
+                      <span className='shrink-0 text-[11px] font-normal text-gray-8'>
                         ({sizeStr})
                       </span>
                     )}
@@ -566,7 +581,10 @@ export default function Attachments({
                     {file.uploadedBy && (
                       <>
                         <span className='size-0.5 rounded-full bg-gray-4' />
-                        <span className='text-[11px] text-gray-8 truncate max-w-[250px]' title={`Uploaded by: ${file.uploadedBy}`}>
+                        <span
+                          className='max-w-[250px] truncate text-[11px] text-gray-8'
+                          title={`Uploaded by: ${file.uploadedBy}`}
+                        >
                           {file.uploadedBy}
                         </span>
                       </>

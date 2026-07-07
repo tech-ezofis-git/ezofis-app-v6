@@ -5,7 +5,9 @@ import workflowsApiV6, {
   mapPublishedWorkflowListToOptions,
 } from '@/api/v6/workflows'
 import PageEmptyState from '@/components/common/PageEmptyState'
+import ApiPlayground from '@/components/playground/ApiPlayground'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
+import cn from '@/utils/cn'
 import type { InboxItem, IRequestMeta, WorkflowOption } from './types'
 import Header from './components/Header'
 import InboxList from './components/InboxList'
@@ -13,8 +15,6 @@ import { ProcessingBackgroundManager } from './components/ProcessingBackgroundMa
 import Request from './components/request/Request'
 import { useInboxData } from './hooks/useInboxData'
 import requestStore from './stores/useRequestStore'
-import ApiPlayground from '@/components/playground/ApiPlayground'
-import cn from '@/utils/cn'
 
 type WorkflowLoadStatus = 'loading' | 'ready' | 'empty'
 
@@ -47,18 +47,18 @@ const RequestsPage = () => {
   const {
     closeRequest,
     isClosed,
+    isPlaygroundOpen,
     openNewRequest,
     openRequest,
     pendingOpenNewRequest,
+    playgroundContext,
     reloadMeta,
     selectedItem,
     stopRefresh,
+    setIsPlaygroundOpen,
     setPendingOpenNewRequest,
     setRawWorkflowData: setRawWorflow,
     setRequestListTab,
-    isPlaygroundOpen,
-    playgroundContext,
-    setIsPlaygroundOpen,
   } = requestStore()
 
   const [page, setPage] = useState(1)
@@ -300,8 +300,8 @@ const RequestsPage = () => {
       <div className='flex h-full min-h-0 w-full overflow-hidden'>
         <div
           className={cn(
-            'flex flex-1 min-h-0 flex-col overflow-hidden transition-all duration-300 ease-in-out',
-            isPlaygroundOpen && !selectedItem ? 'w-full lg:w-[75%]' : 'w-full'
+            'flex min-h-0 flex-1 flex-col overflow-hidden transition-all duration-300 ease-in-out',
+            isPlaygroundOpen && !selectedItem ? 'w-full lg:w-[75%]' : 'w-full',
           )}
         >
           {!selectedItem && (
@@ -330,8 +330,8 @@ const RequestsPage = () => {
               onPrev={onPrev}
             />
           )}
-          {!selectedItem && (
-            showWorkflowEmpty ? (
+          {!selectedItem &&
+            (showWorkflowEmpty ? (
               <PageEmptyState page='requests' variant='unavailable' />
             ) : (
               <InboxList
@@ -351,13 +351,12 @@ const RequestsPage = () => {
                 onRefresh={refetch}
                 onRowClick={handleRowClick}
               />
-            )
-          )}
+            ))}
         </div>
 
         {/* API Playground Drawer for Inbox List page */}
         {isPlaygroundOpen && !selectedItem && (
-          <div className='w-full lg:w-[25%] border-l border-[var(--gray-3)] bg-surface animate-in slide-in-from-right duration-300'>
+          <div className='animate-in slide-in-from-right w-full border-l border-[var(--gray-3)] bg-surface duration-300 lg:w-[25%]'>
             <ApiPlayground
               context={playgroundContext}
               onClose={() => setIsPlaygroundOpen(false)}

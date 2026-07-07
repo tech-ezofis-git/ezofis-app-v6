@@ -211,9 +211,9 @@ const formApi = {
   deleteFormEntry,
   listAllForms,
   updateForm,
+  uploadMasterFile,
   getFormDataById,
   getForms,
-  uploadMasterFile,
 }
 
 export default formApi

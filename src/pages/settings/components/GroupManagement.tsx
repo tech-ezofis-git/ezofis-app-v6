@@ -1,7 +1,4 @@
-import {
-  createColumnHelper,
-  useReactTable,
-} from '@tanstack/react-table'
+import { createColumnHelper, useReactTable } from '@tanstack/react-table'
 import {
   Check,
   Download,
@@ -19,6 +16,7 @@ import InputSelect from '@/components/base/inputs/InputSelect'
 import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
 import InputText from '@/components/base/inputs/InputText'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
+import type { SettingsGroup, SettingsOption } from '../helpers/userGroupMappers'
 import {
   dummySettingsGroups,
   getDummyUserOptions,
@@ -28,17 +26,16 @@ import {
   settingsTableCoreOptions,
 } from '../helpers/settingsDataTable'
 import { calculateGroupSetupProgress } from '../helpers/settingsSetupProgress'
-import type { SettingsGroup, SettingsOption } from '../helpers/userGroupMappers'
 import SettingsSearchInput from './SettingsSearchInput'
 import SetupProgressBar from './SetupProgressBar'
-
-type GroupStepKey = 'details' | 'members' | 'review'
 
 type GroupStep = {
   caption: string
   key: GroupStepKey
   title: string
 }
+
+type GroupStepKey = 'details' | 'members' | 'review'
 
 const groupSteps: GroupStep[] = [
   { caption: 'Step 1', key: 'details', title: 'Group Details' },
@@ -119,10 +116,10 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
     const normalizedGroup: SettingsGroup = {
       ...draftGroup,
       created: draftGroup.created === '—' ? formatToday() : draftGroup.created,
+      description: draftGroup.description.trim(),
       memberIds: selectedMembers.map((member) => member.id),
       members: selectedMembers.map((member) => member.name),
       name: draftGroup.name.trim(),
-      description: draftGroup.description.trim(),
     }
 
     if (!normalizedGroup.name) return
@@ -381,6 +378,34 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
   )
 }
 
+function formatToday() {
+  return new Date().toLocaleDateString('en-US', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  })
+}
+
+function FormCard({
+  children,
+  description,
+  title,
+}: {
+  children: ReactNode
+  description: string
+  title: string
+}) {
+  return (
+    <div className='rounded-[18px] border border-[var(--border-default)] bg-surface p-8 shadow-[var(--shadow-sm)]'>
+      <h2 className='text-[20px] font-semibold text-[var(--gray-13)]'>
+        {title}
+      </h2>
+      <p className='mt-2 text-sm text-[var(--gray-11)]'>{description}</p>
+      <div className='mt-8'>{children}</div>
+    </div>
+  )
+}
+
 function GroupSetup({
   activeStep,
   draftGroup,
@@ -517,15 +542,20 @@ function GroupSetup({
                     value={{
                       id: draftGroup.status,
                       name:
-                        draftGroup.status === 'inactive' ? 'Inactive' : 'Active',
+                        draftGroup.status === 'inactive'
+                          ? 'Inactive'
+                          : 'Active',
                       value:
-                        draftGroup.status === 'inactive' ? 'Inactive' : 'Active',
+                        draftGroup.status === 'inactive'
+                          ? 'Inactive'
+                          : 'Active',
                     }}
                     onChange={(selected) => {
                       if (!selected) return
                       onChange({
                         ...draftGroup,
-                        status: selected.name.toLowerCase() as SettingsGroup['status'],
+                        status:
+                          selected.name.toLowerCase() as SettingsGroup['status'],
                       })
                     }}
                   />
@@ -559,7 +589,10 @@ function GroupSetup({
                 title='Review'
               >
                 <div className='space-y-4 rounded-[14px] border border-[var(--border-default)] bg-surface p-5'>
-                  <ReviewRow label='Group Name' value={draftGroup.name || '—'} />
+                  <ReviewRow
+                    label='Group Name'
+                    value={draftGroup.name || '—'}
+                  />
                   <ReviewRow
                     label='Description'
                     value={draftGroup.description || '—'}
@@ -574,7 +607,9 @@ function GroupSetup({
                     label='Members'
                     value={
                       selectedMembers.length
-                        ? selectedMembers.map((member) => member.name).join(', ')
+                        ? selectedMembers
+                            .map((member) => member.name)
+                            .join(', ')
                         : 'No members selected'
                     }
                   />
@@ -611,24 +646,6 @@ function GroupSetup({
         </section>
       </div>
     </main>
-  )
-}
-
-function FormCard({
-  children,
-  description,
-  title,
-}: {
-  children: ReactNode
-  description: string
-  title: string
-}) {
-  return (
-    <div className='rounded-[18px] border border-[var(--border-default)] bg-surface p-8 shadow-[var(--shadow-sm)]'>
-      <h2 className='text-[20px] font-semibold text-[var(--gray-13)]'>{title}</h2>
-      <p className='mt-2 text-sm text-[var(--gray-11)]'>{description}</p>
-      <div className='mt-8'>{children}</div>
-    </div>
   )
 }
 
@@ -688,12 +705,4 @@ function StatusBadge({ status }: { status: SettingsGroup['status'] }) {
       {status}
     </span>
   )
-}
-
-function formatToday() {
-  return new Date().toLocaleDateString('en-US', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  })
 }

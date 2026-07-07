@@ -1,7 +1,4 @@
-import {
-  createColumnHelper,
-  useReactTable,
-} from '@tanstack/react-table'
+import { createColumnHelper, useReactTable } from '@tanstack/react-table'
 import {
   Check,
   Download,
@@ -18,6 +15,7 @@ import IconButton from '@/components/base/button/IconButton'
 import DataTable from '@/components/base/data-table/DataTable'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import InputText from '@/components/base/inputs/InputText'
+import type { SettingsUser } from '../helpers/userGroupMappers'
 import {
   dummySettingsUsers,
   getDummyGroupOptions,
@@ -27,7 +25,6 @@ import {
   settingsTableCoreOptions,
 } from '../helpers/settingsDataTable'
 import { calculateUserSetupProgress } from '../helpers/settingsSetupProgress'
-import type { SettingsUser } from '../helpers/userGroupMappers'
 import SettingsSearchInput from './SettingsSearchInput'
 import SetupProgressBar from './SetupProgressBar'
 
@@ -130,7 +127,9 @@ export default function ManageUser({ onBack }: ManageUserProps) {
   const [draftUser, setDraftUser] = useState<AppUser>(emptyUser)
 
   const roleOptions = useMemo(() => {
-    const uniqueRoles = Array.from(new Set(users.map((user) => user.role).filter(Boolean)))
+    const uniqueRoles = Array.from(
+      new Set(users.map((user) => user.role).filter(Boolean)),
+    )
     return ['All Roles', ...uniqueRoles]
   }, [users])
 

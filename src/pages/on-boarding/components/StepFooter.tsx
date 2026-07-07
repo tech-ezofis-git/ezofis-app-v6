@@ -2,12 +2,12 @@ import Button from '@/components/base/button/Button'
 import onBoardingStore from '../stores/onBoardingStore'
 
 interface Props {
-  onNext?: () => Promise<void> | void
-  loading?: boolean
   disabled?: boolean
+  loading?: boolean
+  onNext?: () => Promise<void> | void
 }
 
-const StepFooter = ({ onNext, loading, disabled }: Props) => {
+const StepFooter = ({ disabled, loading, onNext }: Props) => {
   const back = onBoardingStore((state) => state.back)
   const next = onBoardingStore((state) => state.next)
   const step = onBoardingStore((state) => state.step)
@@ -43,10 +43,10 @@ const StepFooter = ({ onNext, loading, disabled }: Props) => {
         />
       )}
       <Button
-        label={step === totalSteps ? "Let's Go" : 'Continue'}
-        suffixIcon='lucide:arrow-right'
-        loading={loading}
         disabled={disabled}
+        label={step === totalSteps ? "Let's Go" : 'Continue'}
+        loading={loading}
+        suffixIcon='lucide:arrow-right'
         onClick={handleNext}
       />
     </div>

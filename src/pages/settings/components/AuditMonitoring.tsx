@@ -1,7 +1,4 @@
-import {
-  createColumnHelper,
-  useReactTable,
-} from '@tanstack/react-table'
+import { createColumnHelper, useReactTable } from '@tanstack/react-table'
 import {
   ClipboardList,
   Database,

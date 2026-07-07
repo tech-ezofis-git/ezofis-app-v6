@@ -254,7 +254,8 @@ const findSupplierName = (row: any): string | null => {
   const fromForm = searchInObj(parsedForm)
   if (fromForm) return fromForm
 
-  const agentData = row._agentResponse || row._agentData?.[0] || row._agentData || {}
+  const agentData =
+    row._agentResponse || row._agentData?.[0] || row._agentData || {}
   const fromAgent = searchInObj(agentData)
   if (fromAgent) return fromAgent
 
@@ -306,7 +307,9 @@ const filterRowsByQuickFilters = (
     (f) => f === 'highValue' || f.startsWith('amount:'),
   )
   const activeOverdue = activeQuickFilters.filter((f) => f === 'overdue')
-  const activeSupplier = activeQuickFilters.filter((f) => f.startsWith('supplier:'))
+  const activeSupplier = activeQuickFilters.filter((f) =>
+    f.startsWith('supplier:'),
+  )
 
   if (
     (excludeCategory === 'status' || activeStatus.length === 0) &&
@@ -407,10 +410,10 @@ const filterRowsByQuickFilters = (
         const val = filter.split(':')[1].toUpperCase()
         const supplierName = String(
           findSupplierName(row) ||
-          row?.vendor ||
-          row?.['UtfgJy6Z0qyfRC5Bclf-c'] ||
-          row?.raisedBy ||
-          'Unknown Supplier'
+            row?.vendor ||
+            row?.['UtfgJy6Z0qyfRC5Bclf-c'] ||
+            row?.raisedBy ||
+            'Unknown Supplier',
         ).toUpperCase()
         return supplierName === val
       })
@@ -484,7 +487,8 @@ const findPONumberInObject = (obj: any): string | null => {
 
 const extractPONumber = (row: any): string => {
   if (!row) return 'N/A'
-  const agentData = row._agentResponse || row._agentData?.[0] || row._agentData || {}
+  const agentData =
+    row._agentResponse || row._agentData?.[0] || row._agentData || {}
   const parsedForm = getParsedFormData(row)
 
   if (parsedForm['RXwLGHILLrreMmRqlk9mj']) {
@@ -561,7 +565,8 @@ const findInvoiceNumber = (row: any): string | null => {
   const fromForm = searchInObj(parsedForm)
   if (fromForm) return fromForm
 
-  const agentData = row._agentResponse || row._agentData?.[0] || row._agentData || {}
+  const agentData =
+    row._agentResponse || row._agentData?.[0] || row._agentData || {}
   const fromAgent = searchInObj(agentData)
   if (fromAgent) return fromAgent
 
@@ -600,36 +605,39 @@ const getRowColumnValue = (row: any, colId: string): string => {
     const val = findSupplierName(row)
     if (val && val !== '-') return val
     const fallback =
-      row.vendor ||
-      row.supplier ||
-      row.supplierName ||
-      row.vendorName ||
-      ''
+      row.vendor || row.supplier || row.supplierName || row.vendorName || ''
     return String(fallback)
   }
 
   if (id === 'ponumber') {
     const val = extractPONumber(row)
     if (val && val !== 'N/A' && val !== '-') return val
-    const fallback =
-      row.poNumber ||
-      row.poNo ||
-      ''
+    const fallback = row.poNumber || row.poNo || ''
     return String(fallback)
   }
 
   if (id === 'invoicedate') {
-    const agentData = row._agentResponse || row._agentData?.[0] || row._agentData || {}
-    const fromAgent = agentData?.['Extracted Invoice JSON']?.invoice_header?.['Invoice Date'] ||
+    const agentData =
+      row._agentResponse || row._agentData?.[0] || row._agentData || {}
+    const fromAgent =
+      agentData?.['Extracted Invoice JSON']?.invoice_header?.['Invoice Date'] ||
       agentData?.['Extracted Invoice JSON']?.invoice_header?.['Invoice_Date'] ||
       agentData?.['Extracted Invoice JSON']?.invoice_header?.['InvoiceDate']
     if (fromAgent) return String(fromAgent)
 
-    return String(row.invoiceDate || row.documentDate || row.raisedAt || row.createdAt || '')
+    return String(
+      row.invoiceDate ||
+        row.documentDate ||
+        row.raisedAt ||
+        row.createdAt ||
+        '',
+    )
   }
 
   if (id === 'raisedby' || id === 'createdby') {
-    return String(row.raisedBy || row.createdBy || row.performedByUserName || '')
+    return String(
+      row.raisedBy || row.createdBy || row.performedByUserName || '',
+    )
   }
 
   if (id === 'status' || id === 'matchstatus' || id === 'decision') {
@@ -699,14 +707,22 @@ const InboxList: React.FC<InboxListProps> = ({
 
   const counts = useMemo(() => {
     // For overdue count, filter by Status and Amount (ignore Overdue)
-    const overdueRows = filterRowsByQuickFilters(flatRows, activeQuickFilters, 'overdue')
+    const overdueRows = filterRowsByQuickFilters(
+      flatRows,
+      activeQuickFilters,
+      'overdue',
+    )
     let overdue = 0
     overdueRows.forEach((row) => {
       if (isOverdue(row)) overdue++
     })
 
     // For status counts, filter by Amount and Overdue (ignore Status)
-    const statusRows = filterRowsByQuickFilters(flatRows, activeQuickFilters, 'status')
+    const statusRows = filterRowsByQuickFilters(
+      flatRows,
+      activeQuickFilters,
+      'status',
+    )
     let matched = 0
     let discrepancies = 0
     statusRows.forEach((row) => {
@@ -738,7 +754,11 @@ const InboxList: React.FC<InboxListProps> = ({
     })
 
     // For amount counts, filter by Status and Overdue (ignore Amount)
-    const amountRows = filterRowsByQuickFilters(flatRows, activeQuickFilters, 'amount')
+    const amountRows = filterRowsByQuickFilters(
+      flatRows,
+      activeQuickFilters,
+      'amount',
+    )
     let highValue = 0
     amountRows.forEach((row) => {
       const amtStr = findInvoiceAmount(row)
@@ -794,7 +814,7 @@ const InboxList: React.FC<InboxListProps> = ({
       })
 
       return searchableStrings.some((str) =>
-        str.toLowerCase().includes(searchValue)
+        str.toLowerCase().includes(searchValue),
       )
     })
   }, [quickFilteredRows, searchState])
@@ -808,7 +828,8 @@ const InboxList: React.FC<InboxListProps> = ({
     return filteredFlatRows.filter((row: any) => {
       // All column filters must match
       return filtersState.every((filter: any) => {
-        if (!filter.id || filter.value === undefined || filter.value === null) return true
+        if (!filter.id || filter.value === undefined || filter.value === null)
+          return true
         const filterVal = String(filter.value).toLowerCase().trim()
         if (filterVal === '') return true
 

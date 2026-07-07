@@ -143,7 +143,7 @@ const Steps = () => {
       </AnimateSlideRight>
       <div className='grid min-h-0 flex-1 grid-cols-1 gap-0 xl:grid-cols-[290px_1fr]'>
         <AnimateSlideUp delay={0.2}>
-          <div className='hidden h-full border-r border-gray-3 bg-gray-1/30 pb-3 pl-3.5 pr-2 pt-3 xl:block'>
+          <div className='hidden h-full border-r border-gray-3 bg-gray-1/30 pt-3 pr-2 pb-3 pl-3.5 xl:block'>
             <Stepper
               active={step}
               orientation='vertical'

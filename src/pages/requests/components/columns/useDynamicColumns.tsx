@@ -25,7 +25,6 @@ import type { WorkflowOption } from '../../types'
 import requestStore from '../../stores/useRequestStore'
 import HoverExpandableText from '../HoverExpandableText'
 import DynamicTableCell from './components/DynamicTableCell'
-
 // ✅ Your generic FileSheet (React version)
 // import FileSheet from '@/components/common/file-sheet/FileSheet'
 // add this import near the top
@@ -1739,10 +1738,11 @@ function makeActionsColumn(
       const commentsLabel =
         commentsCount > 0 ? `Comments (${commentsCount})` : 'Comments'
 
-
-
       return (
-        <div className='flex items-center justify-center gap-1.5' onClick={(e) => e.stopPropagation()}>
+        <div
+          className='flex items-center justify-center gap-1.5'
+          onClick={(e) => e.stopPropagation()}
+        >
           <Menu
             position='bottom-end'
             width={200}

@@ -251,10 +251,10 @@ export const authApiV6 = {
   login,
   sendMailOTP,
   signUp,
+  socialLogin,
   verifyMailOTP,
   getSession,
   getTenants,
-  socialLogin,
 }
 
 export default authApiV6

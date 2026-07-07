@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import formApi from '@/api/form/form'
 import workflowsApiV6 from '@/api/v6/workflows'
+import showToast from '@/components/base/toast/showToast'
 // Import your custom animation components
 import { AnimateFadeIn } from '@/components/common/animations'
-import showToast from '@/components/base/toast/showToast'
+import ApiPlayground from '@/components/playground/ApiPlayground'
 import { queryClient } from '@/lib/tanstack-query/queryClient'
 import authUserStore from '@/stores/authUserStore'
+import cn from '@/utils/cn'
 import workflowApi from '../../../../api/workflow/workflow'
 import { useRequestDetail } from '../../hooks/useRequestDetails'
 import requestStore from '../../stores/useRequestStore'
@@ -14,8 +16,6 @@ import {
   isMatrixFieldType,
   isTableType,
 } from '../../utils/dynamicTable.utils'
-import ApiPlayground from '@/components/playground/ApiPlayground'
-import cn from '@/utils/cn'
 import Header from './components/Header'
 import Overview from './components/sections/overview/Overview'
 
@@ -492,15 +492,15 @@ const updateProcessInStore = (apAgentJobId: string | number, jobData: any) => {
       )
       const updatedProcesses = hasJobProcess
         ? state.processingProcesses.map((p) =>
-          String(p.processId || p.id) === jobKey
-            ? {
-              ...p,
-              apAgentJobId: null,
-              id: jobData.instanceId,
-              processId: jobData.instanceId,
-            }
-            : p,
-        )
+            String(p.processId || p.id) === jobKey
+              ? {
+                  ...p,
+                  apAgentJobId: null,
+                  id: jobData.instanceId,
+                  processId: jobData.instanceId,
+                }
+              : p,
+          )
         : state.processingProcesses
 
       return {
@@ -944,10 +944,10 @@ const Request = ({
 
   const hasAgentDecision = request
     ? !!(
-      request.review ||
-      request._agentData?.[0]?.decision ||
-      request.completedAtUtc
-    )
+        request.review ||
+        request._agentData?.[0]?.decision ||
+        request.completedAtUtc
+      )
     : false
   const isCurrentlyProcessing =
     !hasAgentDecision && initialProcessing && !jobStatus?.isCompleted
@@ -1146,8 +1146,8 @@ const Request = ({
           typeof selectedItem?.agentResponse === 'string'
             ? selectedItem.agentResponse
             : JSON.stringify(
-              selectedItem?.agentResponse || request?.agentResponse || {},
-            ),
+                selectedItem?.agentResponse || request?.agentResponse || {},
+              ),
         comments: '',
         formData: formDataStr,
         formEntryId: Number(
@@ -1244,10 +1244,10 @@ const Request = ({
           fields:
             Object.keys(formModel).length > 0
               ? mapFormModelToPayloadFields(
-                formModel,
-                selectedWorkflow,
-                request?._formDefinition,
-              )
+                  formModel,
+                  selectedWorkflow,
+                  request?._formDefinition,
+                )
               : selectedItem?.formData?.fields || {},
           formEntryId: selectedItem?.formData?.formEntryId,
           formId: rawWorkflowData?.wFormId,
@@ -1369,17 +1369,27 @@ const Request = ({
           const docInfo = {
             amount: selectedItem?.amount || formModel?.['Invoice Amount'] || 0,
             currency: currency || formModel?.['Currency'] || 'USD',
-            invoiceNumber: formModel?.['Invoice Number'] || formModel?.['Invoice No'] || selectedItem?.invoiceNumber || '',
+            invoiceNumber:
+              formModel?.['Invoice Number'] ||
+              formModel?.['Invoice No'] ||
+              selectedItem?.invoiceNumber ||
+              '',
             poNumber: poVal || selectedItem?.purchaseOrderNumber || '',
             requestNo: selectedItem?.requestNo || selectedItem?.reqNo || '',
-            vendor: formModel?.['Supplier Name'] || formModel?.['Vendor Name'] || selectedItem?.vendor || '',
+            vendor:
+              formModel?.['Supplier Name'] ||
+              formModel?.['Vendor Name'] ||
+              selectedItem?.vendor ||
+              '',
           }
           setPlaygroundContext({
             actionName: action?.label || 'Paid',
-            endpoint: action?.endpoint || 'https://ezagentplayground.onrender.com/apikey.html?id=2',
+            document: docInfo,
+            endpoint:
+              action?.endpoint ||
+              'https://ezagentplayground.onrender.com/apikey.html?id=2',
             model: action?.model || 'gemini-2.0-flash-exp',
             provider: action?.provider || 'gemini',
-            document: docInfo,
           })
           setIsPlaygroundOpen(true)
         }
@@ -1393,10 +1403,18 @@ const Request = ({
     const docInfo = {
       amount: selectedItem?.amount || formModel?.['Invoice Amount'] || 0,
       currency: currency || formModel?.['Currency'] || 'USD',
-      invoiceNumber: formModel?.['Invoice Number'] || formModel?.['Invoice No'] || selectedItem?.invoiceNumber || '',
+      invoiceNumber:
+        formModel?.['Invoice Number'] ||
+        formModel?.['Invoice No'] ||
+        selectedItem?.invoiceNumber ||
+        '',
       poNumber: poVal || selectedItem?.purchaseOrderNumber || '',
       requestNo: selectedItem?.requestNo || selectedItem?.reqNo || '',
-      vendor: formModel?.['Supplier Name'] || formModel?.['Vendor Name'] || selectedItem?.vendor || '',
+      vendor:
+        formModel?.['Supplier Name'] ||
+        formModel?.['Vendor Name'] ||
+        selectedItem?.vendor ||
+        '',
     }
     setPlaygroundContext({
       ...ctx,
@@ -1435,7 +1453,8 @@ const Request = ({
     if (isCurrentlyProcessing || isLoading) {
       finalStatusBadge = 'Setting up...'
     } else {
-      finalStatusBadge = selectedItem?.stage || selectedItem?.status || 'Finalizing Results...'
+      finalStatusBadge =
+        selectedItem?.stage || selectedItem?.status || 'Finalizing Results...'
     }
   }
 
@@ -1492,19 +1511,19 @@ const Request = ({
             formModel?.['invoice_number'] ||
             formModel?.['invoice_no'] ||
             currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-            'Invoice No'
+              'Invoice No'
             ] ||
             currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-            'invoice_no'
+              'invoice_no'
             ] ||
             currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-            'Invoice Number'
+              'Invoice Number'
             ] ||
             currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-            'invoice_number'
+              'invoice_number'
             ] ||
             currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-            'invoice_num'
+              'invoice_num'
             ] ||
             currentAgentData?.['kvcYuknkDumkTenjvrVLj'] ||
             selectedItem?.reqNo ||
@@ -1518,17 +1537,17 @@ const Request = ({
           onBack={onBack || closeRequest}
           onManualCorrection={() => setIsEditing(!isEditing)}
           onNext={onNext}
-          onPrev={onPrev}
           onOpenPlayground={handleOpenPlayground}
+          onPrev={onPrev}
         />
       </div>
 
       {/* Tab Content + Playground Drawer */}
-      <div className='flex flex-1 min-h-0 w-full overflow-hidden'>
+      <div className='flex min-h-0 w-full flex-1 overflow-hidden'>
         <div
           className={cn(
-            'flex flex-1 min-h-0 flex-col overflow-hidden transition-all duration-300 ease-in-out',
-            isPlaygroundOpen ? 'w-full lg:w-[75%]' : 'w-full'
+            'flex min-h-0 flex-1 flex-col overflow-hidden transition-all duration-300 ease-in-out',
+            isPlaygroundOpen ? 'w-full lg:w-[75%]' : 'w-full',
           )}
         >
           <AnimateFadeIn
@@ -1536,6 +1555,7 @@ const Request = ({
             delay={0.6}
           >
             <Overview
+              actions={headerActions}
               agentData={currentAgentData}
               allowedLabels={allowedLabels}
               formDefinition={request?._formDefinition}
@@ -1552,14 +1572,13 @@ const Request = ({
               workflowId={resolvedWorkflowId}
               setFormModel={setFormModel}
               setRightView={setRightView}
-              actions={headerActions}
               onOpenPlayground={handleOpenPlayground}
             />
           </AnimateFadeIn>
         </div>
 
         {isPlaygroundOpen && (
-          <div className='w-full lg:w-[25%] min-w-[320px] h-full border-l border-[var(--gray-3)] bg-surface flex flex-col shrink-0 overflow-hidden animate-in slide-in-from-right duration-300 ease-in-out'>
+          <div className='animate-in slide-in-from-right flex h-full w-full min-w-[320px] shrink-0 flex-col overflow-hidden border-l border-[var(--gray-3)] bg-surface duration-300 ease-in-out lg:w-[25%]'>
             <ApiPlayground
               context={playgroundContext}
               onClose={() => setIsPlaygroundOpen(false)}

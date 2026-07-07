@@ -723,10 +723,7 @@
                 "nestedListTypeSettings": {},
                 "formula": "",
                 "loginType": "EZOFIS_LOGIN",
-                "additionalLoginTypes": [
-                  "GOOGLE_LOGIN",
-                  "MICROSOFT_LOGIN"
-                ],
+                "additionalLoginTypes": ["GOOGLE_LOGIN", "MICROSOFT_LOGIN"],
                 "masterFormTableColumns": []
               },
               "validation": {
@@ -1340,10 +1337,7 @@
                 "nestedListTypeSettings": {},
                 "formula": "",
                 "loginType": "EZOFIS_LOGIN",
-                "additionalLoginTypes": [
-                  "GOOGLE_LOGIN",
-                  "MICROSOFT_LOGIN"
-                ],
+                "additionalLoginTypes": ["GOOGLE_LOGIN", "MICROSOFT_LOGIN"],
                 "masterFormTableColumns": [],
                 "repositoryId": 0,
                 "repositoryField": "",
@@ -1386,9 +1380,7 @@
                 "contentRule": "",
                 "minimum": "",
                 "maximum": "",
-                "allowedFileTypes": [
-                  "pdf"
-                ],
+                "allowedFileTypes": ["pdf"],
                 "maxFileSize": 10,
                 "dateRange": "NONE",
                 "timeRange": "NONE",
@@ -2031,10 +2023,7 @@
                 "nestedListTypeSettings": {},
                 "formula": "",
                 "loginType": "EZOFIS_LOGIN",
-                "additionalLoginTypes": [
-                  "GOOGLE_LOGIN",
-                  "MICROSOFT_LOGIN"
-                ],
+                "additionalLoginTypes": ["GOOGLE_LOGIN", "MICROSOFT_LOGIN"],
                 "masterFormTableColumns": []
               },
               "validation": {
@@ -2189,10 +2178,7 @@
                 "nestedListTypeSettings": {},
                 "formula": "",
                 "loginType": "EZOFIS_LOGIN",
-                "additionalLoginTypes": [
-                  "GOOGLE_LOGIN",
-                  "MICROSOFT_LOGIN"
-                ],
+                "additionalLoginTypes": ["GOOGLE_LOGIN", "MICROSOFT_LOGIN"],
                 "masterFormTableColumns": [],
                 "repositoryId": 0,
                 "repositoryField": "",
@@ -2438,10 +2424,7 @@
                 "nestedListTypeSettings": {},
                 "formula": "",
                 "loginType": "EZOFIS_LOGIN",
-                "additionalLoginTypes": [
-                  "GOOGLE_LOGIN",
-                  "MICROSOFT_LOGIN"
-                ],
+                "additionalLoginTypes": ["GOOGLE_LOGIN", "MICROSOFT_LOGIN"],
                 "masterFormTableColumns": [],
                 "repositoryId": 0,
                 "repositoryField": "",
@@ -2630,10 +2613,7 @@
                 "nestedListTypeSettings": {},
                 "formula": "",
                 "loginType": "EZOFIS_LOGIN",
-                "additionalLoginTypes": [
-                  "GOOGLE_LOGIN",
-                  "MICROSOFT_LOGIN"
-                ],
+                "additionalLoginTypes": ["GOOGLE_LOGIN", "MICROSOFT_LOGIN"],
                 "masterFormTableColumns": [],
                 "repositoryId": 0,
                 "repositoryField": "",
@@ -2846,10 +2826,7 @@
                 "nestedListTypeSettings": {},
                 "formula": "",
                 "loginType": "EZOFIS_LOGIN",
-                "additionalLoginTypes": [
-                  "GOOGLE_LOGIN",
-                  "MICROSOFT_LOGIN"
-                ],
+                "additionalLoginTypes": ["GOOGLE_LOGIN", "MICROSOFT_LOGIN"],
                 "masterFormTableColumns": [],
                 "repositoryId": 0,
                 "repositoryField": "",
@@ -3050,10 +3027,7 @@
                 "nestedListTypeSettings": {},
                 "formula": "",
                 "loginType": "EZOFIS_LOGIN",
-                "additionalLoginTypes": [
-                  "GOOGLE_LOGIN",
-                  "MICROSOFT_LOGIN"
-                ],
+                "additionalLoginTypes": ["GOOGLE_LOGIN", "MICROSOFT_LOGIN"],
                 "masterFormTableColumns": [],
                 "repositoryId": 0,
                 "repositoryField": "",
@@ -3717,10 +3691,7 @@
                 "nestedListTypeSettings": {},
                 "formula": "",
                 "loginType": "EZOFIS_LOGIN",
-                "additionalLoginTypes": [
-                  "GOOGLE_LOGIN",
-                  "MICROSOFT_LOGIN"
-                ],
+                "additionalLoginTypes": ["GOOGLE_LOGIN", "MICROSOFT_LOGIN"],
                 "masterFormTableColumns": [],
                 "repositoryId": 0,
                 "repositoryField": "",
@@ -3920,10 +3891,7 @@
                 "nestedListTypeSettings": {},
                 "formula": "",
                 "loginType": "EZOFIS_LOGIN",
-                "additionalLoginTypes": [
-                  "GOOGLE_LOGIN",
-                  "MICROSOFT_LOGIN"
-                ],
+                "additionalLoginTypes": ["GOOGLE_LOGIN", "MICROSOFT_LOGIN"],
                 "masterFormTableColumns": []
               },
               "validation": {
@@ -4070,10 +4038,7 @@
                 "nestedListTypeSettings": {},
                 "formula": "",
                 "loginType": "EZOFIS_LOGIN",
-                "additionalLoginTypes": [
-                  "GOOGLE_LOGIN",
-                  "MICROSOFT_LOGIN"
-                ],
+                "additionalLoginTypes": ["GOOGLE_LOGIN", "MICROSOFT_LOGIN"],
                 "masterFormTableColumns": [],
                 "repositoryId": 0,
                 "repositoryField": "",
@@ -4268,10 +4233,7 @@
                 "nestedListTypeSettings": {},
                 "formula": "",
                 "loginType": "EZOFIS_LOGIN",
-                "additionalLoginTypes": [
-                  "GOOGLE_LOGIN",
-                  "MICROSOFT_LOGIN"
-                ],
+                "additionalLoginTypes": ["GOOGLE_LOGIN", "MICROSOFT_LOGIN"],
                 "masterFormTableColumns": [],
                 "repositoryId": 0,
                 "repositoryField": "",
@@ -4486,10 +4448,7 @@
                 "nestedListTypeSettings": {},
                 "formula": "",
                 "loginType": "EZOFIS_LOGIN",
-                "additionalLoginTypes": [
-                  "GOOGLE_LOGIN",
-                  "MICROSOFT_LOGIN"
-                ],
+                "additionalLoginTypes": ["GOOGLE_LOGIN", "MICROSOFT_LOGIN"],
                 "masterFormTableColumns": [],
                 "repositoryId": 0,
                 "repositoryField": "",
@@ -5172,10 +5131,7 @@
                 "nestedListTypeSettings": {},
                 "formula": "",
                 "loginType": "EZOFIS_LOGIN",
-                "additionalLoginTypes": [
-                  "GOOGLE_LOGIN",
-                  "MICROSOFT_LOGIN"
-                ],
+                "additionalLoginTypes": ["GOOGLE_LOGIN", "MICROSOFT_LOGIN"],
                 "masterFormTableColumns": [],
                 "repositoryId": 0,
                 "repositoryField": "",
@@ -5390,10 +5346,7 @@
                 "nestedListTypeSettings": {},
                 "formula": "",
                 "loginType": "EZOFIS_LOGIN",
-                "additionalLoginTypes": [
-                  "GOOGLE_LOGIN",
-                  "MICROSOFT_LOGIN"
-                ],
+                "additionalLoginTypes": ["GOOGLE_LOGIN", "MICROSOFT_LOGIN"],
                 "masterFormTableColumns": [],
                 "repositoryId": 0,
                 "repositoryField": "",
@@ -6073,10 +6026,7 @@
                 "nestedListTypeSettings": {},
                 "formula": "",
                 "loginType": "EZOFIS_LOGIN",
-                "additionalLoginTypes": [
-                  "GOOGLE_LOGIN",
-                  "MICROSOFT_LOGIN"
-                ],
+                "additionalLoginTypes": ["GOOGLE_LOGIN", "MICROSOFT_LOGIN"],
                 "masterFormTableColumns": [],
                 "repositoryId": 0,
                 "repositoryField": "",
@@ -6291,10 +6241,7 @@
                 "nestedListTypeSettings": {},
                 "formula": "",
                 "loginType": "EZOFIS_LOGIN",
-                "additionalLoginTypes": [
-                  "GOOGLE_LOGIN",
-                  "MICROSOFT_LOGIN"
-                ],
+                "additionalLoginTypes": ["GOOGLE_LOGIN", "MICROSOFT_LOGIN"],
                 "masterFormTableColumns": [],
                 "repositoryId": 0,
                 "repositoryField": "",
@@ -6507,10 +6454,7 @@
                 "nestedListTypeSettings": {},
                 "formula": "",
                 "loginType": "EZOFIS_LOGIN",
-                "additionalLoginTypes": [
-                  "GOOGLE_LOGIN",
-                  "MICROSOFT_LOGIN"
-                ],
+                "additionalLoginTypes": ["GOOGLE_LOGIN", "MICROSOFT_LOGIN"],
                 "masterFormTableColumns": []
               },
               "validation": {
@@ -6657,10 +6601,7 @@
                 "nestedListTypeSettings": {},
                 "formula": "",
                 "loginType": "EZOFIS_LOGIN",
-                "additionalLoginTypes": [
-                  "GOOGLE_LOGIN",
-                  "MICROSOFT_LOGIN"
-                ],
+                "additionalLoginTypes": ["GOOGLE_LOGIN", "MICROSOFT_LOGIN"],
                 "masterFormTableColumns": [],
                 "repositoryId": 0,
                 "repositoryField": "",
@@ -6855,10 +6796,7 @@
                 "nestedListTypeSettings": {},
                 "formula": "",
                 "loginType": "EZOFIS_LOGIN",
-                "additionalLoginTypes": [
-                  "GOOGLE_LOGIN",
-                  "MICROSOFT_LOGIN"
-                ],
+                "additionalLoginTypes": ["GOOGLE_LOGIN", "MICROSOFT_LOGIN"],
                 "masterFormTableColumns": [],
                 "repositoryId": 0,
                 "repositoryField": "",
@@ -7059,10 +6997,7 @@
                 "nestedListTypeSettings": {},
                 "formula": "",
                 "loginType": "EZOFIS_LOGIN",
-                "additionalLoginTypes": [
-                  "GOOGLE_LOGIN",
-                  "MICROSOFT_LOGIN"
-                ],
+                "additionalLoginTypes": ["GOOGLE_LOGIN", "MICROSOFT_LOGIN"],
                 "masterFormTableColumns": [],
                 "repositoryId": 0,
                 "repositoryField": "",
@@ -7251,10 +7186,7 @@
                 "nestedListTypeSettings": {},
                 "formula": "",
                 "loginType": "EZOFIS_LOGIN",
-                "additionalLoginTypes": [
-                  "GOOGLE_LOGIN",
-                  "MICROSOFT_LOGIN"
-                ],
+                "additionalLoginTypes": ["GOOGLE_LOGIN", "MICROSOFT_LOGIN"],
                 "masterFormTableColumns": []
               },
               "validation": {
@@ -7401,10 +7333,7 @@
                 "nestedListTypeSettings": {},
                 "formula": "",
                 "loginType": "EZOFIS_LOGIN",
-                "additionalLoginTypes": [
-                  "GOOGLE_LOGIN",
-                  "MICROSOFT_LOGIN"
-                ],
+                "additionalLoginTypes": ["GOOGLE_LOGIN", "MICROSOFT_LOGIN"],
                 "masterFormTableColumns": [],
                 "repositoryId": 0,
                 "repositoryField": "",
@@ -15268,10 +15197,7 @@
                 "nestedListTypeSettings": {},
                 "formula": "",
                 "loginType": "EZOFIS_LOGIN",
-                "additionalLoginTypes": [
-                  "GOOGLE_LOGIN",
-                  "MICROSOFT_LOGIN"
-                ],
+                "additionalLoginTypes": ["GOOGLE_LOGIN", "MICROSOFT_LOGIN"],
                 "masterFormTableColumns": [
                   {
                     "id": "xS75_ftFT1rKcjlm9y_in",
@@ -15541,10 +15467,7 @@
                 "nestedListTypeSettings": {},
                 "formula": "",
                 "loginType": "EZOFIS_LOGIN",
-                "additionalLoginTypes": [
-                  "GOOGLE_LOGIN",
-                  "MICROSOFT_LOGIN"
-                ],
+                "additionalLoginTypes": ["GOOGLE_LOGIN", "MICROSOFT_LOGIN"],
                 "masterFormTableColumns": []
               },
               "validation": {
@@ -15691,10 +15614,7 @@
                 "nestedListTypeSettings": {},
                 "formula": "",
                 "loginType": "EZOFIS_LOGIN",
-                "additionalLoginTypes": [
-                  "GOOGLE_LOGIN",
-                  "MICROSOFT_LOGIN"
-                ],
+                "additionalLoginTypes": ["GOOGLE_LOGIN", "MICROSOFT_LOGIN"],
                 "masterFormTableColumns": [],
                 "repositoryId": 0,
                 "repositoryField": "",
@@ -15933,10 +15853,7 @@
                 "nestedListTypeSettings": {},
                 "formula": "",
                 "loginType": "EZOFIS_LOGIN",
-                "additionalLoginTypes": [
-                  "GOOGLE_LOGIN",
-                  "MICROSOFT_LOGIN"
-                ],
+                "additionalLoginTypes": ["GOOGLE_LOGIN", "MICROSOFT_LOGIN"],
                 "masterFormTableColumns": [],
                 "repositoryId": 0,
                 "repositoryField": "",
@@ -16133,10 +16050,7 @@
                 "nestedListTypeSettings": {},
                 "formula": "",
                 "loginType": "EZOFIS_LOGIN",
-                "additionalLoginTypes": [
-                  "GOOGLE_LOGIN",
-                  "MICROSOFT_LOGIN"
-                ],
+                "additionalLoginTypes": ["GOOGLE_LOGIN", "MICROSOFT_LOGIN"],
                 "masterFormTableColumns": [],
                 "repositoryId": 0,
                 "repositoryField": "",
@@ -16801,10 +16715,7 @@
                 "nestedListTypeSettings": {},
                 "formula": "",
                 "loginType": "EZOFIS_LOGIN",
-                "additionalLoginTypes": [
-                  "GOOGLE_LOGIN",
-                  "MICROSOFT_LOGIN"
-                ],
+                "additionalLoginTypes": ["GOOGLE_LOGIN", "MICROSOFT_LOGIN"],
                 "masterFormTableColumns": [],
                 "repositoryId": 0,
                 "repositoryField": "",
@@ -17469,10 +17380,7 @@
                 "nestedListTypeSettings": {},
                 "formula": "",
                 "loginType": "EZOFIS_LOGIN",
-                "additionalLoginTypes": [
-                  "GOOGLE_LOGIN",
-                  "MICROSOFT_LOGIN"
-                ],
+                "additionalLoginTypes": ["GOOGLE_LOGIN", "MICROSOFT_LOGIN"],
                 "masterFormTableColumns": [],
                 "repositoryId": 0,
                 "repositoryField": "",
@@ -17669,10 +17577,7 @@
                 "nestedListTypeSettings": {},
                 "formula": "",
                 "loginType": "EZOFIS_LOGIN",
-                "additionalLoginTypes": [
-                  "GOOGLE_LOGIN",
-                  "MICROSOFT_LOGIN"
-                ],
+                "additionalLoginTypes": ["GOOGLE_LOGIN", "MICROSOFT_LOGIN"],
                 "masterFormTableColumns": [],
                 "repositoryId": 0,
                 "repositoryField": "",
@@ -18334,10 +18239,7 @@
                 "nestedListTypeSettings": {},
                 "formula": "",
                 "loginType": "EZOFIS_LOGIN",
-                "additionalLoginTypes": [
-                  "GOOGLE_LOGIN",
-                  "MICROSOFT_LOGIN"
-                ],
+                "additionalLoginTypes": ["GOOGLE_LOGIN", "MICROSOFT_LOGIN"],
                 "masterFormTableColumns": [],
                 "repositoryId": 0,
                 "repositoryField": "",
@@ -19002,10 +18904,7 @@
                 "nestedListTypeSettings": {},
                 "formula": "",
                 "loginType": "EZOFIS_LOGIN",
-                "additionalLoginTypes": [
-                  "GOOGLE_LOGIN",
-                  "MICROSOFT_LOGIN"
-                ],
+                "additionalLoginTypes": ["GOOGLE_LOGIN", "MICROSOFT_LOGIN"],
                 "masterFormTableColumns": [],
                 "repositoryId": 0,
                 "repositoryField": "",
@@ -19202,10 +19101,7 @@
                 "nestedListTypeSettings": {},
                 "formula": "",
                 "loginType": "EZOFIS_LOGIN",
-                "additionalLoginTypes": [
-                  "GOOGLE_LOGIN",
-                  "MICROSOFT_LOGIN"
-                ],
+                "additionalLoginTypes": ["GOOGLE_LOGIN", "MICROSOFT_LOGIN"],
                 "masterFormTableColumns": [],
                 "repositoryId": 0,
                 "repositoryField": "",
@@ -19868,10 +19764,7 @@
                 "nestedListTypeSettings": {},
                 "formula": "",
                 "loginType": "EZOFIS_LOGIN",
-                "additionalLoginTypes": [
-                  "GOOGLE_LOGIN",
-                  "MICROSOFT_LOGIN"
-                ],
+                "additionalLoginTypes": ["GOOGLE_LOGIN", "MICROSOFT_LOGIN"],
                 "masterFormTableColumns": [],
                 "repositoryId": 0,
                 "repositoryField": "",
@@ -27326,10 +27219,7 @@
                 "nestedListTypeSettings": {},
                 "formula": "",
                 "loginType": "EZOFIS_LOGIN",
-                "additionalLoginTypes": [
-                  "GOOGLE_LOGIN",
-                  "MICROSOFT_LOGIN"
-                ],
+                "additionalLoginTypes": ["GOOGLE_LOGIN", "MICROSOFT_LOGIN"],
                 "masterFormTableColumns": [],
                 "repositoryId": 0,
                 "repositoryField": "",
@@ -27436,9 +27326,7 @@
         "type": "MASTER",
         "superUser": [],
         "entryUser": [],
-        "uniqueColumns": [
-          "pLIax1zKPXRCdlnCOLHzy"
-        ]
+        "uniqueColumns": ["pLIax1zKPXRCdlnCOLHzy"]
       },
       "rules": [],
       "publish": {
@@ -27464,13 +27352,8 @@
         "settings": {
           "label": "Start",
           "initiateMode": "MANUAL",
-          "initiateBy": [
-            "EMAIL",
-            "USER"
-          ],
-          "users": [
-            "{{userId}}"
-          ],
+          "initiateBy": ["EMAIL", "USER"],
+          "users": ["{{userId}}"],
           "groups": [],
           "userDomains": [],
           "dynamicUser": [],
@@ -27662,9 +27545,7 @@
         "settings": {
           "label": "Paid",
           "initiateMode": "MANUAL",
-          "initiateBy": [
-            "USER"
-          ],
+          "initiateBy": ["USER"],
           "users": [],
           "groups": [],
           "userDomains": [],
@@ -27831,9 +27712,7 @@
         "settings": {
           "label": "AP AGENT 1",
           "initiateMode": "MANUAL",
-          "initiateBy": [
-            "USER"
-          ],
+          "initiateBy": ["USER"],
           "users": [],
           "groups": [],
           "userDomains": [],
@@ -28040,12 +27919,8 @@
         "settings": {
           "label": "Verifier",
           "initiateMode": "MANUAL",
-          "initiateBy": [
-            "USER"
-          ],
-          "users": [
-            "{{userId}}"
-          ],
+          "initiateBy": ["USER"],
+          "users": ["{{userId}}"],
           "groups": [],
           "userDomains": [],
           "dynamicUser": [],
@@ -28210,12 +28085,8 @@
         "settings": {
           "label": "Verifier",
           "initiateMode": "MANUAL",
-          "initiateBy": [
-            "USER"
-          ],
-          "users": [
-            "{{userId}}"
-          ],
+          "initiateBy": ["USER"],
+          "users": ["{{userId}}"],
           "groups": [],
           "userDomains": [],
           "dynamicUser": [],
@@ -28380,12 +28251,8 @@
         "settings": {
           "label": "Approver",
           "initiateMode": "MANUAL",
-          "initiateBy": [
-            "USER"
-          ],
-          "users": [
-            "{{userId}}"
-          ],
+          "initiateBy": ["USER"],
+          "users": ["{{userId}}"],
           "groups": [],
           "userDomains": [],
           "dynamicUser": [],
@@ -28551,12 +28418,8 @@
         "settings": {
           "label": "Verifier",
           "initiateMode": "MANUAL",
-          "initiateBy": [
-            "USER"
-          ],
-          "users": [
-            "{{userId}}"
-          ],
+          "initiateBy": ["USER"],
+          "users": ["{{userId}}"],
           "groups": [],
           "userDomains": [],
           "dynamicUser": [],
@@ -28721,12 +28584,8 @@
         "settings": {
           "label": "Pending for Payment",
           "initiateMode": "MANUAL",
-          "initiateBy": [
-            "USER"
-          ],
-          "users": [
-            "{{userId}}"
-          ],
+          "initiateBy": ["USER"],
+          "users": ["{{userId}}"],
           "groups": [],
           "userDomains": [],
           "dynamicUser": [],

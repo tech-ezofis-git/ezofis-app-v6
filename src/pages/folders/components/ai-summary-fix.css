@@ -1,7 +1,16 @@
 @keyframes ez-progress {
-  0% { width: 0%; transform: translateX(-20%); }
-  50% { width: 72%; transform: translateX(20%); }
-  100% { width: 100%; transform: translateX(0); }
+  0% {
+    width: 0%;
+    transform: translateX(-20%);
+  }
+  50% {
+    width: 72%;
+    transform: translateX(20%);
+  }
+  100% {
+    width: 100%;
+    transform: translateX(0);
+  }
 }
 
 .ez-ai-progress {

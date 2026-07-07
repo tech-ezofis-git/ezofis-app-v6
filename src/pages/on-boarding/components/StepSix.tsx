@@ -7,7 +7,7 @@ import onBoardingStore from '../stores/onBoardingStore'
 import StepFooter from './StepFooter'
 import StepHeader from './StepHeader'
 
-const question = "What Are Your Business Challenges?"
+const question = 'What Are Your Business Challenges?'
 
 const businessChallenges = [
   { id: 1, name: 'Time-consuming manual processes' },
@@ -25,16 +25,32 @@ const StepSix = () => {
   const setAnswer = onBoardingStore((state) => state.setAnswer)
 
   const savedValue = answers[question] || ''
-  
+
   // Parse initial selected options from savedValue string
-  const savedNames = savedValue.split(', ').map(s => s.trim()).filter(Boolean)
+  const savedNames = savedValue
+    .split(', ')
+    .map((s) => s.trim())
+    .filter(Boolean)
   const initialOptionIds = businessChallenges
-    .filter(c => savedNames.some(sn => sn === c.name || (c.name === 'Other' && !businessChallenges.map(x => x.name).includes(sn))))
-    .map(c => c.id)
+    .filter((c) =>
+      savedNames.some(
+        (sn) =>
+          sn === c.name ||
+          (c.name === 'Other' &&
+            !businessChallenges.map((x) => x.name).includes(sn)),
+      ),
+    )
+    .map((c) => c.id)
 
   const isOtherChecked = initialOptionIds.includes(7)
   const initialOtherText = isOtherChecked
-    ? savedNames.find(sn => !businessChallenges.map(x => x.name).filter(n => n !== 'Other').includes(sn)) || ''
+    ? savedNames.find(
+        (sn) =>
+          !businessChallenges
+            .map((x) => x.name)
+            .filter((n) => n !== 'Other')
+            .includes(sn),
+      ) || ''
     : ''
 
   const [selectedIds, setSelectedIds] = useState<number[]>(initialOptionIds)
@@ -46,7 +62,7 @@ const StepSix = () => {
     const selectedNames = ids
       .filter((id) => id !== 7)
       .map((id) => businessChallenges.find((c) => c.id === id)?.name || '')
-      
+
     if (ids.includes(7) && text.trim()) {
       selectedNames.push(text.trim())
     } else if (ids.includes(7)) {
@@ -75,7 +91,7 @@ const StepSix = () => {
   const handleSubmit = async () => {
     try {
       setLoading(true)
-      
+
       const payload = onBoardingStore.getState().answers
       console.log('Sending onboarding answers payload to API:', payload)
 
@@ -90,20 +106,25 @@ const StepSix = () => {
       // Simulate a small delay for premium feels and visual validation
       await new Promise((resolve) => setTimeout(resolve, 1000))
 
-      showToast({ message: 'Onboarding completed successfully!', variant: 'success' })
-      
+      showToast({
+        message: 'Onboarding completed successfully!',
+        variant: 'success',
+      })
+
       navigate({ replace: true, to: '/' })
     } catch (e: any) {
       console.error(e)
-      showToast({ message: e?.message ?? 'Failed to save onboarding answers', variant: 'error' })
+      showToast({
+        message: e?.message ?? 'Failed to save onboarding answers',
+        variant: 'error',
+      })
     } finally {
       setLoading(false)
     }
   }
 
   const isInvalid =
-    selectedIds.length === 0 ||
-    (selectedIds.includes(7) && !otherText.trim())
+    selectedIds.length === 0 || (selectedIds.includes(7) && !otherText.trim())
 
   return (
     <>
@@ -131,13 +152,17 @@ const StepSix = () => {
             label='Please specify your challenges'
             placeholder='e.g. Too many administrative tools'
             value={otherText}
-            onChange={handleOtherChange}
             required
+            onChange={handleOtherChange}
           />
         )}
       </div>
 
-      <StepFooter onNext={handleSubmit} loading={loading} disabled={isInvalid} />
+      <StepFooter
+        disabled={isInvalid}
+        loading={loading}
+        onNext={handleSubmit}
+      />
     </>
   )
 }

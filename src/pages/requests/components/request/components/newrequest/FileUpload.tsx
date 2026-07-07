@@ -177,7 +177,7 @@ const SAMPLE_DOCUMENTS: SampleDocument[] = [
     thumbnail: sample10Img,
     url: sample10,
   },
-];
+]
 
 const SampleThumbnailPreview = ({
   doc,
@@ -878,10 +878,11 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
                     disabled={uploadStatus === 'uploading'}
                     key={doc.fileName}
                     type='button'
-                    className={`group/card relative z-10 flex w-[156px] shrink-0 flex-col overflow-visible rounded-lg border bg-surface text-left shadow-sm transition-all duration-300 hover:z-50 ${isSelected
-                      ? 'scale-[1.02] border-green-8 ring-2 ring-green-3 ring-offset-0'
-                      : 'border-[var(--gray-3)] hover:-translate-y-1.5 hover:scale-[1.02] hover:border-[var(--primary-6)] hover:shadow-md active:translate-y-0 active:scale-98'
-                      } disabled:cursor-not-allowed disabled:opacity-50`}
+                    className={`group/card relative z-10 flex w-[156px] shrink-0 flex-col overflow-visible rounded-lg border bg-surface text-left shadow-sm transition-all duration-300 hover:z-50 ${
+                      isSelected
+                        ? 'scale-[1.02] border-green-8 ring-2 ring-green-3 ring-offset-0'
+                        : 'border-[var(--gray-3)] hover:-translate-y-1.5 hover:scale-[1.02] hover:border-[var(--primary-6)] hover:shadow-md active:translate-y-0 active:scale-98'
+                    } disabled:cursor-not-allowed disabled:opacity-50`}
                     onClick={() => handleSampleSelect(doc)}
                   >
                     <SampleThumbnail

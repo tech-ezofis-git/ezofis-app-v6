@@ -64,8 +64,10 @@ const RequestSummary: React.FC<RequestSummaryProps> = ({
       { label: string; progress: number; theme: SummaryTheme }
     > = {
       'APPROVED': { label: 'APPROVED', progress: 100, theme: 'green' },
-      'MATCHED': { label: 'APPROVED', progress: 100, theme: 'green' },
       'DEFAULT': { label: 'IN REVIEW', progress: 72, theme: 'blue' },
+      'MATCHED': { label: 'APPROVED', progress: 100, theme: 'green' },
+      'NO MATCH': { label: 'REJECTED', progress: 100, theme: 'red' },
+      'NOT MATCHED': { label: 'REJECTED', progress: 100, theme: 'red' },
       'PARTIALLY_APPROVED': {
         label: 'PARTIALLY APPROVED',
         progress: 72,
@@ -87,8 +89,6 @@ const RequestSummary: React.FC<RequestSummaryProps> = ({
         theme: 'blue',
       },
       'REJECTED': { label: 'REJECTED', progress: 100, theme: 'red' },
-      'NOT MATCHED': { label: 'REJECTED', progress: 100, theme: 'red' },
-      'NO MATCH': { label: 'REJECTED', progress: 100, theme: 'red' },
     }
     const decision = decisionMap[decisionRaw] || decisionMap['DEFAULT']
 

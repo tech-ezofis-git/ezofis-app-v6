@@ -1,6 +1,6 @@
 import { ArrowUpFromLine, CheckCircle2, Copy, FileText } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { uploadForOcr, UploadFiles } from '@/api/v6/folder/folder'
+import { UploadFiles, uploadForOcr } from '@/api/v6/folder/folder'
 import IconButton from '@/components/base/button/IconButton'
 import InputDate from '@/components/base/inputs/InputDate'
 import InputSelect from '@/components/base/inputs/InputSelect'
@@ -10,18 +10,18 @@ import showToast from '@/components/base/toast/showToast'
 import DocumentPreviewViewer from '@/components/common/document-preview/DocumentPreviewViewer'
 import type { DynamicRepositoryColumn } from '../../api/folderApi'
 import {
-  findSelectedOption,
-  getSelectOptions,
-  normalizeType,
-  toTextValue,
-} from '../../hooks/useEditMetadataForm'
-import {
   IMAGE_ACCEPT,
   isImage,
   isPdf,
   MAX_SIZE,
   PDF_ACCEPT,
 } from '../../../requests/components/request/components/newrequest/utils'
+import {
+  findSelectedOption,
+  getSelectOptions,
+  normalizeType,
+  toTextValue,
+} from '../../hooks/useEditMetadataForm'
 import { Button } from '../Ui'
 import Icon from './../../../../components/base/icon/Icon'
 import {
@@ -30,6 +30,10 @@ import {
   AnimateSlideUp,
   AnimateStagger,
 } from './../../../../components/common/animations'
+
+type ExportStatus = 'idle' | 'exporting' | 'success' | 'error'
+
+type OcrStatus = 'idle' | 'analyzing' | 'complete' | 'error'
 
 type RepositoryField = {
   dataType: string
@@ -45,7 +49,6 @@ type RepositoryField = {
 }
 
 type ResultTab = 'fields' | 'json'
-
 type UploadProps = {
   folderId: string | number | null
   repositoryData: {
@@ -57,9 +60,6 @@ type UploadProps = {
   onBack: () => void
   onSuccess?: () => void | Promise<void>
 }
-
-type OcrStatus = 'idle' | 'analyzing' | 'complete' | 'error'
-type ExportStatus = 'idle' | 'exporting' | 'success' | 'error'
 
 const PROCESS_STEPS = ['Received', 'Analysis', 'Fields', 'Done'] as const
 
@@ -177,10 +177,7 @@ const findOcrValue = (
   return ''
 }
 
-const appendOcrFieldItems = (
-  target: Map<string, string>,
-  items: unknown,
-) => {
+const appendOcrFieldItems = (target: Map<string, string>, items: unknown) => {
   if (!Array.isArray(items)) return
 
   items.forEach((item) => {
@@ -306,9 +303,10 @@ export default function Upload({
 }: UploadProps) {
   const invoiceInputRef = useRef<HTMLInputElement>(null)
   const ocrRequestIdRef = useRef(0)
-  const lastFileSelectionRef = useRef<{ at: number; fingerprint: string } | null>(
-    null,
-  )
+  const lastFileSelectionRef = useRef<{
+    at: number
+    fingerprint: string
+  } | null>(null)
 
   const [isDragOver, setIsDragOver] = useState(false)
   const [fileData, setFileData] = useState<File | null>(null)
@@ -334,9 +332,7 @@ export default function Upload({
   const isAnalyzing = ocrStatus === 'analyzing'
   const isExporting = exportStatus === 'exporting'
   const isFieldsPhase =
-    ocrStatus === 'complete' &&
-    exportStatus === 'idle' &&
-    Boolean(fileData)
+    ocrStatus === 'complete' && exportStatus === 'idle' && Boolean(fileData)
 
   useEffect(() => {
     return () => {
@@ -455,7 +451,9 @@ export default function Upload({
       }
 
       lastFileSelectionRef.current = { at: now, fingerprint: fileFingerprint }
-      const activeRepositoryId = String(repositoryId || repositoryData?.id || '')
+      const activeRepositoryId = String(
+        repositoryId || repositoryData?.id || '',
+      )
 
       if (previewUrl) URL.revokeObjectURL(previewUrl)
 
@@ -646,9 +644,7 @@ export default function Upload({
           onChange={(selected) =>
             updateFieldValue(
               field,
-              String(
-                selected?.value ?? selected?.name ?? selected?.id ?? '',
-              ),
+              String(selected?.value ?? selected?.name ?? selected?.id ?? ''),
             )
           }
           {...focusProps}
@@ -656,7 +652,11 @@ export default function Upload({
       )
     }
 
-    if (fieldType === 'long_text' || fieldType === 'textarea' || label.toLowerCase().includes('address')) {
+    if (
+      fieldType === 'long_text' ||
+      fieldType === 'textarea' ||
+      label.toLowerCase().includes('address')
+    ) {
       return (
         <InputTextarea
           className='w-full'
@@ -983,13 +983,13 @@ export default function Upload({
               }}
             >
               <DocumentPreviewViewer
-                enableHighlight
                 fileName={fileData.name}
                 fileUrl={previewUrl}
                 highlightTerms={highlightTerms}
                 isImage={isImage(fileData)}
                 isPdf={isPdf(fileData)}
                 showScanOverlay={isAnalyzing}
+                enableHighlight
               />
             </div>
 
@@ -1123,10 +1123,10 @@ export default function Upload({
               </div>
 
               <Button
-  className="!h-10 shrink-0 !border-[var(--gray-3)] !bg-[var(--primary-10)] !px-5 !text-sm !text-[var(--surface)] hover:!bg-[var(--primary-9)] disabled:!opacity-50"
-  disabled={isExporting || isAnalyzing}
-  onClick={uploadFile}
->
+                className='!h-10 shrink-0 !border-[var(--gray-3)] !bg-[var(--primary-10)] !px-5 !text-sm !text-[var(--surface)] hover:!bg-[var(--primary-9)] disabled:!opacity-50'
+                disabled={isExporting || isAnalyzing}
+                onClick={uploadFile}
+              >
                 {isExporting ? (
                   <Icon
                     className='size-4 animate-spin'

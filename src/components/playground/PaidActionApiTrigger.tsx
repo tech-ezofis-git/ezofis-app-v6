@@ -1,5 +1,5 @@
-import Tooltip from '@/components/base/Tooltip'
 import Icon from '@/components/base/icon/Icon'
+import Tooltip from '@/components/base/Tooltip'
 
 interface PaidActionApiTriggerProps {
   action: any
@@ -14,7 +14,9 @@ export const PaidActionApiTrigger = ({
     e.stopPropagation()
     onTrigger({
       actionName: action?.label || 'Paid',
-      endpoint: action?.endpoint || 'https://ezagentplayground.onrender.com/apikey.html?id=2',
+      endpoint:
+        action?.endpoint ||
+        'https://ezagentplayground.onrender.com/apikey.html?id=2',
       model: action?.model || 'gemini-2.0-flash-exp',
       provider: action?.provider || 'gemini',
     })
@@ -24,7 +26,7 @@ export const PaidActionApiTrigger = ({
     <Tooltip content='Playground API' position='top'>
       <button
         aria-label='Playground Api'
-        className='flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-primary-9 text-white shadow-lg transition-all hover:bg-primary-10 hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary-9 focus:ring-offset-2'
+        className='flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-primary-9 text-white shadow-lg transition-all hover:scale-105 hover:bg-primary-10 focus:ring-2 focus:ring-primary-9 focus:ring-offset-2 focus:outline-none active:scale-95'
         type='button'
         onClick={handleClick}
       >

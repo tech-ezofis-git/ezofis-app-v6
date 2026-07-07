@@ -1,10 +1,10 @@
 // import store from '../stores/authUserStore'
 import authUserStore from '../stores/authUserStore'
 import { setToLocalStorage } from '../utils/local-storage'
+import apiRouter from './apiRouter'
 // src/api/authApi.ts
 import { _axios, axiosCrypto } from './axios'
 import { authApiV6 } from './v6/auth'
-import apiRouter from './apiRouter'
 
 // Vite-style env (adjust name to your setup)
 const API_URL = import.meta.env.VITE_API_URL || ''

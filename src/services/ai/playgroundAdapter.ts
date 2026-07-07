@@ -1,18 +1,18 @@
 import { GoogleGenAI } from '@google/genai'
 
 export interface ChatMessage {
-  role: 'user' | 'model'
   content: string
+  role: 'user' | 'model'
 }
 
 export interface StreamParams {
   apiKey: string
-  provider: 'gemini' | string
-  model: string
-  systemPrompt: string
-  temperature: number
   maxTokens: number
   messages: ChatMessage[]
+  model: string
+  provider: 'gemini' | string
+  systemPrompt: string
+  temperature: number
   onChunk: (text: string) => void
   onComplete: (fullText: string) => void
   onError: (error: any) => void
@@ -21,12 +21,12 @@ export interface StreamParams {
 export const streamChat = async (params: StreamParams) => {
   const {
     apiKey,
-    provider,
-    model,
-    systemPrompt,
-    temperature,
     maxTokens,
     messages,
+    model,
+    provider,
+    systemPrompt,
+    temperature,
     onChunk,
     onComplete,
     onError,
@@ -38,18 +38,18 @@ export const streamChat = async (params: StreamParams) => {
 
       // Map messages format for Google GenAI SDK
       const contents = messages.map((m) => ({
-        role: m.role,
         parts: [{ text: m.content }],
+        role: m.role,
       }))
 
       const responseStream = await ai.models.generateContentStream({
-        model: model || 'gemini-2.0-flash-exp',
-        contents,
         config: {
+          maxOutputTokens: maxTokens,
           systemInstruction: systemPrompt || undefined,
           temperature: temperature,
-          maxOutputTokens: maxTokens,
         },
+        contents,
+        model: model || 'gemini-2.0-flash-exp',
       })
 
       let fullText = ''

@@ -1,10 +1,10 @@
-import React, { useState, useMemo } from 'react'
+import React, { useMemo, useState } from 'react'
 import Icon from '@/components/base/icon/Icon'
-import cn from '@/utils/cn'
-import requestStore from '../stores/useRequestStore'
 import Menu from '@/components/base/menu/Menu'
 import MenuItem from '@/components/base/menu/MenuItem'
 import MenuSub from '@/components/base/menu/MenuSub'
+import cn from '@/utils/cn'
+import requestStore from '../stores/useRequestStore'
 
 interface QuickFiltersProps {
   counts: {
@@ -19,7 +19,8 @@ interface QuickFiltersProps {
 const findSupplierName = (row: any): string | null => {
   if (!row) return null
   const parsedForm = row?.parsedForm || {}
-  const agentData = row?._agentResponse || row?._agentData?.[0] || row?._agentData || {}
+  const agentData =
+    row?._agentResponse || row?._agentData?.[0] || row?._agentData || {}
 
   const directKeys = [
     'UtfgJy6Z0qyfRC5Bclfc',
@@ -83,7 +84,7 @@ const QuickFilters: React.FC<QuickFiltersProps> = ({ counts, data }) => {
   const statuses = ['Approved', 'Partially Approved', 'Rejected']
   const filteredStatuses = useMemo(() => {
     return statuses.filter((statusVal) =>
-      statusVal.toLowerCase().includes(statusSearch.toLowerCase())
+      statusVal.toLowerCase().includes(statusSearch.toLowerCase()),
     )
   }, [statusSearch])
 
@@ -95,13 +96,13 @@ const QuickFilters: React.FC<QuickFiltersProps> = ({ counts, data }) => {
   ]
   const filteredPoAmounts = useMemo(() => {
     return poAmounts.filter((opt) =>
-      opt.label.toLowerCase().includes(poSearch.toLowerCase())
+      opt.label.toLowerCase().includes(poSearch.toLowerCase()),
     )
   }, [poSearch])
 
   const filteredSuppliers = useMemo(() => {
     return supplierNames.filter((name) =>
-      name.toLowerCase().includes(supplierSearch.toLowerCase())
+      name.toLowerCase().includes(supplierSearch.toLowerCase()),
     )
   }, [supplierNames, supplierSearch])
 
@@ -164,7 +165,7 @@ const QuickFilters: React.FC<QuickFiltersProps> = ({ counts, data }) => {
   }
 
   return (
-    <div className='flex flex-col gap-2 border-b border-[var(--gray-2)] bg-surface/50 py-2 pr-4 pl-7 backdrop-blur-sm select-none w-full'>
+    <div className='flex w-full flex-col gap-2 border-b border-[var(--gray-2)] bg-surface/50 py-2 pr-4 pl-7 backdrop-blur-sm select-none'>
       <div className='flex flex-wrap items-center gap-2'>
         {filters.map((f) => {
           const isActive = activeQuickFilters.includes(f.id)
@@ -193,7 +194,8 @@ const QuickFilters: React.FC<QuickFiltersProps> = ({ counts, data }) => {
 
         {/* Custom Active Filters */}
         {activeQuickFilters.map((f) => {
-          if (['overdue', 'matched', 'discrepancies', 'highValue'].includes(f)) return null
+          if (['overdue', 'matched', 'discrepancies', 'highValue'].includes(f))
+            return null
 
           const [field, val] = f.split(':')
           let label = ''
@@ -201,10 +203,10 @@ const QuickFilters: React.FC<QuickFiltersProps> = ({ counts, data }) => {
             label = `Status: ${val}`
           } else if (field === 'amount') {
             const amountLabels: Record<string, string> = {
-              lt1k: '< $1k',
               '1k_5k': '$1k - $5k',
               '5k_10k': '$5k - $10k',
-              ge10k: '≥ $10k',
+              'ge10k': '≥ $10k',
+              'lt1k': '< $1k',
             }
             label = `Amount: ${amountLabels[val] || val}`
           } else if (field === 'supplier') {
@@ -213,19 +215,23 @@ const QuickFilters: React.FC<QuickFiltersProps> = ({ counts, data }) => {
 
           return (
             <button
+              className='flex cursor-pointer items-center gap-1.5 rounded-full border border-[var(--purple-5)] bg-[var(--purple-2)] px-3 py-1 text-[11px] font-semibold text-[var(--purple-11)] transition-all duration-200 hover:bg-[var(--purple-3)] active:scale-95'
               key={f}
-              className='flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold transition-all duration-200 active:scale-95 bg-[var(--purple-2)] border-[var(--purple-5)] text-[var(--purple-11)] hover:bg-[var(--purple-3)]'
               onClick={() => toggleQuickFilter(f)}
             >
               <Icon className='size-3.5' name='tabler:filter' />
               <span>{label}</span>
-              <Icon className='size-3 text-[var(--purple-9)] font-bold' name='tabler:x' />
+              <Icon
+                className='size-3 font-bold text-[var(--purple-9)]'
+                name='tabler:x'
+              />
             </button>
           )
         })}
 
         {/* Add Filter Menu */}
         <Menu
+          width={220}
           target={
             <button
               className={cn(
@@ -237,24 +243,29 @@ const QuickFilters: React.FC<QuickFiltersProps> = ({ counts, data }) => {
               <span>Add Filter</span>
             </button>
           }
-          width={220}
         >
-          <MenuSub label="Request Status" icon="tabler:circle-dot" width={200}>
+          <MenuSub icon='tabler:circle-dot' label='Request Status' width={200}>
             {/* Search Box */}
-            <div className='px-2 py-1.5 border-b border-[var(--gray-3)]' onClick={(e) => e.stopPropagation()}>
+            <div
+              className='border-b border-[var(--gray-3)] px-2 py-1.5'
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className='relative flex items-center'>
-                <Icon className='absolute left-2.5 size-3.5 text-[var(--gray-9)]' name='tabler:search' />
+                <Icon
+                  className='absolute left-2.5 size-3.5 text-[var(--gray-9)]'
+                  name='tabler:search'
+                />
                 <input
-                  type='text'
+                  className='w-full rounded border border-[var(--gray-3)] bg-surface py-1 pr-2 pl-8 text-xs font-medium text-[var(--text-primary)] outline-none focus:border-[var(--primary-9)]'
                   placeholder='Search status...'
+                  type='text'
                   value={statusSearch}
                   onChange={(e) => setStatusSearch(e.target.value)}
-                  className='w-full rounded border border-[var(--gray-3)] pl-8 pr-2 py-1 text-xs outline-none bg-surface focus:border-[var(--primary-9)] font-medium text-[var(--text-primary)]'
                 />
                 {statusSearch && (
                   <button
+                    className='absolute right-2 cursor-pointer border-none bg-transparent text-[var(--gray-9)] hover:text-[var(--gray-12)]'
                     onClick={() => setStatusSearch('')}
-                    className='absolute right-2 text-[var(--gray-9)] hover:text-[var(--gray-12)] border-none bg-transparent cursor-pointer'
                   >
                     <Icon className='size-3' name='tabler:x' />
                   </button>
@@ -262,7 +273,9 @@ const QuickFilters: React.FC<QuickFiltersProps> = ({ counts, data }) => {
               </div>
             </div>
             {filteredStatuses.length === 0 ? (
-              <div className='px-3 py-2 text-xs text-[var(--gray-9)] text-center'>No results found</div>
+              <div className='px-3 py-2 text-center text-xs text-[var(--gray-9)]'>
+                No results found
+              </div>
             ) : (
               filteredStatuses.map((statusVal) => (
                 <MenuItem
@@ -273,22 +286,28 @@ const QuickFilters: React.FC<QuickFiltersProps> = ({ counts, data }) => {
               ))
             )}
           </MenuSub>
-          <MenuSub label="PO Amount" icon="tabler:currency-dollar" width={200}>
+          <MenuSub icon='tabler:currency-dollar' label='PO Amount' width={200}>
             {/* Search Box */}
-            <div className='px-2 py-1.5 border-b border-[var(--gray-3)]' onClick={(e) => e.stopPropagation()}>
+            <div
+              className='border-b border-[var(--gray-3)] px-2 py-1.5'
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className='relative flex items-center'>
-                <Icon className='absolute left-2.5 size-3.5 text-[var(--gray-9)]' name='tabler:search' />
+                <Icon
+                  className='absolute left-2.5 size-3.5 text-[var(--gray-9)]'
+                  name='tabler:search'
+                />
                 <input
-                  type='text'
+                  className='w-full rounded border border-[var(--gray-3)] bg-surface py-1 pr-2 pl-8 text-xs font-medium text-[var(--text-primary)] outline-none focus:border-[var(--primary-9)]'
                   placeholder='Search PO range...'
+                  type='text'
                   value={poSearch}
                   onChange={(e) => setPoSearch(e.target.value)}
-                  className='w-full rounded border border-[var(--gray-3)] pl-8 pr-2 py-1 text-xs outline-none bg-surface focus:border-[var(--primary-9)] font-medium text-[var(--text-primary)]'
                 />
                 {poSearch && (
                   <button
+                    className='absolute right-2 cursor-pointer border-none bg-transparent text-[var(--gray-9)] hover:text-[var(--gray-12)]'
                     onClick={() => setPoSearch('')}
-                    className='absolute right-2 text-[var(--gray-9)] hover:text-[var(--gray-12)] border-none bg-transparent cursor-pointer'
                   >
                     <Icon className='size-3' name='tabler:x' />
                   </button>
@@ -296,7 +315,9 @@ const QuickFilters: React.FC<QuickFiltersProps> = ({ counts, data }) => {
               </div>
             </div>
             {filteredPoAmounts.length === 0 ? (
-              <div className='px-3 py-2 text-xs text-[var(--gray-9)] text-center'>No results found</div>
+              <div className='px-3 py-2 text-center text-xs text-[var(--gray-9)]'>
+                No results found
+              </div>
             ) : (
               filteredPoAmounts.map((amountOpt) => (
                 <MenuItem
@@ -307,31 +328,39 @@ const QuickFilters: React.FC<QuickFiltersProps> = ({ counts, data }) => {
               ))
             )}
           </MenuSub>
-          <MenuSub label="Supplier" icon="tabler:building" width={240}>
+          <MenuSub icon='tabler:building' label='Supplier' width={240}>
             {/* Search Box */}
-            <div className='px-2 py-1.5 border-b border-[var(--gray-3)]' onClick={(e) => e.stopPropagation()}>
+            <div
+              className='border-b border-[var(--gray-3)] px-2 py-1.5'
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className='relative flex items-center'>
-                <Icon className='absolute left-2.5 size-3.5 text-[var(--gray-9)]' name='tabler:search' />
+                <Icon
+                  className='absolute left-2.5 size-3.5 text-[var(--gray-9)]'
+                  name='tabler:search'
+                />
                 <input
-                  type='text'
+                  className='w-full rounded border border-[var(--gray-3)] bg-surface py-1 pr-2 pl-8 text-xs font-medium text-[var(--text-primary)] outline-none focus:border-[var(--primary-9)]'
                   placeholder='Search suppliers...'
+                  type='text'
                   value={supplierSearch}
                   onChange={(e) => setSupplierSearch(e.target.value)}
-                  className='w-full rounded border border-[var(--gray-3)] pl-8 pr-2 py-1 text-xs outline-none bg-surface focus:border-[var(--primary-9)] font-medium text-[var(--text-primary)]'
                 />
                 {supplierSearch && (
                   <button
+                    className='absolute right-2 cursor-pointer border-none bg-transparent text-[var(--gray-9)] hover:text-[var(--gray-12)]'
                     onClick={() => setSupplierSearch('')}
-                    className='absolute right-2 text-[var(--gray-9)] hover:text-[var(--gray-12)] border-none bg-transparent cursor-pointer'
                   >
                     <Icon className='size-3' name='tabler:x' />
                   </button>
                 )}
               </div>
             </div>
-            <div className='max-h-60 overflow-y-auto scrollbar'>
+            <div className='scrollbar max-h-60 overflow-y-auto'>
               {filteredSuppliers.length === 0 ? (
-                <div className='px-3 py-2 text-xs text-[var(--gray-9)] text-center'>No suppliers found</div>
+                <div className='px-3 py-2 text-center text-xs text-[var(--gray-9)]'>
+                  No suppliers found
+                </div>
               ) : (
                 filteredSuppliers.map((name) => (
                   <MenuItem

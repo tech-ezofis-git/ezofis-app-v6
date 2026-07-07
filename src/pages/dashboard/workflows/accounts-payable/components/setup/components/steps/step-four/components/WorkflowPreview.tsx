@@ -52,7 +52,7 @@ const WorkflowPreview = () => {
   return (
     <div className='dark:bg-gray-950 relative w-full overflow-hidden rounded-xl border border-gray-3 bg-white'>
       {/* Header */}
-      <div className='flex items-center justify-between border-b border-gray-3 bg-gray-50/50 dark:bg-gray-900/50 px-5 py-3.5'>
+      <div className='bg-gray-50/50 dark:bg-gray-900/50 flex items-center justify-between border-b border-gray-3 px-5 py-3.5'>
         <div className='flex items-center gap-2'>
           <Icon className='size-4 text-purple-9' name='tabler:git-fork' />
           <span className='text-13/5 font-semibold text-gray-13'>
@@ -60,139 +60,139 @@ const WorkflowPreview = () => {
           </span>
         </div>
         <div className='flex items-center gap-1.5 rounded-full border border-green-3 bg-green-1 px-2.5 py-0.5 text-11 font-medium text-green-11'>
-          <span className='size-1.5 rounded-full bg-green-9 animate-pulse' />
+          <span className='size-1.5 animate-pulse rounded-full bg-green-9' />
           Validation Ready
         </div>
       </div>
 
       <div className='relative py-10'>
         {/* Grid Background */}
-      <div
-        className='absolute inset-0 opacity-[0.02] dark:opacity-[0.05]'
-        style={{
-          backgroundImage:
-            'radial-gradient(circle, currentColor 1px, transparent 1px)',
-          backgroundSize: '16px 16px',
-        }}
-      />
+        <div
+          className='absolute inset-0 opacity-[0.02] dark:opacity-[0.05]'
+          style={{
+            backgroundImage:
+              'radial-gradient(circle, currentColor 1px, transparent 1px)',
+            backgroundSize: '16px 16px',
+          }}
+        />
 
-      {/* SVG Canvas for Connections */}
-      <div className='absolute inset-0 mx-auto w-full max-w-[850px] px-10'>
-        <svg
-          className='pointer-events-none h-full w-full'
-          viewBox='0 0 770 150'
-        >
-          <g>
-            {/* Base Line - Edge to Edge */}
-            <path
-              className='fill-none stroke-gray-3 stroke-[1.5] dark:stroke-gray-8'
-              d={flowPath}
-            />
+        {/* SVG Canvas for Connections */}
+        <div className='absolute inset-0 mx-auto w-full max-w-[850px] px-10'>
+          <svg
+            className='pointer-events-none h-full w-full'
+            viewBox='0 0 770 150'
+          >
+            <g>
+              {/* Base Line - Edge to Edge */}
+              <path
+                className='fill-none stroke-gray-3 stroke-[1.5] dark:stroke-gray-8'
+                d={flowPath}
+              />
 
-            {/* Animated "Marching Ants" Wave */}
-            <motion.path
-              className='fill-none stroke-purple-5 stroke-[1.5]'
-              d={flowPath}
-              initial={{ opacity: 0, pathLength: 0 }}
-              animate={{
-                opacity: 1,
-                pathLength: 1,
-                strokeDashoffset: [0, -20],
-              }}
-              style={{
-                strokeDasharray: '6 4',
-              }}
-              transition={{
-                opacity: { delay: 0.5, duration: 0.5 },
-                pathLength: { delay: 0.5, duration: 1.5, ease: 'easeInOut' },
-                strokeDashoffset: {
-                  duration: 1,
+              {/* Animated "Marching Ants" Wave */}
+              <motion.path
+                className='fill-none stroke-purple-5 stroke-[1.5]'
+                d={flowPath}
+                initial={{ opacity: 0, pathLength: 0 }}
+                animate={{
+                  opacity: 1,
+                  pathLength: 1,
+                  strokeDashoffset: [0, -20],
+                }}
+                style={{
+                  strokeDasharray: '6 4',
+                }}
+                transition={{
+                  opacity: { delay: 0.5, duration: 0.5 },
+                  pathLength: { delay: 0.5, duration: 1.5, ease: 'easeInOut' },
+                  strokeDashoffset: {
+                    duration: 1,
+                    ease: 'linear',
+                    repeat: Infinity,
+                  },
+                }}
+              />
+
+              {/* Traveling Data Pulse */}
+              <motion.circle
+                animate={{ offsetDistance: ['0%', '100%'] }}
+                fill='var(--purple-5)'
+                r='3'
+                style={{
+                  filter: 'drop-shadow(0 0 4px var(--purple-4))',
+                  offsetPath: `path("${flowPath}")`,
+                }}
+                transition={{
+                  delay: 2,
+                  duration: 4,
                   ease: 'linear',
                   repeat: Infinity,
-                },
-              }}
-            />
-
-            {/* Traveling Data Pulse */}
-            <motion.circle
-              animate={{ offsetDistance: ['0%', '100%'] }}
-              fill='var(--purple-5)'
-              r='3'
-              style={{
-                filter: 'drop-shadow(0 0 4px var(--purple-4))',
-                offsetPath: `path("${flowPath}")`,
-              }}
-              transition={{
-                delay: 2,
-                duration: 4,
-                ease: 'linear',
-                repeat: Infinity,
-              }}
-            />
-
-            {/* Edge Connection Points */}
-            {points.map((p, i) => (
-              <motion.circle
-                animate={{ opacity: 1, scale: 1 }}
-                className='dark:stroke-gray-900 fill-purple-5 stroke-white stroke-1'
-                cx={p.x}
-                cy={p.y}
-                initial={{ opacity: 0, scale: 0 }}
-                key={i}
-                r='2.5'
-                transition={{ delay: 1 + i * 0.2, type: 'spring' }}
+                }}
               />
-            ))}
-          </g>
-        </svg>
-      </div>
 
-      <div className='relative mx-auto flex h-[150px] max-w-[850px] justify-between px-10'>
-        {/* Node 1: Start (Top) */}
-        <div className='flex w-[130px] flex-col items-center pt-1'>
-          <AnimateFadeIn delay={0.1}>
-            <NodeCard
-              icon={startNode.icon}
-              subtitle={startNode.subtitle}
-              title={startNode.title}
-              isTrigger
-            />
-          </AnimateFadeIn>
+              {/* Edge Connection Points */}
+              {points.map((p, i) => (
+                <motion.circle
+                  animate={{ opacity: 1, scale: 1 }}
+                  className='dark:stroke-gray-900 fill-purple-5 stroke-white stroke-1'
+                  cx={p.x}
+                  cy={p.y}
+                  initial={{ opacity: 0, scale: 0 }}
+                  key={i}
+                  r='2.5'
+                  transition={{ delay: 1 + i * 0.2, type: 'spring' }}
+                />
+              ))}
+            </g>
+          </svg>
         </div>
 
-        {/* Node 2: Agent (Bottom) */}
-        <div className='flex w-[130px] flex-col items-center justify-end pb-1'>
-          <AnimateFadeIn delay={0.4}>
-            <NodeCard
-              icon='noto:robot'
-              subtitle='Extraction & Matching'
-              title='AI Automation'
-            />
-          </AnimateFadeIn>
-        </div>
+        <div className='relative mx-auto flex h-[150px] max-w-[850px] justify-between px-10'>
+          {/* Node 1: Start (Top) */}
+          <div className='flex w-[130px] flex-col items-center pt-1'>
+            <AnimateFadeIn delay={0.1}>
+              <NodeCard
+                icon={startNode.icon}
+                subtitle={startNode.subtitle}
+                title={startNode.title}
+                isTrigger
+              />
+            </AnimateFadeIn>
+          </div>
 
-        {/* Node 3: Approver (Top) */}
-        <div className='flex w-[130px] flex-col items-center pt-1'>
-          <AnimateFadeIn delay={0.7}>
-            <NodeCard
-              icon='flat-color-icons:signature'
-              subtitle='Manual Sign-off'
-              title='Approver Review'
-            />
-          </AnimateFadeIn>
-        </div>
+          {/* Node 2: Agent (Bottom) */}
+          <div className='flex w-[130px] flex-col items-center justify-end pb-1'>
+            <AnimateFadeIn delay={0.4}>
+              <NodeCard
+                icon='noto:robot'
+                subtitle='Extraction & Matching'
+                title='AI Automation'
+              />
+            </AnimateFadeIn>
+          </div>
 
-        {/* Node 4: End (Bottom) */}
-        <div className='flex w-[130px] flex-col items-center justify-end pb-1'>
-          <AnimateFadeIn delay={1.0}>
-            <NodeCard
-              icon='flat-color-icons:ok'
-              subtitle='ERP Synced'
-              title='Process End'
-            />
-          </AnimateFadeIn>
+          {/* Node 3: Approver (Top) */}
+          <div className='flex w-[130px] flex-col items-center pt-1'>
+            <AnimateFadeIn delay={0.7}>
+              <NodeCard
+                icon='flat-color-icons:signature'
+                subtitle='Manual Sign-off'
+                title='Approver Review'
+              />
+            </AnimateFadeIn>
+          </div>
+
+          {/* Node 4: End (Bottom) */}
+          <div className='flex w-[130px] flex-col items-center justify-end pb-1'>
+            <AnimateFadeIn delay={1.0}>
+              <NodeCard
+                icon='flat-color-icons:ok'
+                subtitle='ERP Synced'
+                title='Process End'
+              />
+            </AnimateFadeIn>
+          </div>
         </div>
-      </div>
       </div>
     </div>
   )

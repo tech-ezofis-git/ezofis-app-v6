@@ -3,6 +3,20 @@ import type { SettingsGroup, SettingsUser } from './userGroupMappers'
 const isFilled = (value: string | number | null | undefined) =>
   Boolean(String(value ?? '').trim())
 
+export function calculateGroupSetupProgress(
+  group: SettingsGroup,
+  memberCount: number,
+) {
+  const checks = [
+    isFilled(group.name),
+    isFilled(group.description),
+    memberCount > 0,
+  ]
+
+  const filled = checks.filter(Boolean).length
+  return Math.round((filled / checks.length) * 100)
+}
+
 export function calculateUserSetupProgress(user: SettingsUser) {
   const checks = [
     isFilled(user.firstName),
@@ -18,20 +32,6 @@ export function calculateUserSetupProgress(user: SettingsUser) {
     isFilled(user.location),
     user.groups.length > 0,
     !user.mfaEnabled || user.mfaMethods.length > 0,
-  ]
-
-  const filled = checks.filter(Boolean).length
-  return Math.round((filled / checks.length) * 100)
-}
-
-export function calculateGroupSetupProgress(
-  group: SettingsGroup,
-  memberCount: number,
-) {
-  const checks = [
-    isFilled(group.name),
-    isFilled(group.description),
-    memberCount > 0,
   ]
 
   const filled = checks.filter(Boolean).length

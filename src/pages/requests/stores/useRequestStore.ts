@@ -65,6 +65,7 @@ type Store = {
   isClosed: boolean
   // UI State
   isMaximized: boolean
+  isPlaygroundOpen: boolean
   isRequestOpen: boolean
   jobMappings: Record<string, string>
   jobStatuses: Record<string, any>
@@ -72,6 +73,7 @@ type Store = {
   newRequestMeta: string | null
   pendingNav: any
   pendingOpenNewRequest: boolean
+  playgroundContext: any
   processingProcesses: any[]
   rawWorkflowData: any
   reloadMeta: boolean
@@ -83,10 +85,6 @@ type Store = {
   selectedWorkflow: any
   selectedWorkflowId: number | string | null
   summaryCache: Record<string, any>
-  isPlaygroundOpen: boolean
-  playgroundContext: any
-  setIsPlaygroundOpen: (open: boolean) => void
-  setPlaygroundContext: (context: any) => void
   addProcessingProcess: (process: any) => void
   cacheSummaryData: (reqNo: string, data: any) => void
   clearPendingNav: () => void
@@ -97,11 +95,13 @@ type Store = {
   openNewRequest: (title: string) => void
   openRequest: (item: any, workflowId: any, tab: string) => void // Updated signature
   removeProcessingProcess: (id: string | number) => void
+  setIsPlaygroundOpen: (open: boolean) => void
   setJobMapping: (jobId: string | number, instanceId: string) => void
-
   setJobStatus: (id: string, status: any) => void
+
   setPendingNav: (v: any) => void
   setPendingOpenNewRequest: (value: boolean) => void
+  setPlaygroundContext: (context: any) => void
   setRawWorkflowData: (data: any) => void
 
   setRequestListTab: (tab: string) => void
@@ -117,6 +117,7 @@ const requestStore = create<Store>((set) => ({
   activeTabValue: null,
   isClosed: false,
   isMaximized: false,
+  isPlaygroundOpen: false,
   isRequestOpen: false,
   jobMappings: getInitialJobMappings(),
   jobStatuses: getInitialJobStatuses(),
@@ -124,6 +125,7 @@ const requestStore = create<Store>((set) => ({
   newRequestMeta: null,
   pendingNav: null as null | { direction: 'NEXT' | 'PREV' },
   pendingOpenNewRequest: false,
+  playgroundContext: null,
   processingProcesses: [],
   rawWorkflowData: null,
   reloadMeta: false,
@@ -133,10 +135,6 @@ const requestStore = create<Store>((set) => ({
   selectedWorkflow: null,
   selectedWorkflowId: null,
   summaryCache: {},
-  isPlaygroundOpen: false,
-  playgroundContext: null,
-  setIsPlaygroundOpen: (open) => set({ isPlaygroundOpen: open }),
-  setPlaygroundContext: (context) => set({ playgroundContext: context }),
   addProcessingProcess: (process) =>
     set((state) => ({
       processingProcesses: [
@@ -154,7 +152,6 @@ const requestStore = create<Store>((set) => ({
   clearPendingNav: () => set({ pendingNav: null }),
   clearQuickFilters: () => set({ activeQuickFilters: [] }),
   closeNewRequest: () => set({ newRequest: false, newRequestMeta: null }),
-
   closeRequest: () =>
     set((state) => ({
       activeTabValue: null,
@@ -163,6 +160,7 @@ const requestStore = create<Store>((set) => ({
       selectedItem: null, // Optional: clear data on close
     })),
   handleSetRepoData: (data) => set({ repoData: data }),
+
   openNewRequest: (title: string) =>
     set({
       newRequest: true,
@@ -200,6 +198,7 @@ const requestStore = create<Store>((set) => ({
       ),
     })),
   workflowRefresh: () => set({ reloadMeta: true }),
+  setIsPlaygroundOpen: (open) => set({ isPlaygroundOpen: open }),
   setJobMapping: (jobId, instanceId) =>
     set((state) => {
       const stringJobId = String(jobId)
@@ -231,6 +230,7 @@ const requestStore = create<Store>((set) => ({
   setPendingNav: (v) => set({ pendingNav: v }),
   setPendingOpenNewRequest: (value: boolean) =>
     set({ pendingOpenNewRequest: value }),
+  setPlaygroundContext: (context) => set({ playgroundContext: context }),
   setRawWorkflowData: (data) => set({ rawWorkflowData: data }),
   setRequestListTab: (tab) => set({ requestListTab: tab }),
 }))

@@ -13,10 +13,14 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { flexRender, type Row, type Table as TanstackTable } from '@tanstack/react-table'
+import {
+  flexRender,
+  type Row,
+  type Table as TanstackTable,
+} from '@tanstack/react-table'
 import { GripVertical } from 'lucide-react'
-import TableHeaderCell from '@/components/base/data-table/TableHeaderCell'
 import getColumnPinnedStyles from '@/components/base/data-table/helpers/getColumnPinnedStyles'
+import TableHeaderCell from '@/components/base/data-table/TableHeaderCell'
 import Table from '@/components/base/table/Table'
 import Tbody from '@/components/base/table/Tbody'
 import Td from '@/components/base/table/Td'
@@ -28,65 +32,6 @@ type SettingsSortableDataTableProps<TData> = {
   dragColumnId?: string
   table: TanstackTable<TData>
   onReorder: (nextRows: TData[]) => void
-}
-
-function SortableDataRow<TData>({
-  dragColumnId,
-  row,
-  table,
-}: {
-  dragColumnId: string
-  row: Row<TData>
-  table: TanstackTable<TData>
-}) {
-  const {
-    attributes,
-    isDragging,
-    listeners,
-    setActivatorNodeRef,
-    setNodeRef,
-    transform,
-    transition,
-  } = useSortable({ id: row.id })
-
-  return (
-    <tr
-      ref={setNodeRef}
-      className={cn(
-        'relative border-b border-[var(--gray-2)] transition-all [--pinned-bg:var(--surface)] hover:z-10 hover:bg-[var(--gray-1)] hover:shadow-sm hover:[--pinned-bg:var(--gray-1)]',
-        isDragging && 'z-20 bg-[var(--gray-1)] opacity-90 shadow-md',
-      )}
-      style={{
-        transform: CSS.Transform.toString(transform),
-        transition,
-      }}
-    >
-      {row.getVisibleCells().map((cell) => (
-        <Td
-          key={cell.id}
-          style={getColumnPinnedStyles(cell.column, table)}
-          className={cn('py-2.5', cell.column.columnDef.meta?.className)}
-        >
-          {cell.column.id === dragColumnId ? (
-            <div className='flex justify-center'>
-              <button
-                ref={setActivatorNodeRef}
-                aria-label='Drag to reorder'
-                className='flex cursor-grab items-center text-gray-9 outline-none active:cursor-grabbing'
-                type='button'
-                {...attributes}
-                {...listeners}
-              >
-                <GripVertical size={16} />
-              </button>
-            </div>
-          ) : (
-            flexRender(cell.column.columnDef.cell, cell.getContext())
-          )}
-        </Td>
-      ))}
-    </tr>
-  )
 }
 
 export default function SettingsSortableDataTable<TData>({
@@ -127,7 +72,10 @@ export default function SettingsSortableDataTable<TData>({
           sensors={sensors}
           onDragEnd={handleDragEnd}
         >
-          <SortableContext items={rowIds} strategy={verticalListSortingStrategy}>
+          <SortableContext
+            items={rowIds}
+            strategy={verticalListSortingStrategy}
+          >
             <Table
               className='table-fixed'
               style={{
@@ -164,5 +112,64 @@ export default function SettingsSortableDataTable<TData>({
         </DndContext>
       </div>
     </div>
+  )
+}
+
+function SortableDataRow<TData>({
+  dragColumnId,
+  row,
+  table,
+}: {
+  dragColumnId: string
+  row: Row<TData>
+  table: TanstackTable<TData>
+}) {
+  const {
+    attributes,
+    isDragging,
+    listeners,
+    transform,
+    transition,
+    setActivatorNodeRef,
+    setNodeRef,
+  } = useSortable({ id: row.id })
+
+  return (
+    <tr
+      ref={setNodeRef}
+      className={cn(
+        'relative border-b border-[var(--gray-2)] transition-all [--pinned-bg:var(--surface)] hover:z-10 hover:bg-[var(--gray-1)] hover:shadow-sm hover:[--pinned-bg:var(--gray-1)]',
+        isDragging && 'z-20 bg-[var(--gray-1)] opacity-90 shadow-md',
+      )}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+      }}
+    >
+      {row.getVisibleCells().map((cell) => (
+        <Td
+          className={cn('py-2.5', cell.column.columnDef.meta?.className)}
+          key={cell.id}
+          style={getColumnPinnedStyles(cell.column, table)}
+        >
+          {cell.column.id === dragColumnId ? (
+            <div className='flex justify-center'>
+              <button
+                aria-label='Drag to reorder'
+                className='flex cursor-grab items-center text-gray-9 outline-none active:cursor-grabbing'
+                ref={setActivatorNodeRef}
+                type='button'
+                {...attributes}
+                {...listeners}
+              >
+                <GripVertical size={16} />
+              </button>
+            </div>
+          ) : (
+            flexRender(cell.column.columnDef.cell, cell.getContext())
+          )}
+        </Td>
+      ))}
+    </tr>
   )
 }

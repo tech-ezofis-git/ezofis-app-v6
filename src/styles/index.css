@@ -55,8 +55,6 @@
   /* Native scrollbar */
 }
 
-
-
 /* Minimal Scrollbar */
 .minimal-scrollbar::-webkit-scrollbar {
   width: 4px;
@@ -941,7 +939,6 @@
 
 @layer utilities {
   @keyframes scan {
-
     0%,
     100% {
       top: 0%;

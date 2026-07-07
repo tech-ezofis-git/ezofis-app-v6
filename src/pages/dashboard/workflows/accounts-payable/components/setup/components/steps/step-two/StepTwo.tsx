@@ -3,10 +3,10 @@ import Alert from '@/components/base/Alert'
 import Button from '@/components/base/button/Button'
 import { AnimateFadeIn, AnimateSlideUp } from '@/components/common/animations'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
+import { SYSTEM_TEMPLATE_COLUMNS } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/templateSchema'
 import authUserStore from '@/stores/authUserStore'
 import { StepFooter, StepLayout } from '../components/StepLayout'
 import ErpSystem from './components/ErpSystem'
-import { SYSTEM_TEMPLATE_COLUMNS } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/templateSchema'
 
 const OAUTH_ERP_SYSTEMS = ['QuickBooks'] as const
 

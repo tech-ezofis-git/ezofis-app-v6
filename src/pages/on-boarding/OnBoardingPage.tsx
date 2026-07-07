@@ -6,13 +6,13 @@ import AnimateEntrancePop from '@/components/common/animations/AnimateEntrancePo
 import PageEmptyState from '@/components/common/PageEmptyState'
 import AuthFooter from '@/layouts/auth/components/AuthFooter'
 import PageHeader from './components/PageHeader'
+import StepFive from './components/StepFive'
+import StepFour from './components/StepFour'
 import StepIndicator from './components/StepIndicator'
 import StepOne from './components/StepOne'
-import StepTwo from './components/StepTwo'
-import StepThree from './components/StepThree'
-import StepFour from './components/StepFour'
-import StepFive from './components/StepFive'
 import StepSix from './components/StepSix'
+import StepThree from './components/StepThree'
+import StepTwo from './components/StepTwo'
 import onBoardingStore from './stores/onBoardingStore'
 
 const OnBoardingPage = () => {

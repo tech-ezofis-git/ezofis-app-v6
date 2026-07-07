@@ -90,7 +90,9 @@ const TableHeaderCell = <TData,>({ header, style, table }: Props<TData>) => {
       key={header.id}
       style={{ ...getColumnPinnedStyles(column, table), ...style }}
     >
-      <div className={cn('flex h-10 min-w-0 items-center', headerAlignClassName)}>
+      <div
+        className={cn('flex h-10 min-w-0 items-center', headerAlignClassName)}
+      >
         {/* display column */}
         {!isAccessorColumn &&
           flexRender(column.columnDef.header, header.getContext())}

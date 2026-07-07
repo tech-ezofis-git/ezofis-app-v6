@@ -19,21 +19,22 @@ import {
 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import fileApi from '@/api/file/file'
-import showToast from '@/components/base/toast/showToast'
-import {
-  getMockDB,
-  startSupplierVerification,
-  startRelatedDocuments,
-} from '@/services/mockBackend'
 import BarLoader from '@/components/base/BarLoader'
 import Icon from '@/components/base/icon/Icon'
 import InputDate from '@/components/base/inputs/InputDate'
 import InputSelect from '@/components/base/inputs/InputSelect'
+import showToast from '@/components/base/toast/showToast'
+import PaidActionApiTrigger from '@/components/playground/PaidActionApiTrigger'
 import { useAttachments } from '@/pages/requests/hooks/useAttachments'
 import { useComments } from '@/pages/requests/hooks/useComments'
 import '@react-pdf-viewer/core/lib/styles/index.css'
 import requestStore from '@/pages/requests/stores/useRequestStore'
 import '@react-pdf-viewer/search/lib/styles/index.css'
+import {
+  getMockDB,
+  startRelatedDocuments,
+  startSupplierVerification,
+} from '@/services/mockBackend'
 import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
 import {
@@ -45,7 +46,6 @@ import {
 import Attachments from '../attachment/Attachments'
 import Comments from '../comment/Comments'
 import History from '../history/History'
-import PaidActionApiTrigger from '@/components/playground/PaidActionApiTrigger'
 
 // --- Helpers ---
 
@@ -253,7 +253,8 @@ const updateItemField = (item: any, fieldKey: string, value: any) => {
 
 const recalculateItemAmount = (item: any) => {
   const qtyVal = item.Quantity?.['Invoice Value'] ?? item.quantity
-  const priceVal = item.Price?.['Invoice Value'] ?? item.rate ?? item.unit_price ?? item.price
+  const priceVal =
+    item.Price?.['Invoice Value'] ?? item.rate ?? item.unit_price ?? item.price
 
   const qtyNum = Number.parseFloat(String(qtyVal).replace(/[^0-9.-]+/g, ''))
   const priceNum = Number.parseFloat(String(priceVal).replace(/[^0-9.-]+/g, ''))
@@ -529,7 +530,7 @@ const extractDueDate = (row: any, agentData: any, formModel?: any): string => {
           d.setDate(d.getDate() + days)
           val = d.toISOString().split('T')[0]
         }
-      } catch (e) { }
+      } catch (e) {}
     }
   }
 
@@ -696,27 +697,27 @@ const getSupplierValidationDisplay = (agentData: any, formModel: any) => {
 const AnalysisCard = ({
   icon: Icon,
   isLoading = false,
+  isPulsing = false,
+  isSelected = false,
   status,
   statusType = 'success',
   title,
   value,
   onClick,
-  isPulsing = false,
-  isSelected = false,
 }: any) => {
   return (
     <div
       className={cn(
         'relative flex min-w-0 flex-1 flex-col gap-1.5 rounded-xl border p-2.5 transition-all duration-300 ease-in-out hover:scale-[1.02] hover:shadow-md active:scale-95',
         isSelected
-          ? 'border-[var(--primary-9)] bg-[var(--primary-2)]/30 ring-1 ring-[var(--primary-9)]/20 shadow-sm'
+          ? 'border-[var(--primary-9)] bg-[var(--primary-2)]/30 shadow-sm ring-1 ring-[var(--primary-9)]/20'
           : 'border-[var(--gray-3)] bg-surface hover:bg-[var(--gray-1)]',
         onClick && 'cursor-pointer',
       )}
       onClick={onClick}
     >
       {isPulsing && (
-        <div className='absolute inset-0 rounded-xl ring-2 ring-[var(--orange-6)]/50 animate-pulse pointer-events-none' />
+        <div className='pointer-events-none absolute inset-0 animate-pulse rounded-xl ring-2 ring-[var(--orange-6)]/50' />
       )}
       <div className='flex items-center justify-between'>
         <div
@@ -760,21 +761,21 @@ const AnalysisCard = ({
 }
 
 const DetailReportView = ({
-  title,
+  children,
   icon: IconComponent,
   status,
   statusType = 'success',
+  title,
   onClose,
-  children,
 }: any) => {
   return (
-    <div className='flex flex-col flex-1 min-h-0 bg-surface animate-in fade-in slide-in-from-bottom-2 duration-300'>
+    <div className='animate-in fade-in slide-in-from-bottom-2 flex min-h-0 flex-1 flex-col bg-surface duration-300'>
       {/* Header */}
       <div className='flex shrink-0 items-center justify-between border-b border-[var(--gray-3)] bg-[var(--gray-1)] px-6 py-3.5'>
         <div className='flex items-center gap-3'>
           <button
-            onClick={onClose}
             className='group flex items-center gap-1 text-xs font-semibold text-[var(--gray-11)] transition-all hover:text-[var(--gray-13)] active:scale-95'
+            onClick={onClose}
           >
             <Icon
               className='h-4 w-4 transition-transform group-hover:-translate-x-0.5'
@@ -782,7 +783,7 @@ const DetailReportView = ({
             />
             <span>Back</span>
           </button>
-          <div className='h-4 w-[1px] bg-[var(--gray-3)] mx-1' />
+          <div className='mx-1 h-4 w-[1px] bg-[var(--gray-3)]' />
           <div className='flex items-center gap-2'>
             <div className={cn('rounded-md p-1', getStatusStyles(statusType))}>
               <IconComponent className='h-4 w-4' />
@@ -792,7 +793,7 @@ const DetailReportView = ({
         </div>
         <span
           className={cn(
-            'rounded-md border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider',
+            'rounded-md border px-2.5 py-0.5 text-[10px] font-bold tracking-wider uppercase',
             getStatusBorderStyles(statusType),
           )}
         >
@@ -801,9 +802,7 @@ const DetailReportView = ({
       </div>
 
       {/* Content */}
-      <div className='flex-1 overflow-y-auto p-6 space-y-6'>
-        {children}
-      </div>
+      <div className='flex-1 space-y-6 overflow-y-auto p-6'>{children}</div>
     </div>
   )
 }
@@ -857,9 +856,9 @@ const FormCard = ({
     const selectedOption =
       typeof localValue === 'string' && localValue !== '-'
         ? options.find(
-          (opt: any) =>
-            String(opt.id).toLowerCase() === localValue.toLowerCase(),
-        ) || (localValue ? { id: localValue, name: localValue } : null)
+            (opt: any) =>
+              String(opt.id).toLowerCase() === localValue.toLowerCase(),
+          ) || (localValue ? { id: localValue, name: localValue } : null)
         : null
 
     inputElement = (
@@ -991,7 +990,7 @@ const FormCard = ({
               value === null ||
               value === undefined ||
               value === '') &&
-            'font-medium text-[var(--gray-9)]',
+              'font-medium text-[var(--gray-9)]',
           )}
         >
           {value === null || value === undefined || value === '' ? '-' : value}
@@ -1174,6 +1173,7 @@ const getRecommendationMeta = (rec?: string) => {
 
 const Overview = (props: any) => {
   const {
+    actions,
     agentData,
     allowedLabels,
     formDefinition,
@@ -1188,7 +1188,6 @@ const Overview = (props: any) => {
     transactionId,
     workflowId,
     setFormModel,
-    actions,
     onOpenPlayground,
   } = props
 
@@ -1204,9 +1203,9 @@ const Overview = (props: any) => {
   const resolvedInstanceId = useMemo(() => {
     return String(
       selectedItem?.workflowInstanceId ||
-      selectedItem?.instanceId ||
-      processId ||
-      '',
+        selectedItem?.instanceId ||
+        processId ||
+        '',
     )
   }, [selectedItem, processId])
 
@@ -1331,12 +1330,16 @@ const Overview = (props: any) => {
     [agentData],
   )
   const paidAction = useMemo(() => {
-    return actions?.find((act: any) => String(act?.label || '').toLowerCase() === 'paid') || {
-      label: 'Paid',
-      endpoint: 'https://ezagentplayground.onrender.com/apikey.html?id=2',
-      model: 'gemini-2.0-flash-exp',
-      provider: 'gemini',
-    }
+    return (
+      actions?.find(
+        (act: any) => String(act?.label || '').toLowerCase() === 'paid',
+      ) || {
+        endpoint: 'https://ezagentplayground.onrender.com/apikey.html?id=2',
+        label: 'Paid',
+        model: 'gemini-2.0-flash-exp',
+        provider: 'gemini',
+      }
+    )
   }, [actions])
   const analysisCardCount =
     3 +
@@ -1349,7 +1352,11 @@ const Overview = (props: any) => {
 
   // Document ID resolver
   const docId = useMemo(() => {
-    const rawId = resolvedInstanceId || selectedItem?.workflowInstanceId || selectedItem?.instanceId || processId
+    const rawId =
+      resolvedInstanceId ||
+      selectedItem?.workflowInstanceId ||
+      selectedItem?.instanceId ||
+      processId
     if (!rawId || String(rawId) === 'NaN') {
       return String(selectedItem?.id || '')
     }
@@ -1372,8 +1379,8 @@ const Overview = (props: any) => {
 
   // Supplier Verification Check State
   const [supplierCheckState, setSupplierCheckState] = useState<{
-    status: 'not_run' | 'pending' | 'complete'
     data?: any
+    status: 'not_run' | 'pending' | 'complete'
   }>(() => {
     if (!docId) return { status: 'not_run' }
     const db = getMockDB()
@@ -1382,8 +1389,8 @@ const Overview = (props: any) => {
 
   // Related Documents Check State
   const [relatedDocsState, setRelatedDocsState] = useState<{
-    status: 'not_run' | 'pending' | 'complete'
     data?: any
+    status: 'not_run' | 'pending' | 'complete'
   }>(() => {
     if (!docId) return { status: 'not_run' }
     const db = getMockDB()
@@ -1394,8 +1401,12 @@ const Overview = (props: any) => {
   useEffect(() => {
     if (!docId) return
     const db = getMockDB()
-    setSupplierCheckState(db.documents[docId]?.supplierVerification || { status: 'not_run' })
-    setRelatedDocsState(db.documents[docId]?.relatedDocuments || { status: 'not_run' })
+    setSupplierCheckState(
+      db.documents[docId]?.supplierVerification || { status: 'not_run' },
+    )
+    setRelatedDocsState(
+      db.documents[docId]?.relatedDocuments || { status: 'not_run' },
+    )
   }, [docId])
 
   // Tab sync for external updates (e.g. cross-tab events)
@@ -1403,8 +1414,12 @@ const Overview = (props: any) => {
     const handleStorageChange = () => {
       if (!docId) return
       const db = getMockDB()
-      setSupplierCheckState(db.documents[docId]?.supplierVerification || { status: 'not_run' })
-      setRelatedDocsState(db.documents[docId]?.relatedDocuments || { status: 'not_run' })
+      setSupplierCheckState(
+        db.documents[docId]?.supplierVerification || { status: 'not_run' },
+      )
+      setRelatedDocsState(
+        db.documents[docId]?.relatedDocuments || { status: 'not_run' },
+      )
     }
     window.addEventListener('storage', handleStorageChange)
     return () => window.removeEventListener('storage', handleStorageChange)
@@ -1425,8 +1440,8 @@ const Overview = (props: any) => {
       const result = await startSupplierVerification(docId, realResult)
 
       setSupplierCheckState({
-        status: 'complete',
         data: result,
+        status: 'complete',
       })
 
       showToast({
@@ -1436,7 +1451,8 @@ const Overview = (props: any) => {
     } catch (error: any) {
       setSupplierCheckState({ status: 'not_run' })
       showToast({
-        message: error?.message || 'Verification failed. 1 credit has been refunded.',
+        message:
+          error?.message || 'Verification failed. 1 credit has been refunded.',
         variant: 'error',
       })
     }
@@ -1451,8 +1467,8 @@ const Overview = (props: any) => {
       const result = await startRelatedDocuments(docId, supplierName)
 
       setRelatedDocsState({
-        status: 'complete',
         data: result,
+        status: 'complete',
       })
 
       showToast({
@@ -1481,7 +1497,8 @@ const Overview = (props: any) => {
     )
   }, [formModel])
 
-  const [activeBackOrderTab, setActiveBackOrderTab] = useState<string>('current')
+  const [activeBackOrderTab, setActiveBackOrderTab] =
+    useState<string>('current')
   const [selectedFile, setSelectedFile] = useState<any>(null)
 
   useEffect(() => {
@@ -1831,7 +1848,10 @@ const Overview = (props: any) => {
   const [fileType, setFileType] = useState<string | null>(null)
   const [isViewerLoading, setIsViewerLoading] = useState(false)
   const [scale, setScale] = useState(1)
-  const [scannerBounds, setScannerBounds] = useState<{ left: number; right: number }>({ left: 0, right: 0 })
+  const [scannerBounds, setScannerBounds] = useState<{
+    left: number
+    right: number
+  }>({ left: 0, right: 0 })
   const viewerRef = useRef<any>(null)
   const pdfViewerWrapperRef = useRef<HTMLDivElement>(null)
   const lastFetchedRef = useRef<{
@@ -1939,9 +1959,9 @@ const Overview = (props: any) => {
 
       const repoId = String(
         selectedFile?.repositoryId ||
-        selectedItem?.repositoryId ||
-        repositoryId ||
-        '',
+          selectedItem?.repositoryId ||
+          repositoryId ||
+          '',
       ).trim()
       const itemId = String(
         selectedFile?.itemId || selectedFile?.id || selectedItem?.itemId || '',
@@ -2038,7 +2058,10 @@ const Overview = (props: any) => {
     if (fileType === 'application/pdf') {
       previewContent = (
         <Worker workerUrl='https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js'>
-          <div className='group relative h-full w-full overflow-hidden' ref={pdfViewerWrapperRef}>
+          <div
+            className='group relative h-full w-full overflow-hidden'
+            ref={pdfViewerWrapperRef}
+          >
             <Viewer
               defaultScale={SpecialZoomLevel.PageWidth}
               fileUrl={previewUrl}
@@ -2067,11 +2090,17 @@ const Overview = (props: any) => {
               <div className='pointer-events-none absolute inset-0 z-10 overflow-hidden'>
                 <div
                   className='bg-[color-mix(in srgb,var(--primary-9)_3%,transparent)] absolute inset-y-0'
-                  style={{ left: scannerBounds.left, right: scannerBounds.right }}
+                  style={{
+                    left: scannerBounds.left,
+                    right: scannerBounds.right,
+                  }}
                 />
                 <div
                   className='animate-scan absolute h-[2px] bg-[var(--primary-9)] shadow-[0_0_8px_var(--primary-9),_0_0_16px_var(--primary-9)]'
-                  style={{ left: scannerBounds.left, right: scannerBounds.right }}
+                  style={{
+                    left: scannerBounds.left,
+                    right: scannerBounds.right,
+                  }}
                 />
               </div>
             )}
@@ -2088,7 +2117,7 @@ const Overview = (props: any) => {
           />
           {/* Scanner overlay (restricted to Image) */}
           {isScanning && (
-            <div className='pointer-events-none absolute inset-x-4 bottom-4 top-12 z-10 overflow-hidden rounded-xl'>
+            <div className='pointer-events-none absolute inset-x-4 top-12 bottom-4 z-10 overflow-hidden rounded-xl'>
               <div className='bg-[color-mix(in srgb,var(--primary-9)_3%,transparent)] absolute inset-0' />
               <div className='animate-scan absolute right-0 left-0 h-[2px] bg-[var(--primary-9)] shadow-[0_0_8px_var(--primary-9),_0_0_16px_var(--primary-9)]' />
             </div>
@@ -2128,8 +2157,6 @@ const Overview = (props: any) => {
           )}
 
           {previewContent}
-
-
 
           {menuPosition && selectedText && (
             <menu
@@ -2185,10 +2212,10 @@ const Overview = (props: any) => {
                 {eligibleFields.filter((key) =>
                   key.toLowerCase().includes(searchFilter.toLowerCase()),
                 ).length === 0 && (
-                    <div className='px-3 py-2 text-center text-xs font-medium text-[var(--gray-9)]'>
-                      No matching fields
-                    </div>
-                  )}
+                  <div className='px-3 py-2 text-center text-xs font-medium text-[var(--gray-9)]'>
+                    No matching fields
+                  </div>
+                )}
               </div>
             </menu>
           )}
@@ -2208,9 +2235,9 @@ const Overview = (props: any) => {
                       analysisCardCount <= 3 && 'grid-cols-1 sm:grid-cols-3',
                       analysisCardCount === 4 && 'grid-cols-2 lg:grid-cols-4',
                       analysisCardCount === 5 &&
-                      'grid-cols-2 lg:grid-cols-3 xl:grid-cols-5',
+                        'grid-cols-2 lg:grid-cols-3 xl:grid-cols-5',
                       analysisCardCount >= 6 &&
-                      'grid-cols-2 lg:grid-cols-3 xl:grid-cols-6',
+                        'grid-cols-2 lg:grid-cols-3 xl:grid-cols-6',
                     )}
                   >
                     {(() => {
@@ -2225,7 +2252,9 @@ const Overview = (props: any) => {
                         formModel?.['RXwLGHILLrreMmRqlk9mj']
                       return (
                         <AnalysisCard
+                          align='left'
                           icon={Paperclip}
+                          isSelected={activeDetailView === 'po_matching'}
                           title='PO Matching'
                           isLoading={
                             isCurrentlyProcessing &&
@@ -2247,13 +2276,13 @@ const Overview = (props: any) => {
                               : 'No PO Found'
                           }
                           onClick={() => setActiveDetailView('po_matching')}
-                          isSelected={activeDetailView === 'po_matching'}
-                          align='left'
                         />
                       )
                     })()}
                     <AnalysisCard
+                      align='left'
                       icon={Layers}
+                      isSelected={activeDetailView === 'duplicate_check'}
                       title='Duplicate Detection'
                       isLoading={
                         isCurrentlyProcessing && !agentData?.duplicate_check
@@ -2271,64 +2300,79 @@ const Overview = (props: any) => {
                         'No duplicates detected'
                       }
                       onClick={() => setActiveDetailView('duplicate_check')}
-                      isSelected={activeDetailView === 'duplicate_check'}
-                      align='left'
                     />
                     {supplierCheckState.status === 'not_run' && (
                       <AnalysisCard
+                        align='left'
                         icon={Wand2}
-                        status="Not Verified"
+                        isLoading={false}
+                        isPulsing={true}
+                        status='Not Verified'
                         statusType='warning'
                         title='Supplier Verification'
+                        isSelected={
+                          activeDetailView === 'supplier_verification'
+                        }
                         value={
-                          <span className='inline-flex items-center gap-2 rounded-lg bg-[var(--primary-2)] px-2.5 py-1 text-xs font-bold text-[var(--primary-9)] border border-[var(--primary-4)] hover:bg-[var(--primary-3)] hover:text-[var(--primary-10)] hover:scale-[1.02] transition-all active:scale-95 shadow-sm mt-0.5'>
+                          <span className='mt-0.5 inline-flex items-center gap-2 rounded-lg border border-[var(--primary-4)] bg-[var(--primary-2)] px-2.5 py-1 text-xs font-bold text-[var(--primary-9)] shadow-sm transition-all hover:scale-[1.02] hover:bg-[var(--primary-3)] hover:text-[var(--primary-10)] active:scale-95'>
                             <span className='relative flex h-1.5 w-1.5 shrink-0'>
-                              <span className='animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--primary-9)] opacity-75'></span>
-                              <span className='relative inline-flex rounded-full h-1.5 w-1.5 bg-[var(--primary-9)]'></span>
+                              <span className='absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--primary-9)] opacity-75'></span>
+                              <span className='relative inline-flex h-1.5 w-1.5 rounded-full bg-[var(--primary-9)]'></span>
                             </span>
                             Verify Supplier
                           </span>
                         }
-                        isLoading={false}
                         onClick={handleVerifySupplierClick}
-                        isSelected={activeDetailView === 'supplier_verification'}
-                        align='left'
-                        isPulsing={true}
                       />
                     )}
                     {supplierCheckState.status === 'pending' && (
                       <AnalysisCard
+                        align='left'
                         icon={Wand2}
+                        isLoading={false}
                         status='Verifying...'
                         statusType='info'
                         title='Supplier Verification'
+                        isSelected={
+                          activeDetailView === 'supplier_verification'
+                        }
                         value={
-                          <span className='inline-flex items-center gap-1.5 text-xs text-[var(--gray-10)] font-medium animate-pulse'>
-                            <Icon className='h-3.5 w-3.5 animate-spin text-[var(--primary-9)]' name='tabler:loader-2' />
+                          <span className='inline-flex animate-pulse items-center gap-1.5 text-xs font-medium text-[var(--gray-10)]'>
+                            <Icon
+                              className='h-3.5 w-3.5 animate-spin text-[var(--primary-9)]'
+                              name='tabler:loader-2'
+                            />
                             Verifying...
                           </span>
                         }
-                        isLoading={false}
-                        isSelected={activeDetailView === 'supplier_verification'}
-                        align='left'
                       />
                     )}
                     {supplierCheckState.status === 'complete' && (
                       <AnalysisCard
-                        icon={Store}
-                        status={supplierCheckState.data?.status || 'Verified'}
-                        statusType={supplierCheckState.data?.statusType || 'success'}
-                        title='Supplier Verification'
-                        value={supplierCheckState.data?.value || 'Supplier verified'}
-                        isLoading={isCurrentlyProcessing}
-                        onClick={() => setActiveDetailView('supplier_verification')}
-                        isSelected={activeDetailView === 'supplier_verification'}
                         align='left'
+                        icon={Store}
+                        isLoading={isCurrentlyProcessing}
+                        status={supplierCheckState.data?.status || 'Verified'}
+                        title='Supplier Verification'
+                        isSelected={
+                          activeDetailView === 'supplier_verification'
+                        }
+                        statusType={
+                          supplierCheckState.data?.statusType || 'success'
+                        }
+                        value={
+                          supplierCheckState.data?.value || 'Supplier verified'
+                        }
+                        onClick={() =>
+                          setActiveDetailView('supplier_verification')
+                        }
                       />
                     )}
                     {showGlValidation && glValidationDisplay && (
                       <AnalysisCard
+                        align='right'
                         icon={ListFilter}
+                        isSelected={activeDetailView === 'gl_matching'}
                         status={glValidationDisplay.status}
                         statusType={glValidationDisplay.statusType}
                         title='GL Account Matching'
@@ -2342,14 +2386,14 @@ const Overview = (props: any) => {
                           glValidationDisplay.status
                         }
                         onClick={() => setActiveDetailView('gl_matching')}
-                        isSelected={activeDetailView === 'gl_matching'}
-                        align='right'
                       />
                     )}
                     {showBackOrder &&
-                      backOrderDisplay?.status === 'Detected' ? (
+                    backOrderDisplay?.status === 'Detected' ? (
                       <AnalysisCard
+                        align='right'
                         icon={PackageX}
+                        isSelected={activeDetailView === 'back_order'}
                         status={backOrderDisplay.status}
                         statusType={backOrderDisplay.statusType}
                         title='Back Order'
@@ -2363,12 +2407,12 @@ const Overview = (props: any) => {
                           setActiveDetailView('back_order')
                           setActiveBackOrderTab('current')
                         }}
-                        isSelected={activeDetailView === 'back_order'}
-                        align='right'
                       />
                     ) : (
                       <AnalysisCard
+                        align='right'
                         icon={Calendar}
+                        isSelected={activeDetailView === 'payment_terms'}
                         status={paymentTermsDisplay.calculationText}
                         statusType={paymentTermsDisplay.statusType}
                         title='Payment Terms'
@@ -2376,20 +2420,24 @@ const Overview = (props: any) => {
                           isCurrentlyProcessing &&
                           (!paymentTermsDisplay?.termsDisplay ||
                             paymentTermsDisplay.termsDisplay === '-' ||
-                            extractPaymentTerms(selectedItem, agentData, formModel) === '-')
+                            extractPaymentTerms(
+                              selectedItem,
+                              agentData,
+                              formModel,
+                            ) === '-')
                         }
                         value={paymentTermsDisplay.daysText.replace(
                           /days/i,
                           'Days',
                         )}
                         onClick={() => setActiveDetailView('payment_terms')}
-                        isSelected={activeDetailView === 'payment_terms'}
-                        align='right'
                       />
                     )}
                     {showMatterValidation && matterValidationDisplay && (
                       <AnalysisCard
+                        align='right'
                         icon={Briefcase}
+                        isSelected={activeDetailView === 'matter_validation'}
                         status={matterValidationDisplay.status}
                         statusType={matterValidationDisplay.statusType}
                         title='Matter Validation'
@@ -2400,15 +2448,13 @@ const Overview = (props: any) => {
                             matterValidationDisplay.value === '---')
                         }
                         onClick={() => setActiveDetailView('matter_validation')}
-                        isSelected={activeDetailView === 'matter_validation'}
-                        align='right'
                       />
                     )}
                   </div>
                 </div>
 
                 {!activeDetailView && (
-                  <div className='sticky top-0 z-10 shrink-0 border-b border-[var(--gray-3)] px-6 pt-2 bg-surface'>
+                  <div className='sticky top-0 z-10 shrink-0 border-b border-[var(--gray-3)] bg-surface px-6 pt-2'>
                     <div className='flex items-center gap-8'>
                       {[
                         {
@@ -2453,8 +2499,8 @@ const Overview = (props: any) => {
                                 'Side-by-side Line Item matching'
                               ]?.length > 0 ||
                               agentData?.line_items?.length > 0 ||
-                              agentData?.['Extracted Invoice JSON']?.invoice_items
-                                ?.length > 0) && (
+                              agentData?.['Extracted Invoice JSON']
+                                ?.invoice_items?.length > 0) && (
                               <span className='rounded bg-[var(--gray-2)] px-1.5 py-0.5 text-[10px] text-[var(--gray-11)]'>
                                 {lineItems.length ||
                                   agentData?.debug?.[
@@ -2483,41 +2529,73 @@ const Overview = (props: any) => {
                     <>
                       {activeDetailView === 'po_matching' && (
                         <DetailReportView
-                          title="PO Matching Analysis"
                           icon={Paperclip}
-                          status={poVal && poVal !== '-' && poVal !== 'N/A' ? 'Matched' : 'Not Matched'}
-                          statusType={poVal && poVal !== '-' && poVal !== 'N/A' ? 'success' : 'warning'}
+                          title='PO Matching Analysis'
+                          status={
+                            poVal && poVal !== '-' && poVal !== 'N/A'
+                              ? 'Matched'
+                              : 'Not Matched'
+                          }
+                          statusType={
+                            poVal && poVal !== '-' && poVal !== 'N/A'
+                              ? 'success'
+                              : 'warning'
+                          }
                           onClose={() => setActiveDetailView(null)}
                         >
                           <div className='grid grid-cols-2 gap-6'>
                             <div className='space-y-4'>
-                              <h4 className='text-xs font-bold uppercase tracking-wider text-[var(--gray-10)]'>Document Mapping</h4>
-                              <div className='rounded-xl border border-[var(--gray-3)] bg-[var(--gray-2)] p-4 space-y-3 text-xs'>
+                              <h4 className='text-xs font-bold tracking-wider text-[var(--gray-10)] uppercase'>
+                                Document Mapping
+                              </h4>
+                              <div className='space-y-3 rounded-xl border border-[var(--gray-3)] bg-[var(--gray-2)] p-4 text-xs'>
                                 <div className='flex justify-between border-b border-[var(--gray-3)] pb-2'>
-                                  <span className='font-semibold text-[var(--gray-11)]'>PO Number (Extracted)</span>
-                                  <span className='font-bold text-[var(--gray-13)]'>{poVal || 'N/A'}</span>
+                                  <span className='font-semibold text-[var(--gray-11)]'>
+                                    PO Number (Extracted)
+                                  </span>
+                                  <span className='font-bold text-[var(--gray-13)]'>
+                                    {poVal || 'N/A'}
+                                  </span>
                                 </div>
                                 <div className='flex justify-between border-b border-[var(--gray-3)] pb-2'>
-                                  <span className='font-semibold text-[var(--gray-11)]'>Vendor Name</span>
-                                  <span className='font-bold text-[var(--gray-13)]'>{agentData?.po_row?.['Vendor Name'] || 'N/A'}</span>
+                                  <span className='font-semibold text-[var(--gray-11)]'>
+                                    Vendor Name
+                                  </span>
+                                  <span className='font-bold text-[var(--gray-13)]'>
+                                    {agentData?.po_row?.['Vendor Name'] ||
+                                      'N/A'}
+                                  </span>
                                 </div>
                                 <div className='flex justify-between'>
-                                  <span className='font-semibold text-[var(--gray-11)]'>Authorized Amount</span>
-                                  <span className='font-bold text-[var(--gray-13)]'>{agentData?.po_matching?.po_amount || 'N/A'}</span>
+                                  <span className='font-semibold text-[var(--gray-11)]'>
+                                    Authorized Amount
+                                  </span>
+                                  <span className='font-bold text-[var(--gray-13)]'>
+                                    {agentData?.po_matching?.po_amount || 'N/A'}
+                                  </span>
                                 </div>
                               </div>
                             </div>
                             <div className='space-y-4'>
-                              <h4 className='text-xs font-bold uppercase tracking-wider text-[var(--gray-10)]'>Validation Log</h4>
-                              <div className='rounded-xl border border-[var(--gray-3)] bg-[var(--gray-2)] p-4 space-y-3 text-xs leading-relaxed'>
-                                <p className='text-[var(--gray-12)] font-medium'>
+                              <h4 className='text-xs font-bold tracking-wider text-[var(--gray-10)] uppercase'>
+                                Validation Log
+                              </h4>
+                              <div className='space-y-3 rounded-xl border border-[var(--gray-3)] bg-[var(--gray-2)] p-4 text-xs leading-relaxed'>
+                                <p className='font-medium text-[var(--gray-12)]'>
                                   {poVal && poVal !== '-' && poVal !== 'N/A'
                                     ? 'The extraction engine resolved the PO reference block in the document header and verified its presence in the procurement ledger database.'
                                     : 'No purchase order barcode, ID, or header reference matches could be resolved automatically. Manual association may be required if this is a PO-backed invoice.'}
                                 </p>
-                                <div className='flex items-center gap-2 rounded-lg bg-[var(--primary-2)] text-[var(--primary-9)] p-3 border border-[var(--primary-3)]'>
-                                  <Icon className='h-4 w-4 shrink-0' name='tabler:info-circle' />
-                                  <span className='text-[11px] leading-tight font-medium'>System automatically performs two-way and three-way checks on verified purchase orders.</span>
+                                <div className='flex items-center gap-2 rounded-lg border border-[var(--primary-3)] bg-[var(--primary-2)] p-3 text-[var(--primary-9)]'>
+                                  <Icon
+                                    className='h-4 w-4 shrink-0'
+                                    name='tabler:info-circle'
+                                  />
+                                  <span className='text-[11px] leading-tight font-medium'>
+                                    System automatically performs two-way and
+                                    three-way checks on verified purchase
+                                    orders.
+                                  </span>
                                 </div>
                               </div>
                             </div>
@@ -2526,38 +2604,72 @@ const Overview = (props: any) => {
                       )}
                       {activeDetailView === 'duplicate_check' && (
                         <DetailReportView
-                          title="Duplicate Payment Check"
                           icon={Layers}
-                          status={agentData?.duplicate_check?.status || 'No Duplicate'}
-                          statusType={agentData?.duplicate_check?.status === 'Duplicate' ? 'danger' : 'success'}
+                          title='Duplicate Payment Check'
+                          status={
+                            agentData?.duplicate_check?.status || 'No Duplicate'
+                          }
+                          statusType={
+                            agentData?.duplicate_check?.status === 'Duplicate'
+                              ? 'danger'
+                              : 'success'
+                          }
                           onClose={() => setActiveDetailView(null)}
                         >
                           <div className='grid grid-cols-2 gap-6'>
                             <div className='space-y-4'>
-                              <h4 className='text-xs font-bold uppercase tracking-wider text-[var(--gray-10)]'>Historical Match Results</h4>
-                              <div className='rounded-xl border border-[var(--gray-3)] bg-[var(--gray-2)] p-4 space-y-3 text-xs'>
+                              <h4 className='text-xs font-bold tracking-wider text-[var(--gray-10)] uppercase'>
+                                Historical Match Results
+                              </h4>
+                              <div className='space-y-3 rounded-xl border border-[var(--gray-3)] bg-[var(--gray-2)] p-4 text-xs'>
                                 <div className='flex justify-between border-b border-[var(--gray-3)] pb-2'>
-                                  <span className='font-semibold text-[var(--gray-11)]'>Cross-Check Status</span>
-                                  <span className={cn('font-bold', agentData?.duplicate_check?.status === 'Duplicate' ? 'text-[var(--red-9)]' : 'text-[var(--green-9)]')}>
-                                    {agentData?.duplicate_check?.status || 'Passed'}
+                                  <span className='font-semibold text-[var(--gray-11)]'>
+                                    Cross-Check Status
+                                  </span>
+                                  <span
+                                    className={cn(
+                                      'font-bold',
+                                      agentData?.duplicate_check?.status ===
+                                        'Duplicate'
+                                        ? 'text-[var(--red-9)]'
+                                        : 'text-[var(--green-9)]',
+                                    )}
+                                  >
+                                    {agentData?.duplicate_check?.status ||
+                                      'Passed'}
                                   </span>
                                 </div>
                                 <div className='flex flex-col gap-1'>
-                                  <span className='font-semibold text-[var(--gray-11)]'>System Response</span>
-                                  <span className='font-medium text-[var(--gray-13)] leading-normal'>{agentData?.duplicate_check?.message || 'No duplicate records found.'}</span>
+                                  <span className='font-semibold text-[var(--gray-11)]'>
+                                    System Response
+                                  </span>
+                                  <span className='leading-normal font-medium text-[var(--gray-13)]'>
+                                    {agentData?.duplicate_check?.message ||
+                                      'No duplicate records found.'}
+                                  </span>
                                 </div>
                               </div>
                             </div>
                             <div className='space-y-4'>
-                              <h4 className='text-xs font-bold uppercase tracking-wider text-[var(--gray-10)]'>Security & Auditing Policy</h4>
-                              <div className='rounded-xl border border-[var(--gray-3)] bg-[var(--gray-2)] p-4 space-y-3 text-xs leading-relaxed'>
+                              <h4 className='text-xs font-bold tracking-wider text-[var(--gray-10)] uppercase'>
+                                Security & Auditing Policy
+                              </h4>
+                              <div className='space-y-3 rounded-xl border border-[var(--gray-3)] bg-[var(--gray-2)] p-4 text-xs leading-relaxed'>
                                 <p className='text-[var(--gray-11)]'>
-                                  Double-payment prevention checks analyze historical invoices by combining:
+                                  Double-payment prevention checks analyze
+                                  historical invoices by combining:
                                 </p>
-                                <ul className='list-disc pl-4 space-y-1.5 text-[var(--gray-11)]'>
-                                  <li>Supplier tax identity and banking details.</li>
-                                  <li>Exact Invoice Number string similarity.</li>
-                                  <li>Grand Total and individual line-item value mapping.</li>
+                                <ul className='list-disc space-y-1.5 pl-4 text-[var(--gray-11)]'>
+                                  <li>
+                                    Supplier tax identity and banking details.
+                                  </li>
+                                  <li>
+                                    Exact Invoice Number string similarity.
+                                  </li>
+                                  <li>
+                                    Grand Total and individual line-item value
+                                    mapping.
+                                  </li>
                                 </ul>
                               </div>
                             </div>
@@ -2566,43 +2678,71 @@ const Overview = (props: any) => {
                       )}
                       {activeDetailView === 'supplier_verification' && (
                         <DetailReportView
-                          title="Supplier Verification Registry"
                           icon={Store}
                           status={supplierCheckState.data?.status || 'Verified'}
-                          statusType={supplierCheckState.data?.statusType || 'success'}
+                          title='Supplier Verification Registry'
+                          statusType={
+                            supplierCheckState.data?.statusType || 'success'
+                          }
                           onClose={() => setActiveDetailView(null)}
                         >
                           <div className='grid grid-cols-2 gap-6'>
                             <div className='space-y-4'>
-                              <h4 className='text-xs font-bold uppercase tracking-wider text-[var(--gray-10)]'>Supplier Details</h4>
-                              <div className='rounded-xl border border-[var(--gray-3)] bg-[var(--gray-2)] p-4 space-y-3 text-xs'>
+                              <h4 className='text-xs font-bold tracking-wider text-[var(--gray-10)] uppercase'>
+                                Supplier Details
+                              </h4>
+                              <div className='space-y-3 rounded-xl border border-[var(--gray-3)] bg-[var(--gray-2)] p-4 text-xs'>
                                 <div className='flex justify-between border-b border-[var(--gray-3)] pb-2'>
-                                  <span className='font-semibold text-[var(--gray-11)]'>Supplier Code</span>
+                                  <span className='font-semibold text-[var(--gray-11)]'>
+                                    Supplier Code
+                                  </span>
                                   <span className='font-bold text-[var(--gray-13)]'>
-                                    {formModel?.['Supplier ID'] || formModel?.['SupplierCode'] || formModel?.['Supplier Code'] || formModel?.['supplier_id'] || formModel?.['Vendor ID'] || formModel?.['vendor_id'] || 'Not Available'}
+                                    {formModel?.['Supplier ID'] ||
+                                      formModel?.['SupplierCode'] ||
+                                      formModel?.['Supplier Code'] ||
+                                      formModel?.['supplier_id'] ||
+                                      formModel?.['Vendor ID'] ||
+                                      formModel?.['vendor_id'] ||
+                                      'Not Available'}
                                   </span>
                                 </div>
                                 <div className='flex justify-between border-b border-[var(--gray-3)] pb-2'>
-                                  <span className='font-semibold text-[var(--gray-11)]'>Verification Result</span>
-                                  <span className='font-bold text-[var(--gray-13)]'>{supplierCheckState.data?.value || 'Verified'}</span>
+                                  <span className='font-semibold text-[var(--gray-11)]'>
+                                    Verification Result
+                                  </span>
+                                  <span className='font-bold text-[var(--gray-13)]'>
+                                    {supplierCheckState.data?.value ||
+                                      'Verified'}
+                                  </span>
                                 </div>
-                                {agentData?.supplier_validation?.mismatch && agentData.supplier_validation.mismatch.length > 0 && (
-                                  <div className='flex flex-col gap-1 border-t border-[var(--gray-3)] pt-2 mt-1'>
-                                    <span className='font-semibold text-[var(--red-9)]'>Discrepancy Details</span>
-                                    <ul className='list-disc pl-4 text-[11px] text-[var(--gray-12)] space-y-1'>
-                                      {agentData.supplier_validation.mismatch.map((m: any, idx: number) => (
-                                        <li key={idx}>{String(m)}</li>
-                                      ))}
-                                    </ul>
-                                  </div>
-                                )}
+                                {agentData?.supplier_validation?.mismatch &&
+                                  agentData.supplier_validation.mismatch
+                                    .length > 0 && (
+                                    <div className='mt-1 flex flex-col gap-1 border-t border-[var(--gray-3)] pt-2'>
+                                      <span className='font-semibold text-[var(--red-9)]'>
+                                        Discrepancy Details
+                                      </span>
+                                      <ul className='list-disc space-y-1 pl-4 text-[11px] text-[var(--gray-12)]'>
+                                        {agentData.supplier_validation.mismatch.map(
+                                          (m: any, idx: number) => (
+                                            <li key={idx}>{String(m)}</li>
+                                          ),
+                                        )}
+                                      </ul>
+                                    </div>
+                                  )}
                               </div>
                             </div>
                             <div className='space-y-4'>
-                              <h4 className='text-xs font-bold uppercase tracking-wider text-[var(--gray-10)]'>Registry Verification Log</h4>
-                              <div className='rounded-xl border border-[var(--gray-3)] bg-[var(--gray-2)] p-4 space-y-3 text-xs leading-relaxed'>
+                              <h4 className='text-xs font-bold tracking-wider text-[var(--gray-10)] uppercase'>
+                                Registry Verification Log
+                              </h4>
+                              <div className='space-y-3 rounded-xl border border-[var(--gray-3)] bg-[var(--gray-2)] p-4 text-xs leading-relaxed'>
                                 <p className='text-[var(--gray-12)]'>
-                                  Verification checks supplier address registry, bank details, and business license status against corporate supplier directories and compliance watchlists.
+                                  Verification checks supplier address registry,
+                                  bank details, and business license status
+                                  against corporate supplier directories and
+                                  compliance watchlists.
                                 </p>
                               </div>
                             </div>
@@ -2611,33 +2751,56 @@ const Overview = (props: any) => {
                       )}
                       {activeDetailView === 'gl_matching' && (
                         <DetailReportView
-                          title="GL Account Matching Report"
                           icon={ListFilter}
-                          status={glValidationDisplay?.status || 'Not Available'}
-                          statusType={glValidationDisplay?.statusType || 'default'}
+                          title='GL Account Matching Report'
+                          status={
+                            glValidationDisplay?.status || 'Not Available'
+                          }
+                          statusType={
+                            glValidationDisplay?.statusType || 'default'
+                          }
                           onClose={() => setActiveDetailView(null)}
                         >
                           <div className='grid grid-cols-2 gap-6'>
                             <div className='space-y-4'>
-                              <h4 className='text-xs font-bold uppercase tracking-wider text-[var(--gray-10)]'>Suggested Allocation</h4>
-                              <div className='rounded-xl border border-[var(--gray-3)] bg-[var(--gray-2)] p-4 space-y-3 text-xs'>
+                              <h4 className='text-xs font-bold tracking-wider text-[var(--gray-10)] uppercase'>
+                                Suggested Allocation
+                              </h4>
+                              <div className='space-y-3 rounded-xl border border-[var(--gray-3)] bg-[var(--gray-2)] p-4 text-xs'>
                                 <div className='flex justify-between border-b border-[var(--gray-3)] pb-2'>
-                                  <span className='font-semibold text-[var(--gray-11)]'>Matched GL Account</span>
-                                  <span className='font-bold text-[var(--gray-13)]'>{glValidationDisplay?.account || 'No account matched'}</span>
+                                  <span className='font-semibold text-[var(--gray-11)]'>
+                                    Matched GL Account
+                                  </span>
+                                  <span className='font-bold text-[var(--gray-13)]'>
+                                    {glValidationDisplay?.account ||
+                                      'No account matched'}
+                                  </span>
                                 </div>
-                                {(agentData?.gl_validation?.reason || agentData?.gl_matching?.reason) && (
-                                  <div className='flex flex-col gap-1 border-t border-[var(--gray-3)] pt-2 mt-1'>
-                                    <span className='font-semibold text-[var(--gray-11)]'>Matching Rationale</span>
-                                    <span className='font-medium text-[var(--gray-12)] leading-normal'>{agentData?.gl_validation?.reason || agentData?.gl_matching?.reason}</span>
+                                {(agentData?.gl_validation?.reason ||
+                                  agentData?.gl_matching?.reason) && (
+                                  <div className='mt-1 flex flex-col gap-1 border-t border-[var(--gray-3)] pt-2'>
+                                    <span className='font-semibold text-[var(--gray-11)]'>
+                                      Matching Rationale
+                                    </span>
+                                    <span className='leading-normal font-medium text-[var(--gray-12)]'>
+                                      {agentData?.gl_validation?.reason ||
+                                        agentData?.gl_matching?.reason}
+                                    </span>
                                   </div>
                                 )}
                               </div>
                             </div>
                             <div className='space-y-4'>
-                              <h4 className='text-xs font-bold uppercase tracking-wider text-[var(--gray-10)]'>Allocation Rules</h4>
-                              <div className='rounded-xl border border-[var(--gray-3)] bg-[var(--gray-2)] p-4 space-y-3 text-xs leading-relaxed'>
+                              <h4 className='text-xs font-bold tracking-wider text-[var(--gray-10)] uppercase'>
+                                Allocation Rules
+                              </h4>
+                              <div className='space-y-3 rounded-xl border border-[var(--gray-3)] bg-[var(--gray-2)] p-4 text-xs leading-relaxed'>
                                 <p className='text-[var(--gray-11)]'>
-                                  GL matching translates plain-text line-item descriptions into numerical corporate chart-of-account segments based on historical vendor spend patterns and machine learning classifications.
+                                  GL matching translates plain-text line-item
+                                  descriptions into numerical corporate
+                                  chart-of-account segments based on historical
+                                  vendor spend patterns and machine learning
+                                  classifications.
                                 </p>
                               </div>
                             </div>
@@ -2646,35 +2809,59 @@ const Overview = (props: any) => {
                       )}
                       {activeDetailView === 'payment_terms' && (
                         <DetailReportView
-                          title="Payment Terms Analysis"
                           icon={Calendar}
                           status={paymentTermsDisplay.calculationText}
                           statusType={paymentTermsDisplay.statusType}
+                          title='Payment Terms Analysis'
                           onClose={() => setActiveDetailView(null)}
                         >
                           <div className='grid grid-cols-2 gap-6'>
                             <div className='space-y-4'>
-                              <h4 className='text-xs font-bold uppercase tracking-wider text-[var(--gray-10)]'>Payment Deadlines</h4>
-                              <div className='rounded-xl border border-[var(--gray-3)] bg-[var(--gray-2)] p-4 space-y-3 text-xs'>
+                              <h4 className='text-xs font-bold tracking-wider text-[var(--gray-10)] uppercase'>
+                                Payment Deadlines
+                              </h4>
+                              <div className='space-y-3 rounded-xl border border-[var(--gray-3)] bg-[var(--gray-2)] p-4 text-xs'>
                                 <div className='flex justify-between border-b border-[var(--gray-3)] pb-2'>
-                                  <span className='font-semibold text-[var(--gray-11)]'>Billing Terms</span>
-                                  <span className='font-bold text-[var(--gray-13)]'>{paymentTermsDisplay.termsDisplay}</span>
+                                  <span className='font-semibold text-[var(--gray-11)]'>
+                                    Billing Terms
+                                  </span>
+                                  <span className='font-bold text-[var(--gray-13)]'>
+                                    {paymentTermsDisplay.termsDisplay}
+                                  </span>
                                 </div>
                                 <div className='flex justify-between border-b border-[var(--gray-3)] pb-2'>
-                                  <span className='font-semibold text-[var(--gray-11)]'>Due Date</span>
-                                  <span className='font-bold text-[var(--gray-13)]'>{extractDueDate(selectedItem, agentData, formModel)}</span>
+                                  <span className='font-semibold text-[var(--gray-11)]'>
+                                    Due Date
+                                  </span>
+                                  <span className='font-bold text-[var(--gray-13)]'>
+                                    {extractDueDate(
+                                      selectedItem,
+                                      agentData,
+                                      formModel,
+                                    )}
+                                  </span>
                                 </div>
                                 <div className='flex justify-between'>
-                                  <span className='font-semibold text-[var(--gray-11)]'>Time Remaining</span>
-                                  <span className='font-bold text-[var(--gray-13)]'>{paymentTermsDisplay.daysText}</span>
+                                  <span className='font-semibold text-[var(--gray-11)]'>
+                                    Time Remaining
+                                  </span>
+                                  <span className='font-bold text-[var(--gray-13)]'>
+                                    {paymentTermsDisplay.daysText}
+                                  </span>
                                 </div>
                               </div>
                             </div>
                             <div className='space-y-4'>
-                              <h4 className='text-xs font-bold uppercase tracking-wider text-[var(--gray-10)]'>Deadlines & Penalty Insights</h4>
-                              <div className='rounded-xl border border-[var(--gray-3)] bg-[var(--gray-2)] p-4 space-y-3 text-xs leading-relaxed'>
+                              <h4 className='text-xs font-bold tracking-wider text-[var(--gray-10)] uppercase'>
+                                Deadlines & Penalty Insights
+                              </h4>
+                              <div className='space-y-3 rounded-xl border border-[var(--gray-3)] bg-[var(--gray-2)] p-4 text-xs leading-relaxed'>
                                 <p className='text-[var(--gray-12)]'>
-                                  Payments terms are verified by cross-referencing values extracted from invoice headers against agreed vendor contract parameters. Late fees may apply if settlement exceeds due date boundaries.
+                                  Payments terms are verified by
+                                  cross-referencing values extracted from
+                                  invoice headers against agreed vendor contract
+                                  parameters. Late fees may apply if settlement
+                                  exceeds due date boundaries.
                                 </p>
                               </div>
                             </div>
@@ -2683,39 +2870,64 @@ const Overview = (props: any) => {
                       )}
                       {activeDetailView === 'matter_validation' && (
                         <DetailReportView
-                          title="Legal Matter Association Check"
                           icon={Briefcase}
                           status={matterValidationDisplay?.status || 'Unknown'}
-                          statusType={matterValidationDisplay?.statusType || 'default'}
+                          title='Legal Matter Association Check'
+                          statusType={
+                            matterValidationDisplay?.statusType || 'default'
+                          }
                           onClose={() => setActiveDetailView(null)}
                         >
                           <div className='grid grid-cols-2 gap-6'>
                             <div className='space-y-4'>
-                              <h4 className='text-xs font-bold uppercase tracking-wider text-[var(--gray-10)]'>Associated Entity</h4>
-                              <div className='rounded-xl border border-[var(--gray-3)] bg-[var(--gray-2)] p-4 space-y-3 text-xs'>
+                              <h4 className='text-xs font-bold tracking-wider text-[var(--gray-10)] uppercase'>
+                                Associated Entity
+                              </h4>
+                              <div className='space-y-3 rounded-xl border border-[var(--gray-3)] bg-[var(--gray-2)] p-4 text-xs'>
                                 <div className='flex justify-between border-b border-[var(--gray-3)] pb-2'>
-                                  <span className='font-semibold text-[var(--gray-11)]'>Matter Reference</span>
-                                  <span className='font-bold text-[var(--gray-13)]'>{matterValidationDisplay?.value}</span>
+                                  <span className='font-semibold text-[var(--gray-11)]'>
+                                    Matter Reference
+                                  </span>
+                                  <span className='font-bold text-[var(--gray-13)]'>
+                                    {matterValidationDisplay?.value}
+                                  </span>
                                 </div>
                                 {agentData?.matter_validation?.client_name && (
                                   <div className='flex justify-between border-b border-[var(--gray-3)] pb-2'>
-                                    <span className='font-semibold text-[var(--gray-11)]'>Client</span>
-                                    <span className='font-bold text-[var(--gray-13)]'>{agentData.matter_validation.client_name}</span>
+                                    <span className='font-semibold text-[var(--gray-11)]'>
+                                      Client
+                                    </span>
+                                    <span className='font-bold text-[var(--gray-13)]'>
+                                      {agentData.matter_validation.client_name}
+                                    </span>
                                   </div>
                                 )}
-                                {agentData?.matter_validation?.validation_details?.reason && (
-                                  <div className='flex flex-col gap-1 border-t border-[var(--gray-3)] pt-2 mt-1'>
-                                    <span className='font-semibold text-[var(--gray-11)]'>Compliance Note</span>
-                                    <span className='font-medium text-[var(--gray-12)] text-[11px] leading-normal'>{agentData.matter_validation.validation_details.reason}</span>
+                                {agentData?.matter_validation
+                                  ?.validation_details?.reason && (
+                                  <div className='mt-1 flex flex-col gap-1 border-t border-[var(--gray-3)] pt-2'>
+                                    <span className='font-semibold text-[var(--gray-11)]'>
+                                      Compliance Note
+                                    </span>
+                                    <span className='text-[11px] leading-normal font-medium text-[var(--gray-12)]'>
+                                      {
+                                        agentData.matter_validation
+                                          .validation_details.reason
+                                      }
+                                    </span>
                                   </div>
                                 )}
                               </div>
                             </div>
                             <div className='space-y-4'>
-                              <h4 className='text-xs font-bold uppercase tracking-wider text-[var(--gray-10)]'>Matter Validation Rules</h4>
-                              <div className='rounded-xl border border-[var(--gray-3)] bg-[var(--gray-2)] p-4 space-y-3 text-xs leading-relaxed'>
+                              <h4 className='text-xs font-bold tracking-wider text-[var(--gray-10)] uppercase'>
+                                Matter Validation Rules
+                              </h4>
+                              <div className='space-y-3 rounded-xl border border-[var(--gray-3)] bg-[var(--gray-2)] p-4 text-xs leading-relaxed'>
                                 <p className='text-[var(--gray-11)]'>
-                                  Corporate legal invoices are checked for compliance against corporate billing guidelines, valid client matter IDs, and active legal budgets.
+                                  Corporate legal invoices are checked for
+                                  compliance against corporate billing
+                                  guidelines, valid client matter IDs, and
+                                  active legal budgets.
                                 </p>
                               </div>
                             </div>
@@ -2723,13 +2935,13 @@ const Overview = (props: any) => {
                         </DetailReportView>
                       )}
                       {activeDetailView === 'back_order' && (
-                        <div className='flex flex-col flex-1 min-h-0 bg-surface animate-in fade-in slide-in-from-bottom-2 duration-300'>
+                        <div className='animate-in fade-in slide-in-from-bottom-2 flex min-h-0 flex-1 flex-col bg-surface duration-300'>
                           {/* Header */}
                           <div className='flex shrink-0 items-center justify-between border-b border-[var(--gray-3)] bg-[var(--gray-1)] px-6 py-3.5'>
                             <div className='flex items-center gap-3'>
                               <button
-                                onClick={() => setActiveDetailView(null)}
                                 className='group flex items-center gap-1 text-xs font-semibold text-[var(--gray-11)] transition-all hover:text-[var(--gray-13)] active:scale-95'
+                                onClick={() => setActiveDetailView(null)}
                               >
                                 <Icon
                                   className='h-4 w-4 transition-transform group-hover:-translate-x-0.5'
@@ -2737,10 +2949,13 @@ const Overview = (props: any) => {
                                 />
                                 <span>Back</span>
                               </button>
-                              <div className='h-4 w-[1px] bg-[var(--gray-3)] mx-1' />
+                              <div className='mx-1 h-4 w-[1px] bg-[var(--gray-3)]' />
                               <div className='flex items-center gap-2'>
-                                <div className='rounded-md p-1 bg-[var(--orange-1)] text-[var(--orange-9)] border border-[var(--orange-3)]'>
-                                  <Icon className='h-4 w-4' name='tabler:list-check' />
+                                <div className='rounded-md border border-[var(--orange-3)] bg-[var(--orange-1)] p-1 text-[var(--orange-9)]'>
+                                  <Icon
+                                    className='h-4 w-4'
+                                    name='tabler:list-check'
+                                  />
                                 </div>
                                 <h3 className='text-sm font-bold text-[var(--gray-13)]'>
                                   PO line items vs invoices
@@ -2753,9 +2968,11 @@ const Overview = (props: any) => {
                                 const currentRec =
                                   activeBackOrderTab === 'current'
                                     ? backOrder?.recommendation
-                                    : MOCK_PREVIOUS_BACKORDERS[activeBackOrderTab]
-                                      ?.recommendation
-                                const recMeta = getRecommendationMeta(currentRec)
+                                    : MOCK_PREVIOUS_BACKORDERS[
+                                        activeBackOrderTab
+                                      ]?.recommendation
+                                const recMeta =
+                                  getRecommendationMeta(currentRec)
                                 return (
                                   <span
                                     className={cn(
@@ -2812,10 +3029,13 @@ const Overview = (props: any) => {
                             const currentData =
                               activeBackOrderTab === 'current'
                                 ? backOrder
-                                : MOCK_PREVIOUS_BACKORDERS[activeBackOrderTab] || {}
+                                : MOCK_PREVIOUS_BACKORDERS[
+                                    activeBackOrderTab
+                                  ] || {}
                             const items = currentData?.missing_qty_by_item || []
 
-                            const currencySymbol = agentData?.po_row?.Currency || '$'
+                            const currencySymbol =
+                              agentData?.po_row?.Currency || '$'
                             const invoiceAmount = items.reduce(
                               (sum: number, r: any) =>
                                 sum + (r.invoice_qty || 0) * (r.price || 0),
@@ -2882,7 +3102,9 @@ const Overview = (props: any) => {
                               const currentData =
                                 activeBackOrderTab === 'current'
                                   ? backOrder
-                                  : MOCK_PREVIOUS_BACKORDERS[activeBackOrderTab] || {}
+                                  : MOCK_PREVIOUS_BACKORDERS[
+                                      activeBackOrderTab
+                                    ] || {}
 
                               return (
                                 <div className='animate-in fade-in slide-in-from-top-2 rounded-xl border border-[var(--orange-3)] bg-[var(--orange-1)]/30 p-4 shadow-xs duration-300'>
@@ -2913,14 +3135,19 @@ const Overview = (props: any) => {
                               const currentData =
                                 activeBackOrderTab === 'current'
                                   ? backOrder
-                                  : MOCK_PREVIOUS_BACKORDERS[activeBackOrderTab] || {}
+                                  : MOCK_PREVIOUS_BACKORDERS[
+                                      activeBackOrderTab
+                                    ] || {}
 
-                              const items = currentData?.missing_qty_by_item || []
-                              const currencySymbol = agentData?.po_row?.Currency || '$'
+                              const items =
+                                currentData?.missing_qty_by_item || []
+                              const currencySymbol =
+                                agentData?.po_row?.Currency || '$'
 
                               // Totals
                               const totalRemaining = items.reduce(
-                                (sum: number, r: any) => sum + (r.remaining || 0),
+                                (sum: number, r: any) =>
+                                  sum + (r.remaining || 0),
                                 0,
                               )
                               const totalInvoiceAmt = items.reduce(
@@ -2935,7 +3162,9 @@ const Overview = (props: any) => {
                                     <table className='w-full border-collapse text-left text-xs'>
                                       <thead className='border-b border-[var(--gray-3)] bg-[var(--gray-1)]'>
                                         <tr className='text-[10px] font-bold tracking-wider text-[var(--gray-9)] uppercase'>
-                                          <th className='px-4 py-3.5'>LINE ITEM</th>
+                                          <th className='px-4 py-3.5'>
+                                            LINE ITEM
+                                          </th>
                                           <th className='px-4 py-3.5 text-center'>
                                             PO QTY
                                           </th>
@@ -2953,7 +3182,8 @@ const Overview = (props: any) => {
                                       <tbody className='divide-y divide-[var(--gray-2)] bg-surface'>
                                         {items.map((row: any) => {
                                           const desc =
-                                            row.description?.trim() || 'Unmapped item'
+                                            row.description?.trim() ||
+                                            'Unmapped item'
                                           const invQty = row.invoice_qty ?? 0
                                           const poQty = row.po_qty ?? 1
                                           const price = row.price ?? 0
@@ -2961,12 +3191,15 @@ const Overview = (props: any) => {
                                           const remaining = row.remaining ?? 0
 
                                           // Dynamic percent calculation
-                                          const totalReceived = poQty - remaining
+                                          const totalReceived =
+                                            poQty - remaining
                                           const pct = Math.max(
                                             0,
                                             Math.min(
                                               100,
-                                              Math.round((totalReceived / poQty) * 100),
+                                              Math.round(
+                                                (totalReceived / poQty) * 100,
+                                              ),
                                             ),
                                           )
 
@@ -2990,7 +3223,8 @@ const Overview = (props: any) => {
                                                     {desc}
                                                   </div>
                                                   <div className='mt-0.5 text-[10px] font-medium text-[var(--gray-9)]'>
-                                                    PO Line: {row.po_line_id || '—'} •
+                                                    PO Line:{' '}
+                                                    {row.po_line_id || '—'} •
                                                     Price: {currencySymbol}
                                                     {price.toFixed(2)}
                                                   </div>
@@ -3041,7 +3275,10 @@ const Overview = (props: any) => {
                                           <td className='px-4 py-3 font-medium'>
                                             {items.length} line items
                                           </td>
-                                          <td className='px-4 py-3' colSpan={2} />
+                                          <td
+                                            className='px-4 py-3'
+                                            colSpan={2}
+                                          />
                                           <td className='px-4 py-3 text-center font-bold text-[var(--orange-10)]'>
                                             Total pending qty:{' '}
                                             <span className='underline decoration-[var(--orange-4)] decoration-2 underline-offset-4'>
@@ -3068,122 +3305,125 @@ const Overview = (props: any) => {
                       {activeTab === 'summary' && (
                         <div className='grid flex-1 grid-cols-2 gap-x-4 gap-y-2 overflow-y-auto p-4'>
                           {isCurrentlyProcessing &&
-                            (!formModel ||
-                              Object.keys(formModel).length === 0 ||
-                              !Object.values(formModel).some(
-                                hasMeaningfulScalarValue,
-                              ))
+                          (!formModel ||
+                            Object.keys(formModel).length === 0 ||
+                            !Object.values(formModel).some(
+                              hasMeaningfulScalarValue,
+                            ))
                             ? Array.from({ length: 8 }).map((_, idx) => {
-                              const labels = [
-                                'Supplier Name',
-                                'Invoice Number',
-                                'Invoice Date',
-                                'Invoice Amount',
-                                'PO Number',
-                                'Payment Terms',
-                                'Currency',
-                                'Tax Amount',
-                              ]
-                              const icons = [
-                                Store,
-                                ListFilter,
-                                HistoryIcon,
-                                Wallet,
-                                Paperclip,
-                                HistoryIcon,
-                                CreditCard,
-                                Wallet,
-                              ]
-                              const label = labels[idx]
-                              const IconComp = icons[idx]
-                              return (
-                                <div
-                                  className='flex w-full items-start gap-3 rounded-lg border border-transparent p-3 text-left'
-                                  key={label}
-                                >
-                                  <div className='mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--gray-2)] text-[var(--gray-11)]'>
-                                    <IconComp className='h-3.5 w-3.5' />
-                                  </div>
-                                  <div className='min-w-0 flex-1 space-y-1.5'>
-                                    <p className='text-[10px] leading-none font-semibold text-[var(--gray-11)]'>
-                                      {label}
-                                    </p>
-                                    <div className='h-4 w-28 animate-pulse rounded bg-[var(--gray-3)]' />
-                                  </div>
-                                </div>
-                              )
-                            })
-                            : Object.entries(formModel || {})
-                              .filter(([key, val]) => {
-                                if (typeof val === 'object' && val !== null) {
-                                  if ('Invoice Value' in val) {
-                                    return true
-                                  }
-                                  return false
-                                }
-                                if (typeof val === 'string') {
-                                  const trimmed = val.trim()
-                                  if (
-                                    trimmed.startsWith('[') &&
-                                    trimmed.endsWith(']')
-                                  )
-                                    return false
-                                  if (
-                                    trimmed.startsWith('{') &&
-                                    trimmed.endsWith('}')
-                                  )
-                                    return false
-                                }
-
-                                if (!allowedLabels || allowedLabels.size === 0) {
-                                  return hasMeaningfulScalarValue(val)
-                                }
-
+                                const labels = [
+                                  'Supplier Name',
+                                  'Invoice Number',
+                                  'Invoice Date',
+                                  'Invoice Amount',
+                                  'PO Number',
+                                  'Payment Terms',
+                                  'Currency',
+                                  'Tax Amount',
+                                ]
+                                const icons = [
+                                  Store,
+                                  ListFilter,
+                                  HistoryIcon,
+                                  Wallet,
+                                  Paperclip,
+                                  HistoryIcon,
+                                  CreditCard,
+                                  Wallet,
+                                ]
+                                const label = labels[idx]
+                                const IconComp = icons[idx]
                                 return (
-                                  allowedLabels.has(key) ||
-                                  hasMeaningfulScalarValue(val)
+                                  <div
+                                    className='flex w-full items-start gap-3 rounded-lg border border-transparent p-3 text-left'
+                                    key={label}
+                                  >
+                                    <div className='mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--gray-2)] text-[var(--gray-11)]'>
+                                      <IconComp className='h-3.5 w-3.5' />
+                                    </div>
+                                    <div className='min-w-0 flex-1 space-y-1.5'>
+                                      <p className='text-[10px] leading-none font-semibold text-[var(--gray-11)]'>
+                                        {label}
+                                      </p>
+                                      <div className='h-4 w-28 animate-pulse rounded bg-[var(--gray-3)]' />
+                                    </div>
+                                  </div>
                                 )
                               })
-                              .map(([key, val]) => {
-                                const rawVal =
-                                  val &&
+                            : Object.entries(formModel || {})
+                                .filter(([key, val]) => {
+                                  if (typeof val === 'object' && val !== null) {
+                                    if ('Invoice Value' in val) {
+                                      return true
+                                    }
+                                    return false
+                                  }
+                                  if (typeof val === 'string') {
+                                    const trimmed = val.trim()
+                                    if (
+                                      trimmed.startsWith('[') &&
+                                      trimmed.endsWith(']')
+                                    )
+                                      return false
+                                    if (
+                                      trimmed.startsWith('{') &&
+                                      trimmed.endsWith('}')
+                                    )
+                                      return false
+                                  }
+
+                                  if (
+                                    !allowedLabels ||
+                                    allowedLabels.size === 0
+                                  ) {
+                                    return hasMeaningfulScalarValue(val)
+                                  }
+
+                                  return (
+                                    allowedLabels.has(key) ||
+                                    hasMeaningfulScalarValue(val)
+                                  )
+                                })
+                                .map(([key, val]) => {
+                                  const rawVal =
+                                    val &&
                                     typeof val === 'object' &&
                                     'Invoice Value' in val
-                                    ? val['Invoice Value']
-                                    : val
+                                      ? val['Invoice Value']
+                                      : val
 
-                                const fieldType = getFieldType(key)
-                                const displayValue =
-                                  fieldType === 'date' &&
+                                  const fieldType = getFieldType(key)
+                                  const displayValue =
+                                    fieldType === 'date' &&
                                     (rawVal === null ||
                                       rawVal === undefined ||
                                       rawVal === '' ||
                                       rawVal === '-')
-                                    ? null
-                                    : rawVal || '-'
+                                      ? null
+                                      : rawVal || '-'
 
-                                return (
-                                  <FormCard
-                                    icon={getFieldIcon(key)}
-                                    key={key}
-                                    label={key}
-                                    options={getOptions(key)}
-                                    score={getFieldScore(key)}
-                                    type={fieldType}
-                                    value={displayValue}
-                                    highlight={
-                                      key.toLowerCase().includes('total') ||
-                                      key.toLowerCase().includes('due')
-                                    }
-                                    onChange={(newVal: string) =>
-                                      handleFieldChange(key, newVal)
-                                    }
-                                    onFocus={(val: any) =>
-                                      handleFieldFocus(val, key)
-                                    }
-                                  />
-                                )
-                              })}
+                                  return (
+                                    <FormCard
+                                      icon={getFieldIcon(key)}
+                                      key={key}
+                                      label={key}
+                                      options={getOptions(key)}
+                                      score={getFieldScore(key)}
+                                      type={fieldType}
+                                      value={displayValue}
+                                      highlight={
+                                        key.toLowerCase().includes('total') ||
+                                        key.toLowerCase().includes('due')
+                                      }
+                                      onChange={(newVal: string) =>
+                                        handleFieldChange(key, newVal)
+                                      }
+                                      onFocus={(val: any) =>
+                                        handleFieldFocus(val, key)
+                                      }
+                                    />
+                                  )
+                                })}
                         </div>
                       )}
                       {activeTab === 'line_items' && (
@@ -3198,13 +3438,25 @@ const Overview = (props: any) => {
                                         key={colKey}
                                         className={cn(
                                           'px-3 py-2 text-[11px] font-semibold text-[var(--gray-11)]',
-                                          (colKey.toLowerCase().includes('qty') ||
-                                            colKey.toLowerCase().includes('quantity') ||
-                                            colKey.toLowerCase().includes('rate') ||
-                                            colKey.toLowerCase().includes('price') ||
-                                            colKey.toLowerCase().includes('amount') ||
-                                            colKey.toLowerCase().includes('total')) &&
-                                          'text-right',
+                                          (colKey
+                                            .toLowerCase()
+                                            .includes('qty') ||
+                                            colKey
+                                              .toLowerCase()
+                                              .includes('quantity') ||
+                                            colKey
+                                              .toLowerCase()
+                                              .includes('rate') ||
+                                            colKey
+                                              .toLowerCase()
+                                              .includes('price') ||
+                                            colKey
+                                              .toLowerCase()
+                                              .includes('amount') ||
+                                            colKey
+                                              .toLowerCase()
+                                              .includes('total')) &&
+                                            'text-right',
                                         )}
                                       >
                                         {formatHeaderLabel(colKey)}
@@ -3244,365 +3496,435 @@ const Overview = (props: any) => {
                               <tbody className='divide-y divide-[var(--gray-2)]'>
                                 {isCurrentlyProcessing && lineItems.length === 0
                                   ? skeletonRows.map((rowKey) => (
-                                    <tr
-                                      className='group transition-colors'
-                                      key={rowKey}
-                                    >
-                                      {isDynamicTable ? (
-                                        dynamicColumns.map((colKey, index) => (
-                                          <td
-                                            key={colKey}
-                                            className={cn(
-                                              'px-3 py-3',
-                                              (colKey.toLowerCase().includes('qty') ||
-                                                colKey.toLowerCase().includes('quantity') ||
-                                                colKey.toLowerCase().includes('rate') ||
-                                                colKey.toLowerCase().includes('price') ||
-                                                colKey.toLowerCase().includes('amount') ||
-                                                colKey.toLowerCase().includes('total')) &&
-                                              'text-right',
-                                            )}
-                                          >
-                                            <div
-                                              className={cn(
-                                                'h-4 animate-pulse rounded bg-[var(--gray-3)]',
-                                                index === 0 ? 'w-5/6' : 'w-12 ml-auto',
-                                              )}
-                                            />
-                                          </td>
-                                        ))
-                                      ) : (
-                                        <>
-                                          <td className='px-3 py-3'>
-                                            <div className='h-4 w-5/6 animate-pulse rounded bg-[var(--gray-3)]' />
-                                          </td>
-                                          <td className='w-[100px] px-3 py-3'>
-                                            <div className='ml-auto h-4 w-8 animate-pulse rounded bg-[var(--gray-3)]' />
-                                          </td>
-                                          <td className='w-[140px] px-3 py-3'>
-                                            <div className='ml-auto h-4 w-12 animate-pulse rounded bg-[var(--gray-3)]' />
-                                          </td>
-                                          <td className='w-[160px] px-3 py-3'>
-                                            <div className='ml-auto h-4 w-16 animate-pulse rounded bg-[var(--gray-3)]' />
-                                          </td>
-                                        </>
-                                      )}
-                                      <td className='w-[100px] px-3 py-3'>
-                                        <div className='ml-auto h-4 w-12 animate-pulse rounded bg-[var(--gray-3)]' />
-                                      </td>
-                                      <td className='w-[44px]' />
-                                    </tr>
-                                  ))
-                                  : lineItems.map((item: any, index: number) => {
-                                    const matchData =
-                                      agentData?.debug?.[
-                                      'Side-by-side Line Item matching'
-                                      ]?.[index]
-                                    const lineScore =
-                                      matchData?.['Line Score'] ??
-                                      item['Line Score'] ??
-                                      item?.score
-                                    const isMatch =
-                                      (lineScore !== undefined &&
-                                        lineScore !== null
-                                        ? Number(lineScore) >= 90
-                                        : false) || item?.status === 'MATCH'
-
-                                    return (
                                       <tr
-                                        key={item._id}
-                                        className={cn(
-                                          'group transition-colors',
-                                          isMatch
-                                            ? 'hover:bg-[var(--gray-1)]'
-                                            : 'bg-[var(--red-1)]/30 hover:bg-[var(--red-1)]/50',
-                                        )}
+                                        className='group transition-colors'
+                                        key={rowKey}
                                       >
                                         {isDynamicTable ? (
-                                          dynamicColumns.map((colKey) => {
-                                            const cellVal = getRawVal(item, colKey) ?? ''
-                                            const isNumeric =
-                                              colKey.toLowerCase().includes('qty') ||
-                                              colKey.toLowerCase().includes('quantity') ||
-                                              colKey.toLowerCase().includes('rate') ||
-                                              colKey.toLowerCase().includes('price') ||
-                                              colKey.toLowerCase().includes('amount') ||
-                                              colKey.toLowerCase().includes('total')
-
-                                            return (
+                                          dynamicColumns.map(
+                                            (colKey, index) => (
                                               <td
                                                 key={colKey}
                                                 className={cn(
-                                                  'px-2 py-0.5 font-semibold text-[var(--gray-13)]',
-                                                  isNumeric && 'text-right'
+                                                  'px-3 py-3',
+                                                  (colKey
+                                                    .toLowerCase()
+                                                    .includes('qty') ||
+                                                    colKey
+                                                      .toLowerCase()
+                                                      .includes('quantity') ||
+                                                    colKey
+                                                      .toLowerCase()
+                                                      .includes('rate') ||
+                                                    colKey
+                                                      .toLowerCase()
+                                                      .includes('price') ||
+                                                    colKey
+                                                      .toLowerCase()
+                                                      .includes('amount') ||
+                                                    colKey
+                                                      .toLowerCase()
+                                                      .includes('total')) &&
+                                                    'text-right',
                                                 )}
                                               >
-                                                <div className='group/cell relative'>
-                                                  <input
+                                                <div
+                                                  className={cn(
+                                                    'h-4 animate-pulse rounded bg-[var(--gray-3)]',
+                                                    index === 0
+                                                      ? 'w-5/6'
+                                                      : 'ml-auto w-12',
+                                                  )}
+                                                />
+                                              </td>
+                                            ),
+                                          )
+                                        ) : (
+                                          <>
+                                            <td className='px-3 py-3'>
+                                              <div className='h-4 w-5/6 animate-pulse rounded bg-[var(--gray-3)]' />
+                                            </td>
+                                            <td className='w-[100px] px-3 py-3'>
+                                              <div className='ml-auto h-4 w-8 animate-pulse rounded bg-[var(--gray-3)]' />
+                                            </td>
+                                            <td className='w-[140px] px-3 py-3'>
+                                              <div className='ml-auto h-4 w-12 animate-pulse rounded bg-[var(--gray-3)]' />
+                                            </td>
+                                            <td className='w-[160px] px-3 py-3'>
+                                              <div className='ml-auto h-4 w-16 animate-pulse rounded bg-[var(--gray-3)]' />
+                                            </td>
+                                          </>
+                                        )}
+                                        <td className='w-[100px] px-3 py-3'>
+                                          <div className='ml-auto h-4 w-12 animate-pulse rounded bg-[var(--gray-3)]' />
+                                        </td>
+                                        <td className='w-[44px]' />
+                                      </tr>
+                                    ))
+                                  : lineItems.map(
+                                      (item: any, index: number) => {
+                                        const matchData =
+                                          agentData?.debug?.[
+                                            'Side-by-side Line Item matching'
+                                          ]?.[index]
+                                        const lineScore =
+                                          matchData?.['Line Score'] ??
+                                          item['Line Score'] ??
+                                          item?.score
+                                        const isMatch =
+                                          (lineScore !== undefined &&
+                                          lineScore !== null
+                                            ? Number(lineScore) >= 90
+                                            : false) || item?.status === 'MATCH'
+
+                                        return (
+                                          <tr
+                                            key={item._id}
+                                            className={cn(
+                                              'group transition-colors',
+                                              isMatch
+                                                ? 'hover:bg-[var(--gray-1)]'
+                                                : 'bg-[var(--red-1)]/30 hover:bg-[var(--red-1)]/50',
+                                            )}
+                                          >
+                                            {isDynamicTable ? (
+                                              dynamicColumns.map((colKey) => {
+                                                const cellVal =
+                                                  getRawVal(item, colKey) ?? ''
+                                                const isNumeric =
+                                                  colKey
+                                                    .toLowerCase()
+                                                    .includes('qty') ||
+                                                  colKey
+                                                    .toLowerCase()
+                                                    .includes('quantity') ||
+                                                  colKey
+                                                    .toLowerCase()
+                                                    .includes('rate') ||
+                                                  colKey
+                                                    .toLowerCase()
+                                                    .includes('price') ||
+                                                  colKey
+                                                    .toLowerCase()
+                                                    .includes('amount') ||
+                                                  colKey
+                                                    .toLowerCase()
+                                                    .includes('total')
+
+                                                return (
+                                                  <td
+                                                    key={colKey}
                                                     className={cn(
-                                                      'w-full rounded border-none bg-transparent px-1.5 py-1 text-xs font-semibold transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none',
-                                                      isNumeric ? 'text-right text-[var(--gray-11)]' : 'text-[var(--gray-13)]'
+                                                      'px-2 py-0.5 font-semibold text-[var(--gray-13)]',
+                                                      isNumeric && 'text-right',
                                                     )}
-                                                    title={String(cellVal)}
-                                                    value={cellVal}
-                                                    onBlur={(e) => {
-                                                      if (
-                                                        colKey.toLowerCase().includes('price') ||
-                                                        colKey.toLowerCase().includes('rate') ||
-                                                        colKey.toLowerCase().includes('amount') ||
-                                                        colKey.toLowerCase().includes('total')
-                                                      ) {
-                                                        const num = Number.parseFloat(
-                                                          e.target.value.replace(
-                                                            /[^0-9.-]+/g,
-                                                            '',
-                                                          ),
-                                                        )
-                                                        if (!Number.isNaN(num)) {
+                                                  >
+                                                    <div className='group/cell relative'>
+                                                      <input
+                                                        title={String(cellVal)}
+                                                        value={cellVal}
+                                                        className={cn(
+                                                          'w-full rounded border-none bg-transparent px-1.5 py-1 text-xs font-semibold transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none',
+                                                          isNumeric
+                                                            ? 'text-right text-[var(--gray-11)]'
+                                                            : 'text-[var(--gray-13)]',
+                                                        )}
+                                                        onBlur={(e) => {
+                                                          if (
+                                                            colKey
+                                                              .toLowerCase()
+                                                              .includes(
+                                                                'price',
+                                                              ) ||
+                                                            colKey
+                                                              .toLowerCase()
+                                                              .includes(
+                                                                'rate',
+                                                              ) ||
+                                                            colKey
+                                                              .toLowerCase()
+                                                              .includes(
+                                                                'amount',
+                                                              ) ||
+                                                            colKey
+                                                              .toLowerCase()
+                                                              .includes('total')
+                                                          ) {
+                                                            const num =
+                                                              Number.parseFloat(
+                                                                e.target.value.replace(
+                                                                  /[^0-9.-]+/g,
+                                                                  '',
+                                                                ),
+                                                              )
+                                                            if (
+                                                              !Number.isNaN(num)
+                                                            ) {
+                                                              handleLineItemChange(
+                                                                index,
+                                                                colKey,
+                                                                num.toFixed(2),
+                                                              )
+                                                              return
+                                                            }
+                                                          }
                                                           handleLineItemChange(
                                                             index,
                                                             colKey,
-                                                            num.toFixed(2),
+                                                            e.target.value,
                                                           )
-                                                          return
+                                                        }}
+                                                        onChange={(e) =>
+                                                          handleLineItemChange(
+                                                            index,
+                                                            colKey,
+                                                            e.target.value,
+                                                          )
                                                         }
-                                                      }
-                                                      handleLineItemChange(
-                                                        index,
-                                                        colKey,
-                                                        e.target.value,
-                                                      )
-                                                    }}
+                                                        onFocus={() =>
+                                                          handleFieldFocus?.(
+                                                            cellVal,
+                                                            colKey,
+                                                          )
+                                                        }
+                                                      />
+                                                      {/* Hover tooltip for long values */}
+                                                      {String(cellVal).length >
+                                                        20 && (
+                                                        <div className='animate-in fade-in pointer-events-none absolute bottom-full left-0 z-50 mb-1 hidden max-w-[280px] rounded-lg border border-[var(--gray-3)] bg-surface px-3 py-2 text-xs font-medium break-words whitespace-normal text-[var(--gray-13)] shadow-xl duration-150 group-hover/cell:block'>
+                                                          {String(cellVal)}
+                                                        </div>
+                                                      )}
+                                                    </div>
+                                                  </td>
+                                                )
+                                              })
+                                            ) : (
+                                              <>
+                                                {/* Description Cell */}
+                                                <td className='px-2 py-0.5 font-semibold text-[var(--gray-13)]'>
+                                                  <input
+                                                    className='w-full rounded border-none bg-transparent px-1.5 py-1 text-xs font-semibold text-[var(--gray-13)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
+                                                    value={
+                                                      item.Description?.[
+                                                        'Invoice Value'
+                                                      ] ??
+                                                      item.description ??
+                                                      item.item_no ??
+                                                      item.itemNo ??
+                                                      ''
+                                                    }
                                                     onChange={(e) =>
                                                       handleLineItemChange(
                                                         index,
-                                                        colKey,
+                                                        'description',
                                                         e.target.value,
                                                       )
                                                     }
                                                     onFocus={() =>
                                                       handleFieldFocus?.(
-                                                        cellVal,
-                                                        colKey,
+                                                        item.Description?.[
+                                                          'Invoice Value'
+                                                        ] ??
+                                                          item.description ??
+                                                          item.item_no ??
+                                                          item.itemNo ??
+                                                          '',
+                                                        'description',
                                                       )
                                                     }
                                                   />
-                                                  {/* Hover tooltip for long values */}
-                                                  {String(cellVal).length > 20 && (
-                                                    <div className='pointer-events-none absolute bottom-full left-0 z-50 mb-1 hidden max-w-[280px] rounded-lg border border-[var(--gray-3)] bg-surface px-3 py-2 text-xs font-medium text-[var(--gray-13)] shadow-xl break-words whitespace-normal group-hover/cell:block animate-in fade-in duration-150'>
-                                                      {String(cellVal)}
-                                                    </div>
-                                                  )}
-                                                </div>
-                                              </td>
-                                            )
-                                          })
-                                        ) : (
-                                          <>
-                                            {/* Description Cell */}
-                                            <td className='px-2 py-0.5 font-semibold text-[var(--gray-13)]'>
-                                              <input
-                                                className='w-full rounded border-none bg-transparent px-1.5 py-1 text-xs font-semibold text-[var(--gray-13)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
-                                                value={
-                                                  item.Description?.['Invoice Value'] ??
-                                                  item.description ??
-                                                  item.item_no ??
-                                                  item.itemNo ??
-                                                  ''
-                                                }
-                                                onChange={(e) =>
-                                                  handleLineItemChange(
-                                                    index,
-                                                    'description',
-                                                    e.target.value,
+                                                </td>
+
+                                                {/* Quantity Cell */}
+                                                <td className='w-[100px] px-2 py-0.5 text-right font-semibold text-[var(--gray-11)]'>
+                                                  <input
+                                                    className='w-full rounded border-none bg-transparent px-1.5 py-1 text-right text-xs font-semibold text-[var(--gray-11)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
+                                                    value={
+                                                      item.Quantity?.[
+                                                        'Invoice Value'
+                                                      ] ??
+                                                      item.quantity ??
+                                                      ''
+                                                    }
+                                                    onChange={(e) =>
+                                                      handleLineItemChange(
+                                                        index,
+                                                        'quantity',
+                                                        e.target.value,
+                                                      )
+                                                    }
+                                                    onFocus={() =>
+                                                      handleFieldFocus?.(
+                                                        item.Quantity?.[
+                                                          'Invoice Value'
+                                                        ] ??
+                                                          item.quantity ??
+                                                          '',
+                                                        'qty',
+                                                      )
+                                                    }
+                                                  />
+                                                </td>
+
+                                                {/* Rate/Price Cell */}
+                                                <td className='w-[140px] px-2 py-0.5 text-right font-semibold text-[var(--gray-11)]'>
+                                                  <input
+                                                    className='w-full rounded border-none bg-transparent px-1.5 py-1 text-right text-xs font-semibold text-[var(--gray-11)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
+                                                    value={
+                                                      item.Price?.[
+                                                        'Invoice Value'
+                                                      ] ??
+                                                      item.rate ??
+                                                      item.unit_price ??
+                                                      item.price ??
+                                                      ''
+                                                    }
+                                                    onBlur={(e) => {
+                                                      const num =
+                                                        Number.parseFloat(
+                                                          e.target.value.replace(
+                                                            /[^0-9.-]+/g,
+                                                            '',
+                                                          ),
+                                                        )
+                                                      if (!Number.isNaN(num)) {
+                                                        handleLineItemChange(
+                                                          index,
+                                                          'price',
+                                                          num.toFixed(2),
+                                                        )
+                                                      }
+                                                    }}
+                                                    onChange={(e) =>
+                                                      handleLineItemChange(
+                                                        index,
+                                                        'price',
+                                                        e.target.value,
+                                                      )
+                                                    }
+                                                    onFocus={() =>
+                                                      handleFieldFocus?.(
+                                                        item.Price?.[
+                                                          'Invoice Value'
+                                                        ] ??
+                                                          item.rate ??
+                                                          item.unit_price ??
+                                                          item.price ??
+                                                          '',
+                                                        'price',
+                                                      )
+                                                    }
+                                                  />
+                                                </td>
+
+                                                {/* Total Amount Cell */}
+                                                <td className='w-[160px] px-2 py-0.5 text-right font-semibold text-[var(--gray-13)]'>
+                                                  <input
+                                                    className='w-full rounded border-none bg-transparent px-1.5 py-1 text-right text-xs font-semibold text-[var(--gray-13)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
+                                                    value={
+                                                      item.Amount?.[
+                                                        'Invoice Value'
+                                                      ] ??
+                                                      item.total ??
+                                                      item.amount ??
+                                                      item.line_amount ??
+                                                      item.lineAmount ??
+                                                      ''
+                                                    }
+                                                    onBlur={(e) => {
+                                                      const num =
+                                                        Number.parseFloat(
+                                                          e.target.value.replace(
+                                                            /[^0-9.-]+/g,
+                                                            '',
+                                                          ),
+                                                        )
+                                                      if (!Number.isNaN(num)) {
+                                                        handleLineItemChange(
+                                                          index,
+                                                          'amount',
+                                                          num.toFixed(2),
+                                                        )
+                                                      }
+                                                    }}
+                                                    onChange={(e) =>
+                                                      handleLineItemChange(
+                                                        index,
+                                                        'amount',
+                                                        e.target.value,
+                                                      )
+                                                    }
+                                                    onFocus={() =>
+                                                      handleFieldFocus?.(
+                                                        item.Amount?.[
+                                                          'Invoice Value'
+                                                        ] ??
+                                                          item.total ??
+                                                          item.amount ??
+                                                          item.line_amount ??
+                                                          item.lineAmount ??
+                                                          '',
+                                                        'line_amount',
+                                                      )
+                                                    }
+                                                  />
+                                                </td>
+                                              </>
+                                            )}
+
+                                            {/* Match Score Cell */}
+                                            <td className='w-[100px] px-3 py-2 text-right font-semibold'>
+                                              {(() => {
+                                                if (
+                                                  lineScore === undefined ||
+                                                  lineScore === null
+                                                )
+                                                  return (
+                                                    <span className='text-[11px] text-gray-9'>
+                                                      -
+                                                    </span>
                                                   )
-                                                }
-                                                onFocus={() =>
-                                                  handleFieldFocus?.(
-                                                    item.Description?.['Invoice Value'] ??
-                                                    item.description ??
-                                                    item.item_no ??
-                                                    item.itemNo ??
-                                                    '',
-                                                    'description',
-                                                  )
-                                                }
-                                              />
+                                                const scoreNum =
+                                                  Number(lineScore)
+                                                return (
+                                                  <span
+                                                    className={cn(
+                                                      'text-xs font-bold',
+                                                      {
+                                                        'text-[var(--green-9)]':
+                                                          scoreNum >= 90,
+                                                        'text-[var(--orange-9)]':
+                                                          scoreNum >= 70 &&
+                                                          scoreNum < 90,
+                                                        'text-[var(--red-9)]':
+                                                          scoreNum < 70,
+                                                      },
+                                                    )}
+                                                  >
+                                                    {scoreNum.toFixed(0)}%
+                                                  </span>
+                                                )
+                                              })()}
                                             </td>
 
-                                            {/* Quantity Cell */}
-                                            <td className='w-[100px] px-2 py-0.5 text-right font-semibold text-[var(--gray-11)]'>
-                                              <input
-                                                className='w-full rounded border-none bg-transparent px-1.5 py-1 text-right text-xs font-semibold text-[var(--gray-11)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
-                                                value={
-                                                  item.Quantity?.['Invoice Value'] ??
-                                                  item.quantity ??
-                                                  ''
+                                            {/* Action Cell */}
+                                            <td className='w-[44px] px-2 py-0.5 text-center'>
+                                              <button
+                                                className='rounded p-1 text-[var(--red-9)] transition-all hover:bg-[var(--red-2)] hover:text-[var(--red-11)] active:scale-95'
+                                                title='Remove Item'
+                                                type='button'
+                                                onClick={() =>
+                                                  handleRemoveItem(index)
                                                 }
-                                                onChange={(e) =>
-                                                  handleLineItemChange(
-                                                    index,
-                                                    'quantity',
-                                                    e.target.value,
-                                                  )
-                                                }
-                                                onFocus={() =>
-                                                  handleFieldFocus?.(
-                                                    item.Quantity?.['Invoice Value'] ??
-                                                    item.quantity ??
-                                                    '',
-                                                    'qty',
-                                                  )
-                                                }
-                                              />
-                                            </td>
-
-                                            {/* Rate/Price Cell */}
-                                            <td className='w-[140px] px-2 py-0.5 text-right font-semibold text-[var(--gray-11)]'>
-                                              <input
-                                                className='w-full rounded border-none bg-transparent px-1.5 py-1 text-right text-xs font-semibold text-[var(--gray-11)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
-                                                value={
-                                                  item.Price?.['Invoice Value'] ??
-                                                  item.rate ??
-                                                  item.unit_price ??
-                                                  item.price ??
-                                                  ''
-                                                }
-                                                onBlur={(e) => {
-                                                  const num = Number.parseFloat(
-                                                    e.target.value.replace(
-                                                      /[^0-9.-]+/g,
-                                                      '',
-                                                    ),
-                                                  )
-                                                  if (!Number.isNaN(num)) {
-                                                    handleLineItemChange(
-                                                      index,
-                                                      'price',
-                                                      num.toFixed(2),
-                                                    )
-                                                  }
-                                                }}
-                                                onChange={(e) =>
-                                                  handleLineItemChange(
-                                                    index,
-                                                    'price',
-                                                    e.target.value,
-                                                  )
-                                                }
-                                                onFocus={() =>
-                                                  handleFieldFocus?.(
-                                                    item.Price?.['Invoice Value'] ??
-                                                    item.rate ??
-                                                    item.unit_price ??
-                                                    item.price ??
-                                                    '',
-                                                    'price',
-                                                  )
-                                                }
-                                              />
-                                            </td>
-
-                                            {/* Total Amount Cell */}
-                                            <td className='w-[160px] px-2 py-0.5 text-right font-semibold text-[var(--gray-13)]'>
-                                              <input
-                                                className='w-full rounded border-none bg-transparent px-1.5 py-1 text-right text-xs font-semibold text-[var(--gray-13)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
-                                                value={
-                                                  item.Amount?.['Invoice Value'] ??
-                                                  item.total ??
-                                                  item.amount ??
-                                                  item.line_amount ??
-                                                  item.lineAmount ??
-                                                  ''
-                                                }
-                                                onBlur={(e) => {
-                                                  const num = Number.parseFloat(
-                                                    e.target.value.replace(
-                                                      /[^0-9.-]+/g,
-                                                      '',
-                                                    ),
-                                                  )
-                                                  if (!Number.isNaN(num)) {
-                                                    handleLineItemChange(
-                                                      index,
-                                                      'amount',
-                                                      num.toFixed(2),
-                                                    )
-                                                  }
-                                                }}
-                                                onChange={(e) =>
-                                                  handleLineItemChange(
-                                                    index,
-                                                    'amount',
-                                                    e.target.value,
-                                                  )
-                                                }
-                                                onFocus={() =>
-                                                  handleFieldFocus?.(
-                                                    item.Amount?.['Invoice Value'] ??
-                                                    item.total ??
-                                                    item.amount ??
-                                                    item.line_amount ??
-                                                    item.lineAmount ??
-                                                    '',
-                                                    'line_amount',
-                                                  )
-                                                }
-                                              />
-                                            </td>
-                                          </>
-                                        )}
-
-                                        {/* Match Score Cell */}
-                                        <td className='w-[100px] px-3 py-2 text-right font-semibold'>
-                                          {(() => {
-                                            if (
-                                              lineScore === undefined ||
-                                              lineScore === null
-                                            )
-                                              return (
-                                                <span className='text-[11px] text-gray-9'>
-                                                  -
-                                                </span>
-                                              )
-                                            const scoreNum = Number(lineScore)
-                                            return (
-                                              <span
-                                                className={cn(
-                                                  'text-xs font-bold',
-                                                  {
-                                                    'text-[var(--green-9)]':
-                                                      scoreNum >= 90,
-                                                    'text-[var(--orange-9)]':
-                                                      scoreNum >= 70 &&
-                                                      scoreNum < 90,
-                                                    'text-[var(--red-9)]':
-                                                      scoreNum < 70,
-                                                  },
-                                                )}
                                               >
-                                                {scoreNum.toFixed(0)}%
-                                              </span>
-                                            )
-                                          })()}
-                                        </td>
-
-                                        {/* Action Cell */}
-                                        <td className='w-[44px] px-2 py-0.5 text-center'>
-                                          <button
-                                            className='rounded p-1 text-[var(--red-9)] transition-all hover:bg-[var(--red-2)] hover:text-[var(--red-11)] active:scale-95'
-                                            title='Remove Item'
-                                            type='button'
-                                            onClick={() =>
-                                              handleRemoveItem(index)
-                                            }
-                                          >
-                                            <Trash2 className='h-3.5 w-3.5' />
-                                          </button>
-                                        </td>
-                                      </tr>
-                                    )
-                                  })}
+                                                <Trash2 className='h-3.5 w-3.5' />
+                                              </button>
+                                            </td>
+                                          </tr>
+                                        )
+                                      },
+                                    )}
                               </tbody>
                               <tfoot className='border-t border-[var(--gray-3)] bg-[var(--gray-1)]'>
                                 <tr className='font-bold'>
@@ -3627,19 +3949,22 @@ const Overview = (props: any) => {
                                         (sum: number, item: any) => {
                                           const val = getLineItemAmount(item)
                                           const num = Number.parseFloat(
-                                            String(val).replace(/[^0-9.-]+/g, ''),
+                                            String(val).replace(
+                                              /[^0-9.-]+/g,
+                                              '',
+                                            ),
                                           )
-                                          return sum + (Number.isNaN(num) ? 0 : num)
+                                          return (
+                                            sum + (Number.isNaN(num) ? 0 : num)
+                                          )
                                         },
                                         0,
                                       )
-                                      const formattedTotal = total.toLocaleString(
-                                        undefined,
-                                        {
+                                      const formattedTotal =
+                                        total.toLocaleString(undefined, {
                                           maximumFractionDigits: 2,
                                           minimumFractionDigits: 2,
-                                        },
-                                      )
+                                        })
                                       return currencyCode
                                         ? `${currencyCode} ${formattedTotal}`
                                         : formattedTotal
@@ -3670,34 +3995,46 @@ const Overview = (props: any) => {
                             <>
                               {/* Related Documents Gated Section */}
                               {relatedDocsState.status === 'not_run' && (
-                                <div className='mb-4 rounded-xl border border-[var(--gray-3)] bg-surface p-4 shadow-sm animate-in fade-in duration-300'>
-                                  <div className='flex flex-col md:flex-row md:items-center justify-between gap-4'>
+                                <div className='animate-in fade-in mb-4 rounded-xl border border-[var(--gray-3)] bg-surface p-4 shadow-sm duration-300'>
+                                  <div className='flex flex-col justify-between gap-4 md:flex-row md:items-center'>
                                     <div className='flex-1 space-y-1'>
-                                      <h4 className='text-xs font-bold text-[var(--gray-13)] flex items-center gap-1.5'>
-                                        <Icon className='h-4 w-4 text-[var(--gray-10)]' name='tabler:files' />
+                                      <h4 className='flex items-center gap-1.5 text-xs font-bold text-[var(--gray-13)]'>
+                                        <Icon
+                                          className='h-4 w-4 text-[var(--gray-10)]'
+                                          name='tabler:files'
+                                        />
                                         Related Documents
                                       </h4>
-                                      <p className='text-[11px] text-[var(--gray-10)] leading-normal'>
-                                        Run a check to surface similar POs and prior invoices from this supplier.
+                                      <p className='text-[11px] leading-normal text-[var(--gray-10)]'>
+                                        Run a check to surface similar POs and
+                                        prior invoices from this supplier.
                                       </p>
                                     </div>
                                     <button
+                                      className='inline-flex shrink-0 cursor-pointer items-center justify-center gap-1.5 self-start rounded-lg border-none bg-[var(--primary-9)] px-4 py-2 text-xs font-bold text-white shadow-sm transition-all hover:bg-[var(--primary-10)] active:scale-95 md:self-center'
                                       onClick={handleFindRelatedDocumentsClick}
-                                      className='inline-flex items-center justify-center gap-1.5 rounded-lg bg-[var(--primary-9)] hover:bg-[var(--primary-10)] active:scale-95 text-white px-4 py-2 text-xs font-bold transition-all cursor-pointer shadow-sm border-none shrink-0 self-start md:self-center'
                                     >
-                                      <Icon className='h-4 w-4' name='tabler:search' />
+                                      <Icon
+                                        className='h-4 w-4'
+                                        name='tabler:search'
+                                      />
                                       Find Documents
                                     </button>
                                   </div>
                                 </div>
                               )}
                               {relatedDocsState.status === 'pending' && (
-                                <div className='mb-4 rounded-xl border border-[var(--gray-3)] bg-surface p-4 shadow-sm animate-in fade-in duration-300'>
+                                <div className='animate-in fade-in mb-4 rounded-xl border border-[var(--gray-3)] bg-surface p-4 shadow-sm duration-300'>
                                   <div className='flex items-center gap-3'>
-                                    <Icon className='h-5 w-5 animate-spin text-[var(--primary-9)]' name='tabler:loader-2' />
+                                    <Icon
+                                      className='h-5 w-5 animate-spin text-[var(--primary-9)]'
+                                      name='tabler:loader-2'
+                                    />
                                     <div className='space-y-1'>
-                                      <h4 className='text-xs font-bold text-[var(--gray-13)]'>Related Documents</h4>
-                                      <p className='text-[11px] text-[var(--gray-10)] font-medium animate-pulse'>
+                                      <h4 className='text-xs font-bold text-[var(--gray-13)]'>
+                                        Related Documents
+                                      </h4>
+                                      <p className='animate-pulse text-[11px] font-medium text-[var(--gray-10)]'>
                                         Searching related documents...
                                       </p>
                                     </div>
@@ -3705,33 +4042,43 @@ const Overview = (props: any) => {
                                 </div>
                               )}
                               {relatedDocsState.status === 'complete' && (
-                                <div className='mb-4 rounded-xl border border-[var(--gray-3)] bg-surface p-4 shadow-sm animate-in fade-in duration-300'>
+                                <div className='animate-in fade-in mb-4 rounded-xl border border-[var(--gray-3)] bg-surface p-4 shadow-sm duration-300'>
                                   <div className='space-y-3'>
                                     <div className='flex items-center justify-between border-b border-[var(--gray-3)] pb-2'>
-                                      <h4 className='text-xs font-bold text-[var(--gray-13)] flex items-center gap-1.5'>
-                                        <Icon className='h-4 w-4 text-[var(--green-9)]' name='tabler:circle-check' />
+                                      <h4 className='flex items-center gap-1.5 text-xs font-bold text-[var(--gray-13)]'>
+                                        <Icon
+                                          className='h-4 w-4 text-[var(--green-9)]'
+                                          name='tabler:circle-check'
+                                        />
                                         Related Documents
                                       </h4>
-                                      <span className='rounded bg-[var(--green-1)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--green-9)] border border-[var(--green-3)]'>
+                                      <span className='rounded border border-[var(--green-3)] bg-[var(--green-1)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--green-9)]'>
                                         Completed
                                       </span>
                                     </div>
 
-                                    <p className='text-xs text-[var(--gray-12)] font-medium leading-relaxed'>
+                                    <p className='text-xs leading-relaxed font-medium text-[var(--gray-12)]'>
                                       {relatedDocsState.data?.summary}
                                     </p>
 
                                     <div className='flex flex-wrap gap-2 pt-1'>
-                                      {relatedDocsState.data?.chips?.map((chip: any, idx: number) => (
-                                        <div
-                                          key={idx}
-                                          className='inline-flex items-center gap-1.5 rounded-md bg-[var(--gray-2)] border border-[var(--gray-3)] px-2 py-1 text-[11px] font-semibold text-[var(--gray-12)]'
-                                        >
-                                          <Icon className='h-3 w-3 text-[var(--gray-10)]' name='tabler:file-text' />
-                                          <span>{chip.id}</span>
-                                          <span className='text-[10px] text-[var(--gray-9)] font-normal'>({chip.date})</span>
-                                        </div>
-                                      ))}
+                                      {relatedDocsState.data?.chips?.map(
+                                        (chip: any, idx: number) => (
+                                          <div
+                                            className='inline-flex items-center gap-1.5 rounded-md border border-[var(--gray-3)] bg-[var(--gray-2)] px-2 py-1 text-[11px] font-semibold text-[var(--gray-12)]'
+                                            key={idx}
+                                          >
+                                            <Icon
+                                              className='h-3 w-3 text-[var(--gray-10)]'
+                                              name='tabler:file-text'
+                                            />
+                                            <span>{chip.id}</span>
+                                            <span className='text-[10px] font-normal text-[var(--gray-9)]'>
+                                              ({chip.date})
+                                            </span>
+                                          </div>
+                                        ),
+                                      )}
                                     </div>
                                   </div>
                                 </div>
@@ -3827,7 +4174,7 @@ const Overview = (props: any) => {
         </div>
       </div>
       {onOpenPlayground && (
-        <div className='absolute bottom-20 right-10 z-[90] animate-in fade-in slide-in-from-bottom-2 duration-300'>
+        <div className='animate-in fade-in slide-in-from-bottom-2 absolute right-10 bottom-20 z-[90] duration-300'>
           <PaidActionApiTrigger
             action={paidAction}
             onTrigger={onOpenPlayground}

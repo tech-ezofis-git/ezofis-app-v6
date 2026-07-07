@@ -3,26 +3,26 @@ import { useCallback, useEffect, useState } from 'react'
 import { workflowsApiV6 } from '@/api/v6/workflows'
 
 export type AttachmentItem = {
+  contentType?: string
   createdAt?: string
+  createdAtUtc?: string
+
+  createdBy?: string
   createdByEmail?: string
+
+  createdByName?: string
   fileId?: number | string
-
   fileName?: string
-  id?: number | string
+  filePath?: string
 
+  fileSize?: number
+  id?: number | string
   initiate?: boolean
   itemId?: number | string
   name?: string
   repositoryId?: number | string
-
   stageName?: string
-  filePath?: string
-  fileSize?: number
-  contentType?: string
-  createdAtUtc?: string
-  createdBy?: string
   uploadedBy?: string
-  createdByName?: string
 }
 
 export function useAttachments(
@@ -61,7 +61,12 @@ export function useAttachments(
         createdAt: x.createdAt ?? x.createdAtUtc ?? x.occurredAtUtc ?? '',
         id: x.id ?? x.itemId ?? x.fileId ?? '',
         name: x.name ?? x.fileName ?? '-',
-        uploadedBy: x.uploadedBy ?? x.createdByName ?? x.createdByEmail ?? x.createdBy ?? '',
+        uploadedBy:
+          x.uploadedBy ??
+          x.createdByName ??
+          x.createdByEmail ??
+          x.createdBy ??
+          '',
       }))
 
       setData(normalized)

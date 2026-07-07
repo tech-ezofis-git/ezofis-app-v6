@@ -18,7 +18,8 @@ import SectionHeader from '../../components/SectionHeader'
 import { OrDivider } from '../../components/StepLayout'
 
 const includedStorageItem = {
-  description: 'Default storage option provided with your account for immediate access.',
+  description:
+    'Default storage option provided with your account for immediate access.',
   logo: StorageLogo,
   name: 'Use secure cloud storage',
   value: 'Included storage',

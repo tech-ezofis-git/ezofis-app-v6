@@ -1,7 +1,4 @@
-import {
-  createColumnHelper,
-  useReactTable,
-} from '@tanstack/react-table'
+import { createColumnHelper, useReactTable } from '@tanstack/react-table'
 import {
   Check,
   ChevronDown,
@@ -884,8 +881,8 @@ function RoleDetailsForm({
       <InputText
         label='Role Name'
         placeholder='e.g. AP Supervisor'
-        required
         value={roleName}
+        required
         onChange={onRoleNameChange}
       />
 
@@ -894,10 +891,10 @@ function RoleDetailsForm({
         label='Select Users'
         options={userOptions}
         placeholder='Select users...'
-        required
-        searchable
         value={selectedUsers}
         clearable
+        required
+        searchable
         onChange={(value) => onSelectedUsersChange(value as Option[])}
       />
 
@@ -1096,36 +1093,34 @@ function Tabs({
   activeTab,
   onChange,
 }: {
-  activeTab: TabKey;
-  onChange: (tab: TabKey) => void;
+  activeTab: TabKey
+  onChange: (tab: TabKey) => void
 }) {
   return (
-    <div className="flex h-14 items-center border-b border-gray-3 bg-surface px-6">
+    <div className='flex h-14 items-center border-b border-gray-3 bg-surface px-6'>
       {tabs.map((tab) => {
-        const isActive = activeTab === tab.key;
+        const isActive = activeTab === tab.key
 
         return (
           <button
             key={tab.key}
-            type="button"
-            onClick={() => onChange(tab.key)}
+            type='button'
             className={[
-              "relative mr-9 flex h-14 items-center text-sm font-medium transition",
-              isActive
-                ? "text-primary-9"
-                : "text-gray-12 hover:text-primary-9",
-            ].join(" ")}
+              'relative mr-9 flex h-14 items-center text-sm font-medium transition',
+              isActive ? 'text-primary-9' : 'text-gray-12 hover:text-primary-9',
+            ].join(' ')}
+            onClick={() => onChange(tab.key)}
           >
             {tab.label}
 
             {isActive && (
-              <span className="absolute bottom-0 left-0 h-[2px] w-full bg-primary-9" />
+              <span className='absolute bottom-0 left-0 h-[2px] w-full bg-primary-9' />
             )}
           </button>
-        );
+        )
       })}
     </div>
-  );
+  )
 }
 
 function toggleCategory(rows: PermissionRow[], category: string) {

@@ -13,10 +13,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import {
-  createColumnHelper,
-  useReactTable,
-} from '@tanstack/react-table'
+import { createColumnHelper, useReactTable } from '@tanstack/react-table'
 import {
   Check,
   ChevronRight,
@@ -36,8 +33,8 @@ import {
   useMemo,
   useState,
 } from 'react'
-import IconButton from '@/components/base/button/IconButton'
 import Button from '@/components/base/button/Button'
+import IconButton from '@/components/base/button/IconButton'
 import DataTable from '@/components/base/data-table/DataTable'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import InputSwitch from '@/components/base/inputs/InputSwitch'
@@ -370,7 +367,7 @@ export default function DmsFolderConfiguration({
 
   return (
     <div className='min-h-[90vh] bg-[var(--surface)]'>
-      <div className='flex items-center justify-between gap-6 border-b border-gray-3 bg-surface px-6 py-4 md:px-8 bg-[var(--surface)]'>
+      <div className='flex items-center justify-between gap-6 border-b border-gray-3 bg-[var(--surface)] bg-surface px-6 py-4 md:px-8'>
         <div className='flex items-start gap-3'>
           <IconButton
             ariaLabel='Back'
@@ -869,7 +866,7 @@ function StepNav({
             items={folderHierarchy}
             strategy={verticalListSortingStrategy}
           >
-            <div className='bg-surface-muted/60 space-y-2 rounded-md'>
+            <div className='space-y-2 rounded-md bg-surface-muted/60'>
               {folderHierarchy.map((item) => (
                 <SortableHierarchyItem item={item} key={item} />
               ))}
@@ -1053,9 +1050,7 @@ function WizardContent({
                   <span className='block font-semibold text-gray-13'>
                     {item.title}
                   </span>
-                  <span className='text-sm text-gray-11'>
-                    {item.subtitle}
-                  </span>
+                  <span className='text-sm text-gray-11'>{item.subtitle}</span>
                 </span>
               </button>
             )
@@ -1101,8 +1096,9 @@ function WizardContent({
               options={fieldTypeOptions}
               placeholder='Field type'
               value={
-                fieldTypeOptions.find((option) => option.name === newFieldType) ||
-                fieldTypeOptions[0]
+                fieldTypeOptions.find(
+                  (option) => option.name === newFieldType,
+                ) || fieldTypeOptions[0]
               }
               onChange={(selected) => {
                 if (!selected) return

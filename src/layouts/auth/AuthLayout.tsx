@@ -1,5 +1,5 @@
-import { useLocation } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
+import { useLocation } from '@tanstack/react-router'
 import AuthFooter from './components/AuthFooter'
 import AuthHeader from './components/AuthHeader'
 import Features from './components/Features'
@@ -11,10 +11,17 @@ interface Props {
 
 const AuthLayout = ({ children }: Props) => {
   const location = useLocation()
-  const isResetPassword = location.pathname.replace(/\/$/, '') === '/reset-password'
+  const isResetPassword =
+    location.pathname.replace(/\/$/, '') === '/reset-password'
 
   return (
-    <div className={isResetPassword ? 'block min-h-svh bg-surface' : 'grid min-h-svh grid-cols-1 xl:grid-cols-2'}>
+    <div
+      className={
+        isResetPassword
+          ? 'block min-h-svh bg-surface'
+          : 'grid min-h-svh grid-cols-1 xl:grid-cols-2'
+      }
+    >
       <div className='relative bg-surface p-6'>
         <AuthHeader />
         <div
