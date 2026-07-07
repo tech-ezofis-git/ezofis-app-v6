@@ -7,6 +7,8 @@ import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
 import OverlayHeaderWrapper from '@/components/base/overlay/OverlayHeaderWrapper'
 import showToast from '@/components/base/toast/showToast'
+import InputCheckbox from '@/components/base/inputs/InputCheckbox'
+import InputSelect from '@/components/base/inputs/InputSelect'
 import cn from '@/utils/cn'
 
 interface HeaderProps {
@@ -41,6 +43,7 @@ interface HeaderProps {
   onNext?: () => void
   onOpenPlayground?: (context: any) => void
   onPrev?: () => void
+  ticketUserId?: string
 }
 
 // Generates a consistent color from a string (name/email)
@@ -95,6 +98,13 @@ const getDisplayName = (user: any): string => {
 const getEmail = (user: any): string =>
   user.email || user.Email || user.loginName || ''
 
+const roleOptions = [
+  { id: 'View', name: 'View' },
+  { id: 'Verify', name: 'Verify' },
+  { id: 'Approve', name: 'Approve' },
+  { id: 'Paid', name: 'Paid' },
+]
+
 const Header: React.FC<HeaderProps> = ({
   actions,
   agentData,
@@ -118,6 +128,7 @@ const Header: React.FC<HeaderProps> = ({
   stage: _stage,
   status = 'Pending Review',
   totalAmount,
+  ticketUserId,
   setRightView: _setRightView,
   onApprove,
   onBack,
@@ -129,6 +140,7 @@ const Header: React.FC<HeaderProps> = ({
   const [showShare, setShowShare] = React.useState(false)
   const [shareSearch, setShareSearch] = React.useState('')
   const [sharedUsers, setSharedUsers] = React.useState<Set<string>>(new Set())
+  const [selectedUsersToShare, setSelectedUsersToShare] = React.useState<Record<string, { user: any, permission: 'View' | 'Verify' | 'Approve' | 'Paid' }>>({})
   const containerRef = React.useRef<HTMLDivElement>(null)
   const shareRef = React.useRef<HTMLDivElement>(null)
 
@@ -182,11 +194,17 @@ const Header: React.FC<HeaderProps> = ({
   // Close Share on outside click
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement
       if (
         shareRef.current &&
-        !shareRef.current.contains(event.target as Node)
+        !shareRef.current.contains(target) &&
+        !target.closest('.mantine-Combobox-dropdown') &&
+        !target.closest('.mantine-Popover-dropdown') &&
+        !target.closest('[class*="combobox"]') &&
+        !target.closest('[class*="dropdown"]')
       ) {
         setShowShare(false)
+        setSelectedUsersToShare({})
         setShareSearch('')
       }
     }
@@ -194,12 +212,47 @@ const Header: React.FC<HeaderProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const handleShareUser = (user: any) => {
+  const handleToggleSelectUser = (user: any) => {
     const id = String(user.id || user.value || user.loginName)
-    const name = getDisplayName(user)
-    setSharedUsers((prev) => new Set([...prev, id]))
+    setSelectedUsersToShare((prev) => {
+      const next = { ...prev }
+      if (next[id]) {
+        delete next[id]
+      } else {
+        next[id] = { user, permission: 'View' }
+      }
+      return next
+    })
+  }
+
+  const handlePermissionChange = (id: string, permission: 'View' | 'Verify' | 'Approve' | 'Paid') => {
+    setSelectedUsersToShare((prev) => {
+      const next = { ...prev }
+      if (next[id]) {
+        next[id] = { ...next[id], permission }
+      }
+      return next
+    })
+  }
+
+  const handleBulkShare = () => {
+    const selectedCount = Object.keys(selectedUsersToShare).length
+    if (selectedCount === 0) return
+
+    setSharedUsers((prev) => {
+      const next = new Set(prev)
+      Object.keys(selectedUsersToShare).forEach((id) => {
+        next.add(id)
+      })
+      return next
+    })
+
+    setSelectedUsersToShare({})
+    setShowShare(false)
+    setShareSearch('')
+
     showToast({
-      message: `Request shared with ${name} successfully`,
+      message: 'Request shared successfully',
       variant: 'success',
     })
   }
@@ -308,108 +361,108 @@ const Header: React.FC<HeaderProps> = ({
               {status &&
                 (isProcessing && percent !== undefined
                   ? (() => {
-                      const styles = getProgressStyles(percent)
-                      return (
+                    const styles = getProgressStyles(percent)
+                    return (
+                      <div
+                        className={cn(
+                          'animate-in fade-in zoom-in-95 relative overflow-hidden rounded-full border px-3 py-1 text-[11px] font-semibold transition-all duration-300',
+                          styles.badge,
+                        )}
+                      >
+                        {/* Progress Fill Layer */}
                         <div
+                          style={{ width: `${percent}%` }}
                           className={cn(
-                            'animate-in fade-in zoom-in-95 relative overflow-hidden rounded-full border px-3 py-1 text-[11px] font-semibold transition-all duration-300',
-                            styles.badge,
+                            'absolute inset-y-0 left-0 transition-all duration-500 ease-out',
+                            styles.fill,
                           )}
-                        >
-                          {/* Progress Fill Layer */}
-                          <div
-                            style={{ width: `${percent}%` }}
-                            className={cn(
-                              'absolute inset-y-0 left-0 transition-all duration-500 ease-out',
-                              styles.fill,
-                            )}
-                          />
+                        />
 
-                          {/* Content Layer */}
-                          <span className='relative z-10 flex items-center gap-1.5'>
-                            {percent < 100 && (
-                              <Icon
-                                name='tabler:loader-2'
-                                className={cn(
-                                  'h-3.5 w-3.5 animate-spin',
-                                  styles.icon,
-                                )}
-                              />
-                            )}
-                            <span>{status}</span>
-                          </span>
-                        </div>
-                      )
-                    })()
-                  : (() => {
-                      const dec = String(status || '').toUpperCase()
-                      let iconName = ''
-                      let badgeColorClass = ''
-                      let isLoaderIcon = false
-
-                      if (
-                        dec === 'APPROVED' ||
-                        dec === 'MATCHED' ||
-                        dec === 'VERIFIED'
-                      ) {
-                        iconName = 'tabler:circle-check'
-                        badgeColorClass =
-                          'border-[var(--green-9)] bg-[var(--green-9)] text-white'
-                      } else if (
-                        dec === 'REJECTED' ||
-                        dec === 'NO MATCH' ||
-                        dec === 'NOT MATCHED'
-                      ) {
-                        iconName = 'tabler:alert-circle'
-                        badgeColorClass =
-                          'border-[var(--red-9)] bg-[var(--red-9)] text-white'
-                      } else if (
-                        dec === 'PARTIALLY APPROVED' ||
-                        dec === 'PARTIALLY_APPROVED' ||
-                        dec === 'PARTIALLY MATCHED' ||
-                        dec === 'PARTIAL MATCH'
-                      ) {
-                        iconName = 'tabler:alert-triangle'
-                        badgeColorClass =
-                          'border-transparent bg-[var(--orange-9)] text-white'
-                      } else if (
-                        dec.includes('ANALYZING') ||
-                        dec.includes('FINALIZING') ||
-                        dec.includes('FETCHING') ||
-                        dec.includes('INITIATING') ||
-                        dec.includes('SETTING UP')
-                      ) {
-                        iconName = 'tabler:loader-2'
-                        badgeColorClass =
-                          'border-[var(--orange-9)] bg-[var(--orange-9)] text-white'
-                        isLoaderIcon = true
-                      } else {
-                        if (_showApprove) {
-                          return null
-                        }
-                        iconName = 'tabler:clock'
-                        badgeColorClass =
-                          'border-[var(--orange-9)] bg-[var(--orange-9)] text-white'
-                      }
-
-                      return (
-                        <span
-                          className={cn(
-                            'animate-in fade-in zoom-in-95 flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-semibold transition-all duration-300',
-                            badgeColorClass,
+                        {/* Content Layer */}
+                        <span className='relative z-10 flex items-center gap-1.5'>
+                          {percent < 100 && (
+                            <Icon
+                              name='tabler:loader-2'
+                              className={cn(
+                                'h-3.5 w-3.5 animate-spin',
+                                styles.icon,
+                              )}
+                            />
                           )}
-                        >
-                          <Icon
-                            name={iconName}
-                            className={cn(
-                              'h-3.5 w-3.5',
-                              isLoaderIcon && 'animate-spin',
-                            )}
-                          />
                           <span>{status}</span>
                         </span>
-                      )
-                    })())}
+                      </div>
+                    )
+                  })()
+                  : (() => {
+                    const dec = String(status || '').toUpperCase()
+                    let iconName = ''
+                    let badgeColorClass = ''
+                    let isLoaderIcon = false
+
+                    if (
+                      dec === 'APPROVED' ||
+                      dec === 'MATCHED' ||
+                      dec === 'VERIFIED'
+                    ) {
+                      iconName = 'tabler:circle-check'
+                      badgeColorClass =
+                        'border-[var(--green-9)] bg-[var(--green-9)] text-white'
+                    } else if (
+                      dec === 'REJECTED' ||
+                      dec === 'NO MATCH' ||
+                      dec === 'NOT MATCHED'
+                    ) {
+                      iconName = 'tabler:alert-circle'
+                      badgeColorClass =
+                        'border-[var(--red-9)] bg-[var(--red-9)] text-white'
+                    } else if (
+                      dec === 'PARTIALLY APPROVED' ||
+                      dec === 'PARTIALLY_APPROVED' ||
+                      dec === 'PARTIALLY MATCHED' ||
+                      dec === 'PARTIAL MATCH'
+                    ) {
+                      iconName = 'tabler:alert-triangle'
+                      badgeColorClass =
+                        'border-transparent bg-[var(--orange-9)] text-white'
+                    } else if (
+                      dec.includes('ANALYZING') ||
+                      dec.includes('FINALIZING') ||
+                      dec.includes('FETCHING') ||
+                      dec.includes('INITIATING') ||
+                      dec.includes('SETTING UP')
+                    ) {
+                      iconName = 'tabler:loader-2'
+                      badgeColorClass =
+                        'border-[var(--orange-9)] bg-[var(--orange-9)] text-white'
+                      isLoaderIcon = true
+                    } else {
+                      if (_showApprove) {
+                        return null
+                      }
+                      iconName = 'tabler:clock'
+                      badgeColorClass =
+                        'border-[var(--orange-9)] bg-[var(--orange-9)] text-white'
+                    }
+
+                    return (
+                      <span
+                        className={cn(
+                          'animate-in fade-in zoom-in-95 flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-semibold transition-all duration-300',
+                          badgeColorClass,
+                        )}
+                      >
+                        <Icon
+                          name={iconName}
+                          className={cn(
+                            'h-3.5 w-3.5',
+                            isLoaderIcon && 'animate-spin',
+                          )}
+                        />
+                        <span>{status}</span>
+                      </span>
+                    )
+                  })())}
             </div>
           </div>
         </div>
@@ -447,9 +500,9 @@ const Header: React.FC<HeaderProps> = ({
               return Number.isNaN(num)
                 ? '0.00'
                 : num.toLocaleString(undefined, {
-                    maximumFractionDigits: 2,
-                    minimumFractionDigits: 2,
-                  })
+                  maximumFractionDigits: 2,
+                  minimumFractionDigits: 2,
+                })
             }
 
             const currDisplay = getCurrencyDisplay(currency || '')
@@ -627,6 +680,7 @@ const Header: React.FC<HeaderProps> = ({
                       className='flex cursor-pointer items-center justify-center rounded-md p-1 text-[var(--gray-8)] transition-all hover:bg-[var(--gray-2)] hover:text-[var(--gray-12)] active:scale-95'
                       onClick={() => {
                         setShowShare(false)
+                        setSelectedUsersToShare({})
                         setShareSearch('')
                       }}
                     >
@@ -653,7 +707,7 @@ const Header: React.FC<HeaderProps> = ({
                   </div>
 
                   {/* User List */}
-                  <div className='max-h-[260px] overflow-y-auto px-2 pb-3'>
+                  <div className='max-h-[280px] overflow-y-auto px-2 py-2'>
                     {usersLoading ? (
                       <div className='flex flex-col gap-2 px-2 py-2'>
                         {[1, 2, 3].map((i) => (
@@ -684,62 +738,114 @@ const Header: React.FC<HeaderProps> = ({
                     ) : (
                       users.map((user: any) => {
                         const id = String(
-                          user.id || user.value || user.loginName,
+                          user.userId || user.id || user.value || user.loginName,
                         )
                         const name = getDisplayName(user)
                         const email = getEmail(user)
                         const initials = getInitials(user)
                         const avatarColor = getAvatarColor(email || name)
                         const isShared = sharedUsers.has(id)
-
+                        const isSelectedToShare = !!selectedUsersToShare[id]
+                        const isOwner = ticketUserId && (
+                          String(user.userId) === String(ticketUserId) ||
+                          String(user.id) === String(ticketUserId.toLowerCase()) ||
+                          String(user.value) === String(ticketUserId) ||
+                          String(user.loginName) === String(ticketUserId)
+                        )
+                        // console.log(user, ticketUserId?.toLowerCase(), "Selected user session")
                         return (
-                          <button
+                          <div
                             key={id}
-                            type='button'
                             className={cn(
-                              'group flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left transition-all hover:bg-[var(--primary-2)]/60 active:scale-[0.98]',
-                              isShared && 'bg-[var(--primary-1)]',
+                              'group flex w-full items-center justify-between gap-3 rounded-lg px-2 py-1.5 transition-all hover:bg-[var(--gray-2)]/50',
+                              isShared && 'opacity-90',
+                              isSelectedToShare && 'bg-[var(--primary-2)]/30',
+                              isOwner && 'bg-[var(--primary-1)]/40',
                             )}
-                            onClick={() => !isShared && handleShareUser(user)}
                           >
-                            {/* Avatar */}
+                            {/* Left Side: Checkbox + Avatar + User Info */}
                             <div
-                              className={cn(
-                                'flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold shadow-sm',
-                                avatarColor,
-                              )}
+                              className='flex items-center gap-3 min-w-0 flex-1 cursor-pointer'
+                              onClick={() => !isShared && !isOwner && handleToggleSelectUser(user)}
                             >
-                              {initials}
-                            </div>
-
-                            {/* Name & Email */}
-                            <div className='min-w-0 flex-1'>
-                              <p className='truncate text-[12px] font-semibold text-[var(--gray-13)]'>
-                                {name}
-                              </p>
-                              {email && (
-                                <p className='truncate text-[11px] text-[var(--gray-9)]'>
-                                  {email}
-                                </p>
+                              {isOwner ? (
+                                <div className='w-5 shrink-0 flex items-center justify-center' title='Request Owner'>
+                                  <Icon className='size-4 text-[var(--primary-9)]' name='tabler:crown' />
+                                </div>
+                              ) : (
+                                <InputCheckbox
+                                  checked={isShared || isSelectedToShare}
+                                  disabled={isShared}
+                                  onChange={() => handleToggleSelectUser(user)}
+                                  className='shrink-0 cursor-pointer'
+                                />
                               )}
+
+                              {/* Avatar */}
+                              <div
+                                className={cn(
+                                  'flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold shadow-sm',
+                                  avatarColor,
+                                )}
+                              >
+                                {initials}
+                              </div>
+
+                              {/* Name & Email */}
+                              <div className='min-w-0 flex-1'>
+                                <p className='truncate text-[12px] font-semibold text-[var(--gray-13)]'>
+                                  {name}
+                                </p>
+                                {email && (
+                                  <p className='truncate text-[11px] text-[var(--gray-9)]'>
+                                    {email}
+                                  </p>
+                                )}
+                              </div>
                             </div>
 
-                            {/* Invite / Shared indicator */}
-                            {isShared ? (
-                              <span className='flex shrink-0 items-center gap-1 rounded-full bg-[var(--green-2)] px-2 py-0.5 text-[10px] font-semibold text-[var(--green-9)]'>
-                                <Icon className='size-3' name='tabler:check' />
-                                Shared
-                              </span>
-                            ) : (
-                              <span className='shrink-0 rounded-full border border-[var(--primary-4)] bg-[var(--primary-2)] px-2 py-0.5 text-[10px] font-semibold text-[var(--primary-9)] opacity-0 transition-opacity group-hover:opacity-100'>
-                                Invite
-                              </span>
-                            )}
-                          </button>
+                            {/* Right Side: Invite / Shared / Dropdown selector */}
+                            <div className='shrink-0' onClick={(e) => e.stopPropagation()}>
+                              {isOwner ? (
+                                <span className='flex items-center gap-1 rounded-full bg-[var(--primary-2)] px-2.5 py-0.5 text-[10px] font-semibold text-[var(--primary-9)] border border-[var(--primary-4)]'>
+                                  <Icon className='size-3' name='tabler:crown' />
+                                  Owner
+                                </span>
+                              ) : isShared ? (
+                                <span className='flex items-center gap-1 rounded-full bg-[var(--green-2)] px-2.5 py-0.5 text-[10px] font-semibold text-[var(--green-9)]'>
+                                  <Icon className='size-3' name='tabler:check' />
+                                  Shared
+                                </span>
+                              ) : isSelectedToShare ? (
+                                <div className='w-24'>
+                                  <InputSelect
+                                    options={roleOptions}
+                                    value={roleOptions.find((opt) => opt.id === selectedUsersToShare[id]?.permission) || roleOptions[0]}
+                                    onChange={(val) => handlePermissionChange(id, (val?.id || 'View') as any)}
+                                    searchable={false}
+                                  />
+                                </div>
+                              ) : null}
+                            </div>
+                          </div>
                         )
                       })
                     )}
                   </div>
+
+                  {/* Share Invite Button */}
+                  {Object.keys(selectedUsersToShare).length > 0 && (
+                    <div className='border-t border-[var(--gray-2)] p-2.5 bg-[var(--gray-1)]/50'>
+                      <button
+                        type='button'
+                        onClick={handleBulkShare}
+                        className='flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--primary-9)] hover:bg-[var(--primary-10)] text-white py-1.5 text-xs font-semibold shadow-sm hover:shadow active:scale-95 transition-all'
+                      >
+                        <Icon className='size-3.5' name='tabler:send' />
+                        <span>Share Invite</span>
+                      </button>
+                    </div>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>

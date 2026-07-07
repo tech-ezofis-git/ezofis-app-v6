@@ -17,8 +17,8 @@ const SidebarCTA = () => {
           className='size-4 shrink-0 animate-pulse text-yellow-3'
           name='lucide:sparkles'
         />
-        <span className='text-[10px] font-bold tracking-wider text-white uppercase'>
-          Automate Your Full AP Workflow
+        <span className='text-[12px] font-bold tracking-wider text-white uppercase'>
+          Automate AP Workflow
         </span>
       </div>
 

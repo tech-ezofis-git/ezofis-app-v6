@@ -492,15 +492,15 @@ const updateProcessInStore = (apAgentJobId: string | number, jobData: any) => {
       )
       const updatedProcesses = hasJobProcess
         ? state.processingProcesses.map((p) =>
-            String(p.processId || p.id) === jobKey
-              ? {
-                  ...p,
-                  apAgentJobId: null,
-                  id: jobData.instanceId,
-                  processId: jobData.instanceId,
-                }
-              : p,
-          )
+          String(p.processId || p.id) === jobKey
+            ? {
+              ...p,
+              apAgentJobId: null,
+              id: jobData.instanceId,
+              processId: jobData.instanceId,
+            }
+            : p,
+        )
         : state.processingProcesses
 
       return {
@@ -944,10 +944,10 @@ const Request = ({
 
   const hasAgentDecision = request
     ? !!(
-        request.review ||
-        request._agentData?.[0]?.decision ||
-        request.completedAtUtc
-      )
+      request.review ||
+      request._agentData?.[0]?.decision ||
+      request.completedAtUtc
+    )
     : false
   const isCurrentlyProcessing =
     !hasAgentDecision && initialProcessing && !jobStatus?.isCompleted
@@ -1146,8 +1146,8 @@ const Request = ({
           typeof selectedItem?.agentResponse === 'string'
             ? selectedItem.agentResponse
             : JSON.stringify(
-                selectedItem?.agentResponse || request?.agentResponse || {},
-              ),
+              selectedItem?.agentResponse || request?.agentResponse || {},
+            ),
         comments: '',
         formData: formDataStr,
         formEntryId: Number(
@@ -1244,10 +1244,10 @@ const Request = ({
           fields:
             Object.keys(formModel).length > 0
               ? mapFormModelToPayloadFields(
-                  formModel,
-                  selectedWorkflow,
-                  request?._formDefinition,
-                )
+                formModel,
+                selectedWorkflow,
+                request?._formDefinition,
+              )
               : selectedItem?.formData?.fields || {},
           formEntryId: selectedItem?.formData?.formEntryId,
           formId: rawWorkflowData?.wFormId,
@@ -1479,7 +1479,8 @@ const Request = ({
       statusBadge = finalStatusBadge
     }
   }
-
+  console.log(selectedItem, "Selected Item")
+  
   return (
     <div
       className={`flex w-full flex-col p-0 ${hideActions ? 'bg-grey-2 h-full p-4' : 'h-[calc(100vh-85px)]'}`}
@@ -1511,19 +1512,19 @@ const Request = ({
             formModel?.['invoice_number'] ||
             formModel?.['invoice_no'] ||
             currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-              'Invoice No'
+            'Invoice No'
             ] ||
             currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-              'invoice_no'
+            'invoice_no'
             ] ||
             currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-              'Invoice Number'
+            'Invoice Number'
             ] ||
             currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-              'invoice_number'
+            'invoice_number'
             ] ||
             currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-              'invoice_num'
+            'invoice_num'
             ] ||
             currentAgentData?.['kvcYuknkDumkTenjvrVLj'] ||
             selectedItem?.reqNo ||
@@ -1532,6 +1533,7 @@ const Request = ({
             selectedItem?.requestNo ||
             'REQ - ...'
           }
+          ticketUserId={selectedItem?.userId || request?.userId || authUserStore.getState().session?.id || undefined}
           setRightView={setRightView}
           onApprove={handleVerifier}
           onBack={onBack || closeRequest}
