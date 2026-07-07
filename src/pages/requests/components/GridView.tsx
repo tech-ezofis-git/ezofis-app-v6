@@ -23,8 +23,7 @@ import requestStore, {
 import cn from '@/utils/cn'
 import { formatDatetime } from '@/utils/dayjs'
 import HoverExpandableText from './HoverExpandableText'
-import IconButton from '@/components/base/button/IconButton'
-import Tooltip from '@/components/base/Tooltip'
+
 
 const GridRowSkeleton = ({ index }: { index: number }) => {
   const prefersReducedMotion = useReducedMotion()
@@ -934,7 +933,7 @@ const GridRowItem = memo(
       typeof row?._originalIndex === 'number' ? row._originalIndex : index
     const rowId = row?.id || row?.processId || `item-${originalIndex}`
 
-    const { jobMappings, jobStatuses, processingProcesses, rawWorkflowData } = requestStore(
+    const { jobMappings, jobStatuses, processingProcesses } = requestStore(
       (state) => state,
     )
     const matchingProc = useMemo(() => {
@@ -1005,33 +1004,9 @@ const GridRowItem = memo(
       !!row?.isDuplicateInvoice,
     )
 
-    const isApAgentStage = row.stageType === 'AP_AGENT'
-    let actionsList = row?._actions || row?.actions || []
 
-    if (!isApAgentStage) {
-      const rules = rawWorkflowData?.workflowJson?.rules || []
-      const currentActivityId = row.activityId
-      const dynamicRules = currentActivityId
-        ? rules.filter((rule: any) => rule.fromBlockId === currentActivityId)
-        : []
 
-      const ruleActions = dynamicRules.map((rule: any) => {
-        const actionName = rule.proceedAction || rule.action || 'Submit'
-        return {
-          label: actionName,
-          value: actionName,
-        }
-      })
 
-      if (ruleActions.length > 0) {
-        actionsList = ruleActions
-      }
-    }
-
-    const paidAction = actionsList.find(
-      (act: any) => String(act?.label || '').toLowerCase() === 'paid'
-    )
-    const hasPaidAction = !!paidAction
 
     return (
       <motion.div
@@ -1132,36 +1107,7 @@ const GridRowItem = memo(
               originalIndex={originalIndex}
               row={row}
             />
-            {hasPaidAction && (
-              <Tooltip content='Open Playground API' position='top'>
-                <IconButton
-                  color='primary'
-                  icon='tabler:plug'
-                  size='xs'
-                  variant='subtle'
-                  className='animate-pulse'
-                  onClick={(e: React.MouseEvent) => {
-                    e.stopPropagation()
-                    const docInfo = {
-                      amount: row?.amount || row?.['Invoice Amount'] || 0,
-                      currency: row?.currency || row?.['Currency'] || 'USD',
-                      invoiceNumber: row?.invoiceNumber || row?.['Invoice Number'] || row?.['Invoice No'] || '',
-                      poNumber: extractPONumber(row) || row?.purchaseOrderNumber || '',
-                      requestNo: row?.requestNo || row?.reqNo || '',
-                      vendor: row?.vendor || row?.['Supplier Name'] || row?.['Vendor Name'] || '',
-                    }
-                    requestStore.getState().setPlaygroundContext({
-                      actionName: paidAction?.label || 'Paid',
-                      endpoint: paidAction?.endpoint || 'https://ezagentplayground.onrender.com/apikey.html?id=2',
-                      model: paidAction?.model || 'gemini-2.0-flash-exp',
-                      provider: paidAction?.provider || 'gemini',
-                      document: docInfo,
-                    })
-                    requestStore.getState().setIsPlaygroundOpen(true)
-                  }}
-                />
-              </Tooltip>
-            )}
+
           </div>
 
           {/* Sub-metadata row */}

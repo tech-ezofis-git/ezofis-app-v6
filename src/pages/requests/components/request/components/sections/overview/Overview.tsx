@@ -15,6 +15,7 @@ import {
   Store,
   Trash2,
   Wallet,
+
 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import fileApi from '@/api/file/file'
@@ -700,11 +701,15 @@ const AnalysisCard = ({
   value,
   onClick,
   isPulsing = false,
+  isSelected = false,
 }: any) => {
   return (
     <div
       className={cn(
-        'relative flex min-w-0 flex-1 flex-col gap-1.5 rounded-xl border border-[var(--gray-3)] bg-surface p-2.5 transition-colors hover:bg-[var(--gray-1)]',
+        'relative flex min-w-0 flex-1 flex-col gap-1.5 rounded-xl border p-2.5 transition-all duration-300 ease-in-out hover:scale-[1.02] hover:shadow-md active:scale-95',
+        isSelected
+          ? 'border-[var(--primary-9)] bg-[var(--primary-2)]/30 ring-1 ring-[var(--primary-9)]/20 shadow-sm'
+          : 'border-[var(--gray-3)] bg-surface hover:bg-[var(--gray-1)]',
         onClick && 'cursor-pointer',
       )}
       onClick={onClick}
@@ -2194,6 +2199,7 @@ const Overview = (props: any) => {
                               : 'No PO Found'
                           }
                           onClick={() => setActiveDetailView('po_matching')}
+                          isSelected={activeDetailView === 'po_matching'}
                           align='left'
                         />
                       )
@@ -2217,6 +2223,7 @@ const Overview = (props: any) => {
                         'No duplicates detected'
                       }
                       onClick={() => setActiveDetailView('duplicate_check')}
+                      isSelected={activeDetailView === 'duplicate_check'}
                       align='left'
                     />
                     {supplierCheckState.status === 'not_run' && (
@@ -2235,12 +2242,13 @@ const Overview = (props: any) => {
                         title='Supplier Verification'
                         value={
                           <span className='inline-flex items-center gap-1.5 rounded-lg bg-[var(--primary-2)] px-2.5 py-1 text-xs font-bold text-[var(--primary-9)] border border-[var(--primary-4)] hover:bg-[var(--primary-3)] hover:text-[var(--primary-10)] hover:scale-[1.02] transition-all active:scale-95 shadow-sm mt-0.5'>
-                            <Icon className='h-4 w-4 text-[var(--primary-9)]' name='tabler:shield-check' />
+                            <Icon className='h-4 w-4 text-[var(--primary-9)]' name='tabler:wand' />
                             Verify Supplier
                           </span>
                         }
                         isLoading={isCurrentlyProcessing}
                         onClick={handleVerifySupplierClick}
+                        isSelected={activeDetailView === 'supplier_verification'}
                         align='left'
                         isPulsing={true}
                       />
@@ -2258,6 +2266,7 @@ const Overview = (props: any) => {
                           </span>
                         }
                         isLoading={false}
+                        isSelected={activeDetailView === 'supplier_verification'}
                         align='left'
                       />
                     )}
@@ -2270,6 +2279,7 @@ const Overview = (props: any) => {
                         value={supplierCheckState.data?.value || 'Verified'}
                         isLoading={false}
                         onClick={() => setActiveDetailView('supplier_verification')}
+                        isSelected={activeDetailView === 'supplier_verification'}
                         align='left'
                       />
                     )}
@@ -2289,6 +2299,7 @@ const Overview = (props: any) => {
                           glValidationDisplay.status
                         }
                         onClick={() => setActiveDetailView('gl_matching')}
+                        isSelected={activeDetailView === 'gl_matching'}
                         align='right'
                       />
                     )}
@@ -2309,6 +2320,7 @@ const Overview = (props: any) => {
                           setActiveDetailView('back_order')
                           setActiveBackOrderTab('current')
                         }}
+                        isSelected={activeDetailView === 'back_order'}
                         align='right'
                       />
                     ) : (
@@ -2328,6 +2340,7 @@ const Overview = (props: any) => {
                           'Days',
                         )}
                         onClick={() => setActiveDetailView('payment_terms')}
+                        isSelected={activeDetailView === 'payment_terms'}
                         align='right'
                       />
                     )}
@@ -2344,6 +2357,7 @@ const Overview = (props: any) => {
                             matterValidationDisplay.value === '---')
                         }
                         onClick={() => setActiveDetailView('matter_validation')}
+                        isSelected={activeDetailView === 'matter_validation'}
                         align='right'
                       />
                     )}

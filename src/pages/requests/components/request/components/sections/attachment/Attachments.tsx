@@ -191,6 +191,7 @@ export default function Attachments({
     isLoading,
     refetch,
   } = useAttachments(workflowId, targetInstanceId, enabled)
+  console.log('[Attachments] Loaded files list:', files)
   const { session } = authUserStore.getState()
   const tenantId = session?.tenantId || ''
   const userId = session?.id || ''

@@ -34,23 +34,23 @@ export const ApiPlayground = ({ context, onClose }: ApiPlaygroundProps) => {
     vendor: doc?.vendor || 'Silverline Auto Parts',
   }
 
-  const curlCode = `curl -X POST https://api.ezofis.com/api/v6/payments/process \\
-  -H "Content-Type: application/json" \\
-  -H "Authorization: Bearer YOUR_API_TOKEN" \\
-  -d '${JSON.stringify(requestPayload, null, 2).replace(/\n/g, '\n  ')}'`
+  //   const curlCode = `curl -X POST https://api.ezofis.com/api/v6/payments/process \\
+  //   -H "Content-Type: application/json" \\
+  //   -H "Authorization: Bearer YOUR_API_TOKEN" \\
+  //   -d '${JSON.stringify(requestPayload, null, 2).replace(/\n/g, '\n  ')}'`
 
-  const responseSnippet = `{
-  "success": true,
-  "transactionId": "TXN-${Math.floor(100000 + Math.random() * 900000)}",
-  "status": "Processed",
-  "processedAt": "${new Date().toISOString()}"
-}`
+  //   const responseSnippet = `{
+  //   "success": true,
+  //   "transactionId": "TXN-${Math.floor(100000 + Math.random() * 900000)}",
+  //   "status": "Processed",
+  //   "processedAt": "${new Date().toISOString()}"
+  // }`
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text)
-    setCopiedCode(true)
-    setTimeout(() => setCopiedCode(false), 2000)
-  }
+  //   const copyToClipboard = (text: string) => {
+  //     navigator.clipboard.writeText(text)
+  //     setCopiedCode(true)
+  //     setTimeout(() => setCopiedCode(false), 2000)
+  //   }
 
   return (
     <div className='flex h-full flex-col bg-surface font-sans text-gray-13'>
@@ -71,7 +71,7 @@ export const ApiPlayground = ({ context, onClose }: ApiPlaygroundProps) => {
 
       {/* Main Content Area */}
       <div className='flex-1 overflow-y-auto p-4 space-y-6 scrollbar'>
-        
+
         {/* Intro */}
         <div className='space-y-2'>
           <h3 className='text-xs font-extrabold uppercase tracking-wider text-[var(--gray-11)]'>Disbursement API</h3>
@@ -129,7 +129,7 @@ export const ApiPlayground = ({ context, onClose }: ApiPlaygroundProps) => {
         </div>
 
         {/* Live Payload Snippet */}
-        <div className='space-y-2 relative'>
+        {/* <div className='space-y-2 relative'>
           <div className='flex items-center justify-between'>
             <h4 className='text-[10px] font-bold text-[var(--gray-11)] uppercase tracking-wider'>Live Request Payload</h4>
             <button
@@ -143,10 +143,10 @@ export const ApiPlayground = ({ context, onClose }: ApiPlaygroundProps) => {
           <pre className='bg-[var(--gray-13)] p-3 rounded-lg border border-gray-12 overflow-x-auto scrollbar text-[var(--green-9)] font-mono text-[11px] leading-relaxed whitespace-pre-wrap select-all'>
             {JSON.stringify(requestPayload, null, 2)}
           </pre>
-        </div>
+        </div> */}
 
         {/* cURL Snippet */}
-        <div className='space-y-2 relative'>
+        {/* <div className='space-y-2 relative'>
           <div className='flex items-center justify-between'>
             <h4 className='text-[10px] font-bold text-[var(--gray-11)] uppercase tracking-wider'>cURL Request Code</h4>
             <button
@@ -160,15 +160,15 @@ export const ApiPlayground = ({ context, onClose }: ApiPlaygroundProps) => {
           <pre className='bg-[var(--gray-13)] p-3 rounded-lg border border-gray-12 overflow-x-auto scrollbar text-[var(--blue-9)] font-mono text-[11px] leading-relaxed whitespace-pre-wrap select-all'>
             {curlCode}
           </pre>
-        </div>
+        </div> */}
 
         {/* Response Snippet */}
-        <div className='space-y-2 relative'>
+        {/* <div className='space-y-2 relative'>
           <h4 className='text-[10px] font-bold text-[var(--gray-11)] uppercase tracking-wider'>Expected Response Payload</h4>
           <pre className='bg-[var(--gray-13)] p-3 rounded-lg border border-gray-12 overflow-x-auto scrollbar text-[var(--orange-9)] font-mono text-[11px] leading-relaxed whitespace-pre-wrap'>
             {responseSnippet}
           </pre>
-        </div>
+        </div> */}
 
       </div>
     </div>
