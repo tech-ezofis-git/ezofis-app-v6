@@ -15,7 +15,7 @@ import {
   Store,
   Trash2,
   Wallet,
-
+  Wand2,
 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import fileApi from '@/api/file/file'
@@ -1831,12 +1831,43 @@ const Overview = (props: any) => {
   const [fileType, setFileType] = useState<string | null>(null)
   const [isViewerLoading, setIsViewerLoading] = useState(false)
   const [scale, setScale] = useState(1)
+  const [scannerBounds, setScannerBounds] = useState<{ left: number; right: number }>({ left: 0, right: 0 })
   const viewerRef = useRef<any>(null)
+  const pdfViewerWrapperRef = useRef<HTMLDivElement>(null)
   const lastFetchedRef = useRef<{
     itemId: string
     localUrl?: string
     repoId: string
   } | null>(null)
+
+  // Measure the actual PDF page element bounds so scanner line is confined to it
+  useEffect(() => {
+    if (!pdfViewerWrapperRef.current || !isScanning) return
+    const wrapper = pdfViewerWrapperRef.current
+    const measure = () => {
+      const page =
+        wrapper.querySelector('.rpv-core__page-layer') ||
+        wrapper.querySelector('[class*="page-layer"]') ||
+        wrapper.querySelector('canvas')
+      if (page && wrapper) {
+        const wRect = wrapper.getBoundingClientRect()
+        const pRect = page.getBoundingClientRect()
+        setScannerBounds({
+          left: Math.max(0, pRect.left - wRect.left),
+          right: Math.max(0, wRect.right - pRect.right),
+        })
+      }
+    }
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(wrapper)
+    const mutationObserver = new MutationObserver(measure)
+    mutationObserver.observe(wrapper, { childList: true, subtree: true })
+    return () => {
+      observer.disconnect()
+      mutationObserver.disconnect()
+    }
+  }, [isScanning, previewUrl])
 
   const toolbarPluginInstance = useMemo(
     () => ({
@@ -2007,7 +2038,7 @@ const Overview = (props: any) => {
     if (fileType === 'application/pdf') {
       previewContent = (
         <Worker workerUrl='https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js'>
-          <div className='group relative h-full w-full overflow-hidden'>
+          <div className='group relative h-full w-full overflow-hidden' ref={pdfViewerWrapperRef}>
             <Viewer
               defaultScale={SpecialZoomLevel.PageWidth}
               fileUrl={previewUrl}
@@ -2031,11 +2062,17 @@ const Overview = (props: any) => {
               </button>
             </div>
 
-            {/* Scanner overlay (restricted to PDF viewer) */}
+            {/* Scanner overlay — constrained to actual PDF page width via measured bounds */}
             {isScanning && (
-              <div className='pointer-events-none absolute inset-x-0 bottom-0 top-12 z-10 overflow-hidden'>
-                <div className='bg-[color-mix(in srgb,var(--primary-9)_3%,transparent)] absolute inset-0' />
-                <div className='animate-scan absolute right-0 left-0 h-[2px] bg-[var(--primary-9)] shadow-[0_0_8px_var(--primary-9),_0_0_16px_var(--primary-9)]' />
+              <div className='pointer-events-none absolute inset-0 z-10 overflow-hidden'>
+                <div
+                  className='bg-[color-mix(in srgb,var(--primary-9)_3%,transparent)] absolute inset-y-0'
+                  style={{ left: scannerBounds.left, right: scannerBounds.right }}
+                />
+                <div
+                  className='animate-scan absolute h-[2px] bg-[var(--primary-9)] shadow-[0_0_8px_var(--primary-9),_0_0_16px_var(--primary-9)]'
+                  style={{ left: scannerBounds.left, right: scannerBounds.right }}
+                />
               </div>
             )}
           </div>
@@ -2239,25 +2276,20 @@ const Overview = (props: any) => {
                     />
                     {supplierCheckState.status === 'not_run' && (
                       <AnalysisCard
-                        icon={Store}
-                        status={
-                          <span className='flex items-center gap-1'>
-                            <span className='relative flex h-1.5 w-1.5'>
-                              <span className='animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--orange-9)] opacity-75'></span>
-                              <span className='relative inline-flex rounded-full h-1.5 w-1.5 bg-[var(--orange-9)]'></span>
-                            </span>
-                            Verify
-                          </span>
-                        }
+                        icon={Wand2}
+                        status="Not Verified"
                         statusType='warning'
                         title='Supplier Verification'
                         value={
-                          <span className='inline-flex items-center gap-1.5 rounded-lg bg-[var(--primary-2)] px-2.5 py-1 text-xs font-bold text-[var(--primary-9)] border border-[var(--primary-4)] hover:bg-[var(--primary-3)] hover:text-[var(--primary-10)] hover:scale-[1.02] transition-all active:scale-95 shadow-sm mt-0.5'>
-                            <Icon className='h-4 w-4 text-[var(--primary-9)]' name='tabler:wand' />
+                          <span className='inline-flex items-center gap-2 rounded-lg bg-[var(--primary-2)] px-2.5 py-1 text-xs font-bold text-[var(--primary-9)] border border-[var(--primary-4)] hover:bg-[var(--primary-3)] hover:text-[var(--primary-10)] hover:scale-[1.02] transition-all active:scale-95 shadow-sm mt-0.5'>
+                            <span className='relative flex h-1.5 w-1.5 shrink-0'>
+                              <span className='animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--primary-9)] opacity-75'></span>
+                              <span className='relative inline-flex rounded-full h-1.5 w-1.5 bg-[var(--primary-9)]'></span>
+                            </span>
                             Verify Supplier
                           </span>
                         }
-                        isLoading={isCurrentlyProcessing}
+                        isLoading={false}
                         onClick={handleVerifySupplierClick}
                         isSelected={activeDetailView === 'supplier_verification'}
                         align='left'
@@ -2266,7 +2298,7 @@ const Overview = (props: any) => {
                     )}
                     {supplierCheckState.status === 'pending' && (
                       <AnalysisCard
-                        icon={Store}
+                        icon={Wand2}
                         status='Verifying...'
                         statusType='info'
                         title='Supplier Verification'
@@ -2287,8 +2319,8 @@ const Overview = (props: any) => {
                         status={supplierCheckState.data?.status || 'Verified'}
                         statusType={supplierCheckState.data?.statusType || 'success'}
                         title='Supplier Verification'
-                        value={supplierCheckState.data?.value || 'Verified'}
-                        isLoading={false}
+                        value={supplierCheckState.data?.value || 'Supplier verified'}
+                        isLoading={isCurrentlyProcessing}
                         onClick={() => setActiveDetailView('supplier_verification')}
                         isSelected={activeDetailView === 'supplier_verification'}
                         align='left'
@@ -3305,54 +3337,63 @@ const Overview = (props: any) => {
                                                   isNumeric && 'text-right'
                                                 )}
                                               >
-                                                <input
-                                                  className={cn(
-                                                    'w-full rounded border-none bg-transparent px-1.5 py-1 text-xs font-semibold transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none',
-                                                    isNumeric ? 'text-right text-[var(--gray-11)]' : 'text-[var(--gray-13)]'
-                                                  )}
-                                                  value={cellVal}
-                                                  onBlur={(e) => {
-                                                    if (
-                                                      colKey.toLowerCase().includes('price') ||
-                                                      colKey.toLowerCase().includes('rate') ||
-                                                      colKey.toLowerCase().includes('amount') ||
-                                                      colKey.toLowerCase().includes('total')
-                                                    ) {
-                                                      const num = Number.parseFloat(
-                                                        e.target.value.replace(
-                                                          /[^0-9.-]+/g,
-                                                          '',
-                                                        ),
-                                                      )
-                                                      if (!Number.isNaN(num)) {
-                                                        handleLineItemChange(
-                                                          index,
-                                                          colKey,
-                                                          num.toFixed(2),
+                                                <div className='group/cell relative'>
+                                                  <input
+                                                    className={cn(
+                                                      'w-full rounded border-none bg-transparent px-1.5 py-1 text-xs font-semibold transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none',
+                                                      isNumeric ? 'text-right text-[var(--gray-11)]' : 'text-[var(--gray-13)]'
+                                                    )}
+                                                    title={String(cellVal)}
+                                                    value={cellVal}
+                                                    onBlur={(e) => {
+                                                      if (
+                                                        colKey.toLowerCase().includes('price') ||
+                                                        colKey.toLowerCase().includes('rate') ||
+                                                        colKey.toLowerCase().includes('amount') ||
+                                                        colKey.toLowerCase().includes('total')
+                                                      ) {
+                                                        const num = Number.parseFloat(
+                                                          e.target.value.replace(
+                                                            /[^0-9.-]+/g,
+                                                            '',
+                                                          ),
                                                         )
-                                                        return
+                                                        if (!Number.isNaN(num)) {
+                                                          handleLineItemChange(
+                                                            index,
+                                                            colKey,
+                                                            num.toFixed(2),
+                                                          )
+                                                          return
+                                                        }
                                                       }
+                                                      handleLineItemChange(
+                                                        index,
+                                                        colKey,
+                                                        e.target.value,
+                                                      )
+                                                    }}
+                                                    onChange={(e) =>
+                                                      handleLineItemChange(
+                                                        index,
+                                                        colKey,
+                                                        e.target.value,
+                                                      )
                                                     }
-                                                    handleLineItemChange(
-                                                      index,
-                                                      colKey,
-                                                      e.target.value,
-                                                    )
-                                                  }}
-                                                  onChange={(e) =>
-                                                    handleLineItemChange(
-                                                      index,
-                                                      colKey,
-                                                      e.target.value,
-                                                    )
-                                                  }
-                                                  onFocus={() =>
-                                                    handleFieldFocus?.(
-                                                      cellVal,
-                                                      colKey,
-                                                    )
-                                                  }
-                                                />
+                                                    onFocus={() =>
+                                                      handleFieldFocus?.(
+                                                        cellVal,
+                                                        colKey,
+                                                      )
+                                                    }
+                                                  />
+                                                  {/* Hover tooltip for long values */}
+                                                  {String(cellVal).length > 20 && (
+                                                    <div className='pointer-events-none absolute bottom-full left-0 z-50 mb-1 hidden max-w-[280px] rounded-lg border border-[var(--gray-3)] bg-surface px-3 py-2 text-xs font-medium text-[var(--gray-13)] shadow-xl break-words whitespace-normal group-hover/cell:block animate-in fade-in duration-150'>
+                                                      {String(cellVal)}
+                                                    </div>
+                                                  )}
+                                                </div>
                                               </td>
                                             )
                                           })
