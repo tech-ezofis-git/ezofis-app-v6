@@ -1,4 +1,4 @@
-import { useState } from 'react'
+// import { useState } from 'react'
 import Icon from '@/components/base/icon/Icon'
 // import cn from '@/utils/cn'
 
@@ -21,18 +21,18 @@ interface ApiPlaygroundProps {
 }
 
 export const ApiPlayground = ({ context, onClose }: ApiPlaygroundProps) => {
-  const [copiedCode, setCopiedCode] = useState(false)
-  const doc = context?.document
+  // const [copiedCode, setCopiedCode] = useState(false)
+  // const doc = context?.document
 
   // Default mock values if context document is missing
-  const requestPayload = {
-    amount: doc?.amount || 3057.78,
-    currency: doc?.currency || 'USD',
-    invoiceNumber: doc?.invoiceNumber || 'INV-2001',
-    poNumber: doc?.poNumber || 'PO-1001',
-    requestNo: doc?.requestNo || 'REQ-1',
-    vendor: doc?.vendor || 'Silverline Auto Parts',
-  }
+  // const requestPayload = {
+  //   amount: doc?.amount || 3057.78,
+  //   currency: doc?.currency || 'USD',
+  //   invoiceNumber: doc?.invoiceNumber || 'INV-2001',
+  //   poNumber: doc?.poNumber || 'PO-1001',
+  //   requestNo: doc?.requestNo || 'REQ-1',
+  //   vendor: doc?.vendor || 'Silverline Auto Parts',
+  // }
 
   //   const curlCode = `curl -X POST https://api.ezofis.com/api/v6/payments/process \\
   //   -H "Content-Type: application/json" \\
