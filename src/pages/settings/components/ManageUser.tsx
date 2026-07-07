@@ -1,35 +1,54 @@
-import { createColumnHelper, useReactTable } from '@tanstack/react-table'
+import {
+  createColumnHelper,
+  useReactTable,
+} from '@tanstack/react-table'
 import {
   Check,
-  Download,
   Edit3,
   MoreHorizontal,
-  Plus,
   ShieldCheck,
   Trash2,
   UserRound,
   UsersRound,
 } from 'lucide-react'
-import { type ReactNode, useMemo, useState } from 'react'
+import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react'
 import IconButton from '@/components/base/button/IconButton'
+import InputPassword from '@/components/base/inputs/password/InputPassword'
+import showToast from '@/components/base/toast/showToast'
 import DataTable from '@/components/base/data-table/DataTable'
-import InputSelect from '@/components/base/inputs/InputSelect'
 import InputText from '@/components/base/inputs/InputText'
-import type { SettingsUser } from '../helpers/userGroupMappers'
-import {
-  dummySettingsUsers,
-  getDummyGroupOptions,
-} from '../data/settingsDummyData'
+import { createUser, getUsers, updateUser } from '@/api/v6/user'
+import { dummySettingsUsers, getDummyGroupOptions } from '../data/settingsDummyData'
 import {
   settingsHeaderMeta,
   settingsTableCoreOptions,
+  useSettingsTableSearch,
 } from '../helpers/settingsDataTable'
 import { calculateUserSetupProgress } from '../helpers/settingsSetupProgress'
-import SettingsSearchInput from './SettingsSearchInput'
+import {
+  mapApiUserToSettingsUser,
+  mapApiUsersToSettingsUsers,
+  mapUsersToManagerOptions,
+  type SettingsOption,
+  type SettingsUser,
+} from '../helpers/userGroupMappers'
+import SettingsDateField from './SettingsDateField'
+import SettingsSelectField from './SettingsSelectField'
+import {
+  mapDraftUserToCreatePayload,
+  mapDraftUserToUpdatePayload,
+  type DraftSettingsUser,
+} from '../helpers/mapCreateUserPayload'
 import SetupProgressBar from './SetupProgressBar'
+import SettingsPageHeader, {
+  SettingsHeaderAddButton,
+} from './SettingsPageHeader'
+import SettingsTableToolbarRow from './SettingsTableToolbarRow'
+import useSettingsTableToolbar from './useSettingsTableToolbar'
 
 type AppUser = SettingsUser
-type LoginType = 'Password' | 'Google SSO' | 'MS Entra ID' | 'LDAP / AD'
+type DraftUser = DraftSettingsUser
+type LoginType = 'Password' | 'Google' | 'Microsoft' | 'Active Directory'
 
 type Step = {
   caption: string
@@ -49,7 +68,7 @@ const steps: Step[] = [
   { caption: 'Step 5', key: 'review', title: 'Review' },
 ]
 
-const emptyUser: AppUser = {
+const emptyUser: DraftUser = {
   accountExpiryDate: '',
   businessUnit: '',
   created: 'Jun 6, 2026',
@@ -68,25 +87,33 @@ const emptyUser: AppUser = {
   manager: '',
   mfaEnabled: true,
   mfaMethods: [],
+  password: '',
   passwordExpiryDays: 90,
   role: 'Business User',
   status: 'active',
   username: '',
 }
 
-const departments = ['Finance', 'IT', 'Compliance', 'Procurement', 'Operations']
+const departments = [
+  'Administration',
+  'Finance',
+  'IT',
+  'Legal',
+  'Procurement',
+]
+const jobTitles = ['Executive', 'Manager']
 const roles = [
+  'Administrator',
+  'Workspace Owner',
+  'Process Owner',
+  'Repository Owner',
   'Business User',
-  'AP Officer',
-  'AP Manager',
-  'Auditor',
-  'System Admin',
 ]
 const loginTypes: LoginType[] = [
   'Password',
-  'Google SSO',
-  'MS Entra ID',
-  'LDAP / AD',
+  'Google',
+  'Microsoft',
+  'Active Directory',
 ]
 
 const mfaMethods = ['Email OTP', 'Mobile OTP', 'Authenticator App']
@@ -94,29 +121,19 @@ const mfaMethods = ['Email OTP', 'Mobile OTP', 'Authenticator App']
 const userColumnHelper = createColumnHelper<AppUser>()
 
 type FormSectionProps = {
-  user: AppUser
-  onChange: (user: AppUser) => void
+  user: DraftUser
+  onChange: (user: DraftUser) => void
 }
 
 type ManageUserProps = {
   onBack?: () => void
 }
 
-type SelectOption = {
-  description?: string
-  disabled?: boolean
-  id: string | number
-  name: string
-  value?: string
-}
-
 export default function ManageUser({ onBack }: ManageUserProps) {
   const groupOptions = useMemo(() => getDummyGroupOptions(), [])
 
-  const [users, setUsers] = useState<AppUser[]>(dummySettingsUsers)
-  const [query, setQuery] = useState('')
-  const [roleFilter, setRoleFilter] = useState('All Roles')
-  const [statusFilter, setStatusFilter] = useState('All Status')
+  const [users, setUsers] = useState<AppUser[]>([])
+  const [isLoadingUsers, setIsLoadingUsers] = useState(true)
   const [openMenuId, setOpenMenuId] = useState<string | number | null>(null)
 
   const [isSetupOpen, setIsSetupOpen] = useState(false)
@@ -124,39 +141,60 @@ export default function ManageUser({ onBack }: ManageUserProps) {
     null,
   )
   const [activeStep, setActiveStep] = useState(0)
-  const [draftUser, setDraftUser] = useState<AppUser>(emptyUser)
+  const [draftUser, setDraftUser] = useState<DraftUser>(emptyUser)
+  const [originalUser, setOriginalUser] = useState<DraftUser | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
 
-  const roleOptions = useMemo(() => {
-    const uniqueRoles = Array.from(
-      new Set(users.map((user) => user.role).filter(Boolean)),
-    )
-    return ['All Roles', ...uniqueRoles]
-  }, [users])
+  const tableSearchOptions = useSettingsTableSearch()
 
-  const filteredUsers = useMemo(() => {
-    return users.filter((user) => {
-      const text =
-        `${user.firstName} ${user.lastName} ${user.email}`.toLowerCase()
-      const matchesSearch = text.includes(query.toLowerCase())
-      const matchesRole = roleFilter === 'All Roles' || user.role === roleFilter
-      const matchesStatus =
-        statusFilter === 'All Status' ||
-        user.status === statusFilter.toLowerCase()
+  const loadUsers = useCallback(async () => {
+    setIsLoadingUsers(true)
 
-      return matchesSearch && matchesRole && matchesStatus
-    })
-  }, [query, roleFilter, statusFilter, users])
+    try {
+      const response = await getUsers()
+
+      if (response.error) {
+        showToast({ message: response.error, variant: 'error' })
+        setUsers(dummySettingsUsers)
+        return
+      }
+
+      setUsers(
+        response.data.length
+          ? mapApiUsersToSettingsUsers(response.data)
+          : [],
+      )
+    } finally {
+      setIsLoadingUsers(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    void loadUsers()
+  }, [loadUsers])
+
+  const managerOptions = useMemo(
+    () =>
+      mapUsersToManagerOptions(
+        users.filter((user) => user.id !== editingUserId),
+      ),
+    [users, editingUserId],
+  )
 
   const openAddUser = () => {
     setEditingUserId(null)
+    setOriginalUser(null)
     setDraftUser({ ...emptyUser, id: Date.now() })
     setActiveStep(0)
     setIsSetupOpen(true)
   }
 
   const openEditUser = (user: AppUser) => {
+    const snapshot = { ...user, password: '' }
+
     setEditingUserId(user.id)
-    setDraftUser({ ...user })
+    setOriginalUser(snapshot)
+    setDraftUser(snapshot)
     setActiveStep(0)
     setOpenMenuId(null)
     setIsSetupOpen(true)
@@ -172,8 +210,8 @@ export default function ManageUser({ onBack }: ManageUserProps) {
     setOpenMenuId(null)
   }
 
-  const saveUser = () => {
-    const normalizedUser: AppUser = {
+  const saveUser = async () => {
+    const normalizedUser: DraftUser = {
       ...draftUser,
       created: draftUser.created || 'Jun 6, 2026',
       username:
@@ -183,16 +221,113 @@ export default function ManageUser({ onBack }: ManageUserProps) {
     }
 
     if (editingUserId) {
-      setUsers((current) =>
-        current.map((user) =>
-          user.id === editingUserId ? normalizedUser : user,
-        ),
+      if (!normalizedUser.firstName.trim()) {
+        showToast({ message: 'First name is required', variant: 'error' })
+        return
+      }
+
+      if (!originalUser) {
+        showToast({ message: 'Unable to update user', variant: 'error' })
+        return
+      }
+
+      const updatePayload = mapDraftUserToUpdatePayload(
+        normalizedUser,
+        originalUser,
       )
-    } else {
-      setUsers((current) => [normalizedUser, ...current])
+
+      if (!Object.keys(updatePayload).length) {
+        showToast({ message: 'No changes to save', variant: 'default' })
+        return
+      }
+
+      setIsSaving(true)
+
+      try {
+        const response = await updateUser(String(editingUserId), updatePayload)
+
+        if (response.error) {
+          showToast({ message: response.error, variant: 'error' })
+          return
+        }
+
+        const listResponse = await getUsers()
+
+        if (!listResponse.error && listResponse.data.length) {
+          setUsers(mapApiUsersToSettingsUsers(listResponse.data))
+        } else {
+          const { password: _password, ...userWithoutPassword } = normalizedUser
+
+          setUsers((current) =>
+            current.map((user) =>
+              user.id === editingUserId ? userWithoutPassword : user,
+            ),
+          )
+        }
+
+        showToast({ message: 'User updated successfully', variant: 'success' })
+        setOriginalUser(null)
+        setIsSetupOpen(false)
+      } finally {
+        setIsSaving(false)
+      }
+
+      return
     }
 
-    setIsSetupOpen(false)
+    if (!normalizedUser.email.trim()) {
+      showToast({ message: 'Email is required', variant: 'error' })
+      return
+    }
+
+    if (normalizedUser.loginType === 'Password' && !normalizedUser.password.trim()) {
+      showToast({ message: 'Password is required for Password login', variant: 'error' })
+      return
+    }
+
+    setIsSaving(true)
+
+    try {
+      const response = await createUser(
+        mapDraftUserToCreatePayload(normalizedUser),
+      )
+
+      if (response.error) {
+        showToast({ message: response.error, variant: 'error' })
+        return
+      }
+
+      const listResponse = await getUsers()
+
+      if (!listResponse.error) {
+        setUsers(
+          listResponse.data.length
+            ? mapApiUsersToSettingsUsers(listResponse.data)
+            : users,
+        )
+      } else {
+        const createdUser = response.data
+          ? mapApiUserToSettingsUser(
+            response.data as Record<string, unknown>,
+            users.length,
+          )
+          : null
+        const { password: _password, ...userWithoutPassword } = normalizedUser
+
+        setUsers((current) => [
+          createdUser || {
+            ...userWithoutPassword,
+            id: Date.now(),
+          },
+          ...current,
+        ])
+      }
+
+      showToast({ message: 'User created successfully', variant: 'success' })
+      setIsSetupOpen(false)
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const userColumns = useMemo(
@@ -202,16 +337,16 @@ export default function ManageUser({ onBack }: ManageUserProps) {
         enableSorting: false,
         header: '',
         id: 'avatar',
-        maxSize: 64,
+        maxSize: 48,
         meta: settingsHeaderMeta.center,
-        minSize: 64,
-        size: 64,
+        minSize: 48,
+        size: 48,
         cell: ({ row }) => {
           const user = row.original
 
           return (
             <div className='flex justify-center'>
-              <div className='flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--primary-3)] text-[16px] font-semibold text-[var(--primary-9)]'>
+              <div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--primary-3)] text-xs font-semibold text-[var(--primary-9)]'>
                 {getInitials(user.firstName, user.lastName)}
               </div>
             </div>
@@ -219,32 +354,35 @@ export default function ManageUser({ onBack }: ManageUserProps) {
         },
       }),
 
-      userColumnHelper.display({
-        enableSorting: false,
-        header: 'Name',
-        id: 'name',
-        meta: settingsHeaderMeta.start,
-        minSize: 200,
-        size: 260,
-        cell: ({ row }) => {
-          const user = row.original
+      userColumnHelper.accessor(
+        (row) => `${row.firstName} ${row.lastName} ${row.email}`,
+        {
+          enableSorting: false,
+          header: 'Name',
+          id: 'name',
+          meta: { ...settingsHeaderMeta.start, label: 'Name' },
+          minSize: 200,
+          size: 260,
+          cell: ({ row }) => {
+            const user = row.original
 
-          return (
-            <div className='min-w-0'>
-              <div className='truncate font-semibold text-[var(--gray-13)]'>
-                {user.firstName} {user.lastName}
+            return (
+              <div className='min-w-0'>
+                <div className='truncate font-semibold text-[var(--gray-13)]'>
+                  {user.firstName} {user.lastName}
+                </div>
+                <div className='truncate text-[var(--gray-10)]'>{user.email}</div>
               </div>
-              <div className='truncate text-[var(--gray-10)]'>{user.email}</div>
-            </div>
-          )
+            )
+          },
         },
-      }),
+      ),
 
       userColumnHelper.accessor('department', {
         enableSorting: false,
         header: 'Department',
         id: 'department',
-        meta: settingsHeaderMeta.start,
+        meta: { ...settingsHeaderMeta.start, label: 'Department' },
         minSize: 120,
         size: 140,
         cell: ({ getValue }) => <span>{String(getValue() || '—')}</span>,
@@ -254,7 +392,7 @@ export default function ManageUser({ onBack }: ManageUserProps) {
         enableSorting: false,
         header: 'Role',
         id: 'role',
-        meta: settingsHeaderMeta.start,
+        meta: { ...settingsHeaderMeta.start, label: 'Role' },
         minSize: 130,
         size: 150,
         cell: ({ getValue }) => (
@@ -268,7 +406,7 @@ export default function ManageUser({ onBack }: ManageUserProps) {
         enableSorting: false,
         header: 'Status',
         id: 'status',
-        meta: settingsHeaderMeta.start,
+        meta: { ...settingsHeaderMeta.start, label: 'Status' },
         minSize: 100,
         size: 110,
         cell: ({ getValue }) => <StatusBadge status={getValue()} />,
@@ -358,9 +496,18 @@ export default function ManageUser({ onBack }: ManageUserProps) {
   )
   const userTable = useReactTable({
     ...settingsTableCoreOptions,
+    ...tableSearchOptions,
     columns: userColumns,
-    data: filteredUsers,
+    data: users,
     getRowId: (row) => String(row.id),
+  })
+
+  const { onRowSizeChange, rowSize, toolbar } = useSettingsTableToolbar({
+    isReLoading: isLoadingUsers,
+    table: userTable,
+    onReload: () => {
+      void loadUsers()
+    },
   })
 
   if (isSetupOpen) {
@@ -370,8 +517,13 @@ export default function ManageUser({ onBack }: ManageUserProps) {
         draftUser={draftUser}
         editingUserId={editingUserId}
         groupOptions={groupOptions}
+        managerOptions={managerOptions}
+        isSaving={isSaving}
         onBack={() => setActiveStep((step) => Math.max(step - 1, 0))}
-        onCancel={() => setIsSetupOpen(false)}
+        onCancel={() => {
+          setOriginalUser(null)
+          setIsSetupOpen(false)
+        }}
         onChange={setDraftUser}
         onNext={() =>
           setActiveStep((step) => Math.min(step + 1, steps.length - 1))
@@ -384,74 +536,41 @@ export default function ManageUser({ onBack }: ManageUserProps) {
   return (
     <main className='bg-[var(--surface)]'>
       <section className=''>
-        <div className='mb-4 flex items-center justify-between border-b border-gray-3 bg-surface px-6 py-4 md:px-8'>
-          <div className='flex items-start gap-3'>
-            <IconButton
-              ariaLabel='Back'
-              color='gray'
-              icon='lucide:arrow-left'
-              size='sm'
-              variant='ghost'
-              onClick={onBack}
-            />
-
-            <div>
-              <h1 className='text-18/6 font-semibold tracking-tight text-gray-13'>
-                User Management
-              </h1>
-
-              <p className='text-13/5 text-gray-11'>
-                Manage all users who access the AP Agent and DMS platform.
-              </p>
-            </div>
-          </div>
-
-          <div className='flex items-center gap-3'>
-            <button className='inline-flex h-7 items-center gap-3 rounded-[5px] border border-[var(--border-default)] bg-surface px-4 text-[12px] font-medium text-[var(--gray-13)] shadow-[var(--shadow-sm)] transition hover:bg-[var(--gray-2)]'>
-              <Download size={14} />
-              Export
-            </button>
-            <button
-              className='inline-flex h-7 items-center gap-3 rounded-[5px] bg-[var(--primary-9)] px-5 text-[12px] font-semibold text-white shadow-[var(--shadow-md)] transition hover:bg-[var(--primary-10)]'
+        <SettingsPageHeader
+          actions={
+            <SettingsHeaderAddButton
+              tooltip='Add User'
               onClick={openAddUser}
-            >
-              <Plus size={14} />
-              Add User
-            </button>
+            />
+          }
+          description='Manage all users who access the AP Agent and DMS platform.'
+          title='User Management'
+          onBack={onBack}
+        />
+
+        <div className='px-6 md:px-8'>
+          <SettingsTableToolbarRow toolbar={toolbar} />
+
+          <div className='py-4'>
+            <DataTable
+              emptyDescription='Add a user to grant access to the AP Agent and DMS platform.'
+              emptyIcon='lucide:users'
+              emptyTitle='No users yet'
+              hideActionBar
+              isLoading={isLoadingUsers}
+              isReLoading={isLoadingUsers}
+              pageSize={Math.max(5, users.length || 5)}
+              rowSize={rowSize}
+              table={userTable}
+              tableBodyMaxHeight='calc(100vh - 320px)'
+              hideGrouping
+              stickyHeader
+              onReload={() => {
+                void loadUsers()
+              }}
+              onRowSizeChange={onRowSizeChange}
+            />
           </div>
-        </div>
-
-        <div className='mb-8 grid grid-cols-1 gap-4 px-6 py-4 lg:grid-cols-[1fr_220px_180px]'>
-          <SettingsSearchInput
-            placeholder='Search users by name or email...'
-            value={query}
-            onChange={setQuery}
-          />
-
-          <SelectField
-            options={roleOptions}
-            value={roleFilter}
-            onChange={setRoleFilter}
-          />
-          <SelectField
-            options={['All Status', 'Active', 'Inactive', 'Pending']}
-            value={statusFilter}
-            onChange={setStatusFilter}
-          />
-        </div>
-
-        <div className='px-6 py-4'>
-          <DataTable
-            component={<div />}
-            isLoading={false}
-            isReLoading={false}
-            pageSize={Math.max(5, filteredUsers.length || 5)}
-            table={userTable}
-            tableBodyMaxHeight='calc(100vh - 320px)'
-            hideGrouping
-            stickyHeader
-            onReload={() => setUsers(dummySettingsUsers)}
-          />
         </div>
       </section>
     </main>
@@ -530,16 +649,23 @@ function Authentication({ user, onChange }: FormSectionProps) {
   )
 }
 
-function BusinessDetails({ user, onChange }: FormSectionProps) {
+function BusinessDetails({
+  managerOptions,
+  user,
+  onChange,
+}: FormSectionProps & {
+  managerOptions: SettingsOption[]
+}) {
   return (
     <FormCard
       description='Align this user with the business hierarchy and operating model.'
       title='Business Detail'
     >
       <div className='grid grid-cols-1 gap-5 md:grid-cols-2'>
-        <EzTextField
+        <SettingsSelectField
           label='Job Title'
-          placeholder='e.g. AP Specialist'
+          options={jobTitles}
+          placeholder='Select'
           value={user.jobTitle}
           onChange={(value) => onChange({ ...user, jobTitle: value })}
         />
@@ -551,10 +677,10 @@ function BusinessDetails({ user, onChange }: FormSectionProps) {
           onChange={(value) => onChange({ ...user, employeeId: value })}
         />
 
-        <EzSelectField
+        <SettingsSelectField
           label='Department'
           options={departments}
-          placeholder='Select department'
+          placeholder='Select'
           value={user.department}
           onChange={(value) => onChange({ ...user, department: value })}
         />
@@ -566,9 +692,11 @@ function BusinessDetails({ user, onChange }: FormSectionProps) {
           onChange={(value) => onChange({ ...user, businessUnit: value })}
         />
 
-        <EzTextField
+        <SettingsSelectField
+          clearable
           label='Manager'
-          placeholder='Manager name or email'
+          options={managerOptions}
+          placeholder='Select'
           value={user.manager}
           onChange={(value) => onChange({ ...user, manager: value })}
         />
@@ -581,48 +709,38 @@ function BusinessDetails({ user, onChange }: FormSectionProps) {
         />
       </div>
 
-      <EzSelectField
+      <SettingsSelectField
         label='Role'
         options={roles}
+        required
         value={user.role}
         onChange={(value) => onChange({ ...user, role: value })}
       />
     </FormCard>
   )
 }
-function EzSelectField({
+function EzPasswordField({
   label,
-  options,
-  placeholder = 'Select',
+  required,
   value,
   onChange,
 }: {
   label: string
-  options: string[]
-  placeholder?: string
+  required?: boolean
   value: string
   onChange: (value: string) => void
 }) {
-  const selectOptions = toSelectOptions(options)
-
-  const selectedOption =
-    selectOptions.find(
-      (option) => option.value === value || option.name === value,
-    ) || null
-
   return (
-    <InputSelect
+    <InputPassword
       label={label}
-      options={selectOptions}
-      placeholder={placeholder}
-      value={selectedOption}
-      onChange={(selected: SelectOption | null) => {
-        if (!selected) return
-        onChange(selected.value || selected.name)
-      }}
+      required={required}
+      showPlaceholder
+      value={value}
+      onChange={onChange}
     />
   )
 }
+
 function EzTextField({
   label,
   placeholder,
@@ -791,14 +909,24 @@ function LoginDetails({ user, onChange }: FormSectionProps) {
         onChange={(value) => onChange({ ...user, username: value })}
       />
 
-      <EzSelectField
+      <SettingsSelectField
         label='Login Type'
         options={loginTypes}
+        required
         value={user.loginType}
         onChange={(value) =>
           onChange({ ...user, loginType: value as LoginType })
         }
       />
+
+      {user.loginType === 'Password' ? (
+        <EzPasswordField
+          label='Password'
+          value={user.password}
+          required
+          onChange={(value) => onChange({ ...user, password: value })}
+        />
+      ) : null}
 
       <div className='grid grid-cols-1 gap-5 md:grid-cols-2'>
         <EzTextField
@@ -811,9 +939,8 @@ function LoginDetails({ user, onChange }: FormSectionProps) {
           }
         />
 
-        <EzTextField
+        <SettingsDateField
           label='Account Expiry Date'
-          type='date'
           value={user.accountExpiryDate}
           onChange={(value) => onChange({ ...user, accountExpiryDate: value })}
         />
@@ -830,7 +957,7 @@ function LoginDetails({ user, onChange }: FormSectionProps) {
   )
 }
 
-function Review({ user }: { user: AppUser }) {
+function Review({ user }: { user: DraftUser }) {
   return (
     <FormCard
       description='Validate the user profile before provisioning access.'
@@ -847,6 +974,8 @@ function Review({ user }: { user: AppUser }) {
             value={`${user.firstName} ${user.lastName}`.trim() || '—'}
           />
           <SummaryItem label='Email' value={user.email || '—'} />
+          <SummaryItem label='Job Title' value={user.jobTitle || '—'} />
+          <SummaryItem label='Manager' value={user.manager || '—'} />
           <SummaryItem label='Login' value={user.loginType} />
           <SummaryItem label='Department' value={user.department || '—'} />
           <SummaryItem label='Role' value={user.role || '—'} />
@@ -862,40 +991,6 @@ function Review({ user }: { user: AppUser }) {
         </div>
       </div>
     </FormCard>
-  )
-}
-
-function SelectField({
-  options,
-  value,
-  onChange,
-}: {
-  options: string[]
-  value: string
-  onChange: (value: string) => void
-}) {
-  const selectOptions: SelectOption[] = options.map((option) => ({
-    id: option,
-    name: option,
-    value: option,
-  }))
-
-  const selectedOption =
-    selectOptions.find(
-      (option) => option.value === value || option.name === value,
-    ) || null
-
-  return (
-    <div className='relative'>
-      <InputSelect
-        options={selectOptions}
-        value={selectedOption}
-        onChange={(selected) => {
-          if (!selected) return
-          onChange(selected.value || selected.name)
-        }}
-      />
-    </div>
   )
 }
 
@@ -976,19 +1071,13 @@ function ToggleRow({
   )
 }
 
-function toSelectOptions(options: string[]): SelectOption[] {
-  return options.map((option) => ({
-    id: option,
-    name: option,
-    value: option,
-  }))
-}
-
 function UserSetup({
   activeStep,
   draftUser,
   editingUserId,
   groupOptions,
+  isSaving,
+  managerOptions,
   onBack,
   onCancel,
   onChange,
@@ -997,12 +1086,14 @@ function UserSetup({
   onStepChange,
 }: {
   activeStep: number
-  draftUser: AppUser
+  draftUser: DraftUser
   editingUserId: string | number | null
   groupOptions: Array<{ caption: string; name: string }>
+  isSaving: boolean
+  managerOptions: SettingsOption[]
   onBack: () => void
   onCancel: () => void
-  onChange: (user: AppUser) => void
+  onChange: (user: DraftUser) => void
   onNext: () => void
   onSave: () => void
   onStepChange: (step: number) => void
@@ -1095,7 +1186,11 @@ function UserSetup({
               <LoginDetails user={draftUser} onChange={onChange} />
             )}
             {activeStep === 1 && (
-              <BusinessDetails user={draftUser} onChange={onChange} />
+              <BusinessDetails
+                managerOptions={managerOptions}
+                user={draftUser}
+                onChange={onChange}
+              />
             )}
             {activeStep === 2 && (
               <GroupAssignment
@@ -1128,10 +1223,11 @@ function UserSetup({
               <div className='flex items-center gap-3'>
                 {activeStep === steps.length - 1 ? (
                   <button
-                    className='h-10 rounded-[5px] bg-[var(--primary-9)] px-5 text-[15px] font-semibold text-white shadow-[var(--shadow-md)] transition hover:bg-[var(--primary-10)]'
+                    className='h-10 rounded-[5px] bg-[var(--primary-9)] px-5 text-[15px] font-semibold text-white shadow-[var(--shadow-md)] transition hover:bg-[var(--primary-10)] disabled:cursor-not-allowed disabled:opacity-60'
+                    disabled={isSaving}
                     onClick={onSave}
                   >
-                    Save User
+                    {isSaving ? 'Saving...' : 'Save User'}
                   </button>
                 ) : (
                   <button

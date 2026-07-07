@@ -33,6 +33,8 @@ interface Props<TData> extends ComponentProps<'div'> {
   actions?: TableActionButton[]
   className?: string
   component?: any
+  /** Keeps all controls grouped without a growing spacer. */
+  compact?: boolean
   hideGrouping?: boolean
 
   hideTableActions?: boolean
@@ -43,6 +45,7 @@ interface Props<TData> extends ComponentProps<'div'> {
 const TableActionBar = <TData,>({
   actions = [],
   className,
+  compact = false,
   component,
   hideGrouping = false,
   hideTableActions = false,
@@ -87,7 +90,7 @@ const TableActionBar = <TData,>({
           <TableFilters table={table} />
           {!hideGrouping && <TableGroup table={table} />}
 
-          <div className='flex-1' />
+          {!compact && <div className='flex-1' />}
 
           <TableSort table={table} />
           {!hideTableActions && <TableColumns table={table} />}

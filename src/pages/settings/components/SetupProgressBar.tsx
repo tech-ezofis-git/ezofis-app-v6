@@ -20,11 +20,11 @@ export default function SetupProgressBar({ progress }: SetupProgressBarProps) {
       </div>
       <div className='h-1.5 overflow-hidden rounded-full bg-[var(--gray-3)]'>
         <div
-          style={{ width: `${progress}%` }}
           className={cn(
             'h-full rounded-full transition-all duration-300',
             barClassName,
           )}
+          style={{ width: `${progress}%` }}
         />
       </div>
     </div>

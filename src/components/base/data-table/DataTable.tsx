@@ -29,9 +29,14 @@ interface Props<TData> extends ComponentProps<'table'> {
   component?: any
   /** Menu page for contextual empty states (initial vs filtered). */
   emptyPage?: MenuPage
+  emptyDescription?: string
+  emptyIcon?: string
+  emptyTitle?: string
   /** Infinite-scroll / load-more support */
   hasMore?: boolean
   hideGrouping?: boolean
+  /** Hides the built-in table action bar (search, export, etc.). */
+  hideActionBar?: boolean
   /** Hides "N Items" on group rows but keeps the same row spacing. */
   hideGroupItemCountOnHover?: boolean
   isLoading?: boolean
@@ -47,6 +52,7 @@ interface Props<TData> extends ComponentProps<'table'> {
   loadMoreOffset?: number
   loadMoreText?: string
   pageSize?: number
+  rowSize?: RowSize
   stickyHeader?: boolean
   /** Table body height. Example: 500 or 'calc(100vh - 340px)' */
   tableBodyMaxHeight?: string | number
@@ -55,6 +61,7 @@ interface Props<TData> extends ComponentProps<'table'> {
   onLoadMore?: () => void
 
   onReload: () => void
+  onRowSizeChange?: (rowSize: RowSize) => void
 }
 
 const rowSizeClassNames = {
@@ -80,7 +87,11 @@ const DataTable = <TData,>({
   actions,
   component,
   emptyPage,
+  emptyDescription,
+  emptyIcon,
+  emptyTitle,
   hasMore = false,
+  hideActionBar = false,
   hideGrouping = false,
   hideGroupItemCountOnHover = false,
   isLoading,
@@ -91,14 +102,18 @@ const DataTable = <TData,>({
   loadMoreOffset = 120,
   loadMoreText = 'Scroll down to load more',
   pageSize,
+  rowSize: rowSizeProp,
   stickyHeader = false,
   table,
   tableBodyMaxHeight,
   onEmptyPrimaryAction,
   onLoadMore,
   onReload,
+  onRowSizeChange,
 }: Props<TData>) => {
-  const [rowSize, setRowSize] = useState<RowSize>('default')
+  const [internalRowSize, setInternalRowSize] = useState<RowSize>('default')
+  const rowSize = rowSizeProp ?? internalRowSize
+  const setRowSize = onRowSizeChange ?? setInternalRowSize
   const scrollRef = useRef<HTMLDivElement | null>(null)
   const loadMoreLockRef = useRef(false)
 
@@ -190,9 +205,9 @@ const DataTable = <TData,>({
           style={
             tableBodyMaxHeight
               ? {
-                  maxHeight: tableBodyMaxHeight,
-                  minHeight: tableBodyMaxHeight,
-                }
+                maxHeight: tableBodyMaxHeight,
+                minHeight: tableBodyMaxHeight,
+              }
               : undefined
           }
           onScroll={useScrollContainer ? handleScroll : undefined}
@@ -233,6 +248,9 @@ const DataTable = <TData,>({
 
             {showEmptyState && (
               <TableEmptyState
+                emptyDescription={emptyDescription}
+                emptyIcon={emptyIcon}
+                emptyTitle={emptyTitle}
                 page={emptyPage}
                 table={table}
                 onPrimaryAction={onEmptyPrimaryAction}
@@ -372,7 +390,7 @@ const DataTable = <TData,>({
                                       className={cn(
                                         'flex items-center gap-1.5 rounded border border-transparent bg-[var(--green-2)] px-3 py-1.5 text-[11px] font-normal text-[var(--green-11)] transition-all group-hover/header:border-[var(--green-5)] group-hover/header:bg-[var(--green-3)]',
                                         hideGroupItemCountOnHover &&
-                                          'pointer-events-none invisible',
+                                        'pointer-events-none invisible',
                                       )}
                                     >
                                       <Icon
@@ -451,17 +469,19 @@ const DataTable = <TData,>({
         stickyHeader && 'max-h-full min-h-0',
       )}
     >
-      <TableActionBar
-        actions={actions} // ✅ pass through
-        className={cn('mb-4')}
-        component={component}
-        hideGrouping={hideGrouping}
-        isReloading={isReLoading}
-        rowSize={rowSize}
-        table={table}
-        onReload={onReload}
-        onRowSizeChange={setRowSize}
-      />
+      {!hideActionBar && (
+        <TableActionBar
+          actions={actions} // ✅ pass through
+          className={cn('mb-4')}
+          component={component}
+          hideGrouping={hideGrouping}
+          isReloading={isReLoading}
+          rowSize={rowSize}
+          table={table}
+          onReload={onReload}
+          onRowSizeChange={setRowSize}
+        />
+      )}
 
       <div
         className={cn(

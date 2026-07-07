@@ -1,14 +1,24 @@
-import { createColumnHelper, useReactTable } from '@tanstack/react-table'
+import {
+  createColumnHelper,
+  useReactTable,
+} from '@tanstack/react-table'
 import {
   Check,
-  Download,
   Edit3,
   MoreHorizontal,
-  Plus,
   Trash2,
   UsersRound,
 } from 'lucide-react'
-import { type ReactNode, useMemo, useState } from 'react'
+import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  createGroup as createGroupApi,
+  deleteGroup as deleteGroupApi,
+  getGroupById,
+  getGroups,
+  getUsers,
+  updateGroup as updateGroupApi,
+} from '@/api/v6/user'
+import showToast from '@/components/base/toast/showToast'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
 import DataTable from '@/components/base/data-table/DataTable'
@@ -16,26 +26,32 @@ import InputSelect from '@/components/base/inputs/InputSelect'
 import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
 import InputText from '@/components/base/inputs/InputText'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
-import type { SettingsGroup, SettingsOption } from '../helpers/userGroupMappers'
 import {
-  dummySettingsGroups,
-  getDummyUserOptions,
-} from '../data/settingsDummyData'
+  mapApiGroupsToSettingsGroups,
+  mapUsersToOptions,
+  type SettingsGroup,
+  type SettingsOption,
+} from '../helpers/userGroupMappers'
+import SetupProgressBar from './SetupProgressBar'
+import SettingsPageHeader, {
+  SettingsHeaderAddButton,
+} from './SettingsPageHeader'
+import SettingsTableToolbarRow from './SettingsTableToolbarRow'
+import useSettingsTableToolbar from './useSettingsTableToolbar'
 import {
   settingsHeaderMeta,
   settingsTableCoreOptions,
+  useSettingsTableSearch,
 } from '../helpers/settingsDataTable'
 import { calculateGroupSetupProgress } from '../helpers/settingsSetupProgress'
-import SettingsSearchInput from './SettingsSearchInput'
-import SetupProgressBar from './SetupProgressBar'
+
+type GroupStepKey = 'details' | 'members' | 'review'
 
 type GroupStep = {
   caption: string
   key: GroupStepKey
   title: string
 }
-
-type GroupStepKey = 'details' | 'members' | 'review'
 
 const groupSteps: GroupStep[] = [
   { caption: 'Step 1', key: 'details', title: 'Group Details' },
@@ -56,11 +72,11 @@ const emptyGroup: SettingsGroup = {
 const groupColumnHelper = createColumnHelper<SettingsGroup>()
 
 export default function GroupManagement({ onBack }: { onBack?: () => void }) {
-  const userOptions = useMemo(() => getDummyUserOptions(), [])
-
-  const [groups, setGroups] = useState<SettingsGroup[]>(dummySettingsGroups)
-  const [query, setQuery] = useState('')
-  const [statusFilter, setStatusFilter] = useState('All Status')
+  const [groups, setGroups] = useState<SettingsGroup[]>([])
+  const [userOptions, setUserOptions] = useState<SettingsOption[]>([])
+  const [isLoadingGroups, setIsLoadingGroups] = useState(true)
+  const [isLoadingGroupDetails, setIsLoadingGroupDetails] = useState(false)
+  const [isSavingGroup, setIsSavingGroup] = useState(false)
   const [openMenuId, setOpenMenuId] = useState<string | number | null>(null)
 
   const [isSetupOpen, setIsSetupOpen] = useState(false)
@@ -71,17 +87,38 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
   const [draftGroup, setDraftGroup] = useState<SettingsGroup>(emptyGroup)
   const [selectedMembers, setSelectedMembers] = useState<SettingsOption[]>([])
 
-  const filteredGroups = useMemo(() => {
-    return groups.filter((group) => {
-      const text = `${group.name} ${group.description}`.toLowerCase()
-      const matchesSearch = text.includes(query.toLowerCase())
-      const matchesStatus =
-        statusFilter === 'All Status' ||
-        group.status === statusFilter.toLowerCase()
+  const tableSearchOptions = useSettingsTableSearch()
 
-      return matchesSearch && matchesStatus
-    })
-  }, [groups, query, statusFilter])
+  const loadGroups = useCallback(async () => {
+    setIsLoadingGroups(true)
+
+    try {
+      const [groupsResponse, usersResponse] = await Promise.all([
+        getGroups(),
+        getUsers(),
+      ])
+
+      if (usersResponse.error) {
+        showToast({ message: usersResponse.error, variant: 'error' })
+      } else {
+        setUserOptions(mapUsersToOptions(usersResponse.data))
+      }
+
+      if (groupsResponse.error) {
+        showToast({ message: groupsResponse.error, variant: 'error' })
+        setGroups([])
+        return
+      }
+
+      setGroups(mapApiGroupsToSettingsGroups(groupsResponse.data))
+    } finally {
+      setIsLoadingGroups(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    void loadGroups()
+  }, [loadGroups])
 
   const openCreateGroup = () => {
     setEditingGroupId(null)
@@ -91,50 +128,106 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
     setIsSetupOpen(true)
   }
 
-  const openEditGroup = (group: SettingsGroup) => {
-    setEditingGroupId(group.id)
-    setDraftGroup({ ...group })
-    setSelectedMembers(
-      userOptions.filter((option) => group.memberIds.includes(option.id)),
-    )
-    setActiveStep(0)
+  const openEditGroup = useCallback(async (group: SettingsGroup) => {
+    setIsLoadingGroupDetails(true)
     setOpenMenuId(null)
-    setIsSetupOpen(true)
-  }
 
-  const deleteGroup = (groupId: string | number) => {
+    try {
+      const response = await getGroupById(String(group.id))
+
+      if (response.error || !response.data) {
+        showToast({
+          message: response.error || 'Failed to load group',
+          variant: 'error',
+        })
+        return
+      }
+
+      const mappedGroup = mapApiGroupsToSettingsGroups([response.data])[0]
+      setEditingGroupId(mappedGroup.id)
+      setDraftGroup(mappedGroup)
+      setSelectedMembers(
+        userOptions.filter((option) =>
+          mappedGroup.memberIds.includes(String(option.id)),
+        ),
+      )
+      setActiveStep(0)
+      setIsSetupOpen(true)
+    } finally {
+      setIsLoadingGroupDetails(false)
+    }
+  }, [userOptions])
+
+  const deleteGroup = useCallback(async (groupId: string | number) => {
     const confirmed = window.confirm(
       'Are you sure you want to delete this group?',
     )
     if (!confirmed) return
 
-    setGroups((current) => current.filter((group) => group.id !== groupId))
-    setOpenMenuId(null)
-  }
+    const response = await deleteGroupApi(String(groupId))
 
-  const saveGroup = () => {
-    const normalizedGroup: SettingsGroup = {
-      ...draftGroup,
-      created: draftGroup.created === '—' ? formatToday() : draftGroup.created,
-      description: draftGroup.description.trim(),
-      memberIds: selectedMembers.map((member) => member.id),
-      members: selectedMembers.map((member) => member.name),
-      name: draftGroup.name.trim(),
+    if (response.error) {
+      showToast({ message: response.error, variant: 'error' })
+      return
     }
 
-    if (!normalizedGroup.name) return
+    showToast({ message: 'Group deleted successfully', variant: 'success' })
+    setOpenMenuId(null)
+    await loadGroups()
+  }, [loadGroups])
+
+  const saveGroup = async () => {
+    const description = draftGroup.description.trim()
+    const groupName = draftGroup.name.trim()
+    const users = selectedMembers.map((member) => String(member.id))
 
     if (editingGroupId) {
-      setGroups((current) =>
-        current.map((group) =>
-          group.id === editingGroupId ? normalizedGroup : group,
-        ),
-      )
-    } else {
-      setGroups((current) => [normalizedGroup, ...current])
+      if (!groupName) return
+
+      setIsSavingGroup(true)
+      try {
+        const response = await updateGroupApi(String(editingGroupId), {
+          description,
+          groupName,
+          users,
+        })
+
+        if (response.error) {
+          showToast({ message: response.error, variant: 'error' })
+          return
+        }
+
+        showToast({ message: 'Group updated successfully', variant: 'success' })
+        setIsSetupOpen(false)
+        await loadGroups()
+      } finally {
+        setIsSavingGroup(false)
+      }
+
+      return
     }
 
-    setIsSetupOpen(false)
+    if (!groupName || !description) return
+
+    setIsSavingGroup(true)
+    try {
+      const response = await createGroupApi({
+        description,
+        groupName,
+        users,
+      })
+
+      if (response.error) {
+        showToast({ message: response.error, variant: 'error' })
+        return
+      }
+
+      showToast({ message: 'Group created successfully', variant: 'success' })
+      setIsSetupOpen(false)
+      await loadGroups()
+    } finally {
+      setIsSavingGroup(false)
+    }
   }
 
   const groupColumns = useMemo(
@@ -144,45 +237,48 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
         enableSorting: false,
         header: '',
         id: 'icon',
-        maxSize: 64,
+        maxSize: 48,
         meta: settingsHeaderMeta.center,
-        minSize: 64,
-        size: 64,
+        minSize: 48,
+        size: 48,
         cell: () => (
           <div className='flex justify-center'>
-            <div className='flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] bg-[var(--primary-3)] text-[var(--primary-9)]'>
-              <UsersRound size={20} />
+            <div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[var(--primary-3)] text-[var(--primary-9)]'>
+              <UsersRound size={16} />
             </div>
           </div>
         ),
       }),
-      groupColumnHelper.display({
-        enableSorting: false,
-        header: 'Group',
-        id: 'group',
-        meta: settingsHeaderMeta.start,
-        minSize: 200,
-        size: 240,
-        cell: ({ row }) => {
-          const group = row.original
+      groupColumnHelper.accessor(
+        (row) => `${row.name} ${row.description} ${row.members.length}`,
+        {
+          enableSorting: false,
+          header: 'Group',
+          id: 'group',
+          meta: { ...settingsHeaderMeta.start, label: 'Group' },
+          minSize: 200,
+          size: 240,
+          cell: ({ row }) => {
+            const group = row.original
 
-          return (
-            <div className='min-w-0'>
-              <div className='truncate font-semibold text-[var(--gray-13)]'>
-                {group.name}
+            return (
+              <div className='min-w-0'>
+                <div className='truncate font-semibold text-[var(--gray-13)]'>
+                  {group.name}
+                </div>
+                <div className='truncate text-[var(--gray-10)]'>
+                  {group.members.length} members
+                </div>
               </div>
-              <div className='truncate text-[var(--gray-10)]'>
-                {group.members.length} members
-              </div>
-            </div>
-          )
+            )
+          },
         },
-      }),
+      ),
       groupColumnHelper.accessor('description', {
         enableSorting: false,
         header: 'Description',
         id: 'description',
-        meta: settingsHeaderMeta.start,
+        meta: { ...settingsHeaderMeta.start, label: 'Description' },
         minSize: 180,
         size: 220,
         cell: ({ getValue }) => (
@@ -208,7 +304,7 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
         enableSorting: false,
         header: 'Status',
         id: 'status',
-        meta: settingsHeaderMeta.start,
+        meta: { ...settingsHeaderMeta.start, label: 'Status' },
         minSize: 100,
         size: 110,
         cell: ({ getValue }) => <StatusBadge status={getValue()} />,
@@ -236,7 +332,8 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
           return (
             <div className='relative flex justify-end'>
               <button
-                className='rounded-lg p-2 text-[var(--gray-13)] transition hover:bg-[var(--gray-2)]'
+                className='rounded-lg p-2 text-[var(--gray-13)] transition hover:bg-[var(--gray-2)] disabled:cursor-not-allowed disabled:opacity-50'
+                disabled={isLoadingGroupDetails}
                 type='button'
                 onClick={(event) => {
                   event.stopPropagation()
@@ -271,14 +368,23 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
         },
       }),
     ],
-    [openMenuId],
+    [deleteGroup, isLoadingGroupDetails, openEditGroup, openMenuId],
   )
 
   const groupTable = useReactTable({
     ...settingsTableCoreOptions,
+    ...tableSearchOptions,
     columns: groupColumns,
-    data: filteredGroups,
+    data: groups,
     getRowId: (row) => String(row.id),
+  })
+
+  const { onRowSizeChange, rowSize, toolbar } = useSettingsTableToolbar({
+    isReLoading: isLoadingGroups,
+    table: groupTable,
+    onReload: () => {
+      void loadGroups()
+    },
   })
 
   if (isSetupOpen) {
@@ -287,6 +393,7 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
         activeStep={activeStep}
         draftGroup={draftGroup}
         editingGroupId={editingGroupId}
+        isSaving={isSavingGroup}
         selectedMembers={selectedMembers}
         userOptions={userOptions}
         onBack={() => setActiveStep((step) => Math.max(step - 1, 0))}
@@ -305,104 +412,44 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
   return (
     <main className='bg-[var(--surface)]'>
       <section>
-        <div className='mb-4 flex items-center justify-between border-b border-gray-3 bg-surface px-6 py-4 md:px-8'>
-          <div className='flex items-start gap-3'>
-            <IconButton
-              ariaLabel='Back'
-              color='gray'
-              icon='lucide:arrow-left'
-              size='sm'
-              variant='ghost'
-              onClick={onBack}
-            />
-
-            <div>
-              <h1 className='text-18/6 font-semibold tracking-tight text-gray-13'>
-                Group Management
-              </h1>
-              <p className='text-13/5 text-gray-11'>
-                Create logical groups to organize users by team, department, or
-                function.
-              </p>
-            </div>
-          </div>
-
-          <div className='flex items-center gap-3'>
-            <button
-              className='inline-flex h-7 items-center gap-3 rounded-[5px] border border-[var(--border-default)] bg-surface px-4 text-[12px] font-medium text-[var(--gray-13)] shadow-[var(--shadow-sm)] transition hover:bg-[var(--gray-2)]'
-              type='button'
-            >
-              <Download size={14} />
-              Export
-            </button>
-            <button
-              className='inline-flex h-7 items-center gap-3 rounded-[5px] bg-[var(--primary-9)] px-5 text-[12px] font-semibold text-white shadow-[var(--shadow-md)] transition hover:bg-[var(--primary-10)]'
-              type='button'
+        <SettingsPageHeader
+          actions={
+            <SettingsHeaderAddButton
+              tooltip='Add Group'
               onClick={openCreateGroup}
-            >
-              <Plus size={14} />
-              Create Group
-            </button>
+            />
+          }
+          description='Create logical groups to organize users by team, department, or function.'
+          title='Group Management'
+          onBack={onBack}
+        />
+
+        <div className='px-6 md:px-8'>
+          <SettingsTableToolbarRow toolbar={toolbar} />
+
+          <div className='py-4'>
+            <DataTable
+              emptyDescription='Create a group to organize users by team, department, or function.'
+              emptyIcon='lucide:users-round'
+              emptyTitle='No groups yet'
+              hideActionBar
+              isLoading={isLoadingGroups}
+              isReLoading={isLoadingGroups}
+              pageSize={Math.max(5, groups.length || 5)}
+              rowSize={rowSize}
+              table={groupTable}
+              tableBodyMaxHeight='calc(100vh - 320px)'
+              hideGrouping
+              stickyHeader
+              onReload={() => {
+                void loadGroups()
+              }}
+              onRowSizeChange={onRowSizeChange}
+            />
           </div>
-        </div>
-
-        <div className='mb-8 grid grid-cols-1 gap-4 px-6 py-4 lg:grid-cols-[1fr_180px]'>
-          <SettingsSearchInput
-            placeholder='Search groups by name or description...'
-            value={query}
-            onChange={setQuery}
-          />
-
-          <SelectField
-            options={['All Status', 'Active', 'Inactive']}
-            value={statusFilter}
-            onChange={setStatusFilter}
-          />
-        </div>
-
-        <div className='px-6 py-4'>
-          <DataTable
-            component={<div />}
-            isLoading={false}
-            isReLoading={false}
-            pageSize={Math.max(5, filteredGroups.length || 5)}
-            table={groupTable}
-            tableBodyMaxHeight='calc(100vh - 320px)'
-            hideGrouping
-            stickyHeader
-            onReload={() => setGroups(dummySettingsGroups)}
-          />
         </div>
       </section>
     </main>
-  )
-}
-
-function formatToday() {
-  return new Date().toLocaleDateString('en-US', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  })
-}
-
-function FormCard({
-  children,
-  description,
-  title,
-}: {
-  children: ReactNode
-  description: string
-  title: string
-}) {
-  return (
-    <div className='rounded-[18px] border border-[var(--border-default)] bg-surface p-8 shadow-[var(--shadow-sm)]'>
-      <h2 className='text-[20px] font-semibold text-[var(--gray-13)]'>
-        {title}
-      </h2>
-      <p className='mt-2 text-sm text-[var(--gray-11)]'>{description}</p>
-      <div className='mt-8'>{children}</div>
-    </div>
   )
 }
 
@@ -410,6 +457,7 @@ function GroupSetup({
   activeStep,
   draftGroup,
   editingGroupId,
+  isSaving,
   selectedMembers,
   userOptions,
   onBack,
@@ -423,6 +471,7 @@ function GroupSetup({
   activeStep: number
   draftGroup: SettingsGroup
   editingGroupId: string | number | null
+  isSaving: boolean
   selectedMembers: SettingsOption[]
   userOptions: SettingsOption[]
   onBack: () => void
@@ -438,6 +487,10 @@ function GroupSetup({
     [draftGroup, selectedMembers.length],
   )
   const isLastStep = activeStep === groupSteps.length - 1
+  const canContinueStepZero = Boolean(
+    draftGroup.name.trim() && draftGroup.description.trim(),
+  )
+  const canSave = Boolean(draftGroup.name.trim() && draftGroup.description.trim())
 
   return (
     <main className='min-h-screen bg-[var(--surface-muted)] text-[var(--text-primary)]'>
@@ -525,7 +578,7 @@ function GroupSetup({
                     }
                   />
                   <InputTextarea
-                    label='Description'
+                    label='Description *'
                     minRows={4}
                     placeholder='Describe the purpose of this group...'
                     value={draftGroup.description}
@@ -542,20 +595,15 @@ function GroupSetup({
                     value={{
                       id: draftGroup.status,
                       name:
-                        draftGroup.status === 'inactive'
-                          ? 'Inactive'
-                          : 'Active',
+                        draftGroup.status === 'inactive' ? 'Inactive' : 'Active',
                       value:
-                        draftGroup.status === 'inactive'
-                          ? 'Inactive'
-                          : 'Active',
+                        draftGroup.status === 'inactive' ? 'Inactive' : 'Active',
                     }}
                     onChange={(selected) => {
                       if (!selected) return
                       onChange({
                         ...draftGroup,
-                        status:
-                          selected.name.toLowerCase() as SettingsGroup['status'],
+                        status: selected.name.toLowerCase() as SettingsGroup['status'],
                       })
                     }}
                   />
@@ -589,10 +637,7 @@ function GroupSetup({
                 title='Review'
               >
                 <div className='space-y-4 rounded-[14px] border border-[var(--border-default)] bg-surface p-5'>
-                  <ReviewRow
-                    label='Group Name'
-                    value={draftGroup.name || '—'}
-                  />
+                  <ReviewRow label='Group Name' value={draftGroup.name || '—'} />
                   <ReviewRow
                     label='Description'
                     value={draftGroup.description || '—'}
@@ -607,9 +652,7 @@ function GroupSetup({
                     label='Members'
                     value={
                       selectedMembers.length
-                        ? selectedMembers
-                            .map((member) => member.name)
-                            .join(', ')
+                        ? selectedMembers.map((member) => member.name).join(', ')
                         : 'No members selected'
                     }
                   />
@@ -629,14 +672,14 @@ function GroupSetup({
               {isLastStep ? (
                 <Button
                   className='h-10 border border-primary-10 bg-primary-11 px-5 text-surface'
-                  disabled={!draftGroup.name.trim()}
-                  label='Save Group'
+                  disabled={!canSave || isSaving}
+                  label={isSaving ? 'Saving...' : 'Save Group'}
                   onClick={onSave}
                 />
               ) : (
                 <Button
                   className='h-10 border border-primary-10 bg-primary-11 px-5 text-surface'
-                  disabled={activeStep === 0 && !draftGroup.name.trim()}
+                  disabled={activeStep === 0 && !canContinueStepZero}
                   label='Continue'
                   onClick={onNext}
                 />
@@ -649,6 +692,24 @@ function GroupSetup({
   )
 }
 
+function FormCard({
+  children,
+  description,
+  title,
+}: {
+  children: ReactNode
+  description: string
+  title: string
+}) {
+  return (
+    <div className='rounded-[18px] border border-[var(--border-default)] bg-surface p-8 shadow-[var(--shadow-sm)]'>
+      <h2 className='text-[20px] font-semibold text-[var(--gray-13)]'>{title}</h2>
+      <p className='mt-2 text-sm text-[var(--gray-11)]'>{description}</p>
+      <div className='mt-8'>{children}</div>
+    </div>
+  )
+}
+
 function ReviewRow({ label, value }: { label: string; value: string }) {
   return (
     <div className='flex items-start justify-between gap-6 border-b border-[var(--gray-3)] pb-4 last:border-b-0 last:pb-0'>
@@ -656,38 +717,6 @@ function ReviewRow({ label, value }: { label: string; value: string }) {
       <span className='max-w-[65%] text-right text-sm font-semibold text-[var(--gray-13)]'>
         {value}
       </span>
-    </div>
-  )
-}
-
-function SelectField({
-  options,
-  value,
-  onChange,
-}: {
-  options: string[]
-  value: string
-  onChange: (value: string) => void
-}) {
-  const selectOptions = options.map((option, index) => ({
-    id: index,
-    name: option,
-    value: option,
-  }))
-
-  const selectedOption =
-    selectOptions.find((option) => option.value === value) || null
-
-  return (
-    <div className='relative'>
-      <InputSelect
-        options={selectOptions}
-        value={selectedOption}
-        onChange={(selected) => {
-          if (!selected) return
-          onChange(selected.value || selected.name)
-        }}
-      />
     </div>
   )
 }

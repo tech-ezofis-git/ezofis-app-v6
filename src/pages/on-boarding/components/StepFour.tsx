@@ -40,12 +40,12 @@ const StepFour = () => {
       : otherId
     : null
 
-  const initialOtherText = savedValue && !isPredefined ? savedValue : ''
+  const initialOtherText = savedValue && !isPredefined ? (savedValue as string) : ''
 
   const [industryOption, setIndustryOption] = useState<number | null>(
     initialOption,
   )
-  const [otherText, setOtherText] = useState(initialOtherText)
+  const [otherText, setOtherText] = useState<string>(initialOtherText)
 
   const handleSelect = (option: (typeof industries)[number]) => {
     setIndustryOption(option.id)

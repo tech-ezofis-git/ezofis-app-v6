@@ -11,11 +11,17 @@ import PageEmptyState from '@/components/common/PageEmptyState'
 
 interface Props<TData> {
   table: TanstackTable<TData>
+  emptyDescription?: string
+  emptyIcon?: string
+  emptyTitle?: string
   page?: MenuPage
   onPrimaryAction?: () => void
 }
 
 const TableEmptyState = <TData,>({
+  emptyDescription,
+  emptyIcon,
+  emptyTitle,
   page,
   table,
   onPrimaryAction,
@@ -38,15 +44,17 @@ const TableEmptyState = <TData,>({
             <PageEmptyState
               containerClassName={MENU_LIST_EMPTY_CONTAINER_CLASS}
               fill={false}
-              icon='lucide:folder-search'
+              icon={emptyIcon ?? 'lucide:folder-search'}
               variant={variant}
               description={
-                variant === 'filtered'
+                emptyDescription ??
+                (variant === 'filtered'
                   ? 'No rows match your current search or filters. Try different keywords or clear filters.'
-                  : 'There is no data to display yet.'
+                  : 'There is no data to display yet.')
               }
               title={
-                variant === 'filtered' ? 'No matching results' : 'No data yet'
+                emptyTitle ??
+                (variant === 'filtered' ? 'No matching results' : 'No data yet')
               }
             />
           )}

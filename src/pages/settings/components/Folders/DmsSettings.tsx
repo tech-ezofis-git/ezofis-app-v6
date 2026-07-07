@@ -13,7 +13,10 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { createColumnHelper, useReactTable } from '@tanstack/react-table'
+import {
+  createColumnHelper,
+  useReactTable,
+} from '@tanstack/react-table'
 import {
   Check,
   ChevronRight,
@@ -23,7 +26,6 @@ import {
   GripVertical,
   HardDrive,
   Link2,
-  Plus,
   RefreshCw,
 } from 'lucide-react'
 import {
@@ -33,8 +35,8 @@ import {
   useMemo,
   useState,
 } from 'react'
-import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
+import Button from '@/components/base/button/Button'
 import DataTable from '@/components/base/data-table/DataTable'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import InputSwitch from '@/components/base/inputs/InputSwitch'
@@ -43,9 +45,14 @@ import InputTextarea from '@/components/base/inputs/InputTextarea'
 import {
   settingsHeaderMeta,
   settingsTableCoreOptions,
+  useSettingsTableSearch,
 } from '../../helpers/settingsDataTable'
-import SettingsSearchInput from '../SettingsSearchInput'
 import SettingsSortableDataTable from '../SettingsSortableDataTable'
+import SettingsPageHeader, {
+  SettingsHeaderAddButton,
+} from '../SettingsPageHeader'
+import SettingsTableToolbarRow from '../SettingsTableToolbarRow'
+import useSettingsTableToolbar from '../useSettingsTableToolbar'
 
 type DmsFolderConfigurationProps = {
   onBack?: () => void
@@ -313,7 +320,6 @@ type SortableHierarchyItemProps = {
 export default function DmsFolderConfiguration({
   onBack,
 }: DmsFolderConfigurationProps) {
-  const [search, setSearch] = useState('')
   const [showWizard, setShowWizard] = useState(false)
   const [step, setStep] = useState<WizardStep>(1)
   const [fields, setFields] = useState<FieldRow[]>(defaultFields)
@@ -327,17 +333,6 @@ export default function DmsFolderConfiguration({
   const [category, setCategory] = useState<SelectOption>(categoryOptions[0])
   const [folderOwner, setFolderOwner] = useState('')
   const [folderCoordinator, setFolderCoordinator] = useState('')
-
-  const filteredRepositories = useMemo(() => {
-    const value = search.trim().toLowerCase()
-    if (!value) return repositories
-
-    return repositories.filter((repo) =>
-      `${repo.name} ${repo.owner} ${repo.category} ${repo.storage}`
-        .toLowerCase()
-        .includes(value),
-    )
-  }, [search])
 
   const goNext = () => setStep((prev) => Math.min(5, prev + 1) as WizardStep)
   const goBack = () => setStep((prev) => Math.max(1, prev - 1) as WizardStep)
@@ -365,55 +360,70 @@ export default function DmsFolderConfiguration({
     closeWizard()
   }
 
+  const repositoryTable = useRepositoryTable(repositories)
+  const repositoryToolbar = useSettingsTableToolbar({
+    isReLoading: false,
+    table: repositoryTable.table,
+    onReload: () => undefined,
+  })
+
   return (
     <div className='min-h-[90vh] bg-[var(--surface)]'>
-      <div className='flex items-center justify-between gap-6 border-b border-gray-3 bg-[var(--surface)] bg-surface px-6 py-4 md:px-8'>
-        <div className='flex items-start gap-3'>
-          <IconButton
-            ariaLabel='Back'
-            color='gray'
-            icon='lucide:arrow-left'
-            size='sm'
-            variant='ghost'
-            onClick={onBack}
-          />
-
-          <div>
-            <h1 className='text-18/6 font-semibold tracking-tight text-gray-13'>
-              DMS & Folder Configuration
-            </h1>
-            <p className='text-13/5 text-gray-11'>
-              Create and manage document repositories. No IT assistance
-              required.
-            </p>
-          </div>
-        </div>
-
-        {!showWizard && (
-          <button
-            className='ml-auto inline-flex items-center gap-2 rounded-[10px] bg-primary-9 px-5 py-3 font-semibold text-white shadow-md'
-            type='button'
-            onClick={() => setShowWizard(true)}
-          >
-            <Plus size={18} />
-            New Repository
-          </button>
-        )}
-      </div>
-
       {!showWizard ? (
-        <div className='px-6 py-4'>
-          <div className='mt-4 mb-4 flex justify-end'>
-            <div className='w-full max-w-xl'>
-              <SettingsSearchInput
-                placeholder='Search repositories...'
-                value={search}
-                onChange={setSearch}
-              />
+        <SettingsPageHeader
+          actions={
+            <SettingsHeaderAddButton
+              tooltip='New Repository'
+              onClick={() => setShowWizard(true)}
+            />
+          }
+          description='Create and manage document repositories. No IT assistance required.'
+          title='DMS & Folder Configuration'
+          onBack={onBack}
+        />
+      ) : (
+        <div className='flex items-center justify-between gap-6 border-b border-gray-3 bg-surface px-6 py-4 md:px-8'>
+          <div className='flex items-start gap-3'>
+            <IconButton
+              ariaLabel='Back'
+              color='gray'
+              icon='lucide:arrow-left'
+              size='sm'
+              variant='ghost'
+              onClick={onBack}
+            />
+
+            <div>
+              <h1 className='text-18/6 font-semibold tracking-tight text-gray-13'>
+                DMS & Folder Configuration
+              </h1>
+              <p className='text-13/5 text-gray-11'>
+                Create and manage document repositories. No IT assistance
+                required.
+              </p>
             </div>
           </div>
+        </div>
+      )}
 
-          <RepositoryTable rows={filteredRepositories} />
+      {!showWizard ? (
+        <div className='px-6 md:px-8'>
+          <SettingsTableToolbarRow toolbar={repositoryToolbar.toolbar} />
+
+          <div className='py-4'>
+            <DataTable
+              hideActionBar
+              isLoading={false}
+              isReLoading={false}
+              pageSize={repositories.length || 5}
+              rowSize={repositoryToolbar.rowSize}
+              table={repositoryTable.table}
+              stickyHeader
+              hideGrouping
+              onReload={() => undefined}
+            onRowSizeChange={repositoryToolbar.onRowSizeChange}
+          />
+          </div>
         </div>
       ) : (
         <div className='bg-surface'>
@@ -588,8 +598,9 @@ function FieldsTable({
     />
   )
 }
-function RepositoryTable({ rows }: { rows: RepositoryRow[] }) {
+function useRepositoryTable(rows: RepositoryRow[]) {
   const columnHelper = createColumnHelper<RepositoryRow>()
+  const tableSearchOptions = useSettingsTableSearch()
 
   const columns = useMemo(
     () => [
@@ -598,14 +609,14 @@ function RepositoryTable({ rows }: { rows: RepositoryRow[] }) {
         enableSorting: false,
         header: '',
         id: 'icon',
-        maxSize: 64,
+        maxSize: 48,
         meta: settingsHeaderMeta.center,
-        minSize: 64,
-        size: 64,
+        minSize: 48,
+        size: 48,
         cell: () => (
           <div className='flex justify-center'>
-            <div className='flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] bg-primary-3 text-primary-9'>
-              <Folder size={21} />
+            <div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-primary-3 text-primary-9'>
+              <Folder size={16} />
             </div>
           </div>
         ),
@@ -613,7 +624,7 @@ function RepositoryTable({ rows }: { rows: RepositoryRow[] }) {
       columnHelper.accessor('name', {
         enableSorting: false,
         header: 'Repository',
-        meta: settingsHeaderMeta.start,
+        meta: { ...settingsHeaderMeta.start, label: 'Repository' },
         minSize: 220,
         size: 260,
         cell: ({ row }) => (
@@ -630,7 +641,7 @@ function RepositoryTable({ rows }: { rows: RepositoryRow[] }) {
       columnHelper.accessor('category', {
         enableSorting: false,
         header: 'Category',
-        meta: settingsHeaderMeta.start,
+        meta: { ...settingsHeaderMeta.start, label: 'Category' },
         minSize: 120,
         size: 140,
         cell: (info) => (
@@ -642,7 +653,7 @@ function RepositoryTable({ rows }: { rows: RepositoryRow[] }) {
       columnHelper.accessor('storage', {
         enableSorting: false,
         header: 'Storage',
-        meta: settingsHeaderMeta.start,
+        meta: { ...settingsHeaderMeta.start, label: 'Storage' },
         minSize: 120,
         size: 140,
         cell: (info) => (
@@ -669,7 +680,7 @@ function RepositoryTable({ rows }: { rows: RepositoryRow[] }) {
       columnHelper.accessor('status', {
         enableSorting: false,
         header: 'Status',
-        meta: settingsHeaderMeta.start,
+        meta: { ...settingsHeaderMeta.start, label: 'Status' },
         minSize: 100,
         size: 110,
         cell: (info) => (
@@ -691,20 +702,12 @@ function RepositoryTable({ rows }: { rows: RepositoryRow[] }) {
 
   const table = useReactTable({
     ...settingsTableCoreOptions,
+    ...tableSearchOptions,
     columns,
     data: rows,
   })
 
-  return (
-    <DataTable
-      component={<div />}
-      isReLoading={false}
-      pageSize={rows.length || 5}
-      table={table}
-      stickyHeader
-      onReload={() => undefined}
-    />
-  )
+  return { table }
 }
 
 function SortableHierarchyItem({ item }: SortableHierarchyItemProps) {
@@ -866,7 +869,7 @@ function StepNav({
             items={folderHierarchy}
             strategy={verticalListSortingStrategy}
           >
-            <div className='space-y-2 rounded-md bg-surface-muted/60'>
+            <div className='bg-surface-muted/60 space-y-2 rounded-md'>
               {folderHierarchy.map((item) => (
                 <SortableHierarchyItem item={item} key={item} />
               ))}
@@ -1050,7 +1053,9 @@ function WizardContent({
                   <span className='block font-semibold text-gray-13'>
                     {item.title}
                   </span>
-                  <span className='text-sm text-gray-11'>{item.subtitle}</span>
+                  <span className='text-sm text-gray-11'>
+                    {item.subtitle}
+                  </span>
                 </span>
               </button>
             )
@@ -1096,9 +1101,8 @@ function WizardContent({
               options={fieldTypeOptions}
               placeholder='Field type'
               value={
-                fieldTypeOptions.find(
-                  (option) => option.name === newFieldType,
-                ) || fieldTypeOptions[0]
+                fieldTypeOptions.find((option) => option.name === newFieldType) ||
+                fieldTypeOptions[0]
               }
               onChange={(selected) => {
                 if (!selected) return

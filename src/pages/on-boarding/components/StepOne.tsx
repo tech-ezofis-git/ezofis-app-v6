@@ -36,10 +36,10 @@ const StepOne = () => {
       : 6
     : null
 
-  const initialOtherText = savedValue && !isPredefined ? savedValue : ''
+  const initialOtherText = savedValue && !isPredefined ? (savedValue as string) : ''
 
   const [roleOption, setRoleOption] = useState<number | null>(initialOption)
-  const [otherText, setOtherText] = useState(initialOtherText)
+  const [otherText, setOtherText] = useState<string>(initialOtherText)
 
   const handleSelect = (option: (typeof roles)[number]) => {
     setRoleOption(option.id)

@@ -1,22 +1,20 @@
 import {
-  BadgeDollarSign,
   ChevronRight,
   ClipboardList,
-  Code2,
   FolderOpen,
   PanelsTopLeft,
   Shield,
   UserRoundCheck,
-  Users,
+  Users,Code2,BadgeDollarSign,
 } from 'lucide-react'
 import React, { useState } from 'react'
 import AuditMonitoring from './components/AuditMonitoring'
-import Credits from './components/credits/Credits'
 import DmsSettings from './components/Folders/DmsSettings'
 import GroupManagement from './components/GroupManagement'
 import ManageUser from './components/ManageUser'
 import Menu from './components/Menus'
 import RolesPermissions from './components/RolesPermissions'
+import Credits from './components/credits/Credits'
 type SettingsItem = {
   description: string
   icon: React.ElementType
@@ -75,8 +73,8 @@ const settingsItems: SettingsItem[] = [
     title: 'Audit & Monitoring',
   },
   {
-    description:
-      'Explore, test, and debug API endpoints with live requests and sample responses.',
+   description:
+  'Explore, test, and debug API endpoints with live requests and sample responses.',
     icon: Code2,
     key: 'playground',
     title: 'Playground API',
@@ -113,13 +111,10 @@ export default function SettingsMain() {
   if (activePage === 'audit-monitoring') {
     return <AuditMonitoring onBack={() => setActivePage('settings')} />
   }
-  if (activePage === 'playground') {
-    window.open(
-      'https://ezagentplayground.onrender.com/apikey.html?id=2',
-      '_blank',
-    )
-    setActivePage('settings')
-  }
+ if (activePage === "playground") {
+  window.open("https://ezagentplayground.onrender.com/apikey.html?id=2", "_blank");
+  setActivePage('settings')
+}
   if (activePage === 'credit') {
     return <Credits onBack={() => setActivePage('settings')} />
   }
