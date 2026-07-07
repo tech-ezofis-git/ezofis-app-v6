@@ -73,7 +73,50 @@ function resolveApiBaseUrl() {
   return String(v || '').replace(/\/$/, '')
 }
 
-const getExt = (name?: string) => (name?.split('.').pop() || '').toLowerCase()
+const getExt = (file?: AttachmentItem) => {
+  if (!file) return ''
+
+  // 1. Try to extract from filePath if it exists and has a dot
+  if (file.filePath && file.filePath.includes('.')) {
+    const parts = file.filePath.split('.')
+    const ext = parts.pop()?.toLowerCase()
+    if (ext) return ext
+  }
+
+  // 2. Try to map from contentType
+  if (file.contentType) {
+    const mime = file.contentType.toLowerCase()
+    if (mime.includes('pdf')) return 'pdf'
+    if (mime.includes('png')) return 'png'
+    if (mime.includes('jpg') || mime.includes('jpeg')) return 'jpg'
+    if (mime.includes('gif')) return 'gif'
+    if (mime.includes('webp')) return 'webp'
+    if (mime.includes('csv')) return 'csv'
+    if (mime.includes('text/plain') || mime.includes('txt')) return 'txt'
+    if (mime.includes('word') || mime.includes('doc')) return 'docx'
+    if (mime.includes('excel') || mime.includes('sheet') || mime.includes('xls')) return 'xlsx'
+    if (mime.includes('powerpoint') || mime.includes('presentation') || mime.includes('ppt')) return 'pptx'
+  }
+
+  // 3. Try to extract from name (if it contains a dot)
+  const name = file.name || file.fileName || ''
+  if (name.includes('.')) {
+    const parts = name.split('.')
+    const ext = parts.pop()?.toLowerCase()
+    if (ext) return ext
+  }
+
+  return ''
+}
+
+const formatBytes = (bytes?: number) => {
+  if (bytes === undefined || bytes === null || Number.isNaN(bytes)) return ''
+  if (bytes === 0) return '0 Bytes'
+  const k = 1024
+  const sizes = ['Bytes', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
+}
 
 // const fileSupport = (ext: string) => {
 //     const allowed = [
@@ -469,9 +512,13 @@ export default function Attachments({
           </div>
         ) : (
           files.map((file) => {
-            const ext = getExt(file.name || '')
+            const ext = getExt(file)
             const icon = getFileIcon(ext)
             const styles = getFileIconClasses(ext)
+            const sizeStr = formatBytes(file.fileSize)
+            const displayName = file.name || file.fileName || 'Untitled'
+            const hasExt = ext && displayName.toLowerCase().endsWith('.' + ext.toLowerCase())
+            const displayTitle = ext && !hasExt ? `${displayName}.${ext}` : displayName
 
             return (
               <div
@@ -489,22 +536,41 @@ export default function Attachments({
                 </div>
 
                 <div className='min-w-0 flex-1'>
-                  <div
-                    className='line-clamp-1 text-13 font-semibold break-all text-gray-12 transition-all group-hover:line-clamp-none hover:underline'
-                    title={file.name}
-                  >
-                    {file.name || 'Untitled'}
+                  <div className='flex items-baseline gap-1.5 flex-wrap'>
+                    <span
+                      className='line-clamp-1 text-13 font-semibold break-all text-gray-12 transition-all group-hover:line-clamp-none hover:underline'
+                      title={displayTitle}
+                    >
+                      {displayTitle}
+                    </span>
+                    {sizeStr && (
+                      <span className='text-[11px] font-normal text-gray-8 shrink-0'>
+                        ({sizeStr})
+                      </span>
+                    )}
                   </div>
                   <div className='mt-0.5 flex items-center gap-2'>
-                    <span className='text-[11px] font-medium tracking-wide text-gray-9 uppercase'>
-                      {ext}
-                    </span>
-                    <span className='size-0.5 rounded-full bg-gray-4' />
+                    {/* {ext && (
+                      <>
+                        <span className='text-[11px] font-medium tracking-wide text-gray-9 uppercase'>
+                          {ext}
+                        </span>
+                        <span className='size-0.5 rounded-full bg-gray-4' />
+                      </>
+                    )} */}
                     <span className='text-[11px] text-gray-8'>
                       {file.createdAt
                         ? new Date(file.createdAt).toLocaleDateString()
                         : 'Unknown date'}
                     </span>
+                    {file.uploadedBy && (
+                      <>
+                        <span className='size-0.5 rounded-full bg-gray-4' />
+                        <span className='text-[11px] text-gray-8 truncate max-w-[250px]' title={`Uploaded by: ${file.uploadedBy}`}>
+                          Uploaded by: {file.uploadedBy}
+                        </span>
+                      </>
+                    )}
                   </div>
                 </div>
 
