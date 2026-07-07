@@ -127,7 +127,7 @@ const updateFileHeaders = async (
           const updatedFile = new File([updatedCsv], fileName, {
             type: 'text/csv',
           })
-          downloadFile(updatedFile)
+          // downloadFile(updatedFile)
           resolve(updatedFile)
         }
       }
@@ -162,7 +162,7 @@ const updateFileHeaders = async (
           const updatedFile = new File([updatedBlob], fileName, {
             type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
           })
-          downloadFile(updatedFile)
+          // downloadFile(updatedFile)
           resolve(updatedFile)
         }
       }

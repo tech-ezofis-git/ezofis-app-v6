@@ -1432,7 +1432,7 @@ const Request = ({
   if (apAgentJobId && jobStatus && !jobStatus.isCompleted) {
     // statusBadge = jobStatus.stage
     if (displayMessage) {
-      statusBadge += ` - ${displayMessage}`
+      statusBadge += `${displayMessage}`
     }
   } else if (apAgentJobId && (!jobStatus || !jobStatus.isCompleted)) {
     statusBadge = 'Initiating...'
