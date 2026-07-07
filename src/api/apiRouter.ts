@@ -1,3 +1,4 @@
+import { axiosV6 } from './axios'
 import { authApiV6 } from './v6/auth'
 
 /**
@@ -132,6 +133,30 @@ export const userSession = async () => {
   return await authApi.getSession()
 }
 
+
+
+export const savePreQuestions = async (userId: string | number, payload: any) => {
+  const response: any = {
+    data: '',
+    error: '',
+  }
+  try {
+    const { data, status } = await axiosV6({
+      data: JSON.stringify(payload),
+      method: 'PUT',
+      url: `/Users/${userId}/pre-questions`,
+    })
+    if (status !== 200 && status !== 201) {
+      throw new Error('invalid status code')
+    }
+    response.data = data
+  } catch (e: any) {
+    console.error(e)
+    response.error = e.response?.data?.message || e.message || 'error saving pre-questions'
+  }
+  return response
+}
+
 export const apiRouter = {
   login,
   sendMailOTP,
@@ -140,6 +165,7 @@ export const apiRouter = {
   userSession,
   verifyMailOTP,
   getApiVersion,
+  savePreQuestions,
 }
 
 export default apiRouter

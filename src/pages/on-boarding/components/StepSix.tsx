@@ -3,6 +3,8 @@ import { useState } from 'react'
 import InputCheckboxCard from '@/components/base/inputs/InputCheckboxCard'
 import InputText from '@/components/base/inputs/InputText'
 import showToast from '@/components/base/toast/showToast'
+import { savePreQuestions } from '@/api/apiRouter'
+import authUserStore from '@/stores/authUserStore'
 import onBoardingStore from '../stores/onBoardingStore'
 import StepFooter from './StepFooter'
 import StepHeader from './StepHeader'
@@ -55,7 +57,7 @@ const StepSix = () => {
     : ''
 
   const [selectedIds, setSelectedIds] = useState<number[]>(initialOptionIds)
-  const [otherText, setOtherText] = useState(initialOtherText)
+  const [otherText, setOtherText] = useState<string>(initialOtherText as string)
   const [loading, setLoading] = useState(false)
 
   // Update answer in store
@@ -93,19 +95,26 @@ const StepSix = () => {
     try {
       setLoading(true)
 
-      const payload = onBoardingStore.getState().answers
-      console.log('Sending onboarding answers payload to API:', payload)
+      const answers = onBoardingStore.getState().answers
+      const formattedPayload = {
+        questions: Object.entries(answers).map(([qText, qAns]) => ({
+          question: qText,
+          answer: qAns,
+        })),
+      }
 
-      // TODO: Call the API function here once it is ready.
-      // e.g.:
-      // const response = await apiRouter.saveOnboardingAnswers(payload)
-      // if (response.error) {
-      //   showToast({ message: response.error, variant: 'error' })
-      //   return
-      // }
+      const userId = authUserStore.getState().session?.id
+      if (!userId) {
+        throw new Error('User session not found')
+      }
 
-      // Simulate a small delay for premium feels and visual validation
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      console.log('Sending onboarding answers payload to API:', formattedPayload)
+
+      const response = await savePreQuestions(userId, formattedPayload)
+      if (response.error) {
+        showToast({ message: response.error, variant: 'error' })
+        return
+      }
 
       showToast({
         message: 'Onboarding completed successfully!',
