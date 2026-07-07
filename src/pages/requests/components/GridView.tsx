@@ -965,7 +965,7 @@ const GridRowItem = memo(
 
     const statusText =
       matchedJobStatus && !matchedJobStatus.isCompleted
-        ? `${matchedJobStatus.stage}${matchedJobStatus.message ? ` - ${matchedJobStatus.message}` : ''}`
+        ? `${matchedJobStatus.message ? ` ${matchedJobStatus.message}` : ''}`
         : defaultStatusText
 
     const parsedForm = getParsedFormData(row)

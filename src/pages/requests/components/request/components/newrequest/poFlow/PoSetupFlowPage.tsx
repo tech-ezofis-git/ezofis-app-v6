@@ -231,16 +231,16 @@ export default function PoSetupFlowPage({ onClose }: Props) {
     }, 800)
   }
 
-  const downloadFile = (file: File) => {
-    const url = URL.createObjectURL(file)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = file.name
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
-  }
+  // const downloadFile = (file: File) => {
+  //   const url = URL.createObjectURL(file)
+  //   const a = document.createElement('a')
+  //   a.href = url
+  //   a.download = file.name
+  //   document.body.appendChild(a)
+  //   a.click()
+  //   document.body.removeChild(a)
+  //   URL.revokeObjectURL(url)
+  // }
 
   // Inverted header translator to replace source file headers with master system columns
   const updateFileHeaders = async (
