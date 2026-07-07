@@ -37,6 +37,13 @@ export default function PoSetupFlowPage({ onClose }: Props) {
     rawWorkflowData?.wFormId ??
     rawWorkflowData?.settings?.general?.initiateUsing?.formId
 
+  const apAgentBlock = rawWorkflowData?.workflowJson?.blocks?.find(
+    (b: any) => b.type === 'AP_AGENT',
+  )
+  const masterFormId = apAgentBlock?.settings?.apAgent?.formId ?? wFormId
+
+  console.log('Workflow JSON:', rawWorkflowData?.workflowJson)
+
   // Upload & Pipeline State
   const [uploadState, setUploadState] = useState<UploadState>('idle')
   const [uploadProgress, setUploadProgress] = useState(0)
@@ -322,7 +329,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
   const sendUpdatedFile = async (file: File) => {
     const payload = {
       file: file,
-      formId: wFormId ? String(wFormId) : '',
+      formId: masterFormId ? String(masterFormId) : '',
       workflowId: workflowId ? String(workflowId) : '',
       instanceId: '',
     }
