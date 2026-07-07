@@ -2,11 +2,13 @@ import { useRef } from 'react'
 // import MondayLogo from '@/assets/brands/monday.svg'
 // import OracleLogo from '@/assets/brands/oracle.svg'
 import QuickBooksLogo from '@/assets/brands/quickbooks.svg'
+import poMasterUrl from '@/assets/PO Master.xlsx?url'
 // import SapLogo from '@/assets/brands/sap.svg'
 // import XeroLogo from '@/assets/brands/xero.svg'
 import Alert from '@/components/base/Alert'
 import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
+import showToast from '@/components/base/toast/showToast'
 import {
   AnimateBounce,
   AnimateFadeIn,
@@ -14,16 +16,14 @@ import {
   AnimateScale,
   AnimateSlideUp,
 } from '@/components/common/animations'
+import ColumnMapping from '@/components/common/ColumnMapping'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
-import poMasterUrl from '@/assets/PO Master.xlsx?url'
+import { compareHeaderSimilarity } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/headerSimilarity'
+import { SYSTEM_TEMPLATE_COLUMNS } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/templateSchema'
 import BrandCard from '../../components/BrandCard'
 import SectionHeader from '../../components/SectionHeader'
 import { OrDivider } from '../../components/StepLayout'
 import { extractHeadersAndData } from '../utils/fileParser'
-import ColumnMapping from '@/components/common/ColumnMapping'
-import showToast from '@/components/base/toast/showToast'
-import { compareHeaderSimilarity } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/headerSimilarity'
-import { SYSTEM_TEMPLATE_COLUMNS } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/templateSchema'
 
 const items = [
   // { logo: SapLogo, name: 'SAP', value: 'SAP' },
@@ -56,12 +56,14 @@ const ErpSystem = () => {
     document.body.removeChild(link)
   }
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = event.target.files?.[0]
     if (file) {
       try {
         const { headers, previewRows } = await extractHeadersAndData(file)
-        
+
         // Auto-suggest column mappings on upload
         const initialMapping: Record<string, string> = {}
         SYSTEM_TEMPLATE_COLUMNS.forEach((col) => {
@@ -75,18 +77,21 @@ const ErpSystem = () => {
           ...erpSettings,
           importMethod: 'upload',
           isConnected: true,
+          mapping: initialMapping,
+          previewRows: previewRows,
           system: 'FILE_BASED_IMPORT',
           templateUploaded: true,
+          uploadedColumns: headers,
           uploadedTemplate: file,
           wantsFileBasedImport: true,
-          uploadedColumns: headers,
-          previewRows: previewRows,
-          mapping: initialMapping,
         })
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (err: any) {
         console.error(err)
         showToast({
-          message: err.message || 'Failed to parse file. Please upload a valid CSV or Excel file.',
+          message:
+            err.message ||
+            'Failed to parse file. Please upload a valid CSV or Excel file.',
           variant: 'error',
         })
       }
@@ -174,15 +179,17 @@ const ErpSystem = () => {
               </h3>
 
               <p className='mt-1.5 mb-4 text-13/5.5 text-pretty text-gray-11'>
-                Download the predefined PO Master Data template file to view reference records. Use this file to understand the default schema structure and sample values used for matching.
+                Download the predefined PO Master Data template file to view
+                reference records. Use this file to understand the default
+                schema structure and sample values used for matching.
               </p>
 
               {/* Download button */}
               <div className='mb-4 flex justify-start'>
                 <Button
                   icon='tabler:download'
-                  size='sm'
                   label='Download PO Master Template'
+                  size='sm'
                   onClick={handleDownloadPredefinedMaster}
                 />
               </div>
@@ -205,6 +212,19 @@ const ErpSystem = () => {
                     ? 'Your PO Master records have been successfully uploaded. We will use this data to validate and match incoming invoices.'
                     : 'Upload your PO Master Data spreadsheet here.'}
                 </p>
+
+                {/* Uploaded file name */}
+                {erpSettings.uploadedTemplate && (
+                  <div className='mb-4 flex items-center gap-2 text-13/5 text-gray-12'>
+                    <Icon
+                      className='size-4 text-green-9'
+                      name='tabler:file-check'
+                    />
+                    <span className='font-medium'>
+                      {erpSettings.uploadedTemplate.name}
+                    </span>
+                  </div>
+                )}
 
                 {/* Upload button */}
                 <div className='mb-4 flex justify-start'>
@@ -237,30 +257,20 @@ const ErpSystem = () => {
                     />
                   </div>
                 )}
-
-                {/* Uploaded file name */}
-                {erpSettings.uploadedTemplate && (
-                  <div className='mt-3 flex items-center gap-2 text-13/5 text-gray-11'>
-                    <Icon className='size-4' name='tabler:file-check' />
-                    <span className='font-medium'>
-                      {erpSettings.uploadedTemplate.name}
-                    </span>
-                  </div>
-                )}
               </div>
             </AnimateFadeIn>
             {erpSettings.templateUploaded && (
               <ColumnMapping
-                uploadedColumns={erpSettings.uploadedColumns || []}
-                previewRows={erpSettings.previewRows || []}
                 mapping={erpSettings.mapping || {}}
+                previewRows={erpSettings.previewRows || []}
+                showActionsRow={false}
+                uploadedColumns={erpSettings.uploadedColumns || []}
                 onChangeMapping={(m) =>
                   setErpSettings({
                     ...erpSettings,
                     mapping: m,
                   })
                 }
-                showActionsRow={false}
               />
             )}
           </>

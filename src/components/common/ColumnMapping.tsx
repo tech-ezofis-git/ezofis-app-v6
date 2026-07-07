@@ -3,6 +3,7 @@ import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import showToast from '@/components/base/toast/showToast'
+import Tooltip from '@/components/base/Tooltip'
 import { AnimateFadeIn } from '@/components/common/animations'
 import { compareHeaderSimilarity } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/headerSimilarity'
 import { SYSTEM_TEMPLATE_COLUMNS } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/templateSchema'
@@ -122,22 +123,24 @@ export default function ColumnMapping({
               Align uploaded columns with master system fields.
             </p>
           </div>
-          <button
-            className='flex items-center gap-1 text-[11px] font-bold text-primary-9 hover:underline'
-            type='button'
-            onClick={handleReset}
-          >
-            <Icon className='size-3.5' name='tabler:rotate' />
-            <span>Reset</span>
-          </button>
+          <Tooltip content='Reset to default' position='top'>
+            <button
+              className='flex items-center gap-1 text-[11px] font-bold text-primary-9 hover:underline'
+              type='button'
+              onClick={handleReset}
+            >
+              <Icon className='size-3.5' name='tabler:rotate' />
+              {/* <span>Reset</span> */}
+            </button>
+          </Tooltip>
         </div>
 
         {/* Three-column Mapping Table */}
         <div className='flex flex-col gap-2'>
           {/* Table Header */}
-          <div className='grid grid-cols-[1fr_1.2fr_1fr] border-b border-border-default pb-2 text-[10px] font-extrabold tracking-wider text-gray-8 uppercase'>
-            <div>System Field</div>
-            <div>Your Field</div>
+          <div className='grid grid-cols-[160px_1.2fr_1fr] border-b border-border-default pb-2 text-[10px] font-extrabold tracking-wider text-gray-8'>
+            <div>System Fields</div>
+            <div className='pl-4'>Your Fields</div>
             <div>Preview</div>
           </div>
 
@@ -158,7 +161,7 @@ export default function ColumnMapping({
 
                 return (
                   <div
-                    className='grid grid-cols-[1fr_1.2fr_1fr] items-center gap-4 py-2.5 first:pt-1'
+                    className='grid grid-cols-[160px_1.2fr_1fr] items-center gap-4 py-2.5 first:pt-1'
                     key={col.key}
                   >
                     {/* Column 1: System Field */}
@@ -221,13 +224,11 @@ export default function ColumnMapping({
                       title={previewVal}
                     >
                       {selectedVal === 'Skip to Import' ? (
-                        <span className='text-gray-5 italic'>Skipped</span>
+                        <span className='italic'>Skipped</span>
                       ) : previewVal ? (
-                        <span className='font-semibold text-gray-12'>
-                          "{previewVal}"
-                        </span>
+                        <span>{previewVal}</span>
                       ) : (
-                        <span className='text-gray-5 italic'>No data</span>
+                        <span className='italic'>No data</span>
                       )}
                     </div>
                   </div>
