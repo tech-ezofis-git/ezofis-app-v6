@@ -33,7 +33,7 @@ const StepFive = () => {
   const answers = onBoardingStore((state) => state.answers)
   const setAnswer = onBoardingStore((state) => state.setAnswer)
   const next = onBoardingStore((state) => state.next)
-
+  console.log(answers)
   const savedValue = answers[question] || ''
   const initialOption = savedValue
     ? experienceOptions.find((o) => o.name === savedValue)?.id || null

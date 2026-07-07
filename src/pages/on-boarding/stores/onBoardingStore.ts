@@ -1,13 +1,13 @@
 import { create } from 'zustand'
-
+type Answer = string | string[]
 type Store = {
-  answers: Record<string, string>
+  answers: Record<string, Answer>
   step: number
   totalSteps: number
   back: () => void
   next: () => void
   reset: () => void
-  setAnswer: (question: string, answer: string) => void
+  setAnswer: (question: string, answer: Answer) => void
   setStep: (step: number) => void
 }
 
@@ -28,7 +28,7 @@ const onBoardingStore = create<Store>()((set) => ({
 
   reset: () => set(() => ({ answers: {}, step: 1 })),
 
-  setAnswer: (question: string, answer: string) =>
+  setAnswer: (question: string, answer: Answer) =>
     set((state) => ({
       answers: {
         ...state.answers,

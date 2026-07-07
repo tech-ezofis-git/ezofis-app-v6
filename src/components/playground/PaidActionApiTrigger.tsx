@@ -26,7 +26,7 @@ export const PaidActionApiTrigger = ({
     <Tooltip content='Playground API' position='top'>
       <button
         aria-label='Playground Api'
-        className='flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-primary-9 text-white shadow-lg transition-all hover:scale-105 hover:bg-primary-10 focus:ring-2 focus:ring-primary-9 focus:ring-offset-2 focus:outline-none active:scale-95'
+        className='flex h-10 w-10 cursor-pointer items-center justify-center rounded-md bg-primary-9 text-white shadow-lg transition-all hover:scale-105 hover:bg-primary-10 focus:ring-2 focus:ring-primary-9 focus:ring-offset-2 focus:outline-none active:scale-95'
         type='button'
         onClick={handleClick}
       >

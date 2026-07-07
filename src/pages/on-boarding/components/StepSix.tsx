@@ -27,10 +27,11 @@ const StepSix = () => {
   const savedValue = answers[question] || ''
 
   // Parse initial selected options from savedValue string
-  const savedNames = savedValue
-    .split(', ')
-    .map((s) => s.trim())
-    .filter(Boolean)
+  const savedNames = Array.isArray(savedValue)
+    ? savedValue
+    : savedValue
+      ? [savedValue]
+      : []
   const initialOptionIds = businessChallenges
     .filter((c) =>
       savedNames.some(
@@ -45,12 +46,12 @@ const StepSix = () => {
   const isOtherChecked = initialOptionIds.includes(7)
   const initialOtherText = isOtherChecked
     ? savedNames.find(
-        (sn) =>
-          !businessChallenges
-            .map((x) => x.name)
-            .filter((n) => n !== 'Other')
-            .includes(sn),
-      ) || ''
+      (sn) =>
+        !businessChallenges
+          .map((x) => x.name)
+          .filter((n) => n !== 'Other')
+          .includes(sn),
+    ) || ''
     : ''
 
   const [selectedIds, setSelectedIds] = useState<number[]>(initialOptionIds)
@@ -69,7 +70,7 @@ const StepSix = () => {
       selectedNames.push('Other')
     }
 
-    setAnswer(question, selectedNames.join(', '))
+    setAnswer(question, selectedNames)
   }
 
   const handleClick = (id: number) => {

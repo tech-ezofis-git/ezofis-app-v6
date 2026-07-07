@@ -773,12 +773,14 @@ const Header: React.FC<HeaderProps> = ({
                                   <Icon className='size-4 text-[var(--primary-9)]' name='tabler:crown' />
                                 </div>
                               ) : (
-                                <InputCheckbox
-                                  checked={isShared || isSelectedToShare}
-                                  disabled={isShared}
-                                  onChange={() => handleToggleSelectUser(user)}
-                                  className='shrink-0 cursor-pointer'
-                                />
+                                <div onClick={(e) => e.stopPropagation()} className='shrink-0 flex items-center justify-center'>
+                                  <InputCheckbox
+                                    checked={isShared || isSelectedToShare}
+                                    disabled={isShared}
+                                    onChange={() => handleToggleSelectUser(user)}
+                                    className='cursor-pointer'
+                                  />
+                                </div>
                               )}
 
                               {/* Avatar */}
