@@ -14,6 +14,7 @@ import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useS
 import requestStore from '@/pages/requests/stores/useRequestStore'
 import authUserStore from '@/stores/authUserStore'
 import { StepFooter, StepLayout } from '../components/StepLayout'
+import SuccessCelebration from './components/SuccessCelebration'
 import WorkflowPreview from './components/WorkflowPreview'
 
 const ProtocolCard = ({
@@ -192,6 +193,7 @@ const StepFour = () => {
   )
 
   const [isSaving, setIsSaving] = useState(false)
+  const [showCelebration, setShowCelebration] = useState(false)
 
   const handleClose = async () => {
     setIsSaving(true)
@@ -356,10 +358,14 @@ const StepFour = () => {
 
       // Proceed with setup completion after all V6 APIs run successfully
       setPendingOpenNewRequest(true)
-      apComplete(true)
 
-      // Allow 1.5 seconds for the progress bar to animate to 100%
-      await new Promise((resolve) => setTimeout(resolve, 1500))
+      // Show celebratory success screen with flowers and sparkles
+      setShowCelebration(true)
+
+      // Hold for 4.5 seconds to showcase the animation
+      await new Promise((resolve) => setTimeout(resolve, 4500))
+
+      apComplete(true)
 
       setIsActivatingAutomation(true)
       clearNavigationLock(false)
@@ -384,6 +390,10 @@ const StepFour = () => {
       return 'PO Master File'
     }
     return erpSettings.system ? `${erpSettings.system} ERP` : 'NetSuite ERP'
+  }
+
+  if (showCelebration) {
+    return <SuccessCelebration />
   }
 
   return (
