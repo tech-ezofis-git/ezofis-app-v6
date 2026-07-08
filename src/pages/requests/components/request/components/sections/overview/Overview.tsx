@@ -1055,11 +1055,11 @@ const SummarySkeleton = () => (
 // --- Main App ---
 
 const skeletonRows = ['skeleton-row-0', 'skeleton-row-1', 'skeleton-row-2']
-const LINE_ITEM_LEFT_WIDTHS = [84, 128, 176]
-const LINE_ITEM_AMOUNT_WIDTH = 140
-const LINE_ITEM_SCORE_WIDTH = 100
+const LINE_ITEM_LEFT_WIDTHS = [60, 100, 100]
+const LINE_ITEM_AMOUNT_WIDTH = 100
+const LINE_ITEM_SCORE_WIDTH = 60
 const LINE_ITEM_ACTION_WIDTH = 44
-const LINE_ITEM_DEFAULT_WIDTH = 120
+const LINE_ITEM_DEFAULT_WIDTH = 50
 
 const getStickyLeftOffset = (index: number) =>
   LINE_ITEM_LEFT_WIDTHS.slice(0, index).reduce((sum, width) => sum + width, 0)
@@ -1803,7 +1803,7 @@ const Overview = (props: any) => {
 
   const formatHeaderLabel = (key: string) => {
     if (isLineItemAmountColumn(key)) {
-      return 'Total Amount'
+      return 'Amount'
     }
 
     return key
@@ -3696,7 +3696,7 @@ const Overview = (props: any) => {
                                         <span
                                           className={getLineItemTextClass(true)}
                                         >
-                                          Total Amount
+                                          Amount
                                         </span>
                                       </th>
                                     </>
@@ -3711,7 +3711,7 @@ const Overview = (props: any) => {
                                     <span
                                       className={getLineItemTextClass(true)}
                                     >
-                                      Match Score
+                                      Score
                                     </span>
                                   </th>
                                   <th
@@ -4370,7 +4370,7 @@ const Overview = (props: any) => {
                                   : formattedTotal
 
                                 return (
-                                  <tfoot className='border-t border-[var(--gray-3)] bg-[var(--gray-1)]'>
+                                  <tfoot className='sticky bottom-0 z-30 border-t border-[var(--gray-3)] bg-[var(--gray-1)]'>
                                     <tr>
                                       {/* Spans all columns before the pinned amount column */}
                                       <td
