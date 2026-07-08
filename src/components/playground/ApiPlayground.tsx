@@ -109,7 +109,7 @@ export const ApiPlayground = ({ context, onClose }: ApiPlaygroundProps) => {
         </div>
 
         {/* Endpoint Details */}
-        <div className='space-y-2.5'>
+        {/* <div className='space-y-2.5'>
           <h4 className='text-[10px] font-bold tracking-wider text-[var(--gray-11)] uppercase'>
             Request Specification
           </h4>
@@ -121,10 +121,10 @@ export const ApiPlayground = ({ context, onClose }: ApiPlaygroundProps) => {
               /api/v6/payments/process
             </span>
           </div>
-        </div>
+        </div> */}
 
         {/* Headers */}
-        <div className='space-y-2'>
+        {/* <div className='space-y-2'>
           <h4 className='text-[10px] font-bold tracking-wider text-[var(--gray-11)] uppercase'>
             Headers
           </h4>
@@ -150,7 +150,7 @@ export const ApiPlayground = ({ context, onClose }: ApiPlaygroundProps) => {
               </span>
             </div>
           </div>
-        </div>
+        </div> */}
 
         {/* Live Payload Snippet */}
         {/* <div className='space-y-2 relative'>

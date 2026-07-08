@@ -214,19 +214,26 @@ const QuickFilters: React.FC<QuickFiltersProps> = ({ counts, data }) => {
           }
 
           return (
-            <button
-              className='flex cursor-pointer items-center gap-1.5 rounded-full border border-[var(--purple-5)] bg-[var(--purple-2)] px-3 py-1 text-[11px] font-semibold text-[var(--purple-11)] transition-all duration-200 hover:bg-[var(--purple-3)] active:scale-95'
+            <div
               key={f}
-              onClick={() => toggleQuickFilter(f)}
+              className='flex items-center gap-1.5 rounded-full border border-[var(--purple-5)] bg-[var(--purple-2)] px-3 py-1 text-[11px] font-semibold text-[var(--purple-11)] transition-all duration-200 hover:bg-[var(--purple-3)]'
             >
               <Icon className='size-3.5' name='tabler:filter' />
               <span>{label}</span>
-              <Icon
-                className='size-3 font-bold text-[var(--purple-9)]'
-                name='tabler:x'
-              />
-            </button>
+              <button
+                type='button'
+                className='flex cursor-pointer items-center justify-center rounded-full border-none bg-transparent p-0 text-[var(--purple-9)] active:scale-95'
+                onClick={(e) => {
+                  e.stopPropagation()
+                  toggleQuickFilter(f)
+                }}
+                aria-label={`Remove ${label} filter`}
+              >
+                <Icon className='size-3 font-bold' name='tabler:x' />
+              </button>
+            </div>
           )
+
         })}
 
         {/* Add Filter Menu */}

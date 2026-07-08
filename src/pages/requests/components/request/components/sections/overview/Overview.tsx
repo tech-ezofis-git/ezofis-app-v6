@@ -700,6 +700,7 @@ const AnalysisCard = ({
   isPulsing = false,
   isSelected = false,
   status,
+  statusContent, // NEW: optional node that replaces the plain status badge
   statusType = 'success',
   title,
   value,
@@ -730,6 +731,8 @@ const AnalysisCard = ({
         </div>
         {isLoading ? (
           <div className='h-5 w-14 animate-pulse rounded bg-[var(--gray-3)]' />
+        ) : statusContent ? (
+          statusContent
         ) : (
           <div
             className={cn(
@@ -759,7 +762,6 @@ const AnalysisCard = ({
     </div>
   )
 }
-
 const DetailReportView = ({
   children,
   icon: IconComponent,
@@ -2307,20 +2309,26 @@ const Overview = (props: any) => {
                         icon={Wand2}
                         isLoading={false}
                         isPulsing={true}
-                        status='Not Verified'
-                        statusType='warning'
                         title='Supplier Verification'
+                        value='Not Verified'
                         isSelected={
                           activeDetailView === 'supplier_verification'
                         }
-                        value={
-                          <span className='mt-0.5 inline-flex items-center gap-2 rounded-lg border border-[var(--primary-4)] bg-[var(--primary-2)] px-2.5 py-1 text-xs font-bold text-[var(--primary-9)] shadow-sm transition-all hover:scale-[1.02] hover:bg-[var(--primary-3)] hover:text-[var(--primary-10)] active:scale-95'>
+                        statusContent={
+                          <button
+                            className='relative inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-[var(--primary-4)] bg-[var(--primary-2)] px-2.5 py-1 text-[9px] font-bold text-[var(--primary-9)] shadow-sm transition-all hover:scale-[1.02] hover:bg-[var(--primary-3)] hover:text-[var(--primary-10)] active:scale-95'
+                            type='button'
+                            onClick={(e) => {
+                              e.stopPropagation() // don't also fire the card's onClick
+                              handleVerifySupplierClick()
+                            }}
+                          >
                             <span className='relative flex h-1.5 w-1.5 shrink-0'>
-                              <span className='absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--primary-9)] opacity-75'></span>
-                              <span className='relative inline-flex h-1.5 w-1.5 rounded-full bg-[var(--primary-9)]'></span>
+                              <span className='absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--primary-9)] opacity-75' />
+                              <span className='relative inline-flex h-1.5 w-1.5 rounded-full bg-[var(--primary-9)]' />
                             </span>
                             Verify Supplier
-                          </span>
+                          </button>
                         }
                         onClick={handleVerifySupplierClick}
                       />
@@ -2455,71 +2463,81 @@ const Overview = (props: any) => {
 
                 {!activeDetailView && (
                   <div className='sticky top-0 z-10 shrink-0 border-b border-[var(--gray-3)] bg-surface px-6 pt-2'>
-                    <div className='flex items-center gap-8'>
-                      {[
-                        {
-                          icon: FileText,
-                          id: 'summary',
-                          label: 'Extracted Data',
-                        },
-                        { icon: Layers, id: 'line_items', label: 'Line Items' },
-                        {
-                          icon: Paperclip,
-                          id: 'attachments',
-                          label: 'Attachments',
-                        },
-                        {
-                          icon: MessageCircle,
-                          id: 'comments',
-                          label: 'Comments',
-                        },
-                        { icon: HistoryIcon, id: 'history', label: 'History' },
-                      ].map((tab) => (
-                        <button
-                          key={tab.id}
-                          className={cn(
-                            '-mb-[2px] flex items-center gap-2 border-b-2 pb-4 text-[11px] font-semibold transition-all',
-                            activeTab === tab.id
-                              ? 'border-[var(--primary-9)] text-[var(--primary-9)]'
-                              : 'border-transparent text-[var(--gray-11)]',
-                          )}
-                          onClick={() => setActiveTab(tab.id)}
-                        >
-                          <tab.icon className='h-4 w-4' />
-                          {tab.label}
-                          {tab.id === 'attachments' &&
-                            attachmentData?.length > 0 && (
-                              <span className='rounded bg-[var(--gray-2)] px-1.5 py-0.5 text-[10px] text-[var(--gray-11)]'>
-                                {attachmentData.length}
-                              </span>
+                    <div className='flex items-center justify-between gap-8'>
+                      <div className='flex items-center gap-8'>
+                        {[
+                          {
+                            icon: FileText,
+                            id: 'summary',
+                            label: 'Extracted Data',
+                          },
+                          { icon: Layers, id: 'line_items', label: 'Line Items' },
+                          {
+                            icon: Paperclip,
+                            id: 'attachments',
+                            label: 'Attachments',
+                          },
+                          {
+                            icon: MessageCircle,
+                            id: 'comments',
+                            label: 'Comments',
+                          },
+                          { icon: HistoryIcon, id: 'history', label: 'History' },
+                        ].map((tab) => (
+                          <button
+                            key={tab.id}
+                            className={cn(
+                              '-mb-[2px] flex items-center gap-2 border-b-2 pb-4 text-[11px] font-semibold transition-all',
+                              activeTab === tab.id
+                                ? 'border-[var(--primary-9)] text-[var(--primary-9)]'
+                                : 'border-transparent text-[var(--gray-11)]',
                             )}
-                          {tab.id === 'line_items' &&
-                            (lineItems.length > 0 ||
-                              agentData?.debug?.[
-                                'Side-by-side Line Item matching'
-                              ]?.length > 0 ||
-                              agentData?.line_items?.length > 0 ||
-                              agentData?.['Extracted Invoice JSON']
-                                ?.invoice_items?.length > 0) && (
-                              <span className='rounded bg-[var(--gray-2)] px-1.5 py-0.5 text-[10px] text-[var(--gray-11)]'>
-                                {lineItems.length ||
-                                  agentData?.debug?.[
-                                    'Side-by-side Line Item matching'
-                                  ]?.length ||
-                                  agentData?.line_items?.length ||
-                                  agentData?.['Extracted Invoice JSON']
-                                    ?.invoice_items?.length}
-                              </span>
-                            )}
-                          {tab.id === 'comments' &&
-                            commentsData &&
-                            commentsData.length > 0 && (
-                              <span className='rounded bg-[var(--gray-2)] px-1.5 py-0.5 text-[10px] text-[var(--gray-11)]'>
-                                {commentsData.length}
-                              </span>
-                            )}
-                        </button>
-                      ))}
+                            onClick={() => setActiveTab(tab.id)}
+                          >
+                            <tab.icon className='h-4 w-4' />
+                            {tab.label}
+                            {tab.id === 'attachments' &&
+                              attachmentData?.length > 0 && (
+                                <span className='rounded bg-[var(--gray-2)] px-1.5 py-0.5 text-[10px] text-[var(--gray-11)]'>
+                                  {attachmentData.length}
+                                </span>
+                              )}
+                            {tab.id === 'line_items' &&
+                              (lineItems.length > 0 ||
+                                agentData?.debug?.[
+                                  'Side-by-side Line Item matching'
+                                ]?.length > 0 ||
+                                agentData?.line_items?.length > 0 ||
+                                agentData?.['Extracted Invoice JSON']
+                                  ?.invoice_items?.length > 0) && (
+                                <span className='rounded bg-[var(--gray-2)] px-1.5 py-0.5 text-[10px] text-[var(--gray-11)]'>
+                                  {lineItems.length ||
+                                    agentData?.debug?.[
+                                      'Side-by-side Line Item matching'
+                                    ]?.length ||
+                                    agentData?.line_items?.length ||
+                                    agentData?.['Extracted Invoice JSON']
+                                      ?.invoice_items?.length}
+                                </span>
+                              )}
+                            {tab.id === 'comments' &&
+                              commentsData &&
+                              commentsData.length > 0 && (
+                                <span className='rounded bg-[var(--gray-2)] px-1.5 py-0.5 text-[10px] text-[var(--gray-11)]'>
+                                  {commentsData.length}
+                                </span>
+                              )}
+                          </button>
+                        ))}
+                      </div>
+                      {onOpenPlayground && (
+                        <div className='pb-2.5 animate-in fade-in duration-300'>
+                          <PaidActionApiTrigger
+                            action={paidAction}
+                            onTrigger={onOpenPlayground}
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -4173,14 +4191,7 @@ const Overview = (props: any) => {
           </div>
         </div>
       </div>
-      {onOpenPlayground && (
-        <div className='animate-in fade-in slide-in-from-bottom-2 absolute right-10 bottom-20 z-[90] duration-300'>
-          <PaidActionApiTrigger
-            action={paidAction}
-            onTrigger={onOpenPlayground}
-          />
-        </div>
-      )}
+
     </div>
   )
 }
