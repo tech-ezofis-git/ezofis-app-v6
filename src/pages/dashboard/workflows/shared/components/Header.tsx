@@ -1,1552 +1,1880 @@
-import {
-  ArrowRight,
-  Bot,
-  Building2,
-  Calendar,
-  ClipboardList,
-  Component,
-  DollarSign,
-  RefreshCcw,
-  Search,
-  ShieldAlert,
-} from 'lucide-react'
 import React from 'react'
 import {
+  AreaChart,
   Area,
-  Bar,
   BarChart,
-  CartesianGrid,
-  Cell,
-  ComposedChart,
-  LabelList,
-  Line,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
+  Bar,
   XAxis,
   YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  ComposedChart,
+  Line,
+  CartesianGrid,
 } from 'recharts'
-import { AnimateFadeIn, AnimateSlideUp } from '@/components/common/animations'
-// import Icon from '@/components/base/icon/Icon'
-// import { SCREEN_XL } from '@/constants'
-// import cn from '@/utils/cn'
-// // import Section from '../../shared/components/Section'
-// import Section from './workflows/shared/components/Section'
-// import { Trans } from '@lingui/react/macro'
-// import { useViewportSize } from '@mantine/hooks'
-import Overview from '../../accounts-payable/components/Overview'
-import setupStore from '../../accounts-payable/stores/useSetupStore'
-// import AccountsPayable from './workflows/accounts-payable/AccountsPayable'
-// import Header from './workflows/shared/components/Header'
+import {
+  Search,
+  ChevronDown,
+  ChevronUp,
+  ChevronRight,
+  Building2,
+  DollarSign,
+  ClipboardList,
+} from 'lucide-react'
+import useDashboardStore from '@/pages/dashboard/stores/useDashboardStore'
+import {
+  getFilteredInvoices,
+  getDashboardMetrics,
+  TODAY,
+  suppliers,
+} from '@/pages/dashboard/utils/dashboardData'
+import cn from '@/utils/cn'
 
-// --- Components ---
-
-interface FilterButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  icon: React.ReactNode
-  label: string
-  active?: boolean
+// Format money values (e.g. $10.79M, $642.5K, $0)
+function fmtMoney(v: number, currency = 'USD') {
+  const sym = currency === 'EUR' ? '€' : currency === 'GBP' ? '£' : currency === 'INR' ? '₹' : '$'
+  const abs = Math.abs(v)
+  if (abs >= 1.0e6) {
+    return `${sym}${(v / 1.0e6).toFixed(2)}M`
+  } else if (abs >= 1.0e3) {
+    return `${sym}${(v / 1.0e3).toFixed(1)}K`
+  }
+  return `${sym}${v.toLocaleString()}`
 }
 
-const FilterButton = ({ active, icon, label, ...props }: FilterButtonProps) => {
+// Cyan target-dot list bullet icon matching screenshot
+const BulletIcon = () => (
+  <svg className="h-4 w-4 text-[#00a2c7] shrink-0 mt-0.5 animate-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <circle cx="12" cy="12" r="10" />
+    <circle cx="12" cy="12" r="3" fill="currentColor" />
+  </svg>
+)
+
+export default function DashboardCharts() {
+  const {
+    role,
+    timeframe,
+    supplierCategory,
+    invoiceStatus,
+    currency,
+    searchQuery,
+    drillSupplier,
+    drillAgingBucket,
+    drillStatus,
+    setTimeframe,
+    setSupplierCategory,
+    setInvoiceStatus,
+    setCurrency,
+    setSearchQuery,
+    setDrillSupplier,
+    setDrillAgingBucket,
+    setDrillStatus,
+    resetFilters,
+  } = useDashboardStore()
+
+  // State variables for filter card dropdown refinements
+  const [activeFilterDropdown, setActiveFilterDropdown] = React.useState<'suppliers' | 'statuses' | 'currencies' | 'more' | null>(null)
+  const [activeFilterGroup, setActiveFilterGroup] = React.useState<'status' | 'amount' | 'supplier'>('status')
+  const [filterSearchQuery, setFilterSearchQuery] = React.useState('')
+  const [expandedInvoiceId, setExpandedInvoiceId] = React.useState<string | null>(null)
+
+  // Collapse/Expand state for targeted cards
+  const [isCommandCenterExpanded, setIsCommandCenterExpanded] = React.useState(true)
+
+  // Compute dynamic lists based on active filters
+  const filteredInvoices = React.useMemo(() => {
+    return getFilteredInvoices({
+      timeframe,
+      supplierCategory,
+      invoiceStatus,
+      currency,
+      searchQuery,
+    })
+  }, [timeframe, supplierCategory, invoiceStatus, currency, searchQuery])
+
+  const metrics = React.useMemo(() => {
+    return getDashboardMetrics(filteredInvoices, timeframe)
+  }, [filteredInvoices, timeframe])
+
+  // Drill down filter (shows table inline below the KPI cards)
+  const [activeDrill, setActiveDrill] = React.useState<string | null>(null)
+
+  const handleKpiClick = (kpiName: string) => {
+    if (activeDrill === kpiName) {
+      setActiveDrill(null)
+    } else {
+      setActiveDrill(kpiName)
+    }
+  }
+
+  // Reset active drill row view if outstanding payables is collapsed/hidden
+  React.useEffect(() => {
+    if (!isCommandCenterExpanded && activeDrill === 'Total Outstanding Payables') {
+      setActiveDrill(null)
+    }
+  }, [isCommandCenterExpanded, activeDrill])
+
+  // Filtered list for inline expansion table
+  const drillInvoices = React.useMemo(() => {
+    if (!activeDrill) return []
+    const drillLower = activeDrill.toLowerCase()
+    let result = [...filteredInvoices]
+
+    if (drillLower.includes('outstanding') || drillLower.includes('total ap')) {
+      result = result.filter(inv => inv.status !== 'Paid' && inv.status !== 'Rejected')
+    } else if (drillLower.includes('paid')) {
+      result = result.filter(inv => inv.status === 'Paid')
+    } else if (drillLower.includes('pending')) {
+      result = result.filter(inv => inv.status === 'Pending' || inv.status === 'Approved' || inv.status === 'Processing')
+    } else if (drillLower.includes('due today')) {
+      result = result.filter(inv => {
+        if (inv.status === 'Paid' || inv.status === 'Rejected') return false
+        const d = new Date(inv.dueDate)
+        return d.getFullYear() === TODAY.getFullYear() && d.getMonth() === TODAY.getMonth() && d.getDate() === TODAY.getDate()
+      })
+    } else if (drillLower.includes('overdue')) {
+      result = result.filter(inv => inv.status !== 'Paid' && inv.status !== 'Rejected' && inv.dueDate < TODAY)
+    }
+
+    // Secondary drills from graphs
+    if (drillSupplier) {
+      result = result.filter(inv => inv.supplier === drillSupplier)
+    }
+    if (drillAgingBucket) {
+      result = result.filter(inv => {
+        const days = Math.floor((TODAY.getTime() - new Date(inv.dueDate).getTime()) / (1000 * 60 * 60 * 24))
+        if (drillAgingBucket === '0-15d') return days >= 0 && days <= 15
+        if (drillAgingBucket === '16-30d') return days > 15 && days <= 30
+        if (drillAgingBucket === '31-45d') return days > 30 && days <= 45
+        if (drillAgingBucket === '46-60d') return days > 45 && days <= 60
+        if (drillAgingBucket === '60d+') return days > 60
+        return true
+      })
+    }
+    if (drillStatus) {
+      result = result.filter(inv => inv.status === drillStatus)
+    }
+
+    return result
+  }, [activeDrill, filteredInvoices, drillSupplier, drillAgingBucket, drillStatus])
+
+  // Get color for status badges
+  const getStatusClass = (status: string) => {
+    switch (status) {
+      case 'Approved':
+        return 'bg-success-light text-success border border-success/20'
+      case 'Paid':
+        return 'bg-primary-3 text-primary-9 border border-primary-4'
+      case 'Pending':
+        return 'bg-orange-2 text-orange-11 border border-orange-3'
+      case 'Processing':
+        return 'bg-cyan-2 text-cyan-11 border border-cyan-3'
+      case 'Rejected':
+        return 'bg-red-2 text-red-11 border border-red-3'
+      case 'Hold':
+      default:
+        return 'bg-gray-2 text-gray-10 border border-gray-3'
+    }
+  }
+
+  // Pre-formatted list of AI insights with exact mockup contents, bold weights, and green/red highlights
+  const aiInsightsList = React.useMemo(() => {
+    return [
+      {
+        node: (
+          <>
+            Outstanding overdue balances are <span className="font-bold text-[#1E8E6F]">down 100%</span> versus last month (<span className="font-bold">$0</span> now outstanding past due).
+          </>
+        )
+      },
+      {
+        node: (
+          <>
+            Just <span className="font-bold">3 suppliers</span> account for <span className="font-bold">19%</span> of unpaid liabilities, led by <span className="font-bold">Harbor Point Consulting</span> at $686.5K.
+          </>
+        )
+      },
+      {
+        node: (
+          <>
+            Average approval time increased by <span className="font-bold text-[#B3261E]">1.2 days</span> month over month, now averaging <span className="font-bold">6.1 days</span>.
+          </>
+        )
+      },
+      {
+        node: (
+          <>
+            <span className="font-bold">28 invoices</span> flagged as potential duplicates — recommend review before release to avoid double payment.
+          </>
+        )
+      },
+      {
+        node: (
+          <>
+            Payments due this week total <span className="font-bold">$298.7K</span>, <span className="font-bold text-[#1E8E6F]">below last week by 67%</span>.
+          </>
+        )
+      },
+      {
+        node: (
+          <>
+            Profit margin decreased to <span className="font-bold">12.9%</span>, pressured by higher supplier expenses.
+          </>
+        )
+      },
+      {
+        node: (
+          <>
+            <span className="font-bold">Legal</span> has the longest approval cycle in the current view, averaging <span className="font-bold">8.0 days</span> per invoice.
+          </>
+        )
+      },
+      {
+        node: (
+          <>
+            <span className="font-bold">10 of 24 suppliers</span> now score above 80% on-time delivery, reflecting steadier vendor performance.
+          </>
+        )
+      },
+      {
+        node: (
+          <>
+            Projected cash requirement for the next 4 weeks is <span className="font-bold">$755.7K</span> — plan liquidity accordingly.
+          </>
+        )
+      }
+    ]
+  }, [])
+
   return (
-    <button
-      className={`hover:bg-opacity-80 flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[12px] font-medium transition-all active:scale-95 ${
-        active
-          ? 'border-[#4285F4] bg-[#4285F4]/10 text-[#4285F4]'
-          : 'text-gray-500 hover:bg-gray-50 border-gray-3 bg-white shadow-sm'
-      }`}
-      {...props}
-    >
-      {React.cloneElement(icon as React.ReactElement<{ className?: string }>, {
-        className: `h-3 w-3 ${active ? 'text-[#4285F4]' : 'text-gray-400'}`,
-      })}
-      {label}
-    </button>
-  )
-}
+    <div className="flex flex-col gap-6 p-6">
 
-interface FilterDropdownProps {
-  icon: React.ReactNode
-  isOpen: boolean
-  label: string
-  options: string[]
-  selectedValue: string
-  onSelect: (val: string) => void
-  onToggle: () => void
-}
+      {/* 1. QUICK FILTERS ROW (aligned exactly with screenshot mockup) */}
+      <div className="flex flex-wrap items-center gap-2.5 rounded-lg border border-border-default bg-surface p-3 shadow-xs">
+        <span className="text-12 font-bold text-text-primary mr-1">Filters:</span>
 
-const FilterDropdown = ({
-  icon,
-  isOpen,
-  label,
-  options,
-  selectedValue,
-  onSelect,
-  onToggle,
-}: FilterDropdownProps) => {
-  const isActive =
-    (selectedValue !== label &&
-      selectedValue !== 'All Suppliers' &&
-      selectedValue !== 'All Statuses' &&
-      selectedValue !== 'All Currencies') ||
-    (label === 'This Month' && selectedValue === 'This Month')
+        {/* Timeframe pills */}
+        <div className="flex flex-wrap gap-1.5">
+          {[
+            { label: 'Today', key: 'today' },
+            { label: 'This Week', key: 'week' },
+            { label: 'This Month', key: 'month' },
+            { label: 'Last Month', key: 'lastmonth' },
+            { label: 'Quarter', key: 'quarter' },
+            { label: 'Financial Year', key: 'fy' }
+          ].map(chip => (
+            <button
+              key={chip.key}
+              className={cn(
+                "cursor-pointer rounded-full border px-3.5 py-1 text-12 font-medium transition-all hover:bg-gray-3 dark:hover:bg-gray-10",
+                timeframe === chip.key
+                  ? "border-primary-9 bg-primary-9 text-white shadow-xs"
+                  : "border-border-default bg-surface text-text-secondary"
+              )}
+              onClick={() => setTimeframe(chip.key as any)}
+            >
+              {chip.label}
+            </button>
+          ))}
+        </div>
 
-  return (
-    <div className='relative inline-block text-left'>
-      <FilterButton
-        active={isActive}
-        icon={icon}
-        label={selectedValue}
-        onClick={(e) => {
-          e.stopPropagation()
-          onToggle()
-        }}
-      />
-      {isOpen && (
-        <div
-          className='animate-in fade-in zoom-in-95 absolute left-0 z-50 mt-1 min-w-[130px] overflow-hidden rounded-sm border border-[#7F7F7F] bg-white shadow-lg duration-100'
-          style={{ transformOrigin: 'top left' }}
-        >
-          {options.map((option) => {
-            const isSelected = option === selectedValue
-            return (
-              <button
-                key={option}
-                className={`w-full px-3 py-1.5 text-left text-[12px] leading-normal font-medium transition-colors ${
-                  isSelected
-                    ? 'bg-[#4285F4] text-white'
-                    : 'hover:bg-slate-100 bg-white text-[#4285F4]'
-                }`}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onSelect(option)
-                }}
-              >
-                {option}
-              </button>
-            )
-          })}
+        {/* Custom select dropdown pills */}
+        <div className="flex flex-wrap gap-1.5">
+
+          {/* Suppliers Dropdown Toggle */}
+          <div className="relative">
+            <button
+              className={cn(
+                "cursor-pointer rounded-full border px-3.5 py-1 text-12 font-medium transition-all hover:bg-gray-3 dark:hover:bg-gray-10 flex items-center gap-1.5",
+                supplierCategory || activeFilterDropdown === 'suppliers'
+                  ? "border-primary-9 bg-primary-3/50 text-primary-9"
+                  : "border-border-default bg-surface text-text-secondary"
+              )}
+              onClick={() => {
+                setActiveFilterDropdown(activeFilterDropdown === 'suppliers' ? null : 'suppliers')
+                setFilterSearchQuery('')
+              }}
+            >
+              <span>🏢 {supplierCategory || 'Suppliers'}</span>
+              <ChevronDown className="h-3 w-3 opacity-60" />
+            </button>
+
+            {activeFilterDropdown === 'suppliers' && (
+              <div className="absolute z-30 top-full left-0 mt-1.5 w-[240px] rounded-lg border border-border-default bg-surface p-3 shadow-xs animate-in fade-in slide-in-from-top-2">
+                <div className="relative mb-2">
+                  <Search className="absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-text-muted" />
+                  <input
+                    className="w-full rounded-lg border border-border-default bg-gray-2 py-1 pr-3 pl-8 text-11 text-text-primary outline-none"
+                    placeholder="Search supplier..."
+                    type="text"
+                    value={filterSearchQuery}
+                    onChange={(e) => setFilterSearchQuery(e.target.value)}
+                  />
+                </div>
+                <div className="h-px bg-border-default -mx-3 my-2" />
+                <div className="flex flex-col gap-0.5 max-h-[180px] overflow-y-auto scrollbar">
+                  <button
+                    className={cn(
+                      "w-full rounded px-2.5 py-1.5 text-12 font-medium text-left cursor-pointer transition-colors text-text-primary hover:bg-gray-2",
+                      !supplierCategory && "bg-primary-3/30 text-primary-9 font-semibold"
+                    )}
+                    onClick={() => {
+                      setSupplierCategory('')
+                      setActiveFilterDropdown(null)
+                    }}
+                  >
+                    🏢 All Suppliers
+                  </button>
+                  {Array.from(new Set(suppliers.map(s => s.category))).map(cat => (
+                    <button
+                      key={cat}
+                      className={cn(
+                        "w-full rounded px-2.5 py-1.5 text-12 font-medium text-left cursor-pointer transition-colors text-text-primary hover:bg-gray-2",
+                        supplierCategory === cat && "bg-primary-3/30 text-primary-9 font-semibold"
+                      )}
+                      onClick={() => {
+                        setSupplierCategory(cat)
+                        setActiveFilterDropdown(null)
+                      }}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Statuses Dropdown Toggle */}
+          <div className="relative">
+            <button
+              className={cn(
+                "cursor-pointer rounded-full border px-3.5 py-1 text-12 font-medium transition-all hover:bg-gray-3 dark:hover:bg-gray-10 flex items-center gap-1.5",
+                invoiceStatus || activeFilterDropdown === 'statuses'
+                  ? "border-primary-9 bg-primary-3/50 text-primary-9"
+                  : "border-border-default bg-surface text-text-secondary"
+              )}
+              onClick={() => {
+                setActiveFilterDropdown(activeFilterDropdown === 'statuses' ? null : 'statuses')
+                setFilterSearchQuery('')
+              }}
+            >
+              <span>📋 {invoiceStatus === 'Pending' ? 'Partially Approved' : (invoiceStatus || 'Statuses')}</span>
+              <ChevronDown className="h-3 w-3 opacity-60" />
+            </button>
+
+            {activeFilterDropdown === 'statuses' && (
+              <div className="absolute z-30 top-full left-0 mt-1.5 w-[240px] rounded-lg border border-border-default bg-surface p-3 shadow-xs animate-in fade-in slide-in-from-top-2">
+                <div className="relative mb-2">
+                  <Search className="absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-text-muted" />
+                  <input
+                    className="w-full rounded-lg border border-border-default bg-gray-2 py-1 pr-3 pl-8 text-11 text-text-primary outline-none"
+                    placeholder="Search status..."
+                    type="text"
+                    value={filterSearchQuery}
+                    onChange={(e) => setFilterSearchQuery(e.target.value)}
+                  />
+                </div>
+                <div className="h-px bg-border-default -mx-3 my-2" />
+                <div className="flex flex-col gap-0.5 max-h-[180px] overflow-y-auto scrollbar">
+                  {[
+                    { label: 'Approved', val: 'Approved' },
+                    { label: 'Partially Approved', val: 'Pending' },
+                    { label: 'Rejected', val: 'Rejected' },
+                    { label: 'Paid', val: 'Paid' },
+                    { label: 'Processing', val: 'Processing' },
+                    { label: 'Hold', val: 'Hold' }
+                  ].filter(item => item.label.toLowerCase().includes(filterSearchQuery.toLowerCase())).map(item => (
+                    <button
+                      key={item.label}
+                      className={cn(
+                        "w-full rounded px-2.5 py-1.5 text-12 font-medium text-left cursor-pointer transition-colors text-text-primary hover:bg-gray-2",
+                        invoiceStatus === item.val && "bg-primary-3/30 text-primary-9 font-semibold"
+                      )}
+                      onClick={() => {
+                        setInvoiceStatus(item.val)
+                        setActiveFilterDropdown(null)
+                      }}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Currencies Dropdown Toggle */}
+          <div className="relative">
+            <button
+              className={cn(
+                "cursor-pointer rounded-full border px-3.5 py-1 text-12 font-medium transition-all hover:bg-gray-3 dark:hover:bg-gray-10 flex items-center gap-1.5",
+                currency || activeFilterDropdown === 'currencies'
+                  ? "border-primary-9 bg-primary-3/50 text-primary-9"
+                  : "border-border-default bg-surface text-text-secondary"
+              )}
+              onClick={() => {
+                setActiveFilterDropdown(activeFilterDropdown === 'currencies' ? null : 'currencies')
+                setFilterSearchQuery('')
+              }}
+            >
+              <span>$ {currency || 'Currencies'}</span>
+              <ChevronDown className="h-3 w-3 opacity-60" />
+            </button>
+
+            {activeFilterDropdown === 'currencies' && (
+              <div className="absolute z-30 top-full left-0 mt-1.5 w-[240px] rounded-lg border border-border-default bg-surface p-3 shadow-xs animate-in fade-in slide-in-from-top-2">
+                <div className="relative mb-2">
+                  <Search className="absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-text-muted" />
+                  <input
+                    className="w-full rounded-lg border border-border-default bg-gray-2 py-1 pr-3 pl-8 text-11 text-text-primary outline-none"
+                    placeholder="Search currency..."
+                    type="text"
+                    value={filterSearchQuery}
+                    onChange={(e) => setFilterSearchQuery(e.target.value)}
+                  />
+                </div>
+                <div className="h-px bg-border-default -mx-3 my-2" />
+                <div className="flex flex-col gap-0.5 max-h-[180px] overflow-y-auto scrollbar">
+                  <button
+                    className={cn(
+                      "w-full rounded px-2.5 py-1.5 text-12 font-medium text-left cursor-pointer transition-colors text-text-primary hover:bg-gray-2",
+                      !currency && "bg-primary-3/30 text-primary-9 font-semibold"
+                    )}
+                    onClick={() => {
+                      setCurrency('')
+                      setActiveFilterDropdown(null)
+                    }}
+                  >
+                    $ All Currencies
+                  </button>
+                  {['USD', 'EUR', 'INR', 'GBP'].filter(ccy => ccy.toLowerCase().includes(filterSearchQuery.toLowerCase())).map(ccy => (
+                    <button
+                      key={ccy}
+                      className={cn(
+                        "w-full rounded px-2.5 py-1.5 text-12 font-medium text-left cursor-pointer transition-colors text-text-primary hover:bg-gray-2",
+                        currency === ccy && "bg-primary-3/30 text-primary-9 font-semibold"
+                      )}
+                      onClick={() => {
+                        setCurrency(ccy)
+                        setActiveFilterDropdown(null)
+                      }}
+                    >
+                      {ccy}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* More Filters Dropdown Toggle */}
+          <div className="relative">
+            <button
+              className={cn(
+                "cursor-pointer rounded-full border px-3.5 py-1 text-12 font-medium transition-all hover:bg-gray-3 dark:hover:bg-gray-10 flex items-center gap-1.5",
+                (searchQuery && !currency && !supplierCategory && searchQuery !== 'amount > 100000' && searchQuery !== 'amount < 10000') || activeFilterDropdown === 'more'
+                  ? "border-primary-9 bg-primary-3/50 text-primary-9"
+                  : "border-border-default bg-surface text-text-secondary"
+              )}
+              onClick={() => {
+                setActiveFilterDropdown(activeFilterDropdown === 'more' ? null : 'more')
+                setFilterSearchQuery('')
+              }}
+            >
+              <span>⚙ More filters</span>
+              <ChevronDown className="h-3 w-3 opacity-60" />
+            </button>
+
+            {activeFilterDropdown === 'more' && (
+              <div className="absolute z-30 top-full left-0 mt-1.5 flex rounded-lg border border-border-default bg-surface shadow-xs overflow-hidden animate-in fade-in slide-in-from-top-2">
+                {/* Left panel: filter group options */}
+                <div className="flex flex-col w-[190px] bg-primary-3/30 border-r border-border-default p-1 dark:bg-gray-12">
+                  {[
+                    { id: 'status', label: 'Request Status', icon: ClipboardList },
+                    { id: 'amount', label: 'PO Amount', icon: DollarSign },
+                    { id: 'supplier', label: 'Supplier', icon: Building2 }
+                  ].map(group => {
+                    const IconComp = group.icon
+                    const isActive = activeFilterGroup === group.id
+                    return (
+                      <button
+                        key={group.id}
+                        className={cn(
+                          "flex items-center justify-between w-full rounded-lg px-3 py-2.5 text-12 font-medium text-left transition-all cursor-pointer",
+                          isActive
+                            ? "bg-primary-3 text-primary-9 dark:bg-primary-9 dark:text-white"
+                            : "text-text-secondary hover:bg-gray-2 dark:hover:bg-gray-10"
+                        )}
+                        onClick={() => {
+                          setActiveFilterGroup(group.id as any)
+                          setFilterSearchQuery('')
+                        }}
+                      >
+                        <span className="flex items-center gap-2">
+                          <IconComp className="h-4 w-4" />
+                          <span>{group.label}</span>
+                        </span>
+                        <ChevronRight className="h-3 w-3 opacity-60" />
+                      </button>
+                    )
+                  })}
+                </div>
+
+                {/* Right panel: dynamic options selector */}
+                <div className="flex flex-col w-[260px] p-3 gap-2.5 bg-surface">
+                  {activeFilterGroup === 'status' && (
+                    <>
+                      <div className="relative">
+                        <Search className="absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-text-muted" />
+                        <input
+                          className="w-full rounded-lg border border-border-default bg-gray-2 py-1 pr-3 pl-8 text-11 text-text-primary outline-none"
+                          placeholder="Search status..."
+                          type="text"
+                          value={filterSearchQuery}
+                          onChange={(e) => setFilterSearchQuery(e.target.value)}
+                        />
+                      </div>
+                      <div className="flex flex-col gap-0.5 mt-1 max-h-[160px] overflow-y-auto scrollbar">
+                        {[
+                          { label: 'Approved', val: 'Approved' },
+                          { label: 'Partially Approved', val: 'Pending' },
+                          { label: 'Rejected', val: 'Rejected' }
+                        ].filter(item => item.label.toLowerCase().includes(filterSearchQuery.toLowerCase())).map(item => (
+                          <button
+                            key={item.label}
+                            className={cn(
+                              "w-full rounded px-2.5 py-1.5 text-12 font-medium text-left cursor-pointer transition-colors text-text-primary hover:bg-gray-2",
+                              invoiceStatus === item.val
+                                ? "bg-primary-3/30 text-primary-9 font-semibold"
+                                : "text-text-secondary hover:bg-gray-2"
+                            )}
+                            onClick={() => {
+                              setInvoiceStatus(item.val)
+                              setActiveFilterDropdown(null)
+                            }}
+                          >
+                            {item.label}
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+
+                  {activeFilterGroup === 'amount' && (
+                    <>
+                      <div className="text-11 font-bold text-text-muted mb-1">Filter by PO Amount</div>
+                      <div className="flex flex-col gap-2">
+                        <button
+                          className="w-full rounded px-2.5 py-1.5 text-12 font-medium text-left hover:bg-gray-2 cursor-pointer text-text-secondary"
+                          onClick={() => {
+                            setSearchQuery('amount > 100000')
+                            setActiveFilterDropdown(null)
+                          }}
+                        >
+                          High Value (&gt; $100K)
+                        </button>
+                        <button
+                          className="w-full rounded px-2.5 py-1.5 text-12 font-medium text-left hover:bg-gray-2 cursor-pointer text-text-secondary"
+                          onClick={() => {
+                            setSearchQuery('amount < 1000')
+                            setActiveFilterDropdown(null)
+                          }}
+                        >
+                          Low Value (&lt; $1K)
+                        </button>
+                      </div>
+                    </>
+                  )}
+
+                  {activeFilterGroup === 'supplier' && (
+                    <>
+                      <div className="relative">
+                        <Search className="absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-text-muted" />
+                        <input
+                          className="w-full rounded-lg border border-border-default bg-gray-2 py-1 pr-3 pl-8 text-11 text-text-primary outline-none"
+                          placeholder="Search supplier..."
+                          type="text"
+                          value={filterSearchQuery}
+                          onChange={(e) => setFilterSearchQuery(e.target.value)}
+                        />
+                      </div>
+                      <div className="flex flex-col gap-0.5 mt-1 max-h-[160px] overflow-y-auto scrollbar">
+                        {suppliers.map(s => s.name).filter(name => name.toLowerCase().includes(filterSearchQuery.toLowerCase())).slice(0, 5).map(supName => (
+                          <button
+                            key={supName}
+                            className="w-full rounded px-2.5 py-1.5 text-12 font-medium text-left hover:bg-gray-2 cursor-pointer text-text-secondary"
+                            onClick={() => {
+                              setSearchQuery(supName)
+                              setActiveFilterDropdown(null)
+                            }}
+                          >
+                            {supName}
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+        </div>
+
+        {/* Reset button */}
+        {(timeframe !== 'fy' || supplierCategory || invoiceStatus || currency || searchQuery) && (
+          <button
+            className="cursor-pointer rounded-full border border-border-default bg-gray-2 px-3.5 py-1 text-12 font-medium text-text-secondary transition-all hover:bg-gray-3"
+            onClick={() => {
+              resetFilters()
+              setActiveFilterDropdown(null)
+            }}
+          >
+            Reset
+          </button>
+        )}
+
+        <div className="flex-1" />
+
+        {/* Fully rounded Search Box on the right */}
+        <div className="relative">
+          <Search className="absolute top-1/2 left-3.5 h-3.5 w-3.5 -translate-y-1/2 text-text-muted" />
+          <input
+            className="w-60 rounded-full border border-border-default bg-surface py-1.5 pr-4 pl-9.5 text-12 text-text-primary outline-none transition-all focus:border-primary-9 focus:ring-1 focus:ring-primary-9"
+            placeholder="Search invoice, supplier, PO..."
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+      </div>
+
+      {/* 2. WHITE BANNER (AP Command Center) */}
+      <div className="relative flex flex-wrap items-center justify-between gap-6 overflow-hidden rounded-lg bg-surface border border-border-default px-8 py-6 text-text-primary shadow-xs">
+        <div className="relative z-10">
+          <h2 className="font-serif text-20 font-bold tracking-wide">AP Command Center</h2>
+          <div className="font-mono text-11 text-text-muted mt-1">
+            Real-time · {timeframe} · {supplierCategory || 'all suppliers'} · simulated ledger
+          </div>
+        </div>
+
+        <div className="relative z-10 flex gap-8 flex-wrap items-center">
+          <div className="text-right">
+            <div className="font-mono text-10 uppercase tracking-widest text-text-muted">Total AP</div>
+            <div className="text-21 font-bold tracking-tight text-primary-9">{fmtMoney(metrics.totalAP || 0)}</div>
+          </div>
+          <div className="text-right">
+            <div className="font-mono text-10 uppercase tracking-widest text-text-muted">Overdue</div>
+            <div className="text-21 font-bold tracking-tight text-primary-9">{fmtMoney(metrics.overdueAmount || 0)}</div>
+          </div>
+          <div className="text-right">
+            <div className="font-mono text-10 uppercase tracking-widest text-text-muted">Open Invoices</div>
+            <div className="text-21 font-bold tracking-tight text-primary-9">{metrics.openInvoices}</div>
+          </div>
+          <div className="text-right">
+            <div className="font-mono text-10 uppercase tracking-widest text-text-muted">DPO</div>
+            <div className="text-21 font-bold tracking-tight text-primary-9">{metrics.dpo}d</div>
+          </div>
+
+          {/* Chevron expand/collapse toggle icon on the far right */}
+          <button
+            className="cursor-pointer p-1.5 hover:bg-gray-2 dark:hover:bg-gray-10 rounded-lg text-text-secondary transition-colors ml-4 z-20"
+            onClick={() => setIsCommandCenterExpanded(!isCommandCenterExpanded)}
+            title={isCommandCenterExpanded ? "Collapse targeted cards" : "Expand targeted cards"}
+          >
+            {isCommandCenterExpanded ? (
+              <ChevronUp className="h-5 w-5 text-primary-9" />
+            ) : (
+              <ChevronDown className="h-5 w-5" />
+            )}
+          </button>
+        </div>
+
+        {/* Soft background shape */}
+        <div className="absolute -top-12 -right-12 h-48 w-48 rounded-full bg-primary-3/20 blur-xl" />
+      </div>
+
+      {/* 3. KPI STRIP */}
+      {isCommandCenterExpanded && (
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-6 animate-in fade-in duration-300">
+          {[
+            {
+              name: 'Total Outstanding Payables',
+              value: fmtMoney(metrics.totalAP || 0),
+              trend: metrics.totalAPChange,
+              color: 'border-t-primary-9',
+              isGood: false
+            },
+            {
+              name: 'Total Paid Amount',
+              value: fmtMoney(metrics.totalPaid || 0),
+              trend: metrics.totalPaidChange,
+              color: 'border-t-success',
+              isGood: true
+            },
+            {
+              name: 'Pending Payments',
+              value: fmtMoney(metrics.pendingPayments || 0),
+              trend: metrics.pendingPaymentsChange,
+              color: 'border-t-primary-9',
+              isGood: true
+            },
+            {
+              name: 'Due Today',
+              value: fmtMoney(metrics.dueToday || 0),
+              trend: metrics.dueTodayChange,
+              color: 'border-t-cyan-9',
+              isGood: true
+            },
+            {
+              name: 'Overdue Amount',
+              value: fmtMoney(metrics.overdueAmount || 0),
+              trend: metrics.overdueChange,
+              color: 'border-t-red-9',
+              isGood: false
+            },
+            {
+              name: 'Avg. Processing Time',
+              value: metrics.avgProcessing,
+              trend: metrics.avgProcessingChange,
+              color: 'border-t-primary-9',
+              isGood: true
+            }
+          ].map(kpi => (
+            <div
+              key={kpi.name}
+              className={cn(
+                "cursor-pointer rounded-lg border border-border-default bg-surface p-4 shadow-xs transition-all hover:-translate-y-0.5 border-t-3",
+                kpi.color,
+                activeDrill === kpi.name && "ring-2 ring-primary-9/40 shadow-md"
+              )}
+              onClick={() => handleKpiClick(kpi.name)}
+            >
+              <div className="text-10 font-bold uppercase tracking-wider text-text-muted">{kpi.name}</div>
+              <div className="font-serif text-20 font-bold text-text-primary mt-1.5">{kpi.value}</div>
+              <div className="flex items-center gap-1.5 mt-2 text-11 font-semibold">
+                <span className={cn(
+                  "rounded px-1.5 py-0.5",
+                  kpi.isGood ? "bg-success-light text-success" : "bg-red-2 text-red-11"
+                )}>
+                  {kpi.trend}
+                </span>
+                <span className="text-text-muted font-normal">vs last month</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* INLINE EXPANSION PANEL FOR DRILLS */}
+      {isCommandCenterExpanded && activeDrill && (
+        <div className="animate-in fade-in slide-in-from-top-4 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
+          <div className="flex items-center justify-between border-b border-border-default pb-3.5 mb-4">
+            <div>
+              <h3 className="font-serif text-15 font-bold text-text-primary">
+                Invoices Drill-Down <span className="text-primary-9">· {activeDrill}</span>
+              </h3>
+              <p className="text-11 text-text-muted mt-0.5">Showing records matching this metrics slice</p>
+            </div>
+            <button
+              className="cursor-pointer rounded-lg border border-border-default bg-gray-2 px-2.5 py-1 text-12 font-semibold text-text-secondary transition-all hover:bg-gray-3"
+              onClick={() => setActiveDrill(null)}
+            >
+              Close
+            </button>
+          </div>
+
+          {drillInvoices.length > 0 ? (
+            <div className="overflow-x-auto max-h-[300px] scrollbar">
+              <table className="w-full text-left text-12 border-collapse">
+                <thead>
+                  <tr className="bg-gray-2 text-text-muted uppercase text-10 font-bold border-b border-border-default">
+                    <th className="p-3">Invoice</th>
+                    <th className="p-3">Supplier</th>
+                    <th className="p-3">Department</th>
+                    <th className="p-3 text-right">Amount</th>
+                    <th className="p-3">Due Date</th>
+                    <th className="p-3">Status</th>
+                    <th className="p-3">Payment Method</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {drillInvoices.slice(0, 50).map(inv => (
+                    <tr key={inv.id} className="border-b border-gray-3 hover:bg-gray-2/50">
+                      <td className="p-3 font-mono font-bold text-primary-9">{inv.id}</td>
+                      <td className="p-3 font-medium text-text-primary">
+                        <span className="mr-1.5">{inv.flag}</span>{inv.supplier}
+                      </td>
+                      <td className="p-3 text-text-secondary">{inv.department}</td>
+                      <td className="p-3 text-right font-mono font-bold text-text-primary">{fmtMoney(inv.amount, inv.currency)}</td>
+                      <td className="p-3 text-text-secondary">{new Date(inv.dueDate).toLocaleDateString()}</td>
+                      <td className="p-3">
+                        <span className={cn("px-2 py-0.5 rounded-full text-10 font-bold", getStatusClass(inv.status))}>
+                          {inv.status}
+                        </span>
+                      </td>
+                      <td className="p-3 text-text-muted">{inv.paymentMethod}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {drillInvoices.length > 50 && (
+                <div className="text-center text-11 text-text-muted mt-3">
+                  Showing first 50 of {drillInvoices.length} invoices. Filter to narrow down.
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-6 text-text-muted text-12">No matching invoice records in this slice.</div>
+          )}
+        </div>
+      )}
+
+      {/* 5. TRACK CONTENTS */}
+      {role === 'management' ? (
+
+        /* ================= MANAGEMENT TRACK ================= */
+        <div className="flex flex-col gap-6">
+
+          {/* Insights (Conditionally visible) & Supplier Radar (Always visible, auto-spanning when insights collapse) */}
+          <div className="grid grid-cols-12 gap-5">
+            {isCommandCenterExpanded && (
+              <div className="col-span-12 lg:col-span-8 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="font-sans text-15 font-bold text-text-primary">AI-generated insights</h3>
+                    <div className="text-11 text-text-muted mt-0.5">Auto-updates with your filters — the ledger's margin notes</div>
+                  </div>
+                  <span className="rounded border border-border-default bg-surface px-1.5 py-0.5 text-10 font-bold text-text-muted">LIVE</span>
+                </div>
+                <ul className="flex flex-col">
+                  {aiInsightsList.map((insight, idx) => (
+                    <li key={idx} className="flex gap-3 text-[13px] text-text-secondary border-b border-dashed border-border-default py-2.5 first:pt-0 last:border-b-0 last:pb-0">
+                      <BulletIcon />
+                      <div>{insight.node}</div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Radar / Risk Distribution */}
+            <div className={cn(
+              "rounded-lg border border-border-default bg-surface p-5 shadow-xs transition-all duration-300",
+              isCommandCenterExpanded ? "col-span-12 lg:col-span-4" : "col-span-12"
+            )}>
+              <h3 className="font-serif text-14 font-bold text-text-primary">Supplier Risk Radar</h3>
+              <div className="text-11 text-text-muted mb-4">Which vendors carry the most risk exposure?</div>
+              <div className="h-56">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { name: 'Low Risk', value: 67, color: '#1E8E6F' },
+                        { name: 'Medium Risk', value: 24, color: '#0f7a86' },
+                        { name: 'High Risk', value: 9, color: '#B3261E' }
+                      ]}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={45}
+                      outerRadius={65}
+                      paddingAngle={3}
+                      dataKey="value"
+                    >
+                      {[
+                        { color: '#1E8E6F' },
+                        { color: '#0f7a86' },
+                        { color: '#B3261E' }
+                      ].map((entry, idx) => (
+                        <Cell key={`cell-${idx}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(v: any) => [`${v}%`, 'Exposure']} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="flex justify-around text-11 mt-2">
+                <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded bg-success" />Low</span>
+                <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded bg-warning" />Medium</span>
+                <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded bg-red-9" />High</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Details below (Always visible) */}
+          <div className="flex flex-col gap-6">
+            {/* Section banner (white background refinement) */}
+            <div className="flex flex-wrap items-center justify-between gap-4 overflow-hidden rounded-lg bg-surface border border-border-default px-8 py-5 text-text-primary shadow-xs">
+              <div>
+                <h3 className="font-serif text-16 font-bold">Profitability &amp; Cash Position</h3>
+                <p className="text-11 text-text-secondary mt-0.5">Is payables growth eating margin · future liquidity needs</p>
+              </div>
+              <div className="flex gap-8 flex-wrap">
+                <div className="text-right">
+                  <div className="text-10 uppercase tracking-widest text-text-muted">Profit Margin</div>
+                  <div className="text-18 font-bold text-cyan-9">12.9%</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-10 uppercase tracking-widest text-text-muted">Next 4 Weeks</div>
+                  <div className="text-18 font-bold text-primary-9">$3.85M</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-10 uppercase tracking-widest text-text-muted">Peak Week</div>
+                  <div className="text-18 font-bold text-primary-9">Week 3</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-12 gap-5">
+              {/* Profit vs AP spending */}
+              <div className="col-span-12 lg:col-span-6 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
+                <h3 className="font-serif text-14 font-bold text-text-primary">Profit vs AP spending</h3>
+                <div className="text-11 text-text-muted mb-4">Dual axis spending trend comparison</div>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ComposedChart
+                      data={[
+                        { name: 'Jan', AP: 4.2, Profit: 12.1 },
+                        { name: 'Feb', AP: 3.8, Profit: 13.0 },
+                        { name: 'Mar', AP: 5.1, Profit: 11.5 },
+                        { name: 'Apr', AP: 4.8, Profit: 12.8 },
+                        { name: 'May', AP: 5.6, Profit: 12.9 },
+                        { name: 'Jun', AP: 6.2, Profit: 12.7 }
+                      ]}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                      <YAxis yAxisId="left" tick={{ fontSize: 11 }} label={{ value: 'AP ($M)', angle: -90, position: 'insideLeft', style: { fontSize: 10 } }} />
+                      <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} label={{ value: 'Profit %', angle: 90, position: 'insideRight', style: { fontSize: 10 } }} />
+                      <Tooltip />
+                      <Bar yAxisId="left" dataKey="AP" fill="#8300e6" radius={[4, 4, 0, 0]} barSize={20} />
+                      <Line yAxisId="right" type="monotone" dataKey="Profit" stroke="#19c1d4" strokeWidth={2.5} dot={{ r: 4 }} />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Monthly payment trend */}
+              <div className="col-span-12 lg:col-span-6 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
+                <h3 className="font-serif text-14 font-bold text-text-primary">Monthly payment trend</h3>
+                <div className="text-11 text-text-muted mb-4">Cash leaving the building, month by month</div>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart
+                      data={[
+                        { name: 'Jan', value: 8.5 },
+                        { name: 'Feb', value: 7.2 },
+                        { name: 'Mar', value: 9.8 },
+                        { name: 'Apr', value: 11.2 },
+                        { name: 'May', value: 12.5 },
+                        { name: 'Jun', value: 10.9 }
+                      ]}
+                    >
+                      <defs>
+                        <linearGradient id="paymentGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#8300e6" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="#8300e6" stopOpacity={0.0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                      <YAxis tick={{ fontSize: 11 }} />
+                      <Tooltip formatter={(v: any) => [`$${v}M`]} />
+                      <Area type="monotone" dataKey="value" stroke="#8300e6" strokeWidth={2} fillOpacity={1} fill="url(#paymentGrad)" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Cash flow forecast */}
+              <div className="col-span-12 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
+                <h3 className="font-serif text-14 font-bold text-text-primary">Cash flow forecast</h3>
+                <div className="text-11 text-text-muted mb-4">Liquidity projection and cash needs over next 10 weeks</div>
+                <div className="h-56">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart
+                      data={[
+                        { name: 'W1', value: 3.5 },
+                        { name: 'W2', value: 3.2 },
+                        { name: 'W3', value: 4.8 },
+                        { name: 'W4', value: 3.9 },
+                        { name: 'W5', value: 2.5 },
+                        { name: 'W6', value: 1.8 },
+                        { name: 'W7', value: 2.2 },
+                        { name: 'W8', value: 3.1 },
+                        { name: 'W9', value: 2.8 },
+                        { name: 'W10', value: 3.5 }
+                      ]}
+                    >
+                      <defs>
+                        <linearGradient id="forecastGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#5c21e6" stopOpacity={0.25} />
+                          <stop offset="95%" stopColor="#5c21e6" stopOpacity={0.0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                      <YAxis tick={{ fontSize: 11 }} />
+                      <Tooltip formatter={(v: any) => [`$${v}M`]} />
+                      <Area type="monotone" dataKey="value" stroke="#5c21e6" strokeWidth={2} fillOpacity={1} fill="url(#forecastGrad)" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+
+            {/* Section banner (white background refinement) */}
+            <div className="flex flex-wrap items-center justify-between gap-4 overflow-hidden rounded-lg bg-surface border border-border-default px-8 py-5 text-text-primary shadow-xs">
+              <div>
+                <h3 className="font-serif text-16 font-bold">Supplier Concentration &amp; Risk</h3>
+                <p className="text-11 text-text-secondary mt-0.5">Where spend concentrates · vendor risk exposure</p>
+              </div>
+              <div className="flex gap-8 flex-wrap">
+                <div className="text-right">
+                  <div className="text-10 uppercase tracking-widest text-text-muted">Active Suppliers</div>
+                  <div className="text-18 font-bold text-primary-9">24</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-10 uppercase tracking-widest text-text-muted">High Risk</div>
+                  <div className="text-18 font-bold text-red-9">3</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-10 uppercase tracking-widest text-text-muted">Top-3 Concentration</div>
+                  <div className="text-18 font-bold text-primary-9">44.0%</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-12 gap-5">
+              {/* Top 10 suppliers */}
+              <div className={cn(
+                "rounded-lg border border-border-default bg-surface p-5 shadow-xs transition-all duration-300",
+                isCommandCenterExpanded ? "col-span-12 lg:col-span-4" : "col-span-12 lg:col-span-6"
+              )}>
+                <h3 className="font-serif text-14 font-bold text-text-primary">Top 10 suppliers by invoice value</h3>
+                <div className="text-11 text-text-muted mb-4">Concentration of invoice liabilities</div>
+                <div className="h-60">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={[
+                        { name: 'Meridian Steel', value: 1.8 },
+                        { name: 'Northwind Log.', value: 1.5 },
+                        { name: 'Vertex IT', value: 1.2 },
+                        { name: 'Blue Harbor', value: 0.9 },
+                        { name: 'Solaris Energy', value: 0.8 }
+                      ]}
+                      layout="vertical"
+                      margin={{ left: -10, right: 10 }}
+                    >
+                      <XAxis type="number" tick={{ fontSize: 10 }} />
+                      <YAxis dataKey="name" type="category" tick={{ fontSize: 10 }} width={90} />
+                      <Tooltip formatter={(v: any) => [`$${v}M`]} />
+                      <Bar dataKey="value" fill="#8300e6" radius={[0, 4, 4, 0]} barSize={12} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Outstanding payables (Conditionally shown) */}
+              {isCommandCenterExpanded && (
+                <div className="col-span-12 lg:col-span-4 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
+                  <h3 className="font-serif text-14 font-bold text-text-primary">Outstanding payables by supplier</h3>
+                  <div className="text-11 text-text-muted mb-4">Click a supplier's bar to drill down</div>
+                  <div className="h-60">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={[
+                          { name: 'Meridian Steel', value: 920 },
+                          { name: 'Vertex IT', value: 680 },
+                          { name: 'FastShip Ltd', value: 550 },
+                          { name: 'Solaris Energy', value: 480 },
+                          { name: 'Nimbus Cloud', value: 390 }
+                        ]}
+                        layout="vertical"
+                        margin={{ left: -10, right: 10 }}
+                      >
+                        <XAxis type="number" tick={{ fontSize: 10 }} />
+                        <YAxis dataKey="name" type="category" tick={{ fontSize: 10 }} width={90} />
+                        <Tooltip formatter={(v: any) => [`$${v}K`]} />
+                        <Bar
+                          dataKey="value"
+                          fill="#5c21e6"
+                          radius={[0, 4, 4, 0]}
+                          barSize={12}
+                          onClick={(data: any) => {
+                            setDrillSupplier(data?.name ?? null)
+                            setActiveDrill('Outstanding Payables')
+                          }}
+                          className="cursor-pointer"
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              )}
+
+              {/* Department-wise spend */}
+              <div className={cn(
+                "rounded-lg border border-border-default bg-surface p-5 shadow-xs transition-all duration-300",
+                isCommandCenterExpanded ? "col-span-12 lg:col-span-4" : "col-span-12 lg:col-span-6"
+              )}>
+                <h3 className="font-serif text-14 font-bold text-text-primary">Department-wise spend</h3>
+                <div className="text-11 text-text-muted mb-4">Tile size reflects share of AP expenses</div>
+
+                {/* Treemap layout list representation */}
+                <div className="grid grid-cols-2 gap-2 h-48">
+                  {[
+                    { name: 'Operations', share: '34%', amt: '$3.67M', color: 'bg-primary-3 text-primary-9 border border-primary-4' },
+                    { name: 'IT Services', share: '22%', amt: '$2.37M', color: 'bg-primary-3 text-primary-9 border border-primary-4' },
+                    { name: 'Marketing', share: '18%', amt: '$1.94M', color: 'bg-primary-3 text-primary-9 border border-primary-4' },
+                    { name: 'HR Staffing', share: '12%', amt: '$1.29M', color: 'bg-primary-3 text-primary-9 border border-primary-4' },
+                    { name: 'Finance', share: '9%', amt: '$0.97M', color: 'bg-gray-2 text-text-secondary border border-border-default' },
+                    { name: 'Legal Advisors', share: '5%', amt: '$0.54M', color: 'bg-gray-2 text-text-secondary border border-border-default' }
+                  ].map(dept => (
+                    <div
+                      key={dept.name}
+                      className={cn("cursor-pointer rounded-lg p-2.5 flex flex-col justify-between transition-all hover:scale-[1.02]", dept.color)}
+                      onClick={() => {
+                        setSearchQuery(dept.name)
+                        setActiveDrill('Department Spend')
+                      }}
+                    >
+                      <span className="text-10 font-bold uppercase tracking-wider">{dept.name}</span>
+                      <div className="flex justify-between items-baseline mt-1">
+                        <span className="text-14 font-bold font-serif">{dept.amt}</span>
+                        <span className="text-9 opacity-80">{dept.share}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="text-10 text-text-muted mt-3">Click on a tile to filter workflow records.</div>
+              </div>
+
+              {/* Region distribution */}
+              <div className="col-span-12 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
+                <h3 className="font-serif text-14 font-bold text-text-primary">Supplier geographic distribution</h3>
+                <div className="text-11 text-text-muted mb-4">Regional volume and spend exposure analysis</div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                  {[
+                    { region: 'United States', flag: '🇺🇸', value: '$5.8M', count: '12 suppliers', pct: 54 },
+                    { region: 'Germany', flag: '🇩🇪', value: '$2.1M', count: '5 suppliers', pct: 19 },
+                    { region: 'India', flag: '🇮🇳', value: '$1.6M', count: '4 suppliers', pct: 15 },
+                    { region: 'United Kingdom', flag: '🇬🇧', value: '$1.2M', count: '3 suppliers', pct: 12 }
+                  ].map(tile => (
+                    <div key={tile.region} className="rounded-xl border border-border-default bg-gray-2 p-3">
+                      <div className="flex items-center justify-between text-12 font-bold text-text-primary">
+                        <span className="flex items-center gap-1.5"><span className="text-16">{tile.flag}</span>{tile.region}</span>
+                        <span>{tile.value}</span>
+                      </div>
+                      <div className="h-1.5 w-full bg-border-default rounded-full overflow-hidden mt-3">
+                        <div className="h-full bg-primary-9" style={{ width: `${tile.pct}%` }} />
+                      </div>
+                      <div className="flex justify-between text-10 text-text-muted mt-2">
+                        <span>{tile.count}</span>
+                        <span>{tile.pct}% share</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Section banner (white background refinement) */}
+            <div className="flex flex-wrap items-center justify-between gap-4 overflow-hidden rounded-lg bg-surface border border-border-default px-8 py-5 text-text-primary shadow-xs">
+              <div>
+                <h3 className="font-serif text-16 font-bold">Aging &amp; Process Oversight</h3>
+                <p className="text-11 text-text-secondary mt-0.5">Portfolio-level view of overdue exposure and approval cycles</p>
+              </div>
+              <div className="flex gap-8 flex-wrap">
+                <div className="text-right">
+                  <div className="text-10 uppercase tracking-widest text-text-muted">90+ Days</div>
+                  <div className="text-18 font-bold text-primary-9">$1.24M</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-10 uppercase tracking-widest text-text-muted">Critical Exceptions</div>
+                  <div className="text-18 font-bold text-red-9">4</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-10 uppercase tracking-widest text-text-muted">Approval Rate</div>
+                  <div className="text-18 font-bold text-success">94.2%</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-12 gap-5">
+              {/* Invoice aging analysis */}
+              <div className="col-span-12 lg:col-span-6 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
+                <h3 className="font-serif text-14 font-bold text-text-primary">Invoice aging analysis</h3>
+                <div className="text-11 text-text-muted mb-4">Click a segment to drill into invoices</div>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={[
+                        { name: '0–15d', value: 1842 },
+                        { name: '16–30d', value: 1205 },
+                        { name: '31–45d', value: 623 },
+                        { name: '46–60d', value: 298 },
+                        { name: '60d+', value: 134 }
+                      ]}
+                      margin={{ bottom: 10 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                      <YAxis tick={{ fontSize: 11 }} />
+                      <Tooltip formatter={(v: any) => [`${v} Invoices`, 'Volume']} />
+                      <Bar
+                        dataKey="value"
+                        fill="#8300e6"
+                        radius={[4, 4, 0, 0]}
+                        barSize={24}
+                        onClick={(data: any) => {
+                          setDrillAgingBucket(data?.name ?? null)
+                          setActiveDrill('Aging Analysis')
+                        }}
+                        className="cursor-pointer"
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Heat map */}
+              <div className="col-span-12 lg:col-span-6 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
+                <h3 className="font-serif text-14 font-bold text-text-primary">Approval delay heat map</h3>
+                <div className="text-11 text-text-muted mb-4">Average days to approve by department · last 8 weeks</div>
+
+                <div className="flex flex-col gap-2 font-sans mt-3">
+                  <div className="grid grid-cols-9 gap-1 text-[10px] text-text-muted font-bold text-center">
+                    <div></div>
+                    {['W1', 'W2', 'W3', 'W4', 'W5', 'W6', 'W7', 'W8'].map(w => (
+                      <div key={w}>{w}</div>
+                    ))}
+                  </div>
+
+                  {[
+                    { dept: 'IT', cells: [2, 1, 3, 2, 4, 5, 2, 1] },
+                    { dept: 'Finance', cells: [1, 2, 1, 1, 2, 1, 3, 1] },
+                    { dept: 'Marketing', cells: [5, 4, 6, 8, 7, 5, 6, 5] },
+                    { dept: 'Operations', cells: [3, 2, 4, 3, 3, 4, 2, 3] },
+                    { dept: 'HR', cells: [4, 5, 3, 4, 5, 2, 4, 4] },
+                    { dept: 'Legal', cells: [6, 7, 9, 8, 7, 6, 9, 8] }
+                  ].map(row => (
+                    <div key={row.dept} className="grid grid-cols-9 gap-1 items-center">
+                      <div className="text-11 font-semibold text-text-secondary text-right pr-2">{row.dept}</div>
+                      {row.cells.map((val, idx) => {
+                        let color = 'bg-[#F1E1FC]'
+                        if (val > 7) color = 'bg-[#643094] text-white'
+                        else if (val > 4) color = 'bg-[#8300e6] text-white'
+                        else if (val > 2) color = 'bg-[#EEE6FD] text-primary-9'
+                        return (
+                          <div
+                            key={idx}
+                            className={cn("h-8 rounded flex items-center justify-center text-11 font-bold", color)}
+                            title={`${row.dept} delay: ${val} days`}
+                          >
+                            {val}d
+                          </div>
+                        )
+                      })}
+                    </div>
+                  ))}
+                </div>
+                <div className="text-10 text-text-muted mt-3">Darker cells indicate longer processing bottlenecks.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      ) : (
+
+        /* ================= AP TEAM TRACK ================= */
+        <div className="flex flex-col gap-6">
+
+          {/* Insights (Conditionally visible) & Duplicate Watch (Conditionally visible) */}
+          {isCommandCenterExpanded && (
+            <div className="grid grid-cols-12 gap-5">
+              {/* AI-generated insights */}
+              <div className="col-span-12 lg:col-span-8 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="font-sans text-15 font-bold text-text-primary">AI-generated insights</h3>
+                    <div className="text-11 text-text-muted mt-0.5">Auto-updates with your filters — the ledger's margin notes</div>
+                  </div>
+                  <span className="rounded border border-border-default bg-surface px-1.5 py-0.5 text-10 font-bold text-text-muted">LIVE</span>
+                </div>
+                <ul className="flex flex-col">
+                  {aiInsightsList.map((insight, idx) => (
+                    <li key={idx} className="flex gap-3 text-[13px] text-text-secondary border-b border-dashed border-border-default py-2.5 first:pt-0 last:border-b-0 last:pb-0">
+                      <BulletIcon />
+                      <div>{insight.node}</div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Duplicate invoice watch */}
+              <div className="col-span-12 lg:col-span-4 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
+                <h3 className="font-serif text-14 font-bold text-text-primary">Duplicate invoice watch</h3>
+                <div className="text-11 text-text-muted mb-3">Double payments flagged by ledger algorithms</div>
+
+                <div className="flex flex-col gap-2 max-h-[170px] overflow-y-auto scrollbar">
+                  {[
+                    { id: 'INV-20043', supplier: 'Coral Bay Marketing', amt: '₹4,984', match: '98%' },
+                    { id: 'INV-20056', supplier: 'Silverline Telecom', amt: '$144,788', match: '96%' },
+                    { id: 'INV-20112', supplier: 'Prism Packaging Co.', amt: '₹123,151', match: '95%' },
+                    { id: 'INV-20121', supplier: 'Vertex IT Solutions', amt: '€33,194', match: '94%' },
+                    { id: 'INV-20134', supplier: 'Atlas Freight Partners', amt: '€149,343', match: '92%' }
+                  ].map(item => (
+                    <div key={item.id} className="flex items-center justify-between text-11 border-b border-gray-3 pb-2 last:border-b-0">
+                      <div>
+                        <span className="font-mono font-bold text-red-9">{item.id}</span>
+                        <span className="text-text-primary font-medium ml-2">{item.supplier}</span>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-bold text-text-primary">{item.amt}</div>
+                        <div className="text-[9px] text-red-11 font-semibold">{item.match} match</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Details below (Always visible) */}
+          <div className="flex flex-col gap-6">
+            {/* Section banner (white background refinement) */}
+            <div className="flex flex-wrap items-center justify-between gap-4 overflow-hidden rounded-lg bg-surface border border-border-default px-8 py-5 text-text-primary shadow-xs">
+              <div>
+                <h3 className="font-serif text-16 font-bold">Today's Action Queue</h3>
+                <p className="text-11 text-text-secondary mt-0.5">Prioritized invoice items requiring attention today</p>
+              </div>
+              <div className="flex gap-8 flex-wrap">
+                <div className="text-right">
+                  <div className="text-10 uppercase tracking-widest text-text-muted">Due Today</div>
+                  <div className="text-18 font-bold text-cyan-9">{fmtMoney(metrics.dueToday || 0)}</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-10 uppercase tracking-widest text-text-muted">Cash This Week</div>
+                  <div className="text-18 font-bold text-primary-9">$298.7K</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-10 uppercase tracking-widest text-text-muted">Queue Size</div>
+                  <div className="text-18 font-bold text-primary-9">{filteredInvoices.filter(inv => inv.status === 'Pending').length} items</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-12 gap-5">
+              {/* AP Workbench prioritized queue */}
+              <div className="col-span-12 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
+                <div className="flex items-center justify-between border-b border-border-default pb-3.5 mb-4">
+                  <div>
+                    <h3 className="font-serif text-14 font-bold text-text-primary">AP workbench — prioritized queue</h3>
+                    <div className="text-11 text-text-muted">Overdue and due-soonest first — process top-down</div>
+                  </div>
+                  <span className="rounded-full bg-primary-3 px-3 py-0.5 text-10 font-bold text-primary-9">
+                    {filteredInvoices.slice(0, 10).length} prioritized
+                  </span>
+                </div>
+
+                <div className="overflow-x-auto scrollbar">
+                  <table className="w-full text-left text-12 border-collapse">
+                    <thead>
+                      <tr className="bg-gray-2 text-text-muted uppercase text-10 font-bold border-b border-border-default">
+                        <th className="p-3">Priority</th>
+                        <th className="p-3">Invoice</th>
+                        <th className="p-3">Supplier</th>
+                        <th className="p-3">Department</th>
+                        <th className="p-3 text-right">Amount</th>
+                        <th className="p-3">Due Date</th>
+                        <th className="p-3">Status</th>
+                        <th className="p-3">Buyer</th>
+                        <th className="p-3 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredInvoices.slice(0, 8).map((inv, idx) => {
+                        const isExpanded = expandedInvoiceId === inv.id
+                        return (
+                          <React.Fragment key={inv.id}>
+                            <tr className="border-b border-gray-3 hover:bg-gray-2/50">
+                              <td className="p-3">
+                                <span className={cn(
+                                  "inline-block h-2 w-2 rounded-full",
+                                  idx === 0 ? "bg-red-9" : idx < 3 ? "bg-warning" : "bg-success"
+                                )} />
+                              </td>
+                              <td className="p-3 font-mono font-bold text-primary-9">{inv.id}</td>
+                              <td className="p-3 font-medium text-text-primary">
+                                <span className="mr-1.5">{inv.flag}</span>{inv.supplier}
+                              </td>
+                              <td className="p-3 text-text-secondary">{inv.department}</td>
+                              <td className="p-3 text-right font-mono font-bold text-text-primary">{fmtMoney(inv.amount, inv.currency)}</td>
+                              <td className="p-3 text-text-secondary">{new Date(inv.dueDate).toLocaleDateString()}</td>
+                              <td className="p-3">
+                                <span className={cn("px-2 py-0.5 rounded-full text-10 font-bold", getStatusClass(inv.status))}>
+                                  {inv.status}
+                                </span>
+                              </td>
+                              <td className="p-3 text-text-muted">{inv.buyer}</td>
+                              <td className="p-3 text-right">
+                                <div className="inline-flex items-center gap-2 justify-end">
+                                  <button
+                                    className="cursor-pointer rounded border border-border-default bg-surface px-2.5 py-1 text-10 font-bold text-primary-9 transition-all hover:bg-primary-9 hover:text-white"
+                                    onClick={() => {
+                                      setDrillSupplier(inv.supplier)
+                                      setActiveDrill('Outstanding Payables')
+                                    }}
+                                  >
+                                    Action
+                                  </button>
+                                  <button
+                                    className="cursor-pointer p-1 text-text-secondary hover:bg-gray-3 rounded transition-colors"
+                                    onClick={() => setExpandedInvoiceId(isExpanded ? null : inv.id)}
+                                    title={isExpanded ? "Hide details" : "Show details"}
+                                  >
+                                    {isExpanded ? (
+                                      <ChevronUp className="h-4 w-4 text-primary-9" />
+                                    ) : (
+                                      <ChevronDown className="h-4 w-4" />
+                                    )}
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+
+                            {/* Expanded sub-row details panel */}
+                            {isExpanded && (
+                              <tr className="bg-primary-3/10 dark:bg-gray-12/30">
+                                <td colSpan={9} className="p-4 border-b border-border-default">
+                                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-11 text-text-secondary">
+                                    <div>
+                                      <div className="font-bold text-text-muted">PO Reference</div>
+                                      <div className="font-mono mt-0.5 text-text-primary">{inv.costCenter.replace('CC-', 'PO-')}</div>
+                                    </div>
+                                    <div>
+                                      <div className="font-bold text-text-muted">Cost Center</div>
+                                      <div className="mt-0.5 text-text-primary">{inv.costCenter}</div>
+                                    </div>
+                                    <div>
+                                      <div className="font-bold text-text-muted">Profit Center</div>
+                                      <div className="mt-0.5 text-text-primary">{inv.profitCenter}</div>
+                                    </div>
+                                    <div>
+                                      <div className="font-bold text-text-muted">Payment Channel</div>
+                                      <div className="mt-0.5 text-text-primary">{inv.paymentMethod}</div>
+                                    </div>
+                                  </div>
+                                  <div className="mt-3 p-2.5 rounded bg-orange-2/30 border border-orange-3/30 text-11 text-orange-11">
+                                    <strong>Ledger Verification Note:</strong> Invoice matched against approved master list. {inv.isDuplicate ? "ALERT: Potential duplicate invoice match. Review before release." : "Standard SLA timeline. No pricing exceptions found."}
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </React.Fragment>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Payment calendar */}
+              <div className="col-span-12 lg:col-span-5 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
+                <h3 className="font-serif text-14 font-bold text-text-primary">Payment calendar</h3>
+                <div className="text-11 text-text-muted mb-4">Scheduled payments calendar heatmap</div>
+
+                <div className="grid grid-cols-7 gap-1 text-center font-sans">
+                  {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(d => (
+                    <div key={d} className="text-10 font-bold text-text-muted py-1">{d}</div>
+                  ))}
+                  {/* 35 calendar cells mock */}
+                  {Array.from({ length: 4 }).map((_, idx) => (
+                    <div key={`empty-${idx}`} className="h-8" />
+                  ))}
+                  {Array.from({ length: 30 }).map((_, idx) => {
+                    const day = idx + 1
+                    const isToday = day === 8
+                    const isDue = [5, 12, 18, 22, 25, 29].includes(day)
+
+                    let cellStyle = 'bg-gray-2 text-text-secondary hover:bg-gray-3'
+                    if (isToday) cellStyle = 'bg-primary-9 text-white font-bold'
+                    else if (isDue) cellStyle = 'bg-primary-3 text-primary-9 font-semibold'
+
+                    return (
+                      <div
+                        key={day}
+                        className={cn("h-8 rounded flex items-center justify-center text-11 transition-all cursor-pointer", cellStyle)}
+                        title={isToday ? 'Today' : isDue ? 'Payment due date' : ''}
+                      >
+                        {day}
+                      </div>
+                    )
+                  })}
+                </div>
+                <div className="flex gap-4 text-10 text-text-muted mt-4 justify-center">
+                  <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded bg-primary-9" />Today</span>
+                  <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded bg-primary-3" />Payment Due</span>
+                </div>
+              </div>
+
+              {/* Cash required next 7 days */}
+              <div className="col-span-12 lg:col-span-7 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
+                <h3 className="font-serif text-14 font-bold text-text-primary">Cash required — next 7 days</h3>
+                <div className="text-11 text-text-muted mb-4">Daily cash requirements for approved invoices</div>
+                <div className="h-56">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={[
+                        { day: 'Jul 8', Cash: 0 },
+                        { day: 'Jul 9', Cash: 85 },
+                        { day: 'Jul 10', Cash: 120 },
+                        { day: 'Jul 11', Cash: 40 },
+                        { day: 'Jul 12', Cash: 15 },
+                        { day: 'Jul 13', Cash: 220 },
+                        { day: 'Jul 14', Cash: 90 }
+                      ]}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <XAxis dataKey="day" tick={{ fontSize: 11 }} />
+                      <YAxis tick={{ fontSize: 11 }} label={{ value: 'Cash ($K)', angle: -90, position: 'insideLeft', style: { fontSize: 10 } }} />
+                      <Tooltip formatter={(v) => [`$${v}K`]} />
+                      <Bar dataKey="Cash" fill="#8300e6" radius={[4, 4, 0, 0]} barSize={20} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+
+            {/* Section banner (white background refinement) */}
+            <div className="flex flex-wrap items-center justify-between gap-4 overflow-hidden rounded-lg bg-surface border border-border-default px-8 py-5 text-text-primary shadow-sm">
+              <div>
+                <h3 className="font-serif text-16 font-bold">Processing &amp; Bottlenecks</h3>
+                <p className="text-11 text-text-secondary mt-0.5">Pipeline throughput efficiency and approval metrics</p>
+              </div>
+              <div className="flex gap-8 flex-wrap">
+                <div className="text-right">
+                  <div className="text-10 uppercase tracking-widest text-text-muted">Total Invoices</div>
+                  <div className="text-18 font-bold text-primary-9">266</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-10 uppercase tracking-widest text-text-muted">Touchless Rate</div>
+                  <div className="text-18 font-bold text-primary-9">44.0%</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-10 uppercase tracking-widest text-text-muted">Avg Approval Days</div>
+                  <div className="text-18 font-bold text-primary-9">6.1 days</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-12 gap-5">
+              {/* Invoice processing funnel */}
+              <div className="col-span-12 lg:col-span-4 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
+                <h3 className="font-serif text-14 font-bold text-text-primary">Invoice processing funnel</h3>
+                <div className="text-11 text-text-muted mb-4">Pipeline drops across lifecycle steps</div>
+
+                <div className="flex flex-col gap-3.5 py-4">
+                  {[
+                    { step: '1. Received', value: '266 inv', width: '100%', pct: '100%' },
+                    { step: '2. Extracted', value: '248 inv', width: '93%', pct: '93%' },
+                    { step: '3. Approved', value: '210 inv', width: '79%', pct: '79%' },
+                    { step: '4. Posted', value: '142 inv', width: '53%', pct: '53%' }
+                  ].map(bar => (
+                    <div key={bar.step} className="flex flex-col gap-1 text-12 font-semibold">
+                      <div className="flex justify-between text-text-secondary">
+                        <span>{bar.step}</span>
+                        <span>{bar.value}</span>
+                      </div>
+                      <div className="h-8 bg-gray-2 rounded overflow-hidden relative">
+                        <div
+                          className="h-full bg-gradient-to-r from-primary-9 to-primary-10 flex items-center px-3 text-white font-bold text-11"
+                          style={{ width: bar.width }}
+                        >
+                          {bar.pct} conversion
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Approval heat map */}
+              <div className="col-span-12 lg:col-span-4 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
+                <h3 className="font-serif text-14 font-bold text-text-primary">Approval delay heat map</h3>
+                <div className="text-11 text-text-muted mb-4">Approver delay averages over weeks</div>
+
+                <div className="flex flex-col gap-2 font-sans mt-3">
+                  <div className="grid grid-cols-6 gap-1 text-[10px] text-text-muted font-bold text-center">
+                    <div></div>
+                    {['W1', 'W2', 'W3', 'W4', 'W5'].map(w => (
+                      <div key={w}>{w}</div>
+                    ))}
+                  </div>
+
+                  {[
+                    { user: 'A. Chen', cells: [3, 2, 4, 3, 2] },
+                    { user: 'M. Okafor', cells: [1, 2, 1, 2, 1] },
+                    { user: 'R. Singh', cells: [5, 4, 6, 5, 4] },
+                    { user: 'L. Novak', cells: [2, 3, 2, 4, 2] },
+                    { user: 'J. Fontaine', cells: [6, 8, 7, 9, 8] }
+                  ].map(row => (
+                    <div key={row.user} className="grid grid-cols-6 gap-1 items-center">
+                      <div className="text-11 font-semibold text-text-secondary text-right pr-2">{row.user}</div>
+                      {row.cells.map((val, idx) => {
+                        let color = 'bg-[#F1E1FC]'
+                        if (val > 7) color = 'bg-[#643094] text-white'
+                        else if (val > 4) color = 'bg-[#8300e6] text-white'
+                        else if (val > 2) color = 'bg-[#EEE6FD] text-primary-9'
+                        return (
+                          <div
+                            key={idx}
+                            className={cn("h-8 rounded flex items-center justify-center text-11 font-bold", color)}
+                            title={`${row.user}: ${val} days`}
+                          >
+                            {val}d
+                          </div>
+                        )
+                      })}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Status distribution donut */}
+              <div className="col-span-12 lg:col-span-4 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
+                <h3 className="font-serif text-14 font-bold text-text-primary">Invoice status distribution</h3>
+                <div className="text-11 text-text-muted mb-4">Click a slice to open matching list</div>
+                <div className="h-48">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={[
+                          { name: 'Approved', value: 48, color: '#1E8E6F' },
+                          { name: 'Pending', value: 34, color: '#5c21e6' },
+                          { name: 'Processing', value: 22, color: '#19c1d4' },
+                          { name: 'Hold', value: 12, color: '#847C93' }
+                        ]}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={35}
+                        outerRadius={55}
+                        paddingAngle={2}
+                        dataKey="value"
+                      >
+                        {[
+                          { color: '#1E8E6F' },
+                          { color: '#5c21e6' },
+                          { color: '#19c1d4' },
+                          { color: '#847C93' }
+                        ].map((entry, idx) => (
+                          <Cell
+                            key={`cell-${idx}`}
+                            fill={entry.color}
+                            onClick={() => {
+                              const name = ['Approved', 'Pending', 'Processing', 'Hold'][idx]
+                              setDrillStatus(name)
+                              setActiveDrill('Status Distribution')
+                            }}
+                            className="cursor-pointer"
+                          />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-10 text-text-muted mt-2">
+                  <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded bg-success" />Approved</span>
+                  <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded bg-indigo-9" />Pending</span>
+                  <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded bg-cyan-9" />Processing</span>
+                  <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded bg-gray-10" />Hold</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Section banner (white background refinement) */}
+            <div className="flex flex-wrap items-center justify-between gap-4 overflow-hidden rounded-lg bg-surface border border-border-default px-8 py-5 text-text-primary shadow-sm">
+              <div>
+                <h3 className="font-serif text-16 font-bold">Supplier Follow-ups</h3>
+                <p className="text-11 text-text-secondary mt-0.5">Vendors needing prompt outreach or query resolution</p>
+              </div>
+              <div className="flex gap-8 flex-wrap">
+                <div className="text-right">
+                  <div className="text-10 uppercase tracking-widest text-text-muted">Overdue amount</div>
+                  <div className="text-18 font-bold text-red-9">{fmtMoney(metrics.overdueAmount || 0)}</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-10 uppercase tracking-widest text-text-muted">Duplicates Value</div>
+                  <div className="text-18 font-bold text-primary-9">$84.2K</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-10 uppercase tracking-widest text-text-muted">Suppliers to Chase</div>
+                  <div className="text-18 font-bold text-primary-9">9 vendors</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-12 gap-5">
+              {/* Outstanding payables (Conditionally shown) */}
+              {isCommandCenterExpanded && (
+                <div className="col-span-12 lg:col-span-6 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
+                  <h3 className="font-serif text-14 font-bold text-text-primary">Outstanding payables by supplier</h3>
+                  <div className="text-11 text-text-muted mb-4">Click a supplier's bar to drill down</div>
+                  <div className="h-60">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={[
+                          { name: 'Meridian Steel', value: 920 },
+                          { name: 'Vertex IT', value: 680 },
+                          { name: 'FastShip Ltd', value: 550 },
+                          { name: 'Solaris Energy', value: 480 },
+                          { name: 'Nimbus Cloud', value: 390 }
+                        ]}
+                        layout="vertical"
+                        margin={{ left: -10, right: 10 }}
+                      >
+                        <XAxis type="number" tick={{ fontSize: 10 }} />
+                        <YAxis dataKey="name" type="category" tick={{ fontSize: 10 }} width={90} />
+                        <Tooltip formatter={(v: any) => [`$${v}K`]} />
+                        <Bar
+                          dataKey="value"
+                          fill="#8300e6"
+                          radius={[0, 4, 4, 0]}
+                          barSize={12}
+                          onClick={(data: any) => {
+                            setDrillSupplier(data?.name ?? null)
+                            setActiveDrill('Outstanding Payables')
+                          }}
+                          className="cursor-pointer"
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              )}
+
+              {/* Aging analysis */}
+              <div className={cn(
+                "rounded-lg border border-border-default bg-surface p-5 shadow-xs transition-all duration-300",
+                isCommandCenterExpanded ? "col-span-12 lg:col-span-6" : "col-span-12"
+              )}>
+                <h3 className="font-serif text-14 font-bold text-text-primary">Invoice aging analysis</h3>
+                <div className="text-11 text-text-muted mb-4">Click a segment to drill into aging details</div>
+                <div className="h-60">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={[
+                        { name: '0–15d', value: 1842 },
+                        { name: '16–30d', value: 1205 },
+                        { name: '31–45d', value: 623 },
+                        { name: '46–60d', value: 298 },
+                        { name: '60d+', value: 134 }
+                      ]}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                      <YAxis tick={{ fontSize: 11 }} />
+                      <Tooltip formatter={(v: any) => [`${v} Invoices`, 'Volume']} />
+                      <Bar
+                        dataKey="value"
+                        fill="#5c21e6"
+                        radius={[4, 4, 0, 0]}
+                        barSize={20}
+                        onClick={(data: any) => {
+                          setDrillAgingBucket(data?.name ?? null)
+                          setActiveDrill('Aging Analysis')
+                        }}
+                        className="cursor-pointer"
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Monthly invoice trend */}
+              <div className="col-span-12 lg:col-span-6 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
+                <h3 className="font-serif text-14 font-bold text-text-primary">Monthly invoice trend</h3>
+                <div className="text-11 text-text-muted mb-4">Incoming workload volumes over the last 6 months</div>
+                <div className="h-56">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart
+                      data={[
+                        { name: 'Jan', count: 180 },
+                        { name: 'Feb', count: 165 },
+                        { name: 'Mar', count: 210 },
+                        { name: 'Apr', count: 245 },
+                        { name: 'May', count: 280 },
+                        { name: 'Jun', count: 266 }
+                      ]}
+                    >
+                      <defs>
+                        <linearGradient id="trendGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#8300e6" stopOpacity={0.25} />
+                          <stop offset="95%" stopColor="#8300e6" stopOpacity={0.0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                      <YAxis tick={{ fontSize: 11 }} />
+                      <Tooltip formatter={(v) => [`${v} Invoices`]} />
+                      <Area type="monotone" dataKey="count" stroke="#8300e6" strokeWidth={2} fillOpacity={1} fill="url(#trendGrad)" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Payment method distribution */}
+              <div className="col-span-12 lg:col-span-6 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
+                <h3 className="font-serif text-14 font-bold text-text-primary">Payment method distribution</h3>
+                <div className="text-11 text-text-muted mb-4">Share of transactions by payment channel</div>
+                <div className="h-56">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={[
+                          { name: 'Bank Transfer', value: 45, color: '#8300e6' },
+                          { name: 'ACH', value: 30, color: '#5c21e6' },
+                          { name: 'Wire', value: 15, color: '#19c1d4' },
+                          { name: 'Cheque', value: 10, color: '#847C93' }
+                        ]}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={40}
+                        outerRadius={60}
+                        paddingAngle={3}
+                        dataKey="value"
+                      >
+                        {[
+                          { color: '#8300e6' },
+                          { color: '#5c21e6' },
+                          { color: '#19c1d4' },
+                          { color: '#847C93' }
+                        ].map((entry, idx) => (
+                          <Cell key={`cell-${idx}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(v) => [`${v}%`, 'Share']} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="flex justify-around text-11 mt-1">
+                  <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded bg-primary-9" />Transfer</span>
+                  <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded bg-indigo-9" />ACH</span>
+                  <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded bg-cyan-9" />Wire</span>
+                  <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded bg-gray-10" />Cheque</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
   )
 }
-
-interface MetricCardProps {
-  colorTheme: 'orange' | 'green' | 'red' | 'purple'
-  icon: React.ElementType
-  title: string
-  trend: string
-  value: string
-  tooltip?: string
-}
-
-export const MetricCard = ({
-  colorTheme,
-  icon: Icon,
-  title,
-  tooltip,
-  trend,
-  value,
-}: MetricCardProps) => {
-  const themeStyles = {
-    green: {
-      bg: 'bg-[var(--green-1)]',
-      border: 'border-[var(--green-3)]',
-      text: 'text-[var(--green-9)]',
-    },
-    orange: {
-      bg: 'bg-[var(--orange-1)]',
-      border: 'border-[var(--orange-3)]',
-      text: 'text-[var(--orange-9)]',
-    },
-    purple: {
-      bg: 'bg-[var(--purple-1)]',
-      border: 'border-[var(--purple-3)]',
-      text: 'text-[var(--purple-9)]',
-    },
-    red: {
-      bg: 'bg-[var(--red-1)]',
-      border: 'border-[var(--red-3)]',
-      text: 'text-[var(--red-9)]',
-    },
-  }
-
-  const styles = themeStyles[colorTheme] || themeStyles.green
-
-  return (
-    <div className='flex min-w-0 flex-1 flex-col gap-1.5 rounded-xl border border-[var(--gray-3)] bg-white p-2.5 transition-colors hover:bg-[var(--gray-1)]'>
-      <div className='flex items-center justify-between'>
-        <div
-          className={`shrink-0 rounded p-1.5 transition-colors ${styles.bg} ${styles.text}`}
-        >
-          <Icon aria-hidden='true' className='h-3.5 w-3.5' />
-        </div>
-        <div
-          className={`shrink-0 rounded-md border px-2 py-0.5 text-[9px] font-semibold ${styles.border} ${styles.bg} ${styles.text}`}
-        >
-          {trend}
-        </div>
-      </div>
-      <div className='mt-0.5 flex min-w-0 flex-col gap-0.5'>
-        <span className='text-[11px] leading-none font-semibold tracking-tight text-[var(--gray-11)]'>
-          {title}
-        </span>
-        <span
-          className='text-[13px] leading-tight font-semibold text-[var(--gray-13)]'
-          title={tooltip || value}
-        >
-          {value}
-        </span>
-      </div>
-    </div>
-  )
-}
-
-const RISK_DATA = [
-  { color: 'var(--green-9)', name: 'Low Risk', value: 101 },
-  { color: 'var(--orange-9)', name: 'Medium Risk', value: 38 },
-  { color: 'var(--red-9)', name: 'High Risk', value: 25 },
-]
-
-export const SupplierRiskCard = () => {
-  const total = RISK_DATA.reduce((acc, cur) => acc + cur.value, 0)
-
-  return (
-    <div className='col-span-12 flex flex-col rounded-xl bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md lg:col-span-3'>
-      <div>
-        <h4 className='pl-0.5 font-poppins text-13 leading-none font-bold text-gray-13 capitalize'>
-          supplier risk spending
-        </h4>
-        <div className='mt-1 pl-0.5 text-[11px] text-[var(--gray-9)] lowercase'>
-          {total} active vendors analyzed
-        </div>
-      </div>
-
-      <div className='mt-6 flex flex-1 flex-col justify-between gap-4'>
-        {/* Chart Area */}
-        <div className='flex items-center justify-center'>
-          <div className='relative h-[100px] w-[100px] shrink-0'>
-            <ResponsiveContainer height='100%' width='100%'>
-              <PieChart>
-                <Pie
-                  cx='50%'
-                  cy='50%'
-                  data={RISK_DATA}
-                  dataKey='value'
-                  innerRadius={34}
-                  outerRadius={48}
-                  paddingAngle={3}
-                  stroke='none'
-                >
-                  {RISK_DATA.map((entry, index) => (
-                    <Cell
-                      className='transition-opacity outline-none hover:opacity-90'
-                      fill={entry.color}
-                      key={`cell-${index}`}
-                    />
-                  ))}
-                </Pie>
-                <Tooltip
-                  formatter={(value: any) => [`${value} vendors`]}
-                  contentStyle={{
-                    border: 'none',
-                    borderRadius: '8px',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                    fontSize: '11px',
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-
-            {/* Center Label Overlay */}
-            <div className='pointer-events-none absolute inset-0 flex flex-col items-center justify-center'>
-              <span className='font-poppins text-16 leading-none font-extrabold text-gray-13'>
-                {total}
-              </span>
-              <span className='mt-0.5 text-[8px] font-medium text-gray-10 lowercase'>
-                vendors
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Custom Legend with Progress bars */}
-        <div className='flex flex-col gap-2'>
-          {RISK_DATA.map((entry, index) => {
-            const percentage = Math.round((entry.value / total) * 100)
-            return (
-              <div
-                className='hover:bg-gray-50 group flex cursor-pointer flex-col gap-1 rounded-lg p-1.5 transition-all active:scale-95'
-                key={index}
-                title={`${entry.value} vendors (${percentage}%)`}
-              >
-                <div className='flex items-center justify-between text-[11px] font-medium lowercase'>
-                  <div className='flex items-center gap-2'>
-                    <div
-                      className='size-2.5 shrink-0 rounded-md transition-transform group-hover:scale-110'
-                      style={{ backgroundColor: entry.color }}
-                    />
-                    <span className='font-semibold text-gray-10 transition-colors group-hover:text-gray-13'>
-                      {entry.name}
-                    </span>
-                  </div>
-                  <div className='flex items-center gap-1.5'>
-                    <span className='font-bold text-gray-13'>
-                      {entry.value}
-                    </span>
-                    <span className='text-[9px] font-normal text-gray-10'>
-                      ({percentage}%)
-                    </span>
-                  </div>
-                </div>
-                <div className='bg-gray-100 h-1 w-full overflow-hidden rounded-full'>
-                  <div
-                    className='h-full rounded-full transition-all duration-500'
-                    style={{
-                      backgroundColor: entry.color,
-                      width: `${percentage}%`,
-                    }}
-                  />
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-const CATEGORY_DISTRIBUTION_DATA = [
-  { color: 'var(--indigo-9)', name: 'Hardware', value: 13 },
-  { color: 'var(--primary-9)', name: 'Software', value: 9 },
-  { color: 'var(--violet-9)', name: 'Services', value: 8 },
-  { color: 'var(--pink-9)', name: 'Utilities', value: 5 },
-  { color: 'var(--secondary-9)', name: 'Other', value: 3 },
-]
-
-export const CategoryWiseInvoiceDistributionCard = () => {
-  const total = CATEGORY_DISTRIBUTION_DATA.reduce(
-    (acc, cur) => acc + cur.value,
-    0,
-  )
-
-  return (
-    <div className='col-span-12 flex flex-col rounded-xl bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md lg:col-span-3'>
-      <div>
-        <h4 className='pl-0.5 font-poppins text-13 leading-none font-bold text-gray-13 capitalize'>
-          invoice distribution
-        </h4>
-        <div className='mt-1 pl-0.5 text-[11px] text-[var(--gray-9)] lowercase'>
-          by spend category · {total} items
-        </div>
-      </div>
-
-      <div className='mt-6 flex flex-1 flex-col justify-between gap-4'>
-        {/* Chart Area */}
-        <div className='flex items-center justify-center'>
-          <div className='relative h-[100px] w-[100px] shrink-0'>
-            <ResponsiveContainer height='100%' width='100%'>
-              <PieChart>
-                <Pie
-                  cx='50%'
-                  cy='50%'
-                  data={CATEGORY_DISTRIBUTION_DATA}
-                  dataKey='value'
-                  innerRadius={34}
-                  outerRadius={48}
-                  paddingAngle={3}
-                  stroke='none'
-                >
-                  {CATEGORY_DISTRIBUTION_DATA.map((entry, index) => (
-                    <Cell
-                      className='transition-opacity outline-none hover:opacity-90'
-                      fill={entry.color}
-                      key={`cell-${index}`}
-                    />
-                  ))}
-                </Pie>
-                <Tooltip
-                  formatter={(value: any) => [`${value} invoices`]}
-                  contentStyle={{
-                    border: 'none',
-                    borderRadius: '8px',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                    fontSize: '11px',
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-
-            {/* Center Label Overlay */}
-            <div className='pointer-events-none absolute inset-0 flex flex-col items-center justify-center'>
-              <span className='font-poppins text-16 leading-none font-extrabold text-gray-13'>
-                {total}
-              </span>
-              <span className='mt-0.5 text-[8px] font-medium text-gray-10 lowercase'>
-                invoices
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Custom Legend with Progress tracks */}
-        <div className='flex flex-col gap-1.5'>
-          {CATEGORY_DISTRIBUTION_DATA.map((entry, index) => {
-            const percentage = Math.round((entry.value / total) * 100)
-            return (
-              <div
-                className='hover:bg-gray-55 group flex cursor-pointer flex-col gap-1 rounded-lg p-1 transition-all active:scale-95'
-                key={index}
-                title={`${entry.value} invoices (${percentage}%)`}
-              >
-                <div className='flex items-center justify-between text-[11px] font-medium lowercase'>
-                  <div className='flex items-center gap-2'>
-                    <div
-                      className='size-2.5 shrink-0 rounded-md transition-transform group-hover:scale-110'
-                      style={{ backgroundColor: entry.color }}
-                    />
-                    <span className='font-semibold text-gray-10 transition-colors group-hover:text-gray-13'>
-                      {entry.name}
-                    </span>
-                  </div>
-                  <div className='flex items-center gap-1.5'>
-                    <span className='font-bold text-gray-13'>
-                      {entry.value}
-                    </span>
-                    <span className='text-[9px] font-normal text-gray-10'>
-                      ({percentage}%)
-                    </span>
-                  </div>
-                </div>
-                <div className='bg-gray-100 h-1 w-full overflow-hidden rounded-full'>
-                  <div
-                    className='h-full rounded-full transition-all duration-500'
-                    style={{
-                      backgroundColor: entry.color,
-                      width: `${percentage}%`,
-                    }}
-                  />
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-const TOP_SUPPLIERS_DATA = [
-  { displayValue: '$9.2m', name: 'global freight', value: 9.2 },
-  { displayValue: '$7.4m', name: 'techparts ltd', value: 7.4 },
-  { displayValue: '$5.9m', name: 'office hub', value: 5.9 },
-  { displayValue: '$4.8m', name: 'cloudops inc', value: 4.8 },
-  { displayValue: '$3.7m', name: 'logisupply', value: 3.7 },
-]
-
-export const TopSuppliersCard = () => {
-  return (
-    <div className='col-span-12 flex flex-col rounded-xl bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md lg:col-span-3'>
-      <div>
-        <h4 className='pl-0.5 font-poppins text-13 leading-none font-bold text-gray-13 capitalize'>
-          Top Suppliers
-        </h4>
-        <div className='mt-1 pl-0.5 text-[11px] text-[var(--gray-9)] lowercase'>
-          by invoice value · may 2026
-        </div>
-      </div>
-
-      <div className='mt-6 flex flex-1 flex-col justify-center pr-1'>
-        <ResponsiveContainer height={200} width='100%'>
-          <BarChart
-            data={TOP_SUPPLIERS_DATA}
-            layout='vertical'
-            margin={{ bottom: 0, left: -20, right: 35, top: 0 }}
-          >
-            <defs>
-              <linearGradient
-                id='topSuppliersGradient'
-                x1='0'
-                x2='1'
-                y1='0'
-                y2='0'
-              >
-                <stop
-                  offset='0%'
-                  stopColor='var(--primary-6)'
-                  stopOpacity={0.7}
-                />
-                <stop
-                  offset='100%'
-                  stopColor='var(--primary-9)'
-                  stopOpacity={0.95}
-                />
-              </linearGradient>
-            </defs>
-            <XAxis type='number' hide />
-            <YAxis
-              axisLine={false}
-              dataKey='name'
-              tick={{ fill: 'var(--gray-10)', fontSize: 11, fontWeight: 550 }}
-              tickLine={false}
-              type='category'
-              width={100}
-            />
-            <Tooltip
-              cursor={{ fill: 'var(--gray-2)', opacity: 0.15 }}
-              formatter={(val: any) => [`$${val}M`, 'Value']}
-              contentStyle={{
-                border: 'none',
-                borderRadius: '8px',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                fontSize: '11px',
-              }}
-            />
-            <Bar
-              barSize={14}
-              dataKey='value'
-              fill='url(#topSuppliersGradient)'
-              radius={[0, 6, 6, 0]}
-            >
-              <LabelList
-                dataKey='displayValue'
-                fill='var(--gray-11)'
-                fontSize={10}
-                fontWeight={650}
-                offset={8}
-                position='right'
-              />
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-    </div>
-  )
-}
-
-const TREND_DATA = [
-  { day: '1', exceptions: 40, processed: 90 },
-  { day: '4', exceptions: 50, processed: 140 },
-  { day: '7', exceptions: 45, processed: 190 },
-  { day: '10', exceptions: 55, processed: 160 },
-  { day: '13', exceptions: 48, processed: 250 },
-  { day: '16', exceptions: 60, processed: 210 },
-  { day: '19', exceptions: 40, processed: 290 },
-  { day: '22', exceptions: 75, processed: 230 },
-  { day: '25', exceptions: 55, processed: 280 },
-  { day: '28', exceptions: 70, processed: 330 },
-  { day: '31', exceptions: 65, processed: 300 },
-  { day: '32', exceptions: 80, processed: 320 },
-]
-
-const CustomDot = (props: any) => {
-  const { cx, cy, index } = props
-  if (index === TREND_DATA.length - 1) {
-    return (
-      <circle
-        cx={cx}
-        cy={cy}
-        fill='#3B82F6'
-        r={4}
-        stroke='white'
-        strokeWidth={2}
-      />
-    )
-  }
-  return null
-}
-
-export const InvoiceTrendCard = () => {
-  return (
-    <div className='col-span-12 flex flex-col rounded-xl bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md lg:col-span-6'>
-      <div className='flex items-start justify-between'>
-        <div>
-          <h4 className='text-gray-900 text-[15px] font-bold'>
-            Invoice Processing Trend
-          </h4>
-          <div className='text-gray-400 mt-0.5 text-[13px]'>
-            Daily volume &mdash; May 2026
-          </div>
-        </div>
-        <button className='text-blue-500 hover:text-blue-700 text-[13px] font-medium transition-colors'>
-          View all &rarr;
-        </button>
-      </div>
-
-      <div className='mt-6 flex-1'>
-        <ResponsiveContainer height={220} width='100%'>
-          <ComposedChart
-            data={TREND_DATA}
-            margin={{ bottom: 0, left: -20, right: 10, top: 10 }}
-          >
-            <defs>
-              <linearGradient id='colorProcessed' x1='0' x2='0' y1='0' y2='1'>
-                <stop offset='5%' stopColor='#3B82F6' stopOpacity={0.2} />
-                <stop offset='95%' stopColor='#3B82F6' stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid stroke='#E5E7EB' vertical={false} />
-            <XAxis
-              axisLine={false}
-              dataKey='day'
-              dy={10}
-              tick={{ fill: '#6B7280', fontSize: 12 }}
-              tickLine={false}
-              ticks={['1', '13', '25', '31']}
-            />
-            <YAxis
-              axisLine={false}
-              domain={[0, 400]}
-              tick={{ fill: '#6B7280', fontSize: 12 }}
-              tickLine={false}
-              ticks={[100, 200, 300]}
-            />
-            <Tooltip
-              contentStyle={{
-                border: 'none',
-                borderRadius: '8px',
-                boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-              }}
-            />
-            <Area
-              dataKey='processed'
-              dot={<CustomDot />}
-              fill='url(#colorProcessed)'
-              fillOpacity={1}
-              stroke='#3B82F6'
-              strokeWidth={2}
-              type='linear'
-              activeDot={{
-                fill: '#3B82F6',
-                r: 6,
-                stroke: 'white',
-                strokeWidth: 2,
-              }}
-            />
-            <Line
-              dataKey='exceptions'
-              dot={false}
-              stroke='#EF4444'
-              strokeDasharray='4 4'
-              strokeWidth={2}
-              type='linear'
-              activeDot={{
-                fill: '#EF4444',
-                r: 6,
-                stroke: 'white',
-                strokeWidth: 2,
-              }}
-            />
-          </ComposedChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* Legend */}
-      <div className='mt-4 flex items-center gap-6 pl-2'>
-        <div className='flex items-center gap-2'>
-          <div className='h-1 w-4 rounded-full bg-[#3B82F6]' />
-          <span className='text-gray-500 text-[12px] font-medium'>
-            Processed
-          </span>
-        </div>
-        <div className='flex items-center gap-2'>
-          <svg height='4' width='16'>
-            <line
-              stroke='#EF4444'
-              strokeDasharray='4 4'
-              strokeWidth='2'
-              x1='0'
-              x2='16'
-              y1='2'
-              y2='2'
-            />
-          </svg>
-          <span className='text-gray-500 text-[12px] font-medium'>
-            Exceptions
-          </span>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-const AGING_DATA = [
-  { name: '0–15d', value: 1842 },
-  { name: '16–30d', value: 1205 },
-  { name: '31–45d', value: 623 },
-  { name: '46–60d', value: 298 },
-  { name: '60d+', value: 134 },
-]
-
-export const InvoiceAgingCard = () => {
-  return (
-    <div className='col-span-12 flex flex-col rounded-xl bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md lg:col-span-3'>
-      <div>
-        <h4 className='pl-0.5 font-poppins text-13 leading-none font-bold text-gray-13 capitalize'>
-          Invoice Aging Analysis
-        </h4>
-        <div className='mt-1 pl-0.5 text-[11px] text-[var(--gray-9)] lowercase'>
-          days outstanding status
-        </div>
-      </div>
-      <div className='mt-6 flex flex-1 flex-col justify-center'>
-        <ResponsiveContainer height={180} width='100%'>
-          <BarChart
-            data={AGING_DATA}
-            margin={{ bottom: 0, left: -25, right: 0, top: 20 }}
-          >
-            <defs>
-              <linearGradient
-                id='invoiceAgingGradient'
-                x1='0'
-                x2='0'
-                y1='0'
-                y2='1'
-              >
-                <stop
-                  offset='0%'
-                  stopColor='var(--primary-9)'
-                  stopOpacity={0.9}
-                />
-                <stop
-                  offset='100%'
-                  stopColor='var(--primary-4)'
-                  stopOpacity={0.4}
-                />
-              </linearGradient>
-            </defs>
-            <XAxis
-              axisLine={false}
-              dataKey='name'
-              dy={10}
-              tick={{ fill: 'var(--gray-10)', fontSize: 11, fontWeight: 550 }}
-              tickLine={false}
-            />
-            <Tooltip
-              cursor={{ fill: 'var(--gray-2)', opacity: 0.15 }}
-              formatter={(val: any) => [`${val} Invoices`, 'Volume']}
-              contentStyle={{
-                border: 'none',
-                borderRadius: '8px',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                fontSize: '11px',
-              }}
-            />
-            <Bar
-              barSize={28}
-              dataKey='value'
-              fill='url(#invoiceAgingGradient)'
-              radius={[6, 6, 0, 0]}
-            >
-              <LabelList
-                dataKey='value'
-                position='top'
-                content={(props: any) => {
-                  const { value, width, x, y } = props
-                  return (
-                    <text
-                      fill='var(--gray-11)'
-                      fontSize={10}
-                      fontWeight={650}
-                      textAnchor='middle'
-                      x={x + width / 2}
-                      y={y - 8}
-                    >
-                      {Number(value).toLocaleString()}
-                    </text>
-                  )
-                }}
-              />
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-    </div>
-  )
-}
-
-const SPEND_DATA = [
-  {
-    color: '#10B981',
-    displayValue: '$28.4M - 67%',
-    name: 'Low Risk',
-    percent: 67,
-    value: 28.4,
-  },
-  {
-    color: '#F59E0B',
-    displayValue: '$10.1M - 24%',
-    name: 'Medium Risk',
-    percent: 24,
-    value: 10.1,
-  },
-  {
-    color: '#EF4444',
-    displayValue: '$3.8M - 9%',
-    name: 'High Risk',
-    percent: 9,
-    value: 3.8,
-  },
-]
-
-export const RiskSpendingCard = () => {
-  return (
-    <div className='col-span-12 flex flex-col rounded-xl bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md lg:col-span-6'>
-      <div>
-        <h4 className='text-gray-900 text-[15px] font-bold'>
-          Supplier Risk Spending
-        </h4>
-        <div className='text-gray-400 mt-0.5 text-[13px]'>
-          Spend by risk category
-        </div>
-      </div>
-
-      <div className='mt-6 flex flex-1 items-center gap-6'>
-        <div className='flex flex-1 flex-col justify-center gap-5'>
-          {SPEND_DATA.map((item, i) => (
-            <div className='flex flex-col gap-1.5' key={i}>
-              <div className='flex justify-between text-[12px] font-medium'>
-                <span className='text-gray-500'>{item.name}</span>
-                <span className='font-bold' style={{ color: item.color }}>
-                  {item.displayValue}
-                </span>
-              </div>
-              <div className='bg-gray-100 h-2 w-full overflow-hidden rounded-full'>
-                <div
-                  className='h-full rounded-full'
-                  style={{
-                    backgroundColor: item.color,
-                    width: `${item.percent}%`,
-                  }}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Right Donut Chart */}
-        <div className='relative h-[90px] w-[90px] shrink-0'>
-          <ResponsiveContainer height='100%' width='100%'>
-            <PieChart>
-              <Pie
-                cx='50%'
-                cy='50%'
-                data={SPEND_DATA}
-                dataKey='value'
-                innerRadius={30}
-                outerRadius={45}
-                paddingAngle={0}
-                stroke='none'
-              >
-                {SPEND_DATA.map((entry, index) => (
-                  <Cell fill={entry.color} key={`cell-${index}`} />
-                ))}
-              </Pie>
-              <Tooltip
-                contentStyle={{
-                  border: 'none',
-                  borderRadius: '8px',
-                  boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-                }}
-              />
-            </PieChart>
-          </ResponsiveContainer>
-          <div className='pointer-events-none absolute inset-0 flex flex-col items-center justify-center'>
-            <span className='text-gray-900 text-[11px] font-bold'>$42.3M</span>
-            <span className='text-gray-500 text-[9px] font-medium'>total</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-type ButtonSpec = { color: 'green' | 'red' | 'gray' | 'yellow'; label: string }
-type ExceptionCardProps = {
-  borderClass: string
-  buttons: ButtonSpec[]
-  desc: string
-  icon: React.ReactNode
-  iconBg: string
-  iconColor: string
-  title: string
-}
-
-const ExceptionCard = ({
-  borderClass,
-  buttons,
-  desc,
-  icon,
-  iconBg,
-  iconColor,
-  title,
-}: ExceptionCardProps) => (
-  <div
-    className={`flex gap-3 rounded-xl border bg-white p-3.5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] ${borderClass}`}
-  >
-    <div
-      className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${iconBg} ${iconColor}`}
-    >
-      {icon}
-    </div>
-    <div className='flex flex-col'>
-      <div className='text-gray-900 text-[13px] font-bold'>{title}</div>
-      <div className='text-gray-500 mt-1 text-[11px] leading-relaxed'>
-        {desc}
-      </div>
-      <div className='mt-3 flex gap-2'>
-        {buttons.map((btn, i) => {
-          let btnClass = ''
-          if (btn.color === 'green')
-            btnClass =
-              'border-green-6 bg-green-2 text-green-11 hover:bg-green-3 hover:border-green-7'
-          if (btn.color === 'red')
-            btnClass =
-              'border-red-6 bg-red-2 text-red-11 hover:bg-red-3 hover:border-red-7'
-          if (btn.color === 'gray')
-            btnClass =
-              'border-transparent bg-secondary-3 text-secondary-11 hover:bg-secondary-4'
-          if (btn.color === 'yellow')
-            btnClass =
-              'border-yellow-6 bg-yellow-2 text-yellow-11 hover:bg-yellow-3 hover:border-yellow-7'
-
-          return (
-            <button
-              className={`rounded-md border px-3 py-1 text-[11px] font-semibold transition-all ${btnClass}`}
-              key={i}
-            >
-              {btn.label}
-            </button>
-          )
-        })}
-      </div>
-    </div>
-  </div>
-)
-
-const PO_EXCEPTIONS = [
-  {
-    borderClass: 'border-gray-6 hover:border-gray-6',
-    buttons: [
-      { color: 'green', label: 'Approve' },
-      { color: 'red', label: 'Reject' },
-      { color: 'gray', label: 'View' },
-    ] as ButtonSpec[],
-    desc: 'PO-2033 qty mismatch: Invoice qty 120 vs PO qty 100 · Variance: +20 units · +$3,690 · +20.0% · Requires approval override',
-    icon: <ClipboardList className='h-[18px] w-[18px]' strokeWidth={1.5} />,
-    iconBg: 'bg-red-3',
-    iconColor: 'text-red-9',
-    title: 'INV-2041 — TechParts Ltd · $18,450.00 USD',
-  },
-  {
-    borderClass: 'border-gray-6 hover:border-gray-6',
-    buttons: [
-      { color: 'green', label: 'Approve' },
-      { color: 'red', label: 'Reject' },
-      { color: 'gray', label: 'View' },
-    ] as ButtonSpec[],
-    desc: 'PO-1098 price mismatch: Invoice $62/unit vs PO $58/unit · Tolerance 2%, Actual 6.9% · 11 units affected · Escalated',
-    icon: <ClipboardList className='h-[18px] w-[18px]' strokeWidth={1.5} />,
-    iconBg: 'bg-red-3',
-    iconColor: 'text-red-9',
-    title: 'INV-2044 — Office Hub Supply · $6,200.00 USD',
-  },
-  {
-    borderClass: 'border-gray-6 hover:border-gray-6',
-    buttons: [
-      { color: 'yellow', label: 'Create PO' },
-      { color: 'red', label: 'Reject' },
-      { color: 'gray', label: 'View' },
-    ] as ButtonSpec[],
-    desc: 'No matching PO found in ERP - Invoice references PO-9901 which does not exist · Manual PO creation required',
-    icon: <ClipboardList className='h-[18px] w-[18px]' strokeWidth={1.5} />,
-    iconBg: 'bg-red-3',
-    iconColor: 'text-red-9',
-    title: 'INV-2051 — LogiSupply Corp · $3,800.00 USD',
-  },
-  {
-    borderClass: 'border-gray-6 hover:border-gray-6',
-    buttons: [
-      { color: 'green', label: 'Approve' },
-      { color: 'red', label: 'Reject' },
-      { color: 'gray', label: 'View' },
-    ] as ButtonSpec[],
-    desc: 'PO-1077 amount mismatch: Invoice $9,100 vs PO $8,500 - Variance: +$600 (+7.1%) - Above 2% tolerance threshold',
-    icon: <ClipboardList className='h-[18px] w-[18px]' strokeWidth={1.5} />,
-    iconBg: 'bg-red-3',
-    iconColor: 'text-red-9',
-    title: 'INV-2058 — FastShip Ltd · $9,100.00 USD',
-  },
-]
-
-const GL_EXCEPTIONS = [
-  {
-    borderClass: 'border-gray-6 hover:border-gray-6',
-    buttons: [
-      { color: 'yellow', label: 'Map GL' },
-      { color: 'red', label: 'Hold' },
-      { color: 'gray', label: 'View' },
-    ] as ButtonSpec[],
-    desc: 'GL code missing for line items 3-5 (Software Licenses $12,000) · Cost center CC-IT-2024 not mapped · Blocking ERP posting',
-    icon: <Component className='h-[18px] w-[18px]' strokeWidth={1.5} />,
-    iconBg: 'bg-cyan-50',
-    iconColor: 'text-cyan-500',
-    title: 'INV-2059 — CloudOps Inc · $22,000.00 USD ⚠️ CRITICAL',
-  },
-  {
-    borderClass: 'border-gray-6 hover:border-gray-6',
-    buttons: [
-      { color: 'yellow', label: 'Remap' },
-      { color: 'red', label: 'Reject' },
-      { color: 'gray', label: 'View' },
-    ] as ButtonSpec[],
-    desc: 'GL-9999 referenced - Account deactivated in Chart of Accounts since 2025-12-01 · Remap to GL-6100 required',
-    icon: <Component className='h-[18px] w-[18px]' strokeWidth={1.5} />,
-    iconBg: 'bg-cyan-50',
-    iconColor: 'text-cyan-500',
-    title: 'INV-2063 — FastShip Ltd · $4,100.00 USD',
-  },
-]
-
-const DUP_EXCEPTIONS = [
-  {
-    borderClass: 'border-red-6 hover:border-red-5',
-    buttons: [
-      { color: 'red', label: 'Block' },
-      { color: 'gray', label: 'Review' },
-    ] as ButtonSpec[],
-    desc: '100% duplicate of INV-1987 submitted 2026-04-20 · Same supplier, amount, PO · Auto-blocked · $7,650 prevented',
-    icon: <RefreshCcw className='h-[18px] w-[18px]' strokeWidth={1.5} />,
-    iconBg: 'bg-indigo-3',
-    iconColor: 'text-indigo-8',
-    title: 'INV-2006 — LogiSupply Corp · $7,650.50 USD · EXACT',
-  },
-  {
-    borderClass: 'border-red-6 hover:border-red-5',
-    buttons: [
-      { color: 'red', label: 'Block' },
-      { color: 'gray', label: 'Allow' },
-    ] as ButtonSpec[],
-    desc: 'Near-duplicate of INV-2009 (3 days ago) - Same supplier + amount - Invoice# differ by 1 digit - Match 94%',
-    icon: <RefreshCcw className='h-[18px] w-[18px]' strokeWidth={1.5} />,
-    iconBg: 'bg-indigo-3',
-    iconColor: 'text-indigo-8',
-    title: 'INV-2011 — TechParts Ltd · $3,200.00 USD · NEAR',
-  },
-  {
-    borderClass: 'border-red-6 hover:border-red-500',
-    buttons: [
-      { color: 'red', label: 'Block' },
-      { color: 'gray', label: 'Review' },
-    ] as ButtonSpec[],
-    desc: '100% duplicate of INV-1994 (2026-04-05) · Same invoice# format + exact amount · Auto-blocked - $12,400 prevented',
-    icon: <RefreshCcw className='h-[18px] w-[18px]' strokeWidth={1.5} />,
-    iconBg: 'bg-indigo-3',
-    iconColor: 'text-indigo-8',
-    title: 'INV-2031 — FastShip Ltd · $12,400.00 USD · EXACT',
-  },
-]
-
-const SUPPLIER_EXCEPTIONS = [
-  {
-    borderClass: 'border-gray-6 hover:border-gray-6',
-    buttons: [
-      { color: 'red', label: 'Auto-Reject' },
-      { color: 'gray', label: 'Report' },
-    ] as ButtonSpec[],
-    desc: 'Vendor BLACKLISTED 2025-11-01 · Fraud investigation COMP-2025-441 open · ALL invoices auto-rejected · Do not process',
-    icon: <ShieldAlert className='h-[18px] w-[18px]' strokeWidth={1.5} />,
-    iconBg: 'bg-rose-50',
-    iconColor: 'text-rose-500',
-    title: 'INV-2028 — XYZ Trade Inc · $15,900.00 USD · BLACKLISTED',
-  },
-  {
-    borderClass: 'border-gray-6 hover:border-gray-6',
-    buttons: [
-      { color: 'yellow', label: 'Onboard' },
-      { color: 'red', label: 'Hold' },
-    ] as ButtonSpec[],
-    desc: 'Supplier not in approved vendor master - KYC not submitted - Business justification pending from procurement',
-    icon: <ShieldAlert className='h-[18px] w-[18px]' strokeWidth={1.5} />,
-    iconBg: 'bg-rose-50',
-    iconColor: 'text-rose-500',
-    title: 'INV-2033 — NewVendor Co · $8,200.00 USD',
-  },
-]
-
-const AI_EXCEPTIONS = [
-  {
-    borderClass: 'border-gray-6 hover:border-gray-6',
-    buttons: [
-      { color: 'yellow', label: 'Manual Review' },
-      { color: 'gray', label: 'Reprocess' },
-    ] as ButtonSpec[],
-    desc: 'Low-resolution scan · Supplier name partially obscured · Amount field unclear · Manual verification required',
-    icon: <Bot className='h-[18px] w-[18px]' strokeWidth={1.5} />,
-    iconBg: 'bg-amber-50',
-    iconColor: 'text-amber-500',
-    title: 'INV-2004 — Office Hub · $3,200.00 USD · Confidence: 68.1%',
-  },
-]
-
-const SectionHeader = ({ title }: { title: string }) => (
-  <div className='mt-6 mb-4 flex items-center gap-3 first:mt-0'>
-    <div className='text-slate-400 text-[11px] font-bold tracking-wider uppercase'>
-      {title}
-    </div>
-    <div className='bg-gray-200 h-px flex-1'></div>
-  </div>
-)
-
-export const ExceptionsActionCenter = () => {
-  return (
-    <div className='col-span-12 mt-2'>
-      <div className='grid grid-cols-1 gap-8 lg:grid-cols-2'>
-        {/* Left Column */}
-        <div className='flex flex-col gap-3'>
-          <div>
-            <SectionHeader title='PO Mismatch Exceptions (13)' />
-            <div className='flex flex-col gap-2.5'>
-              {PO_EXCEPTIONS.map((ex, i) => (
-                <ExceptionCard key={i} {...ex} />
-              ))}
-            </div>
-          </div>
-          <div>
-            <SectionHeader title='Missing / Invalid GL Code (8)' />
-            <div className='flex flex-col gap-2.5'>
-              {GL_EXCEPTIONS.map((ex, i) => (
-                <ExceptionCard key={i} {...ex} />
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Right Column */}
-        <div className='flex flex-col gap-3'>
-          <div>
-            <SectionHeader title='Duplicate Invoice Alerts (9)' />
-            <div className='flex flex-col gap-2.5'>
-              {DUP_EXCEPTIONS.map((ex, i) => (
-                <ExceptionCard key={i} {...ex} />
-              ))}
-            </div>
-          </div>
-          <div>
-            <SectionHeader title='Blacklisted / Invalid Supplier (5)' />
-            <div className='flex flex-col gap-2.5'>
-              {SUPPLIER_EXCEPTIONS.map((ex, i) => (
-                <ExceptionCard key={i} {...ex} />
-              ))}
-            </div>
-          </div>
-          <div>
-            <SectionHeader title='AI Exceptions (5)' />
-            <div className='flex flex-col gap-2.5'>
-              {AI_EXCEPTIONS.map((ex, i) => (
-                <ExceptionCard key={i} {...ex} />
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-const CALENDAR_DAYS = [
-  { day: null, type: 'empty' },
-  { day: null, type: 'empty' },
-  { day: null, type: 'empty' },
-  { day: null, type: 'empty' },
-  { day: null, type: 'empty' },
-  { day: 1, type: 'normal' },
-  { day: 2, type: 'due' },
-  { day: 3, type: 'normal' },
-  { day: 4, type: 'normal' },
-  { day: 5, type: 'due' },
-  { day: 6, type: 'normal' },
-  { day: 7, type: 'normal' },
-  { day: 8, type: 'due' },
-  { day: 9, type: 'due' },
-  { day: 10, type: 'normal' },
-  { day: 11, type: 'normal' },
-  { day: 12, type: 'due' },
-  { day: 13, type: 'normal' },
-  { day: 14, type: 'due' },
-  { day: 15, type: 'due' },
-  { day: 16, type: 'normal' },
-  { day: 17, type: 'normal' },
-  { day: 18, type: 'due' },
-  { day: 19, type: 'normal' },
-  { day: 20, type: 'due' },
-  { day: 21, type: 'today' },
-  { day: 22, type: 'due' },
-  { day: 23, type: 'normal' },
-  { day: 24, type: 'normal' },
-  { day: 25, type: 'due' },
-  { day: 26, type: 'normal' },
-  { day: 27, type: 'normal' },
-  { day: 28, type: 'due' },
-  { day: 29, type: 'normal' },
-  { day: 30, type: 'due' },
-  { day: 31, type: 'normal' },
-  { day: null, type: 'empty' },
-  { day: null, type: 'empty' },
-  { day: null, type: 'empty' },
-  { day: null, type: 'empty' },
-  { day: null, type: 'empty' },
-  { day: null, type: 'empty' },
-]
-
-const PaymentCalendarCard = () => {
-  return (
-    <div className='col-span-12 flex flex-col rounded-xl bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md lg:col-span-4'>
-      {/* Title & Subtitle */}
-      <div>
-        <h4 className='font-poppins text-14 leading-none font-semibold text-gray-13 capitalize'>
-          Payment Calendar
-        </h4>
-        <div className='mt-1 text-[11px] text-[var(--gray-9)] lowercase'>
-          may 2026 · scheduled payments
-        </div>
-      </div>
-
-      {/* Calendar Grid Container */}
-      <div className='mx-auto mt-6 flex w-full max-w-[340px] flex-1 flex-col justify-between'>
-        <div>
-          {/* Weekday headers */}
-          <div className='mb-2 grid grid-cols-7 gap-y-2 text-center text-[11px] font-semibold text-gray-10 capitalize'>
-            <div>su</div>
-            <div>mo</div>
-            <div>tu</div>
-            <div>we</div>
-            <div>th</div>
-            <div>fr</div>
-            <div>sa</div>
-          </div>
-
-          {/* Calendar days grid */}
-          <div className='grid grid-cols-7 gap-[5px]'>
-            {CALENDAR_DAYS.map((cell, idx) => {
-              if (cell.type === 'empty') {
-                return <div className='aspect-square' key={`empty-${idx}`} />
-              }
-
-              if (cell.type === 'today') {
-                return (
-                  <div
-                    className='flex aspect-square cursor-pointer items-center justify-center rounded-lg bg-accent-primary text-[12px] font-bold text-white shadow-sm transition-all hover:opacity-90 active:scale-95'
-                    key={`day-${cell.day}`}
-                    title='Today (May 21)'
-                  >
-                    {cell.day}
-                  </div>
-                )
-              }
-
-              if (cell.type === 'due') {
-                return (
-                  <div
-                    className='flex aspect-square cursor-pointer items-center justify-center rounded-lg bg-accent-soft text-[12px] font-semibold text-accent-primary transition-all hover:bg-accent-primary hover:text-white active:scale-95'
-                    key={`day-${cell.day}`}
-                    title={`Payment Due on May ${cell.day}`}
-                  >
-                    {cell.day}
-                  </div>
-                )
-              }
-
-              return (
-                <div
-                  className='flex aspect-square cursor-pointer items-center justify-center rounded-lg text-[12px] font-medium text-gray-11 transition-all hover:bg-gray-2 active:scale-95'
-                  key={`day-${cell.day}`}
-                >
-                  {cell.day}
-                </div>
-              )
-            })}
-          </div>
-        </div>
-
-        {/* Legend */}
-        <div className='mt-4 flex items-center gap-4 pl-1 text-[11px] font-medium text-gray-10 capitalize'>
-          <div className='flex items-center gap-1.5'>
-            <div className='size-3.5 shrink-0 rounded-md bg-accent-primary' />
-            <span>today</span>
-          </div>
-          <div className='flex items-center gap-1.5'>
-            <div className='size-3.5 shrink-0 rounded-md border border-accent-soft bg-accent-soft' />
-            <span>payment due</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Separator line */}
-      <div className='my-5 border-t border-gray-2/70' />
-
-      {/* Bottom KPI stats */}
-      <div className='flex flex-col gap-3'>
-        <h5 className='pl-0.5 font-poppins text-13 leading-none font-bold text-gray-13 capitalize'>
-          This Month
-        </h5>
-
-        <div className='grid grid-cols-2 gap-2'>
-          {/* KPI 1 */}
-          <div className='flex flex-col gap-0.5 rounded-xl border border-gray-3/20 bg-gray-2/40 p-3 shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)] transition-all hover:bg-gray-2/65'>
-            <span className='font-poppins text-16 leading-tight font-extrabold text-gray-13'>
-              $642k
-            </span>
-            <span className='text-[10px] font-medium text-gray-10 lowercase'>
-              total paid
-            </span>
-          </div>
-          {/* KPI 2 */}
-          <div className='flex flex-col gap-0.5 rounded-xl border border-gray-3/20 bg-gray-2/40 p-3 shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)] transition-all hover:bg-gray-2/65'>
-            <span className='font-poppins text-16 leading-tight font-extrabold text-gray-13'>
-              $343k
-            </span>
-            <span className='text-[10px] font-medium text-gray-10 lowercase'>
-              outstanding
-            </span>
-          </div>
-          {/* KPI 3 */}
-          <div className='flex flex-col gap-0.5 rounded-xl border border-gray-3/20 bg-gray-2/40 p-3 shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)] transition-all hover:bg-gray-2/65'>
-            <span className='font-poppins text-16 leading-tight font-extrabold text-gray-13'>
-              4.2d
-            </span>
-            <span className='text-[10px] font-medium text-gray-10 lowercase'>
-              avg processing
-            </span>
-          </div>
-          {/* KPI 4 */}
-          <div className='flex flex-col gap-0.5 rounded-xl border border-gray-3/20 bg-gray-2/40 p-3 shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)] transition-all hover:bg-gray-2/65'>
-            <span className='font-poppins text-16 leading-tight font-extrabold text-gray-13'>
-              98.1%
-            </span>
-            <span className='text-[10px] font-medium text-gray-10 lowercase'>
-              on-time rate
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-const DashboardPage = () => {
-  const [selectedTimeframe, setSelectedTimeframe] = React.useState('This Month')
-  const [selectedSupplier, setSelectedSupplier] =
-    React.useState('All Suppliers')
-  const [selectedStatus, setSelectedStatus] = React.useState('All Statuses')
-  const [selectedCurrency, setSelectedCurrency] =
-    React.useState('All Currencies')
-
-  const [activeDropdown, setActiveDropdown] = React.useState<string | null>(
-    null,
-  )
-
-  React.useEffect(() => {
-    const handleOutsideClick = () => {
-      setActiveDropdown(null)
-    }
-    document.addEventListener('click', handleOutsideClick)
-    return () => {
-      document.removeEventListener('click', handleOutsideClick)
-    }
-  }, [])
-
-  const timeframeOptions = [
-    'This Month',
-    'Last Month',
-    'This Quarter',
-    'This Year',
-  ]
-  const supplierOptions = [
-    'All Suppliers',
-    'Global Freight',
-    'TechParts Ltd',
-    'Office Hub',
-  ]
-  const statusOptions = [
-    'All Statuses',
-    'Matched',
-    'Pending',
-    'Exception',
-    'Posted',
-  ]
-  const currencyOptions = ['All Currencies', 'USD', 'EUR', 'INR', 'GBP']
-
-  return (
-    <>
-      <AnimateSlideUp delay={0.1}>{/* <Header /> */}</AnimateSlideUp>
-      <AnimateFadeIn
-        className='bg-gray-50/50 scrollbar relative flex min-h-0 flex-1 flex-col overflow-y-auto p-6'
-        delay={0.2}
-      >
-        {/* AP Setup Callout Banner */}
-        <div className='animate-in fade-in slide-in-from-top-4 mb-6 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-[var(--gray-3)] bg-white px-6 py-4 shadow-sm duration-300'>
-          <div className='flex items-center gap-3'>
-            <div className='flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--primary-2)] text-[var(--primary-9)]'>
-              <Bot className='h-4.5 w-4.5' />
-            </div>
-            <div>
-              <h5 className='text-14 font-semibold text-[var(--gray-13)]'>
-                Accounts Payable Automation
-              </h5>
-              <p className='text-12 text-[var(--gray-9)]'>
-                Complete setup to start your AP automation.
-              </p>
-            </div>
-          </div>
-          <button
-            className='inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-[var(--primary-9)] px-4 py-2 text-13 font-semibold text-white shadow-sm transition-all hover:bg-[var(--primary-10)] hover:shadow-md active:scale-95'
-            type='button'
-            onClick={() => {
-              setupStore.getState().setisApSetUpCompleted(false)
-              setupStore.getState().setIsSetupStarted(true)
-              setupStore.getState().setStep(0)
-            }}
-          >
-            Get Started
-            <ArrowRight className='h-4 w-4' />
-          </button>
-        </div>
-
-        {/* Filters Row */}
-        <div className='animate-in fade-in slide-in-from-left-4 mb-4 flex flex-wrap items-center justify-between gap-4 duration-300'>
-          <div className='flex flex-wrap items-center gap-2'>
-            <span className='text-gray-400 text-[12px] font-medium'>
-              Filters:
-            </span>
-            <FilterDropdown
-              icon={<Calendar />}
-              isOpen={activeDropdown === 'timeframe'}
-              label='This Month'
-              options={timeframeOptions}
-              selectedValue={selectedTimeframe}
-              onSelect={setSelectedTimeframe}
-              onToggle={() =>
-                setActiveDropdown(
-                  activeDropdown === 'timeframe' ? null : 'timeframe',
-                )
-              }
-            />
-            <FilterDropdown
-              icon={<Building2 />}
-              isOpen={activeDropdown === 'supplier'}
-              label='All Suppliers'
-              options={supplierOptions}
-              selectedValue={selectedSupplier}
-              onSelect={setSelectedSupplier}
-              onToggle={() =>
-                setActiveDropdown(
-                  activeDropdown === 'supplier' ? null : 'supplier',
-                )
-              }
-            />
-            <FilterDropdown
-              icon={<ClipboardList />}
-              isOpen={activeDropdown === 'status'}
-              label='All Statuses'
-              options={statusOptions}
-              selectedValue={selectedStatus}
-              onSelect={setSelectedStatus}
-              onToggle={() =>
-                setActiveDropdown(activeDropdown === 'status' ? null : 'status')
-              }
-            />
-            <FilterDropdown
-              icon={<DollarSign />}
-              isOpen={activeDropdown === 'currency'}
-              label='All Currencies'
-              options={currencyOptions}
-              selectedValue={selectedCurrency}
-              onSelect={setSelectedCurrency}
-              onToggle={() =>
-                setActiveDropdown(
-                  activeDropdown === 'currency' ? null : 'currency',
-                )
-              }
-            />
-          </div>
-          <div className='relative'>
-            <Search className='absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-[#A142F4]' />
-            <input
-              className='text-gray-600 placeholder:text-gray-400 hover:bg-opacity-80 w-60 rounded-full border border-gray-3 bg-white py-1.5 pr-4 pl-8 text-[12px] shadow-sm transition-all outline-none focus:border-[#A142F4] focus:ring-1 focus:ring-[#A142F4]'
-              placeholder='Search invoice, supplier, PO...'
-              type='text'
-            />
-          </div>
-        </div>
-
-        {/* Metrics Cards Row */}
-        {/* <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <MetricCard
-            title="Total Invoices"
-            value="4,234"
-            trend="↑ 12.4% vs last month"
-            colorTheme="orange"
-            icon={FileText}
-          />
-          <MetricCard
-            title="Matched & Posted"
-            value="3,914"
-            trend="81.1% rate"
-            colorTheme="green"
-            icon={CheckCircle}
-          />
-          <MetricCard
-            title="Pending Approval"
-            value="247"
-            trend="12 SLA breach"
-            colorTheme="orange"
-            icon={Clock}
-          />
-          <MetricCard
-            title="Exceptions"
-            value="38"
-            trend="3 new today"
-            colorTheme="orange"
-            icon={AlertTriangle}
-          />
-          <MetricCard
-            title="Duplicates"
-            value="9"
-            trend="$84K blocked"
-            colorTheme="red"
-            icon={StickyNote}
-          />
-          <MetricCard
-            title="Total Value"
-            value="$42.3M"
-            trend="8.7% vs last"
-            colorTheme="purple"
-            icon={DollarSign}
-          />
-        </div> */}
-        <Overview />
-        <div
-          className='animate-in fade-in slide-in-from-bottom-4 mt-5 grid grid-cols-12 gap-4 duration-500'
-          style={{ animationDelay: '150ms', animationFillMode: 'both' }}
-        >
-          <TopSuppliersCard />
-          {/* <InvoiceTrendCard /> */}
-          <InvoiceAgingCard />
-          <SupplierRiskCard />
-          <CategoryWiseInvoiceDistributionCard />
-          {/* <RiskSpendingCard /> */}
-          {/* <ExceptionsActionCenter /> */}
-
-          <PaymentCalendarCard />
-        </div>
-      </AnimateFadeIn>
-    </>
-  )
-}
-
-DashboardPage.displayName = 'DashboardPage'
-export default DashboardPage

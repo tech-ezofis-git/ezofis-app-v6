@@ -4,6 +4,7 @@ import formApi from '@/api/form/form'
 import Badge from '@/components/base/Badge'
 import Icon from '@/components/base/icon/Icon'
 import Title from '@/components/base/Title'
+import useDashboardStore from '@/pages/dashboard/stores/useDashboardStore'
 import requestStore from '@/pages/requests/stores/useRequestStore'
 import useWorkflowStore from '@/pages/workflows/stores/useWorkflowStore'
 
@@ -12,6 +13,7 @@ const PageTitle = () => {
   const { closeRequest, isRequestOpen, requestListTab, selectedWorkflow } =
     requestStore((state) => state)
   const { closeBuilder, isBuilderOpen } = useWorkflowStore((state) => state)
+  const { role, setRole } = useDashboardStore()
 
   const current = matches[matches.length - 1]
   const isFormEntriesRoute = current?.routeId === '/_app/forms_/$formId/entries'
@@ -71,7 +73,31 @@ const PageTitle = () => {
 
     return (
       <div className='flex items-center gap-4'>
-        <Title level={3} title={pageTitle} />
+        <span className='font-serif text-19 font-bold tracking-tight text-black dark:text-white'>
+          {pageTitle}
+        </span>
+        {pageTitle === 'Dashboard' && (
+          <div className='flex gap-0.5 rounded-lg border border-border-default bg-gray-2 p-1 dark:bg-gray-12'>
+            <button
+              className={`cursor-pointer rounded-md px-3.5 py-1 text-12 font-semibold transition-all duration-150 ${role === 'management'
+                ? 'bg-primary-9 text-white shadow-sm'
+                : 'text-gray-11 hover:text-gray-13 hover:bg-gray-3 dark:hover:bg-gray-10'
+                }`}
+              onClick={() => setRole('management')}
+            >
+              Management
+            </button>
+            <button
+              className={`cursor-pointer rounded-md px-3.5 py-1 text-12 font-semibold transition-all duration-150 ${role === 'ap'
+                ? 'bg-primary-9 text-white shadow-sm'
+                : 'text-gray-11 hover:text-gray-13 hover:bg-gray-3 dark:hover:bg-gray-10'
+                }`}
+              onClick={() => setRole('ap')}
+            >
+              AP Team
+            </button>
+          </div>
+        )}
       </div>
     )
   }

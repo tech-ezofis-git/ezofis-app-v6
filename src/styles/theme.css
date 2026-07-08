@@ -307,4 +307,5 @@
   --color-warning-main: var(--warning-main);
   --color-success-main: var(--success-main);
   --color-info-main: var(--info-main);
+  --color-bg-dashboard: var(--bg-dashboard);
 }
