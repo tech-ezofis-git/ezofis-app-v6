@@ -1,12 +1,14 @@
 import Icon from '@/components/base/icon/Icon'
-import showToast from '@/components/base/toast/showToast'
+import useRequestDemoStore from '@/layouts/app/stores/useRequestDemoStore'
+import useSidebarStore from '@/layouts/app/stores/useSidebarStore'
 
 const SidebarCTA = () => {
+  const openDemoForm = useRequestDemoStore((s) => s.openDemoForm)
+  const closeSidebar = useSidebarStore((s) => s.closeSidebar)
+
   const handleRequestDemo = () => {
-    showToast({
-      message: 'Demo requested successfully.',
-      variant: 'success',
-    })
+    openDemoForm()
+    closeSidebar()
   }
 
   return (

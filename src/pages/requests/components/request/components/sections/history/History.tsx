@@ -427,7 +427,7 @@ export default function History({
                   <>
                     <span className='text-gray-6'>·</span>
                     <span className='inline-flex items-center gap-1 rounded bg-[var(--primary-2)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--primary-11)]'>
-                      <Icon className='size-3' name='tabler:arrow-right' />
+                      <Icon className='size-3' name='tabler:clock' />
                       <span>{durationText}</span>
                     </span>
                   </>

@@ -1,4 +1,4 @@
-import { SpecialZoomLevel, Viewer, Worker } from '@react-pdf-viewer/core'
+import { Viewer, Worker } from '@react-pdf-viewer/core'
 import { searchPlugin } from '@react-pdf-viewer/search'
 import {
   Briefcase,
@@ -17,7 +17,7 @@ import {
   Wallet,
   Wand2,
 } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { type CSSProperties, useEffect, useMemo, useRef, useState } from 'react'
 import fileApi from '@/api/file/file'
 import BarLoader from '@/components/base/BarLoader'
 import Icon from '@/components/base/icon/Icon'
@@ -161,6 +161,9 @@ const getRawVal = (obj: any, pathKey: string) => {
 const getLineItemAmount = (item: any): any => {
   return (
     item.Amount?.['Invoice Value'] ??
+    item['Line Amount']?.['Invoice Value'] ??
+    item['line amount'] ??
+    item.LineAmount ??
     item.total ??
     item.amount ??
     item.line_amount ??
@@ -170,7 +173,16 @@ const getLineItemAmount = (item: any): any => {
 }
 
 const FIELD_KEYS_MAP: Record<string, string[]> = {
-  amount: ['Amount', 'total', 'amount', 'line_amount', 'lineAmount'],
+  amount: [
+    'Amount',
+    'Line Amount',
+    'line amount',
+    'LineAmount',
+    'total',
+    'amount',
+    'line_amount',
+    'lineAmount',
+  ],
   description: ['Description', 'description', 'item_no', 'itemNo'],
   price: ['Price', 'rate', 'unit_price', 'price'],
   quantity: ['Quantity', 'quantity'],
@@ -228,6 +240,9 @@ const normalizeExtractedLineItem = (item: any) => {
 
   const amtVal = getFieldValueWithFallback(normalized, [
     'Amount',
+    'Line Amount',
+    'line amount',
+    'LineAmount',
     'total',
     'amount',
     'line_amount',
@@ -264,6 +279,12 @@ const recalculateItemAmount = (item: any) => {
     const formattedAmount = calculatedAmount.toFixed(2)
     if ('Amount' in item)
       updateValueInStructure(item, 'Amount', formattedAmount)
+    if ('Line Amount' in item)
+      updateValueInStructure(item, 'Line Amount', formattedAmount)
+    if ('line amount' in item)
+      updateValueInStructure(item, 'line amount', formattedAmount)
+    if ('LineAmount' in item)
+      updateValueInStructure(item, 'LineAmount', formattedAmount)
     if ('total' in item) updateValueInStructure(item, 'total', formattedAmount)
     if ('amount' in item)
       updateValueInStructure(item, 'amount', formattedAmount)
@@ -530,7 +551,7 @@ const extractDueDate = (row: any, agentData: any, formModel?: any): string => {
           d.setDate(d.getDate() + days)
           val = d.toISOString().split('T')[0]
         }
-      } catch (e) {}
+      } catch (e) { }
     }
   }
 
@@ -858,9 +879,9 @@ const FormCard = ({
     const selectedOption =
       typeof localValue === 'string' && localValue !== '-'
         ? options.find(
-            (opt: any) =>
-              String(opt.id).toLowerCase() === localValue.toLowerCase(),
-          ) || (localValue ? { id: localValue, name: localValue } : null)
+          (opt: any) =>
+            String(opt.id).toLowerCase() === localValue.toLowerCase(),
+        ) || (localValue ? { id: localValue, name: localValue } : null)
         : null
 
     inputElement = (
@@ -992,7 +1013,7 @@ const FormCard = ({
               value === null ||
               value === undefined ||
               value === '') &&
-              'font-medium text-[var(--gray-9)]',
+            'font-medium text-[var(--gray-9)]',
           )}
         >
           {value === null || value === undefined || value === '' ? '-' : value}
@@ -1034,6 +1055,76 @@ const SummarySkeleton = () => (
 // --- Main App ---
 
 const skeletonRows = ['skeleton-row-0', 'skeleton-row-1', 'skeleton-row-2']
+const LINE_ITEM_LEFT_WIDTHS = [84, 128, 176]
+const LINE_ITEM_AMOUNT_WIDTH = 140
+const LINE_ITEM_SCORE_WIDTH = 100
+const LINE_ITEM_ACTION_WIDTH = 44
+const LINE_ITEM_DEFAULT_WIDTH = 120
+
+const getStickyLeftOffset = (index: number) =>
+  LINE_ITEM_LEFT_WIDTHS.slice(0, index).reduce((sum, width) => sum + width, 0)
+
+const getLineItemColumnWidth = (index: number, isNumeric = false) =>
+  LINE_ITEM_LEFT_WIDTHS[index] || (isNumeric ? 140 : LINE_ITEM_DEFAULT_WIDTH)
+
+const getLineItemCellStyle = (
+  index: number,
+  isNumeric = false,
+): CSSProperties => {
+  const width = getLineItemColumnWidth(index, isNumeric)
+  const style: CSSProperties = { maxWidth: width, minWidth: width, width }
+
+  if (index < 3) {
+    style.left = getStickyLeftOffset(index)
+  }
+
+  return style
+}
+
+const getLineItemStickyClass = (
+  index: number,
+  bgClass = 'bg-surface',
+): string =>
+  index < 3
+    ? cn(
+      'sticky z-20 before:absolute before:top-0 before:right-0 before:h-full before:w-px before:bg-[var(--gray-3)]',
+      bgClass,
+    )
+    : ''
+
+const getRightStickyStyle = (right: number, width: number): CSSProperties => ({
+  maxWidth: width,
+  minWidth: width,
+  right,
+  width,
+})
+
+const isLineItemAmountColumn = (key: string) => {
+  const normalizedKey = key.toLowerCase().replace(/[\s_-]+/g, '')
+  return (
+    normalizedKey === 'lineamount' ||
+    normalizedKey === 'amount' ||
+    normalizedKey === 'totalamount'
+  )
+}
+
+const getPinnedAmountStyle = (): CSSProperties =>
+  getRightStickyStyle(
+    LINE_ITEM_ACTION_WIDTH + LINE_ITEM_SCORE_WIDTH,
+    LINE_ITEM_AMOUNT_WIDTH,
+  )
+
+const getPinnedAmountClass = (bgClass = 'bg-surface') =>
+  cn(
+    'sticky z-20 before:absolute before:top-0 before:left-0 before:h-full before:w-px before:bg-[var(--gray-3)]',
+    bgClass,
+  )
+
+const getLineItemTextClass = (isNumeric = false) =>
+  cn(
+    'block w-full overflow-hidden text-ellipsis whitespace-nowrap',
+    isNumeric && 'text-right',
+  )
 
 const formatValueToTwoDecimals = (val: any) => {
   if (val === undefined || val === null || val === '') return ''
@@ -1205,9 +1296,9 @@ const Overview = (props: any) => {
   const resolvedInstanceId = useMemo(() => {
     return String(
       selectedItem?.workflowInstanceId ||
-        selectedItem?.instanceId ||
-        processId ||
-        '',
+      selectedItem?.instanceId ||
+      processId ||
+      '',
     )
   }, [selectedItem, processId])
 
@@ -1711,6 +1802,10 @@ const Overview = (props: any) => {
   }, [rawLineItems])
 
   const formatHeaderLabel = (key: string) => {
+    if (isLineItemAmountColumn(key)) {
+      return 'Total Amount'
+    }
+
     return key
       .replace(/[_-]+/g, ' ')
       .trim()
@@ -1734,11 +1829,11 @@ const Overview = (props: any) => {
       return items.map(({ _id, ...rest }) => rest)
     }
     const sanitized = sanitizeItems(updatedItems)
-      // const newGrandTotal = sanitized.reduce((sum: number, it: any) => {
-      //   const val = getLineItemAmount(it)
-      //   const num = Number.parseFloat(String(val).replace(/[^0-9.-]+/g, ''))
-      //   return sum + (Number.isNaN(num) ? 0 : num)
-      // }, 0)
+    // const newGrandTotal = sanitized.reduce((sum: number, it: any) => {
+    //   const val = getLineItemAmount(it)
+    //   const num = Number.parseFloat(String(val).replace(/[^0-9.-]+/g, ''))
+    //   return sum + (Number.isNaN(num) ? 0 : num)
+    // }, 0)
 
     setFormModel?.((prevForm: any) => {
       const nextForm = { ...prevForm }
@@ -1903,18 +1998,44 @@ const Overview = (props: any) => {
     [],
   )
 
+  const requestFileKey = useMemo(
+    () =>
+      [
+        selectedItem?.processId,
+        selectedItem?.id,
+        selectedItem?.transactionId,
+        selectedItem?.itemId,
+        repositoryId,
+      ]
+        .filter(Boolean)
+        .join(':'),
+    [repositoryId, selectedItem],
+  )
+
+  const zoomTo = (nextScale: number) => {
+    const boundedScale = Math.min(
+      1.5,
+      Math.max(0.75, Number(nextScale.toFixed(2))),
+    )
+    setScale(boundedScale)
+    viewerRef.current?.zoom(boundedScale)
+  }
+
   useEffect(() => {
     // Reset viewer state when request changes
     setSelectedFile(null)
     setPreviewUrl(null)
+    setFileType(null)
+    setScale(1)
+    setIsViewerLoading(false)
     lastFetchedRef.current = null
-  }, [processId, transactionId])
+  }, [requestFileKey])
 
   useEffect(() => {
     if (attachmentData && attachmentData.length > 0 && !selectedFile) {
       setSelectedFile(attachmentData.at(-1))
     }
-  }, [attachmentData, selectedFile])
+  }, [attachmentData, requestFileKey, selectedFile])
 
   useEffect(() => {
     const el = viewerContainerRef.current
@@ -1961,9 +2082,9 @@ const Overview = (props: any) => {
 
       const repoId = String(
         selectedFile?.repositoryId ||
-          selectedItem?.repositoryId ||
-          repositoryId ||
-          '',
+        selectedItem?.repositoryId ||
+        repositoryId ||
+        '',
       ).trim()
       const itemId = String(
         selectedFile?.itemId || selectedFile?.id || selectedItem?.itemId || '',
@@ -2065,14 +2186,16 @@ const Overview = (props: any) => {
             ref={pdfViewerWrapperRef}
           >
             <Viewer
-              defaultScale={SpecialZoomLevel.PageWidth}
+              defaultScale={1}
               fileUrl={previewUrl}
+              key={`${requestFileKey}-${previewUrl}`}
               plugins={[toolbarPluginInstance, searchPluginInstance]}
             />
             <div className='absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 items-center gap-4 rounded-xl border border-[var(--gray-3)] bg-surface/90 px-4 py-2 opacity-0 shadow-2xl backdrop-blur-sm transition-all duration-300 group-hover:opacity-100'>
               <button
-                className='p-1 hover:text-[var(--primary-9)]'
-                onClick={() => viewerRef.current?.zoom(scale - 0.1)}
+                className='p-1 hover:text-[var(--primary-9)] disabled:cursor-not-allowed disabled:opacity-40'
+                disabled={scale <= 0.75}
+                onClick={() => zoomTo(scale - 0.1)}
               >
                 <Icon className='size-5' name='lucide:zoom-out' />
               </button>
@@ -2080,8 +2203,9 @@ const Overview = (props: any) => {
                 {Math.round(scale * 100)}%
               </span>
               <button
-                className='p-1 hover:text-[var(--primary-9)]'
-                onClick={() => viewerRef.current?.zoom(scale + 0.1)}
+                className='p-1 hover:text-[var(--primary-9)] disabled:cursor-not-allowed disabled:opacity-40'
+                disabled={scale >= 1.5}
+                onClick={() => zoomTo(scale + 0.1)}
               >
                 <Icon className='size-5' name='lucide:zoom-in' />
               </button>
@@ -2214,10 +2338,10 @@ const Overview = (props: any) => {
                 {eligibleFields.filter((key) =>
                   key.toLowerCase().includes(searchFilter.toLowerCase()),
                 ).length === 0 && (
-                  <div className='px-3 py-2 text-center text-xs font-medium text-[var(--gray-9)]'>
-                    No matching fields
-                  </div>
-                )}
+                    <div className='px-3 py-2 text-center text-xs font-medium text-[var(--gray-9)]'>
+                      No matching fields
+                    </div>
+                  )}
               </div>
             </menu>
           )}
@@ -2237,9 +2361,9 @@ const Overview = (props: any) => {
                       analysisCardCount <= 3 && 'grid-cols-1 sm:grid-cols-3',
                       analysisCardCount === 4 && 'grid-cols-2 lg:grid-cols-4',
                       analysisCardCount === 5 &&
-                        'grid-cols-2 lg:grid-cols-3 xl:grid-cols-5',
+                      'grid-cols-2 lg:grid-cols-3 xl:grid-cols-5',
                       analysisCardCount >= 6 &&
-                        'grid-cols-2 lg:grid-cols-3 xl:grid-cols-6',
+                      'grid-cols-2 lg:grid-cols-3 xl:grid-cols-6',
                     )}
                   >
                     {(() => {
@@ -2397,7 +2521,7 @@ const Overview = (props: any) => {
                       />
                     )}
                     {showBackOrder &&
-                    backOrderDisplay?.status === 'Detected' ? (
+                      backOrderDisplay?.status === 'Detected' ? (
                       <AnalysisCard
                         align='right'
                         icon={PackageX}
@@ -2471,7 +2595,11 @@ const Overview = (props: any) => {
                             id: 'summary',
                             label: 'Extracted Data',
                           },
-                          { icon: Layers, id: 'line_items', label: 'Line Items' },
+                          {
+                            icon: Layers,
+                            id: 'line_items',
+                            label: 'Line Items',
+                          },
                           {
                             icon: Paperclip,
                             id: 'attachments',
@@ -2482,7 +2610,11 @@ const Overview = (props: any) => {
                             id: 'comments',
                             label: 'Comments',
                           },
-                          { icon: HistoryIcon, id: 'history', label: 'History' },
+                          {
+                            icon: HistoryIcon,
+                            id: 'history',
+                            label: 'History',
+                          },
                         ].map((tab) => (
                           <button
                             key={tab.id}
@@ -2531,7 +2663,7 @@ const Overview = (props: any) => {
                         ))}
                       </div>
                       {onOpenPlayground && (
-                        <div className='pb-2.5 animate-in fade-in duration-300'>
+                        <div className='animate-in fade-in pb-2.5 duration-300'>
                           <PaidActionApiTrigger
                             action={paidAction}
                             onTrigger={onOpenPlayground}
@@ -2796,16 +2928,16 @@ const Overview = (props: any) => {
                                 </div>
                                 {(agentData?.gl_validation?.reason ||
                                   agentData?.gl_matching?.reason) && (
-                                  <div className='mt-1 flex flex-col gap-1 border-t border-[var(--gray-3)] pt-2'>
-                                    <span className='font-semibold text-[var(--gray-11)]'>
-                                      Matching Rationale
-                                    </span>
-                                    <span className='leading-normal font-medium text-[var(--gray-12)]'>
-                                      {agentData?.gl_validation?.reason ||
-                                        agentData?.gl_matching?.reason}
-                                    </span>
-                                  </div>
-                                )}
+                                    <div className='mt-1 flex flex-col gap-1 border-t border-[var(--gray-3)] pt-2'>
+                                      <span className='font-semibold text-[var(--gray-11)]'>
+                                        Matching Rationale
+                                      </span>
+                                      <span className='leading-normal font-medium text-[var(--gray-12)]'>
+                                        {agentData?.gl_validation?.reason ||
+                                          agentData?.gl_matching?.reason}
+                                      </span>
+                                    </div>
+                                  )}
                               </div>
                             </div>
                             <div className='space-y-4'>
@@ -2922,18 +3054,18 @@ const Overview = (props: any) => {
                                 )}
                                 {agentData?.matter_validation
                                   ?.validation_details?.reason && (
-                                  <div className='mt-1 flex flex-col gap-1 border-t border-[var(--gray-3)] pt-2'>
-                                    <span className='font-semibold text-[var(--gray-11)]'>
-                                      Compliance Note
-                                    </span>
-                                    <span className='text-[11px] leading-normal font-medium text-[var(--gray-12)]'>
-                                      {
-                                        agentData.matter_validation
-                                          .validation_details.reason
-                                      }
-                                    </span>
-                                  </div>
-                                )}
+                                    <div className='mt-1 flex flex-col gap-1 border-t border-[var(--gray-3)] pt-2'>
+                                      <span className='font-semibold text-[var(--gray-11)]'>
+                                        Compliance Note
+                                      </span>
+                                      <span className='text-[11px] leading-normal font-medium text-[var(--gray-12)]'>
+                                        {
+                                          agentData.matter_validation
+                                            .validation_details.reason
+                                        }
+                                      </span>
+                                    </div>
+                                  )}
                               </div>
                             </div>
                             <div className='space-y-4'>
@@ -2987,8 +3119,8 @@ const Overview = (props: any) => {
                                   activeBackOrderTab === 'current'
                                     ? backOrder?.recommendation
                                     : MOCK_PREVIOUS_BACKORDERS[
-                                        activeBackOrderTab
-                                      ]?.recommendation
+                                      activeBackOrderTab
+                                    ]?.recommendation
                                 const recMeta =
                                   getRecommendationMeta(currentRec)
                                 return (
@@ -3048,8 +3180,8 @@ const Overview = (props: any) => {
                               activeBackOrderTab === 'current'
                                 ? backOrder
                                 : MOCK_PREVIOUS_BACKORDERS[
-                                    activeBackOrderTab
-                                  ] || {}
+                                activeBackOrderTab
+                                ] || {}
                             const items = currentData?.missing_qty_by_item || []
 
                             const currencySymbol =
@@ -3121,8 +3253,8 @@ const Overview = (props: any) => {
                                 activeBackOrderTab === 'current'
                                   ? backOrder
                                   : MOCK_PREVIOUS_BACKORDERS[
-                                      activeBackOrderTab
-                                    ] || {}
+                                  activeBackOrderTab
+                                  ] || {}
 
                               return (
                                 <div className='animate-in fade-in slide-in-from-top-2 rounded-xl border border-[var(--orange-3)] bg-[var(--orange-1)]/30 p-4 shadow-xs duration-300'>
@@ -3154,8 +3286,8 @@ const Overview = (props: any) => {
                                 activeBackOrderTab === 'current'
                                   ? backOrder
                                   : MOCK_PREVIOUS_BACKORDERS[
-                                      activeBackOrderTab
-                                    ] || {}
+                                  activeBackOrderTab
+                                  ] || {}
 
                               const items =
                                 currentData?.missing_qty_by_item || []
@@ -3323,183 +3455,272 @@ const Overview = (props: any) => {
                       {activeTab === 'summary' && (
                         <div className='grid flex-1 grid-cols-2 gap-x-4 gap-y-2 overflow-y-auto p-4'>
                           {isCurrentlyProcessing &&
-                          (!formModel ||
-                            Object.keys(formModel).length === 0 ||
-                            !Object.values(formModel).some(
-                              hasMeaningfulScalarValue,
-                            ))
+                            (!formModel ||
+                              Object.keys(formModel).length === 0 ||
+                              !Object.values(formModel).some(
+                                hasMeaningfulScalarValue,
+                              ))
                             ? Array.from({ length: 8 }).map((_, idx) => {
-                                const labels = [
-                                  'Supplier Name',
-                                  'Invoice Number',
-                                  'Invoice Date',
-                                  'Invoice Amount',
-                                  'PO Number',
-                                  'Payment Terms',
-                                  'Currency',
-                                  'Tax Amount',
-                                ]
-                                const icons = [
-                                  Store,
-                                  ListFilter,
-                                  HistoryIcon,
-                                  Wallet,
-                                  Paperclip,
-                                  HistoryIcon,
-                                  CreditCard,
-                                  Wallet,
-                                ]
-                                const label = labels[idx]
-                                const IconComp = icons[idx]
-                                return (
-                                  <div
-                                    className='flex w-full items-start gap-3 rounded-lg border border-transparent p-3 text-left'
-                                    key={label}
-                                  >
-                                    <div className='mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--gray-2)] text-[var(--gray-11)]'>
-                                      <IconComp className='h-3.5 w-3.5' />
-                                    </div>
-                                    <div className='min-w-0 flex-1 space-y-1.5'>
-                                      <p className='text-[10px] leading-none font-semibold text-[var(--gray-11)]'>
-                                        {label}
-                                      </p>
-                                      <div className='h-4 w-28 animate-pulse rounded bg-[var(--gray-3)]' />
-                                    </div>
+                              const labels = [
+                                'Supplier Name',
+                                'Invoice Number',
+                                'Invoice Date',
+                                'Invoice Amount',
+                                'PO Number',
+                                'Payment Terms',
+                                'Currency',
+                                'Tax Amount',
+                              ]
+                              const icons = [
+                                Store,
+                                ListFilter,
+                                HistoryIcon,
+                                Wallet,
+                                Paperclip,
+                                HistoryIcon,
+                                CreditCard,
+                                Wallet,
+                              ]
+                              const label = labels[idx]
+                              const IconComp = icons[idx]
+                              return (
+                                <div
+                                  className='flex w-full items-start gap-3 rounded-lg border border-transparent p-3 text-left'
+                                  key={label}
+                                >
+                                  <div className='mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--gray-2)] text-[var(--gray-11)]'>
+                                    <IconComp className='h-3.5 w-3.5' />
                                   </div>
+                                  <div className='min-w-0 flex-1 space-y-1.5'>
+                                    <p className='text-[10px] leading-none font-semibold text-[var(--gray-11)]'>
+                                      {label}
+                                    </p>
+                                    <div className='h-4 w-28 animate-pulse rounded bg-[var(--gray-3)]' />
+                                  </div>
+                                </div>
+                              )
+                            })
+                            : Object.entries(formModel || {})
+                              .filter(([key, val]) => {
+                                if (typeof val === 'object' && val !== null) {
+                                  if ('Invoice Value' in val) {
+                                    return true
+                                  }
+                                  return false
+                                }
+                                if (typeof val === 'string') {
+                                  const trimmed = val.trim()
+                                  if (
+                                    trimmed.startsWith('[') &&
+                                    trimmed.endsWith(']')
+                                  )
+                                    return false
+                                  if (
+                                    trimmed.startsWith('{') &&
+                                    trimmed.endsWith('}')
+                                  )
+                                    return false
+                                }
+
+                                if (
+                                  !allowedLabels ||
+                                  allowedLabels.size === 0
+                                ) {
+                                  return hasMeaningfulScalarValue(val)
+                                }
+
+                                return (
+                                  allowedLabels.has(key) ||
+                                  hasMeaningfulScalarValue(val)
                                 )
                               })
-                            : Object.entries(formModel || {})
-                                .filter(([key, val]) => {
-                                  if (typeof val === 'object' && val !== null) {
-                                    if ('Invoice Value' in val) {
-                                      return true
-                                    }
-                                    return false
-                                  }
-                                  if (typeof val === 'string') {
-                                    const trimmed = val.trim()
-                                    if (
-                                      trimmed.startsWith('[') &&
-                                      trimmed.endsWith(']')
-                                    )
-                                      return false
-                                    if (
-                                      trimmed.startsWith('{') &&
-                                      trimmed.endsWith('}')
-                                    )
-                                      return false
-                                  }
-
-                                  if (
-                                    !allowedLabels ||
-                                    allowedLabels.size === 0
-                                  ) {
-                                    return hasMeaningfulScalarValue(val)
-                                  }
-
-                                  return (
-                                    allowedLabels.has(key) ||
-                                    hasMeaningfulScalarValue(val)
-                                  )
-                                })
-                                .map(([key, val]) => {
-                                  const rawVal =
-                                    val &&
+                              .map(([key, val]) => {
+                                const rawVal =
+                                  val &&
                                     typeof val === 'object' &&
                                     'Invoice Value' in val
-                                      ? val['Invoice Value']
-                                      : val
+                                    ? val['Invoice Value']
+                                    : val
 
-                                  const fieldType = getFieldType(key)
-                                  const displayValue =
-                                    fieldType === 'date' &&
+                                const fieldType = getFieldType(key)
+                                const displayValue =
+                                  fieldType === 'date' &&
                                     (rawVal === null ||
                                       rawVal === undefined ||
                                       rawVal === '' ||
                                       rawVal === '-')
-                                      ? null
-                                      : rawVal || '-'
+                                    ? null
+                                    : rawVal || '-'
 
-                                  return (
-                                    <FormCard
-                                      icon={getFieldIcon(key)}
-                                      key={key}
-                                      label={key}
-                                      options={getOptions(key)}
-                                      score={getFieldScore(key)}
-                                      type={fieldType}
-                                      value={displayValue}
-                                      highlight={
-                                        key.toLowerCase().includes('total') ||
-                                        key.toLowerCase().includes('due')
-                                      }
-                                      onChange={(newVal: string) =>
-                                        handleFieldChange(key, newVal)
-                                      }
-                                      onFocus={(val: any) =>
-                                        handleFieldFocus(val, key)
-                                      }
-                                    />
-                                  )
-                                })}
+                                return (
+                                  <FormCard
+                                    icon={getFieldIcon(key)}
+                                    key={key}
+                                    label={key}
+                                    options={getOptions(key)}
+                                    score={getFieldScore(key)}
+                                    type={fieldType}
+                                    value={displayValue}
+                                    highlight={
+                                      key.toLowerCase().includes('total') ||
+                                      key.toLowerCase().includes('due')
+                                    }
+                                    onChange={(newVal: string) =>
+                                      handleFieldChange(key, newVal)
+                                    }
+                                    onFocus={(val: any) =>
+                                      handleFieldFocus(val, key)
+                                    }
+                                  />
+                                )
+                              })}
                         </div>
                       )}
                       {activeTab === 'line_items' && (
                         <div className='flex-1 overflow-y-auto p-4'>
                           <div className='overflow-x-auto overflow-y-hidden rounded-xl border border-[var(--gray-3)] bg-surface shadow-sm'>
-                            <table className='w-full border-collapse text-left text-xs'>
+                            <table className='min-w-full border-separate border-spacing-0 text-left text-xs'>
                               <thead className='border-b border-[var(--gray-3)] bg-[var(--gray-1)]'>
                                 <tr>
                                   {isDynamicTable ? (
-                                    dynamicColumns.map((colKey) => (
-                                      <th
-                                        key={colKey}
-                                        className={cn(
-                                          'px-3 py-2 text-[11px] font-semibold text-[var(--gray-11)]',
-                                          (colKey
-                                            .toLowerCase()
-                                            .includes('qty') ||
-                                            colKey
-                                              .toLowerCase()
-                                              .includes('quantity') ||
-                                            colKey
-                                              .toLowerCase()
-                                              .includes('rate') ||
-                                            colKey
-                                              .toLowerCase()
-                                              .includes('price') ||
-                                            colKey
-                                              .toLowerCase()
-                                              .includes('amount') ||
-                                            colKey
-                                              .toLowerCase()
-                                              .includes('total')) &&
-                                            'text-right',
-                                        )}
-                                      >
-                                        {formatHeaderLabel(colKey)}
-                                      </th>
-                                    ))
+                                    dynamicColumns.map((colKey, colIndex) => {
+                                      const isNumeric =
+                                        colKey.toLowerCase().includes('qty') ||
+                                        colKey
+                                          .toLowerCase()
+                                          .includes('quantity') ||
+                                        colKey.toLowerCase().includes('rate') ||
+                                        colKey
+                                          .toLowerCase()
+                                          .includes('price') ||
+                                        colKey
+                                          .toLowerCase()
+                                          .includes('amount') ||
+                                        colKey.toLowerCase().includes('total')
+                                      const isAmountColumn =
+                                        isLineItemAmountColumn(colKey)
+
+                                      return (
+                                        <th
+                                          key={colKey}
+                                          className={cn(
+                                            'border-b border-[var(--gray-3)] px-3 py-2 text-[11px] font-semibold whitespace-nowrap text-[var(--gray-11)]',
+                                            isNumeric && 'text-right',
+                                            isAmountColumn && colIndex >= 3
+                                              ? getPinnedAmountClass(
+                                                'bg-[var(--gray-1)]',
+                                              )
+                                              : getLineItemStickyClass(
+                                                colIndex,
+                                                'bg-[var(--gray-1)]',
+                                              ),
+                                          )}
+                                          style={
+                                            isAmountColumn && colIndex >= 3
+                                              ? getPinnedAmountStyle()
+                                              : getLineItemCellStyle(
+                                                colIndex,
+                                                isNumeric,
+                                              )
+                                          }
+                                        >
+                                          <span
+                                            className={getLineItemTextClass(
+                                              isNumeric,
+                                            )}
+                                          >
+                                            {formatHeaderLabel(colKey)}
+                                          </span>
+                                        </th>
+                                      )
+                                    })
                                   ) : (
                                     <>
-                                      <th className='px-3 py-2 text-[11px] font-semibold text-[var(--gray-11)]'>
-                                        Description
+                                      <th
+                                        className={cn(
+                                          'border-b border-[var(--gray-3)] px-3 py-2 text-[11px] font-semibold whitespace-nowrap text-[var(--gray-11)]',
+                                          getLineItemStickyClass(
+                                            0,
+                                            'bg-[var(--gray-1)]',
+                                          ),
+                                        )}
+                                        style={getLineItemCellStyle(0)}
+                                      >
+                                        <span
+                                          className={getLineItemTextClass()}
+                                        >
+                                          Description
+                                        </span>
                                       </th>
-                                      <th className='w-[100px] px-3 py-2 text-right text-[11px] font-semibold text-[var(--gray-11)]'>
-                                        Qty
+                                      <th
+                                        className={cn(
+                                          'border-b border-[var(--gray-3)] px-3 py-2 text-right text-[11px] font-semibold whitespace-nowrap text-[var(--gray-11)]',
+                                          getLineItemStickyClass(
+                                            1,
+                                            'bg-[var(--gray-1)]',
+                                          ),
+                                        )}
+                                        style={getLineItemCellStyle(1, true)}
+                                      >
+                                        <span
+                                          className={getLineItemTextClass(true)}
+                                        >
+                                          Qty
+                                        </span>
                                       </th>
-                                      <th className='w-[140px] px-3 py-2 text-right text-[11px] font-semibold text-[var(--gray-11)]'>
-                                        Rate
+                                      <th
+                                        className={cn(
+                                          'border-b border-[var(--gray-3)] px-3 py-2 text-right text-[11px] font-semibold whitespace-nowrap text-[var(--gray-11)]',
+                                          getLineItemStickyClass(
+                                            2,
+                                            'bg-[var(--gray-1)]',
+                                          ),
+                                        )}
+                                        style={getLineItemCellStyle(2, true)}
+                                      >
+                                        <span
+                                          className={getLineItemTextClass(true)}
+                                        >
+                                          Rate
+                                        </span>
                                       </th>
-                                      <th className='w-[160px] px-3 py-2 text-right text-[11px] font-semibold text-[var(--gray-11)]'>
-                                        Total Amount
+                                      <th
+                                        className={cn(
+                                          'border-b border-[var(--gray-3)] px-3 py-2 text-right text-[11px] font-semibold whitespace-nowrap text-[var(--gray-11)]',
+                                          getPinnedAmountClass(
+                                            'bg-[var(--gray-1)]',
+                                          ),
+                                        )}
+                                        style={getPinnedAmountStyle()}
+                                      >
+                                        <span
+                                          className={getLineItemTextClass(true)}
+                                        >
+                                          Total Amount
+                                        </span>
                                       </th>
                                     </>
                                   )}
-                                  <th className='w-[100px] px-3 py-2 text-right text-[11px] font-semibold text-[var(--gray-11)]'>
-                                    Match Score
+                                  <th
+                                    className='sticky z-20 border-b border-[var(--gray-3)] bg-[var(--gray-1)] px-3 py-2 text-right text-[11px] font-semibold whitespace-nowrap text-[var(--gray-11)] before:absolute before:top-0 before:left-0 before:h-full before:w-px before:bg-[var(--gray-3)]'
+                                    style={getRightStickyStyle(
+                                      LINE_ITEM_ACTION_WIDTH,
+                                      LINE_ITEM_SCORE_WIDTH,
+                                    )}
+                                  >
+                                    <span
+                                      className={getLineItemTextClass(true)}
+                                    >
+                                      Match Score
+                                    </span>
                                   </th>
-                                  <th className='w-[44px] p-1 text-center'>
+                                  <th
+                                    className='sticky z-20 border-b border-[var(--gray-3)] bg-[var(--gray-1)] p-1 text-center'
+                                    style={getRightStickyStyle(
+                                      0,
+                                      LINE_ITEM_ACTION_WIDTH,
+                                    )}
+                                  >
                                     <button
                                       className='inline-flex cursor-pointer items-center justify-center rounded border border-[var(--primary-4)] bg-[var(--primary-2)] p-1 text-[var(--primary-11)] transition-all hover:bg-[var(--primary-3)] hover:text-[var(--primary-12)] active:scale-95'
                                       title='Add New Item'
@@ -3514,37 +3735,55 @@ const Overview = (props: any) => {
                               <tbody className='divide-y divide-[var(--gray-2)]'>
                                 {isCurrentlyProcessing && lineItems.length === 0
                                   ? skeletonRows.map((rowKey) => (
-                                      <tr
-                                        className='group transition-colors'
-                                        key={rowKey}
-                                      >
-                                        {isDynamicTable ? (
-                                          dynamicColumns.map(
-                                            (colKey, index) => (
+                                    <tr
+                                      className='group transition-colors'
+                                      key={rowKey}
+                                    >
+                                      {isDynamicTable ? (
+                                        dynamicColumns.map(
+                                          (colKey, index) => {
+                                            const isNumeric =
+                                              colKey
+                                                .toLowerCase()
+                                                .includes('qty') ||
+                                              colKey
+                                                .toLowerCase()
+                                                .includes('quantity') ||
+                                              colKey
+                                                .toLowerCase()
+                                                .includes('rate') ||
+                                              colKey
+                                                .toLowerCase()
+                                                .includes('price') ||
+                                              colKey
+                                                .toLowerCase()
+                                                .includes('amount') ||
+                                              colKey
+                                                .toLowerCase()
+                                                .includes('total')
+                                            const isAmountColumn =
+                                              isLineItemAmountColumn(colKey)
+
+                                            return (
                                               <td
                                                 key={colKey}
                                                 className={cn(
                                                   'px-3 py-3',
-                                                  (colKey
-                                                    .toLowerCase()
-                                                    .includes('qty') ||
-                                                    colKey
-                                                      .toLowerCase()
-                                                      .includes('quantity') ||
-                                                    colKey
-                                                      .toLowerCase()
-                                                      .includes('rate') ||
-                                                    colKey
-                                                      .toLowerCase()
-                                                      .includes('price') ||
-                                                    colKey
-                                                      .toLowerCase()
-                                                      .includes('amount') ||
-                                                    colKey
-                                                      .toLowerCase()
-                                                      .includes('total')) &&
-                                                    'text-right',
+                                                  isNumeric && 'text-right',
+                                                  isAmountColumn && index >= 3
+                                                    ? getPinnedAmountClass()
+                                                    : getLineItemStickyClass(
+                                                      index,
+                                                    ),
                                                 )}
+                                                style={
+                                                  isAmountColumn && index >= 3
+                                                    ? getPinnedAmountStyle()
+                                                    : getLineItemCellStyle(
+                                                      index,
+                                                      isNumeric,
+                                                    )
+                                                }
                                               >
                                                 <div
                                                   className={cn(
@@ -3555,60 +3794,105 @@ const Overview = (props: any) => {
                                                   )}
                                                 />
                                               </td>
-                                            ),
-                                          )
-                                        ) : (
-                                          <>
-                                            <td className='px-3 py-3'>
-                                              <div className='h-4 w-5/6 animate-pulse rounded bg-[var(--gray-3)]' />
-                                            </td>
-                                            <td className='w-[100px] px-3 py-3'>
-                                              <div className='ml-auto h-4 w-8 animate-pulse rounded bg-[var(--gray-3)]' />
-                                            </td>
-                                            <td className='w-[140px] px-3 py-3'>
-                                              <div className='ml-auto h-4 w-12 animate-pulse rounded bg-[var(--gray-3)]' />
-                                            </td>
-                                            <td className='w-[160px] px-3 py-3'>
-                                              <div className='ml-auto h-4 w-16 animate-pulse rounded bg-[var(--gray-3)]' />
-                                            </td>
-                                          </>
-                                        )}
-                                        <td className='w-[100px] px-3 py-3'>
-                                          <div className='ml-auto h-4 w-12 animate-pulse rounded bg-[var(--gray-3)]' />
-                                        </td>
-                                        <td className='w-[44px]' />
-                                      </tr>
-                                    ))
-                                  : lineItems.map(
-                                      (item: any, index: number) => {
-                                        const matchData =
-                                          agentData?.debug?.[
-                                            'Side-by-side Line Item matching'
-                                          ]?.[index]
-                                        const lineScore =
-                                          matchData?.['Line Score'] ??
-                                          item['Line Score'] ??
-                                          item?.score
-                                        const isMatch =
-                                          (lineScore !== undefined &&
-                                          lineScore !== null
-                                            ? Number(lineScore) >= 90
-                                            : false) || item?.status === 'MATCH'
-
-                                        return (
-                                          <tr
-                                            key={item._id}
+                                            )
+                                          },
+                                        )
+                                      ) : (
+                                        <>
+                                          <td
                                             className={cn(
-                                              'group transition-colors',
-                                              isMatch
-                                                ? 'hover:bg-[var(--gray-1)]'
-                                                : 'bg-[var(--red-1)]/30 hover:bg-[var(--red-1)]/50',
+                                              'px-3 py-3',
+                                              getLineItemStickyClass(0),
+                                            )}
+                                            style={getLineItemCellStyle(0)}
+                                          >
+                                            <div className='h-4 w-5/6 animate-pulse rounded bg-[var(--gray-3)]' />
+                                          </td>
+                                          <td
+                                            className={cn(
+                                              'px-3 py-3',
+                                              getLineItemStickyClass(1),
+                                            )}
+                                            style={getLineItemCellStyle(
+                                              1,
+                                              true,
                                             )}
                                           >
-                                            {isDynamicTable ? (
-                                              dynamicColumns.map((colKey) => {
+                                            <div className='ml-auto h-4 w-8 animate-pulse rounded bg-[var(--gray-3)]' />
+                                          </td>
+                                          <td
+                                            className={cn(
+                                              'px-3 py-3',
+                                              getLineItemStickyClass(2),
+                                            )}
+                                            style={getLineItemCellStyle(
+                                              2,
+                                              true,
+                                            )}
+                                          >
+                                            <div className='ml-auto h-4 w-12 animate-pulse rounded bg-[var(--gray-3)]' />
+                                          </td>
+                                          <td
+                                            className='px-3 py-3'
+                                            style={getLineItemCellStyle(
+                                              3,
+                                              true,
+                                            )}
+                                          >
+                                            <div className='ml-auto h-4 w-16 animate-pulse rounded bg-[var(--gray-3)]' />
+                                          </td>
+                                        </>
+                                      )}
+                                      <td
+                                        className='sticky z-20 bg-surface px-3 py-3 before:absolute before:top-0 before:left-0 before:h-full before:w-px before:bg-[var(--gray-3)]'
+                                        style={getRightStickyStyle(
+                                          LINE_ITEM_ACTION_WIDTH,
+                                          LINE_ITEM_SCORE_WIDTH,
+                                        )}
+                                      >
+                                        <div className='ml-auto h-4 w-12 animate-pulse rounded bg-[var(--gray-3)]' />
+                                      </td>
+                                      <td
+                                        className='sticky z-20 bg-surface'
+                                        style={getRightStickyStyle(
+                                          0,
+                                          LINE_ITEM_ACTION_WIDTH,
+                                        )}
+                                      />
+                                    </tr>
+                                  ))
+                                  : lineItems.map(
+                                    (item: any, index: number) => {
+                                      const matchData =
+                                        agentData?.debug?.[
+                                        'Side-by-side Line Item matching'
+                                        ]?.[index]
+                                      const lineScore =
+                                        matchData?.['Line Score'] ??
+                                        item['Line Score'] ??
+                                        item?.score
+                                      const isMatch =
+                                        (lineScore !== undefined &&
+                                          lineScore !== null
+                                          ? Number(lineScore) >= 90
+                                          : false) || item?.status === 'MATCH'
+
+                                      return (
+                                        <tr
+                                          key={item._id}
+                                          className={cn(
+                                            'group transition-colors',
+                                            isMatch
+                                              ? 'hover:bg-[var(--gray-1)]'
+                                              : 'bg-[var(--red-1)]/30 hover:bg-[var(--red-1)]/50',
+                                          )}
+                                        >
+                                          {isDynamicTable ? (
+                                            dynamicColumns.map(
+                                              (colKey, colIndex) => {
                                                 const cellVal =
-                                                  getRawVal(item, colKey) ?? ''
+                                                  getRawVal(item, colKey) ??
+                                                  ''
                                                 const isNumeric =
                                                   colKey
                                                     .toLowerCase()
@@ -3628,21 +3912,50 @@ const Overview = (props: any) => {
                                                   colKey
                                                     .toLowerCase()
                                                     .includes('total')
+                                                const isAmountColumn =
+                                                  isLineItemAmountColumn(
+                                                    colKey,
+                                                  )
 
                                                 return (
                                                   <td
                                                     key={colKey}
                                                     className={cn(
                                                       'px-2 py-0.5 font-semibold text-[var(--gray-13)]',
-                                                      isNumeric && 'text-right',
+                                                      isNumeric &&
+                                                      'text-right',
+                                                      isAmountColumn &&
+                                                        colIndex >= 3
+                                                        ? getPinnedAmountClass(
+                                                          isMatch
+                                                            ? 'bg-surface'
+                                                            : 'bg-[var(--red-1)]',
+                                                        )
+                                                        : getLineItemStickyClass(
+                                                          colIndex,
+                                                          isMatch
+                                                            ? 'bg-surface'
+                                                            : 'bg-[var(--red-1)]',
+                                                        ),
                                                     )}
+                                                    style={
+                                                      isAmountColumn &&
+                                                        colIndex >= 3
+                                                        ? getPinnedAmountStyle()
+                                                        : getLineItemCellStyle(
+                                                          colIndex,
+                                                          isNumeric,
+                                                        )
+                                                    }
                                                   >
                                                     <div className='group/cell relative'>
                                                       <input
-                                                        title={String(cellVal)}
+                                                        title={String(
+                                                          cellVal,
+                                                        )}
                                                         value={cellVal}
                                                         className={cn(
-                                                          'w-full rounded border-none bg-transparent px-1.5 py-1 text-xs font-semibold transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none',
+                                                          'w-full min-w-0 overflow-hidden rounded border-none bg-transparent px-1.5 py-1 text-xs font-semibold text-ellipsis whitespace-nowrap transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none',
                                                           isNumeric
                                                             ? 'text-right text-[var(--gray-11)]'
                                                             : 'text-[var(--gray-13)]',
@@ -3666,7 +3979,9 @@ const Overview = (props: any) => {
                                                               ) ||
                                                             colKey
                                                               .toLowerCase()
-                                                              .includes('total')
+                                                              .includes(
+                                                                'total',
+                                                              )
                                                           ) {
                                                             const num =
                                                               Number.parseFloat(
@@ -3676,12 +3991,16 @@ const Overview = (props: any) => {
                                                                 ),
                                                               )
                                                             if (
-                                                              !Number.isNaN(num)
+                                                              !Number.isNaN(
+                                                                num,
+                                                              )
                                                             ) {
                                                               handleLineItemChange(
                                                                 index,
                                                                 colKey,
-                                                                num.toFixed(2),
+                                                                num.toFixed(
+                                                                  2,
+                                                                ),
                                                               )
                                                               return
                                                             }
@@ -3707,291 +4026,390 @@ const Overview = (props: any) => {
                                                         }
                                                       />
                                                       {/* Hover tooltip for long values */}
-                                                      {String(cellVal).length >
-                                                        20 && (
-                                                        <div className='animate-in fade-in pointer-events-none absolute bottom-full left-0 z-50 mb-1 hidden max-w-[280px] rounded-lg border border-[var(--gray-3)] bg-surface px-3 py-2 text-xs font-medium break-words whitespace-normal text-[var(--gray-13)] shadow-xl duration-150 group-hover/cell:block'>
-                                                          {String(cellVal)}
-                                                        </div>
-                                                      )}
+                                                      {String(
+                                                        cellVal,
+                                                      ).trim() !== '' && (
+                                                          <div className='animate-in fade-in pointer-events-none absolute bottom-full left-0 z-50 mb-1 hidden max-w-[280px] rounded-lg border border-[var(--gray-3)] bg-surface px-3 py-2 text-xs font-medium break-words whitespace-normal text-[var(--gray-13)] shadow-xl duration-150 group-hover/cell:block'>
+                                                            {String(cellVal)}
+                                                          </div>
+                                                        )}
                                                     </div>
                                                   </td>
                                                 )
-                                              })
-                                            ) : (
-                                              <>
-                                                {/* Description Cell */}
-                                                <td className='px-2 py-0.5 font-semibold text-[var(--gray-13)]'>
-                                                  <input
-                                                    className='w-full rounded border-none bg-transparent px-1.5 py-1 text-xs font-semibold text-[var(--gray-13)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
-                                                    value={
+                                              },
+                                            )
+                                          ) : (
+                                            <>
+                                              {/* Description Cell */}
+                                              <td
+                                                className={cn(
+                                                  'px-2 py-0.5 font-semibold text-[var(--gray-13)]',
+                                                  getLineItemStickyClass(
+                                                    0,
+                                                    isMatch
+                                                      ? 'bg-surface'
+                                                      : 'bg-[var(--red-1)]',
+                                                  ),
+                                                )}
+                                                style={getLineItemCellStyle(
+                                                  0,
+                                                )}
+                                              >
+                                                <input
+                                                  className='w-full min-w-0 overflow-hidden rounded border-none bg-transparent px-1.5 py-1 text-xs font-semibold text-ellipsis whitespace-nowrap text-[var(--gray-13)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
+                                                  value={
+                                                    item.Description?.[
+                                                    'Invoice Value'
+                                                    ] ??
+                                                    item.description ??
+                                                    item.item_no ??
+                                                    item.itemNo ??
+                                                    ''
+                                                  }
+                                                  onChange={(e) =>
+                                                    handleLineItemChange(
+                                                      index,
+                                                      'description',
+                                                      e.target.value,
+                                                    )
+                                                  }
+                                                  onFocus={() =>
+                                                    handleFieldFocus?.(
                                                       item.Description?.[
-                                                        'Invoice Value'
+                                                      'Invoice Value'
                                                       ] ??
                                                       item.description ??
                                                       item.item_no ??
                                                       item.itemNo ??
-                                                      ''
-                                                    }
-                                                    onChange={(e) =>
-                                                      handleLineItemChange(
-                                                        index,
-                                                        'description',
-                                                        e.target.value,
-                                                      )
-                                                    }
-                                                    onFocus={() =>
-                                                      handleFieldFocus?.(
-                                                        item.Description?.[
-                                                          'Invoice Value'
-                                                        ] ??
-                                                          item.description ??
-                                                          item.item_no ??
-                                                          item.itemNo ??
-                                                          '',
-                                                        'description',
-                                                      )
-                                                    }
-                                                  />
-                                                </td>
+                                                      '',
+                                                      'description',
+                                                    )
+                                                  }
+                                                />
+                                              </td>
 
-                                                {/* Quantity Cell */}
-                                                <td className='w-[100px] px-2 py-0.5 text-right font-semibold text-[var(--gray-11)]'>
-                                                  <input
-                                                    className='w-full rounded border-none bg-transparent px-1.5 py-1 text-right text-xs font-semibold text-[var(--gray-11)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
-                                                    value={
+                                              {/* Quantity Cell */}
+                                              <td
+                                                className={cn(
+                                                  'px-2 py-0.5 text-right font-semibold text-[var(--gray-11)]',
+                                                  getLineItemStickyClass(
+                                                    1,
+                                                    isMatch
+                                                      ? 'bg-surface'
+                                                      : 'bg-[var(--red-1)]',
+                                                  ),
+                                                )}
+                                                style={getLineItemCellStyle(
+                                                  1,
+                                                  true,
+                                                )}
+                                              >
+                                                <input
+                                                  className='w-full min-w-0 overflow-hidden rounded border-none bg-transparent px-1.5 py-1 text-right text-xs font-semibold text-ellipsis whitespace-nowrap text-[var(--gray-11)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
+                                                  value={
+                                                    item.Quantity?.[
+                                                    'Invoice Value'
+                                                    ] ??
+                                                    item.quantity ??
+                                                    ''
+                                                  }
+                                                  onChange={(e) =>
+                                                    handleLineItemChange(
+                                                      index,
+                                                      'quantity',
+                                                      e.target.value,
+                                                    )
+                                                  }
+                                                  onFocus={() =>
+                                                    handleFieldFocus?.(
                                                       item.Quantity?.[
-                                                        'Invoice Value'
+                                                      'Invoice Value'
                                                       ] ??
                                                       item.quantity ??
-                                                      ''
-                                                    }
-                                                    onChange={(e) =>
+                                                      '',
+                                                      'qty',
+                                                    )
+                                                  }
+                                                />
+                                              </td>
+
+                                              {/* Rate/Price Cell */}
+                                              <td
+                                                className={cn(
+                                                  'px-2 py-0.5 text-right font-semibold text-[var(--gray-11)]',
+                                                  getLineItemStickyClass(
+                                                    2,
+                                                    isMatch
+                                                      ? 'bg-surface'
+                                                      : 'bg-[var(--red-1)]',
+                                                  ),
+                                                )}
+                                                style={getLineItemCellStyle(
+                                                  2,
+                                                  true,
+                                                )}
+                                              >
+                                                <input
+                                                  className='w-full min-w-0 overflow-hidden rounded border-none bg-transparent px-1.5 py-1 text-right text-xs font-semibold text-ellipsis whitespace-nowrap text-[var(--gray-11)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
+                                                  value={
+                                                    item.Price?.[
+                                                    'Invoice Value'
+                                                    ] ??
+                                                    item.rate ??
+                                                    item.unit_price ??
+                                                    item.price ??
+                                                    ''
+                                                  }
+                                                  onBlur={(e) => {
+                                                    const num =
+                                                      Number.parseFloat(
+                                                        e.target.value.replace(
+                                                          /[^0-9.-]+/g,
+                                                          '',
+                                                        ),
+                                                      )
+                                                    if (!Number.isNaN(num)) {
                                                       handleLineItemChange(
                                                         index,
-                                                        'quantity',
-                                                        e.target.value,
+                                                        'price',
+                                                        num.toFixed(2),
                                                       )
                                                     }
-                                                    onFocus={() =>
-                                                      handleFieldFocus?.(
-                                                        item.Quantity?.[
-                                                          'Invoice Value'
-                                                        ] ??
-                                                          item.quantity ??
-                                                          '',
-                                                        'qty',
-                                                      )
-                                                    }
-                                                  />
-                                                </td>
-
-                                                {/* Rate/Price Cell */}
-                                                <td className='w-[140px] px-2 py-0.5 text-right font-semibold text-[var(--gray-11)]'>
-                                                  <input
-                                                    className='w-full rounded border-none bg-transparent px-1.5 py-1 text-right text-xs font-semibold text-[var(--gray-11)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
-                                                    value={
+                                                  }}
+                                                  onChange={(e) =>
+                                                    handleLineItemChange(
+                                                      index,
+                                                      'price',
+                                                      e.target.value,
+                                                    )
+                                                  }
+                                                  onFocus={() =>
+                                                    handleFieldFocus?.(
                                                       item.Price?.[
-                                                        'Invoice Value'
+                                                      'Invoice Value'
                                                       ] ??
                                                       item.rate ??
                                                       item.unit_price ??
                                                       item.price ??
-                                                      ''
-                                                    }
-                                                    onBlur={(e) => {
-                                                      const num =
-                                                        Number.parseFloat(
-                                                          e.target.value.replace(
-                                                            /[^0-9.-]+/g,
-                                                            '',
-                                                          ),
-                                                        )
-                                                      if (!Number.isNaN(num)) {
-                                                        handleLineItemChange(
-                                                          index,
-                                                          'price',
-                                                          num.toFixed(2),
-                                                        )
-                                                      }
-                                                    }}
-                                                    onChange={(e) =>
+                                                      '',
+                                                      'price',
+                                                    )
+                                                  }
+                                                />
+                                              </td>
+
+                                              {/* Total Amount Cell */}
+                                              <td
+                                                className={cn(
+                                                  'px-2 py-0.5 text-right font-semibold text-[var(--gray-13)]',
+                                                  getPinnedAmountClass(
+                                                    isMatch
+                                                      ? 'bg-surface'
+                                                      : 'bg-[var(--red-1)]',
+                                                  ),
+                                                )}
+                                                style={getPinnedAmountStyle()}
+                                              >
+                                                <input
+                                                  className='w-full min-w-0 overflow-hidden rounded border-none bg-transparent px-1.5 py-1 text-right text-xs font-semibold text-ellipsis whitespace-nowrap text-[var(--gray-13)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
+                                                  value={
+                                                    item.Amount?.[
+                                                    'Invoice Value'
+                                                    ] ??
+                                                    item['Line Amount']?.[
+                                                    'Invoice Value'
+                                                    ] ??
+                                                    item['line amount'] ??
+                                                    item.LineAmount ??
+                                                    item.total ??
+                                                    item.amount ??
+                                                    item.line_amount ??
+                                                    item.lineAmount ??
+                                                    ''
+                                                  }
+                                                  onBlur={(e) => {
+                                                    const num =
+                                                      Number.parseFloat(
+                                                        e.target.value.replace(
+                                                          /[^0-9.-]+/g,
+                                                          '',
+                                                        ),
+                                                      )
+                                                    if (!Number.isNaN(num)) {
                                                       handleLineItemChange(
                                                         index,
-                                                        'price',
-                                                        e.target.value,
+                                                        'amount',
+                                                        num.toFixed(2),
                                                       )
                                                     }
-                                                    onFocus={() =>
-                                                      handleFieldFocus?.(
-                                                        item.Price?.[
-                                                          'Invoice Value'
-                                                        ] ??
-                                                          item.rate ??
-                                                          item.unit_price ??
-                                                          item.price ??
-                                                          '',
-                                                        'price',
-                                                      )
-                                                    }
-                                                  />
-                                                </td>
-
-                                                {/* Total Amount Cell */}
-                                                <td className='w-[160px] px-2 py-0.5 text-right font-semibold text-[var(--gray-13)]'>
-                                                  <input
-                                                    className='w-full rounded border-none bg-transparent px-1.5 py-1 text-right text-xs font-semibold text-[var(--gray-13)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
-                                                    value={
+                                                  }}
+                                                  onChange={(e) =>
+                                                    handleLineItemChange(
+                                                      index,
+                                                      'amount',
+                                                      e.target.value,
+                                                    )
+                                                  }
+                                                  onFocus={() =>
+                                                    handleFieldFocus?.(
                                                       item.Amount?.[
-                                                        'Invoice Value'
+                                                      'Invoice Value'
                                                       ] ??
+                                                      item['Line Amount']?.[
+                                                      'Invoice Value'
+                                                      ] ??
+                                                      item['line amount'] ??
+                                                      item.LineAmount ??
                                                       item.total ??
                                                       item.amount ??
                                                       item.line_amount ??
                                                       item.lineAmount ??
-                                                      ''
-                                                    }
-                                                    onBlur={(e) => {
-                                                      const num =
-                                                        Number.parseFloat(
-                                                          e.target.value.replace(
-                                                            /[^0-9.-]+/g,
-                                                            '',
-                                                          ),
-                                                        )
-                                                      if (!Number.isNaN(num)) {
-                                                        handleLineItemChange(
-                                                          index,
-                                                          'amount',
-                                                          num.toFixed(2),
-                                                        )
-                                                      }
-                                                    }}
-                                                    onChange={(e) =>
-                                                      handleLineItemChange(
-                                                        index,
-                                                        'amount',
-                                                        e.target.value,
-                                                      )
-                                                    }
-                                                    onFocus={() =>
-                                                      handleFieldFocus?.(
-                                                        item.Amount?.[
-                                                          'Invoice Value'
-                                                        ] ??
-                                                          item.total ??
-                                                          item.amount ??
-                                                          item.line_amount ??
-                                                          item.lineAmount ??
-                                                          '',
-                                                        'line_amount',
-                                                      )
-                                                    }
-                                                  />
-                                                </td>
-                                              </>
-                                            )}
+                                                      '',
+                                                      'line_amount',
+                                                    )
+                                                  }
+                                                />
+                                              </td>
+                                            </>
+                                          )}
 
-                                            {/* Match Score Cell */}
-                                            <td className='w-[100px] px-3 py-2 text-right font-semibold'>
-                                              {(() => {
-                                                if (
-                                                  lineScore === undefined ||
-                                                  lineScore === null
-                                                )
-                                                  return (
-                                                    <span className='text-[11px] text-gray-9'>
-                                                      -
-                                                    </span>
-                                                  )
-                                                const scoreNum =
-                                                  Number(lineScore)
+                                          {/* Match Score Cell */}
+                                          <td
+                                            className={cn(
+                                              'sticky z-20 px-3 py-2 text-right font-semibold before:absolute before:top-0 before:left-0 before:h-full before:w-px before:bg-[var(--gray-3)]',
+                                              isMatch
+                                                ? 'bg-surface'
+                                                : 'bg-[var(--red-1)]',
+                                            )}
+                                            style={getRightStickyStyle(
+                                              LINE_ITEM_ACTION_WIDTH,
+                                              LINE_ITEM_SCORE_WIDTH,
+                                            )}
+                                          >
+                                            {(() => {
+                                              if (
+                                                lineScore === undefined ||
+                                                lineScore === null
+                                              )
                                                 return (
-                                                  <span
-                                                    className={cn(
-                                                      'text-xs font-bold',
-                                                      {
-                                                        'text-[var(--green-9)]':
-                                                          scoreNum >= 90,
-                                                        'text-[var(--orange-9)]':
-                                                          scoreNum >= 70 &&
-                                                          scoreNum < 90,
-                                                        'text-[var(--red-9)]':
-                                                          scoreNum < 70,
-                                                      },
-                                                    )}
-                                                  >
-                                                    {scoreNum.toFixed(0)}%
+                                                  <span className='text-[11px] text-gray-9'>
+                                                    -
                                                   </span>
                                                 )
-                                              })()}
-                                            </td>
+                                              const scoreNum =
+                                                Number(lineScore)
+                                              return (
+                                                <span
+                                                  className={cn(
+                                                    'text-xs font-bold',
+                                                    {
+                                                      'text-[var(--green-9)]':
+                                                        scoreNum >= 90,
+                                                      'text-[var(--orange-9)]':
+                                                        scoreNum >= 70 &&
+                                                        scoreNum < 90,
+                                                      'text-[var(--red-9)]':
+                                                        scoreNum < 70,
+                                                    },
+                                                  )}
+                                                >
+                                                  {scoreNum.toFixed(0)}%
+                                                </span>
+                                              )
+                                            })()}
+                                          </td>
 
-                                            {/* Action Cell */}
-                                            <td className='w-[44px] px-2 py-0.5 text-center'>
-                                              <button
-                                                className='rounded p-1 text-[var(--red-9)] transition-all hover:bg-[var(--red-2)] hover:text-[var(--red-11)] active:scale-95'
-                                                title='Remove Item'
-                                                type='button'
-                                                onClick={() =>
-                                                  handleRemoveItem(index)
-                                                }
-                                              >
-                                                <Trash2 className='h-3.5 w-3.5' />
-                                              </button>
-                                            </td>
-                                          </tr>
-                                        )
-                                      },
-                                    )}
-                              </tbody>
-                              <tfoot className='border-t border-[var(--gray-3)] bg-[var(--gray-1)]'>
-                                <tr className='font-bold'>
-                                  <td
-                                    className='px-3 py-2 text-right text-[11px] text-[var(--gray-11)]'
-                                    colSpan={
-                                      isDynamicTable
-                                        ? Math.max(1, dynamicColumns.length - 1)
-                                        : 3
-                                    }
-                                  >
-                                    Grand Total
-                                  </td>
-                                  <td className='px-3 py-2 text-right text-[13px] text-[var(--gray-13)]'>
-                                    {(() => {
-                                      const currencyCode =
-                                        formModel?.['Currency'] ||
-                                        agentData?.['Extracted Invoice JSON']
-                                          ?.invoice_header?.['Currency'] ||
-                                        ''
-                                      const total = lineItems.reduce(
-                                        (sum: number, item: any) => {
-                                          const val = getLineItemAmount(item)
-                                          const num = Number.parseFloat(
-                                            String(val).replace(
-                                              /[^0-9.-]+/g,
-                                              '',
-                                            ),
-                                          )
-                                          return (
-                                            sum + (Number.isNaN(num) ? 0 : num)
-                                          )
-                                        },
-                                        0,
+                                          {/* Action Cell */}
+                                          <td
+                                            className={cn(
+                                              'sticky z-20 px-2 py-0.5 text-center',
+                                              isMatch
+                                                ? 'bg-surface'
+                                                : 'bg-[var(--red-1)]',
+                                            )}
+                                            style={getRightStickyStyle(
+                                              0,
+                                              LINE_ITEM_ACTION_WIDTH,
+                                            )}
+                                          >
+                                            <button
+                                              className='rounded p-1 text-[var(--red-9)] transition-all hover:bg-[var(--red-2)] hover:text-[var(--red-11)] active:scale-95'
+                                              title='Remove Item'
+                                              type='button'
+                                              onClick={() =>
+                                                handleRemoveItem(index)
+                                              }
+                                            >
+                                              <Trash2 className='h-3.5 w-3.5' />
+                                            </button>
+                                          </td>
+                                        </tr>
                                       )
-                                      const formattedTotal =
-                                        total.toLocaleString(undefined, {
-                                          maximumFractionDigits: 2,
-                                          minimumFractionDigits: 2,
-                                        })
-                                      return currencyCode
-                                        ? `${currencyCode} ${formattedTotal}`
-                                        : formattedTotal
-                                    })()}
-                                  </td>
-                                  <td className='w-[100px] bg-[var(--gray-1)]' />
-                                  <td className='w-[44px] bg-[var(--gray-1)]' />
-                                </tr>
-                              </tfoot>
+                                    },
+                                  )}
+                              </tbody>
+                              {lineItems.length > 0 && (() => {
+                                const currencyCode =
+                                  formModel?.['Currency'] ||
+                                  agentData?.['Extracted Invoice JSON']?.invoice_header?.['Currency'] ||
+                                  ''
+
+                                const total = lineItems.reduce((sum: number, item: any) => {
+                                  const val = getLineItemAmount(item)
+                                  const num = Number.parseFloat(String(val).replace(/[^0-9.-]+/g, ''))
+                                  return sum + (Number.isNaN(num) ? 0 : num)
+                                }, 0)
+
+                                const formattedTotal = total.toLocaleString(undefined, {
+                                  maximumFractionDigits: 2,
+                                  minimumFractionDigits: 2,
+                                })
+
+                                const displayTotal = currencyCode
+                                  ? `${currencyCode} ${formattedTotal}`
+                                  : formattedTotal
+
+                                return (
+                                  <tfoot className='border-t border-[var(--gray-3)] bg-[var(--gray-1)]'>
+                                    <tr>
+                                      {/* Spans all columns before the pinned amount column */}
+                                      <td
+                                        className='px-3 py-2.5 text-right text-[11px] font-semibold text-[var(--gray-11)]'
+                                        colSpan={
+                                          isDynamicTable ? Math.max(1, dynamicColumns.length - 1) : 3
+                                        }
+                                      >
+                                        Grand Total
+                                      </td>
+
+                                      {/* Pinned Total Amount cell — sticky-right, same position as header */}
+                                      <td
+                                        className={getPinnedAmountClass('bg-[var(--gray-1)]')}
+                                        style={getPinnedAmountStyle()}
+                                      >
+                                        <span className='block w-full overflow-hidden text-ellipsis whitespace-nowrap px-3 py-2.5 text-right text-[13px] font-bold text-[var(--gray-13)]'>
+                                          {displayTotal}
+                                        </span>
+                                      </td>
+
+                                      {/* Pinned Match Score filler */}
+                                      <td
+                                        className='sticky z-20 bg-[var(--gray-1)]'
+                                        style={getRightStickyStyle(
+                                          LINE_ITEM_ACTION_WIDTH,
+                                          LINE_ITEM_SCORE_WIDTH,
+                                        )}
+                                      />
+
+                                      {/* Pinned Action filler */}
+                                      <td
+                                        className='sticky z-20 bg-[var(--gray-1)]'
+                                        style={getRightStickyStyle(0, LINE_ITEM_ACTION_WIDTH)}
+                                      />
+                                    </tr>
+                                  </tfoot>
+                                )
+                              })()}
                             </table>
                           </div>
                         </div>
@@ -4191,7 +4609,6 @@ const Overview = (props: any) => {
           </div>
         </div>
       </div>
-
     </div>
   )
 }
