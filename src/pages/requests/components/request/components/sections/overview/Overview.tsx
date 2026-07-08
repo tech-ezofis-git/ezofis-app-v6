@@ -1734,11 +1734,11 @@ const Overview = (props: any) => {
       return items.map(({ _id, ...rest }) => rest)
     }
     const sanitized = sanitizeItems(updatedItems)
-    const newGrandTotal = sanitized.reduce((sum: number, it: any) => {
-      const val = getLineItemAmount(it)
-      const num = Number.parseFloat(String(val).replace(/[^0-9.-]+/g, ''))
-      return sum + (Number.isNaN(num) ? 0 : num)
-    }, 0)
+      // const newGrandTotal = sanitized.reduce((sum: number, it: any) => {
+      //   const val = getLineItemAmount(it)
+      //   const num = Number.parseFloat(String(val).replace(/[^0-9.-]+/g, ''))
+      //   return sum + (Number.isNaN(num) ? 0 : num)
+      // }, 0)
 
     setFormModel?.((prevForm: any) => {
       const nextForm = { ...prevForm }
@@ -1763,21 +1763,21 @@ const Overview = (props: any) => {
         nextForm[tableFieldKey] = sanitized
       }
 
-      const formattedGrandTotal = newGrandTotal.toFixed(2)
+      // const formattedGrandTotal = newGrandTotal.toFixed(2)
 
-      Object.keys(nextForm).forEach((k) => {
-        const lk = k.toLowerCase()
-        if (
-          lk === 'invoice amount' ||
-          lk === 'invoice_amount' ||
-          lk === 'total due' ||
-          lk === 'total_due' ||
-          lk === 'total' ||
-          lk === 'total_amount'
-        ) {
-          nextForm[k] = formattedGrandTotal
-        }
-      })
+      // Object.keys(nextForm).forEach((k) => {
+      //   const lk = k.toLowerCase()
+      //   if (
+      //     lk === 'invoice amount' ||
+      //     lk === 'invoice_amount' ||
+      //     lk === 'total due' ||
+      //     lk === 'total_due' ||
+      //     lk === 'total' ||
+      //     lk === 'total_amount'
+      //   ) {
+      //     nextForm[k] = formattedGrandTotal
+      //   }
+      // })
 
       return nextForm
     })
