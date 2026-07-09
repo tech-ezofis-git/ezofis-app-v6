@@ -2,50 +2,106 @@ import { useState } from 'react'
 import Icon from '@/components/base/icon/Icon'
 import cn from '@/utils/cn'
 
-interface ApiPlaygroundProps {
-  context?: {
-    actionName?: string
-    document?: {
-      amount: number
-      currency: string
-      invoiceNumber: string
-      poNumber: string
-      requestNo: string
-      vendor: string
-    }
-    endpoint?: string
-    model?: string
-    provider?: string
-  }
+export interface ApiPlaygroundDocument {
+  amount?: number | string
+  currency?: string
+  invoiceNumber?: string
+  poNumber?: string
+  requestNo?: string
+  vendor?: string
+  [key: string]: unknown
+}
+
+export interface ApiPlaygroundContext {
+  actionName?: string
+  apiEndpoint?: string
+  apiPath?: string
+  document?: ApiPlaygroundDocument
+  endpoint?: string
+  headers?: Record<string, string>
+  method?: string
+  model?: string
+  payload?: Record<string, unknown>
+  playgroundUrl?: string
+  provider?: string
+  requestPayload?: Record<string, unknown>
+  responsePayload?: Record<string, unknown>
+}
+
+interface ApiPlaygroundProps extends ApiPlaygroundContext {
+  context?: ApiPlaygroundContext
   onClose: () => void
 }
 
-export const ApiPlayground = ({ context, onClose }: ApiPlaygroundProps) => {
+const DEFAULT_PLAYGROUND_URL =
+  'https://ezagentplayground.onrender.com/apikey.html?id=2'
+const DEFAULT_API_HOST = 'https://api.ezofis.com'
+const DEFAULT_API_PATH = '/api/v6/payments/process'
+
+const DEFAULT_DOCUMENT: Required<
+  Pick<
+    ApiPlaygroundDocument,
+    'amount' | 'currency' | 'invoiceNumber' | 'poNumber' | 'requestNo' | 'vendor'
+  >
+> = {
+  amount: 3057.78,
+  currency: 'USD',
+  invoiceNumber: 'INV-2001',
+  poNumber: 'PO-1001',
+  requestNo: 'REQ-1',
+  vendor: 'Silverline Auto Parts',
+}
+
+const stringifyJson = (value: unknown) => JSON.stringify(value, null, 2) || ''
+
+export const ApiPlayground = ({
+  context,
+  onClose,
+  ...props
+}: ApiPlaygroundProps) => {
   const [copiedCode, setCopiedCode] = useState(false)
   const [activeTab, setActiveTab] = useState<'config' | 'playground'>('config')
-  const doc = context?.document
-
-  // Default mock values if context document is missing
-  const requestPayload = {
-    amount: doc?.amount || 3057.78,
-    currency: doc?.currency || 'USD',
-    invoiceNumber: doc?.invoiceNumber || 'INV-2001',
-    poNumber: doc?.poNumber || 'PO-1001',
-    requestNo: doc?.requestNo || 'REQ-1',
-    vendor: doc?.vendor || 'Silverline Auto Parts',
+  const config = { ...context, ...props }
+  const requestMethod = config.method || 'POST'
+  const apiPath = config.apiPath || DEFAULT_API_PATH
+  const apiEndpoint =
+    config.apiEndpoint ||
+    (apiPath.startsWith('http') ? apiPath : `${DEFAULT_API_HOST}${apiPath}`)
+  const displayEndpoint = config.apiEndpoint || apiPath
+  const playgroundUrl =
+    config.playgroundUrl || config.endpoint || DEFAULT_PLAYGROUND_URL
+  const requestHeaders = {
+    Authorization: 'Bearer <YOUR_API_TOKEN>',
+    'Content-Type': 'application/json',
+    ...config.headers,
   }
+  const documentPayload = {
+    ...DEFAULT_DOCUMENT,
+    ...(config.document || {}),
+  }
+  const requestPayload =
+    config.requestPayload || config.payload || documentPayload
+  const headerLines = Object.entries(requestHeaders)
+    .map(([key, value]) => `  -H "${key}: ${value}" \\`)
+    .join('\n')
 
-  const curlCode = `curl -X POST https://api.ezofis.com/api/v6/payments/process \\
-  -H "Content-Type: application/json" \\
-  -H "Authorization: Bearer YOUR_API_TOKEN" \\
-  -d '${JSON.stringify(requestPayload, null, 2).replace(/\n/g, '\n  ')}'`
+  const curlCode = `curl -X ${requestMethod} ${apiEndpoint} \\
+${headerLines}
+  -d '${stringifyJson(requestPayload).replace(/\n/g, '\n  ')}'`
 
-  const responseSnippet = `{
-  "success": true,
-  "transactionId": "TXN-${Math.floor(100000 + Math.random() * 900000)}",
-  "status": "Processed",
-  "processedAt": "${new Date().toISOString()}"
-}`
+  const responsePayload =
+    config.responsePayload || {
+      processedAt: new Date().toISOString(),
+      status: 'Processed',
+      success: true,
+      transactionId: `TXN-${Math.floor(100000 + Math.random() * 900000)}`,
+    }
+
+  const contextRows = [
+    { label: 'Action', value: config.actionName },
+    { label: 'Provider', value: config.provider },
+    { label: 'Model', value: config.model },
+  ].filter((row) => row.value)
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text)
@@ -124,10 +180,7 @@ export const ApiPlayground = ({ context, onClose }: ApiPlaygroundProps) => {
               className='decoration-none inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border-none bg-[var(--primary-9)] px-4 py-2 text-xs font-bold text-white shadow-md transition-all hover:bg-[var(--primary-10)] active:scale-95'
               rel='noopener noreferrer'
               target='_blank'
-              href={
-                context?.endpoint ||
-                'https://ezagentplayground.onrender.com/apikey.html?id=2'
-              }
+              href={playgroundUrl}
             >
               <Icon className='h-4 w-4' name='tabler:external-link' />
               Open API Playground
@@ -144,13 +197,40 @@ export const ApiPlayground = ({ context, onClose }: ApiPlaygroundProps) => {
               </h4>
               <div className='flex items-center gap-2 rounded-lg border border-[var(--gray-3)] bg-[var(--gray-1)] px-3 py-2 text-xs'>
                 <span className='rounded border border-[var(--green-3)] bg-[var(--green-1)] px-1.5 py-0.5 text-[10px] font-extrabold text-[var(--green-9)] uppercase'>
-                  POST
+                  {requestMethod}
                 </span>
                 <span className='truncate font-mono font-semibold text-[var(--gray-12)]'>
-                  /api/v6/payments/process
+                  {displayEndpoint}
                 </span>
               </div>
             </div>
+
+            {contextRows.length > 0 && (
+              <div className='space-y-2'>
+                <h4 className='text-[10px] font-bold tracking-wider text-[var(--gray-11)] uppercase'>
+                  Integration Context
+                </h4>
+                <div className='overflow-hidden rounded-lg border border-[var(--gray-3)] bg-surface text-xs'>
+                  {contextRows.map((row, index) => (
+                    <div
+                      className={cn(
+                        'grid grid-cols-3 px-3 py-2 font-mono text-[11px]',
+                        index < contextRows.length - 1 &&
+                        'border-b border-[var(--gray-3)]',
+                      )}
+                      key={row.label}
+                    >
+                      <span className='font-bold text-[var(--gray-12)]'>
+                        {row.label}
+                      </span>
+                      <span className='col-span-2 truncate text-[var(--gray-11)]'>
+                        {row.value}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Headers */}
             <div className='space-y-2'>
@@ -162,22 +242,23 @@ export const ApiPlayground = ({ context, onClose }: ApiPlaygroundProps) => {
                   <span>Header</span>
                   <span className='col-span-2'>Value</span>
                 </div>
-                <div className='grid grid-cols-3 border-b border-[var(--gray-3)] px-3 py-2 font-mono text-[11px]'>
-                  <span className='font-bold text-[var(--gray-12)]'>
-                    Content-Type
-                  </span>
-                  <span className='col-span-2 text-[var(--gray-11)]'>
-                    application/json
-                  </span>
-                </div>
-                <div className='grid grid-cols-3 px-3 py-2 font-mono text-[11px]'>
-                  <span className='font-bold text-[var(--gray-12)]'>
-                    Authorization
-                  </span>
-                  <span className='col-span-2 text-[var(--gray-11)]'>
-                    Bearer &lt;YOUR_API_TOKEN&gt;
-                  </span>
-                </div>
+                {Object.entries(requestHeaders).map(([key, value], index) => (
+                  <div
+                    className={cn(
+                      'grid grid-cols-3 px-3 py-2 font-mono text-[11px]',
+                      index < Object.entries(requestHeaders).length - 1 &&
+                      'border-b border-[var(--gray-3)]',
+                    )}
+                    key={key}
+                  >
+                    <span className='font-bold text-[var(--gray-12)]'>
+                      {key}
+                    </span>
+                    <span className='col-span-2 text-[var(--gray-11)]'>
+                      {value}
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -189,9 +270,7 @@ export const ApiPlayground = ({ context, onClose }: ApiPlaygroundProps) => {
                 </h4>
                 <button
                   className='flex cursor-pointer items-center gap-1 border-none bg-transparent text-[10px] font-bold text-[var(--primary-9)] transition-colors hover:text-[var(--primary-10)]'
-                  onClick={() =>
-                    copyToClipboard(JSON.stringify(requestPayload, null, 2))
-                  }
+                  onClick={() => copyToClipboard(stringifyJson(requestPayload))}
                 >
                   <Icon
                     className='h-3.5 w-3.5'
@@ -201,7 +280,7 @@ export const ApiPlayground = ({ context, onClose }: ApiPlaygroundProps) => {
                 </button>
               </div>
               <pre className='scrollbar select-all overflow-x-auto whitespace-pre-wrap rounded-lg border border-[var(--gray-12)] bg-[var(--gray-13)] p-3 font-mono text-[11px] leading-relaxed text-[var(--green-9)]'>
-                {JSON.stringify(requestPayload, null, 2)}
+                {stringifyJson(requestPayload)}
               </pre>
             </div>
 
@@ -233,7 +312,7 @@ export const ApiPlayground = ({ context, onClose }: ApiPlaygroundProps) => {
                 Expected Response Payload
               </h4>
               <pre className='scrollbar overflow-x-auto whitespace-pre-wrap rounded-lg border border-[var(--gray-12)] bg-[var(--gray-13)] p-3 font-mono text-[11px] leading-relaxed text-[var(--orange-9)]'>
-                {responseSnippet}
+                {stringifyJson(responsePayload)}
               </pre>
             </div>
           </div>

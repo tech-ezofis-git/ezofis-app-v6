@@ -4,7 +4,9 @@ import workflowsApiV6 from '@/api/v6/workflows'
 import showToast from '@/components/base/toast/showToast'
 // Import your custom animation components
 import { AnimateFadeIn } from '@/components/common/animations'
-import ApiPlayground from '@/components/playground/ApiPlayground'
+import ApiPlayground, {
+  type ApiPlaygroundContext,
+} from '@/components/playground/ApiPlayground'
 import { queryClient } from '@/lib/tanstack-query/queryClient'
 import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
@@ -1408,8 +1410,9 @@ const Request = ({
             endpoint:
               action?.endpoint ||
               'https://ezagentplayground.onrender.com/apikey.html?id=2',
-            model: action?.model || 'gemini-2.0-flash-exp',
-            provider: action?.provider || 'gemini',
+            // model: action?.model || 'gemini-2.0-flash-exp',
+            // provider: action?.provider || 'gemini',
+            requestPayload: docInfo,
           })
           setIsPlaygroundOpen(true)
         }
@@ -1419,7 +1422,7 @@ const Request = ({
     }
   }, [selectedItem, formModel, currency, poVal])
 
-  const handleOpenPlayground = (ctx: any) => {
+  const handleOpenPlayground = (ctx: ApiPlaygroundContext = {}) => {
     const docInfo = {
       amount: selectedItem?.amount || formModel?.['Invoice Amount'] || 0,
       currency: currency || formModel?.['Currency'] || 'USD',
@@ -1436,9 +1439,15 @@ const Request = ({
         selectedItem?.vendor ||
         '',
     }
+    const document = {
+      ...docInfo,
+      ...(ctx.document || {}),
+    }
+
     setPlaygroundContext({
       ...ctx,
-      document: docInfo,
+      document,
+      requestPayload: ctx.requestPayload || ctx.payload || document,
     })
     setIsPlaygroundOpen(true)
   }

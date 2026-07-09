@@ -24,6 +24,7 @@ import Icon from '@/components/base/icon/Icon'
 import InputDate from '@/components/base/inputs/InputDate'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import showToast from '@/components/base/toast/showToast'
+import type { ApiPlaygroundContext } from '@/components/playground/ApiPlayground'
 import PaidActionApiTrigger from '@/components/playground/PaidActionApiTrigger'
 import { useAttachments } from '@/pages/requests/hooks/useAttachments'
 import { useComments } from '@/pages/requests/hooks/useComments'
@@ -1262,6 +1263,42 @@ const getRecommendationMeta = (rec?: string) => {
   }
 }
 
+const unwrapPlaygroundValue = (value: any) => {
+  if (value && typeof value === 'object') {
+    if ('Invoice Value' in value) return value['Invoice Value']
+    if ('value' in value) return value.value
+  }
+  return value
+}
+
+const firstPlaygroundValue = (...values: any[]) => {
+  for (const value of values) {
+    const unwrapped = unwrapPlaygroundValue(value)
+    if (
+      unwrapped !== undefined &&
+      unwrapped !== null &&
+      unwrapped !== '' &&
+      unwrapped !== '-'
+    ) {
+      return unwrapped
+    }
+  }
+  return undefined
+}
+
+const toPlaygroundString = (value: any, fallback = '') => {
+  const resolved = firstPlaygroundValue(value)
+  return resolved === undefined ? fallback : String(resolved)
+}
+
+const toPlaygroundAmount = (value: any) => {
+  const resolved = firstPlaygroundValue(value)
+  if (resolved === undefined) return 0
+
+  const numeric = Number.parseFloat(String(resolved).replace(/[^0-9.-]+/g, ''))
+  return Number.isNaN(numeric) ? String(resolved) : numeric
+}
+
 const Overview = (props: any) => {
   const {
     actions,
@@ -1427,8 +1464,8 @@ const Overview = (props: any) => {
       ) || {
         endpoint: 'https://ezagentplayground.onrender.com/apikey.html?id=2',
         label: 'Paid',
-        model: 'gemini-2.0-flash-exp',
-        provider: 'gemini',
+        // model: 'gemini-2.0-flash-exp',
+        // provider: 'gemini',
       }
     )
   }, [actions])
@@ -1587,6 +1624,87 @@ const Overview = (props: any) => {
       formModel?.['RXwLGHILLrreMmRqlk9mj']
     )
   }, [formModel])
+
+  const apiPlaygroundContext = useMemo<ApiPlaygroundContext>(() => {
+    const invoiceHeader =
+      agentData?.['Extracted Invoice JSON']?.invoice_header || {}
+    const amount = firstPlaygroundValue(
+      formModel?.['Invoice Amount'],
+      formModel?.['Total Due'],
+      formModel?.['Total'],
+      formModel?.['invoice_amount'],
+      formModel?.['total_amount'],
+      invoiceHeader?.['Invoice Amount'],
+      invoiceHeader?.['Total Due'],
+      invoiceHeader?.['Total'],
+      invoiceHeader?.['invoice_amount'],
+      invoiceHeader?.['total_amount'],
+      selectedItem?.totalAmount,
+      selectedItem?.amount,
+    )
+    const vendor = firstPlaygroundValue(
+      formModel?.['Supplier Name'],
+      formModel?.['Vendor Name'],
+      formModel?.['SupplierName'],
+      formModel?.['VendorName'],
+      formModel?.['Supplier'],
+      formModel?.['Vendor'],
+      invoiceHeader?.['Supplier Name'],
+      invoiceHeader?.['Vendor Name'],
+      invoiceHeader?.['Supplier'],
+      invoiceHeader?.['Vendor'],
+      agentData?.po_row?.['Vendor Name'],
+      selectedItem?.vendor,
+      supplierName === 'the supplier' ? '' : supplierName,
+    )
+    const document = {
+      amount: toPlaygroundAmount(amount),
+      currency: toPlaygroundString(
+        firstPlaygroundValue(
+          formModel?.['Currency'],
+          invoiceHeader?.['Currency'],
+          selectedItem?.currency,
+        ),
+        'USD',
+      ),
+      invoiceNumber: toPlaygroundString(
+        firstPlaygroundValue(
+          formModel?.['Invoice Number'],
+          formModel?.['Invoice No'],
+          formModel?.['invoice_number'],
+          formModel?.['invoice_no'],
+          invoiceHeader?.['Invoice Number'],
+          invoiceHeader?.['Invoice No'],
+          invoiceHeader?.['invoice_number'],
+          invoiceHeader?.['invoice_no'],
+          selectedItem?.invoiceNumber,
+        ),
+      ),
+      poNumber: toPlaygroundString(
+        firstPlaygroundValue(
+          poVal,
+          selectedItem?.purchaseOrderNumber,
+          selectedItem?.poNumber,
+        ),
+      ),
+      requestNo: toPlaygroundString(
+        firstPlaygroundValue(
+          selectedItem?.requestNo,
+          selectedItem?.reqNo,
+          selectedItem?.transactionId,
+          selectedItem?.processId,
+        ),
+      ),
+      vendor: toPlaygroundString(vendor),
+    }
+
+    return {
+      apiPath: '/api/v6/payments/process',
+      document,
+      method: 'POST',
+      requestPayload: document,
+    }
+  }, [agentData, formModel, poVal, selectedItem, supplierName])
 
   const [activeBackOrderTab, setActiveBackOrderTab] =
     useState<string>('current')
@@ -2685,6 +2803,7 @@ const Overview = (props: any) => {
                         <div className='animate-in fade-in pb-2.5 duration-300'>
                           <PaidActionApiTrigger
                             action={paidAction}
+                            context={apiPlaygroundContext}
                             onTrigger={onOpenPlayground}
                           />
                         </div>
@@ -3770,8 +3889,6 @@ const Overview = (props: any) => {
                                               colKey
                                                 .toLowerCase()
                                                 .includes('total')
-                                            const isAmountColumn =
-                                              isLineItemAmountColumn(colKey)
 
                                             return (
                                               <td
