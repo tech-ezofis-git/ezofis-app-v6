@@ -5,6 +5,7 @@ import Button from '@/components/base/button/Button'
 import IconIllustrated from '@/components/base/icon/IconIllustrated'
 import InputText from '@/components/base/inputs/InputText'
 import InputPassword from '@/components/base/inputs/password/InputPassword'
+import Alert from '@/components/base/Alert'
 import Title from '@/components/base/Title'
 import showToast from '@/components/base/toast/showToast'
 // import HeroText from '@/components/common/HeroText'
@@ -238,7 +239,7 @@ const ResetPasswordPage = () => {
         )}
       </div>
 
-      {error && <div className='text-red-500 text-center text-sm'>{error}</div>}
+      {error && <Alert text={error} variant='primary' />}
 
       <Button
         className='w-full justify-center'

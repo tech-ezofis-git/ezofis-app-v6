@@ -20,7 +20,6 @@ import {
   ChevronDown,
   ChevronUp,
   ChevronRight,
-  Building2,
   DollarSign,
   ClipboardList,
 } from 'lucide-react'
@@ -53,17 +52,19 @@ export default function DashboardCharts() {
     role, timeframe, supplierCategory, invoiceStatus, currency, searchQuery,
     drillSupplier, drillAgingBucket, drillStatus,
     setTimeframe, setSupplierCategory, setInvoiceStatus, setCurrency,
-    setSearchQuery, setDrillSupplier, setDrillAgingBucket, setDrillStatus,
+    setSearchQuery, setDrillSupplier, setDrillAgingBucket, setDrillStatus, resetFilters,
   } = useDashboardStore()
 
-  const [activeFilterDropdown, setActiveFilterDropdown] = React.useState<'suppliers' | 'statuses' | 'currencies' | 'more' | null>(null)
-  const [activeFilterGroup, setActiveFilterGroup] = React.useState<'status' | 'amount' | 'supplier'>('status')
+  const [activeFilterDropdown, setActiveFilterDropdown] = React.useState<'suppliers' | 'statuses' | 'currencies' | 'more' | 'timeframes' | null>(null)
+  const [activeFilterGroup, setActiveFilterGroup] = React.useState<'status' | 'amount'>('status')
   const [filterSearchQuery, setFilterSearchQuery] = React.useState('')
   const [expandedInvoiceId, setExpandedInvoiceId] = React.useState<string | null>(null)
   const [isCommandCenterExpanded, setIsCommandCenterExpanded] = React.useState(true)
   const [isTodayActionExpanded, setIsTodayActionExpanded] = React.useState(false)
   const [isProcessingExpanded, setIsProcessingExpanded] = React.useState(false)
   const [isSupplierFollowUpExpanded, setIsSupplierFollowUpExpanded] = React.useState(false)
+  const [isSearchExpanded, setIsSearchExpanded] = React.useState(false)
+  const searchInputRef = React.useRef<HTMLInputElement>(null)
 
   const filteredInvoices = React.useMemo(() => getFilteredInvoices({ timeframe, supplierCategory, invoiceStatus, currency, searchQuery }), [timeframe, supplierCategory, invoiceStatus, currency, searchQuery])
   const metrics = React.useMemo(() => getDashboardMetrics(filteredInvoices, timeframe), [filteredInvoices, timeframe])
@@ -73,6 +74,20 @@ export default function DashboardCharts() {
   const handleKpiClick = (kpiName: string) => {
     setActiveDrill(activeDrill === kpiName ? null : kpiName)
   }
+
+  const filtersRef = React.useRef<HTMLDivElement>(null)
+
+  React.useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (filtersRef.current && !filtersRef.current.contains(event.target as Node)) {
+        setActiveFilterDropdown(null)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
 
   React.useEffect(() => {
     if (!isCommandCenterExpanded && activeDrill === 'Total Outstanding Payables') {
@@ -127,35 +142,77 @@ export default function DashboardCharts() {
   }
 
   const aiInsightsList = React.useMemo(() => [
-    { node: (<>Outstanding overdue balances are <span className="font-bold text-[#1E8E6F]">down 100%</span> versus last month (<span className="font-bold">$0</span> now outstanding past due).</>) },
-    { node: (<>Just <span className="font-bold">3 suppliers</span> account for <span className="font-bold">19%</span> of unpaid liabilities, led by <span className="font-bold">Harbor Point Consulting</span> at $686.5K.</>) },
-    { node: (<>Average approval time increased by <span className="font-bold text-[#B3261E]">1.2 days</span> month over month, now averaging <span className="font-bold">6.1 days</span>.</>) },
-    { node: (<><span className="font-bold">28 invoices</span> flagged as potential duplicates — recommend review before release to avoid double payment.</>) },
-    { node: (<>Payments due this week total <span className="font-bold">$298.7K</span>, <span className="font-bold text-[#1E8E6F]">below last week by 67%</span>.</>) },
-    { node: (<>Profit margin decreased to <span className="font-bold">12.9%</span>, pressured by higher supplier expenses.</>) },
-    { node: (<><span className="font-bold">Legal</span> has the longest approval cycle in the current view, averaging <span className="font-bold">8.0 days</span> per invoice.</>) },
-    { node: (<><span className="font-bold">10 of 24 suppliers</span> now score above 80% on-time delivery, reflecting steadier vendor performance.</>) },
-    { node: (<>Projected cash requirement for the next 4 weeks is <span className="font-bold">$755.7K</span> — plan liquidity accordingly.</>) },
+    { node: (<>Outstanding overdue balances are <span className="font-semibold text-[#1E8E6F]">down 100%</span> versus last month (<span className="font-semibold">$0</span> now outstanding past due).</>) },
+    { node: (<>Just <span className="font-semibold">3 suppliers</span> account for <span className="font-semibold">19%</span> of unpaid liabilities, led by <span className="font-semibold">Harbor Point Consulting</span> at $686.5K.</>) },
+    { node: (<>Average approval time increased by <span className="font-semibold text-[#B3261E]">1.2 days</span> month over month, now averaging <span className="font-semibold">6.1 days</span>.</>) },
+    { node: (<><span className="font-semibold">28 invoices</span> flagged as potential duplicates — recommend review before release to avoid double payment.</>) },
+    { node: (<>Payments due this week total <span className="font-semibold">$298.7K</span>, <span className="font-semibold text-[#1E8E6F]">below last week by 67%</span>.</>) },
+    { node: (<>Profit margin decreased to <span className="font-semibold">12.9%</span>, pressured by higher supplier expenses.</>) },
+    { node: (<><span className="font-semibold">Legal</span> has the longest approval cycle in the current view, averaging <span className="font-semibold">8.0 days</span> per invoice.</>) },
+    { node: (<><span className="font-semibold">10 of 24 suppliers</span> now score above 80% on-time delivery, reflecting steadier vendor performance.</>) },
+    { node: (<>Projected cash requirement for the next 4 weeks is <span className="font-semibold">$755.7K</span> — plan liquidity accordingly.</>) },
   ], [])
 
   return (
     <div className="flex flex-col gap-6 p-6">
 
       {/* 1. QUICK FILTERS ROW */}
-      <div className="flex flex-wrap items-center gap-2.5 rounded-lg border border-border-default bg-surface p-3 shadow-xs">
-        <span className="text-12 font-bold text-text-primary mr-1">Filters:</span>
+      <div ref={filtersRef} className="flex flex-wrap items-center gap-2.5 rounded-lg border border-border-default bg-surface p-3 shadow-xs">
+        <span className="text-12 font-semibold text-text-primary mr-1">Filters:</span>
 
-        {/* Timeframe pills */}
-        <div className="flex flex-wrap gap-1.5">
-          {[
-            { label: 'Today', key: 'today' }, { label: 'This Week', key: 'week' },
-            { label: 'This Month', key: 'month' }, { label: 'Last Month', key: 'lastmonth' },
-            { label: 'Quarter', key: 'quarter' }, { label: 'Financial Year', key: 'fy' }
-          ].map(chip => (
-            <button key={chip.key} className={cn("cursor-pointer rounded-full border px-3.5 py-1 text-12 font-medium transition-all hover:bg-gray-3 dark:hover:bg-gray-10", timeframe === chip.key ? "border-primary-9 bg-primary-9 text-white shadow-xs" : "border-border-default bg-surface text-text-secondary")} onClick={() => setTimeframe(chip.key as any)}>
-              {chip.label}
-            </button>
-          ))}
+        {/* Timeframe dropdown chip */}
+        <div className="relative">
+          <button
+            className={cn(
+              "cursor-pointer rounded-full border px-3.5 py-1 text-12 font-medium transition-all hover:bg-gray-3 dark:hover:bg-gray-10 flex items-center gap-1.5",
+              timeframe || activeFilterDropdown === 'timeframes'
+                ? "border-primary-9 bg-primary-3/50 text-primary-9"
+                : "border-border-default bg-surface text-text-secondary"
+            )}
+            onClick={() => {
+              setActiveFilterDropdown(activeFilterDropdown === 'timeframes' ? null : 'timeframes')
+              setFilterSearchQuery('')
+            }}
+          >
+            <span>
+              {timeframe === 'today' && 'Today'}
+              {timeframe === 'week' && 'This Week'}
+              {timeframe === 'month' && 'This Month'}
+              {timeframe === 'lastmonth' && 'Last Month'}
+              {timeframe === 'quarter' && 'Quarter'}
+              {timeframe === 'fy' && 'Financial Year'}
+              {!timeframe && 'Timeframe'}
+            </span>
+            <ChevronDown className="h-3 w-3 opacity-60" />
+          </button>
+          {activeFilterDropdown === 'timeframes' && (
+            <div className="absolute z-30 top-full left-0 mt-1.5 w-[200px] rounded-lg border border-border-default bg-surface p-3 shadow-xs animate-in fade-in slide-in-from-top-2">
+              <div className="flex flex-col gap-0.5 max-h-[220px] overflow-y-auto scrollbar">
+                {[
+                  { label: 'Today', key: 'today' },
+                  { label: 'This Week', key: 'week' },
+                  { label: 'This Month', key: 'month' },
+                  { label: 'Last Month', key: 'lastmonth' },
+                  { label: 'Quarter', key: 'quarter' },
+                  { label: 'Financial Year', key: 'fy' }
+                ].map(item => (
+                  <button
+                    key={item.key}
+                    className={cn(
+                      "w-full rounded px-2.5 py-1.5 text-12 font-medium text-left cursor-pointer transition-colors text-text-primary hover:bg-gray-2",
+                      timeframe === item.key && "bg-primary-3/30 text-primary-9 font-semibold"
+                    )}
+                    onClick={() => {
+                      setTimeframe(item.key as any)
+                      setActiveFilterDropdown(null)
+                    }}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Dropdown pills */}
@@ -240,7 +297,7 @@ export default function DashboardCharts() {
             {activeFilterDropdown === 'more' && (
               <div className="absolute z-30 top-full left-0 mt-1.5 flex rounded-lg border border-border-default bg-surface shadow-xs overflow-hidden animate-in fade-in slide-in-from-top-2">
                 <div className="flex flex-col w-[190px] bg-primary-3/30 border-r border-border-default p-1 dark:bg-gray-12">
-                  {[{ id: 'status', label: 'Request Status', icon: ClipboardList }, { id: 'amount', label: 'PO Amount', icon: DollarSign }, { id: 'supplier', label: 'Supplier', icon: Building2 }].map(group => {
+                  {[{ id: 'status', label: 'Request Status', icon: ClipboardList }, { id: 'amount', label: 'PO Amount', icon: DollarSign }].map(group => {
                     const IconComp = group.icon
                     const isActive = activeFilterGroup === group.id
                     return (
@@ -264,54 +321,95 @@ export default function DashboardCharts() {
                   )}
                   {activeFilterGroup === 'amount' && (
                     <>
-                      <div className="text-11 font-bold text-text-muted mb-1">Filter by PO Amount</div>
+                      <div className="text-11 font-semibold text-text-muted mb-1">Filter by PO Amount</div>
                       <div className="flex flex-col gap-2">
                         <button className="w-full rounded px-2.5 py-1.5 text-12 font-medium text-left hover:bg-gray-2 cursor-pointer text-text-secondary" onClick={() => { setSearchQuery('amount > 100000'); setActiveFilterDropdown(null) }}>High Value (&gt; $100K)</button>
                         <button className="w-full rounded px-2.5 py-1.5 text-12 font-medium text-left hover:bg-gray-2 cursor-pointer text-text-secondary" onClick={() => { setSearchQuery('amount < 1000'); setActiveFilterDropdown(null) }}>Low Value (&lt; $1K)</button>
                       </div>
                     </>
                   )}
-                  {activeFilterGroup === 'supplier' && (
-                    <>
-                      <div className="relative"><Search className="absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-text-muted" /><input className="w-full rounded-lg border border-border-default bg-gray-2 py-1 pr-3 pl-8 text-11 text-text-primary outline-none" placeholder="Search supplier..." type="text" value={filterSearchQuery} onChange={e => setFilterSearchQuery(e.target.value)} /></div>
-                      <div className="flex flex-col gap-0.5 mt-1 max-h-[160px] overflow-y-auto scrollbar">
-                        {suppliers.map(s => s.name).filter(name => name.toLowerCase().includes(filterSearchQuery.toLowerCase())).slice(0, 5).map(supName => (
-                          <button key={supName} className="w-full rounded px-2.5 py-1.5 text-12 font-medium text-left hover:bg-gray-2 cursor-pointer text-text-secondary" onClick={() => { setSearchQuery(supName); setActiveFilterDropdown(null) }}>{supName}</button>
-                        ))}
-                      </div>
-                    </>
-                  )}
+
                 </div>
               </div>
             )}
           </div>
         </div>
 
-        {/* {(timeframe !== 'fy' || supplierCategory || invoiceStatus || currency || searchQuery) && (
+        {(timeframe !== 'fy' || supplierCategory || invoiceStatus || currency || searchQuery) && (
           <button className="cursor-pointer rounded-full border border-border-default bg-gray-2 px-3.5 py-1 text-12 font-medium text-text-secondary transition-all hover:bg-gray-3" onClick={() => { resetFilters(); setActiveFilterDropdown(null) }}>Reset</button>
-        )} */}
+        )}
 
         <div className="flex-1" />
-        <div className="relative">
-          <Search className="absolute top-1/2 left-3.5 h-3.5 w-3.5 -translate-y-1/2 text-text-muted" />
-          <input className="w-60 rounded-full border border-border-default bg-surface py-1.5 pr-4 pl-9.5 text-12 text-text-primary outline-none transition-all focus:border-primary-9 focus:ring-1 focus:ring-primary-9" placeholder="Search invoice, supplier, PO..." type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+        <div
+          className={cn(
+            "relative flex items-center justify-end transition-all duration-300",
+            isSearchExpanded || searchQuery ? "w-60" : "w-8"
+          )}
+        >
+          <button
+            type="button"
+            className={cn(
+              "absolute left-0 top-0 bottom-0 flex items-center justify-center transition-all duration-300 rounded-full",
+              isSearchExpanded || searchQuery
+                ? "w-8 pointer-events-none"
+                : "w-8 h-8 cursor-pointer hover:bg-gray-2 dark:hover:bg-gray-10 border border-border-default bg-surface"
+            )}
+            onClick={() => {
+              setIsSearchExpanded(true)
+              setTimeout(() => searchInputRef.current?.focus(), 50)
+            }}
+          >
+            <Search className="h-3.5 w-3.5 text-text-muted" />
+          </button>
+          <input
+            ref={searchInputRef}
+            className={cn(
+              "rounded-full border border-border-default bg-surface py-1.5 text-12 text-text-primary outline-none transition-all duration-300 focus:border-primary-9 focus:ring-1 focus:ring-primary-9",
+              isSearchExpanded || searchQuery
+                ? "w-full pr-4 pl-8 opacity-100"
+                : "w-0 pr-0 pl-0 opacity-0 border-transparent pointer-events-none"
+            )}
+            placeholder="Search invoice, supplier, PO..."
+            type="text"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            onFocus={() => setIsSearchExpanded(true)}
+            onBlur={() => {
+              if (!searchQuery) setIsSearchExpanded(false)
+            }}
+          />
         </div>
       </div>
 
       {/* 2. AP COMMAND CENTER BANNER */}
-      <div className="relative flex flex-wrap items-center justify-between gap-6 overflow-hidden rounded-lg bg-surface border border-border-default px-8 py-4 text-text-primary shadow-xs">
+      <div
+        className="relative cursor-pointer select-none transition-all duration-300 hover:shadow-sm hover:border-primary-9/40 hover:bg-primary-3/5 active:scale-[0.99] flex flex-wrap items-center justify-between gap-6 overflow-hidden rounded-lg bg-surface border border-border-default px-4 py-4 text-text-primary shadow-xs"
+        onClick={() => setIsCommandCenterExpanded(!isCommandCenterExpanded)}
+      >
         <div className="relative z-10">
-          <h2 className="font-poppins text-16 font-bold">AP Command Center</h2>
+          <h2 className="font-poppins text-14 font-semibold">AP Command Center</h2>
           <div className="font-inter text-11 text-text-muted mt-1">Real-time · {timeframe} · {supplierCategory || 'all suppliers'} · simulated ledger</div>
         </div>
-        <div className="relative z-10 flex gap-8 flex-wrap items-center">
-          <div className="text-right"><div className="font-poppins text-10 uppercase">Total AP</div><div className="text-18 font-bold text-primary-9">{fmtMoney(metrics.totalAP || 0)}</div></div>
-          <div className="text-right"><div className="font-poppins text-10 uppercase">Overdue</div><div className="text-18 font-bold text-primary-9">{fmtMoney(metrics.overdueAmount || 0)}</div></div>
-          <div className="text-right"><div className="font-poppins text-10 uppercase">Open Invoices</div><div className="text-18 font-bold text-primary-9">{metrics.openInvoices}</div></div>
-          <div className="text-right"><div className="font-poppins text-10 uppercase">DPO</div><div className="text-18 font-bold text-primary-9">{metrics.dpo}d</div></div>
-          <button className="cursor-pointer p-1.5 hover:bg-gray-2 dark:hover:bg-gray-10 rounded-lg text-text-secondary transition-colors  z-20" onClick={() => setIsCommandCenterExpanded(!isCommandCenterExpanded)}>
+        <div className="relative z-10 flex gap-6 flex-wrap items-center">
+          <div className="text-center md:text-right flex flex-col gap-0.5">
+            <span className="font-poppins text-[10px] font-medium tracking-wider text-text-secondary dark:text-gray-4 uppercase">Total AP</span>
+            <span className="text-15 font-semibold text-primary-9">{fmtMoney(metrics.totalAP || 0)}</span>
+          </div>
+          <div className="text-center md:text-right flex flex-col gap-0.5">
+            <span className="font-poppins text-[10px] font-medium tracking-wider text-text-secondary dark:text-gray-4 uppercase">Overdue</span>
+            <span className={cn("text-15 font-semibold", metrics.overdueAmount > 0 ? "text-red-9" : "text-primary-9")}>{fmtMoney(metrics.overdueAmount || 0)}</span>
+          </div>
+          <div className="text-center md:text-right flex flex-col gap-0.5">
+            <span className="font-poppins text-[10px] font-medium tracking-wider text-text-secondary dark:text-gray-4 uppercase">Open Invoices</span>
+            <span className="text-15 font-semibold text-primary-9">{metrics.openInvoices}</span>
+          </div>
+          <div className="text-center md:text-right flex flex-col gap-0.5">
+            <span className="font-poppins text-[10px] font-medium tracking-wider text-text-secondary dark:text-gray-4 uppercase">DPO</span>
+            <span className="text-15 font-semibold text-primary-9">{metrics.dpo}d</span>
+          </div>
+          <div className="p-1.5 rounded-lg text-text-secondary transition-colors z-20 ml-2">
             {isCommandCenterExpanded ? <ChevronUp className="h-5 w-5 text-primary-9" /> : <ChevronDown className="h-5 w-5" />}
-          </button>
+          </div>
         </div>
         <div className="absolute -top-12 -right-12 h-48 w-48 rounded-full bg-primary-3/20 blur-xl" />
       </div>
@@ -328,9 +426,9 @@ export default function DashboardCharts() {
             { name: 'Avg. Processing Time', value: metrics.avgProcessing, trend: metrics.avgProcessingChange, color: 'border-t-primary-9', isGood: true },
           ].map(kpi => (
             <div key={kpi.name} className={cn("cursor-pointer rounded-lg border border-border-default bg-surface p-4 shadow-xs transition-all hover:-translate-y-0.5 border-t-3", kpi.color, activeDrill === kpi.name && "ring-2 ring-primary-9/40 shadow-md")} onClick={() => handleKpiClick(kpi.name)}>
-              <div className="font-poppins text-10 font-semibold uppercase ">{kpi.name}</div>
+              <div className="font-poppins text-8 font-semibold uppercase ">{kpi.name}</div>
               {/* tracking-wider text-text-muted */}
-              <div className="font-poppins text-20 font-bold text-text-primary mt-1.5">{kpi.value}</div>
+              <div className="font-poppins text-18 font-semibold text-text-primary mt-1.5">{kpi.value}</div>
               <div className="flex items-center gap-1.5 mt-2 text-11 font-semibold">
                 <span className={cn("rounded px-1.5 py-0.5", kpi.isGood ? "bg-success-light text-success" : "bg-red-2 text-red-11")}>{kpi.trend}</span>
                 <span className="font-inter text-text-muted font-normal">vs last month</span>
@@ -345,7 +443,7 @@ export default function DashboardCharts() {
         <div className="animate-in fade-in slide-in-from-top-4 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
           <div className="flex items-center justify-between border-b border-border-default pb-3.5 mb-4">
             <div>
-              <h3 className="font-poppins text-15 font-bold text-text-primary">Invoices Drill-Down <span className="text-primary-9">· {activeDrill}</span></h3>
+              <h3 className="font-poppins text-14 font-semibold text-text-primary">Invoices Drill-Down <span className="text-primary-9">· {activeDrill}</span></h3>
               <p className="font-inter text-11 text-text-muted mt-0.5">Showing records matching this metrics slice</p>
             </div>
             <button className="cursor-pointer rounded-lg border border-border-default bg-gray-2 px-2.5 py-1 text-12 font-semibold text-text-secondary transition-all hover:bg-gray-3" onClick={() => setActiveDrill(null)}>Close</button>
@@ -354,19 +452,19 @@ export default function DashboardCharts() {
             <div className="overflow-x-auto max-h-[300px] scrollbar">
               <table className="w-full text-left text-12 border-collapse">
                 <thead>
-                  <tr className="bg-gray-2 text-text-muted uppercase text-10 font-bold border-b border-border-default">
+                  <tr className="bg-gray-2 text-text-muted uppercase text-10 font-semibold border-b border-border-default">
                     {['Invoice', 'Supplier', 'Department', 'Amount', 'Due Date', 'Status', 'Payment Method'].map(h => <th key={h} className="p-3">{h}</th>)}
                   </tr>
                 </thead>
                 <tbody>
                   {drillInvoices.slice(0, 50).map(inv => (
                     <tr key={inv.id} className="border-b border-gray-3 hover:bg-gray-2/50">
-                      <td className="p-3 font-mono font-bold text-primary-9">{inv.id}</td>
+                      <td className="p-3 font-mono font-semibold text-primary-9">{inv.id}</td>
                       <td className="p-3 font-medium text-text-primary"><span className="mr-1.5">{inv.flag}</span>{inv.supplier}</td>
                       <td className="p-3 text-text-secondary">{inv.department}</td>
-                      <td className="p-3 text-right font-mono font-bold text-text-primary">{fmtMoney(inv.amount, inv.currency)}</td>
+                      <td className="p-3 text-right font-mono font-semibold text-text-primary">{fmtMoney(inv.amount, inv.currency)}</td>
                       <td className="p-3 text-text-secondary">{new Date(inv.dueDate).toLocaleDateString()}</td>
-                      <td className="p-3"><span className={cn("px-2 py-0.5 rounded-full text-10 font-bold", getStatusClass(inv.status))}>{inv.status}</span></td>
+                      <td className="p-3"><span className={cn("px-2 py-0.5 rounded-full text-10 font-semibold", getStatusClass(inv.status))}>{inv.status}</span></td>
                       <td className="p-3 text-text-muted">{inv.paymentMethod}</td>
                     </tr>
                   ))}
@@ -392,10 +490,10 @@ export default function DashboardCharts() {
               <div className="col-span-12 lg:col-span-8 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h3 className="font-poppins text-15 font-bold text-text-primary">AI-generated insights</h3>
+                    <h3 className="font-poppins text-14 font-semibold text-text-primary">AI-generated insights</h3>
                     <div className="font-inter text-11 text-text-muted mt-0.5">Auto-updates with your filters — the ledger's margin notes</div>
                   </div>
-                  <span className="rounded border border-border-default bg-surface px-1.5 py-0.5 text-10 font-bold text-text-muted">LIVE</span>
+                  <span className="rounded border border-border-default bg-surface px-1.5 py-0.5 text-10 font-semibold text-text-muted">LIVE</span>
                 </div>
                 <ul className="flex flex-col">
                   {aiInsightsList.map((insight, idx) => (
@@ -408,7 +506,7 @@ export default function DashboardCharts() {
               </div>
             )}
             <div className={cn("rounded-lg border border-border-default bg-surface p-5 shadow-xs transition-all duration-300", isCommandCenterExpanded ? "col-span-12 lg:col-span-4" : "col-span-12")}>
-              <h3 className="font-poppins text-14 font-bold text-text-primary">Supplier Risk Radar</h3>
+              <h3 className="font-poppins text-14 font-semibold text-text-primary">Supplier Risk Radar</h3>
               <div className="font-inter text-11 text-text-muted mb-4">Which vendors carry the most risk exposure?</div>
               <div className="h-56">
                 <ResponsiveContainer width="100%" height="100%">
@@ -430,21 +528,30 @@ export default function DashboardCharts() {
 
           {/* Profitability Section */}
           <div className="flex flex-col gap-6">
-            <div className="flex flex-wrap items-center justify-between gap-4 overflow-hidden rounded-lg bg-surface border border-border-default px-8 py-5 text-text-primary shadow-xs">
+            <div className="flex flex-wrap items-center justify-between gap-4 overflow-hidden rounded-lg bg-surface border border-border-default px-4 py-4 text-text-primary shadow-xs">
               <div>
-                <h3 className="font-poppins text-16 font-bold">Profitability &amp; Cash Position</h3>
+                <h3 className="font-poppins text-14 font-semibold">Profitability &amp; Cash Position</h3>
                 <p className="font-inter text-11 text-text-secondary mt-0.5">Is payables growth eating margin · future liquidity needs</p>
               </div>
-              <div className="flex gap-8 flex-wrap">
-                <div className="text-right"><div className="font-inter text-10 uppercase tracking-widest text-text-muted">Profit Margin</div><div className="text-18 font-bold text-cyan-9">12.9%</div></div>
-                <div className="text-right"><div className="font-inter text-10 uppercase tracking-widest text-text-muted">Next 4 Weeks</div><div className="text-18 font-bold text-primary-9">$3.85M</div></div>
-                <div className="text-right"><div className="font-inter text-10 uppercase tracking-widest text-text-muted">Peak Week</div><div className="text-18 font-bold text-primary-9">Week 3</div></div>
+              <div className="flex gap-6 flex-wrap items-center">
+                <div className="text-center md:text-right flex flex-col gap-0.5">
+                  <span className="font-poppins text-[10px] font-medium tracking-wider text-text-secondary dark:text-gray-4 uppercase">Profit Margin</span>
+                  <span className="text-15 font-semibold text-cyan-9">12.9%</span>
+                </div>
+                <div className="text-center md:text-right flex flex-col gap-0.5">
+                  <span className="font-poppins text-[10px] font-medium tracking-wider text-text-secondary dark:text-gray-4 uppercase">Next 4 Weeks</span>
+                  <span className="text-15 font-semibold text-primary-9">$3.85M</span>
+                </div>
+                <div className="text-center md:text-right flex flex-col gap-0.5">
+                  <span className="font-poppins text-[10px] font-medium tracking-wider text-text-secondary dark:text-gray-4 uppercase">Peak Week</span>
+                  <span className="text-15 font-semibold text-primary-9">Week 3</span>
+                </div>
               </div>
             </div>
 
             <div className="grid grid-cols-12 gap-5">
               <div className="col-span-12 lg:col-span-6 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
-                <h3 className="font-poppins text-14 font-bold text-text-primary">Profit vs AP spending</h3>
+                <h3 className="font-poppins text-14 font-semibold text-text-primary">Profit vs AP spending</h3>
                 <div className="font-inter text-11 text-text-muted mb-4">Dual axis spending trend comparison</div>
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
@@ -462,7 +569,7 @@ export default function DashboardCharts() {
               </div>
 
               <div className="col-span-12 lg:col-span-6 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
-                <h3 className="font-poppins text-14 font-bold text-text-primary">Monthly payment trend</h3>
+                <h3 className="font-poppins text-14 font-semibold text-text-primary">Monthly payment trend</h3>
                 <div className="font-inter text-11 text-text-muted mb-4">Cash leaving the building, month by month</div>
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
@@ -479,7 +586,7 @@ export default function DashboardCharts() {
               </div>
 
               <div className="col-span-12 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
-                <h3 className="font-poppins text-14 font-bold text-text-primary">Cash flow forecast</h3>
+                <h3 className="font-poppins text-14 font-semibold text-text-primary">Cash flow forecast</h3>
                 <div className="font-inter text-11 text-text-muted mb-4">Liquidity projection and cash needs over next 10 weeks</div>
                 <div className="h-56">
                   <ResponsiveContainer width="100%" height="100%">
@@ -497,21 +604,30 @@ export default function DashboardCharts() {
             </div>
 
             {/* Supplier Concentration Section */}
-            <div className="flex flex-wrap items-center justify-between gap-4 overflow-hidden rounded-lg bg-surface border border-border-default px-8 py-5 text-text-primary shadow-xs">
+            <div className="flex flex-wrap items-center justify-between gap-4 overflow-hidden rounded-lg bg-surface border border-border-default px-4 py-4 text-text-primary shadow-xs">
               <div>
-                <h3 className="font-poppins text-16 font-bold">Supplier Concentration &amp; Risk</h3>
+                <h3 className="font-poppins text-14 font-semibold">Supplier Concentration &amp; Risk</h3>
                 <p className="font-inter text-11 text-text-secondary mt-0.5">Where spend concentrates · vendor risk exposure</p>
               </div>
-              <div className="flex gap-8 flex-wrap">
-                <div className="text-right"><div className="font-inter text-10 uppercase tracking-widest text-text-muted">Active Suppliers</div><div className="text-18 font-bold text-primary-9">24</div></div>
-                <div className="text-right"><div className="font-inter text-10 uppercase tracking-widest text-text-muted">High Risk</div><div className="text-18 font-bold text-red-9">3</div></div>
-                <div className="text-right"><div className="font-inter text-10 uppercase tracking-widest text-text-muted">Top-3 Concentration</div><div className="text-18 font-bold text-primary-9">44.0%</div></div>
+              <div className="flex gap-6 flex-wrap items-center">
+                <div className="text-center md:text-right flex flex-col gap-0.5">
+                  <span className="font-poppins text-[10px] font-medium tracking-wider text-text-secondary dark:text-gray-4 uppercase">Active Suppliers</span>
+                  <span className="text-15 font-semibold text-primary-9">24</span>
+                </div>
+                <div className="text-center md:text-right flex flex-col gap-0.5">
+                  <span className="font-poppins text-[10px] font-medium tracking-wider text-text-secondary dark:text-gray-4 uppercase">High Risk</span>
+                  <span className="text-15 font-semibold text-red-9">3</span>
+                </div>
+                <div className="text-center md:text-right flex flex-col gap-0.5">
+                  <span className="font-poppins text-[10px] font-medium tracking-wider text-text-secondary dark:text-gray-4 uppercase">Top-3 Concentration</span>
+                  <span className="text-15 font-semibold text-primary-9">44.0%</span>
+                </div>
               </div>
             </div>
 
             <div className="grid grid-cols-12 gap-5">
               <div className={cn("rounded-lg border border-border-default bg-surface p-5 shadow-xs transition-all duration-300", isCommandCenterExpanded ? "col-span-12 lg:col-span-4" : "col-span-12 lg:col-span-6")}>
-                <h3 className="font-poppins text-14 font-bold text-text-primary">Top 10 suppliers by invoice value</h3>
+                <h3 className="font-poppins text-14 font-semibold text-text-primary">Top 10 suppliers by invoice value</h3>
                 <div className="font-inter text-11 text-text-muted mb-4">Concentration of invoice liabilities</div>
                 <div className="h-60">
                   <ResponsiveContainer width="100%" height="100%">
@@ -527,7 +643,7 @@ export default function DashboardCharts() {
 
               {isCommandCenterExpanded && (
                 <div className="col-span-12 lg:col-span-4 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
-                  <h3 className="font-poppins text-14 font-bold text-text-primary">Outstanding payables by supplier</h3>
+                  <h3 className="font-poppins text-14 font-semibold text-text-primary">Outstanding payables by supplier</h3>
                   <div className="font-inter text-11 text-text-muted mb-4">Click a supplier's bar to drill down</div>
                   <div className="h-60">
                     <ResponsiveContainer width="100%" height="100%">
@@ -543,7 +659,7 @@ export default function DashboardCharts() {
               )}
 
               <div className={cn("rounded-lg border border-border-default bg-surface p-5 shadow-xs transition-all duration-300", isCommandCenterExpanded ? "col-span-12 lg:col-span-4" : "col-span-12 lg:col-span-6")}>
-                <h3 className="font-poppins text-14 font-bold text-text-primary">Department-wise spend</h3>
+                <h3 className="font-poppins text-14 font-semibold text-text-primary">Department-wise spend</h3>
                 <div className="font-inter text-11 text-text-muted mb-4">Tile size reflects share of AP expenses</div>
                 <div className="grid grid-cols-2 gap-2 h-48">
                   {[
@@ -555,9 +671,9 @@ export default function DashboardCharts() {
                     { name: 'Legal Advisors', share: '5%', amt: '$0.54M', color: 'bg-gray-2 text-text-secondary border border-border-default' },
                   ].map(dept => (
                     <div key={dept.name} className={cn("cursor-pointer rounded-lg p-2.5 flex flex-col justify-between transition-all hover:scale-[1.02]", dept.color)} onClick={() => { setSearchQuery(dept.name); setActiveDrill('Department Spend') }}>
-                      <span className="font-inter text-10 font-bold uppercase tracking-wider">{dept.name}</span>
+                      <span className="font-inter text-10 font-semibold">{dept.name}</span>
                       <div className="flex justify-between items-baseline mt-1">
-                        <span className="font-poppins text-14 font-bold">{dept.amt}</span>
+                        <span className="font-poppins text-14 font-semibold">{dept.amt}</span>
                         <span className="font-inter text-9 opacity-80">{dept.share}</span>
                       </div>
                     </div>
@@ -567,7 +683,7 @@ export default function DashboardCharts() {
               </div>
 
               <div className="col-span-12 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
-                <h3 className="font-poppins text-14 font-bold text-text-primary">Supplier geographic distribution</h3>
+                <h3 className="font-poppins text-14 font-semibold text-text-primary">Supplier geographic distribution</h3>
                 <div className="font-inter text-11 text-text-muted mb-4">Regional volume and spend exposure analysis</div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                   {[
@@ -577,7 +693,7 @@ export default function DashboardCharts() {
                     { region: 'United Kingdom', flag: '🇬🇧', value: '$1.2M', count: '3 suppliers', pct: 12 },
                   ].map(tile => (
                     <div key={tile.region} className="rounded-xl border border-border-default bg-gray-2 p-3">
-                      <div className="flex items-center justify-between font-inter text-12 font-bold text-text-primary">
+                      <div className="flex items-center justify-between font-inter text-12 font-semibold text-text-primary">
                         <span className="flex items-center gap-1.5"><span className="text-16">{tile.flag}</span>{tile.region}</span>
                         <span>{tile.value}</span>
                       </div>
@@ -590,22 +706,31 @@ export default function DashboardCharts() {
             </div>
 
             {/* Aging Section */}
-            <div className="flex flex-wrap items-center justify-between gap-4 overflow-hidden rounded-lg bg-surface border border-border-default px-8 py-5 text-text-primary shadow-xs">
+            <div className="flex flex-wrap items-center justify-between gap-4 overflow-hidden rounded-lg bg-surface border border-border-default px-4 py-4 text-text-primary shadow-xs">
               <div>
-                <h3 className="font-poppins text-16 font-bold">Aging &amp; Process Oversight</h3>
+                <h3 className="font-poppins text-14 font-semibold">Aging &amp; Process Oversight</h3>
                 <p className="font-inter text-11 text-text-secondary mt-0.5">Portfolio-level view of overdue exposure and approval cycles</p>
               </div>
-              <div className="flex gap-8 flex-wrap">
-                <div className="text-right"><div className="font-inter text-10 uppercase tracking-widest text-text-muted">90+ Days</div><div className="text-18 font-bold text-primary-9">$1.24M</div></div>
-                <div className="text-right"><div className="font-inter text-10 uppercase tracking-widest text-text-muted">Critical Exceptions</div><div className="text-18 font-bold text-red-9">4</div></div>
-                <div className="text-right"><div className="font-inter text-10 uppercase tracking-widest text-text-muted">Approval Rate</div><div className="text-18 font-bold text-success">94.2%</div></div>
+              <div className="flex gap-6 flex-wrap items-center">
+                <div className="text-center md:text-right flex flex-col gap-0.5">
+                  <span className="font-poppins text-[10px] font-medium tracking-wider text-text-secondary dark:text-gray-4 uppercase">90+ Days</span>
+                  <span className="text-15 font-semibold text-primary-9">$1.24M</span>
+                </div>
+                <div className="text-center md:text-right flex flex-col gap-0.5">
+                  <span className="font-poppins text-[10px] font-medium tracking-wider text-text-secondary dark:text-gray-4 uppercase">Critical Exceptions</span>
+                  <span className="text-15 font-semibold text-red-9">4</span>
+                </div>
+                <div className="text-center md:text-right flex flex-col gap-0.5">
+                  <span className="font-poppins text-[10px] font-medium tracking-wider text-text-secondary dark:text-gray-4 uppercase">Approval Rate</span>
+                  <span className="text-15 font-semibold text-success">94.2%</span>
+                </div>
               </div>
             </div>
 
             {isSupplierFollowUpExpanded && (
               <div className="grid grid-cols-12 gap-5">
                 <div className="col-span-12 lg:col-span-6 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
-                  <h3 className="font-poppins text-14 font-bold text-text-primary">Invoice aging analysis</h3>
+                  <h3 className="font-poppins text-14 font-semibold text-text-primary">Invoice aging analysis</h3>
                   <div className="font-inter text-11 text-text-muted mb-4">Click a segment to drill into invoices</div>
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
@@ -621,10 +746,10 @@ export default function DashboardCharts() {
                 </div>
 
                 <div className="col-span-12 lg:col-span-6 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
-                  <h3 className="font-poppins text-14 font-bold text-text-primary">Approval delay heat map</h3>
+                  <h3 className="font-poppins text-14 font-semibold text-text-primary">Approval delay heat map</h3>
                   <div className="font-inter text-11 text-text-muted mb-4">Average days to approve by department · last 8 weeks</div>
                   <div className="flex flex-col gap-2 font-inter mt-3">
-                    <div className="grid grid-cols-9 gap-1 text-[10px] text-text-muted font-bold text-center">
+                    <div className="grid grid-cols-9 gap-1 text-[10px] text-text-muted font-semibold text-center">
                       <div></div>
                       {['W1', 'W2', 'W3', 'W4', 'W5', 'W6', 'W7', 'W8'].map(w => <div key={w}>{w}</div>)}
                     </div>
@@ -640,7 +765,7 @@ export default function DashboardCharts() {
                           if (val > 7) color = 'bg-[#643094] text-white'
                           else if (val > 4) color = 'bg-[#8300e6] text-white'
                           else if (val > 2) color = 'bg-[#EEE6FD] text-primary-9'
-                          return <div key={idx} className={cn("h-8 rounded flex items-center justify-center text-11 font-bold", color)} title={`${row.dept}: ${val} days`}>{val}d</div>
+                          return <div key={idx} className={cn("h-8 rounded flex items-center justify-center text-11 font-semibold", color)} title={`${row.dept}: ${val} days`}>{val}d</div>
                         })}
                       </div>
                     ))}
@@ -663,10 +788,10 @@ export default function DashboardCharts() {
               <div className="col-span-12 lg:col-span-8 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h3 className="font-poppins text-15 font-bold text-text-primary">AI-generated insights</h3>
+                    <h3 className="font-poppins text-14 font-semibold text-text-primary">AI-generated insights</h3>
                     <div className="font-inter text-11 text-text-muted mt-0.5">Auto-updates with your filters — the ledger's margin notes</div>
                   </div>
-                  <span className="rounded border border-border-default bg-surface px-1.5 py-0.5 text-10 font-bold text-text-muted">LIVE</span>
+                  <span className="rounded border border-border-default bg-surface px-1.5 py-0.5 text-10 font-semibold text-text-muted">LIVE</span>
                 </div>
                 <ul className="flex flex-col">
                   {aiInsightsList.map((insight, idx) => (
@@ -679,7 +804,7 @@ export default function DashboardCharts() {
               </div>
 
               <div className="col-span-12 lg:col-span-4 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
-                <h3 className="font-poppins text-14 font-bold text-text-primary">Duplicate invoice watch</h3>
+                <h3 className="font-poppins text-14 font-semibold text-text-primary">Duplicate invoice watch</h3>
                 <div className="font-inter text-11 text-text-muted mb-3">Double payments flagged by ledger algorithms</div>
                 <div className="flex flex-col gap-2 max-h-[auto] overflow-y-auto scrollbar">
                   {[
@@ -690,8 +815,8 @@ export default function DashboardCharts() {
                     { id: 'INV-20134', supplier: 'Atlas Freight Partners', amt: '€149,343', match: '92%' },
                   ].map(item => (
                     <div key={item.id} className="flex items-center justify-between text-11 border-b border-gray-3 pb-2 last:border-b-0">
-                      <div><span className="font-mono font-bold text-red-9">{item.id}</span><span className="font-inter text-text-primary font-medium ml-2">{item.supplier}</span></div>
-                      <div className="text-right"><div className="font-bold text-text-primary">{item.amt}</div><div className="font-inter text-[9px] text-red-11 font-semibold">{item.match} match</div></div>
+                      <div><span className="font-mono font-semibold text-red-9">{item.id}</span><span className="font-inter text-text-primary font-medium ml-2">{item.supplier}</span></div>
+                      <div className="text-right"><div className="font-semibold text-text-primary">{item.amt}</div><div className="font-inter text-[9px] text-red-11 font-semibold">{item.match} match</div></div>
                     </div>
                   ))}
                 </div>
@@ -705,19 +830,29 @@ export default function DashboardCharts() {
             {/* Today's Action Queue — conditionally shown */}
 
             <>
-              <div className="flex flex-wrap items-center justify-between gap-4 overflow-hidden rounded-lg bg-surface border border-border-default px-8 py-5 text-text-primary shadow-xs">
+              <div
+                className="cursor-pointer select-none transition-all duration-300 hover:shadow-sm hover:border-primary-9/40 hover:bg-primary-3/5 active:scale-[0.99] flex flex-wrap items-center justify-between gap-4 overflow-hidden rounded-lg bg-surface border border-border-default px-4 py-4 text-text-primary shadow-xs"
+                onClick={() => setIsTodayActionExpanded(!isTodayActionExpanded)}
+              >
                 <div>
-                  <h3 className="font-poppins text-16 font-bold">Today's Action Queue</h3>
+                  <h3 className="font-poppins text-14 font-semibold">Today's Action Queue</h3>
                   <p className="font-inter text-11 text-text-secondary mt-0.5">Prioritized invoice items requiring attention today</p>
                 </div>
-                <div className="flex gap-8 flex-wrap">
-                  <div className="text-right"><div className="font-poppins text-8 uppercase">Due Today</div><div className="text-18 font-bold text-cyan-9">{fmtMoney(metrics.dueToday || 0)}</div></div>
-                  <div className="text-right"><div className="font-poppins text-8 uppercase">Cash This Week</div><div className="text-18 font-bold text-primary-9">$298.7K</div></div>
-                  <div className="text-right"><div className="font-poppins text-8 uppercase">Queue Size</div><div className="text-18 font-bold text-primary-9">{filteredInvoices.filter(inv => inv.status === 'Pending').length} items</div></div>
-                  <div className="text-right">
-                    <button className="cursor-pointer p-1.5 hover:bg-gray-2 dark:hover:bg-gray-10 rounded-lg text-text-secondary transition-colors  z-20" onClick={() => setIsTodayActionExpanded(!isTodayActionExpanded)}>
-                      {isTodayActionExpanded ? <ChevronUp className="h-5 w-5 text-primary-9" /> : <ChevronDown className="h-5 w-5" />}
-                    </button>
+                <div className="flex gap-6 flex-wrap items-center">
+                  <div className="text-center md:text-right flex flex-col gap-0.5">
+                    <span className="font-poppins text-[10px] font-medium tracking-wider text-text-secondary dark:text-gray-4 uppercase">Due Today</span>
+                    <span className="text-15 font-semibold text-cyan-9">{fmtMoney(metrics.dueToday || 0)}</span>
+                  </div>
+                  <div className="text-center md:text-right flex flex-col gap-0.5">
+                    <span className="font-poppins text-[10px] font-medium tracking-wider text-text-secondary dark:text-gray-4 uppercase">Cash This Week</span>
+                    <span className="text-15 font-semibold text-primary-9">$298.7K</span>
+                  </div>
+                  <div className="text-center md:text-right flex flex-col gap-0.5">
+                    <span className="font-poppins text-[10px] font-medium tracking-wider text-text-secondary dark:text-gray-4 uppercase">Queue Size</span>
+                    <span className="text-15 font-semibold text-primary-9">{filteredInvoices.filter(inv => inv.status === 'Pending').length} items</span>
+                  </div>
+                  <div className="p-1.5 rounded-lg text-text-secondary transition-colors z-20 ml-2">
+                    {isTodayActionExpanded ? <ChevronUp className="h-5 w-5 text-primary-9" /> : <ChevronDown className="h-5 w-5" />}
                   </div>
                 </div>
               </div>
@@ -728,15 +863,15 @@ export default function DashboardCharts() {
                   <div className="col-span-12 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
                     <div className="flex items-center justify-between border-b border-border-default pb-3.5 mb-4">
                       <div>
-                        <h3 className="font-poppins text-14 font-bold text-text-primary">AP workbench — prioritized queue</h3>
+                        <h3 className="font-poppins text-14 font-semibold text-text-primary">AP workbench — prioritized queue</h3>
                         <div className="font-inter text-11 text-text-muted">Overdue and due-soonest first — process top-down</div>
                       </div>
-                      <span className="rounded-full bg-primary-3 px-3 py-0.5 text-10 font-bold text-primary-9">{filteredInvoices.slice(0, 10).length} prioritized</span>
+                      <span className="rounded-full bg-primary-3 px-3 py-0.5 text-10 font-semibold text-primary-9">{filteredInvoices.slice(0, 10).length} prioritized</span>
                     </div>
                     <div className="overflow-x-auto scrollbar">
                       <table className="w-full text-left text-12 border-collapse">
                         <thead>
-                          <tr className="bg-gray-2 text-text-muted uppercase text-10 font-bold border-b border-border-default">
+                          <tr className="bg-gray-2 text-text-muted uppercase text-10 font-semibold border-b border-border-default">
                             {['Priority', 'Invoice', 'Supplier', 'Department', 'Amount', 'Due Date', 'Status', 'Buyer', 'Actions'].map(h => <th key={h} className="p-3">{h}</th>)}
                           </tr>
                         </thead>
@@ -747,16 +882,16 @@ export default function DashboardCharts() {
                               <React.Fragment key={inv.id}>
                                 <tr className="border-b border-gray-3 hover:bg-gray-2/50">
                                   <td className="p-3"><span className={cn("inline-block h-2 w-2 rounded-full", idx === 0 ? "bg-red-9" : idx < 3 ? "bg-warning" : "bg-success")} /></td>
-                                  <td className="p-3 font-mono font-bold text-primary-9">{inv.id}</td>
+                                  <td className="p-3 font-mono font-semibold text-primary-9">{inv.id}</td>
                                   <td className="p-3 font-medium text-text-primary"><span className="mr-1.5">{inv.flag}</span>{inv.supplier}</td>
                                   <td className="p-3 text-text-secondary">{inv.department}</td>
-                                  <td className="p-3 text-right font-mono font-bold text-text-primary">{fmtMoney(inv.amount, inv.currency)}</td>
+                                  <td className="p-3 text-right font-mono font-semibold text-text-primary">{fmtMoney(inv.amount, inv.currency)}</td>
                                   <td className="p-3 text-text-secondary">{new Date(inv.dueDate).toLocaleDateString()}</td>
-                                  <td className="p-3"><span className={cn("px-2 py-0.5 rounded-full text-10 font-bold", getStatusClass(inv.status))}>{inv.status}</span></td>
+                                  <td className="p-3"><span className={cn("px-2 py-0.5 rounded-full text-10 font-semibold", getStatusClass(inv.status))}>{inv.status}</span></td>
                                   <td className="p-3 text-text-muted">{inv.buyer}</td>
                                   <td className="p-3 text-right">
                                     <div className="inline-flex items-center gap-2 justify-end">
-                                      <button className="cursor-pointer rounded border border-border-default bg-surface px-2.5 py-1 text-10 font-bold text-primary-9 transition-all hover:bg-primary-9 hover:text-white" onClick={() => { setDrillSupplier(inv.supplier); setActiveDrill('Outstanding Payables') }}>Action</button>
+                                      <button className="cursor-pointer rounded border border-border-default bg-surface px-2.5 py-1 text-10 font-semibold text-primary-9 transition-all hover:bg-primary-9 hover:text-white" onClick={() => { setDrillSupplier(inv.supplier); setActiveDrill('Outstanding Payables') }}>Action</button>
                                       <button className="cursor-pointer p-1 text-text-secondary hover:bg-gray-3 rounded transition-colors" onClick={() => setExpandedInvoiceId(isExpanded ? null : inv.id)}>
                                         {isExpanded ? <ChevronUp className="h-4 w-4 text-primary-9" /> : <ChevronDown className="h-4 w-4" />}
                                       </button>
@@ -767,10 +902,10 @@ export default function DashboardCharts() {
                                   <tr className="bg-primary-3/10 dark:bg-gray-12/30">
                                     <td colSpan={9} className="p-4 border-b border-border-default">
                                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 font-inter text-11 text-text-secondary">
-                                        <div><div className="font-bold text-text-muted">PO Reference</div><div className="font-mono mt-0.5 text-text-primary">{inv.costCenter.replace('CC-', 'PO-')}</div></div>
-                                        <div><div className="font-bold text-text-muted">Cost Center</div><div className="mt-0.5 text-text-primary">{inv.costCenter}</div></div>
-                                        <div><div className="font-bold text-text-muted">Profit Center</div><div className="mt-0.5 text-text-primary">{inv.profitCenter}</div></div>
-                                        <div><div className="font-bold text-text-muted">Payment Channel</div><div className="mt-0.5 text-text-primary">{inv.paymentMethod}</div></div>
+                                        <div><div className="font-semibold text-text-muted">PO Reference</div><div className="font-mono mt-0.5 text-text-primary">{inv.costCenter.replace('CC-', 'PO-')}</div></div>
+                                        <div><div className="font-semibold text-text-muted">Cost Center</div><div className="mt-0.5 text-text-primary">{inv.costCenter}</div></div>
+                                        <div><div className="font-semibold text-text-muted">Profit Center</div><div className="mt-0.5 text-text-primary">{inv.profitCenter}</div></div>
+                                        <div><div className="font-semibold text-text-muted">Payment Channel</div><div className="mt-0.5 text-text-primary">{inv.paymentMethod}</div></div>
                                       </div>
                                       <div className="mt-3 p-2.5 rounded bg-orange-2/30 border border-orange-3/30 font-inter text-11 text-orange-11">
                                         <strong>Ledger Verification Note:</strong> Invoice matched against approved master list. {inv.isDuplicate ? 'ALERT: Potential duplicate invoice match. Review before release.' : 'Standard SLA timeline. No pricing exceptions found.'}
@@ -789,17 +924,17 @@ export default function DashboardCharts() {
                   {/* Payment Calendar */}
                   {isTodayActionExpanded && (
                     <div className="col-span-12 lg:col-span-5 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
-                      <h3 className="font-poppins text-14 font-bold text-text-primary">Payment calendar</h3>
+                      <h3 className="font-poppins text-14 font-semibold text-text-primary">Payment calendar</h3>
                       <div className="font-inter text-11 text-text-muted mb-4">Scheduled payments calendar heatmap</div>
                       <div className="grid grid-cols-7 gap-1 text-center font-inter">
-                        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => <div key={i} className="text-10 font-bold text-text-muted py-1">{d}</div>)}
+                        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => <div key={i} className="text-10 font-semibold text-text-muted py-1">{d}</div>)}
                         {Array.from({ length: 4 }).map((_, idx) => <div key={`e-${idx}`} className="h-8" />)}
                         {Array.from({ length: 30 }).map((_, idx) => {
                           const day = idx + 1
                           const isToday = day === 8
                           const isDue = [5, 12, 18, 22, 25, 29].includes(day)
                           let cellStyle = 'bg-gray-2 text-text-secondary hover:bg-gray-3'
-                          if (isToday) cellStyle = 'bg-primary-9 text-white font-bold'
+                          if (isToday) cellStyle = 'bg-primary-9 text-white font-semibold'
                           else if (isDue) cellStyle = 'bg-primary-3 text-primary-9 font-semibold'
                           return <div key={day} className={cn("h-8 rounded flex items-center justify-center text-11 transition-all cursor-pointer", cellStyle)} title={isToday ? 'Today' : isDue ? 'Payment due date' : ''}>{day}</div>
                         })}
@@ -814,7 +949,7 @@ export default function DashboardCharts() {
                   {/* Cash Required */}
                   {isTodayActionExpanded && (
                     <div className="col-span-12 lg:col-span-7 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
-                      <h3 className="font-poppins text-14 font-bold text-text-primary">Cash required — next 7 days</h3>
+                      <h3 className="font-poppins text-14 font-semibold text-text-primary">Cash required — next 7 days</h3>
                       <div className="font-inter text-11 text-text-muted mb-4">Daily cash requirements for approved invoices</div>
                       <div className="h-56">
                         <ResponsiveContainer width="100%" height="100%">
@@ -835,19 +970,29 @@ export default function DashboardCharts() {
 
 
             {/* Processing & Bottlenecks (Always visible) */}
-            <div className="flex flex-wrap items-center justify-between gap-4 overflow-hidden rounded-lg bg-surface border border-border-default px-8 py-5 text-text-primary shadow-sm">
+            <div
+              className="cursor-pointer select-none transition-all duration-300 hover:shadow-sm hover:border-primary-9/40 hover:bg-primary-3/5 active:scale-[0.99] flex flex-wrap items-center justify-between gap-4 overflow-hidden rounded-lg bg-surface border border-border-default px-4 py-4 text-text-primary shadow-sm"
+              onClick={() => setIsProcessingExpanded(!isProcessingExpanded)}
+            >
               <div>
-                <h3 className="font-poppins text-16 font-bold">Processing &amp; Bottlenecks</h3>
+                <h3 className="font-poppins text-14 font-semibold">Processing &amp; Bottlenecks</h3>
                 <p className="font-inter text-11 text-text-secondary mt-0.5">Pipeline throughput efficiency and approval metrics</p>
               </div>
-              <div className="flex gap-8 flex-wrap">
-                <div className="text-right"><div className="font-poppins text-10 uppercase">Total Invoices</div><div className="text-18 font-bold text-primary-9">266</div></div>
-                <div className="text-right"><div className="font-poppins text-10 uppercase">Touchless Rate</div><div className="text-18 font-bold text-primary-9">44.0%</div></div>
-                <div className="text-right"><div className="font-poppins text-10 uppercase">Avg Approval Days</div><div className="text-18 font-bold text-primary-9">6.1 days</div></div>
-                <div className="text-right">
-                  <button className="cursor-pointer p-1.5 hover:bg-gray-2 dark:hover:bg-gray-10 rounded-lg text-text-secondary transition-colors  z-20" onClick={() => setIsProcessingExpanded(!isProcessingExpanded)}>
-                    {isProcessingExpanded ? <ChevronUp className="h-5 w-5 text-primary-9" /> : <ChevronDown className="h-5 w-5" />}
-                  </button>
+              <div className="flex gap-6 flex-wrap items-center">
+                <div className="text-center md:text-right flex flex-col gap-0.5">
+                  <span className="font-poppins text-[10px] font-medium tracking-wider text-text-secondary dark:text-gray-4 uppercase">Total Invoices</span>
+                  <span className="text-15 font-semibold text-primary-9">266</span>
+                </div>
+                <div className="text-center md:text-right flex flex-col gap-0.5">
+                  <span className="font-poppins text-[10px] font-medium tracking-wider text-text-secondary dark:text-gray-4 uppercase">Touchless Rate</span>
+                  <span className="text-15 font-semibold text-primary-9">44.0%</span>
+                </div>
+                <div className="text-center md:text-right flex flex-col gap-0.5">
+                  <span className="font-poppins text-[10px] font-medium tracking-wider text-text-secondary dark:text-gray-4 uppercase">Avg Approval Days</span>
+                  <span className="text-15 font-semibold text-primary-9">6.1 days</span>
+                </div>
+                <div className="p-1.5 rounded-lg text-text-secondary transition-colors z-20 ml-2">
+                  {isProcessingExpanded ? <ChevronUp className="h-5 w-5 text-primary-9" /> : <ChevronDown className="h-5 w-5" />}
                 </div>
               </div>
             </div>
@@ -855,7 +1000,7 @@ export default function DashboardCharts() {
             {isProcessingExpanded && (
               <div className="grid grid-cols-12 gap-5">
                 <div className="col-span-12 lg:col-span-4 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
-                  <h3 className="font-poppins text-14 font-bold text-text-primary">Invoice processing funnel</h3>
+                  <h3 className="font-poppins text-14 font-semibold text-text-primary">Invoice processing funnel</h3>
                   <div className="font-inter text-11 text-text-muted mb-4">Pipeline drops across lifecycle steps</div>
                   <div className="flex flex-col gap-3.5 py-4">
                     {[
@@ -867,7 +1012,7 @@ export default function DashboardCharts() {
                       <div key={bar.step} className="flex flex-col gap-1 font-inter text-12 font-semibold">
                         <div className="flex justify-between text-text-secondary"><span>{bar.step}</span><span>{bar.value}</span></div>
                         <div className="h-8 bg-gray-2 rounded overflow-hidden relative">
-                          <div className="h-full bg-gradient-to-r from-primary-9 to-primary-10 flex items-center px-3 text-white font-bold text-11" style={{ width: bar.width }}>{bar.pct} conversion</div>
+                          <div className="h-full bg-gradient-to-r from-primary-9 to-primary-10 flex items-center px-3 text-white font-semibold text-11" style={{ width: bar.width }}>{bar.pct} conversion</div>
                         </div>
                       </div>
                     ))}
@@ -876,10 +1021,10 @@ export default function DashboardCharts() {
 
                 {isProcessingExpanded && (
                   <div className="col-span-12 lg:col-span-4 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
-                    <h3 className="font-poppins text-14 font-bold text-text-primary">Approval delay heat map</h3>
+                    <h3 className="font-poppins text-14 font-semibold text-text-primary">Approval delay heat map</h3>
                     <div className="font-inter text-11 text-text-muted mb-4">Approver delay averages over weeks</div>
                     <div className="flex flex-col gap-2 font-inter mt-3">
-                      <div className="grid grid-cols-6 gap-1 text-[10px] text-text-muted font-bold text-center">
+                      <div className="grid grid-cols-6 gap-1 text-[10px] text-text-muted font-semibold text-center">
                         <div></div>
                         {['W1', 'W2', 'W3', 'W4', 'W5'].map(w => <div key={w}>{w}</div>)}
                       </div>
@@ -895,7 +1040,7 @@ export default function DashboardCharts() {
                             if (val > 7) color = 'bg-[#643094] text-white'
                             else if (val > 4) color = 'bg-[#8300e6] text-white'
                             else if (val > 2) color = 'bg-[#EEE6FD] text-primary-9'
-                            return <div key={idx} className={cn("h-8 rounded flex items-center justify-center text-11 font-bold", color)} title={`${row.user}: ${val} days`}>{val}d</div>
+                            return <div key={idx} className={cn("h-8 rounded flex items-center justify-center text-11 font-semibold", color)} title={`${row.user}: ${val} days`}>{val}d</div>
                           })}
                         </div>
                       ))}
@@ -904,7 +1049,7 @@ export default function DashboardCharts() {
                 )}
                 {isProcessingExpanded && (
                   <div className="col-span-12 lg:col-span-4 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
-                    <h3 className="font-poppins text-14 font-bold text-text-primary">Invoice status distribution</h3>
+                    <h3 className="font-poppins text-14 font-semibold text-text-primary">Invoice status distribution</h3>
                     <div className="font-inter text-11 text-text-muted mb-4">Click a slice to open matching list</div>
                     <div className="h-48">
                       <ResponsiveContainer width="100%" height="100%">
@@ -925,22 +1070,32 @@ export default function DashboardCharts() {
                   </div>
                 )}
               </div>
-            )
-            }
+            )}
+
             {/* Supplier Follow-ups (Always visible) */}
-            <div className="flex flex-wrap items-center justify-between gap-4 overflow-hidden rounded-lg bg-surface border border-border-default px-8 py-5 text-text-primary shadow-sm">
+            <div
+              className="cursor-pointer select-none transition-all duration-300 hover:shadow-sm hover:border-primary-9/40 hover:bg-primary-3/5 active:scale-[0.99] flex flex-wrap items-center justify-between gap-4 overflow-hidden rounded-lg bg-surface border border-border-default px-4 py-4 text-text-primary shadow-sm"
+              onClick={() => setIsSupplierFollowUpExpanded(!isSupplierFollowUpExpanded)}
+            >
               <div>
-                <h3 className="font-poppins text-16 font-bold">Supplier Follow-ups</h3>
+                <h3 className="font-poppins text-14 font-semibold">Supplier Follow-ups</h3>
                 <p className="font-inter text-11 text-text-secondary mt-0.5">Vendors needing prompt outreach or query resolution</p>
               </div>
-              <div className="flex gap-8 flex-wrap">
-                <div className="text-right"><div className="font-poppins text-10 uppercase">Overdue amount</div><div className="text-18 font-bold text-red-9">{fmtMoney(metrics.overdueAmount || 0)}</div></div>
-                <div className="text-right"><div className="font-poppins text-10 uppercase">Duplicates Value</div><div className="text-18 font-bold text-primary-9">$84.2K</div></div>
-                <div className="text-right"><div className="font-poppins text-10 uppercase">Suppliers to Chase</div><div className="text-18 font-bold text-primary-9">9 vendors</div></div>
-                <div className="text-right">
-                  <button className="cursor-pointer p-1.5 hover:bg-gray-2 dark:hover:bg-gray-10 rounded-lg text-text-secondary transition-colors  z-20" onClick={() => setIsSupplierFollowUpExpanded(!isSupplierFollowUpExpanded)}>
-                    {isSupplierFollowUpExpanded ? <ChevronUp className="h-5 w-5 text-primary-9" /> : <ChevronDown className="h-5 w-5" />}
-                  </button>
+              <div className="flex gap-6 flex-wrap items-center">
+                <div className="text-center md:text-right flex flex-col gap-0.5">
+                  <span className="font-poppins text-[10px] font-medium tracking-wider text-text-secondary dark:text-gray-4 uppercase">Overdue Amount</span>
+                  <span className="text-15 font-semibold text-red-9">{fmtMoney(metrics.overdueAmount || 0)}</span>
+                </div>
+                <div className="text-center md:text-right flex flex-col gap-0.5">
+                  <span className="font-poppins text-[10px] font-medium tracking-wider text-text-secondary dark:text-gray-4 uppercase">Duplicates Value</span>
+                  <span className="text-15 font-semibold text-primary-9">$84.2K</span>
+                </div>
+                <div className="text-center md:text-right flex flex-col gap-0.5">
+                  <span className="font-poppins text-[10px] font-medium tracking-wider text-text-secondary dark:text-gray-4 uppercase">Suppliers to Chase</span>
+                  <span className="text-15 font-semibold text-primary-9">9 vendors</span>
+                </div>
+                <div className="p-1.5 rounded-lg text-text-secondary transition-colors z-20 ml-2">
+                  {isSupplierFollowUpExpanded ? <ChevronUp className="h-5 w-5 text-primary-9" /> : <ChevronDown className="h-5 w-5" />}
                 </div>
               </div>
             </div>
@@ -948,7 +1103,7 @@ export default function DashboardCharts() {
             <div className="grid grid-cols-12 gap-5">
               {isSupplierFollowUpExpanded && (
                 <div className="col-span-12 lg:col-span-6 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
-                  <h3 className="font-poppins text-14 font-bold text-text-primary">Outstanding payables by supplier</h3>
+                  <h3 className="font-poppins text-14 font-semibold text-text-primary">Outstanding payables by supplier</h3>
                   <div className="font-inter text-11 text-text-muted mb-4">Click a supplier's bar to drill down</div>
                   <div className="h-60">
                     <ResponsiveContainer width="100%" height="100%">
@@ -965,7 +1120,7 @@ export default function DashboardCharts() {
 
               {isSupplierFollowUpExpanded && (
                 <div className={cn("rounded-lg border border-border-default bg-surface p-5 shadow-xs transition-all duration-300", "col-span-6 lg:col-span-6")}>
-                  <h3 className="font-poppins text-14 font-bold text-text-primary">Invoice aging analysis</h3>
+                  <h3 className="font-poppins text-14 font-semibold text-text-primary">Invoice aging analysis</h3>
                   <div className="font-inter text-11 text-text-muted mb-4">Click a segment to drill into aging details</div>
                   <div className="h-60">
                     <ResponsiveContainer width="100%" height="100%">
@@ -982,7 +1137,7 @@ export default function DashboardCharts() {
               )}
               {isSupplierFollowUpExpanded && (
                 <div className="col-span-12 lg:col-span-6 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
-                  <h3 className="font-poppins text-14 font-bold text-text-primary">Monthly invoice trend</h3>
+                  <h3 className="font-poppins text-14 font-semibold text-text-primary">Monthly invoice trend</h3>
                   <div className="font-inter text-11 text-text-muted mb-4">Incoming workload volumes over the last 6 months</div>
                   <div className="h-56">
                     <ResponsiveContainer width="100%" height="100%">
@@ -999,7 +1154,7 @@ export default function DashboardCharts() {
                 </div>
               )}
               {/* <div className="col-span-12 lg:col-span-6 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
-                <h3 className="font-poppins text-14 font-bold text-text-primary">Payment method distribution</h3>
+                <h3 className="font-poppins text-14 font-semibold text-text-primary">Payment method distribution</h3>
                 <div className="font-inter text-11 text-text-muted mb-4">Share of transactions by payment channel</div>
                 <div className="h-56">
                   <ResponsiveContainer width="100%" height="100%">

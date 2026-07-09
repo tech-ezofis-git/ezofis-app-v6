@@ -10,6 +10,7 @@ import Divider from '@/components/base/Divider'
 import Icon from '@/components/base/icon/Icon'
 import IconIllustrated from '@/components/base/icon/IconIllustrated'
 import InputText from '@/components/base/inputs/InputText'
+import Alert from '@/components/base/Alert'
 import Title from '@/components/base/Title'
 import showToast from '@/components/base/toast/showToast'
 import authUserStore from '@/stores/authUserStore'
@@ -211,9 +212,10 @@ const SignUpForm = ({ email, setEmail, onChangeView }: Props) => {
     <>
       <IconIllustrated icon='tabler:user-plus' />
       <Title
-        description='Sign up to start managing your workspace.'
+        className='text-center'
+        description='Sign up to start managing your workspace'
         level={1}
-        title='Create Your Account'
+        title='Create your account'
       />
 
       <div className='space-y-3'>
@@ -247,7 +249,7 @@ const SignUpForm = ({ email, setEmail, onChangeView }: Props) => {
         />
 
         {error && (
-          <div className='text-red-500 text-center text-sm'>{error}</div>
+          <Alert text={error} variant='primary' className='mt-2' />
         )}
       </div>
     </>

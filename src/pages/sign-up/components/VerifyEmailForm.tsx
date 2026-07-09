@@ -91,9 +91,9 @@ const VerifyEmailForm = () => {
       <IconIllustrated icon='lucide:mail-check' />
       <Title
         className='text-center'
-        description='Enter the OTP to continue.'
+        description='Enter the OTP to continue'
         level={1}
-        title='Verify Your Email'
+        title='Verify your email'
       />
 
       <InputPin

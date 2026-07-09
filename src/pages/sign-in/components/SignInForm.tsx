@@ -14,6 +14,7 @@ import IconIllustrated from '@/components/base/icon/IconIllustrated'
 import InputCheckbox from '@/components/base/inputs/InputCheckbox'
 import InputText from '@/components/base/inputs/InputText'
 import InputPassword from '@/components/base/inputs/password/InputPassword'
+import Alert from '@/components/base/Alert'
 import Title from '@/components/base/Title'
 import showToast from '@/components/base/toast/showToast'
 import { AnimateSlideLeft } from '@/components/common/animations'
@@ -589,9 +590,7 @@ const SignInForm = ({ onChangeView }: Props) => {
                 />
               </div>
               {error && (
-                <div className='text-red-500 mt-2 text-center text-sm'>
-                  {error}
-                </div>
+                <Alert text={error} variant='primary' className='mt-2' />
               )}
             </>
           ) : (
@@ -623,9 +622,7 @@ const SignInForm = ({ onChangeView }: Props) => {
                 />
               </div>
               {error && (
-                <div className='text-red-500 mt-2 text-center text-sm'>
-                  {error}
-                </div>
+                <Alert text={error} variant='primary' className='mt-2' />
               )}
             </>
           )}
@@ -738,7 +735,7 @@ const SignInForm = ({ onChangeView }: Props) => {
           />
 
           {error && (
-            <div className='text-red-500 mt-2 text-center text-sm'>{error}</div>
+            <Alert text={error} variant='primary' className='mt-2' />
           )}
 
           {/* Social section – Vue used <SocialAuths>, here we expose Google + Microsoft directly */}
