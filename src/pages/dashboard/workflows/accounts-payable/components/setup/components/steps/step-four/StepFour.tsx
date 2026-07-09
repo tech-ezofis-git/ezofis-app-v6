@@ -3,6 +3,7 @@ import { useState } from 'react'
 import * as XLSX from 'xlsx'
 import { createRepository } from '@/api/createFolder'
 import formApi from '@/api/form/form'
+import usersApiV6 from '@/api/v6/user'
 import workflowApi from '@/api/workflow/workflow'
 import poMasterUrl from '@/assets/PO Master.xlsx?url'
 import Button from '@/components/base/button/Button'
@@ -354,6 +355,20 @@ const StepFour = () => {
         })
         setIsSaving(false)
         return
+      }
+
+      if (userId) {
+        const configRes = await usersApiV6.updateUserConfiguration(userId, {
+          message: 'configuration:completed',
+        })
+        if (configRes.error) {
+          showToast({
+            message: `Failed to update configuration: ${configRes.error}`,
+            variant: 'error',
+          })
+          setIsSaving(false)
+          return
+        }
       }
 
       // Proceed with setup completion after all V6 APIs run successfully
