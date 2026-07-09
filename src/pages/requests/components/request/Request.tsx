@@ -1512,7 +1512,7 @@ const Request = ({
 
   const handleShare = async (emails: string[], message: string) => {
     const instanceId =
-      selectedItem?.workflowInstanceId || request?.workflowInstanceId || jobData?.instanceId
+      selectedItem?.workflowInstanceId || request?.workflowInstanceId
     const repositoryId =
       selectedItem?.repositoryId || request?.repositoryId || rawWorkflowData?.repositoryId
     const itemId =
