@@ -4,7 +4,9 @@ import workflowsApiV6 from '@/api/v6/workflows'
 import showToast from '@/components/base/toast/showToast'
 // Import your custom animation components
 import { AnimateFadeIn } from '@/components/common/animations'
-import ApiPlayground from '@/components/playground/ApiPlayground'
+import ApiPlayground, {
+  type ApiPlaygroundContext,
+} from '@/components/playground/ApiPlayground'
 import { queryClient } from '@/lib/tanstack-query/queryClient'
 import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
@@ -571,7 +573,7 @@ const handleJobData = (
     .getState()
     .updateProcessingProcess(String(`job-${apAgentJobId}`), {
       percent,
-      stage: jobData.stage || 'Initiating...',
+      stage: jobData.stage || 'Initializing....',
     })
 
   if (isCompleted) {
@@ -1301,12 +1303,32 @@ const Request = ({
     }
   }
 
+  const parsedFormData = useMemo(() => {
+    const formData = selectedItem?.formData
+    if (!formData) return {}
+    if (typeof formData === 'object') return formData.fields || formData
+    if (typeof formData === 'string') {
+      try {
+        const parsed = JSON.parse(formData)
+        return parsed.fields || parsed || {}
+      } catch {
+        return {}
+      }
+    }
+    return {}
+  }, [selectedItem])
+
   const totalAmount =
     formModel?.['Invoice Amount'] ||
     formModel?.['Total Due'] ||
     formModel?.['Total'] ||
     formModel?.['invoice_amount'] ||
     formModel?.['total_amount'] ||
+    parsedFormData?.['Invoice Amount'] ||
+    parsedFormData?.['Total Due'] ||
+    parsedFormData?.['Total'] ||
+    parsedFormData?.['invoice_amount'] ||
+    parsedFormData?.['total_amount'] ||
     invoiceHeader?.['Invoice Amount'] ||
     invoiceHeader?.['Total Due'] ||
     invoiceHeader?.['Total'] ||
@@ -1388,8 +1410,9 @@ const Request = ({
             endpoint:
               action?.endpoint ||
               'https://ezagentplayground.onrender.com/apikey.html?id=2',
-            model: action?.model || 'gemini-2.0-flash-exp',
-            provider: action?.provider || 'gemini',
+            // model: action?.model || 'gemini-2.0-flash-exp',
+            // provider: action?.provider || 'gemini',
+            requestPayload: docInfo,
           })
           setIsPlaygroundOpen(true)
         }
@@ -1399,7 +1422,7 @@ const Request = ({
     }
   }, [selectedItem, formModel, currency, poVal])
 
-  const handleOpenPlayground = (ctx: any) => {
+  const handleOpenPlayground = (ctx: ApiPlaygroundContext = {}) => {
     const docInfo = {
       amount: selectedItem?.amount || formModel?.['Invoice Amount'] || 0,
       currency: currency || formModel?.['Currency'] || 'USD',
@@ -1416,9 +1439,15 @@ const Request = ({
         selectedItem?.vendor ||
         '',
     }
+    const document = {
+      ...docInfo,
+      ...(ctx.document || {}),
+    }
+
     setPlaygroundContext({
       ...ctx,
-      document: docInfo,
+      document,
+      requestPayload: ctx.requestPayload || ctx.payload || document,
     })
     setIsPlaygroundOpen(true)
   }
@@ -1470,7 +1499,7 @@ const Request = ({
       statusBadge += `${displayMessage}`
     }
   } else if (apAgentJobId && (!jobStatus || !jobStatus.isCompleted)) {
-    statusBadge = 'Initiating...'
+    statusBadge = 'Fetching necessary Data...'
   } else {
     // If job completed but we don't have agentDecision yet, show a loader status
     if (apAgentJobId && jobStatus && !agentDecision) {
@@ -1480,7 +1509,38 @@ const Request = ({
     }
   }
   console.log(selectedItem, "Selected Item")
-  
+
+  const handleShare = async (emails: string[], message: string) => {
+    const instanceId =
+      selectedItem?.workflowInstanceId || request?.workflowInstanceId
+    const repositoryId =
+      selectedItem?.repositoryId || request?.repositoryId || rawWorkflowData?.repositoryId
+    const itemId =
+      selectedItem?.itemId || request?.itemId || selectedItem?.fileId || request?.fileId
+
+    if (!instanceId) {
+      showToast({ message: 'No instance ID available to share', variant: 'error' })
+      return false
+    }
+
+    try {
+      if (emails.length > 0) {
+        await workflowsApiV6.shareFile(String(instanceId), {
+          email: emails[0],
+          repositoryId: String(repositoryId || ''),
+          itemId: String(itemId || ''),
+          message,
+        })
+      }
+      showToast({ message: 'Request shared successfully', variant: 'success' })
+      return true
+    } catch (error) {
+      console.error('Failed to share:', error)
+      showToast({ message: 'Failed to share request', variant: 'error' })
+      return false
+    }
+  }
+
   return (
     <div
       className={`flex w-full flex-col p-0 ${hideActions ? 'bg-grey-2 h-full p-4' : 'h-[calc(100vh-85px)]'}`}
@@ -1541,6 +1601,7 @@ const Request = ({
           onNext={onNext}
           onOpenPlayground={handleOpenPlayground}
           onPrev={onPrev}
+          onShare={handleShare}
         />
       </div>
 

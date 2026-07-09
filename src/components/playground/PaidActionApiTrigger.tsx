@@ -1,24 +1,30 @@
+import type { MouseEvent } from 'react'
 import Icon from '@/components/base/icon/Icon'
 import Tooltip from '@/components/base/Tooltip'
+import type { ApiPlaygroundContext } from './ApiPlayground'
 
 interface PaidActionApiTriggerProps {
   action: any
-  onTrigger: (context: any) => void
+  context?: ApiPlaygroundContext
+  onTrigger: (context: ApiPlaygroundContext) => void
 }
 
 export const PaidActionApiTrigger = ({
   action,
+  context,
   onTrigger,
 }: PaidActionApiTriggerProps) => {
-  const handleClick = (e: React.MouseEvent) => {
+  const handleClick = (e: MouseEvent) => {
     e.stopPropagation()
     onTrigger({
-      actionName: action?.label || 'Paid',
+      ...context,
+      actionName: action?.label || context?.actionName || 'Paid',
       endpoint:
         action?.endpoint ||
+        context?.endpoint ||
         'https://ezagentplayground.onrender.com/apikey.html?id=2',
-      model: action?.model || 'gemini-2.0-flash-exp',
-      provider: action?.provider || 'gemini',
+      // model: action?.model || context?.model || 'gemini-2.0-flash-exp',
+      // provider: action?.provider || context?.provider || 'gemini',
     })
   }
 

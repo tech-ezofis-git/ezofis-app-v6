@@ -5,9 +5,14 @@ import InputSelect from '@/components/base/inputs/InputSelect'
 import showToast from '@/components/base/toast/showToast'
 import Tooltip from '@/components/base/Tooltip'
 import { AnimateFadeIn } from '@/components/common/animations'
-import { compareHeaderSimilarity } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/headerSimilarity'
+import { findBestHeaderMatch } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/headerSimilarity'
 import { SYSTEM_TEMPLATE_COLUMNS } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/templateSchema'
 import cn from '@/utils/cn'
+
+export interface TemplateColumn {
+  key: string
+  required: boolean
+}
 
 interface ColumnMappingProps {
   mapping: Record<string, string>
@@ -20,6 +25,19 @@ interface ColumnMappingProps {
   onCancel?: () => void
   onChangeMapping: (mapping: Record<string, string>) => void
   onConfirm?: () => void
+  confirmButtonText?: string
+  templateSchema?: readonly TemplateColumn[]
+
+  // Grouping Props
+  showGrouping?: boolean
+  groupingColumn?: string | null
+  onGroupingColumnChange?: (col: string | null) => void
+  availableGroupIds?: string[]
+  previewGroupId?: string
+  onPreviewGroupChange?: (id: string) => void
+  groupedPreviewRows?: any[]
+  totalGroupsCount?: number
+  totalRowsCount?: number
 }
 
 export default function ColumnMapping({
@@ -32,6 +50,17 @@ export default function ColumnMapping({
   onCancel,
   onChangeMapping,
   onConfirm,
+  confirmButtonText,
+  templateSchema = SYSTEM_TEMPLATE_COLUMNS,
+  showGrouping = false,
+  groupingColumn,
+  onGroupingColumnChange,
+  availableGroupIds = [],
+  previewGroupId,
+  onPreviewGroupChange,
+  groupedPreviewRows = [],
+  totalGroupsCount = 0,
+  totalRowsCount = 0,
 }: ColumnMappingProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [isHighlightActive, setIsHighlightActive] = useState(false)
@@ -68,10 +97,8 @@ export default function ColumnMapping({
 
   const runAutoMap = () => {
     const nextMapping: Record<string, string> = {}
-    SYSTEM_TEMPLATE_COLUMNS.forEach((col) => {
-      const match = uploadedColumns.find((u) =>
-        compareHeaderSimilarity(u, col.key),
-      )
+    templateSchema.forEach((col) => {
+      const match = findBestHeaderMatch(col.key, uploadedColumns)
       if (match) {
         nextMapping[col.key] = match
       }
@@ -94,13 +121,13 @@ export default function ColumnMapping({
     })
   }
 
-  const requiredColumns = SYSTEM_TEMPLATE_COLUMNS.filter((c) => c.required)
+  const requiredColumns = templateSchema.filter((c) => c.required)
   const requiredTotalCount = requiredColumns.length
   const requiredMappedCount = requiredColumns.filter(
     (c) => !!mapping[c.key] && mapping[c.key] !== 'Skip to Import',
   ).length
 
-  const isConfirmDisabled = SYSTEM_TEMPLATE_COLUMNS.some(
+  const isConfirmDisabled = templateSchema.some(
     (col) => col.required && !mapping[col.key],
   )
 
@@ -135,6 +162,55 @@ export default function ColumnMapping({
           </Tooltip>
         </div>
 
+        {showGrouping && (
+          <div className='flex flex-col gap-4 border-b border-border-default pb-4 pt-1'>
+            <div className='flex items-center justify-between'>
+              <div className='flex flex-col'>
+                <span className='text-[12px] font-bold text-gray-12'>
+                  Grouping
+                </span>
+                <span className='text-[11px] text-gray-8'>
+                  Group By Column
+                </span>
+              </div>
+              <div className='w-[200px]'>
+                <InputSelect
+                  className='w-full'
+                  placeholder='Select group column...'
+                  clearable
+                  searchable
+                  options={uploadedColumns.map((c) => ({ id: c, name: c }))}
+                  styles={{
+                    input: {
+                      fontSize: '12px',
+                      height: '32px',
+                      minHeight: '32px',
+                    },
+                  }}
+                  value={
+                    groupingColumn
+                      ? { id: groupingColumn, name: groupingColumn }
+                      : null
+                  }
+                  onChange={(v) =>
+                    onGroupingColumnChange?.(v ? String(v.id) : null)
+                  }
+                />
+              </div>
+            </div>
+            <div className='flex gap-4 text-[11px] font-medium text-gray-9'>
+              <div className='flex items-center gap-1.5'>
+                <Icon className='size-3.5 text-green-11' name='tabler:check' />
+                <span>{totalGroupsCount} Purchase Orders Detected</span>
+              </div>
+              <div className='flex items-center gap-1.5'>
+                <Icon className='size-3.5 text-green-11' name='tabler:check' />
+                <span>{totalRowsCount} Line Items Detected</span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Three-column Mapping Table */}
         <div className='flex flex-col gap-2'>
           {/* Table Header */}
@@ -146,7 +222,7 @@ export default function ColumnMapping({
 
           {/* Scrollable Mapping Rows Container */}
           <div className='custom-scrollbar max-h-[300px] divide-y divide-border-default/60 overflow-y-auto pr-1'>
-            {[...SYSTEM_TEMPLATE_COLUMNS]
+            {[...templateSchema]
               .sort((a, b) => {
                 if (a.required === b.required) return 0
                 return a.required ? -1 : 1
@@ -237,6 +313,88 @@ export default function ColumnMapping({
           </div>
         </div>
 
+        {/* Grouped Preview Section */}
+        {showGrouping && previewGroupId && (
+          <div className='mt-2 flex flex-col gap-3 rounded-xl border border-border-default bg-surface-secondary/50 p-4'>
+            <div className='flex items-center justify-between'>
+              <div className='flex flex-col'>
+                <span className='text-[12px] font-bold text-gray-12'>
+                  Preview Group
+                </span>
+                <span className='text-[11px] text-gray-8'>
+                  Viewing {groupedPreviewRows.length} Line Items
+                </span>
+              </div>
+              <div className='w-[200px]'>
+                <InputSelect
+                  className='w-full'
+                  placeholder='Select PO to preview...'
+                  searchable
+                  options={availableGroupIds.map((id) => ({ id, name: id }))}
+                  styles={{
+                    input: {
+                      fontSize: '12px',
+                      height: '32px',
+                      minHeight: '32px',
+                    },
+                  }}
+                  value={
+                    previewGroupId
+                      ? { id: previewGroupId, name: previewGroupId }
+                      : null
+                  }
+                  onChange={(v) => {
+                    if (v && onPreviewGroupChange) {
+                      onPreviewGroupChange(String(v.id))
+                    }
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Render a simple table for the grouped line items */}
+            <div className='custom-scrollbar mt-1 max-h-[200px] overflow-auto rounded-lg border border-border-default bg-surface-primary shadow-2xs'>
+              <table className='w-full text-left text-[11px] text-gray-11'>
+                <thead className='sticky top-0 bg-surface-muted'>
+                  <tr className='border-b border-border-default'>
+                    {templateSchema.map((col) => {
+                      // Only show mapped columns in the preview table
+                      if (!mapping[col.key] || mapping[col.key] === 'Skip to Import') return null
+                      return (
+                        <th key={col.key} className='px-3 py-2 font-bold whitespace-nowrap text-gray-12'>
+                          {col.key}
+                        </th>
+                      )
+                    })}
+                  </tr>
+                </thead>
+                <tbody className='divide-y divide-border-default'>
+                  {groupedPreviewRows.map((row, idx) => (
+                    <tr key={idx} className='hover:bg-surface-hover'>
+                      {templateSchema.map((col) => {
+                        const excelHeader = mapping[col.key]
+                        if (!excelHeader || excelHeader === 'Skip to Import') return null
+                        return (
+                          <td key={col.key} className='px-3 py-1.5 whitespace-nowrap truncate max-w-[150px]'>
+                            {String(row[excelHeader] ?? '')}
+                          </td>
+                        )
+                      })}
+                    </tr>
+                  ))}
+                  {groupedPreviewRows.length === 0 && (
+                    <tr>
+                      <td colSpan={templateSchema.length} className='px-3 py-4 text-center italic text-gray-8'>
+                        No line items found for this group.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
         {/* Summary / Actions Footer */}
         {showActionsRow ? (
           <div className='mt-2 flex items-center justify-between border-t border-border-default pt-4'>
@@ -254,7 +412,7 @@ export default function ColumnMapping({
                 size='xs'
                 onClick={onConfirm}
               >
-                Confirm & Ingest
+                {confirmButtonText || 'Confirm & Ingest'}
               </Button>
             </div>
           </div>

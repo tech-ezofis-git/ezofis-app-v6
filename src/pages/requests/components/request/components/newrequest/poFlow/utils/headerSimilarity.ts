@@ -1,24 +1,25 @@
 // utils/headerSimilarity.ts
 
-// Function to compare two headers based on character similarity
-export const compareHeaderSimilarity = (
+// Normalize headers (trim, remove non-alphanumeric chars, and convert to lowercase)
+const normalize = (str: string) =>
+  str
+    .trim()
+    .replace(/[^a-zA-Z0-9]/g, '')
+    .toLowerCase()
+
+export const getHeaderSimilarityScore = (
   header1: string,
   header2: string,
-): boolean => {
-  // Normalize headers (trim, remove spaces, and convert to lowercase)
-  const normalize = (str: string) =>
-    str
-      .trim() // Remove leading/trailing spaces
-      .replace(/[\s-_]+/g, '') // Remove spaces, underscores, and hyphens
-      .toLowerCase()
-
+): number => {
   const normalizedHeader1 = normalize(header1)
   const normalizedHeader2 = normalize(header2)
 
-  const length = Math.max(normalizedHeader1.length, normalizedHeader2.length)
-  if (length === 0) return true
+  if (normalizedHeader1 === normalizedHeader2) return 1.0
 
-  // Count the number of matching characters
+  const length = Math.max(normalizedHeader1.length, normalizedHeader2.length)
+  if (length === 0) return 1.0
+
+  // Count the number of matching characters at the same index
   let matchCount = 0
   for (
     let i = 0;
@@ -30,7 +31,39 @@ export const compareHeaderSimilarity = (
     }
   }
 
-  // Calculate the similarity percentage (characters matched / total length)
-  const similarityPercentage = matchCount / length
-  return similarityPercentage >= 0.7 // 70% similarity threshold
+  return matchCount / length
+}
+
+// Keep this for backward compatibility if needed, but prefer findBestHeaderMatch
+export const compareHeaderSimilarity = (
+  header1: string,
+  header2: string,
+): boolean => {
+  return getHeaderSimilarityScore(header1, header2) >= 0.8
+}
+
+export const findBestHeaderMatch = (
+  targetHeader: string,
+  availableHeaders: string[]
+): string | undefined => {
+  // First pass: look for 100% match after normalization
+  const normalizedTarget = normalize(targetHeader)
+  const exactMatch = availableHeaders.find(
+    (h) => normalize(h) === normalizedTarget
+  )
+  if (exactMatch) return exactMatch
+
+  // Second pass: find the highest similarity >= 0.8
+  let bestMatch: string | undefined = undefined
+  let highestScore = 0
+
+  for (const header of availableHeaders) {
+    const score = getHeaderSimilarityScore(targetHeader, header)
+    if (score >= 0.8 && score > highestScore) {
+      highestScore = score
+      bestMatch = header
+    }
+  }
+
+  return bestMatch
 }
