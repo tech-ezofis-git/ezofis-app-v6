@@ -1056,9 +1056,9 @@ const SummarySkeleton = () => (
 
 const skeletonRows = ['skeleton-row-0', 'skeleton-row-1', 'skeleton-row-2']
 const LINE_ITEM_LEFT_WIDTHS = [60, 100, 100]
-const LINE_ITEM_AMOUNT_WIDTH = 100
-const LINE_ITEM_SCORE_WIDTH = 60
-const LINE_ITEM_ACTION_WIDTH = 44
+const LINE_ITEM_AMOUNT_WIDTH = 110
+const LINE_ITEM_SCORE_WIDTH = 50
+const LINE_ITEM_ACTION_WIDTH = 38
 const LINE_ITEM_DEFAULT_WIDTH = 50
 
 const getStickyLeftOffset = (index: number) =>
@@ -1085,12 +1085,10 @@ const getLineItemStickyClass = (
   index: number,
   bgClass = 'bg-surface',
 ): string =>
-  index < 2
-    ? cn(
-      'sticky z-20 before:absolute before:top-0 before:right-0 before:h-full before:w-px before:bg-[var(--gray-3)]',
-      bgClass,
-    )
-    : ''
+  cn(
+    'relative before:absolute before:top-0 before:left-0 before:h-full before:w-px before:bg-[var(--gray-3)]',
+    index < 2 && cn('sticky z-20', bgClass)
+  )
 
 const getRightStickyStyle = (right: number, width: number): CSSProperties => ({
   maxWidth: width,
@@ -1798,7 +1796,10 @@ const Overview = (props: any) => {
         })
       }
     })
-    return Array.from(keys)
+    const columns = Array.from(keys)
+    const amountCols = columns.filter(isLineItemAmountColumn)
+    const otherCols = columns.filter((k) => !isLineItemAmountColumn(k))
+    return [...otherCols, ...amountCols]
   }, [rawLineItems])
 
   const formatHeaderLabel = (key: string) => {
@@ -2239,7 +2240,7 @@ const Overview = (props: any) => {
                   }}
                 />
                 <div
-                  className='animate-scan absolute h-[1px] bg-[var(--primary-9)] shadow-[0_0_4px_var(--primary-9),_0_0_8px_var(--primary-9)]'
+                  className='animate-scan absolute h-[1px] bg-[var(--primary-5)] shadow-[0_0_4px_var(--primary-9),_0_0_8px_var(--primary-9)]'
                   style={{
                     left: scannerBounds.left,
                     right: scannerBounds.right,
@@ -3627,12 +3628,12 @@ const Overview = (props: any) => {
                                           className={cn(
                                             'border-b border-[var(--gray-3)] px-3 py-2 text-[11px] font-semibold whitespace-nowrap text-[var(--gray-11)]',
                                             isNumeric && 'text-right',
-                                            getLineItemStickyClass(
+                                            isAmountColumn ? getPinnedAmountClass('bg-[var(--gray-1)]') : getLineItemStickyClass(
                                               colIndex,
                                               'bg-[var(--gray-1)]',
                                             ),
                                           )}
-                                          style={getLineItemCellStyle(
+                                          style={isAmountColumn ? getPinnedAmountStyle() : getLineItemCellStyle(
                                             colIndex,
                                             isNumeric,
                                           )}
@@ -3700,12 +3701,9 @@ const Overview = (props: any) => {
                                       <th
                                         className={cn(
                                           'border-b border-[var(--gray-3)] px-3 py-2 text-right text-[11px] font-semibold whitespace-nowrap text-[var(--gray-11)]',
-                                          getLineItemStickyClass(
-                                            3,
-                                            'bg-[var(--gray-1)]',
-                                          ),
+                                          getPinnedAmountClass('bg-[var(--gray-1)]')
                                         )}
-                                        style={getLineItemCellStyle(3, true)}
+                                        style={getPinnedAmountStyle()}
                                       >
                                         <span
                                           className={getLineItemTextClass(true)}
@@ -3932,14 +3930,14 @@ const Overview = (props: any) => {
                                                       'px-2 py-0.5 font-semibold text-[var(--gray-13)]',
                                                       isNumeric &&
                                                       'text-right',
-                                                      getLineItemStickyClass(
+                                                      isAmountColumn ? getPinnedAmountClass(isMatch ? 'bg-surface' : 'bg-[var(--red-1)]') : getLineItemStickyClass(
                                                         colIndex,
                                                         isMatch
                                                           ? 'bg-surface'
                                                           : 'bg-[var(--red-1)]',
                                                       ),
                                                     )}
-                                                    style={getLineItemCellStyle(
+                                                    style={isAmountColumn ? getPinnedAmountStyle() : getLineItemCellStyle(
                                                       colIndex,
                                                       isNumeric,
                                                     )}
@@ -4022,15 +4020,7 @@ const Overview = (props: any) => {
                                                           )
                                                         }
                                                       />
-                                                      {/* Hover tooltip for long values */}
-                                                      {String(
-                                                        cellVal,
-                                                      ).trim() !== '' && (
-                                                          <div className='animate-in fade-in pointer-events-none absolute bottom-full left-0 z-50 mb-1 hidden max-w-[280px] rounded-lg border border-[var(--gray-3)] bg-surface px-3 py-2 text-xs font-medium break-words whitespace-normal text-[var(--gray-13)] shadow-xl duration-150 group-hover/cell:block'>
-                                                            {String(cellVal)}
-                                                          </div>
-                                                        )}
-                                                    </div>
+                                                      </div>
                                                   </td>
                                                 )
                                               },
@@ -4230,7 +4220,7 @@ const Overview = (props: any) => {
                                               </td>
 
                                               {/* Total Amount Cell */}
-                                              <td className='px-2 py-0.5 text-right font-semibold text-[var(--gray-13)]'>
+                                              <td className={cn('px-2 py-0.5 text-right font-semibold text-[var(--gray-13)]', getPinnedAmountClass(isMatch ? 'bg-surface' : 'bg-[var(--red-1)]'))} style={getPinnedAmountStyle()}>
                                                 <div className='group/cell relative h-full min-h-[24px] w-full'>
                                                   <div className='invisible w-full min-w-0 whitespace-nowrap px-1.5 py-1 text-right text-xs font-semibold break-words group-hover/cell:whitespace-normal'>
                                                     {item.Amount?.[
@@ -4409,20 +4399,26 @@ const Overview = (props: any) => {
                                   : formattedTotal
 
                                 return (
-                                  <tfoot className='sticky bottom-0 z-30 border-t border-[var(--gray-3)] bg-[var(--gray-1)]'>
+                                  <tfoot className='sticky bottom-0 z-30 bg-[var(--gray-1)]'>
                                     <tr>
-                                      {/* Spans all columns before the pinned amount column */}
+                                      {/* Spacer cell to push sticky cells to the right */}
+                                      {(!isDynamicTable || dynamicColumns.length > 2) && (
+                                        <td
+                                          colSpan={isDynamicTable ? dynamicColumns.length - 2 : 2}
+                                        />
+                                      )}
+                                      {/* Grand Total text cell (Pinned right before Amount) */}
                                       <td
-                                        className='px-3 py-2.5 text-right text-[11px] font-semibold text-[var(--gray-11)]'
-                                        colSpan={
-                                          isDynamicTable ? Math.max(1, dynamicColumns.length - 1) : 3
-                                        }
+                                        className='sticky z-20 bg-[var(--gray-1)] px-3 py-2.5 text-right text-[11px] font-semibold text-[var(--gray-11)]'
+                                        style={{
+                                          ...getRightStickyStyle(LINE_ITEM_ACTION_WIDTH + LINE_ITEM_SCORE_WIDTH + LINE_ITEM_AMOUNT_WIDTH, 100),
+                                        }}
                                       >
                                         Grand Total
                                       </td>
 
                                       {/* Total Amount cell */}
-                                      <td className='px-3 py-2.5 text-right'>
+                                      <td className='sticky z-20 bg-[var(--gray-1)] px-3 py-2.5 text-right' style={getPinnedAmountStyle()}>
                                         <span className='block w-full overflow-hidden text-ellipsis whitespace-nowrap text-[13px] font-bold text-[var(--gray-13)]'>
                                           {displayTotal}
                                         </span>

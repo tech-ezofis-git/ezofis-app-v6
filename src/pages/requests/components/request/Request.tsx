@@ -571,7 +571,7 @@ const handleJobData = (
     .getState()
     .updateProcessingProcess(String(`job-${apAgentJobId}`), {
       percent,
-      stage: jobData.stage || 'Initiating...',
+      stage: jobData.stage || 'Initializing....',
     })
 
   if (isCompleted) {
@@ -1470,7 +1470,7 @@ const Request = ({
       statusBadge += `${displayMessage}`
     }
   } else if (apAgentJobId && (!jobStatus || !jobStatus.isCompleted)) {
-    statusBadge = 'Initiating...'
+    statusBadge = 'Fetching necessary Data...'
   } else {
     // If job completed but we don't have agentDecision yet, show a loader status
     if (apAgentJobId && jobStatus && !agentDecision) {
@@ -1480,7 +1480,7 @@ const Request = ({
     }
   }
   console.log(selectedItem, "Selected Item")
-  
+
   return (
     <div
       className={`flex w-full flex-col p-0 ${hideActions ? 'bg-grey-2 h-full p-4' : 'h-[calc(100vh-85px)]'}`}
