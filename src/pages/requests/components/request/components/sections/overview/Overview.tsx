@@ -1,4 +1,4 @@
-import { Viewer, Worker } from '@react-pdf-viewer/core'
+import { Viewer, Worker, SpecialZoomLevel } from '@react-pdf-viewer/core'
 import { searchPlugin } from '@react-pdf-viewer/search'
 import {
   Briefcase,
@@ -1969,10 +1969,13 @@ const Overview = (props: any) => {
       if (page && wrapper) {
         const wRect = wrapper.getBoundingClientRect()
         const pRect = page.getBoundingClientRect()
-        setScannerBounds({
-          left: Math.max(0, pRect.left - wRect.left),
-          right: Math.max(0, wRect.right - pRect.right),
-        })
+        const newLeft = Math.max(0, pRect.left - wRect.left)
+        const newRight = Math.max(0, wRect.right - pRect.right)
+        setScannerBounds((prev) =>
+          prev.left === newLeft && prev.right === newRight
+            ? prev
+            : { left: newLeft, right: newRight },
+        )
       }
     }
     measure()
@@ -1993,6 +1996,14 @@ const Overview = (props: any) => {
       },
       onZoom: (e: any) => {
         setScale(e.scale)
+      },
+      onViewerStateChange: (viewerState: any) => {
+        if (viewerState && viewerState.scale) {
+          setScale((prev) =>
+            prev === viewerState.scale ? prev : viewerState.scale,
+          )
+        }
+        return viewerState
       },
     }),
     [],
@@ -2186,7 +2197,7 @@ const Overview = (props: any) => {
             ref={pdfViewerWrapperRef}
           >
             <Viewer
-              defaultScale={1}
+              defaultScale={SpecialZoomLevel.PageWidth}
               fileUrl={previewUrl}
               key={`${requestFileKey}-${previewUrl}`}
               plugins={[toolbarPluginInstance, searchPluginInstance]}
@@ -2195,7 +2206,10 @@ const Overview = (props: any) => {
               <button
                 className='p-1 hover:text-[var(--primary-9)] disabled:cursor-not-allowed disabled:opacity-40'
                 disabled={scale <= 0.75}
-                onClick={() => zoomTo(scale - 0.1)}
+                onClick={() => {
+                  const step = scale <= 1 ? 0.05 : 0.1
+                  zoomTo(scale - step)
+                }}
               >
                 <Icon className='size-5' name='lucide:zoom-out' />
               </button>
@@ -2205,7 +2219,10 @@ const Overview = (props: any) => {
               <button
                 className='p-1 hover:text-[var(--primary-9)] disabled:cursor-not-allowed disabled:opacity-40'
                 disabled={scale >= 1.5}
-                onClick={() => zoomTo(scale + 0.1)}
+                onClick={() => {
+                  const step = scale < 1 ? 0.05 : 0.1
+                  zoomTo(scale + step)
+                }}
               >
                 <Icon className='size-5' name='lucide:zoom-in' />
               </button>
@@ -2222,10 +2239,11 @@ const Overview = (props: any) => {
                   }}
                 />
                 <div
-                  className='animate-scan absolute h-[2px] bg-[var(--primary-9)] shadow-[0_0_8px_var(--primary-9),_0_0_16px_var(--primary-9)]'
+                  className='animate-scan absolute h-[1px] bg-[var(--primary-9)] shadow-[0_0_4px_var(--primary-9),_0_0_8px_var(--primary-9)]'
                   style={{
                     left: scannerBounds.left,
                     right: scannerBounds.right,
+                    animationDuration: '5s',
                   }}
                 />
               </div>
@@ -2245,7 +2263,10 @@ const Overview = (props: any) => {
           {isScanning && (
             <div className='pointer-events-none absolute inset-x-4 top-12 bottom-4 z-10 overflow-hidden rounded-xl'>
               <div className='bg-[color-mix(in srgb,var(--primary-9)_3%,transparent)] absolute inset-0' />
-              <div className='animate-scan absolute right-0 left-0 h-[2px] bg-[var(--primary-9)] shadow-[0_0_8px_var(--primary-9),_0_0_16px_var(--primary-9)]' />
+              <div
+                className='animate-scan absolute right-0 left-0 h-[1px] bg-[var(--primary-9)] shadow-[0_0_4px_var(--primary-9),_0_0_8px_var(--primary-9)]'
+                style={{ animationDuration: '4s' }}
+              />
             </div>
           )}
         </div>
@@ -4034,12 +4055,12 @@ const Overview = (props: any) => {
                                                 <div className='group/cell relative h-full min-h-[24px] w-full'>
                                                   <div className='invisible w-full min-w-0 whitespace-nowrap px-1.5 py-1 text-xs font-semibold break-words group-hover/cell:whitespace-normal'>
                                                     {item.Description?.[
-                                                    'Invoice Value'
+                                                      'Invoice Value'
                                                     ] ??
-                                                    item.description ??
-                                                    item.item_no ??
-                                                    item.itemNo ??
-                                                    ' '}
+                                                      item.description ??
+                                                      item.item_no ??
+                                                      item.itemNo ??
+                                                      ' '}
                                                   </div>
                                                   <textarea
                                                     rows={1}
@@ -4095,10 +4116,10 @@ const Overview = (props: any) => {
                                                 <div className='group/cell relative h-full min-h-[24px] w-full'>
                                                   <div className='invisible w-full min-w-0 whitespace-nowrap px-1.5 py-1 text-right text-xs font-semibold break-words group-hover/cell:whitespace-normal'>
                                                     {item.Quantity?.[
-                                                    'Invoice Value'
+                                                      'Invoice Value'
                                                     ] ??
-                                                    item.quantity ??
-                                                    ' '}
+                                                      item.quantity ??
+                                                      ' '}
                                                   </div>
                                                   <textarea
                                                     rows={1}
@@ -4150,12 +4171,12 @@ const Overview = (props: any) => {
                                                 <div className='group/cell relative h-full min-h-[24px] w-full'>
                                                   <div className='invisible w-full min-w-0 whitespace-nowrap px-1.5 py-1 text-right text-xs font-semibold break-words group-hover/cell:whitespace-normal'>
                                                     {item.Price?.[
-                                                    'Invoice Value'
+                                                      'Invoice Value'
                                                     ] ??
-                                                    item.rate ??
-                                                    item.unit_price ??
-                                                    item.price ??
-                                                    ' '}
+                                                      item.rate ??
+                                                      item.unit_price ??
+                                                      item.price ??
+                                                      ' '}
                                                   </div>
                                                   <textarea
                                                     rows={1}
@@ -4213,18 +4234,18 @@ const Overview = (props: any) => {
                                                 <div className='group/cell relative h-full min-h-[24px] w-full'>
                                                   <div className='invisible w-full min-w-0 whitespace-nowrap px-1.5 py-1 text-right text-xs font-semibold break-words group-hover/cell:whitespace-normal'>
                                                     {item.Amount?.[
-                                                    'Invoice Value'
+                                                      'Invoice Value'
                                                     ] ??
-                                                    item['Line Amount']?.[
-                                                    'Invoice Value'
-                                                    ] ??
-                                                    item['line amount'] ??
-                                                    item.LineAmount ??
-                                                    item.total ??
-                                                    item.amount ??
-                                                    item.line_amount ??
-                                                    item.lineAmount ??
-                                                    ' '}
+                                                      item['Line Amount']?.[
+                                                      'Invoice Value'
+                                                      ] ??
+                                                      item['line amount'] ??
+                                                      item.LineAmount ??
+                                                      item.total ??
+                                                      item.amount ??
+                                                      item.line_amount ??
+                                                      item.lineAmount ??
+                                                      ' '}
                                                   </div>
                                                   <textarea
                                                     rows={1}
