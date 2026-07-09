@@ -303,8 +303,8 @@ function SplitLegend({
               ))}
             </Pie>
             <RechartsTooltip
-              formatter={(value: number, name: string) => [
-                formatNumber(value),
+              formatter={(value: any, name: any) => [
+                formatNumber(Number(value || 0)),
                 name,
               ]}
             />
@@ -726,8 +726,8 @@ export default function Credits({ onBack }: CreditsProps) {
                     />
                     <RechartsTooltip
                       cursor={{ fill: 'var(--gray-3)', opacity: 0.55 }}
-                      formatter={(value: number) => [
-                        formatNumber(value),
+                      formatter={(value: any) => [
+                        formatNumber(Number(value || 0)),
                         'Credits',
                       ]}
                     />
