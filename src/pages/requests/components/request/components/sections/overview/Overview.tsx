@@ -1065,7 +1065,7 @@ const getStickyLeftOffset = (index: number) =>
   LINE_ITEM_LEFT_WIDTHS.slice(0, index).reduce((sum, width) => sum + width, 0)
 
 const getLineItemColumnWidth = (index: number, isNumeric = false) =>
-  LINE_ITEM_LEFT_WIDTHS[index] || (isNumeric ? 140 : LINE_ITEM_DEFAULT_WIDTH)
+  LINE_ITEM_LEFT_WIDTHS[index] || (isNumeric ? 90 : LINE_ITEM_DEFAULT_WIDTH)
 
 const getLineItemCellStyle = (
   index: number,
@@ -1074,7 +1074,7 @@ const getLineItemCellStyle = (
   const width = getLineItemColumnWidth(index, isNumeric)
   const style: CSSProperties = { maxWidth: width, minWidth: width, width }
 
-  if (index < 3) {
+  if (index < 2) {
     style.left = getStickyLeftOffset(index)
   }
 
@@ -1085,7 +1085,7 @@ const getLineItemStickyClass = (
   index: number,
   bgClass = 'bg-surface',
 ): string =>
-  index < 3
+  index < 2
     ? cn(
       'sticky z-20 before:absolute before:top-0 before:right-0 before:h-full before:w-px before:bg-[var(--gray-3)]',
       bgClass,
@@ -3606,23 +3606,15 @@ const Overview = (props: any) => {
                                           className={cn(
                                             'border-b border-[var(--gray-3)] px-3 py-2 text-[11px] font-semibold whitespace-nowrap text-[var(--gray-11)]',
                                             isNumeric && 'text-right',
-                                            isAmountColumn && colIndex >= 3
-                                              ? getPinnedAmountClass(
-                                                'bg-[var(--gray-1)]',
-                                              )
-                                              : getLineItemStickyClass(
-                                                colIndex,
-                                                'bg-[var(--gray-1)]',
-                                              ),
+                                            getLineItemStickyClass(
+                                              colIndex,
+                                              'bg-[var(--gray-1)]',
+                                            ),
                                           )}
-                                          style={
-                                            isAmountColumn && colIndex >= 3
-                                              ? getPinnedAmountStyle()
-                                              : getLineItemCellStyle(
-                                                colIndex,
-                                                isNumeric,
-                                              )
-                                          }
+                                          style={getLineItemCellStyle(
+                                            colIndex,
+                                            isNumeric,
+                                          )}
                                         >
                                           <span
                                             className={getLineItemTextClass(
@@ -3687,11 +3679,12 @@ const Overview = (props: any) => {
                                       <th
                                         className={cn(
                                           'border-b border-[var(--gray-3)] px-3 py-2 text-right text-[11px] font-semibold whitespace-nowrap text-[var(--gray-11)]',
-                                          getPinnedAmountClass(
+                                          getLineItemStickyClass(
+                                            3,
                                             'bg-[var(--gray-1)]',
                                           ),
                                         )}
-                                        style={getPinnedAmountStyle()}
+                                        style={getLineItemCellStyle(3, true)}
                                       >
                                         <span
                                           className={getLineItemTextClass(true)}
@@ -3770,20 +3763,14 @@ const Overview = (props: any) => {
                                                 className={cn(
                                                   'px-3 py-3',
                                                   isNumeric && 'text-right',
-                                                  isAmountColumn && index >= 3
-                                                    ? getPinnedAmountClass()
-                                                    : getLineItemStickyClass(
-                                                      index,
-                                                    ),
+                                                  getLineItemStickyClass(
+                                                    index,
+                                                  ),
                                                 )}
-                                                style={
-                                                  isAmountColumn && index >= 3
-                                                    ? getPinnedAmountStyle()
-                                                    : getLineItemCellStyle(
-                                                      index,
-                                                      isNumeric,
-                                                    )
-                                                }
+                                                style={getLineItemCellStyle(
+                                                  index,
+                                                  isNumeric,
+                                                )}
                                               >
                                                 <div
                                                   className={cn(
@@ -3924,38 +3911,27 @@ const Overview = (props: any) => {
                                                       'px-2 py-0.5 font-semibold text-[var(--gray-13)]',
                                                       isNumeric &&
                                                       'text-right',
-                                                      isAmountColumn &&
-                                                        colIndex >= 3
-                                                        ? getPinnedAmountClass(
-                                                          isMatch
-                                                            ? 'bg-surface'
-                                                            : 'bg-[var(--red-1)]',
-                                                        )
-                                                        : getLineItemStickyClass(
-                                                          colIndex,
-                                                          isMatch
-                                                            ? 'bg-surface'
-                                                            : 'bg-[var(--red-1)]',
-                                                        ),
+                                                      getLineItemStickyClass(
+                                                        colIndex,
+                                                        isMatch
+                                                          ? 'bg-surface'
+                                                          : 'bg-[var(--red-1)]',
+                                                      ),
                                                     )}
-                                                    style={
-                                                      isAmountColumn &&
-                                                        colIndex >= 3
-                                                        ? getPinnedAmountStyle()
-                                                        : getLineItemCellStyle(
-                                                          colIndex,
-                                                          isNumeric,
-                                                        )
-                                                    }
+                                                    style={getLineItemCellStyle(
+                                                      colIndex,
+                                                      isNumeric,
+                                                    )}
                                                   >
-                                                    <div className='group/cell relative'>
-                                                      <input
-                                                        title={String(
-                                                          cellVal,
-                                                        )}
+                                                    <div className='group/cell relative h-full min-h-[24px] w-full'>
+                                                      <div className='invisible w-full min-w-0 whitespace-nowrap px-1.5 py-1 text-xs font-semibold break-words group-hover/cell:whitespace-normal'>
+                                                        {cellVal || ' '}
+                                                      </div>
+                                                      <textarea
+                                                        rows={1}
                                                         value={cellVal}
                                                         className={cn(
-                                                          'w-full min-w-0 overflow-hidden rounded border-none bg-transparent px-1.5 py-1 text-xs font-semibold text-ellipsis whitespace-nowrap transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none',
+                                                          'absolute inset-0 h-full min-h-full w-full resize-none overflow-hidden whitespace-nowrap rounded border-none bg-transparent px-1.5 py-1 text-xs font-semibold transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none group-hover/cell:whitespace-normal group-hover/cell:break-words',
                                                           isNumeric
                                                             ? 'text-right text-[var(--gray-11)]'
                                                             : 'text-[var(--gray-13)]',
@@ -4055,37 +4031,49 @@ const Overview = (props: any) => {
                                                   0,
                                                 )}
                                               >
-                                                <input
-                                                  className='w-full min-w-0 overflow-hidden rounded border-none bg-transparent px-1.5 py-1 text-xs font-semibold text-ellipsis whitespace-nowrap text-[var(--gray-13)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
-                                                  value={
-                                                    item.Description?.[
+                                                <div className='group/cell relative h-full min-h-[24px] w-full'>
+                                                  <div className='invisible w-full min-w-0 whitespace-nowrap px-1.5 py-1 text-xs font-semibold break-words group-hover/cell:whitespace-normal'>
+                                                    {item.Description?.[
                                                     'Invoice Value'
                                                     ] ??
                                                     item.description ??
                                                     item.item_no ??
                                                     item.itemNo ??
-                                                    ''
-                                                  }
-                                                  onChange={(e) =>
-                                                    handleLineItemChange(
-                                                      index,
-                                                      'description',
-                                                      e.target.value,
-                                                    )
-                                                  }
-                                                  onFocus={() =>
-                                                    handleFieldFocus?.(
+                                                    ' '}
+                                                  </div>
+                                                  <textarea
+                                                    rows={1}
+                                                    className='absolute inset-0 h-full min-h-full w-full resize-none overflow-hidden whitespace-nowrap rounded border-none bg-transparent px-1.5 py-1 text-xs font-semibold text-[var(--gray-13)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none group-hover/cell:whitespace-normal group-hover/cell:break-words'
+                                                    value={
                                                       item.Description?.[
                                                       'Invoice Value'
                                                       ] ??
                                                       item.description ??
                                                       item.item_no ??
                                                       item.itemNo ??
-                                                      '',
-                                                      'description',
-                                                    )
-                                                  }
-                                                />
+                                                      ''
+                                                    }
+                                                    onChange={(e) =>
+                                                      handleLineItemChange(
+                                                        index,
+                                                        'description',
+                                                        e.target.value,
+                                                      )
+                                                    }
+                                                    onFocus={() =>
+                                                      handleFieldFocus?.(
+                                                        item.Description?.[
+                                                        'Invoice Value'
+                                                        ] ??
+                                                        item.description ??
+                                                        item.item_no ??
+                                                        item.itemNo ??
+                                                        '',
+                                                        'description',
+                                                      )
+                                                    }
+                                                  />
+                                                </div>
                                               </td>
 
                                               {/* Quantity Cell */}
@@ -4104,33 +4092,43 @@ const Overview = (props: any) => {
                                                   true,
                                                 )}
                                               >
-                                                <input
-                                                  className='w-full min-w-0 overflow-hidden rounded border-none bg-transparent px-1.5 py-1 text-right text-xs font-semibold text-ellipsis whitespace-nowrap text-[var(--gray-11)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
-                                                  value={
-                                                    item.Quantity?.[
+                                                <div className='group/cell relative h-full min-h-[24px] w-full'>
+                                                  <div className='invisible w-full min-w-0 whitespace-nowrap px-1.5 py-1 text-right text-xs font-semibold break-words group-hover/cell:whitespace-normal'>
+                                                    {item.Quantity?.[
                                                     'Invoice Value'
                                                     ] ??
                                                     item.quantity ??
-                                                    ''
-                                                  }
-                                                  onChange={(e) =>
-                                                    handleLineItemChange(
-                                                      index,
-                                                      'quantity',
-                                                      e.target.value,
-                                                    )
-                                                  }
-                                                  onFocus={() =>
-                                                    handleFieldFocus?.(
+                                                    ' '}
+                                                  </div>
+                                                  <textarea
+                                                    rows={1}
+                                                    className='absolute inset-0 h-full min-h-full w-full resize-none overflow-hidden whitespace-nowrap rounded border-none bg-transparent px-1.5 py-1 text-right text-xs font-semibold text-[var(--gray-11)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none group-hover/cell:whitespace-normal group-hover/cell:break-words'
+                                                    value={
                                                       item.Quantity?.[
                                                       'Invoice Value'
                                                       ] ??
                                                       item.quantity ??
-                                                      '',
-                                                      'qty',
-                                                    )
-                                                  }
-                                                />
+                                                      ''
+                                                    }
+                                                    onChange={(e) =>
+                                                      handleLineItemChange(
+                                                        index,
+                                                        'quantity',
+                                                        e.target.value,
+                                                      )
+                                                    }
+                                                    onFocus={() =>
+                                                      handleFieldFocus?.(
+                                                        item.Quantity?.[
+                                                        'Invoice Value'
+                                                        ] ??
+                                                        item.quantity ??
+                                                        '',
+                                                        'qty',
+                                                      )
+                                                    }
+                                                  />
+                                                </div>
                                               </td>
 
                                               {/* Rate/Price Cell */}
@@ -4149,71 +4147,72 @@ const Overview = (props: any) => {
                                                   true,
                                                 )}
                                               >
-                                                <input
-                                                  className='w-full min-w-0 overflow-hidden rounded border-none bg-transparent px-1.5 py-1 text-right text-xs font-semibold text-ellipsis whitespace-nowrap text-[var(--gray-11)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
-                                                  value={
-                                                    item.Price?.[
+                                                <div className='group/cell relative h-full min-h-[24px] w-full'>
+                                                  <div className='invisible w-full min-w-0 whitespace-nowrap px-1.5 py-1 text-right text-xs font-semibold break-words group-hover/cell:whitespace-normal'>
+                                                    {item.Price?.[
                                                     'Invoice Value'
                                                     ] ??
                                                     item.rate ??
                                                     item.unit_price ??
                                                     item.price ??
-                                                    ''
-                                                  }
-                                                  onBlur={(e) => {
-                                                    const num =
-                                                      Number.parseFloat(
-                                                        e.target.value.replace(
-                                                          /[^0-9.-]+/g,
-                                                          '',
-                                                        ),
-                                                      )
-                                                    if (!Number.isNaN(num)) {
-                                                      handleLineItemChange(
-                                                        index,
-                                                        'price',
-                                                        num.toFixed(2),
-                                                      )
-                                                    }
-                                                  }}
-                                                  onChange={(e) =>
-                                                    handleLineItemChange(
-                                                      index,
-                                                      'price',
-                                                      e.target.value,
-                                                    )
-                                                  }
-                                                  onFocus={() =>
-                                                    handleFieldFocus?.(
+                                                    ' '}
+                                                  </div>
+                                                  <textarea
+                                                    rows={1}
+                                                    className='absolute inset-0 h-full min-h-full w-full resize-none overflow-hidden whitespace-nowrap rounded border-none bg-transparent px-1.5 py-1 text-right text-xs font-semibold text-[var(--gray-11)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none group-hover/cell:whitespace-normal group-hover/cell:break-words'
+                                                    value={
                                                       item.Price?.[
                                                       'Invoice Value'
                                                       ] ??
                                                       item.rate ??
                                                       item.unit_price ??
                                                       item.price ??
-                                                      '',
-                                                      'price',
-                                                    )
-                                                  }
-                                                />
+                                                      ''
+                                                    }
+                                                    onBlur={(e) => {
+                                                      const num =
+                                                        Number.parseFloat(
+                                                          e.target.value.replace(
+                                                            /[^0-9.-]+/g,
+                                                            '',
+                                                          ),
+                                                        )
+                                                      if (!Number.isNaN(num)) {
+                                                        handleLineItemChange(
+                                                          index,
+                                                          'price',
+                                                          num.toFixed(2),
+                                                        )
+                                                      }
+                                                    }}
+                                                    onChange={(e) =>
+                                                      handleLineItemChange(
+                                                        index,
+                                                        'price',
+                                                        e.target.value,
+                                                      )
+                                                    }
+                                                    onFocus={() =>
+                                                      handleFieldFocus?.(
+                                                        item.Price?.[
+                                                        'Invoice Value'
+                                                        ] ??
+                                                        item.rate ??
+                                                        item.unit_price ??
+                                                        item.price ??
+                                                        '',
+                                                        'price',
+                                                      )
+                                                    }
+                                                  />
+                                                </div>
                                               </td>
 
                                               {/* Total Amount Cell */}
-                                              <td
-                                                className={cn(
-                                                  'px-2 py-0.5 text-right font-semibold text-[var(--gray-13)]',
-                                                  getPinnedAmountClass(
-                                                    isMatch
-                                                      ? 'bg-surface'
-                                                      : 'bg-[var(--red-1)]',
-                                                  ),
-                                                )}
-                                                style={getPinnedAmountStyle()}
-                                              >
-                                                <input
-                                                  className='w-full min-w-0 overflow-hidden rounded border-none bg-transparent px-1.5 py-1 text-right text-xs font-semibold text-ellipsis whitespace-nowrap text-[var(--gray-13)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none'
-                                                  value={
-                                                    item.Amount?.[
+                                              <td className='px-2 py-0.5 text-right font-semibold text-[var(--gray-13)]'>
+                                                <div className='group/cell relative h-full min-h-[24px] w-full'>
+                                                  <div className='invisible w-full min-w-0 whitespace-nowrap px-1.5 py-1 text-right text-xs font-semibold break-words group-hover/cell:whitespace-normal'>
+                                                    {item.Amount?.[
                                                     'Invoice Value'
                                                     ] ??
                                                     item['Line Amount']?.[
@@ -4225,33 +4224,12 @@ const Overview = (props: any) => {
                                                     item.amount ??
                                                     item.line_amount ??
                                                     item.lineAmount ??
-                                                    ''
-                                                  }
-                                                  onBlur={(e) => {
-                                                    const num =
-                                                      Number.parseFloat(
-                                                        e.target.value.replace(
-                                                          /[^0-9.-]+/g,
-                                                          '',
-                                                        ),
-                                                      )
-                                                    if (!Number.isNaN(num)) {
-                                                      handleLineItemChange(
-                                                        index,
-                                                        'amount',
-                                                        num.toFixed(2),
-                                                      )
-                                                    }
-                                                  }}
-                                                  onChange={(e) =>
-                                                    handleLineItemChange(
-                                                      index,
-                                                      'amount',
-                                                      e.target.value,
-                                                    )
-                                                  }
-                                                  onFocus={() =>
-                                                    handleFieldFocus?.(
+                                                    ' '}
+                                                  </div>
+                                                  <textarea
+                                                    rows={1}
+                                                    className='absolute inset-0 h-full min-h-full w-full resize-none overflow-hidden whitespace-nowrap rounded border-none bg-transparent px-1.5 py-1 text-right text-xs font-semibold text-[var(--gray-13)] transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none group-hover/cell:whitespace-normal group-hover/cell:break-words'
+                                                    value={
                                                       item.Amount?.[
                                                       'Invoice Value'
                                                       ] ??
@@ -4264,11 +4242,51 @@ const Overview = (props: any) => {
                                                       item.amount ??
                                                       item.line_amount ??
                                                       item.lineAmount ??
-                                                      '',
-                                                      'line_amount',
-                                                    )
-                                                  }
-                                                />
+                                                      ''
+                                                    }
+                                                    onBlur={(e) => {
+                                                      const num =
+                                                        Number.parseFloat(
+                                                          e.target.value.replace(
+                                                            /[^0-9.-]+/g,
+                                                            '',
+                                                          ),
+                                                        )
+                                                      if (!Number.isNaN(num)) {
+                                                        handleLineItemChange(
+                                                          index,
+                                                          'amount',
+                                                          num.toFixed(2),
+                                                        )
+                                                      }
+                                                    }}
+                                                    onChange={(e) =>
+                                                      handleLineItemChange(
+                                                        index,
+                                                        'amount',
+                                                        e.target.value,
+                                                      )
+                                                    }
+                                                    onFocus={() =>
+                                                      handleFieldFocus?.(
+                                                        item.Amount?.[
+                                                        'Invoice Value'
+                                                        ] ??
+                                                        item['Line Amount']?.[
+                                                        'Invoice Value'
+                                                        ] ??
+                                                        item['line amount'] ??
+                                                        item.LineAmount ??
+                                                        item.total ??
+                                                        item.amount ??
+                                                        item.line_amount ??
+                                                        item.lineAmount ??
+                                                        '',
+                                                        'line_amount',
+                                                      )
+                                                    }
+                                                  />
+                                                </div>
                                               </td>
                                             </>
                                           )}
@@ -4382,12 +4400,9 @@ const Overview = (props: any) => {
                                         Grand Total
                                       </td>
 
-                                      {/* Pinned Total Amount cell — sticky-right, same position as header */}
-                                      <td
-                                        className={getPinnedAmountClass('bg-[var(--gray-1)]')}
-                                        style={getPinnedAmountStyle()}
-                                      >
-                                        <span className='block w-full overflow-hidden text-ellipsis whitespace-nowrap px-3 py-2.5 text-right text-[13px] font-bold text-[var(--gray-13)]'>
+                                      {/* Total Amount cell */}
+                                      <td className='px-3 py-2.5 text-right'>
+                                        <span className='block w-full overflow-hidden text-ellipsis whitespace-nowrap text-[13px] font-bold text-[var(--gray-13)]'>
                                           {displayTotal}
                                         </span>
                                       </td>
