@@ -9,6 +9,7 @@ type SelectOptionLike = {
 
 type SettingsSelectFieldProps = {
   clearable?: boolean
+  error?: string
   label: string
   options: SelectOptionLike[] | string[]
   placeholder?: string
@@ -33,6 +34,7 @@ const toSelectOptions = (options: SelectOptionLike[] | string[]): SelectOptionLi
 
 export default function SettingsSelectField({
   clearable,
+  error,
   label,
   options,
   placeholder = 'Select',
@@ -50,6 +52,7 @@ export default function SettingsSelectField({
   return (
     <InputSelect
       clearable={clearable}
+      error={error}
       label={required ? `${label} *` : label}
       options={selectOptions}
       placeholder={placeholder}

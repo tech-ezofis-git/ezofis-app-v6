@@ -58,6 +58,23 @@ export function calculateMenuSetupProgress(
   return Math.round((filled / checks.length) * 100)
 }
 
+export function calculateRoleSetupProgress(
+  roleName: string,
+  description: string,
+  selectedUserCount: number,
+  enabledPermissionCount: number,
+) {
+  const checks = [
+    isFilled(roleName),
+    isFilled(description),
+    selectedUserCount > 0,
+    enabledPermissionCount > 0,
+  ]
+
+  const filled = checks.filter(Boolean).length
+  return Math.round((filled / checks.length) * 100)
+}
+
 export function getSetupProgressStyle(progress: number) {
   if (progress >= 100) {
     return {

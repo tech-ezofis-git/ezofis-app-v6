@@ -39,6 +39,11 @@ import {
   mapDraftUserToUpdatePayload,
   type DraftSettingsUser,
 } from '../helpers/mapCreateUserPayload'
+import {
+  getFieldRequiredError,
+  getMissingRequiredLabels,
+  getRequiredFieldErrorMessage,
+} from '../helpers/requiredFieldErrors'
 import SetupProgressBar from './SetupProgressBar'
 import SettingsPageHeader, {
   SettingsHeaderAddButton,
@@ -220,12 +225,20 @@ export default function ManageUser({ onBack }: ManageUserProps) {
         `${draftUser.firstName}.${draftUser.lastName}`.toLowerCase(),
     }
 
-    if (editingUserId) {
-      if (!normalizedUser.firstName.trim()) {
-        showToast({ message: 'First name is required', variant: 'error' })
-        return
-      }
+    const missingLabels = getMissingRequiredUserLabels(normalizedUser)
 
+    if (missingLabels.length) {
+      const nextStep =
+        missingLabels.every((label) => label === 'Role') ? 1 : 0
+      setActiveStep(nextStep)
+      showToast({
+        message: getRequiredFieldErrorMessage(missingLabels),
+        variant: 'error',
+      })
+      return
+    }
+
+    if (editingUserId) {
       if (!originalUser) {
         showToast({ message: 'Unable to update user', variant: 'error' })
         return
@@ -275,16 +288,6 @@ export default function ManageUser({ onBack }: ManageUserProps) {
       return
     }
 
-    if (!normalizedUser.email.trim()) {
-      showToast({ message: 'Email is required', variant: 'error' })
-      return
-    }
-
-    if (normalizedUser.loginType === 'Password' && !normalizedUser.password.trim()) {
-      showToast({ message: 'Password is required for Password login', variant: 'error' })
-      return
-    }
-
     setIsSaving(true)
 
     try {
@@ -297,28 +300,22 @@ export default function ManageUser({ onBack }: ManageUserProps) {
         return
       }
 
-      const listResponse = await getUsers()
-
-      if (!listResponse.error) {
-        setUsers(
-          listResponse.data.length
-            ? mapApiUsersToSettingsUsers(listResponse.data)
-            : users,
-        )
-      } else {
-        const createdUser = response.data
-          ? mapApiUserToSettingsUser(
+      const createdUser = response.data
+        ? mapApiUserToSettingsUser(
             response.data as Record<string, unknown>,
             users.length,
           )
-          : null
-        const { password: _password, ...userWithoutPassword } = normalizedUser
+        : null
+      const listResponse = await getUsers()
 
+      if (!listResponse.error && listResponse.data.length) {
+        setUsers(mapApiUsersToSettingsUsers(listResponse.data))
+      } else if (createdUser) {
+        setUsers((current) => [createdUser, ...current])
+      } else {
+        const { password: _password, ...userWithoutPassword } = normalizedUser
         setUsers((current) => [
-          createdUser || {
-            ...userWithoutPassword,
-            id: Date.now(),
-          },
+          { ...userWithoutPassword, id: Date.now() },
           ...current,
         ])
       }
@@ -651,10 +648,12 @@ function Authentication({ user, onChange }: FormSectionProps) {
 
 function BusinessDetails({
   managerOptions,
+  showErrors,
   user,
   onChange,
 }: FormSectionProps & {
   managerOptions: SettingsOption[]
+  showErrors?: boolean
 }) {
   return (
     <FormCard
@@ -710,6 +709,7 @@ function BusinessDetails({
       </div>
 
       <SettingsSelectField
+        error={getFieldRequiredError('Role', Boolean(showErrors), user.role)}
         label='Role'
         options={roles}
         required
@@ -720,11 +720,13 @@ function BusinessDetails({
   )
 }
 function EzPasswordField({
+  error,
   label,
   required,
   value,
   onChange,
 }: {
+  error?: string
   label: string
   required?: boolean
   value: string
@@ -732,6 +734,7 @@ function EzPasswordField({
 }) {
   return (
     <InputPassword
+      error={error}
       label={label}
       required={required}
       showPlaceholder
@@ -742,6 +745,7 @@ function EzPasswordField({
 }
 
 function EzTextField({
+  error,
   label,
   placeholder,
   required,
@@ -749,6 +753,7 @@ function EzTextField({
   value,
   onChange,
 }: {
+  error?: string
   label: string
   placeholder?: string
   required?: boolean
@@ -758,6 +763,7 @@ function EzTextField({
 }) {
   return (
     <InputText
+      error={error}
       label={required ? `${label} *` : label}
       placeholder={placeholder}
       type={type}
@@ -869,7 +875,11 @@ function GroupAssignment({
   )
 }
 
-function LoginDetails({ user, onChange }: FormSectionProps) {
+function LoginDetails({
+  showErrors,
+  user,
+  onChange,
+}: FormSectionProps & { showErrors?: boolean }) {
   return (
     <FormCard
       description='Capture primary identity and sign-in configuration.'
@@ -877,6 +887,11 @@ function LoginDetails({ user, onChange }: FormSectionProps) {
     >
       <div className='grid grid-cols-1 gap-5 md:grid-cols-2'>
         <EzTextField
+          error={getFieldRequiredError(
+            'First Name',
+            Boolean(showErrors),
+            user.firstName,
+          )}
           label='First Name'
           placeholder='Enter first name'
           value={user.firstName}
@@ -885,6 +900,11 @@ function LoginDetails({ user, onChange }: FormSectionProps) {
         />
 
         <EzTextField
+          error={getFieldRequiredError(
+            'Last Name',
+            Boolean(showErrors),
+            user.lastName,
+          )}
           label='Last Name'
           placeholder='Enter last name'
           value={user.lastName}
@@ -894,6 +914,11 @@ function LoginDetails({ user, onChange }: FormSectionProps) {
       </div>
 
       <EzTextField
+        error={getFieldRequiredError(
+          'Email Address',
+          Boolean(showErrors),
+          user.email,
+        )}
         label='Email Address'
         placeholder='user@company.com'
         type='email'
@@ -910,6 +935,11 @@ function LoginDetails({ user, onChange }: FormSectionProps) {
       />
 
       <SettingsSelectField
+        error={getFieldRequiredError(
+          'Login Type',
+          Boolean(showErrors),
+          user.loginType,
+        )}
         label='Login Type'
         options={loginTypes}
         required
@@ -921,6 +951,11 @@ function LoginDetails({ user, onChange }: FormSectionProps) {
 
       {user.loginType === 'Password' ? (
         <EzPasswordField
+          error={getFieldRequiredError(
+            'Password',
+            Boolean(showErrors),
+            user.password,
+          )}
           label='Password'
           value={user.password}
           required
@@ -1098,13 +1133,72 @@ function UserSetup({
   onSave: () => void
   onStepChange: (step: number) => void
 }) {
+  const [showErrors, setShowErrors] = useState(false)
   const progress = useMemo(
     () => calculateUserSetupProgress(draftUser),
     [draftUser],
   )
 
+  const handleNext = () => {
+    const missingLabels = getMissingRequiredUserLabels(draftUser, activeStep)
+
+    if (missingLabels.length) {
+      setShowErrors(true)
+      showToast({
+        message: getRequiredFieldErrorMessage(missingLabels),
+        variant: 'error',
+      })
+      return
+    }
+
+    setShowErrors(false)
+    onNext()
+  }
+
+  const handleSave = () => {
+    const missingLabels = getMissingRequiredUserLabels(draftUser)
+
+    if (missingLabels.length) {
+      setShowErrors(true)
+      showToast({
+        message: getRequiredFieldErrorMessage(missingLabels),
+        variant: 'error',
+      })
+      return
+    }
+
+    setShowErrors(false)
+    onSave()
+  }
+
+  const handleStepChange = (step: number) => {
+    if (step > activeStep) {
+      for (let index = activeStep; index < step; index += 1) {
+        const missingLabels = getMissingRequiredUserLabels(draftUser, index)
+
+        if (missingLabels.length) {
+          setShowErrors(true)
+          onStepChange(index)
+          showToast({
+            message: getRequiredFieldErrorMessage(missingLabels),
+            variant: 'error',
+          })
+          return
+        }
+      }
+    }
+
+    setShowErrors(false)
+    onStepChange(step)
+  }
+
+  const handleBack = () => {
+    setShowErrors(false)
+    onBack()
+  }
+
   return (
-    <main className='min-h-screen bg-[var(--surface-muted)] text-[var(--text-primary)]'>
+    <main className='min-h-screen bg-[var(--surface)] text-[var(--text-primary)]'>
       <header className='border-b border-[var(--border-default)] bg-surface px-6 py-4'>
         <div className='flex items-start justify-between gap-5'>
           <div className='flex items-start gap-3'>
@@ -1134,7 +1228,7 @@ function UserSetup({
       </header>
 
       <div className='grid min-h-[calc(100vh-96px)] grid-cols-1 lg:grid-cols-[296px_1fr]'>
-        <aside className='border-r border-[var(--border-default)] bg-[var(--surface-muted)] px-4 py-9'>
+        <aside className='border-r border-[var(--border-default)] bg-[var(--surface)] px-4 py-9'>
           <div className='space-y-5'>
             {steps.map((step, index) => {
               const isActive = index === activeStep
@@ -1144,7 +1238,7 @@ function UserSetup({
                 <button
                   className='group flex w-full items-center gap-5 rounded-[14px] px-3 py-2 text-left transition hover:bg-surface-raised'
                   key={step.key}
-                  onClick={() => onStepChange(index)}
+                  onClick={() => handleStepChange(index)}
                 >
                   <div className='relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--gray-3)]'>
                     {index < steps.length - 1 && (
@@ -1169,7 +1263,6 @@ function UserSetup({
                     </span>
                   </div>
                   <div>
-                    {/* <div className="text-[15px] text-[var(--gray-11)]">{step.caption}</div> */}
                     <div className='text-md mt-1 font-semibold text-[var(--indigo-12)]'>
                       {step.title}
                     </div>
@@ -1183,11 +1276,16 @@ function UserSetup({
         <section className='ez-scrollbar h-[calc(100vh-155px)] min-h-0 overflow-y-auto px-6 py-10 lg:px-20'>
           <div className='mx-auto max-w-[860px]'>
             {activeStep === 0 && (
-              <LoginDetails user={draftUser} onChange={onChange} />
+              <LoginDetails
+                showErrors={showErrors}
+                user={draftUser}
+                onChange={onChange}
+              />
             )}
             {activeStep === 1 && (
               <BusinessDetails
                 managerOptions={managerOptions}
+                showErrors={showErrors}
                 user={draftUser}
                 onChange={onChange}
               />
@@ -1205,17 +1303,10 @@ function UserSetup({
             {activeStep === 4 && <Review user={draftUser} />}
 
             <div className='mt-8 flex items-center justify-between border-t border-[var(--border-default)] pt-6'>
-              {/* <button
-                onClick={onCancel}
-                className="inline-flex h-10 items-center gap-2 rounded-[10px] border border-[var(--border-default)] bg-surface px-4 text-[15px] font-medium text-[var(--gray-13)] transition hover:bg-[var(--gray-2)]"
-              >
-                <X size={17} />
-                Cancel
-              </button> */}
               <button
                 className='inline-flex h-10 items-center rounded-[5px] border border-[var(--border-default)] bg-surface px-5 text-[15px] font-semibold text-[var(--gray-13)] transition hover:bg-[var(--gray-2)] disabled:cursor-not-allowed disabled:opacity-50'
                 disabled={activeStep === 0}
-                onClick={onBack}
+                onClick={handleBack}
               >
                 Back
               </button>
@@ -1225,14 +1316,14 @@ function UserSetup({
                   <button
                     className='h-10 rounded-[5px] bg-[var(--primary-9)] px-5 text-[15px] font-semibold text-white shadow-[var(--shadow-md)] transition hover:bg-[var(--primary-10)] disabled:cursor-not-allowed disabled:opacity-60'
                     disabled={isSaving}
-                    onClick={onSave}
+                    onClick={handleSave}
                   >
                     {isSaving ? 'Saving...' : 'Save User'}
                   </button>
                 ) : (
                   <button
                     className='h-10 rounded-[5px] bg-[var(--primary-9)] px-5 text-[15px] font-semibold text-white shadow-[var(--shadow-md)] transition hover:bg-[var(--primary-10)]'
-                    onClick={onNext}
+                    onClick={handleNext}
                   >
                     Next
                   </button>
@@ -1244,4 +1335,32 @@ function UserSetup({
       </div>
     </main>
   )
+}
+
+function getMissingRequiredUserLabels(user: DraftUser, step?: number) {
+  if (step === 2 || step === 3) return []
+
+  if (step === 1) {
+    return getMissingRequiredLabels([{ label: 'Role', value: user.role }])
+  }
+
+  const loginFields = [
+    { label: 'First Name', value: user.firstName },
+    { label: 'Last Name', value: user.lastName },
+    { label: 'Email Address', value: user.email },
+    { label: 'Login Type', value: user.loginType },
+  ]
+
+  if (user.loginType === 'Password') {
+    loginFields.push({ label: 'Password', value: user.password })
+  }
+
+  if (step === 0) {
+    return getMissingRequiredLabels(loginFields)
+  }
+
+  return getMissingRequiredLabels([
+    ...loginFields,
+    { label: 'Role', value: user.role },
+  ])
 }

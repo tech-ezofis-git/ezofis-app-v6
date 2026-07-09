@@ -57,6 +57,11 @@ const TableSearch = <TData,>({ table }: Props<TData>) => {
   )
 
   const isExpanded = focused || !!searchState?.value
+  const selectedColumn = columns.find((column) => column.id === searchState?.id)
+  const selectedColumnLabel =
+    searchState?.id && selectedColumn
+      ? (selectedColumn.columnDef.meta?.label ?? selectedColumn.id)
+      : null
 
   const handleContainerClick = () => {
     if (!isExpanded) {
@@ -67,7 +72,10 @@ const TableSearch = <TData,>({ table }: Props<TData>) => {
   const containerClasses = cn(
     'flex h-8 items-center rounded border outline-primary-8 transition-all duration-300 select-none focus-visible:outline-2',
     isExpanded
-      ? 'focus-within:border-primary w-72 justify-start border-gray-6 bg-surface pr-1 pl-3'
+      ? cn(
+          'focus-within:border-primary justify-start border-gray-6 bg-surface pr-1 pl-3',
+          selectedColumnLabel ? 'w-80' : 'w-72',
+        )
       : 'w-8 cursor-pointer justify-center border-gray-6 bg-surface text-gray-11 hover:bg-gray-4 hover:text-gray-12 active:scale-95',
   )
 
@@ -79,13 +87,23 @@ const TableSearch = <TData,>({ table }: Props<TData>) => {
       role='search'
       onClick={handleContainerClick}
     >
-      <Icon
-        name='lucide:search'
-        className={cn(
-          'size-4 shrink-0 transition-colors',
-          isExpanded ? 'text-gray-11' : 'text-gray-11 hover:text-gray-12',
-        )}
-      />
+      <div className='flex shrink-0 items-center gap-1.5'>
+        {!isExpanded || !selectedColumnLabel ? (
+          <Icon
+            name='lucide:search'
+            className={cn(
+              'size-4 shrink-0 transition-colors',
+              isExpanded ? 'text-gray-11' : 'text-gray-11 hover:text-gray-12',
+            )}
+          />
+        ) : null}
+
+        {isExpanded && selectedColumnLabel ? (
+          <span className='text-12 font-semibold whitespace-nowrap text-gray-11'>
+            {selectedColumnLabel} :
+          </span>
+        ) : null}
+      </div>
 
       <div
         className={cn(
@@ -95,7 +113,7 @@ const TableSearch = <TData,>({ table }: Props<TData>) => {
       >
         <input
           id='table-search-input'
-          placeholder='Search'
+          placeholder={selectedColumnLabel ? `Search ${selectedColumnLabel}` : 'Search'}
           type='text'
           value={inputValue}
           className={cn(

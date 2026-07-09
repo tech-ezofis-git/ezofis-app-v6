@@ -39,10 +39,17 @@ import {
   settingsTableCoreOptions,
   useSettingsTableSearch,
 } from '../helpers/settingsDataTable'
+import { calculateRoleSetupProgress } from '../helpers/settingsSetupProgress'
+import {
+  getFieldRequiredError,
+  getMissingRequiredLabels,
+  getRequiredFieldErrorMessage,
+} from '../helpers/requiredFieldErrors'
 import { mapUsersToOptions } from '../helpers/userGroupMappers'
 import SettingsPageHeader, {
   SettingsHeaderAddButton,
 } from './SettingsPageHeader'
+import SetupProgressBar from './SetupProgressBar'
 import useSettingsTableToolbar from './useSettingsTableToolbar'
 
 type AssignedUser = {
@@ -51,7 +58,13 @@ type AssignedUser = {
   name: string
   role: string
 }
-type CreateTabKey = 'details' | 'permissions'
+type CreateStepKey = 'details' | 'permissions' | 'review'
+
+type CreateStep = {
+  caption: string
+  key: CreateStepKey
+  title: string
+}
 
 type MenuItem = {
   id: string
@@ -104,6 +117,12 @@ const tabs: { key: TabKey; label: string }[] = [
   { key: 'permissions', label: 'Permission Matrix' },
   { key: 'menus', label: 'Menu Profiles' },
   { key: 'assignments', label: 'User Assignments' },
+]
+
+const roleSteps: CreateStep[] = [
+  { caption: 'Step 1', key: 'details', title: 'Role Details' },
+  { caption: 'Step 2', key: 'permissions', title: 'Permissions' },
+  { caption: 'Step 3', key: 'review', title: 'Review' },
 ]
 
 const actions: PermissionAction[] = [
@@ -162,7 +181,7 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
   const [apiMenus, setApiMenus] = useState<V6MenuItem[]>([])
   const [users, setUsers] = useState<AssignedUser[]>(initialUsers)
   const [isCreatingRole, setIsCreatingRole] = useState(false)
-  const [createTab, setCreateTab] = useState<CreateTabKey>('details')
+  const [createStep, setCreateStep] = useState(0)
   const [newRoleName, setNewRoleName] = useState('')
   const [newRoleDescription, setNewRoleDescription] = useState('')
   const [selectedUsers, setSelectedUsers] = useState<Option[]>([])
@@ -193,7 +212,7 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
 
   const resetCreateRole = () => {
     setIsCreatingRole(false)
-    setCreateTab('details')
+    setCreateStep(0)
     setNewRoleName('')
     setNewRoleDescription('')
     setSelectedUsers([])
@@ -406,7 +425,7 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
           apiMenus.length ? apiMenus : await loadMenus(),
         ),
       )
-      setCreateTab('details')
+      setCreateStep(0)
       setIsCreatingRole(true)
     } finally {
       setIsLoadingRoleDetails(false)
@@ -462,21 +481,25 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
   if (isCreatingRole) {
     return (
       <CreateRolePage
-        activeTab={createTab}
+        activeStep={createStep}
         description={newRoleDescription}
+        editingRoleId={editingRoleId}
         permissionRows={newPermissionRows}
         roleName={newRoleName}
         selectedUsers={selectedUsers}
         userOptions={userOptions}
-        onBack={resetCreateRole}
+        onBack={() => setCreateStep((step) => Math.max(step - 1, 0))}
         onCancel={resetCreateRole}
         onCreate={saveRole}
         isSaving={isSavingRole}
-        submitLabel={editingRoleId ? 'Update Role' : 'Create Role'}
+        submitLabel={editingRoleId ? 'Update Role' : 'Save Role'}
         onDescriptionChange={setNewRoleDescription}
+        onNext={() =>
+          setCreateStep((step) => Math.min(step + 1, roleSteps.length - 1))
+        }
         onRoleNameChange={setNewRoleName}
         onSelectedUsersChange={setSelectedUsers}
-        onTabChange={setCreateTab}
+        onStepChange={setCreateStep}
         onToggleCategory={toggleNewCategory}
         onTogglePermission={toggleNewPermission}
       />
@@ -710,8 +733,9 @@ function CreatePermissionMatrix({
 }
 
 function CreateRolePage({
-  activeTab,
+  activeStep,
   description,
+  editingRoleId,
   isSaving,
   permissionRows,
   roleName,
@@ -722,14 +746,16 @@ function CreateRolePage({
   onCancel,
   onCreate,
   onDescriptionChange,
+  onNext,
   onRoleNameChange,
   onSelectedUsersChange,
-  onTabChange,
+  onStepChange,
   onToggleCategory,
   onTogglePermission,
 }: {
-  activeTab: CreateTabKey
+  activeStep: number
   description: string
+  editingRoleId: string | null
   isSaving: boolean
   permissionRows: PermissionRow[]
   roleName: string
@@ -740,9 +766,10 @@ function CreateRolePage({
   onCancel: () => void
   onCreate: () => void
   onDescriptionChange: (value: string) => void
+  onNext: () => void
   onRoleNameChange: (value: string) => void
   onSelectedUsersChange: (value: Option[]) => void
-  onTabChange: (tab: CreateTabKey) => void
+  onStepChange: (step: number) => void
   onToggleCategory: (category: string) => void
   onTogglePermission: (category: string, action: PermissionAction) => void
 }) {
@@ -750,101 +777,332 @@ function CreateRolePage({
     () => countEnabledPermissions(permissionRows),
     [permissionRows],
   )
-  const canCreate = roleName.trim().length > 0 && selectedUsers.length > 0
+  const progress = useMemo(
+    () =>
+      calculateRoleSetupProgress(
+        roleName,
+        description,
+        selectedUsers.length,
+        enabledCount,
+      ),
+    [description, enabledCount, roleName, selectedUsers.length],
+  )
+  const isLastStep = activeStep === roleSteps.length - 1
+  const [showErrors, setShowErrors] = useState(false)
+
+  const getMissingLabels = (step = activeStep) => {
+    if (step === 1) return []
+
+    const fields = [{ label: 'Role Name', value: roleName }]
+    const labels = getMissingRequiredLabels(fields)
+
+    if (!selectedUsers.length) {
+      labels.push('Select Users')
+    }
+
+    return labels
+  }
+
+  const handleNext = () => {
+    const missingLabels = getMissingLabels(activeStep)
+
+    if (missingLabels.length) {
+      setShowErrors(true)
+      showToast({
+        message: getRequiredFieldErrorMessage(missingLabels),
+        variant: 'error',
+      })
+      return
+    }
+
+    setShowErrors(false)
+    onNext()
+  }
+
+  const handleSave = () => {
+    const missingLabels = getMissingLabels()
+
+    if (missingLabels.length) {
+      setShowErrors(true)
+      if (activeStep !== 0) onStepChange(0)
+      showToast({
+        message: getRequiredFieldErrorMessage(missingLabels),
+        variant: 'error',
+      })
+      return
+    }
+
+    setShowErrors(false)
+    onCreate()
+  }
+
+  const handleStepChange = (step: number) => {
+    if (step > activeStep) {
+      for (let index = activeStep; index < step; index += 1) {
+        const missingLabels = getMissingLabels(index)
+
+        if (missingLabels.length) {
+          setShowErrors(true)
+          onStepChange(index)
+          showToast({
+            message: getRequiredFieldErrorMessage(missingLabels),
+            variant: 'error',
+          })
+          return
+        }
+      }
+    }
+
+    setShowErrors(false)
+    onStepChange(step)
+  }
+
+  const handleBack = () => {
+    setShowErrors(false)
+    onBack()
+  }
+
   return (
-    <main className='flex min-h-full flex-col bg-[var(--surface)]'>
-      <div className='flex items-center justify-between border-b border-gray-3 bg-surface px-6 py-4 md:px-8'>
-        <div className='flex items-start gap-3'>
-          <IconButton
-            ariaLabel='Back'
-            color='gray'
-            icon='lucide:arrow-left'
-            size='sm'
-            variant='ghost'
-            onClick={onBack}
-          />
-          <div>
-            <div className='flex items-center gap-2'>
-              <ShieldCheck className='text-[var(--primary-9)]' size={19} />
-              <h1 className='text-18/6 font-semibold tracking-tight text-gray-13'>
-                Create New Role
+    <main className='min-h-screen bg-[var(--surface)] text-[var(--text-primary)]'>
+      <header className='border-b border-[var(--border-default)] bg-surface px-6 py-4'>
+        <div className='flex items-start justify-between gap-5'>
+          <div className='flex items-start gap-3'>
+            <IconButton
+              ariaLabel='Back'
+              color='gray'
+              icon='lucide:arrow-left'
+              size='sm'
+              variant='ghost'
+              onClick={onCancel}
+            />
+
+            <div>
+              <h1 className='text-[18px] leading-6 font-semibold text-[var(--gray-13)]'>
+                {editingRoleId ? 'Edit Role' : 'Create Role'}
               </h1>
+              <p className='mt-1 text-[14px] leading-5 text-[var(--gray-11)]'>
+                Configure role details, permissions, and review before saving.
+              </p>
             </div>
-            <p className='mt-1 text-13/5 text-gray-11'>
-              Configure role identity and permission controls in one full-page
-              workspace.
-            </p>
           </div>
-        </div>
-      </div>
 
-      <div className='flex flex-1 flex-col px-6 py-4 md:px-8'>
-        <div className='border-b border-[var(--border-default)]'>
-          <button
-            className={getCreateTabClass(activeTab === 'details')}
-            type='button'
-            onClick={() => onTabChange('details')}
-          >
-            Role Details
-          </button>
-          <button
-            className={getCreateTabClass(activeTab === 'permissions')}
-            type='button'
-            onClick={() => onTabChange('permissions')}
-          >
-            Permissions ({enabledCount} Enabled)
-          </button>
+          <SetupProgressBar progress={progress} />
         </div>
+      </header>
 
-        <div className='flex-1 py-5'>
-          {activeTab === 'details' ? (
-            <RoleDetailsForm
-              description={description}
-              roleName={roleName}
-              selectedUsers={selectedUsers}
-              userOptions={userOptions}
-              onDescriptionChange={onDescriptionChange}
-              onRoleNameChange={onRoleNameChange}
-              onSelectedUsersChange={onSelectedUsersChange}
-            />
-          ) : (
-            <CreatePermissionMatrix
-              rows={permissionRows}
-              onToggle={onTogglePermission}
-              onToggleCategory={onToggleCategory}
-            />
-          )}
-        </div>
-      </div>
+      <div className='grid min-h-[calc(100vh-96px)] grid-cols-1 lg:grid-cols-[296px_1fr]'>
+        <aside className='border-r border-[var(--border-default)] bg-[var(--surface)] px-4 py-9'>
+          <div className='space-y-5'>
+            {roleSteps.map((step, index) => {
+              const isActive = index === activeStep
+              const isCompleted = index < activeStep
 
-      <div className='sticky bottom-0 flex justify-end gap-3 border-t border-[var(--border-default)] bg-surface px-6 py-4 shadow-[var(--shadow-sm)] md:px-8'>
-        <button
-          className='h-10 rounded-[10px] border border-[var(--border-default)] bg-surface px-5 text-sm font-semibold text-[var(--gray-13)] shadow-[var(--shadow-sm)] transition hover:bg-[var(--gray-2)]'
-          type='button'
-          onClick={onCancel}
-        >
-          Cancel
-        </button>
-        <button
-          className='h-10 rounded-[10px] bg-[var(--primary-9)] px-5 text-sm font-semibold text-white shadow-[var(--shadow-md)] transition hover:bg-[var(--primary-10)] disabled:cursor-not-allowed disabled:opacity-50'
-          disabled={!canCreate || isSaving}
-          type='button'
-          onClick={onCreate}
-        >
-          {isSaving ? 'Saving...' : submitLabel}
-        </button>
+              return (
+                <button
+                  className='group flex w-full items-center gap-5 rounded-[14px] px-3 py-2 text-left transition hover:bg-surface-raised'
+                  key={step.key}
+                  type='button'
+                  onClick={() => handleStepChange(index)}
+                >
+                  <div className='relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--gray-3)]'>
+                    {index < roleSteps.length - 1 ? (
+                      <span className='absolute top-8 left-1/2 h-12 w-[2px] -translate-x-1/2 bg-[var(--gray-3)]' />
+                    ) : null}
+                    <span
+                      className={[
+                        'z-10 flex h-8 w-8 items-center justify-center rounded-full transition',
+                        isCompleted
+                          ? 'text-[var(--primary-9)]'
+                          : isActive
+                            ? 'bg-[var(--primary-3)] text-[var(--primary-11)] ring-1 ring-[var(--primary-8)]'
+                            : 'bg-[var(--gray-3)] text-[var(--gray-10)]',
+                      ].join(' ')}
+                    >
+                      {isCompleted ? (
+                        <Check size={14} />
+                      ) : (
+                        <RoleStepIcon step={step.key} />
+                      )}
+                    </span>
+                  </div>
+                  <div>
+                    <div className='text-md mt-1 font-semibold text-[var(--indigo-12)]'>
+                      {step.title}
+                    </div>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        </aside>
+
+        <section className='ez-scrollbar h-[calc(100vh-155px)] min-h-0 overflow-y-auto px-6 py-10 lg:px-20'>
+          <div className='mx-auto max-w-[860px]'>
+            {activeStep === 0 ? (
+              <FormCard
+                description='Define the role name, assign users, and describe its scope.'
+                title='Role Details'
+              >
+                <InputText
+                  error={getFieldRequiredError(
+                    'Role Name',
+                    showErrors,
+                    roleName,
+                  )}
+                  label='Role Name *'
+                  placeholder='e.g. AP Supervisor'
+                  value={roleName}
+                  onChange={onRoleNameChange}
+                />
+
+                <InputSelectMultiple
+                  className='bg-surface'
+                  error={
+                    showErrors && !selectedUsers.length
+                      ? 'Please fill the required field: Select Users'
+                      : undefined
+                  }
+                  label='Select Users *'
+                  options={userOptions}
+                  placeholder='Select users...'
+                  searchable
+                  value={selectedUsers}
+                  clearable
+                  onChange={(value) =>
+                    onSelectedUsersChange((value || []) as Option[])
+                  }
+                />
+
+                <InputTextarea
+                  label='Description'
+                  minRows={5}
+                  placeholder="Describe this role's responsibilities and scope..."
+                  value={description}
+                  onChange={onDescriptionChange}
+                />
+              </FormCard>
+            ) : null}
+
+            {activeStep === 1 ? (
+              <FormCard
+                description='Configure granular access permissions for this role.'
+                title='Permissions'
+              >
+                <CreatePermissionMatrix
+                  rows={permissionRows}
+                  onToggle={onTogglePermission}
+                  onToggleCategory={onToggleCategory}
+                />
+              </FormCard>
+            ) : null}
+
+            {activeStep === 2 ? (
+              <FormCard
+                description='Validate the role configuration before saving.'
+                title='Review'
+              >
+                <div className='rounded-[14px] border border-[var(--border-default)] bg-surface p-6'>
+                  <h3 className='text-md mb-6 font-semibold text-[var(--gray-13)]'>
+                    Role Summary
+                  </h3>
+                  <div className='grid grid-cols-1 gap-x-12 gap-y-4 text-sm md:grid-cols-2'>
+                    <SummaryItem label='Role Name' value={roleName || '—'} />
+                    <SummaryItem
+                      label='Permissions'
+                      value={`${enabledCount} enabled`}
+                    />
+                    <SummaryItem
+                      label='Description'
+                      value={description || '—'}
+                    />
+                    <SummaryItem
+                      label='Users'
+                      value={
+                        selectedUsers.length
+                          ? selectedUsers.map((user) => user.name).join(', ')
+                          : '—'
+                      }
+                    />
+                  </div>
+                </div>
+              </FormCard>
+            ) : null}
+
+            <div className='mt-8 flex items-center justify-between border-t border-[var(--border-default)] pt-6'>
+              <button
+                className='inline-flex h-10 items-center rounded-[5px] border border-[var(--border-default)] bg-surface px-5 text-[15px] font-semibold text-[var(--gray-13)] transition hover:bg-[var(--gray-2)] disabled:cursor-not-allowed disabled:opacity-50'
+                disabled={activeStep === 0}
+                type='button'
+                onClick={handleBack}
+              >
+                Back
+              </button>
+
+              <div className='flex items-center gap-3'>
+                {isLastStep ? (
+                  <button
+                    className='h-10 rounded-[5px] bg-[var(--primary-9)] px-5 text-[15px] font-semibold text-white shadow-[var(--shadow-md)] transition hover:bg-[var(--primary-10)] disabled:cursor-not-allowed disabled:opacity-60'
+                    disabled={isSaving}
+                    type='button'
+                    onClick={handleSave}
+                  >
+                    {isSaving ? 'Saving...' : submitLabel}
+                  </button>
+                ) : (
+                  <button
+                    className='h-10 rounded-[5px] bg-[var(--primary-9)] px-5 text-[15px] font-semibold text-white shadow-[var(--shadow-md)] transition hover:bg-[var(--primary-10)]'
+                    type='button'
+                    onClick={handleNext}
+                  >
+                    Next
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
     </main>
   )
 }
 
-function getCreateTabClass(isActive: boolean) {
-  return [
-    'h-11 border-b-2 px-4 text-sm font-medium transition',
-    isActive
-      ? 'border-[var(--primary-9)] text-[var(--primary-9)]'
-      : 'border-transparent text-[var(--gray-11)] hover:text-[var(--gray-13)]',
-  ].join(' ')
+function FormCard({
+  children,
+  description,
+  title,
+}: {
+  children: ReactNode
+  description: string
+  title: string
+}) {
+  return (
+    <div>
+      <div className='mb-8'>
+        <h2 className='text-sm leading-8 font-semibold text-[var(--gray-13)]'>
+          {title}
+        </h2>
+        <p className='mt-1 max-w-[760px] text-xs leading-7 text-[var(--gray-11)]'>
+          {description}
+        </p>
+      </div>
+      <div className='space-y-6'>{children}</div>
+    </div>
+  )
+}
+
+function RoleStepIcon({ step }: { step: CreateStepKey }) {
+  if (step === 'details') return <Shield size={14} />
+  if (step === 'permissions') return <ShieldCheck size={14} />
+  return <Check size={14} />
+}
+
+function SummaryItem({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <span className='font-semibold text-[var(--gray-11)]'>{label}: </span>
+      <span className='ml-2 text-[var(--gray-10)]'>{value}</span>
+    </div>
+  )
 }
 
 function MenuProfiles({
@@ -1058,56 +1316,6 @@ function PermissionMatrix({
         onRowSizeChange={onRowSizeChange}
       />
     </>
-  )
-}
-
-function RoleDetailsForm({
-  description,
-  roleName,
-  selectedUsers,
-  userOptions,
-  onDescriptionChange,
-  onRoleNameChange,
-  onSelectedUsersChange,
-}: {
-  description: string
-  roleName: string
-  selectedUsers: Option[]
-  userOptions: Option[]
-  onDescriptionChange: (value: string) => void
-  onRoleNameChange: (value: string) => void
-  onSelectedUsersChange: (value: Option[]) => void
-}) {
-  return (
-    <div className='max-w-[980px] space-y-5'>
-      <InputText
-        label='Role Name'
-        placeholder='e.g. AP Supervisor'
-        required
-        value={roleName}
-        onChange={onRoleNameChange}
-      />
-
-      <InputSelectMultiple
-        className='bg-surface'
-        label='Select Users'
-        options={userOptions}
-        placeholder='Select users...'
-        required
-        searchable
-        value={selectedUsers}
-        clearable
-        onChange={(value) => onSelectedUsersChange(value as Option[])}
-      />
-
-      <InputTextarea
-        label='Description'
-        minRows={5}
-        placeholder="Describe this role's responsibilities and scope..."
-        value={description}
-        onChange={onDescriptionChange}
-      />
-    </div>
   )
 }
 

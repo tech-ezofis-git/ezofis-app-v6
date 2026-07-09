@@ -32,12 +32,16 @@ import {
   type V6MenuItem,
 } from '@/api/v6/user'
 import IconButton from '@/components/base/button/IconButton'
-import Button from '@/components/base/button/Button'
 import DataTable from '@/components/base/data-table/DataTable'
 import InputNumber from '@/components/base/inputs/InputNumber'
 import InputText from '@/components/base/inputs/InputText'
 import showToast from '@/components/base/toast/showToast'
 import { calculateMenuSetupProgress } from '../helpers/settingsSetupProgress'
+import {
+  getFieldRequiredError,
+  getMissingRequiredLabels,
+  getRequiredFieldErrorMessage,
+} from '../helpers/requiredFieldErrors'
 import {
   settingsHeaderMeta,
   settingsTableCoreOptions,
@@ -543,21 +547,112 @@ function MenuSetup({
     [editingMenuId, formState],
   )
   const isLastStep = activeStep === menuSteps.length - 1
-  const canContinueStepZero = editingMenuId
-    ? Boolean(formState.label.trim())
-    : Boolean(formState.key.trim() && formState.label.trim())
-  const canContinueStepOne = Boolean(
-    formState.routePath.trim() && formState.sortOrder >= 0,
-  )
-  const canSave = canContinueStepZero && canContinueStepOne
+  const [showErrors, setShowErrors] = useState(false)
+
+  const getMissingLabels = (step = activeStep) => {
+    if (step === 0) {
+      return getMissingRequiredLabels([
+        ...(editingMenuId
+          ? []
+          : [{ label: 'Menu Key', value: formState.key }]),
+        { label: 'Label', value: formState.label },
+      ])
+    }
+
+    if (step === 1) {
+      return getMissingRequiredLabels([
+        { label: 'Route Path', value: formState.routePath },
+        {
+          label: 'Sort Order',
+          value: formState.sortOrder >= 0 ? formState.sortOrder : '',
+        },
+      ])
+    }
+
+    return getMissingRequiredLabels([
+      ...(editingMenuId ? [] : [{ label: 'Menu Key', value: formState.key }]),
+      { label: 'Label', value: formState.label },
+      { label: 'Route Path', value: formState.routePath },
+      {
+        label: 'Sort Order',
+        value: formState.sortOrder >= 0 ? formState.sortOrder : '',
+      },
+    ])
+  }
+
+  const handleNext = () => {
+    const missingLabels = getMissingLabels(activeStep)
+
+    if (missingLabels.length) {
+      setShowErrors(true)
+      showToast({
+        message: getRequiredFieldErrorMessage(missingLabels),
+        variant: 'error',
+      })
+      return
+    }
+
+    setShowErrors(false)
+    onNext()
+  }
+
+  const handleSave = () => {
+    const missingLabels = getMissingLabels()
+
+    if (missingLabels.length) {
+      setShowErrors(true)
+      if (missingLabels.includes('Menu Key') || missingLabels.includes('Label')) {
+        onStepChange(0)
+      } else if (
+        missingLabels.includes('Route Path') ||
+        missingLabels.includes('Sort Order')
+      ) {
+        onStepChange(1)
+      }
+      showToast({
+        message: getRequiredFieldErrorMessage(missingLabels),
+        variant: 'error',
+      })
+      return
+    }
+
+    setShowErrors(false)
+    onSave()
+  }
+
+  const handleStepChange = (step: number) => {
+    if (step > activeStep) {
+      for (let index = activeStep; index < step; index += 1) {
+        const missingLabels = getMissingLabels(index)
+
+        if (missingLabels.length) {
+          setShowErrors(true)
+          onStepChange(index)
+          showToast({
+            message: getRequiredFieldErrorMessage(missingLabels),
+            variant: 'error',
+          })
+          return
+        }
+      }
+    }
+
+    setShowErrors(false)
+    onStepChange(step)
+  }
+
+  const handleBack = () => {
+    setShowErrors(false)
+    onBack()
+  }
 
   return (
-    <main className='min-h-screen bg-[var(--surface-muted)] text-[var(--text-primary)]'>
+    <main className='min-h-screen bg-[var(--surface)] text-[var(--text-primary)]'>
       <header className='border-b border-[var(--border-default)] bg-surface px-6 py-4'>
         <div className='flex items-start justify-between gap-5'>
           <div className='flex items-start gap-3'>
             <IconButton
-              ariaLabel='Cancel setup'
+              ariaLabel='Back'
               color='gray'
               icon='lucide:arrow-left'
               size='sm'
@@ -581,7 +676,7 @@ function MenuSetup({
       </header>
 
       <div className='grid min-h-[calc(100vh-96px)] grid-cols-1 lg:grid-cols-[296px_1fr]'>
-        <aside className='border-r border-[var(--border-default)] bg-[var(--surface-muted)] px-4 py-9'>
+        <aside className='border-r border-[var(--border-default)] bg-[var(--surface)] px-4 py-9'>
           <div className='space-y-5'>
             {menuSteps.map((step, index) => {
               const isActive = index === activeStep
@@ -592,7 +687,7 @@ function MenuSetup({
                   className='group flex w-full items-center gap-5 rounded-[14px] px-3 py-2 text-left transition hover:bg-surface-raised'
                   key={step.key}
                   type='button'
-                  onClick={() => onStepChange(index)}
+                  onClick={() => handleStepChange(index)}
                 >
                   <div className='relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--gray-3)]'>
                     {index < menuSteps.length - 1 ? (
@@ -608,11 +703,17 @@ function MenuSetup({
                             : 'bg-[var(--gray-3)] text-[var(--gray-10)]',
                       ].join(' ')}
                     >
-                      {isCompleted ? <Check size={14} /> : index + 1}
+                      {isCompleted ? (
+                        <Check size={14} />
+                      ) : (
+                        <MenuStepIcon step={step.key} />
+                      )}
                     </span>
                   </div>
-                  <div className='text-md font-semibold text-[var(--indigo-12)]'>
-                    {step.title}
+                  <div>
+                    <div className='text-md mt-1 font-semibold text-[var(--indigo-12)]'>
+                      {step.title}
+                    </div>
                   </div>
                 </button>
               )
@@ -627,33 +728,41 @@ function MenuSetup({
                 description='Define the menu key and display label shown in navigation.'
                 title='Menu Details'
               >
-                <div className='grid grid-cols-1 gap-5'>
-                  {editingMenuId ? (
-                    <InputText
-                      disabled
-                      label='Menu Key'
-                      value={formState.key}
-                      onChange={() => undefined}
-                    />
-                  ) : (
-                    <InputText
-                      label='Menu Key *'
-                      placeholder='e.g. reports'
-                      value={formState.key}
-                      onChange={(value) =>
-                        onChange({ ...formState, key: value })
-                      }
-                    />
-                  )}
+                {editingMenuId ? (
                   <InputText
-                    label='Label *'
-                    placeholder='e.g. Reports'
-                    value={formState.label}
+                    disabled
+                    label='Menu Key'
+                    value={formState.key}
+                    onChange={() => undefined}
+                  />
+                ) : (
+                  <InputText
+                    error={getFieldRequiredError(
+                      'Menu Key',
+                      showErrors,
+                      formState.key,
+                    )}
+                    label='Menu Key *'
+                    placeholder='e.g. reports'
+                    value={formState.key}
                     onChange={(value) =>
-                      onChange({ ...formState, label: value })
+                      onChange({ ...formState, key: value })
                     }
                   />
-                </div>
+                )}
+                <InputText
+                  error={getFieldRequiredError(
+                    'Label',
+                    showErrors,
+                    formState.label,
+                  )}
+                  label='Label *'
+                  placeholder='e.g. Reports'
+                  value={formState.label}
+                  onChange={(value) =>
+                    onChange({ ...formState, label: value })
+                  }
+                />
               </FormCard>
             ) : null}
 
@@ -662,77 +771,97 @@ function MenuSetup({
                 description='Set the route path and sort order for this menu item.'
                 title='Route & Order'
               >
-                <div className='grid grid-cols-1 gap-5'>
-                  <InputText
-                    label='Route Path *'
-                    placeholder='e.g. /reports'
-                    value={formState.routePath}
-                    onChange={(value) =>
-                      onChange({ ...formState, routePath: value })
-                    }
-                  />
-                  <InputNumber
-                    label='Sort Order *'
-                    min={0}
-                    value={formState.sortOrder}
-                    onChange={(value) =>
-                      onChange({
-                        ...formState,
-                        sortOrder: Number(value) || 0,
-                      })
-                    }
-                  />
-                </div>
+                <InputText
+                  error={getFieldRequiredError(
+                    'Route Path',
+                    showErrors,
+                    formState.routePath,
+                  )}
+                  label='Route Path *'
+                  placeholder='e.g. /reports'
+                  value={formState.routePath}
+                  onChange={(value) =>
+                    onChange({ ...formState, routePath: value })
+                  }
+                />
+                <InputNumber
+                  error={
+                    showErrors && !(formState.sortOrder >= 0)
+                      ? 'Please fill the required field: Sort Order'
+                      : undefined
+                  }
+                  label='Sort Order *'
+                  min={0}
+                  value={formState.sortOrder}
+                  onChange={(value) =>
+                    onChange({
+                      ...formState,
+                      sortOrder: Number(value) || 0,
+                    })
+                  }
+                />
               </FormCard>
             ) : null}
 
             {activeStep === 2 ? (
               <FormCard
-                description='Review the menu configuration before saving.'
+                description='Validate the menu configuration before saving.'
                 title='Review'
               >
-                <div className='space-y-4 rounded-[14px] border border-[var(--border-default)] bg-surface p-5'>
-                  <ReviewRow label='Menu Key' value={formState.key || '—'} />
-                  <ReviewRow label='Label' value={formState.label || '—'} />
-                  <ReviewRow
-                    label='Route Path'
-                    value={formState.routePath || '—'}
-                  />
-                  <ReviewRow
-                    label='Sort Order'
-                    value={String(formState.sortOrder)}
-                  />
+                <div className='rounded-[14px] border border-[var(--border-default)] bg-surface p-6'>
+                  <h3 className='text-md mb-6 font-semibold text-[var(--gray-13)]'>
+                    Menu Summary
+                  </h3>
+                  <div className='grid grid-cols-1 gap-x-12 gap-y-4 text-sm md:grid-cols-2'>
+                    <SummaryItem label='Menu Key' value={formState.key || '—'} />
+                    <SummaryItem label='Label' value={formState.label || '—'} />
+                    <SummaryItem
+                      label='Route Path'
+                      value={formState.routePath || '—'}
+                    />
+                    <SummaryItem
+                      label='Sort Order'
+                      value={String(formState.sortOrder)}
+                    />
+                  </div>
                 </div>
               </FormCard>
             ) : null}
 
-            <div className='mt-10 flex items-center justify-between'>
-              <Button
-                className='h-10 px-5'
+            <div className='mt-8 flex items-center justify-between border-t border-[var(--border-default)] pt-6'>
+              <button
+                className='inline-flex h-10 items-center rounded-[5px] border border-[var(--border-default)] bg-surface px-5 text-[15px] font-semibold text-[var(--gray-13)] transition hover:bg-[var(--gray-2)] disabled:cursor-not-allowed disabled:opacity-50'
                 disabled={activeStep === 0}
-                label='Back'
-                variant='outline'
-                onClick={onBack}
-              />
+                type='button'
+                onClick={handleBack}
+              >
+                Back
+              </button>
 
-              {isLastStep ? (
-                <Button
-                  className='h-10 border border-primary-10 bg-primary-11 px-5 text-surface'
-                  disabled={!canSave || isSaving}
-                  label={isSaving ? 'Saving...' : editingMenuId ? 'Update Menu' : 'Create Menu'}
-                  onClick={onSave}
-                />
-              ) : (
-                <Button
-                  className='h-10 border border-primary-10 bg-primary-11 px-5 text-surface'
-                  disabled={
-                    (activeStep === 0 && !canContinueStepZero) ||
-                    (activeStep === 1 && !canContinueStepOne)
-                  }
-                  label='Continue'
-                  onClick={onNext}
-                />
-              )}
+              <div className='flex items-center gap-3'>
+                {isLastStep ? (
+                  <button
+                    className='h-10 rounded-[5px] bg-[var(--primary-9)] px-5 text-[15px] font-semibold text-white shadow-[var(--shadow-md)] transition hover:bg-[var(--primary-10)] disabled:cursor-not-allowed disabled:opacity-60'
+                    disabled={isSaving}
+                    type='button'
+                    onClick={handleSave}
+                  >
+                    {isSaving
+                      ? 'Saving...'
+                      : editingMenuId
+                        ? 'Update Menu'
+                        : 'Save Menu'}
+                  </button>
+                ) : (
+                  <button
+                    className='h-10 rounded-[5px] bg-[var(--primary-9)] px-5 text-[15px] font-semibold text-white shadow-[var(--shadow-md)] transition hover:bg-[var(--primary-10)]'
+                    type='button'
+                    onClick={handleNext}
+                  >
+                    Next
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </section>
@@ -751,21 +880,31 @@ function FormCard({
   title: string
 }) {
   return (
-    <div className='rounded-[18px] border border-[var(--border-default)] bg-surface p-8 shadow-[var(--shadow-sm)]'>
-      <h2 className='text-[20px] font-semibold text-[var(--gray-13)]'>{title}</h2>
-      <p className='mt-2 text-sm text-[var(--gray-11)]'>{description}</p>
-      <div className='mt-8'>{children}</div>
+    <div>
+      <div className='mb-8'>
+        <h2 className='text-sm leading-8 font-semibold text-[var(--gray-13)]'>
+          {title}
+        </h2>
+        <p className='mt-1 max-w-[760px] text-xs leading-7 text-[var(--gray-11)]'>
+          {description}
+        </p>
+      </div>
+      <div className='space-y-6'>{children}</div>
     </div>
   )
 }
 
-function ReviewRow({ label, value }: { label: string; value: string }) {
+function MenuStepIcon({ step }: { step: MenuStep['key'] }) {
+  if (step === 'details') return <Menu size={14} />
+  if (step === 'route') return <LayoutDashboard size={14} />
+  return <Check size={14} />
+}
+
+function SummaryItem({ label, value }: { label: string; value: string }) {
   return (
-    <div className='flex items-start justify-between gap-6 border-b border-[var(--gray-3)] pb-4 last:border-b-0 last:pb-0'>
-      <span className='text-sm font-medium text-[var(--gray-10)]'>{label}</span>
-      <span className='max-w-[65%] text-right text-sm font-semibold text-[var(--gray-13)]'>
-        {value}
-      </span>
+    <div>
+      <span className='font-semibold text-[var(--gray-11)]'>{label}: </span>
+      <span className='ml-2 text-[var(--gray-10)]'>{value}</span>
     </div>
   )
 }
