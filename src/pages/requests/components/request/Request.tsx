@@ -1510,6 +1510,37 @@ const Request = ({
   }
   console.log(selectedItem, "Selected Item")
 
+  const handleShare = async (emails: string[], message: string) => {
+    const instanceId =
+      selectedItem?.workflowInstanceId || request?.workflowInstanceId || jobData?.instanceId
+    const repositoryId =
+      selectedItem?.repositoryId || request?.repositoryId || rawWorkflowData?.repositoryId
+    const itemId =
+      selectedItem?.itemId || request?.itemId || selectedItem?.fileId || request?.fileId
+
+    if (!instanceId) {
+      showToast({ message: 'No instance ID available to share', variant: 'error' })
+      return false
+    }
+
+    try {
+      if (emails.length > 0) {
+        await workflowsApiV6.shareFile(String(instanceId), {
+          email: emails[0],
+          repositoryId: String(repositoryId || ''),
+          itemId: String(itemId || ''),
+          message,
+        })
+      }
+      showToast({ message: 'Request shared successfully', variant: 'success' })
+      return true
+    } catch (error) {
+      console.error('Failed to share:', error)
+      showToast({ message: 'Failed to share request', variant: 'error' })
+      return false
+    }
+  }
+
   return (
     <div
       className={`flex w-full flex-col p-0 ${hideActions ? 'bg-grey-2 h-full p-4' : 'h-[calc(100vh-85px)]'}`}
@@ -1570,6 +1601,7 @@ const Request = ({
           onNext={onNext}
           onOpenPlayground={handleOpenPlayground}
           onPrev={onPrev}
+          onShare={handleShare}
         />
       </div>
 

@@ -44,6 +44,7 @@ interface HeaderProps {
   onOpenPlayground?: (context: any) => void
   onPrev?: () => void
   ticketUserId?: string
+  onShare?: (emails: string[], message: string) => Promise<boolean>
 }
 
 // Generates a consistent color from a string (name/email)
@@ -135,12 +136,17 @@ const Header: React.FC<HeaderProps> = ({
   onManualCorrection: _onManualCorrection,
   onNext,
   onPrev,
+  onShare,
 }) => {
   const [showAIInsights, setShowAIInsights] = React.useState(false)
   const [showShare, setShowShare] = React.useState(false)
   const [shareSearch, setShareSearch] = React.useState('')
+  const [shareMessage, setShareMessage] = React.useState('')
+  const [isSharing, setIsSharing] = React.useState(false)
   const [sharedUsers, setSharedUsers] = React.useState<Set<string>>(new Set())
-  const [selectedUsersToShare, setSelectedUsersToShare] = React.useState<Record<string, { user: any, permission: 'View' | 'Verify' | 'Approve' | 'Paid' }>>({})
+  const [globalShareRole, setGlobalShareRole] = React.useState<{id: string, name: string}>({ id: 'View', name: 'View' })
+  const [showRoleDropdown, setShowRoleDropdown] = React.useState(false)
+  const [selectedUsersToShare, setSelectedUsersToShare] = React.useState<Record<string, { user: any, permission: string }>>({})
   const containerRef = React.useRef<HTMLDivElement>(null)
   const shareRef = React.useRef<HTMLDivElement>(null)
 
@@ -150,13 +156,38 @@ const Header: React.FC<HeaderProps> = ({
   )
 
   const users = React.useMemo(() => {
+    if (!shareSearch) {
+      return (rawUsers as any[]).filter(user => {
+        const id = String(user.userId || user.id || user.value || user.loginName);
+        const isShared = sharedUsers.has(id);
+        const isOwner = ticketUserId && (
+          String(user.userId) === String(ticketUserId) ||
+          String(user.id) === String(ticketUserId.toLowerCase()) ||
+          String(user.value) === String(ticketUserId) ||
+          String(user.loginName) === String(ticketUserId)
+        );
+        return isOwner || isShared;
+      });
+    }
     return (rawUsers as any[]).filter((u) => {
       const name = getDisplayName(u).toLowerCase()
       const email = getEmail(u).toLowerCase()
       const q = shareSearch.toLowerCase()
       return name.includes(q) || email.includes(q)
     })
-  }, [rawUsers, shareSearch])
+  }, [rawUsers, shareSearch, sharedUsers, ticketUserId])
+
+  const shareRoleOptions = React.useMemo(() => {
+    const defaultOptions = [{ id: 'View', name: 'View' }]
+    if (actions && actions.length > 0) {
+      actions.forEach((a: any) => {
+        if (a.label) {
+          defaultOptions.push({ id: a.label, name: a.label })
+        }
+      })
+    }
+    return defaultOptions
+  }, [actions])
 
   const getProgressStyles = (pct: number) => {
     if (pct < 100) {
@@ -206,6 +237,7 @@ const Header: React.FC<HeaderProps> = ({
         setShowShare(false)
         setSelectedUsersToShare({})
         setShareSearch('')
+        setShareMessage('')
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -219,7 +251,7 @@ const Header: React.FC<HeaderProps> = ({
       if (next[id]) {
         delete next[id]
       } else {
-        next[id] = { user, permission: 'View' }
+        next[id] = { user, permission: globalShareRole.id }
       }
       return next
     })
@@ -235,26 +267,60 @@ const Header: React.FC<HeaderProps> = ({
     })
   }
 
-  const handleBulkShare = () => {
+  const handleBulkShare = async () => {
+    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(shareSearch);
     const selectedCount = Object.keys(selectedUsersToShare).length
-    if (selectedCount === 0) return
+    if (selectedCount === 0 && !isEmail) return
 
-    setSharedUsers((prev) => {
-      const next = new Set(prev)
-      Object.keys(selectedUsersToShare).forEach((id) => {
-        next.add(id)
+    const emailsToShare: string[] = []
+    Object.values(selectedUsersToShare).forEach(({ user }) => {
+      const email = getEmail(user)
+      if (email) emailsToShare.push(email)
+    })
+    if (isEmail) {
+      emailsToShare.push(shareSearch)
+    }
+
+    if (onShare) {
+      setIsSharing(true)
+      const success = await onShare(emailsToShare, shareMessage)
+      setIsSharing(false)
+      
+      if (success) {
+        setSharedUsers((prev) => {
+          const next = new Set(prev)
+          Object.keys(selectedUsersToShare).forEach((id) => next.add(id))
+          if (selectedCount === 0 && isEmail) next.add(shareSearch)
+          return next
+        })
+        setSelectedUsersToShare({})
+        setShowShare(false)
+        setShareSearch('')
+        setShareMessage('')
+      }
+    } else {
+      // Fallback
+      setSharedUsers((prev) => {
+        const next = new Set(prev)
+        Object.keys(selectedUsersToShare).forEach((id) => {
+          next.add(id)
+        })
+        if (selectedCount === 0 && isEmail) {
+          next.add(shareSearch)
+        }
+        return next
       })
-      return next
-    })
 
-    setSelectedUsersToShare({})
-    setShowShare(false)
-    setShareSearch('')
+      setSelectedUsersToShare({})
+      setShowShare(false)
+      setShareSearch('')
+      setShareMessage('')
 
-    showToast({
-      message: 'Request shared successfully',
-      variant: 'success',
-    })
+      showToast({
+        message: 'Request shared successfully',
+        variant: 'success',
+      })
+    }
   }
 
   const insightContent =
@@ -705,19 +771,72 @@ const Header: React.FC<HeaderProps> = ({
 
                   {/* Search */}
                   <div className='px-3 pt-3 pb-2'>
-                    <div className='flex items-center gap-2 rounded-lg border border-[var(--gray-3)] bg-[var(--gray-1)] px-3 py-2 transition-all focus-within:border-[var(--primary-7)] focus-within:bg-surface focus-within:ring-1 focus-within:ring-[var(--primary-4)]'>
-                      <Icon
-                        className='size-3.5 shrink-0 text-[var(--gray-9)]'
-                        name='tabler:search'
-                      />
-                      <input
-                        className='flex-1 bg-transparent text-[12px] font-medium text-[var(--gray-13)] placeholder:text-[var(--gray-8)] focus:outline-none'
-                        placeholder='Search people...'
-                        type='text'
-                        value={shareSearch}
-                        autoFocus
-                        onChange={(e) => setShareSearch(e.target.value)}
-                      />
+                    <div className='flex items-center gap-2 rounded-lg border border-[var(--gray-3)] bg-surface px-3 py-1.5 transition-all focus-within:border-[var(--primary-7)] focus-within:ring-1 focus-within:ring-[var(--primary-4)]'>
+                      
+                      <div className='flex flex-1 items-center gap-2 flex-wrap min-w-0'>
+                        <Icon
+                          className='size-4 shrink-0 text-[var(--gray-9)]'
+                          name='tabler:search'
+                        />
+                        
+                        {Object.values(selectedUsersToShare).map(({user}) => (
+                          <div key={user.id || user.value || user.loginName || user.email} className='flex items-center gap-1 rounded bg-[var(--primary-2)] px-2 py-0.5 text-[12px] font-semibold text-[var(--primary-9)]'>
+                            {getDisplayName(user)}
+                            <button onClick={() => handleToggleSelectUser(user)} className='cursor-pointer text-[var(--primary-9)] hover:text-[var(--primary-10)]'>
+                              <Icon name='lucide:x' className='size-3' />
+                            </button>
+                          </div>
+                        ))}
+
+                        <input
+                          className='flex-1 min-w-[120px] bg-transparent text-[13px] font-medium text-[var(--gray-13)] placeholder:text-[var(--gray-8)] focus:outline-none'
+                          placeholder={Object.keys(selectedUsersToShare).length > 0 ? 'Add more people...' : 'Add names or emails'}
+                          type='text'
+                          value={shareSearch}
+                          autoFocus
+                          onChange={(e) => setShareSearch(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ',') {
+                              e.preventDefault()
+                              const val = shareSearch.trim().replace(/,$/, '')
+                              if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
+                                setSelectedUsersToShare(prev => ({
+                                  ...prev,
+                                  [val]: { user: { id: val, email: val, name: val, isExternal: true }, permission: globalShareRole.id }
+                                }))
+                                setShareSearch('')
+                              }
+                            }
+                          }}
+                        />
+                      </div>
+                      
+                      <div className='h-4 w-px bg-[var(--gray-3)] shrink-0' />
+                      <div className='relative shrink-0'>
+                        <button 
+                          onClick={() => setShowRoleDropdown(!showRoleDropdown)}
+                          className='flex items-center gap-1 px-2 py-1 cursor-pointer text-[13px] font-semibold text-[var(--gray-12)] hover:bg-[var(--gray-2)] rounded transition-colors'
+                        >
+                          {globalShareRole.name}
+                          <Icon name='lucide:chevron-down' className='size-3.5 text-[var(--gray-9)]' />
+                        </button>
+                        {showRoleDropdown && (
+                          <div className='absolute right-0 top-full mt-1 z-[110] min-w-[120px] rounded-lg border border-[var(--gray-3)] bg-surface py-1 shadow-lg'>
+                            {shareRoleOptions.map(opt => (
+                              <button 
+                                key={opt.id}
+                                className='w-full flex items-center justify-between text-left px-3 cursor-pointer py-1.5 text-[13px] font-medium hover:bg-[var(--gray-2)] transition-colors'
+                                onClick={() => { setGlobalShareRole(opt); setShowRoleDropdown(false); }}
+                              >
+                                <span>{opt.name}</span>
+                                {globalShareRole.id === opt.id && (
+                                  <Icon name='lucide:check' className='size-3.5 text-[var(--primary-9)]' />
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
 
@@ -738,19 +857,7 @@ const Header: React.FC<HeaderProps> = ({
                           </div>
                         ))}
                       </div>
-                    ) : users.length === 0 ? (
-                      <div className='flex flex-col items-center justify-center py-8 text-center'>
-                        <Icon
-                          className='mb-2 size-8 text-[var(--gray-5)]'
-                          name='tabler:users-group'
-                        />
-                        <p className='text-[12px] font-medium text-[var(--gray-9)]'>
-                          {shareSearch
-                            ? 'No users found'
-                            : 'No users available'}
-                        </p>
-                      </div>
-                    ) : (
+                    ) : users.length > 0 ? (
                       users.map((user: any) => {
                         const id = String(
                           user.userId || user.id || user.value || user.loginName,
@@ -810,11 +917,11 @@ const Header: React.FC<HeaderProps> = ({
 
                               {/* Name & Email */}
                               <div className='min-w-0 flex-1'>
-                                <p className='truncate text-[12px] font-semibold text-[var(--gray-13)]'>
+                                <p className='truncate text-[12px] font-semibold text-[var(--gray-13)]' title={name}>
                                   {name}
                                 </p>
                                 {email && (
-                                  <p className='truncate text-[11px] text-[var(--gray-9)]'>
+                                  <p className='truncate text-[11px] text-[var(--gray-9)]' title={email}>
                                     {email}
                                   </p>
                                 )}
@@ -831,38 +938,57 @@ const Header: React.FC<HeaderProps> = ({
                               ) : isShared ? (
                                 <span className='flex items-center gap-1 rounded-full bg-[var(--green-2)] px-2.5 py-0.5 text-[10px] font-semibold text-[var(--green-9)]'>
                                   <Icon className='size-3' name='tabler:check' />
-                                  Shared
+                                  Invited
                                 </span>
                               ) : isSelectedToShare ? (
-                                <div className='w-24'>
-                                  <InputSelect
-                                    options={roleOptions}
-                                    value={roleOptions.find((opt) => opt.id === selectedUsersToShare[id]?.permission) || roleOptions[0]}
-                                    onChange={(val) => handlePermissionChange(id, (val?.id || 'View') as any)}
-                                    searchable={false}
-                                  />
-                                </div>
+                                <span className='flex items-center gap-1 rounded-full bg-[var(--primary-1)] px-2.5 py-0.5 text-[10px] font-semibold text-[var(--primary-9)]'>
+                                  <Icon className='size-3' name='tabler:check' />
+                                  Selected
+                                </span>
                               ) : null}
                             </div>
                           </div>
                         )
                       })
-                    )}
+                    ) : null}
                   </div>
 
                   {/* Share Invite Button */}
-                  {Object.keys(selectedUsersToShare).length > 0 && (
-                    <div className='border-t border-[var(--gray-2)] p-2.5 bg-[var(--gray-1)]/50'>
-                      <button
-                        type='button'
-                        onClick={handleBulkShare}
-                        className='flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--primary-9)] hover:bg-[var(--primary-10)] text-white py-1.5 text-xs font-semibold shadow-sm hover:shadow active:scale-95 transition-all'
-                      >
-                        <Icon className='size-3.5' name='tabler:send' />
-                        <span>Share Invite</span>
-                      </button>
-                    </div>
-                  )}
+                  {(() => {
+                    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(shareSearch);
+                    const hasSelectedUsers = Object.keys(selectedUsersToShare).length > 0;
+                    const showFooter = hasSelectedUsers || shareSearch.length > 0;
+                    const canShare = hasSelectedUsers || isEmail;
+
+                    return showFooter ? (
+                      <div className='flex flex-col gap-3 border-t border-[var(--gray-2)] p-4 bg-surface'>
+                        <div className='flex items-center gap-2'>
+                          <InputCheckbox checked disabled />
+                          <span className='text-[13px] font-medium text-[var(--gray-13)]'>Send notification</span>
+                        </div>
+                        <textarea
+                          className='w-full rounded-lg border border-[var(--gray-3)] bg-surface p-2.5 text-[13px] font-medium text-[var(--gray-13)] placeholder:text-[var(--gray-8)] focus:border-[var(--primary-5)] focus:outline-none focus:ring-1 focus:ring-[var(--primary-4)] transition-all'
+                          placeholder='Add message (optional)'
+                          rows={3}
+                          value={shareMessage}
+                          onChange={(e) => setShareMessage(e.target.value)}
+                        />
+                        <button
+                          type='button'
+                          onClick={handleBulkShare}
+                          disabled={!canShare || isSharing}
+                          className={cn(
+                            'mt-1 flex w-full items-center justify-center gap-2 rounded-lg py-2 text-[13px] font-bold shadow-sm transition-all',
+                            (canShare && !isSharing)
+                              ? 'bg-[var(--primary-9)] text-white cursor-pointer hover:bg-[var(--primary-10)] active:scale-95 hover:shadow-md'
+                              : 'bg-[var(--gray-3)] text-[var(--gray-8)] cursor-not-allowed'
+                          )}
+                        >
+                          {isSharing ? 'Sharing...' : 'Share'}
+                        </button>
+                      </div>
+                    ) : null;
+                  })()}
                 </motion.div>
               )}
             </AnimatePresence>
