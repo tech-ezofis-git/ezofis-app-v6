@@ -73,9 +73,7 @@ const PageTitle = () => {
 
     return (
       <div className='flex items-center gap-4'>
-        <span className='font-serif text-19 font-bold tracking-tight text-black dark:text-white'>
-          {pageTitle}
-        </span>
+        <Title level={3} title={pageTitle} />
         {pageTitle === 'Dashboard' && (
           <div className='flex gap-0.5 rounded-lg border border-border-default bg-gray-2 p-1 dark:bg-gray-12'>
             <button
