@@ -1301,12 +1301,32 @@ const Request = ({
     }
   }
 
+  const parsedFormData = useMemo(() => {
+    const formData = selectedItem?.formData
+    if (!formData) return {}
+    if (typeof formData === 'object') return formData.fields || formData
+    if (typeof formData === 'string') {
+      try {
+        const parsed = JSON.parse(formData)
+        return parsed.fields || parsed || {}
+      } catch {
+        return {}
+      }
+    }
+    return {}
+  }, [selectedItem])
+
   const totalAmount =
     formModel?.['Invoice Amount'] ||
     formModel?.['Total Due'] ||
     formModel?.['Total'] ||
     formModel?.['invoice_amount'] ||
     formModel?.['total_amount'] ||
+    parsedFormData?.['Invoice Amount'] ||
+    parsedFormData?.['Total Due'] ||
+    parsedFormData?.['Total'] ||
+    parsedFormData?.['invoice_amount'] ||
+    parsedFormData?.['total_amount'] ||
     invoiceHeader?.['Invoice Amount'] ||
     invoiceHeader?.['Total Due'] ||
     invoiceHeader?.['Total'] ||

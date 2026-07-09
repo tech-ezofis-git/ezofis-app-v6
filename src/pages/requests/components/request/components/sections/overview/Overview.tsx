@@ -2240,7 +2240,7 @@ const Overview = (props: any) => {
                   }}
                 />
                 <div
-                  className='animate-scan absolute h-[1px] bg-[var(--primary-5)] shadow-[0_0_4px_var(--primary-9),_0_0_8px_var(--primary-9)]'
+                  className='animate-scan absolute h-[1px] bg-[var(--primary-3)] shadow-[0_0_4px_var(--primary-9),_0_0_8px_var(--primary-9)]'
                   style={{
                     left: scannerBounds.left,
                     right: scannerBounds.right,
@@ -2454,7 +2454,7 @@ const Overview = (props: any) => {
                         align='left'
                         icon={Wand2}
                         isLoading={false}
-                        isPulsing={true}
+                        isPulsing={false}
                         title='Supplier Verification'
                         value='Not Verified'
                         isSelected={
@@ -2462,18 +2462,15 @@ const Overview = (props: any) => {
                         }
                         statusContent={
                           <button
-                            className='relative inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-[var(--primary-4)] bg-[var(--primary-2)] px-2.5 py-1 text-[9px] font-bold text-[var(--primary-9)] shadow-sm transition-all hover:scale-[1.02] hover:bg-[var(--primary-3)] hover:text-[var(--primary-10)] active:scale-95'
+                            className='relative inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-[var(--primary-4)] bg-[var(--primary-2)] px-2.5 py-1 text-[10px] font-bold text-[var(--primary-9)] shadow-sm animate-pulse transition-all hover:scale-[1.02] hover:bg-[var(--primary-3)] hover:text-[var(--primary-10)] active:scale-95 hover:animate-none'
                             type='button'
                             onClick={(e) => {
                               e.stopPropagation() // don't also fire the card's onClick
                               handleVerifySupplierClick()
                             }}
                           >
-                            <span className='relative flex h-1.5 w-1.5 shrink-0'>
-                              <span className='absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--primary-9)] opacity-75' />
-                              <span className='relative inline-flex h-1.5 w-1.5 rounded-full bg-[var(--primary-9)]' />
-                            </span>
-                            Verify Supplier
+                            <Icon name='lucide:bot' className='size-3.5' />
+                            Verify
                           </button>
                         }
                         onClick={handleVerifySupplierClick}
@@ -4020,7 +4017,7 @@ const Overview = (props: any) => {
                                                           )
                                                         }
                                                       />
-                                                      </div>
+                                                    </div>
                                                   </td>
                                                 )
                                               },

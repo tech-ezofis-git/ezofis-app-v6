@@ -470,8 +470,7 @@ const Header: React.FC<HeaderProps> = ({
 
       {/* Right Side Group: Total Amount + Actions */}
       <div className='flex items-center gap-6'>
-        {!isProcessing &&
-          (() => {
+        {(() => {
             const getCurrencyDisplay = (curr: string) => {
               if (!curr) return '$'
               const symbols: { [key: string]: string } = {
@@ -541,29 +540,43 @@ const Header: React.FC<HeaderProps> = ({
                   <span className='mb-1 text-[10px] leading-none font-semibold text-[var(--gray-11)]'>
                     Invoice Value
                   </span>
-                  <span
+                  <div
                     className={cn(
-                      'text-[13px] leading-none font-semibold',
+                      'flex items-center justify-end h-[13px]',
                       invoiceValueColorClass,
                     )}
                   >
-                    {currDisplay} {formatAmount(totalAmount)}
-                  </span>
+                    {formatAmount(totalAmount) === '0.00' ? (
+                      <div className='h-3 w-16 animate-pulse rounded bg-[var(--gray-4)]' />
+                    ) : (
+                      <span className='text-[13px] leading-none font-semibold'>
+                        {currDisplay} {formatAmount(totalAmount)}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div className='flex flex-col border-l border-[var(--gray-3)] pl-3 text-right'>
                   <span className='mb-1 text-[10px] leading-none font-semibold text-[var(--gray-11)]'>
                     PO Value
                   </span>
-                  <span className='text-[13px] leading-none font-semibold text-[var(--primary-9)]'>
-                    {currDisplay} {formatAmount(poValue)}
-                  </span>
+                  <div className='flex items-center justify-end h-[13px] text-[var(--primary-9)]'>
+                    {formatAmount(poValue) === '0.00' ? (
+                      <div className='h-3 w-16 animate-pulse rounded bg-[var(--gray-4)]' />
+                    ) : (
+                      <span className='text-[13px] leading-none font-semibold'>
+                        {currDisplay} {formatAmount(poValue)}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
             )
           })()}
 
         {/* AI Insights Toggle & Overlay */}
-        {!isProcessing && enableAIInsights && (
+        {isProcessing ? (
+          enableAIInsights && <div className='h-8 w-[120px] animate-pulse rounded-lg bg-[var(--gray-3)]' />
+        ) : enableAIInsights && (
           <div className='relative flex items-center gap-3' ref={containerRef}>
             <Button
               variant='outline'
@@ -632,12 +645,14 @@ const Header: React.FC<HeaderProps> = ({
         )}
 
         {/* Share Button — Canva-style user picker */}
-        {!isProcessing && (
+        {isProcessing ? (
+          <div className='h-8 w-[90px] animate-pulse rounded-lg bg-[var(--gray-3)]' />
+        ) : (
           <div className='relative' ref={shareRef}>
             <button
               type='button'
               className={cn(
-                'flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-1.5 text-[13px] font-semibold transition-all hover:shadow-sm active:scale-95',
+                'flex h-8 w-[90px] justify-center cursor-pointer items-center gap-2 rounded-lg border text-[13px] font-semibold transition-all hover:shadow-sm active:scale-95',
                 showShare
                   ? 'border-[var(--primary-6)] bg-[var(--primary-1)] text-[var(--primary-9)]'
                   : 'border-[var(--gray-3)] bg-surface text-[var(--gray-11)] hover:border-[var(--gray-5)] hover:text-[var(--gray-13)]',
@@ -854,7 +869,12 @@ const Header: React.FC<HeaderProps> = ({
           </div>
         )}
 
-        {!isProcessing && (
+        {isProcessing ? (
+          <div className='flex items-center gap-2'>
+            <div className='h-8 w-[90px] animate-pulse rounded-lg bg-[var(--gray-3)]' />
+            <div className='h-8 w-[90px] animate-pulse rounded-lg bg-[var(--gray-3)]' />
+          </div>
+        ) : (
           <div className='flex items-center gap-2'>
             {isEditing && (
               <Button
@@ -897,12 +917,12 @@ const Header: React.FC<HeaderProps> = ({
               return (
                 <div className='flex items-center gap-1.5' key={action?.value}>
                   <Button
-                    className={borderClass}
+                    className={cn(borderClass, 'w-[90px] h-8 justify-center')}
                     color={btnColor}
                     icon={action?.icon}
                     label={action?.label}
                     loading={approveLoading}
-                    size='lg'
+                    size='md'
                     variant={btnVariant}
                     onClick={() => onApprove?.(action?.value)}
                   />
