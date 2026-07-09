@@ -1,4 +1,3 @@
-import Papa from 'papaparse'
 import { useMemo, useRef, useState } from 'react'
 import * as XLSX from 'xlsx'
 import formApi from '@/api/form/form'
@@ -11,14 +10,23 @@ import requestStore from '@/pages/requests/stores/useRequestStore'
 import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
 import { downloadTemplate, PO_ACCEPT } from '../utils'
-import { compareHeaderSimilarity } from './utils/headerSimilarity'
+import { findBestHeaderMatch } from './utils/headerSimilarity'
 import { SYSTEM_TEMPLATE_COLUMNS } from './utils/templateSchema'
+import { LINE_ITEM_TEMPLATE_COLUMNS } from './utils/lineItemSchema'
+import {
+  mergeLineItemSheets,
+  detectGroupingColumn,
+  groupLineItems,
+  getPreviewGroup,
+  transformMappedRows,
+} from './utils/lineItemHelpers'
 
 export type UploadState =
   | 'idle'
   | 'parsing'
   | 'processing'
   | 'ready'
+  | 'lineItemMapping'
   | 'completed'
   | 'error'
 type Props = {
@@ -49,11 +57,19 @@ export default function PoSetupFlowPage({ onClose }: Props) {
   const [uploadProgress, setUploadProgress] = useState(0)
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
 
-  // File details
+  // File details (Header)
   const [uploadedColumns, setUploadedColumns] = useState<string[]>([])
   const [rowCount, setRowCount] = useState<number | null>(null)
   const [mapping, setMapping] = useState<Record<string, string>>({})
   const [previewRows, setPreviewRows] = useState<any[]>([])
+
+  // Line item details
+  const [lineItemHeaders, setLineItemHeaders] = useState<string[]>([])
+  const [lineItemRows, setLineItemRows] = useState<any[]>([])
+  const [lineItemMapping, setLineItemMapping] = useState<Record<string, string>>({})
+  const [groupingColumn, setGroupingColumn] = useState<string | null>(null)
+  const [previewGroupId, setPreviewGroupId] = useState<string | null>(null)
+  const [groupedData, setGroupedData] = useState<Record<string, any[]>>({})
 
   // Timeline step states
   const [step1State, setStep1State] = useState<StepState>('waiting')
@@ -77,63 +93,76 @@ export default function PoSetupFlowPage({ onClose }: Props) {
       .replace(/\s+/g, ' ')
   }
 
-  // Parse CSV payload
-  const parseCsv = async (
-    csvFileOrText: File | string,
-  ): Promise<{ headers: string[]; previewRows: any[]; rowCount: number }> => {
-    return new Promise((resolve, reject) => {
-      Papa.parse(csvFileOrText as any, {
-        header: true,
-        skipEmptyLines: true,
-        complete: (results) => {
-          const fields = (results.meta?.fields ?? [])
-            .map(normalizeHeader)
-            .filter(Boolean)
-          const rowCount = results.data.length
-          const previewRows = results.data.slice(0, 15)
-
-          if (!fields.length) reject(new Error('No header row found in CSV.'))
-          else resolve({ headers: fields, previewRows, rowCount })
-        },
-        error: (err) => reject(err),
-      })
-    })
+  // Parse CSV payload (CSV can only have 1 sheet, so we reject it per business rules)
+  const parseCsv = async (): Promise<any> => {
+    throw new Error('This workbook contains only one worksheet. PO Import requires both Header and Line Item data. Please upload an Excel file containing at least two worksheets.')
   }
+
 
   // Extract Columns and Row Count from uploaded File
   const extractHeadersAndData = async (
     file: File,
-  ): Promise<{ headers: string[]; previewRows: any[]; rowCount: number }> => {
+  ): Promise<{ 
+    headers: string[]; 
+    previewRows: any[]; 
+    rowCount: number;
+    lineItemHeaders: string[];
+    lineItemRows: any[];
+  }> => {
     const name = file.name.toLowerCase()
-    if (name.endsWith('.csv')) return parseCsv(file)
+    if (name.endsWith('.csv')) return parseCsv()
     if (name.endsWith('.xlsx')) {
       const buf = await file.arrayBuffer()
       const u8 = new Uint8Array(buf)
       const looksLikeZip = u8.length >= 2 && u8[0] === 0x50 && u8[1] === 0x4b
       if (!looksLikeZip) {
-        const text = await file.text()
-        return parseCsv(text)
+        return parseCsv()
       }
       try {
         const wb = XLSX.read(u8, { type: 'array' })
-        const firstSheetName = wb.SheetNames?.[0]
-        if (!firstSheetName) throw new Error('No sheets found in XLSX.')
-        const ws = wb.Sheets[firstSheetName]
-        const rows = XLSX.utils.sheet_to_json(ws, {
+        if (wb.SheetNames.length < 2) {
+          throw new Error('This workbook contains only one worksheet. PO Import requires both Header and Line Item data. Please upload an Excel file containing at least two worksheets.')
+        }
+
+        // Sheet 1: Header
+        const firstSheetName = wb.SheetNames[0]
+        const headerWs = wb.Sheets[firstSheetName]
+        const headerRawRows = XLSX.utils.sheet_to_json(headerWs, {
           blankrows: false,
           header: 1,
         }) as unknown[][]
-        const headerRow = rows?.[0] ?? []
+        const headerRow = headerRawRows?.[0] ?? []
         const headers = headerRow.map(normalizeHeader).filter(Boolean)
 
-        const allRows = XLSX.utils.sheet_to_json(ws) as any[]
-        const previewRows = allRows.slice(0, 15)
-        const rowCount = allRows.length
+        const allHeaderRows = XLSX.utils.sheet_to_json(headerWs) as any[]
+        const previewRows = allHeaderRows.slice(0, 15)
+        const rowCount = allHeaderRows.length
 
-        return { headers, previewRows, rowCount }
+        // Sheets 2..N: Line Items
+        const lineItemSheetsData: { headers: string[], rows: any[] }[] = []
+        for (let i = 1; i < wb.SheetNames.length; i++) {
+          const liWs = wb.Sheets[wb.SheetNames[i]]
+          const liRawRows = XLSX.utils.sheet_to_json(liWs, {
+            blankrows: false,
+            header: 1,
+          }) as unknown[][]
+          const liHeaderRow = liRawRows?.[0] ?? []
+          const liHeaders = liHeaderRow.map(normalizeHeader).filter(Boolean)
+          const liRows = XLSX.utils.sheet_to_json(liWs) as any[]
+          lineItemSheetsData.push({ headers: liHeaders, rows: liRows })
+        }
+
+        const mergedLineItems = mergeLineItemSheets(lineItemSheetsData)
+
+        return { 
+          headers, 
+          previewRows, 
+          rowCount, 
+          lineItemHeaders: mergedLineItems.headers,
+          lineItemRows: mergedLineItems.rows
+        }
       } catch {
-        const text = await file.text()
-        return parseCsv(text)
+        return parseCsv()
       }
     }
     throw new Error('Unsupported file type. Please upload a CSV or XLSX file.')
@@ -146,8 +175,17 @@ export default function PoSetupFlowPage({ onClose }: Props) {
     setUploadState('parsing')
 
     try {
-      const result = await extractHeadersAndData(file)
+      const result: any = await extractHeadersAndData(file)
       setPreviewRows(result.previewRows || [])
+      setLineItemHeaders(result.lineItemHeaders || [])
+      setLineItemRows(result.lineItemRows || [])
+
+      // Initial Grouping setup
+      const detectedGroupCol = detectGroupingColumn(result.lineItemHeaders) || result.lineItemHeaders[0]
+      setGroupingColumn(detectedGroupCol)
+      const initialGroupedData = groupLineItems(result.lineItemRows, detectedGroupCol)
+      setGroupedData(initialGroupedData)
+      setPreviewGroupId(Object.keys(initialGroupedData)[0] || null)
 
       // Simulate upload/parse progress bar smoothly
       let currentProgress = 0
@@ -209,9 +247,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
 
               // Map system columns based on similarity
               systemColumns.forEach((col) => {
-                const match = headers.find((u) =>
-                  compareHeaderSimilarity(u, col.key),
-                )
+                const match = findBestHeaderMatch(col.key, headers)
                 if (match) {
                   initialMapping[col.key] = match
                 }
@@ -231,102 +267,82 @@ export default function PoSetupFlowPage({ onClose }: Props) {
     }, 800)
   }
 
-  // const downloadFile = (file: File) => {
-  //   const url = URL.createObjectURL(file)
-  //   const a = document.createElement('a')
-  //   a.href = url
-  //   a.download = file.name
-  //   document.body.appendChild(a)
-  //   a.click()
-  //   document.body.removeChild(a)
-  //   URL.revokeObjectURL(url)
-  // }
+  const downloadFile = (file: File) => {
+    const url = URL.createObjectURL(file)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = file.name
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
 
-  // Inverted header translator to replace source file headers with master system columns
+  // Inverted header translator to replace source file headers with master system columns, generating a 2-sheet workbook
   const updateFileHeaders = async (
     file: File,
-    mapping: Record<string, string>,
+    headerMapping: Record<string, string>,
+    liMapping: Record<string, string>,
   ) => {
     const fileName = file.name
-    const fileExtension = fileName.split('.').pop()?.toLowerCase()
 
-    return new Promise<File>((resolve, reject) => {
-      // Invert mapping: sourceField -> masterField
-      const invertedMapping: Record<string, string> = {}
-      Object.entries(mapping).forEach(([masterKey, sourceVal]) => {
-        if (sourceVal && sourceVal !== 'Skip to Import') {
-          invertedMapping[sourceVal.trim()] = masterKey
-        }
-      })
+    return new Promise<File>(async (resolve, reject) => {
+      try {
+        const buf = await file.arrayBuffer()
+        const wb = XLSX.read(buf, { type: 'array' })
 
-      const translateHeader = (header: string) => {
-        const trimmed = header.trim()
-        return invertedMapping[trimmed] || trimmed
-      }
-
-      if (fileExtension === 'csv') {
-        const reader = new FileReader()
-        reader.onload = (event) => {
-          if (event.target?.result) {
-            const csvData = event.target.result as string
-            const lines = csvData.split('\n')
-            if (lines.length > 0) {
-              const headers = lines[0].split(',')
-              const updatedHeaders = headers.map(translateHeader)
-              lines[0] = updatedHeaders.join(',')
-            }
-            const updatedCsv = new Blob([lines.join('\n')], {
-              type: 'text/csv',
-            })
-            const updatedFile = new File([updatedCsv], fileName, {
-              type: 'text/csv',
-            })
-            // downloadFile(updatedFile)
-            resolve(updatedFile)
+        // 1. Process Header Sheet (Sheet 1)
+        const invertedHeaderMapping: Record<string, string> = {}
+        Object.entries(headerMapping).forEach(([sysKey, xlVal]) => {
+          if (xlVal && xlVal !== 'Skip to Import') {
+            invertedHeaderMapping[xlVal.trim()] = sysKey
           }
+        })
+        const translateHeader = (header: string) => invertedHeaderMapping[header.trim()] || header.trim()
+        
+        const firstSheetName = wb.SheetNames[0]
+        const headerSheet = wb.Sheets[firstSheetName]
+        const headerRows: any = XLSX.utils.sheet_to_json(headerSheet, { header: 1 })
+        if (headerRows.length > 0) {
+          headerRows[0] = headerRows[0].map(translateHeader)
         }
-        reader.onerror = (error) => reject(error)
-        reader.readAsText(file)
-      } else if (fileExtension === 'xlsx' || fileExtension === 'xls') {
-        const reader = new FileReader()
-        reader.onload = (event) => {
-          if (event.target?.result) {
-            const data = event.target.result as ArrayBuffer
-            const wb = XLSX.read(data, { type: 'array' })
-            const sheetName = wb.SheetNames[0]
-            const sheet = wb.Sheets[sheetName]
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const rows: any = XLSX.utils.sheet_to_json(sheet, { header: 1 })
+        const updatedHeaderSheet = XLSX.utils.aoa_to_sheet(headerRows)
 
-            if (rows.length > 0) {
-              const updatedHeaders = rows[0].map((h: string) =>
-                translateHeader(h),
-              )
-              rows[0] = updatedHeaders
-            }
+        // 2. Process Line Items (Merge into new Sheet 2)
+        // transformMappedRows outputs an array of objects where keys are ONLY the mapped system keys.
+        const transformedLineItems = transformMappedRows(lineItemRows, liMapping)
+        
+        // We need to write this back as an AOA to properly form a sheet, ensuring columns are system fields.
+        // We'll collect all used system fields.
+        const liSystemFields = Object.keys(liMapping).filter(k => liMapping[k] && liMapping[k] !== 'Skip to Import')
+        
+        const liAoa: any[][] = [liSystemFields]
+        transformedLineItems.forEach(row => {
+          const rowArr = liSystemFields.map(field => row[field] ?? '')
+          liAoa.push(rowArr)
+        })
+        
+        const updatedLiSheet = XLSX.utils.aoa_to_sheet(liAoa)
 
-            const updatedSheet = XLSX.utils.aoa_to_sheet(rows)
-            // Update the first sheet in place to preserve other sheets in the workbook
-            wb.Sheets[sheetName] = updatedSheet
+        // 3. Construct new Workbook with exactly two sheets
+        const newWb = XLSX.utils.book_new()
+        XLSX.utils.book_append_sheet(newWb, updatedHeaderSheet, 'PO Header')
+        XLSX.utils.book_append_sheet(newWb, updatedLiSheet, 'PO Line Items')
 
-            const updatedBlob = XLSX.write(wb, {
-              bookType: 'xlsx',
-              type: 'array',
-            })
-            const updatedFile = new File([updatedBlob], fileName, {
-              type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            })
-            // downloadFile(updatedFile)
-            resolve(updatedFile)
-          }
-        }
-        reader.onerror = (error) => reject(error)
-        reader.readAsArrayBuffer(file)
-      } else {
-        reject(new Error('Unsupported file extension'))
+        const updatedBlob = XLSX.write(newWb, {
+          bookType: 'xlsx',
+          type: 'array',
+        })
+        const updatedFile = new File([updatedBlob], fileName, {
+          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        })
+        resolve(updatedFile)
+      } catch (error) {
+        reject(error)
       }
     })
   }
+
 
   // Upload API submission
   const sendUpdatedFile = async (file: File) => {
@@ -366,9 +382,13 @@ export default function PoSetupFlowPage({ onClose }: Props) {
     setStep4State('active')
 
     try {
-      const updatedFile = await updateFileHeaders(uploadedFile, mapping)
+      const updatedFile = await updateFileHeaders(uploadedFile, mapping, lineItemMapping)
       // Simulate final saving in Step 4 for 1200ms
       await new Promise((resolve) => setTimeout(resolve, 1200))
+      
+      // Trigger download so the user can inspect it
+      downloadFile(updatedFile)
+      
       await sendUpdatedFile(updatedFile)
       setStep4State('done')
     } catch (error) {
@@ -614,7 +634,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
       )}
 
       {/* SCREEN 2: INGESTION TIMELINE SCREEN */}
-      {(uploadState === 'processing' || uploadState === 'ready') && (
+      {(uploadState === 'processing' || uploadState === 'ready' || uploadState === 'lineItemMapping') && (
         <AnimateFadeIn className='flex h-full w-full flex-col overflow-hidden'>
           {/* Header */}
           <div className='flex h-13 shrink-0 items-center gap-2 border-b border-border-default bg-gradient-to-b from-gray-1 to-gray-2 px-4'>
@@ -904,7 +924,8 @@ export default function PoSetupFlowPage({ onClose }: Props) {
 
                 {uploadState === 'ready' && (
                   <ColumnMapping
-                    isConfirmLoading={isSubmitting}
+                    confirmButtonText='Confirm Column Mapping'
+                    isConfirmLoading={false}
                     mapping={mapping}
                     previewRows={previewRows}
                     showActionsRow={true}
@@ -916,6 +937,41 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                       setPreviewRows([])
                     }}
                     onChangeMapping={setMapping}
+                    onConfirm={() => {
+                      setUploadState('lineItemMapping')
+                    }}
+                  />
+                )}
+
+                {uploadState === 'lineItemMapping' && (
+                  <ColumnMapping
+                    confirmButtonText='Confirm Line Item Mapping'
+                    isConfirmLoading={isSubmitting}
+                    mapping={lineItemMapping}
+                    previewRows={lineItemRows}
+                    showActionsRow={true}
+                    uploadedColumns={lineItemHeaders}
+                    templateSchema={LINE_ITEM_TEMPLATE_COLUMNS}
+                    showGrouping={true}
+                    groupingColumn={groupingColumn}
+                    onGroupingColumnChange={(col) => {
+                      setGroupingColumn(col)
+                      if (col) {
+                        const newGroupedData = groupLineItems(lineItemRows, col)
+                        setGroupedData(newGroupedData)
+                        setPreviewGroupId(Object.keys(newGroupedData)[0] || null)
+                      }
+                    }}
+                    availableGroupIds={Object.keys(groupedData)}
+                    previewGroupId={previewGroupId || ''}
+                    onPreviewGroupChange={setPreviewGroupId}
+                    groupedPreviewRows={getPreviewGroup(groupedData, previewGroupId || '')}
+                    totalGroupsCount={Object.keys(groupedData).length}
+                    totalRowsCount={lineItemRows.length}
+                    onCancel={() => {
+                      setUploadState('ready') // Go back to header mapping
+                    }}
+                    onChangeMapping={setLineItemMapping}
                     onConfirm={handleManualConfirm}
                   />
                 )}
