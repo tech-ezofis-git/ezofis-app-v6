@@ -8,7 +8,7 @@ import Icon from '@/components/base/icon/Icon'
 import OverlayHeaderWrapper from '@/components/base/overlay/OverlayHeaderWrapper'
 import showToast from '@/components/base/toast/showToast'
 import InputCheckbox from '@/components/base/inputs/InputCheckbox'
-import InputSelect from '@/components/base/inputs/InputSelect'
+// import InputSelect from '@/components/base/inputs/InputSelect'
 import cn from '@/utils/cn'
 
 interface HeaderProps {
@@ -99,12 +99,12 @@ const getDisplayName = (user: any): string => {
 const getEmail = (user: any): string =>
   user.email || user.Email || user.loginName || ''
 
-const roleOptions = [
-  { id: 'View', name: 'View' },
-  { id: 'Verify', name: 'Verify' },
-  { id: 'Approve', name: 'Approve' },
-  { id: 'Paid', name: 'Paid' },
-]
+// const roleOptions = [
+//   { id: 'View', name: 'View' },
+//   { id: 'Verify', name: 'Verify' },
+//   { id: 'Approve', name: 'Approve' },
+//   { id: 'Paid', name: 'Paid' },
+// ]
 
 const Header: React.FC<HeaderProps> = ({
   actions,
@@ -257,15 +257,15 @@ const Header: React.FC<HeaderProps> = ({
     })
   }
 
-  const handlePermissionChange = (id: string, permission: 'View' | 'Verify' | 'Approve' | 'Paid') => {
-    setSelectedUsersToShare((prev) => {
-      const next = { ...prev }
-      if (next[id]) {
-        next[id] = { ...next[id], permission }
-      }
-      return next
-    })
-  }
+  // const handlePermissionChange = (id: string, permission: 'View' | 'Verify' | 'Approve' | 'Paid') => {
+  //   setSelectedUsersToShare((prev) => {
+  //     const next = { ...prev }
+  //     if (next[id]) {
+  //       next[id] = { ...next[id], permission }
+  //     }
+  //     return next
+  //   })
+  // }
 
   const handleBulkShare = async () => {
     const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(shareSearch);
