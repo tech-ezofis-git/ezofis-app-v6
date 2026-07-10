@@ -10,7 +10,7 @@ const CATEGORIES = [
   { key: 'integration', label: 'Integration support', icon: 'lucide:plug', team: 'Engineering team' },
   { key: 'explore', label: 'Explore the app features', icon: 'lucide:compass', team: 'Product team' },
   { key: 'demo', label: 'Request a demo session', icon: 'lucide:presentation', team: 'Sales team' },
-  { key: 'consultant', label: 'Connect with a consultant', icon: 'lucide:user', team: 'Consultant desk' },
+  { key: 'consultant', label: 'Talk to an expert', icon: 'lucide:user', team: 'Consultant desk' },
   { key: 'support', label: 'Connect for support', icon: 'lucide:headphones', team: 'Support team' },
   { key: 'bug', label: 'Issue or bug to report', icon: 'lucide:bug', team: 'Engineering team' },
 ]
@@ -67,29 +67,29 @@ const RequestDemoForm = () => {
   const selectedCategory = CATEGORIES.find(c => c.key === form.category)
 
   return (
-    <div className='animate-in fade-in zoom-in-95 flex h-full min-h-0 flex-1 flex-col items-center overflow-y-auto bg-gray-1 py-8 duration-300'>
+    <div className='animate-in fade-in slide-in-from-bottom-8 duration-500 flex h-full min-h-0 flex-1 flex-col items-center overflow-y-auto bg-gray-1 py-8'>
       {/* Form card */}
       <div className='mx-6 w-full max-w-3xl rounded-2xl border border-gray-3 bg-surface p-8 shadow-sm'>
         {/* Title */}
-        <div className='mb-8 flex items-start gap-3'>
+        <div className='mb-8 flex items-start justify-between gap-3'>
+          <div>
+            <h2 className='text-2xl font-bold tracking-tight text-gray-13'>
+              Connect with the EZOFIS Team
+            </h2>
+            <p className='mt-2 text-sm leading-relaxed text-gray-11'>
+              Whether you need help with AP workflows, PO matching, or custom integrations, we'll route your request to the right experts.
+            </p>
+          </div>
           <button
-            className='group mt-0.5 flex shrink-0 items-center justify-center rounded-lg p-1.5 text-gray-10 transition-all hover:bg-gray-3 hover:text-gray-13 active:scale-95'
+            className='group flex shrink-0 items-center justify-center rounded-lg p-1.5 text-gray-10 transition-all hover:bg-gray-3 hover:text-gray-13 active:scale-95'
             type='button'
             onClick={closeDemoForm}
           >
             <Icon
-              className='size-5 transition-transform group-hover:-translate-x-0.5'
-              name='lucide:arrow-left'
+              className='size-5 transition-transform'
+              name='lucide:x'
             />
           </button>
-          <div>
-            <h2 className='text-2xl font-bold tracking-tight text-gray-13'>
-              Let's get your team unblocked.
-            </h2>
-            <p className='mt-2 text-sm leading-relaxed text-gray-11'>
-              Tell us what's going on. We'll route your request straight to the right people — no back-and-forth.
-            </p>
-          </div>
         </div>
 
         <form className='space-y-5' noValidate onSubmit={handleSubmit}>
@@ -100,7 +100,7 @@ const RequestDemoForm = () => {
               What do you need help with? <span className='text-red-9 font-bold'>*</span>
             </label>
             <p className='mb-3 text-xs text-gray-11'>Pick the option that's closest to your situation.</p>
-             <div className='grid grid-cols-1 gap-2.5 sm:grid-cols-3'>
+            <div className='grid grid-cols-1 gap-2.5 sm:grid-cols-3'>
               {CATEGORIES.map((c) => (
                 <button
                   key={c.key}
@@ -116,7 +116,7 @@ const RequestDemoForm = () => {
                     className={`size-5 shrink-0 ${form.category === c.key ? 'text-primary-9' : 'text-gray-11'}`}
                   />
                   <span
-                    className={`text-sm font-semibold leading-none ${form.category === c.key ? 'text-primary-11' : 'text-gray-12'
+                    className={`text-sm font-medium leading-none ${form.category === c.key ? 'text-primary-11' : 'text-gray-12'
                       }`}
                   >
                     {c.label}

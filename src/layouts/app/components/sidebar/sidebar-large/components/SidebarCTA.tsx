@@ -16,18 +16,17 @@ const SidebarCTA = () => {
       {/* Header */}
       <div className='mb-2 flex items-center gap-2'>
         <Icon
-          className='size-4 shrink-0 animate-pulse text-yellow-3'
-          name='lucide:sparkles'
+          className='size-4 shrink-0 text-yellow-3'
+          name='lucide:workflow'
         />
         <span className='text-[12px] font-bold tracking-wider text-white uppercase'>
-          Automate AP Workflow
+          EZOFIS AP Automation
         </span>
       </div>
 
       {/* Description */}
       <p className='mb-4 text-xs leading-relaxed text-primary-2 opacity-95'>
-        Auto-route invoices by PO, match custom fields, handle complex line
-        items, and connect via API — tailored to your process.
+        Streamline your Accounts Payable with intelligent PO matching, automated invoice routing, and seamless integrations.
       </p>
 
       {/* CTA Button */}

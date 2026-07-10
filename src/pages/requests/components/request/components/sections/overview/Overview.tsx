@@ -839,6 +839,7 @@ const FormCard = ({
   score,
   type = 'text',
   value,
+  isLoading = false,
   onChange,
   onFocus,
 }: any) => {
@@ -1006,19 +1007,23 @@ const FormCard = ({
             </span>
           )}
         </div>
-        <p
-          className={cn(
-            'text-[13px] leading-tight font-semibold text-[var(--gray-13)] transition-colors group-hover:text-[var(--primary-9)]',
-            highlight && 'text-[var(--green-9)]',
-            (value === '-' ||
-              value === null ||
-              value === undefined ||
-              value === '') &&
-            'font-medium text-[var(--gray-9)]',
-          )}
-        >
-          {value === null || value === undefined || value === '' ? '-' : value}
-        </p>
+        {isLoading ? (
+          <div className='mt-1 h-4 w-28 animate-pulse rounded bg-[var(--gray-3)]' />
+        ) : (
+          <p
+            className={cn(
+              'text-[13px] leading-tight font-semibold text-[var(--gray-13)] transition-colors group-hover:text-[var(--primary-9)]',
+              highlight && 'text-[var(--green-9)]',
+              (value === '-' ||
+                value === null ||
+                value === undefined ||
+                value === '') &&
+              'font-medium text-[var(--gray-9)]',
+            )}
+          >
+            {value === null || value === undefined || value === '' ? '-' : value}
+          </p>
+        )}
       </div>
     </button>
   )
@@ -2572,7 +2577,8 @@ const Overview = (props: any) => {
                         align='left'
                         icon={Wand2}
                         isLoading={false}
-                        isPulsing={false}
+                        isPulsing={true}
+                        statusType='warning'
                         title='Supplier Verification'
                         value='Not Verified'
                         isSelected={
@@ -2591,7 +2597,13 @@ const Overview = (props: any) => {
                             Verify
                           </button>
                         }
-                        onClick={handleVerifySupplierClick}
+                        onClick={() => {
+                          showToast({
+                            message: "Please click 'Verify' to check if this supplier is legitimate and prevent fraud.",
+
+
+                          })
+                        }}
                       />
                     )}
                     {supplierCheckState.status === 'pending' && (
@@ -3592,52 +3604,33 @@ const Overview = (props: any) => {
                     <>
                       {activeTab === 'summary' && (
                         <div className='grid flex-1 grid-cols-2 gap-x-4 gap-y-2 overflow-y-auto p-4'>
-                          {isCurrentlyProcessing &&
-                            (!formModel ||
-                              Object.keys(formModel).length === 0 ||
-                              !Object.values(formModel).some(
-                                hasMeaningfulScalarValue,
-                              ))
-                            ? Array.from({ length: 8 }).map((_, idx) => {
-                              const labels = [
-                                'Supplier Name',
-                                'Invoice Number',
-                                'Invoice Date',
-                                'Invoice Amount',
-                                'PO Number',
-                                'Payment Terms',
-                                'Currency',
-                                'Tax Amount',
-                              ]
-                              const icons = [
-                                Store,
-                                ListFilter,
-                                HistoryIcon,
-                                Wallet,
-                                Paperclip,
-                                HistoryIcon,
-                                CreditCard,
-                                Wallet,
-                              ]
-                              const label = labels[idx]
-                              const IconComp = icons[idx]
-                              return (
-                                <div
-                                  className='flex w-full items-start gap-3 rounded-lg border border-transparent p-3 text-left'
-                                  key={label}
-                                >
-                                  <div className='mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--gray-2)] text-[var(--gray-11)]'>
-                                    <IconComp className='h-3.5 w-3.5' />
-                                  </div>
-                                  <div className='min-w-0 flex-1 space-y-1.5'>
-                                    <p className='text-[10px] leading-none font-semibold text-[var(--gray-11)]'>
-                                      {label}
-                                    </p>
-                                    <div className='h-4 w-28 animate-pulse rounded bg-[var(--gray-3)]' />
-                                  </div>
-                                </div>
-                              )
-                            })
+                          {(!formModel ||
+                            Object.keys(formModel).length === 0 ||
+                            !Object.values(formModel).some(
+                              hasMeaningfulScalarValue,
+                            ))
+                            ? [
+                              'Supplier Name',
+                              'Invoice Number',
+                              'Invoice Date',
+                              'Invoice Amount',
+                              'PO Number',
+                              'Payment Terms',
+                              'Currency',
+                              'Tax Amount',
+                            ].map((label) => (
+                              <FormCard
+                                icon={getFieldIcon(label)}
+                                key={label}
+                                label={label}
+                                options={getOptions(label)}
+                                type={getFieldType(label)}
+                                value={'-'}
+                                isLoading={isCurrentlyProcessing}
+                                onChange={(newVal: string) => handleFieldChange(label, newVal)}
+                                onFocus={(val: any) => handleFieldFocus(val, label)}
+                              />
+                            ))
                             : Object.entries(formModel || {})
                               .filter(([key, val]) => {
                                 if (typeof val === 'object' && val !== null) {
@@ -3699,6 +3692,7 @@ const Overview = (props: any) => {
                                     score={getFieldScore(key)}
                                     type={fieldType}
                                     value={displayValue}
+                                    isLoading={isCurrentlyProcessing && (displayValue === null || displayValue === undefined || displayValue === '' || displayValue === '-')}
                                     highlight={
                                       key.toLowerCase().includes('total') ||
                                       key.toLowerCase().includes('due')

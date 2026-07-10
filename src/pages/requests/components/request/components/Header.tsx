@@ -144,7 +144,7 @@ const Header: React.FC<HeaderProps> = ({
   const [shareMessage, setShareMessage] = React.useState('')
   const [isSharing, setIsSharing] = React.useState(false)
   const [sharedUsers, setSharedUsers] = React.useState<Set<string>>(new Set())
-  const [globalShareRole, setGlobalShareRole] = React.useState<{id: string, name: string}>({ id: 'View', name: 'View' })
+  const [globalShareRole, setGlobalShareRole] = React.useState<{ id: string, name: string }>({ id: 'View', name: 'View' })
   const [showRoleDropdown, setShowRoleDropdown] = React.useState(false)
   const [selectedUsersToShare, setSelectedUsersToShare] = React.useState<Record<string, { user: any, permission: string }>>({})
   const containerRef = React.useRef<HTMLDivElement>(null)
@@ -178,10 +178,13 @@ const Header: React.FC<HeaderProps> = ({
   }, [rawUsers, shareSearch, sharedUsers, ticketUserId])
 
   const shareRoleOptions = React.useMemo(() => {
-    const defaultOptions = [{ id: 'View', name: 'View' }]
+    const defaultOptions = [
+      { id: 'View', name: 'View' },
+      { id: 'Edit', name: 'Edit' },
+    ]
     if (actions && actions.length > 0) {
       actions.forEach((a: any) => {
-        if (a.label) {
+        if (a.label && a.label !== 'View' && a.label !== 'Edit') {
           defaultOptions.push({ id: a.label, name: a.label })
         }
       })
@@ -285,7 +288,7 @@ const Header: React.FC<HeaderProps> = ({
       setIsSharing(true)
       const success = await onShare(emailsToShare, shareMessage)
       setIsSharing(false)
-      
+
       if (success) {
         setSharedUsers((prev) => {
           const next = new Set(prev)
@@ -537,112 +540,110 @@ const Header: React.FC<HeaderProps> = ({
       {/* Right Side Group: Total Amount + Actions */}
       <div className='flex items-center gap-6'>
         {(() => {
-            const getCurrencyDisplay = (curr: string) => {
-              if (!curr) return '$'
-              const symbols: { [key: string]: string } = {
-                AED: 'د.إ',
-                AUD: '$',
-                CAD: '$',
-                EUR: '€',
-                GBP: '£',
-                INR: '₹',
-                SGD: '$',
-                USD: '$',
-              }
-              const code = curr.length === 3 ? curr.toUpperCase() : null
-              const symbol =
-                symbols[code || ''] || (curr.length === 1 ? curr : '$')
-              if (code && code !== symbol) return `${code} - ${symbol}`
-              return symbol
+          const getCurrencyDisplay = (curr: string) => {
+            if (!curr) return '$'
+            const symbols: { [key: string]: string } = {
+              AED: 'د.إ',
+              AUD: '$',
+              CAD: '$',
+              EUR: '€',
+              GBP: '£',
+              INR: '₹',
+              SGD: '$',
+              USD: '$',
             }
+            const code = curr.length === 3 ? curr.toUpperCase() : null
+            const symbol =
+              symbols[code || ''] || (curr.length === 1 ? curr : '$')
+            if (code && code !== symbol) return `${code} - ${symbol}`
+            return symbol
+          }
 
-            const formatAmount = (val: any) => {
-              if (!val || val === '0.00') return '0.00'
-              const num =
-                typeof val === 'number'
-                  ? val
-                  : Number.parseFloat(String(val).replace(/[^0-9.-]+/g, ''))
-              return Number.isNaN(num)
-                ? '0.00'
-                : num.toLocaleString(undefined, {
-                  maximumFractionDigits: 2,
-                  minimumFractionDigits: 2,
-                })
-            }
+          const formatAmount = (val: any) => {
+            if (!val || val === '0.00') return '0.00'
+            const num =
+              typeof val === 'number'
+                ? val
+                : Number.parseFloat(String(val).replace(/[^0-9.-]+/g, ''))
+            return Number.isNaN(num)
+              ? '0.00'
+              : num.toLocaleString(undefined, {
+                maximumFractionDigits: 2,
+                minimumFractionDigits: 2,
+              })
+          }
 
-            const currDisplay = getCurrencyDisplay(currency || '')
+          const currDisplay = getCurrencyDisplay(currency || '')
 
-            const parseVal = (val: any) => {
-              if (!val) return 0
-              const num = Number.parseFloat(
-                String(val).replace(/[^0-9.-]+/g, ''),
-              )
-              return Number.isNaN(num) ? 0 : num
-            }
+          const parseVal = (val: any) => {
+            if (!val) return 0
+            const num = Number.parseFloat(
+              String(val).replace(/[^0-9.-]+/g, ''),
+            )
+            return Number.isNaN(num) ? 0 : num
+          }
 
-            const invoiceNum = parseVal(totalAmount)
-            const poNum = parseVal(poValue)
+          const invoiceNum = parseVal(totalAmount)
+          const poNum = parseVal(poValue)
 
-            let invoiceValueColorClass = 'text-[var(--gray-13)]'
-            if (invoiceNum > 0 && poNum > 0) {
-              if (invoiceNum === poNum) {
-                invoiceValueColorClass = 'text-[var(--green-9)]'
-              } else if (invoiceNum < poNum) {
-                invoiceValueColorClass = 'text-[var(--red-9)]'
-              }
-            }
-            if (
-              invoiceValueColorClass === 'text-[var(--gray-13)]' &&
-              poNumber &&
-              poNumber !== '-' &&
-              poNumber !== 'N/A'
-            ) {
+          let invoiceValueColorClass = 'text-[var(--gray-13)]'
+          if (invoiceNum > 0 && poNum > 0) {
+            if (invoiceNum === poNum) {
               invoiceValueColorClass = 'text-[var(--green-9)]'
+            } else if (invoiceNum < poNum) {
+              invoiceValueColorClass = 'text-[var(--red-9)]'
             }
+          }
+          if (
+            invoiceValueColorClass === 'text-[var(--gray-13)]' &&
+            poNumber &&
+            poNumber !== '-' &&
+            poNumber !== 'N/A'
+          ) {
+            invoiceValueColorClass = 'text-[var(--green-9)]'
+          }
 
-            return (
-              <div className='flex items-center gap-3 pr-3'>
-                <div className='flex flex-col border-[var(--gray-3)] pl-3 text-right'>
-                  <span className='mb-1.5 text-[10px] leading-none font-semibold text-[var(--gray-11)]'>
-                    Invoice Value
-                  </span>
-                  <div
-                    className={cn(
-                      'flex items-center justify-end',
-                      invoiceValueColorClass,
-                    )}
-                  >
-                    {formatAmount(totalAmount) === '0.00' ? (
-                      <div className='h-3 w-16 animate-pulse rounded bg-[var(--gray-4)]' />
-                    ) : (
-                      <span className='text-[13px] leading-tight font-semibold'>
-                        {currDisplay} {formatAmount(totalAmount)}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <div className='flex flex-col border-l border-[var(--gray-3)] pl-3 text-right'>
-                  <span className='mb-1.5 text-[10px] leading-none font-semibold text-[var(--gray-11)]'>
-                    PO Value
-                  </span>
-                  <div className='flex items-center justify-end text-[var(--primary-9)]'>
-                    {formatAmount(poValue) === '0.00' ? (
-                      <div className='h-3 w-16 animate-pulse rounded bg-[var(--gray-4)]' />
-                    ) : (
-                      <span className='text-[13px] leading-tight font-semibold'>
-                        {currDisplay} {formatAmount(poValue)}
-                      </span>
-                    )}
-                  </div>
+          return (
+            <div className='flex items-center gap-3 pr-3'>
+              <div className='flex flex-col border-[var(--gray-3)] pl-3 text-right'>
+                <span className='mb-1.5 text-[10px] leading-none font-semibold text-[var(--gray-11)]'>
+                  Invoice Value
+                </span>
+                <div
+                  className={cn(
+                    'flex items-center justify-end',
+                    invoiceValueColorClass,
+                  )}
+                >
+                  {formatAmount(totalAmount) === '0.00' ? (
+                    <div className='h-3 w-16 animate-pulse rounded bg-[var(--gray-4)]' />
+                  ) : (
+                    <span className='text-[13px] leading-tight font-semibold'>
+                      {currDisplay} {formatAmount(totalAmount)}
+                    </span>
+                  )}
                 </div>
               </div>
-            )
-          })()}
+              <div className='flex flex-col border-l border-[var(--gray-3)] pl-3 text-right'>
+                <span className='mb-1.5 text-[10px] leading-none font-semibold text-[var(--gray-11)]'>
+                  PO Value
+                </span>
+                <div className='flex items-center justify-end text-[var(--primary-9)]'>
+                  {formatAmount(poValue) === '0.00' ? (
+                    <div className='h-3 w-16 animate-pulse rounded bg-[var(--gray-4)]' />
+                  ) : (
+                    <span className='text-[13px] leading-tight font-semibold'>
+                      {currDisplay} {formatAmount(poValue)}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          )
+        })()}
 
         {/* AI Insights Toggle & Overlay */}
-        {isProcessing ? (
-          enableAIInsights && <div className='h-8 w-[120px] animate-pulse rounded-lg bg-[var(--gray-3)]' />
-        ) : enableAIInsights && (
+        {enableAIInsights && (
           <div className='relative flex items-center gap-3' ref={containerRef}>
             <Button
               variant='outline'
@@ -651,8 +652,9 @@ const Header: React.FC<HeaderProps> = ({
                 showAIInsights
                   ? 'border-[var(--primary-6)] bg-[var(--primary-1)] text-[var(--primary-9)]'
                   : 'border-[var(--gray-3)] text-[var(--gray-11)]',
+                isProcessing && 'animate-pulse opacity-70 pointer-events-none'
               )}
-              onClick={() => setShowAIInsights(!showAIInsights)}
+              onClick={() => !isProcessing && setShowAIInsights(!showAIInsights)}
             >
               <Icon className='size-4.5' name='tabler:sparkles' />
               <span>AI Insights</span>
@@ -711,9 +713,7 @@ const Header: React.FC<HeaderProps> = ({
         )}
 
         {/* Share Button — Canva-style user picker */}
-        {isProcessing ? (
-          <div className='h-8 w-[90px] animate-pulse rounded-lg bg-[var(--gray-3)]' />
-        ) : (
+        {!isProcessing && (
           <div className='relative' ref={shareRef}>
             <button
               type='button'
@@ -772,21 +772,12 @@ const Header: React.FC<HeaderProps> = ({
                   {/* Search */}
                   <div className='px-3 pt-3 pb-2'>
                     <div className='flex items-center gap-2 rounded-lg border border-[var(--gray-3)] bg-surface px-3 py-1.5 transition-all focus-within:border-[var(--primary-7)] focus-within:ring-1 focus-within:ring-[var(--primary-4)]'>
-                      
+
                       <div className='flex flex-1 items-center gap-2 flex-wrap min-w-0'>
                         <Icon
                           className='size-4 shrink-0 text-[var(--gray-9)]'
                           name='tabler:search'
                         />
-                        
-                        {Object.values(selectedUsersToShare).map(({user}) => (
-                          <div key={user.id || user.value || user.loginName || user.email} className='flex items-center gap-1 rounded bg-[var(--primary-2)] px-2 py-0.5 text-[12px] font-semibold text-[var(--primary-9)]'>
-                            {getDisplayName(user)}
-                            <button onClick={() => handleToggleSelectUser(user)} className='cursor-pointer text-[var(--primary-9)] hover:text-[var(--primary-10)]'>
-                              <Icon name='lucide:x' className='size-3' />
-                            </button>
-                          </div>
-                        ))}
 
                         <input
                           className='flex-1 min-w-[120px] bg-transparent text-[13px] font-medium text-[var(--gray-13)] placeholder:text-[var(--gray-8)] focus:outline-none'
@@ -810,10 +801,10 @@ const Header: React.FC<HeaderProps> = ({
                           }}
                         />
                       </div>
-                      
+
                       <div className='h-4 w-px bg-[var(--gray-3)] shrink-0' />
                       <div className='relative shrink-0'>
-                        <button 
+                        <button
                           onClick={() => setShowRoleDropdown(!showRoleDropdown)}
                           className='flex items-center gap-1 px-2 py-1 cursor-pointer text-[13px] font-semibold text-[var(--gray-12)] hover:bg-[var(--gray-2)] rounded transition-colors'
                         >
@@ -823,7 +814,7 @@ const Header: React.FC<HeaderProps> = ({
                         {showRoleDropdown && (
                           <div className='absolute right-0 top-full mt-1 z-[110] min-w-[120px] rounded-lg border border-[var(--gray-3)] bg-surface py-1 shadow-lg'>
                             {shareRoleOptions.map(opt => (
-                              <button 
+                              <button
                                 key={opt.id}
                                 className='w-full flex items-center justify-between text-left px-3 cursor-pointer py-1.5 text-[13px] font-medium hover:bg-[var(--gray-2)] transition-colors'
                                 onClick={() => { setGlobalShareRole(opt); setShowRoleDropdown(false); }}
@@ -857,10 +848,18 @@ const Header: React.FC<HeaderProps> = ({
                           </div>
                         ))}
                       </div>
-                    ) : users.length > 0 ? (
-                      users.map((user: any) => {
+                    ) : (users.length > 0 || Object.keys(selectedUsersToShare).length > 0) ? (
+                      [...users, ...Object.values(selectedUsersToShare).map(s => s.user).filter(su => !users.some((u: any) => String(u.userId || u.id || u.value || u.loginName || u.email) === String(su.userId || su.id || su.value || su.loginName || su.email)))].sort((a: any, b: any) => {
+                        const aId = String(a.userId || a.id || a.value || a.loginName || a.email)
+                        const bId = String(b.userId || b.id || b.value || b.loginName || b.email)
+                        const aSelected = !!selectedUsersToShare[aId]
+                        const bSelected = !!selectedUsersToShare[bId]
+                        if (aSelected && !bSelected) return -1
+                        if (!aSelected && bSelected) return 1
+                        return 0
+                      }).map((user: any) => {
                         const id = String(
-                          user.userId || user.id || user.value || user.loginName,
+                          user.userId || user.id || user.value || user.loginName || user.email,
                         )
                         const name = getDisplayName(user)
                         const email = getEmail(user)
@@ -941,10 +940,27 @@ const Header: React.FC<HeaderProps> = ({
                                   Invited
                                 </span>
                               ) : isSelectedToShare ? (
-                                <span className='flex items-center gap-1 rounded-full bg-[var(--primary-1)] px-2.5 py-0.5 text-[10px] font-semibold text-[var(--primary-9)]'>
-                                  <Icon className='size-3' name='tabler:check' />
-                                  Selected
-                                </span>
+                                <select
+                                  className='cursor-pointer appearance-none rounded-md border border-[var(--gray-3)] bg-surface px-2.5 py-1 pr-6 text-[11px] font-semibold text-[var(--gray-12)] outline-none focus:border-[var(--primary-5)] focus:ring-1 focus:ring-[var(--primary-4)]'
+                                  style={{
+                                    backgroundImage: `url("data:image/svg+xml;charset=US-ASCII,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%23666'%3E%3Cpath fill-rule='evenodd' d='M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z' clip-rule='evenodd'/%3E%3C/svg%3E")`,
+                                    backgroundRepeat: 'no-repeat',
+                                    backgroundPosition: 'right 0.25rem center',
+                                    backgroundSize: '1rem',
+                                  }}
+                                  value={selectedUsersToShare[id]?.permission || globalShareRole.id}
+                                  onChange={(e) => {
+                                    setSelectedUsersToShare(prev => ({
+                                      ...prev,
+                                      [id]: { ...prev[id], permission: e.target.value }
+                                    }))
+                                  }}
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  {shareRoleOptions.map(opt => (
+                                    <option key={opt.id} value={opt.id}>{opt.name}</option>
+                                  ))}
+                                </select>
                               ) : null}
                             </div>
                           </div>
@@ -995,12 +1011,7 @@ const Header: React.FC<HeaderProps> = ({
           </div>
         )}
 
-        {isProcessing ? (
-          <div className='flex items-center gap-2'>
-            <div className='h-8 w-[90px] animate-pulse rounded-lg bg-[var(--gray-3)]' />
-            <div className='h-8 w-[90px] animate-pulse rounded-lg bg-[var(--gray-3)]' />
-          </div>
-        ) : (
+        {!isProcessing && (
           <div className='flex items-center gap-2'>
             {isEditing && (
               <Button

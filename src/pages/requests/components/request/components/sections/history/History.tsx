@@ -91,7 +91,7 @@ const getStepConfig = (h: HistoryRow, isStart: boolean) => {
   // If action contains 'move', prioritize orange clock theme
   if (action === 'move' || action.includes('move')) {
     return {
-      bulletBg: 'bg-orange-3/30 text-orange-11',
+      bulletBg: 'text-orange-9',
       icon: 'tabler:clock',
     }
   }
@@ -104,7 +104,7 @@ const getStepConfig = (h: HistoryRow, isStart: boolean) => {
     s.includes('ingest')
   ) {
     return {
-      bulletBg: 'bg-blue-3/30 text-blue-11',
+      bulletBg: 'text-blue-9',
       icon: 'tabler:file-text',
     }
   }
@@ -119,7 +119,7 @@ const getStepConfig = (h: HistoryRow, isStart: boolean) => {
     actor.includes('ai agent')
   ) {
     return {
-      bulletBg: 'bg-purple-3/30 text-purple-11',
+      bulletBg: 'text-purple-9',
       icon: 'lucide:bot',
     }
   }
@@ -136,7 +136,7 @@ const getStepConfig = (h: HistoryRow, isStart: boolean) => {
 
   if (isApproved) {
     return {
-      bulletBg: 'bg-green-3/30 text-green-11',
+      bulletBg: 'text-green-9',
       icon: 'tabler:circle-check',
     }
   }
@@ -144,7 +144,7 @@ const getStepConfig = (h: HistoryRow, isStart: boolean) => {
   // 4. Rejected (Red theme with Circle X icon)
   if (s.includes('reject') || stage.includes('reject')) {
     return {
-      bulletBg: 'bg-red-3/30 text-red-11',
+      bulletBg: 'text-red-9',
       icon: 'tabler:circle-x',
     }
   }
@@ -158,14 +158,14 @@ const getStepConfig = (h: HistoryRow, isStart: boolean) => {
     s.includes('hold')
   ) {
     return {
-      bulletBg: 'bg-orange-3/30 text-orange-11',
+      bulletBg: 'text-orange-9',
       icon: 'tabler:clock',
     }
   }
 
   // Default: Gray theme with Clock icon
   return {
-    bulletBg: 'bg-gray-3/30 text-gray-11',
+    bulletBg: 'text-gray-9',
     icon: 'tabler:clock',
   }
 }
@@ -349,94 +349,154 @@ export default function History({
   }
 
   return (
-    <div className='animate-in fade-in slide-in-from-left-4 relative flex flex-col gap-5 py-2 pr-1 pl-2 duration-300'>
-      {/* Timeline Connecting Line */}
-      {flows.length > 1 && (
-        <div className='absolute top-7 bottom-7 left-[27px] w-[2px] bg-gray-3' />
-      )}
+    <div className='p-4'>
+      <div className='animate-in fade-in slide-in-from-left-4 rounded-xl border border-[var(--gray-3)] bg-surface p-5 shadow-sm duration-300'>
+        <div className='relative flex flex-col gap-5'>
+          {/* Timeline Connecting Line */}
+          {flows.length > 1 && (
+            <div className='absolute top-8 bottom-8 left-[19px] z-0 w-0 border-l-[1.5px] border-dotted border-[var(--gray-5)]' />
+          )}
 
-      {flows.map((h, idx) => {
-        const isStart = idx === 0
-        const config = getStepConfig(h, isStart)
-        const title = h.title || getTitle(h)
-        const actor = pickActor(h)
-        const date = getFormattedTimestamp(h)
-        const showDesc =
-          h.description &&
-          h.description.trim() &&
-          h.description !== h.activityId &&
-          h.description !== h.stage &&
-          safeLower(title).includes('ap agent')
+          {flows.map((h, idx) => {
+            const isStart = idx === 0
+            const config = getStepConfig(h, isStart)
+            const title = h.title || getTitle(h)
+            const actor = pickActor(h)
+            const date = getFormattedTimestamp(h)
+            const isApAgent = safeLower(title).includes('ap agent')
+            const hasDesc =
+              h.description &&
+              h.description.trim() &&
+              h.description !== h.activityId &&
+              h.description !== h.stage
 
-        // Duration calculation
-        let durationText = ''
-        const currentDate = getStepDate(h)
-        if (currentDate) {
-          let nextStep: HistoryRow | undefined
-          if (isChronological) {
-            if (idx + 1 < flows.length) {
-              nextStep = flows[idx + 1]
-            }
-          } else {
-            if (idx - 1 >= 0) {
-              nextStep = flows[idx - 1]
-            }
-          }
+            let matchBadge = null
+            let showDesc = !!hasDesc
 
-          if (nextStep) {
-            const nextDate = getStepDate(nextStep)
-            if (nextDate) {
-              const diffMs = Math.abs(
-                nextDate.getTime() - currentDate.getTime(),
-              )
-              if (diffMs > 0) {
-                durationText = formatDuration(diffMs)
+            if (isApAgent && hasDesc) {
+              const descLower = safeLower(h.description)
+              if (descLower.includes('review: matched')) {
+                matchBadge = {
+                  label: 'Matched',
+                  color: 'border-green-3 bg-green-1 text-green-9',
+                }
+                if (descLower.trim() === 'review: matched') showDesc = false
+              } else if (descLower.includes('partially matched')) {
+                matchBadge = {
+                  label: 'Partially Matched',
+                  color: 'border-orange-3 bg-orange-1 text-orange-9',
+                }
+                if (descLower.trim() === 'review: partially matched') showDesc = false
+              } else if (descLower.includes('not matched')) {
+                matchBadge = {
+                  label: 'Not Matched',
+                  color: 'border-red-3 bg-red-1 text-red-9',
+                }
+                if (descLower.trim() === 'review: not matched') showDesc = false
               }
             }
-          }
-        }
 
-        return (
-          <div
-            className='relative flex items-start gap-4 transition-all duration-200 hover:translate-x-1'
-            key={`${h.activityId ?? idx}-${idx}`}
-          >
-            <div
-              className={cn(
-                'relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-surface bg-surface shadow-sm transition-all active:scale-95',
-                config.bulletBg,
-              )}
-            >
-              <Icon className='size-5' name={config.icon} />
-            </div>
+            // Duration calculation
+            let durationText = ''
+            let isLatestDuration = false
+            const currentDate = getStepDate(h)
+            if (currentDate) {
+              let nextStep: HistoryRow | undefined
+              if (isChronological) {
+                if (idx + 1 < flows.length) {
+                  nextStep = flows[idx + 1]
+                }
+              } else {
+                if (idx - 1 >= 0) {
+                  nextStep = flows[idx - 1]
+                }
+              }
 
-            <div className='flex min-w-0 flex-1 flex-col gap-0.5 pt-0.5'>
-              <div className='text-13 leading-snug font-semibold text-gray-13'>
-                {title}
-              </div>
-              {showDesc && (
+              if (nextStep) {
+                const nextDate = getStepDate(nextStep)
+                if (nextDate) {
+                  const diffMs = Math.abs(
+                    nextDate.getTime() - currentDate.getTime(),
+                  )
+                  if (diffMs > 0) {
+                    durationText = formatDuration(diffMs)
+                  }
+                }
+              } else {
+                const isLatest = isChronological ? idx === flows.length - 1 : idx === 0
+                if (isLatest) {
+                  const isTerminal = safeLower(title).includes('complet') || safeLower(h.status).includes('complet') || safeLower(h.stage).includes('complet') || safeLower(title).includes('approv') || safeLower(title).includes('reject') || safeLower(title).includes('end')
+                  const diffMs = Math.abs(Date.now() - currentDate.getTime())
+                  if (diffMs > 0) {
+                    durationText = formatDuration(diffMs) + ' ago'
+                    isLatestDuration = !isTerminal
+                  }
+                }
+              }
+            }
+
+            return (
+              <div
+                className='relative flex items-start gap-4 transition-all duration-200 hover:translate-x-1'
+                key={`${h.activityId ?? idx}-${idx}`}
+              >
+                <div
+                  className={cn(
+                    'relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] border border-[var(--gray-3)] bg-surface shadow-sm transition-all active:scale-95',
+                    config.bulletBg,
+                  )}
+                >
+                  <Icon className='size-5' name={config.icon} />
+                </div>
+
+                <div className='flex min-w-0 flex-1 flex-col gap-0.5 pt-0.5'>
+                  <div className='flex items-center gap-2'>
+                    <div className='text-13 leading-snug font-semibold text-gray-13'>
+                      {title}
+                    </div>
+                    {matchBadge && (
+                      <span
+                        className={cn(
+                          'shrink-0 rounded border px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider',
+                          matchBadge.color,
+                        )}
+                      >
+                        {matchBadge.label}
+                      </span>
+                    )}
+                  </div>
+                  {/* {showDesc && (
                 <div className='mt-1 max-w-md rounded-lg border border-gray-3/30 bg-gray-2/50 px-2.5 py-1.5 text-11 leading-normal font-normal whitespace-pre-wrap text-gray-11'>
                   {h.description}
                 </div>
-              )}
-              <div className='mt-1 flex flex-wrap items-center gap-1.5 text-11 font-medium text-gray-9'>
-                <span>{actor}</span>
-                <span className='text-gray-6'>·</span>
-                <span>{date}</span>
-                {durationText && (
-                  <>
+              )} */}
+                  <div className='mt-1 flex flex-wrap items-center gap-1.5 text-11 font-medium text-gray-9'>
+                    <span>{actor}</span>
                     <span className='text-gray-6'>·</span>
-                    <span className='inline-flex items-center gap-1 rounded bg-[var(--primary-2)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--primary-11)]'>
-                      <Icon className='size-3' name='tabler:clock' />
-                      <span>{durationText}</span>
-                    </span>
-                  </>
-                )}
+                    <span>{date}</span>
+                    {durationText && (
+                      <>
+                        <span className='text-gray-6'>·</span>
+                        <span
+                          className={cn(
+                            'inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold',
+                            isLatestDuration
+                              ? 'bg-yellow-2/60 text-yellow-11'
+                              : 'bg-purple-2/60 text-purple-11',
+                          )}
+                        >
+                          <Icon className='size-3' name='tabler:clock' />
+                          <span>{durationText}</span>
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-        )
-      })}
+            )
+          })}
+        </div>
+      </div>
     </div>
   )
 }
