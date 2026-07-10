@@ -2,9 +2,10 @@ import { useMsal } from '@azure/msal-react'
 import { useGoogleLogin } from '@react-oauth/google'
 import { useNavigate } from '@tanstack/react-router'
 import { AnimatePresence, motion } from 'motion/react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useSearch } from '@tanstack/react-router'
 import apiRouter from '@/api/apiRouter'
-import authApi from '@/api/auth'
+import authApiV6 from '@/api/v6/auth'
 import Button from '@/components/base/button/Button'
 import GoogleButton from '@/components/base/button/GoogleButton'
 import MicrosoftButton from '@/components/base/button/MicrosoftButton'
@@ -34,12 +35,28 @@ const SignInForm = ({ onChangeView }: Props) => {
   const navigate = useNavigate()
   const { instance: msalInstance } = useMsal()
   console.log(onChangeView)
+  const search: any = useSearch({ strict: false })
+  const shareToken = search?.shareToken
+  const mailid = search?.email || search?.mailid || search?.mailId || ''
+
   // === form / ui state ===
-  const [email, setEmail] = useState('')
+  const [email, setEmail] = useState(mailid)
   const [password, setPassword] = useState('')
   const [rememberMe, setRememberMe] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const [shareTenantId, setShareTenantId] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (shareToken) {
+      authApiV6.getSharePreview(shareToken).then(res => {
+        if (res.data?.sourceTenantId) {
+          setShareTenantId(res.data.sourceTenantId)
+        }
+      })
+    }
+  }, [shareToken])
 
   // === flow control (mirrors Vue logic) ===
   const [normalLogin, setNormalLogin] = useState(false)
@@ -110,6 +127,12 @@ const SignInForm = ({ onChangeView }: Props) => {
       console.error('Failed to load session details:', err)
     }
 
+    if (shareTenantId) {
+      navigate({ replace: true, to: '/folders' })
+      setLoading(false)
+      return
+    }
+
     const { isApSetUpCompleted } = useSetupStore.getState()
     if (!isApSetUpCompleted) {
       navigate({ replace: true, to: '/' })
@@ -131,7 +154,8 @@ const SignInForm = ({ onChangeView }: Props) => {
       loginType: sType,
     }
 
-    const { data, error, status } = await authApi.socialLogin(payload, tenantId)
+    const targetTenantId = tenantId || shareTenantId || undefined
+    const { data, error, status } = await apiRouter.socialLogin(payload, targetTenantId)
 
     if (error) {
       setError(error)
@@ -182,7 +206,8 @@ const SignInForm = ({ onChangeView }: Props) => {
         password,
       }
 
-      const { data, error, status } = await apiRouter.login(payload, tenantId)
+      const targetTenantId = tenantId || shareTenantId || undefined
+      const { data, error, status } = await apiRouter.login(payload, targetTenantId)
 
       if (error) {
         setLoading(false)
@@ -254,7 +279,7 @@ const SignInForm = ({ onChangeView }: Props) => {
         return
       }
 
-      const { data, error } = await authApi.emailValidate(1, { email })
+      const { data, error } = await authApiV6.emailValidate(1, { email })
 
       if (error) {
         setError(error)

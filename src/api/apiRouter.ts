@@ -129,8 +129,7 @@ export const socialLogin = async (payload: any, tenantId?: string | number) => {
 }
 
 export const userSession = async () => {
-  const { authApi } = await import('./auth')
-  return await authApi.getSession()
+  return await authApiV6.getSession()
 }
 
 

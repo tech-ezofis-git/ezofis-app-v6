@@ -247,6 +247,119 @@ export const socialLogin = async (payload: {
   return response
 }
 
+export const getSharePreview = async (shareToken: string) => {
+  const response: any = { data: null, error: '' }
+  try {
+    const { data, status } = await axiosV6({
+      method: 'GET',
+      url: `/repositories/share/${shareToken}/preview`,
+    })
+    if (status !== 200) throw new Error('invalid status code')
+    response.data = data
+  } catch (e: any) {
+    console.error(e)
+    response.error = getV6ApiErrorMessage(
+      e?.response?.data,
+      'error fetching share preview',
+    )
+  }
+  return response
+}
+
+export const setSharePassword = async (payload: {
+  email: string
+  password: string
+  shareToken: string
+  tenantId?: string
+}) => {
+  const response: any = { data: null, error: '' }
+  try {
+    const { data, status } = await axiosV6({
+      data: JSON.stringify({
+        email: payload.email,
+        password: payload.password,
+        shareToken: payload.shareToken,
+      }),
+      headers: payload.tenantId ? { 'X-Tenant-Id': payload.tenantId } : undefined,
+      method: 'POST',
+      url: `/auth/share/set-password`,
+    })
+
+    if (status !== 200 && status !== 201) throw new Error('invalid status code')
+
+    if (data) {
+      setToLocalStorage(data, 'identity')
+      const { setIdentity } = authUserStore.getState()
+      setIdentity(data)
+      response.data = 'Success'
+    } else {
+      response.error = 'No data returned'
+    }
+  } catch (e: any) {
+    console.error(e)
+    response.error = getV6ApiErrorMessage(
+      e?.response?.data,
+      'Failed to set password',
+    )
+  }
+  return response
+}
+
+export const shareSocialLogin = async (payload: {
+  email: string
+  provider: string
+  shareToken: string
+}) => {
+  const response: any = { data: null, error: '' }
+  try {
+    const { data, status } = await axiosV6({
+      data: JSON.stringify(payload),
+      method: 'POST',
+      url: `/auth/share/social-login`,
+    })
+
+    if (status !== 200 && status !== 201) throw new Error('invalid status code')
+
+    if (data) {
+      setToLocalStorage(data, 'identity')
+      const { setIdentity } = authUserStore.getState()
+      setIdentity(data)
+      response.data = 'Success'
+    } else {
+      response.error = 'No data returned'
+    }
+  } catch (e: any) {
+    console.error(e)
+    response.error = getV6ApiErrorMessage(
+      e?.response?.data,
+      'error in social login',
+    )
+  }
+  return response
+}
+
+export const emailValidate = async (tenantId: number | string, payload: any) => {
+  const response: any = { data: '', error: '' }
+  try {
+    const { data, status } = await axiosV6({
+      data: JSON.stringify(payload),
+      method: 'POST',
+      url: `/activeDirectory/verifyUser/${tenantId}`,
+    })
+    if (status !== 200) throw new Error('invalid status code')
+    response.data = data
+  } catch (e: any) {
+    console.error(e)
+    response.error = 'error logging in'
+    if (e?.response?.status === 404) {
+      response.error = 'user account not found'
+    } else {
+      response.error = getV6ApiErrorMessage(e?.response?.data, 'error logging in')
+    }
+  }
+  return response
+}
+
 export const authApiV6 = {
   login,
   sendMailOTP,
@@ -255,6 +368,10 @@ export const authApiV6 = {
   verifyMailOTP,
   getSession,
   getTenants,
+  getSharePreview,
+  setSharePassword,
+  shareSocialLogin,
+  emailValidate,
 }
 
 export default authApiV6

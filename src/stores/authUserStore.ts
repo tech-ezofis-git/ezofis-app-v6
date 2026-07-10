@@ -6,6 +6,13 @@ import useSetupStore from '@/pages/dashboard/workflows/accounts-payable/stores/u
 import { getFromLocalStorage } from '@/utils/local-storage'
 
 export type DefaultView = Record<string, unknown>
+export type ShareContext = {
+  shareToken: string
+  sourceItemId: string
+  sourceRepositoryId: string
+  sourceTenantId: string
+  workflowInstanceId?: string
+}
 export type Identity = {
   // V6 fields
   accessToken?: string
@@ -43,6 +50,7 @@ type Store = {
   preferenceId: number
   profileMenus: unknown[]
   session: Session | null
+  shareContext: ShareContext | null
   signUpUserData: SignUpUserData
   user: User
   resetAuthState: () => void
@@ -52,6 +60,7 @@ type Store = {
   setPreferenceId: (id: number) => void
   setProfileMenu: (menus: unknown[]) => void
   setSession: (session: Session | null) => void
+  setShareContext: (context: ShareContext | null) => void
   setSignUpUserData: (partial: Partial<SignUpUserData>) => void
   setUser: (user: User) => void
 }
@@ -82,6 +91,7 @@ const authUserStore = create<Store>()((set) => {
     preferenceId: 0,
     profileMenus: [],
     session,
+    shareContext: null,
     signUpUserData: emptySignUp,
 
     user: {
@@ -134,6 +144,7 @@ const authUserStore = create<Store>()((set) => {
         preferenceId: 0,
         profileMenus: [],
         session: null,
+        shareContext: null,
         signUpUserData: emptySignUp,
       }))
     },
@@ -167,6 +178,8 @@ const authUserStore = create<Store>()((set) => {
       }
       set(() => ({ session }))
     },
+
+    setShareContext: (context) => set(() => ({ shareContext: context })),
 
     setSignUpUserData: (partial) =>
       set((state) => ({
