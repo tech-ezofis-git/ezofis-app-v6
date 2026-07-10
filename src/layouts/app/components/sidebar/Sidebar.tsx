@@ -21,7 +21,7 @@ const Sidebar = () => {
         },
         {
           icon: 'lucide:folder',
-          label: t`Folders`,
+          label: 'Folders',
           route: '/folders',
         },
         // {

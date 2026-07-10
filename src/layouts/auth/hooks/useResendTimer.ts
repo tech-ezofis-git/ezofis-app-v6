@@ -7,7 +7,7 @@ export default function useResendTimer(
 
   const [elapsed, setElapsed] = useState(RESEND_SECONDS)
 
-  const resendLabel = elapsed === 0 ? label : `${label} in ${elapsed}`
+  const resendLabel = elapsed === 0 ? label : `${label} in ${elapsed} seconds`
 
   useEffect(() => {
     const timerId = setTimeout(() => {

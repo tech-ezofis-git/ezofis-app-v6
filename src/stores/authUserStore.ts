@@ -23,6 +23,7 @@ export type Session = {
   lastName?: string
   name?: string
   tenantId: string
+  configuration?: number | string
 }
 export type SignUpUserData = {
   email: string
@@ -157,6 +158,12 @@ const authUserStore = create<Store>()((set) => {
           name: session.firstName,
           tenantId: session.tenantId,
         })
+      }
+      if (session && 'configuration' in session) {
+        const isCompleted = String(session.configuration) !== '0'
+        const setupStoreState = useSetupStore.getState()
+        setupStoreState.setisApSetUpCompleted(isCompleted)
+        setupStoreState.setRestrictNavigationUntilApSetup(!isCompleted)
       }
       set(() => ({ session }))
     },

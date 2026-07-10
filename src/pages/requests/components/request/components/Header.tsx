@@ -603,33 +603,33 @@ const Header: React.FC<HeaderProps> = ({
             return (
               <div className='flex items-center gap-3 pr-3'>
                 <div className='flex flex-col border-[var(--gray-3)] pl-3 text-right'>
-                  <span className='mb-1 text-[10px] leading-none font-semibold text-[var(--gray-11)]'>
+                  <span className='mb-1.5 text-[10px] leading-none font-semibold text-[var(--gray-11)]'>
                     Invoice Value
                   </span>
                   <div
                     className={cn(
-                      'flex items-center justify-end h-[13px]',
+                      'flex items-center justify-end',
                       invoiceValueColorClass,
                     )}
                   >
                     {formatAmount(totalAmount) === '0.00' ? (
                       <div className='h-3 w-16 animate-pulse rounded bg-[var(--gray-4)]' />
                     ) : (
-                      <span className='text-[13px] leading-none font-semibold'>
+                      <span className='text-[13px] leading-tight font-semibold'>
                         {currDisplay} {formatAmount(totalAmount)}
                       </span>
                     )}
                   </div>
                 </div>
                 <div className='flex flex-col border-l border-[var(--gray-3)] pl-3 text-right'>
-                  <span className='mb-1 text-[10px] leading-none font-semibold text-[var(--gray-11)]'>
+                  <span className='mb-1.5 text-[10px] leading-none font-semibold text-[var(--gray-11)]'>
                     PO Value
                   </span>
-                  <div className='flex items-center justify-end h-[13px] text-[var(--primary-9)]'>
+                  <div className='flex items-center justify-end text-[var(--primary-9)]'>
                     {formatAmount(poValue) === '0.00' ? (
                       <div className='h-3 w-16 animate-pulse rounded bg-[var(--gray-4)]' />
                     ) : (
-                      <span className='text-[13px] leading-none font-semibold'>
+                      <span className='text-[13px] leading-tight font-semibold'>
                         {currDisplay} {formatAmount(poValue)}
                       </span>
                     )}
@@ -718,7 +718,7 @@ const Header: React.FC<HeaderProps> = ({
             <button
               type='button'
               className={cn(
-                'flex h-8 w-[90px] justify-center cursor-pointer items-center gap-2 rounded-lg border text-[13px] font-semibold transition-all hover:shadow-sm active:scale-95',
+                'flex h-8 px-3.5 justify-center cursor-pointer items-center gap-2 rounded-lg border text-[13px] font-semibold transition-all hover:shadow-sm active:scale-95',
                 showShare
                   ? 'border-[var(--primary-6)] bg-[var(--primary-1)] text-[var(--primary-9)]'
                   : 'border-[var(--gray-3)] bg-surface text-[var(--gray-11)] hover:border-[var(--gray-5)] hover:text-[var(--gray-13)]',
@@ -1005,9 +1005,12 @@ const Header: React.FC<HeaderProps> = ({
             {isEditing && (
               <Button
                 color='primary'
+                className='h-8 px-3.5 rounded-lg text-[13px] font-semibold justify-center border border-primary-4 hover:border-primary-6 shadow-sm hover:shadow-md transition-shadow'
+                icon='lucide:save'
+                iconClass='size-4'
                 label='Save'
                 loading={approveLoading}
-                size='lg'
+                size='md'
                 variant='solid'
                 onClick={() => onApprove?.('Save')}
               />
@@ -1021,6 +1024,25 @@ const Header: React.FC<HeaderProps> = ({
                 'subtle'
               let borderClass =
                 'border-primary-4 hover:border-primary-6 shadow-sm hover:shadow-md transition-shadow'
+
+              let defaultIcon = action?.icon
+              if (!defaultIcon) {
+                if (
+                  label === 'approved' ||
+                  label === 'approve' ||
+                  label.includes('approve')
+                ) {
+                  defaultIcon = 'lucide:check'
+                } else if (
+                  label === 'rejected' ||
+                  label === 'reject' ||
+                  label.includes('reject')
+                ) {
+                  defaultIcon = 'lucide:x'
+                } else {
+                  defaultIcon = 'lucide:arrow-right'
+                }
+              }
 
               if (
                 label === 'approved' ||
@@ -1043,9 +1065,10 @@ const Header: React.FC<HeaderProps> = ({
               return (
                 <div className='flex items-center gap-1.5' key={action?.value}>
                   <Button
-                    className={cn(borderClass, 'w-[90px] h-8 justify-center')}
+                    className={cn(borderClass, 'h-8 px-3.5 justify-center rounded-lg text-[13px] font-semibold')}
                     color={btnColor}
-                    icon={action?.icon}
+                    icon={defaultIcon}
+                    iconClass='size-4'
                     label={action?.label}
                     loading={approveLoading}
                     size='md'

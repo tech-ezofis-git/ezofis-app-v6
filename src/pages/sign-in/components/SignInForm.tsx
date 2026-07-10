@@ -104,20 +104,18 @@ const SignInForm = ({ onChangeView }: Props) => {
 
   // === navigation after successful login (simplified Vue logged()) ===
   const handleLoggedNavigation = async () => {
-    const { setisApSetUpCompleted, setRestrictNavigationUntilApSetup } =
-      useSetupStore.getState()
-    setRestrictNavigationUntilApSetup(false)
-    setisApSetUpCompleted(true)
-
     try {
       await apiRouter.userSession()
     } catch (err) {
       console.error('Failed to load session details:', err)
     }
 
-    // In Vue this used profileMenus + workspace access logic.
-    // For now, replicate the basic behavior: honor 2FA, then go home.
-    navigate({ replace: true, to: '/requests' })
+    const { isApSetUpCompleted } = useSetupStore.getState()
+    if (!isApSetUpCompleted) {
+      navigate({ replace: true, to: '/' })
+    } else {
+      navigate({ replace: true, to: '/requests' })
+    }
     setLoading(false)
   }
 

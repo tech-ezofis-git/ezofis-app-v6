@@ -1545,7 +1545,7 @@ const Request = ({
     <div
       className={`flex w-full flex-col p-0 ${hideActions ? 'bg-grey-2 h-full p-4' : 'h-[calc(100vh-85px)]'}`}
     >
-      <div className='sticky top-0 z-20 border-b border-[var(--gray-3)] px-2'>
+      <div className='sticky top-0 z-50 border-b border-[var(--gray-3)] bg-surface px-2'>
         <Header
           actions={headerActions}
           agentData={currentAgentData}

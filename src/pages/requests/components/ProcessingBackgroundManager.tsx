@@ -65,9 +65,10 @@ export const ProcessingBackgroundManager = () => {
                 jobData.stage === 'COMPLETED' ||
                 jobData.hangfireStatus === 'Succeeded'
 
-              // Update job status in store
+              // Update job status in store with full jobData payload
               const jobKey = `job-${apAgentJobId}`
               requestStore.getState().setJobStatus(jobKey, {
+                ...jobData,
                 apAgentJobId,
                 isCompleted,
                 message,
@@ -83,6 +84,7 @@ export const ProcessingBackgroundManager = () => {
                 requestStore
                   .getState()
                   .setJobStatus(String(jobData.instanceId), {
+                    ...jobData,
                     apAgentJobId,
                     isCompleted,
                     message,
@@ -96,17 +98,29 @@ export const ProcessingBackgroundManager = () => {
                   .updateProcessingProcess(String(processId), {
                     id: jobData.instanceId,
                     processId: jobData.instanceId,
+                    isCompleted,
+                    stage,
+                    ...jobData,
+                  })
+              } else {
+                requestStore
+                  .getState()
+                  .updateProcessingProcess(String(processId), {
+                    isCompleted,
+                    stage,
+                    ...jobData,
                   })
               }
 
               if (isCompleted) {
-                if (jobData.instanceId) {
-                  removeProcessingProcess(jobData.instanceId)
-                } else {
-                  removeProcessingProcess(processId)
-                }
                 queryClient.invalidateQueries({ queryKey: ['inbox'] })
                 queryClient.invalidateQueries({ queryKey: ['request-detail'] })
+                setTimeout(() => {
+                  if (jobData.instanceId) {
+                    removeProcessingProcess(jobData.instanceId)
+                  }
+                  removeProcessingProcess(processId)
+                }, 5000)
               }
             }
             return
@@ -160,21 +174,26 @@ export const ProcessingBackgroundManager = () => {
               item.completedAtUtc
             )
 
-            updateProcessingProcess(processId, {
-              lastUpdated: new Date(),
-              stage,
-              stageType,
-            })
-
             // Keep polling as long as stageType is AP_AGENT and has no decision. Remove when stageType is NOT AP_AGENT or has a decision or completes.
             const isCompleted =
               stageType !== 'AP_AGENT' ||
               hasAgentDecision ||
               ['Verifier', 'Approved', 'Completed'].includes(stage)
+
+            updateProcessingProcess(processId, {
+              lastUpdated: new Date(),
+              stage,
+              stageType,
+              isCompleted,
+              ...item,
+            })
+
             if (isCompleted) {
-              removeProcessingProcess(processId)
               queryClient.invalidateQueries({ queryKey: ['inbox'] })
               queryClient.invalidateQueries({ queryKey: ['request-detail'] })
+              setTimeout(() => {
+                removeProcessingProcess(processId)
+              }, 5000)
             }
           }
         } catch (error) {

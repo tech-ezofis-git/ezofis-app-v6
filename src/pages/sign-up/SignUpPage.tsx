@@ -14,7 +14,9 @@ const SignUpPage = () => {
   return (
     <AnimatePresence initial={false} mode='wait'>
       <AnimateEntrancePop key={view}>
-        {view === 'verify-email-form' && <VerifyEmailForm />}
+        {view === 'verify-email-form' && (
+          <VerifyEmailForm onBack={() => setView('sign-up-form')} />
+        )}
         {view === 'sign-up-form' && (
           <SignUpForm
             email={email}

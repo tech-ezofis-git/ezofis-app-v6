@@ -893,17 +893,70 @@ const InboxList: React.FC<InboxListProps> = ({
 
     const newProcessingItems = processingProcesses
       .filter((p) => !existingIds.has(String(p.processId || p.id)))
-      .map((p) => ({
-        ...p,
-        _groupKey: 'root',
-        documentNumber: p.requestNo || p.name || 'Processing...',
-        id: p.processId || p.id,
-        isProcessing: true,
-        processId: p.processId || p.id,
-        raisedAt: new Date().toISOString(),
-        stage: p.stage || 'Start',
-        status: 'Progressing',
-      }))
+      .map((p) => {
+        const rowId = p.processId || p.id
+        const jobStatuses = requestStore.getState().jobStatuses || {}
+        const jobMappings = requestStore.getState().jobMappings || {}
+        
+        let matchedJobStatus = jobStatuses[String(rowId)]
+        if (!matchedJobStatus && p.apAgentJobId) {
+          const mappedJobId = jobMappings[String(p.apAgentJobId)]
+          if (mappedJobId) {
+            matchedJobStatus = jobStatuses[String(mappedJobId)] || jobStatuses[`job-${mappedJobId}`]
+          }
+          if (!matchedJobStatus) {
+            matchedJobStatus = jobStatuses[`job-${p.apAgentJobId}`]
+          }
+        }
+
+        const isCompleted = matchedJobStatus?.isCompleted || p.isCompleted || false
+        
+        // Extract values from matchedJobStatus / p / agentResponse if available
+        const agentResponse = matchedJobStatus || p.agentResponse || p._agentResponse || null
+        let parsedAgentResponse = null
+        if (agentResponse) {
+          if (typeof agentResponse === 'string') {
+            try {
+              parsedAgentResponse = JSON.parse(agentResponse)
+            } catch {}
+          } else if (typeof agentResponse === 'object') {
+            parsedAgentResponse = agentResponse
+          }
+        }
+        
+        // Extract OCR fields like supplier, amount, currency, invoice date, invoice number
+        const ocrData = parsedAgentResponse?.['Extracted Invoice JSON'] || parsedAgentResponse?.extractedInvoiceJson || {}
+        const invoiceHeader = ocrData?.invoice_header || {}
+        
+        const invoiceValue = invoiceHeader?.['Invoice Amount'] || invoiceHeader?.['Total Due'] || invoiceHeader?.['Total'] || invoiceHeader?.['invoice_amount'] || invoiceHeader?.['total_amount'] || parsedAgentResponse?.invoice_amount || p['Invoice Value'] || ''
+        const invoiceNo = invoiceHeader?.['Invoice Number'] || invoiceHeader?.['Invoice No'] || invoiceHeader?.['invoice_number'] || parsedAgentResponse?.invoice_number || p['Invoice Number'] || ''
+        const supplierName = invoiceHeader?.['Supplier Name'] || invoiceHeader?.['Vendor Name'] || invoiceHeader?.['vendor'] || parsedAgentResponse?.vendor || p['Supplier Name'] || ''
+        const poValue = invoiceHeader?.['PO Value'] || invoiceHeader?.['PO Amount'] || invoiceHeader?.['po_value'] || invoiceHeader?.['po_amount'] || parsedAgentResponse?.po_amount || p['PO Value'] || ''
+        const currency = invoiceHeader?.['Currency'] || parsedAgentResponse?.currency || p['Currency'] || 'USD'
+
+        const status = isCompleted ? (parsedAgentResponse?.decision || p.status || 'Matched') : 'Progressing'
+        const stage = matchedJobStatus?.stage || p.stage || 'Start'
+
+        return {
+          ...p,
+          _groupKey: 'root',
+          documentNumber: invoiceNo || p.requestNo || p.name || 'Processing...',
+          id: rowId,
+          isProcessing: !isCompleted,
+          processId: rowId,
+          raisedAt: p.raisedAt || new Date().toISOString(),
+          stage: stage,
+          status: status,
+          // Merge extracted values
+          'Invoice Value': invoiceValue,
+          'Invoice Number': invoiceNo,
+          'Supplier Name': supplierName,
+          'PO Value': poValue,
+          'Currency': currency,
+          _agentResponse: parsedAgentResponse,
+          _agentData: parsedAgentResponse ? [parsedAgentResponse] : [],
+        }
+      })
 
     if (newProcessingItems.length > 0) {
       const rootGroup = outData.find((g) => g.groupId === 'root')

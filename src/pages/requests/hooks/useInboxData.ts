@@ -6,6 +6,7 @@ import {
   filterInboxItemsByTab,
   isDuplicatedInboxItem,
 } from '../utils/inboxList.utils'
+import requestStore from '../stores/useRequestStore'
 import { getActionsForActivity } from '../utils/workflow.utils'
 
 const transformProcess = (
@@ -129,11 +130,33 @@ const transformProcess = (
     raisedBy: process.transactionCreatedByEmail || process.raisedBy,
     requestNo: requestNo,
     ...(isAgentProcessing
-      ? {
-          isProcessing: true,
-          stage: process.stage || 'Start',
-          status: 'Progressing',
-        }
+      ? (() => {
+          const rowId = processId || process.id
+          const storeState = requestStore.getState()
+          const jobStatuses = storeState.jobStatuses || {}
+          const jobMappings = storeState.jobMappings || {}
+          
+          let matchedJobStatus = jobStatuses[String(rowId)]
+          if (!matchedJobStatus && process.apAgentJobId) {
+            const mappedJobId = jobMappings[String(process.apAgentJobId)]
+            if (mappedJobId) {
+              matchedJobStatus = jobStatuses[String(mappedJobId)] || jobStatuses[`job-${mappedJobId}`]
+            }
+            if (!matchedJobStatus) {
+              matchedJobStatus = jobStatuses[`job-${process.apAgentJobId}`]
+            }
+          }
+
+          const isCompleted = matchedJobStatus?.isCompleted || false
+          const stage = matchedJobStatus?.stage || process.stage || 'Start'
+          const status = isCompleted ? (matchedJobStatus?.decision || 'Matched') : 'Progressing'
+
+          return {
+            isProcessing: !isCompleted,
+            stage,
+            status,
+          }
+        })()
       : {}),
   }
 }

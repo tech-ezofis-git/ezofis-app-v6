@@ -157,6 +157,28 @@ export const savePreQuestions = async (userId: string | number, payload: any) =>
   return response
 }
 
+export const saveUserConfiguration = async (userId: string | number, payload: { message: string }) => {
+  const response: any = {
+    data: '',
+    error: '',
+  }
+  try {
+    const { data, status } = await axiosV6({
+      data: JSON.stringify(payload),
+      method: 'POST',
+      url: `/users/${userId}/configuration`,
+    })
+    if (status !== 200 && status !== 201 && status !== 204) {
+      throw new Error('invalid status code')
+    }
+    response.data = data
+  } catch (e: any) {
+    console.error(e)
+    response.error = e.response?.data?.message || e.message || 'error saving user configuration'
+  }
+  return response
+}
+
 export const apiRouter = {
   login,
   sendMailOTP,
@@ -166,6 +188,7 @@ export const apiRouter = {
   verifyMailOTP,
   getApiVersion,
   savePreQuestions,
+  saveUserConfiguration,
 }
 
 export default apiRouter

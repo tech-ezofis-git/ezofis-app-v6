@@ -9,7 +9,11 @@ import showToast from '@/components/base/toast/showToast'
 import useResendTimer from '@/layouts/auth/hooks/useResendTimer'
 import authUserStore from '@/stores/authUserStore'
 
-const VerifyEmailForm = () => {
+interface Props {
+  onBack?: () => void
+}
+
+const VerifyEmailForm = ({ onBack }: Props) => {
   const navigate = useNavigate()
   const { signUpUserData, setSignUpUserData } = authUserStore()
 
@@ -37,12 +41,12 @@ const VerifyEmailForm = () => {
         requiredOTP: true,
       })
       if (error) {
-        setError(error)
+        setError('Failed to send OTP. Please try again.')
         return
       }
       resetTimer()
     } catch (e: any) {
-      setError(e?.message ?? 'Unable to resend OTP')
+      setError('Unable to resend OTP. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -64,23 +68,19 @@ const VerifyEmailForm = () => {
 
       setVerifyLoading(true)
       const { data, error } = await apiRouter.verifyMailOTP({ email, otp })
-      // console.log(data)
-
-      // if (error) {
-      //   setError(error)
-      //   return
-      // }
-
       console.log(data, error)
-      if (data == 'Success') {
-        showToast({ message: 'OTP verified successfully', variant: 'success' })
-        setSignUpUserData({ loginType: loginType || 'EZOFIS' })
 
-        navigate({ to: '/reset-password' })
+      if (error || data !== 'Success') {
+        setError('Invalid OTP. Please try again.')
+        return
       }
-      // upgrade the signup type (still NORMAL)
+
+      showToast({ message: 'OTP verified successfully', variant: 'success' })
+      setSignUpUserData({ loginType: loginType || 'EZOFIS' })
+
+      navigate({ to: '/reset-password' })
     } catch (e: any) {
-      setError(e?.message ?? 'OTP verification failed')
+      setError('OTP verification failed. Please try again.')
     } finally {
       setVerifyLoading(false)
     }
@@ -91,7 +91,7 @@ const VerifyEmailForm = () => {
       <IconIllustrated icon='lucide:mail-check' />
       <Title
         className='text-center'
-        description='Enter the OTP to continue'
+        description={`We've sent a 6-digit verification code to ${email || ''}`}
         level={1}
         title='Verify your email'
       />
@@ -130,6 +130,16 @@ const VerifyEmailForm = () => {
         variant='ghost'
         onClick={resendOtp}
       />
+
+      {onBack && (
+        <Button
+          className='w-full justify-center underline -mt-2'
+          color='gray'
+          label='Try with a different email'
+          variant='ghost'
+          onClick={onBack}
+        />
+      )}
     </>
   )
 }

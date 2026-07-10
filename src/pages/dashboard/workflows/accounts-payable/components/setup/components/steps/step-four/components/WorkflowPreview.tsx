@@ -1,6 +1,7 @@
 import { motion } from 'motion/react'
 import Icon from '@/components/base/icon/Icon'
 import { AnimateFadeIn } from '@/components/common/animations'
+import cn from '@/utils/cn'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 
 const WorkflowPreview = () => {
@@ -164,9 +165,10 @@ const WorkflowPreview = () => {
           <div className='flex w-[130px] flex-col items-center justify-end pb-1'>
             <AnimateFadeIn delay={0.4}>
               <NodeCard
-                icon='noto:robot'
+                icon='lucide:bot'
                 subtitle='Extraction & Matching'
                 title='AI Automation'
+                isAgent
               />
             </AnimateFadeIn>
           </div>
@@ -189,6 +191,7 @@ const WorkflowPreview = () => {
                 icon='flat-color-icons:ok'
                 subtitle='ERP Synced'
                 title='Process End'
+                isEnd
               />
             </AnimateFadeIn>
           </div>
@@ -201,11 +204,15 @@ const WorkflowPreview = () => {
 const NodeCard = ({
   icon,
   isTrigger = false,
+  isAgent = false,
+  isEnd = false,
   subtitle,
   title,
 }: {
   icon: string
   isTrigger?: boolean
+  isAgent?: boolean
+  isEnd?: boolean
   subtitle: string
   title: string
 }) => (
@@ -217,35 +224,82 @@ const NodeCard = ({
       </div>
     )}
     <motion.div
-      className='dark:bg-gray-900 relative z-10 flex w-[130px] flex-col rounded-md border border-gray-3 bg-white p-2 shadow-[0_2px_6px_rgba(0,0,0,0.02)] transition-colors'
+      className={cn(
+        'relative z-10 flex w-[130px] flex-col rounded-md border p-2 shadow-[0_2px_6px_rgba(0,0,0,0.02)] transition-colors',
+        isAgent
+          ? 'border-purple-8 bg-purple-9 text-white dark:border-purple-7 dark:bg-purple-9'
+          : isEnd
+            ? 'border-green-9 bg-white dark:bg-gray-900 text-gray-12 dark:border-green-8'
+            : 'border-gray-3 bg-white dark:border-gray-8 dark:bg-gray-900 text-gray-12'
+      )}
       transition={{ damping: 25, stiffness: 400, type: 'spring' }}
-      whileHover={{
-        borderColor: 'var(--purple-4)',
-        boxShadow:
-          '0 10px 25px -5px rgba(168, 85, 247, 0.1), 0 8px 10px -6px rgba(168, 85, 247, 0.1)',
-        scale: 1.02,
-        y: -4,
-      }}
+      whileHover={
+        isAgent
+          ? {
+              borderColor: 'var(--purple-3)',
+              boxShadow:
+                '0 10px 25px -5px rgba(168, 85, 247, 0.25), 0 8px 10px -6px rgba(168, 85, 247, 0.25)',
+              scale: 1.02,
+              y: -4,
+            }
+          : isEnd
+            ? {
+                borderColor: 'var(--green-5)',
+                boxShadow:
+                  '0 10px 25px -5px rgba(34, 197, 94, 0.15), 0 8px 10px -6px rgba(34, 197, 94, 0.15)',
+                scale: 1.02,
+                y: -4,
+              }
+            : {
+                borderColor: 'var(--purple-4)',
+                boxShadow:
+                  '0 10px 25px -5px rgba(168, 85, 247, 0.1), 0 8px 10px -6px rgba(168, 85, 247, 0.1)',
+                scale: 1.02,
+                y: -4,
+              }
+      }
     >
       <div className='flex items-center gap-1.5'>
         <motion.div
-          className='group-hover:bg-purple-50 dark:bg-gray-800 flex h-6 w-6 shrink-0 items-center justify-center rounded border border-gray-2 bg-gray-1 transition-colors group-hover:border-purple-2 dark:border-gray-7'
+          className={cn(
+            'flex h-6 w-6 shrink-0 items-center justify-center rounded border transition-colors',
+            isAgent
+              ? 'bg-purple-8/40 border-purple-7/40 text-white'
+              : 'bg-gray-1 border-gray-2 group-hover:bg-purple-50 group-hover:border-purple-2 dark:bg-gray-800 dark:border-gray-7'
+          )}
           whileHover={{ rotate: 5, scale: 1.1 }}
         >
-          <Icon className='size-3.5' name={icon} />
+          <Icon className={cn('size-3.5', isAgent ? 'text-white' : '')} name={icon} />
         </motion.div>
         <div className='flex-1 overflow-hidden'>
-          <div className='flex items-center justify-between'>
-            <h4 className='truncate text-[10px] leading-none font-bold text-gray-12 transition-colors group-hover:text-purple-7'>
+          <div className='flex items-center justify-between gap-1'>
+            <h4 className={cn(
+              'truncate text-[10px] leading-none font-bold transition-colors',
+              isAgent ? 'text-white' : 'text-gray-12 group-hover:text-purple-7'
+            )}>
               {title}
             </h4>
-            <Icon className='size-2 text-gray-8' name='tabler:chevron-down' />
+            {isAgent ? (
+              <span className='shrink-0 rounded-[2px] border border-purple-7 bg-purple-8/50 px-1 py-0.5 text-[5px] font-bold text-white uppercase tracking-tight'>
+                AI Agent 1
+              </span>
+            ) : (
+              <Icon className='size-2 text-gray-8' name='tabler:chevron-down' />
+            )}
           </div>
-          <p className='mt-0.5 truncate text-[9px] leading-none font-medium text-gray-10'>
+          <p className={cn(
+            'mt-0.5 truncate text-[9px] leading-none font-medium',
+            isAgent ? 'text-purple-2' : 'text-gray-10'
+          )}>
             {subtitle}
           </p>
         </div>
       </div>
+      {isAgent && (
+        <div className='mt-2.5 h-1 w-full rounded-full bg-purple-8/40 overflow-hidden'>
+          <div className='h-full w-2/3 rounded-full bg-purple-3' />
+        </div>
+      )}
     </motion.div>
   </div>
 )

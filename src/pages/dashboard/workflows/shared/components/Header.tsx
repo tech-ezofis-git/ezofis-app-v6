@@ -22,6 +22,7 @@ import {
   ChevronRight,
   DollarSign,
   ClipboardList,
+  X,
 } from 'lucide-react'
 import useDashboardStore from '@/pages/dashboard/stores/useDashboardStore'
 import {
@@ -154,7 +155,7 @@ export default function DashboardCharts() {
   ], [])
 
   return (
-    <div className="flex flex-col gap-6 p-6">
+    <div className="flex flex-col gap-4 p-6">
 
       {/* 1. QUICK FILTERS ROW */}
       <div ref={filtersRef} className="flex flex-wrap items-center gap-2.5 rounded-lg border border-border-default bg-surface p-3 shadow-xs">
@@ -416,7 +417,7 @@ export default function DashboardCharts() {
 
       {/* 3. KPI STRIP */}
       {isCommandCenterExpanded && (
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-6 animate-in fade-in duration-300">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-6 animate-in fade-in duration-300">
           {[
             { name: 'Total Outstanding Payables', value: fmtMoney(metrics.totalAP || 0), trend: metrics.totalAPChange, color: 'border-t-primary-9', isGood: false },
             { name: 'Total Paid Amount', value: fmtMoney(metrics.totalPaid || 0), trend: metrics.totalPaidChange, color: 'border-t-success', isGood: true },
@@ -446,7 +447,13 @@ export default function DashboardCharts() {
               <h3 className="font-poppins text-14 font-semibold text-text-primary">Invoices Drill-Down <span className="text-primary-9">· {activeDrill}</span></h3>
               <p className="font-inter text-11 text-text-muted mt-0.5">Showing records matching this metrics slice</p>
             </div>
-            <button className="cursor-pointer rounded-lg border border-border-default bg-gray-2 px-2.5 py-1 text-12 font-semibold text-text-secondary transition-all hover:bg-gray-3" onClick={() => setActiveDrill(null)}>Close</button>
+            <button
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-text-muted transition-all hover:bg-gray-2 hover:text-text-primary active:scale-95 cursor-pointer"
+              title="Close panel"
+              onClick={() => setActiveDrill(null)}
+            >
+              <X className="h-4 w-4" />
+            </button>
           </div>
           {drillInvoices.length > 0 ? (
             <div className="overflow-x-auto max-h-[300px] scrollbar">
@@ -482,10 +489,10 @@ export default function DashboardCharts() {
       {role === 'management' ? (
 
         /* ===== MANAGEMENT TRACK ===== */
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-4">
 
           {/* AI Insights + Supplier Radar */}
-          <div className="grid grid-cols-12 gap-5">
+          <div className="grid grid-cols-12 gap-4">
             {isCommandCenterExpanded && (
               <div className="col-span-12 lg:col-span-8 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
                 <div className="flex items-center justify-between mb-4">
@@ -527,7 +534,7 @@ export default function DashboardCharts() {
           </div>
 
           {/* Profitability Section */}
-          <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-4">
             <div className="flex flex-wrap items-center justify-between gap-4 overflow-hidden rounded-lg bg-surface border border-border-default px-4 py-4 text-text-primary shadow-xs">
               <div>
                 <h3 className="font-poppins text-14 font-semibold">Profitability &amp; Cash Position</h3>
@@ -549,7 +556,7 @@ export default function DashboardCharts() {
               </div>
             </div>
 
-            <div className="grid grid-cols-12 gap-5">
+            <div className="grid grid-cols-12 gap-4">
               <div className="col-span-12 lg:col-span-6 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
                 <h3 className="font-poppins text-14 font-semibold text-text-primary">Profit vs AP spending</h3>
                 <div className="font-inter text-11 text-text-muted mb-4">Dual axis spending trend comparison</div>
@@ -625,7 +632,7 @@ export default function DashboardCharts() {
               </div>
             </div>
 
-            <div className="grid grid-cols-12 gap-5">
+            <div className="grid grid-cols-12 gap-4">
               <div className={cn("rounded-lg border border-border-default bg-surface p-5 shadow-xs transition-all duration-300", isCommandCenterExpanded ? "col-span-12 lg:col-span-4" : "col-span-12 lg:col-span-6")}>
                 <h3 className="font-poppins text-14 font-semibold text-text-primary">Top 10 suppliers by invoice value</h3>
                 <div className="font-inter text-11 text-text-muted mb-4">Concentration of invoice liabilities</div>
@@ -780,11 +787,11 @@ export default function DashboardCharts() {
       ) : (
 
         /* ===== AP TEAM TRACK ===== */
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-4">
 
           {/* AI Insights + Duplicate Watch (Conditionally visible) */}
           {isCommandCenterExpanded && (
-            <div className="grid grid-cols-12 gap-5">
+            <div className="grid grid-cols-12 gap-4">
               <div className="col-span-12 lg:col-span-8 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
                 <div className="flex items-center justify-between mb-4">
                   <div>
@@ -825,7 +832,7 @@ export default function DashboardCharts() {
           )}
 
           {/* Details below */}
-          <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-4">
 
             {/* Today's Action Queue — conditionally shown */}
 
@@ -858,7 +865,7 @@ export default function DashboardCharts() {
               </div>
 
               {isTodayActionExpanded && (
-                <div className="grid grid-cols-12 gap-5">
+                <div className="grid grid-cols-12 gap-4">
                   {/* AP Workbench */}
                   <div className="col-span-12 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
                     <div className="flex items-center justify-between border-b border-border-default pb-3.5 mb-4">

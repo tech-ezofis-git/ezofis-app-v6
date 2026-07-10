@@ -92,31 +92,31 @@ const RequestDemoForm = () => {
           </div>
         </div>
 
-        <form className='space-y-8' noValidate onSubmit={handleSubmit}>
+        <form className='space-y-5' noValidate onSubmit={handleSubmit}>
 
           {/* Category */}
           <div className='flex flex-col gap-1.5'>
             <label className='text-sm font-semibold text-gray-13'>
-              What do you need help with? <span className='font-normal text-gray-9'>(required)</span>
+              What do you need help with? <span className='text-red-9 font-bold'>*</span>
             </label>
             <p className='mb-3 text-xs text-gray-11'>Pick the option that's closest to your situation.</p>
-            <div className='grid grid-cols-2 gap-3 sm:grid-cols-3'>
+             <div className='grid grid-cols-1 gap-2.5 sm:grid-cols-3'>
               {CATEGORIES.map((c) => (
                 <button
                   key={c.key}
                   type='button'
                   onClick={() => setForm({ ...form, category: c.key })}
-                  className={`flex flex-col gap-2.5 rounded-xl border p-3.5 text-left transition-all ${form.category === c.key
+                  className={`flex items-center gap-3 rounded-xl border p-3 text-left transition-all ${form.category === c.key
                     ? 'border-primary-9 bg-primary-3/30'
                     : 'border-gray-4 bg-surface hover:border-primary-7'
                     }`}
                 >
                   <Icon
                     name={c.icon}
-                    className={`size-5 ${form.category === c.key ? 'text-primary-9' : 'text-gray-11'}`}
+                    className={`size-5 shrink-0 ${form.category === c.key ? 'text-primary-9' : 'text-gray-11'}`}
                   />
                   <span
-                    className={`text-sm font-medium leading-snug ${form.category === c.key ? 'text-primary-11' : 'text-gray-12'
+                    className={`text-sm font-semibold leading-none ${form.category === c.key ? 'text-primary-11' : 'text-gray-12'
                       }`}
                   >
                     {c.label}
@@ -199,17 +199,16 @@ const RequestDemoForm = () => {
               className='text-sm font-semibold text-gray-13'
               htmlFor='description'
             >
-              Describe your issue{' '}
-              <span className='font-normal text-gray-9'>(required)</span>
+              Describe your request <span className='text-red-9 font-bold'>*</span>
             </label>
             <p className='mb-2 text-xs text-gray-11'>
-              Tell us what happened and what's not working.
+              Tell us about your requirements or what you'd like to cover.
             </p>
             <div className='relative'>
               <textarea
                 id='description'
                 name='description'
-                placeholder="Tell us what happened and what's not working"
+                placeholder="Describe how we can help you or what you'd like to accomplish"
                 rows={4}
                 maxLength={1000}
                 className='min-h-[110px] w-full resize-y rounded-lg border border-gray-4 bg-surface px-3 py-2.5 text-sm text-gray-13 outline-none placeholder:text-gray-8 transition-all hover:border-gray-6 focus:border-primary-7 focus:ring-2 focus:ring-primary-4'
@@ -223,7 +222,7 @@ const RequestDemoForm = () => {
           </div>
 
           {/* Consent */}
-          <div className='mt-8 flex flex-col gap-3'>
+          <div className='mt-5 flex flex-col gap-3'>
             <label className='flex cursor-pointer items-start gap-3'>
               <input
                 type='checkbox'
@@ -259,7 +258,7 @@ const RequestDemoForm = () => {
           </div>
 
           {/* Submit Row */}
-          <div className='mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-gray-4 pt-6'>
+          <div className='mt-5 flex flex-wrap items-center justify-between gap-4 border-t border-gray-4 pt-4'>
             <div className='text-xs text-gray-11'>
               Routes to{' '}
               <span className='font-semibold text-gray-13'>

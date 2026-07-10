@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
-import { useLocation } from '@tanstack/react-router'
+import { useLocation, useNavigate } from '@tanstack/react-router'
 import { useEffect } from 'react'
+import useSetupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import authApi from '@/api/auth'
 import AskAI from '@/components/common/ask-ai/AskAI'
 import useAskAIStore from '@/components/common/ask-ai/stores/useAskAIStore'
@@ -23,6 +24,11 @@ const AppLayout = ({ children }: Props) => {
   const isAskAIOpen = useAskAIStore((state) => state.isOpen)
   const isDemoFormOpen = useRequestDemoStore((s) => s.isDemoFormOpen)
   const { pathname } = useLocation()
+  const navigate = useNavigate()
+  const isApSetUpCompleted = useSetupStore((state) => state.isApSetUpCompleted)
+  const restrictNavigationUntilApSetup = useSetupStore(
+    (state) => state.restrictNavigationUntilApSetup,
+  )
 
   useEffect(() => {
     if (isNewRequestOpen) {
@@ -40,6 +46,12 @@ const AppLayout = ({ children }: Props) => {
     }
     fetchSession()
   }, [])
+
+  useEffect(() => {
+    if (restrictNavigationUntilApSetup && !isApSetUpCompleted && pathname !== '/') {
+      navigate({ replace: true, to: '/' })
+    }
+  }, [isApSetUpCompleted, restrictNavigationUntilApSetup, pathname, navigate])
 
   return (
     <>

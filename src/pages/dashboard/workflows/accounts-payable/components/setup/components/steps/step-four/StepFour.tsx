@@ -3,6 +3,7 @@ import { useState } from 'react'
 import * as XLSX from 'xlsx'
 import { createRepository } from '@/api/createFolder'
 import formApi from '@/api/form/form'
+import apiRouter from '@/api/apiRouter'
 import workflowApi from '@/api/workflow/workflow'
 import poMasterUrl from '@/assets/PO Master.xlsx?url'
 import Button from '@/components/base/button/Button'
@@ -350,6 +351,19 @@ const StepFour = () => {
       if (workflowRes.error) {
         showToast({
           message: `Failed to create Workflow: ${workflowRes.error}`,
+          variant: 'error',
+        })
+        setIsSaving(false)
+        return
+      }
+
+      // 5. Call user session configuration completed endpoint
+      const configRes = await apiRouter.saveUserConfiguration(userId, {
+        message: 'configuration:completed',
+      })
+      if (configRes.error) {
+        showToast({
+          message: `Failed to save configuration status: ${configRes.error}`,
           variant: 'error',
         })
         setIsSaving(false)

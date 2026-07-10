@@ -480,8 +480,8 @@ export default function Attachments({
       {/* Header Row (Small top-right button when attachments exist) */}
       {canUpload && !isLoading && files.length > 0 && (
         <div className='mb-3 flex shrink-0 items-center justify-between'>
-          <h4 className='text-xs font-bold tracking-wider text-[var(--gray-10)] uppercase'>
-            All Attachments
+          <h4 className='text-xs font-bold tracking-wider text-[var(--gray-10)]'>
+            Attachments
           </h4>
           <button
             disabled={isUploading}

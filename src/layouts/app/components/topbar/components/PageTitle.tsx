@@ -7,6 +7,7 @@ import Title from '@/components/base/Title'
 import useDashboardStore from '@/pages/dashboard/stores/useDashboardStore'
 import requestStore from '@/pages/requests/stores/useRequestStore'
 import useWorkflowStore from '@/pages/workflows/stores/useWorkflowStore'
+import useSetupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 
 const PageTitle = () => {
   const matches = useMatches()
@@ -14,6 +15,7 @@ const PageTitle = () => {
     requestStore((state) => state)
   const { closeBuilder, isBuilderOpen } = useWorkflowStore((state) => state)
   const { role, setRole } = useDashboardStore()
+  const isApSetUpCompleted = useSetupStore((state) => state.isApSetUpCompleted)
 
   const current = matches[matches.length - 1]
   const isFormEntriesRoute = current?.routeId === '/_app/forms_/$formId/entries'
@@ -74,7 +76,7 @@ const PageTitle = () => {
     return (
       <div className='flex items-center gap-4'>
         <Title level={3} title={pageTitle} />
-        {pageTitle === 'Dashboard' && (
+        {pageTitle === 'Dashboard' && isApSetUpCompleted && (
           <div className='flex gap-0.5 rounded-lg border border-border-default bg-gray-2 p-1 dark:bg-gray-12'>
             <button
               className={`cursor-pointer rounded-md px-3.5 py-1 text-12 font-semibold transition-all duration-150 ${role === 'management'
