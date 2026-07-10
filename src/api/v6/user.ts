@@ -762,6 +762,42 @@ export const deleteMenu = async (menuId: string) => {
   return response
 }
 
+export const updateUserConfiguration = async (
+  userId: string,
+  payload: { message: string },
+) => {
+  const response: {
+    data: unknown
+    error: string
+  } = {
+    data: null,
+    error: '',
+  }
+
+  try {
+    const store = authUserStore.getState()
+    const tenantId = store.session?.tenantId || ''
+
+    const { data, status } = await axiosV6({
+      data: payload,
+      headers: tenantId ? { 'X-Tenant-Id': tenantId } : undefined,
+      method: 'POST',
+      url: `/Users/${userId}/configuration`,
+    })
+
+    if (status !== 200 && status !== 201) throw new Error('invalid status code')
+    response.data = data
+  } catch (error: any) {
+    console.error(error)
+    response.error = getV6ApiErrorMessage(
+      error?.response?.data,
+      'Failed to update user configuration',
+    )
+  }
+
+  return response
+}
+
 export const usersApiV6 = {
   createGroup,
   createMenu,
@@ -780,6 +816,7 @@ export const usersApiV6 = {
   updateMenu,
   updateRole,
   updateUser,
+  updateUserConfiguration,
 }
 
 export default usersApiV6

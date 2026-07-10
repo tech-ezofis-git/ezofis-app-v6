@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { useLocation, useNavigate } from '@tanstack/react-router'
+import { useLocation, useNavigate } from '@tanstack/react-router'
 import { useEffect } from 'react'
 import useSetupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import authApi from '@/api/auth'
@@ -11,6 +12,7 @@ import RequestDemoForm from './components/RequestDemoForm'
 import Sidebar from './components/sidebar/Sidebar'
 import Topbar from './components/topbar/Topbar'
 import useRequestDemoStore from './stores/useRequestDemoStore'
+import useSetupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 
 interface Props {
   children: ReactNode
@@ -39,7 +41,14 @@ const AppLayout = ({ children }: Props) => {
   useEffect(() => {
     const fetchSession = async () => {
       try {
-        await authApi.getSession()
+        const res = await authApi.getSession()
+        if (res?.data?.configuration === 0) {
+          useSetupStore.getState().setIsSetupStarted(true)
+          useSetupStore.getState().setisApSetUpCompleted(false)
+          navigate({ to: '/' })
+        } else if (res?.data?.configuration === 1) {
+          navigate({ to: '/requests' })
+        }
       } catch (err) {
         console.error('Failed to fetch session on app layout mount:', err)
       }
