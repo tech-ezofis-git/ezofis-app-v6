@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react'
 import { useLocation, useNavigate } from '@tanstack/react-router'
-import { useLocation, useNavigate } from '@tanstack/react-router'
 import { useEffect } from 'react'
 import useSetupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import authApi from '@/api/auth'
@@ -12,7 +11,6 @@ import RequestDemoForm from './components/RequestDemoForm'
 import Sidebar from './components/sidebar/Sidebar'
 import Topbar from './components/topbar/Topbar'
 import useRequestDemoStore from './stores/useRequestDemoStore'
-import useSetupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 
 interface Props {
   children: ReactNode
