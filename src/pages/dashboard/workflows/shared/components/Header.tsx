@@ -16,15 +16,15 @@ import {
   CartesianGrid,
 } from 'recharts'
 import {
-  Search,
+  // Search,
   ChevronDown,
   ChevronUp,
-  ChevronRight,
+  // ChevronRight,
   DollarSign,
   ClipboardList,
   X,
 } from 'lucide-react'
-import CustomFilter, { FilterDefinition, FilterGroup } from '@/components/common/CustomFilter'
+import CustomFilter from '@/components/common/CustomFilter'
 import useDashboardStore from '@/pages/dashboard/stores/useDashboardStore'
 import {
   getFilteredInvoices,

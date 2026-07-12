@@ -371,7 +371,7 @@ export default function History({
               h.description !== h.stage
 
             let matchBadge = null
-            let showDesc = !!hasDesc
+            // let showDesc = !!hasDesc
 
             if (isApAgent && hasDesc) {
               const descLower = safeLower(h.description)
@@ -380,19 +380,19 @@ export default function History({
                   label: 'Matched',
                   color: 'border-green-3 bg-green-1 text-green-9',
                 }
-                if (descLower.trim() === 'review: matched') showDesc = false
+                // if (descLower.trim() === 'review: matched') showDesc = false
               } else if (descLower.includes('partially matched')) {
                 matchBadge = {
                   label: 'Partially Matched',
                   color: 'border-orange-3 bg-orange-1 text-orange-9',
                 }
-                if (descLower.trim() === 'review: partially matched') showDesc = false
+                // if (descLower.trim() === 'review: partially matched') showDesc = false
               } else if (descLower.includes('not matched')) {
                 matchBadge = {
                   label: 'Not Matched',
                   color: 'border-red-3 bg-red-1 text-red-9',
                 }
-                if (descLower.trim() === 'review: not matched') showDesc = false
+                // if (descLower.trim() === 'review: not matched') showDesc = false
               }
             }
 

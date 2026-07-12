@@ -6,7 +6,7 @@ import { memo, useCallback, useEffect, useMemo, useState } from 'react'
 import type { TableActionButton } from '@/components/base/data-table/TableActionBar'
 import type { RowSize } from '@/components/base/data-table/types'
 import TableExport from '@/components/base/data-table/actions/TableExport'
-import TableFilters from '@/components/base/data-table/actions/TableFilters'
+// import TableFilters from '@/components/base/data-table/actions/TableFilters'
 import TableReload from '@/components/base/data-table/actions/TableReload'
 // ✅ Table Actions imports
 // import { generateDummySummary } from '@/pages/requests/utils/dummyData'
