@@ -73,7 +73,7 @@ export default function SuccessCelebration() {
     }
 
     // Populate initial rain particles
-    for (let i = 0; i < 40; i++) {
+    for (let i = 0; i < 15; i++) {
       particles.push(
         createParticle(canvas.width * Math.random(), canvas.height, true),
       )
@@ -81,7 +81,7 @@ export default function SuccessCelebration() {
 
     // Spawn corner bursts (velocity upwards and inwards)
     const spawnBurst = () => {
-      for (let i = 0; i < 12; i++) {
+      for (let i = 0; i < 5; i++) {
         // Left corner burst
         particles.push({
           color: COLORS[Math.floor(Math.random() * COLORS.length)],
@@ -118,7 +118,7 @@ export default function SuccessCelebration() {
     spawnBurst()
 
     // Periodically spawn bursts
-    const burstInterval = setInterval(spawnBurst, 800)
+    const burstInterval = setInterval(spawnBurst, 1500)
 
     const drawFlower = (c: CanvasRenderingContext2D, p: Particle) => {
       c.save()
@@ -127,9 +127,9 @@ export default function SuccessCelebration() {
       c.fillStyle = p.color
       c.globalAlpha = p.opacity
 
-      // Draw 5 petals using arcs (extremely robust cross-platform)
-      for (let i = 0; i < 5; i++) {
-        c.rotate((Math.PI * 2) / 5)
+      // Draw 4 petals using arcs (extremely robust cross-platform)
+      for (let i = 0; i < 4; i++) {
+        c.rotate((Math.PI * 2) / 4)
         c.beginPath()
         c.arc(0, p.size * 0.5, p.size * 0.4, 0, Math.PI * 2)
         c.fill()
@@ -204,17 +204,18 @@ export default function SuccessCelebration() {
 
   return (
     <div className='animate-in fade-in fixed inset-0 z-[9999] flex items-center justify-center bg-black/25 p-4 backdrop-blur-md duration-300'>
-      {/* Viewport-wide Canvas Confetti Shower */}
-      <canvas
-        className='pointer-events-none absolute inset-0 z-10 h-full w-full'
-        ref={canvasRef}
-      />
-
       {/* Center Glassmorphic Success Card */}
-      <div className='animate-in zoom-in-95 relative z-20 flex w-full max-w-md flex-col items-center rounded-2xl border border-border-default bg-surface-primary/90 p-8 text-center shadow-2xl backdrop-blur-lg duration-300 dark:bg-surface-secondary/90'>
-        <motion.div
-          animate={{ opacity: 1, scale: 1 }}
-          className='flex size-20 items-center justify-center rounded-full border border-green-3 bg-green-1 shadow-lg shadow-green-9/10 dark:bg-green-9/10'
+      <div className='animate-in zoom-in-95 relative z-20 flex w-full max-w-md flex-col items-center overflow-hidden rounded-2xl border border-border-default bg-surface-primary/90 p-8 text-center shadow-2xl backdrop-blur-lg duration-300 dark:bg-surface-secondary/90'>
+        {/* Card-contained Canvas Confetti Shower */}
+        <canvas
+          className='pointer-events-none absolute inset-0 z-0 h-full w-full'
+          ref={canvasRef}
+        />
+        
+        <div className='relative z-10 flex w-full flex-col items-center'>
+          <motion.div
+            animate={{ opacity: 1, scale: 1 }}
+            className='flex size-20 items-center justify-center rounded-full border border-green-3 bg-green-1 shadow-lg shadow-green-9/10 dark:bg-green-9/10'
           initial={{ opacity: 0, scale: 0.3 }}
           transition={{
             delay: 0.1,
@@ -269,6 +270,7 @@ export default function SuccessCelebration() {
           />
           <span>Loading request workspace...</span>
         </motion.div>
+        </div>
       </div>
     </div>
   )

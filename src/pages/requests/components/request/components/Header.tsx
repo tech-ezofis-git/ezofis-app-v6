@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { AnimatePresence, motion } from 'motion/react'
 import React from 'react'
 import { getUserListQueryOptions } from '@/api/userQueries'
@@ -138,6 +138,7 @@ const Header: React.FC<HeaderProps> = ({
   onPrev,
   onShare,
 }) => {
+  const queryClient = useQueryClient()
   const [showAIInsights, setShowAIInsights] = React.useState(false)
   const [showShare, setShowShare] = React.useState(false)
   const [shareSearch, setShareSearch] = React.useState('')
@@ -146,6 +147,9 @@ const Header: React.FC<HeaderProps> = ({
   const [sharedUsers, setSharedUsers] = React.useState<Set<string>>(new Set())
   const [globalShareRole, setGlobalShareRole] = React.useState<{ id: string, name: string }>({ id: 'View', name: 'View' })
   const [showRoleDropdown, setShowRoleDropdown] = React.useState(false)
+  const [openUserDropdown, setOpenUserDropdown] = React.useState<string | null>(null)
+  const [sendNotification, setSendNotification] = React.useState(true)
+  const [notifyAccessed, setNotifyAccessed] = React.useState(false)
   const [selectedUsersToShare, setSelectedUsersToShare] = React.useState<Record<string, { user: any, permission: string }>>({})
   const containerRef = React.useRef<HTMLDivElement>(null)
   const shareRef = React.useRef<HTMLDivElement>(null)
@@ -178,19 +182,11 @@ const Header: React.FC<HeaderProps> = ({
   }, [rawUsers, shareSearch, sharedUsers, ticketUserId])
 
   const shareRoleOptions = React.useMemo(() => {
-    const defaultOptions = [
+    return [
       { id: 'View', name: 'View' },
-      { id: 'Edit', name: 'Edit' },
+      { id: 'Manage', name: 'Manage' },
     ]
-    if (actions && actions.length > 0) {
-      actions.forEach((a: any) => {
-        if (a.label && a.label !== 'View' && a.label !== 'Edit') {
-          defaultOptions.push({ id: a.label, name: a.label })
-        }
-      })
-    }
-    return defaultOptions
-  }, [actions])
+  }, [])
 
   const getProgressStyles = (pct: number) => {
     if (pct < 100) {
@@ -258,6 +254,7 @@ const Header: React.FC<HeaderProps> = ({
       }
       return next
     })
+    setShareSearch('')
   }
 
   // const handlePermissionChange = (id: string, permission: 'View' | 'Verify' | 'Approve' | 'Paid') => {
@@ -300,6 +297,9 @@ const Header: React.FC<HeaderProps> = ({
         setShowShare(false)
         setShareSearch('')
         setShareMessage('')
+
+        queryClient.invalidateQueries({ queryKey: ['user-list'] })
+        queryClient.invalidateQueries({ queryKey: ['inbox'] })
       }
     } else {
       // Fallback
@@ -318,6 +318,9 @@ const Header: React.FC<HeaderProps> = ({
       setShowShare(false)
       setShareSearch('')
       setShareMessage('')
+
+      queryClient.invalidateQueries({ queryKey: ['user-list'] })
+      queryClient.invalidateQueries({ queryKey: ['inbox'] })
 
       showToast({
         message: 'Request shared successfully',
@@ -940,27 +943,37 @@ const Header: React.FC<HeaderProps> = ({
                                   Invited
                                 </span>
                               ) : isSelectedToShare ? (
-                                <select
-                                  className='cursor-pointer appearance-none rounded-md border border-[var(--gray-3)] bg-surface px-2.5 py-1 pr-6 text-[11px] font-semibold text-[var(--gray-12)] outline-none focus:border-[var(--primary-5)] focus:ring-1 focus:ring-[var(--primary-4)]'
-                                  style={{
-                                    backgroundImage: `url("data:image/svg+xml;charset=US-ASCII,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%23666'%3E%3Cpath fill-rule='evenodd' d='M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z' clip-rule='evenodd'/%3E%3C/svg%3E")`,
-                                    backgroundRepeat: 'no-repeat',
-                                    backgroundPosition: 'right 0.25rem center',
-                                    backgroundSize: '1rem',
-                                  }}
-                                  value={selectedUsersToShare[id]?.permission || globalShareRole.id}
-                                  onChange={(e) => {
-                                    setSelectedUsersToShare(prev => ({
-                                      ...prev,
-                                      [id]: { ...prev[id], permission: e.target.value }
-                                    }))
-                                  }}
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  {shareRoleOptions.map(opt => (
-                                    <option key={opt.id} value={opt.id}>{opt.name}</option>
-                                  ))}
-                                </select>
+                                <div className='relative shrink-0' onClick={(e) => e.stopPropagation()}>
+                                  <button
+                                    onClick={() => setOpenUserDropdown(openUserDropdown === id ? null : id)}
+                                    className='flex items-center gap-1 px-2.5 py-1 cursor-pointer text-[11px] font-semibold text-[var(--gray-12)] hover:bg-[var(--gray-2)] rounded-md border border-[var(--gray-3)] bg-surface transition-colors'
+                                  >
+                                    {shareRoleOptions.find(opt => opt.id === (selectedUsersToShare[id]?.permission || globalShareRole.id))?.name || (selectedUsersToShare[id]?.permission || globalShareRole.id)}
+                                    <Icon name='lucide:chevron-down' className='size-3 text-[var(--gray-9)]' />
+                                  </button>
+                                  {openUserDropdown === id && (
+                                    <div className='absolute right-0 top-full mt-1 z-[110] min-w-[100px] rounded-lg border border-[var(--gray-3)] bg-surface py-1 shadow-lg'>
+                                      {shareRoleOptions.map(opt => (
+                                        <button
+                                          key={opt.id}
+                                          className='w-full flex items-center justify-between text-left px-3 cursor-pointer py-1.5 text-[11px] font-medium hover:bg-[var(--gray-2)] transition-colors'
+                                          onClick={() => {
+                                            setSelectedUsersToShare(prev => ({
+                                              ...prev,
+                                              [id]: { ...prev[id], permission: opt.id }
+                                            }))
+                                            setOpenUserDropdown(null)
+                                          }}
+                                        >
+                                          <span>{opt.name}</span>
+                                          {(selectedUsersToShare[id]?.permission || globalShareRole.id) === opt.id && (
+                                            <Icon name='lucide:check' className='size-3.5 text-[var(--primary-9)]' />
+                                          )}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
                               ) : null}
                             </div>
                           </div>
@@ -978,17 +991,19 @@ const Header: React.FC<HeaderProps> = ({
 
                     return showFooter ? (
                       <div className='flex flex-col gap-3 border-t border-[var(--gray-2)] p-4 bg-surface'>
-                        <div className='flex items-center gap-2'>
-                          <InputCheckbox checked disabled />
-                          <span className='text-[13px] font-medium text-[var(--gray-13)]'>Send notification</span>
+                        <div className='flex items-center gap-2 cursor-pointer w-fit' onClick={() => setSendNotification(!sendNotification)}>
+                          <InputCheckbox checked={sendNotification} onChange={() => {}} className='cursor-pointer' />
+                          <span className='text-[13px] font-medium text-[var(--gray-13)] select-none'>Send notification</span>
                         </div>
-                        <textarea
-                          className='w-full rounded-lg border border-[var(--gray-3)] bg-surface p-2.5 text-[13px] font-medium text-[var(--gray-13)] placeholder:text-[var(--gray-8)] focus:border-[var(--primary-5)] focus:outline-none focus:ring-1 focus:ring-[var(--primary-4)] transition-all'
-                          placeholder='Add message (optional)'
-                          rows={3}
-                          value={shareMessage}
-                          onChange={(e) => setShareMessage(e.target.value)}
-                        />
+                        {sendNotification && (
+                          <textarea
+                            className='w-full rounded-lg border border-[var(--gray-3)] bg-surface p-2.5 text-[13px] font-medium text-[var(--gray-13)] placeholder:text-[var(--gray-8)] focus:border-[var(--primary-5)] focus:outline-none focus:ring-1 focus:ring-[var(--primary-4)] transition-all'
+                            placeholder='Add message (optional)'
+                            rows={3}
+                            value={shareMessage}
+                            onChange={(e) => setShareMessage(e.target.value)}
+                          />
+                        )}
                         <button
                           type='button'
                           onClick={handleBulkShare}
@@ -1002,6 +1017,32 @@ const Header: React.FC<HeaderProps> = ({
                         >
                           {isSharing ? 'Sharing...' : 'Share'}
                         </button>
+
+                        <div className='mt-2 border-t border-[var(--gray-2)] pt-3 flex items-center justify-between'>
+                          <div className='flex items-center gap-1.5'>
+                            <Icon name='lucide:info' className='size-3.5 text-[var(--gray-13)]' />
+                            <span className='text-[13px] font-medium text-[var(--gray-13)]'>Notify me when accessed</span>
+                            <span className='rounded-full bg-[#8c52ff] px-1.5 py-0.5 text-[10px] font-bold leading-none text-white ml-0.5'>New</span>
+                          </div>
+                          
+                          <button
+                            type='button'
+                            role='switch'
+                            aria-checked={notifyAccessed}
+                            onClick={() => setNotifyAccessed(!notifyAccessed)}
+                            className={cn(
+                              'relative inline-flex h-[20px] w-[36px] shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none',
+                              notifyAccessed ? 'bg-[#8c52ff]' : 'bg-[var(--gray-5)]'
+                            )}
+                          >
+                            <span
+                              className={cn(
+                                'pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out',
+                                notifyAccessed ? 'translate-x-4' : 'translate-x-0'
+                              )}
+                            />
+                          </button>
+                        </div>
                       </div>
                     ) : null;
                   })()}

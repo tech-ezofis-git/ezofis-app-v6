@@ -24,6 +24,7 @@ import {
   ClipboardList,
   X,
 } from 'lucide-react'
+import CustomFilter, { FilterDefinition, FilterGroup } from '@/components/common/CustomFilter'
 import useDashboardStore from '@/pages/dashboard/stores/useDashboardStore'
 import {
   getFilteredInvoices,
@@ -56,16 +57,11 @@ export default function DashboardCharts() {
     setSearchQuery, setDrillSupplier, setDrillAgingBucket, setDrillStatus, resetFilters,
   } = useDashboardStore()
 
-  const [activeFilterDropdown, setActiveFilterDropdown] = React.useState<'suppliers' | 'statuses' | 'currencies' | 'more' | 'timeframes' | null>(null)
-  const [activeFilterGroup, setActiveFilterGroup] = React.useState<'status' | 'amount'>('status')
-  const [filterSearchQuery, setFilterSearchQuery] = React.useState('')
   const [expandedInvoiceId, setExpandedInvoiceId] = React.useState<string | null>(null)
   const [isCommandCenterExpanded, setIsCommandCenterExpanded] = React.useState(true)
   const [isTodayActionExpanded, setIsTodayActionExpanded] = React.useState(false)
   const [isProcessingExpanded, setIsProcessingExpanded] = React.useState(false)
   const [isSupplierFollowUpExpanded, setIsSupplierFollowUpExpanded] = React.useState(false)
-  const [isSearchExpanded, setIsSearchExpanded] = React.useState(false)
-  const searchInputRef = React.useRef<HTMLInputElement>(null)
 
   const filteredInvoices = React.useMemo(() => getFilteredInvoices({ timeframe, supplierCategory, invoiceStatus, currency, searchQuery }), [timeframe, supplierCategory, invoiceStatus, currency, searchQuery])
   const metrics = React.useMemo(() => getDashboardMetrics(filteredInvoices, timeframe), [filteredInvoices, timeframe])
@@ -76,19 +72,7 @@ export default function DashboardCharts() {
     setActiveDrill(activeDrill === kpiName ? null : kpiName)
   }
 
-  const filtersRef = React.useRef<HTMLDivElement>(null)
 
-  React.useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (filtersRef.current && !filtersRef.current.contains(event.target as Node)) {
-        setActiveFilterDropdown(null)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [])
 
   React.useEffect(() => {
     if (!isCommandCenterExpanded && activeDrill === 'Total Outstanding Payables') {
@@ -158,229 +142,90 @@ export default function DashboardCharts() {
     <div className="flex flex-col gap-4 p-6">
 
       {/* 1. QUICK FILTERS ROW */}
-      <div ref={filtersRef} className="flex flex-wrap items-center gap-2.5 rounded-lg border border-border-default bg-surface p-3 shadow-xs">
-        <span className="text-12 font-semibold text-text-primary mr-1">Filters:</span>
-
-        {/* Timeframe dropdown chip */}
-        <div className="relative">
-          <button
-            className={cn(
-              "cursor-pointer rounded-full border px-3.5 py-1 text-12 font-medium transition-all hover:bg-gray-3 dark:hover:bg-gray-10 flex items-center gap-1.5",
-              timeframe || activeFilterDropdown === 'timeframes'
-                ? "border-primary-9 bg-primary-3/50 text-primary-9"
-                : "border-border-default bg-surface text-text-secondary"
-            )}
-            onClick={() => {
-              setActiveFilterDropdown(activeFilterDropdown === 'timeframes' ? null : 'timeframes')
-              setFilterSearchQuery('')
-            }}
-          >
-            <span>
-              {timeframe === 'today' && 'Today'}
-              {timeframe === 'week' && 'This Week'}
-              {timeframe === 'month' && 'This Month'}
-              {timeframe === 'lastmonth' && 'Last Month'}
-              {timeframe === 'quarter' && 'Quarter'}
-              {timeframe === 'fy' && 'Financial Year'}
-              {!timeframe && 'Timeframe'}
-            </span>
-            <ChevronDown className="h-3 w-3 opacity-60" />
-          </button>
-          {activeFilterDropdown === 'timeframes' && (
-            <div className="absolute z-30 top-full left-0 mt-1.5 w-[200px] rounded-lg border border-border-default bg-surface p-3 shadow-xs animate-in fade-in slide-in-from-top-2">
-              <div className="flex flex-col gap-0.5 max-h-[220px] overflow-y-auto scrollbar">
-                {[
-                  { label: 'Today', key: 'today' },
-                  { label: 'This Week', key: 'week' },
-                  { label: 'This Month', key: 'month' },
-                  { label: 'Last Month', key: 'lastmonth' },
-                  { label: 'Quarter', key: 'quarter' },
-                  { label: 'Financial Year', key: 'fy' }
-                ].map(item => (
-                  <button
-                    key={item.key}
-                    className={cn(
-                      "w-full rounded px-2.5 py-1.5 text-12 font-medium text-left cursor-pointer transition-colors text-text-primary hover:bg-gray-2",
-                      timeframe === item.key && "bg-primary-3/30 text-primary-9 font-semibold"
-                    )}
-                    onClick={() => {
-                      setTimeframe(item.key as any)
-                      setActiveFilterDropdown(null)
-                    }}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Dropdown pills */}
-        <div className="flex flex-wrap gap-1.5">
-
-          {/* Suppliers */}
-          <div className="relative">
-            <button className={cn("cursor-pointer rounded-full border px-3.5 py-1 text-12 font-medium transition-all hover:bg-gray-3 dark:hover:bg-gray-10 flex items-center gap-1.5", supplierCategory || activeFilterDropdown === 'suppliers' ? "border-primary-9 bg-primary-3/50 text-primary-9" : "border-border-default bg-surface text-text-secondary")} onClick={() => { setActiveFilterDropdown(activeFilterDropdown === 'suppliers' ? null : 'suppliers'); setFilterSearchQuery('') }}>
-              <span> {supplierCategory || 'Suppliers'}</span>
-              <ChevronDown className="h-3 w-3 opacity-60" />
-            </button>
-            {activeFilterDropdown === 'suppliers' && (
-              <div className="absolute z-30 top-full left-0 mt-1.5 w-[240px] rounded-lg border border-border-default bg-surface p-3 shadow-xs animate-in fade-in slide-in-from-top-2">
-                <div className="relative mb-2">
-                  <Search className="absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-text-muted" />
-                  <input className="w-full rounded-lg border border-border-default bg-gray-2 py-1 pr-3 pl-8 text-11 text-text-primary outline-none" placeholder="Search supplier..." type="text" value={filterSearchQuery} onChange={e => setFilterSearchQuery(e.target.value)} />
-                </div>
-                <div className="h-px bg-border-default -mx-3 my-2" />
-                <div className="flex flex-col gap-0.5 max-h-[180px] overflow-y-auto scrollbar">
-                  <button className={cn("w-full rounded px-2.5 py-1.5 text-12 font-medium text-left cursor-pointer transition-colors text-text-primary hover:bg-gray-2", !supplierCategory && "bg-primary-3/30 text-primary-9 font-semibold")} onClick={() => { setSupplierCategory(''); setActiveFilterDropdown(null) }}>🏢 All Suppliers</button>
-                  {Array.from(new Set(suppliers.map(s => s.category))).map(cat => (
-                    <button key={cat} className={cn("w-full rounded px-2.5 py-1.5 text-12 font-medium text-left cursor-pointer transition-colors text-text-primary hover:bg-gray-2", supplierCategory === cat && "bg-primary-3/30 text-primary-9 font-semibold")} onClick={() => { setSupplierCategory(cat); setActiveFilterDropdown(null) }}>{cat}</button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Statuses */}
-          <div className="relative">
-            <button className={cn("cursor-pointer rounded-full border px-3.5 py-1 text-12 font-medium transition-all hover:bg-gray-3 dark:hover:bg-gray-10 flex items-center gap-1.5", invoiceStatus || activeFilterDropdown === 'statuses' ? "border-primary-9 bg-primary-3/50 text-primary-9" : "border-border-default bg-surface text-text-secondary")} onClick={() => { setActiveFilterDropdown(activeFilterDropdown === 'statuses' ? null : 'statuses'); setFilterSearchQuery('') }}>
-              <span> {invoiceStatus === 'Pending' ? 'Partially Approved' : (invoiceStatus || 'Statuses')}</span>
-              {/* 📋 */}
-              <ChevronDown className="h-3 w-3 opacity-60" />
-            </button>
-            {activeFilterDropdown === 'statuses' && (
-              <div className="absolute z-30 top-full left-0 mt-1.5 w-[240px] rounded-lg border border-border-default bg-surface p-3 shadow-xs animate-in fade-in slide-in-from-top-2">
-                <div className="relative mb-2">
-                  <Search className="absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-text-muted" />
-                  <input className="w-full rounded-lg border border-border-default bg-gray-2 py-1 pr-3 pl-8 text-11 text-text-primary outline-none" placeholder="Search status..." type="text" value={filterSearchQuery} onChange={e => setFilterSearchQuery(e.target.value)} />
-                </div>
-                <div className="h-px bg-border-default -mx-3 my-2" />
-                <div className="flex flex-col gap-0.5 max-h-[180px] overflow-y-auto scrollbar">
-                  {[{ label: 'Approved', val: 'Approved' }, { label: 'Partially Approved', val: 'Pending' }, { label: 'Rejected', val: 'Rejected' }, { label: 'Paid', val: 'Paid' }, { label: 'Processing', val: 'Processing' }, { label: 'Hold', val: 'Hold' }].filter(item => item.label.toLowerCase().includes(filterSearchQuery.toLowerCase())).map(item => (
-                    <button key={item.label} className={cn("w-full rounded px-2.5 py-1.5 text-12 font-medium text-left cursor-pointer transition-colors text-text-primary hover:bg-gray-2", invoiceStatus === item.val && "bg-primary-3/30 text-primary-9 font-semibold")} onClick={() => { setInvoiceStatus(item.val); setActiveFilterDropdown(null) }}>{item.label}</button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Currencies */}
-          <div className="relative">
-            <button className={cn("cursor-pointer rounded-full border px-3.5 py-1 text-12 font-medium transition-all hover:bg-gray-3 dark:hover:bg-gray-10 flex items-center gap-1.5", currency || activeFilterDropdown === 'currencies' ? "border-primary-9 bg-primary-3/50 text-primary-9" : "border-border-default bg-surface text-text-secondary")} onClick={() => { setActiveFilterDropdown(activeFilterDropdown === 'currencies' ? null : 'currencies'); setFilterSearchQuery('') }}>
-              <span> {currency || 'Currencies'}</span>
-              <ChevronDown className="h-3 w-3 opacity-60" />
-            </button>
-            {activeFilterDropdown === 'currencies' && (
-              <div className="absolute z-30 top-full left-0 mt-1.5 w-[240px] rounded-lg border border-border-default bg-surface p-3 shadow-xs animate-in fade-in slide-in-from-top-2">
-                <div className="relative mb-2">
-                  <Search className="absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-text-muted" />
-                  <input className="w-full rounded-lg border border-border-default bg-gray-2 py-1 pr-3 pl-8 text-11 text-text-primary outline-none" placeholder="Search currency..." type="text" value={filterSearchQuery} onChange={e => setFilterSearchQuery(e.target.value)} />
-                </div>
-                <div className="h-px bg-border-default -mx-3 my-2" />
-                <div className="flex flex-col gap-0.5 max-h-[180px] overflow-y-auto scrollbar">
-                  <button className={cn("w-full rounded px-2.5 py-1.5 text-12 font-medium text-left cursor-pointer transition-colors text-text-primary hover:bg-gray-2", !currency && "bg-primary-3/30 text-primary-9 font-semibold")} onClick={() => { setCurrency(''); setActiveFilterDropdown(null) }}>$ All Currencies</button>
-                  {['USD', 'EUR', 'INR', 'GBP'].filter(ccy => ccy.toLowerCase().includes(filterSearchQuery.toLowerCase())).map(ccy => (
-                    <button key={ccy} className={cn("w-full rounded px-2.5 py-1.5 text-12 font-medium text-left cursor-pointer transition-colors text-text-primary hover:bg-gray-2", currency === ccy && "bg-primary-3/30 text-primary-9 font-semibold")} onClick={() => { setCurrency(ccy); setActiveFilterDropdown(null) }}>{ccy}</button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* More Filters */}
-          <div className="relative">
-            <button className={cn("cursor-pointer rounded-full border px-3.5 py-1 text-12 font-medium transition-all hover:bg-gray-3 dark:hover:bg-gray-10 flex items-center gap-1.5", activeFilterDropdown === 'more' ? "border-primary-9 bg-primary-3/50 text-primary-9" : "border-border-default bg-surface text-text-secondary")} onClick={() => { setActiveFilterDropdown(activeFilterDropdown === 'more' ? null : 'more'); setFilterSearchQuery('') }}>
-              <span> More filters</span>
-              {/* ⚙ */}
-              <ChevronDown className="h-3 w-3 opacity-60" />
-            </button>
-            {activeFilterDropdown === 'more' && (
-              <div className="absolute z-30 top-full left-0 mt-1.5 flex rounded-lg border border-border-default bg-surface shadow-xs overflow-hidden animate-in fade-in slide-in-from-top-2">
-                <div className="flex flex-col w-[190px] bg-primary-3/30 border-r border-border-default p-1 dark:bg-gray-12">
-                  {[{ id: 'status', label: 'Request Status', icon: ClipboardList }, { id: 'amount', label: 'PO Amount', icon: DollarSign }].map(group => {
-                    const IconComp = group.icon
-                    const isActive = activeFilterGroup === group.id
-                    return (
-                      <button key={group.id} className={cn("flex items-center justify-between w-full rounded-lg px-3 py-2.5 text-12 font-medium text-left transition-all cursor-pointer", isActive ? "bg-primary-3 text-primary-9 dark:bg-primary-9 dark:text-white" : "text-text-secondary hover:bg-gray-2 dark:hover:bg-gray-10")} onClick={() => { setActiveFilterGroup(group.id as any); setFilterSearchQuery('') }}>
-                        <span className="flex items-center gap-2"><IconComp className="h-4 w-4" /><span>{group.label}</span></span>
-                        <ChevronRight className="h-3 w-3 opacity-60" />
-                      </button>
-                    )
-                  })}
-                </div>
-                <div className="flex flex-col w-[260px] p-3 gap-2.5 bg-surface">
-                  {activeFilterGroup === 'status' && (
-                    <>
-                      <div className="relative"><Search className="absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-text-muted" /><input className="w-full rounded-lg border border-border-default bg-gray-2 py-1 pr-3 pl-8 text-11 text-text-primary outline-none" placeholder="Search status..." type="text" value={filterSearchQuery} onChange={e => setFilterSearchQuery(e.target.value)} /></div>
-                      <div className="flex flex-col gap-0.5 mt-1 max-h-[160px] overflow-y-auto scrollbar">
-                        {[{ label: 'Approved', val: 'Approved' }, { label: 'Partially Approved', val: 'Pending' }, { label: 'Rejected', val: 'Rejected' }].filter(item => item.label.toLowerCase().includes(filterSearchQuery.toLowerCase())).map(item => (
-                          <button key={item.label} className={cn("w-full rounded px-2.5 py-1.5 text-12 font-medium text-left cursor-pointer transition-colors text-text-primary hover:bg-gray-2", invoiceStatus === item.val ? "bg-primary-3/30 text-primary-9 font-semibold" : "text-text-secondary hover:bg-gray-2")} onClick={() => { setInvoiceStatus(item.val); setActiveFilterDropdown(null) }}>{item.label}</button>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                  {activeFilterGroup === 'amount' && (
-                    <>
-                      <div className="text-11 font-semibold text-text-muted mb-1">Filter by PO Amount</div>
-                      <div className="flex flex-col gap-2">
-                        <button className="w-full rounded px-2.5 py-1.5 text-12 font-medium text-left hover:bg-gray-2 cursor-pointer text-text-secondary" onClick={() => { setSearchQuery('amount > 100000'); setActiveFilterDropdown(null) }}>High Value (&gt; $100K)</button>
-                        <button className="w-full rounded px-2.5 py-1.5 text-12 font-medium text-left hover:bg-gray-2 cursor-pointer text-text-secondary" onClick={() => { setSearchQuery('amount < 1000'); setActiveFilterDropdown(null) }}>Low Value (&lt; $1K)</button>
-                      </div>
-                    </>
-                  )}
-
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {(timeframe !== 'fy' || supplierCategory || invoiceStatus || currency || searchQuery) && (
-          <button className="cursor-pointer rounded-full border border-border-default bg-gray-2 px-3.5 py-1 text-12 font-medium text-text-secondary transition-all hover:bg-gray-3" onClick={() => { resetFilters(); setActiveFilterDropdown(null) }}>Reset</button>
-        )}
-
-        <div className="flex-1" />
-        <div
-          className={cn(
-            "relative flex items-center justify-end transition-all duration-300",
-            isSearchExpanded || searchQuery ? "w-60" : "w-8"
-          )}
-        >
-          <button
-            type="button"
-            className={cn(
-              "absolute left-0 top-0 bottom-0 flex items-center justify-center transition-all duration-300 rounded-full",
-              isSearchExpanded || searchQuery
-                ? "w-8 pointer-events-none"
-                : "w-8 h-8 cursor-pointer hover:bg-gray-2 dark:hover:bg-gray-10 border border-border-default bg-surface"
-            )}
-            onClick={() => {
-              setIsSearchExpanded(true)
-              setTimeout(() => searchInputRef.current?.focus(), 50)
-            }}
-          >
-            <Search className="h-3.5 w-3.5 text-text-muted" />
-          </button>
-          <input
-            ref={searchInputRef}
-            className={cn(
-              "rounded-full border border-border-default bg-surface py-1.5 text-12 text-text-primary outline-none transition-all duration-300 focus:border-primary-9 focus:ring-1 focus:ring-primary-9",
-              isSearchExpanded || searchQuery
-                ? "w-full pr-4 pl-8 opacity-100"
-                : "w-0 pr-0 pl-0 opacity-0 border-transparent pointer-events-none"
-            )}
-            placeholder="Search invoice, supplier, PO..."
-            type="text"
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            onFocus={() => setIsSearchExpanded(true)}
-            onBlur={() => {
-              if (!searchQuery) setIsSearchExpanded(false)
-            }}
-          />
-        </div>
-      </div>
+      <CustomFilter
+        filters={[
+          {
+            id: 'timeframe',
+            label: 'Timeframe',
+            options: [
+              { label: 'Today', value: 'today' },
+              { label: 'This Week', value: 'week' },
+              { label: 'This Month', value: 'month' },
+              { label: 'Last Month', value: 'lastmonth' },
+              { label: 'Quarter', value: 'quarter' },
+              { label: 'Financial Year', value: 'fy' }
+            ]
+          },
+          {
+            id: 'supplierCategory',
+            label: 'Suppliers',
+            searchable: true,
+            searchPlaceholder: 'Search supplier...',
+            options: Array.from(new Set(suppliers.map(s => s.category))).map(cat => ({ label: cat, value: cat }))
+          },
+          {
+            id: 'invoiceStatus',
+            label: 'Statuses',
+            searchable: true,
+            searchPlaceholder: 'Search status...',
+            options: [
+              { label: 'Approved', value: 'Approved' },
+              { label: 'Partially Approved', value: 'Pending' },
+              { label: 'Rejected', value: 'Rejected' },
+              { label: 'Paid', value: 'Paid' },
+              { label: 'Processing', value: 'Processing' },
+              { label: 'Hold', value: 'Hold' }
+            ]
+          },
+          {
+            id: 'currency',
+            label: 'Currencies',
+            searchable: true,
+            searchPlaceholder: 'Search currency...',
+            options: ['USD', 'EUR', 'INR', 'GBP'].map(c => ({ label: c, value: c }))
+          }
+        ]}
+        moreFilters={[
+          {
+            id: 'status',
+            label: 'Request Status',
+            icon: ClipboardList,
+            options: [
+              { label: 'Approved', value: 'Approved' },
+              { label: 'Partially Approved', value: 'Pending' },
+              { label: 'Rejected', value: 'Rejected' }
+            ]
+          },
+          {
+            id: 'amount',
+            label: 'PO Amount',
+            icon: DollarSign,
+            actions: [
+              { label: 'High Value (> $100K)', value: 'amount > 100000' },
+              { label: 'Low Value (< $1K)', value: 'amount < 1000' }
+            ]
+          }
+        ]}
+        activeFilters={{
+          timeframe: timeframe || '',
+          supplierCategory: supplierCategory || '',
+          invoiceStatus: invoiceStatus || '',
+          currency: currency || '',
+          status: invoiceStatus || '',
+        }}
+        onFilterChange={(id, value) => {
+          if (id === 'timeframe') setTimeframe(value as any)
+          else if (id === 'supplierCategory') setSupplierCategory(value)
+          else if (id === 'invoiceStatus' || id === 'status') setInvoiceStatus(value)
+          else if (id === 'currency') setCurrency(value)
+          else if (id === 'amount') setSearchQuery(value)
+        }}
+        showReset={!!(timeframe !== 'fy' || supplierCategory || invoiceStatus || currency || searchQuery)}
+        onReset={() => resetFilters()}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Search invoice, supplier, PO..."
+      />
 
       {/* 2. AP COMMAND CENTER BANNER */}
       <div

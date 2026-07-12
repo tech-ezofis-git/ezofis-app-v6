@@ -9,7 +9,6 @@ import TableExport from '@/components/base/data-table/actions/TableExport'
 import TableFilters from '@/components/base/data-table/actions/TableFilters'
 import TableReload from '@/components/base/data-table/actions/TableReload'
 // ✅ Table Actions imports
-import TableSearch from '@/components/base/data-table/actions/TableSearch'
 // import { generateDummySummary } from '@/pages/requests/utils/dummyData'
 // import SummaryBadge from '@/components/common/SummaryBadge'
 import Icon from '@/components/base/icon/Icon'
@@ -823,6 +822,7 @@ const RowStatusBadge = ({
 
   if (
     formatted.toLowerCase() === 'rejected' ||
+    formatted.toLowerCase() === 'not matched' ||
     formatted.toLowerCase() === 'no match'
   ) {
     return (
@@ -1577,8 +1577,7 @@ const GridView = <TData,>({
               </motion.div>
             ) : (
               <>
-                <TableSearch table={table} />
-                <TableFilters table={table} />
+                {/* <TableFilters table={table} /> */}
                 <TableExport table={table} />
                 <TableReload
                   isReloading={isReloading || false}

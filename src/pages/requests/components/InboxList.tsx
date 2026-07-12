@@ -7,7 +7,8 @@ import type { TableGroup, WorkflowOption } from '../types'
 import requestStore from '../stores/useRequestStore'
 import { useDynamicColumns } from './columns/useDynamicColumns'
 import GridView from './GridView'
-import QuickFilters from './QuickFilters'
+import CustomFilter from '@/components/common/CustomFilter'
+import TableSearch from '@/components/base/data-table/actions/TableSearch'
 // import TableActionBar, { type TableActionButton } from '@/components/base/data-table/TableActionBar'
 // import { getGroupedRowModel } from '@tanstack/react-table'
 
@@ -358,18 +359,20 @@ const filterRowsByQuickFilters = (
           if (val === 'APPROVED' || val === 'MATCHED') {
             return rawDecision === 'APPROVED' || rawDecision === 'MATCHED'
           }
-          if (val === 'PARTIALLY APPROVED' || val === 'PARTIALLY MATCHED') {
+          if (val === 'PARTIALLY APPROVED' || val === 'PARTIALLY MATCHED' || val === 'PENDING') {
             return (
               rawDecision === 'PARTIALLY APPROVED' ||
               rawDecision === 'PARTIALLY MATCHED' ||
-              rawDecision === 'PARTIALLY_APPROVED'
+              rawDecision === 'PARTIALLY_APPROVED' ||
+              rawDecision === 'PENDING'
             )
           }
-          if (val === 'NOT MATCHED') {
+          if (val === 'NOT MATCHED' || val === 'REJECTED') {
             return (
               rawDecision === 'NOT MATCHED' ||
               rawDecision === 'NO MATCH' ||
-              rawDecision === 'NO_MATCH'
+              rawDecision === 'NO_MATCH' ||
+              rawDecision === 'REJECTED'
             )
           }
           return rawDecision === val
@@ -771,6 +774,46 @@ const InboxList: React.FC<InboxListProps> = ({
     return { discrepancies, highValue, matched, overdue }
   }, [flatRows, activeQuickFilters])
 
+  const supplierNames = useMemo(() => {
+    const set = new Set<string>()
+    flatRows.forEach((row: any) => {
+      const name = findSupplierName(row) || row?.vendor || row?.raisedBy
+      if (name && name !== 'Unknown Supplier' && name !== '-') {
+        set.add(name)
+      }
+    })
+    return Array.from(set).sort((a, b) => a.localeCompare(b))
+  }, [flatRows])
+
+  const activeFiltersMap = useMemo(() => {
+    const map: Record<string, string> = {}
+    activeQuickFilters.forEach(f => {
+      if (f.startsWith('status:')) map.status = f.split(':')[1]
+      if (f.startsWith('amount:')) map.amount = f.split(':')[1]
+      if (f.startsWith('supplier:')) map.supplier = f.split(':')[1]
+      if (f === 'matched') map.status = 'Approved'
+      if (f === 'discrepancies') map.status = 'Rejected'
+      if (f === 'highValue') map.amount = 'ge10k'
+    })
+    return map
+  }, [activeQuickFilters])
+
+  const handleFilterChange = (id: string, value: string) => {
+    const store = requestStore.getState()
+    const newFilters = store.activeQuickFilters.filter(f => !f.startsWith(`${id}:`) && !['matched', 'discrepancies', 'highValue', 'overdue'].includes(f))
+    
+    if (value) {
+      if (id === 'status' && value === 'Pending') {
+        newFilters.push(`status:Partially Approved`)
+      } else {
+        newFilters.push(`${id}:${value}`)
+      }
+    }
+    
+    store.clearQuickFilters()
+    newFilters.forEach(f => store.toggleQuickFilter(f))
+  }
+
   const quickFilteredRows = useMemo(() => {
     if (activeTab !== 'Inbox' || activeQuickFilters.length === 0) {
       return flatRows
@@ -1024,9 +1067,52 @@ const InboxList: React.FC<InboxListProps> = ({
   return (
     <div className='bg-primary flex min-h-0 flex-1 flex-col overflow-hidden px-6 py-2 md:px-6'>
       {!selectedItem && activeTab === 'Inbox' && (
-        <QuickFilters counts={counts} data={flatRows} />
+        <CustomFilter
+          filters={[
+            {
+              id: 'status',
+              label: 'Request Status',
+              searchable: true,
+              searchPlaceholder: 'Search status...',
+              options: [
+                { label: 'Matched', value: 'Approved' },
+                { label: 'Partially Matched', value: 'Pending' },
+                { label: 'Not Matched', value: 'Rejected' },
+              ]
+            },
+            {
+              id: 'supplier',
+              label: 'Supplier',
+              searchable: true,
+              searchPlaceholder: 'Search suppliers...',
+              options: supplierNames.map(name => ({ label: name, value: name }))
+            }
+          ]}
+          moreFilters={[
+            {
+              id: 'amount',
+              label: 'PO Amount',
+              actions: [
+                { label: '< $1k', value: 'lt1k' },
+                { label: '$1k - $5k', value: '1k_5k' },
+                { label: '$5k - $10k', value: '5k_10k' },
+                { label: '≥ $10k', value: 'ge10k' },
+              ]
+            }
+          ]}
+          activeFilters={activeFiltersMap}
+          onFilterChange={handleFilterChange}
+          showReset={activeQuickFilters.length > 0}
+          onReset={() => requestStore.getState().clearQuickFilters()}
+          searchQuery={searchState?.value || ''}
+          onSearchChange={(val) => {
+            if (setSearchState) setSearchState({ id: '', value: val })
+          }}
+          searchPlaceholder="Search invoice, supplier, PO..."
+          customSearchComponent={<TableSearch table={table as any} />}
+        />
       )}
-      <div className='relative flex min-h-0 w-full flex-1 flex-col'>
+      <div className='relative flex min-h-0 w-full flex-1 flex-col mt-2'>
         <div className='flex h-full w-full gap-3'>
           {/* Left */}
           {!selectedItem && viewMode === 'table' && (

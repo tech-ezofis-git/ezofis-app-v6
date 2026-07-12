@@ -1062,30 +1062,12 @@ const SummarySkeleton = () => (
 
 const skeletonRows = ['skeleton-row-0', 'skeleton-row-1', 'skeleton-row-2']
 const LINE_ITEM_LEFT_WIDTHS = [60, 100, 100]
-const LINE_ITEM_AMOUNT_WIDTH = 110
-const LINE_ITEM_SCORE_WIDTH = 50
+const LINE_ITEM_AMOUNT_WIDTH = 105
+const LINE_ITEM_SCORE_WIDTH = 65
 const LINE_ITEM_ACTION_WIDTH = 38
 const LINE_ITEM_DEFAULT_WIDTH = 50
 
-const getStickyLeftOffset = (index: number) =>
-  LINE_ITEM_LEFT_WIDTHS.slice(0, index).reduce((sum, width) => sum + width, 0)
 
-const getLineItemColumnWidth = (index: number, isNumeric = false) =>
-  LINE_ITEM_LEFT_WIDTHS[index] || (isNumeric ? 90 : LINE_ITEM_DEFAULT_WIDTH)
-
-const getLineItemCellStyle = (
-  index: number,
-  isNumeric = false,
-): CSSProperties => {
-  const width = getLineItemColumnWidth(index, isNumeric)
-  const style: CSSProperties = { maxWidth: width, minWidth: width, width }
-
-  if (index < 2) {
-    style.left = getStickyLeftOffset(index)
-  }
-
-  return style
-}
 
 const getLineItemStickyClass = (
   index: number,
@@ -1093,7 +1075,8 @@ const getLineItemStickyClass = (
 ): string =>
   cn(
     'relative before:absolute before:top-0 before:left-0 before:h-full before:w-px before:bg-[var(--gray-3)]',
-    index < 2 && cn('sticky z-20', bgClass)
+    index < 2 && cn('sticky z-20', bgClass),
+    index === 1 && 'after:absolute after:top-0 after:right-0 after:h-full after:w-px after:bg-[var(--gray-3)] shadow-[2px_0_5px_rgba(0,0,0,0.03)]'
   )
 
 const getRightStickyStyle = (right: number, width: number): CSSProperties => ({
@@ -1947,6 +1930,69 @@ const Overview = (props: any) => {
       setLineItems([])
     }
   }, [rawLineItems])
+
+  const dynamicWidths = useMemo(() => {
+    if (!lineItems || lineItems.length === 0) return [60, 100, 100];
+    const widths: number[] = [];
+    if (isDynamicTable && dynamicColumns) {
+      dynamicColumns.forEach((colKey: string, index: number) => {
+        let maxChars = colKey.length;
+        if (colKey.toLowerCase().includes('line')) maxChars = 2;
+        if (colKey.toLowerCase() === 'uom') maxChars = 4;
+        lineItems.forEach((item: any) => {
+          const val = item[colKey]?.['Invoice Value'] ?? item[colKey] ?? '';
+          const str = String(val);
+          if (str.length > maxChars) maxChars = str.length;
+        });
+        
+        if (colKey.toLowerCase().includes('line')) {
+           widths[index] = Math.max(65, Math.ceil(maxChars * 8.0) + 24);
+        } else {
+           widths[index] = Math.max(40, Math.ceil(maxChars * 8.0) + 24); 
+        }
+      });
+    } else {
+      const cols = ['no', 'description', 'quantity', 'rate'];
+      cols.forEach((col: string, index: number) => {
+        let maxChars = col.length;
+        if (col === 'no') maxChars = 2; // Keep line no smaller
+        lineItems.forEach((item: any) => {
+          let val = '';
+          if (col === 'description') val = item.Description?.['Invoice Value'] ?? item.description ?? item.item_no ?? item.itemNo ?? '';
+          else if (col === 'quantity') val = item.Quantity?.['Invoice Value'] ?? item.quantity ?? '';
+          else if (col === 'rate') val = item.Price?.['Invoice Value'] ?? item.rate ?? item.unit_price ?? item.price ?? '';
+          const str = String(val);
+          if (str.length > maxChars) maxChars = str.length;
+        });
+        if (col === 'description') {
+           widths[index] = Math.max(120, Math.ceil(maxChars * 8.0) + 24);
+        } else {
+           widths[index] = Math.max(40, Math.ceil(maxChars * 8.0) + 24);
+        }
+      });
+    }
+    return widths;
+  }, [lineItems, isDynamicTable, dynamicColumns]);
+
+  const getStickyLeftOffset = (index: number) =>
+    dynamicWidths.slice(0, index).reduce((sum: number, width: number) => sum + width, 0)
+
+  const getLineItemColumnWidth = (index: number, isNumeric = false) =>
+    dynamicWidths[index] || (isNumeric ? 90 : 50)
+
+  const getLineItemCellStyle = (
+    index: number,
+    isNumeric = false,
+  ): CSSProperties => {
+    const width = getLineItemColumnWidth(index, isNumeric)
+    const style: CSSProperties = { maxWidth: width, minWidth: width, width }
+
+    if (index < 2) {
+      style.left = getStickyLeftOffset(index)
+    }
+
+    return style
+  }
 
   const syncLineItemsToFormModel = (updatedItems: any[]) => {
     const sanitizeItems = (items: any[]) => {
@@ -4507,17 +4553,18 @@ const Overview = (props: any) => {
                                   : formattedTotal
 
                                 return (
-                                  <tfoot className='sticky bottom-0 z-30 bg-[var(--gray-1)]'>
-                                    <tr>
+                                  <tfoot className='sticky bottom-0 z-30 bg-[var(--gray-1)] shadow-[0_-1px_0_var(--gray-3)]'>
+                                    <tr className='border-t border-[var(--gray-3)]'>
                                       {/* Spacer cell to push sticky cells to the right */}
                                       {(!isDynamicTable || dynamicColumns.length > 2) && (
                                         <td
                                           colSpan={isDynamicTable ? dynamicColumns.length - 2 : 2}
+                                          className='border-t border-[var(--gray-3)]'
                                         />
                                       )}
                                       {/* Grand Total text cell (Pinned right before Amount) */}
                                       <td
-                                        className='sticky z-20 bg-[var(--gray-1)] px-3 py-2.5 text-right text-[11px] font-semibold text-[var(--gray-11)]'
+                                        className='sticky z-20 border-t border-[var(--gray-3)] bg-[var(--gray-1)] px-3 py-2.5 text-right text-[11px] font-semibold text-[var(--gray-11)] before:absolute before:top-0 before:left-0 before:h-full before:w-px before:bg-[var(--gray-3)]'
                                         style={{
                                           ...getRightStickyStyle(LINE_ITEM_ACTION_WIDTH + LINE_ITEM_SCORE_WIDTH + LINE_ITEM_AMOUNT_WIDTH, 100),
                                         }}
@@ -4526,7 +4573,7 @@ const Overview = (props: any) => {
                                       </td>
 
                                       {/* Total Amount cell */}
-                                      <td className='sticky z-20 bg-[var(--gray-1)] px-3 py-2.5 text-right' style={getPinnedAmountStyle()}>
+                                      <td className={cn('px-3 py-2.5 text-right border-t border-[var(--gray-3)]', getPinnedAmountClass('bg-[var(--gray-1)]'))} style={getPinnedAmountStyle()}>
                                         <span className='block w-full overflow-hidden text-ellipsis whitespace-nowrap text-[13px] font-bold text-[var(--gray-13)]'>
                                           {displayTotal}
                                         </span>
@@ -4534,7 +4581,7 @@ const Overview = (props: any) => {
 
                                       {/* Pinned Match Score filler */}
                                       <td
-                                        className='sticky z-20 bg-[var(--gray-1)]'
+                                        className='sticky z-20 border-t border-[var(--gray-3)] bg-[var(--gray-1)] before:absolute before:top-0 before:left-0 before:h-full before:w-px before:bg-[var(--gray-3)]'
                                         style={getRightStickyStyle(
                                           LINE_ITEM_ACTION_WIDTH,
                                           LINE_ITEM_SCORE_WIDTH,
@@ -4543,7 +4590,7 @@ const Overview = (props: any) => {
 
                                       {/* Pinned Action filler */}
                                       <td
-                                        className='sticky z-20 bg-[var(--gray-1)]'
+                                        className='sticky z-20 border-t border-[var(--gray-3)] bg-[var(--gray-1)]'
                                         style={getRightStickyStyle(0, LINE_ITEM_ACTION_WIDTH)}
                                       />
                                     </tr>

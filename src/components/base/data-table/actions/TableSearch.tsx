@@ -70,13 +70,13 @@ const TableSearch = <TData,>({ table }: Props<TData>) => {
   }
 
   const containerClasses = cn(
-    'flex h-8 items-center rounded border outline-primary-8 transition-all duration-300 select-none focus-visible:outline-2',
+    'flex h-8 items-center rounded-full border outline-primary-8 transition-all duration-300 select-none focus-visible:outline-2',
     isExpanded
       ? cn(
-          'focus-within:border-primary justify-start border-gray-6 bg-surface pr-1 pl-3',
+          'focus-within:border-primary justify-start border-[var(--border-default)] bg-surface pr-1 pl-3',
           selectedColumnLabel ? 'w-80' : 'w-72',
         )
-      : 'w-8 cursor-pointer justify-center border-gray-6 bg-surface text-gray-11 hover:bg-gray-4 hover:text-gray-12 active:scale-95',
+      : 'w-8 cursor-pointer justify-center border-[var(--border-default)] bg-surface text-gray-11 hover:bg-gray-4 hover:text-gray-12 active:scale-95',
   )
 
   const searchContent = (
