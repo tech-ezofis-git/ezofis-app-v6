@@ -80,7 +80,7 @@ type RepositoryFolderNode = {
 type StaticFolderNode = {
   kind: 'static'
   label: string
-  staticId: 'recent' | 'favorites'
+  staticId: 'recent'
 }
 
 const structureCache = new Map<string, BrowseStructureDto>()
@@ -237,14 +237,14 @@ const toWorkspaceDetail = (workspace: any): any => {
 const toFileItem = (row: Record<string, any>, index: number): FileItem => {
   const id = String(
     row.id ??
-      row.Id ??
-      row.itemId ??
-      row.ItemId ??
-      row.documentId ??
-      row.DocumentId ??
-      row.fileId ??
-      row.FileId ??
-      `file-${index}`,
+    row.Id ??
+    row.itemId ??
+    row.ItemId ??
+    row.documentId ??
+    row.DocumentId ??
+    row.fileId ??
+    row.FileId ??
+    `file-${index}`,
   )
 
   return {
@@ -270,6 +270,22 @@ const getRepositoryBrowseStructure = async (repositoryId: string) => {
   return structure
 }
 
+export const resolveFolderDisplayIcon = (
+  title: string,
+  iconKey?: string,
+  level = 0,
+) => {
+  const normalizedTitle = (title || '').trim().toLowerCase()
+
+  if (normalizedTitle === 'by supplier') return 'building'
+  if (normalizedTitle === 'by document type') return 'fileText'
+  if (normalizedTitle === 'email attachments') return 'mail'
+
+  if (level >= 2) return 'folder'
+
+  return iconKey || 'folder'
+}
+
 const toBrowsePathItem = (args: {
   label: string
   pathId: string
@@ -277,7 +293,7 @@ const toBrowsePathItem = (args: {
   repositoryName: string
 }): FolderItem => ({
   hasChildren: true,
-  iconKey: 'folder',
+  iconKey: resolveFolderDisplayIcon(args.label),
   id: encodeRepositoryNodeId({
     kind: 'browsePath',
     label: args.label,
@@ -291,11 +307,30 @@ const toBrowsePathItem = (args: {
   title: args.label,
 })
 
+const buildFieldIconMap = (fields: Array<Record<string, any>> = []) => {
+  const map = new Map<string, string>()
+
+  fields.forEach((field) => {
+    if (!field.includeInFolderStructure || !field.iconKey) return
+
+    if (field.sqlColumnName) {
+      map.set(String(field.sqlColumnName), String(field.iconKey))
+    }
+
+    if (field.name) {
+      map.set(String(field.name), String(field.iconKey))
+    }
+  })
+
+  return map
+}
+
 const toFolderItem = (args: {
   dateModified?: string | null
   groupField: string
   groupValue: string
   hasChildren?: boolean
+  iconKey?: string
   isLeaf?: boolean
   itemCount?: number
   level: number
@@ -312,7 +347,7 @@ const toFolderItem = (args: {
 
   return {
     hasChildren: args.hasChildren ?? true,
-    iconKey: 'folder',
+    iconKey: args.iconKey || 'folder',
     id: encodeRepositoryNodeId({
       groupField: args.groupField,
       groupValue: args.groupValue,
@@ -421,6 +456,7 @@ const normalizeChildren = (
   response: BrowseChildrenDto,
   payload: FolderNodePayload,
   folderFieldCount = 0,
+  fieldIconMap: Map<string, string> = new Map(),
 ) => {
   const repositoryId =
     payload.kind === 'repository'
@@ -469,6 +505,7 @@ const normalizeChildren = (
       groupField,
       groupValue: String(group.name),
       hasChildren: !isLeaf,
+      iconKey: fieldIconMap.get(groupField) || 'folder',
       isLeaf,
       itemCount: group.itemCount,
       level: response.level ?? Object.keys(currentFilters).length + 1,
@@ -628,6 +665,8 @@ export const folderApi = {
     }
 
     const structure = await getRepositoryBrowseStructure(repositoryId)
+    const repositoryFields = await getRepositoryFields(repositoryId)
+    const fieldIconMap = buildFieldIconMap(repositoryFields)
 
     if (isBrowseLeafNode(decoded, structure)) {
       return { folderPage: toPage(null), folders: [] }
@@ -648,6 +687,7 @@ export const folderApi = {
       childrenResult.data,
       decoded,
       getBrowseFolderFieldCount(structure),
+      fieldIconMap,
     )
     const folderPage = toPage(childrenResult.data?.groups)
 
@@ -700,7 +740,7 @@ export const folderApi = {
     const repository =
       decoded.kind === 'repository'
         ? ((await authApiV6.getRepositoryById(decoded.repositoryId))
-            .data as RepositoryDto)
+          .data as RepositoryDto)
         : undefined
     const fields = await getRepositoryFields(
       decoded.kind === 'repository'
@@ -708,15 +748,16 @@ export const folderApi = {
         : decoded.repositoryId,
       repository,
     )
+    const fieldIconMap = buildFieldIconMap(fields)
     const structure =
       decoded.kind === 'repository' ||
-      decoded.kind === 'browsePath' ||
-      decoded.kind === 'browse'
+        decoded.kind === 'browsePath' ||
+        decoded.kind === 'browse'
         ? await getRepositoryBrowseStructure(
-            decoded.kind === 'repository'
-              ? decoded.repositoryId
-              : decoded.repositoryId,
-          )
+          decoded.kind === 'repository'
+            ? decoded.repositoryId
+            : decoded.repositoryId,
+        )
         : null
     const { filters, pathId, repositoryId } = getDecodedRepositoryInfo(decoded)
 
@@ -792,6 +833,7 @@ export const folderApi = {
         childrenResult.data,
         decoded,
         getBrowseFolderFieldCount(structure),
+        fieldIconMap,
       )
       folderPage = toPage(childrenResult.data?.groups)
 
@@ -883,18 +925,18 @@ export const folderApi = {
         isStatic: true,
         title: 'Recent',
       },
-      {
-        hasChildren: false,
-        iconKey: 'sparkles',
-        id: encodeRepositoryNodeId({
-          kind: 'static',
-          label: 'Favorites',
-          staticId: 'favorites',
-        }),
-        isLoaded: true,
-        isStatic: true,
-        title: 'Favorites',
-      },
+      // {
+      //   hasChildren: false,
+      //   iconKey: 'sparkles',
+      //   id: encodeRepositoryNodeId({
+      //     kind: 'static',
+      //     label: 'Favorites',
+      //     staticId: 'favorites',
+      //   }),
+      //   isLoaded: true,
+      //   isStatic: true,
+      //   title: 'Favorites',
+      // },
     ]
   },
   async getWorkflowData(): Promise<WorkflowData> {

@@ -44,11 +44,12 @@ import {
   getMissingRequiredLabels,
   getRequiredFieldErrorMessage,
 } from '../helpers/requiredFieldErrors'
-import SetupProgressBar from './SetupProgressBar'
+import SettingsFormSection from './SettingsFormSection'
+import SettingsSetupContent from './SettingsSetupContent'
+import SettingsSetupHeader from './SettingsSetupHeader'
 import SettingsPageHeader, {
   SettingsHeaderAddButton,
 } from './SettingsPageHeader'
-import SettingsTableToolbarRow from './SettingsTableToolbarRow'
 import useSettingsTableToolbar from './useSettingsTableToolbar'
 
 type AppUser = SettingsUser
@@ -57,6 +58,7 @@ type LoginType = 'Password' | 'Google' | 'Microsoft' | 'Active Directory'
 
 type Step = {
   caption: string
+  description: string
   key: StepKey
   title: string
 }
@@ -66,11 +68,38 @@ type StepKey = 'login' | 'business' | 'groups' | 'authentication' | 'review'
 type UserStatus = 'active' | 'inactive' | 'pending'
 
 const steps: Step[] = [
-  { caption: 'Step 1', key: 'login', title: 'Login Details' },
-  { caption: 'Step 2', key: 'business', title: 'Business Detail' },
-  { caption: 'Step 3', key: 'groups', title: 'Group Assignment' },
-  { caption: 'Step 4', key: 'authentication', title: 'Authentication' },
-  { caption: 'Step 5', key: 'review', title: 'Review' },
+  {
+    caption: 'Step 1',
+    description: 'Capture primary identity and sign-in configuration.',
+    key: 'login',
+    title: 'Login Details',
+  },
+  {
+    caption: 'Step 2',
+    description:
+      'Align this user with the business hierarchy and operating model.',
+    key: 'business',
+    title: 'Business Detail',
+  },
+  {
+    caption: 'Step 3',
+    description:
+      'Assign this user to one or more groups. Groups determine shared folder and workflow access.',
+    key: 'groups',
+    title: 'Group Assignment',
+  },
+  {
+    caption: 'Step 4',
+    description: 'Govern multi-factor verification for secure user access.',
+    key: 'authentication',
+    title: 'Authentication',
+  },
+  {
+    caption: 'Step 5',
+    description: 'Validate the user profile before provisioning access.',
+    key: 'review',
+    title: 'Review',
+  },
 ]
 
 const emptyUser: DraftUser = {
@@ -111,7 +140,7 @@ const roles = [
   'Administrator',
   'Workspace Owner',
   'Process Owner',
-  'Repository Owner',
+  'Folder Owner',
   'Business User',
 ]
 const loginTypes: LoginType[] = [
@@ -517,6 +546,7 @@ export default function ManageUser({ onBack }: ManageUserProps) {
         managerOptions={managerOptions}
         isSaving={isSaving}
         onBack={() => setActiveStep((step) => Math.max(step - 1, 0))}
+        onBackToSettings={onBack}
         onCancel={() => {
           setOriginalUser(null)
           setIsSetupOpen(false)
@@ -536,21 +566,19 @@ export default function ManageUser({ onBack }: ManageUserProps) {
         <SettingsPageHeader
           actions={
             <SettingsHeaderAddButton
-              tooltip='Add User'
+              tooltip='Add'
               onClick={openAddUser}
             />
           }
-          description='Manage all users who access the AP Agent and DMS platform.'
           title='User Management'
+          toolbar={toolbar}
           onBack={onBack}
         />
 
         <div className='px-6 md:px-8'>
-          <SettingsTableToolbarRow toolbar={toolbar} />
-
           <div className='py-4'>
             <DataTable
-              emptyDescription='Add a user to grant access to the AP Agent and DMS platform.'
+              emptyDescription='Add a user to grant access to the platform and assign folder permissions.'
               emptyIcon='lucide:users'
               emptyTitle='No users yet'
               hideActionBar
@@ -585,10 +613,7 @@ function Authentication({ user, onChange }: FormSectionProps) {
   }
 
   return (
-    <FormCard
-      description='Govern multi-factor verification for secure user access.'
-      title='Authentication'
-    >
+    <SettingsFormSection>
       <div className='mb-7 rounded-[14px] border border-[var(--border-default)] bg-surface p-5'>
         <div className='flex items-center justify-between gap-4'>
           <div>
@@ -642,7 +667,7 @@ function Authentication({ user, onChange }: FormSectionProps) {
           )
         })}
       </div>
-    </FormCard>
+    </SettingsFormSection>
   )
 }
 
@@ -656,10 +681,7 @@ function BusinessDetails({
   showErrors?: boolean
 }) {
   return (
-    <FormCard
-      description='Align this user with the business hierarchy and operating model.'
-      title='Business Detail'
-    >
+    <SettingsFormSection>
       <div className='grid grid-cols-1 gap-5 md:grid-cols-2'>
         <SettingsSelectField
           label='Job Title'
@@ -716,7 +738,7 @@ function BusinessDetails({
         value={user.role}
         onChange={(value) => onChange({ ...user, role: value })}
       />
-    </FormCard>
+    </SettingsFormSection>
   )
 }
 function EzPasswordField({
@@ -780,30 +802,6 @@ function EzTextField({
   )
 }
 
-function FormCard({
-  children,
-  description,
-  title,
-}: {
-  children: ReactNode
-  description: string
-  title: string
-}) {
-  return (
-    <div>
-      <div className='mb-8'>
-        <h2 className='text-sm leading-8 font-semibold text-[var(--gray-13)]'>
-          {title}
-        </h2>
-        <p className='mt-1 max-w-[760px] text-xs leading-7 text-[var(--gray-11)]'>
-          {description}
-        </p>
-      </div>
-      <div className='space-y-6'>{children}</div>
-    </div>
-  )
-}
-
 function getInitials(firstName: string, lastName: string) {
   return `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase() || 'U'
 }
@@ -824,10 +822,7 @@ function GroupAssignment({
   }
 
   return (
-    <FormCard
-      description='Assign this user to one or more groups. Groups determine shared folder and workflow access.'
-      title='Group Assignment'
-    >
+    <SettingsFormSection>
       {groupOptions.length ? (
         <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
           {groupOptions.map((group) => {
@@ -871,7 +866,7 @@ function GroupAssignment({
           No groups available from the API yet.
         </div>
       )}
-    </FormCard>
+    </SettingsFormSection>
   )
 }
 
@@ -881,10 +876,7 @@ function LoginDetails({
   onChange,
 }: FormSectionProps & { showErrors?: boolean }) {
   return (
-    <FormCard
-      description='Capture primary identity and sign-in configuration.'
-      title='Login Details'
-    >
+    <SettingsFormSection>
       <div className='grid grid-cols-1 gap-5 md:grid-cols-2'>
         <EzTextField
           error={getFieldRequiredError(
@@ -988,16 +980,13 @@ function LoginDetails({
           onChange({ ...user, forcePasswordReset: checked })
         }
       />
-    </FormCard>
+    </SettingsFormSection>
   )
 }
 
 function Review({ user }: { user: DraftUser }) {
   return (
-    <FormCard
-      description='Validate the user profile before provisioning access.'
-      title='Review'
-    >
+    <SettingsFormSection>
       <div className='rounded-[14px] border border-[var(--border-default)] bg-surface p-6'>
         <h3 className='text-md mb-6 font-semibold text-[var(--gray-13)]'>
           User Summary
@@ -1025,7 +1014,7 @@ function Review({ user }: { user: DraftUser }) {
           />
         </div>
       </div>
-    </FormCard>
+    </SettingsFormSection>
   )
 }
 
@@ -1114,6 +1103,7 @@ function UserSetup({
   isSaving,
   managerOptions,
   onBack,
+  onBackToSettings,
   onCancel,
   onChange,
   onNext,
@@ -1127,6 +1117,7 @@ function UserSetup({
   isSaving: boolean
   managerOptions: SettingsOption[]
   onBack: () => void
+  onBackToSettings?: () => void
   onCancel: () => void
   onChange: (user: DraftUser) => void
   onNext: () => void
@@ -1197,35 +1188,19 @@ function UserSetup({
     onBack()
   }
 
+  const activeStepConfig = steps[activeStep]
+
   return (
     <main className='min-h-screen bg-[var(--surface)] text-[var(--text-primary)]'>
-      <header className='border-b border-[var(--border-default)] bg-surface px-6 py-4'>
-        <div className='flex items-start justify-between gap-5'>
-          <div className='flex items-start gap-3'>
-            <IconButton
-              ariaLabel='Back'
-              color='gray'
-              icon='lucide:arrow-left'
-              size='sm'
-              variant='ghost'
-              onClick={onCancel}
-            />
-
-            <div>
-              <h1 className='text-[18px] leading-6 font-semibold text-[var(--gray-13)]'>
-                {editingUserId ? 'Edit User' : 'Add User'}
-              </h1>
-
-              <p className='mt-1 text-[14px] leading-5 text-[var(--gray-11)]'>
-                Configure login, business details, group access, and
-                authentication.
-              </p>
-            </div>
-          </div>
-
-          <SetupProgressBar progress={progress} />
-        </div>
-      </header>
+      <SettingsSetupHeader
+        moduleTitle='User Management'
+        progress={progress}
+        setupTitle={editingUserId ? 'Edit User' : 'Create User'}
+        stepDescription={activeStepConfig.description}
+        stepTitle={activeStepConfig.title}
+        onBackToSettings={onBackToSettings}
+        onCancelSetup={onCancel}
+      />
 
       <div className='grid min-h-[calc(100vh-96px)] grid-cols-1 lg:grid-cols-[296px_1fr]'>
         <aside className='border-r border-[var(--border-default)] bg-[var(--surface)] px-4 py-9'>
@@ -1273,8 +1248,7 @@ function UserSetup({
           </div>
         </aside>
 
-        <section className='ez-scrollbar h-[calc(100vh-155px)] min-h-0 overflow-y-auto px-6 py-10 lg:px-20'>
-          <div className='mx-auto max-w-[860px]'>
+        <SettingsSetupContent>
             {activeStep === 0 && (
               <LoginDetails
                 showErrors={showErrors}
@@ -1330,8 +1304,7 @@ function UserSetup({
                 )}
               </div>
             </div>
-          </div>
-        </section>
+        </SettingsSetupContent>
       </div>
     </main>
   )

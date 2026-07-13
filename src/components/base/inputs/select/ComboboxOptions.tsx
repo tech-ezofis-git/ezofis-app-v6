@@ -78,6 +78,7 @@ const ComboboxOptions = ({
               <div key={option.id} onClick={() => handleClick(option)}>
                 <ComboboxOption
                   {...option}
+                  iconKey={(option as Option & { iconKey?: string }).iconKey}
                   isSelected={isSelected(option.id)}
                   variant={variant}
                 />

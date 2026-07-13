@@ -2,19 +2,19 @@ import {
   ChevronRight,
   ClipboardList,
   FolderOpen,
-  PanelsTopLeft,
   Shield,
   UserRoundCheck,
   Users,Code2,BadgeDollarSign,
 } from 'lucide-react'
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import AuditMonitoring from './components/AuditMonitoring'
 import DmsSettings from './components/Folders/DmsSettings'
 import GroupManagement from './components/GroupManagement'
 import ManageUser from './components/ManageUser'
-import Menu from './components/Menus'
 import RolesPermissions from './components/RolesPermissions'
 import Credits from './components/credits/Credits'
+import useSettingsTopbar from './hooks/useSettingsTopbar'
+import { createSettingsRootBreadcrumbs } from './helpers/settingsBreadcrumbs'
 type SettingsItem = {
   description: string
   icon: React.ElementType
@@ -44,19 +44,19 @@ const settingsItems: SettingsItem[] = [
     key: 'group-management',
     title: 'Group Management',
   },
+  // {
+  //   description:
+  //     'Control navigation visibility, ordering, and default landing pages per role.',
+  //   icon: PanelsTopLeft,
+  //   key: 'menu-profiles',
+  //   title: 'Menu & Profiles',
+  // },
   {
     description:
-      'Control navigation visibility, ordering, and default landing pages per role.',
-    icon: PanelsTopLeft,
-    key: 'menu-profiles',
-    title: 'Menu & Profiles',
-  },
-  {
-    description:
-      'Create document repositories with custom fields, security, and versioning.',
+      'Set up folders with custom fields, storage, security, and versioning.',
     icon: FolderOpen,
-    key: 'dms-folders',
-    title: 'DMS & Folders',
+    key: 'folder-configuration',
+    title: 'Folder Configuration',
   },
   // {
   //   key: 'ai-agent-config',
@@ -101,10 +101,7 @@ export default function SettingsMain() {
     return <GroupManagement onBack={() => setActivePage('settings')} />
   }
 
-  if (activePage === 'menu-profiles') {
-    return <Menu onBack={() => setActivePage('settings')} />
-  }
-  if (activePage === 'dms-folders') {
+  if (activePage === 'folder-configuration') {
     return <DmsSettings onBack={() => setActivePage('settings')} />
   }
 
@@ -119,18 +116,24 @@ export default function SettingsMain() {
     return <Credits onBack={() => setActivePage('settings')} />
   }
 
+  return <SettingsLanding onOpenPage={setActivePage} />
+}
+
+function SettingsLanding({
+  onOpenPage,
+}: {
+  onOpenPage: (page: string) => void
+}) {
+  const rootBreadcrumbs = useMemo(() => createSettingsRootBreadcrumbs(), [])
+  useSettingsTopbar(rootBreadcrumbs)
+
   return (
     <main className='overflow-y-auto bg-[var(--surface)]'>
-      <section className='mb-4 flex items-center justify-between border-b border-gray-3 bg-surface px-6 py-4 md:px-8'>
-        <div className='flex flex-col gap-1'>
-          <h1 className='text-18/6 font-semibold tracking-tight text-gray-13'>
-            Settings &amp; Administration
-          </h1>
-          <p className='text-13/5 text-gray-11'>
-            Configure your AP Agent and DMS platform
-          </p>
-        </div>
-      </section>
+      {/* <section className='mb-4 border-b border-gray-3 bg-surface px-6 py-4 md:px-8'>
+        <p className='text-13/5 text-gray-11'>
+          Configure users, folders, roles, and platform settings
+        </p>
+      </section> */}
 
       <section
         aria-label='Settings administration modules'
@@ -144,7 +147,7 @@ export default function SettingsMain() {
               className='group grid min-h-[88px] w-full grid-cols-[40px_1fr_24px] items-start rounded-[12px] border border-[var(--border-default)] bg-[var(--surface-primary)] px-6 py-5 text-left shadow-[var(--shadow-sm)] transition hover:border-[var(--primary-7)] hover:shadow-[var(--shadow-md)]'
               key={item.key}
               type='button'
-              onClick={() => setActivePage(item.key)}
+              onClick={() => onOpenPage(item.key)}
             >
               <span className='flex h-8 w-8 items-center justify-center pt-1 text-[var(--primary-10)]'>
                 <Icon size={20} strokeWidth={1.9} />

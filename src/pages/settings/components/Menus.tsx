@@ -47,11 +47,12 @@ import {
   settingsTableCoreOptions,
   useSettingsTableSearch,
 } from '../helpers/settingsDataTable'
-import SetupProgressBar from './SetupProgressBar'
+import SettingsFormSection from './SettingsFormSection'
+import SettingsSetupContent from './SettingsSetupContent'
+import SettingsSetupHeader from './SettingsSetupHeader'
 import SettingsPageHeader, {
   SettingsHeaderAddButton,
 } from './SettingsPageHeader'
-import SettingsTableToolbarRow from './SettingsTableToolbarRow'
 import useSettingsTableToolbar from './useSettingsTableToolbar'
 
 type AppMenu = {
@@ -76,14 +77,27 @@ type MenuProps = {
 }
 
 type MenuStep = {
+  description: string
   key: 'details' | 'review' | 'route'
   title: string
 }
 
 const menuSteps: MenuStep[] = [
-  { key: 'details', title: 'Menu Details' },
-  { key: 'route', title: 'Route & Order' },
-  { key: 'review', title: 'Review' },
+  {
+    description: 'Define the menu key and display label shown in navigation.',
+    key: 'details',
+    title: 'Menu Details',
+  },
+  {
+    description: 'Set the route path and sort order for this menu item.',
+    key: 'route',
+    title: 'Route & Order',
+  },
+  {
+    description: 'Validate the menu configuration before saving.',
+    key: 'review',
+    title: 'Review',
+  },
 ]
 
 const menuIconByKey: Record<string, ElementType> = {
@@ -462,6 +476,7 @@ export default function MenuProfileManagement({ onBack }: MenuProps) {
         formState={formState}
         isSaving={isSavingMenu}
         onBack={() => setActiveStep((step) => Math.max(step - 1, 0))}
+        onBackToSettings={onBack}
         onCancel={resetSetup}
         onChange={setFormState}
         onNext={() =>
@@ -487,12 +502,11 @@ export default function MenuProfileManagement({ onBack }: MenuProps) {
           }
           description='Manage navigation menus, routes, and display order across the platform.'
           title='Menu & Profile Management'
+          toolbar={toolbar}
           onBack={onBack}
         />
 
         <div className='px-6 md:px-8'>
-          <SettingsTableToolbarRow toolbar={toolbar} />
-
           <div className='py-4'>
             <DataTable
               emptyDescription='Create a menu to add custom navigation items.'
@@ -525,6 +539,7 @@ function MenuSetup({
   formState,
   isSaving,
   onBack,
+  onBackToSettings,
   onCancel,
   onChange,
   onNext,
@@ -536,6 +551,7 @@ function MenuSetup({
   formState: MenuFormState
   isSaving: boolean
   onBack: () => void
+  onBackToSettings?: () => void
   onCancel: () => void
   onChange: (form: MenuFormState) => void
   onNext: () => void
@@ -646,34 +662,19 @@ function MenuSetup({
     onBack()
   }
 
+  const activeStepConfig = menuSteps[activeStep]
+
   return (
     <main className='min-h-screen bg-[var(--surface)] text-[var(--text-primary)]'>
-      <header className='border-b border-[var(--border-default)] bg-surface px-6 py-4'>
-        <div className='flex items-start justify-between gap-5'>
-          <div className='flex items-start gap-3'>
-            <IconButton
-              ariaLabel='Back'
-              color='gray'
-              icon='lucide:arrow-left'
-              size='sm'
-              variant='ghost'
-              onClick={onCancel}
-            />
-
-            <div>
-              <h1 className='text-[18px] leading-6 font-semibold text-[var(--gray-13)]'>
-                {editingMenuId ? 'Edit Menu' : 'Create Menu'}
-              </h1>
-              <p className='mt-1 text-[14px] leading-5 text-[var(--gray-11)]'>
-                Configure menu details, route path, and display order before
-                saving.
-              </p>
-            </div>
-          </div>
-
-          <SetupProgressBar progress={progress} />
-        </div>
-      </header>
+      <SettingsSetupHeader
+        moduleTitle='Menu & Profile Management'
+        progress={progress}
+        setupTitle={editingMenuId ? 'Edit Menu' : 'Create Menu'}
+        stepDescription={activeStepConfig.description}
+        stepTitle={activeStepConfig.title}
+        onBackToSettings={onBackToSettings}
+        onCancelSetup={onCancel}
+      />
 
       <div className='grid min-h-[calc(100vh-96px)] grid-cols-1 lg:grid-cols-[296px_1fr]'>
         <aside className='border-r border-[var(--border-default)] bg-[var(--surface)] px-4 py-9'>
@@ -721,13 +722,9 @@ function MenuSetup({
           </div>
         </aside>
 
-        <section className='ez-scrollbar h-[calc(100vh-155px)] min-h-0 overflow-y-auto px-6 py-10 lg:px-20'>
-          <div className='mx-auto max-w-[860px]'>
+        <SettingsSetupContent>
             {activeStep === 0 ? (
-              <FormCard
-                description='Define the menu key and display label shown in navigation.'
-                title='Menu Details'
-              >
+              <SettingsFormSection>
                 {editingMenuId ? (
                   <InputText
                     disabled
@@ -763,14 +760,11 @@ function MenuSetup({
                     onChange({ ...formState, label: value })
                   }
                 />
-              </FormCard>
+              </SettingsFormSection>
             ) : null}
 
             {activeStep === 1 ? (
-              <FormCard
-                description='Set the route path and sort order for this menu item.'
-                title='Route & Order'
-              >
+              <SettingsFormSection>
                 <InputText
                   error={getFieldRequiredError(
                     'Route Path',
@@ -800,14 +794,11 @@ function MenuSetup({
                     })
                   }
                 />
-              </FormCard>
+              </SettingsFormSection>
             ) : null}
 
             {activeStep === 2 ? (
-              <FormCard
-                description='Validate the menu configuration before saving.'
-                title='Review'
-              >
+              <SettingsFormSection>
                 <div className='rounded-[14px] border border-[var(--border-default)] bg-surface p-6'>
                   <h3 className='text-md mb-6 font-semibold text-[var(--gray-13)]'>
                     Menu Summary
@@ -825,7 +816,7 @@ function MenuSetup({
                     />
                   </div>
                 </div>
-              </FormCard>
+              </SettingsFormSection>
             ) : null}
 
             <div className='mt-8 flex items-center justify-between border-t border-[var(--border-default)] pt-6'>
@@ -863,34 +854,9 @@ function MenuSetup({
                 )}
               </div>
             </div>
-          </div>
-        </section>
+        </SettingsSetupContent>
       </div>
     </main>
-  )
-}
-
-function FormCard({
-  children,
-  description,
-  title,
-}: {
-  children: ReactNode
-  description: string
-  title: string
-}) {
-  return (
-    <div>
-      <div className='mb-8'>
-        <h2 className='text-sm leading-8 font-semibold text-[var(--gray-13)]'>
-          {title}
-        </h2>
-        <p className='mt-1 max-w-[760px] text-xs leading-7 text-[var(--gray-11)]'>
-          {description}
-        </p>
-      </div>
-      <div className='space-y-6'>{children}</div>
-    </div>
   )
 }
 

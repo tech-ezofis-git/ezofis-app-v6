@@ -1,37 +1,28 @@
-import {
-  createColumnHelper,
-  useReactTable,
-} from '@tanstack/react-table'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { createColumnHelper, useReactTable } from '@tanstack/react-table'
+import { useMemo, useState } from 'react'
 import {
   Bar,
   BarChart,
   Cell,
+  LabelList,
   Pie,
   PieChart,
   ResponsiveContainer,
-  Tooltip as RechartsTooltip,
+  Tooltip,
   XAxis,
   YAxis,
 } from 'recharts'
 import {
   getCreditsUsage,
   type CreditsUsageBucket,
-  type CreditsUsagePeriod,
-  type CreditsUsageResponse,
   type CreditsUsageTransaction,
 } from '@/api/v6/billing'
 import IconButton from '@/components/base/button/IconButton'
 import DataTable from '@/components/base/data-table/DataTable'
-import Icon from '@/components/base/icon/Icon'
 import InputSelect from '@/components/base/inputs/InputSelect'
-import showToast from '@/components/base/toast/showToast'
 import type { Option } from '@/types/option'
 import cn from '@/utils/cn'
-import {
-  settingsChartPalette,
-  settingsTheme,
-} from '../../helpers/settingsTheme'
 import {
   settingsHeaderMeta,
   settingsTableCoreOptions,
@@ -40,16 +31,14 @@ import {
 import SettingsPageHeader from '../SettingsPageHeader'
 import useSettingsTableToolbar from '../useSettingsTableToolbar'
 
-type CreditsProps = {
-  onBack?: () => void
-}
+type UsagePeriod = 'today' | 'yesterday' | 'monthly' | 'quarterly' | 'yearly'
 
-const PERIOD_OPTIONS: Option[] = [
-  { id: 'today', name: 'Today', value: 'today' },
-  { id: 'yesterday', name: 'Yesterday', value: 'yesterday' },
-  { id: 'monthly', name: 'Monthly', value: 'monthly' },
-  { id: 'quarterly', name: 'Quarterly', value: 'quarterly' },
-  { id: 'yearly', name: 'Yearly', value: 'yearly' },
+const PERIOD_FILTERS: { label: string; value: UsagePeriod }[] = [
+  { label: 'Today', value: 'today' },
+  { label: 'Yesterday', value: 'yesterday' },
+  { label: 'Monthly', value: 'monthly' },
+  { label: 'Quarterly', value: 'quarterly' },
+  { label: 'Yearly', value: 'yearly' },
 ]
 
 const MONTH_OPTIONS: Option[] = [
@@ -67,293 +56,395 @@ const MONTH_OPTIONS: Option[] = [
   { id: '12', name: 'December', value: '12' },
 ]
 
-const formatNumber = (value: number) => value.toLocaleString()
+const CHART_COLORS = [
+  'var(--primary-9)',
+  'var(--indigo-9)',
+  'var(--violet-9)',
+  'var(--pink-9)',
+  'var(--secondary-9)',
+  'var(--orange-9)',
+]
+const MAX_TABLE_ROWS = 200
+const MAX_CHART_ITEMS = 10
 
-const formatCompact = (value: number) => {
-  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}m`
-  if (value >= 1_000) return `${(value / 1_000).toFixed(1)}k`
-  return formatNumber(value)
+function formatNumber(value: number) {
+  return new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 }).format(
+    value,
+  )
 }
 
-const formatDateTime = (value?: string | null) => {
-  if (!value) return '—'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return value
-  return date.toLocaleString('en-IN', {
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  })
+function formatPeriodSubtitle(
+  period: UsagePeriod,
+  month: Option,
+  year: Option,
+  periodLabel?: string,
+) {
+  if (periodLabel) {
+    return periodLabel.toLowerCase()
+  }
+
+  if (period === 'monthly') {
+    return `${month.name.toLowerCase()} ${year.name}`
+  }
+
+  if (period === 'yearly') {
+    return `calendar year ${year.name}`
+  }
+
+  return period.replaceAll('_', ' ')
 }
 
-const withoutTotal = (rows: CreditsUsageBucket[]) =>
-  rows.filter((row) => row.type.toLowerCase() !== 'total')
-
-const getBucketTotal = (rows: CreditsUsageBucket[], fallback = 0) => {
-  const totalRow = rows.find((row) => row.type.toLowerCase() === 'total')
-  if (totalRow) return totalRow.creditsUsed
-  const sum = withoutTotal(rows).reduce((acc, row) => acc + row.creditsUsed, 0)
-  return sum || fallback
+function mapBucketsToChartData(buckets: CreditsUsageBucket[]) {
+  return buckets.map((item, index) => ({
+    color: CHART_COLORS[index % CHART_COLORS.length],
+    credits: item.creditsUsed,
+    name: item.type,
+  }))
 }
 
-const emptyUsage = (): CreditsUsageResponse => ({
-  distributionReport: [],
-  highestConsumption: [],
-  monthlyConsumption: null,
-  overallCreditSplit: [],
-  period: 'Monthly',
-  periodLabel: '',
-  rangeEndUtc: '',
-  rangeStartUtc: '',
-  timeline: [],
-  totalCreditsConsumed: 0,
-  transactionCount: 0,
-  transactions: [],
-})
+function findTopBucket(buckets: CreditsUsageBucket[]) {
+  if (buckets.length === 0) return null
 
-const transactionColumnHelper = createColumnHelper<CreditsUsageTransaction>()
+  return buckets.reduce((top, item) =>
+    item.creditsUsed > top.creditsUsed ? item : top,
+  )
+}
 
-function DashboardCard({
+function FilterPill({
+  active,
   children,
-  className,
-  description,
+  onClick,
+}: {
+  active: boolean
+  children: React.ReactNode
+  onClick: () => void
+}) {
+  return (
+    <button
+      className={cn(
+        'rounded-full border px-3 py-1 text-12 font-medium transition-all active:scale-95',
+        active
+          ? 'border-primary-9 bg-primary-9 text-white shadow-sm'
+          : 'border-gray-3 bg-white text-gray-11 shadow-sm hover:bg-gray-1',
+      )}
+      type='button'
+      onClick={onClick}
+    >
+      {children}
+    </button>
+  )
+}
+
+function MetricSummaryCard({
+  isLoading,
+  title,
+  trend,
+  trendTone = 'neutral',
+  value,
+}: {
+  isLoading: boolean
+  title: string
+  trend?: string
+  trendTone?: 'down' | 'neutral' | 'up'
+  value: string
+}) {
+  const trendStyles = {
+    down: 'border-red-3 bg-red-1 text-red-9',
+    neutral: 'border-gray-3 bg-gray-1 text-gray-11',
+    up: 'border-green-3 bg-green-1 text-green-9',
+  }
+
+  return (
+    <div className='relative overflow-hidden rounded-xl border border-gray-3 bg-white p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md'>
+      <div className='absolute inset-x-0 top-0 h-1 bg-primary-9' />
+      <p className='text-[11px] font-semibold tracking-wide text-gray-11 uppercase'>
+        {title}
+      </p>
+      <p className='mt-3 text-[28px] leading-none font-bold text-gray-13'>
+        {isLoading ? '—' : value}
+      </p>
+      {trend ? (
+        <div className='mt-3 flex flex-wrap items-center gap-2'>
+          <span
+            className={cn(
+              'rounded-md border px-2 py-0.5 text-[11px] font-semibold',
+              trendStyles[trendTone],
+            )}
+          >
+            {trend}
+          </span>
+          <span className='text-[11px] text-gray-10 lowercase'>
+            vs last period
+          </span>
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
+function ChartCard({
+  children,
+  subtitle,
   title,
 }: {
   children: React.ReactNode
-  className?: string
-  description?: string
+  subtitle?: string
   title: string
 }) {
   return (
-    <section
-      className={cn(
-        'flex h-full min-h-[360px] flex-col rounded-[18px] border border-[var(--border-default)] bg-surface p-4 shadow-[var(--shadow-sm)]',
-        className,
-      )}
-    >
-      <div className='mb-4 shrink-0'>
-        <h2 className='text-[14px] font-semibold tracking-tight text-[var(--gray-13)]'>
+    <div className='flex flex-col rounded-xl bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md'>
+      <div>
+        <h4 className='pl-0.5 font-poppins text-13 leading-none font-bold text-gray-13 capitalize'>
           {title}
-        </h2>
-        {description ? (
-          <p className='mt-1 line-clamp-1 text-[11px] text-[var(--gray-11)]'>
-            {description}
-          </p>
+        </h4>
+        {subtitle ? (
+          <div className='mt-1 pl-0.5 text-[11px] text-gray-9 lowercase'>
+            {subtitle}
+          </div>
         ) : null}
       </div>
-      <div className='min-h-0 flex-1'>{children}</div>
-    </section>
-  )
-}
-
-function KpiCard({
-  icon,
-  isLoading,
-  label,
-  tone = 'primary',
-  value,
-}: {
-  icon: string
-  isLoading?: boolean
-  label: string
-  tone?: 'green' | 'orange' | 'primary' | 'red'
-  value: string
-}) {
-  const toneClass =
-    tone === 'green'
-      ? 'bg-[var(--green-3)] text-[var(--green-11)]'
-      : tone === 'orange'
-        ? 'bg-[var(--orange-3)] text-[var(--orange-11)]'
-        : tone === 'red'
-          ? 'bg-[var(--red-3)] text-[var(--red-11)]'
-          : 'bg-[var(--primary-3)] text-[var(--primary-11)]'
-
-  return (
-    <div className='rounded-[18px] border border-[var(--border-default)] bg-surface p-4 shadow-[var(--shadow-sm)]'>
-      <div
-        className={cn(
-          'mb-4 flex h-9 w-9 items-center justify-center rounded-[12px]',
-          toneClass,
-        )}
-      >
-        <Icon className='size-4' name={icon} />
-      </div>
-      <div className='truncate text-[28px] leading-none font-semibold tracking-tight text-[var(--gray-13)]'>
-        {isLoading ? '…' : value}
-      </div>
-      <div className='mt-2 text-[13px] font-medium text-[var(--gray-11)]'>
-        {label}
-      </div>
+      <div className='mt-6 flex flex-1 flex-col justify-center'>{children}</div>
     </div>
   )
 }
 
-function HorizontalBars({
-  emptyLabel,
-  rows,
-  totalFallback,
+function HorizontalConsumptionChart({
+  data,
 }: {
-  emptyLabel: string
-  rows: CreditsUsageBucket[]
-  totalFallback: number
+  data: { credits: number; name: string }[]
 }) {
-  const items = withoutTotal(rows).slice(0, 5)
-  const total = getBucketTotal(rows, totalFallback)
-  const max = Math.max(...items.map((item) => item.creditsUsed), 1)
+  const chartData = data.map((item) => ({
+    ...item,
+    displayValue: `${formatNumber(item.credits)} credits`,
+  }))
 
-  if (!items.length) {
+  if (chartData.length === 0) {
     return (
-      <div className='flex h-full min-h-[260px] items-center justify-center text-sm text-[var(--gray-11)]'>
-        {emptyLabel}
+      <div className='flex h-[200px] items-center justify-center text-13 text-gray-10'>
+        No consumption data for this period.
       </div>
     )
   }
 
   return (
-    <div className='flex h-full min-h-[260px] flex-col justify-center gap-4'>
-      {items.map((item) => {
-        const width = Math.max((item.creditsUsed / max) * 100, 10)
-        const share =
-          total > 0 ? Math.round((item.creditsUsed / total) * 100) : 0
-
-        return (
-          <div key={item.type}>
-            <div className='mb-1.5 flex items-center justify-between gap-2'>
-              <span
-                className='min-w-0 flex-1 truncate text-[12px] font-medium text-[var(--gray-12)]'
-                title={item.type}
-              >
-                {item.type}
-              </span>
-              <span className='shrink-0 text-[12px] font-semibold tabular-nums text-[var(--gray-13)]'>
-                {formatCompact(item.creditsUsed)}
-                <span className='ml-1 text-[10px] font-medium text-[var(--gray-10)]'>
-                  ({share}%)
-                </span>
-              </span>
-            </div>
-            <div className='h-2.5 overflow-hidden rounded-full bg-[var(--gray-3)]'>
-              <div
-                className='h-full rounded-full transition-all'
-                style={{
-                  background:
-                    'linear-gradient(90deg, var(--primary-9), var(--cyan-9))',
-                  width: `${width}%`,
-                }}
-              />
-            </div>
-          </div>
-        )
-      })}
-    </div>
+    <ResponsiveContainer height={200} width='100%'>
+      <BarChart
+        data={chartData}
+        layout='vertical'
+        margin={{ bottom: 0, left: -20, right: 40, top: 0 }}
+      >
+        <defs>
+          <linearGradient id='creditConsumptionGradient' x1='0' x2='1' y1='0' y2='0'>
+            <stop offset='0%' stopColor='var(--primary-6)' stopOpacity={0.7} />
+            <stop offset='100%' stopColor='var(--primary-9)' stopOpacity={0.95} />
+          </linearGradient>
+        </defs>
+        <XAxis type='number' hide />
+        <YAxis
+          axisLine={false}
+          dataKey='name'
+          tick={{ fill: 'var(--gray-10)', fontSize: 11, fontWeight: 550 }}
+          tickLine={false}
+          type='category'
+          width={100}
+        />
+        <Tooltip
+          cursor={{ fill: 'var(--gray-2)', opacity: 0.15 }}
+          formatter={(val: any) => [`${formatNumber(val)} credits`, 'Credits']}
+          contentStyle={{
+            border: 'none',
+            borderRadius: '8px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+            fontSize: '11px',
+          }}
+        />
+        <Bar
+          barSize={14}
+          dataKey='credits'
+          fill='url(#creditConsumptionGradient)'
+          radius={[0, 6, 6, 0]}
+        >
+          <LabelList
+            dataKey='displayValue'
+            fill='var(--gray-11)'
+            fontSize={10}
+            fontWeight={650}
+            offset={8}
+            position='right'
+          />
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer>
   )
 }
 
-function SplitLegend({
+function UsageTimelineChart({
+  data,
+}: {
+  data: { credits: number; label: string }[]
+}) {
+  if (data.length === 0) {
+    return (
+      <div className='flex h-[180px] items-center justify-center text-13 text-gray-10'>
+        No timeline data for this period.
+      </div>
+    )
+  }
+
+  return (
+    <ResponsiveContainer height={180} width='100%'>
+      <BarChart data={data} margin={{ bottom: 0, left: -25, right: 0, top: 20 }}>
+        <defs>
+          <linearGradient id='creditTimelineGradient' x1='0' x2='0' y1='0' y2='1'>
+            <stop offset='0%' stopColor='var(--primary-9)' stopOpacity={0.9} />
+            <stop offset='100%' stopColor='var(--primary-4)' stopOpacity={0.4} />
+          </linearGradient>
+        </defs>
+        <XAxis
+          axisLine={false}
+          dataKey='label'
+          dy={10}
+          tick={{ fill: 'var(--gray-10)', fontSize: 11, fontWeight: 550 }}
+          tickLine={false}
+        />
+        <Tooltip
+          cursor={{ fill: 'var(--gray-2)', opacity: 0.15 }}
+          formatter={(val: any) => [`${formatNumber(val)} credits`, 'Credits']}
+          contentStyle={{
+            border: 'none',
+            borderRadius: '8px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+            fontSize: '11px',
+          }}
+        />
+        <Bar
+          barSize={28}
+          dataKey='credits'
+          fill='url(#creditTimelineGradient)'
+          radius={[6, 6, 0, 0]}
+        >
+          <LabelList
+            dataKey='credits'
+            position='top'
+            content={(props: any) => {
+              const { value, width = 0, x = 0, y = 0 } = props
+              return (
+                <text
+                  fill='var(--gray-11)'
+                  fontSize={10}
+                  fontWeight={650}
+                  textAnchor='middle'
+                  x={x + width / 2}
+                  y={y - 8}
+                >
+                  {formatNumber(Number(value ?? 0))}
+                </text>
+              )
+            }}
+          />
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer>
+  )
+}
+
+function DistributionDonutChart({
   centerLabel,
   centerValue,
-  rows,
-  totalFallback,
+  data,
 }: {
   centerLabel: string
   centerValue: string
-  rows: CreditsUsageBucket[]
-  totalFallback: number
+  data: { color: string; credits: number; name: string }[]
 }) {
-  const items = withoutTotal(rows).slice(0, 5)
-  const total = getBucketTotal(rows, totalFallback) || 1
-  const pieData = items.map((item) => ({
-    name: item.type,
-    value: item.creditsUsed,
-  }))
+  const total = data.reduce((sum, item) => sum + item.credits, 0)
 
-  if (!items.length) {
+  if (data.length === 0) {
     return (
-      <div className='flex h-full min-h-[260px] items-center justify-center text-sm text-[var(--gray-11)]'>
-        No split data
+      <div className='flex h-[220px] items-center justify-center text-13 text-gray-10'>
+        No distribution data for this period.
       </div>
     )
   }
 
   return (
-    <div className='flex h-full min-h-[260px] flex-col'>
-      <div className='relative mx-auto h-[120px] w-[120px] shrink-0'>
-        <ResponsiveContainer height='100%' width='100%'>
-          <PieChart>
-            <Pie
-              cx='50%'
-              cy='50%'
-              data={pieData}
-              dataKey='value'
-              innerRadius={36}
-              nameKey='name'
-              outerRadius={52}
-              paddingAngle={2}
-              stroke='transparent'
-            >
-              {pieData.map((entry, index) => (
-                <Cell
-                  fill={
-                    settingsChartPalette[index % settingsChartPalette.length]
-                  }
-                  key={entry.name}
-                />
-              ))}
-            </Pie>
-            <RechartsTooltip
-              formatter={(value: any, name: any) => [
-                formatNumber(Number(value || 0)),
-                name,
-              ]}
-            />
-          </PieChart>
-        </ResponsiveContainer>
-        <div className='pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-2 text-center'>
-          <div className='text-[15px] leading-none font-semibold text-[var(--gray-13)]'>
-            {centerValue}
-          </div>
-          <div className='mt-1 text-[10px] text-[var(--gray-11)]'>
-            {centerLabel}
+    <div className='flex flex-col gap-4'>
+      <div className='flex items-center justify-center'>
+        <div className='relative h-[100px] w-[100px] shrink-0'>
+          <ResponsiveContainer height='100%' width='100%'>
+            <PieChart>
+              <Pie
+                cx='50%'
+                cy='50%'
+                data={data}
+                dataKey='credits'
+                innerRadius={34}
+                outerRadius={48}
+                paddingAngle={3}
+                stroke='none'
+              >
+                {data.map((entry, index) => (
+                  <Cell fill={entry.color} key={`cell-${index}`} />
+                ))}
+              </Pie>
+              <Tooltip
+                formatter={(value: any) => [`${formatNumber(value)} credits`]}
+                contentStyle={{
+                  border: 'none',
+                  borderRadius: '8px',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                  fontSize: '11px',
+                }}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+          <div className='pointer-events-none absolute inset-0 flex flex-col items-center justify-center'>
+            <span className='font-poppins text-16 leading-none font-extrabold text-gray-13'>
+              {centerValue}
+            </span>
+            <span className='mt-0.5 text-[8px] font-medium text-gray-10 lowercase'>
+              {centerLabel}
+            </span>
           </div>
         </div>
       </div>
 
-      <div className='ez-scrollbar mt-4 max-h-[150px] space-y-2.5 overflow-y-auto pr-1'>
-        {items.map((item, index) => {
-          const share = Math.round((item.creditsUsed / total) * 100)
+      <div className='flex flex-col gap-2'>
+        {data.map((entry, index) => {
+          const percentage =
+            total > 0 ? Math.round((entry.credits / total) * 100) : 0
+
           return (
-            <div key={item.type}>
-              <div className='mb-1 flex items-center justify-between gap-2'>
-                <div className='flex min-w-0 flex-1 items-center gap-2'>
-                  <span
-                    className='h-2 w-2 shrink-0 rounded-full'
-                    style={{
-                      backgroundColor:
-                        settingsChartPalette[
-                          index % settingsChartPalette.length
-                        ],
-                    }}
+            <div
+              className='group flex cursor-pointer flex-col gap-1 rounded-lg p-1.5 transition-all hover:bg-gray-1 active:scale-95'
+              key={index}
+              title={`${formatNumber(entry.credits)} credits (${percentage}%)`}
+            >
+              <div className='flex items-center justify-between text-[11px] font-medium lowercase'>
+                <div className='flex items-center gap-2'>
+                  <div
+                    className='size-2.5 shrink-0 rounded-md transition-transform group-hover:scale-110'
+                    style={{ backgroundColor: entry.color }}
                   />
-                  <span
-                    className='truncate text-[11px] font-medium text-[var(--gray-12)]'
-                    title={item.type}
-                  >
-                    {item.type}
+                  <span className='font-semibold text-gray-10 transition-colors group-hover:text-gray-13'>
+                    {entry.name}
                   </span>
                 </div>
-                <span className='shrink-0 text-[11px] font-semibold tabular-nums text-[var(--gray-13)]'>
-                  {formatCompact(item.creditsUsed)} ({share}%)
-                </span>
+                <div className='flex items-center gap-1.5'>
+                  <span className='font-bold text-gray-13'>
+                    {formatNumber(entry.credits)}
+                  </span>
+                  <span className='text-[9px] font-normal text-gray-10'>
+                    ({percentage}%)
+                  </span>
+                </div>
               </div>
-              <div className='h-1.5 overflow-hidden rounded-full bg-[var(--gray-3)]'>
+              <div className='h-1 w-full overflow-hidden rounded-full bg-gray-2'>
                 <div
-                  className='h-full rounded-full'
+                  className='h-full rounded-full transition-all duration-500'
                   style={{
-                    backgroundColor:
-                      settingsChartPalette[index % settingsChartPalette.length],
-                    width: `${Math.max(share, 4)}%`,
+                    backgroundColor: entry.color,
+                    width: `${percentage}%`,
                   }}
                 />
               </div>
@@ -365,469 +456,385 @@ function SplitLegend({
   )
 }
 
-export default function Credits({ onBack }: CreditsProps) {
-  const [period, setPeriod] = useState<CreditsUsagePeriod>('monthly')
-  const [year, setYear] = useState(() => new Date().getFullYear())
-  const [month, setMonth] = useState(() => new Date().getMonth() + 1)
-  const [isLoading, setIsLoading] = useState(true)
-  const [usage, setUsage] = useState<CreditsUsageResponse>(emptyUsage)
+export default function Credits({ onBack }: { onBack?: () => void }) {
+  const currentYear = new Date().getFullYear()
+  const currentMonthIndex = new Date().getMonth()
+  const [period, setPeriod] = useState<UsagePeriod>('monthly')
+  const [month, setMonth] = useState<Option>(
+    MONTH_OPTIONS[currentMonthIndex] ?? MONTH_OPTIONS[0],
+  )
+  const [year, setYear] = useState<Option>({
+    id: String(currentYear),
+    name: String(currentYear),
+    value: String(currentYear),
+  })
 
-  const tableSearchOptions = useSettingsTableSearch()
+  const yearOptions = useMemo<Option[]>(
+    () =>
+      Array.from({ length: 6 }, (_, index) => {
+        const value = String(currentYear - index)
+        return { id: value, name: value, value }
+      }),
+    [currentYear],
+  )
 
-  const yearOptions = useMemo(() => {
-    const current = new Date().getFullYear()
-    return [current, current - 1, current - 2].map((option) => ({
-      id: String(option),
-      name: String(option),
-      value: String(option),
-    }))
-  }, [])
-
-  const selectedPeriod =
-    PERIOD_OPTIONS.find((option) => option.value === period) || null
-  const selectedMonth =
-    MONTH_OPTIONS.find((option) => option.value === String(month)) || null
-  const selectedYear =
-    yearOptions.find((option) => option.value === String(year)) || null
-
-  const loadUsage = useCallback(async () => {
-    setIsLoading(true)
-
-    try {
+  const { data: usage, isFetching, isLoading, refetch } = useQuery({
+    queryFn: async () => {
       const response = await getCreditsUsage({
-        month: period === 'monthly' ? month : undefined,
+        month: period === 'monthly' ? Number(month.value) : undefined,
         period,
-        year: period === 'monthly' ? year : undefined,
+        year:
+          period === 'monthly' || period === 'yearly'
+            ? Number(year.value)
+            : undefined,
       })
 
-      if (response.error || !response.data) {
-        showToast({
-          message: response.error || 'Failed to load credit usage',
-          variant: 'error',
-        })
-        setUsage(emptyUsage())
-        return
+      if (response.error) {
+        throw new Error(response.error)
       }
 
-      setUsage(response.data)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [month, period, year])
+      return response.data
+    },
+    queryKey: ['settings', 'credits-usage', period, month.value, year.value],
+  })
 
-  useEffect(() => {
-    void loadUsage()
-  }, [loadUsage])
+  const transactions = useMemo(
+    () => (usage?.transactions ?? []).slice(0, MAX_TABLE_ROWS),
+    [usage?.transactions],
+  )
+  const periodSubtitle = formatPeriodSubtitle(
+    period,
+    month,
+    year,
+    usage?.periodLabel,
+  )
 
-  const highestRows = useMemo(
-    () => withoutTotal(usage.highestConsumption),
-    [usage.highestConsumption],
+  const consumptionByAgent = useMemo(
+    () =>
+      mapBucketsToChartData(usage?.overallCreditSplit ?? []).slice(
+        0,
+        MAX_CHART_ITEMS,
+      ),
+    [usage?.overallCreditSplit],
   )
-  const distributionRows = useMemo(
-    () => withoutTotal(usage.distributionReport),
-    [usage.distributionReport],
+
+  const consumptionByActivity = useMemo(
+    () =>
+      mapBucketsToChartData(usage?.distributionReport ?? []).slice(
+        0,
+        MAX_CHART_ITEMS,
+      ),
+    [usage?.distributionReport],
   )
-  const splitRows = useMemo(
-    () => withoutTotal(usage.overallCreditSplit),
-    [usage.overallCreditSplit],
+
+  const highestConsumption = useMemo(
+    () =>
+      mapBucketsToChartData(usage?.highestConsumption ?? []).slice(
+        0,
+        MAX_CHART_ITEMS,
+      ),
+    [usage?.highestConsumption],
   )
 
   const timelineData = useMemo(
     () =>
-      usage.timeline.map((point) => ({
-        creditsUsed: point.creditsUsed,
-        label: point.label,
+      (usage?.timeline ?? []).slice(0, 24).map((item) => ({
+        credits: item.creditsUsed,
+        label: item.label,
       })),
-    [usage.timeline],
+    [usage?.timeline],
   )
 
-  const avgCredits =
-    usage.transactionCount > 0
-      ? Math.round(usage.totalCreditsConsumed / usage.transactionCount)
+  const topActivity = useMemo(
+    () => findTopBucket(usage?.distributionReport ?? []),
+    [usage?.distributionReport],
+  )
+
+  const peakTimeline = useMemo(() => {
+    const points = usage?.timeline ?? []
+    if (points.length === 0) return null
+
+    return points.reduce((peak, item) =>
+      item.creditsUsed > peak.creditsUsed ? item : peak,
+    )
+  }, [usage?.timeline])
+
+  const avgCreditsPerTransaction =
+    usage && usage.transactionCount > 0
+      ? usage.totalCreditsConsumed / usage.transactionCount
       : 0
 
-  const topCredits = highestRows[0]?.creditsUsed || 0
-  const activityCount = Math.max(splitRows.length, highestRows.length)
-  const peakTimeline = Math.max(
-    ...usage.timeline.map((point) => point.creditsUsed),
-    0,
+  const columnHelper = useMemo(
+    () => createColumnHelper<CreditsUsageTransaction>(),
+    [],
   )
+  const tableSearchOptions = useSettingsTableSearch()
 
-  const transactionColumns = useMemo(
+  const columns = useMemo(
     () => [
-      transactionColumnHelper.accessor('activityType', {
+      columnHelper.accessor('createdAt', {
+        enableSorting: false,
+        header: 'Date',
+        meta: { ...settingsHeaderMeta.start, label: 'Date' },
+        minSize: 160,
+        size: 180,
+        cell: ({ getValue }) => {
+          const value = getValue()
+          if (!value) return '—'
+
+          const date = new Date(value)
+          return Number.isNaN(date.getTime())
+            ? value
+            : date.toLocaleString()
+        },
+      }),
+      columnHelper.accessor('activityType', {
         enableSorting: false,
         header: 'Activity',
-        id: 'activityType',
         meta: { ...settingsHeaderMeta.start, label: 'Activity' },
         minSize: 180,
         size: 220,
         cell: ({ row }) => (
           <div className='min-w-0'>
-            <div className='truncate text-sm font-semibold text-[var(--gray-13)]'>
+            <div className='truncate font-medium text-gray-13'>
               {row.original.activityType}
             </div>
-            {row.original.remarks ? (
-              <div className='mt-0.5 truncate text-xs text-[var(--gray-11)]'>
-                {row.original.remarks}
+            {row.original.subActivityType ? (
+              <div className='truncate text-xs text-gray-11'>
+                {row.original.subActivityType}
               </div>
             ) : null}
           </div>
         ),
       }),
-      transactionColumnHelper.accessor(
-        (row) => row.subActivityType || '—',
-        {
-          enableSorting: false,
-          header: 'Sub Activity',
-          id: 'subActivityType',
-          meta: { ...settingsHeaderMeta.start, label: 'Sub Activity' },
-          minSize: 140,
-          size: 180,
-        },
-      ),
-      transactionColumnHelper.accessor(
-        (row) =>
-          row.identifyTable
-            ? `${row.identifyTable} #${row.identifyId ?? '—'}`
-            : '—',
-        {
-          enableSorting: false,
-          header: 'Identify',
-          id: 'identify',
-          meta: { ...settingsHeaderMeta.start, label: 'Identify' },
-          minSize: 140,
-          size: 170,
-        },
-      ),
-      transactionColumnHelper.accessor('credit', {
+      columnHelper.accessor('credit', {
         enableSorting: false,
         header: 'Credits',
-        id: 'credit',
         meta: { ...settingsHeaderMeta.end, label: 'Credits' },
         minSize: 100,
-        size: 110,
-        cell: ({ getValue }) => (
-          <span className='font-semibold tabular-nums text-[var(--gray-13)]'>
-            {formatNumber(getValue())}
-          </span>
-        ),
+        size: 120,
+        cell: ({ getValue }) => formatNumber(Number(getValue() ?? 0)),
       }),
-      transactionColumnHelper.accessor(
-        (row) =>
-          row.totalTokens != null ? formatNumber(row.totalTokens) : '—',
-        {
-          enableSorting: false,
-          header: 'Tokens',
-          id: 'tokens',
-          meta: { ...settingsHeaderMeta.end, label: 'Tokens' },
-          minSize: 100,
-          size: 110,
+      columnHelper.accessor('remarks', {
+        enableSorting: false,
+        header: 'Remarks',
+        meta: { ...settingsHeaderMeta.start, label: 'Remarks' },
+        minSize: 180,
+        size: 220,
+        cell: ({ getValue }) => getValue() || '—',
+      }),
+      columnHelper.accessor('identifyTable', {
+        enableSorting: false,
+        header: 'Reference',
+        meta: { ...settingsHeaderMeta.start, label: 'Reference' },
+        minSize: 140,
+        size: 160,
+        cell: ({ row }) => {
+          const tableName = row.original.identifyTable
+          const identifyId = row.original.identifyId
+          if (!tableName && identifyId == null) return '—'
+          if (identifyId == null) return tableName
+          return `${tableName ?? 'record'} #${identifyId}`
         },
-      ),
-      transactionColumnHelper.accessor(
-        (row) => formatDateTime(row.createdAt),
-        {
-          enableSorting: false,
-          header: 'Created',
-          id: 'createdAt',
-          meta: { ...settingsHeaderMeta.start, label: 'Created' },
-          minSize: 160,
-          size: 180,
-        },
-      ),
+      }),
     ],
-    [],
+    [columnHelper],
   )
 
   const transactionTable = useReactTable({
     ...settingsTableCoreOptions,
     ...tableSearchOptions,
-    columns: transactionColumns,
-    data: usage.transactions,
-    getRowId: (row) => String(row.id),
+    columns,
+    data: transactions,
   })
 
   const { onRowSizeChange, rowSize, toolbar } = useSettingsTableToolbar({
-    isReLoading: isLoading,
+    isReLoading: isFetching,
     table: transactionTable,
-    onReload: () => {
-      void loadUsage()
-    },
+    onReload: () => void refetch(),
   })
 
-  return (
-    <main className='min-h-full bg-[var(--gray-2)]'>
-      <SettingsPageHeader
-        actions={
-          <div className='flex flex-wrap items-end gap-2'>
-            <div className='w-[150px]'>
-              <InputSelect
-                className='bg-surface'
-                options={PERIOD_OPTIONS}
-                placeholder='Period'
-                value={selectedPeriod}
-                onChange={(selected) => {
-                  if (!selected?.value) return
-                  setPeriod(selected.value as CreditsUsagePeriod)
-                }}
-              />
-            </div>
+  const totalActivityCredits = consumptionByActivity.reduce(
+    (sum, item) => sum + item.credits,
+    0,
+  )
 
+  return (
+    <div className='flex h-full min-h-0 flex-col'>
+      <SettingsPageHeader
+        leading={
+          <div className='flex flex-wrap items-center gap-2'>
+            <span className='text-12 font-medium text-gray-10'>Filters:</span>
+            {PERIOD_FILTERS.map((filter) => (
+              <FilterPill
+                active={period === filter.value}
+                key={filter.value}
+                onClick={() => setPeriod(filter.value)}
+              >
+                {filter.label}
+              </FilterPill>
+            ))}
             {period === 'monthly' ? (
               <>
-                <div className='w-[150px]'>
-                  <InputSelect
-                    className='bg-surface'
-                    options={MONTH_OPTIONS}
-                    placeholder='Month'
-                    value={selectedMonth}
-                    onChange={(selected) => {
-                      if (!selected?.value) return
-                      setMonth(Number(selected.value))
-                    }}
-                  />
-                </div>
-                <div className='w-[120px]'>
-                  <InputSelect
-                    className='bg-surface'
-                    options={yearOptions}
-                    placeholder='Year'
-                    value={selectedYear}
-                    onChange={(selected) => {
-                      if (!selected?.value) return
-                      setYear(Number(selected.value))
-                    }}
-                  />
-                </div>
+                <InputSelect
+                  className='w-[130px]'
+                  options={MONTH_OPTIONS}
+                  value={month}
+                  onChange={(value) => {
+                    if (value) setMonth(value)
+                  }}
+                />
+                <InputSelect
+                  className='w-[100px]'
+                  options={yearOptions}
+                  value={year}
+                  onChange={(value) => {
+                    if (value) setYear(value)
+                  }}
+                />
               </>
             ) : null}
-
-            <IconButton
-              ariaLabel='Refresh credits'
-              color='gray'
-              icon='lucide:rotate-cw'
-              size='sm'
-              variant='outline'
-              onClick={() => {
-                void loadUsage()
-              }}
-            />
+            {period === 'yearly' ? (
+              <InputSelect
+                className='w-[100px]'
+                options={yearOptions}
+                value={year}
+                onChange={(value) => {
+                  if (value) setYear(value)
+                }}
+              />
+            ) : null}
           </div>
         }
-        description='Monitor realtime credit consumption, trends, and activity across agents.'
         title='Credit Usage'
+        actions={
+          <IconButton
+            ariaLabel='Refresh credit usage'
+            color='gray'
+            icon='lucide:rotate-cw'
+            loading={isFetching}
+            size='sm'
+            variant='outline'
+            onClick={() => void refetch()}
+          />
+        }
         onBack={onBack}
       />
 
-      <div className='ez-scrollbar max-h-[calc(100vh-120px)] space-y-5 overflow-y-auto px-6 py-5 md:px-8'>
-        <div className='grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6'>
-          <KpiCard
-            icon='lucide:coins'
+      <div className='flex-1 overflow-y-auto p-6 md:p-8'>
+        <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6'>
+          <MetricSummaryCard
             isLoading={isLoading}
-            label='Credits Consumed'
-            value={formatNumber(usage.totalCreditsConsumed)}
+            title='Credits Consumed'
+            trend={
+              usage
+                ? `${formatNumber(usage.totalCreditsConsumed)} total`
+                : undefined
+            }
+            value={formatNumber(usage?.totalCreditsConsumed ?? 0)}
           />
-          <KpiCard
-            icon='lucide:check-circle-2'
+          <MetricSummaryCard
             isLoading={isLoading}
-            label='Transactions'
-            tone='green'
-            value={formatNumber(usage.transactionCount)}
+            title='Transactions'
+            trend={
+              usage ? `${usage.transactionCount} records` : undefined
+            }
+            value={formatNumber(usage?.transactionCount ?? 0)}
           />
-          <KpiCard
-            icon='lucide:sparkles'
+          <MetricSummaryCard
             isLoading={isLoading}
-            label='Top Activity Credits'
-            tone='orange'
-            value={formatNumber(topCredits)}
+            title='Top Activity Credits'
+            trend={topActivity ? topActivity.type.toLowerCase() : undefined}
+            value={formatNumber(topActivity?.creditsUsed ?? 0)}
           />
-          <KpiCard
-            icon='lucide:gauge'
+          <MetricSummaryCard
             isLoading={isLoading}
-            label='Avg Credits / Txn'
-            tone='green'
-            value={formatNumber(avgCredits)}
+            title='Avg Credits / Txn'
+            trendTone='neutral'
+            value={formatNumber(avgCreditsPerTransaction)}
           />
-          <KpiCard
-            icon='lucide:layers'
+          <MetricSummaryCard
             isLoading={isLoading}
-            label='Active Agents'
-            tone='red'
-            value={formatNumber(activityCount)}
+            title='Peak Timeline'
+            trend={peakTimeline ? peakTimeline.label.toLowerCase() : undefined}
+            value={formatNumber(peakTimeline?.creditsUsed ?? 0)}
           />
-          <KpiCard
-            icon='lucide:trending-up'
+          <MetricSummaryCard
             isLoading={isLoading}
-            label='Peak Timeline'
-            value={formatNumber(peakTimeline)}
+            title='Active Agents'
+            trend={
+              consumptionByAgent.length > 0
+                ? `${consumptionByAgent.length} agents`
+                : undefined
+            }
+            value={formatNumber(consumptionByAgent.length)}
           />
         </div>
 
-        <div className='grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4'>
-          <DashboardCard
-            description={`by credit usage · ${usage.periodLabel || 'selected period'}`}
+        <div className='mt-5 grid grid-cols-1 gap-4 xl:grid-cols-2 2xl:grid-cols-4'>
+          <ChartCard
+            subtitle={`by agent · ${periodSubtitle}`}
             title='Highest Credit Consumption'
           >
-            {isLoading ? (
-              <div className='flex h-full min-h-[260px] items-center justify-center text-sm text-[var(--gray-11)]'>
-                Loading...
-              </div>
-            ) : (
-              <HorizontalBars
-                emptyLabel='No highest consumption data'
-                rows={usage.highestConsumption}
-                totalFallback={usage.totalCreditsConsumed}
-              />
-            )}
-          </DashboardCard>
+            <HorizontalConsumptionChart
+              data={highestConsumption.map((item) => ({
+                credits: item.credits,
+                name: item.name,
+              }))}
+            />
+          </ChartCard>
 
-          <DashboardCard
-            description='credit trend across selected range'
+          <ChartCard
+            subtitle='credit trend across selected range'
             title='Usage Timeline'
           >
-            {isLoading ? (
-              <div className='flex h-full min-h-[260px] items-center justify-center text-sm text-[var(--gray-11)]'>
-                Loading...
-              </div>
-            ) : timelineData.length ? (
-              <div className='h-full min-h-[260px]'>
-                <ResponsiveContainer height='100%' width='100%'>
-                  <BarChart
-                    barCategoryGap='24%'
-                    data={timelineData}
-                    margin={{ bottom: 4, left: -8, right: 4, top: 12 }}
-                  >
-                    <defs>
-                      <linearGradient
-                        id='creditsBarGradient'
-                        x1='0'
-                        x2='0'
-                        y1='0'
-                        y2='1'
-                      >
-                        <stop offset='0%' stopColor='var(--primary-9)' />
-                        <stop offset='100%' stopColor='var(--cyan-8)' />
-                      </linearGradient>
-                    </defs>
-                    <XAxis
-                      axisLine={false}
-                      dataKey='label'
-                      interval='preserveStartEnd'
-                      tick={{ fill: 'var(--gray-11)', fontSize: 11 }}
-                      tickLine={false}
-                    />
-                    <YAxis
-                      allowDecimals={false}
-                      axisLine={false}
-                      tick={{ fill: 'var(--gray-11)', fontSize: 11 }}
-                      tickLine={false}
-                      width={28}
-                    />
-                    <RechartsTooltip
-                      cursor={{ fill: 'var(--gray-3)', opacity: 0.55 }}
-                      formatter={(value: any) => [
-                        formatNumber(Number(value || 0)),
-                        'Credits',
-                      ]}
-                    />
-                    <Bar
-                      dataKey='creditsUsed'
-                      fill='url(#creditsBarGradient)'
-                      maxBarSize={36}
-                      radius={[8, 8, 0, 0]}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            ) : (
-              <div className='flex h-full min-h-[260px] items-center justify-center text-sm text-[var(--gray-11)]'>
-                No timeline data
-              </div>
-            )}
-          </DashboardCard>
+            <UsageTimelineChart data={timelineData} />
+          </ChartCard>
 
-          <DashboardCard
-            description={`${formatNumber(distributionRows.length)} sub-activities analyzed`}
+          <ChartCard
+            subtitle={`by activity · ${formatNumber(totalActivityCredits)} credits`}
             title='Credit Distribution'
           >
-            {isLoading ? (
-              <div className='flex h-full min-h-[260px] items-center justify-center text-sm text-[var(--gray-11)]'>
-                Loading...
-              </div>
-            ) : (
-              <SplitLegend
-                centerLabel='credits'
-                centerValue={formatCompact(usage.totalCreditsConsumed)}
-                rows={usage.distributionReport}
-                totalFallback={usage.totalCreditsConsumed}
-              />
-            )}
-          </DashboardCard>
+            <DistributionDonutChart
+              centerLabel='credits'
+              centerValue={formatNumber(totalActivityCredits)}
+              data={consumptionByActivity}
+            />
+          </ChartCard>
 
-          <DashboardCard
-            description={`by activity type · ${formatNumber(splitRows.length)} items`}
+          <ChartCard
+            subtitle={`by agent · ${consumptionByAgent.length} agents`}
             title='Overall Credit Split'
           >
-            {isLoading ? (
-              <div className='flex h-full min-h-[260px] items-center justify-center text-sm text-[var(--gray-11)]'>
-                Loading...
-              </div>
-            ) : (
-              <SplitLegend
-                centerLabel='agents'
-                centerValue={formatNumber(activityCount)}
-                rows={usage.overallCreditSplit}
-                totalFallback={usage.totalCreditsConsumed}
-              />
-            )}
-          </DashboardCard>
+            <DistributionDonutChart
+              centerLabel='agents'
+              centerValue={String(consumptionByAgent.length)}
+              data={consumptionByAgent}
+            />
+          </ChartCard>
         </div>
 
-        <section className='rounded-[18px] border border-[var(--border-default)] bg-surface p-5 shadow-[var(--shadow-sm)]'>
-          <div className='mb-4 flex flex-wrap items-start justify-between gap-3'>
-            <div>
-              <h2 className='text-[15px] font-semibold tracking-tight text-[var(--gray-13)]'>
-                Transaction Activity
-              </h2>
-              <p className='mt-1 text-[12px] text-[var(--gray-11)]'>
-                {formatNumber(usage.transactionCount)} transactions in{' '}
-                {usage.periodLabel || 'selected period'}
-              </p>
-            </div>
+        <div className='mt-5 rounded-xl border border-gray-3 bg-white p-4 shadow-sm'>
+          <div className='mb-4 flex flex-wrap items-center justify-between gap-3'>
+            <h4 className='font-poppins text-13 font-bold text-gray-13 capitalize'>
+              Transaction Activity
+            </h4>
             {toolbar}
           </div>
-
           <DataTable
-            emptyDescription='No credit transactions found for this period.'
-            emptyIcon='lucide:receipt'
-            emptyTitle='No transactions yet'
             hideActionBar
             isLoading={isLoading}
-            isReLoading={isLoading}
-            pageSize={Math.max(8, usage.transactions.length || 8)}
+            isReLoading={isFetching}
+            pageSize={10}
             rowSize={rowSize}
-            table={transactionTable}
-            tableBodyMaxHeight='calc(100vh - 420px)'
-            hideGrouping
             stickyHeader
-            onReload={() => {
-              void loadUsage()
-            }}
+            table={transactionTable}
+            hideGrouping
+            onReload={() => void refetch()}
             onRowSizeChange={onRowSizeChange}
           />
-        </section>
-
-        {!isLoading &&
-        !usage.highestConsumption.length &&
-        !usage.transactions.length ? (
-          <div className={cn(settingsTheme.cardMuted, 'px-6 py-10 text-center')}>
-            <p className='text-sm text-[var(--gray-11)]'>
-              No credit usage found for this period.
-            </p>
-          </div>
-        ) : null}
+        </div>
       </div>
-    </main>
+    </div>
   )
 }

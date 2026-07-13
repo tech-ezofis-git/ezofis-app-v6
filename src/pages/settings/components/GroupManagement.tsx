@@ -30,12 +30,14 @@ import {
   type SettingsGroup,
   type SettingsOption,
 } from '../helpers/userGroupMappers'
+import SettingsFormSection from './SettingsFormSection'
 import SettingsSelectField from './SettingsSelectField'
-import SetupProgressBar from './SetupProgressBar'
+import SettingsSelectedChips from './SettingsSelectedChips'
+import SettingsSetupContent from './SettingsSetupContent'
+import SettingsSetupHeader from './SettingsSetupHeader'
 import SettingsPageHeader, {
   SettingsHeaderAddButton,
 } from './SettingsPageHeader'
-import SettingsTableToolbarRow from './SettingsTableToolbarRow'
 import useSettingsTableToolbar from './useSettingsTableToolbar'
 import {
   settingsHeaderMeta,
@@ -53,14 +55,31 @@ type GroupStepKey = 'details' | 'members' | 'review'
 
 type GroupStep = {
   caption: string
+  description: string
   key: GroupStepKey
   title: string
 }
 
 const groupSteps: GroupStep[] = [
-  { caption: 'Step 1', key: 'details', title: 'Group Details' },
-  { caption: 'Step 2', key: 'members', title: 'Assign Members' },
-  { caption: 'Step 3', key: 'review', title: 'Review' },
+  {
+    caption: 'Step 1',
+    description: 'Define the group name, description, and availability.',
+    key: 'details',
+    title: 'Group Details',
+  },
+  {
+    caption: 'Step 2',
+    description:
+      'Select users from your organization to include in this group.',
+    key: 'members',
+    title: 'Assign Members',
+  },
+  {
+    caption: 'Step 3',
+    description: 'Validate the group configuration before saving.',
+    key: 'review',
+    title: 'Review',
+  },
 ]
 
 const emptyGroup: SettingsGroup = {
@@ -401,6 +420,7 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
         selectedMembers={selectedMembers}
         userOptions={userOptions}
         onBack={() => setActiveStep((step) => Math.max(step - 1, 0))}
+        onBackToSettings={onBack}
         onCancel={() => setIsSetupOpen(false)}
         onChange={setDraftGroup}
         onMembersChange={setSelectedMembers}
@@ -425,12 +445,11 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
           }
           description='Create logical groups to organize users by team, department, or function.'
           title='Group Management'
+          toolbar={toolbar}
           onBack={onBack}
         />
 
         <div className='px-6 md:px-8'>
-          <SettingsTableToolbarRow toolbar={toolbar} />
-
           <div className='py-4'>
             <DataTable
               emptyDescription='Create a group to organize users by team, department, or function.'
@@ -465,6 +484,7 @@ function GroupSetup({
   selectedMembers,
   userOptions,
   onBack,
+  onBackToSettings,
   onCancel,
   onChange,
   onMembersChange,
@@ -479,6 +499,7 @@ function GroupSetup({
   selectedMembers: SettingsOption[]
   userOptions: SettingsOption[]
   onBack: () => void
+  onBackToSettings?: () => void
   onCancel: () => void
   onChange: (group: SettingsGroup) => void
   onMembersChange: (members: SettingsOption[]) => void
@@ -561,34 +582,19 @@ function GroupSetup({
     onBack()
   }
 
+  const activeStepConfig = groupSteps[activeStep]
+
   return (
     <main className='min-h-screen bg-[var(--surface)] text-[var(--text-primary)]'>
-      <header className='border-b border-[var(--border-default)] bg-surface px-6 py-4'>
-        <div className='flex items-start justify-between gap-5'>
-          <div className='flex items-start gap-3'>
-            <IconButton
-              ariaLabel='Back'
-              color='gray'
-              icon='lucide:arrow-left'
-              size='sm'
-              variant='ghost'
-              onClick={onCancel}
-            />
-
-            <div>
-              <h1 className='text-[18px] leading-6 font-semibold text-[var(--gray-13)]'>
-                {editingGroupId ? 'Edit Group' : 'Create Group'}
-              </h1>
-              <p className='mt-1 text-[14px] leading-5 text-[var(--gray-11)]'>
-                Configure group details, assign members, and review before
-                saving.
-              </p>
-            </div>
-          </div>
-
-          <SetupProgressBar progress={progress} />
-        </div>
-      </header>
+      <SettingsSetupHeader
+        moduleTitle='Group Management'
+        progress={progress}
+        setupTitle={editingGroupId ? 'Edit Group' : 'Create Group'}
+        stepDescription={activeStepConfig.description}
+        stepTitle={activeStepConfig.title}
+        onBackToSettings={onBackToSettings}
+        onCancelSetup={onCancel}
+      />
 
       <div className='grid min-h-[calc(100vh-96px)] grid-cols-1 lg:grid-cols-[296px_1fr]'>
         <aside className='border-r border-[var(--border-default)] bg-[var(--surface)] px-4 py-9'>
@@ -636,13 +642,9 @@ function GroupSetup({
           </div>
         </aside>
 
-        <section className='ez-scrollbar h-[calc(100vh-155px)] min-h-0 overflow-y-auto px-6 py-10 lg:px-20'>
-          <div className='mx-auto max-w-[860px]'>
+        <SettingsSetupContent>
             {activeStep === 0 ? (
-              <FormCard
-                description='Define the group name, description, and availability.'
-                title='Group Details'
-              >
+              <SettingsFormSection>
                 <InputText
                   error={getFieldRequiredError(
                     'Group Name',
@@ -683,14 +685,11 @@ function GroupSetup({
                     })
                   }
                 />
-              </FormCard>
+              </SettingsFormSection>
             ) : null}
 
             {activeStep === 1 ? (
-              <FormCard
-                description='Select users from your organization to include in this group.'
-                title='Assign Members'
-              >
+              <SettingsFormSection>
                 <InputSelectMultiple
                   className='bg-surface'
                   label='Group Members'
@@ -703,14 +702,19 @@ function GroupSetup({
                     onMembersChange((value || []) as SettingsOption[])
                   }
                 />
-              </FormCard>
+                <SettingsSelectedChips
+                  items={selectedMembers}
+                  onRemove={(id) =>
+                    onMembersChange(
+                      selectedMembers.filter((member) => member.id !== id),
+                    )
+                  }
+                />
+              </SettingsFormSection>
             ) : null}
 
             {activeStep === 2 ? (
-              <FormCard
-                description='Validate the group configuration before saving.'
-                title='Review'
-              >
+              <SettingsFormSection>
                 <div className='rounded-[14px] border border-[var(--border-default)] bg-surface p-6'>
                   <h3 className='text-md mb-6 font-semibold text-[var(--gray-13)]'>
                     Group Summary
@@ -742,7 +746,7 @@ function GroupSetup({
                     />
                   </div>
                 </div>
-              </FormCard>
+              </SettingsFormSection>
             ) : null}
 
             <div className='mt-8 flex items-center justify-between border-t border-[var(--border-default)] pt-6'>
@@ -776,34 +780,9 @@ function GroupSetup({
                 )}
               </div>
             </div>
-          </div>
-        </section>
+        </SettingsSetupContent>
       </div>
     </main>
-  )
-}
-
-function FormCard({
-  children,
-  description,
-  title,
-}: {
-  children: ReactNode
-  description: string
-  title: string
-}) {
-  return (
-    <div>
-      <div className='mb-8'>
-        <h2 className='text-sm leading-8 font-semibold text-[var(--gray-13)]'>
-          {title}
-        </h2>
-        <p className='mt-1 max-w-[760px] text-xs leading-7 text-[var(--gray-11)]'>
-          {description}
-        </p>
-      </div>
-      <div className='space-y-6'>{children}</div>
-    </div>
   )
 }
 

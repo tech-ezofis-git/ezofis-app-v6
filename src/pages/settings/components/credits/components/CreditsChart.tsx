@@ -60,7 +60,7 @@ const CreditsChart: React.FC<CreditsChartProps> = ({ data, search = "" }) => {
                   return (
                     <React.Fragment key={subActivity.id}>
                       <tr className="sub-activity-row" onClick={() => toggleRow(subActivity.id)}>
-                        <td>{isExpanded ? "▾" : "▸"} {subActivity.subActivityName} ({subActivity.repositoryDetails.length} Repositories)</td>
+                        <td>{isExpanded ? "▾" : "▸"} {subActivity.subActivityName} ({subActivity.repositoryDetails.length} Folders)</td>
                         <td>{subActivity.totalCreditUsed.toLocaleString()}</td>
                       </tr>
                       {isExpanded && (
@@ -69,7 +69,7 @@ const CreditsChart: React.FC<CreditsChartProps> = ({ data, search = "" }) => {
                             <table className="nested-table">
                               <thead>
                                 <tr>
-                                  <th>Repository Name</th>
+                                  <th>Folder Name</th>
                                   <th>Usage Count</th>
                                   <th>Credits Used</th>
                                 </tr>
