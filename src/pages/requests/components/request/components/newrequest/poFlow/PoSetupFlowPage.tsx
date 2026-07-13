@@ -924,6 +924,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
 
                 {uploadState === 'ready' && (
                   <ColumnMapping
+                    key="header-mapping"
                     confirmButtonText='Confirm Column Mapping'
                     isConfirmLoading={false}
                     mapping={mapping}
@@ -945,6 +946,8 @@ export default function PoSetupFlowPage({ onClose }: Props) {
 
                 {uploadState === 'lineItemMapping' && (
                   <ColumnMapping
+                    key="line-item-mapping"
+                    title='Confirm Line Item Mapping'
                     confirmButtonText='Confirm Line Item Mapping'
                     isConfirmLoading={isSubmitting}
                     mapping={lineItemMapping}

@@ -26,6 +26,7 @@ interface ColumnMappingProps {
   onChangeMapping: (mapping: Record<string, string>) => void
   onConfirm?: () => void
   confirmButtonText?: string
+  title?: string
   templateSchema?: readonly TemplateColumn[]
 
   // Grouping Props
@@ -51,6 +52,7 @@ export default function ColumnMapping({
   onChangeMapping,
   onConfirm,
   confirmButtonText,
+  title,
   templateSchema = SYSTEM_TEMPLATE_COLUMNS,
   showGrouping = false,
   groupingColumn,
@@ -144,7 +146,7 @@ export default function ColumnMapping({
         <div className='flex items-center justify-between border-b border-border-default pb-3'>
           <div>
             <h4 className='text-[14px] font-bold text-gray-12'>
-              Confirm Column Mapping
+              {title || 'Confirm Column Mapping'}
             </h4>
             <p className='mt-0.5 text-[11px] text-gray-8'>
               Align uploaded columns with master system fields.

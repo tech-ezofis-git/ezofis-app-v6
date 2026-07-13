@@ -1578,7 +1578,7 @@ const GridView = <TData,>({
             ) : (
               <>
                 {/* <TableFilters table={table} /> */}
-                <TableExport table={table} />
+                 <TableExport table={table} />
                 <TableReload
                   isReloading={isReloading || false}
                   onReload={onReload || (() => {})}

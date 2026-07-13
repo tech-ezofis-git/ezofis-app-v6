@@ -709,6 +709,71 @@ const InboxList: React.FC<InboxListProps> = ({
 
   const activeQuickFilters = requestStore((state) => state.activeQuickFilters)
 
+  const counts = useMemo(() => {
+    // For overdue count, filter by Status and Amount (ignore Overdue)
+    const overdueRows = filterRowsByQuickFilters(
+      flatRows,
+      activeQuickFilters,
+      'overdue',
+    )
+    let overdue = 0
+    overdueRows.forEach((row) => {
+      if (isOverdue(row)) overdue++
+    })
+
+    // For status counts, filter by Amount and Overdue (ignore Status)
+    const statusRows = filterRowsByQuickFilters(
+      flatRows,
+      activeQuickFilters,
+      'status',
+    )
+    let matched = 0
+    let discrepancies = 0
+    statusRows.forEach((row) => {
+      const parsedForm = getParsedFormData(row)
+      const agentData =
+        row._agentResponse || row._agentData?.[0] || row._agentData || {}
+      const rawDecision = String(
+        parsedForm['2MH_BMDFEVKsU0uAQjoI1'] ||
+          agentData?.decision ||
+          row.decision ||
+          row.status ||
+          '',
+      ).toUpperCase()
+
+      if (rawDecision === 'APPROVED' || rawDecision === 'MATCHED') {
+        matched++
+      }
+
+      if (
+        rawDecision === 'PARTIALLY APPROVED' ||
+        rawDecision === 'PARTIALLY MATCHED' ||
+        rawDecision === 'REJECTED' ||
+        rawDecision === 'NOT MATCHED' ||
+        rawDecision === 'NO MATCH' ||
+        row.isDuplicateInvoice === true
+      ) {
+        discrepancies++
+      }
+    })
+
+    // For amount counts, filter by Status and Overdue (ignore Amount)
+    const amountRows = filterRowsByQuickFilters(
+      flatRows,
+      activeQuickFilters,
+      'amount',
+    )
+    let highValue = 0
+    amountRows.forEach((row) => {
+      const amtStr = findInvoiceAmount(row)
+      const amount = amtStr ? Number(amtStr.replace(/[^0-9.-]/g, '')) : 0
+      if (amount >= 10000) {
+        highValue++
+      }
+    })
+
+    return { discrepancies, highValue, matched, overdue }
+  }, [flatRows, activeQuickFilters])
 
   const supplierNames = useMemo(() => {
     const set = new Set<string>()
@@ -1005,6 +1070,14 @@ const InboxList: React.FC<InboxListProps> = ({
     <div className='bg-primary flex min-h-0 flex-1 flex-col overflow-hidden px-6 py-2 md:px-6'>
       {!selectedItem && activeTab === 'Inbox' && (
         <CustomFilter
+          quickFilters={[
+            { id: 'overdue', label: 'Overdue', icon: 'tabler:clock', count: counts.overdue },
+            { id: 'matched', label: 'Auto-Matched', icon: 'tabler:circle-check', count: counts.matched },
+            { id: 'discrepancies', label: 'Discrepancies', icon: 'tabler:alert-triangle', count: counts.discrepancies },
+            { id: 'highValue', label: 'High Value (≥$10k)', icon: 'tabler:currency-dollar', count: counts.highValue }
+          ]}
+          activeQuickFilters={activeQuickFilters}
+          onQuickFilterToggle={(id) => requestStore.getState().toggleQuickFilter(id)}
           filters={[
             {
               id: 'status',
@@ -1039,8 +1112,11 @@ const InboxList: React.FC<InboxListProps> = ({
           ]}
           activeFilters={activeFiltersMap}
           onFilterChange={handleFilterChange}
-          showReset={activeQuickFilters.length > 0}
-          onReset={() => requestStore.getState().clearQuickFilters()}
+          showReset={activeQuickFilters.length > 0 || Object.keys(activeFiltersMap).length > 0}
+          onReset={() => {
+            requestStore.getState().clearQuickFilters()
+            if (setFiltersState) setFiltersState([])
+          }}
           searchQuery={searchState?.value || ''}
           onSearchChange={(val) => {
             if (setSearchState) setSearchState({ id: '', value: val })

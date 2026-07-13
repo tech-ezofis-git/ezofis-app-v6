@@ -17,13 +17,12 @@ const DashboardPage = () => {
 
   return (
     <div className='bg-gray-1 flex h-full flex-col overflow-y-auto'>
-      {isApSetUpCompleted ? (
+      {isApSetUpCompleted && (
         <AnimateSlideUp delay={0.1}>
           <DashboardCharts />
         </AnimateSlideUp>
-      ) : (
-        <AccountsPayable />
       )}
+      <AccountsPayable />
     </div>
   )
 }
