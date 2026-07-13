@@ -2409,7 +2409,7 @@ const Overview = (props: any) => {
                   }}
                 />
                 <div
-                  className='animate-scan absolute h-[1px] bg-[var(--primary-5)] shadow-[0_0_6px_var(--primary-7)]'
+                  className='animate-scan absolute h-[1px] bg-[var(--primary-8)] shadow-[0_0_6px_var(--primary-9)]'
                   style={{
                     left: scannerBounds.left,
                     right: scannerBounds.right,
@@ -2434,7 +2434,7 @@ const Overview = (props: any) => {
             <div className='pointer-events-none absolute inset-x-4 top-12 bottom-4 z-10 overflow-hidden rounded-xl'>
               <div className='bg-[color-mix(in srgb,var(--primary-9)_3%,transparent)] absolute inset-0' />
               <div
-                className='animate-scan absolute right-0 left-0 h-[1px] bg-[var(--primary-5)] shadow-[0_0_6px_var(--primary-7)]'
+                className='animate-scan absolute right-0 left-0 h-[1px] bg-[var(--primary-8)] shadow-[0_0_6px_var(--primary-9)]'
                 style={{ animationDuration: '8s' }}
               />
             </div>

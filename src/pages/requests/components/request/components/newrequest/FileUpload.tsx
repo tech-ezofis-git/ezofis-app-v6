@@ -917,43 +917,53 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
         </AnimateSlideUp>
 
         {/* Bottom Capabilities - Kept from original but repositioned */}
-        <div className='grid w-full grid-cols-1 gap-6 md:grid-cols-3'>
+        <div className='mx-auto grid w-full max-w-[900px] grid-cols-1 gap-4 md:grid-cols-3'>
           {[
             {
               color: 'text-[var(--orange-9)] bg-[var(--orange-2)]',
               icon: 'tabler:bolt',
+              label: 'AI EXTRACTION',
               sub: 'AI-powered extraction in seconds',
               title: 'Instant Processing',
             },
             {
               color: 'text-[var(--indigo-9)] bg-[var(--indigo-2)]',
               icon: 'tabler:sparkles',
+              label: 'INTELLIGENCE',
               sub: 'Link invoices to POs with precision.',
               title: 'Smart PO Matching',
             },
             {
               color: 'text-[var(--green-11)] bg-[var(--green-2)]',
               icon: 'tabler:clock',
+              label: 'ANALYTICS',
               sub: 'Insights into your liabilities.',
               title: 'Payables Overview',
             },
           ].map((item, idx) => (
             <AnimateEntrancePop delay={0.4 + idx * 0.1} key={item.title}>
-              <div className='group flex h-full flex-col items-start rounded-xl border border-[var(--gray-3)] bg-surface p-6 text-left shadow-sm transition-all duration-300 hover:shadow-md'>
-                <div
-                  className={`flex size-9 shrink-0 items-center justify-center rounded-lg 2xl:size-10 ${item.color} mt-1 mb-4 transition-transform duration-300 group-hover:scale-110`}
-                >
-                  <Icon
-                    className='size-5 transition-transform duration-300 group-hover:rotate-6'
-                    name={item.icon}
-                  />
+              <div className='group flex h-full flex-col gap-2 rounded-xl border border-[var(--gray-3)] bg-surface p-5 shadow-sm transition-all duration-300 hover:shadow-md'>
+                <span className='truncate text-[9px] font-bold tracking-wider text-[var(--gray-10)] uppercase'>
+                  {item.label}
+                </span>
+                <div className='mt-1 flex items-center gap-3.5'>
+                  <div
+                    className={`flex size-10 items-center justify-center rounded-lg shadow-sm ${item.color} transition-transform duration-300 group-hover:scale-105`}
+                  >
+                    <Icon
+                      className='size-5 transition-transform duration-300 group-hover:rotate-6'
+                      name={item.icon}
+                    />
+                  </div>
+                  <div className='min-w-0 flex-1'>
+                    <h4 className='truncate text-13/4.5 font-semibold text-[var(--gray-13)] transition-colors group-hover:text-purple-7'>
+                      {item.title}
+                    </h4>
+                    <p className='mt-0.5 truncate text-11/4 text-[var(--gray-10)]'>
+                      {item.sub}
+                    </p>
+                  </div>
                 </div>
-                <h4 className='text-sm font-medium tracking-tight text-[var(--gray-13)]'>
-                  {item.title}
-                </h4>
-                <p className='mt-2 text-xs leading-relaxed font-medium text-[var(--gray-10)]'>
-                  {item.sub}
-                </p>
               </div>
             </AnimateEntrancePop>
           ))}

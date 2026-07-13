@@ -1,5 +1,4 @@
 import { useDebouncedCallback } from '@mantine/hooks'
-import { useClickOutside } from '@mantine/hooks'
 import { useEffect, useId, useState } from 'react'
 import Icon from '@/components/base/icon/Icon'
 import Tooltip from '@/components/base/Tooltip'
@@ -17,9 +16,7 @@ export default function SettingsSearchInput({
   onChange,
 }: SettingsSearchInputProps) {
   const inputId = useId()
-  const [focused, setFocused] = useState(false)
   const [inputValue, setInputValue] = useState(value)
-  const ref = useClickOutside(() => setFocused(false))
 
   useEffect(() => {
     setInputValue(value)
@@ -29,7 +26,7 @@ export default function SettingsSearchInput({
     onChange(nextValue)
   }, 300)
 
-  const isExpanded = focused || !!value
+  const isExpanded = true
 
   const handleContainerClick = () => {
     if (!isExpanded) {
@@ -48,7 +45,6 @@ export default function SettingsSearchInput({
     <div
       aria-label='Search'
       className={containerClasses}
-      ref={ref}
       role='search'
       onClick={handleContainerClick}
     >
@@ -79,7 +75,6 @@ export default function SettingsSearchInput({
             setInputValue(event.target.value)
             handleValueChange(event.target.value)
           }}
-          onFocus={() => setFocused(true)}
         />
       </div>
     </div>

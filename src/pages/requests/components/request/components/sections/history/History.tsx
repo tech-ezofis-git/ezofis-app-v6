@@ -349,8 +349,8 @@ export default function History({
   }
 
   return (
-    <div className='p-4'>
-      <div className='animate-in fade-in slide-in-from-left-4 rounded-xl border border-[var(--gray-3)] bg-surface p-5 shadow-sm duration-300'>
+    <div className=''>
+      <div className='animate-in fade-in slide-in-from-left-4 rounded-xl border border-[var(--gray-3)] bg-surface p-3 shadow-sm duration-300'>
         <div className='relative flex flex-col gap-5'>
           {/* Timeline Connecting Line */}
           {flows.length > 1 && (

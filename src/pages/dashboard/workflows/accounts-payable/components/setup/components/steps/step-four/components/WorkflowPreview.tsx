@@ -34,20 +34,19 @@ const WorkflowPreview = () => {
   const startNode = getStartNodeConfig()
 
   // Compact Staggered Path (Edge-to-Edge)
-  // Node 1 Right (130, 40) -> Node 2 Left (213, 110)
-  // Node 2 Right (343, 110) -> Node 3 Left (426, 40)
-  // Node 3 Right (556, 40) -> Node 4 Left (640, 110)
+  // Node 1 Right (130, 40) -> Node 2 Left (207, 110)
+  // Node 2 Right (337, 110) -> Node 3 Left (413, 40)
+  // Node 3 Right (563, 40) -> Node 4 Left (640, 110)
   const flowPath =
-    'M 130 40 C 170 40, 170 110, 213 110 M 343 110 C 385 110, 385 40, 426 40 M 556 40 C 600 40, 600 110, 640 110'
+    'M 130 40 C 168 40, 168 110, 207 110 M 337 110 C 375 110, 375 40, 413 40 M 563 40 C 601 40, 601 110, 640 110'
 
-  // Connection Points (Left and Right of each node)
   const points = [
-    { x: 130, y: 40 }, // Node 1 Right
-    { x: 213, y: 110 }, // Node 2 Left
-    { x: 343, y: 110 }, // Node 2 Right
-    { x: 426, y: 40 }, // Node 3 Left
-    { x: 556, y: 40 }, // Node 3 Right
-    { x: 640, y: 110 }, // Node 4 Left
+    { x: 130, y: 40 },
+    { x: 207, y: 110 },
+    { x: 337, y: 110 },
+    { x: 413, y: 40 },
+    { x: 563, y: 40 },
+    { x: 640, y: 110 },
   ]
 
   return (
@@ -84,13 +83,11 @@ const WorkflowPreview = () => {
             viewBox='0 0 770 150'
           >
             <g>
-              {/* Base Line - Edge to Edge */}
               <path
                 className='fill-none stroke-gray-3 stroke-[1.5] dark:stroke-gray-8'
                 d={flowPath}
               />
 
-              {/* Animated "Marching Ants" Wave */}
               <motion.path
                 className='fill-none stroke-purple-5 stroke-[1.5]'
                 d={flowPath}
@@ -114,24 +111,58 @@ const WorkflowPreview = () => {
                 }}
               />
 
-              {/* Traveling Data Pulse */}
+              {/* Staggered Segment Pulses */}
               <motion.circle
-                animate={{ offsetDistance: ['0%', '100%'] }}
+                animate={{ offsetDistance: ['0%', '100%'], opacity: [0, 1, 1, 0] }}
                 fill='var(--purple-5)'
                 r='3'
                 style={{
                   filter: 'drop-shadow(0 0 4px var(--purple-4))',
-                  offsetPath: `path("${flowPath}")`,
+                  offsetPath: `path("M 130 40 C 168 40, 168 110, 207 110")`,
                 }}
                 transition={{
-                  delay: 2,
-                  duration: 4,
+                  delay: 0,
+                  duration: 1.2,
                   ease: 'linear',
                   repeat: Infinity,
+                  repeatDelay: 2.4,
                 }}
               />
 
-              {/* Edge Connection Points */}
+              <motion.circle
+                animate={{ offsetDistance: ['0%', '100%'], opacity: [0, 1, 1, 0] }}
+                fill='var(--purple-5)'
+                r='3'
+                style={{
+                  filter: 'drop-shadow(0 0 4px var(--purple-4))',
+                  offsetPath: `path("M 337 110 C 375 110, 375 40, 413 40")`,
+                }}
+                transition={{
+                  delay: 1.2,
+                  duration: 1.2,
+                  ease: 'linear',
+                  repeat: Infinity,
+                  repeatDelay: 2.4,
+                }}
+              />
+
+              <motion.circle
+                animate={{ offsetDistance: ['0%', '100%'], opacity: [0, 1, 1, 0] }}
+                fill='var(--purple-5)'
+                r='3'
+                style={{
+                  filter: 'drop-shadow(0 0 4px var(--purple-4))',
+                  offsetPath: `path("M 563 40 C 601 40, 601 110, 640 110")`,
+                }}
+                transition={{
+                  delay: 2.4,
+                  duration: 1.2,
+                  ease: 'linear',
+                  repeat: Infinity,
+                  repeatDelay: 2.4,
+                }}
+              />
+
               {points.map((p, i) => (
                 <motion.circle
                   animate={{ opacity: 1, scale: 1 }}
@@ -174,12 +205,13 @@ const WorkflowPreview = () => {
           </div>
 
           {/* Node 3: Approver (Top) */}
-          <div className='flex w-[130px] flex-col items-center pt-1'>
+          <div className='flex w-[150px] flex-col items-center pt-1'>
             <AnimateFadeIn delay={0.7}>
               <NodeCard
                 icon='flat-color-icons:signature'
                 subtitle='Manual Sign-off'
                 title='Approver Review'
+                widthClass='w-[150px]'
               />
             </AnimateFadeIn>
           </div>
@@ -208,6 +240,7 @@ const NodeCard = ({
   isEnd = false,
   subtitle,
   title,
+  widthClass = 'w-[130px]',
 }: {
   icon: string
   isTrigger?: boolean
@@ -215,6 +248,7 @@ const NodeCard = ({
   isEnd?: boolean
   subtitle: string
   title: string
+  widthClass?: string
 }) => (
   <div className='group relative'>
     {isTrigger && (
@@ -225,7 +259,8 @@ const NodeCard = ({
     )}
     <motion.div
       className={cn(
-        'relative z-10 flex w-[130px] flex-col rounded-md border p-2 shadow-[0_2px_6px_rgba(0,0,0,0.02)] transition-colors',
+        'relative z-10 flex flex-col rounded-md border p-2 shadow-[0_2px_6px_rgba(0,0,0,0.02)] transition-colors',
+        widthClass,
         isAgent
           ? 'border-purple-8 bg-purple-9 text-white dark:border-purple-7 dark:bg-purple-9'
           : isEnd
@@ -236,68 +271,71 @@ const NodeCard = ({
       whileHover={
         isAgent
           ? {
-              borderColor: 'var(--purple-3)',
+            borderColor: 'var(--purple-3)',
+            boxShadow:
+              '0 10px 25px -5px rgba(168, 85, 247, 0.25), 0 8px 10px -6px rgba(168, 85, 247, 0.25)',
+            scale: 1.02,
+            y: -4,
+          }
+          : isEnd
+            ? {
+              borderColor: 'var(--green-5)',
               boxShadow:
-                '0 10px 25px -5px rgba(168, 85, 247, 0.25), 0 8px 10px -6px rgba(168, 85, 247, 0.25)',
+                '0 10px 25px -5px rgba(34, 197, 94, 0.15), 0 8px 10px -6px rgba(34, 197, 94, 0.15)',
               scale: 1.02,
               y: -4,
             }
-          : isEnd
-            ? {
-                borderColor: 'var(--green-5)',
-                boxShadow:
-                  '0 10px 25px -5px rgba(34, 197, 94, 0.15), 0 8px 10px -6px rgba(34, 197, 94, 0.15)',
-                scale: 1.02,
-                y: -4,
-              }
             : {
-                borderColor: 'var(--purple-4)',
-                boxShadow:
-                  '0 10px 25px -5px rgba(168, 85, 247, 0.1), 0 8px 10px -6px rgba(168, 85, 247, 0.1)',
-                scale: 1.02,
-                y: -4,
-              }
+              borderColor: 'var(--purple-4)',
+              boxShadow:
+                '0 10px 25px -5px rgba(168, 85, 247, 0.1), 0 8px 10px -6px rgba(168, 85, 247, 0.1)',
+              scale: 1.02,
+              y: -4,
+            }
       }
     >
-      <div className='flex items-center gap-1.5'>
-        <motion.div
-          className={cn(
-            'flex h-6 w-6 shrink-0 items-center justify-center rounded border transition-colors',
-            isAgent
-              ? 'bg-purple-8/40 border-purple-7/40 text-white'
-              : 'bg-gray-1 border-gray-2 group-hover:bg-purple-50 group-hover:border-purple-2 dark:bg-gray-800 dark:border-gray-7'
-          )}
-          whileHover={{ rotate: 5, scale: 1.1 }}
-        >
-          <Icon className={cn('size-3.5', isAgent ? 'text-white' : '')} name={icon} />
-        </motion.div>
-        <div className='flex-1 overflow-hidden'>
-          <div className='flex items-center justify-between gap-1'>
-            <h4 className={cn(
-              'truncate text-[10px] leading-none font-bold transition-colors',
-              isAgent ? 'text-white' : 'text-gray-12 group-hover:text-purple-7'
-            )}>
-              {title}
-            </h4>
-            {isAgent ? (
-              <span className='shrink-0 rounded-[2px] border border-purple-7 bg-purple-8/50 px-1 py-0.5 text-[5px] font-bold text-white uppercase tracking-tight'>
-                AI Agent 1
-              </span>
-            ) : (
-              <Icon className='size-2 text-gray-8' name='tabler:chevron-down' />
-            )}
+      {isAgent ? (
+        <>
+          <div className='flex items-start justify-between gap-2'>
+            <motion.div
+              className='flex h-6 w-6 shrink-0 items-center justify-center rounded border border-purple-7/40 bg-purple-8/40 text-white transition-colors'
+              whileHover={{ rotate: 5, scale: 1.1 }}
+            >
+              <Icon className='size-3.5 text-white' name={icon} />
+            </motion.div>
+            <span className='shrink-0 rounded border border-purple-7/60 bg-purple-8/50 px-1.5 py-0.5 text-[6px] font-bold tracking-wide text-white uppercase'>
+              AI Agent
+            </span>
           </div>
-          <p className={cn(
-            'mt-0.5 truncate text-[9px] leading-none font-medium',
-            isAgent ? 'text-purple-2' : 'text-gray-10'
-          )}>
+          <h4 className='mt-2 text-[10px] leading-tight font-bold text-white break-words'>
+            {title}
+          </h4>
+          <p className='mt-1 text-[9px] leading-snug font-medium text-purple-2 break-words'>
             {subtitle}
           </p>
-        </div>
-      </div>
-      {isAgent && (
-        <div className='mt-2.5 h-1 w-full rounded-full bg-purple-8/40 overflow-hidden'>
-          <div className='h-full w-2/3 rounded-full bg-purple-3' />
+          <div className='mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-purple-8/40'>
+            <div className='h-full w-2/3 rounded-full bg-purple-3' />
+          </div>
+        </>
+      ) : (
+        <div className='flex items-center gap-1.5'>
+          <motion.div
+            className={cn(
+              'flex h-6 w-6 shrink-0 items-center justify-center rounded border transition-colors',
+              'bg-gray-1 border-gray-2 group-hover:bg-purple-50 group-hover:border-purple-2 dark:bg-gray-800 dark:border-gray-7'
+            )}
+            whileHover={{ rotate: 5, scale: 1.1 }}
+          >
+            <Icon className='size-3.5' name={icon} />
+          </motion.div>
+          <div className='flex-1 min-w-0'>
+            <h4 className='text-[9px] leading-tight font-bold text-gray-12 transition-colors group-hover:text-purple-7 break-words'>
+              {title}
+            </h4>
+            <p className='mt-0.5 text-[8px] leading-tight font-medium text-gray-10 break-words'>
+              {subtitle}
+            </p>
+          </div>
         </div>
       )}
     </motion.div>

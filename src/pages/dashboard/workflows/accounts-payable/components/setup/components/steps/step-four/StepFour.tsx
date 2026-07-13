@@ -34,7 +34,7 @@ const ProtocolCard = ({
   title: string
 }) => (
   <div className='flex flex-col gap-2 rounded-xl border border-gray-3 bg-surface p-5 shadow-sm transition-shadow hover:shadow-md'>
-    <span className='text-[10px] font-bold tracking-wider text-gray-10 uppercase'>
+    <span className='truncate text-[9px] font-bold tracking-wider text-gray-10 uppercase'>
       {label}
     </span>
     <div className='mt-1 flex items-center gap-3.5'>
@@ -44,10 +44,10 @@ const ProtocolCard = ({
         <Icon className={`size-5 ${iconColor}`} name={icon} />
       </div>
       <div className='min-w-0 flex-1'>
-        <h4 className='truncate text-14/5 font-semibold text-gray-13'>
+        <h4 className='truncate text-13/4.5 font-semibold text-gray-13'>
           {title}
         </h4>
-        <p className='mt-0.5 truncate text-12/4.5 text-gray-10'>{subtitle}</p>
+        <p className='mt-0.5 truncate text-11/4 text-gray-10'>{subtitle}</p>
       </div>
     </div>
   </div>
@@ -442,7 +442,7 @@ const StepFour = () => {
         </AnimateFadeIn>
 
         <AnimateFadeIn delay={0.4}>
-          <div className='grid grid-cols-1 gap-4 sm:grid-cols-3'>
+          <div className='mx-auto grid w-full max-w-[900px] grid-cols-1 gap-4 sm:grid-cols-3'>
             <ProtocolCard
               icon='tabler:database'
               iconBg='bg-blue-1 dark:bg-blue-9/20'

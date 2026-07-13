@@ -17,10 +17,8 @@ interface Props<TData> {
 }
 
 const TableSearch = <TData,>({ table }: Props<TData>) => {
-  const [focused, setFocused] = useState(false)
   const [opened, setOpened] = useState(false)
   const ref = useClickOutside(() => {
-    setFocused(false)
     setOpened(false)
   })
 
@@ -56,7 +54,7 @@ const TableSearch = <TData,>({ table }: Props<TData>) => {
     300,
   )
 
-  const isExpanded = focused || !!searchState?.value
+  const isExpanded = true
   const selectedColumn = columns.find((column) => column.id === searchState?.id)
   const selectedColumnLabel =
     searchState?.id && selectedColumn
@@ -124,7 +122,6 @@ const TableSearch = <TData,>({ table }: Props<TData>) => {
             setInputValue(e.target.value)
             handleValueChange(e.target.value)
           }}
-          onFocus={() => setFocused(true)}
         />
       </div>
 
