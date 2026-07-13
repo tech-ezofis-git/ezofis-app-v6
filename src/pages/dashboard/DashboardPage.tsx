@@ -1,5 +1,6 @@
 import { AnimateSlideUp } from '@/components/common/animations'
 import AccountsPayable from './workflows/accounts-payable/AccountsPayable'
+import Setup from './workflows/accounts-payable/components/setup/Setup'
 import setupStore from './workflows/accounts-payable/stores/useSetupStore'
 import DashboardCharts from './workflows/shared/components/Header'
 
@@ -23,6 +24,7 @@ const DashboardPage = () => {
         </AnimateSlideUp>
       )}
       <AccountsPayable />
+      <Setup />
     </div>
   )
 }

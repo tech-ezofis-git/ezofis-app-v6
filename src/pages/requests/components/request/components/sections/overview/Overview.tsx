@@ -1095,9 +1095,9 @@ const isLineItemAmountColumn = (key: string) => {
   )
 }
 
-const getPinnedAmountStyle = (): CSSProperties =>
+const getPinnedAmountStyle = (scoreWidth = LINE_ITEM_SCORE_WIDTH): CSSProperties =>
   getRightStickyStyle(
-    LINE_ITEM_ACTION_WIDTH + LINE_ITEM_SCORE_WIDTH,
+    LINE_ITEM_ACTION_WIDTH + scoreWidth,
     LINE_ITEM_AMOUNT_WIDTH,
   )
 
@@ -1973,6 +1973,22 @@ const Overview = (props: any) => {
     }
     return widths;
   }, [lineItems, isDynamicTable, dynamicColumns]);
+
+  const hasAnyScore = useMemo(() => {
+    return lineItems.some((item: any, index: number) => {
+      const matchData =
+        agentData?.debug?.[
+          'Side-by-side Line Item matching'
+        ]?.[index]
+      const lineScore =
+        matchData?.['Line Score'] ??
+        item['Line Score'] ??
+        item?.score
+      return lineScore !== undefined && lineScore !== null
+    })
+  }, [lineItems, agentData])
+
+  const currentScoreWidth = hasAnyScore ? LINE_ITEM_SCORE_WIDTH : 0;
 
   const getStickyLeftOffset = (index: number) =>
     dynamicWidths.slice(0, index).reduce((sum: number, width: number) => sum + width, 0)
@@ -3789,7 +3805,7 @@ const Overview = (props: any) => {
                                               'bg-[var(--gray-1)]',
                                             ),
                                           )}
-                                          style={isAmountColumn ? getPinnedAmountStyle() : getLineItemCellStyle(
+                                          style={isAmountColumn ? getPinnedAmountStyle(currentScoreWidth) : getLineItemCellStyle(
                                             colIndex,
                                             isNumeric,
                                           )}
@@ -3859,7 +3875,7 @@ const Overview = (props: any) => {
                                           'border-b border-[var(--gray-3)] px-3 py-2 text-right text-[11px] font-semibold whitespace-nowrap text-[var(--gray-11)]',
                                           getPinnedAmountClass('bg-[var(--gray-1)]')
                                         )}
-                                        style={getPinnedAmountStyle()}
+                                        style={getPinnedAmountStyle(currentScoreWidth)}
                                       >
                                         <span
                                           className={getLineItemTextClass(true)}
@@ -3869,19 +3885,20 @@ const Overview = (props: any) => {
                                       </th>
                                     </>
                                   )}
-                                  <th
-                                    className='sticky z-20 border-b border-[var(--gray-3)] bg-[var(--gray-1)] px-3 py-2 text-right text-[11px] font-semibold whitespace-nowrap text-[var(--gray-11)] before:absolute before:top-0 before:left-0 before:h-full before:w-px before:bg-[var(--gray-3)]'
-                                    style={getRightStickyStyle(
-                                      LINE_ITEM_ACTION_WIDTH,
-                                      LINE_ITEM_SCORE_WIDTH,
-                                    )}
-                                  >
-                                    <span
-                                      className={getLineItemTextClass(true)}
+                                  {hasAnyScore && (
+                                    <th
+                                      className='sticky z-20 border-b border-[var(--gray-3)] bg-[var(--gray-1)] px-3 py-2 text-right text-[11px] font-semibold whitespace-nowrap text-[var(--gray-11)] before:absolute before:top-0 before:left-0 before:h-full before:w-px before:bg-[var(--gray-3)]'
+                                      style={getRightStickyStyle(
+                                        LINE_ITEM_ACTION_WIDTH,
+                                        currentScoreWidth,
+                                      )}
                                     >
-                                      Score
-                                    </span>
-                                  </th>
+                                      <span
+                                        className={getLineItemTextClass(true)}
+                                      >
+                                      </span>
+                                    </th>
+                                  )}
                                   <th
                                     className='sticky z-20 border-b border-[var(--gray-3)] bg-[var(--gray-1)] p-1 text-center'
                                     style={getRightStickyStyle(
@@ -4003,15 +4020,17 @@ const Overview = (props: any) => {
                                           </td>
                                         </>
                                       )}
-                                      <td
-                                        className='sticky z-20 bg-surface px-3 py-3 before:absolute before:top-0 before:left-0 before:h-full before:w-px before:bg-[var(--gray-3)]'
-                                        style={getRightStickyStyle(
-                                          LINE_ITEM_ACTION_WIDTH,
-                                          LINE_ITEM_SCORE_WIDTH,
-                                        )}
-                                      >
-                                        <div className='ml-auto h-4 w-12 animate-pulse rounded bg-[var(--gray-3)]' />
-                                      </td>
+                                      {hasAnyScore && (
+                                        <td
+                                          className='sticky z-20 bg-surface px-3 py-3 before:absolute before:top-0 before:left-0 before:h-full before:w-px before:bg-[var(--gray-3)]'
+                                          style={getRightStickyStyle(
+                                            LINE_ITEM_ACTION_WIDTH,
+                                            currentScoreWidth,
+                                          )}
+                                        >
+                                          <div className='ml-auto h-4 w-12 animate-pulse rounded bg-[var(--gray-3)]' />
+                                        </td>
+                                      )}
                                       <td
                                         className='sticky z-20 bg-surface'
                                         style={getRightStickyStyle(
@@ -4091,7 +4110,7 @@ const Overview = (props: any) => {
                                                           : 'bg-[var(--red-1)]',
                                                       ),
                                                     )}
-                                                    style={isAmountColumn ? getPinnedAmountStyle() : getLineItemCellStyle(
+                                                    style={isAmountColumn ? getPinnedAmountStyle(currentScoreWidth) : getLineItemCellStyle(
                                                       colIndex,
                                                       isNumeric,
                                                     )}
@@ -4374,7 +4393,7 @@ const Overview = (props: any) => {
                                               </td>
 
                                               {/* Total Amount Cell */}
-                                              <td className={cn('px-2 py-0.5 text-right font-semibold text-[var(--gray-13)]', getPinnedAmountClass(isMatch ? 'bg-surface' : 'bg-[var(--red-1)]'))} style={getPinnedAmountStyle()}>
+                                              <td className={cn('px-2 py-0.5 text-right font-semibold text-[var(--gray-13)]', getPinnedAmountClass(isMatch ? 'bg-surface' : 'bg-[var(--red-1)]'))} style={getPinnedAmountStyle(currentScoreWidth)}>
                                                 <div className='group/cell relative h-full min-h-[24px] w-full'>
                                                   <div className='invisible w-full min-w-0 whitespace-nowrap px-1.5 py-1 text-right text-xs font-semibold break-words group-hover/cell:whitespace-normal'>
                                                     {item.Amount?.[
@@ -4457,50 +4476,52 @@ const Overview = (props: any) => {
                                           )}
 
                                           {/* Match Score Cell */}
-                                          <td
-                                            className={cn(
-                                              'sticky z-20 px-3 py-2 text-right font-semibold before:absolute before:top-0 before:left-0 before:h-full before:w-px before:bg-[var(--gray-3)]',
-                                              isMatch
-                                                ? 'bg-surface'
-                                                : 'bg-[var(--red-1)]',
-                                            )}
-                                            style={getRightStickyStyle(
-                                              LINE_ITEM_ACTION_WIDTH,
-                                              LINE_ITEM_SCORE_WIDTH,
-                                            )}
-                                          >
-                                            {(() => {
-                                              if (
-                                                lineScore === undefined ||
-                                                lineScore === null
-                                              )
+                                          {hasAnyScore && (
+                                            <td
+                                              className={cn(
+                                                'sticky z-20 px-3 py-2 text-right font-semibold before:absolute before:top-0 before:left-0 before:h-full before:w-px before:bg-[var(--gray-3)]',
+                                                isMatch
+                                                  ? 'bg-surface'
+                                                  : 'bg-[var(--red-1)]',
+                                              )}
+                                              style={getRightStickyStyle(
+                                                LINE_ITEM_ACTION_WIDTH,
+                                                currentScoreWidth,
+                                              )}
+                                            >
+                                              {(() => {
+                                                if (
+                                                  lineScore === undefined ||
+                                                  lineScore === null
+                                                )
+                                                  return (
+                                                    <span className='text-[11px] text-gray-9'>
+                                                      -
+                                                    </span>
+                                                  )
+                                                const scoreNum =
+                                                  Number(lineScore)
                                                 return (
-                                                  <span className='text-[11px] text-gray-9'>
-                                                    -
+                                                  <span
+                                                    className={cn(
+                                                      'text-xs font-bold',
+                                                      {
+                                                        'text-[var(--green-9)]':
+                                                          scoreNum >= 90,
+                                                        'text-[var(--orange-9)]':
+                                                          scoreNum >= 70 &&
+                                                          scoreNum < 90,
+                                                        'text-[var(--red-9)]':
+                                                          scoreNum < 70,
+                                                      },
+                                                    )}
+                                                  >
+                                                    {scoreNum.toFixed(0)}%
                                                   </span>
                                                 )
-                                              const scoreNum =
-                                                Number(lineScore)
-                                              return (
-                                                <span
-                                                  className={cn(
-                                                    'text-xs font-bold',
-                                                    {
-                                                      'text-[var(--green-9)]':
-                                                        scoreNum >= 90,
-                                                      'text-[var(--orange-9)]':
-                                                        scoreNum >= 70 &&
-                                                        scoreNum < 90,
-                                                      'text-[var(--red-9)]':
-                                                        scoreNum < 70,
-                                                    },
-                                                  )}
-                                                >
-                                                  {scoreNum.toFixed(0)}%
-                                                </span>
-                                              )
-                                            })()}
-                                          </td>
+                                              })()}
+                                            </td>
+                                          )}
 
                                           {/* Action Cell */}
                                           <td
@@ -4556,37 +4577,29 @@ const Overview = (props: any) => {
                                   <tfoot className='sticky bottom-0 z-30 bg-[var(--gray-1)] shadow-[0_-1px_0_var(--gray-3)]'>
                                     <tr className='border-t border-[var(--gray-3)]'>
                                       {/* Spacer cell to push sticky cells to the right */}
-                                      {(!isDynamicTable || dynamicColumns.length > 2) && (
+                                      {(!isDynamicTable || dynamicColumns.length > 1) && (
                                         <td
-                                          colSpan={isDynamicTable ? dynamicColumns.length - 2 : 2}
+                                          colSpan={isDynamicTable ? dynamicColumns.length - 1 : 3}
                                           className='border-t border-[var(--gray-3)]'
                                         />
                                       )}
-                                      {/* Grand Total text cell (Pinned right before Amount) */}
-                                      <td
-                                        className='sticky z-20 border-t border-[var(--gray-3)] bg-[var(--gray-1)] px-3 py-2.5 text-right text-[11px] font-semibold text-[var(--gray-11)] before:absolute before:top-0 before:left-0 before:h-full before:w-px before:bg-[var(--gray-3)]'
-                                        style={{
-                                          ...getRightStickyStyle(LINE_ITEM_ACTION_WIDTH + LINE_ITEM_SCORE_WIDTH + LINE_ITEM_AMOUNT_WIDTH, 100),
-                                        }}
-                                      >
-                                        Grand Total
-                                      </td>
-
                                       {/* Total Amount cell */}
-                                      <td className={cn('px-3 py-2.5 text-right border-t border-[var(--gray-3)]', getPinnedAmountClass('bg-[var(--gray-1)]'))} style={getPinnedAmountStyle()}>
+                                      <td className={cn('px-3 py-2.5 text-right border-t border-[var(--gray-3)]', getPinnedAmountClass('bg-[var(--gray-1)]'))} style={getPinnedAmountStyle(currentScoreWidth)}>
                                         <span className='block w-full overflow-hidden text-ellipsis whitespace-nowrap text-[13px] font-bold text-[var(--gray-13)]'>
                                           {displayTotal}
                                         </span>
                                       </td>
 
                                       {/* Pinned Match Score filler */}
-                                      <td
-                                        className='sticky z-20 border-t border-[var(--gray-3)] bg-[var(--gray-1)] before:absolute before:top-0 before:left-0 before:h-full before:w-px before:bg-[var(--gray-3)]'
-                                        style={getRightStickyStyle(
-                                          LINE_ITEM_ACTION_WIDTH,
-                                          LINE_ITEM_SCORE_WIDTH,
-                                        )}
-                                      />
+                                      {hasAnyScore && (
+                                        <td
+                                          className='sticky z-20 border-t border-[var(--gray-3)] bg-[var(--gray-1)] before:absolute before:top-0 before:left-0 before:h-full before:w-px before:bg-[var(--gray-3)]'
+                                          style={getRightStickyStyle(
+                                            LINE_ITEM_ACTION_WIDTH,
+                                            currentScoreWidth,
+                                          )}
+                                        />
+                                      )}
 
                                       {/* Pinned Action filler */}
                                       <td

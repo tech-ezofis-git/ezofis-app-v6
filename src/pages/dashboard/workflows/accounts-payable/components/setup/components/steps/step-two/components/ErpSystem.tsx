@@ -23,7 +23,7 @@ import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useS
 import { compareHeaderSimilarity } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/headerSimilarity'
 import { SYSTEM_TEMPLATE_COLUMNS } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/templateSchema'
 import { LINE_ITEM_TEMPLATE_COLUMNS } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/lineItemSchema'
-import { detectGroupingColumn, groupLineItems, getPreviewGroup } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/lineItemHelpers'
+import { detectGroupingColumn } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/lineItemHelpers'
 import BrandCard from '../../components/BrandCard'
 import SectionHeader from '../../components/SectionHeader'
 import { OrDivider } from '../../components/StepLayout'
@@ -48,6 +48,7 @@ const ErpSystem = () => {
   const erpSettings = setupStore((state) => state.erpSettings)
   const setErpSettings = setupStore((state) => state.setErpSettings)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [isParsing, setIsParsing] = useState(false)
 
   const isFileBasedImportSelected = erpSettings.system === 'FILE_BASED_IMPORT'
 
@@ -65,6 +66,7 @@ const ErpSystem = () => {
   ) => {
     const file = event.target.files?.[0]
     if (file) {
+      setIsParsing(true)
       try {
         const { headers, previewRows, lineItemHeaders: liHeaders, lineItemRows: liRows } = await extractHeadersAndData(file)
 
@@ -106,6 +108,11 @@ const ErpSystem = () => {
             'Failed to parse file. Please upload a valid CSV or Excel file.',
           variant: 'error',
         })
+      } finally {
+        setIsParsing(false)
+        if (fileInputRef.current) {
+          fileInputRef.current.value = ''
+        }
       }
     }
   }
@@ -243,6 +250,7 @@ const ErpSystem = () => {
                   <Button
                     icon='tabler:upload'
                     size='sm'
+                    loading={isParsing}
                     label={
                       erpSettings.templateUploaded
                         ? 'Replace Master Data'

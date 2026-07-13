@@ -9,6 +9,7 @@ interface Props {
   description?: string
   icon?: string
   logo?: string
+  loading?: boolean
   onClick: () => void
 }
 
@@ -16,6 +17,7 @@ const BrandCard = ({
   checked,
   description,
   icon,
+  loading,
   logo,
   name,
   onClick,
@@ -23,11 +25,13 @@ const BrandCard = ({
   return (
     <motion.button
       aria-pressed={checked}
+      disabled={loading}
       type='button'
-      whileHover={{ scale: 1.01 }}
-      whileTap={{ scale: 0.99 }}
+      whileHover={{ scale: loading ? 1 : 1.01 }}
+      whileTap={{ scale: loading ? 1 : 0.99 }}
       className={cn(
-        'group relative flex h-full min-h-[76px] w-full cursor-pointer flex-row items-center justify-between gap-3 rounded-lg border px-4 py-3.5 text-left transition-all duration-200',
+        'group relative flex h-full min-h-[76px] w-full flex-row items-center justify-between gap-3 rounded-lg border px-4 py-3.5 text-left transition-all duration-200',
+        loading ? 'cursor-not-allowed opacity-70' : 'cursor-pointer',
         checked
           ? 'border-green-9 bg-green-1 shadow-sm ring-2 ring-green-9/25'
           : 'border-gray-4 bg-surface hover:border-gray-5 hover:bg-gray-2',
@@ -69,7 +73,15 @@ const BrandCard = ({
           )}
         </div>
       </div>
-      {checked && (
+      {loading ? (
+        <motion.div
+          animate={{ opacity: 1, scale: 1 }}
+          className='flex size-5 shrink-0 items-center justify-center'
+          initial={{ opacity: 0, scale: 0.5 }}
+        >
+          <Icon className='size-5 animate-spin text-gray-10' name='tabler:loader-2' />
+        </motion.div>
+      ) : checked && (
         <motion.div
           animate={{ opacity: 1, scale: 1 }}
           className='flex size-5 shrink-0 items-center justify-center rounded-full bg-green-9'

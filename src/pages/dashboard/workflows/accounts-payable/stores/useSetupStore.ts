@@ -105,15 +105,18 @@ const useSetupStore = create<Store>()((set, get) => ({
   emailSettings: initialEmailSettings,
   erpSettings: initialErpSettings,
   isActivatingAutomation: false,
-  isApSetUpCompleted: false, // TEMPORARY BYPASS: Force setup to render instead of dashboard overview
+  isApSetUpCompleted:
+    typeof window !== 'undefined'
+      ? localStorage.getItem('isApSetUpCompleted') === 'true'
+      : false,
   isSetupCalloutDismissed: false,
-  isSetupOpen: true, // TEMPORARY BYPASS: Auto open the setup modal
+  isSetupOpen: false,
   isSetupStarted: true,
   restrictNavigationUntilApSetup:
     typeof window !== 'undefined'
       ? localStorage.getItem('restrictNavigationUntilApSetup') === 'true'
       : false,
-  step: 1, // TEMPORARY BYPASS: Start directly on step 2 (index 1) for column mapping testing
+  step: 0,
   storageSettings: initialStorageSettings,
   closeSetup: () =>
     set({
