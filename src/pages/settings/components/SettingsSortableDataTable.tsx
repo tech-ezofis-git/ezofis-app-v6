@@ -26,17 +26,40 @@ import cn from '@/utils/cn'
 
 type SettingsSortableDataTableProps<TData> = {
   dragColumnId?: string
+  getRowClassName?: (row: TData) => string | undefined
+  onRowClick?: (rowId: string) => void
+  onRowMouseEnter?: (rowId: string) => void
+  onRowMouseLeave?: () => void
+  onValidateReorder?: (
+    activeIndex: number,
+    newIndex: number,
+    rows: TData[],
+  ) => boolean
+  rowClassName?: string
+  selectedRowId?: string | null
   table: TanstackTable<TData>
   onReorder: (nextRows: TData[]) => void
 }
 
 function SortableDataRow<TData>({
   dragColumnId,
+  getRowClassName,
+  onRowClick,
+  onRowMouseEnter,
+  onRowMouseLeave,
   row,
+  rowClassName,
+  selectedRowId,
   table,
 }: {
   dragColumnId: string
+  getRowClassName?: (row: TData) => string | undefined
+  onRowClick?: (rowId: string) => void
+  onRowMouseEnter?: (rowId: string) => void
+  onRowMouseLeave?: () => void
   row: Row<TData>
+  rowClassName?: string
+  selectedRowId?: string | null
   table: TanstackTable<TData>
 }) {
   const {
@@ -54,12 +77,18 @@ function SortableDataRow<TData>({
       ref={setNodeRef}
       className={cn(
         'relative border-b border-[var(--gray-2)] transition-all [--pinned-bg:var(--surface)] hover:z-10 hover:bg-[var(--gray-1)] hover:shadow-sm hover:[--pinned-bg:var(--gray-1)]',
+        rowClassName,
+        getRowClassName?.(row.original),
+        selectedRowId === row.id && 'bg-primary-1',
         isDragging && 'z-20 bg-[var(--gray-1)] opacity-90 shadow-md',
       )}
       style={{
         transform: CSS.Transform.toString(transform),
         transition,
       }}
+      onClick={() => onRowClick?.(row.id)}
+      onMouseEnter={() => onRowMouseEnter?.(row.id)}
+      onMouseLeave={() => onRowMouseLeave?.()}
     >
       {row.getVisibleCells().map((cell) => (
         <Td
@@ -91,6 +120,13 @@ function SortableDataRow<TData>({
 
 export default function SettingsSortableDataTable<TData>({
   dragColumnId = 'drag',
+  getRowClassName,
+  onRowClick,
+  onRowMouseEnter,
+  onRowMouseLeave,
+  onValidateReorder,
+  rowClassName,
+  selectedRowId,
   table,
   onReorder,
 }: SettingsSortableDataTableProps<TData>) {
@@ -111,11 +147,15 @@ export default function SettingsSortableDataTable<TData>({
     const newIndex = rowIds.indexOf(String(over.id))
     if (oldIndex === -1 || newIndex === -1) return
 
-    const reorderedRows = arrayMove(
-      rows.map((row) => row.original),
-      oldIndex,
-      newIndex,
-    )
+    const rowData = rows.map((row) => row.original)
+    if (
+      onValidateReorder &&
+      !onValidateReorder(oldIndex, newIndex, rowData)
+    ) {
+      return
+    }
+
+    const reorderedRows = arrayMove(rowData, oldIndex, newIndex)
     onReorder(reorderedRows)
   }
 
@@ -153,9 +193,15 @@ export default function SettingsSortableDataTable<TData>({
                 {rows.map((row) => (
                   <SortableDataRow
                     dragColumnId={dragColumnId}
+                    getRowClassName={getRowClassName}
                     key={row.id}
                     row={row}
+                    rowClassName={rowClassName}
+                    selectedRowId={selectedRowId}
                     table={table}
+                    onRowClick={onRowClick}
+                    onRowMouseEnter={onRowMouseEnter}
+                    onRowMouseLeave={onRowMouseLeave}
                   />
                 ))}
               </Tbody>

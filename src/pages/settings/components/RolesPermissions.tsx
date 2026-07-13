@@ -48,8 +48,12 @@ import {
 import { mapUsersToOptions } from '../helpers/userGroupMappers'
 import SettingsPageHeader, {
   SettingsHeaderAddButton,
+  type SettingsAddAction,
 } from './SettingsPageHeader'
-import SetupProgressBar from './SetupProgressBar'
+import SettingsFormSection from './SettingsFormSection'
+import SettingsSelectedChips from './SettingsSelectedChips'
+import SettingsSetupContent from './SettingsSetupContent'
+import SettingsSetupHeader from './SettingsSetupHeader'
 import useSettingsTableToolbar from './useSettingsTableToolbar'
 
 type AssignedUser = {
@@ -62,6 +66,7 @@ type CreateStepKey = 'details' | 'permissions' | 'review'
 
 type CreateStep = {
   caption: string
+  description: string
   key: CreateStepKey
   title: string
 }
@@ -81,19 +86,10 @@ type Option = {
   value?: string
 }
 
-type PermissionAction =
-  | 'View'
-  | 'Create'
-  | 'Edit'
-  | 'Delete'
-  | 'Approve'
-  | 'Export'
-  | 'Manage'
-
 type PermissionRow = {
   category: string
   categoryKey: string
-  permissions: Record<PermissionAction, boolean>
+  enabled: boolean
 }
 
 type Role = {
@@ -120,19 +116,24 @@ const tabs: { key: TabKey; label: string }[] = [
 ]
 
 const roleSteps: CreateStep[] = [
-  { caption: 'Step 1', key: 'details', title: 'Role Details' },
-  { caption: 'Step 2', key: 'permissions', title: 'Permissions' },
-  { caption: 'Step 3', key: 'review', title: 'Review' },
-]
-
-const actions: PermissionAction[] = [
-  'View',
-  'Create',
-  'Edit',
-  'Delete',
-  'Approve',
-  'Export',
-  'Manage',
+  {
+    caption: 'Step 1',
+    description: 'Define the role name, assign users, and describe its scope.',
+    key: 'details',
+    title: 'Role Details',
+  },
+  {
+    caption: 'Step 2',
+    description: 'Enable or disable access for each module in this role.',
+    key: 'permissions',
+    title: 'Permissions',
+  },
+  {
+    caption: 'Step 3',
+    description: 'Validate the role configuration before saving.',
+    key: 'review',
+    title: 'Review',
+  },
 ]
 
 const initialMenuItems: MenuItem[] = []
@@ -172,8 +173,6 @@ const permissionColumnHelper = createColumnHelper<PermissionRow>()
 const userAssignmentColumnHelper = createColumnHelper<AssignedUser>()
 
 export default function RolesPermissions({ onBack }: RoleUserProps) {
-  const [activeTab, setActiveTab] = useState<TabKey>('roles')
-  const [toolbarSlot, setToolbarSlot] = useState<HTMLDivElement | null>(null)
   const [roles, setRoles] = useState<Role[]>([])
   const [selectedRoleId, setSelectedRoleId] = useState('')
   const [permissionRows, setPermissionRows] = useState<PermissionRow[]>([])
@@ -343,17 +342,6 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
   )
 
   useEffect(() => {
-    if (!selectedRoleId || activeTab !== 'permissions') return
-    void loadRolePermissions(selectedRoleId)
-  }, [activeTab, loadRolePermissions, selectedRoleId])
-
-  useEffect(() => {
-    if (activeTab !== 'menus') return
-    if (menuItems.length) return
-    void loadMenus()
-  }, [activeTab, loadMenus, menuItems.length])
-
-  useEffect(() => {
     if (!apiMenus.length) return
     setNewPermissionRows(buildEmptyPermissionRows(apiMenus))
   }, [apiMenus])
@@ -390,7 +378,6 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
       })
       await loadRoles()
       resetCreateRole()
-      setActiveTab('roles')
     } finally {
       setIsSavingRole(false)
     }
@@ -432,20 +419,14 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
     }
   }
 
-  const togglePermission = (category: string, action: PermissionAction) => {
-    setPermissionRows((current) =>
-      togglePermissionByAction(current, category, action),
-    )
-  }
-
-  const toggleNewPermission = (category: string, action: PermissionAction) => {
+  const toggleNewPermission = (categoryKey: string) => {
     setNewPermissionRows((current) =>
-      togglePermissionByAction(current, category, action),
+      current.map((row) =>
+        row.categoryKey === categoryKey
+          ? { ...row, enabled: !row.enabled }
+          : row,
+      ),
     )
-  }
-
-  const toggleNewCategory = (category: string) => {
-    setNewPermissionRows((current) => toggleCategory(current, category))
   }
 
   const toggleMenu = (id: string) => {
@@ -489,6 +470,7 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
         selectedUsers={selectedUsers}
         userOptions={userOptions}
         onBack={() => setCreateStep((step) => Math.max(step - 1, 0))}
+        onBackToSettings={onBack}
         onCancel={resetCreateRole}
         onCreate={saveRole}
         isSaving={isSavingRole}
@@ -500,7 +482,6 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
         onRoleNameChange={setNewRoleName}
         onSelectedUsersChange={setSelectedUsers}
         onStepChange={setCreateStep}
-        onToggleCategory={toggleNewCategory}
         onTogglePermission={toggleNewPermission}
       />
     )
@@ -508,86 +489,15 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
 
   return (
     <main className='min-h-full bg-[var(--surface)]'>
-      <section>
-        <SettingsPageHeader
-          actions={
-            <SettingsHeaderAddButton
-              tooltip='Create Role'
-              onClick={() => setIsCreatingRole(true)}
-            />
-          }
-          description='Define roles and configure granular access permissions across the platform.'
-          title='Roles & Permissions'
-          onBack={onBack}
-        />
-
-        <div className='md:px-8'>
-          <TabBar
-            activeTab={activeTab}
-            onChange={setActiveTab}
-            onToolbarSlotChange={setToolbarSlot}
-          />
-
-          <div className='px-6 pb-4 md:px-0'>
-            {activeTab === 'roles' && (
-              <RoleList
-                isLoading={isLoadingRoles}
-                isLoadingRoleDetails={isLoadingRoleDetails}
-                roles={roles}
-                toolbarSlot={toolbarSlot}
-                onEdit={openEditRole}
-                onReload={loadRoles}
-              />
-            )}
-
-            {activeTab === 'permissions' && (
-              <PermissionMatrix
-                isLoading={isLoadingRolePermissions || isLoadingMenus}
-                roles={roles}
-                rows={permissionRows}
-                selectedRoleId={selectedRoleId}
-                toolbarSlot={toolbarSlot}
-                onReload={async () => {
-                  const menus = await loadMenus()
-                  if (selectedRoleId) {
-                    await loadRolePermissions(selectedRoleId, menus)
-                  } else {
-                    setPermissionRows(buildEmptyPermissionRows(menus))
-                  }
-                }}
-                onRoleChange={setSelectedRoleId}
-                onToggle={togglePermission}
-              />
-            )}
-
-            {activeTab === 'menus' && (
-              <MenuProfiles
-                isLoading={isLoadingMenus}
-                items={menuItems}
-                roles={roles}
-                selectedRoleId={selectedRoleId}
-                selectedRoleName={selectedRole?.name || 'Role'}
-                toolbarSlot={toolbarSlot}
-                onMove={moveMenu}
-                onReload={() => {
-                  void loadMenus()
-                }}
-                onRoleChange={setSelectedRoleId}
-                onToggle={toggleMenu}
-              />
-            )}
-
-            {activeTab === 'assignments' && (
-              <UserAssignments
-                roleNames={roleNames}
-                toolbarSlot={toolbarSlot}
-                users={users}
-                onChangeRole={changeUserRole}
-              />
-            )}
-          </div>
-        </div>
-      </section>
+      <RoleList
+        isLoading={isLoadingRoles}
+        isLoadingRoleDetails={isLoadingRoleDetails}
+        roles={roles}
+        onBack={onBack}
+        onCreate={() => setIsCreatingRole(true)}
+        onEdit={openEditRole}
+        onReload={loadRoles}
+      />
     </main>
   )
 }
@@ -619,21 +529,15 @@ function CheckBox({
 }
 
 function countEnabledPermissions(rows: PermissionRow[]) {
-  return rows.reduce(
-    (total, row) =>
-      total + actions.filter((action) => row.permissions[action]).length,
-    0,
-  )
+  return rows.filter((row) => row.enabled).length
 }
 
 function CreatePermissionMatrix({
   rows,
   onToggle,
-  onToggleCategory,
 }: {
   rows: PermissionRow[]
-  onToggle: (categoryKey: string, action: PermissionAction) => void
-  onToggleCategory: (categoryKey: string) => void
+  onToggle: (categoryKey: string) => void
 }) {
   const tableSearchOptions = useSettingsTableSearch()
   const permissionColumns = useMemo(
@@ -643,55 +547,30 @@ function CreatePermissionMatrix({
         header: 'Category',
         id: 'category',
         meta: settingsHeaderMeta.start,
-        size: 290,
-        cell: ({ row }) => {
-          const isRowEnabled = actions.some(
-            (action) => row.original.permissions[action],
-          )
-          return (
-            <button
-              className='flex items-center gap-3 text-left'
-              type='button'
-              onClick={() => onToggleCategory(row.original.categoryKey)}
-            >
-              <CheckBox
-                checked={isRowEnabled}
-                onChange={() => onToggleCategory(row.original.categoryKey)}
-              />
-              <span className='text-sm font-semibold text-[var(--gray-13)]'>
-                {row.original.category}
-              </span>
-            </button>
-          )
-        },
+        size: 360,
+        cell: ({ getValue }) => (
+          <span className='text-sm font-semibold text-[var(--gray-13)]'>
+            {getValue()}
+          </span>
+        ),
       }),
-      ...actions.map((action) =>
-        permissionColumnHelper.display({
-          enableSorting: false,
-          id: action,
-          meta: settingsHeaderMeta.center,
-          size: 112,
-          cell: ({ row }) => (
-            <div className='flex justify-center'>
-              <CheckBox
-                checked={row.original.permissions[action]}
-                onChange={() => onToggle(row.original.categoryKey, action)}
-              />
-            </div>
-          ),
-          header: () => (
-            <div className='flex w-full flex-col items-center justify-center gap-1 text-center'>
-              <span>{action}</span>
-              <span className='text-[11px] font-medium text-[var(--gray-10)]'>
-                {rows.filter((row) => row.permissions[action]).length}/
-                {rows.length}
-              </span>
-            </div>
-          ),
-        }),
-      ),
+      permissionColumnHelper.display({
+        enableSorting: false,
+        header: 'Access',
+        id: 'access',
+        meta: settingsHeaderMeta.center,
+        size: 140,
+        cell: ({ row }) => (
+          <div className='flex justify-center'>
+            <Switch
+              checked={row.original.enabled}
+              onChange={() => onToggle(row.original.categoryKey)}
+            />
+          </div>
+        ),
+      }),
     ],
-    [onToggle, onToggleCategory, rows],
+    [onToggle],
   )
 
   const permissionTable = useReactTable({
@@ -724,10 +603,7 @@ function CreatePermissionMatrix({
         onRowSizeChange={onRowSizeChange}
       />
 
-      <p className='mt-3 text-13/5 text-gray-11'>
-        Click a category name to toggle the full row. Click a column header to
-        toggle that permission for all categories.
-      </p>
+     
     </div>
   )
 }
@@ -743,6 +619,7 @@ function CreateRolePage({
   submitLabel,
   userOptions,
   onBack,
+  onBackToSettings,
   onCancel,
   onCreate,
   onDescriptionChange,
@@ -750,7 +627,6 @@ function CreateRolePage({
   onRoleNameChange,
   onSelectedUsersChange,
   onStepChange,
-  onToggleCategory,
   onTogglePermission,
 }: {
   activeStep: number
@@ -763,6 +639,7 @@ function CreateRolePage({
   submitLabel: string
   userOptions: Option[]
   onBack: () => void
+  onBackToSettings?: () => void
   onCancel: () => void
   onCreate: () => void
   onDescriptionChange: (value: string) => void
@@ -770,8 +647,7 @@ function CreateRolePage({
   onRoleNameChange: (value: string) => void
   onSelectedUsersChange: (value: Option[]) => void
   onStepChange: (step: number) => void
-  onToggleCategory: (category: string) => void
-  onTogglePermission: (category: string, action: PermissionAction) => void
+  onTogglePermission: (categoryKey: string) => void
 }) {
   const enabledCount = useMemo(
     () => countEnabledPermissions(permissionRows),
@@ -862,33 +738,19 @@ function CreateRolePage({
     onBack()
   }
 
+  const activeStepConfig = roleSteps[activeStep]
+
   return (
     <main className='min-h-screen bg-[var(--surface)] text-[var(--text-primary)]'>
-      <header className='border-b border-[var(--border-default)] bg-surface px-6 py-4'>
-        <div className='flex items-start justify-between gap-5'>
-          <div className='flex items-start gap-3'>
-            <IconButton
-              ariaLabel='Back'
-              color='gray'
-              icon='lucide:arrow-left'
-              size='sm'
-              variant='ghost'
-              onClick={onCancel}
-            />
-
-            <div>
-              <h1 className='text-[18px] leading-6 font-semibold text-[var(--gray-13)]'>
-                {editingRoleId ? 'Edit Role' : 'Create Role'}
-              </h1>
-              <p className='mt-1 text-[14px] leading-5 text-[var(--gray-11)]'>
-                Configure role details, permissions, and review before saving.
-              </p>
-            </div>
-          </div>
-
-          <SetupProgressBar progress={progress} />
-        </div>
-      </header>
+      <SettingsSetupHeader
+        moduleTitle='Roles & Permissions'
+        progress={progress}
+        setupTitle={editingRoleId ? 'Edit Role' : 'Create Role'}
+        stepDescription={activeStepConfig.description}
+        stepTitle={activeStepConfig.title}
+        onBackToSettings={onBackToSettings}
+        onCancelSetup={onCancel}
+      />
 
       <div className='grid min-h-[calc(100vh-96px)] grid-cols-1 lg:grid-cols-[296px_1fr]'>
         <aside className='border-r border-[var(--border-default)] bg-[var(--surface)] px-4 py-9'>
@@ -936,13 +798,9 @@ function CreateRolePage({
           </div>
         </aside>
 
-        <section className='ez-scrollbar h-[calc(100vh-155px)] min-h-0 overflow-y-auto px-6 py-10 lg:px-20'>
-          <div className='mx-auto max-w-[860px]'>
+        <SettingsSetupContent>
             {activeStep === 0 ? (
-              <FormCard
-                description='Define the role name, assign users, and describe its scope.'
-                title='Role Details'
-              >
+              <SettingsFormSection>
                 <InputText
                   error={getFieldRequiredError(
                     'Role Name',
@@ -972,6 +830,14 @@ function CreateRolePage({
                     onSelectedUsersChange((value || []) as Option[])
                   }
                 />
+                <SettingsSelectedChips
+                  items={selectedUsers}
+                  onRemove={(id) =>
+                    onSelectedUsersChange(
+                      selectedUsers.filter((user) => user.id !== id),
+                    )
+                  }
+                />
 
                 <InputTextarea
                   label='Description'
@@ -980,27 +846,20 @@ function CreateRolePage({
                   value={description}
                   onChange={onDescriptionChange}
                 />
-              </FormCard>
+              </SettingsFormSection>
             ) : null}
 
             {activeStep === 1 ? (
-              <FormCard
-                description='Configure granular access permissions for this role.'
-                title='Permissions'
-              >
+              <SettingsFormSection>
                 <CreatePermissionMatrix
                   rows={permissionRows}
                   onToggle={onTogglePermission}
-                  onToggleCategory={onToggleCategory}
                 />
-              </FormCard>
+              </SettingsFormSection>
             ) : null}
 
             {activeStep === 2 ? (
-              <FormCard
-                description='Validate the role configuration before saving.'
-                title='Review'
-              >
+              <SettingsFormSection>
                 <div className='rounded-[14px] border border-[var(--border-default)] bg-surface p-6'>
                   <h3 className='text-md mb-6 font-semibold text-[var(--gray-13)]'>
                     Role Summary
@@ -1025,7 +884,7 @@ function CreateRolePage({
                     />
                   </div>
                 </div>
-              </FormCard>
+              </SettingsFormSection>
             ) : null}
 
             <div className='mt-8 flex items-center justify-between border-t border-[var(--border-default)] pt-6'>
@@ -1059,34 +918,9 @@ function CreateRolePage({
                 )}
               </div>
             </div>
-          </div>
-        </section>
+        </SettingsSetupContent>
       </div>
     </main>
-  )
-}
-
-function FormCard({
-  children,
-  description,
-  title,
-}: {
-  children: ReactNode
-  description: string
-  title: string
-}) {
-  return (
-    <div>
-      <div className='mb-8'>
-        <h2 className='text-sm leading-8 font-semibold text-[var(--gray-13)]'>
-          {title}
-        </h2>
-        <p className='mt-1 max-w-[760px] text-xs leading-7 text-[var(--gray-11)]'>
-          {description}
-        </p>
-      </div>
-      <div className='space-y-6'>{children}</div>
-    </div>
   )
 }
 
@@ -1230,7 +1064,7 @@ function PermissionMatrix({
   toolbarSlot: HTMLDivElement | null
   onReload: () => void
   onRoleChange: (id: string) => void
-  onToggle: (categoryKey: string, action: PermissionAction) => void
+  onToggle: (categoryKey: string) => void
 }) {
   const tableSearchOptions = useSettingsTableSearch()
   const permissionColumns = useMemo(
@@ -1248,24 +1082,22 @@ function PermissionMatrix({
           </span>
         ),
       }),
-      ...actions.map((action) =>
-        permissionColumnHelper.display({
-          enableSorting: false,
-          header: action,
-          id: action,
-          meta: settingsHeaderMeta.center,
-          minSize: 100,
-          size: 112,
-          cell: ({ row }) => (
-            <div className='flex justify-center'>
-              <CheckBox
-                checked={row.original.permissions[action]}
-                onChange={() => onToggle(row.original.categoryKey, action)}
-              />
-            </div>
-          ),
-        }),
-      ),
+      permissionColumnHelper.display({
+        enableSorting: false,
+        header: 'Access',
+        id: 'access',
+        meta: settingsHeaderMeta.center,
+        minSize: 120,
+        size: 140,
+        cell: ({ row }) => (
+          <div className='flex justify-center'>
+            <Switch
+              checked={row.original.enabled}
+              onChange={() => onToggle(row.original.categoryKey)}
+            />
+          </div>
+        ),
+      }),
     ],
     [onToggle],
   )
@@ -1322,15 +1154,17 @@ function PermissionMatrix({
 function RoleList({
   isLoading,
   isLoadingRoleDetails,
+  onBack,
+  onCreate,
   roles,
-  toolbarSlot,
   onEdit,
   onReload,
 }: {
   isLoading: boolean
   isLoadingRoleDetails: boolean
+  onBack?: () => void
+  onCreate: () => void
   roles: Role[]
-  toolbarSlot: HTMLDivElement | null
   onEdit: (id: string) => void
   onReload: () => void | Promise<void>
 }) {
@@ -1469,25 +1303,38 @@ function RoleList({
 
   return (
     <>
-      <TabToolbarPortal slot={toolbarSlot} toolbar={toolbar} />
-      <DataTable
-        emptyDescription='Create a role to manage access permissions across the platform.'
-        emptyIcon='lucide:shield'
-        emptyTitle='No roles yet'
-        hideActionBar
-        isLoading={isLoading}
-        isReLoading={isLoading}
-        pageSize={Math.max(6, roles.length || 6)}
-        rowSize={rowSize}
-        table={roleTable}
-        tableBodyMaxHeight='420px'
-        hideGrouping
-        stickyHeader
-        onReload={() => {
-          void onReload()
-        }}
-        onRowSizeChange={onRowSizeChange}
+      <SettingsPageHeader
+        actions={
+          <SettingsHeaderAddButton
+            tooltip='Create Role'
+            onClick={onCreate}
+          />
+        }
+        title='Roles & Permissions'
+        toolbar={toolbar}
+        onBack={onBack}
       />
+
+      <div className='px-6 py-4 md:px-8'>
+        <DataTable
+          emptyDescription='Create a role to manage access permissions across the platform.'
+          emptyIcon='lucide:shield'
+          emptyTitle='No roles yet'
+          hideActionBar
+          isLoading={isLoading}
+          isReLoading={isLoading}
+          pageSize={Math.max(6, roles.length || 6)}
+          rowSize={rowSize}
+          table={roleTable}
+          tableBodyMaxHeight='calc(100vh - 320px)'
+          hideGrouping
+          stickyHeader
+          onReload={() => {
+            void onReload()
+          }}
+          onRowSizeChange={onRowSizeChange}
+        />
+      </div>
     </>
   )
 }
@@ -1581,10 +1428,12 @@ function TabToolbarPortal({
 
 function TabBar({
   activeTab,
+  addAction,
   onChange,
   onToolbarSlotChange,
 }: {
   activeTab: TabKey
+  addAction?: SettingsAddAction
   onChange: (tab: TabKey) => void
   onToolbarSlotChange: (node: HTMLDivElement | null) => void
 }) {
@@ -1616,44 +1465,14 @@ function TabBar({
         })}
       </div>
 
-      <div
-        ref={onToolbarSlotChange}
-        className='flex min-h-10 flex-wrap items-center justify-end gap-2'
-      />
+      <div className='flex min-h-10 flex-wrap items-center justify-end gap-2'>
+        <div
+          ref={onToolbarSlotChange}
+          className='flex min-h-10 flex-wrap items-center justify-end gap-2'
+        />
+        {addAction ? <SettingsHeaderAddButton {...addAction} /> : null}
+      </div>
     </div>
-  )
-}
-
-function toggleCategory(rows: PermissionRow[], categoryKey: string) {
-  return rows.map((row) => {
-    if (row.categoryKey !== categoryKey) return row
-
-    const shouldEnable = actions.some((action) => !row.permissions[action])
-    return {
-      ...row,
-      permissions: actions.reduce(
-        (acc, action) => ({ ...acc, [action]: shouldEnable }),
-        {} as Record<PermissionAction, boolean>,
-      ),
-    }
-  })
-}
-
-function togglePermissionByAction(
-  rows: PermissionRow[],
-  categoryKey: string,
-  action: PermissionAction,
-) {
-  return rows.map((row) =>
-    row.categoryKey === categoryKey
-      ? {
-        ...row,
-        permissions: {
-          ...row.permissions,
-          [action]: !row.permissions[action],
-        },
-      }
-      : row,
   )
 }
 
@@ -1714,10 +1533,7 @@ function buildEmptyPermissionRows(menus: V6MenuItem[]): PermissionRow[] {
   return buildPermissionCategoriesFromMenus(menus).map(({ key, name }) => ({
     category: name,
     categoryKey: key,
-    permissions: actions.reduce(
-      (acc, action) => ({ ...acc, [action]: false }),
-      {} as Record<PermissionAction, boolean>,
-    ),
+    enabled: false,
   }))
 }
 
@@ -1729,8 +1545,7 @@ function mapPermissionsToRows(
   const categoryKeys = new Set(categories.map((category) => category.key))
 
   for (const permission of permissions) {
-    const [rawCategory = ''] = permission.split(/[.:|]/)
-    const key = normalizeCategorySlug(rawCategory)
+    const key = normalizePermissionCategory(permission)
 
     if (key && !categoryKeys.has(key)) {
       categories.push({
@@ -1742,47 +1557,32 @@ function mapPermissionsToRows(
     }
   }
 
-  const set = new Set(permissions.map(normalizePermissionKey))
-
   return categories.map((category) => ({
     category: category.name,
     categoryKey: category.key,
-    permissions: actions.reduce(
-      (acc, action) => ({
-        ...acc,
-        [action]: set.has(toPermissionKey(category.key, action)),
-      }),
-      {} as Record<PermissionAction, boolean>,
-    ),
+    enabled: isPermissionEnabledForCategory(category.key, permissions),
   }))
 }
 
 function mapPermissionRowsToPermissions(rows: PermissionRow[]): string[] {
-  return rows.flatMap((row) =>
-    actions
-      .filter((action) => row.permissions[action])
-      .map((action) => toPermissionKey(row.categoryKey, action)),
+  return rows.filter((row) => row.enabled).map((row) => row.categoryKey)
+}
+
+function isPermissionEnabledForCategory(
+  categoryKey: string,
+  permissions: string[],
+): boolean {
+  return permissions.some(
+    (permission) => normalizePermissionCategory(permission) === categoryKey,
   )
 }
 
-function normalizePermissionKey(value: string): string {
-  const [rawCategory = '', rawAction = ''] = value
+function normalizePermissionCategory(value: string): string {
+  const [rawCategory = ''] = value
     .split(/[.:|]/)
     .map((part) => part.trim())
 
-  const category = rawCategory
-    .toLowerCase()
-    .replace(/&/g, 'and')
-    .replace(/[^\w]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-
-  const action = rawAction.toLowerCase()
-
-  return `${category}.${action}`
-}
-
-function toPermissionKey(categoryKey: string, action: PermissionAction): string {
-  return `${categoryKey}.${action.toLowerCase()}`
+  return normalizeCategorySlug(rawCategory)
 }
 
 function UserAssignments({

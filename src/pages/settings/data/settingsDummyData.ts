@@ -97,7 +97,7 @@ export const dummySettingsUsers: SettingsUser[] = [
     mfaEnabled: true,
     mfaMethods: ['Email OTP', 'Authenticator App'],
     passwordExpiryDays: 90,
-    role: 'Repository Owner',
+    role: 'Folder Owner',
     status: 'active',
     username: 'acc-ap',
   },

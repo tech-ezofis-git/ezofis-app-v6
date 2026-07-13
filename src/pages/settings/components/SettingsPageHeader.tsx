@@ -1,7 +1,10 @@
 import type { ReactNode } from 'react'
+import { useMemo } from 'react'
 import IconButton from '@/components/base/button/IconButton'
 import Tooltip from '@/components/base/Tooltip'
 import cn from '@/utils/cn'
+import { createSettingsListBreadcrumbs } from '../helpers/settingsBreadcrumbs'
+import useSettingsTopbar from '../hooks/useSettingsTopbar'
 
 export type SettingsAddAction = {
   onClick: () => void
@@ -11,7 +14,9 @@ export type SettingsAddAction = {
 type SettingsPageHeaderProps = {
   actions?: ReactNode
   description?: string
+  leading?: ReactNode
   title: string
+  toolbar?: ReactNode
   onBack?: () => void
 }
 
@@ -32,19 +37,34 @@ export function SettingsHeaderAddButton({ onClick, tooltip }: SettingsAddAction)
 
 export default function SettingsPageHeader({
   actions,
-  description,
+  leading,
   onBack,
   title,
+  toolbar,
 }: SettingsPageHeaderProps) {
+  const breadcrumbConfig = useMemo(
+    () => createSettingsListBreadcrumbs(title, onBack),
+    [onBack, title],
+  )
+
+  useSettingsTopbar(breadcrumbConfig)
+
+  const hasRightContent = Boolean(toolbar || actions)
+  const hasLeftContent = Boolean(onBack || leading)
+
+  if (!hasLeftContent && !hasRightContent) {
+    return null
+  }
+
   return (
     <div className='border-b border-gray-3 bg-surface px-6 py-4 md:px-8'>
       <div
         className={cn(
-          'flex flex-wrap items-start gap-4',
-          actions ? 'justify-between' : '',
+          'flex flex-wrap items-center gap-4',
+          hasRightContent ? 'justify-between' : '',
         )}
       >
-        <div className='flex min-w-0 items-start gap-3'>
+        <div className='flex min-w-0 flex-1 flex-wrap items-center gap-3'>
           {onBack ? (
             <IconButton
               ariaLabel='Back'
@@ -55,20 +75,12 @@ export default function SettingsPageHeader({
               onClick={onBack}
             />
           ) : null}
-
-          <div className='min-w-0'>
-            <h1 className='text-18/6 font-semibold tracking-tight text-gray-13'>
-              {title}
-            </h1>
-
-            {description ? (
-              <p className='text-13/5 text-gray-11'>{description}</p>
-            ) : null}
-          </div>
+          {leading}
         </div>
 
-        {actions ? (
-          <div className='flex flex-wrap items-end justify-end gap-2'>
+        {hasRightContent ? (
+          <div className='flex flex-wrap items-center justify-end gap-2'>
+            {toolbar}
             {actions}
           </div>
         ) : null}

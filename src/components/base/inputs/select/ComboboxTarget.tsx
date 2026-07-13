@@ -10,6 +10,7 @@ import { classNames, inputWrapperOrder } from '../shared/constants'
 
 interface Props extends InputProps {
   value: Option[]
+  iconOnly?: boolean
   leftSection?: ReactNode
   loading?: boolean
   rightSectionIcon?: string
@@ -23,6 +24,7 @@ const ComboboxTarget = forwardRef<HTMLButtonElement, Props>(
     {
       clearable,
       description,
+      iconOnly,
       label,
       loading,
       optional,
@@ -85,8 +87,18 @@ const ComboboxTarget = forwardRef<HTMLButtonElement, Props>(
       }
 
       if (variant === 'single') {
+        if (iconOnly) {
+          return firstValue ? (
+            <span className='sr-only'>{firstValue.name}</span>
+          ) : (
+            <Input.Placeholder className='font-normal text-gray-8'>
+              {placeholder || 'Select'}
+            </Input.Placeholder>
+          )
+        }
+
         return (
-          <div className='text-13 font-medium text-gray-12'>
+          <div className='truncate text-13 font-medium text-gray-12'>
             {firstValue?.name}
           </div>
         )
@@ -104,7 +116,7 @@ const ComboboxTarget = forwardRef<HTMLButtonElement, Props>(
           )}
         </div>
       )
-    }, [value, variant, firstValue, counter, placeholder])
+    }, [value, variant, firstValue, counter, placeholder, iconOnly])
 
     return (
       <Base.Target>

@@ -18,7 +18,6 @@ import {
   useSettingsTableSearch,
 } from '../helpers/settingsDataTable'
 import SettingsPageHeader from './SettingsPageHeader'
-import SettingsTableToolbarRow from './SettingsTableToolbarRow'
 import useSettingsTableToolbar from './useSettingsTableToolbar'
 type AuditEvent = {
   category:
@@ -158,6 +157,7 @@ export default function AuditMonitoring({ onBack }: AuditUserProps) {
       <SettingsPageHeader
         description='Track user activity, configuration changes, and security events across the platform.'
         title='Audit & Monitoring'
+        toolbar={eventsTable.toolbar}
         onBack={onBack}
       />
       <div className='max-h-[calc(100vh-150px)] overflow-y-auto px-6 py-4 md:px-8'>
@@ -180,8 +180,6 @@ export default function AuditMonitoring({ onBack }: AuditUserProps) {
             value={criticalAlerts}
           />
         </div>
-
-        <SettingsTableToolbarRow toolbar={eventsTable.toolbar} />
 
         <div className='py-4'>
           <DataTable

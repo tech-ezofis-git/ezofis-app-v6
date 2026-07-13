@@ -68,11 +68,13 @@ export interface RepositoryDto {
 
 export interface RepositoryFieldDto {
   dataType: string
+  iconKey?: string
   id: string
   includeInFolderStructure: boolean
   isMandatory: boolean
   level: number
   name: string
+  orderId?: number
   sqlColumnName: string
 }
 

@@ -1,47 +1,47 @@
-import type { DragEndEvent } from '@dnd-kit/core'
-import {
-  closestCenter,
-  DndContext,
-  PointerSensor,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core'
-import {
-  arrayMove,
-  SortableContext,
-  useSortable,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
 import {
   createColumnHelper,
   useReactTable,
 } from '@tanstack/react-table'
+import { Combobox as MantineCombobox, useCombobox } from '@mantine/core'
 import {
   Check,
-  ChevronRight,
-  Cloud,
-  Database,
   Folder,
-  GripVertical,
-  HardDrive,
   Link2,
-  RefreshCw,
 } from 'lucide-react'
 import {
+  useCallback,
+  type CSSProperties,
   type Dispatch,
-  type ElementType,
+  type ReactNode,
   type SetStateAction,
+  useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react'
-import IconButton from '@/components/base/button/IconButton'
+import GoogleDriveLogo from '@/assets/brands/googledrive.svg'
+import OneDriveLogo from '@/assets/brands/onedrive.svg'
+import { getRepositorys } from '@/api/v6/folder/folder'
+import { createRepository } from '@/api/createFolder'
 import Button from '@/components/base/button/Button'
+import IconButton from '@/components/base/button/IconButton'
+import Icon from '@/components/base/icon/Icon'
 import DataTable from '@/components/base/data-table/DataTable'
+import InputCheckbox from '@/components/base/inputs/InputCheckbox'
 import InputSelect from '@/components/base/inputs/InputSelect'
-import InputSwitch from '@/components/base/inputs/InputSwitch'
 import InputText from '@/components/base/inputs/InputText'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
+import showToast from '@/components/base/toast/showToast'
+import Menu from '@/components/base/menu/Menu'
+import MenuItem from '@/components/base/menu/MenuItem'
+import ComboboxOptions from '@/components/base/inputs/select/ComboboxOptions'
+import ComboboxSearch from '@/components/base/inputs/select/ComboboxSearch'
+import useLocalSearch from '@/components/base/inputs/shared/hooks/useLocalSearch'
+import { classNames as inputSharedClassNames } from '@/components/base/inputs/shared/constants'
+import type { Option } from '@/types/option'
+import { getUsers } from '@/api/v6/user'
+import { DynamicIcon } from '@/pages/folders/components/icons'
+import cn from '@/utils/cn'
 import {
   settingsHeaderMeta,
   settingsTableCoreOptions,
@@ -51,33 +51,42 @@ import SettingsSortableDataTable from '../SettingsSortableDataTable'
 import SettingsPageHeader, {
   SettingsHeaderAddButton,
 } from '../SettingsPageHeader'
-import SettingsTableToolbarRow from '../SettingsTableToolbarRow'
+import SettingsFormSection from '../SettingsFormSection'
+import SettingsSetupHeader from '../SettingsSetupHeader'
+import SettingsSetupContent from '../SettingsSetupContent'
+import FolderStorageConnectorPanel, {
+  type CloudStorageOption,
+} from './FolderStorageConnectorPanel'
 import useSettingsTableToolbar from '../useSettingsTableToolbar'
 
 type DmsFolderConfigurationProps = {
   onBack?: () => void
 }
 type FieldRow = {
+  dataType: string
   fieldName: string
+  iconKey?: string
   id: string
-  mandatory: boolean
-  ocrExtract: boolean
-  searchable: boolean
-  showInList: boolean
-  syncField: boolean
+  includeInFolderStructure: boolean
+  isMandatory: boolean
+  level: number
+  orderId: number
   system?: boolean
-  type: string
+}
+
+type FieldDisplayRow = FieldRow & {
+  ancestorContinues: boolean[]
+  depth: number
+  isLastAtDepth: boolean
 }
 
 type RepositoryRow = {
-  category: string
   documents: number
-  id: number
+  id: string
   name: string
   owner: string
   status: RepositoryStatus
   storage: string
-  versioning: string
 }
 
 type RepositoryStatus = 'active' | 'archived'
@@ -85,6 +94,7 @@ type RepositoryStatus = 'active' | 'archived'
 type SelectOption = {
   description?: string
   disabled?: boolean
+  iconKey?: string
   id: string | number
   name: string
   value?: string
@@ -98,114 +108,161 @@ type WizardStepItem = {
   title: string
 }
 
-const repositories: RepositoryRow[] = [
-  {
-    category: 'Invoices',
-    documents: 1250,
-    id: 1,
-    name: 'AP Invoices',
-    owner: 'John Smith',
-    status: 'active',
-    storage: 'Default',
-    versioning: 'Incremental Versioning',
-  },
-  {
-    category: 'Purchase Orders',
-    documents: 840,
-    id: 2,
-    name: 'Purchase Orders',
-    owner: 'Sarah Miller',
-    status: 'active',
-    storage: 'Azure',
-    versioning: 'Timestamp Versioning',
-  },
-  {
-    category: 'Contracts',
-    documents: 320,
-    id: 3,
-    name: 'Vendor Contracts',
-    owner: 'Mike Johnson',
-    status: 'active',
-    storage: 'OneDrive',
-    versioning: 'Incremental Versioning',
-  },
-  {
-    category: 'Compliance',
-    documents: 2195,
-    id: 4,
-    name: 'Compliance Docs',
-    owner: 'Lisa Chen',
-    status: 'active',
-    storage: 'Default',
-    versioning: 'Replace Existing',
-  },
-  {
-    category: 'Receipts',
-    documents: 0,
-    id: 5,
-    name: 'Old Receipts',
-    owner: 'Tom Wilson',
-    status: 'archived',
-    storage: 'Default',
-    versioning: 'Incremental Versioning',
-  },
-]
+const extractRepositories = (payload: unknown): Array<Record<string, unknown>> => {
+  if (!payload) return []
+  if (Array.isArray(payload)) return payload
+
+  if (typeof payload === 'object') {
+    const record = payload as Record<string, unknown>
+    for (const key of ['data', 'payload', 'value', 'items', 'repositories']) {
+      const inner = record[key]
+      if (Array.isArray(inner)) return inner
+    }
+  }
+
+  return []
+}
+
+const formatStorageLabel = (code?: string) => {
+  switch (code) {
+    case 'EZOFIS':
+      return 'Default'
+    case 'ONE_DRIVE':
+      return 'OneDrive'
+    case 'GOOGLE_DRIVE':
+      return 'Google Drive'
+    case 'AZURE':
+      return 'Azure'
+    case 'EXTERNAL':
+      return 'External'
+    default:
+      return code ? String(code).replace(/_/g, ' ') : 'Default'
+  }
+}
+
+const getRepositoryDocumentCount = (repository: Record<string, unknown>) => {
+  const value =
+    repository.documentCount ??
+    repository.itemCount ??
+    repository.totalCount ??
+    repository.documents ??
+    0
+
+  const count = Number(value)
+  return Number.isFinite(count) ? count : 0
+}
+
+const getRepositoryStatus = (
+  repository: Record<string, unknown>,
+): RepositoryStatus => {
+  const status = String(
+    repository.status || repository.repositoryStatus || '',
+  ).toLowerCase()
+
+  if (status === 'archived' || repository.isArchived === true) {
+    return 'archived'
+  }
+
+  return 'active'
+}
+
+const mapRepositoryToRow = (
+  repository: Record<string, unknown>,
+): RepositoryRow | null => {
+  const id = String(repository.id || repository.repositoryId || '').trim()
+  const name = String(repository.name || repository.title || '').trim()
+
+  if (!id || !name) return null
+
+  const storageCode = repository.storageProviderCode
+    ? String(repository.storageProviderCode)
+    : repository.storageProviderId
+      ? 'EXTERNAL'
+      : 'EZOFIS'
+
+  return {
+    documents: getRepositoryDocumentCount(repository),
+    id,
+    name,
+    owner: String(repository.createdByName || repository.ownerName || '—'),
+    status: getRepositoryStatus(repository),
+    storage: formatStorageLabel(storageCode),
+  }
+}
 
 const defaultFields: FieldRow[] = [
   {
+    dataType: 'SHORT_TEXT',
+    fieldName: 'Supplier',
+    iconKey: 'building',
+    id: 'supplier',
+    includeInFolderStructure: true,
+    isMandatory: true,
+    level: 1,
+    orderId: 1,
+    system: true,
+  },
+  {
+    dataType: 'SINGLE_SELECT',
+    fieldName: 'Document Type',
+    iconKey: 'document',
+    id: 'documentType',
+    includeInFolderStructure: true,
+    isMandatory: true,
+    level: 2,
+    orderId: 2,
+    system: true,
+  },
+  {
+    dataType: 'SHORT_TEXT',
+    fieldName: 'PO Number',
+    iconKey: 'folder',
+    id: 'poNumber',
+    includeInFolderStructure: true,
+    isMandatory: true,
+    level: 3,
+    orderId: 3,
+    system: true,
+  },
+  {
+    dataType: 'SHORT_TEXT',
     fieldName: 'Invoice Number',
     id: 'invoiceNumber',
-    mandatory: true,
-    ocrExtract: true,
-    searchable: true,
-    showInList: true,
-    syncField: true,
+    includeInFolderStructure: false,
+    isMandatory: true,
+    level: 0,
+    orderId: 4,
     system: true,
-    type: 'Text',
   },
   {
+    dataType: 'SHORT_TEXT',
     fieldName: 'Vendor Name',
     id: 'vendorName',
-    mandatory: true,
-    ocrExtract: true,
-    searchable: true,
-    showInList: true,
-    syncField: false,
+    includeInFolderStructure: false,
+    isMandatory: false,
+    level: 0,
+    orderId: 5,
     system: true,
-    type: 'Text',
   },
   {
+    dataType: 'DATE',
     fieldName: 'Invoice Date',
     id: 'invoiceDate',
-    mandatory: true,
-    ocrExtract: true,
-    searchable: true,
-    showInList: true,
-    syncField: false,
+    includeInFolderStructure: false,
+    isMandatory: false,
+    level: 0,
+    orderId: 6,
     system: true,
-    type: 'Date',
   },
   {
-    fieldName: 'PO Number',
-    id: 'poNumber',
-    mandatory: false,
-    ocrExtract: true,
-    searchable: true,
-    showInList: true,
-    syncField: true,
-    system: true,
-    type: 'Text',
-  },
-  {
+    dataType: 'CURRENCY_AMOUNT',
     fieldName: 'Amount',
     id: 'amount',
-    mandatory: true,
-    ocrExtract: true,
-    searchable: false,
-    showInList: true,
-    syncField: true,
+    includeInFolderStructure: false,
+    isMandatory: true,
+    level: 0,
+    orderId: 7,
     system: true,
-    type: 'Currency',
   },
 ]
 
@@ -223,36 +280,99 @@ const categoryOptions: SelectOption[] = [
   { id: 'Contracts', name: 'Contracts', value: 'Contracts' },
 ]
 
-const storageOptions = [
+type StorageOption = {
+  comingSoon: boolean
+  connectorType?: string
+  description: string
+  features: string[]
+  icon?: string
+  id: string
+  logo?: string
+  oauthProvider?: string
+  status: string
+  storageProviderCode: string
+  subtitle: string
+  title: string
+  type: string
+}
+
+const isCloudStorageOption = (
+  option: StorageOption,
+): option is StorageOption & CloudStorageOption =>
+  Boolean(option.connectorType && option.oauthProvider)
+
+const storageOptions: StorageOption[] = [
   {
-    icon: HardDrive,
-    id: 'Default Drive',
+    comingSoon: false,
+    description:
+      'Use EZOFIS-managed storage with built-in encryption, access controls, and no external provider setup.',
+    features: [
+      'Enterprise-grade encryption at rest',
+      'No third-party account required',
+      'Automatic backups and versioning support',
+    ],
+    id: 'EZOFIS Drive',
+    logo: '/favicon.svg',
+    status: 'Ready to use',
+    storageProviderCode: 'EZOFIS',
     subtitle: 'Built-in secure storage',
-    title: 'Default Drive',
+    title: 'EZOFIS Drive',
+    type: 'Built-in provider',
   },
   {
-    icon: Cloud,
-    id: 'Azure Blob Storage',
-    subtitle: 'Microsoft Azure cloud',
-    title: 'Azure Blob Storage',
-  },
-  {
-    icon: Cloud,
-    id: 'OneDrive',
+    comingSoon: false,
+    connectorType: 'ONE_DRIVE',
+    description:
+      'Store folder documents in Microsoft OneDrive with Microsoft 365 sign-in and folder sync.',
+    features: [
+      'Microsoft 365 authentication',
+      'Sync with existing OneDrive folders',
+      'Enterprise sharing policies supported',
+    ],
+    id: 'One Drive',
+    logo: OneDriveLogo,
+    oauthProvider: 'onedrive',
+    status: 'Connect required',
+    storageProviderCode: 'ONE_DRIVE',
     subtitle: 'Microsoft OneDrive',
-    title: 'OneDrive',
+    title: 'One Drive',
+    type: 'Microsoft cloud',
   },
   {
-    icon: Cloud,
+    comingSoon: false,
+    connectorType: 'GOOGLE_DRIVE',
+    description:
+      'Connect Google Workspace to store files in Google Drive with shared drive support.',
+    features: [
+      'Google Workspace sign-in',
+      'Shared drive compatibility',
+      'Automatic file metadata sync',
+    ],
     id: 'Google Drive',
+    logo: GoogleDriveLogo,
+    oauthProvider: 'google',
+    status: 'Connect required',
+    storageProviderCode: 'GOOGLE_DRIVE',
     subtitle: 'Google Workspace',
     title: 'Google Drive',
+    type: 'Google cloud',
   },
   {
-    icon: Database,
-    id: 'Amazon S3',
-    subtitle: 'AWS S3 bucket',
-    title: 'Amazon S3',
+    comingSoon: true,
+    description:
+      'Azure Blob storage integration for organizations using Microsoft Azure infrastructure.',
+    features: [
+      'Azure AD authentication',
+      'Blob container mapping',
+      'Regional data residency options',
+    ],
+    icon: 'logos:microsoft-azure',
+    id: 'Azure Drive',
+    status: 'Coming soon',
+    storageProviderCode: 'AZURE',
+    subtitle: 'Coming Soon',
+    title: 'Azure Drive',
+    type: 'Microsoft Azure',
   },
 ]
 
@@ -284,38 +404,161 @@ const integrations = [
   'QuickBooks',
   'Custom API',
 ]
-const defaultHierarchy = ['Root', 'Year', 'Month', 'Vendor']
+const REPOSITORY_FIELD_DATA_TYPES = [
+  'SHORT_TEXT',
+  'LONG_TEXT',
+  'NUMBER',
+  'DATE',
+  'DATE_TIME',
+  'TIME',
+  'CURRENCY_AMOUNT',
+  'SINGLE_SELECT',
+  'MULTI_SELECT',
+  'YES_NO_TOGGLE',
+  'EMAIL',
+  'PHONE_NUMBER',
+  'URL',
+  'FILE_UPLOAD',
+] as const
 
-const fieldColumnHelper = createColumnHelper<FieldRow>()
+const FOLDER_FIELD_ICON_KEYS = [
+  'building',
+  'document',
+  'folder',
+  'amount',
+  'date',
+  'card',
+  'currency',
+  'tax',
+  'address',
+] as const
 
-const toggleFieldKeys = [
-  'mandatory',
-  'searchable',
-  'showInList',
-  'ocrExtract',
-  'syncField',
-] as const satisfies ReadonlyArray<keyof FieldRow>
+const FOLDER_FIELD_ICON_LABELS: Record<(typeof FOLDER_FIELD_ICON_KEYS)[number], string> =
+  {
+    address: 'Address',
+    amount: 'Amount',
+    building: 'Supplier',
+    card: 'Card',
+    currency: 'Currency',
+    date: 'Date',
+    document: 'Document',
+    folder: 'Folder',
+    tax: 'Tax',
+  }
 
-type ToggleFieldKey = (typeof toggleFieldKeys)[number]
+const folderIconOptions: SelectOption[] = FOLDER_FIELD_ICON_KEYS.map((key) => ({
+  iconKey: key,
+  id: key,
+  name: FOLDER_FIELD_ICON_LABELS[key],
+  value: key,
+}))
 
-const toggleFieldLabels: Record<ToggleFieldKey, string> = {
-  mandatory: 'Mandatory',
-  ocrExtract: 'OCR Extract',
-  searchable: 'Searchable',
-  showInList: 'Show in List',
-  syncField: 'Sync Field',
+const formatDataTypeLabel = (value: string) =>
+  value
+    .replace(/_/g, ' ')
+    .toLowerCase()
+    .replace(/\b\w/g, (char) => char.toUpperCase())
+
+const getFieldIconKey = (
+  field: Pick<FieldRow, 'iconKey' | 'includeInFolderStructure'>,
+) => (field.includeInFolderStructure ? field.iconKey || 'folder' : 'document')
+
+const FIELD_TREE_STEP = 24
+
+const isLastTreeRowAtDepth = (
+  rows: Array<{ depth: number }>,
+  index: number,
+) => {
+  const depth = rows[index].depth
+
+  for (let nextIndex = index + 1; nextIndex < rows.length; nextIndex += 1) {
+    if (rows[nextIndex].depth < depth) return true
+    if (rows[nextIndex].depth === depth) return false
+  }
+
+  return true
 }
 
-const fieldTypeOptions: SelectOption[] = [
-  { id: 'Alphanumeric', name: 'Alphanumeric', value: 'Alphanumeric' },
-  { id: 'Date', name: 'Date', value: 'Date' },
-  { id: 'Currency', name: 'Currency', value: 'Currency' },
-  { id: 'Text', name: 'Text', value: 'Text' },
-]
+const buildAncestorContinues = (
+  rows: Array<{ depth: number }>,
+  index: number,
+) => {
+  const depth = rows[index].depth
+  const continues: boolean[] = []
 
-type SortableHierarchyItemProps = {
-  item: string
+  for (let level = 0; level < depth; level += 1) {
+    let hasMore = false
+
+    for (let nextIndex = index + 1; nextIndex < rows.length; nextIndex += 1) {
+      if (rows[nextIndex].depth > level) {
+        hasMore = true
+        break
+      }
+
+      if (rows[nextIndex].depth <= level) break
+    }
+
+    continues.push(hasMore)
+  }
+
+  return continues
 }
+
+const buildUnifiedFieldRows = (fields: FieldRow[]): FieldDisplayRow[] => {
+  const sorted = [...fields].sort((left, right) => left.orderId - right.orderId)
+  const withDepth = sorted.map((field) => ({
+    ...field,
+    depth: field.includeInFolderStructure ? Math.max(0, field.level - 1) : 0,
+  }))
+
+  return withDepth.map((field, index) => ({
+    ...field,
+    ancestorContinues: buildAncestorContinues(withDepth, index),
+    isLastAtDepth: isLastTreeRowAtDepth(withDepth, index),
+  }))
+}
+
+const recalculateFieldHierarchy = (orderedFields: FieldRow[]): FieldRow[] => {
+  const folderFields = orderedFields.filter(
+    (field) => field.includeInFolderStructure,
+  )
+  const metadataFields = orderedFields.filter(
+    (field) => !field.includeInFolderStructure,
+  )
+  const normalized = [...folderFields, ...metadataFields]
+  const folderIds = folderFields.map((field) => field.id)
+
+  return normalized.map((field, index) => {
+    const orderId = index + 1
+
+    if (!field.includeInFolderStructure) {
+      return {
+        ...field,
+        level: 0,
+        orderId,
+      }
+    }
+
+    const folderIndex = folderIds.indexOf(field.id)
+
+    return {
+      ...field,
+      level: folderIndex + 1,
+      orderId,
+    }
+  })
+}
+
+const toFieldTypeOptions = (types: string[]): SelectOption[] =>
+  [...new Set(types.filter(Boolean))]
+    .sort((left, right) => left.localeCompare(right))
+    .map((type) => ({
+      id: type,
+      name: formatDataTypeLabel(type),
+      value: type,
+    }))
+
+const fieldColumnHelper = createColumnHelper<FieldDisplayRow>()
 
 export default function DmsFolderConfiguration({
   onBack,
@@ -323,120 +566,249 @@ export default function DmsFolderConfiguration({
   const [showWizard, setShowWizard] = useState(false)
   const [step, setStep] = useState<WizardStep>(1)
   const [fields, setFields] = useState<FieldRow[]>(defaultFields)
-  const [folderHierarchy, setFolderHierarchy] =
-    useState<string[]>(defaultHierarchy)
-  const [storage, setStorage] = useState('Default Drive')
+  const [storage, setStorage] = useState('EZOFIS Drive')
+  const [storageConnectorId, setStorageConnectorId] = useState<string | null>(
+    null,
+  )
+  const [storageConnectorLabel, setStorageConnectorLabel] = useState<
+    string | null
+  >(null)
+  const [isSavingRepository, setIsSavingRepository] = useState(false)
   const [versioning, setVersioning] = useState('Incremental Version')
   const [displayMode, setDisplayMode] = useState('Show Latest Version Only')
   const [folderName, setFolderName] = useState('')
   const [description, setDescription] = useState('')
   const [category, setCategory] = useState<SelectOption>(categoryOptions[0])
-  const [folderOwner, setFolderOwner] = useState('')
-  const [folderCoordinator, setFolderCoordinator] = useState('')
+  const [folderOwner, setFolderOwner] = useState<SelectOption | null>(null)
+  const [folderCoordinator, setFolderCoordinator] = useState<SelectOption | null>(
+    null,
+  )
+  const [userOptions, setUserOptions] = useState<SelectOption[]>([])
+  const [repositories, setRepositories] = useState<RepositoryRow[]>([])
+  const [isLoadingRepositories, setIsLoadingRepositories] = useState(true)
 
-  const goNext = () => setStep((prev) => Math.min(5, prev + 1) as WizardStep)
-  const goBack = () => setStep((prev) => Math.max(1, prev - 1) as WizardStep)
+  const openEditRepository = useCallback((repository: RepositoryRow) => {
+    setFolderName(repository.name)
+    setShowWizard(true)
+    setStep(1)
+  }, [])
+
+  const loadRepositories = useCallback(async () => {
+    setIsLoadingRepositories(true)
+
+    try {
+      const response = await getRepositorys()
+
+      if (response.error) {
+        showToast({
+          message: 'Failed to load folders.',
+          variant: 'error',
+        })
+        setRepositories([])
+        return
+      }
+
+      const rows = extractRepositories(response.data)
+        .map((repository) => mapRepositoryToRow(repository))
+        .filter((repository): repository is RepositoryRow => repository !== null)
+
+      setRepositories(rows)
+    } finally {
+      setIsLoadingRepositories(false)
+    }
+  }, [])
+
+  const loadUsers = useCallback(async () => {
+    const response = await getUsers()
+    if (response.error) return
+
+    setUserOptions(
+      response.data.map((user) => ({
+        id: user.id,
+        name: user.displayName || user.email,
+        value: user.id,
+      })),
+    )
+  }, [])
+
+  useEffect(() => {
+    void loadUsers()
+    void loadRepositories()
+  }, [loadRepositories, loadUsers])
 
   const closeWizard = () => {
     setShowWizard(false)
     setStep(1)
+    setStorageConnectorId(null)
+    setStorageConnectorLabel(null)
   }
 
-  const handleCreateRepository = () => {
-    const payload = {
-      category: category.name,
-      description,
-      displayMode,
-      fields,
-      folderCoordinator,
-      folderHierarchy,
-      folderName,
-      folderOwner,
-      storage,
-      versioning,
+  const handleStorageChange = (nextStorage: string) => {
+    setStorage(nextStorage)
+    setStorageConnectorId(null)
+    setStorageConnectorLabel(null)
+  }
+
+  const handleStorageConnectorChange = (
+    connectorId: string | null,
+    connectorLabel: string | null,
+  ) => {
+    setStorageConnectorId(connectorId)
+    setStorageConnectorLabel(connectorLabel)
+  }
+
+  const goNext = () => {
+    if (step === 2) {
+      const selectedStorageOption =
+        storageOptions.find((item) => item.id === storage) ?? storageOptions[0]
+
+      if (
+        isCloudStorageOption(selectedStorageOption) &&
+        !storageConnectorId
+      ) {
+        showToast({
+          message: `Connect ${selectedStorageOption.title} and select a connector before continuing.`,
+          variant: 'error',
+        })
+        return
+      }
     }
 
-    console.log('Repository payload:', payload)
-    closeWizard()
+    setStep((prev) => Math.min(5, prev + 1) as WizardStep)
+  }
+  const goBack = () => setStep((prev) => Math.max(1, prev - 1) as WizardStep)
+
+  const handleCreateRepository = async () => {
+    const trimmedName = folderName.trim()
+    if (!trimmedName) {
+      showToast({ message: 'Folder name is required.', variant: 'error' })
+      setStep(1)
+      return
+    }
+
+    const selectedStorageOption =
+      storageOptions.find((item) => item.id === storage) ?? storageOptions[0]
+
+    if (isCloudStorageOption(selectedStorageOption) && !storageConnectorId) {
+      showToast({
+        message: `Connect ${selectedStorageOption.title} before saving the folder.`,
+        variant: 'error',
+      })
+      setStep(2)
+      return
+    }
+
+    const payload = {
+      description,
+      fields: fields.map((field, index) => ({
+        dataType: field.dataType,
+        iconKey: field.iconKey,
+        includeInFolderStructure: field.includeInFolderStructure,
+        isMandatory: field.isMandatory,
+        level: field.level,
+        name: field.fieldName,
+        orderId: field.orderId ?? index + 1,
+      })),
+      name: trimmedName,
+      storageDrive: null,
+      storageProviderCode: selectedStorageOption.storageProviderCode,
+      storageProviderId:
+        selectedStorageOption.storageProviderCode === 'EZOFIS'
+          ? undefined
+          : storageConnectorId,
+    }
+
+    setIsSavingRepository(true)
+
+    try {
+      const response = await createRepository(payload)
+
+      if (response.error) {
+        showToast({
+          message: `Failed to create folder: ${response.error}`,
+          variant: 'error',
+        })
+        return
+      }
+
+      showToast({
+        message: 'Folder created successfully.',
+        variant: 'success',
+      })
+      await loadRepositories()
+      closeWizard()
+    } finally {
+      setIsSavingRepository(false)
+    }
   }
 
-  const repositoryTable = useRepositoryTable(repositories)
+  const repositoryTable = useRepositoryTable(repositories, {
+    onEditRepository: openEditRepository,
+  })
   const repositoryToolbar = useSettingsTableToolbar({
-    isReLoading: false,
+    isReLoading: isLoadingRepositories,
     table: repositoryTable.table,
-    onReload: () => undefined,
+    onReload: () => {
+      void loadRepositories()
+    },
   })
 
   return (
     <div className='min-h-[90vh] bg-[var(--surface)]'>
       {!showWizard ? (
-        <SettingsPageHeader
-          actions={
-            <SettingsHeaderAddButton
-              tooltip='New Repository'
-              onClick={() => setShowWizard(true)}
-            />
-          }
-          description='Create and manage document repositories. No IT assistance required.'
-          title='DMS & Folder Configuration'
-          onBack={onBack}
-        />
-      ) : (
-        <div className='flex items-center justify-between gap-6 border-b border-gray-3 bg-surface px-6 py-4 md:px-8'>
-          <div className='flex items-start gap-3'>
-            <IconButton
-              ariaLabel='Back'
-              color='gray'
-              icon='lucide:arrow-left'
-              size='sm'
-              variant='ghost'
-              onClick={onBack}
-            />
-
-            <div>
-              <h1 className='text-18/6 font-semibold tracking-tight text-gray-13'>
-                DMS & Folder Configuration
-              </h1>
-              <p className='text-13/5 text-gray-11'>
-                Create and manage document repositories. No IT assistance
-                required.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {!showWizard ? (
-        <div className='px-6 md:px-8'>
-          <SettingsTableToolbarRow toolbar={repositoryToolbar.toolbar} />
-
-          <div className='py-4'>
-            <DataTable
-              hideActionBar
-              isLoading={false}
-              isReLoading={false}
-              pageSize={repositories.length || 5}
-              rowSize={repositoryToolbar.rowSize}
-              table={repositoryTable.table}
-              stickyHeader
-              hideGrouping
-              onReload={() => undefined}
-            onRowSizeChange={repositoryToolbar.onRowSizeChange}
+        <>
+          <SettingsPageHeader
+            actions={
+              <SettingsHeaderAddButton
+                tooltip='New Folder'
+                onClick={() => setShowWizard(true)}
+              />
+            }
+            description='Create and manage folders with custom fields, storage, and versioning.'
+            title='Folder Configuration'
+            toolbar={repositoryToolbar.toolbar}
+            onBack={onBack}
           />
-          </div>
-        </div>
-      ) : (
-        <div className='bg-surface'>
-          <div className='flex'>
-            <div className='max-h-[calc(100vh-200px)] overflow-y-auto'>
-              <StepNav
-                folderHierarchy={folderHierarchy}
-                step={step}
-                setFolderHierarchy={setFolderHierarchy}
-                setStep={setStep}
+
+          <div className='px-6 md:px-8'>
+            <div className='py-4'>
+              <DataTable
+                hideActionBar
+                isLoading={isLoadingRepositories}
+                isReLoading={isLoadingRepositories}
+                pageSize={repositories.length || 5}
+                rowSize={repositoryToolbar.rowSize}
+                table={repositoryTable.table}
+                stickyHeader
+                hideGrouping
+                onReload={() => {
+                  void loadRepositories()
+                }}
+                onRowSizeChange={repositoryToolbar.onRowSizeChange}
               />
             </div>
-            <div className='max-h-[calc(100vh-200px)] flex-1 overflow-y-auto p-6'>
+          </div>
+        </>
+      ) : (
+        <>
+          <SettingsSetupHeader
+            moduleTitle='Folder Configuration'
+            progress={(step / wizardSteps.length) * 100}
+            setupTitle='New Folder'
+            stepDescription={
+              wizardSteps.find((item) => item.id === step)?.description || ''
+            }
+            stepTitle={wizardSteps.find((item) => item.id === step)?.title || ''}
+            onBackToSettings={onBack}
+            onCancelSetup={closeWizard}
+          />
+
+          <div className='grid min-h-[calc(100vh-96px)] grid-cols-1 lg:grid-cols-[296px_1fr]'>
+            <aside className='border-r border-[var(--border-default)] bg-[var(--surface)] px-4 py-9'>
+              <StepNav setStep={setStep} step={step} />
+            </aside>
+
+            <SettingsSetupContent fullWidth>
               <WizardContent
                 category={category}
                 description={description}
@@ -447,6 +819,8 @@ export default function DmsFolderConfiguration({
                 folderOwner={folderOwner}
                 step={step}
                 storage={storage}
+                storageConnectorId={storageConnectorId}
+                storageConnectorLabel={storageConnectorLabel}
                 versioning={versioning}
                 setCategory={setCategory}
                 setDescription={setDescription}
@@ -455,66 +829,310 @@ export default function DmsFolderConfiguration({
                 setFolderCoordinator={setFolderCoordinator}
                 setFolderName={setFolderName}
                 setFolderOwner={setFolderOwner}
-                setStorage={setStorage}
+                setStorage={handleStorageChange}
+                onStorageConnectorChange={handleStorageConnectorChange}
+                userOptions={userOptions}
                 setVersioning={setVersioning}
               />
-            </div>
-          </div>
 
-          <div className='flex items-center justify-between border-t border-gray-3 px-6 py-4'>
-            {step === 1 ? (
-              <button
-                className='rounded-[8px] border border-gray-3 px-5 py-2 font-semibold'
-                type='button'
-                onClick={closeWizard}
-              >
-                Cancel
-              </button>
-            ) : (
-              <button
-                className='rounded-[8px] border border-gray-3 px-5 py-2 font-semibold'
-                type='button'
-                onClick={goBack}
-              >
-                Back
-              </button>
-            )}
+              <div className='mt-8 flex items-center justify-between border-t border-[var(--border-default)] pt-6'>
+                <button
+                  className='inline-flex h-10 items-center rounded-[5px] border border-[var(--border-default)] bg-surface px-5 text-[15px] font-semibold text-[var(--gray-13)] transition hover:bg-[var(--gray-2)] disabled:cursor-not-allowed disabled:opacity-50'
+                  disabled={step === 1}
+                  type='button'
+                  onClick={goBack}
+                >
+                  Back
+                </button>
 
-            <div className='flex items-center gap-4'>
-              <span className='text-sm text-gray-11'>Step {step} of 5</span>
-              <button
-                className='inline-flex items-center gap-2 rounded-[8px] bg-primary-9 px-5 py-2 font-semibold text-white'
-                type='button'
-                onClick={step === 5 ? handleCreateRepository : goNext}
-              >
-                {step === 5 ? 'Create Repository' : 'Continue'}
-                {step !== 5 && <ChevronRight size={16} />}
-              </button>
-            </div>
+                <div className='flex items-center gap-3'>
+                  {step === 5 ? (
+                    <button
+                      className='h-10 rounded-[5px] bg-[var(--primary-9)] px-5 text-[15px] font-semibold text-white shadow-[var(--shadow-md)] transition hover:bg-[var(--primary-10)] disabled:cursor-not-allowed disabled:opacity-60'
+                      disabled={isSavingRepository}
+                      type='button'
+                      onClick={() => {
+                        void handleCreateRepository()
+                      }}
+                    >
+                      {isSavingRepository ? 'Saving...' : 'Save'}
+                    </button>
+                  ) : (
+                    <button
+                      className='h-10 rounded-[5px] bg-[var(--primary-9)] px-5 text-[15px] font-semibold text-white shadow-[var(--shadow-md)] transition hover:bg-[var(--primary-10)]'
+                      type='button'
+                      onClick={goNext}
+                    >
+                      Next
+                    </button>
+                  )}
+                </div>
+              </div>
+            </SettingsSetupContent>
           </div>
-        </div>
+        </>
       )}
     </div>
   )
 }
 
-function cn(...values: Array<string | false | null | undefined>) {
-  return values.filter(Boolean).join(' ')
+function FieldNameWithIconInput({
+  autoFocus,
+  iconKey = 'folder',
+  placeholder,
+  showIconPicker,
+  size = 'sm',
+  value,
+  onBlur,
+  onChange,
+  onIconChange,
+}: {
+  autoFocus?: boolean
+  iconKey?: string
+  placeholder?: string
+  showIconPicker: boolean
+  size?: 'sm' | 'md'
+  value: string
+  onBlur?: () => void
+  onChange: (value: string) => void
+  onIconChange?: (iconKey: string) => void
+}) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const combobox = useCombobox({
+    onDropdownClose: () => onSearch(''),
+  })
+  const { filteredOptions, search, onSearch } = useLocalSearch(
+    folderIconOptions as Option[],
+  )
+
+  useEffect(() => {
+    if (!autoFocus) return
+    inputRef.current?.focus()
+    inputRef.current?.select()
+  }, [autoFocus])
+
+  const selectedKey = iconKey || 'folder'
+  const selectedOption =
+    folderIconOptions.find((option) => option.value === selectedKey) ||
+    folderIconOptions.find((option) => option.value === 'folder') ||
+    folderIconOptions[0]
+
+  const handleIconSelect = (options: Option[]) => {
+    const next = options[0]
+    if (!next?.value) return
+    onIconChange?.(String(next.value))
+    combobox.closeDropdown()
+  }
+
+  const heightClass = size === 'md' ? 'h-9 min-h-9' : 'h-8 min-h-8'
+
+  const iconSection = showIconPicker ? (
+    <MantineCombobox
+      position='bottom-start'
+      store={combobox}
+      transitionProps={{ transition: 'pop' }}
+      width={240}
+    >
+      <MantineCombobox.Target>
+        <button
+          aria-label='Select field icon'
+          className='flex h-full w-full items-center justify-center gap-0.5 text-gray-11'
+          type='button'
+          onClick={() => combobox.toggleDropdown()}
+        >
+          <DynamicIcon className='h-4 w-4' name={selectedKey} />
+          <Icon className='h-3 w-3 text-gray-8' name='lucide:chevron-down' />
+        </button>
+      </MantineCombobox.Target>
+
+      <MantineCombobox.Dropdown
+        classNames={{
+          dropdown: 'z-[200] border border-gray-3  p-0 shadow-md',
+        }}
+      >
+        <ComboboxSearch
+          placeholder='Search icons'
+          search={search}
+          onSearch={onSearch}
+        />
+        <ComboboxOptions
+          comboboxStore={combobox}
+          options={filteredOptions}
+          search={search}
+          value={selectedOption ? [selectedOption as Option] : []}
+          variant='single'
+          onChange={handleIconSelect}
+        />
+      </MantineCombobox.Dropdown>
+    </MantineCombobox>
+  ) : (
+    <DynamicIcon className='h-4 w-4 text-gray-11' name='document' />
+  )
+
+  const leftSection = (
+    <div
+      className={cn(
+        'flex h-full w-full items-center justify-center border-r border-[var(--border-default)]',
+      )}
+    >
+      {iconSection}
+    </div>
+  )
+
+  return (
+    <InputText
+      ref={inputRef}
+      classNames={{ input: heightClass }}
+      leftSection={leftSection}
+      leftSectionPointerEvents='auto'
+      placeholder={placeholder}
+      styles={{
+        wrapper: {
+          '--input-left-section-width': showIconPicker ? '44px' : '36px',
+        } as React.CSSProperties,
+      }}
+      value={value}
+      onBlur={onBlur}
+      onChange={onChange}
+    />
+  )
+}
+
+function FieldTreeLines({
+  depth,
+  isLastAtDepth,
+}: {
+  depth: number
+  isLastAtDepth: boolean
+}) {
+  if (depth === 0) return null
+
+  return (
+    <div
+      className='relative mr-1 shrink-0 self-stretch'
+      style={{
+        marginLeft: (depth - 1) * FIELD_TREE_STEP,
+        width: FIELD_TREE_STEP,
+      }}
+    >
+      <span
+        className='absolute top-0 left-1/2 w-px -translate-x-1/2 bg-gray-5'
+        style={{ height: '50%' }}
+      />
+      <span
+        className='absolute top-1/2 left-1/2 h-px bg-gray-5'
+        style={{ width: FIELD_TREE_STEP / 2 }}
+      />
+      {!isLastAtDepth ? (
+        <span className='absolute top-1/2 bottom-0 left-1/2 w-px -translate-x-1/2 bg-gray-5' />
+      ) : null}
+    </div>
+  )
+}
+
+function FieldTreeIcon({
+  iconKey,
+  isFolder,
+}: {
+  iconKey: string
+  isFolder: boolean
+}) {
+  return (
+    <span
+      className={cn(
+        'mr-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-md',
+        isFolder ? 'bg-primary-3 text-primary-9' : 'bg-blue-3 text-blue-9',
+      )}
+    >
+      <DynamicIcon className='h-3.5 w-3.5' name={iconKey} />
+    </span>
+  )
+}
+
+function FieldNameTreeCell({
+  children,
+  depth,
+  iconKey,
+  isLastAtDepth,
+}: {
+  children: ReactNode
+  depth: number
+  iconKey: string
+  isLastAtDepth: boolean
+}) {
+  return (
+    <div className='flex min-h-9 min-w-0 items-center'>
+      <FieldTreeLines depth={depth} isLastAtDepth={isLastAtDepth} />
+      <FieldTreeIcon iconKey={iconKey} isFolder />
+      <div className='min-w-0 flex-1'>{children}</div>
+    </div>
+  )
+}
+
+function FieldNameCell({
+  children,
+  field,
+}: {
+  children: ReactNode
+  field: FieldRow
+}) {
+  return (
+    <div className='flex min-h-9 min-w-0 items-center'>
+      <FieldTreeIcon
+        iconKey={getFieldIconKey(field)}
+        isFolder={field.includeInFolderStructure}
+      />
+      <div className='min-w-0 flex-1'>{children}</div>
+    </div>
+  )
 }
 
 function FieldsTable({
+  fieldTypeOptions,
   fields,
   setFields,
 }: {
+  fieldTypeOptions: SelectOption[]
   fields: FieldRow[]
   setFields: Dispatch<SetStateAction<FieldRow[]>>
 }) {
-  const updateField = (id: string, key: ToggleFieldKey) => {
+  const [editingRowId, setEditingRowId] = useState<string | null>(null)
+
+  const displayRows = useMemo(() => buildUnifiedFieldRows(fields), [fields])
+
+  const updateField = (id: string, patch: Partial<FieldRow>) => {
+    setFields((prev) => {
+      const next = prev.map((field) =>
+        field.id === id ? { ...field, ...patch } : field,
+      )
+
+      if ('includeInFolderStructure' in patch) {
+        return recalculateFieldHierarchy(next)
+      }
+
+      return next
+    })
+  }
+
+  const toggleFolder = (id: string, checked: boolean) => {
     setFields((prev) =>
-      prev.map((field) =>
-        field.id === id ? { ...field, [key]: !field[key] } : field,
+      recalculateFieldHierarchy(
+        prev.map((field) =>
+          field.id === id
+            ? {
+                ...field,
+                iconKey: checked ? field.iconKey || 'folder' : undefined,
+                includeInFolderStructure: checked,
+                isMandatory: checked ? true : field.isMandatory,
+              }
+            : field,
+        ),
       ),
     )
+  }
+
+  const toggleRowEdit = (rowId: string) => {
+    setEditingRowId((current) => (current === rowId ? null : rowId))
   }
 
   const columns = useMemo(
@@ -535,70 +1153,278 @@ function FieldsTable({
         header: 'Field Name',
         id: 'fieldName',
         meta: settingsHeaderMeta.start,
-        minSize: 200,
-        size: 240,
-        cell: ({ row }) => (
-          <div className='min-w-0'>
-            <div className='font-semibold text-gray-13'>
+        minSize: 280,
+        size: 360,
+        cell: ({ row }) => {
+          const rowId = row.original.id
+          const isRowEditing = editingRowId === rowId
+
+          if (isRowEditing) {
+            const nameInput = (
+              <FieldNameWithIconInput
+                iconKey={row.original.iconKey || 'folder'}
+                showIconPicker={Boolean(row.original.includeInFolderStructure)}
+                value={row.original.fieldName}
+                onChange={(value) => updateField(rowId, { fieldName: value })}
+                onIconChange={(iconKey) => updateField(rowId, { iconKey })}
+              />
+            )
+
+            if (row.original.includeInFolderStructure) {
+              return (
+                <div className='flex min-h-9 min-w-0 items-center'>
+                  <FieldTreeLines
+                    depth={row.original.depth}
+                    isLastAtDepth={row.original.isLastAtDepth}
+                  />
+                  <div className='min-w-0 flex-1'>{nameInput}</div>
+                </div>
+              )
+            }
+
+            return <div className='min-w-0'>{nameInput}</div>
+          }
+
+          const nameLabel = (
+            <div className='truncate py-1.5 font-semibold text-gray-13'>
               {row.original.fieldName}
             </div>
-            {row.original.system ? (
-              <span className='mt-1 inline-flex rounded-md border border-gray-3 px-2 py-0.5 text-[11px]'>
-                System
-              </span>
-            ) : null}
-          </div>
-        ),
+          )
+
+          return row.original.includeInFolderStructure ? (
+            <FieldNameTreeCell
+              depth={row.original.depth}
+              iconKey={getFieldIconKey(row.original)}
+              isLastAtDepth={row.original.isLastAtDepth}
+            >
+              {nameLabel}
+            </FieldNameTreeCell>
+          ) : (
+            <FieldNameCell field={row.original}>{nameLabel}</FieldNameCell>
+          )
+        },
       }),
-      fieldColumnHelper.accessor('type', {
+      fieldColumnHelper.accessor('dataType', {
         enableSorting: false,
         header: 'Type',
-        id: 'type',
+        id: 'dataType',
         meta: settingsHeaderMeta.start,
-        minSize: 100,
-        size: 120,
-        cell: ({ getValue }) => (
-          <span className='text-gray-11'>{String(getValue())}</span>
-        ),
-      }),
-      ...toggleFieldKeys.map((key) =>
-        fieldColumnHelper.display({
-          enableResizing: false,
-          enableSorting: false,
-          header: toggleFieldLabels[key],
-          id: key,
-          meta: settingsHeaderMeta.center,
-          minSize: 110,
-          size: 120,
-          cell: ({ row }) => (
-            <div className='flex justify-center'>
-              <InputSwitch
-                checked={Boolean(row.original[key])}
-                onChange={() => updateField(row.original.id, key)}
+        minSize: 150,
+        size: 170,
+        cell: ({ row }) => {
+          const rowId = row.original.id
+          const isRowEditing = editingRowId === rowId
+
+          if (!isRowEditing) {
+            return (
+              <span className='text-sm text-gray-12'>
+                {formatDataTypeLabel(row.original.dataType)}
+              </span>
+            )
+          }
+
+          return (
+            <div className='w-full max-w-[170px]'>
+              <InputSelect
+                classNames={{ input: 'h-8 text-12' }}
+                options={fieldTypeOptions}
+                value={
+                  fieldTypeOptions.find(
+                    (option) => option.value === row.original.dataType,
+                  ) ||
+                  fieldTypeOptions[0] ||
+                  null
+                }
+                width='target'
+                onChange={(selected) => {
+                  if (!selected?.value) return
+                  updateField(rowId, {
+                    dataType: String(selected.value),
+                  })
+                }}
               />
             </div>
-          ),
-        }),
-      ),
+          )
+        },
+      }),
+      fieldColumnHelper.display({
+        enableResizing: false,
+        enableSorting: false,
+        header: 'Folder',
+        id: 'folder',
+        meta: settingsHeaderMeta.center,
+        minSize: 90,
+        size: 100,
+        cell: ({ row }) => {
+          const rowId = row.original.id
+          const isRowEditing = editingRowId === rowId
+
+          if (!isRowEditing) {
+            return (
+              <div className='flex justify-center'>
+                <span className='text-sm text-gray-11'>
+                  {row.original.includeInFolderStructure ? 'Yes' : 'No'}
+                </span>
+              </div>
+            )
+          }
+
+          return (
+            <div className='flex justify-center'>
+              <InputCheckbox
+                checked={Boolean(row.original.includeInFolderStructure)}
+                onChange={(checked) => toggleFolder(rowId, Boolean(checked))}
+              />
+            </div>
+          )
+        },
+      }),
+      fieldColumnHelper.display({
+        enableResizing: false,
+        enableSorting: false,
+        header: 'Mandatory',
+        id: 'isMandatory',
+        meta: settingsHeaderMeta.center,
+        minSize: 110,
+        size: 120,
+        cell: ({ row }) => {
+          const rowId = row.original.id
+          const isRowEditing = editingRowId === rowId
+          const isMandatory = Boolean(
+            row.original.includeInFolderStructure || row.original.isMandatory,
+          )
+
+          if (!isRowEditing) {
+            return (
+              <div className='flex justify-center'>
+                <span className='text-sm text-gray-11'>
+                  {isMandatory ? 'Yes' : 'No'}
+                </span>
+              </div>
+            )
+          }
+
+          if (row.original.includeInFolderStructure) {
+            return (
+              <div className='flex justify-center'>
+                <InputCheckbox checked disabled />
+              </div>
+            )
+          }
+
+          return (
+            <div className='flex justify-center'>
+              <InputCheckbox
+                checked={Boolean(row.original.isMandatory)}
+                onChange={(checked) =>
+                  updateField(rowId, { isMandatory: Boolean(checked) })
+                }
+              />
+            </div>
+          )
+        },
+      }),
+      fieldColumnHelper.display({
+        enableResizing: false,
+        enableSorting: false,
+        header: '',
+        id: 'edit',
+        maxSize: 52,
+        meta: settingsHeaderMeta.center,
+        minSize: 52,
+        size: 52,
+        cell: ({ row }) => {
+          const rowId = row.original.id
+          const isRowEditing = editingRowId === rowId
+
+          return (
+            <div className='flex justify-center'>
+              <IconButton
+                ariaLabel={isRowEditing ? 'Done editing' : 'Edit field'}
+                color='gray'
+                icon={isRowEditing ? 'lucide:check' : 'lucide:pencil'}
+                size='sm'
+                variant='ghost'
+                onClick={() => toggleRowEdit(rowId)}
+              />
+            </div>
+          )
+        },
+      }),
     ],
-    [setFields],
+    [editingRowId, fieldTypeOptions],
   )
 
   const table = useReactTable({
     ...settingsTableCoreOptions,
     columns,
-    data: fields,
+    data: displayRows,
     getRowId: (row) => row.id,
   })
 
+  const handleReorder = (reorderedRows: FieldDisplayRow[]) => {
+    const orderedFields = reorderedRows
+      .map((row) => fields.find((field) => field.id === row.id))
+      .filter((field): field is FieldRow => Boolean(field))
+
+    setFields(recalculateFieldHierarchy(orderedFields))
+  }
+
+  const handleValidateReorder = (
+    activeIndex: number,
+    newIndex: number,
+    rows: FieldDisplayRow[],
+  ) => {
+    const activeRow = rows[activeIndex]
+    const overRow = rows[newIndex]
+    if (!activeRow || !overRow) return false
+
+    const activeIsFolder = activeRow.includeInFolderStructure
+    const overIsFolder = overRow.includeInFolderStructure
+
+    if (activeIsFolder !== overIsFolder) return false
+
+    const firstNonFolderIndex = rows.findIndex(
+      (row) => !row.includeInFolderStructure,
+    )
+    const folderBoundary =
+      firstNonFolderIndex === -1 ? rows.length : firstNonFolderIndex
+
+    if (activeIsFolder) {
+      return newIndex < folderBoundary
+    }
+
+    return newIndex >= folderBoundary
+  }
+
+  if (!displayRows.length) {
+    return (
+      <div className='rounded-xl border border-[var(--gray-3)] bg-surface px-4 py-8 text-center text-sm text-gray-11 shadow-sm'>
+        No fields configured yet. Use the form above to add your first field.
+      </div>
+    )
+  }
+
   return (
     <SettingsSortableDataTable
+      getRowClassName={(row) =>
+        !row.includeInFolderStructure ? 'bg-[var(--gray-1)]/70' : undefined
+      }
+      rowClassName='group'
       table={table}
-      onReorder={(nextRows) => setFields(nextRows)}
+      onReorder={handleReorder}
+      onValidateReorder={handleValidateReorder}
     />
   )
 }
-function useRepositoryTable(rows: RepositoryRow[]) {
+function useRepositoryTable(
+  rows: RepositoryRow[],
+  {
+    onEditRepository,
+  }: {
+    onEditRepository: (repository: RepositoryRow) => void
+  },
+) {
   const columnHelper = createColumnHelper<RepositoryRow>()
   const tableSearchOptions = useSettingsTableSearch()
 
@@ -623,8 +1449,8 @@ function useRepositoryTable(rows: RepositoryRow[]) {
       }),
       columnHelper.accessor('name', {
         enableSorting: false,
-        header: 'Repository',
-        meta: { ...settingsHeaderMeta.start, label: 'Repository' },
+        header: 'Folder',
+        meta: { ...settingsHeaderMeta.start, label: 'Folder' },
         minSize: 220,
         size: 260,
         cell: ({ row }) => (
@@ -636,18 +1462,6 @@ function useRepositoryTable(rows: RepositoryRow[]) {
               Owner: {row.original.owner}
             </div>
           </div>
-        ),
-      }),
-      columnHelper.accessor('category', {
-        enableSorting: false,
-        header: 'Category',
-        meta: { ...settingsHeaderMeta.start, label: 'Category' },
-        minSize: 120,
-        size: 140,
-        cell: (info) => (
-          <span className='rounded-lg border border-gray-3 px-3 py-1 text-xs font-medium'>
-            {info.getValue()}
-          </span>
         ),
       }),
       columnHelper.accessor('storage', {
@@ -670,13 +1484,6 @@ function useRepositoryTable(rows: RepositoryRow[]) {
         size: 150,
         cell: (info) => `${info.getValue().toLocaleString()} documents`,
       }),
-      columnHelper.accessor('versioning', {
-        enableSorting: false,
-        header: 'Versioning',
-        meta: settingsHeaderMeta.start,
-        minSize: 110,
-        size: 120,
-      }),
       columnHelper.accessor('status', {
         enableSorting: false,
         header: 'Status',
@@ -696,8 +1503,48 @@ function useRepositoryTable(rows: RepositoryRow[]) {
           </span>
         ),
       }),
+      columnHelper.display({
+        enableResizing: false,
+        enableSorting: false,
+        header: 'Actions',
+        id: 'actions',
+        meta: settingsHeaderMeta.end,
+        minSize: 72,
+        size: 72,
+        cell: ({ row }) => {
+          const repository = row.original
+
+          return (
+            <div
+              className='flex justify-end'
+              onClick={(event) => event.stopPropagation()}
+            >
+              <Menu
+                position='bottom-end'
+                width={160}
+                withinPortal
+                target={
+                  <IconButton
+                    color='gray'
+                    icon='lucide:more-horizontal'
+                    size='md'
+                    variant='ghost'
+                  />
+                }
+              >
+                <MenuItem
+                  icon='lucide:pencil'
+                  label='Edit'
+                  onClick={() => onEditRepository(repository)}
+                />
+                <MenuItem disabled icon='lucide:settings' label='Settings' />
+              </Menu>
+            </div>
+          )
+        },
+      }),
     ],
-    [columnHelper],
+    [columnHelper, onEditRepository],
   )
 
   const table = useReactTable({
@@ -705,44 +1552,24 @@ function useRepositoryTable(rows: RepositoryRow[]) {
     ...tableSearchOptions,
     columns,
     data: rows,
+    getRowId: (row) => row.id,
   })
 
   return { table }
 }
 
-function SortableHierarchyItem({ item }: SortableHierarchyItemProps) {
-  const {
-    attributes,
-    isDragging,
-    listeners,
-    transform,
-    transition,
-    setNodeRef,
-  } = useSortable({ id: item })
-
+function StorageCornerCheck() {
   return (
-    <div
-      ref={setNodeRef}
-      className={cn(
-        'flex items-center gap-2 rounded-[9px] border border-gray-3 bg-[var(--surface-secondary)] px-3 py-2 text-sm text-gray-13 shadow-sm transition',
-        isDragging && 'z-50 opacity-80 shadow-lg',
-      )}
-      style={{
-        transform: CSS.Transform.toString(transform),
-        transition,
-      }}
-    >
-      <button
-        aria-label={`Drag ${item}`}
-        className='flex cursor-grab items-center text-gray-10 outline-none active:cursor-grabbing'
-        type='button'
-        {...attributes}
-        {...listeners}
-      >
-        <GripVertical size={14} />
-      </button>
-      <span className='truncate'>{item}</span>
-    </div>
+    <span className='pointer-events-none absolute top-0 right-0 h-6 w-6 overflow-hidden rounded-tr-[9px]'>
+      <span
+        className='absolute top-0 right-0 h-full w-full bg-primary-9'
+        style={{ clipPath: 'polygon(100% 0, 0 0, 100% 100%)' }}
+      />
+      <Check
+        className='absolute top-0.5 right-0.5 h-3 w-3 text-white'
+        strokeWidth={3}
+      />
+    </span>
   )
 }
 
@@ -751,63 +1578,15 @@ function StepIcon({ step }: { step: WizardStep }) {
 }
 
 function StepNav({
-  folderHierarchy,
   step,
-  setFolderHierarchy,
   setStep,
 }: {
-  folderHierarchy: string[]
-  setFolderHierarchy: Dispatch<SetStateAction<string[]>>
   step: WizardStep
   setStep: (step: WizardStep) => void
 }) {
-  const [newLevel, setNewLevel] = useState('')
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 5,
-      },
-    }),
-  )
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event
-
-    if (!over || active.id === over.id) return
-
-    setFolderHierarchy((items) => {
-      const oldIndex = items.indexOf(String(active.id))
-      const newIndex = items.indexOf(String(over.id))
-
-      if (oldIndex === -1 || newIndex === -1) return items
-
-      return arrayMove(items, oldIndex, newIndex)
-    })
-  }
-
-  const handleAddLevel = () => {
-    const value = newLevel.trim()
-
-    if (!value) return
-
-    const alreadyExists = folderHierarchy.some(
-      (item) => item.toLowerCase() === value.toLowerCase(),
-    )
-
-    if (alreadyExists) {
-      setNewLevel('')
-      return
-    }
-
-    setFolderHierarchy((prev) => [...prev, value])
-    setNewLevel('')
-  }
-
   return (
-    <div className='h-full w-[310px] shrink-0 border-r border-gray-3 bg-surface p-5'>
-      <div className='relative pb-2'>
-        {wizardSteps.map((item, index) => {
+    <div className='space-y-5'>
+      {wizardSteps.map((item, index) => {
           const isCompleted = step > item.id
           const isActive = step === item.id
 
@@ -853,54 +1632,6 @@ function StepNav({
             </button>
           )
         })}
-      </div>
-
-      <div className='mt-5 border-t border-gray-3 pt-4 pb-5'>
-        <div className='mb-3 text-xs font-bold text-gray-11 uppercase'>
-          Folder Hierarchy
-        </div>
-
-        <DndContext
-          collisionDetection={closestCenter}
-          sensors={sensors}
-          onDragEnd={handleDragEnd}
-        >
-          <SortableContext
-            items={folderHierarchy}
-            strategy={verticalListSortingStrategy}
-          >
-            <div className='bg-surface-muted/60 space-y-2 rounded-md'>
-              {folderHierarchy.map((item) => (
-                <SortableHierarchyItem item={item} key={item} />
-              ))}
-            </div>
-          </SortableContext>
-        </DndContext>
-
-        <div className='mt-2 flex items-end gap-2'>
-          <InputText
-            className='flex-1'
-            label='Add level'
-            placeholder='Add level...'
-            value={newLevel}
-            onChange={setNewLevel}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') {
-                event.preventDefault()
-                handleAddLevel()
-              }
-            }}
-          />
-          <Button
-            aria-label='Add hierarchy level'
-            className='mb-0.5'
-            icon='lucide:plus'
-            size='sm'
-            variant='solid'
-            onClick={handleAddLevel}
-          />
-        </div>
-      </div>
     </div>
   )
 }
@@ -913,8 +1644,11 @@ function WizardContent({
   folderCoordinator,
   folderName,
   folderOwner,
+  onStorageConnectorChange,
   step,
   storage,
+  storageConnectorId,
+  storageConnectorLabel,
   versioning,
   setCategory,
   setDescription,
@@ -924,57 +1658,100 @@ function WizardContent({
   setFolderName,
   setFolderOwner,
   setStorage,
+  userOptions,
   setVersioning,
 }: {
   category: SelectOption
   description: string
   displayMode: string
   fields: FieldRow[]
-  folderCoordinator: string
+  folderCoordinator: SelectOption | null
   folderName: string
-  folderOwner: string
+  folderOwner: SelectOption | null
+  onStorageConnectorChange: (
+    connectorId: string | null,
+    connectorLabel: string | null,
+  ) => void
   setCategory: Dispatch<SetStateAction<SelectOption>>
   setDescription: Dispatch<SetStateAction<string>>
   setDisplayMode: Dispatch<SetStateAction<string>>
   setFields: Dispatch<SetStateAction<FieldRow[]>>
-  setFolderCoordinator: Dispatch<SetStateAction<string>>
+  setFolderCoordinator: Dispatch<SetStateAction<SelectOption | null>>
   setFolderName: Dispatch<SetStateAction<string>>
-  setFolderOwner: Dispatch<SetStateAction<string>>
-  setStorage: Dispatch<SetStateAction<string>>
+  setFolderOwner: Dispatch<SetStateAction<SelectOption | null>>
+  setStorage: (nextStorage: string) => void
+  userOptions: SelectOption[]
   setVersioning: Dispatch<SetStateAction<string>>
   step: WizardStep
   storage: string
+  storageConnectorId: string | null
+  storageConnectorLabel: string | null
   versioning: string
 }) {
   const [newFieldName, setNewFieldName] = useState('')
-  const [newFieldType, setNewFieldType] = useState('Alphanumeric')
+  const [newFieldType, setNewFieldType] = useState('SHORT_TEXT')
+  const [newIsFolder, setNewIsFolder] = useState(false)
+  const [newIsMandatory, setNewIsMandatory] = useState(false)
+  const [newFieldIcon, setNewFieldIcon] = useState<SelectOption | null>(
+    folderIconOptions.find((option) => option.value === 'folder') || null,
+  )
+  const [fieldTypeOptions, setFieldTypeOptions] = useState<SelectOption[]>(() =>
+    toFieldTypeOptions([...REPOSITORY_FIELD_DATA_TYPES]),
+  )
+
+  const loadFieldTypes = useCallback(async () => {
+    const types = new Set<string>(REPOSITORY_FIELD_DATA_TYPES)
+    const response = await getRepositorys()
+
+    if (!response.error && Array.isArray(response.data)) {
+      response.data.forEach((repository: { fields?: Array<{ dataType?: string }> }) => {
+        ;(repository.fields || []).forEach((field) => {
+          if (field.dataType) types.add(field.dataType)
+        })
+      })
+    }
+
+    setFieldTypeOptions(toFieldTypeOptions(Array.from(types)))
+  }, [])
+
+  useEffect(() => {
+    if (step !== 3) return
+    void loadFieldTypes()
+  }, [loadFieldTypes, step])
 
   const addField = () => {
     const trimmedName = newFieldName.trim()
     if (!trimmedName) return
 
-    setFields((prev) => [
-      ...prev,
-      {
-        fieldName: trimmedName,
-        id: `${trimmedName}-${Date.now()}`,
-        mandatory: false,
-        ocrExtract: false,
-        searchable: true,
-        showInList: true,
-        syncField: false,
-        type: newFieldType,
-      },
-    ])
+    setFields((prev) =>
+      recalculateFieldHierarchy([
+        ...prev,
+        {
+          dataType: newFieldType,
+          fieldName: trimmedName,
+          iconKey: newIsFolder ? String(newFieldIcon?.value || 'folder') : undefined,
+          id: `${trimmedName}-${Date.now()}`,
+          includeInFolderStructure: newIsFolder,
+          isMandatory: newIsFolder || newIsMandatory,
+          level: 0,
+          orderId: prev.length + 1,
+        },
+      ]),
+    )
     setNewFieldName('')
-    setNewFieldType('Alphanumeric')
+    setNewFieldType(String(fieldTypeOptions[0]?.value || 'SHORT_TEXT'))
+    setNewIsFolder(false)
+    setNewIsMandatory(false)
+    setNewFieldIcon(
+      folderIconOptions.find((option) => option.value === 'folder') || null,
+    )
   }
 
   if (step === 1) {
     return (
-      <div className='space-y-5'>
+      <SettingsFormSection>
         <p className='text-sm text-gray-11'>
-          Define the basic information for your document repository.
+          Define the basic information for your folder.
         </p>
 
         <InputText
@@ -987,12 +1764,12 @@ function WizardContent({
         <InputTextarea
           label='Description'
           minRows={3}
-          placeholder='Describe the purpose of this repository...'
+          placeholder='Describe the purpose of this folder...'
           value={description}
           onChange={setDescription}
         />
 
-        <div>
+        {/* <div>
           <label className='mb-2 block text-sm font-semibold text-gray-13'>
             Category
           </label>
@@ -1004,63 +1781,98 @@ function WizardContent({
               setCategory(item)
             }}
           />
-        </div>
+        </div> */}
 
         <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-          <InputText
+          <InputSelect
             label='Folder Owner'
-            placeholder='Owner name or email'
+            options={userOptions}
             value={folderOwner}
-            onChange={(value: string) => setFolderOwner(value)}
+            onChange={(item: SelectOption | null) => setFolderOwner(item)}
           />
 
-          <InputText
+          <InputSelect
             label='Folder Coordinator'
-            placeholder='Coordinator name or email'
+            options={userOptions}
             value={folderCoordinator}
-            onChange={(value: string) => setFolderCoordinator(value)}
+            onChange={(item: SelectOption | null) => setFolderCoordinator(item)}
           />
         </div>
-      </div>
+      </SettingsFormSection>
     )
   }
 
   if (step === 2) {
+    const selectedStorage =
+      storageOptions.find((item) => item.id === storage) ?? storageOptions[0]
+
     return (
       <div>
-        <p className='mb-5 text-sm text-gray-11'>
-          Choose where documents in this repository will be stored.
+        <p className='mb-4 text-sm text-gray-11'>
+          Choose where documents in this folder will be stored.
         </p>
-        <div className='grid grid-cols-1 gap-3 md:grid-cols-2'>
+
+        <div className='grid grid-cols-2 gap-3 lg:grid-cols-4'>
           {storageOptions.map((item) => {
-            const Icon = item.icon as ElementType
+            const isSelected = storage === item.id
+            const isDisabled = item.comingSoon
+
             return (
               <button
                 key={item.id}
                 type='button'
+                disabled={isDisabled}
                 className={cn(
-                  'flex items-center gap-4 rounded-[12px] border p-4 text-left transition',
-                  storage === item.id
-                    ? 'border-primary-9 bg-primary-2'
-                    : 'border-gray-3 bg-surface hover:bg-surface-muted',
+                  'relative flex min-h-[132px] w-full flex-col items-center justify-center gap-2 rounded-[12px] border p-4 text-center transition',
+                  isSelected
+                    ? 'border-primary-9 bg-surface shadow-sm'
+                    : 'border-gray-3 bg-surface hover:border-gray-4 hover:bg-surface-muted',
+                  isDisabled && 'cursor-not-allowed opacity-70',
                 )}
-                onClick={() => setStorage(item.id)}
+                onClick={() => {
+                  if (!isDisabled) setStorage(item.id)
+                }}
               >
-                <span className='flex h-10 w-10 items-center justify-center rounded-[10px] bg-gray-2 text-gray-11'>
-                  <Icon size={20} />
+                {isSelected ? <StorageCornerCheck /> : null}
+
+                <span className='flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-gray-2 text-gray-11'>
+                  {item.logo ? (
+                    <img
+                      alt={item.title}
+                      className='h-5 w-5 object-contain'
+                      src={item.logo}
+                    />
+                  ) : item.icon ? (
+                    <Icon className='h-5 w-5' name={item.icon} />
+                  ) : null}
                 </span>
-                <span>
-                  <span className='block font-semibold text-gray-13'>
+
+                <div className='min-w-0 px-1'>
+                  <div
+                    className={cn(
+                      'truncate text-sm font-semibold',
+                      isDisabled ? 'text-gray-9' : 'text-gray-13',
+                    )}
+                  >
                     {item.title}
-                  </span>
-                  <span className='text-sm text-gray-11'>
+                  </div>
+                  <div className='mt-0.5 truncate text-xs text-gray-11'>
                     {item.subtitle}
-                  </span>
-                </span>
+                  </div>
+                </div>
               </button>
             )
           })}
         </div>
+
+        {isCloudStorageOption(selectedStorage) ? (
+          <FolderStorageConnectorPanel
+            connectorId={storageConnectorId}
+            connectorLabel={storageConnectorLabel}
+            option={selectedStorage}
+            onConnectorChange={onStorageConnectorChange}
+          />
+        ) : null}
       </div>
     )
   }
@@ -1068,116 +1880,194 @@ function WizardContent({
   if (step === 3) {
     return (
       <div className='space-y-5'>
-        <div className='flex flex-wrap items-center justify-between gap-4'>
-          <div>
-            <h3 className='font-bold text-gray-13'>
-              Document Fields Configuration
-            </h3>
-            <p className='text-sm text-gray-11'>
-              Configure metadata fields. Mark each as OCR Extract or Sync field.
-            </p>
-          </div>
-          <div className='flex gap-4 text-sm text-gray-11'>
-            <span>
-              <RefreshCw className='inline' size={13} /> OCR Extract
-            </span>
-            <span>
-              <RefreshCw className='inline' size={13} /> Sync Field
-            </span>
-          </div>
+        <div>
+          <h3 className='font-bold text-gray-13'>Folder Fields Configuration</h3>
+          <p className='text-sm text-gray-11'>
+            Configure metadata fields for documents stored in this folder.
+          </p>
         </div>
 
         <div className='rounded-[12px] border border-gray-3 bg-surface-muted p-4'>
           <div className='mb-3 text-xs font-bold text-gray-11 uppercase'>
             Add New Field
           </div>
-          <div className='grid grid-cols-1 gap-3 md:grid-cols-[1fr_160px_160px]'>
-            <InputText
-              placeholder='e.g. Cost Center'
-              value={newFieldName}
-              onChange={setNewFieldName}
-            />
-            <InputSelect
-              options={fieldTypeOptions}
-              placeholder='Field type'
-              value={
-                fieldTypeOptions.find((option) => option.name === newFieldType) ||
-                fieldTypeOptions[0]
-              }
-              onChange={(selected) => {
-                if (!selected) return
-                setNewFieldType(selected.name)
-              }}
-            />
-            <Button
-              className='self-end'
-              icon='lucide:plus'
-              label='Add Field'
-              onClick={addField}
-            />
+          <div className='grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-[88px_minmax(280px,1fr)_200px_108px_auto] lg:items-end'>
+            <div>
+              <label className='mb-1.5 block h-4 text-xs leading-4 font-semibold text-gray-11'>
+                Folder
+              </label>
+              <div className='flex h-9 items-center'>
+                <InputCheckbox
+                  checked={newIsFolder}
+                  onChange={(checked) => {
+                    const isFolder = Boolean(checked)
+                    setNewIsFolder(isFolder)
+                    if (isFolder) setNewIsMandatory(true)
+                  }}
+                />
+              </div>
+            </div>
+
+            <div className='sm:col-span-2 lg:col-span-1'>
+              <label className='mb-1.5 block h-4 text-xs leading-4 font-semibold text-gray-11'>
+                Field Name
+              </label>
+              <FieldNameWithIconInput
+                iconKey={String(newFieldIcon?.value || 'folder')}
+                placeholder='e.g. Cost Center'
+                showIconPicker={newIsFolder}
+                size='md'
+                value={newFieldName}
+                onChange={setNewFieldName}
+                onIconChange={(iconKey) => {
+                  const option = folderIconOptions.find(
+                    (item) => item.value === iconKey,
+                  )
+                  setNewFieldIcon(option || null)
+                }}
+              />
+            </div>
+
+            <div>
+              <label className='mb-1.5 block h-4 text-xs leading-4 font-semibold text-gray-11'>
+                Type
+              </label>
+              <InputSelect
+                classNames={{ input: cn(inputSharedClassNames.input, 'text-13') }}
+                options={fieldTypeOptions}
+                placeholder='Field type'
+                value={
+                  fieldTypeOptions.find((option) => option.value === newFieldType) ||
+                  fieldTypeOptions[0] ||
+                  null
+                }
+                width='target'
+                onChange={(selected) => {
+                  if (!selected) return
+                  setNewFieldType(String(selected.value || selected.name))
+                }}
+              />
+            </div>
+
+            <div>
+              <label className='mb-1.5 block h-4 text-xs leading-4 font-semibold text-gray-11'>
+                Mandatory
+              </label>
+              <div className='flex h-9 items-center'>
+                <InputCheckbox
+                  checked={newIsFolder || newIsMandatory}
+                  disabled={newIsFolder}
+                  onChange={(checked) => setNewIsMandatory(Boolean(checked))}
+                />
+              </div>
+            </div>
+
+            <div>
+              <div
+                aria-hidden
+                className='mb-1.5 hidden h-4 lg:block'
+              />
+              <Button
+                className='h-9 w-full whitespace-nowrap lg:w-auto'
+                icon='lucide:plus'
+                label='Add Field'
+                size='lg'
+                onClick={addField}
+              />
+            </div>
           </div>
         </div>
 
-        <FieldsTable fields={fields} setFields={setFields} />
+        <FieldsTable
+          fieldTypeOptions={fieldTypeOptions}
+          fields={fields}
+          setFields={setFields}
+        />
       </div>
     )
   }
 
   if (step === 4) {
-    return (
-      <div className='space-y-5'>
-        <p className='text-sm text-gray-11'>
-          Choose how document versions are managed in this repository.
-        </p>
-        <h3 className='font-bold text-gray-13'>Version Strategy</h3>
-        {versionOptions.map((item) => (
-          <button
-            key={item.id}
-            type='button'
-            className={cn(
-              'block w-full rounded-[12px] border p-4 text-left transition',
-              versioning === item.id
-                ? 'border-primary-9 bg-primary-2'
-                : 'border-gray-3 hover:bg-surface-muted',
-            )}
-            onClick={() => setVersioning(item.id)}
-          >
-            <div className='font-semibold text-gray-13'>{item.title}</div>
-            <div className='text-sm text-gray-11'>{item.subtitle}</div>
-            <code className='mt-2 inline-block rounded bg-gray-2 px-2 py-1 text-xs'>
-              {item.sample}
-            </code>
-          </button>
-        ))}
+    const displayOptions = [
+      'Show Latest Version Only',
+      'Show All Versions',
+      'Version History Panel',
+    ] as const
 
-        <h3 className='font-bold text-gray-13'>Display Settings</h3>
-        {[
-          'Show Latest Version Only',
-          'Show All Versions',
-          'Version History Panel',
-        ].map((item) => (
-          <button
-            key={item}
-            type='button'
-            className={cn(
-              'flex w-full items-center gap-3 rounded-[10px] border p-3 text-left transition',
-              displayMode === item
-                ? 'border-primary-9 bg-primary-2'
-                : 'border-gray-3 hover:bg-surface-muted',
-            )}
-            onClick={() => setDisplayMode(item)}
-          >
-            <span
-              className={cn(
-                'h-4 w-4 rounded-full border',
-                displayMode === item
-                  ? 'border-primary-9 bg-primary-9'
-                  : 'border-primary-9 bg-surface',
-              )}
-            />
-            {item}
-          </button>
-        ))}
+    return (
+      <div className='space-y-8'>
+        <div>
+          <p className='text-sm text-gray-11'>
+            Choose how document versions are managed in this folder.
+          </p>
+
+          <h3 className='mt-5 font-bold text-gray-13'>Version Strategy</h3>
+          <div className='mt-3 grid grid-cols-1 gap-3 lg:grid-cols-3'>
+            {versionOptions.map((item) => {
+              const isSelected = versioning === item.id
+
+              return (
+                <button
+                  key={item.id}
+                  type='button'
+                  className={cn(
+                    'relative flex min-h-[148px] w-full flex-col rounded-[12px] border p-4 text-left transition',
+                    isSelected
+                      ? 'border-primary-9 bg-primary-2 shadow-sm'
+                      : 'border-gray-3 bg-surface hover:border-gray-4 hover:bg-surface-muted',
+                  )}
+                  onClick={() => setVersioning(item.id)}
+                >
+                  {isSelected ? <StorageCornerCheck /> : null}
+
+                  <div className='font-semibold text-gray-13'>{item.title}</div>
+                  <div className='mt-1 text-sm text-gray-11'>{item.subtitle}</div>
+                  <code className='mt-auto inline-block w-full truncate rounded-[6px] bg-gray-2 px-2 py-1.5 text-xs text-gray-11'>
+                    {item.sample}
+                  </code>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        <div>
+          <h3 className='font-bold text-gray-13'>Display Settings</h3>
+          <div className='mt-3 grid grid-cols-1 gap-3 lg:grid-cols-3'>
+            {displayOptions.map((item) => {
+              const isSelected = displayMode === item
+
+              return (
+                <button
+                  key={item}
+                  type='button'
+                  className={cn(
+                    'relative flex min-h-[72px] w-full items-center gap-3 rounded-[12px] border p-4 text-left transition',
+                    isSelected
+                      ? 'border-primary-9 bg-primary-2 shadow-sm'
+                      : 'border-gray-3 bg-surface hover:border-gray-4 hover:bg-surface-muted',
+                  )}
+                  onClick={() => setDisplayMode(item)}
+                >
+                  <span
+                    className={cn(
+                      'flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2',
+                      isSelected
+                        ? 'border-primary-9 bg-primary-9'
+                        : 'border-gray-6 bg-surface',
+                    )}
+                  >
+                    {isSelected ? (
+                      <span className='h-1.5 w-1.5 rounded-full bg-white' />
+                    ) : null}
+                  </span>
+
+                  <span className='text-sm font-semibold text-gray-13'>{item}</span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
       </div>
     )
   }
@@ -1185,7 +2075,7 @@ function WizardContent({
   return (
     <div>
       <p className='mb-5 text-sm text-gray-11'>
-        Connect external ERP or business systems and map repository fields for
+        Connect external ERP or business systems and map folder fields for
         synchronization.
       </p>
       <div className='mb-3 text-xs font-bold text-gray-11 uppercase'>

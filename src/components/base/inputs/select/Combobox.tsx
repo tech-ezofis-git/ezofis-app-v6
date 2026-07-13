@@ -9,6 +9,7 @@ import ComboboxTarget from './ComboboxTarget'
 interface Props extends InputProps, SelectProps {
   search: string
   value: Option[]
+  autoOpen?: boolean
   dropdownFooter?: React.ReactNode
   loading?: boolean
   rightSectionIcon?: string
@@ -16,12 +17,15 @@ interface Props extends InputProps, SelectProps {
   onBottomReached?: () => void
   onChange: (value: Option[]) => void
   onCreate?: () => void
+  onDropdownClose?: () => void
+  onDropdownOpen?: () => void
   onSearch: (search: string) => void
 }
 
 const Combobox = forwardRef<HTMLButtonElement, Props>(
   (
     {
+      autoOpen,
       creatable,
       dropdownFooter,
       options,
@@ -35,6 +39,8 @@ const Combobox = forwardRef<HTMLButtonElement, Props>(
       width = 'target',
       onBottomReached,
       onChange,
+      onDropdownClose,
+      onDropdownOpen,
       onSearch,
       ...rest
     },
@@ -44,14 +50,22 @@ const Combobox = forwardRef<HTMLButtonElement, Props>(
       onDropdownClose: () => {
         onSearch('')
         comboboxStore.resetSelectedOption()
+        onDropdownClose?.()
       },
     })
 
     useEffect(() => {
+      if (!autoOpen) return
+      comboboxStore.openDropdown()
+      // eslint-disable-next-line react-hooks/exhaustive-deps -- open once when autoOpen is set
+    }, [autoOpen])
+
+    useEffect(() => {
       if (comboboxStore.dropdownOpened) {
         comboboxStore.focusSearchInput()
+        onDropdownOpen?.()
       }
-    }, [comboboxStore.dropdownOpened])
+    }, [comboboxStore.dropdownOpened, onDropdownOpen])
 
     const handleSearchKeyDown = (
       event: React.KeyboardEvent<HTMLInputElement>,
@@ -96,6 +110,7 @@ const Combobox = forwardRef<HTMLButtonElement, Props>(
           classNames={{
             dropdown: 'border border-gray-3 bg-surface-raised p-0 shadow-md',
           }}
+          data-combobox-dropdown
         >
           {(searchable || creatable) && (
             <ComboboxSearch

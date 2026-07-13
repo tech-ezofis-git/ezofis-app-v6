@@ -101,11 +101,13 @@ export interface RepositoryDetail {
 export interface RepositoryFieldDetail {
   [key: string]: any
   dataType: string
+  iconKey?: string
   id: string
   includeInFolderStructure: boolean
   isMandatory: boolean
   level: number
   name: string
+  orderId?: number
   sqlColumnName: string
 }
 

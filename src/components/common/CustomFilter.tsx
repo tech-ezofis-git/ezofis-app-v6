@@ -220,7 +220,7 @@ export default function CustomFilter({
               <span>{moreFiltersLabel}</span>
               <ChevronDown className="h-3 w-3 opacity-60" />
             </button>
-            
+
             {activeFilterDropdown === 'more' && (
               <div className="absolute z-30 top-full left-0 mt-1.5 flex rounded-lg border border-border-default bg-surface shadow-xs overflow-hidden animate-in fade-in slide-in-from-top-2">
                 <div className="flex flex-col w-[190px] bg-primary-3/30 border-r border-border-default p-1 dark:bg-gray-12">
@@ -250,7 +250,7 @@ export default function CustomFilter({
                     )
                   })}
                 </div>
-                
+
                 <div className="flex flex-col w-[260px] p-3 gap-2.5 bg-surface">
                   {moreFilters.map((group) => {
                     if (activeFilterGroup !== group.id) return null
@@ -337,7 +337,7 @@ export default function CustomFilter({
       )}
 
       <div className="flex-1" />
-      
+
       {customSearchComponent ? (
         customSearchComponent
       ) : (
