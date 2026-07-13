@@ -5,6 +5,8 @@ import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
 import showToast from '@/components/base/toast/showToast'
 import { AnimateFadeIn, AnimateSlideUp } from '@/components/common/animations'
+import Accordion from '@/components/base/accordion/Accordion'
+import AccordionItem from '@/components/base/accordion/AccordionItem'
 import ColumnMapping from '@/components/common/ColumnMapping'
 import requestStore from '@/pages/requests/stores/useRequestStore'
 import authUserStore from '@/stores/authUserStore'
@@ -181,11 +183,16 @@ export default function PoSetupFlowPage({ onClose }: Props) {
       setLineItemRows(result.lineItemRows || [])
 
       // Initial Grouping setup
-      const detectedGroupCol = detectGroupingColumn(result.lineItemHeaders) || result.lineItemHeaders[0]
+      const detectedGroupCol = detectGroupingColumn(result.lineItemHeaders) || null
       setGroupingColumn(detectedGroupCol)
-      const initialGroupedData = groupLineItems(result.lineItemRows, detectedGroupCol)
-      setGroupedData(initialGroupedData)
-      setPreviewGroupId(Object.keys(initialGroupedData)[0] || null)
+      if (detectedGroupCol) {
+        const initialGroupedData = groupLineItems(result.lineItemRows, detectedGroupCol)
+        setGroupedData(initialGroupedData)
+        setPreviewGroupId(Object.keys(initialGroupedData)[0] || null)
+      } else {
+        setGroupedData({})
+        setPreviewGroupId(null)
+      }
 
       // Simulate upload/parse progress bar smoothly
       let currentProgress = 0
@@ -923,60 +930,69 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                 )}
 
                 {uploadState === 'ready' && (
-                  <ColumnMapping
-                    key="header-mapping"
-                    confirmButtonText='Confirm Column Mapping'
-                    isConfirmLoading={false}
-                    mapping={mapping}
-                    previewRows={previewRows}
-                    showActionsRow={true}
-                    uploadedColumns={uploadedColumns}
-                    onCancel={() => {
-                      setUploadState('idle')
-                      setUploadedFile(null)
-                      setMapping({})
-                      setPreviewRows([])
-                    }}
-                    onChangeMapping={setMapping}
-                    onConfirm={() => {
-                      setUploadState('lineItemMapping')
-                    }}
-                  />
-                )}
-
-                {uploadState === 'lineItemMapping' && (
-                  <ColumnMapping
-                    key="line-item-mapping"
-                    title='Confirm Line Item Mapping'
-                    confirmButtonText='Confirm Line Item Mapping'
-                    isConfirmLoading={isSubmitting}
-                    mapping={lineItemMapping}
-                    previewRows={lineItemRows}
-                    showActionsRow={true}
-                    uploadedColumns={lineItemHeaders}
-                    templateSchema={LINE_ITEM_TEMPLATE_COLUMNS}
-                    showGrouping={true}
-                    groupingColumn={groupingColumn}
-                    onGroupingColumnChange={(col) => {
-                      setGroupingColumn(col)
-                      if (col) {
-                        const newGroupedData = groupLineItems(lineItemRows, col)
-                        setGroupedData(newGroupedData)
-                        setPreviewGroupId(Object.keys(newGroupedData)[0] || null)
-                      }
-                    }}
-                    availableGroupIds={Object.keys(groupedData)}
-                    previewGroupId={previewGroupId || ''}
-                    onPreviewGroupChange={setPreviewGroupId}
-                    groupedPreviewRows={getPreviewGroup(groupedData, previewGroupId || '')}
-                    totalGroupsCount={Object.keys(groupedData).length}
-                    totalRowsCount={lineItemRows.length}
-                    onCancel={() => {
-                      setUploadState('ready') // Go back to header mapping
-                    }}
-                    onChangeMapping={setLineItemMapping}
-                    onConfirm={handleManualConfirm}
-                  />
+                  <div className='flex flex-col gap-4 mt-2'>
+                    {!groupingColumn && (
+                      <div className='flex items-center gap-2 rounded-lg border border-red-5 bg-red-1 px-4 py-3 text-sm text-red-11 shadow-sm'>
+                        <Icon className='size-5' name='tabler:alert-triangle' />
+                        <span className='font-medium'>
+                          Line item missing error: PO Number column could not be matched.
+                        </span>
+                      </div>
+                    )}
+                    <Accordion multiple defaultValue={['header-mapping', 'line-item-mapping']}>
+                      <AccordionItem value='header-mapping' label='Header Column Mapping'>
+                        <div className="pt-2">
+                          <ColumnMapping
+                            key="header-mapping"
+                            title='Header Mapping'
+                            isConfirmLoading={false}
+                            mapping={mapping}
+                            previewRows={previewRows}
+                            showActionsRow={false}
+                            uploadedColumns={uploadedColumns}
+                            onChangeMapping={setMapping}
+                          />
+                        </div>
+                      </AccordionItem>
+                      <AccordionItem value='line-item-mapping' label='Line Item Mapping'>
+                        <div className="pt-2">
+                          <ColumnMapping
+                            key="line-item-mapping"
+                            title='Line Item Mapping'
+                            isConfirmLoading={false}
+                            mapping={lineItemMapping}
+                            previewRows={lineItemRows}
+                            showActionsRow={false}
+                            uploadedColumns={lineItemHeaders}
+                            templateSchema={LINE_ITEM_TEMPLATE_COLUMNS}
+                            showGrouping={false}
+                            autoScrollAndHighlight={false}
+                            onChangeMapping={setLineItemMapping}
+                          />
+                        </div>
+                      </AccordionItem>
+                    </Accordion>
+                    <div className='flex justify-end gap-3 pt-2'>
+                      <Button variant='outline' onClick={() => {
+                        setUploadState('idle')
+                        setUploadedFile(null)
+                        setMapping({})
+                        setPreviewRows([])
+                      }}>
+                        Cancel
+                      </Button>
+                      <Button
+                        disabled={!groupingColumn || 
+                          systemColumns.some(col => col.required && !mapping[col.key]) ||
+                          LINE_ITEM_TEMPLATE_COLUMNS.some(col => col.required && !lineItemMapping[col.key])
+                        }
+                        loading={isSubmitting}
+                        onClick={handleManualConfirm}
+                      >
+                        Confirm & Ingest
+                      </Button>
+                    </div>
+                  </div>
                 )}
               </div>
 

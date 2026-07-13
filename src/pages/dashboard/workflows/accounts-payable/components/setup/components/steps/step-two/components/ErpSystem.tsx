@@ -16,6 +16,8 @@ import {
   AnimateScale,
   AnimateSlideUp,
 } from '@/components/common/animations'
+import Accordion from '@/components/base/accordion/Accordion'
+import AccordionItem from '@/components/base/accordion/AccordionItem'
 import ColumnMapping from '@/components/common/ColumnMapping'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import { compareHeaderSimilarity } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/headerSimilarity'
@@ -47,15 +49,6 @@ const ErpSystem = () => {
   const setErpSettings = setupStore((state) => state.setErpSettings)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const [uploadState, setUploadState] = useState<'ready' | 'lineItemMapping' | 'done'>('ready')
-  const [lineItemMapping, setLineItemMapping] = useState<Record<string, string>>({})
-  const [lineItemHeaders, setLineItemHeaders] = useState<string[]>([])
-  const [lineItemRows, setLineItemRows] = useState<any[]>([])
-
-  const [groupingColumn, setGroupingColumn] = useState<string | null>(null)
-  const [groupedData, setGroupedData] = useState<Record<string, any[]>>({})
-  const [previewGroupId, setPreviewGroupId] = useState<string | null>(null)
-
   const isFileBasedImportSelected = erpSettings.system === 'FILE_BASED_IMPORT'
 
   const handleDownloadPredefinedMaster = () => {
@@ -84,6 +77,9 @@ const ErpSystem = () => {
           }
         })
 
+        const hasLineItems = liHeaders && liHeaders.length > 0
+        const detectedGroupCol = hasLineItems ? (detectGroupingColumn(liHeaders) || null) : null
+
         setErpSettings({
           ...erpSettings,
           importMethod: 'upload',
@@ -95,22 +91,12 @@ const ErpSystem = () => {
           uploadedColumns: headers,
           uploadedTemplate: file,
           wantsFileBasedImport: true,
+          lineItemHeaders: hasLineItems ? liHeaders : [],
+          lineItemRows: hasLineItems && liRows ? liRows : [],
+          groupingColumn: detectedGroupCol,
+          lineItemMapping: {},
         })
-        
-        if (liHeaders && liHeaders.length > 0) {
-          setLineItemHeaders(liHeaders)
-          const detectedGroupCol = detectGroupingColumn(liHeaders) || liHeaders[0]
-          setGroupingColumn(detectedGroupCol)
-          
-          if (liRows) {
-            setLineItemRows(liRows)
-            const initialGroupedData = groupLineItems(liRows, detectedGroupCol)
-            setGroupedData(initialGroupedData)
-            setPreviewGroupId(Object.keys(initialGroupedData)[0] || null)
-          }
-        }
-        
-        setUploadState('ready')
+
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (err: any) {
         console.error(err)
@@ -285,68 +271,68 @@ const ErpSystem = () => {
                 )}
               </div>
             </AnimateFadeIn>
-            {erpSettings.templateUploaded && uploadState === 'ready' && (
-              <ColumnMapping
-                key="header-mapping"
-                confirmButtonText='Confirm Column Mapping'
-                mapping={erpSettings.mapping || {}}
-                previewRows={erpSettings.previewRows || []}
-                showActionsRow={true}
-                uploadedColumns={erpSettings.uploadedColumns || []}
-                onChangeMapping={(m) =>
-                  setErpSettings({
-                    ...erpSettings,
-                    mapping: m,
-                  })
-                }
-                onConfirm={() => {
-                  if (lineItemHeaders.length > 0) {
-                    setUploadState('lineItemMapping')
-                  } else {
-                    setUploadState('done')
-                  }
-                }}
-                onCancel={() => {
-                  setErpSettings({ ...erpSettings, templateUploaded: false, uploadedTemplate: null })
-                }}
-              />
-            )}
-            {erpSettings.templateUploaded && uploadState === 'lineItemMapping' && (
-              <ColumnMapping
-                key="line-item-mapping"
-                title='Confirm Line Item Mapping'
-                confirmButtonText='Confirm Line Item Mapping'
-                mapping={lineItemMapping}
-                previewRows={lineItemRows}
-                showActionsRow={true}
-                uploadedColumns={lineItemHeaders}
-                templateSchema={LINE_ITEM_TEMPLATE_COLUMNS}
-                showGrouping={true}
-                groupingColumn={groupingColumn}
-                onGroupingColumnChange={(col) => {
-                  setGroupingColumn(col)
-                  if (col) {
-                    const newGroupedData = groupLineItems(lineItemRows, col)
-                    setGroupedData(newGroupedData)
-                    setPreviewGroupId(Object.keys(newGroupedData)[0] || null)
-                  }
-                }}
-                availableGroupIds={Object.keys(groupedData)}
-                previewGroupId={previewGroupId || ''}
-                onPreviewGroupChange={setPreviewGroupId}
-                groupedPreviewRows={getPreviewGroup(groupedData, previewGroupId || '')}
-                totalGroupsCount={Object.keys(groupedData).length}
-                totalRowsCount={lineItemRows.length}
-                onChangeMapping={setLineItemMapping}
-                onConfirm={() => setUploadState('done')}
-                onCancel={() => setUploadState('ready')}
-              />
-            )}
-            {erpSettings.templateUploaded && uploadState === 'done' && (
-               <Alert
-                 text='Mapping complete! You can now proceed to the next step.'
-                 variant='green'
-               />
+            {erpSettings.templateUploaded && (
+              <div className='flex flex-col gap-4 mt-2'>
+                {erpSettings.lineItemHeaders && erpSettings.lineItemHeaders.length > 0 && !erpSettings.groupingColumn && (
+                  <div className='flex items-center gap-2 rounded-lg border border-red-5 bg-red-1 px-4 py-3 text-sm text-red-11 shadow-sm'>
+                    <Icon className='size-5' name='tabler:alert-triangle' />
+                    <span className='font-medium'>
+                      Line item missing error: PO Number column could not be matched.
+                    </span>
+                  </div>
+                )}
+                <Accordion multiple defaultValue={['header-mapping', 'line-item-mapping']}>
+                  <AccordionItem value='header-mapping' label='Header Column Mapping'>
+                    <div className="pt-2">
+                      <ColumnMapping
+                        key="header-mapping"
+                        title='Header Mapping'
+                        mapping={erpSettings.mapping || {}}
+                        previewRows={erpSettings.previewRows || []}
+                        showActionsRow={false}
+                        uploadedColumns={erpSettings.uploadedColumns || []}
+                        onChangeMapping={(m) =>
+                          setErpSettings({
+                            ...erpSettings,
+                            mapping: m,
+                          })
+                        }
+                      />
+                    </div>
+                  </AccordionItem>
+
+                  {erpSettings.lineItemHeaders && erpSettings.lineItemHeaders.length > 0 && (
+                    <AccordionItem value='line-item-mapping' label='Line Item Mapping'>
+                      <div className="pt-2">
+                        <ColumnMapping
+                          key="line-item-mapping"
+                          title='Line Item Mapping'
+                          mapping={erpSettings.lineItemMapping || {}}
+                          previewRows={erpSettings.lineItemRows || []}
+                          showActionsRow={false}
+                          uploadedColumns={erpSettings.lineItemHeaders || []}
+                          templateSchema={LINE_ITEM_TEMPLATE_COLUMNS}
+                          showGrouping={false}
+                          autoScrollAndHighlight={false}
+                          onChangeMapping={(m) =>
+                            setErpSettings({
+                              ...erpSettings,
+                              lineItemMapping: m,
+                            })
+                          }
+                        />
+                      </div>
+                    </AccordionItem>
+                  )}
+                </Accordion>
+                <div className='flex justify-end gap-3 pt-2'>
+                  <Button variant='outline' onClick={() => {
+                    setErpSettings({ ...erpSettings, templateUploaded: false, uploadedTemplate: null })
+                  }}>
+                    Cancel Upload
+                  </Button>
+                </div>
+              </div>
             )}
           </>
         )}

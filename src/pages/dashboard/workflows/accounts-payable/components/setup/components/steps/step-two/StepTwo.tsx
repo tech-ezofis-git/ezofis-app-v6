@@ -4,6 +4,7 @@ import Button from '@/components/base/button/Button'
 import { AnimateFadeIn, AnimateSlideUp } from '@/components/common/animations'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import { SYSTEM_TEMPLATE_COLUMNS } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/templateSchema'
+import { LINE_ITEM_TEMPLATE_COLUMNS } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/lineItemSchema'
 import authUserStore from '@/stores/authUserStore'
 import { StepFooter, StepLayout } from '../components/StepLayout'
 import ErpSystem from './components/ErpSystem'
@@ -69,14 +70,30 @@ const StepTwo = () => {
     window.open(url, '_blank')
   }
 
-  const requiredColumns = SYSTEM_TEMPLATE_COLUMNS.filter((c) => c.required)
-  const isMappingComplete =
-    requiredColumns.length > 0 &&
-    requiredColumns.every(
+  const requiredHeaderColumns = SYSTEM_TEMPLATE_COLUMNS.filter((c) => c.required)
+  const isHeaderMappingComplete =
+    requiredHeaderColumns.length > 0 &&
+    requiredHeaderColumns.every(
       (col) =>
         !!erpSettings.mapping?.[col.key] &&
         erpSettings.mapping[col.key] !== 'Skip to Import',
     )
+
+  const hasLineItems = erpSettings.lineItemHeaders && erpSettings.lineItemHeaders.length > 0
+  const requiredLineItemColumns = LINE_ITEM_TEMPLATE_COLUMNS.filter((c) => c.required)
+  
+  const isLineItemMappingComplete = !hasLineItems || (
+    requiredLineItemColumns.length > 0 &&
+    requiredLineItemColumns.every(
+      (col) =>
+        !!erpSettings.lineItemMapping?.[col.key] &&
+        erpSettings.lineItemMapping[col.key] !== 'Skip to Import',
+    )
+  )
+
+  const isGroupingMissing = hasLineItems && !erpSettings.groupingColumn
+
+  const isMappingComplete = isHeaderMappingComplete && isLineItemMappingComplete && !isGroupingMissing
 
   const canContinue =
     erpSettings.system === 'PREDEFINED' ||

@@ -1,12 +1,7 @@
-import type { ReactNode } from 'react'
-import { Accordion as Base } from '@mantine/core'
+import { Accordion as Base, type AccordionProps } from '@mantine/core'
 
-interface Props {
-  children: ReactNode
-}
-
-const Accordion = ({ children }: Props) => {
-  return <Base>{children}</Base>
+const Accordion = (props: AccordionProps) => {
+  return <Base {...props} />
 }
 
 Accordion.displayName = 'Accordion'

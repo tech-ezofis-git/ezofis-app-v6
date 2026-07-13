@@ -17,6 +17,10 @@ type ErpSettings = {
   isConnected: boolean
   isConnecting: boolean
   mapping?: Record<string, string>
+  lineItemMapping?: Record<string, string>
+  lineItemHeaders?: string[]
+  lineItemRows?: any[]
+  groupingColumn?: string | null
   previewRows?: any[]
   selectedFormName?: string | null
   system: string
@@ -76,6 +80,10 @@ const initialErpSettings: ErpSettings = {
   isConnected: true,
   isConnecting: false,
   mapping: {},
+  lineItemMapping: {},
+  lineItemHeaders: [],
+  lineItemRows: [],
+  groupingColumn: null,
   previewRows: [],
   selectedFormName: null,
   system: 'PREDEFINED',
@@ -97,18 +105,15 @@ const useSetupStore = create<Store>()((set, get) => ({
   emailSettings: initialEmailSettings,
   erpSettings: initialErpSettings,
   isActivatingAutomation: false,
-  isApSetUpCompleted:
-    typeof window !== 'undefined'
-      ? localStorage.getItem('isApSetUpCompleted') === 'true'
-      : false,
+  isApSetUpCompleted: false, // TEMPORARY BYPASS: Force setup to render instead of dashboard overview
   isSetupCalloutDismissed: false,
-  isSetupOpen: false,
+  isSetupOpen: true, // TEMPORARY BYPASS: Auto open the setup modal
   isSetupStarted: true,
   restrictNavigationUntilApSetup:
     typeof window !== 'undefined'
       ? localStorage.getItem('restrictNavigationUntilApSetup') === 'true'
       : false,
-  step: 0,
+  step: 1, // TEMPORARY BYPASS: Start directly on step 2 (index 1) for column mapping testing
   storageSettings: initialStorageSettings,
   closeSetup: () =>
     set({
