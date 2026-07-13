@@ -1,6 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { ChevronDown, ChevronRight, Search } from 'lucide-react'
+import Icon from '@/components/base/icon/Icon'
 import cn from '@/utils/cn'
+
+export interface QuickFilterOption {
+  id: string
+  label: string
+  icon?: string
+  count?: number
+}
 
 export interface FilterOption {
   label: string
@@ -36,6 +44,9 @@ export interface CustomFilterProps {
   onSearchChange: (val: string) => void
   searchPlaceholder?: string
   customSearchComponent?: React.ReactNode
+  quickFilters?: QuickFilterOption[]
+  activeQuickFilters?: string[]
+  onQuickFilterToggle?: (id: string) => void
 }
 
 export default function CustomFilter({
@@ -50,13 +61,16 @@ export default function CustomFilter({
   onSearchChange,
   searchPlaceholder = 'Search...',
   customSearchComponent,
+  quickFilters,
+  activeQuickFilters,
+  onQuickFilterToggle,
 }: CustomFilterProps) {
   const [activeFilterDropdown, setActiveFilterDropdown] = useState<string | null>(null)
   const [activeFilterGroup, setActiveFilterGroup] = useState<string | null>(
     moreFilters && moreFilters.length > 0 ? moreFilters[0].id : null
   )
   const [filterSearchQuery, setFilterSearchQuery] = useState('')
-  const [isSearchExpanded, setIsSearchExpanded] = useState(false)
+  const [isSearchExpanded, setIsSearchExpanded] = useState(true)
   const searchInputRef = useRef<HTMLInputElement>(null)
   const filtersRef = useRef<HTMLDivElement>(null)
 
@@ -73,10 +87,36 @@ export default function CustomFilter({
   }, [])
 
   return (
-    <div ref={filtersRef} className="flex flex-wrap items-center gap-2.5 rounded-lg border border-border-default bg-surface p-3 shadow-xs w-full">
-      <span className="text-12 font-semibold text-text-primary mr-1">Filters:</span>
+    <div ref={filtersRef} className="flex flex-wrap items-center gap-2.5 rounded-lg border border-[var(--border-default)] bg-surface p-3 shadow-xs w-full">
+      <div className="flex flex-wrap gap-2 items-center">
+        {quickFilters && quickFilters.map((qf) => {
+          const isActive = activeQuickFilters?.includes(qf.id)
+          return (
+            <button
+              key={qf.id}
+              className={cn(
+                "cursor-pointer rounded-full border px-3 py-1 text-12 font-medium transition-all flex items-center gap-1.5",
+                isActive
+                  ? "border-[var(--primary-9)] bg-[var(--primary-3)] text-[var(--primary-9)]"
+                  : "border-[var(--border-default)] bg-surface text-[var(--text-secondary)] hover:bg-gray-3 dark:hover:bg-gray-10"
+              )}
+              onClick={() => onQuickFilterToggle?.(qf.id)}
+            >
+              {qf.icon && <Icon className="size-3.5" name={qf.icon} />}
+              <span>{qf.label}</span>
+              {qf.count !== undefined && (
+                <span className={cn(
+                  "flex items-center justify-center rounded-full px-1.5 py-0.5 text-10 font-bold",
+                  isActive ? "bg-[var(--primary-4)] text-[var(--primary-9)]" : "bg-gray-3 text-gray-11"
+                )}>
+                  {qf.count}
+                </span>
+              )}
+            </button>
+          )
+        })}
 
-      <div className="flex flex-wrap gap-1.5">
+        {/* Existing top-level dropdown filters */}
         {filters.map((filter) => {
           const activeValue = activeFilters[filter.id]
           const activeOption = filter.options.find((o) => o.value === activeValue)
@@ -335,9 +375,6 @@ export default function CustomFilter({
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             onFocus={() => setIsSearchExpanded(true)}
-            onBlur={() => {
-              if (!searchQuery) setIsSearchExpanded(false)
-            }}
           />
         </div>
       )}

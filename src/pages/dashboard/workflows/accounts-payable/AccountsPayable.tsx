@@ -1,7 +1,7 @@
 import { AnimatePresence } from 'motion/react'
 import Integrations from './components/Integrations'
 import Steps from './components/setup/components/Steps'
-// import Overview from './components/Overview'
+import Overview from './components/Overview'
 import SetupCallout from './components/SetupCallout'
 import setupStore from './stores/useSetupStore'
 
@@ -22,7 +22,7 @@ const AccountsPayable = () => {
 
       {showOverviewAndIntegrations && isApSetUpCompleted && !isSetupStarted && (
         <>
-          {/* <Overview /> */}
+          <Overview />
           <Integrations />
         </>
       )}

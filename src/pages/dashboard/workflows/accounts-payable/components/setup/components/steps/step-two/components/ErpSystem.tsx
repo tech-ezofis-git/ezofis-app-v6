@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 // import MondayLogo from '@/assets/brands/monday.svg'
 // import OracleLogo from '@/assets/brands/oracle.svg'
 import QuickBooksLogo from '@/assets/brands/quickbooks.svg'
@@ -20,6 +20,8 @@ import ColumnMapping from '@/components/common/ColumnMapping'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import { compareHeaderSimilarity } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/headerSimilarity'
 import { SYSTEM_TEMPLATE_COLUMNS } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/templateSchema'
+import { LINE_ITEM_TEMPLATE_COLUMNS } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/lineItemSchema'
+import { detectGroupingColumn, groupLineItems, getPreviewGroup } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/lineItemHelpers'
 import BrandCard from '../../components/BrandCard'
 import SectionHeader from '../../components/SectionHeader'
 import { OrDivider } from '../../components/StepLayout'
@@ -45,6 +47,15 @@ const ErpSystem = () => {
   const setErpSettings = setupStore((state) => state.setErpSettings)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  const [uploadState, setUploadState] = useState<'ready' | 'lineItemMapping' | 'done'>('ready')
+  const [lineItemMapping, setLineItemMapping] = useState<Record<string, string>>({})
+  const [lineItemHeaders, setLineItemHeaders] = useState<string[]>([])
+  const [lineItemRows, setLineItemRows] = useState<any[]>([])
+
+  const [groupingColumn, setGroupingColumn] = useState<string | null>(null)
+  const [groupedData, setGroupedData] = useState<Record<string, any[]>>({})
+  const [previewGroupId, setPreviewGroupId] = useState<string | null>(null)
+
   const isFileBasedImportSelected = erpSettings.system === 'FILE_BASED_IMPORT'
 
   const handleDownloadPredefinedMaster = () => {
@@ -62,7 +73,7 @@ const ErpSystem = () => {
     const file = event.target.files?.[0]
     if (file) {
       try {
-        const { headers, previewRows } = await extractHeadersAndData(file)
+        const { headers, previewRows, lineItemHeaders: liHeaders, lineItemRows: liRows } = await extractHeadersAndData(file)
 
         // Auto-suggest column mappings on upload
         const initialMapping: Record<string, string> = {}
@@ -85,6 +96,21 @@ const ErpSystem = () => {
           uploadedTemplate: file,
           wantsFileBasedImport: true,
         })
+        
+        if (liHeaders && liHeaders.length > 0) {
+          setLineItemHeaders(liHeaders)
+          const detectedGroupCol = detectGroupingColumn(liHeaders) || liHeaders[0]
+          setGroupingColumn(detectedGroupCol)
+          
+          if (liRows) {
+            setLineItemRows(liRows)
+            const initialGroupedData = groupLineItems(liRows, detectedGroupCol)
+            setGroupedData(initialGroupedData)
+            setPreviewGroupId(Object.keys(initialGroupedData)[0] || null)
+          }
+        }
+        
+        setUploadState('ready')
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (err: any) {
         console.error(err)
@@ -259,11 +285,13 @@ const ErpSystem = () => {
                 )}
               </div>
             </AnimateFadeIn>
-            {erpSettings.templateUploaded && (
+            {erpSettings.templateUploaded && uploadState === 'ready' && (
               <ColumnMapping
+                key="header-mapping"
+                confirmButtonText='Confirm Column Mapping'
                 mapping={erpSettings.mapping || {}}
                 previewRows={erpSettings.previewRows || []}
-                showActionsRow={false}
+                showActionsRow={true}
                 uploadedColumns={erpSettings.uploadedColumns || []}
                 onChangeMapping={(m) =>
                   setErpSettings({
@@ -271,7 +299,54 @@ const ErpSystem = () => {
                     mapping: m,
                   })
                 }
+                onConfirm={() => {
+                  if (lineItemHeaders.length > 0) {
+                    setUploadState('lineItemMapping')
+                  } else {
+                    setUploadState('done')
+                  }
+                }}
+                onCancel={() => {
+                  setErpSettings({ ...erpSettings, templateUploaded: false, uploadedTemplate: null })
+                }}
               />
+            )}
+            {erpSettings.templateUploaded && uploadState === 'lineItemMapping' && (
+              <ColumnMapping
+                key="line-item-mapping"
+                title='Confirm Line Item Mapping'
+                confirmButtonText='Confirm Line Item Mapping'
+                mapping={lineItemMapping}
+                previewRows={lineItemRows}
+                showActionsRow={true}
+                uploadedColumns={lineItemHeaders}
+                templateSchema={LINE_ITEM_TEMPLATE_COLUMNS}
+                showGrouping={true}
+                groupingColumn={groupingColumn}
+                onGroupingColumnChange={(col) => {
+                  setGroupingColumn(col)
+                  if (col) {
+                    const newGroupedData = groupLineItems(lineItemRows, col)
+                    setGroupedData(newGroupedData)
+                    setPreviewGroupId(Object.keys(newGroupedData)[0] || null)
+                  }
+                }}
+                availableGroupIds={Object.keys(groupedData)}
+                previewGroupId={previewGroupId || ''}
+                onPreviewGroupChange={setPreviewGroupId}
+                groupedPreviewRows={getPreviewGroup(groupedData, previewGroupId || '')}
+                totalGroupsCount={Object.keys(groupedData).length}
+                totalRowsCount={lineItemRows.length}
+                onChangeMapping={setLineItemMapping}
+                onConfirm={() => setUploadState('done')}
+                onCancel={() => setUploadState('ready')}
+              />
+            )}
+            {erpSettings.templateUploaded && uploadState === 'done' && (
+               <Alert
+                 text='Mapping complete! You can now proceed to the next step.'
+                 variant='green'
+               />
             )}
           </>
         )}

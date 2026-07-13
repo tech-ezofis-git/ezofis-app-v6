@@ -9,7 +9,7 @@ const normalizeHeader = (h: unknown) => {
 
 const parseCsv = async (
   csvFileOrText: File | string,
-): Promise<{ headers: string[]; previewRows: any[]; rowCount: number }> => {
+): Promise<{ headers: string[]; previewRows: any[]; rowCount: number; lineItemHeaders?: string[]; lineItemRows?: any[] }> => {
   return new Promise((resolve, reject) => {
     Papa.parse(csvFileOrText as any, {
       header: true,
@@ -31,7 +31,7 @@ const parseCsv = async (
 
 export const extractHeadersAndData = async (
   file: File,
-): Promise<{ headers: string[]; previewRows: any[]; rowCount: number }> => {
+): Promise<{ headers: string[]; previewRows: any[]; rowCount: number; lineItemHeaders?: string[]; lineItemRows?: any[] }> => {
   const name = file.name.toLowerCase()
   if (name.endsWith('.csv')) return parseCsv(file)
   if (name.endsWith('.xlsx') || name.endsWith('.xls')) {
@@ -58,7 +58,22 @@ export const extractHeadersAndData = async (
       const previewRows = allRows.slice(0, 15)
       const rowCount = allRows.length
 
-      return { headers, previewRows, rowCount }
+      let lineItemHeaders: string[] = []
+      let lineItemRows: any[] = []
+
+      // If there are multiple sheets, try to extract line items
+      if (wb.SheetNames.length > 1) {
+        const liWs = wb.Sheets[wb.SheetNames[1]]
+        const liRows = XLSX.utils.sheet_to_json(liWs, {
+          blankrows: false,
+          header: 1,
+        }) as unknown[][]
+        const liHeaderRow = liRows?.[0] ?? []
+        lineItemHeaders = liHeaderRow.map(normalizeHeader).filter(Boolean)
+        lineItemRows = XLSX.utils.sheet_to_json(liWs) as any[]
+      }
+
+      return { headers, previewRows, rowCount, lineItemHeaders, lineItemRows }
     } catch {
       const text = await file.text()
       return parseCsv(text)
