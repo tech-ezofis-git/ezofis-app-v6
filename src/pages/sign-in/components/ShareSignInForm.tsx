@@ -78,7 +78,7 @@ const ShareSignInForm = ({ shareToken, email }: Props) => {
           tenantId: shareCtx.sourceTenantId
         })
       }
-      navigate({ replace: true, to: '/folders' })
+      navigate({ replace: true, to: '/requests' })
     } else {
       navigate({ replace: true, to: '/' })
     }
