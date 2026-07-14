@@ -1636,10 +1636,58 @@ const Overview = (props: any) => {
     }
 
     return {
-      apiPath: '/api/v6/payments/process',
-      document,
-      method: 'POST',
-      requestPayload: document,
+      endpoints: [
+        {
+          id: 'list_inbox',
+          title: 'List Inbox Requests',
+          description: 'Retrieve a paginated list of all pending requests in the current user\'s inbox.',
+          method: 'GET',
+          apiPath: '/api/v6/requests/inbox',
+          requestPayload: null,
+          responsePayload: {
+            success: true,
+            data: [
+              {
+                transactionId: document.requestNo || 'REQ-1',
+                status: 'Pending',
+                vendor: document.vendor || 'Silverline Auto Parts',
+                amount: document.amount || 3057.78
+              }
+            ],
+            total: 15,
+            page: 1
+          }
+        },
+        {
+          id: 'get_request',
+          title: 'Get Request Details',
+          description: 'Retrieve full metadata and extracted data for a specific request.',
+          method: 'GET',
+          apiPath: `/api/v6/requests/${document.requestNo || 'REQ-1'}`,
+          requestPayload: null,
+          responsePayload: {
+            success: true,
+            data: document
+          }
+        },
+        {
+          id: 'move_next',
+          title: 'Move to Next Stage',
+          description: 'Approve and transition the specified request to the next step in its workflow.',
+          method: 'POST',
+          apiPath: `/api/v6/requests/${document.requestNo || 'REQ-1'}/move-next`,
+          requestPayload: {
+            action: 'approve',
+            comments: 'Verified automatically.'
+          },
+          responsePayload: {
+            success: true,
+            message: 'Request successfully moved to the next stage.',
+            transactionId: document.requestNo || 'REQ-1',
+            nextStage: 'Manager Approval'
+          }
+        }
+      ]
     }
   }, [agentData, formModel, poVal, selectedItem, supplierName])
 
