@@ -100,10 +100,12 @@ export const ApiPlayground = ({
     }
   ]
 
-  // Default to expanding the first endpoint
-  const [expandedEndpoints, setExpandedEndpoints] = useState<Record<string, boolean>>({
-    [endpoints[0]?.id]: true
-  })
+  // Default to expanding the first endpoint only if there is exactly one
+  const [expandedEndpoints, setExpandedEndpoints] = useState<Record<string, boolean>>(
+    endpoints.length === 1 && endpoints[0]
+      ? { [endpoints[0].id]: true }
+      : {}
+  )
 
   const toggleEndpoint = (id: string) => {
     setExpandedEndpoints(prev => ({
