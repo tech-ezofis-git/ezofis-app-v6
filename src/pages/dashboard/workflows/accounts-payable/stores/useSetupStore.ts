@@ -27,6 +27,7 @@ type ErpSettings = {
   templateUploaded?: boolean
   uploadedColumns?: string[]
   uploadedTemplate?: File | null
+  uploadedLineItemTemplate?: File | null
   wantsFileBasedImport?: boolean
 }
 
@@ -90,6 +91,7 @@ const initialErpSettings: ErpSettings = {
   templateUploaded: false,
   uploadedColumns: [],
   uploadedTemplate: null,
+  uploadedLineItemTemplate: null,
   wantsFileBasedImport: false,
 }
 

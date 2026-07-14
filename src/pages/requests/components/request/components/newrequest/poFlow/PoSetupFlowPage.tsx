@@ -4,9 +4,7 @@ import formApi from '@/api/form/form'
 import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
 import showToast from '@/components/base/toast/showToast'
-import { AnimateFadeIn, AnimateSlideUp } from '@/components/common/animations'
-import Accordion from '@/components/base/accordion/Accordion'
-import AccordionItem from '@/components/base/accordion/AccordionItem'
+import { AnimateEntrancePop, AnimateFadeIn, AnimateSlideUp } from '@/components/common/animations'
 import ColumnMapping from '@/components/common/ColumnMapping'
 import requestStore from '@/pages/requests/stores/useRequestStore'
 import authUserStore from '@/stores/authUserStore'
@@ -18,8 +16,6 @@ import { LINE_ITEM_TEMPLATE_COLUMNS } from './utils/lineItemSchema'
 import {
   mergeLineItemSheets,
   detectGroupingColumn,
-  groupLineItems,
-  getPreviewGroup,
   transformMappedRows,
 } from './utils/lineItemHelpers'
 
@@ -70,14 +66,14 @@ export default function PoSetupFlowPage({ onClose }: Props) {
   const [lineItemRows, setLineItemRows] = useState<any[]>([])
   const [lineItemMapping, setLineItemMapping] = useState<Record<string, string>>({})
   const [groupingColumn, setGroupingColumn] = useState<string | null>(null)
-  const [previewGroupId, setPreviewGroupId] = useState<string | null>(null)
-  const [groupedData, setGroupedData] = useState<Record<string, any[]>>({})
+
 
   // Timeline step states
   const [step1State, setStep1State] = useState<StepState>('waiting')
   const [step2State, setStep2State] = useState<StepState>('waiting')
   const [step3State, setStep3State] = useState<StepState>('waiting')
   const [step4State, setStep4State] = useState<StepState>('waiting')
+  const [activeMappingTab, setActiveMappingTab] = useState<'header' | 'lineItem'>('header')
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isDragOver, setIsDragOver] = useState(false)
@@ -185,14 +181,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
       // Initial Grouping setup
       const detectedGroupCol = detectGroupingColumn(result.lineItemHeaders) || null
       setGroupingColumn(detectedGroupCol)
-      if (detectedGroupCol) {
-        const initialGroupedData = groupLineItems(result.lineItemRows, detectedGroupCol)
-        setGroupedData(initialGroupedData)
-        setPreviewGroupId(Object.keys(initialGroupedData)[0] || null)
-      } else {
-        setGroupedData({})
-        setPreviewGroupId(null)
-      }
+
 
       // Simulate upload/parse progress bar smoothly
       let currentProgress = 0
@@ -204,7 +193,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
 
           setTimeout(() => {
             setUploadState('processing')
-            runTimelineSimulation(result.headers, result.rowCount)
+            runTimelineSimulation(result.headers, result.rowCount, result.lineItemHeaders || [])
           }, 300)
         } else {
           setUploadProgress(currentProgress)
@@ -222,7 +211,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
   }
 
   // Simulation run for Stage 2 Ingestion timeline
-  const runTimelineSimulation = (headers: string[], rowsCount: number) => {
+  const runTimelineSimulation = (headers: string[], rowsCount: number, liHeaders: string[]) => {
     setUploadedColumns(headers)
     setRowCount(rowsCount)
 
@@ -260,7 +249,16 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                 }
               })
 
+              const initialLineItemMapping: Record<string, string> = {}
+              LINE_ITEM_TEMPLATE_COLUMNS.forEach((col) => {
+                const match = findBestHeaderMatch(col.key, liHeaders)
+                if (match) {
+                  initialLineItemMapping[col.key] = match
+                }
+              })
+
               setMapping(initialMapping)
+              setLineItemMapping(initialLineItemMapping)
               setStep3State('done')
 
               // At 5000ms (400ms later), transition to verify mappings UI
@@ -466,11 +464,11 @@ export default function PoSetupFlowPage({ onClose }: Props) {
           </div>
 
           <main className='custom-scrollbar flex min-h-0 flex-1 flex-col items-center overflow-y-auto p-6'>
-            <div className='my-auto flex w-full max-w-xl flex-col items-center gap-4 py-2'>
+            <div className='my-auto flex w-full max-w-[900px] flex-col items-center gap-4 py-2'>
               {/* Header Section */}
               <AnimateSlideUp className='space-y-1.5 text-center'>
                 <h1 className='text-2xl font-bold tracking-tight text-gray-13'>
-                  Intelligent <span className='text-primary-9'>PO Agent</span>
+                  Intelligent <span className='text-primary-9'>PO Setup</span>
                 </h1>
                 <p className='mx-auto max-w-xl text-sm leading-normal font-medium text-gray-10'>
                   Streamline your Purchase Orders. Automatically match columns,
@@ -478,26 +476,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                 </p>
               </AnimateSlideUp>
 
-              {/* Download template button centered */}
-              <AnimateSlideUp className='flex w-full justify-end' delay={0.05}>
-                <button
-                  className='mb-2 flex cursor-pointer items-center gap-2 self-end rounded-lg border border-border-default bg-surface-primary px-4 py-2 text-[12px] font-bold text-gray-11 shadow-2xs transition-all duration-300 hover:scale-[1.02] hover:bg-surface-secondary active:scale-[0.98]'
-                  disabled={isDownloading}
-                  onClick={handleDownload}
-                >
-                  {isDownloading ? (
-                    <span className='size-3.5 animate-spin rounded-full border-2 border-gray-10 border-t-transparent' />
-                  ) : (
-                    <Icon
-                      className='size-4 text-primary-9'
-                      name='tabler:download'
-                    />
-                  )}
-                  <span>
-                    {isDownloading ? 'Preparing...' : 'Download PO template'}
-                  </span>
-                </button>
-              </AnimateSlideUp>
+
 
               {/* Drop Zone / Selection state */}
               <AnimateSlideUp className='w-full' delay={0.1}>
@@ -535,14 +514,32 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                       </div>
                       <div className='text-center'>
                         <h3 className='text-[14px] font-medium tracking-tight text-gray-12'>
-                          Drop your PO file here, or{' '}
+                          Drop your PO master file here, or{' '}
                           <span className='font-medium text-primary-9 group-hover:underline'>
                             browse
                           </span>
                         </h3>
                         <p className='mt-1.5 text-[12px] text-gray-8'>
-                          Supports CSV, XLSX · Max 4 MB
+                          Supports Excel (.xlsx, .xls) and CSV formats
                         </p>
+                        <div className='mt-3 flex justify-center'>
+                          <button
+                            type='button'
+                            className='inline-flex items-center gap-1.5 text-[12px] font-medium text-primary-9 hover:text-primary-10 hover:underline cursor-pointer'
+                            onClick={(e) => {
+                              e.stopPropagation() // Prevent triggering file input click
+                              handleDownload()
+                            }}
+                            disabled={isDownloading}
+                          >
+                            {isDownloading ? (
+                              <span className='size-3 animate-spin rounded-full border-2 border-primary-9 border-t-transparent' />
+                            ) : (
+                              <Icon className='size-3.5' name='tabler:download' />
+                            )}
+                            <span>{isDownloading ? 'Downloading...' : 'Download PO Template'}</span>
+                          </button>
+                        </div>
                       </div>
                     </div>
 
@@ -587,54 +584,59 @@ export default function PoSetupFlowPage({ onClose }: Props) {
               </AnimateSlideUp>
 
               {/* Three Context Cards Grid */}
-              <AnimateSlideUp className='w-full' delay={0.15}>
-                <div className='mt-1.5 grid w-full grid-cols-3 gap-3.5'>
-                  {/* Card 1 */}
-                  <div className='flex flex-col gap-2 rounded-xl border border-border-default bg-surface-primary p-3 shadow-2xs transition-shadow duration-300 hover:shadow-xs'>
-                    <div className='flex size-8 items-center justify-center rounded-lg bg-accent-soft text-primary-9'>
-                      <Icon className='size-4' name='tabler:table-column' />
-                    </div>
-                    <div>
-                      <div className='mb-1 text-[11px] leading-none font-medium text-gray-8'>
-                        Auto column mapping
+              <div className='w-full'>
+                <div className='mt-1.5 grid w-full grid-cols-1 gap-4 md:grid-cols-3'>
+                  {[
+                    {
+                      color: 'text-[var(--orange-9)] bg-[var(--orange-2)]',
+                      icon: 'tabler:table-column',
+                      label: 'MAPPING',
+                      sub: 'Automatically links file columns',
+                      title: 'Auto Column Mapping',
+                    },
+                    {
+                      color: 'text-[var(--indigo-9)] bg-[var(--indigo-2)]',
+                      icon: 'tabler:checks',
+                      label: 'VALIDATION',
+                      sub: 'Validates required system fields',
+                      title: 'Schema Validation',
+                    },
+                    {
+                      color: 'text-[var(--green-11)] bg-[var(--green-2)]',
+                      icon: 'tabler:database-import',
+                      label: 'INGESTION',
+                      sub: 'Updates records in master database',
+                      title: 'PO Master Update',
+                    },
+                  ].map((item, idx) => (
+                    <AnimateEntrancePop delay={0.2 + idx * 0.1} key={item.title}>
+                      <div className='group flex h-full flex-col gap-2 rounded-xl border border-[var(--gray-3)] bg-surface p-5 shadow-sm transition-all duration-300 hover:shadow-md'>
+                        <span className='truncate text-[9px] font-bold tracking-wider text-[var(--gray-10)] uppercase'>
+                          {item.label}
+                        </span>
+                        <div className='mt-1 flex items-center gap-3.5'>
+                          <div
+                            className={`flex size-10 items-center justify-center rounded-lg shadow-sm ${item.color} transition-transform duration-300 group-hover:scale-105`}
+                          >
+                            <Icon
+                              className='size-5 transition-transform duration-300 group-hover:rotate-6'
+                              name={item.icon}
+                            />
+                          </div>
+                          <div className='min-w-0 flex-1'>
+                            <h4 className='truncate text-13/4.5 font-semibold text-[var(--gray-13)] transition-colors group-hover:text-purple-7'>
+                              {item.title}
+                            </h4>
+                            <p className='mt-0.5 truncate text-11/4 text-[var(--gray-10)]'>
+                              {item.sub}
+                            </p>
+                          </div>
+                        </div>
                       </div>
-                      <div className='text-[13px] leading-tight font-bold text-gray-12'>
-                        AI-matched fields
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Card 2 */}
-                  <div className='flex flex-col gap-2 rounded-xl border border-border-default bg-surface-primary p-3 shadow-2xs transition-shadow duration-300 hover:shadow-xs'>
-                    <div className='flex size-8 items-center justify-center rounded-lg bg-accent-soft text-primary-9'>
-                      <Icon className='size-4' name='tabler:checks' />
-                    </div>
-                    <div>
-                      <div className='mb-1 text-[11px] leading-none font-medium text-gray-8'>
-                        Validation
-                      </div>
-                      <div className='text-[13px] leading-tight font-bold text-gray-12'>
-                        Required fields checked
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Card 3 */}
-                  <div className='flex flex-col gap-2 rounded-xl border border-border-default bg-surface-primary p-3 shadow-2xs transition-shadow duration-300 hover:shadow-xs'>
-                    <div className='flex size-8 items-center justify-center rounded-lg bg-accent-soft text-primary-9'>
-                      <Icon className='size-4' name='tabler:history' />
-                    </div>
-                    <div>
-                      <div className='mb-1 text-[11px] leading-none font-medium text-gray-8'>
-                        Previous templates
-                      </div>
-                      <div className='text-[13px] leading-tight font-bold text-gray-12'>
-                        3 saved mappings
-                      </div>
-                    </div>
-                  </div>
+                    </AnimateEntrancePop>
+                  ))}
                 </div>
-              </AnimateSlideUp>
+              </div>
             </div>
           </main>
         </AnimateFadeIn>
@@ -688,7 +690,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                     className={cn(
                       'absolute top-0.5 left-0 z-10 flex size-7 items-center justify-center rounded-full shadow-xs transition-all duration-300',
                       step1State === 'done'
-                        ? 'border border-green-9 bg-green-9 text-white'
+                        ? 'border border-green-9 bg-white text-green-9'
                         : step1State === 'active'
                           ? 'border-2 border-primary-9 bg-white text-primary-9'
                           : 'border-2 border-gray-3 bg-white text-gray-4',
@@ -714,7 +716,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                         File Ingestion & Parsing
                       </h3>
                       {step1State === 'done' && (
-                        <span className='rounded-full bg-green-3 px-2 py-0.5 text-[11px] font-medium text-green-11'>
+                        <span className='rounded-full border border-green-9 bg-white px-2 py-0.5 text-[11px] font-medium text-green-9'>
                           Completed in 0.4s
                         </span>
                       )}
@@ -734,7 +736,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                 {(step1State === 'active' || step1State === 'done') && (
                   <div className='animate-in fade-in slide-in-from-top-2 grid grid-cols-2 gap-x-6 gap-y-2 rounded-xl border border-border-default bg-surface-primary p-4 text-[12px] shadow-2xs duration-300'>
                     <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
-                      <span className='text-gray-8'>File size</span>
+                      <span className='text-gray-11'>File Size</span>
                       <span className='font-bold text-gray-12'>
                         {uploadedFile
                           ? `${(uploadedFile.size / 1024).toFixed(1)} KB`
@@ -742,20 +744,20 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                       </span>
                     </div>
                     <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
-                      <span className='text-gray-8'>Format</span>
+                      <span className='text-gray-11'>Format</span>
                       <span className='font-bold text-gray-12'>
                         {uploadedFile?.name.split('.').pop()?.toUpperCase() ||
                           'XLSX'}
                       </span>
                     </div>
                     <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
-                      <span className='text-gray-8'>Rows detected</span>
+                      <span className='text-gray-11'>Rows Detected</span>
                       <span className='font-bold text-gray-12'>
                         {rowCount || 48} rows
                       </span>
                     </div>
                     <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
-                      <span className='text-gray-8'>Sheets used</span>
+                      <span className='text-gray-11'>Sheets Used</span>
                       <span className='font-bold text-gray-12'>1 sheet</span>
                     </div>
                   </div>
@@ -777,7 +779,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                     className={cn(
                       'absolute top-0.5 left-0 z-10 flex size-7 items-center justify-center rounded-full shadow-xs transition-all duration-300',
                       step2State === 'done'
-                        ? 'border border-green-9 bg-green-9 text-white'
+                        ? 'border border-green-9 bg-white text-green-9'
                         : step2State === 'active'
                           ? 'border-2 border-primary-9 bg-white text-primary-9'
                           : 'border-2 border-gray-3 bg-white text-gray-4',
@@ -803,7 +805,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                         Column & Row Extraction
                       </h3>
                       {step2State === 'done' && (
-                        <span className='rounded-full bg-green-3 px-2 py-0.5 text-[11px] font-medium text-green-11'>
+                        <span className='rounded-full border border-green-9 bg-white px-2 py-0.5 text-[11px] font-medium text-green-9'>
                           Completed in 0.9s
                         </span>
                       )}
@@ -823,21 +825,21 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                 {(step2State === 'active' || step2State === 'done') && (
                   <div className='animate-in fade-in slide-in-from-top-2 grid grid-cols-2 gap-x-6 gap-y-2 rounded-xl border border-border-default bg-surface-primary p-4 text-[12px] shadow-2xs duration-300'>
                     <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
-                      <span className='text-gray-8'>Columns found</span>
+                      <span className='text-gray-11'>Columns Found</span>
                       <span className='font-bold text-gray-12'>
                         {uploadedColumns.length || 8} columns
                       </span>
                     </div>
                     <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
-                      <span className='text-gray-8'>Empty rows skipped</span>
+                      <span className='text-gray-11'>Empty Rows Skipped</span>
                       <span className='font-bold text-gray-12'>0 skipped</span>
                     </div>
                     <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
-                      <span className='text-gray-8'>Header row</span>
+                      <span className='text-gray-11'>Header Row</span>
                       <span className='font-bold text-gray-12'>Row 1</span>
                     </div>
                     <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
-                      <span className='text-gray-8'>Data rows</span>
+                      <span className='text-gray-11'>Data Rows</span>
                       <span className='font-bold text-gray-12'>
                         {rowCount ? rowCount - 1 : 47} rows
                       </span>
@@ -861,7 +863,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                     className={cn(
                       'absolute top-0.5 left-0 z-10 flex size-7 items-center justify-center rounded-full shadow-xs transition-all duration-300',
                       step3State === 'done'
-                        ? 'border border-green-9 bg-green-9 text-white'
+                        ? 'border border-green-9 bg-white text-green-9'
                         : step3State === 'active'
                           ? 'border-2 border-primary-9 bg-white text-primary-9'
                           : 'border-2 border-gray-3 bg-white text-gray-4',
@@ -887,7 +889,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                         Schema Auto-Mapping
                       </h3>
                       {step3State === 'done' && (
-                        <span className='rounded-full bg-green-3 px-2 py-0.5 text-[11px] font-medium text-green-11'>
+                        <span className='rounded-full border border-green-9 bg-white px-2 py-0.5 text-[11px] font-medium text-green-9'>
                           Completed
                         </span>
                       )}
@@ -907,7 +909,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                 {(step3State === 'active' || step3State === 'done') && (
                   <div className='animate-in fade-in slide-in-from-top-2 grid grid-cols-2 gap-x-6 gap-y-2 rounded-xl border border-border-default bg-surface-primary p-4 text-[12px] shadow-2xs duration-300'>
                     <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
-                      <span className='text-gray-8'>Fields matched</span>
+                      <span className='text-gray-11'>Fields Matched</span>
                       <span className='font-bold text-gray-12'>
                         {step3State === 'done'
                           ? '6 / 6 fields'
@@ -915,13 +917,13 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                       </span>
                     </div>
                     <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
-                      <span className='text-gray-8'>Confidence level</span>
+                      <span className='text-gray-11'>Confidence Level</span>
                       <span className='font-bold text-gray-12'>
                         91% average
                       </span>
                     </div>
                     <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
-                      <span className='text-gray-8'>Fields needing review</span>
+                      <span className='text-gray-11'>Fields Needing Review</span>
                       <span className='font-bold text-gray-12'>
                         {step3State === 'done' ? '0 fields' : '4 fields'}
                       </span>
@@ -932,18 +934,56 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                 {uploadState === 'ready' && (
                   <div className='flex flex-col gap-4 mt-2'>
                     {!groupingColumn && (
-                      <div className='flex items-center gap-2 rounded-lg border border-red-5 bg-red-1 px-4 py-3 text-sm text-red-11 shadow-sm'>
-                        <Icon className='size-5' name='tabler:alert-triangle' />
+                      <div className='flex items-center gap-2 rounded-lg border border-blue-5 bg-blue-2 px-3 py-2 text-12 text-blue-11 shadow-xs'>
+                        <Icon className='size-4 text-blue-9' name='tabler:info-circle' />
                         <span className='font-medium'>
-                          Line item missing error: PO Number column could not be matched.
+                          Line item info: PO Number column could not be matched.
                         </span>
                       </div>
                     )}
-                    <Accordion multiple defaultValue={['header-mapping', 'line-item-mapping']}>
-                      <AccordionItem value='header-mapping' label='Header Column Mapping'>
-                        <div className="pt-2">
+
+                    {/* Tab Switcher */}
+                    <div className='flex justify-start gap-4 mb-0'>
+                      <button
+                        type='button'
+                        className={`pl-0 pr-2 py-2 text-13 font-semibold transition-all border-b-2 cursor-pointer flex items-center gap-1.5 text-left ${
+                          activeMappingTab === 'header'
+                            ? 'border-primary-9 text-primary-9'
+                            : 'border-transparent text-gray-11 hover:text-gray-13'
+                        }`}
+                        onClick={() => setActiveMappingTab('header')}
+                      >
+                        <span>Header Fields</span>
+                        <span className={`px-1.5 py-0.2 text-11 rounded-full ${
+                          activeMappingTab === 'header' ? 'bg-primary-2 text-primary-9' : 'bg-gray-2 text-gray-9'
+                        }`}>
+                          {Object.keys(mapping).length}/{systemColumns.length}
+                        </span>
+                      </button>
+                      <button
+                        type='button'
+                        className={`pl-0 pr-2 py-2 text-13 font-semibold transition-all border-b-2 cursor-pointer flex items-center gap-1.5 text-left ${
+                          activeMappingTab === 'lineItem'
+                            ? 'border-primary-9 text-primary-9'
+                            : 'border-transparent text-gray-11 hover:text-gray-13'
+                        }`}
+                        onClick={() => setActiveMappingTab('lineItem')}
+                      >
+                        <span>Line Items</span>
+                        <span className={`px-1.5 py-0.2 text-11 rounded-full ${
+                          activeMappingTab === 'lineItem' ? 'bg-primary-2 text-primary-9' : 'bg-gray-2 text-gray-9'
+                        }`}>
+                          {Object.keys(lineItemMapping).length}/{LINE_ITEM_TEMPLATE_COLUMNS.length}
+                        </span>
+                      </button>
+                    </div>
+
+                    {/* Content mapping box */}
+                    <div>
+                      {activeMappingTab === 'header' && (
+                        <div className='animate-in fade-in duration-300'>
                           <ColumnMapping
-                            key="header-mapping"
+                            key='header-mapping'
                             title='Header Mapping'
                             isConfirmLoading={false}
                             mapping={mapping}
@@ -951,13 +991,14 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                             showActionsRow={false}
                             uploadedColumns={uploadedColumns}
                             onChangeMapping={setMapping}
+                            simple
                           />
                         </div>
-                      </AccordionItem>
-                      <AccordionItem value='line-item-mapping' label='Line Item Mapping'>
-                        <div className="pt-2">
+                      )}
+                      {activeMappingTab === 'lineItem' && (
+                        <div className='animate-in fade-in duration-300'>
                           <ColumnMapping
-                            key="line-item-mapping"
+                            key='line-item-mapping'
                             title='Line Item Mapping'
                             isConfirmLoading={false}
                             mapping={lineItemMapping}
@@ -968,10 +1009,11 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                             showGrouping={false}
                             autoScrollAndHighlight={false}
                             onChangeMapping={setLineItemMapping}
+                            simple
                           />
                         </div>
-                      </AccordionItem>
-                    </Accordion>
+                      )}
+                    </div>
                     <div className='flex justify-end gap-3 pt-2'>
                       <Button variant='outline' onClick={() => {
                         setUploadState('idle')
@@ -1003,7 +1045,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                     className={cn(
                       'absolute top-0.5 left-0 z-10 flex size-7 items-center justify-center rounded-full shadow-xs transition-all duration-300',
                       step4State === 'done'
-                        ? 'border border-green-9 bg-green-9 text-white'
+                        ? 'border border-green-9 bg-white text-green-9'
                         : step4State === 'active'
                           ? 'border-2 border-primary-9 bg-white text-primary-9'
                           : 'border-2 border-gray-3 bg-white text-gray-4',

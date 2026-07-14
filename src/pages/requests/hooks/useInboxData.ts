@@ -131,32 +131,32 @@ const transformProcess = (
     requestNo: requestNo,
     ...(isAgentProcessing
       ? (() => {
-          const rowId = processId || process.id
-          const storeState = requestStore.getState()
-          const jobStatuses = storeState.jobStatuses || {}
-          const jobMappings = storeState.jobMappings || {}
-          
-          let matchedJobStatus = jobStatuses[String(rowId)]
-          if (!matchedJobStatus && process.apAgentJobId) {
-            const mappedJobId = jobMappings[String(process.apAgentJobId)]
-            if (mappedJobId) {
-              matchedJobStatus = jobStatuses[String(mappedJobId)] || jobStatuses[`job-${mappedJobId}`]
-            }
-            if (!matchedJobStatus) {
-              matchedJobStatus = jobStatuses[`job-${process.apAgentJobId}`]
-            }
-          }
+        const rowId = processId || process.id
+        const storeState = requestStore.getState()
+        const jobStatuses = storeState.jobStatuses || {}
+        const jobMappings = storeState.jobMappings || {}
 
-          const isCompleted = matchedJobStatus?.isCompleted || false
-          const stage = matchedJobStatus?.stage || process.stage || 'Start'
-          const status = isCompleted ? (matchedJobStatus?.decision || 'Matched') : 'Progressing'
-
-          return {
-            isProcessing: !isCompleted,
-            stage,
-            status,
+        let matchedJobStatus = jobStatuses[String(rowId)]
+        if (!matchedJobStatus && process.apAgentJobId) {
+          const mappedJobId = jobMappings[String(process.apAgentJobId)]
+          if (mappedJobId) {
+            matchedJobStatus = jobStatuses[String(mappedJobId)] || jobStatuses[`job-${mappedJobId}`]
           }
-        })()
+          if (!matchedJobStatus) {
+            matchedJobStatus = jobStatuses[`job-${process.apAgentJobId}`]
+          }
+        }
+
+        const isCompleted = matchedJobStatus?.isCompleted || false
+        const stage = matchedJobStatus?.stage || process.stage || 'Start'
+        const status = isCompleted ? (matchedJobStatus?.decision || 'Matched') : 'Progressing'
+
+        return {
+          isProcessing: !isCompleted,
+          stage,
+          status,
+        }
+      })()
       : {}),
   }
 }
@@ -439,15 +439,15 @@ export const useInboxData = (
       const filteredGroupedData =
         activeTab === 'Inbox' || activeTab === 'Exceptions'
           ? groupedData
-              .map((group) => {
-                const items = filterInboxItemsByTab(group.items, activeTab)
-                return {
-                  ...group,
-                  groupCount: items.length,
-                  items,
-                }
-              })
-              .filter((group) => group.items.length > 0)
+            .map((group) => {
+              const items = filterInboxItemsByTab(group.items, activeTab)
+              return {
+                ...group,
+                groupCount: items.length,
+                items,
+              }
+            })
+            .filter((group) => group.items.length > 0)
           : groupedData
 
       return {

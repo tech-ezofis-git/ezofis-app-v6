@@ -17,7 +17,6 @@ import {
 } from 'lucide-react'
 import {
   type ElementType,
-  type ReactNode,
   useCallback,
   useEffect,
   useMemo,
@@ -31,7 +30,6 @@ import {
   updateMenu as updateMenuApi,
   type V6MenuItem,
 } from '@/api/v6/user'
-import IconButton from '@/components/base/button/IconButton'
 import DataTable from '@/components/base/data-table/DataTable'
 import InputNumber from '@/components/base/inputs/InputNumber'
 import InputText from '@/components/base/inputs/InputText'

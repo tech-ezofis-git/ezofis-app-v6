@@ -59,7 +59,7 @@ function flattenRows(groups: any[]): any[] {
     }
   }
 
-  ;(groups || []).forEach(walk)
+    ; (groups || []).forEach(walk)
   return out
 }
 
@@ -329,10 +329,10 @@ const filterRowsByQuickFilters = (
       row._agentResponse || row._agentData?.[0] || row._agentData || {}
     const rawDecision = String(
       parsedForm['2MH_BMDFEVKsU0uAQjoI1'] ||
-        agentData?.decision ||
-        row.decision ||
-        row.status ||
-        '',
+      agentData?.decision ||
+      row.decision ||
+      row.status ||
+      '',
     ).toUpperCase()
 
     const isMtc = rawDecision === 'APPROVED' || rawDecision === 'MATCHED'
@@ -413,10 +413,10 @@ const filterRowsByQuickFilters = (
         const val = filter.split(':')[1].toUpperCase()
         const supplierName = String(
           findSupplierName(row) ||
-            row?.vendor ||
-            row?.['UtfgJy6Z0qyfRC5Bclf-c'] ||
-            row?.raisedBy ||
-            'Unknown Supplier',
+          row?.vendor ||
+          row?.['UtfgJy6Z0qyfRC5Bclf-c'] ||
+          row?.raisedBy ||
+          'Unknown Supplier',
         ).toUpperCase()
         return supplierName === val
       })
@@ -630,10 +630,10 @@ const getRowColumnValue = (row: any, colId: string): string => {
 
     return String(
       row.invoiceDate ||
-        row.documentDate ||
-        row.raisedAt ||
-        row.createdAt ||
-        '',
+      row.documentDate ||
+      row.raisedAt ||
+      row.createdAt ||
+      '',
     )
   }
 
@@ -735,10 +735,10 @@ const InboxList: React.FC<InboxListProps> = ({
         row._agentResponse || row._agentData?.[0] || row._agentData || {}
       const rawDecision = String(
         parsedForm['2MH_BMDFEVKsU0uAQjoI1'] ||
-          agentData?.decision ||
-          row.decision ||
-          row.status ||
-          '',
+        agentData?.decision ||
+        row.decision ||
+        row.status ||
+        '',
       ).toUpperCase()
 
       if (rawDecision === 'APPROVED' || rawDecision === 'MATCHED') {
@@ -802,7 +802,7 @@ const InboxList: React.FC<InboxListProps> = ({
   const handleFilterChange = (id: string, value: string) => {
     const store = requestStore.getState()
     const newFilters = store.activeQuickFilters.filter(f => !f.startsWith(`${id}:`) && !['matched', 'discrepancies', 'highValue', 'overdue'].includes(f))
-    
+
     if (value) {
       if (id === 'status' && value === 'Pending') {
         newFilters.push(`status:Partially Approved`)
@@ -810,7 +810,7 @@ const InboxList: React.FC<InboxListProps> = ({
         newFilters.push(`${id}:${value}`)
       }
     }
-    
+
     store.clearQuickFilters()
     newFilters.forEach(f => store.toggleQuickFilter(f))
   }
@@ -941,7 +941,7 @@ const InboxList: React.FC<InboxListProps> = ({
         const rowId = p.processId || p.id
         const jobStatuses = requestStore.getState().jobStatuses || {}
         const jobMappings = requestStore.getState().jobMappings || {}
-        
+
         let matchedJobStatus = jobStatuses[String(rowId)]
         if (!matchedJobStatus && p.apAgentJobId) {
           const mappedJobId = jobMappings[String(p.apAgentJobId)]
@@ -954,7 +954,7 @@ const InboxList: React.FC<InboxListProps> = ({
         }
 
         const isCompleted = matchedJobStatus?.isCompleted || p.isCompleted || false
-        
+
         // Extract values from matchedJobStatus / p / agentResponse if available
         const agentResponse = matchedJobStatus || p.agentResponse || p._agentResponse || null
         let parsedAgentResponse = null
@@ -962,16 +962,16 @@ const InboxList: React.FC<InboxListProps> = ({
           if (typeof agentResponse === 'string') {
             try {
               parsedAgentResponse = JSON.parse(agentResponse)
-            } catch {}
+            } catch { }
           } else if (typeof agentResponse === 'object') {
             parsedAgentResponse = agentResponse
           }
         }
-        
+
         // Extract OCR fields like supplier, amount, currency, invoice date, invoice number
         const ocrData = parsedAgentResponse?.['Extracted Invoice JSON'] || parsedAgentResponse?.extractedInvoiceJson || {}
         const invoiceHeader = ocrData?.invoice_header || {}
-        
+
         const invoiceValue = invoiceHeader?.['Invoice Amount'] || invoiceHeader?.['Total Due'] || invoiceHeader?.['Total'] || invoiceHeader?.['invoice_amount'] || invoiceHeader?.['total_amount'] || parsedAgentResponse?.invoice_amount || p['Invoice Value'] || ''
         const invoiceNo = invoiceHeader?.['Invoice Number'] || invoiceHeader?.['Invoice No'] || invoiceHeader?.['invoice_number'] || parsedAgentResponse?.invoice_number || p['Invoice Number'] || ''
         const supplierName = invoiceHeader?.['Supplier Name'] || invoiceHeader?.['Vendor Name'] || invoiceHeader?.['vendor'] || parsedAgentResponse?.vendor || p['Supplier Name'] || ''

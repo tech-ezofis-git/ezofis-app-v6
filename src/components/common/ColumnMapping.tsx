@@ -7,6 +7,7 @@ import Tooltip from '@/components/base/Tooltip'
 import { AnimateFadeIn } from '@/components/common/animations'
 import { findBestHeaderMatch } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/headerSimilarity'
 import { SYSTEM_TEMPLATE_COLUMNS } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/templateSchema'
+import dayjs from 'dayjs'
 import cn from '@/utils/cn'
 
 export interface TemplateColumn {
@@ -39,6 +40,7 @@ interface ColumnMappingProps {
   groupedPreviewRows?: any[]
   totalGroupsCount?: number
   totalRowsCount?: number
+  simple?: boolean
 }
 
 export default function ColumnMapping({
@@ -63,6 +65,7 @@ export default function ColumnMapping({
   groupedPreviewRows = [],
   totalGroupsCount = 0,
   totalRowsCount = 0,
+  simple = false,
 }: ColumnMappingProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [isHighlightActive, setIsHighlightActive] = useState(false)
@@ -137,32 +140,39 @@ export default function ColumnMapping({
     <div className='w-full' ref={containerRef}>
       <AnimateFadeIn
         className={cn(
-          'animate-in fade-in slide-in-from-top-2 mt-4 space-y-4 rounded-xl border p-5 shadow-sm transition-all duration-1000',
-          isHighlightActive
-            ? 'border-primary-9 bg-primary-1/10 shadow-md ring-4 shadow-primary-9/5 ring-primary-9/20'
-            : 'border-border-default bg-surface-primary',
+          'animate-in fade-in slide-in-from-top-2 transition-all duration-1000',
+          simple
+            ? 'mt-0 space-y-3 border border-border-default rounded-xl pt-2.5 pb-4 px-4 bg-surface-primary shadow-sm'
+            : cn(
+                'mt-4 space-y-4 rounded-xl border p-5 shadow-sm',
+                isHighlightActive
+                  ? 'border-primary-9 bg-primary-1/10 shadow-md ring-4 shadow-primary-9/5 ring-primary-9/20'
+                  : 'border-border-default bg-surface-primary',
+              )
         )}
       >
-        <div className='flex items-center justify-between border-b border-border-default pb-3'>
-          <div>
-            <h4 className='text-[14px] font-bold text-gray-12'>
-              {title || 'Confirm Column Mapping'}
-            </h4>
-            <p className='mt-0.5 text-[11px] text-gray-8'>
-              Align uploaded columns with master system fields.
-            </p>
+        {!simple && (
+          <div className='flex items-center justify-between border-b border-border-default pb-3'>
+            <div>
+              <h4 className='text-[14px] font-bold text-gray-12'>
+                {title || 'Confirm Column Mapping'}
+              </h4>
+              <p className='mt-0.5 text-[11px] text-gray-8'>
+                Align uploaded columns with master system fields.
+              </p>
+            </div>
+            <Tooltip content='Reset to default' position='top'>
+              <button
+                className='flex items-center gap-1 text-[11px] font-bold text-primary-9 hover:underline'
+                type='button'
+                onClick={handleReset}
+              >
+                <Icon className='size-3.5' name='tabler:rotate' />
+                {/* <span>Reset</span> */}
+              </button>
+            </Tooltip>
           </div>
-          <Tooltip content='Reset to default' position='top'>
-            <button
-              className='flex items-center gap-1 text-[11px] font-bold text-primary-9 hover:underline'
-              type='button'
-              onClick={handleReset}
-            >
-              <Icon className='size-3.5' name='tabler:rotate' />
-              {/* <span>Reset</span> */}
-            </button>
-          </Tooltip>
-        </div>
+        )}
 
         {showGrouping && (
           <div className='flex flex-col gap-4 border-b border-border-default pb-4 pt-1'>
@@ -216,7 +226,7 @@ export default function ColumnMapping({
         {/* Three-column Mapping Table */}
         <div className='flex flex-col gap-2'>
           {/* Table Header */}
-          <div className='grid grid-cols-[160px_1.2fr_1fr] border-b border-border-default pb-2 text-[10px] font-extrabold tracking-wider text-gray-8'>
+          <div className='grid grid-cols-[160px_1.2fr_1fr] border-b border-border-default pb-2 text-[11px] font-semibold tracking-wider text-gray-10'>
             <div>System Fields</div>
             <div className='pl-4'>Your Fields</div>
             <div>Preview</div>
@@ -232,10 +242,34 @@ export default function ColumnMapping({
               .map((col) => {
                 const selectedVal = mapping[col.key] || ''
                 const isMapped = !!selectedVal
-                const previewVal =
+                const rawVal =
                   selectedVal && selectedVal !== 'Skip to Import'
-                    ? String(previewRows[0]?.[selectedVal] ?? '')
+                    ? previewRows[0]?.[selectedVal]
                     : ''
+
+                let previewVal = ''
+                if (rawVal !== undefined && rawVal !== null && rawVal !== '') {
+                  if (col.key.toLowerCase().includes('date')) {
+                    if (rawVal instanceof Date) {
+                      previewVal = dayjs(rawVal).format('YYYY-MM-DD')
+                    } else {
+                      const num = Number(rawVal)
+                      if (!isNaN(num) && num > 30000 && num < 60000) {
+                        const parsedDate = new Date(Math.round((num - 25569) * 86400 * 1000))
+                        previewVal = dayjs(parsedDate).format('YYYY-MM-DD')
+                      } else {
+                        const parsed = dayjs(rawVal)
+                        if (parsed.isValid() && parsed.format() !== 'Invalid Date' && isNaN(Number(rawVal))) {
+                          previewVal = parsed.format('YYYY-MM-DD')
+                        } else {
+                          previewVal = String(rawVal)
+                        }
+                      }
+                    }
+                  } else {
+                    previewVal = String(rawVal)
+                  }
+                }
 
                 return (
                   <div
@@ -244,7 +278,7 @@ export default function ColumnMapping({
                   >
                     {/* Column 1: System Field */}
                     <div className='flex min-w-0 items-center gap-1.5'>
-                      <span className='truncate text-[13px] font-semibold text-gray-12'>
+                      <span className='truncate text-[13px] font-semibold text-gray-12 hover:whitespace-normal hover:overflow-visible hover:break-words'>
                         {col.key}
                       </span>
                       {col.required && (
@@ -298,8 +332,7 @@ export default function ColumnMapping({
 
                     {/* Column 3: Preview Value */}
                     <div
-                      className='truncate text-[12px] font-medium text-gray-8'
-                      title={previewVal}
+                      className='truncate text-[12px] font-medium text-gray-8 hover:whitespace-normal hover:overflow-visible hover:break-words'
                     >
                       {selectedVal === 'Skip to Import' ? (
                         <span className='italic'>Skipped</span>

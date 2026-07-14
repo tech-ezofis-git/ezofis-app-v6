@@ -10,7 +10,6 @@ import {
 } from 'lucide-react'
 import {
   useCallback,
-  type CSSProperties,
   type Dispatch,
   type ReactNode,
   type SetStateAction,
@@ -274,11 +273,6 @@ const wizardSteps: WizardStepItem[] = [
   { description: 'ERP and sync mapping', id: 5, title: 'Integrations' },
 ]
 
-const categoryOptions: SelectOption[] = [
-  { id: 'General', name: 'General', value: 'General' },
-  { id: 'Invoices', name: 'Invoices', value: 'Invoices' },
-  { id: 'Contracts', name: 'Contracts', value: 'Contracts' },
-]
 
 type StorageOption = {
   comingSoon: boolean
@@ -578,7 +572,7 @@ export default function DmsFolderConfiguration({
   const [displayMode, setDisplayMode] = useState('Show Latest Version Only')
   const [folderName, setFolderName] = useState('')
   const [description, setDescription] = useState('')
-  const [category, setCategory] = useState<SelectOption>(categoryOptions[0])
+
   const [folderOwner, setFolderOwner] = useState<SelectOption | null>(null)
   const [folderCoordinator, setFolderCoordinator] = useState<SelectOption | null>(
     null,
@@ -810,7 +804,6 @@ export default function DmsFolderConfiguration({
 
             <SettingsSetupContent fullWidth>
               <WizardContent
-                category={category}
                 description={description}
                 displayMode={displayMode}
                 fields={fields}
@@ -822,7 +815,6 @@ export default function DmsFolderConfiguration({
                 storageConnectorId={storageConnectorId}
                 storageConnectorLabel={storageConnectorLabel}
                 versioning={versioning}
-                setCategory={setCategory}
                 setDescription={setDescription}
                 setDisplayMode={setDisplayMode}
                 setFields={setFields}
@@ -1637,7 +1629,6 @@ function StepNav({
 }
 
 function WizardContent({
-  category,
   description,
   displayMode,
   fields,
@@ -1650,7 +1641,6 @@ function WizardContent({
   storageConnectorId,
   storageConnectorLabel,
   versioning,
-  setCategory,
   setDescription,
   setDisplayMode,
   setFields,
@@ -1661,7 +1651,6 @@ function WizardContent({
   userOptions,
   setVersioning,
 }: {
-  category: SelectOption
   description: string
   displayMode: string
   fields: FieldRow[]
@@ -1672,7 +1661,6 @@ function WizardContent({
     connectorId: string | null,
     connectorLabel: string | null,
   ) => void
-  setCategory: Dispatch<SetStateAction<SelectOption>>
   setDescription: Dispatch<SetStateAction<string>>
   setDisplayMode: Dispatch<SetStateAction<string>>
   setFields: Dispatch<SetStateAction<FieldRow[]>>
@@ -1769,19 +1757,7 @@ function WizardContent({
           onChange={setDescription}
         />
 
-        {/* <div>
-          <label className='mb-2 block text-sm font-semibold text-gray-13'>
-            Category
-          </label>
-          <InputSelect
-            options={categoryOptions}
-            value={category}
-            onChange={(item: SelectOption | null) => {
-              if (!item) return
-              setCategory(item)
-            }}
-          />
-        </div> */}
+
 
         <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
           <InputSelect

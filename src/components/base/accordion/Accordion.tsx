@@ -1,4 +1,4 @@
-import { Accordion as MantineAccordion, type AccordionProps } from '@mantine/core'
+import { Accordion as MantineAccordion } from '@mantine/core'
 
 const Accordion = ({ children, ...props }: any) => {
   return <MantineAccordion {...props}>{children}</MantineAccordion>

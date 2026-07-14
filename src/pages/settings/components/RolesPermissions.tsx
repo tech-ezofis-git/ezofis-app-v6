@@ -4,17 +4,12 @@ import {
 } from '@tanstack/react-table'
 import {
   Check,
-  ChevronDown,
-  ChevronUp,
   Edit3,
-  Grid2X2,
   MoreHorizontal,
   Shield,
   ShieldCheck,
-  UserRound,
 } from 'lucide-react'
-import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react'
-import { createPortal } from 'react-dom'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   createRole as createRoleApi,
   getMenus,
@@ -27,10 +22,7 @@ import {
   type V6RoleItem,
 } from '@/api/v6/user'
 import showToast from '@/components/base/toast/showToast'
-import IconButton from '@/components/base/button/IconButton'
 import DataTable from '@/components/base/data-table/DataTable'
-import TableReload from '@/components/base/data-table/actions/TableReload'
-import InputSelect from '@/components/base/inputs/InputSelect'
 import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
 import InputText from '@/components/base/inputs/InputText'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
@@ -46,10 +38,7 @@ import {
   getRequiredFieldErrorMessage,
 } from '../helpers/requiredFieldErrors'
 import { mapUsersToOptions } from '../helpers/userGroupMappers'
-import SettingsPageHeader, {
-  SettingsHeaderAddButton,
-  type SettingsAddAction,
-} from './SettingsPageHeader'
+import SettingsPageHeader, { SettingsHeaderAddButton } from './SettingsPageHeader'
 import SettingsFormSection from './SettingsFormSection'
 import SettingsSelectedChips from './SettingsSelectedChips'
 import SettingsSetupContent from './SettingsSetupContent'
@@ -69,13 +58,6 @@ type CreateStep = {
   description: string
   key: CreateStepKey
   title: string
-}
-
-type MenuItem = {
-  id: string
-  name: string
-  order: number
-  visible: boolean
 }
 
 type Option = {
@@ -106,14 +88,7 @@ type RoleUserProps = {
   onBack?: () => void
 }
 
-type TabKey = 'roles' | 'permissions' | 'menus' | 'assignments'
 
-const tabs: { key: TabKey; label: string }[] = [
-  { key: 'roles', label: 'Role List' },
-  { key: 'permissions', label: 'Permission Matrix' },
-  { key: 'menus', label: 'Menu Profiles' },
-  { key: 'assignments', label: 'User Assignments' },
-]
 
 const roleSteps: CreateStep[] = [
   {
@@ -136,14 +111,7 @@ const roleSteps: CreateStep[] = [
   },
 ]
 
-const initialMenuItems: MenuItem[] = []
 
-const mapApiMenuToProfileItem = (menu: V6MenuItem): MenuItem => ({
-  id: String(menu.id || menu.key || ''),
-  name: String(menu.label || menu.key || 'Menu'),
-  order: Number(menu.sortOrder ?? 0),
-  visible: true,
-})
 
 const initialUsers: AssignedUser[] = [
   { email: 'john@company.com', id: '1', name: 'John Doe', role: 'AP Manager' },
@@ -170,13 +138,10 @@ const initialUsers: AssignedUser[] = [
 
 const roleColumnHelper = createColumnHelper<Role>()
 const permissionColumnHelper = createColumnHelper<PermissionRow>()
-const userAssignmentColumnHelper = createColumnHelper<AssignedUser>()
 
 export default function RolesPermissions({ onBack }: RoleUserProps) {
   const [roles, setRoles] = useState<Role[]>([])
-  const [selectedRoleId, setSelectedRoleId] = useState('')
-  const [permissionRows, setPermissionRows] = useState<PermissionRow[]>([])
-  const [menuItems, setMenuItems] = useState<MenuItem[]>(initialMenuItems)
+
   const [apiMenus, setApiMenus] = useState<V6MenuItem[]>([])
   const [users, setUsers] = useState<AssignedUser[]>(initialUsers)
   const [isCreatingRole, setIsCreatingRole] = useState(false)
@@ -188,8 +153,6 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
   const [editingRoleId, setEditingRoleId] = useState<string | null>(null)
   const [isLoadingRoles, setIsLoadingRoles] = useState(false)
   const [isLoadingRoleDetails, setIsLoadingRoleDetails] = useState(false)
-  const [isLoadingRolePermissions, setIsLoadingRolePermissions] = useState(false)
-  const [isLoadingMenus, setIsLoadingMenus] = useState(false)
   const [isSavingRole, setIsSavingRole] = useState(false)
   const userOptions: Option[] = useMemo(() => {
     return mapUsersToOptions(
@@ -201,13 +164,6 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
       })),
     )
   }, [users])
-
-  const selectedRole = useMemo(() => {
-    if (!roles.length) return null
-    return roles.find((role) => role.id === selectedRoleId) || roles[0]
-  }, [roles, selectedRoleId])
-
-  const roleNames = useMemo(() => roles.map((role) => role.name), [roles])
 
   const resetCreateRole = () => {
     setIsCreatingRole(false)
@@ -249,15 +205,6 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
 
       const mappedRoles = rolesResponse.data.map(mapApiRoleToRole)
       setRoles(mappedRoles)
-      if (mappedRoles.length) {
-        setSelectedRoleId((current) =>
-          mappedRoles.some((role) => role.id === current)
-            ? current
-            : mappedRoles[0].id,
-        )
-      } else {
-        setSelectedRoleId('')
-      }
     } finally {
       setIsLoadingRoles(false)
     }
@@ -268,78 +215,28 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
   }, [loadRoles])
 
   const loadMenus = useCallback(async (): Promise<V6MenuItem[]> => {
-    setIsLoadingMenus(true)
+    const response = await getMenus()
 
-    try {
-      const response = await getMenus()
-
-      if (response.error) {
-        showToast({ message: response.error, variant: 'error' })
-        setMenuItems([])
-        setApiMenus([])
-        return []
-      }
-
-      const menus = [...response.data].sort(
-        (a, b) => Number(a.sortOrder ?? 0) - Number(b.sortOrder ?? 0),
-      )
-
-      setApiMenus(menus)
-      setMenuItems(menus.map(mapApiMenuToProfileItem))
-
-      return menus
-    } finally {
-      setIsLoadingMenus(false)
+    if (response.error) {
+      showToast({ message: response.error, variant: 'error' })
+      setApiMenus([])
+      return []
     }
+
+    const menus = [...response.data].sort(
+      (a, b) => Number(a.sortOrder ?? 0) - Number(b.sortOrder ?? 0),
+    )
+
+    setApiMenus(menus)
+
+    return menus
   }, [])
 
   useEffect(() => {
     void loadMenus()
   }, [loadMenus])
 
-  const loadRolePermissions = useCallback(
-    async (roleId: string, menusOverride?: V6MenuItem[]) => {
-      if (!roleId) {
-        setPermissionRows(buildEmptyPermissionRows(menusOverride ?? apiMenus))
-        return
-      }
 
-      setIsLoadingRolePermissions(true)
-      try {
-        const menus =
-          menusOverride ??
-          (apiMenus.length ? apiMenus : await loadMenus())
-
-        const response = await getRoleById(roleId)
-
-        if (response.error || !response.data) {
-          showToast({
-            message: response.error || 'Failed to load role permissions',
-            variant: 'error',
-          })
-          return
-        }
-
-        const role = mapApiRoleToRole(response.data)
-        setPermissionRows(mapPermissionsToRows(role.permissions, menus))
-        setRoles((current) =>
-          current.map((item) =>
-            item.id === role.id
-              ? {
-                ...item,
-                permissions: role.permissions,
-                userIds: role.userIds,
-                users: role.users,
-              }
-              : item,
-          ),
-        )
-      } finally {
-        setIsLoadingRolePermissions(false)
-      }
-    },
-    [apiMenus, loadMenus],
-  )
 
   useEffect(() => {
     if (!apiMenus.length) return
@@ -429,35 +326,7 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
     )
   }
 
-  const toggleMenu = (id: string) => {
-    setMenuItems((current) =>
-      current.map((item) =>
-        item.id === id ? { ...item, visible: !item.visible } : item,
-      ),
-    )
-  }
 
-  const moveMenu = (id: string, direction: 'up' | 'down') => {
-    setMenuItems((current) => {
-      const sorted = [...current].sort((a, b) => a.order - b.order)
-      const index = sorted.findIndex((item) => item.id === id)
-      const targetIndex = direction === 'up' ? index - 1 : index + 1
-
-      if (targetIndex < 0 || targetIndex >= sorted.length) return current
-
-      const currentOrder = sorted[index].order
-      sorted[index].order = sorted[targetIndex].order
-      sorted[targetIndex].order = currentOrder
-
-      return sorted.sort((a, b) => a.order - b.order)
-    })
-  }
-
-  const changeUserRole = (id: string, role: string) => {
-    setUsers((current) =>
-      current.map((user) => (user.id === id ? { ...user, role } : user)),
-    )
-  }
 
   if (isCreatingRole) {
     return (
@@ -502,31 +371,6 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
   )
 }
 
-function CheckBox({
-  checked,
-  onChange,
-}: {
-  checked: boolean
-  onChange: () => void
-}) {
-  return (
-    <button
-      type='button'
-      className={[
-        'inline-flex h-5 w-5 items-center justify-center rounded-[6px] border shadow-[var(--shadow-sm)] transition',
-        checked
-          ? 'border-[var(--primary-9)] bg-[var(--primary-9)] text-white'
-          : 'border-[var(--primary-8)] bg-surface text-transparent hover:bg-[var(--primary-2)]',
-      ].join(' ')}
-      onClick={(event) => {
-        event.stopPropagation()
-        onChange()
-      }}
-    >
-      <Check size={14} strokeWidth={3} />
-    </button>
-  )
-}
 
 function countEnabledPermissions(rows: PermissionRow[]) {
   return rows.filter((row) => row.enabled).length
@@ -939,217 +783,9 @@ function SummaryItem({ label, value }: { label: string; value: string }) {
   )
 }
 
-function MenuProfiles({
-  isLoading,
-  items,
-  roles,
-  selectedRoleId,
-  selectedRoleName,
-  toolbarSlot,
-  onMove,
-  onReload,
-  onRoleChange,
-  onToggle,
-}: {
-  isLoading: boolean
-  items: MenuItem[]
-  roles: Role[]
-  selectedRoleId: string
-  selectedRoleName: string
-  toolbarSlot: HTMLDivElement | null
-  onMove: (id: string, direction: 'up' | 'down') => void
-  onReload: () => void | Promise<void>
-  onRoleChange: (id: string) => void
-  onToggle: (id: string) => void
-}) {
-  const orderedItems = [...items].sort((a, b) => a.order - b.order)
 
-  return (
-    <>
-      <TabToolbarPortal
-        slot={toolbarSlot}
-        toolbar={
-          <div className='flex flex-wrap items-center justify-end gap-2'>
-            <RoleTabSelect
-              roles={roles}
-              selectedRoleId={selectedRoleId}
-              onRoleChange={onRoleChange}
-            />
-            <TableReload
-              isReloading={isLoading}
-              onReload={() => {
-                void onReload()
-              }}
-            />
-          </div>
-        }
-      />
-      <div className='mt-5 overflow-hidden rounded-[14px] border border-[var(--border-default)] bg-surface shadow-[var(--shadow-sm)]'>
-        <div className='flex items-center gap-3 border-b border-[var(--border-default)] px-5 py-4'>
-          <Grid2X2 className='text-[var(--primary-9)]' size={18} />
-          <h2 className='text-md font-semibold text-[var(--gray-13)]'>
-            Menu Visibility for {selectedRoleName}
-          </h2>
-        </div>
 
-        <div className='ez-scrollbar max-h-[calc(100vh-320px)] overflow-y-auto'>
-          {isLoading ? (
-            <div className='px-5 py-12 text-center text-sm text-[var(--gray-11)]'>
-              Loading menus...
-            </div>
-          ) : orderedItems.length === 0 ? (
-            <div className='px-5 py-12 text-center text-sm text-[var(--gray-11)]'>
-              No menus found.
-            </div>
-          ) : (
-            orderedItems.map((item) => (
-              <div
-                className='flex min-h-[63px] items-center justify-between gap-4 border-b border-[var(--border-default)] px-5 last:border-b-0'
-                key={item.id}
-              >
-                <div className='flex items-center gap-4'>
-                  <Switch
-                    checked={item.visible}
-                    onChange={() => onToggle(item.id)}
-                  />
-                  <span className='text-sm font-semibold text-[var(--gray-13)]'>
-                    {item.name}
-                  </span>
-                </div>
 
-                <div className='flex items-center gap-4'>
-                  <div className='flex flex-col'>
-                    <button
-                      className='text-[var(--gray-10)] hover:text-[var(--primary-10)]'
-                      type='button'
-                      onClick={() => onMove(item.id, 'up')}
-                    >
-                      <ChevronUp size={18} />
-                    </button>
-                    <button
-                      className='text-[var(--gray-10)] hover:text-[var(--primary-10)]'
-                      type='button'
-                      onClick={() => onMove(item.id, 'down')}
-                    >
-                      <ChevronDown size={18} />
-                    </button>
-                  </div>
-                  <span className='flex h-7 min-w-7 items-center justify-center rounded-[8px] border border-[var(--border-default)] bg-surface px-2 text-xs font-semibold text-[var(--gray-13)]'>
-                    {item.order}
-                  </span>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-    </>
-  )
-}
-
-function PermissionMatrix({
-  isLoading,
-  roles,
-  rows,
-  selectedRoleId,
-  toolbarSlot,
-  onReload,
-  onRoleChange,
-  onToggle,
-}: {
-  isLoading: boolean
-  roles: Role[]
-  rows: PermissionRow[]
-  selectedRoleId: string
-  toolbarSlot: HTMLDivElement | null
-  onReload: () => void
-  onRoleChange: (id: string) => void
-  onToggle: (categoryKey: string) => void
-}) {
-  const tableSearchOptions = useSettingsTableSearch()
-  const permissionColumns = useMemo(
-    () => [
-      permissionColumnHelper.accessor('category', {
-        enableSorting: false,
-        header: 'Category',
-        id: 'category',
-        meta: settingsHeaderMeta.start,
-        minSize: 200,
-        size: 240,
-        cell: ({ getValue }) => (
-          <span className='text-sm font-semibold text-[var(--gray-13)]'>
-            {getValue()}
-          </span>
-        ),
-      }),
-      permissionColumnHelper.display({
-        enableSorting: false,
-        header: 'Access',
-        id: 'access',
-        meta: settingsHeaderMeta.center,
-        minSize: 120,
-        size: 140,
-        cell: ({ row }) => (
-          <div className='flex justify-center'>
-            <Switch
-              checked={row.original.enabled}
-              onChange={() => onToggle(row.original.categoryKey)}
-            />
-          </div>
-        ),
-      }),
-    ],
-    [onToggle],
-  )
-
-  const permissionTable = useReactTable({
-    ...settingsTableCoreOptions,
-    ...tableSearchOptions,
-    columns: permissionColumns,
-    data: rows,
-    getRowId: (row) => row.category,
-  })
-
-  const { onRowSizeChange, rowSize, toolbar } = useSettingsTableToolbar({
-    isReLoading: isLoading,
-    table: permissionTable,
-    onReload,
-  })
-
-  return (
-    <>
-      <TabToolbarPortal
-        slot={toolbarSlot}
-        toolbar={
-          <div className='flex flex-wrap items-center justify-end gap-2'>
-            <RoleTabSelect
-              roles={roles}
-              selectedRoleId={selectedRoleId}
-              onRoleChange={onRoleChange}
-            />
-            {toolbar}
-          </div>
-        }
-      />
-      <DataTable
-        emptyDescription='Menus will appear here once navigation items are available.'
-        emptyIcon='lucide:shield'
-        emptyTitle='No permissions to configure'
-        hideActionBar
-        isLoading={isLoading}
-        isReLoading={isLoading}
-        pageSize={Math.max(5, rows.length || 5)}
-        rowSize={rowSize}
-        table={permissionTable}
-        tableBodyMaxHeight='calc(100vh - 380px)'
-        hideGrouping
-        stickyHeader
-        onReload={onReload}
-        onRowSizeChange={onRowSizeChange}
-      />
-    </>
-  )
-}
 
 function RoleList({
   isLoading,
@@ -1339,54 +975,7 @@ function RoleList({
   )
 }
 
-function RoleTabSelect({
-  roles,
-  selectedRoleId,
-  onRoleChange,
-}: {
-  roles: Role[]
-  selectedRoleId: string
-  onRoleChange: (id: string) => void
-}) {
-  const roleOptions = useMemo(
-    () =>
-      roles.map((role) => ({
-        id: role.id,
-        name: role.name,
-        value: role.id,
-      })),
-    [roles],
-  )
 
-  const selectedRole =
-    roleOptions.find((option) => option.id === selectedRoleId) ||
-    roleOptions[0] ||
-    null
-
-  useEffect(() => {
-    if (!roleOptions.length) return
-
-    const hasSelected = roleOptions.some((option) => option.id === selectedRoleId)
-    if (!hasSelected) {
-      onRoleChange(String(roleOptions[0].id))
-    }
-  }, [onRoleChange, roleOptions, selectedRoleId])
-
-  if (!roleOptions.length) return null
-
-  return (
-    <InputSelect
-      options={roleOptions}
-      placeholder='Select role'
-      value={selectedRole}
-      width={220}
-      onChange={(option) => {
-        if (!option) return
-        onRoleChange(String(option.id))
-      }}
-    />
-  )
-}
 
 function Switch({
   checked,
@@ -1414,67 +1003,6 @@ function Switch({
   )
 }
 
-function TabToolbarPortal({
-  slot,
-  toolbar,
-}: {
-  slot: HTMLDivElement | null
-  toolbar: ReactNode
-}) {
-  if (!slot) return null
-
-  return createPortal(toolbar, slot)
-}
-
-function TabBar({
-  activeTab,
-  addAction,
-  onChange,
-  onToolbarSlotChange,
-}: {
-  activeTab: TabKey
-  addAction?: SettingsAddAction
-  onChange: (tab: TabKey) => void
-  onToolbarSlotChange: (node: HTMLDivElement | null) => void
-}) {
-  return (
-    <div className='flex min-h-14 flex-wrap items-center justify-between gap-3 border-b border-gray-3 bg-surface px-6 py-2 md:px-8'>
-      <div className='flex h-14 min-w-0 items-center'>
-        {tabs.map((tab) => {
-          const isActive = activeTab === tab.key
-
-          return (
-            <button
-              key={tab.key}
-              type='button'
-              onClick={() => onChange(tab.key)}
-              className={[
-                'relative mr-9 flex h-14 items-center text-sm font-medium transition',
-                isActive
-                  ? 'text-primary-9'
-                  : 'text-gray-12 hover:text-primary-9',
-              ].join(' ')}
-            >
-              {tab.label}
-
-              {isActive ? (
-                <span className='absolute bottom-0 left-0 h-[2px] w-full bg-primary-9' />
-              ) : null}
-            </button>
-          )
-        })}
-      </div>
-
-      <div className='flex min-h-10 flex-wrap items-center justify-end gap-2'>
-        <div
-          ref={onToolbarSlotChange}
-          className='flex min-h-10 flex-wrap items-center justify-end gap-2'
-        />
-        {addAction ? <SettingsHeaderAddButton {...addAction} /> : null}
-      </div>
-    </div>
-  )
-}
 
 function mapApiRoleToRole(role: V6RoleItem): Role {
   const permissions = Array.isArray(role.permissions)
@@ -1583,152 +1111,4 @@ function normalizePermissionCategory(value: string): string {
     .map((part) => part.trim())
 
   return normalizeCategorySlug(rawCategory)
-}
-
-function UserAssignments({
-  roleNames,
-  toolbarSlot,
-  users,
-  onChangeRole,
-}: {
-  roleNames: string[]
-  toolbarSlot: HTMLDivElement | null
-  users: AssignedUser[]
-  onChangeRole: (id: string, role: string) => void
-}) {
-  const tableSearchOptions = useSettingsTableSearch()
-  const userAssignmentColumns = useMemo(
-    () => [
-      userAssignmentColumnHelper.display({
-        enableResizing: false,
-        enableSorting: false,
-        header: '',
-        id: 'avatar',
-        maxSize: 48,
-        meta: settingsHeaderMeta.center,
-        minSize: 48,
-        size: 48,
-        cell: () => (
-          <div className='flex justify-center'>
-            <div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--primary-3)] text-[var(--primary-9)]'>
-              <UserRound size={16} />
-            </div>
-          </div>
-        ),
-      }),
-      userAssignmentColumnHelper.accessor('name', {
-        enableSorting: false,
-        header: 'User',
-        id: 'name',
-        meta: { ...settingsHeaderMeta.start, label: 'User' },
-        minSize: 160,
-        size: 200,
-        cell: ({ getValue }) => (
-          <span className='text-sm font-semibold text-[var(--gray-13)]'>
-            {getValue()}
-          </span>
-        ),
-      }),
-      userAssignmentColumnHelper.accessor('email', {
-        enableSorting: false,
-        header: 'Email',
-        id: 'email',
-        meta: { ...settingsHeaderMeta.start, label: 'Email' },
-        minSize: 200,
-        size: 240,
-        cell: ({ getValue }) => (
-          <span className='text-sm text-[var(--gray-11)]'>{getValue()}</span>
-        ),
-      }),
-      userAssignmentColumnHelper.accessor('role', {
-        enableSorting: false,
-        header: 'Current Role',
-        id: 'role',
-        meta: { ...settingsHeaderMeta.start, label: 'Current Role' },
-        minSize: 140,
-        size: 160,
-        cell: ({ getValue }) => (
-          <span className='rounded-[8px] bg-[var(--gray-2)] px-3 py-1 text-xs font-semibold text-[var(--gray-13)]'>
-            {getValue()}
-          </span>
-        ),
-      }),
-      userAssignmentColumnHelper.display({
-        enableSorting: false,
-        header: 'Change Role',
-        id: 'changeRole',
-        meta: settingsHeaderMeta.start,
-        minSize: 220,
-        size: 240,
-        cell: ({ row }) => {
-          const roleOptions = roleNames.map((role) => ({
-            id: role,
-            name: role,
-            value: role,
-          }))
-          const selectedRole =
-            roleOptions.find((option) => option.name === row.original.role) ||
-            null
-
-          return (
-            <InputSelect
-              options={roleOptions}
-              value={selectedRole}
-              width={200}
-              onChange={(selected) => {
-                if (!selected) return
-                onChangeRole(row.original.id, selected.name)
-              }}
-            />
-          )
-        },
-      }),
-    ],
-    [onChangeRole, roleNames],
-  )
-
-  const userAssignmentTable = useReactTable({
-    ...settingsTableCoreOptions,
-    ...tableSearchOptions,
-    columns: userAssignmentColumns,
-    data: users,
-    getRowId: (row) => String(row.id),
-  })
-
-  const { onRowSizeChange, rowSize, toolbar } = useSettingsTableToolbar({
-    isReLoading: false,
-    table: userAssignmentTable,
-    onReload: () => undefined,
-  })
-
-  return (
-    <>
-      <TabToolbarPortal slot={toolbarSlot} toolbar={toolbar} />
-
-      <DataTable
-        emptyDescription='Assign users to roles once users are available in the platform.'
-        emptyIcon='lucide:user-round'
-        emptyTitle='No user assignments yet'
-        hideActionBar
-        isLoading={false}
-        isReLoading={false}
-        pageSize={Math.max(5, users.length || 5)}
-        rowSize={rowSize}
-        table={userAssignmentTable}
-        tableBodyMaxHeight='calc(100vh - 390px)'
-        hideGrouping
-        stickyHeader
-        onReload={() => undefined}
-        onRowSizeChange={onRowSizeChange}
-      />
-      <div className='flex justify-end px-4 py-4'>
-        <button
-          className='h-10 rounded-[8px] bg-[var(--primary-9)] px-5 text-sm font-semibold text-white shadow-[var(--shadow-md)] transition hover:bg-[var(--primary-10)]'
-          type='button'
-        >
-          Save Assignments
-        </button>
-      </div>
-    </>
-  )
 }

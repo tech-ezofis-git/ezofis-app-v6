@@ -9,7 +9,7 @@ import {
   Trash2,
   UsersRound,
 } from 'lucide-react'
-import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   createGroup as createGroupApi,
   deleteGroup as deleteGroupApi,
@@ -19,7 +19,6 @@ import {
   updateGroup as updateGroupApi,
 } from '@/api/v6/user'
 import showToast from '@/components/base/toast/showToast'
-import IconButton from '@/components/base/button/IconButton'
 import DataTable from '@/components/base/data-table/DataTable'
 import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
 import InputText from '@/components/base/inputs/InputText'
