@@ -976,6 +976,11 @@ const Request = ({
   const dynamicRules = useMemo(() => {
     const rules = rawWorkflowData?.workflowJson?.rules || []
     const currentActivityId = request?.activityId || selectedItem?.activityId
+    
+    console.log('--- USER DEBUG ---')
+    console.log('activityId:', currentActivityId)
+    console.log('workflowJson:', rawWorkflowData?.workflowJson)
+
     if (!currentActivityId) return []
     return rules.filter((rule: any) => rule.fromBlockId === currentActivityId)
   }, [rawWorkflowData, request?.activityId, selectedItem?.activityId])

@@ -161,10 +161,13 @@ const ShareSignInForm = ({ shareToken, email }: Props) => {
           throw new Error('Please login with the email address that the link was shared to.')
         }
 
+        const shareCtx = authUserStore.getState().shareContext
+
         const { error: apiError } = await authApiV6.shareSocialLogin({
           email: gEmail,
           provider: 'google',
-          shareToken
+          shareToken,
+          tenantId: shareCtx?.sourceTenantId,
         })
 
         if (apiError) {
@@ -196,10 +199,13 @@ const ShareSignInForm = ({ shareToken, email }: Props) => {
         throw new Error('Please login with the email address that the link was shared to.')
       }
 
+      const shareCtx = authUserStore.getState().shareContext
+
       const { error: apiError } = await authApiV6.shareSocialLogin({
         email: msEmail,
         provider: 'microsoft',
-        shareToken
+        shareToken,
+        tenantId: shareCtx?.sourceTenantId,
       })
 
       if (apiError) {

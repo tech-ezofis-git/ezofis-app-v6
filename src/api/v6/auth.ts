@@ -309,11 +309,17 @@ export const shareSocialLogin = async (payload: {
   email: string
   provider: string
   shareToken: string
+  tenantId?: string
 }) => {
   const response: any = { data: null, error: '' }
   try {
     const { data, status } = await axiosV6({
-      data: JSON.stringify(payload),
+      data: JSON.stringify({
+        email: payload.email,
+        provider: payload.provider,
+        shareToken: payload.shareToken,
+      }),
+      headers: payload.tenantId ? { 'X-Tenant-Id': payload.tenantId } : undefined,
       method: 'POST',
       url: `/auth/share/social-login`,
     })
