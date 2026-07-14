@@ -13,6 +13,7 @@ import type {
   RepositoryFilePage,
 } from '../types/folderTypes'
 import { DynamicIcon } from './icons'
+import { StatusPill } from './Ui'
 
 const HIDDEN_FILE_KEYS = new Set([
   'storageproviderid',
@@ -20,6 +21,8 @@ const HIDDEN_FILE_KEYS = new Set([
   'storageprovidercode',
 
   'hasfilepath',
+
+  'status',
 ])
 
 type FileRow = {
@@ -103,6 +106,82 @@ const fileColumnHelper = createColumnHelper<FileRow>()
 const isHiddenFileKey = (key: string) => HIDDEN_FILE_KEYS.has(key.toLowerCase())
 
 const getFileId = (file: FileItem) => String((file as any).id ?? '')
+
+const getFileColumnSizing = (
+  column: {
+    dataType?: string
+    key: string
+    label: string
+  },
+  contentLength = 0,
+) => {
+  if (column.key === '__name') {
+    return { maxSize: 340, minSize: 220, size: 260 }
+  }
+
+  if (column.key === '__status') {
+    return { maxSize: 180, minSize: 110, size: 130 }
+  }
+
+  if (column.key === 'actions') {
+    return { maxSize: 72, minSize: 56, size: 64 }
+  }
+
+  const dataType = String(column.dataType || '').toLowerCase()
+  const key = column.key.toLowerCase()
+  const label = column.label || column.key
+  const labelWidth = Math.ceil(label.length * 8.5) + 40
+  const contentWidth = Math.ceil(Math.max(contentLength, label.length) * 8.2) + 40
+
+  if (
+    dataType.includes('date') ||
+    key.includes('date') ||
+    dataType.includes('time')
+  ) {
+    return { maxSize: 200, minSize: 130, size: 160 }
+  }
+
+  if (
+    ['currency', 'decimal', 'number', 'int', 'amount', 'money'].some(
+      (token) => dataType.includes(token) || key.includes(token),
+    )
+  ) {
+    return {
+      maxSize: 200,
+      minSize: 120,
+      size: Math.min(Math.max(140, labelWidth, contentWidth), 200),
+    }
+  }
+
+  return {
+    maxSize: 420,
+    minSize: 120,
+    size: Math.min(Math.max(labelWidth, contentWidth, 140), 280),
+  }
+}
+
+function EllipsisText({
+  className,
+  value,
+}: {
+  className?: string
+  value: string
+}) {
+  return (
+    <span
+      className={[
+        'block max-w-full overflow-hidden break-words text-gray-10',
+        '[display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]',
+        className,
+      ]
+        .filter(Boolean)
+        .join(' ')}
+      title={value}
+    >
+      {value}
+    </span>
+  )
+}
 
 const getRepositoryFieldValue = (row: any, sqlColumnName: string) => {
   if (!row || !sqlColumnName) return '-'
@@ -453,6 +532,11 @@ function FileDataTableSection({
       files.map((file) => {
         const row: FileRow = {
           __name: getPrimaryFileName(file),
+          __status: String(
+            (file as any)?.status ??
+              (file as any)?.Status ??
+              '',
+          ),
           id: getFileId(file),
           raw: file,
         }
@@ -468,7 +552,9 @@ function FileDataTableSection({
 
   const fileColumns = useMemo(() => {
     const normalColumns = columns.filter(
-      (column) => !hiddenFirstColumnKeys.includes(column.key),
+      (column) =>
+        !hiddenFirstColumnKeys.includes(column.key) &&
+        column.key.toLowerCase() !== 'status',
     )
 
     const resolvedColumns: DynamicRepositoryColumn[] = [
@@ -476,13 +562,24 @@ function FileDataTableSection({
         key: '__name',
         label: 'Name',
       } as DynamicRepositoryColumn,
+      {
+        key: '__status',
+        label: 'Status',
+      } as DynamicRepositoryColumn,
       ...normalColumns,
     ]
 
-    const dynamicColumns = resolvedColumns.map((column, index) =>
-      fileColumnHelper.accessor((row) => row[column.key], {
+    const dynamicColumns = resolvedColumns.map((column, index) => {
+      const sizing = getFileColumnSizing(column)
+      const isPinnedColumn = column.key === '__name'
+
+      return fileColumnHelper.accessor((row) => row[column.key], {
+        enableResizing: !isPinnedColumn,
         header: column.label,
         id: column.key,
+        maxSize: sizing.maxSize,
+        minSize: sizing.minSize,
+        size: sizing.size,
         cell: ({ row, getValue }) => {
           const fileId = row.original.id
           const value = String(getValue() || '-')
@@ -506,23 +603,29 @@ function FileDataTableSection({
             )
           }
 
-          return (
-            <span
-              className='block max-w-[260px] truncate text-gray-10'
-              title={value}
-            >
-              {value}
-            </span>
-          )
+          if (column.key === '__status') {
+            const status = String(getValue() || '').trim()
+            if (!status) {
+              return <span className='text-gray-10'>—</span>
+            }
+            return <StatusPill status={status} />
+          }
+
+          return <EllipsisText value={value} />
         },
-      }),
-    )
+      })
+    })
 
     return [
       ...dynamicColumns,
       fileColumnHelper.display({
+        enableResizing: false,
         header: '',
         id: 'actions',
+        maxSize: 72,
+        minSize: 56,
+        size: 64,
+        meta: { headerAlign: 'right' as const },
         cell: ({ row }) => {
           const fileId = row.original.id
 
@@ -617,10 +720,23 @@ function FileDataTableSection({
   ])
 
   const fileTable = useReactTable({
+    columnResizeMode: 'onChange',
     columns: fileColumns,
     data: fileRows,
+    defaultColumn: {
+      enableResizing: true,
+      maxSize: 480,
+      minSize: 80,
+    },
+    enableColumnResizing: true,
     getCoreRowModel: getCoreRowModel(),
     getRowId: (row) => `file-${row.id}`,
+    initialState: {
+      columnPinning: {
+        left: ['__name'],
+        right: ['actions'],
+      },
+    },
   })
 
   const currentPage = filePage?.page || 1
@@ -649,6 +765,7 @@ function FileDataTableSection({
           table={fileTable}
           tableBodyMaxHeight={fileTableMaxHeight}
           hideGrouping
+          isSticky
           stickyHeader
           onReload={onReload || (() => undefined)}
         />

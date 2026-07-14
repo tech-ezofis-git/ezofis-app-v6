@@ -107,13 +107,18 @@ export function StatusPill({ status }: { status: string }) {
     s.includes('approved') ||
     s.includes('clean') ||
     s.includes('pass') ||
-    s.includes('verified')
+    s.includes('verified') ||
+    s.includes('paid')
       ? 'border-green-6 bg-green-3 text-green-11'
-      : s.includes('pending') || s.includes('high')
+      : s.includes('approver') ||
+          s.includes('pending') ||
+          s.includes('high')
         ? 'border-orange-6 bg-orange-3 text-orange-11'
         : s.includes('flag') || s.includes('reject')
           ? 'border-red-6 bg-red-3 text-red-11'
-          : 'border-blue-6 bg-blue-3 text-blue-11'
+          : s.includes('verifier')
+            ? 'border-blue-6 bg-blue-3 text-blue-11'
+            : 'border-blue-6 bg-blue-3 text-blue-11'
   return (
     <span
       className={`inline-flex w-max items-center rounded-full border px-2 py-0.5 text-xs font-medium ${tone}`}

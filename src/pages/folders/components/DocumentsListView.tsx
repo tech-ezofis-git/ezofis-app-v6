@@ -11,7 +11,7 @@ import type { DynamicRepositoryColumn } from '../api/folderApi'
 import type { FileItem, RepositoryFilePage } from '../types/folderTypes'
 import { type BreadcrumbItem, Breadcrumbs } from './Breadcrumbs'
 import { DynamicIcon } from './icons'
-import { Button } from './Ui'
+import { Button, StatusPill } from './Ui'
 
 type ActionMenuPosition = {
   left: number
@@ -59,6 +59,7 @@ const HIDDEN_FILE_KEYS = new Set([
   'storageproviderid',
   'storageprovidercode',
   'hasfilepath',
+  'status',
 ])
 
 const ACTION_MENU_WIDTH = 220
@@ -201,15 +202,24 @@ const getFileId = (file: AnyFileItem) =>
       '',
   )
 
-const getColumnWidth = (_key: string, dataType?: string) => {
+const getColumnWidth = (key: string, label?: string, dataType?: string) => {
   const normalizedType = String(dataType || '').toLowerCase()
+  const normalizedKey = String(key || '').toLowerCase()
+  const labelWidth = Math.ceil(String(label || key).length * 8.5) + 40
 
-  if (normalizedType === 'date' || normalizedType === 'datetime') return 160
-  if (['decimal', 'number', 'int', 'integer'].includes(normalizedType)) {
-    return 160
+  if (key === '__name') return 260
+  if (key === '__status') return 130
+  if (normalizedType === 'date' || normalizedType === 'datetime') return 150
+  if (
+    ['decimal', 'number', 'int', 'integer', 'currency', 'amount'].includes(
+      normalizedType,
+    ) ||
+    normalizedKey.includes('amount')
+  ) {
+    return Math.max(140, labelWidth)
   }
 
-  return 180
+  return Math.min(Math.max(labelWidth, 140), 260)
 }
 
 const buildRepositoryColumns = (
@@ -225,12 +235,21 @@ const buildRepositoryColumns = (
       label: 'Name',
       minWidth: 220,
     },
-    ...normalColumns.map((column) => ({
-      dataType: column.dataType,
-      key: column.key,
-      label: column.label || toTitle(column.key),
-      minWidth: getColumnWidth(column.key, column.dataType),
-    })),
+    {
+      key: '__status',
+      label: 'Status',
+      minWidth: 140,
+    },
+    ...normalColumns.map((column) => {
+      const label = column.label || toTitle(column.key)
+
+      return {
+        dataType: column.dataType,
+        key: column.key,
+        label,
+        minWidth: getColumnWidth(column.key, label, column.dataType),
+      }
+    }),
   ]
 }
 
@@ -292,6 +311,14 @@ export function DocumentsListView({
     return searchedFiles.filter((file) =>
       Object.entries(filters).every(([key, value]) => {
         if (!value) return true
+
+        if (key === '__status') {
+          return String(file.status ?? file.Status ?? '').trim() === value
+        }
+
+        if (key === '__name') {
+          return getPrimaryFileName(file) === value
+        }
 
         return String(getRepositoryFieldRawValue(file, key) ?? '') === value
       }),
@@ -371,7 +398,15 @@ export function DocumentsListView({
     Array.from(
       new Set(
         searchedFiles
-          .map((file) => getRepositoryFieldRawValue(file, key))
+          .map((file) => {
+            if (key === '__status') {
+              return String(file.status ?? file.Status ?? '').trim() || undefined
+            }
+            if (key === '__name') {
+              return getPrimaryFileName(file)
+            }
+            return getRepositoryFieldRawValue(file, key)
+          })
           .filter(
             (value) => value !== undefined && value !== null && value !== '',
           )
@@ -457,14 +492,19 @@ export function DocumentsListView({
     }
 
     const dynamicColumns: ColumnDef<AnyFileItem>[] = columns.map((column) => ({
+      enableResizing: column.key !== '__name',
       header: column.label,
       id: column.key,
       minSize: column.minWidth || 180,
       size: column.minWidth || 180,
-      accessorFn: (row) =>
-        column.key === '__name'
-          ? getPrimaryFileName(row)
-          : getDisplayValue(row, column.key, column.dataType),
+      maxSize: column.key === '__name' ? 340 : 420,
+      accessorFn: (row) => {
+        if (column.key === '__name') return getPrimaryFileName(row)
+        if (column.key === '__status') {
+          return String(row.status ?? row.Status ?? '').trim()
+        }
+        return getDisplayValue(row, column.key, column.dataType)
+      },
       cell: ({ row, getValue }) => {
         const value = String(getValue() ?? '-')
 
@@ -490,9 +530,15 @@ export function DocumentsListView({
           )
         }
 
+        if (column.key === '__status') {
+          const status = String(getValue() || '').trim()
+          if (!status) return <span className='text-gray-10'>—</span>
+          return <StatusPill status={status} />
+        }
+
         return (
           <span
-            className='block max-w-full truncate text-gray-10 hover:[overflow:visible] hover:leading-5 hover:break-words hover:[text-overflow:clip] hover:whitespace-normal'
+            className='block max-w-full overflow-hidden break-words text-gray-10 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]'
             title={value}
           >
             {value}
@@ -502,9 +548,11 @@ export function DocumentsListView({
     }))
 
     const actionColumn: ColumnDef<AnyFileItem> = {
+      enableResizing: false,
       header: 'Actions',
       id: 'actions',
-      minSize: 120,
+      maxSize: 120,
+      minSize: 100,
       size: 120,
       cell: ({ row }) => {
         const fileId = getFileId(row.original)
@@ -556,11 +604,18 @@ export function DocumentsListView({
   ])
 
   const table = useReactTable({
+    columnResizeMode: 'onChange',
     columns: dataTableColumns,
     data: visibleFiles,
+    defaultColumn: {
+      enableResizing: true,
+      maxSize: 480,
+      minSize: 80,
+    },
+    enableColumnResizing: true,
     initialState: {
       columnPinning: {
-        left: ['selection', columns[0]?.key].filter(Boolean) as string[],
+        left: ['selection', '__name'],
         right: ['actions'],
       },
     },
