@@ -44,7 +44,7 @@ interface HeaderProps {
   onOpenPlayground?: (context: any) => void
   onPrev?: () => void
   ticketUserId?: string
-  onShare?: (emails: string[], message: string) => Promise<boolean>
+  onShare?: (shares: { email: string; action: number }[], message: string) => Promise<boolean>
 }
 
 // Generates a consistent color from a string (name/email)
@@ -272,18 +272,20 @@ const Header: React.FC<HeaderProps> = ({
     const selectedCount = Object.keys(selectedUsersToShare).length
     if (selectedCount === 0 && !isEmail) return
 
-    const emailsToShare: string[] = []
-    Object.values(selectedUsersToShare).forEach(({ user }) => {
+    const shares: { email: string; action: number }[] = []
+    Object.values(selectedUsersToShare).forEach(({ user, permission }) => {
       const email = getEmail(user)
-      if (email) emailsToShare.push(email)
+      if (email) {
+        shares.push({ email, action: (permission || globalShareRole.id) === 'View' ? 0 : 1 })
+      }
     })
     if (isEmail) {
-      emailsToShare.push(shareSearch)
+      shares.push({ email: shareSearch, action: globalShareRole.id === 'View' ? 0 : 1 })
     }
 
     if (onShare) {
       setIsSharing(true)
-      const success = await onShare(emailsToShare, shareMessage)
+      const success = await onShare(shares, shareMessage)
       setIsSharing(false)
 
       if (success) {
