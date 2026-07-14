@@ -11,13 +11,11 @@ import {
   MessageCircle,
   PackageX,
   Paperclip,
-  Plus,
   Store,
-  Trash2,
   Wallet,
   Wand2,
 } from 'lucide-react'
-import { type CSSProperties, useEffect, useMemo, useRef, useState, useCallback } from 'react'
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import fileApi from '@/api/file/file'
 import BarLoader from '@/components/base/BarLoader'
 import Icon from '@/components/base/icon/Icon'
@@ -158,20 +156,6 @@ const getRawVal = (obj: any, pathKey: string) => {
     return obj[pathKey]['Invoice Value']
   }
   return obj[pathKey]
-}
-
-const getLineItemAmount = (item: any): any => {
-  return (
-    item.Amount?.['Invoice Value'] ??
-    item['Line Amount']?.['Invoice Value'] ??
-    item['line amount'] ??
-    item.LineAmount ??
-    item.total ??
-    item.amount ??
-    item.line_amount ??
-    item.lineAmount ??
-    0
-  )
 }
 
 const FIELD_KEYS_MAP: Record<string, string[]> = {
@@ -1063,29 +1047,11 @@ const SummarySkeleton = () => (
 
 const skeletonRows = ['skeleton-row-0', 'skeleton-row-1', 'skeleton-row-2']
 // const LINE_ITEM_LEFT_WIDTHS = [60, 100, 100]
-const LINE_ITEM_AMOUNT_WIDTH = 80
 const LINE_ITEM_SCORE_WIDTH = 55
 const LINE_ITEM_ACTION_WIDTH = 38
 // const LINE_ITEM_DEFAULT_WIDTH = 50
 
 
-
-const getLineItemStickyClass = (
-  index: number,
-  bgClass = 'bg-surface',
-): string =>
-  cn(
-    'relative before:absolute before:top-0 before:left-0 before:h-full before:w-px before:bg-[var(--gray-3)]',
-    index < 2 && cn('sticky z-20', bgClass),
-    index === 1 && 'after:absolute after:top-0 after:right-0 after:h-full after:w-px after:bg-[var(--gray-3)] shadow-[2px_0_5px_rgba(0,0,0,0.03)]'
-  )
-
-const getRightStickyStyle = (right: number, width: number): CSSProperties => ({
-  maxWidth: width,
-  minWidth: width,
-  right,
-  width,
-})
 
 const isLineItemAmountColumn = (key: string) => {
   const normalizedKey = key.toLowerCase().replace(/[\s_-]+/g, '')
@@ -1095,24 +1061,6 @@ const isLineItemAmountColumn = (key: string) => {
     normalizedKey === 'totalamount'
   )
 }
-
-const getPinnedAmountStyle = (scoreWidth = LINE_ITEM_SCORE_WIDTH): CSSProperties =>
-  getRightStickyStyle(
-    LINE_ITEM_ACTION_WIDTH + scoreWidth,
-    LINE_ITEM_AMOUNT_WIDTH,
-  )
-
-const getPinnedAmountClass = (bgClass = 'bg-surface') =>
-  cn(
-    'sticky z-20 before:absolute before:top-0 before:left-0 before:h-full before:w-px before:bg-[var(--gray-3)]',
-    bgClass,
-  )
-
-const getLineItemTextClass = (isNumeric = false) =>
-  cn(
-    'block w-full overflow-hidden text-ellipsis whitespace-nowrap',
-    isNumeric && 'text-right',
-  )
 
 const formatValueToTwoDecimals = (val: any) => {
   if (val === undefined || val === null || val === '') return ''
@@ -1909,17 +1857,6 @@ const Overview = (props: any) => {
     return [...otherCols, ...amountCols]
   }, [rawLineItems])
 
-  const formatHeaderLabel = (key: string) => {
-    if (isLineItemAmountColumn(key)) {
-      return 'Amount'
-    }
-
-    return key
-      .replace(/[_-]+/g, ' ')
-      .trim()
-      .replace(/\b\w/g, (char) => char.toUpperCase())
-  }
-
   useEffect(() => {
     if (rawLineItems && rawLineItems.length > 0) {
       const cloned = structuredClone(rawLineItems)
@@ -2009,13 +1946,11 @@ const Overview = (props: any) => {
   }, [lineItems, isDynamicTable, dynamicColumns]);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [atStart, setAtStart] = useState(true);
   const [atEnd, setAtEnd] = useState(false);
 
   const updateScrollEdges = useCallback(() => {
     if (!scrollContainerRef.current) return;
     const el = scrollContainerRef.current;
-    setAtStart(el.scrollLeft <= 1);
     setAtEnd(Math.ceil(el.scrollLeft + el.clientWidth) >= el.scrollWidth - 1);
   }, []);
 
@@ -2040,26 +1975,6 @@ const Overview = (props: any) => {
   }, [lineItems, agentData])
 
   const currentScoreWidth = hasAnyScore ? LINE_ITEM_SCORE_WIDTH : 0;
-
-  const getStickyLeftOffset = (index: number) =>
-    dynamicWidths.slice(0, index).reduce((sum: number, width: number) => sum + width, 0)
-
-  const getLineItemColumnWidth = (index: number, isNumeric = false) =>
-    dynamicWidths[index] || (isNumeric ? 90 : 50)
-
-  const getLineItemCellStyle = (
-    index: number,
-    isNumeric = false,
-  ): CSSProperties => {
-    const width = getLineItemColumnWidth(index, isNumeric)
-    const style: CSSProperties = { maxWidth: width, minWidth: width, width }
-
-    if (index < 2) {
-      style.left = getStickyLeftOffset(index)
-    }
-
-    return style
-  }
 
   const syncLineItemsToFormModel = (updatedItems: any[]) => {
     const sanitizeItems = (items: any[]) => {
@@ -3823,28 +3738,7 @@ const Overview = (props: any) => {
                       )}
                       {activeTab === 'line_items' && (
                         <div className='flex-1 overflow-y-auto p-4'>
-                          <div className='overflow-x-auto overflow-y-hidden rounded-xl border border-[var(--gray-3)] bg-surface shadow-sm relative'>
-                            {/* Left Edge Shadow */}
-                            <div
-                              className={cn(
-                                'pointer-events-none absolute bottom-0 left-0 top-0 z-40 w-6 bg-gradient-to-r from-[rgba(15,23,42,0.08)] to-transparent transition-opacity duration-300',
-                                atStart ? 'opacity-0' : 'opacity-100',
-                              )}
-                              style={{
-                                left: `${(!isDynamicTable || dynamicColumns.length > 1)
-                                  ? (isDynamicTable ? dynamicColumns.findIndex((col: string) => col.toLowerCase() === 'description') > -1 ? dynamicWidths.slice(0, dynamicColumns.findIndex((col: string) => col.toLowerCase() === 'description')).reduce((a: number, b: number) => a + b, 0) : 0 : 0)
-                                  : 0
-                                  }px`,
-                              }}
-                            />
-                            {/* Right Edge Shadow */}
-                            <div
-                              className={cn(
-                                'pointer-events-none absolute bottom-0 right-0 top-0 z-40 w-6 bg-gradient-to-l from-[rgba(15,23,42,0.08)] to-transparent transition-opacity duration-300',
-                                atEnd ? 'opacity-0' : 'opacity-100',
-                              )}
-                              style={getRightStickyStyle(LINE_ITEM_ACTION_WIDTH, currentScoreWidth)}
-                            />
+                          <div className='overflow-hidden rounded-xl border border-[var(--gray-3)] bg-surface relative'>
                             <div
                               className="w-full h-full overflow-x-auto overflow-y-hidden"
                               ref={scrollContainerRef}
@@ -3866,6 +3760,7 @@ const Overview = (props: any) => {
                                 handleRemoveItem={handleRemoveItem}
                                 handleLineItemChange={handleLineItemChange}
                                 handleFieldFocus={handleFieldFocus}
+                                atEnd={atEnd}
                               />
                             </div>
                           </div>
