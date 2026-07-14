@@ -1637,27 +1637,7 @@ const Overview = (props: any) => {
 
     return {
       endpoints: [
-        {
-          id: 'list_inbox',
-          title: 'List Inbox Requests',
-          description: 'Retrieve a paginated list of all pending requests in the current user\'s inbox.',
-          method: 'GET',
-          apiPath: '/api/v6/requests/inbox',
-          requestPayload: null,
-          responsePayload: {
-            success: true,
-            data: [
-              {
-                transactionId: document.requestNo || 'REQ-1',
-                status: 'Pending',
-                vendor: document.vendor || 'Silverline Auto Parts',
-                amount: document.amount || 3057.78
-              }
-            ],
-            total: 15,
-            page: 1
-          }
-        },
+
         {
           id: 'get_request',
           title: 'Get Request Details',

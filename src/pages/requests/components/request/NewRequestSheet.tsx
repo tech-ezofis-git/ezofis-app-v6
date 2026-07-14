@@ -35,37 +35,37 @@ const NewRequestSheet = ({ onClose }: Props) => {
         status: 'Draft'
       }
     },
-    {
-      id: 'list_master_data',
-      title: 'List Master Data API',
-      description: 'Retrieve reference data lists (vendors, GL codes, etc.) for populating creation forms.',
-      method: 'GET',
-      apiPath: '/api/v6/master-data',
-      requestPayload: null,
-      responsePayload: {
-        success: true,
-        data: {
-          vendors: [
-            { id: 'V-1', name: 'Silverline Auto Parts' },
-            { id: 'V-2', name: 'Acme Corp' }
-          ],
-          glCodes: [
-            { code: 'GL-1000', description: 'Office Supplies' },
-            { code: 'GL-2000', description: 'Software Subscriptions' }
-          ]
-        }
-      }
-    }
+    // {
+    //   id: 'list_master_data',
+    //   title: 'List Master Data API',
+    //   description: 'Retrieve reference data lists (vendors, GL codes, etc.) for populating creation forms.',
+    //   method: 'GET',
+    //   apiPath: '/api/v6/master-data',
+    //   requestPayload: null,
+    //   responsePayload: {
+    //     success: true,
+    //     data: {
+    //       vendors: [
+    //         { id: 'V-1', name: 'Silverline Auto Parts' },
+    //         { id: 'V-2', name: 'Acme Corp' }
+    //       ],
+    //       glCodes: [
+    //         { code: 'GL-1000', description: 'Office Supplies' },
+    //         { code: 'GL-2000', description: 'Software Subscriptions' }
+    //       ]
+    //     }
+    //   }
+    // }
   ]
 
   return (
     <div className='flex h-full w-full min-w-0'>
       <div className='flex h-full flex-1 flex-col overflow-hidden bg-surface-muted'>
         {newRequestMeta !== 'po' && (
-          <Header 
-            title='New Request' 
-            onClose={onClose} 
-            onOpenPlayground={() => setIsPlaygroundOpen(true)} 
+          <Header
+            title='New Request'
+            onClose={onClose}
+            onOpenPlayground={() => setIsPlaygroundOpen(true)}
           />
         )}
 
