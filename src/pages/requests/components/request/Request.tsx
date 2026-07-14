@@ -1510,7 +1510,7 @@ const Request = ({
   }
   console.log(selectedItem, "Selected Item")
 
-  const handleShare = async (emails: string[], message: string) => {
+  const handleShare = async (shares: { email: string; action: number }[], message: string) => {
     const instanceId =
       selectedItem?.workflowInstanceId || request?.workflowInstanceId
     const repositoryId =
@@ -1524,13 +1524,14 @@ const Request = ({
     }
 
     try {
-      if (emails.length > 0) {
-        await workflowsApiV6.shareFile(String(instanceId), {
-          email: emails[0],
+      if (shares.length > 0) {
+        await Promise.all(shares.map(share => workflowsApiV6.shareFile(String(instanceId), {
+          email: share.email,
           repositoryId: String(repositoryId || ''),
           itemId: String(itemId || ''),
           message,
-        })
+          action: share.action,
+        })))
       }
       showToast({ message: 'Request shared successfully', variant: 'success' })
       return true

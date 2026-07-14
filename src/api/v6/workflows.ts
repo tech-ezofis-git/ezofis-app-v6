@@ -636,7 +636,7 @@ const addInstanceAttachment = async (
 
 export const shareFile = async (
   instanceId: string,
-  payload: { email: string; repositoryId: string; itemId: string; message: string }
+  payload: { email: string; repositoryId: string; itemId: string; message: string; action?: number }
 ) => {
   const res = await axiosV6.post(`/workflows/instances/${instanceId}/share-file`, payload)
   return res.data
