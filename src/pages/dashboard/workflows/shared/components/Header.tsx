@@ -26,12 +26,8 @@ import {
 } from 'lucide-react'
 import CustomFilter from '@/components/common/CustomFilter'
 import useDashboardStore from '@/pages/dashboard/stores/useDashboardStore'
-import {
-  getFilteredInvoices,
-  getDashboardMetrics,
-  TODAY,
-  suppliers,
-} from '@/pages/dashboard/utils/dashboardData'
+import { getDashboardData } from '@/api/v6/dashboard'
+import { TODAY } from '@/pages/dashboard/utils/dashboardData'
 import cn from '@/utils/cn'
 
 function fmtMoney(v: number, currency = 'USD') {
@@ -58,13 +54,99 @@ export default function DashboardCharts() {
   } = useDashboardStore()
 
   const [expandedInvoiceId, setExpandedInvoiceId] = React.useState<string | null>(null)
+  const getKpiConfig = (key: string) => {
+    switch (key) {
+      case 'total_outstanding':
+        return { color: 'border-t-primary-9', isGood: false }
+      case 'total_paid':
+        return { color: 'border-t-success', isGood: true }
+      case 'pending_payments':
+        return { color: 'border-t-primary-9', isGood: true }
+      case 'due_today':
+        return { color: 'border-t-cyan-9', isGood: true }
+      case 'overdue_amount':
+        return { color: 'border-t-red-9', isGood: false }
+      case 'avg_processing_time':
+        return { color: 'border-t-primary-9', isGood: true }
+      default:
+        return { color: 'border-t-primary-9', isGood: true }
+    }
+  }
   const [isCommandCenterExpanded, setIsCommandCenterExpanded] = React.useState(true)
   const [isTodayActionExpanded, setIsTodayActionExpanded] = React.useState(false)
   const [isProcessingExpanded, setIsProcessingExpanded] = React.useState(false)
   const [isSupplierFollowUpExpanded, setIsSupplierFollowUpExpanded] = React.useState(false)
 
-  const filteredInvoices = React.useMemo(() => getFilteredInvoices({ timeframe, supplierCategory, invoiceStatus, currency, searchQuery }), [timeframe, supplierCategory, invoiceStatus, currency, searchQuery])
-  const metrics = React.useMemo(() => getDashboardMetrics(filteredInvoices, timeframe), [filteredInvoices, timeframe])
+  // Local filter states for non-store API filter fields
+  const [department, setDepartment] = React.useState<string>('')
+  const [requestStatus, setRequestStatus] = React.useState<string>('')
+  const [poAmountTier, setPoAmountTier] = React.useState<string>('')
+
+  // API response storage
+  const [dashboardData, setDashboardData] = React.useState<any>(null)
+  const [_isLoading, setIsLoading] = React.useState(false)
+
+  // Map store timeframe key to API period key
+  const periodMap: Record<string, string> = {
+    today: 'today',
+    week: 'week',
+    month: 'thisMonth',
+    lastmonth: 'lastmonth',
+    quarter: 'quarter',
+    fy: 'fy',
+    thisMonth: 'thisMonth',
+  }
+
+  React.useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true)
+      const payload: any = {
+        period: periodMap[timeframe] || 'thisMonth',
+        includeInvoiceDetails: true,
+      }
+
+      if (supplierCategory) payload.supplier = supplierCategory
+      if (currency) payload.currency = currency
+      if (invoiceStatus) payload.status = invoiceStatus
+      if (department) payload.department = department
+      if (requestStatus) payload.requestStatus = requestStatus
+      if (poAmountTier) payload.poAmountTier = poAmountTier
+
+      const res = await getDashboardData(payload)
+      if (res.data) {
+        const rawData = res.data
+        const data = Array.isArray(rawData) ? rawData[0] : rawData
+        setDashboardData(data)
+      } else {
+        console.error(res.error)
+      }
+      setIsLoading(false)
+    }
+    fetchData()
+  }, [timeframe, supplierCategory, invoiceStatus, currency, department, requestStatus, poAmountTier])
+
+  const filteredInvoices = React.useMemo(() => {
+    let list = [...(dashboardData?.invoices || [])]
+    const q = (searchQuery || '').toLowerCase().trim()
+    if (q) {
+      list = list.filter(inv =>
+        String(inv.id || inv.invoiceId || inv.invoiceNo || '').toLowerCase().includes(q) ||
+        String(inv.supplier || inv.supplierName || '').toLowerCase().includes(q) ||
+        String(inv.costCenter || inv.poNumber || '').toLowerCase().includes(q)
+      )
+    }
+    return list
+  }, [dashboardData?.invoices, searchQuery])
+
+  const metrics = React.useMemo(() => {
+    const header = dashboardData?.header || {}
+    return {
+      totalAP: header.totalAp || 0,
+      overdueAmount: header.overdue || 0,
+      openInvoices: header.openInvoices || 0,
+      dpo: header.dpoDays || 0,
+    }
+  }, [dashboardData])
 
   const [activeDrill, setActiveDrill] = React.useState<string | null>(null)
 
@@ -72,10 +154,8 @@ export default function DashboardCharts() {
     setActiveDrill(activeDrill === kpiName ? null : kpiName)
   }
 
-
-
   React.useEffect(() => {
-    if (!isCommandCenterExpanded && activeDrill === 'Total Outstanding Payables') {
+    if (!isCommandCenterExpanded && activeDrill === 'Total Outstanding') {
       setActiveDrill(null)
     }
   }, [isCommandCenterExpanded, activeDrill])
@@ -97,7 +177,7 @@ export default function DashboardCharts() {
         return d.getFullYear() === TODAY.getFullYear() && d.getMonth() === TODAY.getMonth() && d.getDate() === TODAY.getDate()
       })
     } else if (drillLower.includes('overdue')) {
-      result = result.filter(inv => inv.status !== 'Paid' && inv.status !== 'Rejected' && inv.dueDate < TODAY)
+      result = result.filter(inv => inv.status !== 'Paid' && inv.status !== 'Rejected' && new Date(inv.dueDate) < TODAY)
     }
     if (drillSupplier) result = result.filter(inv => inv.supplier === drillSupplier)
     if (drillAgingBucket) {
@@ -116,12 +196,13 @@ export default function DashboardCharts() {
   }, [activeDrill, filteredInvoices, drillSupplier, drillAgingBucket, drillStatus])
 
   const getStatusClass = (status: string) => {
-    switch (status) {
-      case 'Approved': return 'bg-success-light text-success border border-success/20'
-      case 'Paid': return 'bg-primary-3 text-primary-9 border border-primary-4'
-      case 'Pending': return 'bg-orange-2 text-orange-11 border border-orange-3'
-      case 'Processing': return 'bg-cyan-2 text-cyan-11 border border-cyan-3'
-      case 'Rejected': return 'bg-red-2 text-red-11 border border-red-3'
+    const s = String(status || '').toLowerCase()
+    switch (s) {
+      case 'approved': return 'bg-success-light text-success border border-success/20'
+      case 'paid': return 'bg-primary-3 text-primary-9 border border-primary-4'
+      case 'pending': return 'bg-orange-2 text-orange-11 border border-orange-3'
+      case 'processing': return 'bg-cyan-2 text-cyan-11 border border-cyan-3'
+      case 'rejected': return 'bg-red-2 text-red-11 border border-red-3'
       default: return 'bg-gray-2 text-gray-10 border border-gray-3'
     }
   }
@@ -138,90 +219,217 @@ export default function DashboardCharts() {
     { node: (<>Projected cash requirement for the next 4 weeks is <span className="font-semibold">$755.7K</span> — plan liquidity accordingly.</>) },
   ], [])
 
+  const filterOptions = dashboardData?.filterOptions || {}
+  const serverActiveFilters = dashboardData?.activeFilters || {}
+
+  const filtersProp = React.useMemo(() => [
+    {
+      id: 'timeframe',
+      label: 'Timeframe',
+      options: [
+        { label: 'Today', value: 'today' },
+        { label: 'This Week', value: 'week' },
+        { label: 'This Month', value: 'month' },
+        { label: 'Last Month', value: 'lastmonth' },
+        { label: 'Quarter', value: 'quarter' },
+        { label: 'Financial Year', value: 'fy' }
+      ]
+    },
+    {
+      id: 'department',
+      label: 'Department',
+      searchable: true,
+      searchPlaceholder: 'Search department...',
+      options: (filterOptions.departments || []).map((dept: string) => ({
+        label: dept,
+        value: dept
+      }))
+    },
+    {
+      id: 'supplierCategory',
+      label: 'Suppliers',
+      searchable: true,
+      searchPlaceholder: 'Search supplier...',
+      options: (filterOptions.suppliers || []).map((sup: string) => ({
+        label: sup,
+        value: sup
+      }))
+    },
+    {
+      id: 'invoiceStatus',
+      label: 'Statuses',
+      searchable: true,
+      searchPlaceholder: 'Search status...',
+      options: (filterOptions.approvalStatuses || [])
+        .filter((opt: any) => opt.key !== 'all')
+        .map((opt: any) => ({
+          label: opt.label,
+          value: opt.key
+        }))
+    },
+    {
+      id: 'currency',
+      label: 'Currencies',
+      searchable: true,
+      searchPlaceholder: 'Search currency...',
+      options: (filterOptions.currencies || []).map((cur: string) => ({
+        label: cur,
+        value: cur
+      }))
+    }
+  ], [filterOptions])
+
+  const moreFiltersProp = React.useMemo(() => [
+    {
+      id: 'status',
+      label: 'Request Status',
+      icon: ClipboardList,
+      options: (filterOptions.requestStatuses || [])
+        .filter((opt: any) => opt.key !== 'all')
+        .map((opt: any) => ({
+          label: opt.label,
+          value: opt.key
+        }))
+    },
+    {
+      id: 'amount',
+      label: 'PO Amount',
+      icon: DollarSign,
+      options: (filterOptions.poAmountTiers || [])
+        .filter((opt: any) => opt.key !== 'all')
+        .map((opt: any) => ({
+          label: opt.label,
+          value: opt.key
+        }))
+    }
+  ], [filterOptions])
+
+  const radarData = React.useMemo(() => {
+    return (dashboardData?.supplierRiskRadar?.segments || []).map((seg: any) => ({
+      name: `${seg.label} Risk`,
+      value: seg.percent ?? seg.amount ?? 0
+    }))
+  }, [dashboardData])
+
+  const profitVsApData = React.useMemo(() => {
+    return (dashboardData?.profitVsApSpending?.points || []).map((pt: any) => ({
+      name: pt.label,
+      AP: pt.primary,
+      Profit: pt.secondary
+    }))
+  }, [dashboardData])
+
+  const monthlyPaymentData = React.useMemo(() => {
+    return (dashboardData?.monthlyPaymentTrend?.points || []).map((pt: any) => ({
+      name: pt.label,
+      value: pt.primary
+    }))
+  }, [dashboardData])
+
+  const cashFlowData = React.useMemo(() => {
+    return (dashboardData?.cashFlowForecast?.points || []).map((pt: any) => ({
+      name: pt.label,
+      value: pt.primary
+    }))
+  }, [dashboardData])
+
+  const topSuppliersData = React.useMemo(() => {
+    return (dashboardData?.topSuppliersByInvoice || []).map((item: any) => ({
+      name: item.supplier,
+      value: item.amount
+    }))
+  }, [dashboardData])
+
+  const outstandingSuppliersData = React.useMemo(() => {
+    return (dashboardData?.outstandingBySupplier || []).map((item: any) => ({
+      name: item.supplier,
+      value: item.amount
+    }))
+  }, [dashboardData])
+
+  const departmentSpendData = React.useMemo(() => {
+    return (dashboardData?.departmentSpend || []).map((item: any, idx: number) => {
+      const color = idx < 4
+        ? 'bg-primary-3 text-primary-9 border border-primary-4'
+        : 'bg-gray-2 text-text-secondary border border-border-default'
+      return {
+        name: item.department,
+        share: `${item.percent}%`,
+        amt: fmtMoney(item.amount, item.currency || 'CAD'),
+        color
+      }
+    })
+  }, [dashboardData])
+
+  const geographyData = React.useMemo(() => {
+    return (dashboardData?.supplierGeography || []).map((item: any) => {
+      const getFlag = (code: string) => {
+        const codeUpper = String(code || '').toUpperCase()
+        if (codeUpper === 'US') return '🇺🇸'
+        if (codeUpper === 'DE') return '🇩🇪'
+        if (codeUpper === 'IN') return '🇮🇳'
+        if (codeUpper === 'GB' || codeUpper === 'UK') return '🇬🇧'
+        if (codeUpper === 'CA') return '🇨🇦'
+        return '🏳️'
+      }
+      return {
+        region: item.country || item.countryCode,
+        flag: getFlag(item.countryCode),
+        value: fmtMoney(item.amount, item.currency || 'CAD'),
+        count: `${item.supplierCount} suppliers`,
+        pct: item.percent
+      }
+    })
+  }, [dashboardData])
+
+  const cashRequiredData = React.useMemo(() => {
+    return (dashboardData?.cashFlowForecast?.points || [])
+      .slice(0, 7)
+      .map((pt: any) => ({
+        day: pt.label,
+        Cash: pt.primary
+      }))
+  }, [dashboardData])
+
+  const dueTodayValue = React.useMemo(() => {
+    const kpi = (dashboardData?.kpis || []).find((k: any) => k.key === 'due_today')
+    return kpi ? kpi.value : 0
+  }, [dashboardData])
+
+  const handleReset = () => {
+    resetFilters()
+    setDepartment('')
+    setRequestStatus('')
+    setPoAmountTier('')
+  }
+
   return (
     <div className="flex flex-col gap-4 p-6">
 
       {/* 1. QUICK FILTERS ROW */}
       <CustomFilter
-        filters={[
-          {
-            id: 'timeframe',
-            label: 'Timeframe',
-            options: [
-              { label: 'Today', value: 'today' },
-              { label: 'This Week', value: 'week' },
-              { label: 'This Month', value: 'month' },
-              { label: 'Last Month', value: 'lastmonth' },
-              { label: 'Quarter', value: 'quarter' },
-              { label: 'Financial Year', value: 'fy' }
-            ]
-          },
-          {
-            id: 'supplierCategory',
-            label: 'Suppliers',
-            searchable: true,
-            searchPlaceholder: 'Search supplier...',
-            options: Array.from(new Set(suppliers.map(s => s.category))).map(cat => ({ label: cat, value: cat }))
-          },
-          {
-            id: 'invoiceStatus',
-            label: 'Statuses',
-            searchable: true,
-            searchPlaceholder: 'Search status...',
-            options: [
-              { label: 'Approved', value: 'Approved' },
-              { label: 'Partially Approved', value: 'Pending' },
-              { label: 'Rejected', value: 'Rejected' },
-              { label: 'Paid', value: 'Paid' },
-              { label: 'Processing', value: 'Processing' },
-              { label: 'Hold', value: 'Hold' }
-            ]
-          },
-          {
-            id: 'currency',
-            label: 'Currencies',
-            searchable: true,
-            searchPlaceholder: 'Search currency...',
-            options: ['USD', 'EUR', 'INR', 'GBP'].map(c => ({ label: c, value: c }))
-          }
-        ]}
-        moreFilters={[
-          {
-            id: 'status',
-            label: 'Request Status',
-            icon: ClipboardList,
-            options: [
-              { label: 'Approved', value: 'Approved' },
-              { label: 'Partially Approved', value: 'Pending' },
-              { label: 'Rejected', value: 'Rejected' }
-            ]
-          },
-          {
-            id: 'amount',
-            label: 'PO Amount',
-            icon: DollarSign,
-            actions: [
-              { label: 'High Value (> $100K)', value: 'amount > 100000' },
-              { label: 'Low Value (< $1K)', value: 'amount < 1000' }
-            ]
-          }
-        ]}
+        filters={filtersProp}
+        moreFilters={moreFiltersProp}
         activeFilters={{
-          timeframe: timeframe || '',
-          supplierCategory: supplierCategory || '',
-          invoiceStatus: invoiceStatus || '',
-          currency: currency || '',
-          status: invoiceStatus || '',
+          timeframe: serverActiveFilters.period === 'thisMonth' ? 'month' : (serverActiveFilters.period || ''),
+          department: serverActiveFilters.department || '',
+          supplierCategory: serverActiveFilters.supplier || '',
+          invoiceStatus: serverActiveFilters.status || '',
+          currency: serverActiveFilters.currency || '',
+          status: serverActiveFilters.requestStatus || '',
+          amount: serverActiveFilters.poAmountTier || '',
         }}
         onFilterChange={(id, value) => {
           if (id === 'timeframe') setTimeframe(value as any)
-          else if (id === 'supplierCategory') setSupplierCategory(value)
-          else if (id === 'invoiceStatus' || id === 'status') setInvoiceStatus(value)
-          else if (id === 'currency') setCurrency(value)
-          else if (id === 'amount') setSearchQuery(value)
+          else if (id === 'supplierCategory') setSupplierCategory(value as string)
+          else if (id === 'invoiceStatus') setInvoiceStatus(value as string)
+          else if (id === 'currency') setCurrency(value as string)
+          else if (id === 'department') setDepartment(value as string)
+          else if (id === 'status') setRequestStatus(value as string)
+          else if (id === 'amount') setPoAmountTier(value as string)
         }}
-        showReset={!!(timeframe !== 'fy' || supplierCategory || invoiceStatus || currency || searchQuery)}
-        onReset={() => resetFilters()}
+        showReset={!!(timeframe !== 'month' || supplierCategory || invoiceStatus || currency || department || requestStatus || poAmountTier || searchQuery)}
+        onReset={handleReset}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         searchPlaceholder="Search invoice, supplier, PO..."
@@ -234,24 +442,24 @@ export default function DashboardCharts() {
       >
         <div className="relative z-10">
           <h2 className="font-poppins text-14 font-semibold">AP Command Center</h2>
-          <div className="font-inter text-11 text-text-muted mt-1">Real-time · {timeframe} · {supplierCategory || 'all suppliers'} · simulated ledger</div>
+          <div className="font-inter text-11 text-text-muted mt-1">{dashboardData?.header?.contextLabel || 'Loading...'}</div>
         </div>
         <div className="relative z-10 flex gap-6 flex-wrap items-center">
           <div className="text-center md:text-right flex flex-col gap-0.5">
             <span className="font-poppins text-[10px] font-medium tracking-wider text-text-secondary dark:text-gray-4 uppercase">Total AP</span>
-            <span className="text-15 font-semibold text-primary-9">{fmtMoney(metrics.totalAP || 0)}</span>
+            <span className="text-15 font-semibold text-primary-9">{dashboardData?.header?.totalApDisplay || fmtMoney(metrics.totalAP || 0)}</span>
           </div>
           <div className="text-center md:text-right flex flex-col gap-0.5">
             <span className="font-poppins text-[10px] font-medium tracking-wider text-text-secondary dark:text-gray-4 uppercase">Overdue</span>
-            <span className={cn("text-15 font-semibold", metrics.overdueAmount > 0 ? "text-red-9" : "text-primary-9")}>{fmtMoney(metrics.overdueAmount || 0)}</span>
+            <span className={cn("text-15 font-semibold", metrics.overdueAmount > 0 ? "text-red-9" : "text-primary-9")}>{dashboardData?.header?.overdueDisplay || fmtMoney(metrics.overdueAmount || 0)}</span>
           </div>
           <div className="text-center md:text-right flex flex-col gap-0.5">
             <span className="font-poppins text-[10px] font-medium tracking-wider text-text-secondary dark:text-gray-4 uppercase">Open Invoices</span>
-            <span className="text-15 font-semibold text-primary-9">{metrics.openInvoices}</span>
+            <span className="text-15 font-semibold text-primary-9">{dashboardData?.header?.openInvoices ?? metrics.openInvoices}</span>
           </div>
           <div className="text-center md:text-right flex flex-col gap-0.5">
             <span className="font-poppins text-[10px] font-medium tracking-wider text-text-secondary dark:text-gray-4 uppercase">DPO</span>
-            <span className="text-15 font-semibold text-primary-9">{metrics.dpo}d</span>
+            <span className="text-15 font-semibold text-primary-9">{dashboardData?.header?.dpoDisplay || `${metrics.dpo}d`}</span>
           </div>
           <div className="p-1.5 rounded-lg text-text-secondary transition-colors z-20 ml-2">
             {isCommandCenterExpanded ? <ChevronUp className="h-5 w-5 text-primary-9" /> : <ChevronDown className="h-5 w-5" />}
@@ -263,24 +471,23 @@ export default function DashboardCharts() {
       {/* 3. KPI STRIP */}
       {isCommandCenterExpanded && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-6 animate-in fade-in duration-300">
-          {[
-            { name: 'Total Outstanding', value: fmtMoney(metrics.totalAP || 0), trend: metrics.totalAPChange, color: 'border-t-primary-9', isGood: false },
-            { name: 'Total Paid', value: fmtMoney(metrics.totalPaid || 0), trend: metrics.totalPaidChange, color: 'border-t-success', isGood: true },
-            { name: 'Pending Payments', value: fmtMoney(metrics.pendingPayments || 0), trend: metrics.pendingPaymentsChange, color: 'border-t-primary-9', isGood: true },
-            { name: 'Due Today', value: fmtMoney(metrics.dueToday || 0), trend: metrics.dueTodayChange, color: 'border-t-cyan-9', isGood: true },
-            { name: 'Overdue', value: fmtMoney(metrics.overdueAmount || 0), trend: metrics.overdueChange, color: 'border-t-red-9', isGood: false },
-            { name: 'Avg. Processing Time', value: metrics.avgProcessing, trend: metrics.avgProcessingChange, color: 'border-t-primary-9', isGood: true },
-          ].map(kpi => (
-            <div key={kpi.name} className={cn("cursor-pointer rounded-lg border border-border-default bg-surface p-4 shadow-xs transition-all hover:-translate-y-0.5 border-t-3", kpi.color, activeDrill === kpi.name && "ring-2 ring-primary-9/40 shadow-md")} onClick={() => handleKpiClick(kpi.name)}>
-              <div className="font-poppins text-8 font-semibold uppercase ">{kpi.name}</div>
-              {/* tracking-wider text-text-muted */}
-              <div className="font-poppins text-18 font-semibold text-text-primary mt-1.5">{kpi.value}</div>
-              <div className="flex items-center gap-1.5 mt-2 text-11 font-semibold">
-                <span className={cn("rounded px-1.5 py-0.5", kpi.isGood ? "bg-success-light text-success" : "bg-red-2 text-red-11")}>{kpi.trend}</span>
-                <span className="font-inter text-text-muted font-normal">vs last month</span>
+          {(dashboardData?.kpis || []).map((kpi: any) => {
+            const config = getKpiConfig(kpi.key)
+            const trendVal = kpi.changePercent !== null && kpi.changePercent !== undefined
+              ? `${kpi.changePercent > 0 ? '+' : ''}${kpi.changePercent}%`
+              : (kpi.trend === 'flat' ? 'Flat' : kpi.trend)
+
+            return (
+              <div key={kpi.key} className={cn("cursor-pointer rounded-lg border border-border-default bg-surface p-4 shadow-xs transition-all hover:-translate-y-0.5 border-t-3", config.color, activeDrill === kpi.label && "ring-2 ring-primary-9/40 shadow-md")} onClick={() => handleKpiClick(kpi.label)}>
+                <div className="font-poppins text-8 font-semibold uppercase">{kpi.label}</div>
+                <div className="font-poppins text-18 font-semibold text-text-primary mt-1.5">{kpi.displayValue}</div>
+                <div className="flex items-center gap-1.5 mt-2 text-11 font-semibold">
+                  <span className={cn("rounded px-1.5 py-0.5", config.isGood ? "bg-success-light text-success" : "bg-red-2 text-red-11")}>{trendVal}</span>
+                  <span className="font-inter text-text-muted font-normal">vs last month</span>
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
 
@@ -358,13 +565,20 @@ export default function DashboardCharts() {
               </div>
             )}
             <div className={cn("rounded-lg border border-border-default bg-surface p-5 shadow-xs transition-all duration-300", isCommandCenterExpanded ? "col-span-12 lg:col-span-4" : "col-span-12")}>
-              <h3 className="font-poppins text-14 font-semibold text-text-primary">Supplier Risk Radar</h3>
-              <div className="font-inter text-11 text-text-muted mb-4">Which vendors carry the most risk exposure?</div>
+              <h3 className="font-poppins text-14 font-semibold text-text-primary">
+                {dashboardData?.supplierRiskRadar?.title || 'Supplier Risk Radar'}
+              </h3>
+              <div className="font-inter text-11 text-text-muted mb-4">
+                {dashboardData?.supplierRiskRadar?.subtitle || 'Which vendors carry the most risk exposure?'}
+              </div>
               <div className="h-56">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie data={[{ name: 'Low Risk', value: 67 }, { name: 'Medium Risk', value: 24 }, { name: 'High Risk', value: 9 }]} cx="50%" cy="50%" innerRadius={45} outerRadius={65} paddingAngle={3} dataKey="value">
-                      {['#1E8E6F', '#0f7a86', '#B3261E'].map((color, idx) => <Cell key={idx} fill={color} />)}
+                    <Pie data={radarData} cx="50%" cy="50%" innerRadius={45} outerRadius={65} paddingAngle={3} dataKey="value">
+                      {radarData.map((_entry: any, idx: number) => {
+                        const colors = ['#1E8E6F', '#0f7a86', '#B3261E']
+                        return <Cell key={idx} fill={colors[idx % colors.length]} />
+                      })}
                     </Pie>
                     <Tooltip formatter={(v: any) => [`${v}%`, 'Exposure']} />
                   </PieChart>
@@ -403,16 +617,20 @@ export default function DashboardCharts() {
 
             <div className="grid grid-cols-12 gap-4">
               <div className="col-span-12 lg:col-span-6 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
-                <h3 className="font-poppins text-14 font-semibold text-text-primary">Profit vs AP spending</h3>
-                <div className="font-inter text-11 text-text-muted mb-4">Dual axis spending trend comparison</div>
+                <h3 className="font-poppins text-14 font-semibold text-text-primary">
+                  {dashboardData?.profitVsApSpending?.title || 'Profit vs AP spending'}
+                </h3>
+                <div className="font-inter text-11 text-text-muted mb-4">
+                  {dashboardData?.profitVsApSpending?.subtitle || 'Dual axis spending trend comparison'}
+                </div>
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
-                    <ComposedChart data={[{ name: 'Jan', AP: 4.2, Profit: 12.1 }, { name: 'Feb', AP: 3.8, Profit: 13.0 }, { name: 'Mar', AP: 5.1, Profit: 11.5 }, { name: 'Apr', AP: 4.8, Profit: 12.8 }, { name: 'May', AP: 5.6, Profit: 12.9 }, { name: 'Jun', AP: 6.2, Profit: 12.7 }]}>
+                    <ComposedChart data={profitVsApData}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} />
                       <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                      <YAxis yAxisId="left" tick={{ fontSize: 11 }} label={{ value: 'AP ($M)', angle: -90, position: 'insideLeft', style: { fontSize: 10 } }} />
+                      <YAxis yAxisId="left" tick={{ fontSize: 11 }} label={{ value: 'AP Amount', angle: -90, position: 'insideLeft', style: { fontSize: 10 } }} />
                       <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} label={{ value: 'Profit %', angle: 90, position: 'insideRight', style: { fontSize: 10 } }} />
-                      <Tooltip />
+                      <Tooltip formatter={(v: any, name?: string) => name === 'Profit' ? [`${v}%`, name] : [fmtMoney(v), name || '']} />
                       <Bar yAxisId="left" dataKey="AP" fill="#8300e6" radius={[4, 4, 0, 0]} barSize={20} />
                       <Line yAxisId="right" type="monotone" dataKey="Profit" stroke="#19c1d4" strokeWidth={2.5} dot={{ r: 4 }} />
                     </ComposedChart>
@@ -421,16 +639,20 @@ export default function DashboardCharts() {
               </div>
 
               <div className="col-span-12 lg:col-span-6 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
-                <h3 className="font-poppins text-14 font-semibold text-text-primary">Monthly payment trend</h3>
-                <div className="font-inter text-11 text-text-muted mb-4">Cash leaving the building, month by month</div>
+                <h3 className="font-poppins text-14 font-semibold text-text-primary">
+                  {dashboardData?.monthlyPaymentTrend?.title || 'Monthly payment trend'}
+                </h3>
+                <div className="font-inter text-11 text-text-muted mb-4">
+                  {dashboardData?.monthlyPaymentTrend?.subtitle || 'Cash leaving the building, month by month'}
+                </div>
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={[{ name: 'Jan', value: 8.5 }, { name: 'Feb', value: 7.2 }, { name: 'Mar', value: 9.8 }, { name: 'Apr', value: 11.2 }, { name: 'May', value: 12.5 }, { name: 'Jun', value: 10.9 }]}>
+                    <AreaChart data={monthlyPaymentData}>
                       <defs><linearGradient id="paymentGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#8300e6" stopOpacity={0.3} /><stop offset="95%" stopColor="#8300e6" stopOpacity={0.0} /></linearGradient></defs>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} />
                       <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                       <YAxis tick={{ fontSize: 11 }} />
-                      <Tooltip formatter={(v: any) => [`$${v}M`]} />
+                      <Tooltip formatter={(v: any) => [fmtMoney(v)]} />
                       <Area type="monotone" dataKey="value" stroke="#8300e6" strokeWidth={2} fillOpacity={1} fill="url(#paymentGrad)" />
                     </AreaChart>
                   </ResponsiveContainer>
@@ -438,16 +660,20 @@ export default function DashboardCharts() {
               </div>
 
               <div className="col-span-12 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
-                <h3 className="font-poppins text-14 font-semibold text-text-primary">Cash out forecast</h3>
-                <div className="font-inter text-11 text-text-muted mb-4">Liquidity projection and cash needs over next 10 weeks</div>
+                <h3 className="font-poppins text-14 font-semibold text-text-primary">
+                  {dashboardData?.cashFlowForecast?.title || 'Cash out forecast'}
+                </h3>
+                <div className="font-inter text-11 text-text-muted mb-4">
+                  {dashboardData?.cashFlowForecast?.subtitle || 'Liquidity projection and cash needs over next 10 weeks'}
+                </div>
                 <div className="h-56">
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={[{ name: 'W1', value: 3.5 }, { name: 'W2', value: 3.2 }, { name: 'W3', value: 4.8 }, { name: 'W4', value: 3.9 }, { name: 'W5', value: 2.5 }, { name: 'W6', value: 1.8 }, { name: 'W7', value: 2.2 }, { name: 'W8', value: 3.1 }, { name: 'W9', value: 2.8 }, { name: 'W10', value: 3.5 }]}>
+                    <AreaChart data={cashFlowData}>
                       <defs><linearGradient id="forecastGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#5c21e6" stopOpacity={0.25} /><stop offset="95%" stopColor="#5c21e6" stopOpacity={0.0} /></linearGradient></defs>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} />
                       <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                       <YAxis tick={{ fontSize: 11 }} />
-                      <Tooltip formatter={(v: any) => [`$${v}M`]} />
+                      <Tooltip formatter={(v: any) => [fmtMoney(v)]} />
                       <Area type="monotone" dataKey="value" stroke="#5c21e6" strokeWidth={2} fillOpacity={1} fill="url(#forecastGrad)" />
                     </AreaChart>
                   </ResponsiveContainer>
@@ -478,15 +704,17 @@ export default function DashboardCharts() {
             </div>
 
             <div className="grid grid-cols-12 gap-4">
+
+
               <div className={cn("rounded-lg border border-border-default bg-surface p-5 shadow-xs transition-all duration-300", isCommandCenterExpanded ? "col-span-12 lg:col-span-4" : "col-span-12 lg:col-span-6")}>
                 <h3 className="font-poppins text-14 font-semibold text-text-primary">Top 10 suppliers by invoice value</h3>
                 <div className="font-inter text-11 text-text-muted mb-4">Concentration of invoice liabilities</div>
                 <div className="h-60">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={[{ name: 'Meridian Steel', value: 1.8 }, { name: 'Northwind Log.', value: 1.5 }, { name: 'Vertex IT', value: 1.2 }, { name: 'Blue Harbor', value: 0.9 }, { name: 'Solaris Energy', value: 0.8 }]} layout="vertical" margin={{ left: -10, right: 10 }}>
+                    <BarChart data={topSuppliersData} layout="vertical" margin={{ left: -10, right: 10 }}>
                       <XAxis type="number" tick={{ fontSize: 10 }} />
                       <YAxis dataKey="name" type="category" tick={{ fontSize: 10 }} width={90} />
-                      <Tooltip formatter={(v: any) => [`$${v}M`]} />
+                      <Tooltip formatter={(v: any) => [fmtMoney(v)]} />
                       <Bar dataKey="value" fill="#8300e6" radius={[0, 4, 4, 0]} barSize={12} />
                     </BarChart>
                   </ResponsiveContainer>
@@ -495,14 +723,14 @@ export default function DashboardCharts() {
 
               {isCommandCenterExpanded && (
                 <div className="col-span-12 lg:col-span-4 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
-                  <h3 className="font-poppins text-14 font-semibold text-text-primary">Top 5 outstanding by supplier</h3>
+                  <h3 className="font-poppins text-14 font-semibold text-text-primary">Outstanding payables by supplier</h3>
                   <div className="font-inter text-11 text-text-muted mb-4">Click a supplier's bar to drill down</div>
                   <div className="h-60">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={[{ name: 'Meridian Steel', value: 920 }, { name: 'Vertex IT', value: 680 }, { name: 'FastShip Ltd', value: 550 }, { name: 'Solaris Energy', value: 480 }, { name: 'Nimbus Cloud', value: 390 }]} layout="vertical" margin={{ left: -10, right: 10 }}>
+                      <BarChart data={outstandingSuppliersData} layout="vertical" margin={{ left: -10, right: 10 }}>
                         <XAxis type="number" tick={{ fontSize: 10 }} />
                         <YAxis dataKey="name" type="category" tick={{ fontSize: 10 }} width={90} />
-                        <Tooltip formatter={(v: any) => [`$${v}K`]} />
+                        <Tooltip formatter={(v: any) => [fmtMoney(v)]} />
                         <Bar dataKey="value" fill="#5c21e6" radius={[0, 4, 4, 0]} barSize={12} onClick={(data: any) => { setDrillSupplier(data?.name ?? null); setActiveDrill('Outstanding Payables') }} className="cursor-pointer" />
                       </BarChart>
                     </ResponsiveContainer>
@@ -514,14 +742,7 @@ export default function DashboardCharts() {
                 <h3 className="font-poppins text-14 font-semibold text-text-primary">Department-wise spend</h3>
                 <div className="font-inter text-11 text-text-muted mb-4">Tile size reflects share of AP expenses</div>
                 <div className="grid grid-cols-2 gap-2 h-48">
-                  {[
-                    { name: 'Operations', share: '34%', amt: '$3.67M', color: 'bg-primary-3 text-primary-9 border border-primary-4' },
-                    { name: 'IT Services', share: '22%', amt: '$2.37M', color: 'bg-primary-3 text-primary-9 border border-primary-4' },
-                    { name: 'Marketing', share: '18%', amt: '$1.94M', color: 'bg-primary-3 text-primary-9 border border-primary-4' },
-                    { name: 'HR Staffing', share: '12%', amt: '$1.29M', color: 'bg-primary-3 text-primary-9 border border-primary-4' },
-                    { name: 'Finance', share: '9%', amt: '$0.97M', color: 'bg-gray-2 text-text-secondary border border-border-default' },
-                    { name: 'Legal Advisors', share: '5%', amt: '$0.54M', color: 'bg-gray-2 text-text-secondary border border-border-default' },
-                  ].map(dept => (
+                  {departmentSpendData.map((dept: any) => (
                     <div key={dept.name} className={cn("cursor-pointer rounded-lg p-2.5 flex flex-col justify-between transition-all hover:scale-[1.02]", dept.color)} onClick={() => { setSearchQuery(dept.name); setActiveDrill('Department Spend') }}>
                       <span className="font-inter text-10 font-semibold">{dept.name}</span>
                       <div className="flex justify-between items-baseline mt-1">
@@ -538,12 +759,7 @@ export default function DashboardCharts() {
                 <h3 className="font-poppins text-14 font-semibold text-text-primary">Supplier geographic distribution</h3>
                 <div className="font-inter text-11 text-text-muted mb-4">Regional volume and spend exposure analysis</div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                  {[
-                    { region: 'United States', flag: '🇺🇸', value: '$5.8M', count: '12 suppliers', pct: 54 },
-                    { region: 'Germany', flag: '🇩🇪', value: '$2.1M', count: '5 suppliers', pct: 19 },
-                    { region: 'India', flag: '🇮🇳', value: '$1.6M', count: '4 suppliers', pct: 15 },
-                    { region: 'United Kingdom', flag: '🇬🇧', value: '$1.2M', count: '3 suppliers', pct: 12 },
-                  ].map(tile => (
+                  {geographyData.map((tile: any) => (
                     <div key={tile.region} className="rounded-xl border border-border-default bg-gray-2 p-3">
                       <div className="flex items-center justify-between font-inter text-12 font-semibold text-text-primary">
                         <span className="flex items-center gap-1.5"><span className="text-16">{tile.flag}</span>{tile.region}</span>
@@ -693,7 +909,7 @@ export default function DashboardCharts() {
                 <div className="flex gap-6 flex-wrap items-center">
                   <div className="text-center md:text-right flex flex-col gap-0.5">
                     <span className="font-poppins text-[10px] font-medium tracking-wider text-text-secondary dark:text-gray-4 uppercase">Due Today</span>
-                    <span className="text-15 font-semibold text-cyan-9">{fmtMoney(metrics.dueToday || 0)}</span>
+                    <span className="text-15 font-semibold text-cyan-9">{fmtMoney(dueTodayValue)}</span>
                   </div>
                   <div className="text-center md:text-right flex flex-col gap-0.5">
                     <span className="font-poppins text-[10px] font-medium tracking-wider text-text-secondary dark:text-gray-4 uppercase">Cash This Week</span>
@@ -701,7 +917,7 @@ export default function DashboardCharts() {
                   </div>
                   <div className="text-center md:text-right flex flex-col gap-0.5">
                     <span className="font-poppins text-[10px] font-medium tracking-wider text-text-secondary dark:text-gray-4 uppercase">Queue Size</span>
-                    <span className="text-15 font-semibold text-primary-9">{filteredInvoices.filter(inv => inv.status === 'Pending').length} items</span>
+                    <span className="text-15 font-semibold text-primary-9">{filteredInvoices.filter(inv => (inv.status || '').toLowerCase() === 'pending').length} items</span>
                   </div>
                   <div className="p-1.5 rounded-lg text-text-secondary transition-colors z-20 ml-2">
                     {isTodayActionExpanded ? <ChevronUp className="h-5 w-5 text-primary-9" /> : <ChevronDown className="h-5 w-5" />}
@@ -729,22 +945,33 @@ export default function DashboardCharts() {
                         </thead>
                         <tbody>
                           {filteredInvoices.slice(0, 8).map((inv, idx) => {
-                            const isExpanded = expandedInvoiceId === inv.id
+                            const invId = inv.id || inv.invoiceId || inv.invoiceNo || ''
+                            const isExpanded = expandedInvoiceId === invId
+                            const supplier = inv.supplier || inv.supplierName || ''
+                            const costCenter = inv.costCenter || inv.poNumber || ''
+                            const profitCenter = inv.profitCenter || ''
+                            const paymentMethod = inv.paymentMethod || 'ACH'
+                            const isDuplicate = inv.isDuplicate || false
+                            const buyer = inv.buyer || 'Unknown'
+                            const amount = inv.amount || 0
+                            const currency = inv.currency || 'USD'
+                            const dueDate = inv.dueDate ? new Date(inv.dueDate) : new Date()
+
                             return (
-                              <React.Fragment key={inv.id}>
+                              <React.Fragment key={invId}>
                                 <tr className="border-b border-gray-3 hover:bg-gray-2/50">
                                   <td className="p-3"><span className={cn("inline-block h-2 w-2 rounded-full", idx === 0 ? "bg-red-9" : idx < 3 ? "bg-warning" : "bg-success")} /></td>
-                                  <td className="p-3 font-mono font-semibold text-primary-9">{inv.id}</td>
-                                  <td className="p-3 font-medium text-text-primary"><span className="mr-1.5">{inv.flag}</span>{inv.supplier}</td>
-                                  <td className="p-3 text-text-secondary">{inv.department}</td>
-                                  <td className="p-3 text-right font-mono font-semibold text-text-primary">{fmtMoney(inv.amount, inv.currency)}</td>
-                                  <td className="p-3 text-text-secondary">{new Date(inv.dueDate).toLocaleDateString()}</td>
-                                  <td className="p-3"><span className={cn("px-2 py-0.5 rounded-full text-10 font-semibold", getStatusClass(inv.status))}>{inv.status}</span></td>
-                                  <td className="p-3 text-text-muted">{inv.buyer}</td>
+                                  <td className="p-3 font-mono font-semibold text-primary-9">{invId}</td>
+                                  <td className="p-3 font-medium text-text-primary"><span className="mr-1.5">{inv.flag || ''}</span>{supplier}</td>
+                                  <td className="p-3 text-text-secondary">{inv.department || ''}</td>
+                                  <td className="p-3 text-right font-mono font-semibold text-text-primary">{fmtMoney(amount, currency)}</td>
+                                  <td className="p-3 text-text-secondary">{dueDate.toLocaleDateString()}</td>
+                                  <td className="p-3"><span className={cn("px-2 py-0.5 rounded-full text-10 font-semibold", getStatusClass(inv.status))}>{inv.status || 'Pending'}</span></td>
+                                  <td className="p-3 text-text-muted">{buyer}</td>
                                   <td className="p-3 text-right">
                                     <div className="inline-flex items-center gap-2 justify-end">
-                                      <button className="cursor-pointer rounded border border-border-default bg-surface px-2.5 py-1 text-10 font-semibold text-primary-9 transition-all hover:bg-primary-9 hover:text-white" onClick={() => { setDrillSupplier(inv.supplier); setActiveDrill('Outstanding Payables') }}>Action</button>
-                                      <button className="cursor-pointer p-1 text-text-secondary hover:bg-gray-3 rounded transition-colors" onClick={() => setExpandedInvoiceId(isExpanded ? null : inv.id)}>
+                                      <button className="cursor-pointer rounded border border-border-default bg-surface px-2.5 py-1 text-10 font-semibold text-primary-9 transition-all hover:bg-primary-9 hover:text-white" onClick={() => { setDrillSupplier(supplier); setActiveDrill('Outstanding Payables') }}>Action</button>
+                                      <button className="cursor-pointer p-1 text-text-secondary hover:bg-gray-3 rounded transition-colors" onClick={() => setExpandedInvoiceId(isExpanded ? null : invId)}>
                                         {isExpanded ? <ChevronUp className="h-4 w-4 text-primary-9" /> : <ChevronDown className="h-4 w-4" />}
                                       </button>
                                     </div>
@@ -754,13 +981,13 @@ export default function DashboardCharts() {
                                   <tr className="bg-primary-3/10 dark:bg-gray-12/30">
                                     <td colSpan={9} className="p-4 border-b border-border-default">
                                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 font-inter text-11 text-text-secondary">
-                                        <div><div className="font-semibold text-text-muted">PO Reference</div><div className="font-mono mt-0.5 text-text-primary">{inv.costCenter.replace('CC-', 'PO-')}</div></div>
-                                        <div><div className="font-semibold text-text-muted">Cost Center</div><div className="mt-0.5 text-text-primary">{inv.costCenter}</div></div>
-                                        <div><div className="font-semibold text-text-muted">Profit Center</div><div className="mt-0.5 text-text-primary">{inv.profitCenter}</div></div>
-                                        <div><div className="font-semibold text-text-muted">Payment Channel</div><div className="mt-0.5 text-text-primary">{inv.paymentMethod}</div></div>
+                                        <div><div className="font-semibold text-text-muted">PO Reference</div><div className="font-mono mt-0.5 text-text-primary">{costCenter.replace('CC-', 'PO-')}</div></div>
+                                        <div><div className="font-semibold text-text-muted">Cost Center</div><div className="mt-0.5 text-text-primary">{costCenter}</div></div>
+                                        <div><div className="font-semibold text-text-muted">Profit Center</div><div className="mt-0.5 text-text-primary">{profitCenter}</div></div>
+                                        <div><div className="font-semibold text-text-muted">Payment Channel</div><div className="mt-0.5 text-text-primary">{paymentMethod}</div></div>
                                       </div>
                                       <div className="mt-3 p-2.5 rounded bg-orange-2/30 border border-orange-3/30 font-inter text-11 text-orange-11">
-                                        <strong>Ledger Verification Note:</strong> Invoice matched against approved master list. {inv.isDuplicate ? 'ALERT: Potential duplicate invoice match. Review before release.' : 'Standard SLA timeline. No pricing exceptions found.'}
+                                        <strong>Ledger Verification Note:</strong> Invoice matched against approved master list. {isDuplicate ? 'ALERT: Potential duplicate invoice match. Review before release.' : 'Standard SLA timeline. No pricing exceptions found.'}
                                       </div>
                                     </td>
                                   </tr>
@@ -805,11 +1032,11 @@ export default function DashboardCharts() {
                       <div className="font-inter text-11 text-text-muted mb-4">Daily cash requirements for approved invoices</div>
                       <div className="h-56">
                         <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={[{ day: 'Jul 8', Cash: 0 }, { day: 'Jul 9', Cash: 85 }, { day: 'Jul 10', Cash: 120 }, { day: 'Jul 11', Cash: 40 }, { day: 'Jul 12', Cash: 15 }, { day: 'Jul 13', Cash: 220 }, { day: 'Jul 14', Cash: 90 }]}>
+                          <BarChart data={cashRequiredData}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} />
                             <XAxis dataKey="day" tick={{ fontSize: 11 }} />
-                            <YAxis tick={{ fontSize: 11 }} label={{ value: 'Cash ($K)', angle: -90, position: 'insideLeft', style: { fontSize: 10 } }} />
-                            <Tooltip formatter={(v) => [`$${v}K`]} />
+                            <YAxis tick={{ fontSize: 11 }} label={{ value: 'Cash required', angle: -90, position: 'insideLeft', style: { fontSize: 10 } }} />
+                            <Tooltip formatter={(v: any) => [fmtMoney(Number(v || 0))]} />
                             <Bar dataKey="Cash" fill="#8300e6" radius={[4, 4, 0, 0]} barSize={20} />
                           </BarChart>
                         </ResponsiveContainer>
@@ -955,7 +1182,7 @@ export default function DashboardCharts() {
             <div className="grid grid-cols-12 gap-5">
               {isSupplierFollowUpExpanded && (
                 <div className="col-span-12 lg:col-span-6 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
-                  <h3 className="font-poppins text-14 font-semibold text-text-primary">Top 5 outstanding by supplier</h3>
+                  <h3 className="font-poppins text-14 font-semibold text-text-primary">Outstanding payables by supplier</h3>
                   <div className="font-inter text-11 text-text-muted mb-4">Click a supplier's bar to drill down</div>
                   <div className="h-60">
                     <ResponsiveContainer width="100%" height="100%">

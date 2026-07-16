@@ -4,7 +4,7 @@ import {
   FolderOpen,
   Shield,
   UserRoundCheck,
-  Users,Code2,BadgeDollarSign,
+  Users, Code2, BadgeDollarSign,
 } from 'lucide-react'
 import React, { useMemo, useState } from 'react'
 import AuditMonitoring from './components/AuditMonitoring'
@@ -73,8 +73,8 @@ const settingsItems: SettingsItem[] = [
     title: 'Audit & Monitoring',
   },
   {
-   description:
-  'Explore, test, and debug API endpoints with live requests and sample responses.',
+    description:
+      'Explore, test, and debug API endpoints with live requests and sample responses.',
     icon: Code2,
     key: 'playground',
     title: 'Playground API',
@@ -108,10 +108,10 @@ export default function SettingsMain() {
   if (activePage === 'audit-monitoring') {
     return <AuditMonitoring onBack={() => setActivePage('settings')} />
   }
- if (activePage === "playground") {
-  window.open("https://ezagentplayground.onrender.com/apikey.html?id=2", "_blank");
-  setActivePage('settings')
-}
+  if (activePage === "playground") {
+    window.open("https://demo.ezofis.com/V6Playground/apikey.html", "_blank");
+    setActivePage('settings')
+  }
   if (activePage === 'credit') {
     return <Credits onBack={() => setActivePage('settings')} />
   }

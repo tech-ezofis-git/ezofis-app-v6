@@ -976,7 +976,7 @@ const Request = ({
   const dynamicRules = useMemo(() => {
     const rules = rawWorkflowData?.workflowJson?.rules || []
     const currentActivityId = request?.activityId || selectedItem?.activityId
-    
+
     console.log('--- USER DEBUG ---')
     console.log('activityId:', currentActivityId)
     console.log('workflowJson:', rawWorkflowData?.workflowJson)
@@ -1414,7 +1414,7 @@ const Request = ({
             document: docInfo,
             endpoint:
               action?.endpoint ||
-              'https://ezagentplayground.onrender.com/apikey.html?id=2',
+              'https://demo.ezofis.com/V6Playground/apikey.html',
             // model: action?.model || 'gemini-2.0-flash-exp',
             // provider: action?.provider || 'gemini',
             requestPayload: docInfo,
@@ -1495,6 +1495,8 @@ const Request = ({
   let displayMessage = jobStatus?.message || jobStatus?.hangfireStatus || ''
   if (displayMessage === 'AP Agent finished') {
     displayMessage = 'AP Agent'
+  } else if (displayMessage === 'Linking related records') {
+    displayMessage = 'Linking PO Records'
   }
 
   let statusBadge = ''

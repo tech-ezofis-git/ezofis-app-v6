@@ -1474,7 +1474,7 @@ const Overview = (props: any) => {
       actions?.find(
         (act: any) => String(act?.label || '').toLowerCase() === 'paid',
       ) || {
-        endpoint: 'https://ezagentplayground.onrender.com/apikey.html?id=2',
+        endpoint: 'https://demo.ezofis.com/V6Playground/apikey.html',
         label: 'Paid',
         // model: 'gemini-2.0-flash-exp',
         // provider: 'gemini',
@@ -1810,7 +1810,7 @@ const Overview = (props: any) => {
       const mappedItem: any = {
         _id: item._id || `po-li-${idx}-${Date.now()}`
       }
-      
+
       Object.entries(item).forEach(([k, v]) => {
         if (k === '_id') return
         const label = poColMap.get(k) || FALLBACK_PO_COLS_MAP[k] || k
@@ -1823,11 +1823,11 @@ const Overview = (props: any) => {
 
   const poDynamicColumns = useMemo(() => {
     const cols = new Set<string>()
-    
+
     poColMap.forEach((label) => {
       cols.add(label)
     })
-    
+
     Object.values(FALLBACK_PO_COLS_MAP).forEach((label) => {
       cols.add(label)
     })

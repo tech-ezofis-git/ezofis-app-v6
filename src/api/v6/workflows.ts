@@ -479,6 +479,9 @@ const getApAgentJobStatus = async (jobId: string) => {
       url: `/Workflows/ap-agent/jobs/${jobId}`,
     })
     if (status !== 200) throw new Error('invalid status code')
+    if (data && data.message === 'Linking related records') {
+      data.message = 'Linking PO Records'
+    }
     response.data = data
   } catch (e: unknown) {
     console.error(e)

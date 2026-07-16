@@ -115,7 +115,7 @@ export function AiSummaryView({ onBack }: { onBack: () => void }) {
                   <h2 className='text-[17px] leading-6 font-semibold text-gray-13'>
                     {data.engineTitle}
                     <span className='ml-2 inline-flex w-fit items-center rounded-md border border-violet-5 bg-surface-primary px-2 py-0.5 text-[11px] font-medium whitespace-nowrap text-violet-11'>
-                      GPT-4o Powered
+
                     </span>
                   </h2>
                   <p className='text-[13px] leading-5 text-gray-10'>

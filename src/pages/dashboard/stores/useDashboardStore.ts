@@ -24,7 +24,7 @@ type DashboardState = {
 }
 
 const useDashboardStore = create<DashboardState>()((set) => ({
-  role: 'ap', // default to match screenshot and ap team focus
+  role: 'management',
   timeframe: 'month', // "This Month"
   supplierCategory: '',
   invoiceStatus: '',

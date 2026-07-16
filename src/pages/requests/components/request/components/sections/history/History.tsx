@@ -57,7 +57,7 @@ const toDate = (value: any): Date | null => {
 
 // Helper to determine the actor name
 const pickActor = (h: HistoryRow) => {
-  const userName = h.performedByUserName || h.processedBy || h.actionUser || h.actionUserEmail
+  const userName = h.actionUser || h.performedByUserName
   const milestoneLower = safeLower(h.status || h.stage || h.stageType || '')
   const isApAgentNode =
     milestoneLower.includes('ap_agent') ||
@@ -70,15 +70,14 @@ const pickActor = (h: HistoryRow) => {
   if (h.agentType) {
     return h.agentType === 'ocr' ? 'AI Engine' : h.agentType
   }
-  const rawUser = h.processedBy || h.actionUser || h.actionUserEmail
-  if (!rawUser) {
+  if (!userName) {
     const stageLc = safeLower(h.stage)
     if (stageLc.includes('start') || stageLc.includes('ingest')) {
       return 'System (Email)'
     }
     return 'System'
   }
-  return rawUser
+  return userName
 }
 
 // Formats timestamp matching user's layout: YYYY-MM-DD hh:mm A
@@ -271,6 +270,7 @@ export default function History({
   const formatDuration = (ms: number): string => {
     if (ms < 0) ms = Math.abs(ms)
     const secs = Math.floor(ms / 1000)
+    if (secs <= 0) return ''
     if (secs < 60) return `${secs}s`
     const mins = Math.floor(secs / 60)
     if (mins < 60) {
@@ -365,8 +365,11 @@ export default function History({
                   const isTerminal = safeLower(title).includes('complet') || safeLower(h.status).includes('complet') || safeLower(h.stage).includes('complet') || safeLower(title).includes('approv') || safeLower(title).includes('reject') || safeLower(title).includes('end')
                   const diffMs = Math.abs(Date.now() - currentDate.getTime())
                   if (diffMs > 0) {
-                    durationText = formatDuration(diffMs) + ' ago'
-                    isLatestDuration = !isTerminal
+                    const formatted = formatDuration(diffMs)
+                    if (formatted) {
+                      durationText = `${formatted} ago`
+                      isLatestDuration = !isTerminal
+                    }
                   }
                 }
               }

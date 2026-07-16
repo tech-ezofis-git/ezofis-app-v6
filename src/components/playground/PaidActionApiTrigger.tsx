@@ -22,7 +22,7 @@ export const PaidActionApiTrigger = ({
       endpoint:
         action?.endpoint ||
         context?.endpoint ||
-        'https://ezagentplayground.onrender.com/apikey.html?id=2',
+        'https://demo.ezofis.com/V6Playground/apikey.html',
       // model: action?.model || context?.model || 'gemini-2.0-flash-exp',
       // provider: action?.provider || context?.provider || 'gemini',
     })

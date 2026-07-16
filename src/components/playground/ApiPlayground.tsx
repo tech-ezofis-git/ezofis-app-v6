@@ -49,7 +49,7 @@ interface ApiPlaygroundProps extends ApiPlaygroundContext {
 }
 
 const DEFAULT_PLAYGROUND_URL =
-  'https://ezagentplayground.onrender.com/apikey.html?id=2'
+  'https://demo.ezofis.com/V6Playground/apikey.html'
 const DEFAULT_API_HOST = 'https://api.ezofis.com'
 
 const DEFAULT_DOCUMENT: Required<
@@ -74,7 +74,28 @@ export const ApiPlayground = ({
   ...props
 }: ApiPlaygroundProps) => {
   const [copiedId, setCopiedId] = useState<string | null>(null)
-  
+
+  const [apiKey, setApiKey] = useState<string>(() => {
+    return localStorage.getItem('playground_api_key') || ''
+  })
+  const [isKeyGenerated, setIsKeyGenerated] = useState<boolean>(() => {
+    return localStorage.getItem('playground_api_key_status') === 'created'
+  })
+  const [showKey, setShowKey] = useState<boolean>(false)
+  const [isKeyGeneratedNow, setIsKeyGeneratedNow] = useState<boolean>(false)
+
+  const generateApiKey = () => {
+    const randomHex = Array.from({ length: 16 }, () =>
+      Math.floor(Math.random() * 16).toString(16)
+    ).join('')
+    const newKey = `ez_live_${randomHex}`
+    localStorage.setItem('playground_api_key', newKey)
+    localStorage.setItem('playground_api_key_status', 'created')
+    setApiKey(newKey)
+    setIsKeyGenerated(true)
+    setIsKeyGeneratedNow(true)
+  }
+
   const config = { ...context, ...props }
   const playgroundUrl =
     config.playgroundUrl || config.endpoint || DEFAULT_PLAYGROUND_URL
@@ -156,210 +177,326 @@ export const ApiPlayground = ({
       {/* Main Content Area */}
       <div className='scrollbar flex-1 space-y-6 overflow-y-auto p-4'>
         {/* Intro */}
-        <div className='space-y-2'>
+        <div className='space-y-2 animate-in fade-in slide-in-from-top-4 duration-300'>
           <p className='text-xs leading-relaxed text-[var(--gray-11)]'>
             {config.description ||
               (endpoints.length > 0
                 ? `This API documentation details how to ${new Intl.ListFormat('en').format(
-                    endpoints.map((e) => e.title.toLowerCase())
-                  )}. You can use this interactive sandbox to test these endpoints.`
+                  endpoints.map((e) => e.title.toLowerCase())
+                )}. You can use this interactive sandbox to test these endpoints.`
                 : 'This API documentation details the available endpoints, required payloads, and interactive sandbox testing environments.')}
           </p>
         </div>
 
-        <div className='space-y-4'>
-            {endpoints.map((endpoint) => {
-              const isExpanded = expandedEndpoints[endpoint.id]
-              
-              const requestHeaders = {
-                Authorization: 'Bearer <YOUR_API_TOKEN>',
-                'Content-Type': 'application/json',
-                ...endpoint.headers,
-              }
-              
-              const fullApiEndpoint = endpoint.apiEndpoint || (endpoint.apiPath.startsWith('http') ? endpoint.apiPath : `${DEFAULT_API_HOST}${endpoint.apiPath}`)
-              
-              const headerLines = Object.entries(requestHeaders)
-                .map(([key, value]) => `  -H "${key}: ${value}" \\`)
-                .join('\n')
+        {/* API Authentication Setup Card */}
+        <div
+          className={cn(
+            'animate-in fade-in slide-in-from-top-4 duration-300 rounded-xl border transition-all shadow-sm',
+            isKeyGenerated
+              ? 'border-[var(--green-3)] bg-[var(--green-1)] text-[var(--green-9)]'
+              : 'border-[var(--orange-3)] bg-[var(--orange-1)] text-[var(--orange-9)] border-dashed',
+            isKeyGenerated && !isKeyGeneratedNow ? 'p-2 px-3' : 'p-4 flex flex-col gap-3.5'
+          )}
+        >
+          {isKeyGenerated && !isKeyGeneratedNow ? (
+            <div className='flex items-center justify-between gap-3'>
+              <div className='flex items-start gap-2.5 min-w-0'>
+                <div className='flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--green-2)] text-[var(--green-9)] font-bold shadow-sm mt-0.5'>
+                  <Icon className='h-3 w-3' name='tabler:check' />
+                </div>
+                <div className='flex flex-col min-w-0 gap-0.5'>
+                  <span className='text-xs font-bold text-[var(--gray-12)]  tracking-wider'>
+                    API Key
+                  </span>
+                  <span className='inline-flex items-center gap-1 rounded bg-[var(--green-2)] border border-[var(--green-3)] px-1.5 py-0.5 text-[9px] font-extrabold uppercase text-[var(--green-9)] tracking-wide shadow-sm w-fit'>
+                    Setup Completed
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={generateApiKey}
+                className='inline-flex items-center justify-center gap-1 cursor-pointer rounded border-none bg-[var(--gray-2)] text-[var(--gray-12)] hover:bg-[var(--gray-3)] hover:text-[var(--gray-13)] px-2.5 py-1.5 text-[9px] font-extrabold uppercase shadow-sm transition-all active:scale-95 duration-200 shrink-0'
+              >
+                <Icon className='h-3 w-3' name='tabler:refresh' />
+                Regenerate
+              </button>
+            </div>
+          ) : (
+            <div className='flex items-start gap-3'>
+              <div className={cn(
+                'flex h-7 w-7 shrink-0 items-center justify-center rounded-lg shadow-sm font-bold',
+                isKeyGenerated ? 'bg-[var(--green-2)] text-[var(--green-9)]' : 'bg-[var(--orange-2)] text-[var(--orange-9)]'
+              )}>
+                <Icon
+                  className='h-4 w-4'
+                  name={isKeyGenerated ? 'tabler:circle-check' : 'tabler:key'}
+                />
+              </div>
+              <div className='flex-1 space-y-2 min-w-0'>
+                <div className='flex items-center justify-between gap-2 flex-wrap'>
+                  <h4 className='text-[11px] font-extrabold uppercase tracking-wider text-[var(--gray-12)]'>
+                    {isKeyGenerated ? 'Authentication Setup Active' : 'Authentication Required'}
+                  </h4>
+                  {isKeyGenerated && (
+                    <span className='inline-flex items-center gap-1 rounded bg-[var(--green-2)] border border-[var(--green-3)] px-1.5 py-0.5 text-[9px] font-extrabold uppercase text-[var(--green-9)] tracking-wide shadow-sm'>
+                      <Icon className='h-3 w-3' name='tabler:check' />
+                      Step Completed
+                    </span>
+                  )}
+                </div>
+                <p className='text-xs text-[var(--gray-11)] leading-relaxed'>
+                  {isKeyGenerated
+                    ? 'Your sandbox API key has been created successfully. Copy it now, as it will be hidden for security once you close this panel.'
+                    : 'You must generate a sandbox API key to authorize the interactive sandbox. This token will act as a Bearer authorization token.'
+                  }
+                </p>
 
-              const curlCode = endpoint.requestPayload
-                ? `curl -X ${endpoint.method} ${fullApiEndpoint} \\\n${headerLines}\n  -d '${stringifyJson(endpoint.requestPayload).replace(/\n/g, '\n  ')}'`
-                : `curl -X ${endpoint.method} ${fullApiEndpoint} \\\n${headerLines}`
+                {isKeyGenerated && (
+                  <div className='flex flex-col gap-1.5'>
+                    <div className='flex items-center gap-2 mt-1 bg-surface border border-[var(--gray-3)] rounded-lg px-2.5 py-1.5 font-mono text-[11px] max-w-full overflow-hidden shadow-inner'>
+                      <span className='text-[var(--gray-10)] select-none shrink-0 font-bold'>Token:</span>
+                      <span className='flex-1 font-semibold text-[var(--gray-13)] truncate break-all'>
+                        {showKey ? apiKey : 'ez_live_••••••••••••••••'}
+                      </span>
+                      <div className='flex items-center gap-1 shrink-0'>
+                        <button
+                          className='p-1 text-[var(--gray-9)] hover:text-[var(--gray-12)] hover:bg-[var(--gray-2)] rounded transition-colors border-none bg-transparent cursor-pointer flex items-center justify-center'
+                          onClick={() => setShowKey(!showKey)}
+                          title={showKey ? 'Hide Key' : 'Show Key'}
+                        >
+                          <Icon className='h-3.5 w-3.5' name={showKey ? 'tabler:eye-off' : 'tabler:eye'} />
+                        </button>
+                        <button
+                          className='p-1 text-[var(--gray-9)] hover:text-[var(--gray-12)] hover:bg-[var(--gray-2)] rounded transition-colors border-none bg-transparent cursor-pointer flex items-center justify-center'
+                          onClick={() => copyToClipboard(apiKey, 'generated-api-key')}
+                          title='Copy API Key'
+                        >
+                          <Icon
+                            className='h-3.5 w-3.5'
+                            name={copiedId === 'generated-api-key' ? 'tabler:check' : 'tabler:copy'}
+                          />
+                        </button>
+                      </div>
+                    </div>
+                    <span className='text-[10px] text-[var(--orange-9)] font-medium flex items-center gap-1'>
+                      <Icon className='h-3.5 w-3.5' name='tabler:alert-triangle' />
+                      For security, you cannot view or copy this key after closing this view.
+                    </span>
+                  </div>
+                )}
 
-              return (
-                <div key={endpoint.id} className='overflow-hidden rounded-xl border border-[var(--gray-3)] bg-surface shadow-sm'>
-                  {/* Accordion Header */}
+                <div className='flex items-center gap-2 pt-1.5'>
                   <button
-                    className='flex w-full cursor-pointer items-center justify-between border-none bg-[var(--gray-1)] px-4 py-3 text-left transition-colors hover:bg-[var(--gray-2)]'
-                    onClick={() => toggleEndpoint(endpoint.id)}
+                    onClick={generateApiKey}
+                    className={cn(
+                      'inline-flex items-center justify-center gap-1.5 cursor-pointer rounded-lg border-none px-3.5 py-1.5 text-[11px] font-bold shadow-sm transition-all active:scale-95 duration-200',
+                      isKeyGenerated
+                        ? 'bg-[var(--gray-2)] text-[var(--gray-12)] hover:bg-[var(--gray-3)] hover:text-[var(--gray-13)]'
+                        : 'bg-[var(--primary-9)] text-white hover:bg-[var(--primary-10)]'
+                    )}
                   >
-                    <div className='flex flex-1 min-w-0 flex-col gap-1 pr-4'>
-                      <div className='flex items-center gap-2'>
-                        <span className={cn(
-                          'rounded border px-1.5 py-0.5 text-[10px] font-extrabold uppercase shrink-0',
-                          endpoint.method === 'GET' ? 'border-[var(--blue-3)] bg-[var(--blue-1)] text-[var(--blue-9)]' :
-                          endpoint.method === 'POST' ? 'border-[var(--green-3)] bg-[var(--green-1)] text-[var(--green-9)]' :
-                          endpoint.method === 'PUT' ? 'border-[var(--orange-3)] bg-[var(--orange-1)] text-[var(--orange-9)]' :
-                          endpoint.method === 'DELETE' ? 'border-[var(--red-3)] bg-[var(--red-1)] text-[var(--red-9)]' :
-                          'border-[var(--gray-3)] bg-[var(--gray-2)] text-[var(--gray-11)]'
-                        )}>
-                          {endpoint.method}
-                        </span>
-                        <span className='font-bold text-[var(--gray-13)] text-xs truncate'>
-                          {endpoint.title}
-                        </span>
-                      </div>
-                      {!isExpanded && endpoint.description && (
-                        <span className='text-[10px] text-[var(--gray-11)] truncate hover:whitespace-normal hover:overflow-visible'>
-                          {endpoint.description}
-                        </span>
-                      )}
-                    </div>
-                    <div className='flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-[var(--gray-3)]'>
-                      <Icon
-                        className={cn('h-4 w-4 text-[var(--gray-11)] transition-transform duration-300', isExpanded ? 'rotate-180' : 'rotate-0')}
-                        name='tabler:chevron-down'
-                      />
-                    </div>
+                    <Icon className='h-3.5 w-3.5' name={isKeyGenerated ? 'tabler:refresh' : 'tabler:key'} />
+                    {isKeyGenerated ? 'Regenerate API Key' : 'Generate API Key'}
                   </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
 
-                  {/* Accordion Content */}
-                  {isExpanded && (
-                    <div className='animate-in slide-in-from-top-2 fade-in space-y-6 border-t border-[var(--gray-3)] p-4 duration-300'>
-                      
-                      {endpoint.description && (
-                        <p className='text-xs leading-relaxed text-[var(--gray-11)]'>
-                          {endpoint.description}
-                        </p>
-                      )}
+        <div className='space-y-4'>
+          {endpoints.map((endpoint) => {
+            const isExpanded = expandedEndpoints[endpoint.id]
 
-                      {/* Full Endpoint Details */}
-                      <div className='space-y-2.5'>
-                        <div className='flex items-center justify-between'>
-                          <h4 className='text-[10px] font-bold tracking-wider text-[var(--gray-11)] uppercase'>
-                            Endpoint URL
-                          </h4>
-                          <a
-                            className='decoration-none inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border-none bg-[var(--primary-9)] px-3 py-1.5 text-[11px] font-bold text-white shadow-sm transition-all hover:bg-[var(--primary-10)] active:scale-95'
-                            rel='noopener noreferrer'
-                            target='_blank'
-                            href={playgroundUrl}
-                          >
-                            <Icon className='h-3.5 w-3.5' name='tabler:external-link' />
-                            Try it out
-                          </a>
-                        </div>
-                        <div className='flex items-start gap-2 rounded-lg border border-[var(--gray-3)] bg-[var(--gray-1)] px-3 py-2 text-xs'>
-                          <span className='flex-1 break-all font-mono font-semibold text-[var(--gray-12)] mt-0.5'>
-                            {fullApiEndpoint}
-                          </span>
-                          <button
-                            className='flex cursor-pointer items-center justify-center rounded border-none bg-transparent p-1 text-[var(--gray-9)] transition-colors hover:bg-[var(--gray-3)] hover:text-[var(--gray-12)]'
-                            onClick={() => copyToClipboard(fullApiEndpoint, `endpoint-${endpoint.id}`)}
-                            title='Copy Endpoint'
-                          >
-                            <Icon
-                              className='h-3.5 w-3.5'
-                              name={copiedId === `endpoint-${endpoint.id}` ? 'tabler:check' : 'tabler:copy'}
-                            />
-                          </button>
-                        </div>
-                      </div>
+            const requestHeaders = {
+              Authorization: apiKey ? `Bearer ${apiKey}` : 'Bearer <YOUR_API_TOKEN>',
+              'Content-Type': 'application/json',
+              ...endpoint.headers,
+            }
 
-                      {/* Headers */}
-                      <div className='space-y-2'>
+            const fullApiEndpoint = endpoint.apiEndpoint || (endpoint.apiPath.startsWith('http') ? endpoint.apiPath : `${DEFAULT_API_HOST}${endpoint.apiPath}`)
+
+            const headerLines = Object.entries(requestHeaders)
+              .map(([key, value]) => `  -H "${key}: ${value}" \\`)
+              .join('\n')
+
+            const curlCode = endpoint.requestPayload
+              ? `curl -X ${endpoint.method} ${fullApiEndpoint} \\\n${headerLines}\n  -d '${stringifyJson(endpoint.requestPayload).replace(/\n/g, '\n  ')}'`
+              : `curl -X ${endpoint.method} ${fullApiEndpoint} \\\n${headerLines}`
+
+            return (
+              <div key={endpoint.id} className='overflow-hidden rounded-xl border border-[var(--gray-3)] bg-surface shadow-sm'>
+                {/* Accordion Header */}
+                <button
+                  className='flex w-full cursor-pointer items-center justify-between border-none bg-[var(--gray-1)] px-4 py-3 text-left transition-colors hover:bg-[var(--gray-2)]'
+                  onClick={() => toggleEndpoint(endpoint.id)}
+                >
+                  <div className='flex flex-1 min-w-0 flex-col gap-1 pr-4'>
+                    <div className='flex items-center gap-2'>
+                      <span className={cn(
+                        'rounded border px-1.5 py-0.5 text-[10px] font-extrabold uppercase shrink-0',
+                        endpoint.method === 'GET' ? 'border-[var(--blue-3)] bg-[var(--blue-1)] text-[var(--blue-9)]' :
+                          endpoint.method === 'POST' ? 'border-[var(--green-3)] bg-[var(--green-1)] text-[var(--green-9)]' :
+                            endpoint.method === 'PUT' ? 'border-[var(--orange-3)] bg-[var(--orange-1)] text-[var(--orange-9)]' :
+                              endpoint.method === 'DELETE' ? 'border-[var(--red-3)] bg-[var(--red-1)] text-[var(--red-9)]' :
+                                'border-[var(--gray-3)] bg-[var(--gray-2)] text-[var(--gray-11)]'
+                      )}>
+                        {endpoint.method}
+                      </span>
+                      <span className='font-bold text-[var(--gray-13)] text-xs truncate'>
+                        {endpoint.title}
+                      </span>
+                    </div>
+                    {!isExpanded && endpoint.description && (
+                      <span className='text-[10px] text-[var(--gray-11)] truncate hover:whitespace-normal hover:overflow-visible'>
+                        {endpoint.description}
+                      </span>
+                    )}
+                  </div>
+                  <div className='flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-[var(--gray-3)]'>
+                    <Icon
+                      className={cn('h-4 w-4 text-[var(--gray-11)] transition-transform duration-300', isExpanded ? 'rotate-180' : 'rotate-0')}
+                      name='tabler:chevron-down'
+                    />
+                  </div>
+                </button>
+
+                {/* Accordion Content */}
+                {isExpanded && (
+                  <div className='animate-in slide-in-from-top-2 fade-in space-y-6 border-t border-[var(--gray-3)] p-4 duration-300'>
+
+                    {endpoint.description && (
+                      <p className='text-xs leading-relaxed text-[var(--gray-11)]'>
+                        {endpoint.description}
+                      </p>
+                    )}
+
+                    {/* Full Endpoint Details */}
+                    <div className='space-y-2.5'>
+                      <div className='flex items-center justify-between'>
                         <h4 className='text-[10px] font-bold tracking-wider text-[var(--gray-11)] uppercase'>
-                          Headers
+                          Endpoint URL
                         </h4>
-                        <div className='overflow-hidden rounded-lg border border-[var(--gray-3)] bg-surface text-xs'>
-                          <div className='grid grid-cols-3 border-b border-[var(--gray-3)] bg-[var(--gray-1)] px-3 py-1.5 text-[9px] font-bold tracking-wider text-[var(--gray-11)] uppercase'>
-                            <span>Header</span>
-                            <span className='col-span-2'>Value</span>
-                          </div>
-                          {Object.entries(requestHeaders).map(([key, value], index) => (
-                            <div
-                              className={cn(
-                                'grid grid-cols-3 px-3 py-2 font-mono text-[11px]',
-                                index < Object.entries(requestHeaders).length - 1 &&
-                                'border-b border-[var(--gray-3)]',
-                              )}
-                              key={key}
-                            >
-                              <span className='font-bold text-[var(--gray-12)]'>
-                                {key}
-                              </span>
-                              <span className='col-span-2 text-[var(--gray-11)]'>
-                                {value}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
+                        <a
+                          className='decoration-none inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border-none bg-[var(--primary-9)] px-3 py-1.5 text-[11px] font-bold text-white shadow-sm transition-all hover:bg-[var(--primary-10)] active:scale-95'
+                          rel='noopener noreferrer'
+                          target='_blank'
+                          href={playgroundUrl}
+                        >
+                          <Icon className='h-3.5 w-3.5' name='tabler:external-link' />
+                          Try it out
+                        </a>
                       </div>
+                      <div className='flex items-start gap-2 rounded-lg border border-[var(--gray-3)] bg-[var(--gray-1)] px-3 py-2 text-xs'>
+                        <span className='flex-1 break-all font-mono font-semibold text-[var(--gray-12)] mt-0.5'>
+                          {fullApiEndpoint}
+                        </span>
+                        <button
+                          className='flex cursor-pointer items-center justify-center rounded border-none bg-transparent p-1 text-[var(--gray-9)] transition-colors hover:bg-[var(--gray-3)] hover:text-[var(--gray-12)]'
+                          onClick={() => copyToClipboard(fullApiEndpoint, `endpoint-${endpoint.id}`)}
+                          title='Copy Endpoint'
+                        >
+                          <Icon
+                            className='h-3.5 w-3.5'
+                            name={copiedId === `endpoint-${endpoint.id}` ? 'tabler:check' : 'tabler:copy'}
+                          />
+                        </button>
+                      </div>
+                    </div>
 
-                      {/* Request Payload */}
-                      {endpoint.requestPayload && (
-                        <div className='relative space-y-2'>
-                          <div className='flex items-center justify-between'>
-                            <h4 className='text-[10px] font-bold tracking-wider text-[var(--gray-11)] uppercase'>
-                              Request Payload
-                            </h4>
-                            <button
-                              className='flex cursor-pointer items-center gap-1 border-none bg-transparent text-[10px] font-bold text-[var(--primary-9)] transition-colors hover:text-[var(--primary-10)]'
-                              onClick={() => copyToClipboard(stringifyJson(endpoint.requestPayload), `payload-${endpoint.id}`)}
-                            >
-                              <Icon
-                                className='h-3.5 w-3.5'
-                                name={copiedId === `payload-${endpoint.id}` ? 'tabler:check' : 'tabler:copy'}
-                              />
-                              <span>{copiedId === `payload-${endpoint.id}` ? 'Copied!' : 'Copy'}</span>
-                            </button>
-                          </div>
-                          <pre className='scrollbar select-all overflow-x-auto whitespace-pre-wrap rounded-lg border border-[var(--gray-12)] bg-[var(--gray-13)] p-3 font-mono text-[11px] leading-relaxed text-[var(--green-9)]'>
-                            {stringifyJson(endpoint.requestPayload)}
-                          </pre>
+                    {/* Headers */}
+                    <div className='space-y-2'>
+                      <h4 className='text-[10px] font-bold tracking-wider text-[var(--gray-11)] uppercase'>
+                        Headers
+                      </h4>
+                      <div className='overflow-hidden rounded-lg border border-[var(--gray-3)] bg-surface text-xs'>
+                        <div className='grid grid-cols-3 border-b border-[var(--gray-3)] bg-[var(--gray-1)] px-3 py-1.5 text-[9px] font-bold tracking-wider text-[var(--gray-11)] uppercase'>
+                          <span>Header</span>
+                          <span className='col-span-2'>Value</span>
                         </div>
-                      )}
+                        {Object.entries(requestHeaders).map(([key, value], index) => (
+                          <div
+                            className={cn(
+                              'grid grid-cols-3 px-3 py-2 font-mono text-[11px]',
+                              index < Object.entries(requestHeaders).length - 1 &&
+                              'border-b border-[var(--gray-3)]',
+                            )}
+                            key={key}
+                          >
+                            <span className='font-bold text-[var(--gray-12)]'>
+                              {key}
+                            </span>
+                            <span className='col-span-2 text-[var(--gray-11)]'>
+                              {value}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
 
-                      {/* cURL Snippet */}
+                    {/* Request Payload */}
+                    {endpoint.requestPayload && (
                       <div className='relative space-y-2'>
                         <div className='flex items-center justify-between'>
                           <h4 className='text-[10px] font-bold tracking-wider text-[var(--gray-11)] uppercase'>
-                            cURL Example
+                            Request Payload
                           </h4>
                           <button
                             className='flex cursor-pointer items-center gap-1 border-none bg-transparent text-[10px] font-bold text-[var(--primary-9)] transition-colors hover:text-[var(--primary-10)]'
-                            onClick={() => copyToClipboard(curlCode, `curl-${endpoint.id}`)}
+                            onClick={() => copyToClipboard(stringifyJson(endpoint.requestPayload), `payload-${endpoint.id}`)}
                           >
                             <Icon
                               className='h-3.5 w-3.5'
-                              name={copiedId === `curl-${endpoint.id}` ? 'tabler:check' : 'tabler:copy'}
+                              name={copiedId === `payload-${endpoint.id}` ? 'tabler:check' : 'tabler:copy'}
                             />
-                            <span>{copiedId === `curl-${endpoint.id}` ? 'Copied!' : 'Copy'}</span>
+                            <span>{copiedId === `payload-${endpoint.id}` ? 'Copied!' : 'Copy'}</span>
                           </button>
                         </div>
-                        <pre className='scrollbar select-all overflow-x-auto whitespace-pre-wrap rounded-lg border border-[var(--gray-12)] bg-[var(--gray-13)] p-3 font-mono text-[11px] leading-relaxed text-[var(--blue-9)]'>
-                          {curlCode}
+                        <pre className='scrollbar select-all overflow-x-auto whitespace-pre-wrap rounded-lg border border-[var(--gray-12)] bg-[var(--gray-13)] p-3 font-mono text-[11px] leading-relaxed text-[var(--green-9)]'>
+                          {stringifyJson(endpoint.requestPayload)}
                         </pre>
                       </div>
+                    )}
 
-                      {/* Response Snippet */}
-                      {endpoint.responsePayload && (
-                        <div className='relative space-y-2'>
-                          <h4 className='text-[10px] font-bold tracking-wider text-[var(--gray-11)] uppercase'>
-                            Response Payload
-                          </h4>
-                          <pre className='scrollbar overflow-x-auto whitespace-pre-wrap rounded-lg border border-[var(--gray-12)] bg-[var(--gray-13)] p-3 font-mono text-[11px] leading-relaxed text-[var(--orange-9)]'>
-                            {stringifyJson(endpoint.responsePayload)}
-                          </pre>
-                        </div>
-                      )}
+                    {/* cURL Snippet */}
+                    <div className='relative space-y-2'>
+                      <div className='flex items-center justify-between'>
+                        <h4 className='text-[10px] font-bold tracking-wider text-[var(--gray-11)] uppercase'>
+                          cURL Example
+                        </h4>
+                        <button
+                          className='flex cursor-pointer items-center gap-1 border-none bg-transparent text-[10px] font-bold text-[var(--primary-9)] transition-colors hover:text-[var(--primary-10)]'
+                          onClick={() => copyToClipboard(curlCode, `curl-${endpoint.id}`)}
+                        >
+                          <Icon
+                            className='h-3.5 w-3.5'
+                            name={copiedId === `curl-${endpoint.id}` ? 'tabler:check' : 'tabler:copy'}
+                          />
+                          <span>{copiedId === `curl-${endpoint.id}` ? 'Copied!' : 'Copy'}</span>
+                        </button>
+                      </div>
+                      <pre className='scrollbar select-all overflow-x-auto whitespace-pre-wrap rounded-lg border border-[var(--gray-12)] bg-[var(--gray-13)] p-3 font-mono text-[11px] leading-relaxed text-[var(--blue-9)]'>
+                        {curlCode}
+                      </pre>
                     </div>
-                  )}
-                </div>
-              )
-            })}
-          </div>
+
+                    {/* Response Snippet */}
+                    {endpoint.responsePayload && (
+                      <div className='relative space-y-2'>
+                        <h4 className='text-[10px] font-bold tracking-wider text-[var(--gray-11)] uppercase'>
+                          Response Payload
+                        </h4>
+                        <pre className='scrollbar overflow-x-auto whitespace-pre-wrap rounded-lg border border-[var(--gray-12)] bg-[var(--gray-13)] p-3 font-mono text-[11px] leading-relaxed text-[var(--orange-9)]'>
+                          {stringifyJson(endpoint.responsePayload)}
+                        </pre>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
       </div>
     </div>
   )
