@@ -136,6 +136,25 @@ const deleteFormEntry = async (fId: string, eId: string) => {
   return response
 }
 
+const getFormEntries = async (formId: string) => {
+  const response: any = { data: null, error: '' }
+  try {
+    const store = authUserStore.getState()
+    const tenantId = store.session?.tenantId || ''
+    const { data, status } = await axiosV6.get(`/form/${formId}/entry/all`, {
+      headers: {
+        'X-Tenant-Id': tenantId,
+      },
+    })
+    if (status !== 200) throw new Error('Invalid status code')
+    response.data = data
+  } catch (e: any) {
+    console.error(e)
+    response.error = e.message || 'Error fetching form entries'
+  }
+  return response
+}
+
 const getForms = async (payload: any) => {
   const response: any = { data: null, error: '' }
   try {
@@ -209,6 +228,7 @@ const formApi = {
   createForm,
   deleteForm,
   deleteFormEntry,
+  getFormEntries,
   listAllForms,
   updateForm,
   uploadMasterFile,

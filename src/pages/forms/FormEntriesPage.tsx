@@ -173,6 +173,25 @@ const FormEntriesPage = () => {
     },
   })
 
+  // Fetch form entries from backend API
+  const {
+    data: fetchedEntries,
+    isError: isEntriesError,
+    isLoading: isEntriesLoading,
+    refetch: refetchEntries,
+  } = useQuery({
+    enabled: !!formId,
+    queryKey: ['forms', 'entries', formId],
+    queryFn: async () => {
+      const { data, error } = await formApi.getFormEntries(formId)
+      if (error) throw new Error(error)
+      if (data && typeof data === 'object' && Array.isArray(data.entries)) {
+        return data.entries
+      }
+      return Array.isArray(data) ? data : []
+    },
+  })
+
   const panels = useMemo(() => {
     if (!formData) return []
     let json = formData._json || formData.formJson
@@ -219,13 +238,59 @@ const FormEntriesPage = () => {
     }
   }, [fields, initialVisibilitySet, setVisibilityState])
 
-  // Populate dynamic mock data on load
+  // Synchronize fetched entries from backend with component state
   useEffect(() => {
-    if (fields.length > 0 && entries.length === 0 && !isLoading) {
-      const mock = generateDummyEntries(fields, 5)
-      setEntries(mock)
+    if (fetchedEntries && Array.isArray(fetchedEntries)) {
+      const parsedEntries = fetchedEntries.map((e: any) => {
+        const metadataKeys = [
+          'itemId',
+          'id',
+          'uid',
+          'createdAt',
+          'modifiedAt',
+          'createdBy',
+          'modifiedBy',
+          'isDeleted',
+          'todayTask',
+          'isMarked',
+          'ValidFrom',
+          'ValidTo',
+        ]
+        // Extract flat dynamic field values from API item root into values object
+        let values: Record<string, any> = {}
+        if (e.values) {
+          if (typeof e.values === 'string') {
+            try {
+              values = JSON.parse(e.values)
+            } catch (err) {
+              console.error('Failed to parse entry values:', err)
+            }
+          } else {
+            values = e.values
+          }
+        } else {
+          Object.keys(e).forEach((key) => {
+            if (!metadataKeys.includes(key)) {
+              values[key] = e[key]
+            }
+          })
+        }
+
+        return {
+          id: e.itemId ? `Entry #${e.itemId}` : e.id || e.uid || `Entry #${Math.random()}`,
+          createdAt: e.createdAt || new Date().toISOString(),
+          createdBy: e.createdBy || 'unknown@ezofis.com',
+          isDeleted: !!e.isDeleted,
+          values,
+        }
+      })
+
+      const active = parsedEntries.filter((e: any) => !e.isDeleted)
+      const trashed = parsedEntries.filter((e: any) => e.isDeleted)
+      setEntries(active)
+      setTrashEntries(trashed)
     }
-  }, [fields, isLoading])
+  }, [fetchedEntries])
 
   const handleFieldChange = (fieldId: string, val: any) => {
     setEditValues((prev) => ({ ...prev, [fieldId]: val }))
@@ -528,8 +593,11 @@ const FormEntriesPage = () => {
     },
   })
 
+  const isPageLoading = isLoading || isEntriesLoading
+  const isPageError = isError || isEntriesError
+
   // Skeleton Loader for initial fetching
-  if (isLoading) {
+  if (isPageLoading) {
     return (
       <div className='bg-gray-50/20 flex h-full flex-col p-8'>
         <div className='mb-6 flex items-center justify-between border-b border-gray-2 pb-4'>
@@ -545,7 +613,7 @@ const FormEntriesPage = () => {
     )
   }
 
-  if (isError) {
+  if (isPageError) {
     return (
       <div className='bg-gray-50/20 flex h-full flex-col items-center justify-center p-8'>
         <div className='mb-4 flex size-14 items-center justify-center rounded-2xl border border-red-3 bg-red-2 text-red-11'>
@@ -560,7 +628,10 @@ const FormEntriesPage = () => {
           className='mt-6'
           icon='lucide:rotate-cw'
           label='Retry Loading'
-          onClick={() => refetch()}
+          onClick={() => {
+            refetch()
+            refetchEntries()
+          }}
         />
       </div>
     )
@@ -1038,12 +1109,15 @@ const FormEntriesPage = () => {
           <div className='min-h-0 flex-1 overflow-hidden'>
             <DataTable
               actions={[]}
-              isLoading={isLoading}
-              isReLoading={isLoading}
+              isLoading={isPageLoading}
+              isReLoading={isPageLoading}
               pageSize={pageSize}
               stickyHeader={true}
               table={table}
-              onReload={refetch}
+              onReload={() => {
+                refetch()
+                refetchEntries()
+              }}
             />
           </div>
           <Pagination
