@@ -40,6 +40,8 @@ interface Props<TData> extends ComponentProps<'div'> {
   hideTableActions?: boolean
   hideExport?: boolean
   hideReload?: boolean
+  hideSearch?: boolean
+  hideFilters?: boolean
   onReload: () => void
   onRowSizeChange: (rowSize: RowSize) => void
 }
@@ -53,6 +55,8 @@ const TableActionBar = <TData,>({
   hideTableActions = false,
   hideExport = false,
   hideReload = false,
+  hideSearch = false,
+  hideFilters = false,
   isReloading,
   rowSize,
   table,
@@ -90,8 +94,8 @@ const TableActionBar = <TData,>({
             </div>
           )}
 
-          <TableSearch table={table} />
-          <TableFilters table={table} />
+          {!hideSearch && <TableSearch table={table} />}
+          {!hideFilters && <TableFilters table={table} />}
           {!hideGrouping && <TableGroup table={table} />}
 
           {!compact && <div className='flex-1' />}

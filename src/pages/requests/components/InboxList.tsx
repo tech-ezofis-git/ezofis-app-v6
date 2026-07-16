@@ -1135,7 +1135,7 @@ const InboxList: React.FC<InboxListProps> = ({
               component: (
                 <div className='flex cursor-pointer items-center gap-1 rounded-lg border border-[var(--border-default)] bg-[var(--gray-1)] p-1'>
                   <button
-                    className={`cursor-pointer rounded-md px-3 py-1.5 transition-all duration-200 ${viewMode === 'grid'
+                    className={`cursor-pointer rounded-md px-2 py-1 transition-all duration-200 ${viewMode === 'grid'
                         ? 'bg-surface text-[var(--primary-9)] shadow-sm'
                         : 'text-[var(--gray-10)] hover:text-[var(--gray-12)]'
                       }`}
@@ -1144,7 +1144,7 @@ const InboxList: React.FC<InboxListProps> = ({
                     <Icon className='size-4' name='tabler:layout-grid' />
                   </button>
                   <button
-                    className={`cursor-pointer rounded-md px-3 py-1.5 transition-all duration-200 ${viewMode === 'table'
+                    className={`cursor-pointer rounded-md px-2 py-1 transition-all duration-200 ${viewMode === 'table'
                         ? 'bg-surface text-[var(--primary-9)] shadow-sm'
                         : 'text-[var(--gray-10)] hover:text-[var(--gray-12)]'
                       }`}
@@ -1172,6 +1172,8 @@ const InboxList: React.FC<InboxListProps> = ({
                 hideGrouping={true}
                 hideExport={true}
                 hideReload={true}
+                hideSearch={true}
+                hideFilters={true}
                 isLoading={isLoading}
                 isReLoading={isRefetching}
                 pageSize={pageSize}

@@ -3143,25 +3143,7 @@ const Overview = (props: any) => {
                                   {attachmentData.length}
                                 </span>
                               )}
-                            {tab.id === 'line_items' &&
-                              (lineItems.length > 0 ||
-                                poLineItems.length > 0 ||
-                                agentData?.debug?.[
-                                  'Side-by-side Line Item matching'
-                                ]?.length > 0 ||
-                                agentData?.line_items?.length > 0 ||
-                                agentData?.['Extracted Invoice JSON']
-                                  ?.invoice_items?.length > 0) && (
-                                <span className='rounded bg-[var(--gray-2)] px-1.5 py-0.5 text-[10px] text-[var(--gray-11)]'>
-                                  {(lineItems.length ||
-                                    agentData?.debug?.[
-                                      'Side-by-side Line Item matching'
-                                    ]?.length ||
-                                    agentData?.line_items?.length ||
-                                    agentData?.['Extracted Invoice JSON']
-                                      ?.invoice_items?.length || 0) + (poLineItems.length || 0)}
-                                </span>
-                              )}
+
                             {tab.id === 'comments' &&
                               commentsData &&
                               commentsData.length > 0 && (
@@ -4077,7 +4059,7 @@ const Overview = (props: any) => {
                               <div className='flex items-center justify-between'>
                                 <h4 className='text-xs font-bold tracking-tight text-[var(--gray-13)] flex items-center gap-1.5'>
                                   <Icon className='h-4 w-4 text-[var(--orange-9)]' name='tabler:shopping-cart' />
-                                  PO Line Items 
+                                  PO Line Items ({poLineItems.length})
                                 </h4>
                               </div>
                               <div className='overflow-hidden rounded-xl border border-[var(--gray-3)] bg-surface relative'>
@@ -4113,7 +4095,7 @@ const Overview = (props: any) => {
                             <div className='flex items-center justify-between'>
                               <h4 className='text-xs font-bold tracking-tight text-[var(--gray-13)] flex items-center gap-1.5'>
                                 <Icon className='h-4 w-4 text-[var(--primary-9)]' name='tabler:file-invoice' />
-                                Invoice Line Items
+                                Invoice Line Items ({lineItems.length})
                               </h4>
                             </div>
                             <div className='overflow-hidden rounded-xl border border-[var(--gray-3)] bg-surface relative'>

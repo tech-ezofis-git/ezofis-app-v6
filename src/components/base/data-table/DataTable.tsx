@@ -48,6 +48,8 @@ interface Props<TData> extends ComponentProps<'table'> {
   hideActionBar?: boolean
   hideExport?: boolean
   hideReload?: boolean
+  hideSearch?: boolean
+  hideFilters?: boolean
   /** Hides "N Items" on group rows but keeps the same row spacing. */
   hideGroupItemCountOnHover?: boolean
   isLoading?: boolean
@@ -108,6 +110,8 @@ const DataTable = <TData,>({
   hideActionBar = false,
   hideExport = false,
   hideReload = false,
+  hideSearch = false,
+  hideFilters = false,
   hideGrouping = false,
   hideGroupItemCountOnHover = false,
   isLoading,
@@ -516,6 +520,8 @@ const DataTable = <TData,>({
           hideGrouping={hideGrouping}
           hideExport={hideExport}
           hideReload={hideReload}
+          hideSearch={hideSearch}
+          hideFilters={hideFilters}
           isReloading={isReLoading}
           rowSize={rowSize}
           table={table}
