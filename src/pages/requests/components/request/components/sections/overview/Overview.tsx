@@ -699,6 +699,81 @@ const getSupplierValidationDisplay = (agentData: any, formModel: any) => {
   }
 }
 
+const FALLBACK_PO_COLS_MAP: Record<string, string> = {
+  '2z2Rh5MpXEaiHSaWlMThr': 'Line',
+  'eEpfRP5JIbS8aFle8J615': 'Part Number',
+  '8nVIWBIeCFM6wgC7JOlzL': 'Class',
+  'ZpY63z5PRSjClud4PDpKV': 'Description',
+  'hy5p0sTmR4l7MkX5sWIuE': 'UOM',
+  'ja59TImIXkfIm_EIy2dxJ': 'Tax Rate',
+  'eewd3Jx-Kx1ub1ZcjBt7L': 'Qty',
+  'STqVWjmFqexaezHTRAkFG': 'Rate',
+  'gRh9236whOB_ri9TtFaKq': 'Amount',
+  'Ywg9Bc_J8IyRglLcnrAWl': 'Date',
+  'kXPikEE9xLRxtpE9lGwFo': 'Weight',
+  'JXmxAE-HiQMv119GGn5N6': 'Ref Code'
+}
+
+const getPoTableColumnsMapping = (formJson: any) => {
+  const colMap = new Map<string, string>()
+  if (!formJson) return colMap
+
+  let form = formJson
+  if (typeof form === 'string') {
+    try {
+      form = JSON.parse(form)
+      if (form && typeof form === 'object' && 'formJson' in form) {
+        const inner = JSON.parse(form.formJson)
+        if (inner && typeof inner === 'object') {
+          form = inner
+        }
+      }
+    } catch (e) {
+      return colMap
+    }
+  }
+
+  if (!form || typeof form !== 'object') return colMap
+
+  const controls: any[] = []
+  const append = (list: any) => {
+    if (Array.isArray(list)) controls.push(...list)
+  }
+
+  append(form.controllist)
+  append(form.controlList)
+
+  const panels = [
+    ...(Array.isArray(form.panels) ? form.panels : []),
+    ...(Array.isArray(form.secondaryPanels) ? form.secondaryPanels : []),
+  ]
+
+  panels.forEach((panel) => {
+    append(panel?.controlList)
+    append(panel?.controllist)
+    append(panel?.fields)
+  })
+
+  const poControl = controls.find((c: any) => {
+    const id = c?.id || c?.jsonId || c?.name || ''
+    return String(id).toLowerCase().startsWith('awai')
+  })
+
+  if (poControl) {
+    const cols =
+      poControl?.settings?.specific?.tableColumns ||
+      poControl?.tableColumns ||
+      []
+    cols.forEach((col: any) => {
+      if (col?.id && col?.label) {
+        colMap.set(col.id, col.label)
+      }
+    })
+  }
+
+  return colMap
+}
+
 // --- Components ---
 
 const AnalysisCard = ({
@@ -1692,6 +1767,235 @@ const Overview = (props: any) => {
   } = useComments(workflowId, resolvedInstanceId, true)
 
   const [lineItems, setLineItems] = useState<any[]>([])
+
+  // --- PO Line Items Setup ---
+  const parsedFormData = useMemo(() => {
+    return getParsedFormData(selectedItem)
+  }, [selectedItem])
+
+  const poLineItemsKey = useMemo(() => {
+    let key = formModel ? Object.keys(formModel).find((k) => k.toLowerCase().startsWith('awai')) : null
+    if (key) return key
+
+    if (parsedFormData) {
+      key = Object.keys(parsedFormData).find((k) => k.toLowerCase().startsWith('awai'))
+    }
+    return key || null
+  }, [formModel, parsedFormData])
+
+  const rawPoLineItems = useMemo(() => {
+    if (!poLineItemsKey) return []
+    let val = formModel ? formModel[poLineItemsKey] : undefined
+    if (val === undefined && parsedFormData) {
+      val = parsedFormData[poLineItemsKey]
+    }
+    if (Array.isArray(val)) return val
+    if (typeof val === 'string') {
+      try {
+        const parsed = JSON.parse(val)
+        return Array.isArray(parsed) ? parsed : []
+      } catch {
+        return []
+      }
+    }
+    return []
+  }, [formModel, parsedFormData, poLineItemsKey])
+
+  const poColMap = useMemo(() => {
+    return getPoTableColumnsMapping(selectedWorkflow?.formJson || formDefinition)
+  }, [selectedWorkflow, formDefinition])
+
+  const poLineItems = useMemo(() => {
+    return rawPoLineItems.map((item: any, idx: number) => {
+      const mappedItem: any = {
+        _id: item._id || `po-li-${idx}-${Date.now()}`
+      }
+      
+      Object.entries(item).forEach(([k, v]) => {
+        if (k === '_id') return
+        const label = poColMap.get(k) || FALLBACK_PO_COLS_MAP[k] || k
+        mappedItem[label] = v
+      })
+
+      return mappedItem
+    })
+  }, [rawPoLineItems, poColMap])
+
+  const poDynamicColumns = useMemo(() => {
+    const cols = new Set<string>()
+    
+    poColMap.forEach((label) => {
+      cols.add(label)
+    })
+    
+    Object.values(FALLBACK_PO_COLS_MAP).forEach((label) => {
+      cols.add(label)
+    })
+
+    const activeCols = new Set<string>()
+    poLineItems.forEach((item: any) => {
+      Object.keys(item).forEach((k) => {
+        if (k !== '_id') {
+          activeCols.add(k)
+        }
+      })
+    })
+
+    return Array.from(cols).filter((c) => activeCols.has(c))
+  }, [poLineItems, poColMap])
+
+  const poDynamicWidths = useMemo(() => {
+    if (!poLineItems || poLineItems.length === 0) return [60, 100, 100];
+    const widths: number[] = [];
+
+    const totalsByKey: Record<string, string> = {};
+    poDynamicColumns.forEach((colKey: string) => {
+      const normalizedKey = colKey.toLowerCase()
+      if (normalizedKey.includes('amount') || normalizedKey.includes('total') || normalizedKey === 'price' || normalizedKey === 'rate') {
+        const total = poLineItems.reduce((sum: number, item: any) => {
+          let val = item[colKey] ?? '';
+          const strVal = String(val);
+          const num = Number.parseFloat(strVal.replace(/[^0-9.-]+/g, ''));
+          return sum + (Number.isNaN(num) ? 0 : num);
+        }, 0);
+        const formattedTotal = total.toLocaleString(undefined, { maximumFractionDigits: 2, minimumFractionDigits: 2 });
+        totalsByKey[colKey] = formattedTotal;
+      }
+    });
+
+    poDynamicColumns.forEach((colKey: string, index: number) => {
+      let maxChars = colKey.length;
+      if (colKey.toLowerCase().includes('line')) maxChars = 2;
+      if (colKey.toLowerCase() === 'uom') maxChars = 4;
+      poLineItems.forEach((item: any) => {
+        const val = item[colKey] ?? '';
+        const str = String(val);
+        if (str.length > maxChars) maxChars = str.length;
+      });
+      if (totalsByKey[colKey]) {
+        if (totalsByKey[colKey].length > maxChars) maxChars = totalsByKey[colKey].length;
+      }
+
+      widths[index] = Math.min(100, Math.max(35, Math.ceil(maxChars * 8.0) + 24));
+    });
+
+    return widths;
+  }, [poLineItems, poDynamicColumns])
+
+  const poScrollContainerRef = useRef<HTMLDivElement>(null)
+  const [poAtEnd, setPoAtEnd] = useState(false)
+  const updatePoScrollEdges = useCallback(() => {
+    if (!poScrollContainerRef.current) return;
+    const el = poScrollContainerRef.current;
+    setPoAtEnd(Math.ceil(el.scrollLeft + el.clientWidth) >= el.scrollWidth - 1);
+  }, []);
+
+  useEffect(() => {
+    updatePoScrollEdges();
+    window.addEventListener('resize', updatePoScrollEdges);
+    return () => window.removeEventListener('resize', updatePoScrollEdges);
+  }, [poLineItems, poDynamicWidths, updatePoScrollEdges]);
+
+  useEffect(() => {
+    console.log('=== DATA SOURCE & TABLES DEBUG ===')
+    console.log('Raw formData (from API/item):', selectedItem?.formData)
+    console.log('Parsed formData:', getParsedFormData(selectedItem))
+    console.log('Invoice Line Items Table values:', lineItems)
+    console.log('PO Line Items Table values (mapped):', poLineItems)
+  }, [selectedItem, lineItems, poLineItems])
+
+  const handlePoLineItemChange = (
+    index: number,
+    fieldLabel: string,
+    value: any,
+  ) => {
+    const originalKey = Array.from(poColMap.entries()).find(
+      ([_, label]) => label === fieldLabel,
+    )?.[0] || Object.entries(FALLBACK_PO_COLS_MAP).find(
+      ([_, label]) => label === fieldLabel,
+    )?.[0] || fieldLabel
+
+    setFormModel?.((prevForm: any) => {
+      const nextForm = { ...prevForm }
+      if (!poLineItemsKey) return nextForm
+
+      const val = nextForm[poLineItemsKey]
+      let currentItems: any[] = []
+      if (Array.isArray(val)) {
+        currentItems = [...val]
+      } else if (typeof val === 'string') {
+        try {
+          currentItems = JSON.parse(val)
+        } catch {
+          currentItems = []
+        }
+      }
+
+      if (currentItems[index]) {
+        currentItems[index] = {
+          ...currentItems[index],
+          [originalKey]: value,
+        }
+      }
+
+      nextForm[poLineItemsKey] = currentItems
+      return nextForm
+    })
+  }
+
+  const handleAddPoItem = () => {
+    setFormModel?.((prevForm: any) => {
+      const nextForm = { ...prevForm }
+      if (!poLineItemsKey) return nextForm
+
+      const val = nextForm[poLineItemsKey]
+      let currentItems: any[] = []
+      if (Array.isArray(val)) {
+        currentItems = [...val]
+      } else if (typeof val === 'string') {
+        try {
+          currentItems = JSON.parse(val)
+        } catch {
+          currentItems = []
+        }
+      }
+
+      const newItem: any = {}
+      poColMap.forEach((_, colId) => {
+        newItem[colId] = ''
+      })
+      Object.keys(FALLBACK_PO_COLS_MAP).forEach((colId) => {
+        newItem[colId] = ''
+      })
+
+      currentItems.push(newItem)
+      nextForm[poLineItemsKey] = currentItems
+      return nextForm
+    })
+  }
+
+  const handleRemovePoItem = (indexToRemove: number) => {
+    setFormModel?.((prevForm: any) => {
+      const nextForm = { ...prevForm }
+      if (!poLineItemsKey) return nextForm
+
+      const val = nextForm[poLineItemsKey]
+      let currentItems: any[] = []
+      if (Array.isArray(val)) {
+        currentItems = [...val]
+      } else if (typeof val === 'string') {
+        try {
+          currentItems = JSON.parse(val)
+        } catch {
+          currentItems = []
+        }
+      }
+
+      const updated = currentItems.filter((_, idx) => idx !== indexToRemove)
+      nextForm[poLineItemsKey] = updated
+      return nextForm
+    })
+  }
 
   const currentSearchPluginInstance = searchPlugin()
   const searchPluginInstanceRef = useRef<any>(null)
@@ -2841,6 +3145,7 @@ const Overview = (props: any) => {
                               )}
                             {tab.id === 'line_items' &&
                               (lineItems.length > 0 ||
+                                poLineItems.length > 0 ||
                                 agentData?.debug?.[
                                   'Side-by-side Line Item matching'
                                 ]?.length > 0 ||
@@ -2848,13 +3153,13 @@ const Overview = (props: any) => {
                                 agentData?.['Extracted Invoice JSON']
                                   ?.invoice_items?.length > 0) && (
                                 <span className='rounded bg-[var(--gray-2)] px-1.5 py-0.5 text-[10px] text-[var(--gray-11)]'>
-                                  {lineItems.length ||
+                                  {(lineItems.length ||
                                     agentData?.debug?.[
                                       'Side-by-side Line Item matching'
                                     ]?.length ||
                                     agentData?.line_items?.length ||
                                     agentData?.['Extracted Invoice JSON']
-                                      ?.invoice_items?.length}
+                                      ?.invoice_items?.length || 0) + (poLineItems.length || 0)}
                                 </span>
                               )}
                             {tab.id === 'comments' &&
@@ -3765,31 +4070,77 @@ const Overview = (props: any) => {
                         </div>
                       )}
                       {activeTab === 'line_items' && (
-                        <div className='flex-1 overflow-y-auto p-4'>
-                          <div className='overflow-hidden rounded-xl border border-[var(--gray-3)] bg-surface relative'>
-                            <div
-                              className="w-full h-full overflow-x-auto overflow-y-hidden"
-                              ref={scrollContainerRef}
-                              onScroll={updateScrollEdges}
-                            >
-                              <LineItemTable
-                                lineItems={lineItems}
-                                dynamicColumns={dynamicColumns}
-                                isDynamicTable={isDynamicTable}
-                                formModel={formModel}
-                                agentData={agentData}
-                                isCurrentlyProcessing={isCurrentlyProcessing}
-                                currentScoreWidth={currentScoreWidth}
-                                LINE_ITEM_ACTION_WIDTH={LINE_ITEM_ACTION_WIDTH}
-                                skeletonRows={skeletonRows}
-                                hasAnyScore={hasAnyScore}
-                                dynamicWidths={dynamicWidths}
-                                handleAddItem={handleAddItem}
-                                handleRemoveItem={handleRemoveItem}
-                                handleLineItemChange={handleLineItemChange}
-                                handleFieldFocus={handleFieldFocus}
-                                atEnd={atEnd}
-                              />
+                        <div className='flex-1 overflow-y-auto p-4 space-y-6'>
+                          {/* PO Line Items Section */}
+                          {poLineItems.length > 0 && (
+                            <div className='space-y-2.5'>
+                              <div className='flex items-center justify-between'>
+                                <h4 className='text-xs font-bold tracking-tight text-[var(--gray-13)] flex items-center gap-1.5'>
+                                  <Icon className='h-4 w-4 text-[var(--orange-9)]' name='tabler:shopping-cart' />
+                                  PO Line Items 
+                                </h4>
+                              </div>
+                              <div className='overflow-hidden rounded-xl border border-[var(--gray-3)] bg-surface relative'>
+                                <div
+                                  className="w-full h-full overflow-x-auto overflow-y-hidden"
+                                  ref={poScrollContainerRef}
+                                  onScroll={updatePoScrollEdges}
+                                >
+                                  <LineItemTable
+                                    lineItems={poLineItems}
+                                    dynamicColumns={poDynamicColumns}
+                                    isDynamicTable={true}
+                                    formModel={formModel}
+                                    agentData={agentData}
+                                    isCurrentlyProcessing={isCurrentlyProcessing}
+                                    currentScoreWidth={0}
+                                    LINE_ITEM_ACTION_WIDTH={LINE_ITEM_ACTION_WIDTH}
+                                    skeletonRows={skeletonRows}
+                                    hasAnyScore={false}
+                                    dynamicWidths={poDynamicWidths}
+                                    handleLineItemChange={handlePoLineItemChange}
+                                    handleFieldFocus={handleFieldFocus}
+                                    atEnd={poAtEnd}
+                                    hideFooter={true}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Invoice Line Items Section */}
+                          <div className={cn('space-y-2.5', poLineItems.length > 0 && 'pt-4 border-t border-[var(--gray-3)]')}>
+                            <div className='flex items-center justify-between'>
+                              <h4 className='text-xs font-bold tracking-tight text-[var(--gray-13)] flex items-center gap-1.5'>
+                                <Icon className='h-4 w-4 text-[var(--primary-9)]' name='tabler:file-invoice' />
+                                Invoice Line Items
+                              </h4>
+                            </div>
+                            <div className='overflow-hidden rounded-xl border border-[var(--gray-3)] bg-surface relative'>
+                              <div
+                                className="w-full h-full overflow-x-auto overflow-y-hidden"
+                                ref={scrollContainerRef}
+                                onScroll={updateScrollEdges}
+                              >
+                                <LineItemTable
+                                  lineItems={lineItems}
+                                  dynamicColumns={dynamicColumns}
+                                  isDynamicTable={isDynamicTable}
+                                  formModel={formModel}
+                                  agentData={agentData}
+                                  isCurrentlyProcessing={isCurrentlyProcessing}
+                                  currentScoreWidth={currentScoreWidth}
+                                  LINE_ITEM_ACTION_WIDTH={LINE_ITEM_ACTION_WIDTH}
+                                  skeletonRows={skeletonRows}
+                                  hasAnyScore={hasAnyScore}
+                                  dynamicWidths={dynamicWidths}
+                                  handleAddItem={handleAddItem}
+                                  handleRemoveItem={handleRemoveItem}
+                                  handleLineItemChange={handleLineItemChange}
+                                  handleFieldFocus={handleFieldFocus}
+                                  atEnd={atEnd}
+                                />
+                              </div>
                             </div>
                           </div>
                         </div>

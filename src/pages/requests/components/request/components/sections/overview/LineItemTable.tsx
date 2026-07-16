@@ -65,11 +65,12 @@ export interface LineItemTableProps {
   skeletonRows: string[]
   hasAnyScore: boolean
   dynamicWidths: number[]
-  handleAddItem: () => void
-  handleRemoveItem: (index: number) => void
-  handleLineItemChange: (index: number, field: string, value: any) => void
-  handleFieldFocus: (value: any, field: string) => void
+  handleAddItem?: () => void
+  handleRemoveItem?: (index: number) => void
+  handleLineItemChange?: (index: number, field: string, value: any) => void
+  handleFieldFocus?: (value: any, field: string) => void
   atEnd?: boolean
+  hideFooter?: boolean
 }
 
 interface ColumnConfig {
@@ -98,6 +99,7 @@ export default function LineItemTable({
   handleLineItemChange,
   handleFieldFocus,
   atEnd = false,
+  hideFooter = false,
 }: LineItemTableProps) {
   const allColumns: ColumnConfig[] = []
   if (isDynamicTable) {
@@ -130,7 +132,9 @@ export default function LineItemTable({
   if (hasAnyScore) {
     allColumns.push({ id: 'score', type: 'score', isNumeric: true, isAmount: false })
   }
-  allColumns.push({ id: 'action', type: 'action', isNumeric: false, isAmount: false })
+  if (handleAddItem || handleRemoveItem) {
+    allColumns.push({ id: 'action', type: 'action', isNumeric: false, isAmount: false })
+  }
 
   const getColWidth = (col: ColumnConfig, _idx: number): number => {
     if (col.type === 'action') return LINE_ITEM_ACTION_WIDTH
@@ -350,7 +354,7 @@ export default function LineItemTable({
             } else if (col.type === 'score') {
               headerContent = <span className={getLineItemTextClass(true)}>Score</span>
             } else if (col.type === 'action') {
-              headerContent = (
+              headerContent = handleAddItem ? (
                 <button
                   className='inline-flex cursor-pointer items-center justify-center rounded border border-[var(--primary-4)] bg-[var(--primary-2)] p-1 text-[var(--primary-11)] transition-all hover:bg-[var(--primary-3)] hover:text-[var(--primary-12)] active:scale-95'
                   title='Add New Item'
@@ -359,7 +363,7 @@ export default function LineItemTable({
                 >
                   <Plus className='h-3.5 w-3.5' />
                 </button>
-              )
+              ) : null
             }
 
             return (
@@ -458,7 +462,7 @@ export default function LineItemTable({
                       )
                     }
                   } else if (col.type === 'action') {
-                    cellContent = (
+                    cellContent = handleRemoveItem ? (
                       <button
                         className='rounded p-1 text-[var(--red-9)] transition-all hover:bg-[var(--red-2)] hover:text-[var(--red-11)] active:scale-95'
                         title='Remove Item'
@@ -467,7 +471,7 @@ export default function LineItemTable({
                       >
                         <Trash2 className='h-3.5 w-3.5' />
                       </button>
-                    )
+                    ) : null
                   } else {
                     const cellVal = getCellVal(item, col)
                     const changeKey = getColChangeKey(col)
@@ -496,6 +500,7 @@ export default function LineItemTable({
                               : 'text-[var(--gray-13)]'
                           )}
                           onBlur={(e) => {
+                            if (!handleLineItemChange) return
                             if (
                               col.type === 'rate' ||
                               col.type === 'amount' ||
@@ -516,7 +521,7 @@ export default function LineItemTable({
                             handleLineItemChange(index, changeKey, e.target.value)
                           }}
                           onChange={(e) =>
-                            handleLineItemChange(index, changeKey, e.target.value)
+                            handleLineItemChange?.(index, changeKey, e.target.value)
                           }
                           onFocus={() => handleFieldFocus?.(cellVal, focusKey)}
                         />
@@ -538,7 +543,7 @@ export default function LineItemTable({
             )
           })}
       </tbody>
-      {lineItems.length > 0 && (
+      {lineItems.length > 0 && !hideFooter && (
         <tfoot className='sticky bottom-0 z-30 bg-[var(--gray-1)]'>
           <tr>
             {allColumns.map((col, i) => {
