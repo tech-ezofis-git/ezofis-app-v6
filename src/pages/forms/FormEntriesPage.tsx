@@ -1,10 +1,14 @@
 import { Divider, Rating, Skeleton, Stack, Tooltip } from '@mantine/core'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useParams } from '@tanstack/react-router'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Column } from '@/components/base/data-table/types'
 import type { Question } from '@/pages/form-builder/store/formStore'
 import formApi from '@/api/form/form'
+import userApi from '@/api/user'
+import authUserStore from '@/stores/authUserStore'
+import Badge from '@/components/base/Badge'
+import Modal from '@/components/base/Modal'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
 // DataTable and pagination imports
@@ -157,6 +161,57 @@ const FormEntriesPage = () => {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
 
+  // Active line items for the modal table explorer
+  const [activeLineItems, setActiveLineItems] = useState<{
+    rowId: string
+    colLabel: string
+    data: any[]
+  } | null>(null)
+
+  // Fetch users list for Created By resolution
+  const { data: usersData } = useQuery({
+    queryKey: ['users', 'list'],
+    queryFn: async () => {
+      const { payload, error } = await userApi.getUserList()
+      if (error) throw new Error(error)
+      return payload || []
+    },
+  })
+
+  // Helper to match createdBy user ID to user name or logged in user name
+  const resolveUserName = (userId: string) => {
+    if (usersData && Array.isArray(usersData)) {
+      const user = usersData.find(
+        (u: any) =>
+          String(u.id) === String(userId) ||
+          String(u.userId) === String(userId),
+      )
+      if (user) {
+        const fullName =
+          user.fullName ||
+          user.name ||
+          (user.firstName
+            ? `${user.firstName} ${user.lastName || ''}`.trim()
+            : '') ||
+          user.loginName ||
+          user.email
+        if (fullName) return fullName
+      }
+    }
+
+    const store = authUserStore.getState()
+    const loggedInUser = store.session
+    if (loggedInUser && String(loggedInUser.id) === String(userId)) {
+      const fullName =
+        loggedInUser.name ||
+        `${loggedInUser.firstName} ${loggedInUser.lastName || ''}`.trim() ||
+        loggedInUser.email
+      if (fullName) return fullName
+    }
+
+    return userId
+  }
+
   // Fetch form schema
   const {
     data: formData,
@@ -211,6 +266,27 @@ const FormEntriesPage = () => {
     [panels],
   )
 
+  // Resolver helper to find human-readable names for nested keys inside table structures
+  const getFieldLabel = useCallback(
+    (key: string) => {
+      const topField = fields.find((item: Question) => item.id === key)
+      if (topField) return topField.label || key
+
+      for (const field of fields) {
+        const tableCols =
+          field.settings?.specific?.tableColumns ||
+          field.settings?.specific?.columns
+        if (Array.isArray(tableCols)) {
+          const matchedCol = tableCols.find((col: any) => col.id === key)
+          if (matchedCol) return matchedCol.name || matchedCol.label || key
+        }
+      }
+
+      return key
+    },
+    [fields],
+  )
+
   // Set up standard data table state
   const {
     expandState,
@@ -225,13 +301,13 @@ const FormEntriesPage = () => {
     initialVisibilityState: {},
   })
 
-  // Initialize selected columns (first 5 fields visible by default)
+  // Initialize selected columns (all columns visible by default)
   const [initialVisibilitySet, setInitialVisibilitySet] = useState(false)
   useEffect(() => {
     if (fields.length > 0 && !initialVisibilitySet) {
       const visibility: Record<string, boolean> = {}
-      fields.forEach((field: Question, idx: number) => {
-        visibility[field.id] = idx < 5
+      fields.forEach((field: Question) => {
+        visibility[field.id] = true
       })
       setVisibilityState(visibility)
       setInitialVisibilitySet(true)
@@ -448,12 +524,71 @@ const FormEntriesPage = () => {
 
     // Render dynamic columns from fields
     fields.forEach((field: Question) => {
+      const isStatusCol = (field.label || '').toLowerCase().trim() === 'matched status'
+      const getFieldLabel = (key: string) => {
+        const f = fields.find((item: Question) => item.id === key)
+        return f?.label || key
+      }
+
       colList.push({
         id: field.id,
         label: field.label || 'Untitled Field',
         size: 180,
         renderCell: (row: any) => {
           const val = row.values?.[field.id]
+          
+          // 1. Handle matched status badge
+          if (isStatusCol && val) {
+            const statusStr = String(val).trim()
+            let badgeColor: 'green' | 'red' | 'orange' | 'gray' = 'gray'
+            const lowerStatus = statusStr.toLowerCase()
+            if (lowerStatus.includes('partially matched') || lowerStatus.includes('partial')) {
+              badgeColor = 'orange' // yellow/orange
+            } else if (lowerStatus.includes('not matched') || lowerStatus.includes('mismatch') || lowerStatus.includes('fail') || lowerStatus.includes('error')) {
+              badgeColor = 'red'
+            } else if (lowerStatus.includes('matched') || lowerStatus === 'match') {
+              badgeColor = 'green'
+            }
+            return <Badge color={badgeColor} label={statusStr} />
+          }
+
+          // 2. Handle nested PO line items table inline expansion
+          const isJsonTable = (() => {
+            if (typeof val !== 'string') return false
+            const trimmed = val.trim()
+            return trimmed.startsWith('[') && trimmed.endsWith(']')
+          })()
+
+          if (isJsonTable) {
+            let parsedData: any[] = []
+            try {
+              parsedData = JSON.parse(String(val))
+            } catch (e) {
+              console.error('Failed to parse nested table JSON', e)
+            }
+
+            return (
+              <div className='flex items-center gap-2'>
+                <IconButton
+                  color='primary'
+                  icon='lucide:table'
+                  title='View Line Items Table'
+                  variant='ghost'
+                  onClick={() =>
+                    setActiveLineItems({
+                      rowId: row.id,
+                      colLabel: field.label || 'Line Items',
+                      data: parsedData,
+                    })
+                  }
+                />
+                <span className='text-[10px] font-semibold text-gray-7'>
+                  ({parsedData.length} items)
+                </span>
+              </div>
+            )
+          }
+
           return (
             <span className='block max-w-[200px] truncate font-medium text-[var(--gray-12)]'>
               {val !== undefined && val !== null ? String(val) : '-'}
@@ -495,7 +630,7 @@ const FormEntriesPage = () => {
         size: 180,
         renderCell: (row: any) => (
           <span className='font-medium text-[var(--gray-12)]'>
-            {row.createdBy}
+            {resolveUserName(row.createdBy)}
           </span>
         ),
       },
@@ -562,7 +697,7 @@ const FormEntriesPage = () => {
     )
 
     return colList
-  }, [fields, tabValue])
+  }, [fields, tabValue, activeLineItems, usersData])
 
   // Map flat paginated entries to DataTable format
   const formattedRows = useMemo(() => {
@@ -1132,6 +1267,68 @@ const FormEntriesPage = () => {
           />
         </div>
       </div>
+
+      {/* Dynamic Modal popup for nested table data */}
+      <Modal
+        opened={!!activeLineItems}
+        width={700}
+        onClose={() => setActiveLineItems(null)}
+      >
+        {activeLineItems && (
+          <div className='flex flex-col font-inter p-6 bg-white rounded-lg'>
+            <div className='flex items-center justify-between mb-4 pb-2 border-b border-gray-2'>
+              <div className='flex items-center gap-2'>
+                <Icon name='lucide:table' className='size-5 text-accent-primary' />
+                <h3 className='text-sm font-bold text-gray-13'>
+                  {activeLineItems.colLabel} — {activeLineItems.rowId}
+                </h3>
+              </div>
+              <IconButton
+                color='gray'
+                icon='lucide:x'
+                size='sm'
+                variant='ghost'
+                onClick={() => setActiveLineItems(null)}
+              />
+            </div>
+            
+            <div className='max-h-[400px] overflow-y-auto overflow-x-auto border border-gray-2 rounded-lg bg-white custom-scrollbar'>
+              <table className='w-full text-left text-xs border-collapse'>
+                <thead>
+                  <tr className='border-b border-gray-2 bg-gray-50'>
+                    {activeLineItems.data.length > 0 &&
+                      Object.keys(activeLineItems.data[0]).map((k) => (
+                        <th
+                          key={k}
+                          className='p-3 font-bold text-gray-11 whitespace-nowrap'
+                        >
+                          {getFieldLabel(k)}
+                        </th>
+                      ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {activeLineItems.data.map((item: any, idx: number) => (
+                    <tr
+                      key={idx}
+                      className='border-b border-gray-1 last:border-0 hover:bg-gray-50/50'
+                    >
+                      {Object.keys(item).map((k) => (
+                        <td
+                          key={k}
+                          className='p-3 font-medium text-gray-12 whitespace-nowrap'
+                        >
+                          {item[k]}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   )
 }
