@@ -10,6 +10,7 @@ import showToast from '@/components/base/toast/showToast'
 import InputCheckbox from '@/components/base/inputs/InputCheckbox'
 // import InputSelect from '@/components/base/inputs/InputSelect'
 import cn from '@/utils/cn'
+import Tooltip from '@/components/base/Tooltip'
 
 interface HeaderProps {
   isLoading: boolean
@@ -405,27 +406,31 @@ const Header: React.FC<HeaderProps> = ({
 
         <div className='flex flex-col pb-1'>
           <div className='flex items-center gap-3'>
-            <IconButton
-              className='size-7 cursor-pointer hover:bg-surface'
-              color='gray'
-              disabled={!onPrev}
-              icon='tabler:chevron-left'
-              size='sm'
-              variant='ghost'
-              onClick={onPrev}
-            />
+            <Tooltip content='Previous Request' position='bottom'>
+              <IconButton
+                className='size-7 cursor-pointer hover:bg-surface'
+                color='gray'
+                disabled={!onPrev}
+                icon='tabler:chevron-left'
+                size='sm'
+                variant='ghost'
+                onClick={onPrev}
+              />
+            </Tooltip>
             <h1 className='text-[15px] font-semibold tracking-tight text-[var(--gray-13)]'>
               {requestNo}
             </h1>
-            <IconButton
-              className='size-7 cursor-pointer hover:bg-surface'
-              color='gray'
-              disabled={!onNext}
-              icon='tabler:chevron-right'
-              size='sm'
-              variant='ghost'
-              onClick={onNext}
-            />
+            <Tooltip content='Next Request' position='bottom'>
+              <IconButton
+                className='size-7 cursor-pointer hover:bg-surface'
+                color='gray'
+                disabled={!onNext}
+                icon='tabler:chevron-right'
+                size='sm'
+                variant='ghost'
+                onClick={onNext}
+              />
+            </Tooltip>
             <div className='flex items-center gap-2'>
               {poNumber && poNumber !== '-' && poNumber !== 'N/A' && (
                 <span className='animate-in fade-in slide-in-from-left-2 rounded-full border border-[var(--gray-3)] bg-[var(--gray-1)] px-3 py-1 text-[11px] font-semibold text-[var(--gray-11)] duration-300'>

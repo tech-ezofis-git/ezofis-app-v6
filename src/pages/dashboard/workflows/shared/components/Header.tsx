@@ -264,11 +264,11 @@ export default function DashboardCharts() {
       {isCommandCenterExpanded && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-6 animate-in fade-in duration-300">
           {[
-            { name: 'Total Outstanding Payables', value: fmtMoney(metrics.totalAP || 0), trend: metrics.totalAPChange, color: 'border-t-primary-9', isGood: false },
-            { name: 'Total Paid Amount', value: fmtMoney(metrics.totalPaid || 0), trend: metrics.totalPaidChange, color: 'border-t-success', isGood: true },
+            { name: 'Total Outstanding', value: fmtMoney(metrics.totalAP || 0), trend: metrics.totalAPChange, color: 'border-t-primary-9', isGood: false },
+            { name: 'Total Paid', value: fmtMoney(metrics.totalPaid || 0), trend: metrics.totalPaidChange, color: 'border-t-success', isGood: true },
             { name: 'Pending Payments', value: fmtMoney(metrics.pendingPayments || 0), trend: metrics.pendingPaymentsChange, color: 'border-t-primary-9', isGood: true },
             { name: 'Due Today', value: fmtMoney(metrics.dueToday || 0), trend: metrics.dueTodayChange, color: 'border-t-cyan-9', isGood: true },
-            { name: 'Overdue Amount', value: fmtMoney(metrics.overdueAmount || 0), trend: metrics.overdueChange, color: 'border-t-red-9', isGood: false },
+            { name: 'Overdue', value: fmtMoney(metrics.overdueAmount || 0), trend: metrics.overdueChange, color: 'border-t-red-9', isGood: false },
             { name: 'Avg. Processing Time', value: metrics.avgProcessing, trend: metrics.avgProcessingChange, color: 'border-t-primary-9', isGood: true },
           ].map(kpi => (
             <div key={kpi.name} className={cn("cursor-pointer rounded-lg border border-border-default bg-surface p-4 shadow-xs transition-all hover:-translate-y-0.5 border-t-3", kpi.color, activeDrill === kpi.name && "ring-2 ring-primary-9/40 shadow-md")} onClick={() => handleKpiClick(kpi.name)}>
@@ -438,7 +438,7 @@ export default function DashboardCharts() {
               </div>
 
               <div className="col-span-12 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
-                <h3 className="font-poppins text-14 font-semibold text-text-primary">Cash flow forecast</h3>
+                <h3 className="font-poppins text-14 font-semibold text-text-primary">Cash out forecast</h3>
                 <div className="font-inter text-11 text-text-muted mb-4">Liquidity projection and cash needs over next 10 weeks</div>
                 <div className="h-56">
                   <ResponsiveContainer width="100%" height="100%">
@@ -495,7 +495,7 @@ export default function DashboardCharts() {
 
               {isCommandCenterExpanded && (
                 <div className="col-span-12 lg:col-span-4 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
-                  <h3 className="font-poppins text-14 font-semibold text-text-primary">Outstanding payables by supplier</h3>
+                  <h3 className="font-poppins text-14 font-semibold text-text-primary">Top 5 outstanding by supplier</h3>
                   <div className="font-inter text-11 text-text-muted mb-4">Click a supplier's bar to drill down</div>
                   <div className="h-60">
                     <ResponsiveContainer width="100%" height="100%">
@@ -955,7 +955,7 @@ export default function DashboardCharts() {
             <div className="grid grid-cols-12 gap-5">
               {isSupplierFollowUpExpanded && (
                 <div className="col-span-12 lg:col-span-6 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
-                  <h3 className="font-poppins text-14 font-semibold text-text-primary">Outstanding payables by supplier</h3>
+                  <h3 className="font-poppins text-14 font-semibold text-text-primary">Top 5 outstanding by supplier</h3>
                   <div className="font-inter text-11 text-text-muted mb-4">Click a supplier's bar to drill down</div>
                   <div className="h-60">
                     <ResponsiveContainer width="100%" height="100%">

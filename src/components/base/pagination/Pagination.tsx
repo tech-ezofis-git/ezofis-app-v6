@@ -29,7 +29,9 @@ const Pagination = ({
 
   const handlePageSizeChange = (value: number) => {
     onPageSizeChange(value)
-    onPageChange(1)
+    if (page !== 1) {
+      onPageChange(1)
+    }
   }
 
   const _className = cn(

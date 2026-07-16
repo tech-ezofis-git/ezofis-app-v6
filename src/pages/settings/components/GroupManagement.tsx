@@ -4,9 +4,7 @@ import {
 } from '@tanstack/react-table'
 import {
   Check,
-  Edit3,
   MoreHorizontal,
-  Trash2,
   UsersRound,
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -23,6 +21,8 @@ import DataTable from '@/components/base/data-table/DataTable'
 import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
 import InputText from '@/components/base/inputs/InputText'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
+import Menu from '@/components/base/menu/Menu'
+import MenuItem from '@/components/base/menu/MenuItem'
 import {
   mapApiGroupsToSettingsGroups,
   mapUsersToOptions,
@@ -99,7 +99,6 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
   const [isLoadingGroups, setIsLoadingGroups] = useState(true)
   const [isLoadingGroupDetails, setIsLoadingGroupDetails] = useState(false)
   const [isSavingGroup, setIsSavingGroup] = useState(false)
-  const [openMenuId, setOpenMenuId] = useState<string | number | null>(null)
 
   const [isSetupOpen, setIsSetupOpen] = useState(false)
   const [editingGroupId, setEditingGroupId] = useState<string | number | null>(
@@ -152,7 +151,6 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
 
   const openEditGroup = useCallback(async (group: SettingsGroup) => {
     setIsLoadingGroupDetails(true)
-    setOpenMenuId(null)
 
     try {
       const response = await getGroupById(String(group.id))
@@ -194,7 +192,6 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
     }
 
     showToast({ message: 'Group deleted successfully', variant: 'success' })
-    setOpenMenuId(null)
     await loadGroups()
   }, [loadGroups])
 
@@ -352,45 +349,43 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
           const group = row.original
 
           return (
-            <div className='relative flex justify-end'>
-              <button
-                className='rounded-lg p-2 text-[var(--gray-13)] transition hover:bg-[var(--gray-2)] disabled:cursor-not-allowed disabled:opacity-50'
-                disabled={isLoadingGroupDetails}
-                type='button'
-                onClick={(event) => {
-                  event.stopPropagation()
-                  setOpenMenuId(openMenuId === group.id ? null : group.id)
-                }}
+            <div
+              className='flex justify-end'
+              onClick={(event) => event.stopPropagation()}
+            >
+              <Menu
+                position='bottom-end'
+                withinPortal
+                width={160}
+                target={
+                  <button
+                    className='rounded-lg p-2 text-[var(--gray-13)] transition hover:bg-[var(--gray-2)] disabled:cursor-not-allowed disabled:opacity-50'
+                    disabled={isLoadingGroupDetails}
+                    type='button'
+                  >
+                    <MoreHorizontal size={20} />
+                  </button>
+                }
               >
-                <MoreHorizontal size={20} />
-              </button>
-
-              {openMenuId === group.id ? (
-                <div className='absolute top-10 right-0 z-50 w-40 overflow-hidden rounded-[10px] border border-[var(--border-default)] bg-surface py-1 text-left shadow-[var(--shadow-lg)]'>
-                  <button
-                    className='flex w-full items-center gap-2 px-3 py-2 text-[var(--gray-13)] hover:bg-[var(--gray-2)]'
-                    type='button'
-                    onClick={() => openEditGroup(group)}
-                  >
-                    <Edit3 size={15} />
-                    Edit
-                  </button>
-                  <button
-                    className='flex w-full items-center gap-2 px-3 py-2 text-[var(--red-11)] hover:bg-[var(--red-2)]'
-                    type='button'
-                    onClick={() => deleteGroup(group.id)}
-                  >
-                    <Trash2 size={15} />
-                    Delete
-                  </button>
-                </div>
-              ) : null}
+                <MenuItem
+                  icon='lucide:pencil'
+                  label='Edit'
+                  onClick={() => openEditGroup(group)}
+                />
+                <MenuItem
+                  className='text-red-11'
+                  icon='lucide:trash-2'
+                  iconClass='text-red-11'
+                  label='Delete'
+                  onClick={() => deleteGroup(group.id)}
+                />
+              </Menu>
             </div>
           )
         },
       }),
     ],
-    [deleteGroup, isLoadingGroupDetails, openEditGroup, openMenuId],
+    [deleteGroup, isLoadingGroupDetails, openEditGroup],
   )
 
   const groupTable = useReactTable({

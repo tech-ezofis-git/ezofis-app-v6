@@ -85,6 +85,7 @@ const StorageSystem = () => {
               setStorageSettings({
                 ...storageSettings,
                 isConnected: true,
+                isConnecting: false,
                 system: includedStorageItem.value,
               })
             }
@@ -117,6 +118,7 @@ const StorageSystem = () => {
                     setStorageSettings({
                       ...storageSettings,
                       isConnected: false,
+                      isConnecting: false,
                       system: item.value,
                     })
                   }

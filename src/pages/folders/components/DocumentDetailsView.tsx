@@ -1,6 +1,7 @@
 import { ArrowLeft } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import fileApi from '@/api/file/file'
+import Tooltip from '@/components/base/Tooltip'
 import DocumentPreviewViewer from '@/components/common/document-preview/DocumentPreviewViewer'
 import authUserStore from '@/stores/authUserStore'
 import { folderApi } from '../api/folderApi'
@@ -108,7 +109,12 @@ const buildInfoCards = (data: WorkspaceDocumentDetail | null): DetailCard[] => {
             field.value !== '',
         )
         .map((field) => ({
-          label: field.label || field.key || '-',
+          label:
+            String(field.label || field.key || '')
+              .trim()
+              .toLowerCase() === 'status'
+              ? 'Current Stage'
+              : field.label || field.key || '-',
           value: toDisplayValue(field.value),
         })),
       title: section.title || section.sectionKey || `Section ${index + 1}`,
@@ -153,6 +159,8 @@ export function DocumentDetailsView({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [previewMimeType, setPreviewMimeType] = useState<string | null>(null)
   const [isPreviewLoading, setIsPreviewLoading] = useState(false)
+  const [isDownloading, setIsDownloading] = useState(false)
+  const [downloadError, setDownloadError] = useState('')
   const relatedDocs: RelatedDoc[] = []
   const { session } = authUserStore.getState()
   const currentUserEmail = session?.email ?? 'me@app.com'
@@ -310,6 +318,61 @@ export function DocumentDetailsView({
     }
   }
 
+  const handleDownload = async () => {
+    if (!repositoryId || !id || isDownloading) return
+
+    setIsDownloading(true)
+    setDownloadError('')
+    try {
+      const response = await fileApi.viewBinaryV6(
+        repositoryId,
+        id,
+        'attachment',
+      )
+
+      if (!(response?.data instanceof Blob)) {
+        throw new Error(response?.error || 'Unable to download file')
+      }
+
+      const downloadUrl = URL.createObjectURL(response.data)
+      const link = document.createElement('a')
+      link.href = downloadUrl
+      link.download = data?.fileName || 'document'
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      URL.revokeObjectURL(downloadUrl)
+    } catch (exception: any) {
+      console.error(exception)
+      setDownloadError(exception?.message || 'Unable to download file')
+    } finally {
+      setIsDownloading(false)
+    }
+  }
+
+  const handlePrint = () => {
+    if (!previewUrl) return
+
+    const printWindow = window.open(previewUrl, '_blank', 'noopener,noreferrer')
+    if (!printWindow) return
+
+    const triggerPrint = () => {
+      try {
+        printWindow.focus()
+        printWindow.print()
+      } catch (exception) {
+        console.error(exception)
+      }
+    }
+
+    if (printWindow.document.readyState === 'complete') {
+      triggerPrint()
+      return
+    }
+
+    printWindow.addEventListener('load', triggerPrint, { once: true })
+  }
+
   const infoCards = useMemo(() => buildInfoCards(data), [data])
   const lineItems = Array.isArray(data?.lineItems) ? data.lineItems : []
   const hasLineItems = lineItems.length > 0
@@ -420,7 +483,7 @@ export function DocumentDetailsView({
             ) : null}
 
             <Card className='overflow-hidden'>
-              <div className='flex items-center justify-between border-b border-gray-3 px-5 py-4'>
+              <div className='flex items-center justify-between gap-3 border-b border-gray-3 px-5 py-4'>
                 <div className='flex min-w-0 items-center gap-3'>
                   <DynamicIcon
                     className='h-5 w-5 shrink-0 text-red-8'
@@ -429,11 +492,43 @@ export function DocumentDetailsView({
                   <b className='truncate text-[16px] font-semibold text-gray-13'>
                     {data.fileName}
                   </b>
-                  <span className='inline-flex w-fit rounded-lg bg-gray-2 px-2 py-1 text-[11px] font-bold whitespace-nowrap text-gray-11'>
-                    {data.fileType}
-                  </span>
+                </div>
+
+                <div className='flex shrink-0 items-center gap-1.5'>
+                  <Tooltip content='Print' position='top'>
+                    <button
+                      aria-label='Print'
+                      className='inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-11 transition-all hover:bg-gray-4 hover:text-gray-12 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50'
+                      disabled={!previewUrl || isPreviewLoading}
+                      type='button'
+                      onClick={handlePrint}
+                    >
+                      <DynamicIcon className='h-4 w-4' name='printer' />
+                    </button>
+                  </Tooltip>
+
+                  <Tooltip
+                    content={isDownloading ? 'Downloading...' : 'Download'}
+                    position='top'
+                  >
+                    <button
+                      aria-label='Download'
+                      className='inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-11 transition-all hover:bg-gray-4 hover:text-gray-12 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50'
+                      disabled={isDownloading || isPreviewLoading}
+                      type='button'
+                      onClick={handleDownload}
+                    >
+                      <DynamicIcon className='h-4 w-4' name='download' />
+                    </button>
+                  </Tooltip>
                 </div>
               </div>
+
+              {downloadError ? (
+                <div className='border-b border-red-4 bg-red-1 px-5 py-2 text-[12px] font-medium text-red-10'>
+                  {downloadError}
+                </div>
+              ) : null}
 
               <div className='ez-detail-scroll h-[560px] overflow-hidden bg-gray-1'>
                 {hasValidFileUrl || isPreviewLoading ? (

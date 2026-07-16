@@ -13,6 +13,8 @@ export default function getColumnPinnedStyles<TData>(
     column.id !== 'actions'
   const hasRightPinnedColumns = table.getRightLeafColumns().length > 0
 
+  const size = column.getSize()
+
   return {
     backgroundColor: isPinned
       ? 'var(--pinned-bg, var(--surface-muted))'
@@ -21,9 +23,10 @@ export default function getColumnPinnedStyles<TData>(
     borderRightWidth:
       hasRightPinnedColumns && isLastCenterColumn ? '0px' : undefined,
     left: isPinned === 'left' ? `${column.getStart('left')}px` : undefined,
+    maxWidth: `${size}px`,
     position: isPinned ? 'sticky' : 'relative',
     right: isPinned === 'right' ? `${column.getAfter('right')}px` : undefined,
-    width: `${column.getSize()}px`,
+    width: `${size}px`,
     zIndex: isPinned ? 1 : 0,
   }
 }

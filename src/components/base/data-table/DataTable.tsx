@@ -1,5 +1,10 @@
 import { flexRender, type Table as TanstackTable } from '@tanstack/react-table'
-import { type ComponentProps, useCallback, useRef, useState } from 'react'
+import {
+  type ComponentProps,
+  useCallback,
+  useRef,
+  useState,
+} from 'react'
 import type { MenuPage } from '@/components/common/menuPageEmptyStates'
 import Icon from '@/components/base/icon/Icon'
 import Skeleton from '@/components/base/Skeleton'
@@ -17,6 +22,10 @@ import getColumnPinnedStyles from './helpers/getColumnPinnedStyles'
 import hasTableRowsWithData from './helpers/hasTableRowsWithData'
 import TableActionBar, { type TableActionButton } from './TableActionBar'
 import TableBulkActionBar from './TableBulkActionBar'
+import TableEllipsis, {
+  shouldAllowCellOverflow,
+  shouldDisableTableEllipsis,
+} from './TableEllipsis'
 import TableEmptyState from './TableEmptyState'
 import TableHeaderCell from './TableHeaderCell'
 import TableSkeleton from './TableSkeleton'
@@ -74,12 +83,15 @@ const getStickyColumnStyle = <TData,>(
   column: any,
   table: TanstackTable<TData>,
   isSticky: boolean,
+  options?: { isHeader?: boolean },
 ) => {
   if (!isSticky) return undefined
 
   return {
     ...getColumnPinnedStyles(column, table),
-    background: 'var(--pinned-bg, var(--surface))',
+    background: options?.isHeader
+      ? 'var(--gray-2)'
+      : 'var(--pinned-bg, var(--surface))',
   }
 }
 
@@ -231,6 +243,7 @@ const DataTable = <TData,>({
                         header.column,
                         table,
                         isSticky,
+                        { isHeader: true },
                       )}
                     />
                   ))}
@@ -414,21 +427,43 @@ const DataTable = <TData,>({
                       className='relative border-b border-[var(--gray-2)] transition-all [--pinned-bg:var(--surface)] hover:z-10 hover:bg-[var(--gray-1)] hover:shadow-sm hover:[--pinned-bg:var(--gray-1)]'
                       key={row.id}
                     >
-                      {row.getVisibleCells().map((cell) => (
-                        <Td
-                          key={cell.id}
-                          style={getCellPinnedStyle(cell.column)}
-                          className={cn(
-                            rowSizeClassNames[rowSize],
-                            cell.column.columnDef.meta?.className,
-                          )}
-                        >
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext(),
-                          )}
-                        </Td>
-                      ))}
+                      {row.getVisibleCells().map((cell) => {
+                        const allowOverflow = shouldAllowCellOverflow(
+                          cell.column.id,
+                          cell.column.columnDef.meta?.disableEllipsis,
+                        )
+                        const pinnedStyle = getCellPinnedStyle(cell.column) || {}
+
+                        return (
+                          <Td
+                            key={cell.id}
+                            data-datatable-actions={
+                              allowOverflow ? true : undefined
+                            }
+                            style={pinnedStyle}
+                            className={cn(
+                              'group/dtcell',
+                              allowOverflow
+                                ? 'overflow-visible'
+                                : 'max-w-0 overflow-hidden',
+                              rowSizeClassNames[rowSize],
+                              cell.column.columnDef.meta?.className,
+                            )}
+                          >
+                            <TableEllipsis
+                              disabled={shouldDisableTableEllipsis(
+                                cell.column.id,
+                                cell.column.columnDef.meta?.disableEllipsis,
+                              )}
+                            >
+                              {flexRender(
+                                cell.column.columnDef.cell,
+                                cell.getContext(),
+                              )}
+                            </TableEllipsis>
+                          </Td>
+                        )
+                      })}
                     </Tr>
                   )
                 })}

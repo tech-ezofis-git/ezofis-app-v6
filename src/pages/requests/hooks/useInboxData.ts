@@ -47,8 +47,34 @@ const transformProcess = (
     }
   })
 
+  let parsedAgentResponse = null
+  if (process.agentResponse) {
+    if (typeof process.agentResponse === 'string') {
+      try {
+        parsedAgentResponse = JSON.parse(process.agentResponse)
+      } catch {
+        parsedAgentResponse = null
+      }
+    } else if (typeof process.agentResponse === 'object') {
+      parsedAgentResponse = process.agentResponse
+    }
+  }
+
+  const hasAgentResponse = !!(parsedAgentResponse && Object.keys(parsedAgentResponse).length > 0)
+
+  const isStatusMatched = String(process.status || '').toUpperCase() === 'MATCHED'
+  const isDecisionMatched = String(process.decision || '').toUpperCase() === 'MATCHED'
+  const isReviewMatched = String(process.review || '').toUpperCase() === 'MATCHED'
+
+  const status = isStatusMatched && !hasAgentResponse ? '' : process.status
+  const decision = isDecisionMatched && !hasAgentResponse ? '' : process.decision
+  const review = isReviewMatched && !hasAgentResponse ? '' : process.review
+
   const processCopy = {
     ...process,
+    status,
+    decision,
+    review,
     formData: {
       ...(typeof process.formData === 'object' ? process.formData : {}),
       fields: fieldsSource,
@@ -71,21 +97,9 @@ const transformProcess = (
       : '') ||
     process.requestNo ||
     ''
-  let parsedAgentResponse = null
-  if (process.agentResponse) {
-    if (typeof process.agentResponse === 'string') {
-      try {
-        parsedAgentResponse = JSON.parse(process.agentResponse)
-      } catch {
-        parsedAgentResponse = null
-      }
-    } else if (typeof process.agentResponse === 'object') {
-      parsedAgentResponse = process.agentResponse
-    }
-  }
 
   const hasAgentDecision = !!(
-    process.review ||
+    processCopy.review ||
     parsedAgentResponse?.decision ||
     process.completedAtUtc
   )
@@ -107,10 +121,10 @@ const transformProcess = (
   const isDuplicateInvoice = isDuplicatedInboxItem({
     _agentData: parsedAgentResponse ? [parsedAgentResponse] : [],
     _agentResponse: parsedAgentResponse,
-    decision: process.decision,
+    decision: processCopy.decision,
     formData: processCopy.formData,
-    review: process.review,
-    status: process.status,
+    review: processCopy.review,
+    status: processCopy.status,
   })
 
   return {
@@ -149,12 +163,12 @@ const transformProcess = (
 
         const isCompleted = matchedJobStatus?.isCompleted || false
         const stage = matchedJobStatus?.stage || process.stage || 'Start'
-        const status = isCompleted ? (matchedJobStatus?.decision || 'Matched') : 'Progressing'
+        const statusVal = isCompleted ? (matchedJobStatus?.decision || (hasAgentResponse ? 'Matched' : '')) : 'Progressing'
 
         return {
           isProcessing: !isCompleted,
           stage,
-          status,
+          status: statusVal,
         }
       })()
       : {}),

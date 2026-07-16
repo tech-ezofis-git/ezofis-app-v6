@@ -76,7 +76,7 @@ function SortableDataRow<TData>({
     <tr
       ref={setNodeRef}
       className={cn(
-        'relative border-b border-[var(--gray-2)] transition-all [--pinned-bg:var(--surface)] hover:z-10 hover:bg-[var(--gray-1)] hover:shadow-sm hover:[--pinned-bg:var(--gray-1)]',
+        'relative border-b border-[var(--gray-2)] transition-all [--pinned-bg:var(--surface)] hover:z-10 hover:bg-[var(--gray-1)] hover:shadow-sm hover:[--pinned-bg:var(--gray-1)] focus-within:z-40',
         rowClassName,
         getRowClassName?.(row.original),
         selectedRowId === row.id && 'bg-primary-1',

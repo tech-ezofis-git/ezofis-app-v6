@@ -771,7 +771,7 @@ export const folderApi = {
         page: request.page ?? defaultPage,
         pageSize: request.pageSize ?? defaultItemPageSize,
         search: request.search,
-        skipTotal: true,
+        skipTotal: false,
         sortBy: request.sortBy || 'DocumentDate',
         sortOrder: request.sortOrder || 'desc',
       })
@@ -883,6 +883,7 @@ export const folderApi = {
       sharedWith: [],
     }
   },
+
   async getTree(): Promise<TreeNode[]> {
     const result = await authApiV6.getRepositorys()
     if (result.error) throw new Error(String(result.error))

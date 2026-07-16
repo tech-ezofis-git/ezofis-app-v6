@@ -6,14 +6,12 @@ import {
   Building2,
   Check,
   CheckSquare,
-  Edit3,
   FileCheck2,
   Inbox,
   LayoutDashboard,
-  Menu,
+  Menu as MenuIcon,
   MoreHorizontal,
   ScanLine,
-  Trash2,
 } from 'lucide-react'
 import {
   type ElementType,
@@ -33,6 +31,8 @@ import {
 import DataTable from '@/components/base/data-table/DataTable'
 import InputNumber from '@/components/base/inputs/InputNumber'
 import InputText from '@/components/base/inputs/InputText'
+import Menu from '@/components/base/menu/Menu'
+import MenuItem from '@/components/base/menu/MenuItem'
 import showToast from '@/components/base/toast/showToast'
 import { calculateMenuSetupProgress } from '../helpers/settingsSetupProgress'
 import {
@@ -142,7 +142,6 @@ export default function MenuProfileManagement({ onBack }: MenuProps) {
   const [isLoadingMenus, setIsLoadingMenus] = useState(true)
   const [isLoadingMenuDetails, setIsLoadingMenuDetails] = useState(false)
   const [isSavingMenu, setIsSavingMenu] = useState(false)
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   const [isSetupOpen, setIsSetupOpen] = useState(false)
   const [activeStep, setActiveStep] = useState(0)
   const [editingMenuId, setEditingMenuId] = useState<string | null>(null)
@@ -198,7 +197,6 @@ export default function MenuProfileManagement({ onBack }: MenuProps) {
 
   const openEditMenu = useCallback(async (menu: AppMenu) => {
     setIsLoadingMenuDetails(true)
-    setOpenMenuId(null)
 
     try {
       const response = await getMenuById(menu.id)
@@ -249,7 +247,6 @@ export default function MenuProfileManagement({ onBack }: MenuProps) {
       }
 
       showToast({ message: 'Menu deleted successfully', variant: 'success' })
-      setOpenMenuId(null)
       await loadMenus()
     },
     [loadMenus],
@@ -315,7 +312,7 @@ export default function MenuProfileManagement({ onBack }: MenuProps) {
         minSize: 48,
         size: 48,
         cell: ({ row }) => {
-          const Icon = menuIconByKey[row.original.key] || Menu
+          const Icon = menuIconByKey[row.original.key] || MenuIcon
 
           return (
             <div className='flex justify-center'>
@@ -404,50 +401,48 @@ export default function MenuProfileManagement({ onBack }: MenuProps) {
           const menu = row.original
 
           return (
-            <div className='relative flex justify-end'>
-              <button
-                className='rounded-lg p-2 text-[var(--gray-13)] transition hover:bg-[var(--gray-2)] disabled:cursor-not-allowed disabled:opacity-50'
-                disabled={isLoadingMenuDetails}
-                type='button'
-                onClick={(event) => {
-                  event.stopPropagation()
-                  setOpenMenuId(openMenuId === menu.id ? null : menu.id)
-                }}
+            <div
+              className='flex justify-end'
+              onClick={(event) => event.stopPropagation()}
+            >
+              <Menu
+                position='bottom-end'
+                withinPortal
+                width={160}
+                target={
+                  <button
+                    className='rounded-lg p-2 text-[var(--gray-13)] transition hover:bg-[var(--gray-2)] disabled:cursor-not-allowed disabled:opacity-50'
+                    disabled={isLoadingMenuDetails}
+                    type='button'
+                  >
+                    <MoreHorizontal size={20} />
+                  </button>
+                }
               >
-                <MoreHorizontal size={20} />
-              </button>
-
-              {openMenuId === menu.id ? (
-                <div className='absolute top-10 right-0 z-50 w-40 overflow-hidden rounded-[10px] border border-[var(--border-default)] bg-surface py-1 text-left shadow-[var(--shadow-lg)]'>
-                  <button
-                    className='flex w-full items-center gap-2 px-3 py-2 text-[var(--gray-13)] hover:bg-[var(--gray-2)]'
-                    type='button'
-                    onClick={() => {
-                      void openEditMenu(menu)
-                    }}
-                  >
-                    <Edit3 size={15} />
-                    Edit
-                  </button>
-                  <button
-                    className='flex w-full items-center gap-2 px-3 py-2 text-[var(--red-11)] hover:bg-[var(--red-2)] disabled:cursor-not-allowed disabled:opacity-40'
-                    disabled={menu.isSystem}
-                    type='button'
-                    onClick={() => {
-                      void deleteMenu(menu.id, menu.isSystem)
-                    }}
-                  >
-                    <Trash2 size={15} />
-                    Delete
-                  </button>
-                </div>
-              ) : null}
+                <MenuItem
+                  icon='lucide:pencil'
+                  label='Edit'
+                  onClick={() => {
+                    void openEditMenu(menu)
+                  }}
+                />
+                <MenuItem
+                  className='text-red-11'
+                  disabled={menu.isSystem}
+                  icon='lucide:trash-2'
+                  iconClass='text-red-11'
+                  label='Delete'
+                  onClick={() => {
+                    void deleteMenu(menu.id, menu.isSystem)
+                  }}
+                />
+              </Menu>
             </div>
           )
         },
       }),
     ],
-    [deleteMenu, isLoadingMenuDetails, openEditMenu, openMenuId],
+    [deleteMenu, isLoadingMenuDetails, openEditMenu],
   )
 
   const menuTable = useReactTable({
@@ -859,7 +854,7 @@ function MenuSetup({
 }
 
 function MenuStepIcon({ step }: { step: MenuStep['key'] }) {
-  if (step === 'details') return <Menu size={14} />
+  if (step === 'details') return <MenuIcon size={14} />
   if (step === 'route') return <LayoutDashboard size={14} />
   return <Check size={14} />
 }

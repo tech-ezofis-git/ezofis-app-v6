@@ -46,7 +46,6 @@ const steps = [
 const Steps = () => {
   const step = setupStore((state) => state.step)
   const setStep = setupStore((state) => state.setStep)
-  const isConnected = setupStore((state) => state.emailSettings.isConnected)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -93,10 +92,10 @@ const Steps = () => {
 
   const formattedSteps = steps.map((s, idx) => ({
     ...s,
-    // Allow clicking only if connected or it's the current step
-    clickable: idx === 0 || isConnected,
-    // Disable steps beyond Step 1 (index 0) if not connected
-    disabled: idx > 0 && !isConnected,
+    // Allow clicking only on the current and previous steps (cannot click forward to next steps)
+    clickable: idx <= step,
+    // Disable steps beyond the current active step
+    disabled: idx > step,
   }))
 
   return (

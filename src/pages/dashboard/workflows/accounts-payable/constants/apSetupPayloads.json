@@ -127,12 +127,20 @@
         "orderId": 15
       },
       {
+        "name": "Invoice Extracted Line Item",
+        "dataType": "DYNAMIC_TABLE",
+        "level": 0,
+        "isMandatory": false,
+        "includeInFolderStructure": false,
+        "orderId": 16
+      },
+      {
         "name": "Matched Status",
         "dataType": "SINGLE_SELECT",
         "level": 0,
         "isMandatory": false,
         "includeInFolderStructure": false,
-        "orderId": 16
+        "orderId": 17
       }
     ]
   },

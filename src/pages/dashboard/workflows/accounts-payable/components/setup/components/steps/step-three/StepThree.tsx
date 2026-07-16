@@ -1,29 +1,59 @@
+import { useEffect } from 'react'
 import Alert from '@/components/base/Alert'
 import Button from '@/components/base/button/Button'
-import Divider from '@/components/base/Divider'
 import { AnimateFadeIn, AnimateSlideUp } from '@/components/common/animations'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
+import authUserStore from '@/stores/authUserStore'
 import { StepFooter, StepLayout } from '../components/StepLayout'
-import StorageSettings from './components/StorageSettings'
 import StorageSystem from './components/StorageSystem'
+
+const getStorageProvider = (system: string) => {
+  if (system === 'Google Drive') return 'gcp'
+  return system.toLowerCase()
+}
 
 const StepThree = () => {
   const setStep = setupStore((state) => state.setStep)
   const storageSettings = setupStore((state) => state.storageSettings)
   const setStorageSettings = setupStore((state) => state.setStorageSettings)
+  const session = authUserStore((state) => state.session)
+
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return
+      if (event.data.type === 'CONNECTION_SUCCESS') {
+        setStorageSettings({
+          ...storageSettings,
+          isConnected: true,
+          isConnecting: false,
+        })
+      }
+    }
+
+    window.addEventListener('message', handleMessage)
+    return () => window.removeEventListener('message', handleMessage)
+  }, [storageSettings, setStorageSettings])
 
   const handleConnect = () => {
+    const tenantId = session?.tenantId
+
     setStorageSettings({
       ...storageSettings,
       isConnecting: true,
     })
-    setTimeout(() => {
-      setStorageSettings({
-        ...storageSettings,
-        isConnected: true,
-        isConnecting: false,
-      })
-    }, 1000)
+
+    const now = new Date()
+    const day = now.getDate().toString().padStart(2, '0')
+    const month = now.toLocaleString('default', { month: 'short' })
+    const year = now.getFullYear()
+    const hours = now.getHours().toString().padStart(2, '0')
+    const minutes = now.getMinutes().toString().padStart(2, '0')
+
+    const provider = getStorageProvider(storageSettings.system)
+    const connectionName = `${provider}-${day}${month}${year}-${hours}${minutes}`
+    const url = `https://ezcloudauth.azurewebsites.net/api/authorize?tenantid=${tenantId}&envtype=trial&connectorname=${encodeURIComponent(connectionName)}&provider=${provider}&resulturl=${window.location.origin}/auth/`
+
+    window.open(url, '_blank')
   }
 
   return (
@@ -39,19 +69,41 @@ const StepThree = () => {
             variant='outline'
             onClick={() => setStep(1)}
           />
-          {storageSettings.system === 'Included storage' ||
-          storageSettings.isConnected ? (
+          {storageSettings.system &&
+          storageSettings.system !== 'Included storage' &&
+          !storageSettings.isConnected ? (
+            <div className='flex items-center gap-3'>
+              {storageSettings.isConnecting && (
+                <Button
+                  color='gray'
+                  label='Cancel'
+                  variant='outline'
+                  onClick={() =>
+                    setStorageSettings({
+                      ...storageSettings,
+                      isConnecting: false,
+                    })
+                  }
+                />
+              )}
+              <Button
+                icon='lucide:plug'
+                label={`Connect ${storageSettings.system}`}
+                loading={storageSettings.isConnecting}
+                onClick={handleConnect}
+              />
+            </div>
+          ) : (
             <Button
+              disabled={
+                !(
+                  storageSettings.system === 'Included storage' ||
+                  storageSettings.isConnected
+                )
+              }
               label='Continue'
               suffixIcon='tabler:arrow-right'
               onClick={() => setStep(3)}
-            />
-          ) : (
-            <Button
-              icon='lucide:plug'
-              label={`Connect ${storageSettings.system}`}
-              loading={storageSettings.isConnecting}
-              onClick={handleConnect}
             />
           )}
         </StepFooter>
@@ -61,21 +113,13 @@ const StepThree = () => {
         <StorageSystem />
       </AnimateFadeIn>
 
-      {storageSettings.system &&
-        storageSettings.system !== 'Included storage' && (
-          <AnimateFadeIn delay={0.4}>
-            <>
-              <Divider />
-              <StorageSettings />
-            </>
-          </AnimateFadeIn>
-        )}
+
 
       {storageSettings.system === 'Included storage' && (
         <AnimateSlideUp delay={0.4}>
           <Alert
             text='Storage selected. Documents will be saved here once you begin processing.'
-            variant='primary'
+            variant='green'
           />
         </AnimateSlideUp>
       )}

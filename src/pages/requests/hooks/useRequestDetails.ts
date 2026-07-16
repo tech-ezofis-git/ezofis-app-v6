@@ -87,10 +87,11 @@ export const useRequestDetail = (
       // 3. Fetch History (Critical for Agent Data)
       let historyData = null
       try {
-        historyData = await requestApi.processHistory(
+        const historyRes = await workflowsApiV6.getInstanceHistory(
           workflowId as number | string,
-          processId as number,
+          processId as number | string,
         )
+        historyData = historyRes.data
       } catch (err) {
         console.error('Error fetching process history:', err)
       }

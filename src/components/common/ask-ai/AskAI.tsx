@@ -27,75 +27,49 @@ import {
   Plus,
   ScanLine,
   Send,
+  Sparkles,
   Store,
   Table2,
+  Trash2,
   X,
 } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import {
   type CSSProperties,
+  type ReactElement,
   type ReactNode,
   useEffect,
   useMemo,
   useRef,
   useState,
 } from 'react'
+import Tooltip from '@/components/base/Tooltip'
 import useAskAIStore from './stores/useAskAIStore'
 
-type AnalysisRow = {
-  icon?: string
-  label?: string
-  ok?: boolean
-  value?: string
-}
-type ApiAiPayload = {
-  actions?: string[]
-  analysis?: AnalysisRow[] | null
-  attachments?: Attachments | null
-  clarify?: Clarify | null
-  creditsRemaining?: number
-  extraResults?: ExtraResult[] | null
-  insight?: { stats?: InsightStat[]; title?: string } | null
-  reply?: string | string[]
-  result?: FileResult | null
-  text?: string
-}
+type TextBlock =
+  | {
+      type: 'paragraph'
+      text: string
+    }
+  | {
+      type: 'bullets'
+      title?: string
+      variant?: 'dot' | string
+      items: Array<{ label: string; value: string | number }>
+    }
+  | {
+      type: 'card'
+      title: string
+      subtitle?: string
+      fields: Array<{ label: string; value: string | number }>
+    }
 
-type AttachmentItem = {
-  cite?: string
-  file?: string
-  meta?: string
-  url?: string
-}
-
-type Attachments = {
-  docx?: AttachmentItem[]
-  excel?: AttachmentItem[]
-  other?: AttachmentItem[]
-  pdf?: AttachmentItem[]
-}
-
-type Clarify = {
-  options?: string[]
-  question?: string
-}
-
-type ExtraResult = {
-  confidence?: string | number
-  icon?: string
-  name?: string
-  url?: string
-}
-
-type FileResult = {
-  confidence?: string | number
-  date?: string
-  name?: string
-  path?: string
-  reason?: string
-  source?: string
-  type?: string
-  url?: string
+type AskAiAnswer = {
+  action?: Record<string, unknown>
+  actionContext?: Record<string, unknown>
+  actionTo?: string
+  conversation_id: string
+  text: { blocks: TextBlock[] }
 }
 
 type HistoryItem = {
@@ -108,41 +82,379 @@ type HistoryItem = {
   title: string
 }
 
-type InsightStat = {
-  label?: string
-  n?: string | number
-}
-
 type Message = {
+  blocks?: TextBlock[]
   id: string
-  payload?: ApiAiPayload
+  isTyping?: boolean
+  revealExtras?: boolean
   role: Role
   text: string
 }
 
 type Role = 'user' | 'ai' | 'status'
 
+const AI_STATUS_WORDS = [
+  'Thinking…',
+  'Working…',
+  'Finding…',
+  'Analyzing…',
+  'Reasoning…',
+  'Searching…',
+  'Generating…',
+]
+
 type ViewMode = 'chat' | 'history'
 
 const suggestions = [
-  { label: 'Show recent documents.', query: 'Show recent documents' },
   {
-    label: 'Search for a supplier invoice.',
-    query: 'Find the latest GST invoice from Rajan Suppliers',
+    label: 'Find recent supplier invoices.',
+    query: 'Show recent supplier invoices awaiting review',
   },
   {
-    label: 'Retrieve scanned contracts.',
-    query: 'Show me all scanned contracts from Q1 2025',
+    label: 'Search for a purchase request.',
+    query: 'Find open purchase requests pending approval',
   },
   {
-    label: 'Summarise archive insights.',
-    query: 'Give me data insights for documents this month',
+    label: 'Locate a vendor payment document.',
+    query: 'Find payment documents and remittance advices for this month',
   },
   {
-    label: 'Find an email attachment.',
-    query: 'Find the onboarding email attachment for Priya Nair',
+    label: 'Check invoice matching status.',
+    query: 'Show invoices that need 2-way or 3-way matching',
+  },
+  {
+    label: 'Summarise AP documents this week.',
+    query: 'Summarise accounts payable documents and requests from this week',
   },
 ]
+
+const sampleAnswers: AskAiAnswer[] = [
+  {
+    actionTo: 'Repository',
+    conversation_id: 'sample-invoices-001',
+    text: {
+      blocks: [
+        { type: 'paragraph', text: "Here's what I found for you!" },
+        {
+          type: 'paragraph',
+          text: 'Found 3 supplier invoices awaiting review in Accounts Payable.',
+        },
+        {
+          type: 'bullets',
+          items: [
+            { label: 'Status', value: 'Awaiting review' },
+            { label: 'Document type', value: 'Supplier invoice' },
+            { label: 'Period', value: 'Last 7 days' },
+          ],
+          title: 'Filters Applied',
+          variant: 'dot',
+        },
+        {
+          type: 'card',
+          fields: [
+            { label: 'Invoice No', value: 'INV-4821' },
+            { label: 'Vendor', value: 'Rajan Suppliers' },
+            { label: 'Amount', value: '$12,450.00' },
+            { label: 'Due date', value: '22 Jul 2026' },
+          ],
+          subtitle: 'GST invoice · Pending review',
+          title: 'INV-4821',
+        },
+        {
+          type: 'card',
+          fields: [
+            { label: 'Invoice No', value: 'INV-4818' },
+            { label: 'Vendor', value: 'Hexaware Services' },
+            { label: 'Amount', value: '$8,920.50' },
+            { label: 'Due date', value: '18 Jul 2026' },
+          ],
+          subtitle: 'Service invoice · Pending review',
+          title: 'INV-4818',
+        },
+      ],
+    },
+  },
+  {
+    actionTo: 'Repository',
+    conversation_id: 'sample-requests-002',
+    text: {
+      blocks: [
+        { type: 'paragraph', text: "Here's what I found for you!" },
+        {
+          type: 'paragraph',
+          text: 'There are 2 open purchase requests pending approval.',
+        },
+        {
+          type: 'bullets',
+          items: [
+            { label: 'Request type', value: 'Purchase request' },
+            { label: 'Status', value: 'Pending approval' },
+          ],
+          title: 'Filters Applied',
+          variant: 'dot',
+        },
+        {
+          type: 'card',
+          fields: [
+            { label: 'Request No', value: 'PR-2204' },
+            { label: 'Requester', value: 'Priya Nair' },
+            { label: 'Amount', value: '$4,350.00' },
+            { label: 'Department', value: 'Operations' },
+          ],
+          subtitle: 'Purchase request · Pending approval',
+          title: 'PR-2204',
+        },
+        {
+          type: 'card',
+          fields: [
+            { label: 'Request No', value: 'PR-2197' },
+            { label: 'Requester', value: 'Arun Mehta' },
+            { label: 'Amount', value: '$1,280.00' },
+            { label: 'Department', value: 'Finance' },
+          ],
+          subtitle: 'Purchase request · Pending approval',
+          title: 'PR-2197',
+        },
+      ],
+    },
+  },
+  {
+    actionTo: 'Repository',
+    conversation_id: 'sample-payments-003',
+    text: {
+      blocks: [
+        { type: 'paragraph', text: "Here's what I found for you!" },
+        {
+          type: 'paragraph',
+          text: 'Located payment documents and remittance advices for this month.',
+        },
+        {
+          type: 'bullets',
+          items: [
+            { label: 'Document type', value: 'Payment / Remittance' },
+            { label: 'Period', value: 'Jul 2026' },
+          ],
+          title: 'Filters Applied',
+          variant: 'dot',
+        },
+        {
+          type: 'card',
+          fields: [
+            { label: 'Payment No', value: 'PAY-9032' },
+            { label: 'Vendor', value: 'Rajan Suppliers' },
+            { label: 'Amount', value: '$12,450.00' },
+            { label: 'Paid on', value: '09 Jul 2026' },
+          ],
+          subtitle: 'Remittance advice · Posted',
+          title: 'PAY-9032',
+        },
+      ],
+    },
+  },
+  {
+    actionTo: 'Repository',
+    conversation_id: 'sample-matching-004',
+    text: {
+      blocks: [
+        { type: 'paragraph', text: "Here's what I found for you!" },
+        {
+          type: 'paragraph',
+          text: '2 invoices need 2-way or 3-way matching before payment.',
+        },
+        {
+          type: 'bullets',
+          items: [
+            { label: 'Match status', value: 'Incomplete' },
+            { label: 'Match type', value: '2-way / 3-way' },
+          ],
+          title: 'Filters Applied',
+          variant: 'dot',
+        },
+        {
+          type: 'card',
+          fields: [
+            { label: 'Invoice No', value: 'INV-4790' },
+            { label: 'PO Number', value: 'PO-1001' },
+            { label: 'Match type', value: '3-way' },
+            { label: 'Missing', value: 'Goods receipt' },
+          ],
+          subtitle: 'PO-1001 · Matching incomplete',
+          title: 'INV-4790',
+        },
+        {
+          type: 'card',
+          fields: [
+            { label: 'Invoice No', value: 'INV-4785' },
+            { label: 'PO Number', value: 'PO-0988' },
+            { label: 'Match type', value: '2-way' },
+            { label: 'Missing', value: 'PO line match' },
+          ],
+          subtitle: 'PO-0988 · Matching incomplete',
+          title: 'INV-4785',
+        },
+      ],
+    },
+  },
+  {
+    actionTo: 'Repository',
+    conversation_id: 'sample-summary-005',
+    text: {
+      blocks: [
+        { type: 'paragraph', text: "Here's your AP summary for this week!" },
+        {
+          type: 'paragraph',
+          text: 'Accounts payable activity is up 12% vs last week across invoices and requests.',
+        },
+        {
+          type: 'bullets',
+          items: [
+            { label: 'Period', value: 'This week' },
+            { label: 'Scope', value: 'AP documents & requests' },
+          ],
+          title: 'Filters Applied',
+          variant: 'dot',
+        },
+        {
+          type: 'card',
+          fields: [
+            { label: 'Invoices received', value: 48 },
+            { label: 'Requests opened', value: 12 },
+            { label: 'Pending approval', value: 9 },
+            { label: 'Matched & ready', value: 31 },
+          ],
+          subtitle: 'Accounts Payable · Weekly snapshot',
+          title: 'AP weekly summary',
+        },
+      ],
+    },
+  },
+]
+
+/** Exact match sample for PO-style answers using the provided API shape. */
+const poSampleAnswer: AskAiAnswer = {
+  action: {
+    browse_request: {
+      contentSearchValue: '',
+      currentPage: 1,
+      filterBy: [
+        {
+          filters: [
+            {
+              arrayValue: ['PO-1001'],
+              condition: 'IS_EQUALS_TO',
+              criteria: 'PO Number',
+              criteriaArray: ['PO Number'],
+              dataType: 'SHORT_TEXT',
+              id: 'DU4SYnCjVJL2d5jMcgGI5',
+              value: '["PO-1001"]',
+            },
+          ],
+          groupCondition: '',
+          id: 's-ezGkc-7wOTfDgOyO_2c',
+        },
+      ],
+      fuzzy: 8,
+      groupBy: '',
+      itemsPerPage: 100,
+      level: 0,
+      mode: 'BROWSE',
+      parentNodeId: 0,
+      repositoryId: 214,
+      searchType: 1,
+      sortBy: { criteria: '', order: 'ASC' },
+    },
+  },
+  actionContext: { repositoryId: 214, workspaceId: 35 },
+  actionTo: 'Repository',
+  conversation_id: 'edef830c-a654-482d-a749-1993cebacfb5',
+  text: {
+    blocks: [
+      { type: 'paragraph', text: "Here's what I found for you!" },
+      {
+        type: 'paragraph',
+        text: 'The PO number for PO-1001 is PO-1001.',
+      },
+      {
+        type: 'bullets',
+        items: [{ label: 'PO Number', value: 'PO-1001' }],
+        title: 'Filters Applied',
+        variant: 'dot',
+      },
+      {
+        type: 'card',
+        fields: [
+          { label: 'PO Number', value: 'PO-1001' },
+          { label: 'Total Documents', value: 2 },
+          { label: 'Repository', value: 'Access2PayRep' },
+        ],
+        subtitle: 'PO PO-1001',
+        title: 'PO-1001',
+      },
+    ],
+  },
+}
+
+const paragraphTextFromBlocks = (blocks: TextBlock[]) =>
+  blocks
+    .filter((b): b is Extract<TextBlock, { type: 'paragraph' }> => b.type === 'paragraph')
+    .map((b) => b.text)
+    .join('\n')
+
+async function fetchAskAIAnswer(question: string): Promise<AskAiAnswer> {
+  await new Promise((resolve) => setTimeout(resolve, 550))
+  const q = question.toLowerCase()
+
+  if (q.includes('po-1001') || q.includes('po number')) {
+    return poSampleAnswer
+  }
+
+  const suggestionIndex = suggestions.findIndex(
+    (item) =>
+      item.query.toLowerCase() === q ||
+      item.label.toLowerCase().replace(/\.$/, '') === q.replace(/\.$/, ''),
+  )
+  if (suggestionIndex >= 0) {
+    return sampleAnswers[suggestionIndex]
+  }
+
+  if (q.includes('invoice') && (q.includes('match') || q.includes('2-way') || q.includes('3-way'))) {
+    return sampleAnswers[3]
+  }
+  if (q.includes('payment') || q.includes('remittance')) {
+    return sampleAnswers[2]
+  }
+  if (q.includes('purchase request') || q.includes('pending approval')) {
+    return sampleAnswers[1]
+  }
+  if (q.includes('summar') || q.includes('this week')) {
+    return sampleAnswers[4]
+  }
+  if (q.includes('invoice') || q.includes('supplier')) {
+    return sampleAnswers[0]
+  }
+
+  return {
+    conversation_id: 'sample-fallback-000',
+    text: {
+      blocks: [
+        { type: 'paragraph', text: "Here's what I found for you!" },
+        {
+          type: 'paragraph',
+          text: 'I searched AP documents, invoices, and requests for your query. Try a suggestion below for a structured sample result.',
+        },
+        {
+          type: 'bullets',
+          items: [
+            { label: 'Scope', value: 'Invoices, requests, payments' },
+            { label: 'Tip', value: 'Use a predefined question for rich cards' },
+          ],
+          title: 'Search context',
+          variant: 'dot',
+        },
+      ],
+    },
+  }
+}
 
 const iconMap: Record<string, LucideIconType> = {
   add: Plus,
@@ -177,6 +489,7 @@ const iconMap: Record<string, LucideIconType> = {
   send: Send,
   store: Store,
   table: Table2,
+  trash: Trash2,
   user: FileText,
 }
 
@@ -243,223 +556,180 @@ const UiIcon = ({
 
 const HeaderIconButton = ({
   children,
+  disabled,
   title,
   onClick,
 }: {
   children: ReactNode
+  disabled?: boolean
   title: string
   onClick?: () => void
 }) => (
-  <button
-    className='group grid size-[30px] place-items-center rounded-lg text-[var(--text2)] hover:bg-[var(--bg2)]'
-    title={title}
-    type='button'
-    onClick={onClick}
-  >
-    {children}
-  </button>
+  <Tooltip content={title} position='bottom'>
+    <button
+      aria-label={title}
+      className='group grid size-[30px] place-items-center rounded-lg text-[var(--text2)] hover:bg-[var(--bg2)] disabled:pointer-events-none disabled:opacity-40'
+      disabled={disabled}
+      type='button'
+      onClick={onClick}
+    >
+      {children}
+    </button>
+  </Tooltip>
 )
 
 const uid = () =>
   typeof crypto !== 'undefined' && crypto.randomUUID
     ? crypto.randomUUID()
     : String(Date.now() + Math.random())
-const asArray = (value?: string | string[]) =>
-  Array.isArray(value) ? value : value ? [value] : []
-const confidenceText = (value?: string | number) => {
-  if (value === undefined || value === null || value === '') return '96%'
-  return typeof value === 'number' ? `${value}%` : value
-}
-
-async function fetchAskAIAnswer(question: string): Promise<ApiAiPayload> {
-  await new Promise((resolve) => setTimeout(resolve, 550))
-  const q = question.toLowerCase()
-
-  if (q.includes('insight') || q.includes('summar')) {
-    return {
-      actions: ['Full report', 'Copy', 'Export'],
-      creditsRemaining: 14,
-      insight: {
-        stats: [
-          { label: 'Total docs', n: '1,842' },
-          { label: 'This month', n: '312' },
-          { label: 'Email', n: '94' },
-          { label: 'Scanned', n: '78' },
-          { label: 'Workflow', n: '61' },
-          { label: 'Unclassified', n: '14' },
-        ],
-        title: 'Archive insights · May 2026',
-      },
-      reply:
-        'Archive insights for May 2026 — storage grew 18% MoM. 14 documents remain unclassified and 3 potential duplicates were detected.',
-    }
-  }
-
-  if (q.includes('contract') || q.includes('q1') || q.includes('scanned')) {
-    return {
-      analysis: [
-        {
-          icon: 'mingcute:certificate-line',
-          label: 'Document type',
-          ok: true,
-          value: 'Contract · 8 found',
-        },
-        {
-          icon: 'mingcute:calendar-line',
-          label: 'Date range',
-          value: 'Jan – Mar 2025',
-        },
-        {
-          icon: 'mingcute:scan-line',
-          label: 'Source',
-          ok: true,
-          value: 'Scanner / OCR',
-        },
-      ],
-      clarify: {
-        options: ['All vendors', 'Hexaware', 'TCS', 'No filter'],
-        question: 'Which department or vendor to filter by?',
-      },
-      creditsRemaining: 14,
-      extraResults: [
-        {
-          confidence: '87%',
-          icon: 'mingcute:file-certificate-line',
-          name: 'VendorContract_TCS_Feb2025.pdf',
-        },
-        {
-          confidence: '79%',
-          icon: 'mingcute:file-certificate-line',
-          name: 'ServiceAgreement_Infosys_Mar2025.pdf',
-        },
-      ],
-      reply:
-        'Found 8 scanned contracts from Q1 2025. Showing the highest-confidence result below.',
-      result: {
-        confidence: '91%',
-        date: '06 Jan 2025',
-        name: 'VendorContract_Hexaware_Jan2025.pdf',
-        path: 'Legal / Contracts / 2025 / Q1',
-        reason:
-          'OCR matched contract, agreement, and terms in the Q1 date window.',
-        source: 'Scanner + OCR import',
-        type: 'PDF · Vendor contract',
-      },
-    }
-  }
-
-  if (q.includes('email') || q.includes('priya') || q.includes('onboarding')) {
-    return {
-      analysis: [
-        {
-          icon: 'mingcute:mail-open-line',
-          label: 'Email source',
-          ok: true,
-          value: 'HR@company.com',
-        },
-        {
-          icon: 'mingcute:user-3-line',
-          label: 'Employee',
-          ok: true,
-          value: 'Priya Nair',
-        },
-        {
-          icon: 'mingcute:building-2-line',
-          label: 'Department',
-          ok: true,
-          value: 'HR / Onboarding',
-        },
-      ],
-      clarify: {
-        options: ['Jan–Mar 2025', 'Apr–Jun 2025', 'Last 30 days', 'Not sure'],
-        question: 'When was this email received?',
-      },
-      creditsRemaining: 14,
-      reply:
-        'Found 1 onboarding document for Priya Nair from HR. Name matched in email subject, body, and metadata.',
-      result: {
-        confidence: '98%',
-        date: '22 Mar 2025',
-        name: 'Onboarding_PriyaNair_OfferLetter.docx',
-        path: 'HR / Onboarding / 2025',
-        reason:
-          'Employee name matched in subject, body, and document metadata.',
-        source: 'Email (HR@company.com)',
-        type: 'DOCX · Offer letter',
-      },
-    }
-  }
-
-  return {
-    analysis: [
-      {
-        icon: 'mingcute:bill-line',
-        label: 'Document type',
-        ok: true,
-        value: 'GST invoice',
-      },
-      {
-        icon: 'mingcute:store-2-line',
-        label: 'Supplier',
-        ok: true,
-        value: 'Rajan Suppliers',
-      },
-      {
-        icon: 'mingcute:mail-line',
-        label: 'Source',
-        ok: true,
-        value: 'Email attachment',
-      },
-    ],
-    clarify: {
-      options: ['Email attachment', 'Manual upload', 'Any source'],
-      question: 'Which source should I check first?',
-    },
-    creditsRemaining: 14,
-    reply:
-      'Found 2 matching GST invoices from Rajan Suppliers. The most recent one is shown below.',
-    result: {
-      confidence: '96%',
-      date: '14 Feb 2025',
-      name: 'GST_Invoice_RajanSuppliers_Feb2025.pdf',
-      path: 'Finance / Supplier Invoices / 2025 / Feb',
-      reason: 'Supplier name and invoice number matched via OCR extraction.',
-      source: 'Email attachment',
-      type: 'PDF · GST Invoice',
-    },
-  }
-}
-
-const SparkIcon = ({ small = false }: { small?: boolean }) => (
-  <svg
-    fill='none'
-    height={small ? 18 : 44}
-    viewBox='0 0 44 44'
-    width={small ? 18 : 44}
-    aria-hidden
+/** Same Sparkles icon — soft AI “thinking” sparkle while loading. */
+const SparkIconLoading = ({ size = 18 }: { size?: number }) => (
+  <motion.div
+    animate={{
+      opacity: [0.55, 1, 0.55],
+      rotate: [0, 8, -8, 0],
+      scale: [0.92, 1.12, 0.92],
+    }}
+    className='inline-flex text-[var(--primary-9)]'
+    transition={{ duration: 1.6, ease: 'easeInOut', repeat: Infinity }}
   >
-    <defs>
-      <linearGradient
-        gradientUnits='userSpaceOnUse'
-        id={small ? 'sparkSmall' : 'sparkLarge'}
-        x1='0'
-        x2='44'
-        y1='0'
-        y2='44'
-      >
-        <stop offset='0%' stopColor='var(--primary-8)' />
-        <stop offset='100%' stopColor='var(--blue-9)' />
-      </linearGradient>
-    </defs>
-    <path
-      d='M22 3L25.6 16.8L39.5 22L25.6 27.2L22 41L18.4 27.2L4.5 22L18.4 16.8L22 3Z'
-      fill={`url(#${small ? 'sparkSmall' : 'sparkLarge'})`}
-    />
-    {!small && (
-      <circle cx='34' cy='8' fill='var(--primary-7)' opacity='.7' r='3.5' />
-    )}
-  </svg>
+    <Sparkles size={size} strokeWidth={2} />
+  </motion.div>
 )
+
+const useAiStatusWord = (active: boolean) => {
+  const [statusIndex, setStatusIndex] = useState(0)
+
+  useEffect(() => {
+    if (!active) {
+      setStatusIndex(0)
+      return
+    }
+    const timer = window.setInterval(() => {
+      setStatusIndex((prev) => (prev + 1) % AI_STATUS_WORDS.length)
+    }, 1300)
+    return () => window.clearInterval(timer)
+  }, [active])
+
+  return active ? AI_STATUS_WORDS[statusIndex] : null
+}
+
+const CallingLoader = () => (
+  <div className='px-[18px] py-4'>
+    <div className='flex items-center gap-2.5'>
+      <div className='shrink-0 text-[var(--primary-9)]'>
+        <Sparkles size={16} strokeWidth={2} />
+      </div>
+      <div className='flex items-center gap-1.5'>
+        {[0, 1, 2].map((dot) => (
+          <motion.span
+            animate={{ opacity: [0.35, 1, 0.35], y: [0, -3, 0] }}
+            className='size-2 rounded-full bg-[var(--primary-9)]'
+            key={dot}
+            transition={{
+              delay: dot * 0.16,
+              duration: 0.7,
+              ease: 'easeInOut',
+              repeat: Infinity,
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  </div>
+)
+
+const TypewriterReply = ({
+  onComplete,
+  onProgress,
+  text,
+}: {
+  onComplete?: () => void
+  onProgress?: () => void
+  text: string
+}) => {
+  const [count, setCount] = useState(0)
+  const completedRef = useRef(false)
+
+  useEffect(() => {
+    completedRef.current = false
+    setCount(0)
+    // ~2–3.5s typed reply depending on length (not instant)
+    const step = Math.max(1, Math.ceil(text.length / 160))
+    const timer = window.setInterval(() => {
+      setCount((prev) => {
+        if (prev >= text.length) {
+          window.clearInterval(timer)
+          return prev
+        }
+        return Math.min(text.length, prev + step)
+      })
+    }, 28)
+
+    return () => window.clearInterval(timer)
+  }, [text])
+
+  useEffect(() => {
+    if (count > 0) onProgress?.()
+    if (count >= text.length && text.length > 0 && !completedRef.current) {
+      completedRef.current = true
+      // Brief pause before cards start appearing
+      window.setTimeout(() => onComplete?.(), 280)
+    }
+  }, [count, onComplete, onProgress, text.length])
+
+  return (
+    <span>
+      {text.slice(0, count)}
+      {count < text.length && (
+        <motion.span
+          animate={{ opacity: [1, 0] }}
+          className='ml-0.5 inline-block h-[14px] w-[2px] translate-y-[2px] bg-[var(--spark1)] align-middle'
+          transition={{ duration: 0.55, ease: 'easeInOut', repeat: Infinity }}
+        />
+      )}
+    </span>
+  )
+}
+
+const StaggeredCards = ({
+  items,
+  onProgress,
+}: {
+  items: ReactElement[]
+  onProgress?: () => void
+}) => {
+  const [visibleCount, setVisibleCount] = useState(0)
+  const itemsKey = items.length
+
+  useEffect(() => {
+    setVisibleCount(0)
+  }, [itemsKey])
+
+  useEffect(() => {
+    if (visibleCount >= items.length) return
+    const timer = window.setTimeout(() => {
+      setVisibleCount((prev) => prev + 1)
+      onProgress?.()
+    }, visibleCount === 0 ? 120 : 380)
+    return () => window.clearTimeout(timer)
+  }, [items.length, onProgress, visibleCount])
+
+  return (
+    <div className='flex flex-col'>
+      {items.slice(0, visibleCount).map((item, index) => (
+        <motion.div
+          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0, y: 12 }}
+          key={item.key ?? index}
+          transition={{ duration: 0.32, ease: 'easeOut' }}
+        >
+          {item}
+        </motion.div>
+      ))}
+    </div>
+  )
+}
 
 const AskAI = () => {
   const isOpen = useAskAIStore((state: any) => state.isOpen)
@@ -476,6 +746,7 @@ const AskAI = () => {
 
   const hasMessages = messages.length > 0
   const canSend = input.trim().length > 0 && !busy
+  const aiStatusWord = useAiStatusWord(busy && view === 'chat')
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -500,7 +771,12 @@ const AskAI = () => {
         creditsRemaining,
         creditsUsed: (existing?.creditsUsed || 0) + creditsUsed,
         id: sessionId,
-        messages: nextMessages.filter((m) => m.role !== 'status'),
+        messages: nextMessages
+          .filter((m) => m.role !== 'status')
+          .map(({ isTyping: _isTyping, revealExtras: _revealExtras, ...rest }) => ({
+            ...rest,
+            revealExtras: true,
+          })),
         subtitle: lastAi.text,
         title: existing?.title || firstUser.text,
       }
@@ -510,7 +786,7 @@ const AskAI = () => {
     })
   }
 
-  const newChat = () => {
+  const clearChat = () => {
     setMessages([])
     setCurrentHistoryId(null)
     setInput('')
@@ -523,9 +799,17 @@ const AskAI = () => {
   }
 
   const loadHistory = (item: HistoryItem) => {
-    setMessages(item.messages)
+    setMessages(item.messages.map((m) => ({ ...m, isTyping: false, revealExtras: true })))
     setCurrentHistoryId(item.id)
     setView('chat')
+  }
+
+  const finishTyping = (messageId: string) => {
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.id === messageId ? { ...m, isTyping: false, revealExtras: true } : m,
+      ),
+    )
   }
 
   const sendMessage = async (value?: string) => {
@@ -534,33 +818,36 @@ const AskAI = () => {
     if (credits <= 0) return
 
     const userMessage: Message = { id: uid(), role: 'user', text }
-    const statusMessage: Message = {
-      id: uid(),
-      role: 'status',
-      text: 'Searching email index, OCR content and document metadata…',
-    }
-    const baseMessages = [...messages, userMessage]
+    const baseMessages = [...messages.filter((m) => m.role !== 'status'), userMessage]
 
-    setMessages([...baseMessages, statusMessage])
+    setMessages(baseMessages)
     setInput('')
     setBusy(true)
     setView('chat')
 
     try {
-      const payload = await fetchAskAIAnswer(text)
+      // Keep loading (border loop) for at least 4s so answers are not instant
+      const answer = await Promise.all([
+        fetchAskAIAnswer(text),
+        new Promise<void>((resolve) => {
+          window.setTimeout(resolve, 4000)
+        }),
+      ]).then(([result]) => result)
+
       const replyText =
-        asArray(payload.reply || payload.text).join('\n') ||
+        paragraphTextFromBlocks(answer.text.blocks) ||
         'I found matching documents based on your search.'
       const aiMessage: Message = {
+        blocks: answer.text.blocks,
         id: uid(),
-        payload,
+        isTyping: true,
+        revealExtras: false,
         role: 'ai',
         text: replyText,
       }
       const finalMessages = [...baseMessages, aiMessage]
 
       // One user message = one AI credit.
-      // Do not depend on mock/API creditsRemaining here because sample payloads may always return 14.
       const creditsUsed = 1
       const nextCredits = Math.max(0, credits - creditsUsed)
 
@@ -568,10 +855,16 @@ const AskAI = () => {
       saveHistory(finalMessages, creditsUsed, nextCredits)
       setCredits(nextCredits)
     } catch {
+      // Still respect the minimum wait feel on errors
+      await new Promise<void>((resolve) => {
+        window.setTimeout(resolve, 1200)
+      })
       setMessages([
         ...baseMessages,
         {
           id: uid(),
+          isTyping: true,
+          revealExtras: false,
           role: 'ai',
           text: 'Unable to complete the AI search. Please check the API endpoint and try again.',
         },
@@ -626,35 +919,56 @@ const AskAI = () => {
                 />
               </HeaderIconButton>
             ) : (
-              <HeaderIconButton title='New chat' onClick={newChat}>
-                <UiIcon
-                  className='text-[var(--text2)] group-hover:text-[var(--text1)]'
-                  name='add'
-                  size={20}
-                />
-              </HeaderIconButton>
+              <div className='relative grid size-8 shrink-0 place-items-center text-[var(--primary-9)]'>
+                {busy ? (
+                  <SparkIconLoading size={18} />
+                ) : (
+                  <Sparkles size={18} strokeWidth={2} />
+                )}
+              </div>
             )}
 
-            <span className='flex-1 text-[15px] font-semibold tracking-[-.2px] text-[var(--text1)]'>
-              {view === 'history' ? 'Chat History' : 'AI Chat'}
-            </span>
+            <div className='min-w-0 flex-1'>
+              <div className='truncate text-[15px] font-semibold tracking-[-.2px] text-[var(--text1)]'>
+                {view === 'history' ? 'Chat History' : 'AI Chat'}
+              </div>
+              {aiStatusWord && (
+                <AnimatePresence mode='wait'>
+                  <motion.div
+                    animate={{ opacity: 1, y: 0 }}
+                    className='text-[11.5px] text-[var(--text2)]'
+                    exit={{ opacity: 0, y: -3 }}
+                    initial={{ opacity: 0, y: 3 }}
+                    key={aiStatusWord}
+                    transition={{ duration: 0.2 }}
+                  >
+                    {aiStatusWord}
+                  </motion.div>
+                </AnimatePresence>
+              )}
+            </div>
 
-            {view === 'history' ? (
-              <HeaderIconButton title='New chat' onClick={newChat}>
-                <UiIcon
-                  className='text-[var(--text2)] group-hover:text-[var(--text1)]'
-                  name='add'
-                  size={20}
-                />
-              </HeaderIconButton>
-            ) : (
-              <HeaderIconButton title='Chat history' onClick={openHistory}>
-                <UiIcon
-                  className='text-[var(--text2)] group-hover:text-[var(--text1)]'
-                  name='history'
-                  size={16}
-                />
-              </HeaderIconButton>
+            {view === 'history' ? null : (
+              <>
+                <HeaderIconButton
+                  disabled={!hasMessages && !busy}
+                  title='Clear chat'
+                  onClick={clearChat}
+                >
+                  <UiIcon
+                    className='text-[var(--text2)] group-hover:text-[var(--text1)]'
+                    name='trash'
+                    size={16}
+                  />
+                </HeaderIconButton>
+                <HeaderIconButton title='Chat history' onClick={openHistory}>
+                  <UiIcon
+                    className='text-[var(--text2)] group-hover:text-[var(--text1)]'
+                    name='history'
+                    size={16}
+                  />
+                </HeaderIconButton>
+              </>
             )}
 
             <HeaderIconButton title='Close' onClick={close}>
@@ -670,16 +984,24 @@ const AskAI = () => {
             {view === 'history' ? (
               <HistoryView
                 history={history}
+                onClear={clearChat}
                 onLoad={loadHistory}
-                onNewChat={newChat}
               />
             ) : !hasMessages ? (
               <WelcomeView onSend={sendMessage} />
             ) : (
               <div className='pb-2'>
                 {messages.map((msg) => (
-                  <ChatMessage key={msg.id} msg={msg} />
+                  <ChatMessage
+                    key={msg.id}
+                    msg={msg}
+                    onTypingComplete={() => finishTyping(msg.id)}
+                    onTypingProgress={() =>
+                      bottomRef.current?.scrollIntoView({ behavior: 'auto' })
+                    }
+                  />
                 ))}
+                {busy && <CallingLoader />}
                 <div ref={bottomRef} />
               </div>
             )}
@@ -706,7 +1028,7 @@ const AskAI = () => {
                   <div className='px-3.5 pt-2.5 pb-1'>
                     <textarea
                       className='max-h-[100px] min-h-[34px] w-full resize-none bg-transparent text-[13.5px] leading-[1.5] text-[var(--text1)] outline-none placeholder:text-[var(--text3)]'
-                      placeholder='Ask me anything ...'
+                      placeholder='Ask about invoices, documents, or requests…'
                       rows={1}
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
@@ -719,28 +1041,7 @@ const AskAI = () => {
                     />
                   </div>
 
-                  <div className='flex items-center gap-1.5 px-2 pb-2'>
-                    <button
-                      className='grid size-8 place-items-center rounded-[9px] border border-[var(--border2)] bg-[var(--bg)] text-[var(--text2)] hover:bg-[var(--bg3)]'
-                      title='Attach file'
-                      type='button'
-                    >
-                      <UiIcon
-                        className='size-4'
-                        name='mingcute:attachment-line'
-                      />
-                    </button>
-                    <button
-                      className='flex h-8 items-center gap-1 rounded-[9px] border border-[var(--border2)] bg-[var(--bg)] px-2.5 text-[12.5px] font-medium text-[var(--text1)] hover:bg-[var(--bg3)]'
-                      type='button'
-                    >
-                      All{' '}
-                      <UiIcon
-                        className='size-3.5 text-[var(--text3)]'
-                        name='mingcute:down-line'
-                      />
-                    </button>
-                    <div className='flex-1' />
+                  <div className='flex items-center justify-end gap-1.5 px-2 pb-2'>
                     <button
                       className={`grid size-8 place-items-center rounded-[9px] border transition ${canSend ? 'border-[var(--spark1)] bg-[var(--spark1)] text-white' : 'border-[var(--border2)] bg-[var(--bg3)] text-[var(--text3)] opacity-70'}`}
                       disabled={!canSend}
@@ -766,20 +1067,24 @@ const AskAI = () => {
 
 const WelcomeView = ({ onSend }: { onSend: (value: string) => void }) => (
   <div className='px-5 pt-7 pb-4'>
-    <div className='mb-[18px] grid size-11 place-items-center'>
-      <SparkIcon />
+    <div className='mb-5 text-[var(--primary-9)]'>
+      <Sparkles size={40} strokeWidth={2} />
     </div>
     <h2 className='mb-2 text-[19px] font-bold tracking-[-.3px] text-[var(--text1)]'>
       How can I assist you?
     </h2>
     <p className='mb-[22px] text-[13.5px] leading-[1.55] text-[var(--text2)]'>
-      Here are a few things I can do, or ask me anything!
+      Search invoices, documents, and accounts payable requests — or ask me
+      anything.
     </p>
     <div className='flex flex-col'>
-      {suggestions.map((item) => (
-        <button
+      {suggestions.map((item, index) => (
+        <motion.button
+          animate={{ opacity: 1, x: 0 }}
           className='flex items-center gap-3 border-b border-[var(--border)] px-1 py-[13px] text-left text-[13.5px] leading-[1.4] text-[var(--text1)] hover:rounded-[10px] hover:bg-[var(--bg2)]'
+          initial={{ opacity: 0, x: -8 }}
           key={item.query}
+          transition={{ delay: 0.05 * index, duration: 0.25 }}
           type='button'
           onClick={() => onSend(item.query)}
         >
@@ -788,7 +1093,7 @@ const WelcomeView = ({ onSend }: { onSend: (value: string) => void }) => (
             name='mingcute:arrow-right-line'
           />
           <span>{item.label}</span>
-        </button>
+        </motion.button>
       ))}
     </div>
   </div>
@@ -796,32 +1101,31 @@ const WelcomeView = ({ onSend }: { onSend: (value: string) => void }) => (
 
 const HistoryView = ({
   history,
+  onClear,
   onLoad,
-  onNewChat,
 }: {
   history: HistoryItem[]
+  onClear: () => void
   onLoad: (item: HistoryItem) => void
-  onNewChat: () => void
 }) => (
   <div className='px-4 py-4'>
     {history.length === 0 ? (
       <div className='flex h-[calc(100vh-110px)] flex-col items-center justify-center text-center'>
-        <div className='mb-3 grid size-12 place-items-center rounded-2xl bg-[var(--purple-light)] text-[var(--purple)]'>
-          <UiIcon name='history' size={22} />
+        <div className='mb-4 text-[var(--primary-9)]'>
+          <Sparkles size={28} strokeWidth={2} />
         </div>
         <div className='text-[15px] font-semibold text-[var(--text1)]'>
           No chat history yet
         </div>
         <p className='mt-1 max-w-[300px] text-[12.5px] leading-5 text-[var(--text2)]'>
-          Start a new AI conversation. Completed searches will appear here in
-          the same panel area.
+          Start an AI conversation. Completed searches will appear here.
         </p>
         <button
           className='mt-4 rounded-lg bg-[var(--spark1)] px-4 py-2 text-xs font-semibold text-white'
           type='button'
-          onClick={onNewChat}
+          onClick={onClear}
         >
-          Start new chat
+          Back to chat
         </button>
       </div>
     ) : (
@@ -868,364 +1172,150 @@ const HistoryView = ({
   </div>
 )
 
-const ChatMessage = ({ msg }: { msg: Message }) => {
+const ChatMessage = ({
+  msg,
+  onTypingComplete,
+  onTypingProgress,
+}: {
+  msg: Message
+  onTypingComplete?: () => void
+  onTypingProgress?: () => void
+}) => {
   if (msg.role === 'status') {
-    return (
-      <div className='px-[18px] py-3'>
-        <div className='flex items-start gap-2.5'>
-          <div className='mt-1 grid size-6 shrink-0 place-items-center'>
-            <SparkIcon small />
-          </div>
-          <div className='flex items-center gap-2 pt-0.5 text-[12.5px] text-[var(--text2)] italic'>
-            <span className='size-[7px] animate-pulse rounded-full bg-[var(--spark1)]' />
-            {msg.text}
-          </div>
-        </div>
-      </div>
-    )
+    return <CallingLoader />
   }
 
   if (msg.role === 'user') {
     return (
-      <div className='px-[18px] py-3'>
-        <div className='mb-[6px] flex items-start gap-[9px]'>
-          <div className='mt-0.5 grid size-6 shrink-0 place-items-center rounded-full border border-[var(--border2)] bg-[var(--bg)] text-[var(--text3)]'>
-            <UiIcon className='size-3' name='mingcute:pencil-line' />
-          </div>
-          <div className='max-w-[88%] rounded-[4px_16px_16px_16px] border border-[var(--border)] bg-[var(--bg2)] px-3.5 py-2 text-[13.5px] leading-[1.55] text-[var(--text1)]'>
+      <motion.div
+        animate={{ opacity: 1, y: 0 }}
+        className='px-[18px] py-3'
+        initial={{ opacity: 0, y: 8 }}
+        transition={{ duration: 0.22 }}
+      >
+        <div className='flex justify-end'>
+          <div className='max-w-[88%] rounded-[16px_4px_16px_16px] bg-[var(--purple-light)] px-3.5 py-2 text-[13.5px] leading-[1.55] text-[var(--text1)]'>
             {msg.text}
           </div>
+        </div>
+      </motion.div>
+    )
+  }
+
+  const blocks = msg.blocks || []
+  const paragraphs = msg.text.split('\n').filter(Boolean)
+  const showExtras = Boolean(msg.revealExtras)
+  const richBlocks = blocks.filter((b) => b.type !== 'paragraph')
+
+  return (
+    <motion.div
+      animate={{ opacity: 1, y: 0 }}
+      className='px-[18px] py-3'
+      initial={{ opacity: 0, y: 8 }}
+      transition={{ duration: 0.22 }}
+    >
+      <div className='flex items-start gap-2.5'>
+        <div className='mt-1 shrink-0 text-[var(--primary-9)]'>
+          <Sparkles size={16} strokeWidth={2} />
+        </div>
+        <div className='min-w-0 flex-1 pt-0.5 text-[13.5px] leading-[1.72] text-[var(--text1)]'>
+          {msg.isTyping ? (
+            <p className='mb-2.5 whitespace-pre-wrap'>
+              <TypewriterReply
+                text={msg.text}
+                onComplete={onTypingComplete}
+                onProgress={onTypingProgress}
+              />
+            </p>
+          ) : (
+            paragraphs.map((p, i) => (
+              <p className='mb-2.5' key={`${p}-${i}`}>
+                {p}
+              </p>
+            ))
+          )}
+
+          {showExtras && richBlocks.length > 0 && (
+            <StaggeredCards
+              items={richBlocks.map((block, index) => (
+                <AnswerBlock block={block} key={`${block.type}-${index}`} />
+              ))}
+              onProgress={onTypingProgress}
+            />
+          )}
+        </div>
+      </div>
+    </motion.div>
+  )
+}
+
+const AnswerBlock = ({ block }: { block: TextBlock }) => {
+  if (block.type === 'paragraph') {
+    return <p className='mb-2.5'>{block.text}</p>
+  }
+
+  if (block.type === 'bullets') {
+    return (
+      <div className='mb-2.5 overflow-hidden rounded-[14px] border border-[var(--border)]'>
+        {block.title && (
+          <div className='border-b border-[var(--border)] bg-[var(--bg2)] px-3 py-2 text-[10.5px] font-medium tracking-[.4px] text-[var(--text2)] uppercase'>
+            {block.title}
+          </div>
+        )}
+        <div className='flex flex-col gap-2 px-3 py-2.5'>
+          {block.items.map((item) => (
+            <div
+              className='flex items-start gap-2 text-[12.5px]'
+              key={`${item.label}-${item.value}`}
+            >
+              <span className='mt-1.5 size-1.5 shrink-0 rounded-full bg-[var(--primary-9)]' />
+              <div className='min-w-0 flex-1'>
+                <span className='font-medium text-[var(--text2)]'>
+                  {item.label}:
+                </span>{' '}
+                <span className='text-[var(--text1)]'>{item.value}</span>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     )
   }
 
-  const payload = msg.payload
-  const paragraphs = msg.text.split('\n').filter(Boolean)
-
-  return (
-    <div className='px-[18px] py-3'>
-      <div className='flex items-start gap-2.5'>
-        <div className='mt-1 grid size-6 shrink-0 place-items-center'>
-          <SparkIcon small />
-        </div>
-        <div className='min-w-0 flex-1 pt-0.5 text-[13.5px] leading-[1.72] text-[var(--text1)]'>
-          {payload?.clarify && <ClarifyCard clarify={payload.clarify} />}
-          {payload?.analysis?.length ? (
-            <AnalysisRibbon rows={payload.analysis} />
-          ) : null}
-          {paragraphs.map((p, i) => (
-            <p className='mb-2.5' key={`${p}-${i}`}>
-              {p}
-            </p>
-          ))}
-          {payload?.result && <FileCard result={payload.result} />}
-          {payload?.extraResults?.length ? (
-            <ExtraResults results={payload.extraResults} />
-          ) : null}
-          {payload?.insight?.stats?.length ? (
-            <InsightCard insight={payload.insight} />
-          ) : null}
-          {payload?.attachments && (
-            <AttachmentSection attachments={payload.attachments} />
-          )}
-          <ActionRow
-            actions={payload?.actions}
-            insight={Boolean(payload?.insight)}
-          />
-          <div className='mt-3 flex items-center justify-center gap-1 border-t border-[var(--border)] pt-2 text-[11px] text-[var(--text3)]'>
-            <UiIcon
-              className='size-3 text-[var(--primary-7)]'
-              name='mingcute:lightning-line'
-            />
-            <span className='rounded border border-[var(--primary-4)] bg-[var(--primary-3)] px-1.5 py-0.5 text-[9.5px] font-semibold text-[var(--spark1)]'>
-              EZOFIS Search AI
-            </span>
-            <span>· 1 call used</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-const ClarifyCard = ({ clarify }: { clarify: Clarify }) => {
-  const [picked, setPicked] = useState('')
-  if (!clarify.question && !clarify.options?.length) return null
-
   return (
     <div className='mb-2.5 overflow-hidden rounded-[14px] border border-[var(--border)]'>
-      <div className='flex items-center gap-1.5 border-b border-[var(--border)] bg-[var(--bg2)] px-3 py-2 text-[10.5px] font-medium tracking-[.4px] text-[var(--text2)] uppercase'>
-        <UiIcon
-          className='size-3 text-[var(--purple)]'
-          name='mingcute:question-line'
-        />{' '}
-        Quick clarification
-      </div>
-      {clarify.question && (
-        <div className='border-b border-[var(--border)] px-3 py-2.5 text-[13px] leading-[1.5]'>
-          {clarify.question}
+      <div className='border-b border-[var(--border)] px-3 py-2.5'>
+        <div className='text-[13.5px] font-semibold text-[var(--text1)]'>
+          {block.title}
         </div>
-      )}
-      <div className='flex flex-wrap gap-1.5 px-3 py-2.5'>
-        {(clarify.options || []).map((item) => (
-          <button
-            className={`rounded-full border px-3 py-1.5 text-xs ${picked === item ? 'border-[var(--purple)] bg-[var(--purple-light)] text-[var(--purple)]' : 'border-[var(--border2)] bg-[var(--bg)] text-[var(--text1)] hover:border-[var(--purple)] hover:bg-[var(--purple-light)] hover:text-[var(--purple)]'}`}
-            key={item}
-            type='button'
-            onClick={() => setPicked(item)}
+        {block.subtitle && (
+          <div className='mt-0.5 text-[11.5px] text-[var(--text3)]'>
+            {block.subtitle}
+          </div>
+        )}
+      </div>
+      <div className='grid grid-cols-2'>
+        {block.fields.map((field, index) => (
+          <div
+            className={`border-b border-[var(--border)] px-3 py-2 ${
+              index % 2 === 0 ? 'border-r' : ''
+            } ${
+              block.fields.length % 2 === 1 &&
+              index === block.fields.length - 1
+                ? 'col-span-2 border-r-0'
+                : ''
+            }`}
+            key={`${field.label}-${index}`}
           >
-            {item}
-          </button>
+            <div className='mb-0.5 text-[10px] tracking-[.3px] text-[var(--text3)] uppercase'>
+              {field.label}
+            </div>
+            <div className='text-xs font-medium text-[var(--text1)]'>
+              {field.value}
+            </div>
+          </div>
         ))}
       </div>
-    </div>
-  )
-}
-
-const AnalysisRibbon = ({ rows }: { rows: AnalysisRow[] }) => (
-  <div className='mb-2.5 overflow-hidden rounded-[14px] border border-[var(--border)]'>
-    <div className='flex items-center gap-1.5 border-b border-[var(--border)] bg-[var(--bg2)] px-3 py-2 text-[10px] font-medium tracking-[.5px] text-[var(--text2)] uppercase'>
-      <span className='size-1.5 rounded-full bg-[var(--teal)]' /> Archive match
-      analysis
-    </div>
-    {rows.map((row, index) => (
-      <div
-        className='flex items-center justify-between border-b border-[var(--border)] px-3 py-2 last:border-b-0'
-        key={`${row.label}-${index}`}
-      >
-        <div className='flex items-center gap-1.5 text-[12.5px] text-[var(--text2)]'>
-          <UiIcon
-            className='size-3.5 text-[var(--purple)]'
-            name={row.icon || 'mingcute:check-circle-line'}
-          />
-          {row.label || 'Match'}
-        </div>
-        <div
-          className={`text-[11.5px] font-medium ${row.ok ? 'text-[var(--green)]' : 'text-[var(--teal)]'}`}
-        >
-          {row.value || '-'}
-        </div>
-      </div>
-    ))}
-  </div>
-)
-
-const FileCard = ({ result }: { result: FileResult }) => (
-  <div className='mt-2.5 overflow-hidden rounded-[14px] border border-[var(--border)]'>
-    <div className='flex items-center gap-2.5 border-b border-[var(--border)] px-3 py-2.5'>
-      <div className='grid size-[30px] shrink-0 place-items-center rounded-lg border border-[rgba(131,0,230,.15)] bg-[var(--purple-light)] text-[var(--purple)]'>
-        <UiIcon className='size-4' name='mingcute:file-text-line' />
-      </div>
-      <div className='min-w-0 flex-1'>
-        <div className='text-xs leading-[1.4] font-medium break-all text-[var(--text1)]'>
-          {result.name || 'Document.pdf'}
-        </div>
-        <div className='mt-0.5 truncate text-[10.5px] text-[var(--text3)]'>
-          {result.path || 'Repository / Documents'}
-        </div>
-      </div>
-      <div className='shrink-0 rounded-full border border-[rgba(26,158,110,.2)] bg-[var(--green-bg)] px-2 py-0.5 text-[10.5px] font-semibold text-[var(--green)]'>
-        {confidenceText(result.confidence)}
-      </div>
-    </div>
-    <div className='grid grid-cols-2'>
-      <MetaCell label='Type' value={result.type || 'PDF · Document'} />
-      <MetaCell label='Date' value={result.date || '-'} />
-      <div className='col-span-2'>
-        <MetaCell label='Source' value={result.source || '-'} noRightBorder />
-      </div>
-    </div>
-    <div className='flex items-start gap-2.5 border-t border-[var(--border)] bg-[var(--bg2)] px-3 py-2.5'>
-      <div className='flex min-w-0 flex-1 items-start gap-1.5 text-[11.5px] leading-[1.45] text-[var(--text2)]'>
-        <UiIcon
-          className='mt-0.5 size-3 text-[var(--teal)]'
-          name='mingcute:bulb-line'
-        />
-        <span>
-          {result.reason || 'Matched using metadata and OCR extraction.'}
-        </span>
-      </div>
-      <button
-        className='flex shrink-0 items-center gap-1 rounded-md border border-[rgba(131,0,230,.3)] bg-[var(--bg)] px-2.5 py-1.5 text-[11.5px] font-medium text-[var(--purple)] hover:bg-[var(--purple-light)]'
-        type='button'
-        onClick={() => result.url && window.open(result.url, '_blank')}
-      >
-        <UiIcon className='size-3' name='mingcute:external-link-line' />
-        Open
-      </button>
-    </div>
-  </div>
-)
-
-const MetaCell = ({
-  label,
-  noRightBorder,
-  value,
-}: {
-  label: string
-  noRightBorder?: boolean
-  value: string
-}) => (
-  <div
-    className={`border-b border-[var(--border)] px-3 py-2 ${noRightBorder ? '' : 'border-r'}`}
-  >
-    <div className='mb-0.5 text-[10px] tracking-[.3px] text-[var(--text3)] uppercase'>
-      {label}
-    </div>
-    <div className='text-xs text-[var(--text1)]'>{value}</div>
-  </div>
-)
-
-const ExtraResults = ({ results }: { results: ExtraResult[] }) => (
-  <div className='mt-2 flex flex-col gap-1.5'>
-    <div className='mb-0.5 text-[11px] text-[var(--text3)]'>
-      {results.length} more matching file{results.length > 1 ? 's' : ''}:
-    </div>
-    {results.map((item, index) => (
-      <button
-        className='flex items-center gap-2 rounded-[10px] border border-[var(--border)] bg-[var(--bg)] px-2.5 py-2 hover:border-[var(--purple)] hover:bg-[var(--purple-light)]'
-        key={`${item.name}-${index}`}
-        type='button'
-        onClick={() => item.url && window.open(item.url, '_blank')}
-      >
-        <span className='grid size-[26px] shrink-0 place-items-center rounded-md border border-[rgba(131,0,230,.12)] bg-[var(--purple-light)] text-[var(--purple)]'>
-          <UiIcon
-            className='size-3.5'
-            name={item.icon || 'mingcute:file-line'}
-          />
-        </span>
-        <span className='min-w-0 flex-1 truncate text-left text-[11.5px] font-medium text-[var(--text1)]'>
-          {item.name || 'Document'}
-        </span>
-        <span className='shrink-0 rounded-xl bg-[var(--green-bg)] px-2 py-0.5 text-[10.5px] font-semibold text-[var(--green)]'>
-          {confidenceText(item.confidence)}
-        </span>
-      </button>
-    ))}
-  </div>
-)
-
-const InsightCard = ({
-  insight,
-}: {
-  insight: NonNullable<ApiAiPayload['insight']>
-}) => (
-  <div className='mt-2.5 overflow-hidden rounded-[14px] border border-[var(--border)]'>
-    <div className='flex items-center gap-1.5 border-b border-[var(--border)] bg-[var(--bg2)] px-3 py-2 text-[10px] font-medium tracking-[.5px] text-[var(--text2)] uppercase'>
-      <UiIcon
-        className='size-3 text-[var(--purple)]'
-        name='mingcute:chart-bar-line'
-      />
-      {insight.title || 'Archive insights'}
-    </div>
-    <div className='grid grid-cols-3'>
-      {(insight.stats || []).map((s, index) => (
-        <div
-          className='border-r border-b border-[var(--border)] px-3 py-2.5'
-          key={`${s.label}-${index}`}
-        >
-          <div className='text-[17px] font-semibold text-[var(--purple)]'>
-            {s.n}
-          </div>
-          <div className='mt-0.5 text-[10.5px] text-[var(--text2)]'>
-            {s.label}
-          </div>
-        </div>
-      ))}
-    </div>
-  </div>
-)
-
-const AttachmentSection = ({ attachments }: { attachments: Attachments }) => {
-  const groups = (
-    [
-      ['DOCX', attachments.docx ?? [], 'mingcute:file-text-line'],
-      ['Excel', attachments.excel ?? [], 'mingcute:table-line'],
-      ['PDF', attachments.pdf ?? [], 'mingcute:file-pdf-line'],
-      ['Other', attachments.other ?? [], 'mingcute:attachment-line'],
-    ] satisfies Array<[string, AttachmentItem[], string]>
-  ).filter(([, items]) => items.length > 0)
-
-  if (!groups.length) return null
-
-  return (
-    <div className='mt-3'>
-      <p className='mb-2 text-[12.5px] leading-[1.55]'>
-        Documents attached or mentioned in the email thread:
-      </p>
-      {groups.map(([label, items, icon]) => (
-        <div className='mb-2' key={label}>
-          <div className='mb-1 flex items-center gap-1 text-[11px] font-semibold tracking-[.4px] text-[var(--text2)] uppercase'>
-            <UiIcon className='size-3 text-[var(--purple)]' name={icon} />
-            {label}
-          </div>
-          {items.map((item, index) => (
-            <div key={`${item.file}-${index}`}>
-              <button
-                className='mb-1 flex w-full items-center gap-1.5 rounded-md border border-[var(--primary-4)] bg-[var(--primary-2)] px-2.5 py-1.5 text-left font-mono text-[11.5px] text-[var(--primary-11)] hover:bg-[var(--primary-3)]'
-                type='button'
-                onClick={() => item.url && window.open(item.url, '_blank')}
-              >
-                <UiIcon
-                  className='size-3 shrink-0 text-[var(--purple)]'
-                  name='mingcute:attachment-line'
-                />
-                <span className='min-w-0 flex-1 truncate'>{item.file}</span>
-                {item.cite && (
-                  <sup className='text-[8.5px] font-bold text-[var(--blue-9)]'>
-                    {item.cite}
-                  </sup>
-                )}
-              </button>
-              {item.meta && (
-                <div className='mb-1 pl-0.5 text-[11px] text-[var(--text3)]'>
-                  ({item.meta})
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      ))}
-    </div>
-  )
-}
-
-const ActionRow = ({
-  actions,
-  insight,
-}: {
-  actions?: string[]
-  insight?: boolean
-}) => {
-  const finalActions = actions?.length
-    ? actions
-    : insight
-      ? ['Full report', 'Copy', 'Export']
-      : ['All results', 'Refine', 'Copy', 'Export']
-  const actionIcons: Record<string, string> = {
-    'All results': 'mingcute:copy-2-line',
-    'Copy': 'mingcute:copy-line',
-    'Export': 'mingcute:download-line',
-    'Full report': 'mingcute:chart-line',
-    'Refine': 'mingcute:filter-line',
-  }
-
-  return (
-    <div className='mt-3 flex flex-wrap items-center gap-1.5'>
-      {finalActions.map((label) => (
-        <button
-          className='flex items-center gap-1 rounded-full border border-[var(--border)] bg-[var(--bg)] px-2.5 py-1 text-[11.5px] text-[var(--text2)] hover:border-[var(--purple)] hover:bg-[var(--purple-light)] hover:text-[var(--purple)]'
-          key={label}
-          type='button'
-        >
-          <UiIcon
-            className='size-3'
-            name={actionIcons[label] || 'mingcute:more-2-line'}
-          />
-          {label}
-        </button>
-      ))}
     </div>
   )
 }

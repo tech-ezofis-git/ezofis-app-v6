@@ -305,22 +305,7 @@ const groupRequestAction = async (payload: any) => {
   }
 }
 
-// CRITICAL FOR DRAWER (Detailed History)
-const processHistory = async (
-  workflowId: number | string,
-  processId: number | string,
-) => {
-  try {
-    const { data, status } = await axiosCrypto.get(
-      `/workflow/processHistory/${workflowId}/${processId}`,
-    )
-    if (status === 200) return data
-    throw new Error('Error fetching history')
-  } catch (e) {
-    console.error(e)
-    throw e
-  }
-}
+
 
 const overviewChart = async (workflowId: number | string, payload: any) => {
   try {
@@ -885,7 +870,7 @@ export const requestApi = {
   linkedRequestedTicket,
   overviewChart,
   overviewTableReport,
-  processHistory,
+
   processTransaction,
   reopenRequest,
   resendMail,

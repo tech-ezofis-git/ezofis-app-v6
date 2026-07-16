@@ -51,10 +51,8 @@ const SidebarSmall = ({ menus }: Props) => {
               type='button'
               onClick={openSidebar}
             >
-              {/* Pulse ring */}
-              <span className='absolute inline-flex size-full animate-ping rounded-lg bg-primary-9 opacity-30' />
               <Icon
-                className='relative size-4 animate-pulse text-primary-10 group-hover:text-primary-11'
+                className='relative size-4 text-primary-10 group-hover:text-primary-11'
                 name='lucide:sparkles'
               />
             </button>

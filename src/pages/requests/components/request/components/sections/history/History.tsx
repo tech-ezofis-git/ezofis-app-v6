@@ -57,6 +57,15 @@ const toDate = (value: any): Date | null => {
 
 // Helper to determine the actor name
 const pickActor = (h: HistoryRow) => {
+  const userName = h.performedByUserName || h.processedBy || h.actionUser || h.actionUserEmail
+  const milestoneLower = safeLower(h.status || h.stage || h.stageType || '')
+  const isApAgentNode =
+    milestoneLower.includes('ap_agent') ||
+    milestoneLower.includes('ocr') ||
+    safeLower(h.stageName).includes('ocr')
+
+  if (isApAgentNode && userName === 'pilot@ezofis.com') return 'AI Agent'
+
   if (h.performedByUserName) return h.performedByUserName
   if (h.agentType) {
     return h.agentType === 'ocr' ? 'AI Engine' : h.agentType
@@ -80,15 +89,10 @@ const getFormattedTimestamp = (h: HistoryRow) => {
 }
 
 // Config for Icons and Badge Colors based on status matching sample layout
-const getStepConfig = (h: HistoryRow, isStart: boolean) => {
-  const s = safeLower(h.status)
-  const stage = safeLower(h.stage)
-  const actor = safeLower(
-    h.processedBy || h.actionUser || h.actionUserEmail || h.agentType || '',
-  )
+const getStepConfig = (h: HistoryRow, _isStart: boolean) => {
   const action = safeLower(h.action)
 
-  // If action contains 'move', prioritize orange clock theme
+  // If action contains 'move', prioritize orange clock theme (pending/moving)
   if (action === 'move' || action.includes('move')) {
     return {
       bulletBg: 'text-orange-9',
@@ -96,77 +100,10 @@ const getStepConfig = (h: HistoryRow, isStart: boolean) => {
     }
   }
 
-  // 1. Ingestion / Start (Blue theme with File icon)
-  if (
-    isStart ||
-    stage.includes('start') ||
-    stage.includes('ingest') ||
-    s.includes('ingest')
-  ) {
-    return {
-      bulletBg: 'text-blue-9',
-      icon: 'tabler:file-text',
-    }
-  }
-
-  // 2. OCR / AI (Purple/Violet theme with Robot icon)
-  if (
-    stage.includes('ocr') ||
-    stage.includes('extraction') ||
-    s.includes('ocr') ||
-    s.includes('extraction') ||
-    actor.includes('ai engine') ||
-    actor.includes('ai agent')
-  ) {
-    return {
-      bulletBg: 'text-purple-9',
-      icon: 'lucide:bot',
-    }
-  }
-
-  // 3. Approved / Verified / Duplicate Checks (Green theme with Check/Verified icon)
-  const isApproved =
-    s.includes('approved') ||
-    s.includes('approve') ||
-    s.includes('verified') ||
-    s.includes('validate') ||
-    stage === 'end' ||
-    stage.includes('approved') ||
-    stage.includes('verified')
-
-  if (isApproved) {
-    return {
-      bulletBg: 'text-green-9',
-      icon: 'tabler:circle-check',
-    }
-  }
-
-  // 4. Rejected (Red theme with Circle X icon)
-  if (s.includes('reject') || stage.includes('reject')) {
-    return {
-      bulletBg: 'text-red-9',
-      icon: 'tabler:circle-x',
-    }
-  }
-
-  // 5. Warning / Escalated / Pending (Orange theme with Clock icon)
-  if (
-    s.includes('escalat') ||
-    stage.includes('escalat') ||
-    s.includes('pending') ||
-    s.includes('delay') ||
-    s.includes('hold')
-  ) {
-    return {
-      bulletBg: 'text-orange-9',
-      icon: 'tabler:clock',
-    }
-  }
-
-  // Default: Gray theme with Clock icon
+  // Otherwise, if action is not equal to move, it represents completed status (green success)
   return {
-    bulletBg: 'text-gray-9',
-    icon: 'tabler:clock',
+    bulletBg: 'text-green-9',
+    icon: 'tabler:circle-check',
   }
 }
 

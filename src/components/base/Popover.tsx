@@ -42,7 +42,10 @@ const Popover = ({
       withArrow={withArrow}
       onChange={onChange}
     >
-      <Base.Target>{target}</Base.Target>
+      {/* Wrap target so Target always has a stable ref-capable element. */}
+      <Base.Target>
+        <div className='inline-flex'>{target}</div>
+      </Base.Target>
       <Base.Dropdown>{children}</Base.Dropdown>
     </Base>
   )

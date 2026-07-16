@@ -45,10 +45,11 @@ const ErpSystem = () => {
   const erpSettings = setupStore((state) => state.erpSettings)
   const setErpSettings = setupStore((state) => state.setErpSettings)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const lineItemFileInputRef = useRef<HTMLInputElement>(null)
+  // const lineItemFileInputRef = useRef<HTMLInputElement>(null)
   const [isParsing, setIsParsing] = useState(false)
   const [activeMappingTab, setActiveMappingTab] = useState<'header' | 'lineItems'>('header')
 
+  /*
   const handleLineItemFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>,
   ) => {
@@ -101,6 +102,7 @@ const ErpSystem = () => {
       uploadedLineItemTemplate: null,
     })
   }
+  */
 
   const isFileBasedImportSelected = erpSettings.system === 'FILE_BASED_IMPORT'
 
@@ -216,6 +218,7 @@ const ErpSystem = () => {
                   ...erpSettings,
                   importMethod: 'upload',
                   isConnected: true,
+                  isConnecting: false,
                   system: 'PREDEFINED',
                   wantsFileBasedImport: false,
                 })
@@ -234,6 +237,7 @@ const ErpSystem = () => {
                   ...erpSettings,
                   importMethod: 'upload',
                   isConnected: erpSettings.templateUploaded || false,
+                  isConnecting: false,
                   system: 'FILE_BASED_IMPORT',
                   wantsFileBasedImport: true,
                 })
@@ -253,14 +257,14 @@ const ErpSystem = () => {
         />
 
         {/* Hidden separate line items file input */}
-        <input
+        {/* <input
           accept='.csv,.xlsx,.xls'
           className='hidden'
           id='lineItemFileUploadInput'
           ref={lineItemFileInputRef}
           type='file'
           onChange={handleLineItemFileUpload}
-        />
+        /> */}
 
         {erpSettings.system === 'PREDEFINED' && (
           <AnimateFadeIn delay={0.2}>
@@ -279,7 +283,7 @@ const ErpSystem = () => {
               <div className='mb-4 flex justify-start'>
                 <Button
                   icon='tabler:download'
-                  label='Download PO Master Template'
+                  label='Download PO Master Demo Data'
                   size='sm'
                   onClick={handleDownloadPredefinedMaster}
                 />
@@ -357,7 +361,7 @@ const ErpSystem = () => {
                         loading={isParsing}
                         onClick={handleUploadClick}
                       />
-                       <button
+                      <button
                         type='button'
                         className='p-2 text-gray-9 hover:text-red-11 hover:bg-gray-3 active:scale-95 transition-all rounded-lg border border-gray-3 bg-surface shadow-sm shrink-0'
                         onClick={() => {
@@ -380,7 +384,7 @@ const ErpSystem = () => {
                   </div>
 
                   {/* Uploaded Line Items File Details Card (if separately uploaded) */}
-                  {erpSettings.uploadedLineItemTemplate && (
+                  {/* {erpSettings.uploadedLineItemTemplate && (
                     <div className='flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-xl bg-gray-2 border border-gray-3 mb-4 animate-in fade-in slide-in-from-top-2 duration-300'>
                       <div className='flex items-center gap-3 min-w-0'>
                         <div className='p-2 bg-blue-2 rounded-lg text-blue-9 shrink-0'>
@@ -422,7 +426,7 @@ const ErpSystem = () => {
                         </button>
                       </div>
                     </div>
-                  )}
+                  )} */}
                   {/* Mapping fields section inside the same card layout */}
                   <div className='flex flex-col gap-4 mt-3 border-t border-gray-2 pt-3'>
                     <div className='flex items-center justify-between'>
@@ -449,27 +453,8 @@ const ErpSystem = () => {
                           <div className='flex items-center gap-2 rounded-lg border border-blue-5 bg-blue-2 px-3 py-2 text-12 text-blue-11 shadow-xs'>
                             <Icon className='size-4 text-blue-9' name='tabler:info-circle' />
                             <span className='font-medium'>
-                              Line item info: No line item data found in this file. You can upload a separate CSV or Excel file for line items below.
+                              Line item info: No line item data found in this file.
                             </span>
-                          </div>
-                          
-                          <div
-                            className='flex flex-col items-center justify-center border border-dashed border-gray-3 hover:border-primary-9 bg-surface p-4 rounded-xl cursor-pointer group text-center transition-all'
-                            onClick={() => lineItemFileInputRef.current?.click()}
-                          >
-                            <div className='flex flex-col items-center justify-center space-y-1.5'>
-                              <div className='p-2 bg-gray-2 group-hover:bg-primary-2 rounded-full text-gray-11 group-hover:text-primary-9 transition-colors shrink-0'>
-                                <Icon className='size-5' name='tabler:cloud-upload' />
-                              </div>
-                              <div>
-                                <h4 className='text-12 font-semibold text-gray-13 group-hover:text-primary-9 transition-colors'>
-                                  Upload separate Line Items file (CSV/Excel)
-                                </h4>
-                                <p className='mt-0.5 text-11 text-gray-11'>
-                                  Drag & drop or <span className='text-primary-9 font-medium'>browse</span>
-                                </p>
-                              </div>
-                            </div>
                           </div>
                         </div>
                       )}
@@ -478,34 +463,30 @@ const ErpSystem = () => {
                       <div className='flex justify-start gap-4 mb-0'>
                         <button
                           type='button'
-                          className={`pl-0 pr-2 py-2 text-13 font-semibold transition-all border-b-2 cursor-pointer flex items-center gap-1.5 text-left ${
-                            activeMappingTab === 'header'
+                          className={`pl-0 pr-2 py-2 text-13 font-semibold transition-all border-b-2 cursor-pointer flex items-center gap-1.5 text-left ${activeMappingTab === 'header'
                               ? 'border-primary-9 text-primary-9'
                               : 'border-transparent text-gray-11 hover:text-gray-13'
-                          }`}
+                            }`}
                           onClick={() => setActiveMappingTab('header')}
                         >
                           <span>Header Fields</span>
-                          <span className={`px-1.5 py-0.2 text-11 rounded-full ${
-                            activeMappingTab === 'header' ? 'bg-primary-2 text-primary-9' : 'bg-gray-2 text-gray-11'
-                          }`}>
+                          <span className={`px-1.5 py-0.2 text-11 rounded-full ${activeMappingTab === 'header' ? 'bg-primary-2 text-primary-9' : 'bg-gray-2 text-gray-11'
+                            }`}>
                             {Object.keys(erpSettings.mapping || {}).length}/{SYSTEM_TEMPLATE_COLUMNS.length}
                           </span>
                         </button>
                         {erpSettings.lineItemHeaders && erpSettings.lineItemHeaders.length > 0 && erpSettings.groupingColumn && (
                           <button
                             type='button'
-                            className={`pl-0 pr-2 py-2 text-13 font-semibold transition-all border-b-2 cursor-pointer flex items-center gap-1.5 text-left ${
-                              activeMappingTab === 'lineItems'
+                            className={`pl-0 pr-2 py-2 text-13 font-semibold transition-all border-b-2 cursor-pointer flex items-center gap-1.5 text-left ${activeMappingTab === 'lineItems'
                                 ? 'border-primary-9 text-primary-9'
                                 : 'border-transparent text-gray-11 hover:text-gray-13'
-                            }`}
+                              }`}
                             onClick={() => setActiveMappingTab('lineItems')}
                           >
                             <span>Line Items</span>
-                            <span className={`px-1.5 py-0.2 text-11 rounded-full ${
-                              activeMappingTab === 'lineItems' ? 'bg-primary-2 text-primary-9' : 'bg-gray-2 text-gray-11'
-                            }`}>
+                            <span className={`px-1.5 py-0.2 text-11 rounded-full ${activeMappingTab === 'lineItems' ? 'bg-primary-2 text-primary-9' : 'bg-gray-2 text-gray-11'
+                              }`}>
                               {Object.keys(erpSettings.lineItemMapping || {}).length}/{LINE_ITEM_TEMPLATE_COLUMNS.length}
                             </span>
                           </button>
@@ -595,6 +576,7 @@ const ErpSystem = () => {
                     setErpSettings({
                       ...erpSettings,
                       isConnected: false,
+                      isConnecting: false,
                       system: item.value,
                       wantsFileBasedImport: false,
                     })

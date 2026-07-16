@@ -45,10 +45,7 @@ const StepTwo = () => {
   }, [erpSettings, setErpSettings])
 
   const handleConnect = () => {
-    if (!session?.tenantId) {
-      console.error('Tenant ID missing')
-      return
-    }
+    const tenantId = session?.tenantId
 
     setErpSettings({
       ...erpSettings,
@@ -62,7 +59,6 @@ const StepTwo = () => {
     const hours = now.getHours().toString().padStart(2, '0')
     const minutes = now.getMinutes().toString().padStart(2, '0')
 
-    const tenantId = session.tenantId
     const provider = getErpProvider(erpSettings.system)
     const connectionName = `${provider}-${day}${month}${year}-${hours}${minutes}`
     const url = `https://ezcloudauth.azurewebsites.net/api/authorize?tenantid=${tenantId}&envtype=trial&connectorname=${encodeURIComponent(connectionName)}&provider=${provider}&resulturl=${window.location.origin}/auth/`
@@ -81,7 +77,7 @@ const StepTwo = () => {
 
   const hasLineItems = erpSettings.lineItemHeaders && erpSettings.lineItemHeaders.length > 0
   const requiredLineItemColumns = LINE_ITEM_TEMPLATE_COLUMNS.filter((c) => c.required)
-  
+
   const isLineItemMappingComplete = !hasLineItems || (
     requiredLineItemColumns.length > 0 &&
     requiredLineItemColumns.every(
@@ -109,8 +105,8 @@ const StepTwo = () => {
   const selectionAlert = (() => {
     if (erpSettings.system === 'PREDEFINED') {
       return {
-        text: 'ERP selected. Data will sync once setup is complete.',
-        variant: 'primary' as const,
+        text: 'Demo data selected. This data will be used for invoice processing.',
+        variant: 'green' as const,
       }
     }
     if (
@@ -118,7 +114,7 @@ const StepTwo = () => {
       !erpSettings.templateUploaded
     ) {
       return {
-        text: 'Upload Master File selected. Upload your PO master file below to continue.',
+        text: 'Upload PO master file selected. A PO master file is required to proceed with the setup.',
         variant: 'primary' as const,
       }
     }
@@ -144,20 +140,33 @@ const StepTwo = () => {
             variant='outline'
             onClick={() => setStep(0)}
           />
-          {canContinue ? (
+          {showConnect ? (
+            <div className='flex items-center gap-3'>
+              {erpSettings.isConnecting && (
+                <Button
+                  color='gray'
+                  label='Cancel'
+                  variant='outline'
+                  onClick={() =>
+                    setErpSettings({ ...erpSettings, isConnecting: false })
+                  }
+                />
+              )}
+              <Button
+                icon='lucide:plug'
+                label={`Connect ${erpSettings.system}`}
+                loading={erpSettings.isConnecting}
+                onClick={handleConnect}
+              />
+            </div>
+          ) : (
             <Button
+              disabled={!canContinue}
               label='Continue'
               suffixIcon='tabler:arrow-right'
               onClick={() => setStep(2)}
             />
-          ) : showConnect ? (
-            <Button
-              icon='lucide:plug'
-              label={`Connect ${erpSettings.system}`}
-              loading={erpSettings.isConnecting}
-              onClick={handleConnect}
-            />
-          ) : null}
+          )}
         </StepFooter>
       }
     >
@@ -174,7 +183,7 @@ const StepTwo = () => {
       {erpSettings.templateUploaded && (
         <AnimateSlideUp delay={0.4}>
           <Alert
-            text='Template uploaded successfully. You can proceed to the next step.'
+            text='Your PO master file uploaded successfully. You can proceed to the next step.'
             variant='green'
           />
         </AnimateSlideUp>

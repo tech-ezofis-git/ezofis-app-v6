@@ -63,6 +63,9 @@ export function useFolderExplorer() {
   const requestSeqRef = useRef(0)
   const folderLoadLockRef = useRef(false)
   const lastRequestedFolderPageRef = useRef<Record<string, number>>({})
+  const pageSizeRef = useRef(pageSize)
+
+  pageSizeRef.current = pageSize
 
   const getSelectedFileRow = useCallback(
     (selectedFileId: string) =>
@@ -273,10 +276,10 @@ export function useFolderExplorer() {
       folderId: activeFolder,
       listAllFiles: viewMode === 'list',
       page: 1,
-      pageSizeValue: DEFAULT_FOLDER_PAGE_SIZE,
+      pageSizeValue: pageSizeRef.current,
     }).catch(() => undefined)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeFolder, pageSize, viewMode])
+  }, [activeFolder, viewMode])
 
   useEffect(() => {
     if (!activeFolder) return
@@ -290,7 +293,7 @@ export function useFolderExplorer() {
             folderId: activeFolder,
             listAllFiles: true,
             page: 1,
-            pageSizeValue: pageSize,
+            pageSizeValue: pageSizeRef.current,
             search: searchText,
             syncTree: false,
           })
@@ -447,16 +450,27 @@ export function useFolderExplorer() {
       listAllFiles: viewMode === 'list',
       page: safePage,
       pageOnly: true,
-      pageSizeValue: filePage?.pageSize || pageSize,
+      pageSizeValue: pageSizeRef.current,
       syncTree: false,
     }).catch(() => undefined)
   }
 
   const changePageSize = (nextPageSize: number) => {
-    if (!activeFolder || loading || loadingPage) return
-    setLoadingPage(true)
+    if (!activeFolder || loadingPage) return
+
+    pageSizeRef.current = nextPageSize
     setPageSize(nextPageSize)
     cursorByFolderRef.current[activeFolder] = { 1: null }
+
+    void loadFolderContent({
+      cursor: null,
+      folderId: activeFolder,
+      listAllFiles: viewMode === 'list',
+      page: 1,
+      pageOnly: true,
+      pageSizeValue: nextPageSize,
+      syncTree: false,
+    }).catch(() => undefined)
   }
 
   const changeViewMode = (nextView: ExplorerView) => {
@@ -540,7 +554,7 @@ export function useFolderExplorer() {
         listAllFiles: viewMode === 'list',
         page: filePage?.page || 1,
         pageOnly: false,
-        pageSizeValue: filePage?.pageSize || pageSize,
+        pageSizeValue: pageSizeRef.current,
         syncTree: true,
       })
     } catch {
@@ -552,8 +566,6 @@ export function useFolderExplorer() {
     activeFolder,
     refreshing,
     filePage?.page,
-    filePage?.pageSize,
-    pageSize,
     viewMode,
   ])
   return {

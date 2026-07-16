@@ -4,10 +4,8 @@ import {
 } from '@tanstack/react-table'
 import {
   Check,
-  Edit3,
   MoreHorizontal,
   ShieldCheck,
-  Trash2,
   UserRound,
   UsersRound,
 } from 'lucide-react'
@@ -16,6 +14,8 @@ import InputPassword from '@/components/base/inputs/password/InputPassword'
 import showToast from '@/components/base/toast/showToast'
 import DataTable from '@/components/base/data-table/DataTable'
 import InputText from '@/components/base/inputs/InputText'
+import Menu from '@/components/base/menu/Menu'
+import MenuItem from '@/components/base/menu/MenuItem'
 import { createUser, getUsers, updateUser } from '@/api/v6/user'
 import { dummySettingsUsers, getDummyGroupOptions } from '../data/settingsDummyData'
 import {
@@ -167,7 +167,6 @@ export default function ManageUser({ onBack }: ManageUserProps) {
 
   const [users, setUsers] = useState<AppUser[]>([])
   const [isLoadingUsers, setIsLoadingUsers] = useState(true)
-  const [openMenuId, setOpenMenuId] = useState<string | number | null>(null)
 
   const [isSetupOpen, setIsSetupOpen] = useState(false)
   const [editingUserId, setEditingUserId] = useState<string | number | null>(
@@ -229,7 +228,6 @@ export default function ManageUser({ onBack }: ManageUserProps) {
     setOriginalUser(snapshot)
     setDraftUser(snapshot)
     setActiveStep(0)
-    setOpenMenuId(null)
     setIsSetupOpen(true)
   }
 
@@ -240,7 +238,6 @@ export default function ManageUser({ onBack }: ManageUserProps) {
     if (!confirmed) return
 
     setUsers((current) => current.filter((user) => user.id !== userId))
-    setOpenMenuId(null)
   }
 
   const saveUser = async () => {
@@ -479,45 +476,42 @@ export default function ManageUser({ onBack }: ManageUserProps) {
           const user = row.original
 
           return (
-            <div className='relative flex justify-end'>
-              <button
-                className='rounded-lg p-2 text-[var(--gray-13)] transition hover:bg-[var(--gray-2)]'
-                type='button'
-                onClick={(event) => {
-                  event.stopPropagation()
-                  setOpenMenuId(openMenuId === user.id ? null : user.id)
-                }}
+            <div
+              className='flex justify-end'
+              onClick={(event) => event.stopPropagation()}
+            >
+              <Menu
+                position='bottom-end'
+                withinPortal
+                width={144}
+                target={
+                  <button
+                    className='rounded-lg p-2 text-[var(--gray-13)] transition hover:bg-[var(--gray-2)]'
+                    type='button'
+                  >
+                    <MoreHorizontal size={20} />
+                  </button>
+                }
               >
-                <MoreHorizontal size={20} />
-              </button>
-
-              {openMenuId === user.id ? (
-                <div className='absolute top-10 right-0 z-50 w-36 overflow-hidden rounded-[10px] border border-[var(--border-default)] bg-surface py-1 text-left shadow-[var(--shadow-lg)]'>
-                  <button
-                    className='flex w-full items-center gap-2 px-3 py-2 text-[var(--gray-13)] hover:bg-[var(--gray-2)]'
-                    type='button'
-                    onClick={() => openEditUser(user)}
-                  >
-                    <Edit3 size={15} />
-                    Edit
-                  </button>
-
-                  <button
-                    className='flex w-full items-center gap-2 px-3 py-2 text-[var(--red-11)] hover:bg-[var(--red-2)]'
-                    type='button'
-                    onClick={() => deleteUser(user.id)}
-                  >
-                    <Trash2 size={15} />
-                    Delete
-                  </button>
-                </div>
-              ) : null}
+                <MenuItem
+                  icon='lucide:pencil'
+                  label='Edit'
+                  onClick={() => openEditUser(user)}
+                />
+                <MenuItem
+                  className='text-red-11'
+                  icon='lucide:trash-2'
+                  iconClass='text-red-11'
+                  label='Delete'
+                  onClick={() => deleteUser(user.id)}
+                />
+              </Menu>
             </div>
           )
         },
       }),
     ],
-    [openMenuId, setOpenMenuId, openEditUser, deleteUser],
+    [openEditUser, deleteUser],
   )
   const userTable = useReactTable({
     ...settingsTableCoreOptions,

@@ -2,7 +2,7 @@ import './styles/folderTokens.css'
 import { FolderExplorer } from './components/FolderExplorer'
 const FoldersPage = () => {
   return (
-    <div className='ezofis-folder-shell h-screen min-h-0 overflow-hidden bg-surface-secondary text-sm text-gray-13'>
+    <div className='ezofis-folder-shell flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-surface-secondary text-sm text-gray-13'>
       <FolderExplorer />
     </div>
   )

@@ -326,8 +326,8 @@ const RequestsPage = () => {
               item={selectedItem}
               workflowId={selectedWorkflow?.id}
               onBack={closeRequest}
-              onNext={onNext}
-              onPrev={onPrev}
+              onNext={hasNext ? onNext : undefined}
+              onPrev={hasPrev ? onPrev : undefined}
             />
           )}
           {!selectedItem &&

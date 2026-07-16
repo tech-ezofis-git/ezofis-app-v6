@@ -67,6 +67,7 @@ const ProviderSettings = () => {
               setEmailSettings({
                 ...emailSettings,
                 isConnected: directUploadItem.value === 'DIRECT_UPLOAD',
+                isConnecting: false,
                 provider: directUploadItem.value,
               })
             }
@@ -99,6 +100,7 @@ const ProviderSettings = () => {
                     setEmailSettings({
                       ...emailSettings,
                       isConnected: false,
+                      isConnecting: false,
                       provider: item.value,
                     })
                   }

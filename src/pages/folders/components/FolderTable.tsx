@@ -1,10 +1,19 @@
 import {
   createColumnHelper,
   getCoreRowModel,
+  getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+} from 'react'
 import DataTable from '@/components/base/data-table/DataTable'
+import Menu from '@/components/base/menu/Menu'
+import MenuDivider from '@/components/base/menu/MenuDivider'
+import MenuItem from '@/components/base/menu/MenuItem'
 import Pagination from '@/components/base/pagination/Pagination'
 import type { DynamicRepositoryColumn } from '../api/folderApi'
 import type {
@@ -12,8 +21,9 @@ import type {
   FolderItem,
   RepositoryFilePage,
 } from '../types/folderTypes'
+import { filterFolderFiles } from './FolderFilterBar'
 import { DynamicIcon } from './icons'
-import { StatusPill } from './Ui'
+import { EllipsisText, StatusPill } from './Ui'
 
 const HIDDEN_FILE_KEYS = new Set([
   'storageproviderid',
@@ -30,7 +40,7 @@ type FileRow = {
 
   id: string
 
-  raw: FileItem
+  raw: any
 }
 
 type FolderRow = {
@@ -49,6 +59,8 @@ type FolderTableDataTableSplitProps = {
   error?: string
 
   fileColumns?: DynamicRepositoryColumn[]
+
+  fileFilters?: Record<string, string>
 
   filePage?: RepositoryFilePage
 
@@ -91,21 +103,13 @@ type FolderTableDataTableSplitProps = {
   onWorkflow: (id: string) => void
 }
 
-type OpenMenuState = {
-  id: string
-
-  type: RowKind
-} | null
-
-type RowKind = 'folder' | 'file'
-
 const folderColumnHelper = createColumnHelper<FolderRow>()
 
 const fileColumnHelper = createColumnHelper<FileRow>()
 
 const isHiddenFileKey = (key: string) => HIDDEN_FILE_KEYS.has(key.toLowerCase())
 
-const getFileId = (file: FileItem) => String((file as any).id ?? '')
+const getFileId = (file: any) => String((file as any).id ?? '')
 
 const getFileColumnSizing = (
   column: {
@@ -160,29 +164,6 @@ const getFileColumnSizing = (
   }
 }
 
-function EllipsisText({
-  className,
-  value,
-}: {
-  className?: string
-  value: string
-}) {
-  return (
-    <span
-      className={[
-        'block max-w-full overflow-hidden break-words text-gray-10',
-        '[display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]',
-        className,
-      ]
-        .filter(Boolean)
-        .join(' ')}
-      title={value}
-    >
-      {value}
-    </span>
-  )
-}
-
 const getRepositoryFieldValue = (row: any, sqlColumnName: string) => {
   if (!row || !sqlColumnName) return '-'
 
@@ -214,6 +195,8 @@ export default function FolderTableDataTableSplit({
   error = '',
 
   fileColumns = [],
+
+  fileFilters = {},
 
   filePage,
 
@@ -255,10 +238,6 @@ export default function FolderTableDataTableSplit({
 
   onWorkflow,
 }: FolderTableDataTableSplitProps) {
-  const [openMenu, setOpenMenu] = useState<OpenMenuState>(null)
-
-  const menuRef = useRef<HTMLDivElement | null>(null)
-
   const visibleFileColumns = useMemo(
     () => fileColumns.filter((column) => !isHiddenFileKey(column.key)),
 
@@ -270,26 +249,6 @@ export default function FolderTableDataTableSplit({
   const hasMoreFolders = Boolean(
     onLoadMoreFolders && folderHasMore && folders.length < effectiveFolderTotal,
   )
-
-  const closeMenu = () => setOpenMenu(null)
-
-  const toggleMenu = (type: RowKind, id: string) => {
-    setOpenMenu((current) =>
-      current?.type === type && current.id === id ? null : { id, type },
-    )
-  }
-
-  useEffect(() => {
-    const handleOutsideClick = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        closeMenu()
-      }
-    }
-
-    document.addEventListener('mousedown', handleOutsideClick)
-
-    return () => document.removeEventListener('mousedown', handleOutsideClick)
-  }, [])
 
   if (error) {
     return (
@@ -320,13 +279,9 @@ export default function FolderTableDataTableSplit({
           loading={loading}
           loadingFolders={loadingFolders}
           loadingPage={loadingPage}
-          menuRef={menuRef}
-          openMenu={openMenu}
-          onCloseMenu={closeMenu}
           onLoadMoreFolders={onLoadMoreFolders}
           onOpenFolder={onOpenFolder}
           onReload={onReload}
-          onToggleMenu={toggleMenu}
         />
 
         {folders.length < 10 && folders.length && files.length ? (
@@ -350,22 +305,19 @@ export default function FolderTableDataTableSplit({
         {(files.length || loading || loadingPage) && folders.length < 10 ? (
           <FileDataTableSection
             columns={visibleFileColumns}
+            fileFilters={fileFilters}
             filePage={filePage}
             files={files}
             foldersLength={folders.length}
             loading={loading}
             loadingPage={loadingPage}
-            menuRef={menuRef}
-            openMenu={openMenu}
             onAiSummary={onAiSummary}
-            onCloseMenu={closeMenu}
             onEditMetadata={onEditMetadata}
             onOpenFile={onOpenFile}
             onPageChange={onPageChange}
             onPageSizeChange={onPageSizeChange}
             onReload={onReload}
             onShare={onShare}
-            onToggleMenu={toggleMenu}
             onWorkflow={onWorkflow}
           />
         ) : null}
@@ -396,42 +348,6 @@ export default function FolderTableDataTableSplit({
   )
 }
 
-function ActionMenuItem({
-  danger = false,
-
-  icon,
-
-  label,
-
-  onClick,
-}: {
-  danger?: boolean
-
-  icon: string
-
-  label: string
-
-  onClick: () => void
-}) {
-  return (
-    <button
-      type='button'
-      className={`flex w-full items-center gap-3 px-4 py-2.5 text-left text-[14px] transition-all hover:bg-gray-2 ${
-        danger ? 'text-red-9' : 'text-gray-13'
-      }`}
-      onClick={(event) => {
-        event.stopPropagation()
-
-        onClick()
-      }}
-    >
-      <DynamicIcon className='h-4 w-4 text-current' name={icon} />
-
-      {label}
-    </button>
-  )
-}
-
 function EmptyState() {
   return (
     <div className='flex h-full min-h-[320px] items-center justify-center bg-surface px-6 text-center'>
@@ -458,43 +374,42 @@ function EmptyState() {
 
 function FileDataTableSection({
   columns,
+  fileFilters = {},
   filePage,
   files,
   foldersLength,
   loading,
   loadingPage,
-  menuRef,
-  openMenu,
   onAiSummary,
-  onCloseMenu,
   onEditMetadata,
   onOpenFile,
   onPageChange,
   onPageSizeChange,
   onReload,
   onShare,
-  onToggleMenu,
   onWorkflow,
 }: {
   columns: DynamicRepositoryColumn[]
+  fileFilters?: Record<string, string>
   filePage?: RepositoryFilePage
   files: FileItem[]
   foldersLength: number
   loading: boolean
   loadingPage: boolean
-  menuRef: React.RefObject<HTMLDivElement | null>
-  openMenu: OpenMenuState
   onAiSummary: (id: string) => void
-  onCloseMenu: () => void
   onEditMetadata: (id: string) => void
   onOpenFile: (id: string) => void
   onPageChange?: (page: number, cursor?: string | null) => void
   onPageSizeChange?: (pageSize: number) => void
   onReload?: () => void
   onShare: (id: string) => void
-  onToggleMenu: (type: RowKind, id: string) => void
   onWorkflow: (id: string) => void
 }) {
+  const filteredFiles = useMemo(
+    () => filterFolderFiles(files as Array<Record<string, unknown>>, fileFilters),
+    [fileFilters, files],
+  )
+
   const getPrimaryFileName = (file: any) => {
     return (
       file?.fileName ||
@@ -529,7 +444,7 @@ function FileDataTableSection({
 
   const fileRows = useMemo<FileRow[]>(
     () =>
-      files.map((file) => {
+      filteredFiles.map((file) => {
         const row: FileRow = {
           __name: getPrimaryFileName(file),
           __status: String(
@@ -547,7 +462,7 @@ function FileDataTableSection({
 
         return row
       }),
-    [columns, files],
+    [columns, filteredFiles],
   )
 
   const fileColumns = useMemo(() => {
@@ -564,7 +479,7 @@ function FileDataTableSection({
       } as DynamicRepositoryColumn,
       {
         key: '__status',
-        label: 'Status',
+        label: 'Current Stage',
       } as DynamicRepositoryColumn,
       ...normalColumns,
     ]
@@ -587,8 +502,7 @@ function FileDataTableSection({
           if (index === 0) {
             return (
               <button
-                className='flex min-w-0 items-center gap-3 text-left'
-                title={value}
+                className='flex min-w-0 max-w-full items-center gap-3 text-left'
                 type='button'
                 onClick={() => onOpenFile(fileId)}
               >
@@ -596,9 +510,11 @@ function FileDataTableSection({
                   className='h-5 w-5 shrink-0 text-[#4f5b88]'
                   name='fileText'
                 />
-                <span className='truncate font-semibold text-gray-13'>
-                  {value}
-                </span>
+                <EllipsisText
+                  className='font-semibold text-gray-13'
+                  lines={1}
+                  value={value}
+                />
               </button>
             )
           }
@@ -611,7 +527,7 @@ function FileDataTableSection({
             return <StatusPill status={status} />
           }
 
-          return <EllipsisText value={value} />
+          return <span className='text-gray-10'>{value}</span>
         },
       })
     })
@@ -620,6 +536,7 @@ function FileDataTableSection({
       ...dynamicColumns,
       fileColumnHelper.display({
         enableResizing: false,
+        enableSorting: false,
         header: '',
         id: 'actions',
         maxSize: 72,
@@ -630,75 +547,57 @@ function FileDataTableSection({
           const fileId = row.original.id
 
           return (
-            <div className='relative flex justify-end'>
-              <button
-                className='flex h-8 w-8 items-center justify-center rounded-lg text-gray-13 transition-all hover:bg-gray-5 disabled:cursor-not-allowed disabled:opacity-40'
-                disabled={loadingPage}
-                type='button'
-                onClick={(event) => {
-                  event.stopPropagation()
-                  onToggleMenu('file', fileId)
-                }}
+            <div
+              className='flex justify-end'
+              onClick={(event) => event.stopPropagation()}
+            >
+              <Menu
+                position='bottom-end'
+                withinPortal
+                width={220}
+                target={
+                  <button
+                    className='flex h-8 w-8 items-center justify-center rounded-lg text-gray-13 transition-all hover:bg-gray-5 disabled:cursor-not-allowed disabled:opacity-40'
+                    disabled={loadingPage}
+                    type='button'
+                  >
+                    <DynamicIcon className='h-4 w-4' name='more' />
+                  </button>
+                }
               >
-                <DynamicIcon className='h-4 w-4' name='more' />
-              </button>
-
-              {openMenu?.type === 'file' && openMenu.id === fileId ? (
-                <div
-                  className='absolute top-9 right-0 z-50 w-[220px] overflow-hidden rounded-xl border border-gray-3 bg-surface py-2 shadow-xl'
-                  ref={menuRef}
-                >
-                  <ActionMenuItem
-                    icon='eye'
-                    label='View Details'
-                    onClick={() => {
-                      onCloseMenu()
-                      onOpenFile(fileId)
-                    }}
-                  />
-                  <ActionMenuItem
-                    icon='edit'
-                    label='Edit Metadata'
-                    onClick={() => {
-                      onCloseMenu()
-                      onEditMetadata(fileId)
-                    }}
-                  />
-                  <ActionMenuItem
-                    icon='bot'
-                    label='AI Summary'
-                    onClick={() => {
-                      onCloseMenu()
-                      onAiSummary(fileId)
-                    }}
-                  />
-                  <ActionMenuItem
-                    icon='share'
-                    label='Share'
-                    onClick={() => {
-                      onCloseMenu()
-                      onShare(fileId)
-                    }}
-                  />
-                  <ActionMenuItem
-                    icon='play'
-                    label='Start Workflow'
-                    onClick={() => {
-                      onCloseMenu()
-                      onWorkflow(fileId)
-                    }}
-                  />
-
-                  <div className='my-2 border-t border-gray-3' />
-
-                  <ActionMenuItem
-                    icon='trash'
-                    label='Delete'
-                    danger
-                    onClick={onCloseMenu}
-                  />
-                </div>
-              ) : null}
+                <MenuItem
+                  icon='lucide:eye'
+                  label='View Details'
+                  onClick={() => onOpenFile(fileId)}
+                />
+                <MenuItem
+                  icon='lucide:pencil'
+                  label='Edit Metadata'
+                  onClick={() => onEditMetadata(fileId)}
+                />
+                <MenuItem
+                  icon='lucide:bot'
+                  label='AI Summary'
+                  onClick={() => onAiSummary(fileId)}
+                />
+                <MenuItem
+                  icon='lucide:share-2'
+                  label='Share'
+                  onClick={() => onShare(fileId)}
+                />
+                <MenuItem
+                  icon='lucide:play'
+                  label='Start Workflow'
+                  onClick={() => onWorkflow(fileId)}
+                />
+                <MenuDivider />
+                <MenuItem
+                  className='text-red-9'
+                  icon='lucide:trash-2'
+                  iconClass='text-red-9'
+                  label='Delete'
+                />
+              </Menu>
             </div>
           )
         },
@@ -708,15 +607,11 @@ function FileDataTableSection({
     columns,
     hiddenFirstColumnKeys,
     loadingPage,
-    menuRef,
     onAiSummary,
-    onCloseMenu,
     onEditMetadata,
     onOpenFile,
     onShare,
-    onToggleMenu,
     onWorkflow,
-    openMenu,
   ])
 
   const fileTable = useReactTable({
@@ -725,11 +620,14 @@ function FileDataTableSection({
     data: fileRows,
     defaultColumn: {
       enableResizing: true,
+      enableSorting: true,
       maxSize: 480,
       minSize: 80,
     },
     enableColumnResizing: true,
+    enableSorting: true,
     getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
     getRowId: (row) => `file-${row.id}`,
     initialState: {
       columnPinning: {
@@ -741,9 +639,18 @@ function FileDataTableSection({
 
   const currentPage = filePage?.page || 1
   const pageSize = filePage?.pageSize || 50
-  const totalCount = filePage?.totalCount || files.length
+  const apiTotalCount = Number(filePage?.totalCount ?? 0)
+  const totalCount =
+    apiTotalCount > 0
+      ? apiTotalCount
+      : filePage?.hasMore
+        ? Math.max(currentPage * pageSize + 1, filteredFiles.length)
+        : Math.max(
+            (currentPage - 1) * pageSize + filteredFiles.length,
+            filteredFiles.length,
+          )
 
-  const showFiles = files.length || loading || loadingPage
+  const showFiles = filteredFiles.length || files.length || loading || loadingPage
 
   if (!showFiles) return null
 
@@ -781,16 +688,17 @@ function FileDataTableSection({
           onPageChange={(nextPage) => {
             if (loadingPage) return
 
+            if (nextPage === currentPage) return
+
             if (nextPage < currentPage) {
               onPageChange?.(nextPage, null)
               return
             }
 
-            if (nextPage > currentPage) {
-              onPageChange?.(nextPage, filePage?.nextCursor || null)
-            }
+            onPageChange?.(nextPage, filePage?.nextCursor || null)
           }}
           onPageSizeChange={(nextPageSize) => {
+            if (loadingPage) return
             onPageSizeChange?.(nextPageSize)
           }}
         />
@@ -814,19 +722,11 @@ function FolderDataTableSection({
 
   loadingPage,
 
-  menuRef,
-
-  openMenu,
-
-  onCloseMenu,
-
   onLoadMoreFolders,
 
   onOpenFolder,
 
   onReload,
-
-  onToggleMenu,
 }: {
   effectiveFolderTotal: number
 
@@ -844,19 +744,11 @@ function FolderDataTableSection({
 
   loadingPage: boolean
 
-  menuRef: React.RefObject<HTMLDivElement | null>
-
-  openMenu: OpenMenuState
-
-  onCloseMenu: () => void
-
   onLoadMoreFolders?: () => void
 
   onOpenFolder: (id: string) => void
 
   onReload?: () => void
-
-  onToggleMenu: (type: RowKind, id: string) => void
 }) {
   const folderScrollRef = useRef<HTMLDivElement | null>(null)
 
@@ -911,17 +803,17 @@ function FolderDataTableSection({
     () => [
       folderColumnHelper.accessor('name', {
         header: 'Name',
-
         id: 'name',
-
+        maxSize: 360,
+        minSize: 200,
+        size: 280,
         cell: ({ row }) => {
           const folder = row.original.raw
 
           return (
             <button
-              className='flex min-w-0 items-center gap-3 text-left disabled:cursor-not-allowed disabled:opacity-60'
+              className='flex min-w-0 max-w-full items-center gap-3 text-left disabled:cursor-not-allowed disabled:opacity-60'
               disabled={loadingFolders || loadingPage}
-              title={row.original.name}
               type='button'
               onClick={() => onOpenFolder(row.original.id)}
             >
@@ -930,9 +822,11 @@ function FolderDataTableSection({
                 name={folder.iconKey || 'folder'}
               />
 
-              <span className='truncate font-bold text-gray-13'>
-                {row.original.name}
-              </span>
+              <EllipsisText
+                className='font-bold text-gray-13'
+                lines={1}
+                value={row.original.name}
+              />
             </button>
           )
         },
@@ -940,9 +834,10 @@ function FolderDataTableSection({
 
       folderColumnHelper.accessor('items', {
         header: 'Items',
-
         id: 'items',
-
+        maxSize: 140,
+        minSize: 100,
+        size: 120,
         cell: ({ getValue }) => (
           <span className='text-gray-10'>{String(getValue() || '-')}</span>
         ),
@@ -950,97 +845,79 @@ function FolderDataTableSection({
 
       folderColumnHelper.accessor('modified', {
         header: 'Date Modified',
-
         id: 'modified',
-
+        maxSize: 180,
+        minSize: 130,
+        size: 150,
         cell: ({ getValue }) => (
           <span className='text-gray-10'>{String(getValue() || '-')}</span>
         ),
       }),
 
       folderColumnHelper.display({
+        enableResizing: false,
+        enableSorting: false,
         header: '',
-
         id: 'actions',
+        maxSize: 72,
+        minSize: 56,
+        size: 64,
 
         cell: ({ row }) => {
           const folderId = row.original.id
 
           return (
-            <div className='relative flex justify-end'>
-              <button
-                className='flex h-8 w-8 items-center justify-center rounded-lg text-gray-13 transition-all hover:bg-gray-5 disabled:cursor-not-allowed disabled:opacity-40'
-                disabled={loadingFolders}
-                type='button'
-                onClick={(event) => {
-                  event.stopPropagation()
-
-                  onToggleMenu('folder', folderId)
-                }}
+            <div
+              className='flex justify-end'
+              onClick={(event) => event.stopPropagation()}
+            >
+              <Menu
+                position='bottom-end'
+                withinPortal
+                width={200}
+                target={
+                  <button
+                    className='flex h-8 w-8 items-center justify-center rounded-lg text-gray-13 transition-all hover:bg-gray-5 disabled:cursor-not-allowed disabled:opacity-40'
+                    disabled={loadingFolders}
+                    type='button'
+                  >
+                    <DynamicIcon className='h-4 w-4' name='more' />
+                  </button>
+                }
               >
-                <DynamicIcon className='h-4 w-4' name='more' />
-              </button>
-
-              {openMenu?.type === 'folder' && openMenu.id === folderId ? (
-                <div
-                  className='absolute top-9 right-0 z-50 w-[200px] overflow-hidden rounded-xl border border-gray-3 bg-surface py-2 shadow-xl'
-                  ref={menuRef}
-                >
-                  <ActionMenuItem
-                    icon='folder'
-                    label='Open'
-                    onClick={() => {
-                      onCloseMenu()
-                      onOpenFolder(folderId)
-                    }}
-                  />
-
-                  <ActionMenuItem
-                    icon='edit'
-                    label='Rename'
-                    onClick={onCloseMenu}
-                  />
-
-                  <ActionMenuItem
-                    icon='share'
-                    label='Share'
-                    onClick={onCloseMenu}
-                  />
-
-                  <div className='my-2 border-t border-gray-3' />
-
-                  <ActionMenuItem
-                    icon='trash'
-                    label='Delete'
-                    danger
-                    onClick={onCloseMenu}
-                  />
-                </div>
-              ) : null}
+                <MenuItem
+                  icon='lucide:folder'
+                  label='Open'
+                  onClick={() => onOpenFolder(folderId)}
+                />
+                <MenuItem icon='lucide:pencil' label='Rename' />
+                <MenuItem icon='lucide:share-2' label='Share' />
+                <MenuDivider />
+                <MenuItem
+                  className='text-red-9'
+                  icon='lucide:trash-2'
+                  iconClass='text-red-9'
+                  label='Delete'
+                />
+              </Menu>
             </div>
           )
         },
       }),
     ],
 
-    [
-      loadingFolders,
-      loadingPage,
-      menuRef,
-      onCloseMenu,
-      onOpenFolder,
-      onToggleMenu,
-      openMenu,
-    ],
+    [loadingFolders, loadingPage, onOpenFolder],
   )
 
   const folderTable = useReactTable({
     columns: folderColumns,
-
     data: folderRows,
-
+    defaultColumn: {
+      enableSorting: true,
+    },
+    enableSorting: true,
     getCoreRowModel: getCoreRowModel(),
-
+    getSortedRowModel: getSortedRowModel(),
     getRowId: (row) => `folder-${row.id}`,
   })
 

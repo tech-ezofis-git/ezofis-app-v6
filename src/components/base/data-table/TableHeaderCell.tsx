@@ -5,7 +5,6 @@ import {
 } from '@tanstack/react-table'
 import { produce } from 'immer'
 import { type ComponentProps, useState } from 'react'
-import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
 import Menu from '@/components/base/menu/Menu'
@@ -15,6 +14,9 @@ import MenuSub from '@/components/base/menu/MenuSub'
 import Th from '@/components/base/table/Th'
 import cn from '@/utils/cn'
 import getColumnPinnedStyles from './helpers/getColumnPinnedStyles'
+import TableEllipsis, {
+  shouldDisableTableEllipsis,
+} from './TableEllipsis'
 
 interface Props<TData> extends ComponentProps<'th'> {
   header: Header<TData, unknown>
@@ -27,12 +29,23 @@ const TableHeaderCell = <TData,>({ header, style, table }: Props<TData>) => {
   const column = header.column
   const headerAlign = column.columnDef.meta?.headerAlign ?? 'left'
   const showMenu = column.columnDef.meta?.showMenu
+  const disableEllipsis = shouldDisableTableEllipsis(
+    column.id,
+    column.columnDef.meta?.disableEllipsis,
+  )
+
   const columns = table.getAllLeafColumns()
   const isAccessorColumn = !!column.accessorFn
   const canSort = isAccessorColumn && column.getCanSort()
   const isSorted = column.getIsSorted()
   const isPinned = column.getIsPinned()
   const columnOrder = table.getState().columnOrder
+
+  const headerContent = (
+    <TableEllipsis disabled={disableEllipsis}>
+      {flexRender(column.columnDef.header, header.getContext())}
+    </TableEllipsis>
+  )
 
   const getTargetColumnId = (id: string, direction: 'right' | 'left') => {
     const index = columns.findIndex((c) => c.id === id)
@@ -86,48 +99,49 @@ const TableHeaderCell = <TData,>({ header, style, table }: Props<TData>) => {
 
   return (
     <Th
-      className='h-10 py-0'
+      className='group/dtcell min-h-10 max-w-0 overflow-hidden bg-[var(--gray-2)] py-0 [--pinned-bg:var(--gray-2)]'
       key={header.id}
-      style={{ ...getColumnPinnedStyles(column, table), ...style }}
+      style={{
+        ...getColumnPinnedStyles(column, table),
+        ...style,
+        background: 'var(--gray-2)',
+        backgroundColor: 'var(--gray-2)',
+      }}
     >
       <div
-        className={cn('flex h-10 min-w-0 items-center', headerAlignClassName)}
+        className={cn('flex min-h-10 min-w-0 items-center py-1', headerAlignClassName)}
       >
         {/* display column */}
-        {!isAccessorColumn &&
-          flexRender(column.columnDef.header, header.getContext())}
+        {!isAccessorColumn && headerContent}
 
         {/* sortable accessor column */}
         {canSort && (
-          <Button
-            className='h-full min-w-0 flex-1 justify-start px-0'
-            color='gray'
-            variant='ghost'
+          <button
+            className='flex h-full min-w-0 flex-1 cursor-pointer items-center justify-start bg-transparent px-0 text-left outline-none hover:bg-transparent focus:bg-transparent active:bg-transparent'
+            type='button'
             onClick={column.getToggleSortingHandler()}
           >
-            <div className='flex min-w-0 items-center gap-2'>
-              {flexRender(column.columnDef.header, header.getContext())}
-              <div className='flex size-5 shrink-0 items-center justify-center'>
-                {isSorted && (
+            <div className='flex min-w-0 items-center gap-1.5'>
+              <div className='min-w-0 flex-1'>{headerContent}</div>
+              <div className='flex size-4 shrink-0 items-center justify-center'>
+                {isSorted ? (
                   <Icon
-                    className='text-primary'
+                    className='size-3.5 text-[var(--gray-11)]'
                     name={
                       isSorted === 'desc'
                         ? 'lucide:arrow-down'
                         : 'lucide:arrow-up'
                     }
                   />
-                )}
+                ) : null}
               </div>
             </div>
-          </Button>
+          </button>
         )}
 
         {/* non-sortable accessor column (e.g. display-only headers) */}
         {isAccessorColumn && !canSort && (
-          <div className='flex min-w-0 flex-1 items-center'>
-            {flexRender(column.columnDef.header, header.getContext())}
-          </div>
+          <div className='min-w-0 flex-1'>{headerContent}</div>
         )}
 
         {/* menu button */}
@@ -267,7 +281,7 @@ const TableHeaderCell = <TData,>({ header, style, table }: Props<TData>) => {
       {/* resize handle */}
       {column.getCanResize() && (
         <div
-          className='absolute top-0 right-0 h-full w-1 cursor-col-resize touch-none select-none'
+          className='absolute top-0 right-0 z-10 h-full w-1.5 cursor-col-resize touch-none select-none hover:bg-primary-6'
           onDoubleClick={column.resetSize}
           onMouseDown={header.getResizeHandler()}
           onTouchStart={header.getResizeHandler()}

@@ -83,17 +83,25 @@ export function useHistory(
           status = ''
         }
 
+        const isApAgentNode =
+          milestoneLower === 'ap_agent' ||
+          milestoneLower === 'ocr' ||
+          String(item.stageType || '').toLowerCase() === 'ap_agent'
+
+        const rawActor = item.performedByUserName || item.modifiedByName || item.createdByName || ''
+        const user = (isApAgentNode && rawActor === 'pilot@ezofis.com') ? 'AI Agent' : rawActor
+
         return {
           action: item.action || item.step || '',
           actionAt: item.occurredAtUtc || null,
           actionStatus: item.actionStatus ?? 1,
-          actionUser: item.performedByUserName || null,
-          actionUserEmail: item.performedByUserName || null,
+          actionUser: user || null,
+          actionUserEmail: user || null,
           activityId: item.activityId || `v6-step-${idx}`,
           agentType,
           description: item.description || '',
-          performedByUserName: item.performedByUserName || '',
-          processedBy: item.performedByUserName || null,
+          performedByUserName: user,
+          processedBy: user || null,
           processedOn: item.occurredAtUtc || null,
           receivedOn: item.occurredAtUtc || null,
           review: item.review || '',

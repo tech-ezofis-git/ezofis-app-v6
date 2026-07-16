@@ -5,9 +5,12 @@ import Badge from '@/components/base/Badge'
 import Icon from '@/components/base/icon/Icon'
 import Title from '@/components/base/Title'
 import useDashboardStore from '@/pages/dashboard/stores/useDashboardStore'
-import requestStore from '@/pages/requests/stores/useRequestStore'
-import useWorkflowStore from '@/pages/workflows/stores/useWorkflowStore'
 import useSetupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
+import requestStore from '@/pages/requests/stores/useRequestStore'
+import SettingsBreadcrumbs from '@/pages/settings/components/SettingsBreadcrumbs'
+import useSettingsTopbarStore from '@/pages/settings/stores/useSettingsTopbarStore'
+import useFoldersTopbarStore from '@/pages/folders/stores/useFoldersTopbarStore'
+import useWorkflowStore from '@/pages/workflows/stores/useWorkflowStore'
 
 const PageTitle = () => {
   const matches = useMatches()
@@ -16,6 +19,10 @@ const PageTitle = () => {
   const { closeBuilder, isBuilderOpen } = useWorkflowStore((state) => state)
   const { role, setRole } = useDashboardStore()
   const isApSetUpCompleted = useSetupStore((state) => state.isApSetUpCompleted)
+  const settingsBreadcrumbs = useSettingsTopbarStore((state) => state.breadcrumbs)
+  const settingsNavigate = useSettingsTopbarStore((state) => state.onNavigate)
+  const foldersBreadcrumbs = useFoldersTopbarStore((state) => state.breadcrumbs)
+  const foldersNavigate = useFoldersTopbarStore((state) => state.onNavigate)
 
   const current = matches[matches.length - 1]
   const isFormEntriesRoute = current?.routeId === '/_app/forms_/$formId/entries'
@@ -36,6 +43,10 @@ const PageTitle = () => {
     isFormEntriesRoute && formName
       ? formName
       : (current?.staticData?.pageTitle ?? 'Untitled')
+  const isSettingsRoute =
+    current?.routeId === '/_app/settings' || pageTitle === 'Settings'
+  const isFoldersRoute =
+    current?.routeId === '/_app/folders' || pageTitle === 'Folders'
 
   const renderContent = () => {
     if (isBuilderOpen) {
@@ -70,6 +81,24 @@ const PageTitle = () => {
           </span>
           <Badge color={badgeColor} label={requestListTab || 'Inbox'} />
         </div>
+      )
+    }
+
+    if (isSettingsRoute && settingsBreadcrumbs.length) {
+      return (
+        <SettingsBreadcrumbs
+          items={settingsBreadcrumbs}
+          onNavigate={settingsNavigate}
+        />
+      )
+    }
+
+    if (isFoldersRoute && foldersBreadcrumbs.length) {
+      return (
+        <SettingsBreadcrumbs
+          items={foldersBreadcrumbs}
+          onNavigate={foldersNavigate}
+        />
       )
     }
 

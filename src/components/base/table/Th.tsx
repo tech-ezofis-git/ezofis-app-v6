@@ -12,7 +12,7 @@ const Th = ({
       colSpan={colSpan}
       rowSpan={rowSpan}
       className={cn(
-        'border-b border-[var(--gray-3)] bg-[var(--gray-2)] px-4 py-3 text-left align-middle text-13 font-medium text-[var(--gray-11)] first:pl-6 last:pr-6',
+        'relative overflow-hidden border-b border-[var(--gray-3)] bg-[var(--gray-2)] px-4 py-3 text-left align-middle text-13 font-medium text-[var(--gray-11)] first:pl-6 last:pr-6',
         className,
       )}
       {...props}

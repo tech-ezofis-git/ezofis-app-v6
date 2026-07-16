@@ -32,10 +32,7 @@ const StepOne = () => {
   }, [emailSettings, setEmailSettings])
 
   const handleConnect = () => {
-    if (!session?.tenantId) {
-      console.error('Tenant ID missing')
-      return
-    }
+    const tenantId = session?.tenantId
 
     setEmailSettings({
       ...emailSettings,
@@ -49,7 +46,6 @@ const StepOne = () => {
     const hours = now.getHours().toString().padStart(2, '0')
     const minutes = now.getMinutes().toString().padStart(2, '0')
 
-    const tenantId = session.tenantId
     const provider = emailSettings.provider
     const connectionName = `${provider}-${day}${month}${year}-${hours}${minutes}`
     const location = window.location
@@ -72,18 +68,30 @@ const StepOne = () => {
               onClick={() => setStep(1)}
             />
           ) : (
-            <Button
-              disabled={!emailSettings.provider}
-              icon='lucide:plug'
-              key='connect-button'
-              loading={emailSettings.isConnecting}
-              label={
-                emailSettings.provider
-                  ? `Connect ${emailSettings.provider.charAt(0).toUpperCase() + emailSettings.provider.slice(1)}`
-                  : 'Select an integration'
-              }
-              onClick={handleConnect}
-            />
+            <div className='flex items-center gap-3'>
+              {emailSettings.isConnecting && (
+                <Button
+                  color='gray'
+                  label='Cancel'
+                  variant='outline'
+                  onClick={() =>
+                    setEmailSettings({ ...emailSettings, isConnecting: false })
+                  }
+                />
+              )}
+              <Button
+                disabled={!emailSettings.provider}
+                icon='lucide:plug'
+                key='connect-button'
+                loading={emailSettings.isConnecting}
+                label={
+                  emailSettings.provider
+                    ? `Connect ${emailSettings.provider.charAt(0).toUpperCase() + emailSettings.provider.slice(1)}`
+                    : 'Select an integration'
+                }
+                onClick={handleConnect}
+              />
+            </div>
           )}
         </StepFooter>
       }
@@ -105,7 +113,7 @@ const StepOne = () => {
         <AnimateSlideUp delay={0.4}>
           <Alert
             text="Quick Drop selected. You'll be able to upload your first invoices once your setup is complete."
-            variant='primary'
+            variant='green'
           />
         </AnimateSlideUp>
       )}

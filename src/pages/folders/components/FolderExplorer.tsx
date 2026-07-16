@@ -1,4 +1,6 @@
+import { useCallback, useMemo, useState } from 'react'
 import { useFolderExplorer } from '../hooks/useFolderExplorer'
+import useFoldersTopbar from '../hooks/useFoldersTopbar'
 import { AiSummaryView } from './AiSummaryView'
 import { DocumentDetailsView } from './DocumentDetailsView'
 import { DocumentsListView } from './DocumentsListView'
@@ -11,6 +13,8 @@ import { TreeSidebar } from './TreeSidebar'
 import Upload from './Upload/Upload'
 
 export function FolderExplorer() {
+  const [fileFilters, setFileFilters] = useState<Record<string, string>>({})
+
   const {
     activeFolder,
     appView,
@@ -48,6 +52,39 @@ export function FolderExplorer() {
   } = useFolderExplorer()
 
   const isBusy = loading || loadingPage || refreshing
+
+  const handleBreadcrumbNavigate = useCallback(
+    (key: string) => {
+      if (key === 'folders-root') {
+        const root = tree.find((node) => !node.isStatic) || tree[0]
+        if (root) void openFolder(root.id)
+        return
+      }
+
+      void openFolder(key)
+    },
+    [openFolder, tree],
+  )
+
+  const foldersTopbar = useMemo(() => {
+    const pathItems = breadcrumbs.map((item) => ({
+      key: item.id,
+      label: item.label,
+    }))
+
+    return {
+      items: [
+        {
+          key: pathItems.length ? 'folders-root' : undefined,
+          label: 'Folders',
+        },
+        ...pathItems,
+      ],
+      onNavigate: handleBreadcrumbNavigate,
+    }
+  }, [breadcrumbs, handleBreadcrumbNavigate])
+
+  useFoldersTopbar(foldersTopbar)
 
   const handleUpload = () => {
     setAppView('Upload')
@@ -129,39 +166,28 @@ export function FolderExplorer() {
 
   if (viewMode === 'list') {
     return (
-      <div className='flex h-full min-h-0 flex-col bg-surface-secondary text-sm text-gray-11'>
-        <ExplorerToolbar
-          disabled={isBusy}
-          folderSearch={folderSearch}
-          items={breadcrumbs}
-          refreshing={refreshing}
-          view={viewMode}
-          setView={changeViewMode}
-          onFolderSearchChange={setFolderSearch}
-          onRefresh={handleRefresh}
-          onSelect={openFolder}
-          onUpload={handleUpload}
-        />
-
+      <div className='flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-surface-secondary text-sm text-gray-11'>
         <DocumentsListView
           breadcrumbs={breadcrumbs}
           error={error}
           fileColumns={fileColumns}
           filePage={filePage}
           files={files}
-          folderSearch={folderSearch}
           loading={loading}
           loadingPage={loadingPage}
           refreshing={refreshing}
+          view={viewMode}
           onAiSummary={(id) => openFileAction(id, 'aiSummary')}
           onBreadcrumbSelect={openFolder}
           onEdit={(id) => openFileAction(id, 'editMetadata')}
-          onFolderSearchChange={setFolderSearch}
           onOpenFile={openFile}
           onPageChange={changeServerPage}
           onPageSizeChange={changePageSize}
+          onRefresh={handleRefresh}
           onShare={(id) => openFileAction(id, 'share')}
+          onUpload={handleUpload}
           onWorkflow={(id) => openFileAction(id, 'workflow')}
+          setView={changeViewMode}
         />
       </div>
     )
@@ -171,14 +197,15 @@ export function FolderExplorer() {
     <div className='flex h-full min-h-0 flex-col bg-surface-secondary text-sm text-gray-11'>
       <ExplorerToolbar
         disabled={isBusy}
-        folderSearch={folderSearch}
-        items={breadcrumbs}
+        fileColumns={fileColumns}
+        files={files}
+        loadingPage={loadingPage}
         refreshing={refreshing}
         view={viewMode}
         setView={changeViewMode}
+        onFiltersChange={setFileFilters}
         onFolderSearchChange={setFolderSearch}
         onRefresh={handleRefresh}
-        onSelect={openFolder}
         onUpload={handleUpload}
       />
 
@@ -195,6 +222,7 @@ export function FolderExplorer() {
           <div className='ez-scrollbar min-h-0 flex-1 overflow-y-auto'>
             <FolderTable
               fileColumns={fileColumns}
+              fileFilters={fileFilters}
               filePage={filePage}
               files={files}
               folderHasMore={folderHasMore}

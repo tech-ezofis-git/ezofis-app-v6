@@ -5,6 +5,8 @@ declare module '@tanstack/react-table' {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface ColumnMeta<TData extends RowData, TValue> {
     className?: string
+    /** Skip DataTable 2-line ellipsis wrap (icons, actions, pills, etc.). */
+    disableEllipsis?: boolean
     headerAlign?: 'left' | 'center' | 'right'
     label?: string
     showMenu?: boolean

@@ -45,8 +45,13 @@ const Menu = ({
       transitionProps={{ transition: 'pop' }}
       returnFocus
     >
+      {/*
+        Wrap target in a div: Mantine Target needs a ref-capable element.
+        Triggers like UserMenuTrigger / Tooltip stacks don't forward refs.
+        Do not put stopPropagation on the inner target — it blocks open.
+      */}
       <Base.Target>
-        <div>{target}</div>
+        <div className='inline-flex'>{target}</div>
       </Base.Target>
       <Base.Dropdown>{children}</Base.Dropdown>
     </Base>

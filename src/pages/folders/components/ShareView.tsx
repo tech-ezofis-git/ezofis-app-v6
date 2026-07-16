@@ -21,13 +21,6 @@ export function ShareView({ onBack }: { onBack: () => void }) {
 
   return (
     <div className='animate-in fade-in flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-surface-secondary text-[13px] text-gray-11 duration-300'>
-      {/* <div className="flex h-[74px] shrink-0 items-center justify-between border-b border-gray-3 bg-surface-primary px-6">
-        <div>
-          <h1 className="text-[22px] font-semibold leading-7 text-gray-13">Share Document</h1>
-          <p className="mt-0.5 text-[13px] text-gray-10">{data.documentId}.pdf</p>
-        </div>
-      </div> */}
-
       <div className='flex h-[56px] shrink-0 items-center border-b border-gray-3 bg-surface-primary px-6'>
         <button
           className='inline-flex h-9 items-center gap-2 rounded-lg px-3 text-[14px] font-semibold text-gray-13 transition-all hover:bg-gray-4 hover:text-gray-12 active:scale-95'
@@ -35,7 +28,7 @@ export function ShareView({ onBack }: { onBack: () => void }) {
           onClick={onBack}
         >
           <DynamicIcon className='h-4 w-4' name='arrowLeft' />
-          Backs
+          Back
         </button>
       </div>
 
@@ -125,61 +118,13 @@ export function ShareView({ onBack }: { onBack: () => void }) {
                   className='mr-2 h-4 w-4 shrink-0 text-green-11'
                   name='shield'
                 />
-                <span className='truncate'>{data.link}</span>
+                <span className='truncate'>{data.link || 'No link generated'}</span>
               </div>
 
               <Button className='h-11 px-4 text-[14px] shadow-sm'>
                 <DynamicIcon className='h-4 w-4' name='copy' />
                 Copy Link
               </Button>
-            </div>
-
-            <div className='mt-4 flex gap-6 text-[14px] text-gray-13'>
-              <label className='inline-flex items-center gap-2'>
-                <input
-                  className='h-4 w-4 accent-blue-9'
-                  type='checkbox'
-                  defaultChecked
-                />
-                Require login to view
-              </label>
-
-              <label className='inline-flex items-center gap-2'>
-                <input className='h-4 w-4 accent-blue-9' type='checkbox' />
-                Expire in 7 days
-              </label>
-            </div>
-          </Card>
-
-          <Card className='rounded-xl border border-gray-3 bg-gray-2 p-5 shadow-none'>
-            <h3 className='mb-3 text-[13px] font-semibold text-gray-10'>
-              Permission Levels
-            </h3>
-
-            <div className='grid grid-cols-3 gap-5 text-[13px]'>
-              {data.permissions.map((permission, index) => {
-                const iconColor =
-                  index === 0
-                    ? 'text-blue-11'
-                    : index === 1
-                      ? 'text-orange-10'
-                      : 'text-green-11'
-
-                return (
-                  <div
-                    className='flex gap-2 text-gray-13'
-                    key={permission.label}
-                  >
-                    <DynamicIcon
-                      className={`mt-0.5 h-4 w-4 shrink-0 ${iconColor}`}
-                      name={permission.iconKey}
-                    />
-                    <span>
-                      <b>{permission.label}:</b> {permission.text}
-                    </span>
-                  </div>
-                )
-              })}
             </div>
           </Card>
         </div>

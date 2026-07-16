@@ -47,6 +47,7 @@ export interface CustomFilterProps {
   quickFilters?: QuickFilterOption[]
   activeQuickFilters?: string[]
   onQuickFilterToggle?: (id: string) => void
+  trailingActions?: React.ReactNode
 }
 
 export default function CustomFilter({
@@ -64,6 +65,7 @@ export default function CustomFilter({
   quickFilters,
   activeQuickFilters,
   onQuickFilterToggle,
+  trailingActions,
 }: CustomFilterProps) {
   const [activeFilterDropdown, setActiveFilterDropdown] = useState<string | null>(null)
   const [activeFilterGroup, setActiveFilterGroup] = useState<string | null>(
@@ -87,7 +89,7 @@ export default function CustomFilter({
   }, [])
 
   return (
-    <div ref={filtersRef} className="flex flex-wrap items-center gap-2.5 rounded-lg border border-[var(--border-default)] bg-surface p-3 shadow-xs w-full">
+    <div ref={filtersRef} className="relative z-40 flex flex-wrap items-center gap-2.5 rounded-lg border border-[var(--border-default)] bg-surface p-3 shadow-xs w-full">
       <div className="flex flex-wrap gap-2 items-center">
         {quickFilters && quickFilters.map((qf) => {
           const isActive = activeQuickFilters?.includes(qf.id)
@@ -143,7 +145,7 @@ export default function CustomFilter({
 
               {activeFilterDropdown === filter.id && (
                 <div
-                  className="absolute z-30 top-full left-0 mt-1.5 rounded-lg border border-border-default bg-surface p-3 shadow-xs animate-in fade-in slide-in-from-top-2"
+                  className="absolute z-50 top-full left-0 mt-1.5 rounded-lg border border-border-default bg-surface p-3 shadow-xs animate-in fade-in slide-in-from-top-2"
                   style={{ width: filter.width || 240 }}
                 >
                   {filter.searchable && (
@@ -222,7 +224,7 @@ export default function CustomFilter({
             </button>
 
             {activeFilterDropdown === 'more' && (
-              <div className="absolute z-30 top-full left-0 mt-1.5 flex rounded-lg border border-border-default bg-surface shadow-xs overflow-hidden animate-in fade-in slide-in-from-top-2">
+              <div className="absolute z-50 top-full left-0 mt-1.5 flex rounded-lg border border-border-default bg-surface shadow-xs overflow-hidden animate-in fade-in slide-in-from-top-2">
                 <div className="flex flex-col w-[190px] bg-primary-3/30 border-r border-border-default p-1 dark:bg-gray-12">
                   {moreFilters.map((group) => {
                     const IconComp = group.icon
@@ -378,6 +380,10 @@ export default function CustomFilter({
           />
         </div>
       )}
+
+      {trailingActions ? (
+        <div className='flex shrink-0 items-center gap-1.5'>{trailingActions}</div>
+      ) : null}
     </div>
   )
 }
