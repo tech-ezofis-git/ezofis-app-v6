@@ -38,6 +38,8 @@ interface Props<TData> extends ComponentProps<'div'> {
   hideGrouping?: boolean
 
   hideTableActions?: boolean
+  hideExport?: boolean
+  hideReload?: boolean
   onReload: () => void
   onRowSizeChange: (rowSize: RowSize) => void
 }
@@ -49,6 +51,8 @@ const TableActionBar = <TData,>({
   component,
   hideGrouping = false,
   hideTableActions = false,
+  hideExport = false,
+  hideReload = false,
   isReloading,
   rowSize,
   table,
@@ -97,8 +101,8 @@ const TableActionBar = <TData,>({
           {!hideTableActions && (
             <TableRows rowSize={rowSize} onRowSizeChange={onRowSizeChange} />
           )}
-          <TableExport table={table} />
-          <TableReload isReloading={isReloading} onReload={onReload} />
+          {!hideExport && <TableExport table={table} />}
+          {!hideReload && <TableReload isReloading={isReloading} onReload={onReload} />}
 
           {/* ✅ right side (after built-in buttons) */}
           {!!rightActions.length && (

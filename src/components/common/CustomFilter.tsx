@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState, useMemo } from 'react'
 import { ChevronDown, ChevronRight, Search } from 'lucide-react'
 import Icon from '@/components/base/icon/Icon'
 import cn from '@/utils/cn'
@@ -32,6 +32,11 @@ export interface FilterDefinition {
   width?: number
 }
 
+export interface FilterAction {
+  key: string
+  component: React.ReactNode
+}
+
 export interface CustomFilterProps {
   filters: FilterDefinition[]
   moreFilters?: FilterGroup[]
@@ -48,6 +53,7 @@ export interface CustomFilterProps {
   activeQuickFilters?: string[]
   onQuickFilterToggle?: (id: string) => void
   trailingActions?: React.ReactNode
+  actions?: FilterAction[]
 }
 
 export default function CustomFilter({
@@ -66,11 +72,25 @@ export default function CustomFilter({
   activeQuickFilters,
   onQuickFilterToggle,
   trailingActions,
+  actions,
 }: CustomFilterProps) {
+  const combinedFilters = useMemo(() => {
+    const list: any[] = []
+    if (filters) list.push(...filters)
+    if (moreFilters) list.push(...moreFilters)
+    return list
+  }, [filters, moreFilters])
+
   const [activeFilterDropdown, setActiveFilterDropdown] = useState<string | null>(null)
   const [activeFilterGroup, setActiveFilterGroup] = useState<string | null>(
-    moreFilters && moreFilters.length > 0 ? moreFilters[0].id : null
+    combinedFilters.length > 0 ? combinedFilters[0].id : null
   )
+
+  useEffect(() => {
+    if (!activeFilterGroup && combinedFilters.length > 0) {
+      setActiveFilterGroup(combinedFilters[0].id)
+    }
+  }, [combinedFilters, activeFilterGroup])
   const [filterSearchQuery, setFilterSearchQuery] = useState('')
   const [isSearchExpanded, setIsSearchExpanded] = useState(true)
   const searchInputRef = useRef<HTMLInputElement>(null)
@@ -89,127 +109,66 @@ export default function CustomFilter({
   }, [])
 
   return (
-    <div ref={filtersRef} className="relative z-40 flex flex-wrap items-center gap-2.5 rounded-lg border border-[var(--border-default)] bg-surface p-3 shadow-xs w-full">
-      <div className="flex flex-wrap gap-2 items-center">
-        {quickFilters && quickFilters.map((qf) => {
-          const isActive = activeQuickFilters?.includes(qf.id)
-          return (
-            <button
-              key={qf.id}
-              className={cn(
-                "cursor-pointer rounded-full border px-3 py-1 text-12 font-medium transition-all flex items-center gap-1.5",
-                isActive
-                  ? "border-[var(--primary-9)] bg-[var(--primary-3)] text-[var(--primary-9)]"
-                  : "border-[var(--border-default)] bg-surface text-[var(--text-secondary)] hover:bg-gray-3 dark:hover:bg-gray-10"
-              )}
-              onClick={() => onQuickFilterToggle?.(qf.id)}
-            >
-              {qf.icon && <Icon className="size-3.5" name={qf.icon} />}
-              <span>{qf.label}</span>
-              {qf.count !== undefined && (
-                <span className={cn(
-                  "flex items-center justify-center rounded-full px-1.5 py-0.5 text-10 font-bold",
-                  isActive ? "bg-[var(--primary-4)] text-[var(--primary-9)]" : "bg-gray-3 text-gray-11"
-                )}>
-                  {qf.count}
-                </span>
-              )}
-            </button>
-          )
-        })}
-
-        {/* Existing top-level dropdown filters */}
-        {filters.map((filter) => {
-          const activeValue = activeFilters[filter.id]
-          const activeOption = filter.options.find((o) => o.value === activeValue)
-          const displayLabel = activeOption ? activeOption.label : filter.label
-          const isActive = !!activeValue || activeFilterDropdown === filter.id
-
-          return (
-            <div key={filter.id} className="relative">
+    <div ref={filtersRef} className="relative z-40 flex items-center justify-between gap-4 rounded-lg border border-[var(--border-default)] bg-surface p-3 shadow-xs w-full">
+      <div className="flex items-center gap-2 w-[60%] shrink-0">
+        <div className="flex flex-nowrap overflow-x-auto no-scrollbar gap-2 items-center min-w-0">
+          {quickFilters && quickFilters.map((qf) => {
+            const isActive = activeQuickFilters?.includes(qf.id)
+            return (
               <button
+                key={qf.id}
                 className={cn(
-                  "cursor-pointer rounded-full border px-3.5 py-1 text-12 font-medium transition-all hover:bg-gray-3 dark:hover:bg-gray-10 flex items-center gap-1.5",
+                  "cursor-pointer rounded-full border px-3 py-1 text-12 font-medium transition-all flex items-center gap-1.5",
                   isActive
-                    ? "border-primary-9 bg-primary-3/50 text-primary-9"
-                    : "border-border-default bg-surface text-text-secondary"
+                    ? "border-[var(--primary-9)] bg-[var(--primary-3)] text-[var(--primary-9)]"
+                    : "border-[var(--border-default)] bg-surface text-[var(--text-secondary)] hover:bg-gray-3 dark:hover:bg-gray-10"
                 )}
-                onClick={() => {
-                  setActiveFilterDropdown(activeFilterDropdown === filter.id ? null : filter.id)
-                  setFilterSearchQuery('')
-                }}
+                onClick={() => onQuickFilterToggle?.(qf.id)}
               >
-                <span>{displayLabel}</span>
-                <ChevronDown className="h-3 w-3 opacity-60" />
+                {qf.icon && <Icon className="size-3.5" name={qf.icon} />}
+                <span className="whitespace-nowrap">{qf.label}</span>
+                {qf.count !== undefined && (
+                  <span className={cn(
+                    "flex items-center justify-center rounded-full px-1.5 py-0.5 text-10 font-bold",
+                    isActive ? "bg-[var(--primary-4)] text-[var(--primary-9)]" : "bg-gray-3 text-gray-11"
+                  )}>
+                    {qf.count}
+                  </span>
+                )}
               </button>
+            )
+          })}
 
-              {activeFilterDropdown === filter.id && (
-                <div
-                  className="absolute z-50 top-full left-0 mt-1.5 rounded-lg border border-border-default bg-surface p-3 shadow-xs animate-in fade-in slide-in-from-top-2"
-                  style={{ width: filter.width || 240 }}
+          {/* Active Filters as tags */}
+          {combinedFilters.map(group => {
+            const activeValue = activeFilters[group.id]
+            if (!activeValue) return null
+
+            const option = group.options?.find((o: any) => o.value === activeValue)
+            const action = group.actions?.find((a: any) => a.value === activeValue)
+            const label = option?.label || action?.label || activeValue
+
+            return (
+              <div key={group.id} className="flex items-center gap-1.5 rounded-full border border-[var(--primary-5)] bg-[var(--primary-2)] px-2.5 py-1 text-12 font-medium text-[var(--primary-11)] shrink-0">
+                <span className="opacity-70">{group.label}:</span>
+                <span className="whitespace-nowrap">{label}</span>
+                <button
+                  onClick={() => onFilterChange(group.id, '')}
+                  className="ml-0.5 cursor-pointer hover:text-[var(--primary-9)]"
                 >
-                  {filter.searchable && (
-                    <>
-                      <div className="relative mb-2">
-                        <Search className="absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-text-muted" />
-                        <input
-                          className="w-full rounded-lg border border-border-default bg-gray-2 py-1 pr-3 pl-8 text-11 text-text-primary outline-none"
-                          placeholder={filter.searchPlaceholder || "Search..."}
-                          type="text"
-                          value={filterSearchQuery}
-                          onChange={(e) => setFilterSearchQuery(e.target.value)}
-                        />
-                      </div>
-                      <div className="h-px bg-border-default -mx-3 my-2" />
-                    </>
-                  )}
-                  <div className="flex flex-col gap-0.5 max-h-[220px] overflow-y-auto scrollbar">
-                    <button
-                      className={cn(
-                        "w-full rounded px-2.5 py-1.5 text-12 font-medium text-left cursor-pointer transition-colors text-text-primary hover:bg-gray-2",
-                        !activeValue && "bg-primary-3/30 text-primary-9 font-semibold"
-                      )}
-                      onClick={() => {
-                        onFilterChange(filter.id, '')
-                        setActiveFilterDropdown(null)
-                      }}
-                    >
-                      All {filter.label}
-                    </button>
-                    {filter.options
-                      .filter((item) =>
-                        filter.searchable && filterSearchQuery
-                          ? item.label.toLowerCase().includes(filterSearchQuery.toLowerCase())
-                          : true
-                      )
-                      .map((item) => (
-                        <button
-                          key={item.value}
-                          className={cn(
-                            "w-full rounded px-2.5 py-1.5 text-12 font-medium text-left cursor-pointer transition-colors text-text-primary hover:bg-gray-2",
-                            activeValue === item.value && "bg-primary-3/30 text-primary-9 font-semibold"
-                          )}
-                          onClick={() => {
-                            onFilterChange(filter.id, item.value)
-                            setActiveFilterDropdown(null)
-                          }}
-                        >
-                          {item.label}
-                        </button>
-                      ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )
-        })}
+                  <Icon name="tabler:x" className="size-3.5" />
+                </button>
+              </div>
+            )
+          })}
+        </div>
 
-        {/* More Filters */}
-        {moreFilters && moreFilters.length > 0 && (
-          <div className="relative">
+        {/* All Available Filters Menu */}
+        {combinedFilters.length > 0 && (
+          <div className="relative shrink-0">
             <button
               className={cn(
-                "cursor-pointer rounded-full border px-3.5 py-1 text-12 font-medium transition-all hover:bg-gray-3 dark:hover:bg-gray-10 flex items-center gap-1.5",
+                "cursor-pointer rounded-full border border-dashed px-2 py-1.5 transition-all hover:bg-gray-3 dark:hover:bg-gray-10 flex items-center justify-center shrink-0",
                 activeFilterDropdown === 'more'
                   ? "border-primary-9 bg-primary-3/50 text-primary-9"
                   : "border-border-default bg-surface text-text-secondary"
@@ -218,15 +177,15 @@ export default function CustomFilter({
                 setActiveFilterDropdown(activeFilterDropdown === 'more' ? null : 'more')
                 setFilterSearchQuery('')
               }}
+              title="Add Filter"
             >
-              <span>{moreFiltersLabel}</span>
-              <ChevronDown className="h-3 w-3 opacity-60" />
+              <Icon className="size-4" name="tabler:plus" />
             </button>
 
             {activeFilterDropdown === 'more' && (
               <div className="absolute z-50 top-full left-0 mt-1.5 flex rounded-lg border border-border-default bg-surface shadow-xs overflow-hidden animate-in fade-in slide-in-from-top-2">
                 <div className="flex flex-col w-[190px] bg-primary-3/30 border-r border-border-default p-1 dark:bg-gray-12">
-                  {moreFilters.map((group) => {
+                  {combinedFilters.map((group) => {
                     const IconComp = group.icon
                     const isActive = activeFilterGroup === group.id
                     return (
@@ -244,7 +203,11 @@ export default function CustomFilter({
                         }}
                       >
                         <span className="flex items-center gap-2">
-                          {IconComp && <IconComp className="h-4 w-4" />}
+                          {typeof IconComp === 'string' ? (
+                            <Icon name={IconComp} className="size-4" />
+                          ) : IconComp ? (
+                            <IconComp className="h-4 w-4" />
+                          ) : null}
                           <span>{group.label}</span>
                         </span>
                         <ChevronRight className="h-3 w-3 opacity-60" />
@@ -254,7 +217,7 @@ export default function CustomFilter({
                 </div>
 
                 <div className="flex flex-col w-[260px] p-3 gap-2.5 bg-surface">
-                  {moreFilters.map((group) => {
+                  {combinedFilters.map((group) => {
                     if (activeFilterGroup !== group.id) return null
                     return (
                       <React.Fragment key={group.id}>
@@ -272,10 +235,10 @@ export default function CustomFilter({
                             </div>
                             <div className="flex flex-col gap-0.5 mt-1 max-h-[160px] overflow-y-auto scrollbar">
                               {group.options
-                                .filter((item) =>
+                                .filter((item: any) =>
                                   item.label.toLowerCase().includes(filterSearchQuery.toLowerCase())
                                 )
-                                .map((item) => (
+                                .map((item: any) => (
                                   <button
                                     key={item.value}
                                     className={cn(
@@ -301,7 +264,7 @@ export default function CustomFilter({
                               Filter by {group.label}
                             </div>
                             <div className="flex flex-col gap-2">
-                              {group.actions.map((action) => (
+                              {group.actions.map((action: any) => (
                                 <button
                                   key={action.value}
                                   className="w-full rounded px-2.5 py-1.5 text-12 font-medium text-left hover:bg-gray-2 cursor-pointer text-text-secondary"
@@ -324,66 +287,77 @@ export default function CustomFilter({
             )}
           </div>
         )}
-      </div>
 
-      {showReset && (
-        <button
-          className="cursor-pointer rounded-full border border-border-default bg-gray-2 px-3.5 py-1 text-12 font-medium text-text-secondary transition-all hover:bg-gray-3"
-          onClick={() => {
-            onReset()
-            setActiveFilterDropdown(null)
-          }}
-        >
-          Reset
-        </button>
-      )}
-
-      <div className="flex-1" />
-
-      {customSearchComponent ? (
-        customSearchComponent
-      ) : (
-        <div
-          className={cn(
-            "relative flex items-center justify-end transition-all duration-300",
-            isSearchExpanded || searchQuery ? "w-60" : "w-8"
-          )}
-        >
+        {showReset && (
           <button
-            type="button"
-            className={cn(
-              "absolute left-0 top-0 bottom-0 flex items-center justify-center transition-all duration-300 rounded-full",
-              isSearchExpanded || searchQuery
-                ? "w-8 pointer-events-none"
-                : "w-8 h-8 cursor-pointer hover:bg-[var(--gray-2)] dark:hover:bg-[var(--gray-10)] border border-[var(--border-default)] bg-surface"
-            )}
+            className="cursor-pointer shrink-0 rounded-full border border-border-default bg-gray-2 px-3.5 py-1 text-12 font-medium text-text-secondary transition-all hover:bg-gray-3"
             onClick={() => {
-              setIsSearchExpanded(true)
-              setTimeout(() => searchInputRef.current?.focus(), 50)
+              onReset()
+              setActiveFilterDropdown(null)
             }}
           >
-            <Search className="h-3.5 w-3.5 text-[var(--text-muted)]" />
+            Reset
           </button>
-          <input
-            ref={searchInputRef}
-            className={cn(
-              "rounded-full border border-[var(--border-default)] bg-surface py-1.5 text-12 text-[var(--text-primary)] outline-none transition-all duration-300 focus:border-[var(--primary-9)] focus:ring-1 focus:ring-[var(--primary-9)]",
-              isSearchExpanded || searchQuery
-                ? "w-full pr-4 pl-8 opacity-100"
-                : "w-0 pr-0 pl-0 opacity-0 border-transparent pointer-events-none"
-            )}
-            placeholder={searchPlaceholder}
-            type="text"
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
-            onFocus={() => setIsSearchExpanded(true)}
-          />
-        </div>
-      )}
+        )}
+      </div>
 
-      {trailingActions ? (
-        <div className='flex shrink-0 items-center gap-1.5'>{trailingActions}</div>
-      ) : null}
+      <div className="flex flex-1 items-center justify-end gap-2">
+        {customSearchComponent ? (
+          customSearchComponent
+        ) : (
+          <div
+            className={cn(
+              "relative flex items-center justify-end transition-all duration-300",
+              isSearchExpanded || searchQuery ? "w-60" : "w-8"
+            )}
+          >
+            <button
+              type="button"
+              className={cn(
+                "absolute left-0 top-0 bottom-0 flex items-center justify-center transition-all duration-300 rounded-full",
+                isSearchExpanded || searchQuery
+                  ? "w-8 pointer-events-none"
+                  : "w-8 h-8 cursor-pointer hover:bg-[var(--gray-2)] dark:hover:bg-[var(--gray-10)] border border-[var(--border-default)] bg-surface"
+              )}
+              onClick={() => {
+                setIsSearchExpanded(true)
+                setTimeout(() => searchInputRef.current?.focus(), 50)
+              }}
+            >
+              <Search className="h-3.5 w-3.5 text-[var(--text-muted)]" />
+            </button>
+            <input
+              ref={searchInputRef}
+              className={cn(
+                "rounded-full border border-[var(--border-default)] bg-surface py-1.5 text-12 text-[var(--text-primary)] outline-none transition-all duration-300 focus:border-[var(--primary-9)] focus:ring-1 focus:ring-[var(--primary-9)]",
+                isSearchExpanded || searchQuery
+                  ? "w-full pr-4 pl-8 opacity-100"
+                  : "w-0 pr-0 pl-0 opacity-0 border-transparent pointer-events-none"
+              )}
+              placeholder={searchPlaceholder}
+              type="text"
+              value={searchQuery}
+              onChange={(e) => onSearchChange(e.target.value)}
+              onFocus={() => setIsSearchExpanded(true)}
+              onBlur={() => {
+                if (!searchQuery) {
+                  setIsSearchExpanded(false)
+                }
+              }}
+            />
+          </div>
+        )}
+
+        {actions && actions.length > 0 ? (
+          <div className='flex shrink-0 items-center gap-1.5'>
+            {actions.map((action) => (
+              <React.Fragment key={action.key}>{action.component}</React.Fragment>
+            ))}
+          </div>
+        ) : trailingActions ? (
+          <div className='flex shrink-0 items-center gap-1.5'>{trailingActions}</div>
+        ) : null}
+      </div>
     </div>
   )
 }

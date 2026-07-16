@@ -18,12 +18,18 @@ interface Props<TData> {
 
 const TableSearch = <TData,>({ table }: Props<TData>) => {
   const [opened, setOpened] = useState(false)
-  const ref = useClickOutside(() => {
-    setOpened(false)
-  })
-
   const searchState = table.getState().globalFilter as SearchState
   const [inputValue, setInputValue] = useState(searchState?.value || '')
+  const [isExpanded, setIsExpanded] = useState(!!searchState?.value)
+
+  const ref = useClickOutside(() => {
+    setOpened(false)
+    if (!inputValue) {
+      setIsExpanded(false)
+    }
+  })
+
+
 
   const columns = table
     .getAllLeafColumns()
@@ -54,7 +60,6 @@ const TableSearch = <TData,>({ table }: Props<TData>) => {
     300,
   )
 
-  const isExpanded = true
   const selectedColumn = columns.find((column) => column.id === searchState?.id)
   const selectedColumnLabel =
     searchState?.id && selectedColumn
@@ -63,12 +68,15 @@ const TableSearch = <TData,>({ table }: Props<TData>) => {
 
   const handleContainerClick = () => {
     if (!isExpanded) {
+      setIsExpanded(true)
+      setTimeout(() => document.getElementById('table-search-input')?.focus(), 50)
+    } else {
       document.getElementById('table-search-input')?.focus()
     }
   }
 
   const containerClasses = cn(
-    'flex h-8 items-center rounded-full border outline-primary-8 transition-all duration-300 select-none focus-visible:outline-2',
+    'flex h-8 items-center rounded-md border outline-primary-8 transition-all duration-300 select-none focus-visible:outline-2',
     isExpanded
       ? cn(
           'focus-within:border-primary justify-start border-[var(--border-default)] bg-surface pr-1 pl-3',

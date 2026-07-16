@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react'
+import Icon from '@/components/base/icon/Icon'
 import DataTable from '@/components/base/data-table/DataTable'
 import useDataTable from '@/components/base/data-table/hooks/useDataTable'
 import useDataTableState from '@/components/base/data-table/hooks/useDataTableState'
@@ -9,6 +10,9 @@ import { useDynamicColumns } from './columns/useDynamicColumns'
 import GridView from './GridView'
 import CustomFilter from '@/components/common/CustomFilter'
 import TableSearch from '@/components/base/data-table/actions/TableSearch'
+import ExportButton from './buttons/ExportButton'
+import RefreshButton from './buttons/RefreshButton'
+import UploadPoButton from './buttons/UploadPoButton'
 // import TableActionBar, { type TableActionButton } from '@/components/base/data-table/TableActionBar'
 // import { getGroupedRowModel } from '@tanstack/react-table'
 
@@ -21,6 +25,7 @@ interface InboxListProps {
   selectedItem: any
   totalItems: number
   viewMode: 'table' | 'grid'
+  setViewMode: (mode: 'table' | 'grid') => void
   workflow: WorkflowOption | null
   activeTab?: string
   setPage: (p: number) => void
@@ -665,6 +670,7 @@ const InboxList: React.FC<InboxListProps> = ({
   selectedItem,
   totalItems,
   viewMode,
+  setViewMode,
   workflow,
   setPage,
   setPageSize,
@@ -1123,6 +1129,36 @@ const InboxList: React.FC<InboxListProps> = ({
           }}
           searchPlaceholder="Search invoice, supplier, PO..."
           customSearchComponent={<TableSearch table={table as any} />}
+          actions={[
+            {
+              key: 'viewMode',
+              component: (
+                <div className='flex cursor-pointer items-center gap-1 rounded-lg border border-[var(--border-default)] bg-[var(--gray-1)] p-1'>
+                  <button
+                    className={`cursor-pointer rounded-md px-3 py-1.5 transition-all duration-200 ${viewMode === 'grid'
+                        ? 'bg-surface text-[var(--primary-9)] shadow-sm'
+                        : 'text-[var(--gray-10)] hover:text-[var(--gray-12)]'
+                      }`}
+                    onClick={() => setViewMode('grid')}
+                  >
+                    <Icon className='size-4' name='tabler:layout-grid' />
+                  </button>
+                  <button
+                    className={`cursor-pointer rounded-md px-3 py-1.5 transition-all duration-200 ${viewMode === 'table'
+                        ? 'bg-surface text-[var(--primary-9)] shadow-sm'
+                        : 'text-[var(--gray-10)] hover:text-[var(--gray-12)]'
+                      }`}
+                    onClick={() => setViewMode('table')}
+                  >
+                    <Icon className='size-4' name='tabler:table' />
+                  </button>
+                </div>
+              ),
+            },
+            { key: 'refresh', component: <RefreshButton onClick={onRefresh} /> },
+            { key: 'export', component: <ExportButton onClick={() => {}} /> },
+            { key: 'upload', component: <UploadPoButton label="Upload PO" onClick={handlePoSheet} /> },
+          ]}
         />
       )}
       <div className='relative flex min-h-0 w-full flex-1 flex-col mt-2'>
@@ -1134,21 +1170,14 @@ const InboxList: React.FC<InboxListProps> = ({
                 component={selectedItem}
                 emptyPage='requests'
                 hideGrouping={true}
+                hideExport={true}
+                hideReload={true}
                 isLoading={isLoading}
                 isReLoading={isRefetching}
                 pageSize={pageSize}
                 stickyHeader={true}
                 table={table}
-                actions={[
-                  {
-                    align: 'right', // or 'left'
-                    icon: 'tabler:upload',
-                    label: 'Upload PO',
-                    onClick: () => {
-                      handlePoSheet()
-                    },
-                  },
-                ]}
+                actions={[]}
                 onEmptyPrimaryAction={() => openNewRequest('request')}
                 onReload={onRefresh}
               />
@@ -1160,20 +1189,13 @@ const InboxList: React.FC<InboxListProps> = ({
               <GridView
                 activeTab={activeTab}
                 data={finalData} // ✅ Use final data
+                hideExport={true}
                 hideGrouping={activeTab !== 'Inbox'}
+                hideReload={true}
                 isLoading={isLoading}
                 isReloading={isRefetching}
                 table={table} // Pass the instance
-                actions={[
-                  {
-                    align: 'right',
-                    icon: 'tabler:upload',
-                    label: 'Upload PO',
-                    onClick: () => {
-                      handlePoSheet()
-                    },
-                  },
-                ]}
+                actions={[]}
                 onNewRequest={() => openNewRequest('request')}
                 onReload={onRefresh}
                 onRowClick={onRowClick}

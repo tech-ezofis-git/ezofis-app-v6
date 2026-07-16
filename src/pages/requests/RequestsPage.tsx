@@ -312,10 +312,8 @@ const RequestsPage = () => {
               exceptionsCount={inboxResult?.exceptionsCount}
               isLoading={isLoading}
               metaData={metaData}
-              viewMode={viewMode}
               workflow={workflow}
               setActiveTab={handleTabChange}
-              setViewMode={setViewMode}
               setWorkflow={setWorkflow}
             />
           )}
@@ -344,6 +342,7 @@ const RequestsPage = () => {
                 selectedItem={selectedItem}
                 totalItems={inboxResult?.totalItems || 0}
                 viewMode={viewMode}
+                setViewMode={setViewMode}
                 workflow={selectedWorkflow}
                 setPage={setPage}
                 setPageSize={setPageSize}

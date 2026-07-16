@@ -1279,6 +1279,8 @@ interface GridViewProps<TData> {
   actions?: TableActionButton[]
   activeTab?: string
   hideGrouping?: boolean
+  hideExport?: boolean
+  hideReload?: boolean
   isReloading?: boolean
   rowSize?: RowSize
   onNewRequest?: () => void
@@ -1292,6 +1294,8 @@ const GridView = <TData,>({
   activeTab,
   data,
   hideGrouping: _hideGrouping,
+  hideExport = false,
+  hideReload = false,
   isLoading,
   isReloading,
   rowSize: _rowSize,
@@ -1578,11 +1582,13 @@ const GridView = <TData,>({
             ) : (
               <>
                 {/* <TableFilters table={table} /> */}
-                 <TableExport table={table} />
-                <TableReload
-                  isReloading={isReloading || false}
-                  onReload={onReload || (() => {})}
-                />
+                {!hideExport && <TableExport table={table} />}
+                {!hideReload && (
+                  <TableReload
+                    isReloading={isReloading || false}
+                    onReload={onReload || (() => {})}
+                  />
+                )}
 
                 {/* Custom Actions */}
                 {actions?.map((a, idx) => (
