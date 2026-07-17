@@ -16,6 +16,10 @@ import showToast from '@/components/base/toast/showToast'
 import FormStatusBadge from '@/components/common/FormStatusBadge'
 import FormTypeBadge from '@/components/common/FormTypeBadge'
 import { formatDatetime } from '@/utils/dayjs'
+import CustomFilter from '@/components/common/CustomFilter'
+import TableSearch from '@/components/base/data-table/actions/TableSearch'
+import TableExport from '@/components/base/data-table/actions/TableExport'
+import authUserStore from '@/stores/authUserStore'
 import Header from './components/header/Header'
 import Table from './components/Table'
 
@@ -59,10 +63,14 @@ const FormsPage = () => {
   const [deletingForm, setDeletingForm] = useState<any | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
+  const [activeFilters, setActiveFilters] = useState<Record<string, string>>({})
+  const session = authUserStore((state) => state.session)
+  const loggedInUser = session?.firstName ? `${session.firstName} ${session.lastName || ''}`.trim() : session?.email || '-'
+
   const initialVisibilityState = {
-    createdAt: false,
-    createdBy: false,
-    description: false,
+    createdAt: true,
+    createdBy: true,
+    description: true,
   }
 
   const {
@@ -71,6 +79,7 @@ const FormsPage = () => {
     searchState,
     sortState,
     setExpandState,
+    setSearchState,
     ...restState
   } = useDataTableState({
     initialVisibilityState,
@@ -95,6 +104,24 @@ const FormsPage = () => {
         value: 'DRAFT',
       })
     }
+    
+    Object.entries(activeFilters).forEach(([key, value]) => {
+      if (value) {
+        if (key === 'createdAt' || key === 'modifiedAt') {
+          return // Handled locally
+        }
+        let condition = 'CONTAINS'
+        if (['createdBy', 'modifiedBy'].includes(key)) {
+          condition = 'IS_EQUALS_TO'
+        }
+        filters.push({
+          condition,
+          criteria: key === 'status' ? 'publishOption' : key,
+          value,
+        })
+      }
+    })
+
     return filters.length > 0
       ? [
           {
@@ -103,7 +130,7 @@ const FormsPage = () => {
           },
         ]
       : []
-  }, [tabValue])
+  }, [tabValue, activeFilters])
 
   const { data, isFetching, isPending, isRefetching, refetch } = useQuery(
     getFormsListQueryOptions(page, pageSize, groupBy, filterBy),
@@ -254,6 +281,46 @@ const FormsPage = () => {
       const isGrouped =
         'key' in rawList[0] && ('value' in rawList[0] || 'data' in rawList[0])
 
+      const filterLogic = (item: any) => {
+        const option = (
+          item._json?.settings?.publish?.publishOption ||
+          item.publishOption ||
+          ''
+        ).toUpperCase()
+        if (tabValue === 'Published' && option !== 'PUBLISHED') return false
+        if (tabValue === 'Drafts' && option !== 'DRAFT') return false
+
+        let matches = true
+        Object.entries(activeFilters).forEach(([key, value]) => {
+          if (!value) return
+          if (key === 'createdAt' || key === 'modifiedAt') {
+            const filterDate = value.split('T')[0]
+            const rowDate = item[key] ? String(item[key]).split('T')[0] : ''
+            if (rowDate !== filterDate) matches = false
+          } else if (key === 'status') {
+            if (option !== value) matches = false
+          } else if (key === 'createdBy' || key === 'modifiedBy') {
+            if (item[key] !== value) matches = false
+          } else {
+            if (!item[key] || !String(item[key]).toLowerCase().includes(String(value).toLowerCase())) {
+              matches = false
+            }
+          }
+        })
+
+        if (searchState?.value) {
+          const query = searchState.value.toLowerCase()
+          const searchCols = searchState.id ? [searchState.id] : Object.keys(item)
+          const matchesSearch = searchCols.some((colKey) => {
+            const val = item[colKey]
+            return val != null && String(val).toLowerCase().includes(query)
+          })
+          if (!matchesSearch) matches = false
+        }
+
+        return matches
+      }
+
       if (isGrouped) {
         return rawList
           .map((group: any) => {
@@ -265,21 +332,8 @@ const FormsPage = () => {
             }
             const mappedItems = items.map(mapItem)
 
-            // Apply local filtering for tabValue status
-            const filteredItems = mappedItems.filter((item: any) => {
-              const option = (
-                item._json?.settings?.publish?.publishOption ||
-                item.publishOption ||
-                ''
-              ).toUpperCase()
-              if (tabValue === 'Published') {
-                return option === 'PUBLISHED'
-              }
-              if (tabValue === 'Drafts') {
-                return option === 'DRAFT'
-              }
-              return true
-            })
+            // Apply local filtering
+            const filteredItems = mappedItems.filter(filterLogic)
 
             let groupValue = String(group.key)
             if (groupValue.toUpperCase() === 'PUBLISHED') {
@@ -301,20 +355,7 @@ const FormsPage = () => {
 
       // If not grouped, fallback to flat mapper
       const mappedItems = rawList.map(mapItem)
-      const filteredItems = mappedItems.filter((item: any) => {
-        const option = (
-          item._json?.settings?.publish?.publishOption ||
-          item.publishOption ||
-          ''
-        ).toUpperCase()
-        if (tabValue === 'Published') {
-          return option === 'PUBLISHED'
-        }
-        if (tabValue === 'Drafts') {
-          return option === 'DRAFT'
-        }
-        return true
-      })
+      const filteredItems = mappedItems.filter(filterLogic)
 
       return [
         {
@@ -328,7 +369,7 @@ const FormsPage = () => {
     }
 
     return []
-  }, [data, tabValue])
+  }, [data, tabValue, activeFilters, searchState])
 
   const totalItems = useMemo(() => {
     if (!data) return 0
@@ -349,6 +390,24 @@ const FormsPage = () => {
     return meta?.totalItems ?? (forms?.[0]?.groupCount || 0)
   }, [data, forms])
 
+  const createdByOptions = useMemo(() => {
+    const unique = new Map<string, string>()
+    const allItems = forms.flatMap((g) => g.items)
+    allItems.forEach((w: any) => {
+      if (w.createdBy) unique.set(w.createdBy, w.createdByName || loggedInUser)
+    })
+    return Array.from(unique.entries()).map(([value, label]) => ({ label, value }))
+  }, [forms, loggedInUser])
+
+  const modifiedByOptions = useMemo(() => {
+    const unique = new Map<string, string>()
+    const allItems = forms.flatMap((g) => g.items)
+    allItems.forEach((w: any) => {
+      if (w.modifiedBy) unique.set(w.modifiedBy, w.modifiedByName || w.createdByName || loggedInUser)
+    })
+    return Array.from(unique.entries()).map(([value, label]) => ({ label, value }))
+  }, [forms, loggedInUser])
+
   const { table } = useDataTable({
     columns,
     enableRowSelection: false,
@@ -359,6 +418,7 @@ const FormsPage = () => {
       searchState,
       sortState,
       setExpandState,
+      setSearchState,
       ...restState,
     },
   })
@@ -448,19 +508,85 @@ const FormsPage = () => {
         </div>
       )}
 
-      <div className='bg-gray-50/50 flex-1 overflow-hidden px-6 py-2'>
-        <Table
-          isLoading={isPending}
-          isRefetching={isFetching || isRefetching}
-          page={page}
-          pageSize={pageSize}
-          table={table}
-          totalItems={totalItems}
-          onCreate={openFormBuilder}
-          onPageChange={setPage}
-          onPageSizeChange={setPageSize}
-          onReload={refetch}
+      <div className='bg-gray-50/50 flex flex-col flex-1 overflow-hidden px-6 py-2'>
+        <CustomFilter
+          filters={[
+            {
+              id: "status",
+              label: "Status",
+              options: [
+                { label: "Published", value: "PUBLISHED" },
+                { label: "Draft", value: "DRAFT" }
+              ]
+            },
+            {
+              id: "createdBy",
+              label: "Created By",
+              options: createdByOptions,
+            }
+          ]}
+          moreFilters={[
+            {
+              id: "modifiedBy",
+              label: "Modified By",
+              options: modifiedByOptions,
+            },
+            {
+              id: "createdAt",
+              label: "Created Date",
+              dataType: "date",
+            },
+            {
+              id: "modifiedAt",
+              label: "Modified Date",
+              dataType: "date",
+            }
+          ]}
+          activeFilters={activeFilters}
+          onFilterChange={(id, value) => {
+            setActiveFilters((prev) => ({ ...prev, [id]: value }))
+            setPage(1)
+          }}
+          onReset={() => {
+            setActiveFilters({})
+            setSearchState({ id: '', value: '' })
+            setPage(1)
+          }}
+          showReset={Object.keys(activeFilters).some(k => activeFilters[k]) || !!searchState?.value}
+          searchQuery=""
+          onSearchChange={() => {}}
+          searchPlaceholder="Search forms..."
+          customSearchComponent={<TableSearch table={table as any} />}
+          actionButtons={[
+            {
+              id: 'refresh',
+              icon: 'tabler:refresh',
+              tooltip: 'Refresh',
+              onClick: () => refetch(),
+              isIconButton: true,
+              color: 'gray',
+              variant: 'outline',
+              disabled: isFetching
+            }
+          ]}
+          trailingActions={
+            <TableExport table={table as any} />
+          }
         />
+        <div className='min-h-0 flex-1 mt-2'>
+          <Table
+            isLoading={isPending}
+            isRefetching={isFetching || isRefetching}
+            page={page}
+            pageSize={pageSize}
+            table={table}
+            totalItems={totalItems}
+            onCreate={openFormBuilder}
+            onPageChange={setPage}
+            onPageSizeChange={setPageSize}
+            onReload={refetch}
+          />
+        </div>
       </div>
     </div>
   )

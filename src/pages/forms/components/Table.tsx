@@ -34,6 +34,12 @@ const Table = ({
       <div className='min-h-0 flex-1'>
         <DataTable
           emptyPage='forms'
+          hideActionBar={true}
+          hideGrouping={true}
+          hideExport={true}
+          hideReload={true}
+          hideSearch={true}
+          hideFilters={true}
           isLoading={isLoading}
           isReLoading={isRefetching}
           pageSize={pageSize}
