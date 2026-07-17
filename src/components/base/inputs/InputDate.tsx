@@ -29,6 +29,7 @@ interface Props extends Omit<
   maxDate?: string
   minDate?: string
   valueFormat?: string
+  popoverProps?: Record<string, any>
   onChange: (value: string | null) => void
 }
 
@@ -46,6 +47,7 @@ const InputDate = forwardRef<HTMLInputElement, Props>(
       value,
       valueFormat = 'DD-MMM-YYYY',
       onChange,
+      popoverProps,
       ...rest
     },
     ref,
@@ -70,6 +72,27 @@ const InputDate = forwardRef<HTMLInputElement, Props>(
 
     const _previousIcon = <Icon name='lucide:chevron-left' />
     const _nextIcon = <Icon name='lucide:chevron-right' />
+
+    const handleChange = (nextValue: string | Date | null) => {
+      if (nextValue == null || nextValue === '') {
+        onChange(null)
+        return
+      }
+
+      if (nextValue instanceof Date) {
+        if (Number.isNaN(nextValue.getTime())) {
+          onChange(null)
+          return
+        }
+        const year = nextValue.getFullYear()
+        const month = String(nextValue.getMonth() + 1).padStart(2, '0')
+        const day = String(nextValue.getDate()).padStart(2, '0')
+        onChange(`${year}-${month}-${day}`)
+        return
+      }
+
+      onChange(String(nextValue))
+    }
 
     return (
       <Base
@@ -106,11 +129,15 @@ const InputDate = forwardRef<HTMLInputElement, Props>(
             'text-gray-11 transition-colors hover:bg-gray-4 hover:text-gray-12 data-[disabled]:opacity-50 data-[selected]:!bg-primary-9 data-[selected]:!font-medium data-[selected]:!text-white',
         }}
         popoverProps={{
+          withinPortal: true,
+          zIndex: 10050,
+          ...popoverProps,
           classNames: {
             dropdown: 'border border-gray-3 bg-surface-raised p-3 shadow-md',
+            ...popoverProps?.classNames,
           },
         }}
-        onChange={onChange}
+        onChange={handleChange as any}
       />
     )
   },

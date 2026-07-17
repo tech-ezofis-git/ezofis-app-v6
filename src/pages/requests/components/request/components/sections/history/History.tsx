@@ -62,10 +62,12 @@ const pickActor = (h: HistoryRow) => {
   const isApAgentNode =
     milestoneLower.includes('ap_agent') ||
     milestoneLower.includes('ocr') ||
-    safeLower(h.stageName).includes('ocr')
+    safeLower(h.stageName).includes('ocr') ||
+    safeLower(h.stageType) === 'ap_agent'
 
-  if (isApAgentNode && userName === 'pilot@ezofis.com') return 'AI Agent'
+  if (isApAgentNode) return 'AI Agent'
 
+  if (h.actionUser) return h.actionUser
   if (h.performedByUserName) return h.performedByUserName
   if (h.agentType) {
     return h.agentType === 'ocr' ? 'AI Engine' : h.agentType
@@ -411,7 +413,22 @@ export default function History({
                 </div>
               )} */}
                   <div className='mt-1 flex flex-wrap items-center gap-1.5 text-11 font-medium text-gray-9'>
-                    <span>{actor}</span>
+                    <span className='flex items-center gap-1'>
+                      <Icon
+                        className={cn(
+                          'size-3.5 shrink-0',
+                          actor === 'AI Agent' ? 'text-[var(--primary-9)]' : 'text-gray-8'
+                        )}
+                        name={
+                          actor === 'AI Agent'
+                            ? 'lucide:bot'
+                            : actor === 'System' || actor === 'System (Email)'
+                              ? 'tabler:settings'
+                              : 'tabler:user'
+                        }
+                      />
+                      <span>{actor}</span>
+                    </span>
                     <span className='text-gray-6'>·</span>
                     <span>{date}</span>
                     {durationText && (

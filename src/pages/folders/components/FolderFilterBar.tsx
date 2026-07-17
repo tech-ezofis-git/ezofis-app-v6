@@ -6,7 +6,14 @@ import CustomFilter, {
 } from '@/components/common/CustomFilter'
 import Tooltip from '@/components/base/Tooltip'
 import type { DynamicRepositoryColumn } from '../api/folderApi'
-import type { ExplorerView } from '../types/folderTypes'
+import { decodeRepositoryNodeId } from '../api/folderApi'
+import type { ExplorerView, FolderItem } from '../types/folderTypes'
+import type { ExplorerFilterMode } from '../utils/folderExplorerUtils'
+import {
+  getRepositoryFieldStringValue,
+  matchesFieldKey,
+  normalizeFieldKey,
+} from '../utils/repositoryFieldUtils'
 import { IconButton } from './Ui'
 
 type AnyFileItem = Record<string, any>
@@ -15,79 +22,243 @@ const HIDDEN_FILTER_KEYS = new Set([
   'storageproviderid',
   'storageprovidercode',
   'hasfilepath',
-  'status',
   'filename',
   'name',
   '__name',
+  'id',
+  'fileversion',
+  'ocrpercent',
+  'workflowinstanceid',
 ])
 
-const DEFAULT_FILTER_SPECS = [
-  { id: '__status', label: 'Status' },
-  { id: 'supplier', label: 'Supplier' },
-  { id: 'documentType', label: 'Document Type' },
+/** Folder table filters — match Name, Items, Date Modified columns. */
+const DEFAULT_FOLDER_FILTER_SPECS = [
+  { id: '__folderName', label: 'Name' },
+  { id: '__folderItems', label: 'Items' },
+  { id: '__folderModified', label: 'Date Modified' },
 ] as const
 
-const normalizeKey = (key: string) =>
-  String(key || '')
-    .replace(/([a-z])([A-Z])/g, '$1 $2')
-    .replace(/[_-]/g, ' ')
-    .replace(/\s+/g, ' ')
+/** Default file filters — same property keys as repository items. */
+const DEFAULT_FILE_FILTER_SPECS = [
+  { id: 'status', label: 'Status', aliases: ['status', 'Status', '__status'] },
+  {
+    id: 'supplier',
+    label: 'Supplier',
+    aliases: ['supplier', 'Supplier'],
+  },
+  {
+    id: 'documentType',
+    label: 'Document Type',
+    aliases: ['documentType', 'DocumentType'],
+  },
+] as const
+
+const normalizeKey = normalizeFieldKey
+
+const isDateColumn = (dataType?: string) => {
+  const normalized = String(dataType || '')
     .trim()
     .toLowerCase()
-
-const getFilterValue = (file: AnyFileItem, filterId: string) => {
-  if (filterId === '__status') {
-    return String(file.status ?? file.Status ?? '').trim()
-  }
-
-  const matchedKey = Object.keys(file).find(
-    (key) => normalizeKey(key) === normalizeKey(filterId),
+  return (
+    normalized === 'date' ||
+    normalized === 'datetime' ||
+    normalized.includes('date')
   )
-
-  if (matchedKey) {
-    const value = file[matchedKey]
-    if (value !== undefined && value !== null && value !== '') {
-      return String(value).trim()
-    }
-  }
-
-  return String(file[filterId] ?? '').trim()
 }
 
-const buildFilterOptions = (files: AnyFileItem[], filterId: string) =>
-  Array.from(
-    new Set(
-      files
-        .map((file) => getFilterValue(file, filterId))
-        .filter((value) => value.length > 0),
+/** Prefer sqlColumnName / item property key that matches the sample payload. */
+const resolveFilterId = (
+  preferredId: string,
+  aliases: readonly string[],
+  fileColumns: DynamicRepositoryColumn[],
+  files: AnyFileItem[],
+) => {
+  const candidates = [preferredId, ...aliases]
+
+  const columnMatch = fileColumns.find((column) =>
+    candidates.some(
+      (candidate) =>
+        normalizeKey(column.key) === normalizeKey(candidate) ||
+        normalizeKey(column.label || '') === normalizeKey(candidate),
     ),
   )
-    .sort((left, right) => left.localeCompare(right))
+  if (columnMatch?.key) return columnMatch.key
+
+  const sampleFile = files[0]
+  if (sampleFile) {
+    const itemKey = Object.keys(sampleFile).find((key) =>
+      candidates.some(
+        (candidate) => normalizeKey(key) === normalizeKey(candidate),
+      ),
+    )
+    if (itemKey) return itemKey
+  }
+
+  return preferredId
+}
+
+const getFilterValue = (
+  item: AnyFileItem,
+  filterId: string,
+  folderContextFilters: Record<string, string> = {},
+) =>
+  getRepositoryFieldStringValue(item, filterId, folderContextFilters)
+
+const mergeUniqueOptions = (
+  ...optionLists: Array<Array<{ label: string; value: string }>>
+) => {
+  const map = new Map<string, { label: string; value: string }>()
+  optionLists.flat().forEach((option) => {
+    const value = String(option.value || '').trim()
+    if (!value) return
+    const key = value.toLowerCase()
+    if (!map.has(key)) map.set(key, { label: option.label || value, value })
+  })
+  return Array.from(map.values()).sort((left, right) =>
+    left.label.localeCompare(right.label),
+  )
+}
+
+const buildFilterOptionsFromContext = (
+  filterId: string,
+  folderContextFilters: Record<string, string> = {},
+) => {
+  const value = getRepositoryFieldStringValue(
+    {},
+    filterId,
+    folderContextFilters,
+  )
+  if (!value) return []
+  return [{ label: value, value }]
+}
+
+const buildFilterOptionsFromFiles = (
+  files: AnyFileItem[],
+  filterId: string,
+) =>
+  files
+    .map((file) => getRepositoryFieldStringValue(file, filterId))
+    .filter((value) => value.length > 0)
     .map((value) => ({ label: value, value }))
+
+const shouldIncludeFolderOptions = (
+  filterId: string,
+  currentFolderGroupField?: string,
+) => {
+  if (!currentFolderGroupField) return false
+  return matchesFieldKey(filterId, currentFolderGroupField)
+}
+
+/** Folder browse rows only contribute values for their active group field. */
+const buildFilterOptionsFromFolders = (
+  folders: FolderItem[],
+  filterId: string,
+) =>
+  folders
+    .map((folder) => {
+      const decoded = decodeRepositoryNodeId(folder.id)
+      if (!decoded || decoded.kind !== 'browse') return null
+      if (!matchesFieldKey(decoded.groupField, filterId)) return null
+
+      const value = String(
+        decoded.groupValue || folder.title || decoded.label || '',
+      ).trim()
+      if (!value) return null
+
+      return { label: value, value }
+    })
+    .filter((option): option is { label: string; value: string } =>
+      Boolean(option),
+    )
+
+const buildFolderTableFilterOptions = (
+  folders: FolderItem[],
+  filterId: string,
+) => {
+  if (filterId === '__folderName') {
+    return folders
+      .map((folder) => String(folder.title || '').trim())
+      .filter(Boolean)
+      .map((value) => ({ label: value, value }))
+  }
+
+  if (filterId === '__folderItems') {
+    return folders
+      .map((folder) => String(folder.itemsText || '').trim())
+      .filter((value) => value && value !== '-')
+      .map((value) => ({ label: value, value }))
+  }
+
+  if (filterId === '__folderModified') {
+    return folders
+      .map((folder) => String(folder.modifiedText || '').trim())
+      .filter((value) => value && value !== '-')
+      .map((value) => ({ label: value, value }))
+  }
+
+  return []
+}
+
+const getFolderTableFilterValue = (folder: FolderItem, filterId: string) => {
+  if (filterId === '__folderName') return String(folder.title || '').trim()
+  if (filterId === '__folderItems') return String(folder.itemsText || '').trim()
+  if (filterId === '__folderModified') {
+    return String(folder.modifiedText || '').trim()
+  }
+  return ''
+}
+
+export const isFolderTableFilterId = (filterId: string) =>
+  DEFAULT_FOLDER_FILTER_SPECS.some((spec) => spec.id === filterId)
+
+export const matchesFolderTableFilters = (
+  folder: FolderItem,
+  filters: Record<string, string>,
+) =>
+  Object.entries(filters).every(([key, value]) => {
+    if (!value || !isFolderTableFilterId(key)) return true
+
+    return getFolderTableFilterValue(folder, key)
+      .toLowerCase()
+      .includes(value.trim().toLowerCase())
+  })
+
+export const filterFolders = (
+  folders: FolderItem[],
+  filters: Record<string, string>,
+) =>
+  folders.filter((folder) => matchesFolderTableFilters(folder, filters))
 
 export const matchesFolderFileFilters = (
   file: AnyFileItem,
   filters: Record<string, string>,
+  folderContextFilters: Record<string, string> = {},
 ) =>
   Object.entries(filters).every(([key, value]) => {
     if (!value) return true
 
-    if (key === '__status') {
-      return String(file.status ?? file.Status ?? '').trim() === value
-    }
-
-    return getFilterValue(file, key) === value
+    return getFilterValue(file, key, folderContextFilters)
+      .toLowerCase()
+      .includes(value.trim().toLowerCase())
   })
 
 export const filterFolderFiles = (
   files: AnyFileItem[],
   filters: Record<string, string>,
-) => files.filter((file) => matchesFolderFileFilters(file, filters))
+  folderContextFilters: Record<string, string> = {},
+) =>
+  files.filter((file) =>
+    matchesFolderFileFilters(file, filters, folderContextFilters),
+  )
 
 type FolderFilterBarProps = {
   activeFilters: Record<string, string>
+  currentFolderGroupField?: string
   fileColumns?: DynamicRepositoryColumn[]
   files: AnyFileItem[]
+  filterMode?: ExplorerFilterMode
+  folderContextFilters?: Record<string, string>
+  folders?: FolderItem[]
   isBusy?: boolean
   refreshing?: boolean
   searchPlaceholder?: string
@@ -103,8 +274,12 @@ type FolderFilterBarProps = {
 
 export function FolderFilterBar({
   activeFilters,
+  currentFolderGroupField = '',
   fileColumns = [],
   files,
+  filterMode = 'files',
+  folderContextFilters = {},
+  folders = [],
   isBusy = false,
   onFilterChange,
   onRefresh,
@@ -117,38 +292,138 @@ export function FolderFilterBar({
   setView,
   view,
 }: FolderFilterBarProps) {
-  const defaultFilters = useMemo<FilterDefinition[]>(
+  const showFileFilters = filterMode === 'files' || filterMode === 'both'
+  const showFolderFilters = filterMode === 'folders' || filterMode === 'both'
+
+  const resolvedFileDefaultFilters = useMemo(
     () =>
-      DEFAULT_FILTER_SPECS.map((spec) => ({
-        id: spec.id,
-        label: spec.label,
-        options: buildFilterOptions(files, spec.id),
-        searchable: true,
-        searchPlaceholder: `Search ${spec.label.toLowerCase()}...`,
-        width: 240,
+      DEFAULT_FILE_FILTER_SPECS.map((spec) => ({
+        ...spec,
+        id: resolveFilterId(spec.id, spec.aliases, fileColumns, files),
       })),
-    [files],
+    [fileColumns, files],
   )
+
+  const buildOptionsForFileFilter = (filterId: string) =>
+    mergeUniqueOptions(
+      buildFilterOptionsFromContext(filterId, folderContextFilters),
+      buildFilterOptionsFromFiles(files, filterId),
+      shouldIncludeFolderOptions(filterId, currentFolderGroupField)
+        ? buildFilterOptionsFromFolders(folders, filterId)
+        : [],
+    )
+
+  const buildOptionsForFolderFilter = (filterId: string) =>
+    mergeUniqueOptions(buildFolderTableFilterOptions(folders, filterId))
+
+  const buildFolderFilterDefinitions = (): FilterDefinition[] =>
+    DEFAULT_FOLDER_FILTER_SPECS.map((spec) => ({
+      id: spec.id,
+      label: spec.label,
+      options: buildOptionsForFolderFilter(spec.id),
+      searchable: true,
+      searchPlaceholder: `Search ${spec.label.toLowerCase()}...`,
+      width: 240,
+    }))
+
+  const buildFileFilterDefinitions = (): FilterDefinition[] =>
+    resolvedFileDefaultFilters.map((spec) => {
+      const matchedColumn = fileColumns.find(
+        (column) =>
+          normalizeKey(column.key) === normalizeKey(spec.id) ||
+          normalizeKey(column.label || '') === normalizeKey(spec.label),
+      )
+
+      const label = matchedColumn?.label || spec.label
+
+      return {
+        id: spec.id,
+        label,
+        options: buildOptionsForFileFilter(spec.id),
+        searchable: true,
+        searchPlaceholder: `Search ${label.toLowerCase()}...`,
+        width: 240,
+      }
+    })
+
+  const defaultFilters = useMemo<FilterDefinition[]>(() => {
+    const folderDefaultFilters = showFolderFilters
+      ? buildFolderFilterDefinitions()
+      : []
+    const fileDefaultFilters = showFileFilters ? buildFileFilterDefinitions() : []
+
+    if (filterMode === 'folders') return folderDefaultFilters
+    if (filterMode === 'files') return fileDefaultFilters
+
+    if (filterMode === 'both') {
+      const folderIds = new Set(folderDefaultFilters.map((filter) => filter.id))
+      const fileOnlyFilters = fileDefaultFilters.filter(
+        (filter) => !folderIds.has(filter.id),
+      )
+      return [...folderDefaultFilters, ...fileOnlyFilters]
+    }
+
+    return []
+  }, [
+    currentFolderGroupField,
+    fileColumns,
+    files,
+    filterMode,
+    folderContextFilters,
+    folders,
+    resolvedFileDefaultFilters,
+    showFileFilters,
+    showFolderFilters,
+  ])
 
   const moreFilters = useMemo<FilterGroup[]>(() => {
     const defaultIds = new Set(
-      DEFAULT_FILTER_SPECS.map((spec) => normalizeKey(spec.id)),
+      defaultFilters.map((filter) => normalizeKey(filter.id)),
     )
 
     const extraColumns = fileColumns.filter((column) => {
       const key = normalizeKey(column.key)
-      return !HIDDEN_FILTER_KEYS.has(key) && !defaultIds.has(key)
+      if (HIDDEN_FILTER_KEYS.has(key) || defaultIds.has(key)) return false
+
+      if (filterMode === 'folders') return false
+
+      if (filterMode === 'files' || filterMode === 'both') {
+        return true
+      }
+
+      return false
     })
 
-    return extraColumns.map((column) => ({
-      id: column.key,
-      label: column.label || column.key,
-      options: buildFilterOptions(files, column.key).map((option) => ({
-        label: option.label,
-        value: option.value,
-      })),
-    }))
-  }, [fileColumns, files])
+    if (!showFolderFilters && !showFileFilters) return []
+
+    return extraColumns.map((column) => {
+      const filterId = resolveFilterId(
+        column.key,
+        [column.key, column.label || ''],
+        fileColumns,
+        files,
+      )
+
+      return {
+        id: filterId,
+        label: column.label || column.key,
+        dataType: column.dataType,
+        options: isDateColumn(column.dataType)
+          ? undefined
+          : buildOptionsForFileFilter(filterId),
+      }
+    })
+  }, [
+    currentFolderGroupField,
+    defaultFilters,
+    fileColumns,
+    files,
+    filterMode,
+    folderContextFilters,
+    folders,
+    showFileFilters,
+    showFolderFilters,
+  ])
 
   const hasActiveFilters = Object.values(activeFilters).some(Boolean)
 

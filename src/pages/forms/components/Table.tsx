@@ -39,6 +39,7 @@ const Table = ({
           pageSize={pageSize}
           stickyHeader={true}
           table={table}
+          hideGroupItemCountOnHover={true}
           onEmptyPrimaryAction={onCreate}
           onReload={onReload}
         />

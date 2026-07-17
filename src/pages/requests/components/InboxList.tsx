@@ -13,6 +13,7 @@ import TableSearch from '@/components/base/data-table/actions/TableSearch'
 import ExportButton from './buttons/ExportButton'
 import RefreshButton from './buttons/RefreshButton'
 import UploadPoButton from './buttons/UploadPoButton'
+import Tooltip from '@/components/base/Tooltip'
 // import TableActionBar, { type TableActionButton } from '@/components/base/data-table/TableActionBar'
 // import { getGroupedRowModel } from '@tanstack/react-table'
 
@@ -1129,11 +1130,10 @@ const InboxList: React.FC<InboxListProps> = ({
           }}
           searchPlaceholder="Search invoice, supplier, PO..."
           customSearchComponent={<TableSearch table={table as any} />}
-          actions={[
-            {
-              key: 'viewMode',
-              component: (
-                <div className='flex cursor-pointer items-center gap-1 rounded-lg border border-[var(--border-default)] bg-[var(--gray-1)] p-1'>
+          trailingActions={
+            <>
+              <div className='flex cursor-pointer items-center gap-1 rounded-lg border border-[var(--border-default)] bg-[var(--gray-1)] p-1'>
+                <Tooltip content="Grid View" openDelay={500}>
                   <button
                     className={`cursor-pointer rounded-md px-2 py-1 transition-all duration-200 ${viewMode === 'grid'
                         ? 'bg-surface text-[var(--primary-9)] shadow-sm'
@@ -1143,6 +1143,8 @@ const InboxList: React.FC<InboxListProps> = ({
                   >
                     <Icon className='size-4' name='tabler:layout-grid' />
                   </button>
+                </Tooltip>
+                <Tooltip content="Table View" openDelay={500}>
                   <button
                     className={`cursor-pointer rounded-md px-2 py-1 transition-all duration-200 ${viewMode === 'table'
                         ? 'bg-surface text-[var(--primary-9)] shadow-sm'
@@ -1152,13 +1154,13 @@ const InboxList: React.FC<InboxListProps> = ({
                   >
                     <Icon className='size-4' name='tabler:table' />
                   </button>
-                </div>
-              ),
-            },
-            { key: 'refresh', component: <RefreshButton onClick={onRefresh} /> },
-            { key: 'export', component: <ExportButton onClick={() => {}} /> },
-            { key: 'upload', component: <UploadPoButton label="Upload PO" onClick={handlePoSheet} /> },
-          ]}
+                </Tooltip>
+              </div>
+              <RefreshButton onClick={onRefresh} />
+              <ExportButton onClick={() => {}} />
+              <UploadPoButton label="Upload PO" onClick={handlePoSheet} />
+            </>
+          }
         />
       )}
       <div className='relative flex min-h-0 w-full flex-1 flex-col mt-2'>

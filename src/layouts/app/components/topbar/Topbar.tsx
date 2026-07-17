@@ -24,7 +24,7 @@ const Topbar = () => {
           className='text-gray-11 hover:text-gray-13'
           color='gray'
           icon='lucide:bot'
-          title='Ask AI'
+          tooltip='Ask AI'
           variant='ghost'
           onClick={openAskAI}
         />
@@ -33,7 +33,7 @@ const Topbar = () => {
           className='text-gray-11 hover:text-gray-13'
           color='gray'
           icon='lucide:help-circle'
-          title='Quick Help'
+          tooltip='Quick Help'
           variant='ghost'
           onClick={() =>
             globalThis.open('https://help.ezofis.com/', '_blank', 'noopener')

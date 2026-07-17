@@ -21,7 +21,9 @@ import type {
   FolderItem,
   RepositoryFilePage,
 } from '../types/folderTypes'
-import { filterFolderFiles } from './FolderFilterBar'
+import { FOLDER_FILES_SECTION_MAX_FOLDERS } from '../utils/folderExplorerUtils'
+import { getRepositoryFieldStringValue } from '../utils/repositoryFieldUtils'
+import { filterFolderFiles, filterFolders } from './FolderFilterBar'
 import { DynamicIcon } from './icons'
 import { EllipsisText, StatusPill } from './Ui'
 
@@ -65,6 +67,10 @@ type FolderTableDataTableSplitProps = {
   filePage?: RepositoryFilePage
 
   files: FileItem[]
+
+  folderContextFilters?: Record<string, string>
+
+  folderFilters?: Record<string, string>
 
   folderHasMore?: boolean
 
@@ -164,31 +170,17 @@ const getFileColumnSizing = (
   }
 }
 
-const getRepositoryFieldValue = (row: any, sqlColumnName: string) => {
-  if (!row || !sqlColumnName) return '-'
-
-  const sources = [
+const getRepositoryFieldValue = (
+  row: any,
+  sqlColumnName: string,
+  folderContextFilters: Record<string, string> = {},
+) => {
+  const value = getRepositoryFieldStringValue(
     row,
-    row.metadata,
-    row.Metadata,
-    row.fields,
-    row.Fields,
-    row.values,
-    row.Values,
-  ].filter((source) => source && typeof source === 'object')
-
-  for (const source of sources) {
-    const matchedKey = Object.keys(source).find(
-      (key) => key.toLowerCase() === sqlColumnName.toLowerCase(),
-    )
-
-    const value = matchedKey ? source[matchedKey] : undefined
-    if (value !== undefined && value !== null && value !== '') {
-      return String(value)
-    }
-  }
-
-  return '-'
+    sqlColumnName,
+    folderContextFilters,
+  )
+  return value || '-'
 }
 
 export default function FolderTableDataTableSplit({
@@ -201,6 +193,10 @@ export default function FolderTableDataTableSplit({
   filePage,
 
   files,
+
+  folderContextFilters = {},
+
+  folderFilters = {},
 
   folderHasMore,
 
@@ -272,6 +268,7 @@ export default function FolderTableDataTableSplit({
       <div className='flex min-h-0 flex-1 flex-col gap-3 overflow-hidden bg-surface p-3'>
         <FolderDataTableSection
           effectiveFolderTotal={effectiveFolderTotal}
+          folderFilters={folderFilters}
           folders={folders}
           folderSearch={folderSearch}
           hasFiles={filesHave}
@@ -284,7 +281,9 @@ export default function FolderTableDataTableSplit({
           onReload={onReload}
         />
 
-        {folders.length < 10 && folders.length && files.length ? (
+        {folders.length < FOLDER_FILES_SECTION_MAX_FOLDERS &&
+        folders.length &&
+        files.length ? (
           <div className='relative flex shrink-0 items-center justify-center py-1'>
             <div className='absolute top-1/2 right-0 left-0 h-px -translate-y-1/2 bg-gray-4' />
 
@@ -302,12 +301,14 @@ export default function FolderTableDataTableSplit({
           </div>
         ) : null}
 
-        {(files.length || loading || loadingPage) && folders.length < 10 ? (
+        {(files.length || loading || loadingPage) &&
+        folders.length < FOLDER_FILES_SECTION_MAX_FOLDERS ? (
           <FileDataTableSection
             columns={visibleFileColumns}
             fileFilters={fileFilters}
             filePage={filePage}
             files={files}
+            folderContextFilters={folderContextFilters}
             foldersLength={folders.length}
             loading={loading}
             loadingPage={loadingPage}
@@ -377,6 +378,7 @@ function FileDataTableSection({
   fileFilters = {},
   filePage,
   files,
+  folderContextFilters = {},
   foldersLength,
   loading,
   loadingPage,
@@ -393,6 +395,7 @@ function FileDataTableSection({
   fileFilters?: Record<string, string>
   filePage?: RepositoryFilePage
   files: FileItem[]
+  folderContextFilters?: Record<string, string>
   foldersLength: number
   loading: boolean
   loadingPage: boolean
@@ -406,8 +409,13 @@ function FileDataTableSection({
   onWorkflow: (id: string) => void
 }) {
   const filteredFiles = useMemo(
-    () => filterFolderFiles(files as Array<Record<string, unknown>>, fileFilters),
-    [fileFilters, files],
+    () =>
+      filterFolderFiles(
+        files as Array<Record<string, unknown>>,
+        fileFilters,
+        folderContextFilters,
+      ),
+    [fileFilters, files, folderContextFilters],
   )
 
   const getPrimaryFileName = (file: any) => {
@@ -457,12 +465,16 @@ function FileDataTableSection({
         }
 
         columns.forEach((column) => {
-          row[column.key] = getRepositoryFieldValue(file as any, column.key)
+          row[column.key] = getRepositoryFieldValue(
+            file as any,
+            column.key,
+            folderContextFilters,
+          )
         })
 
         return row
       }),
-    [columns, filteredFiles],
+    [columns, filteredFiles, folderContextFilters],
   )
 
   const fileColumns = useMemo(() => {
@@ -709,7 +721,7 @@ function FileDataTableSection({
 
 function FolderDataTableSection({
   folders,
-
+  folderFilters = {},
   folderSearch,
 
   hasFiles,
@@ -729,7 +741,7 @@ function FolderDataTableSection({
   onReload,
 }: {
   effectiveFolderTotal: number
-
+  folderFilters?: Record<string, string>
   folders: FolderItem[]
 
   folderSearch: string
@@ -756,9 +768,14 @@ function FolderDataTableSection({
 
   const requestedFolderCountRef = useRef(0)
 
+  const filteredFolders = useMemo(
+    () => filterFolders(folders, folderFilters),
+    [folderFilters, folders],
+  )
+
   const folderRows = useMemo<FolderRow[]>(
     () =>
-      folders.map((folder) => ({
+      filteredFolders.map((folder) => ({
         id: folder.id,
 
         items: folder.itemsText || '-',
@@ -770,7 +787,7 @@ function FolderDataTableSection({
         raw: folder,
       })),
 
-    [folders],
+    [filteredFolders],
   )
 
   const loadNextFolderBatch = useCallback(() => {
@@ -924,7 +941,7 @@ function FolderDataTableSection({
   if (!folders.length && !folderSearch && !loadingFolders) return null
 
   const folderBodyMaxHeight =
-    hasFiles && folders.length < 10
+    hasFiles && folders.length < FOLDER_FILES_SECTION_MAX_FOLDERS
       ? `${Math.min(220, Math.max(96, folders.length * 56 + 52))}px`
       : 'calc(100vh - 220px)'
 

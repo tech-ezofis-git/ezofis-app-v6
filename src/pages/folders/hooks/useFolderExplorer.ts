@@ -14,6 +14,7 @@ import {
   type DynamicRepositoryColumn,
   folderApi,
   foldersToTreeNodes,
+  getFolderContextFilters,
 } from '../api/folderApi'
 import {
   DEFAULT_FOLDER_PAGE_SIZE,
@@ -56,6 +57,10 @@ export function useFolderExplorer() {
   const [error, setError] = useState('')
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
   const [folderSearch, setFolderSearch] = useState('')
+  const [fileSearch, setFileSearch] = useState('')
+  const [fileFilters, setFileFilters] = useState<Record<string, string>>({})
+  const [folderFilters, setFolderFilters] = useState<Record<string, string>>({})
+  const [currentFolderGroupField, setCurrentFolderGroupField] = useState('')
   const [refreshing, setRefreshing] = useState(false)
   const cursorByFolderRef = useRef<
     Record<string, Record<number, string | null>>
@@ -64,13 +69,28 @@ export function useFolderExplorer() {
   const folderLoadLockRef = useRef(false)
   const lastRequestedFolderPageRef = useRef<Record<string, number>>({})
   const pageSizeRef = useRef(pageSize)
+  const fileFiltersRef = useRef(fileFilters)
+  const folderFiltersRef = useRef(folderFilters)
+  const folderSearchRef = useRef(folderSearch)
+  const fileSearchRef = useRef(fileSearch)
+  const skipFilterReloadRef = useRef(false)
+  const skipSearchReloadRef = useRef(false)
 
   pageSizeRef.current = pageSize
+  fileFiltersRef.current = fileFilters
+  folderFiltersRef.current = folderFilters
+  folderSearchRef.current = folderSearch
+  fileSearchRef.current = fileSearch
 
   const getSelectedFileRow = useCallback(
     (selectedFileId: string) =>
       files.find((file) => getFileId(file) === selectedFileId),
     [files],
+  )
+
+  const folderContextFilters = useMemo(
+    () => getFolderContextFilters(activeFolder),
+    [activeFolder],
   )
 
   const loadSelectedRepository = async (folderId: string) => {
@@ -99,24 +119,30 @@ export function useFolderExplorer() {
     cursor = null,
     folderId,
     folderPageOnly = false,
+    folderFilters,
+    fileFilters,
     includeFiles,
     listAllFiles,
     page = 1,
     pageOnly = false,
     pageSizeValue = pageSize,
-    search,
+    folderSearch,
+    fileSearch,
     syncTree = true,
   }: {
     appendFolders?: boolean
     cursor?: string | null
     folderId: string
     folderPageOnly?: boolean
+    folderFilters?: Record<string, string>
+    fileFilters?: Record<string, string>
     includeFiles?: boolean
     listAllFiles?: boolean
     page?: number
     pageOnly?: boolean
     pageSizeValue?: number
-    search?: string
+    folderSearch?: string
+    fileSearch?: string
     syncTree?: boolean
   }) => {
     const requestId = ++requestSeqRef.current
@@ -130,11 +156,20 @@ export function useFolderExplorer() {
     try {
       const response = await folderApi.getFolderContent(folderId, {
         cursor,
+        folderFilters: folderFilters ?? folderFiltersRef.current,
+        fileFilters: fileFilters ?? fileFiltersRef.current,
         includeFiles,
         listAllFiles: listAllFiles ?? viewMode === 'list',
         page,
         pageSize: pageSizeValue,
-        search,
+        folderSearch:
+          folderSearch !== undefined
+            ? folderSearch
+            : folderSearchRef.current.trim() || undefined,
+        fileSearch:
+          fileSearch !== undefined
+            ? fileSearch
+            : fileSearchRef.current.trim() || undefined,
       })
 
       if (requestId !== requestSeqRef.current) return response
@@ -149,6 +184,7 @@ export function useFolderExplorer() {
       )
       setFiles((previous) => (folderPageOnly ? previous : response.files || []))
       setFileColumns(response.fileColumns || [])
+      setCurrentFolderGroupField(response.currentFolderGroupField || '')
       setFilePage(response.filePage)
       setFolderPage(nextFolderPage)
 
@@ -182,6 +218,7 @@ export function useFolderExplorer() {
           setFolders([])
           setFiles([])
           setFileColumns([])
+          setCurrentFolderGroupField('')
           setFilePage(undefined)
           setFolderPage(undefined)
           setError(exception?.message || 'Unable to load folder content')
@@ -270,13 +307,22 @@ export function useFolderExplorer() {
     cursorByFolderRef.current[activeFolder] = { 1: null }
     folderLoadLockRef.current = false
     lastRequestedFolderPageRef.current[activeFolder] = 1
+    skipFilterReloadRef.current = true
+    skipSearchReloadRef.current = true
     setFolderSearch('')
+    setFileSearch('')
+    setFileFilters({})
+    setFolderFilters({})
     loadSelectedRepository(activeFolder)
     loadFolderContent({
       folderId: activeFolder,
+      folderFilters: {},
+      fileFilters: {},
       listAllFiles: viewMode === 'list',
       page: 1,
       pageSizeValue: pageSizeRef.current,
+      folderSearch: '',
+      fileSearch: '',
     }).catch(() => undefined)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeFolder, viewMode])
@@ -284,54 +330,67 @@ export function useFolderExplorer() {
   useEffect(() => {
     if (!activeFolder) return
 
-    const searchText = folderSearch.trim()
-    const timer = window.setTimeout(async () => {
-      if (viewMode === 'list') {
-        setLoadingPage(true)
-        try {
-          await loadFolderContent({
-            folderId: activeFolder,
-            listAllFiles: true,
-            page: 1,
-            pageSizeValue: pageSizeRef.current,
-            search: searchText,
-            syncTree: false,
-          })
-        } catch (exception: any) {
-          setError(exception?.message || 'Unable to search files')
-        } finally {
-          setLoadingPage(false)
-        }
-        return
-      }
+    if (skipSearchReloadRef.current) {
+      skipSearchReloadRef.current = false
+      return
+    }
 
+    const timer = window.setTimeout(async () => {
+      cursorByFolderRef.current[activeFolder] = { 1: null }
       folderLoadLockRef.current = false
       lastRequestedFolderPageRef.current[activeFolder] = 1
-      setLoadingFolders(true)
 
       try {
-        const response = await folderApi.getFolderChildren(activeFolder, {
+        await loadFolderContent({
+          folderId: activeFolder,
+          folderFilters: folderFiltersRef.current,
+          fileFilters: fileFiltersRef.current,
+          listAllFiles: viewMode === 'list',
           page: 1,
-          pageSize: DEFAULT_FOLDER_PAGE_SIZE,
-          search: searchText,
+          pageSizeValue: pageSizeRef.current,
+          folderSearch: folderSearch.trim(),
+          fileSearch: fileSearch.trim(),
+          syncTree: viewMode === 'grid',
         })
-
-        const nextFolders = response?.folders || []
-        setFolders(nextFolders)
-        setFolderPage(getFolderPageMeta(response))
-        setTree((previous) =>
-          syncTreeChildren(previous, activeFolder, nextFolders),
-        )
       } catch (exception: any) {
-        setError(exception?.message || 'Unable to search folders')
-      } finally {
-        setLoadingFolders(false)
+        setError(
+          exception?.message ||
+            (viewMode === 'list'
+              ? 'Unable to search files'
+              : 'Unable to search folders'),
+        )
       }
     }, FOLDER_SEARCH_DEBOUNCE_MS)
 
     return () => window.clearTimeout(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [folderSearch])
+  }, [folderSearch, fileSearch])
+
+  useEffect(() => {
+    if (!activeFolder) return
+
+    if (skipFilterReloadRef.current) {
+      skipFilterReloadRef.current = false
+      return
+    }
+
+    cursorByFolderRef.current[activeFolder] = { 1: null }
+    folderLoadLockRef.current = false
+    lastRequestedFolderPageRef.current[activeFolder] = 1
+
+    loadFolderContent({
+      folderId: activeFolder,
+      folderFilters,
+      fileFilters,
+      listAllFiles: viewMode === 'list',
+      page: 1,
+      pageSizeValue: pageSizeRef.current,
+      folderSearch: folderSearchRef.current.trim(),
+      fileSearch: fileSearchRef.current.trim(),
+      syncTree: viewMode === 'grid',
+    }).catch(() => undefined)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fileFilters, folderFilters])
 
   const openFolder = async (id: string) => {
     if (loading || loadingPage) return
@@ -401,9 +460,10 @@ export function useFolderExplorer() {
 
     try {
       const response = await folderApi.getFolderChildren(activeFolder, {
+        folderFilters: folderFiltersRef.current,
         page: nextPage,
         pageSize: effectivePageSize,
-        search: folderSearch.trim(),
+        folderSearch: folderSearch.trim(),
       })
 
       const incomingFolders = response?.folders || []
@@ -447,10 +507,14 @@ export function useFolderExplorer() {
     await loadFolderContent({
       cursor: cursor ?? cachedCursor ?? null,
       folderId: activeFolder,
+      folderFilters: folderFiltersRef.current,
+      fileFilters: fileFiltersRef.current,
       listAllFiles: viewMode === 'list',
       page: safePage,
       pageOnly: true,
       pageSizeValue: pageSizeRef.current,
+      folderSearch: folderSearchRef.current.trim() || undefined,
+      fileSearch: fileSearchRef.current.trim() || undefined,
       syncTree: false,
     }).catch(() => undefined)
   }
@@ -465,10 +529,14 @@ export function useFolderExplorer() {
     void loadFolderContent({
       cursor: null,
       folderId: activeFolder,
+      folderFilters: folderFiltersRef.current,
+      fileFilters: fileFiltersRef.current,
       listAllFiles: viewMode === 'list',
       page: 1,
       pageOnly: true,
       pageSizeValue: nextPageSize,
+      folderSearch: folderSearchRef.current.trim() || undefined,
+      fileSearch: fileSearchRef.current.trim() || undefined,
       syncTree: false,
     }).catch(() => undefined)
   }
@@ -551,10 +619,14 @@ export function useFolderExplorer() {
         cursor: null,
         folderId: activeFolder,
         folderPageOnly: false,
+        folderFilters: folderFiltersRef.current,
+        fileFilters: fileFiltersRef.current,
         listAllFiles: viewMode === 'list',
         page: filePage?.page || 1,
         pageOnly: false,
         pageSizeValue: pageSizeRef.current,
+        folderSearch: folderSearchRef.current.trim() || undefined,
+        fileSearch: fileSearchRef.current.trim() || undefined,
         syncTree: true,
       })
     } catch {
@@ -576,12 +648,17 @@ export function useFolderExplorer() {
     changePageSize,
     changeServerPage,
     changeViewMode,
+    currentFolderGroupField,
     currentTitle,
     error,
     expandedIds,
     fileColumns,
+    fileFilters,
     filePage,
     files,
+    fileSearch,
+    folderContextFilters,
+    folderFilters,
     folderHasMore,
     folderPage,
     folders,
@@ -608,6 +685,9 @@ export function useFolderExplorer() {
     getRepositoryIdFromFolder,
     getSelectedFileRow,
     setAppView,
+    setFileFilters,
+    setFileSearch,
+    setFolderFilters,
     setFolderSearch,
     setSelectedFile,
   }

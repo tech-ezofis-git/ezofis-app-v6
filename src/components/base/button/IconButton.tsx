@@ -3,6 +3,7 @@ import Icon from '@/components/base/icon/Icon'
 import cn from '@/utils/cn'
 import type { ButtonColor, ButtonSize, ButtonVariant } from './types'
 import { getVariantClassName } from './helpers'
+import Tooltip from '@/components/base/Tooltip'
 
 interface Props extends ComponentProps<'button'> {
   ariaLabel?: string
@@ -15,6 +16,7 @@ interface Props extends ComponentProps<'button'> {
   loading?: boolean
   size?: ButtonSize
   variant?: ButtonVariant
+  tooltip?: string
 }
 
 const sizeClassName: Record<ButtonSize, string> = {
@@ -38,6 +40,7 @@ const IconButton = forwardRef<HTMLButtonElement, Props>(
       loading,
       size = 'md',
       variant = 'solid',
+      tooltip,
       ...props
     },
     ref,
@@ -50,7 +53,7 @@ const IconButton = forwardRef<HTMLButtonElement, Props>(
       className,
     )
 
-    return (
+    const buttonElement = (
       <button
         aria-label={ariaLabel}
         className={_className}
@@ -68,6 +71,12 @@ const IconButton = forwardRef<HTMLButtonElement, Props>(
         )}
       </button>
     )
+
+    if (tooltip) {
+      return <Tooltip content={tooltip}>{buttonElement}</Tooltip>
+    }
+
+    return buttonElement
   },
 )
 

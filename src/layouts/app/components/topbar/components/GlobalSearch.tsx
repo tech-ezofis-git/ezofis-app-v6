@@ -175,7 +175,7 @@ const GlobalSearch = () => {
         opened ? (
           <div
             className={cn(
-              'relative flex h-9 w-[280px] items-center gap-2 rounded-lg border px-2.5 transition-colors',
+              'relative flex h-9 w-[460px] items-center gap-2 rounded-lg border px-2.5 transition-colors',
               query.trim()
                 ? 'border-primary-6 bg-primary-2'
                 : 'border-gray-4 bg-gray-2',
@@ -228,7 +228,7 @@ const GlobalSearch = () => {
             className='text-gray-11 hover:text-gray-13'
             color='gray'
             icon='lucide:search'
-            title='Search'
+            tooltip='Search'
             variant='ghost'
           />
         )

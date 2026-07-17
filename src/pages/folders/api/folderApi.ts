@@ -36,15 +36,110 @@ export interface DynamicRepositoryColumn {
 export interface FolderContentRequest {
   append?: boolean
   cursor?: string | null
+  /**
+   * @deprecated Prefer folderFilters / fileFilters.
+   * Kept as a fallback merged into both when specific props are omitted.
+   */
+  filters?: Record<string, string>
+  /** UI filters for browse/children ParentFilters only */
+  folderFilters?: Record<string, string>
+  /** UI filters for repository items Filters only */
+  fileFilters?: Record<string, string>
   /** Grid tree sync: skip file fetch when only loading folder children */
   includeFiles?: boolean
   /** List view: load all repository files without folder filters */
   listAllFiles?: boolean
   page?: number
   pageSize?: number
+  /** @deprecated Prefer folderSearch / fileSearch */
   search?: string
+  /** Search for browse/children */
+  folderSearch?: string
+  /** Search for repository items */
+  fileSearch?: string
   sortBy?: string
   sortOrder?: 'asc' | 'desc' | string
+}
+
+const normalizeFilterKey = (key: string) =>
+  String(key || '')
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
+    .replace(/[_-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase()
+
+/** Prefer sqlColumnName (e.g. PONumber) as the Filters API key. */
+const resolveApiFilterKey = (
+  uiKey: string,
+  fields: Array<{ name?: string; sqlColumnName?: string }> = [],
+  fieldKeys: string[] = [],
+): string => {
+  const lookupKey = uiKey === '__status' ? 'status' : uiKey
+  const normalizedLookup = normalizeFilterKey(lookupKey)
+
+  for (const field of fields) {
+    const sqlKey = String(field.sqlColumnName || '').trim()
+    const nameKey = String(field.name || '').trim()
+    const candidates = [sqlKey, nameKey].filter(Boolean)
+
+    if (
+      candidates.some(
+        (candidate) => normalizeFilterKey(candidate) === normalizedLookup,
+      )
+    ) {
+      return sqlKey || nameKey
+    }
+  }
+
+  const matchedFieldKey = fieldKeys.find(
+    (fieldKey) => normalizeFilterKey(fieldKey) === normalizedLookup,
+  )
+  if (matchedFieldKey) return matchedFieldKey
+
+  if (lookupKey === 'status') return 'Status'
+
+  // camelCase item keys (poNumber) → PascalCase API keys (PoNumber / PONumber-style)
+  if (/^[a-z]/.test(lookupKey)) {
+    return lookupKey.charAt(0).toUpperCase() + lookupKey.slice(1)
+  }
+
+  return lookupKey.replace(/\s+/g, '')
+}
+
+/** Map UI filter ids to API field names and drop empty values. */
+export const buildApiFilters = (
+  filters: Record<string, string> = {},
+  fieldKeys: string[] = [],
+  fields: Array<{ name?: string; sqlColumnName?: string }> = [],
+): Record<string, string> => {
+  const apiFilters: Record<string, string> = {}
+
+  Object.entries(filters).forEach(([key, rawValue]) => {
+    const value = String(rawValue ?? '').trim()
+    if (!value) return
+
+    const apiKey = resolveApiFilterKey(key, fields, fieldKeys)
+    if (!apiKey) return
+
+    apiFilters[apiKey] = value
+  })
+
+  return apiFilters
+}
+
+const mergeFilters = (
+  ...groups: Array<Record<string, string> | undefined>
+): Record<string, string> => {
+  const merged: Record<string, string> = {}
+  groups.forEach((group) => {
+    Object.entries(group || {}).forEach(([key, value]) => {
+      const trimmed = String(value ?? '').trim()
+      if (trimmed) merged[key] = trimmed
+    })
+  })
+  return merged
 }
 
 type BrowseFolderNode = {
@@ -131,6 +226,37 @@ export const decodeRepositoryNodeId = (
     console.error('Invalid repository node id', error)
     return null
   }
+}
+
+/** Browse-path field values (Supplier, Document Type, etc.) for the active folder. */
+export const getFolderContextFilters = (
+  folderId: string,
+): Record<string, string> => {
+  const decoded = decodeRepositoryNodeId(folderId)
+  if (!decoded || decoded.kind !== 'browse') return {}
+
+  return Object.fromEntries(
+    Object.entries(decoded.parentFilters).filter(
+      ([, value]) => String(value ?? '').trim().length > 0,
+    ),
+  )
+}
+
+export const resolveCurrentFolderGroupField = (
+  structure: { folderFields?: Array<{ level: number; name: string; sqlColumnName: string }> } | null | undefined,
+  parentFilters: Record<string, string> = {},
+  apiGroupField?: string,
+) => {
+  if (apiGroupField) return apiGroupField
+
+  const folderFields = structure?.folderFields ?? []
+  if (!folderFields.length) return ''
+
+  const sorted = [...folderFields].sort((left, right) => left.level - right.level)
+  const depth = Object.keys(parentFilters).length
+  const field = sorted[depth]
+
+  return field?.sqlColumnName || field?.name || ''
 }
 
 const getPagedData = <T>(paged: any): T[] => {
@@ -627,7 +753,14 @@ export const folderApi = {
 
   async getFolderChildren(
     folderId: string,
-    request: { page?: number; pageSize?: number; search?: string } = {},
+    request: {
+      filters?: Record<string, string>
+      folderFilters?: Record<string, string>
+      page?: number
+      pageSize?: number
+      search?: string
+      folderSearch?: string
+    } = {},
   ): Promise<{
     folderPage: RepositoryFilePage
     folders: FolderItem[]
@@ -667,6 +800,17 @@ export const folderApi = {
     const structure = await getRepositoryBrowseStructure(repositoryId)
     const repositoryFields = await getRepositoryFields(repositoryId)
     const fieldIconMap = buildFieldIconMap(repositoryFields)
+    const fieldKeys = repositoryFields
+      .map((field) => field.sqlColumnName || field.name)
+      .filter(Boolean) as string[]
+    const parentFilters = mergeFilters(
+      filters,
+      buildApiFilters(
+        request.folderFilters ?? request.filters,
+        fieldKeys,
+        repositoryFields,
+      ),
+    )
 
     if (isBrowseLeafNode(decoded, structure)) {
       return { folderPage: toPage(null), folders: [] }
@@ -676,9 +820,10 @@ export const folderApi = {
       id: repositoryId,
       page: request.page ?? defaultPage,
       pageSize: request.pageSize ?? defaultGroupPageSize,
-      parentFilters: filters,
+      parentFilters,
       pathId,
-      search: request.search?.trim() || undefined,
+      search:
+        (request.folderSearch ?? request.search)?.trim() || undefined,
     } as any)
 
     if (childrenResult.error) throw new Error(String(childrenResult.error))
@@ -707,6 +852,7 @@ export const folderApi = {
     request: FolderContentRequest = {},
   ): Promise<{
     breadcrumbs: BreadcrumbItem[]
+    currentFolderGroupField: string
     fileColumns: DynamicRepositoryColumn[]
     filePage: RepositoryFilePage
     files: FileItem[]
@@ -718,6 +864,7 @@ export const folderApi = {
     if (!decoded) {
       return {
         breadcrumbs: [{ id: folderId, label: 'Repository' }],
+        currentFolderGroupField: '',
         fileColumns: [],
         filePage: toPage(null),
         files: [],
@@ -729,6 +876,7 @@ export const folderApi = {
     if (decoded.kind === 'static') {
       return {
         breadcrumbs: buildBreadcrumbs(decoded),
+        currentFolderGroupField: '',
         fileColumns: [],
         filePage: toPage(null),
         files: [],
@@ -760,9 +908,34 @@ export const folderApi = {
         )
         : null
     const { filters, pathId, repositoryId } = getDecodedRepositoryInfo(decoded)
+    const fieldKeys = fields
+      .map((field) => field.sqlColumnName || field.name)
+      .filter(Boolean) as string[]
+
+    const folderUiFilters = buildApiFilters(
+      request.folderFilters ??
+        (request.fileFilters ? {} : request.filters) ??
+        {},
+      fieldKeys,
+      fields,
+    )
+    const fileUiFilters = buildApiFilters(
+      request.fileFilters ??
+        (request.folderFilters ? {} : request.filters) ??
+        {},
+      fieldKeys,
+      fields,
+    )
+    const folderParentFilters = mergeFilters(filters, folderUiFilters)
+    const fileItemFilters = mergeFilters(filters, fileUiFilters)
+    const folderSearchText =
+      (request.folderSearch ?? request.search)?.trim() || undefined
+    const fileSearchText =
+      (request.fileSearch ?? request.search)?.trim() || undefined
 
     const fetchRepositoryFiles = async (
       itemFilters: Record<string, string>,
+      searchText?: string,
     ) => {
       const itemResult = await getRepositoryItems({
         cursor: request.cursor ?? null,
@@ -770,7 +943,7 @@ export const folderApi = {
         id: repositoryId,
         page: request.page ?? defaultPage,
         pageSize: request.pageSize ?? defaultItemPageSize,
-        search: request.search,
+        search: searchText,
         skipTotal: false,
         sortBy: request.sortBy || 'DocumentDate',
         sortOrder: request.sortOrder || 'desc',
@@ -792,9 +965,16 @@ export const folderApi = {
     let folderPage = toPage(null)
     let files: FileItem[] = []
     let filePageResult = toPage(null)
+    let currentFolderGroupField = resolveCurrentFolderGroupField(
+      structure,
+      filters,
+    )
 
     if (listAllFiles) {
-      const fileResult = await fetchRepositoryFiles({})
+      const fileResult = await fetchRepositoryFiles(
+        fileItemFilters,
+        fileSearchText,
+      )
       files = fileResult.files
       filePageResult = fileResult.filePage
     } else if (decoded.kind === 'repository') {
@@ -814,8 +994,23 @@ export const folderApi = {
         totalCount: folders.length,
         totalPages: 1,
       }
+
+      if (
+        includeFiles &&
+        (Object.keys(fileUiFilters).length > 0 || Boolean(fileSearchText))
+      ) {
+        const fileResult = await fetchRepositoryFiles(
+          fileUiFilters,
+          fileSearchText,
+        )
+        files = fileResult.files
+        filePageResult = fileResult.filePage
+      }
     } else if (isBrowseLeafNode(decoded, structure)) {
-      const fileResult = await fetchRepositoryFiles(filters)
+      const fileResult = await fetchRepositoryFiles(
+        fileItemFilters,
+        fileSearchText,
+      )
       files = fileResult.files
       filePageResult = fileResult.filePage
     } else {
@@ -823,12 +1018,17 @@ export const folderApi = {
         id: repositoryId,
         page: defaultPage,
         pageSize: defaultGroupPageSize,
-        parentFilters: filters,
+        parentFilters: folderParentFilters,
         pathId,
-        search: request.search?.trim() || undefined,
+        search: folderSearchText,
       } as any)
 
       if (childrenResult.error) throw new Error(String(childrenResult.error))
+      currentFolderGroupField = resolveCurrentFolderGroupField(
+        structure,
+        folderParentFilters,
+        childrenResult.data?.groupField || childrenResult.data?.groupFieldName,
+      )
       folders = normalizeChildren(
         childrenResult.data,
         decoded,
@@ -841,15 +1041,22 @@ export const folderApi = {
         includeFiles &&
         (decoded.kind === 'browse' || decoded.kind === 'browsePath')
       ) {
-        const fileResult = await fetchRepositoryFiles(filters)
+        const fileResult = await fetchRepositoryFiles(
+          fileItemFilters,
+          fileSearchText,
+        )
         files = fileResult.files
         filePageResult = fileResult.filePage
       } else if (
         decoded.kind === 'browse' &&
         !folders.length &&
-        Object.keys(filters).length >= getBrowseFolderFieldCount(structure)
+        Object.keys(folderParentFilters).length >=
+          getBrowseFolderFieldCount(structure)
       ) {
-        const fileResult = await fetchRepositoryFiles(filters)
+        const fileResult = await fetchRepositoryFiles(
+          fileItemFilters,
+          fileSearchText,
+        )
         files = fileResult.files
         filePageResult = fileResult.filePage
       }
@@ -857,6 +1064,7 @@ export const folderApi = {
 
     return {
       breadcrumbs: buildBreadcrumbs(decoded),
+      currentFolderGroupField,
       fileColumns: toFileColumns(fields),
       filePage: filePageResult,
       files,

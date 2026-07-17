@@ -9,6 +9,55 @@ export const DEFAULT_PAGE_SIZE = 50
 export const DEFAULT_FOLDER_PAGE_SIZE = 100
 export const FOLDER_SEARCH_DEBOUNCE_MS = 350
 
+/** Matches FolderTable visibility: files hide when there are 10+ folders. */
+export const FOLDER_FILES_SECTION_MAX_FOLDERS = 10
+
+export type ExplorerFilterMode = 'folders' | 'files' | 'both' | 'none'
+
+export const getExplorerSectionVisibility = ({
+  folderSearch = '',
+  foldersLength,
+  filesLength,
+  hasActiveFileFilters = false,
+  hasActiveFolderFilters = false,
+  loading = false,
+  loadingFolders = false,
+  loadingPage = false,
+}: {
+  folderSearch?: string
+  foldersLength: number
+  filesLength: number
+  hasActiveFileFilters?: boolean
+  hasActiveFolderFilters?: boolean
+  loading?: boolean
+  loadingFolders?: boolean
+  loadingPage?: boolean
+}) => {
+  const showFoldersSection =
+    foldersLength > 0 ||
+    Boolean(folderSearch.trim()) ||
+    loadingFolders ||
+    hasActiveFolderFilters
+
+  const showFilesSection =
+    ((filesLength > 0 || loading || loadingPage) &&
+      foldersLength < FOLDER_FILES_SECTION_MAX_FOLDERS) ||
+    (hasActiveFileFilters && foldersLength < FOLDER_FILES_SECTION_MAX_FOLDERS)
+
+  return { showFoldersSection, showFilesSection }
+}
+
+export const getExplorerFilterMode = (visibility: {
+  showFoldersSection: boolean
+  showFilesSection: boolean
+}): ExplorerFilterMode => {
+  const { showFoldersSection, showFilesSection } = visibility
+  if (showFoldersSection && showFilesSection) return 'both'
+  if (showFilesSection) return 'files'
+  if (showFoldersSection) return 'folders'
+  return 'none'
+}
+
 export type FolderPageMeta = {
   hasMore: boolean
   nextCursor?: string | null

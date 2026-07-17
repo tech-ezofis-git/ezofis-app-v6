@@ -49,7 +49,10 @@ const PageTitle = () => {
     current?.routeId === '/_app/folders' || pageTitle === 'Folders'
 
   const renderContent = () => {
-    if (isBuilderOpen) {
+    const isRequestsRoute = current?.routeId === '/_app/requests'
+    const isWorkflowsRoute = current?.routeId === '/_app/workflows'
+
+    if (isWorkflowsRoute && isBuilderOpen) {
       return (
         <div className='flex items-center gap-3'>
           <button
@@ -63,7 +66,7 @@ const PageTitle = () => {
       )
     }
 
-    if (isRequestOpen && selectedWorkflow?.name) {
+    if (isRequestsRoute && isRequestOpen && selectedWorkflow?.name) {
       const badgeColor =
         requestListTab === 'Sent'
           ? 'orange'
