@@ -17,6 +17,14 @@ import Pagination from '@/components/base/pagination/Pagination'
 import showToast from '@/components/base/toast/showToast'
 import FormStatusBadge from '@/components/common/FormStatusBadge'
 import { formatDatetime } from '@/utils/dayjs'
+import CustomFilter from '@/components/common/CustomFilter'
+import Tooltip from '@/components/base/Tooltip'
+import TableSearch from '@/components/base/data-table/actions/TableSearch'
+import TableSort from '@/components/base/data-table/actions/TableSort'
+import TableColumns from '@/components/base/data-table/actions/TableColumns'
+import TableRows from '@/components/base/data-table/actions/TableRows'
+import type { RowSize } from '@/components/base/data-table/types'
+import authUserStore from '@/stores/authUserStore'
 
 interface TableProps {
   tabValue: string
@@ -59,19 +67,21 @@ const Table = ({ tabValue, onCreate }: TableProps) => {
       id: 'createdBy',
       label: 'Created By',
       size: 140,
+      renderCell: (row: any) =>
+        String(row.createdByName || loggedInUser),
     },
     {
       id: 'createdAt',
       label: 'Created At',
       size: 180,
-      renderCell: (row) => formatDatetime(row.createdAt as string, 'datetime'),
+      renderCell: (row: any) => formatDatetime(row.createdAt as string, 'datetime'),
     },
     {
       id: 'modifiedBy',
       label: 'Modified By',
       size: 140,
-      renderCell: (row) =>
-        String(row.modifiedByName || row.createdByName || '-'),
+      renderCell: (row: any) =>
+        String(row.modifiedByName || row.createdByName || loggedInUser),
     },
     {
       id: 'modifiedAt',
@@ -129,16 +139,21 @@ const Table = ({ tabValue, onCreate }: TableProps) => {
   ]
 
   const initialVisibilityState = {
-    createdAt: false,
-    createdBy: false,
-    description: false,
+    createdAt: true,
+    createdBy: true,
+    description: true,
   }
 
-  const { expandState, groupState, sortState, ...rest } = useDataTableState({
+  const { expandState, groupState, sortState, searchState, setSearchState, ...rest } = useDataTableState({
     initialVisibilityState,
   })
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(100)
+  const [rowSize, setRowSize] = useState<RowSize>('default')
+  const [activeFilters, setActiveFilters] = useState<Record<string, string>>({})
+
+  const session = authUserStore((state) => state.session)
+  const loggedInUser = session?.firstName ? `${session.firstName} ${session.lastName || ''}`.trim() : session?.email || '-'
 
   const payload = useMemo((): WorkflowBrowsePayload => {
     const sortColumn = sortState?.[0]?.id
@@ -159,6 +174,24 @@ const Table = ({ tabValue, onCreate }: TableProps) => {
         value: 'DRAFT',
       })
     }
+
+    Object.entries(activeFilters).forEach(([key, value]) => {
+      if (value) {
+        if (key === 'createdAt' || key === 'modifiedAt') {
+          // Handled locally in filteredWorkflows
+          return
+        }
+        let condition = 'CONTAINS'
+        if (['createdBy', 'modifiedBy', 'flowStatus'].includes(key)) {
+          condition = 'IS_EQUALS_TO'
+        }
+        filters.push({
+          condition,
+          criteria: key,
+          value,
+        })
+      }
+    })
 
     return {
       currentPage: page,
@@ -249,18 +282,152 @@ const Table = ({ tabValue, onCreate }: TableProps) => {
     return groups
   }, [data, tabValue])
 
+  const createdByOptions = useMemo(() => {
+    const unique = new Map<string, string>()
+    workflows.forEach((group: any) => {
+      group.items.forEach((w: any) => {
+        if (w.createdBy) unique.set(w.createdBy, w.createdByName || loggedInUser)
+      })
+    })
+    return Array.from(unique.entries()).map(([value, label]) => ({ label, value }))
+  }, [workflows, loggedInUser])
+
+  const modifiedByOptions = useMemo(() => {
+    const unique = new Map<string, string>()
+    workflows.forEach((group: any) => {
+      group.items.forEach((w: any) => {
+        if (w.modifiedBy) unique.set(w.modifiedBy, w.modifiedByName || w.createdByName || loggedInUser)
+      })
+    })
+    return Array.from(unique.entries()).map(([value, label]) => ({ label, value }))
+  }, [workflows, loggedInUser])
+
+  const filteredWorkflows = useMemo(() => {
+    return workflows
+      .map((group: any) => {
+        const filteredItems = group.items.filter((w: any) => {
+          let matches = true
+          Object.entries(activeFilters).forEach(([key, value]) => {
+            if (!value) return
+            
+            if (key === 'createdAt' || key === 'modifiedAt') {
+              const filterDate = value.split('T')[0]
+              const rowDate = w[key] ? String(w[key]).split('T')[0] : ''
+              if (rowDate !== filterDate) matches = false
+            } else if (key === 'flowStatus') {
+              const rowStatus = w.flowStatus || w.flowstatus
+              if (rowStatus !== value) matches = false
+            } else if (key === 'createdBy' || key === 'modifiedBy') {
+              if (w[key] !== value) matches = false
+            } else {
+              if (!w[key] || !String(w[key]).toLowerCase().includes(String(value).toLowerCase())) {
+                matches = false
+              }
+            }
+          })
+          
+          if (searchState?.value) {
+            const query = searchState.value.toLowerCase()
+            const searchCols = searchState.id ? [searchState.id] : Object.keys(w)
+            const matchesSearch = searchCols.some((colKey) => {
+              const val = w[colKey]
+              return val != null && String(val).toLowerCase().includes(query)
+            })
+            if (!matchesSearch) matches = false
+          }
+          
+          return matches
+        })
+        return {
+          ...group,
+          items: filteredItems,
+          groupCount: filteredItems.length,
+        }
+      })
+      .filter((group: any) => group.items.length > 0)
+  }, [workflows, activeFilters, searchState])
+
   const { table } = useDataTable({
     columns,
     enableRowSelection: false,
-    rows: workflows,
-    state: { expandState, groupState, sortState, ...rest },
+    rows: filteredWorkflows,
+    state: { expandState, groupState, sortState, searchState, setSearchState, ...rest },
   })
 
   return (
     <div className='flex h-full flex-col px-2 py-1'>
-      <div className='min-h-0 flex-1'>
+      <CustomFilter
+        filters={[
+          {
+            id: "flowStatus",
+            label: "Status",
+            options: [
+              { label: "Published", value: "PUBLISHED" },
+              { label: "Draft", value: "DRAFT" }
+            ]
+          },
+          {
+            id: "createdBy",
+            label: "Created By",
+            options: createdByOptions,
+          }
+        ]}
+        moreFilters={[
+          {
+            id: "modifiedBy",
+            label: "Modified By",
+            options: modifiedByOptions,
+          },
+          {
+            id: "createdAt",
+            label: "Created Date",
+            dataType: "date",
+          },
+          {
+            id: "modifiedAt",
+            label: "Modified Date",
+            dataType: "date",
+          }
+        ]}
+        activeFilters={activeFilters}
+        onFilterChange={(id, value) => {
+          setActiveFilters((prev) => ({ ...prev, [id]: value }))
+          setPage(1)
+        }}
+        onReset={() => {
+          setActiveFilters({})
+          setSearchState({ id: '', value: '' })
+          setPage(1)
+        }}
+        showReset={Object.keys(activeFilters).some(k => activeFilters[k]) || !!searchState?.value}
+        searchQuery=""
+        onSearchChange={() => {}}
+        searchPlaceholder="Search workflows..."
+        customSearchComponent={<TableSearch table={table as any} />}
+        actionButtons={[
+          {
+            id: 'refresh',
+            icon: 'tabler:refresh',
+            tooltip: 'Refresh',
+            onClick: () => refetch(),
+            isIconButton: true,
+            color: 'gray',
+            variant: 'outline',
+            disabled: isFetching
+          }
+        ]}
+      />
+      <div className='min-h-0 flex-1 mt-2'>
         <DataTable
           emptyPage='workflows'
+          hideActionBar={true}
+          hideGrouping={true}
+          hideExport={true}
+          hideReload={true}
+          hideSearch={true}
+          hideFilters={true}
+          rowSize={rowSize}
+          onRowSizeChange={setRowSize}
           isLoading={isPending}
           isReLoading={isFetching || isRefetching}
           pageSize={pageSize}
