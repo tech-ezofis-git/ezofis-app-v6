@@ -12,9 +12,10 @@ import SortableItem from '@/components/base/sortable/SortableItem'
 
 interface Props<TData> {
   table: TanstackTable<TData>
+  iconOnly?: boolean
 }
 
-const TableColumns = <TData,>({ table }: Props<TData>) => {
+const TableColumns = <TData,>({ table, iconOnly }: Props<TData>) => {
   const orderState = table.getState().columnOrder
   const columns = table
     .getAllLeafColumns()
@@ -47,7 +48,7 @@ const TableColumns = <TData,>({ table }: Props<TData>) => {
         <Button
           color='gray'
           icon='lucide:columns-3'
-          label='Columns'
+          label={iconOnly ? undefined : 'Columns'}
           rightSection={_rightSection}
           variant='outline'
         />

@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react'
+import React, { useMemo, useState } from 'react'
 import Icon from '@/components/base/icon/Icon'
 import DataTable from '@/components/base/data-table/DataTable'
 import useDataTable from '@/components/base/data-table/hooks/useDataTable'
@@ -10,12 +10,14 @@ import { useDynamicColumns } from './columns/useDynamicColumns'
 import GridView from './GridView'
 import CustomFilter from '@/components/common/CustomFilter'
 import TableSearch from '@/components/base/data-table/actions/TableSearch'
+// import TableSort from '@/components/base/data-table/actions/TableSort'
+// import TableColumns from '@/components/base/data-table/actions/TableColumns'
+// import TableRows from '@/components/base/data-table/actions/TableRows'
+// import type { RowSize } from '@/components/base/data-table/types'
 import ExportButton from './buttons/ExportButton'
 import RefreshButton from './buttons/RefreshButton'
 import UploadPoButton from './buttons/UploadPoButton'
 import Tooltip from '@/components/base/Tooltip'
-// import TableActionBar, { type TableActionButton } from '@/components/base/data-table/TableActionBar'
-// import { getGroupedRowModel } from '@tanstack/react-table'
 
 interface InboxListProps {
   data: TableGroup[]
@@ -682,6 +684,7 @@ const InboxList: React.FC<InboxListProps> = ({
   const openNewRequest = requestStore((state) => state.openNewRequest)
   const columns =
     useDynamicColumns(workflow, onRowClick, selectedItem, activeTab) || []
+  // const [rowSize, setRowSize] = useState<RowSize>('default')
 
   const initialVisibilityState = {
     createdAt: false,
@@ -1161,6 +1164,27 @@ const InboxList: React.FC<InboxListProps> = ({
           ]}
           viewMode={viewMode}
           onViewModeChange={setViewMode}
+          /* trailingActions={
+            viewMode === 'table' ? (
+              <div className="flex items-center gap-1.5 ml-1">
+                <Tooltip content="Sort">
+                  <div>
+                    <TableSort table={table as any} iconOnly />
+                  </div>
+                </Tooltip>
+                <Tooltip content="Hide/Show Columns">
+                  <div>
+                    <TableColumns table={table as any} iconOnly />
+                  </div>
+                </Tooltip>
+                <Tooltip content="Hide/Show Rows">
+                  <div>
+                    <TableRows rowSize={rowSize} onRowSizeChange={setRowSize} iconOnly />
+                  </div>
+                </Tooltip>
+              </div>
+            ) : null
+          } */
         />
       )}
       <div className='relative flex min-h-0 w-full flex-1 flex-col mt-2'>
@@ -1171,6 +1195,7 @@ const InboxList: React.FC<InboxListProps> = ({
               <DataTable
                 component={selectedItem}
                 emptyPage='requests'
+                hideActionBar={true}
                 hideGrouping={true}
                 hideExport={true}
                 hideReload={true}
@@ -1179,6 +1204,8 @@ const InboxList: React.FC<InboxListProps> = ({
                 isLoading={isLoading}
                 isReLoading={isRefetching}
                 pageSize={pageSize}
+                // rowSize={rowSize}
+                // onRowSizeChange={setRowSize}
                 stickyHeader={true}
                 table={table}
                 actions={[]}

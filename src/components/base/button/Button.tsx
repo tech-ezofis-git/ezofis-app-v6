@@ -71,7 +71,7 @@ const Button = forwardRef<HTMLButtonElement, Props>(
             {!loading && icon && (
               <Icon className={cn('-ml-1', iconClass)} name={icon} />
             )}
-            <span className={labelClass}>{label}</span>
+            {label && <span className={labelClass}>{label}</span>}
             {suffixIcon && (
               <Icon
                 className={cn('-mr-1', suffixIconClass)}

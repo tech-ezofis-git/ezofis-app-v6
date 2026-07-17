@@ -13,9 +13,10 @@ import cn from '@/utils/cn'
 
 interface Props<TData> {
   table: TanstackTable<TData>
+  iconOnly?: boolean
 }
 
-const TableSort = <TData,>({ table }: Props<TData>) => {
+const TableSort = <TData,>({ table, iconOnly }: Props<TData>) => {
   const sortDirections = ['Ascending', 'Descending']
   const sortState = table.getState().sorting
 
@@ -89,7 +90,7 @@ const TableSort = <TData,>({ table }: Props<TData>) => {
         <Button
           color='gray'
           icon='lucide:arrow-down-up'
-          label='Sort'
+          label={iconOnly ? undefined : 'Sort'}
           rightSection={_rightSection}
           variant='outline'
         />

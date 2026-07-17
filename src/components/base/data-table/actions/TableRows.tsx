@@ -8,11 +8,12 @@ import InputRadioIndicator from '../../inputs/InputRadioIndicator'
 interface Props {
   rowSize: RowSize
   onRowSizeChange: (rowSize: RowSize) => void
+  iconOnly?: boolean
 }
 
 const rowSizes = ['default', 'compact', 'comfortable']
 
-const TableRows = ({ rowSize, onRowSizeChange }: Props) => {
+const TableRows = ({ rowSize, onRowSizeChange, iconOnly }: Props) => {
   return (
     <Menu
       className='px-2 py-3'
@@ -22,7 +23,7 @@ const TableRows = ({ rowSize, onRowSizeChange }: Props) => {
         <Button
           color='gray'
           icon='lucide:rows-3'
-          label='Rows'
+          label={iconOnly ? undefined : 'Rows'}
           variant='outline'
         />
       }
