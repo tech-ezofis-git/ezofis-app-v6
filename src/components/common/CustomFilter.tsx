@@ -95,6 +95,29 @@ export default function CustomFilter({
   const [isSearchExpanded, setIsSearchExpanded] = useState(true)
   const searchInputRef = useRef<HTMLInputElement>(null)
   const filtersRef = useRef<HTMLDivElement>(null)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const container = scrollContainerRef.current
+    if (!container) return
+
+    const handleWheel = (e: WheelEvent) => {
+      if (e.deltaY === 0) return
+
+      const isAtLeft = container.scrollLeft === 0
+      const isAtRight = Math.abs(container.scrollWidth - container.clientWidth - container.scrollLeft) < 1
+
+      if ((e.deltaY < 0 && isAtLeft) || (e.deltaY > 0 && isAtRight)) {
+        return
+      }
+
+      e.preventDefault()
+      container.scrollLeft += e.deltaY
+    }
+
+    container.addEventListener('wheel', handleWheel, { passive: false })
+    return () => container.removeEventListener('wheel', handleWheel)
+  }, [])
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -111,7 +134,7 @@ export default function CustomFilter({
   return (
     <div ref={filtersRef} className="relative z-40 flex items-center justify-between gap-4 rounded-lg border border-[var(--border-default)] bg-surface p-3 shadow-xs w-full">
       <div className="flex items-center gap-2 w-[60%] shrink-0">
-        <div className="flex flex-nowrap overflow-x-auto no-scrollbar gap-2 items-center min-w-0">
+        <div ref={scrollContainerRef} className="flex flex-nowrap overflow-x-auto no-scrollbar gap-2 items-center min-w-0">
           {quickFilters && quickFilters.map((qf) => {
             const isActive = activeQuickFilters?.includes(qf.id)
             return (
