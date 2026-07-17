@@ -1,386 +1,925 @@
-import React, { useEffect, useRef, useState, useMemo } from 'react'
-import { ChevronDown, ChevronRight, Search } from 'lucide-react'
-import Icon from '@/components/base/icon/Icon'
-import cn from '@/utils/cn'
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { ChevronDown, ChevronRight, Search, X } from "lucide-react";
+import Icon from "@/components/base/icon/Icon";
+import InputDate from "@/components/base/inputs/InputDate";
+import Tooltip from "@/components/base/Tooltip";
+import cn from "@/utils/cn";
+
+const MORE_FILTER_DEBOUNCE_MS = 350;
+const MORE_FILTER_PANEL_WIDTH = 388;
+const MORE_FILTER_PANEL_HEIGHT = 260;
+/** Same layer as More filters panel; above toolbar/table content */
+const FILTER_MENU_Z_INDEX = 50000;
+const VIEWPORT_GAP = 8;
+
+interface DropdownPosition {
+  top: number;
+  left: number;
+  width: number;
+}
+
+const isDateFilterType = (dataType?: string) => {
+  const normalized = String(dataType || "")
+    .trim()
+    .toLowerCase();
+  return (
+    normalized === "date" ||
+    normalized === "datetime" ||
+    normalized.includes("date")
+  );
+};
+
+/** Normalize picker value to API filter format: YYYY-MM-DDT00:00:00 */
+const toApiDateFilterValue = (value: string | Date | null | undefined) => {
+  if (value == null || value === "") return "";
+
+  let parsed: Date | null = null;
+
+  if (value instanceof Date) {
+    parsed = value;
+  } else {
+    const trimmed = String(value).trim();
+    if (!trimmed) return "";
+
+    // ISO / YYYY-MM-DD
+    parsed = new Date(trimmed);
+
+    // DD-MMM-YYYY (InputDate display format)
+    if (Number.isNaN(parsed.getTime())) {
+      const match = trimmed.match(/^(\d{1,2})[-/ ]([A-Za-z]{3})[-/ ](\d{4})$/);
+      if (match) {
+        parsed = new Date(`${match[2]} ${match[1]}, ${match[3]}`);
+      }
+    }
+  }
+
+  if (!parsed || Number.isNaN(parsed.getTime())) {
+    return typeof value === "string" ? value.trim() : "";
+  }
+
+  const year = parsed.getFullYear();
+  const month = String(parsed.getMonth() + 1).padStart(2, "0");
+  const day = String(parsed.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}T00:00:00`;
+};
+
+const formatDateChipLabel = (value: string) => {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+
+  return parsed.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
 
 export interface QuickFilterOption {
-  id: string
-  label: string
-  icon?: string
-  count?: number
+  id: string;
+  label: string;
+  icon?: string;
+  count?: number;
 }
 
 export interface FilterOption {
-  label: string
-  value: string
+  label: string;
+  value: string;
 }
 
 export interface FilterGroup {
-  id: string
-  label: string
-  icon?: React.ComponentType<{ className?: string }>
-  options?: FilterOption[]
-  actions?: FilterOption[] // Used for buttons like High Value / Low Value
+  id: string;
+  label: string;
+  icon?: React.ComponentType<{ className?: string }>;
+  dataType?: string;
+  options?: FilterOption[];
+  actions?: FilterOption[]; // Used for buttons like High Value / Low Value
 }
 
 export interface FilterDefinition {
-  id: string
-  label: string
-  options: FilterOption[]
-  searchable?: boolean
-  searchPlaceholder?: string
-  width?: number
-}
-
-export interface FilterAction {
-  key: string
-  component: React.ReactNode
+  id: string;
+  label: string;
+  options: FilterOption[];
+  searchable?: boolean;
+  searchPlaceholder?: string;
+  width?: number;
 }
 
 export interface CustomFilterProps {
-  filters: FilterDefinition[]
-  moreFilters?: FilterGroup[]
-  moreFiltersLabel?: string
-  activeFilters: Record<string, string>
-  onFilterChange: (id: string, value: string) => void
-  onReset: () => void
-  showReset?: boolean
-  searchQuery: string
-  onSearchChange: (val: string) => void
-  searchPlaceholder?: string
-  customSearchComponent?: React.ReactNode
-  quickFilters?: QuickFilterOption[]
-  activeQuickFilters?: string[]
-  onQuickFilterToggle?: (id: string) => void
-  trailingActions?: React.ReactNode
-  actions?: FilterAction[]
+  filters: FilterDefinition[];
+  moreFilters?: FilterGroup[];
+  moreFiltersLabel?: string;
+  activeFilters: Record<string, string>;
+  onFilterChange: (id: string, value: string) => void;
+  onReset: () => void;
+  showReset?: boolean;
+  searchQuery: string;
+  onSearchChange: (val: string) => void;
+  searchPlaceholder?: string;
+  customSearchComponent?: React.ReactNode;
+  quickFilters?: QuickFilterOption[];
+  activeQuickFilters?: string[];
+  onQuickFilterToggle?: (id: string) => void;
+  trailingActions?: React.ReactNode;
 }
 
 export default function CustomFilter({
   filters,
   moreFilters,
-  moreFiltersLabel = 'More filters',
+  moreFiltersLabel = "More filters",
   activeFilters,
   onFilterChange,
   onReset,
   showReset,
   searchQuery,
   onSearchChange,
-  searchPlaceholder = 'Search...',
+  searchPlaceholder = "Search...",
   customSearchComponent,
   quickFilters,
   activeQuickFilters,
   onQuickFilterToggle,
   trailingActions,
-  actions,
 }: CustomFilterProps) {
-  const combinedFilters = useMemo(() => {
-    const list: any[] = []
-    if (filters) list.push(...filters)
-    if (moreFilters) list.push(...moreFilters)
-    return list
-  }, [filters, moreFilters])
-
-  const [activeFilterDropdown, setActiveFilterDropdown] = useState<string | null>(null)
+  const [activeFilterDropdown, setActiveFilterDropdown] = useState<
+    string | null
+  >(null);
   const [activeFilterGroup, setActiveFilterGroup] = useState<string | null>(
-    combinedFilters.length > 0 ? combinedFilters[0].id : null
-  )
+    moreFilters && moreFilters.length > 0 ? moreFilters[0].id : null,
+  );
+  const [filterSearchQuery, setFilterSearchQuery] = useState("");
+  const [isSearchExpanded, setIsSearchExpanded] = useState(true);
+  const [morePanelPos, setMorePanelPos] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
+  const [filterDropdownPos, setFilterDropdownPos] =
+    useState<DropdownPosition | null>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const filtersRef = useRef<HTMLDivElement>(null);
+  const moreFiltersButtonRef = useRef<HTMLButtonElement>(null);
+  const moreFiltersPanelRef = useRef<HTMLDivElement>(null);
+  const filterDropdownPanelRef = useRef<HTMLDivElement>(null);
+  const filterButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const morePanelAnchorRef = useRef<HTMLElement | null>(null);
+  const skipMoreFilterDebounceRef = useRef(false);
 
-  useEffect(() => {
-    if (!activeFilterGroup && combinedFilters.length > 0) {
-      setActiveFilterGroup(combinedFilters[0].id)
-    }
-  }, [combinedFilters, activeFilterGroup])
-  const [filterSearchQuery, setFilterSearchQuery] = useState('')
-  const [isSearchExpanded, setIsSearchExpanded] = useState(true)
-  const searchInputRef = useRef<HTMLInputElement>(null)
-  const filtersRef = useRef<HTMLDivElement>(null)
-  const scrollContainerRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const container = scrollContainerRef.current
-    if (!container) return
-
-    const handleWheel = (e: WheelEvent) => {
-      if (e.deltaY === 0) return
-
-      const isAtLeft = container.scrollLeft === 0
-      const isAtRight = Math.abs(container.scrollWidth - container.clientWidth - container.scrollLeft) < 1
-
-      if ((e.deltaY < 0 && isAtLeft) || (e.deltaY > 0 && isAtRight)) {
-        return
-      }
-
-      e.preventDefault()
-      container.scrollLeft += e.deltaY
+  const updateFilterDropdownPosition = useCallback(() => {
+    if (!activeFilterDropdown || activeFilterDropdown === "more") {
+      setFilterDropdownPos(null);
+      return;
     }
 
-    container.addEventListener('wheel', handleWheel, { passive: false })
-    return () => container.removeEventListener('wheel', handleWheel)
-  }, [])
+    const anchor = filterButtonRefs.current[activeFilterDropdown];
+    if (!anchor) return;
+
+    const filter = filters.find((item) => item.id === activeFilterDropdown);
+    const width = filter?.width || 240;
+    const rect = anchor.getBoundingClientRect();
+
+    let left = rect.left;
+    let top = rect.bottom + 6;
+
+    if (left + width > window.innerWidth - VIEWPORT_GAP) {
+      left = Math.max(VIEWPORT_GAP, window.innerWidth - width - VIEWPORT_GAP);
+    }
+
+    const estimatedHeight = 292;
+    if (top + estimatedHeight > window.innerHeight - VIEWPORT_GAP) {
+      top = Math.max(VIEWPORT_GAP, rect.top - estimatedHeight - 6);
+    }
+
+    setFilterDropdownPos({ top, left, width });
+  }, [activeFilterDropdown, filters]);
+
+  const updateMorePanelPosition = useCallback(() => {
+    const anchor = morePanelAnchorRef.current || moreFiltersButtonRef.current;
+    if (!anchor) return;
+
+    const rect = anchor.getBoundingClientRect();
+    let left = rect.left;
+    let top = rect.bottom + 6;
+
+    if (left + MORE_FILTER_PANEL_WIDTH > window.innerWidth - 8) {
+      left = Math.max(8, window.innerWidth - MORE_FILTER_PANEL_WIDTH - 8);
+    }
+    if (top + MORE_FILTER_PANEL_HEIGHT > window.innerHeight - 8) {
+      top = Math.max(8, rect.top - MORE_FILTER_PANEL_HEIGHT - 6);
+    }
+
+    setMorePanelPos({ left, top });
+  }, []);
+
+  const openMoreFilters = useCallback(
+    (anchor: HTMLElement | null, groupId?: string | null) => {
+      const nextGroup =
+        groupId ||
+        activeFilterGroup ||
+        moreFilters?.find((group) => !activeFilters[group.id])?.id ||
+        moreFilters?.[0]?.id ||
+        null;
+
+      morePanelAnchorRef.current = anchor;
+      setActiveFilterGroup(nextGroup);
+      setActiveFilterDropdown("more");
+      skipMoreFilterDebounceRef.current = true;
+      setFilterSearchQuery(nextGroup ? activeFilters[nextGroup] || "" : "");
+    },
+    [activeFilterGroup, activeFilters, moreFilters],
+  );
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (filtersRef.current && !filtersRef.current.contains(event.target as Node)) {
-        setActiveFilterDropdown(null)
+      const target = event.target as Node;
+      const element = target instanceof Element ? target : target.parentElement;
+      const inBar = Boolean(filtersRef.current?.contains(target));
+      const inPanel = Boolean(moreFiltersPanelRef.current?.contains(target));
+      const inFilterDropdown = Boolean(
+        filterDropdownPanelRef.current?.contains(target),
+      );
+      // Date picker / Mantine portals render outside the panel
+      const inDatePicker = Boolean(
+        element?.closest(
+          [
+            "[data-portal]",
+            "[data-mantine-portal]",
+            "[data-dates-dropdown]",
+            ".mantine-Popover-dropdown",
+            ".mantine-DatePicker-dropdown",
+            ".mantine-DateInput-dropdown",
+            ".mantine-DatePickerInput-dropdown",
+          ].join(", "),
+        ),
+      );
+
+      if (!inBar && !inPanel && !inFilterDropdown && !inDatePicker) {
+        setActiveFilterDropdown(null);
       }
     }
-    document.addEventListener('mousedown', handleClickOutside)
+
+    // Use click (not mousedown) so date selection onChange runs first
+    document.addEventListener("click", handleClickOutside, true);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener("click", handleClickOutside, true);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!activeFilterDropdown || activeFilterDropdown === "more") {
+      setFilterDropdownPos(null);
+      return;
     }
-  }, [])
 
-  return (
-    <div ref={filtersRef} className="relative z-40 flex items-center justify-between gap-4 rounded-lg border border-[var(--border-default)] bg-surface p-3 shadow-xs w-full">
-      <div className="flex items-center gap-2 w-[60%] shrink-0">
-        <div ref={scrollContainerRef} className="flex flex-nowrap overflow-x-auto no-scrollbar gap-2 items-center min-w-0">
-          {quickFilters && quickFilters.map((qf) => {
-            const isActive = activeQuickFilters?.includes(qf.id)
-            return (
-              <button
-                key={qf.id}
-                className={cn(
-                  "cursor-pointer rounded-full border px-3 py-1 text-12 font-medium transition-all flex items-center gap-1.5",
-                  isActive
-                    ? "border-[var(--primary-9)] bg-[var(--primary-3)] text-[var(--primary-9)]"
-                    : "border-[var(--border-default)] bg-surface text-[var(--text-secondary)] hover:bg-gray-3 dark:hover:bg-gray-10"
-                )}
-                onClick={() => onQuickFilterToggle?.(qf.id)}
-              >
-                {qf.icon && <Icon className="size-3.5" name={qf.icon} />}
-                <span className="whitespace-nowrap">{qf.label}</span>
-                {qf.count !== undefined && (
-                  <span className={cn(
-                    "flex items-center justify-center rounded-full px-1.5 py-0.5 text-10 font-bold",
-                    isActive ? "bg-[var(--primary-4)] text-[var(--primary-9)]" : "bg-gray-3 text-gray-11"
-                  )}>
-                    {qf.count}
-                  </span>
-                )}
-              </button>
-            )
-          })}
+    updateFilterDropdownPosition();
+    const onReposition = () => updateFilterDropdownPosition();
+    window.addEventListener("resize", onReposition);
+    window.addEventListener("scroll", onReposition, true);
 
-          {/* Active Filters as tags */}
-          {combinedFilters.map(group => {
-            const activeValue = activeFilters[group.id]
-            if (!activeValue) return null
+    return () => {
+      window.removeEventListener("resize", onReposition);
+      window.removeEventListener("scroll", onReposition, true);
+    };
+  }, [activeFilterDropdown, updateFilterDropdownPosition]);
 
-            const option = group.options?.find((o: any) => o.value === activeValue)
-            const action = group.actions?.find((a: any) => a.value === activeValue)
-            const label = option?.label || action?.label || activeValue
+  useEffect(() => {
+    if (activeFilterDropdown !== "more") {
+      setMorePanelPos(null);
+      morePanelAnchorRef.current = null;
+      return;
+    }
 
-            return (
-              <div key={group.id} className="flex items-center gap-1.5 rounded-full border border-[var(--primary-5)] bg-[var(--primary-2)] px-2.5 py-1 text-12 font-medium text-[var(--primary-11)] shrink-0">
-                <span className="opacity-70">{group.label}:</span>
-                <span className="whitespace-nowrap">{label}</span>
-                <button
-                  onClick={() => onFilterChange(group.id, '')}
-                  className="ml-0.5 cursor-pointer hover:text-[var(--primary-9)]"
-                >
-                  <Icon name="tabler:x" className="size-3.5" />
-                </button>
-              </div>
-            )
-          })}
-        </div>
+    updateMorePanelPosition();
+    const onReposition = () => updateMorePanelPosition();
+    window.addEventListener("resize", onReposition);
+    window.addEventListener("scroll", onReposition, true);
+    return () => {
+      window.removeEventListener("resize", onReposition);
+      window.removeEventListener("scroll", onReposition, true);
+    };
+  }, [activeFilterDropdown, updateMorePanelPosition]);
 
-        {/* All Available Filters Menu */}
-        {combinedFilters.length > 0 && (
-          <div className="relative shrink-0">
-            <button
-              className={cn(
-                "cursor-pointer rounded-full border border-dashed px-2 py-1.5 transition-all hover:bg-gray-3 dark:hover:bg-gray-10 flex items-center justify-center shrink-0",
-                activeFilterDropdown === 'more'
-                  ? "border-primary-9 bg-primary-3/50 text-primary-9"
-                  : "border-border-default bg-surface text-text-secondary"
-              )}
-              onClick={() => {
-                setActiveFilterDropdown(activeFilterDropdown === 'more' ? null : 'more')
-                setFilterSearchQuery('')
-              }}
-              title="Add Filter"
-            >
-              <Icon className="size-4" name="tabler:plus" />
-            </button>
+  useEffect(() => {
+    if (activeFilterDropdown !== "more" || !activeFilterGroup) return;
 
-            {activeFilterDropdown === 'more' && (
-              <div className="absolute z-50 top-full left-0 mt-1.5 flex rounded-lg border border-border-default bg-surface shadow-xs overflow-hidden animate-in fade-in slide-in-from-top-2">
-                <div className="flex flex-col w-[190px] bg-primary-3/30 border-r border-border-default p-1 dark:bg-gray-12">
-                  {combinedFilters.map((group) => {
-                    const IconComp = group.icon
-                    const isActive = activeFilterGroup === group.id
-                    return (
-                      <button
-                        key={group.id}
-                        className={cn(
-                          "flex items-center justify-between w-full rounded-lg px-3 py-2.5 text-12 font-medium text-left transition-all cursor-pointer",
-                          isActive
-                            ? "bg-primary-3 text-primary-9 dark:bg-primary-9 dark:text-white"
-                            : "text-text-secondary hover:bg-gray-2 dark:hover:bg-gray-10"
-                        )}
-                        onClick={() => {
-                          setActiveFilterGroup(group.id)
-                          setFilterSearchQuery('')
-                        }}
-                      >
-                        <span className="flex items-center gap-2">
-                          {typeof IconComp === 'string' ? (
-                            <Icon name={IconComp} className="size-4" />
-                          ) : IconComp ? (
-                            <IconComp className="h-4 w-4" />
-                          ) : null}
-                          <span>{group.label}</span>
-                        </span>
-                        <ChevronRight className="h-3 w-3 opacity-60" />
-                      </button>
-                    )
-                  })}
-                </div>
+    const activeGroup = moreFilters?.find(
+      (group) => group.id === activeFilterGroup,
+    );
+    if (isDateFilterType(activeGroup?.dataType)) return;
 
-                <div className="flex flex-col w-[260px] p-3 gap-2.5 bg-surface">
-                  {combinedFilters.map((group) => {
-                    if (activeFilterGroup !== group.id) return null
-                    return (
-                      <React.Fragment key={group.id}>
-                        {group.options && (
-                          <>
-                            <div className="relative">
-                              <Search className="absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-text-muted" />
-                              <input
-                                className="w-full rounded-lg border border-border-default bg-gray-2 py-1 pr-3 pl-8 text-11 text-text-primary outline-none"
-                                placeholder={`Search ${group.label.toLowerCase()}...`}
-                                type="text"
-                                value={filterSearchQuery}
-                                onChange={(e) => setFilterSearchQuery(e.target.value)}
-                              />
-                            </div>
-                            <div className="flex flex-col gap-0.5 mt-1 max-h-[160px] overflow-y-auto scrollbar">
-                              {group.options
-                                .filter((item: any) =>
-                                  item.label.toLowerCase().includes(filterSearchQuery.toLowerCase())
-                                )
-                                .map((item: any) => (
-                                  <button
-                                    key={item.value}
-                                    className={cn(
-                                      "w-full rounded px-2.5 py-1.5 text-12 font-medium text-left cursor-pointer transition-colors text-text-primary hover:bg-gray-2",
-                                      activeFilters[group.id] === item.value
-                                        ? "bg-primary-3/30 text-primary-9 font-semibold"
-                                        : "text-text-secondary hover:bg-gray-2"
-                                    )}
-                                    onClick={() => {
-                                      onFilterChange(group.id, item.value)
-                                      setActiveFilterDropdown(null)
-                                    }}
-                                  >
-                                    {item.label}
-                                  </button>
-                                ))}
-                            </div>
-                          </>
-                        )}
-                        {group.actions && (
-                          <>
-                            <div className="text-11 font-semibold text-text-muted mb-1">
-                              Filter by {group.label}
-                            </div>
-                            <div className="flex flex-col gap-2">
-                              {group.actions.map((action: any) => (
-                                <button
-                                  key={action.value}
-                                  className="w-full rounded px-2.5 py-1.5 text-12 font-medium text-left hover:bg-gray-2 cursor-pointer text-text-secondary"
-                                  onClick={() => {
-                                    onFilterChange(group.id, action.value)
-                                    setActiveFilterDropdown(null)
-                                  }}
-                                >
-                                  {action.label}
-                                </button>
-                              ))}
-                            </div>
-                          </>
-                        )}
-                      </React.Fragment>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+    if (skipMoreFilterDebounceRef.current) {
+      skipMoreFilterDebounceRef.current = false;
+      return;
+    }
 
-        {showReset && (
-          <button
-            className="cursor-pointer shrink-0 rounded-full border border-border-default bg-gray-2 px-3.5 py-1 text-12 font-medium text-text-secondary transition-all hover:bg-gray-3"
-            onClick={() => {
-              onReset()
-              setActiveFilterDropdown(null)
+    const trimmed = filterSearchQuery.trim();
+    const current = String(activeFilters[activeFilterGroup] ?? "").trim();
+    if (trimmed === current) return;
+
+    const timer = window.setTimeout(() => {
+      onFilterChange(activeFilterGroup, trimmed);
+    }, MORE_FILTER_DEBOUNCE_MS);
+
+    return () => window.clearTimeout(timer);
+  }, [
+    activeFilterDropdown,
+    activeFilterGroup,
+    activeFilters,
+    filterSearchQuery,
+    moreFilters,
+    onFilterChange,
+  ]);
+
+  // Default filter dropdown: apply typed value when options are empty
+  useEffect(() => {
+    if (!activeFilterDropdown || activeFilterDropdown === "more") return;
+
+    const activeFilter = filters.find(
+      (filter) => filter.id === activeFilterDropdown,
+    );
+    if (!activeFilter?.searchable) return;
+    if (activeFilter.options.length > 0) return;
+
+    if (skipMoreFilterDebounceRef.current) {
+      skipMoreFilterDebounceRef.current = false;
+      return;
+    }
+
+    const trimmed = filterSearchQuery.trim();
+    const current = String(activeFilters[activeFilterDropdown] ?? "").trim();
+    if (trimmed === current) return;
+
+    const timer = window.setTimeout(() => {
+      onFilterChange(activeFilterDropdown, trimmed);
+    }, MORE_FILTER_DEBOUNCE_MS);
+
+    return () => window.clearTimeout(timer);
+  }, [
+    activeFilterDropdown,
+    activeFilters,
+    filterSearchQuery,
+    filters,
+    onFilterChange,
+  ]);
+
+  const moreFiltersPanel =
+    activeFilterDropdown === "more" &&
+    morePanelPos &&
+    moreFilters &&
+    moreFilters.length > 0
+      ? createPortal(
+          <div
+            ref={moreFiltersPanelRef}
+            className="fixed flex max-h-[260px] overflow-hidden rounded-lg border border-border-default bg-surface shadow-md animate-in fade-in zoom-in-95"
+            style={{
+              top: morePanelPos.top,
+              left: morePanelPos.left,
+              zIndex: FILTER_MENU_Z_INDEX,
             }}
           >
-            Reset
-          </button>
-        )}
+            <div className="ez-scrollbar flex max-h-[260px] w-[168px] flex-col overflow-y-auto border-r border-border-default bg-primary-3/30 p-1 dark:bg-gray-12">
+              {moreFilters.map((group) => {
+                const IconComp = group.icon;
+                const isActive = activeFilterGroup === group.id;
+                const hasValue = Boolean(activeFilters[group.id]);
+                return (
+                  <button
+                    key={group.id}
+                    className={cn(
+                      "flex w-full cursor-pointer items-center justify-between rounded-md px-2.5 py-1.5 text-left text-12 font-medium transition-all",
+                      isActive
+                        ? "bg-primary-3 text-primary-9 dark:bg-primary-9 dark:text-white"
+                        : "text-text-secondary hover:bg-gray-2 dark:hover:bg-gray-10",
+                      hasValue && !isActive && "text-primary-9",
+                    )}
+                    type="button"
+                    onClick={() => {
+                      setActiveFilterGroup(group.id);
+                      skipMoreFilterDebounceRef.current = true;
+                      setFilterSearchQuery(activeFilters[group.id] || "");
+                    }}
+                  >
+                    <span className="flex min-w-0 items-center gap-1.5">
+                      {IconComp && (
+                        <IconComp className="h-3.5 w-3.5 shrink-0" />
+                      )}
+                      <span className="truncate">{group.label}</span>
+                    </span>
+                    <ChevronRight className="h-3 w-3 shrink-0 opacity-60" />
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="ez-scrollbar flex max-h-[260px] w-[220px] flex-col gap-2 overflow-y-auto bg-surface p-2.5">
+              {moreFilters.map((group) => {
+                if (activeFilterGroup !== group.id) return null;
+
+                if (isDateFilterType(group.dataType)) {
+                  const dateValue = activeFilters[group.id] || null;
+                  return (
+                    <React.Fragment key={group.id}>
+                      <div className="text-11 font-semibold text-text-muted">
+                        Filter by {group.label}
+                      </div>
+                      <InputDate
+                        className="w-full"
+                        clearable
+                        placeholder="Select date"
+                        popoverProps={{
+                          withinPortal: true,
+                          zIndex: FILTER_MENU_Z_INDEX + 1,
+                          middlewares: { flip: true, shift: true },
+                        }}
+                        value={dateValue}
+                        onChange={(nextValue) => {
+                          const apiValue = toApiDateFilterValue(
+                            nextValue as string | Date | null,
+                          );
+                          if (!apiValue) {
+                            skipMoreFilterDebounceRef.current = true;
+                            setFilterSearchQuery("");
+                            onFilterChange(group.id, "");
+                            return;
+                          }
+
+                          skipMoreFilterDebounceRef.current = true;
+                          setFilterSearchQuery(apiValue);
+                          onFilterChange(group.id, apiValue);
+                          // Close after apply so the value is committed first
+                          window.setTimeout(() => {
+                            setActiveFilterDropdown(null);
+                          }, 0);
+                        }}
+                      />
+                      {dateValue ? (
+                        <button
+                          className="w-full cursor-pointer rounded px-2 py-1.5 text-left text-12 font-medium text-text-secondary hover:bg-gray-2"
+                          type="button"
+                          onClick={() => {
+                            skipMoreFilterDebounceRef.current = true;
+                            setFilterSearchQuery("");
+                            onFilterChange(group.id, "");
+                            setActiveFilterDropdown(null);
+                          }}
+                        >
+                          Clear {group.label}
+                        </button>
+                      ) : null}
+                    </React.Fragment>
+                  );
+                }
+
+                return (
+                  <React.Fragment key={group.id}>
+                    {group.options && (
+                      <>
+                        <div className="relative">
+                          <Search className="absolute top-1/2 left-2 h-3.5 w-3.5 -translate-y-1/2 text-text-muted" />
+                          <input
+                            className="w-full rounded-lg border border-border-default bg-gray-2 py-1 pr-3 pl-7 text-11 text-text-primary outline-none"
+                            placeholder={`Search ${group.label.toLowerCase()}...`}
+                            type="text"
+                            value={filterSearchQuery}
+                            onChange={(e) =>
+                              setFilterSearchQuery(e.target.value)
+                            }
+                          />
+                        </div>
+                        <div className="ez-scrollbar flex max-h-[180px] flex-col gap-0.5 overflow-y-auto">
+                          <button
+                            className={cn(
+                              "w-full cursor-pointer rounded px-2 py-1.5 text-left text-12 font-medium text-text-primary transition-colors hover:bg-gray-2",
+                              !activeFilters[group.id] &&
+                                "bg-primary-3/30 font-semibold text-primary-9",
+                            )}
+                            type="button"
+                            onClick={() => {
+                              skipMoreFilterDebounceRef.current = true;
+                              setFilterSearchQuery("");
+                              onFilterChange(group.id, "");
+                              setActiveFilterDropdown(null);
+                            }}
+                          >
+                            All {group.label}
+                          </button>
+                          {group.options
+                            .filter((item) =>
+                              item.label
+                                .toLowerCase()
+                                .includes(filterSearchQuery.toLowerCase()),
+                            )
+                            .map((item) => (
+                              <button
+                                key={item.value}
+                                className={cn(
+                                  "w-full cursor-pointer rounded px-2 py-1.5 text-left text-12 font-medium transition-colors hover:bg-gray-2",
+                                  activeFilters[group.id] === item.value
+                                    ? "bg-primary-3/30 font-semibold text-primary-9"
+                                    : "text-text-secondary",
+                                )}
+                                type="button"
+                                onClick={() => {
+                                  skipMoreFilterDebounceRef.current = true;
+                                  setFilterSearchQuery(item.value);
+                                  onFilterChange(group.id, item.value);
+                                  setActiveFilterDropdown(null);
+                                }}
+                              >
+                                {item.label}
+                              </button>
+                            ))}
+                        </div>
+                      </>
+                    )}
+                    {group.actions && (
+                      <>
+                        <div className="mb-0.5 text-11 font-semibold text-text-muted">
+                          Filter by {group.label}
+                        </div>
+                        <div className="flex flex-col gap-1.5">
+                          {group.actions.map((action) => (
+                            <button
+                              key={action.value}
+                              className="w-full cursor-pointer rounded px-2 py-1.5 text-left text-12 font-medium text-text-secondary hover:bg-gray-2"
+                              type="button"
+                              onClick={() => {
+                                onFilterChange(group.id, action.value);
+                                setActiveFilterDropdown(null);
+                              }}
+                            >
+                              {action.label}
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </React.Fragment>
+                );
+              })}
+            </div>
+          </div>,
+          document.body,
+        )
+      : null;
+
+  return (
+    <div
+      ref={filtersRef}
+      className="relative z-40 flex w-full items-center gap-2 rounded-lg border border-[var(--border-default)] bg-surface p-3 shadow-xs"
+    >
+      {/* Filters wrap onto new lines when they overflow */}
+      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+          {quickFilters &&
+            quickFilters.map((qf) => {
+              const isActive = activeQuickFilters?.includes(qf.id);
+              return (
+                <button
+                  key={qf.id}
+                  className={cn(
+                    "flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1 text-12 font-medium transition-all",
+                    isActive
+                      ? "border-[var(--primary-9)] bg-[var(--primary-3)] text-[var(--primary-9)]"
+                      : "border-[var(--border-default)] bg-surface text-[var(--text-secondary)] hover:bg-gray-3 dark:hover:bg-gray-10",
+                  )}
+                  onClick={() => onQuickFilterToggle?.(qf.id)}
+                >
+                  {qf.icon && <Icon className="size-3.5" name={qf.icon} />}
+                  <span>{qf.label}</span>
+                  {qf.count !== undefined && (
+                    <span
+                      className={cn(
+                        "flex items-center justify-center rounded-full px-1.5 py-0.5 text-10 font-bold",
+                        isActive
+                          ? "bg-[var(--primary-4)] text-[var(--primary-9)]"
+                          : "bg-gray-3 text-gray-11",
+                      )}
+                    >
+                      {qf.count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+
+          {filters.map((filter) => {
+            const activeValue = activeFilters[filter.id];
+            const activeOption = filter.options.find(
+              (o) => o.value === activeValue,
+            );
+            const displayLabel = activeOption
+              ? `${filter.label} : ${activeOption.label}`
+              : activeValue
+                ? `${filter.label} : ${activeValue}`
+                : filter.label;
+            const isActive =
+              !!activeValue || activeFilterDropdown === filter.id;
+
+            return (
+              <div
+                key={filter.id}
+                className={cn(
+                  "relative",
+                  activeFilterDropdown === filter.id && "z-[10000]",
+                )}
+              >
+                <div
+                  className={cn(
+                    "flex max-w-[240px] items-center gap-1 rounded-full border py-1 pr-1.5 pl-3.5 text-12 font-medium transition-all",
+                    isActive
+                      ? "border-primary-9 bg-primary-3/50 text-primary-9"
+                      : "border-border-default bg-surface text-text-secondary",
+                  )}
+                >
+                  <button
+                    ref={(node) => {
+                      filterButtonRefs.current[filter.id] = node;
+                    }}
+                    className="flex min-w-0 cursor-pointer items-center gap-1.5 hover:opacity-80"
+                    type="button"
+                    onClick={() => {
+                      const nextOpen =
+                        activeFilterDropdown === filter.id ? null : filter.id;
+                      setActiveFilterDropdown(nextOpen);
+                      skipMoreFilterDebounceRef.current = true;
+                      setFilterSearchQuery(
+                        nextOpen ? activeFilters[filter.id] || "" : "",
+                      );
+                    }}
+                  >
+                    <span className="truncate">{displayLabel}</span>
+                    <ChevronDown className="h-3 w-3 shrink-0 opacity-60" />
+                  </button>
+                  {activeValue ? (
+                    <Tooltip content={`Clear ${filter.label}`}>
+                      <button
+                        aria-label={`Clear ${filter.label}`}
+                        className="inline-flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center rounded-full text-primary-9 transition-colors hover:bg-primary-3"
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onFilterChange(filter.id, "");
+                          if (activeFilterDropdown === filter.id) {
+                            setActiveFilterDropdown(null);
+                          }
+                        }}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Tooltip>
+                  ) : null}
+                </div>
+
+                {activeFilterDropdown === filter.id &&
+                  filterDropdownPos &&
+                  createPortal(
+                    <div
+                      ref={filterDropdownPanelRef}
+                      className="fixed rounded-lg border border-border-default bg-surface p-3 shadow-md animate-in fade-in slide-in-from-top-2"
+                      style={{
+                        top: filterDropdownPos.top,
+                        left: filterDropdownPos.left,
+                        width: filterDropdownPos.width,
+                        zIndex: FILTER_MENU_Z_INDEX,
+                      }}
+                    >
+                      {filter.searchable && (
+                        <>
+                          <div className="relative mb-2">
+                            <Search className="absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-text-muted" />
+                            <input
+                              className="w-full rounded-lg border border-border-default bg-gray-2 py-1 pr-3 pl-8 text-11 text-text-primary outline-none"
+                              placeholder={
+                                filter.searchPlaceholder || "Search..."
+                              }
+                              type="text"
+                              value={filterSearchQuery}
+                              onChange={(e) =>
+                                setFilterSearchQuery(e.target.value)
+                              }
+                            />
+                          </div>
+                          <div className="mx-[-12px] my-2 h-px bg-border-default" />
+                        </>
+                      )}
+                      <div className="scrollbar flex max-h-[220px] flex-col gap-0.5 overflow-y-auto">
+                        <button
+                          className={cn(
+                            "w-full cursor-pointer rounded px-2.5 py-1.5 text-left text-12 font-medium text-text-primary transition-colors hover:bg-gray-2",
+                            !activeValue &&
+                              "bg-primary-3/30 font-semibold text-primary-9",
+                          )}
+                          onClick={() => {
+                            skipMoreFilterDebounceRef.current = true;
+                            setFilterSearchQuery("");
+                            onFilterChange(filter.id, "");
+                            setActiveFilterDropdown(null);
+                          }}
+                        >
+                          All {filter.label}
+                        </button>
+                        {(() => {
+                          const visibleOptions = filter.options.filter(
+                            (item) =>
+                              filter.searchable && filterSearchQuery
+                                ? item.label
+                                    .toLowerCase()
+                                    .includes(filterSearchQuery.toLowerCase())
+                                : true,
+                          );
+
+                          if (visibleOptions.length === 0) {
+                            const typed = filterSearchQuery.trim();
+                            if (typed) {
+                              return (
+                                <button
+                                  className="w-full cursor-pointer rounded px-2.5 py-1.5 text-left text-12 font-medium text-primary-9 transition-colors hover:bg-primary-3/30"
+                                  type="button"
+                                  onClick={() => {
+                                    skipMoreFilterDebounceRef.current = true;
+                                    onFilterChange(filter.id, typed);
+                                    setActiveFilterDropdown(null);
+                                  }}
+                                >
+                                  Apply &quot;{typed}&quot;
+                                </button>
+                              );
+                            }
+
+                            return (
+                              <div className="px-2.5 py-2 text-12 text-text-muted">
+                                Type to search or apply a value
+                              </div>
+                            );
+                          }
+
+                          return visibleOptions.map((item) => (
+                            <button
+                              key={item.value}
+                              className={cn(
+                                "w-full cursor-pointer rounded px-2.5 py-1.5 text-left text-12 font-medium text-text-primary transition-colors hover:bg-gray-2",
+                                activeValue === item.value &&
+                                  "bg-primary-3/30 font-semibold text-primary-9",
+                              )}
+                              onClick={() => {
+                                skipMoreFilterDebounceRef.current = true;
+                                setFilterSearchQuery(item.value);
+                                onFilterChange(filter.id, item.value);
+                                setActiveFilterDropdown(null);
+                              }}
+                            >
+                              {item.label}
+                            </button>
+                          ));
+                        })()}
+                      </div>
+                    </div>,
+                    document.body,
+                  )}
+              </div>
+            );
+          })}
+
+          {moreFilters
+            ?.filter((group) => Boolean(activeFilters[group.id]))
+            .map((group) => {
+              const value = activeFilters[group.id];
+              const isOpen =
+                activeFilterDropdown === "more" &&
+                activeFilterGroup === group.id;
+
+              return (
+                <div key={`chip-${group.id}`} className="relative">
+                  <div className="flex max-w-[260px] items-center gap-1 rounded-full border border-primary-9 bg-primary-3/50 py-1 pr-1.5 pl-3.5 text-12 font-medium text-primary-9">
+                    <button
+                      className="flex min-w-0 cursor-pointer items-center gap-1.5 hover:opacity-80"
+                      type="button"
+                      onClick={(event) => {
+                        if (isOpen) {
+                          setActiveFilterDropdown(null);
+                          return;
+                        }
+                        openMoreFilters(event.currentTarget, group.id);
+                      }}
+                    >
+                      <span className="truncate">
+                        {group.label} :{" "}
+                        {isDateFilterType(group.dataType)
+                          ? formatDateChipLabel(value)
+                          : value}
+                      </span>
+                      <ChevronDown className="h-3 w-3 shrink-0 opacity-60" />
+                    </button>
+                    <Tooltip content={`Clear ${group.label}`}>
+                      <button
+                        aria-label={`Clear ${group.label}`}
+                        className="inline-flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center rounded-full text-primary-9 transition-colors hover:bg-primary-3"
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          skipMoreFilterDebounceRef.current = true;
+                          setFilterSearchQuery("");
+                          onFilterChange(group.id, "");
+                          if (isOpen) setActiveFilterDropdown(null);
+                        }}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Tooltip>
+                  </div>
+                </div>
+              );
+            })}
+
+          {moreFilters && moreFilters.length > 0 && (
+            <button
+              ref={moreFiltersButtonRef}
+              className={cn(
+                "flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border px-3.5 py-1 text-12 font-medium transition-all hover:bg-gray-3 dark:hover:bg-gray-10",
+                activeFilterDropdown === "more"
+                  ? "border-primary-9 bg-primary-3/50 text-primary-9"
+                  : "border-border-default bg-surface text-text-secondary",
+              )}
+              type="button"
+              onClick={() => {
+                if (activeFilterDropdown === "more") {
+                  setActiveFilterDropdown(null);
+                  return;
+                }
+                openMoreFilters(moreFiltersButtonRef.current);
+              }}
+            >
+              <span>{moreFiltersLabel}</span>
+              <ChevronDown className="h-3 w-3 opacity-60" />
+            </button>
+          )}
+
+          {showReset && (
+            <button
+              className="shrink-0 cursor-pointer rounded-full border border-border-default bg-gray-2 px-3.5 py-1 text-12 font-medium text-text-secondary transition-all hover:bg-gray-3"
+              type="button"
+              onClick={() => {
+                onReset();
+                setFilterSearchQuery("");
+                setActiveFilterDropdown(null);
+              }}
+            >
+              Reset
+            </button>
+          )}
       </div>
 
-      <div className="flex flex-1 items-center justify-end gap-2">
+      {/* Actions stay vertically centered while filters wrap */}
+      <div className="flex shrink-0 items-center justify-end gap-1.5 self-center">
         {customSearchComponent ? (
           customSearchComponent
         ) : (
           <div
             className={cn(
               "relative flex items-center justify-end transition-all duration-300",
-              isSearchExpanded || searchQuery ? "w-60" : "w-8"
+              isSearchExpanded || searchQuery ? "w-60" : "w-8",
             )}
           >
-            <button
-              type="button"
-              className={cn(
-                "absolute left-0 top-0 bottom-0 flex items-center justify-center transition-all duration-300 rounded-full",
-                isSearchExpanded || searchQuery
-                  ? "w-8 pointer-events-none"
-                  : "w-8 h-8 cursor-pointer hover:bg-[var(--gray-2)] dark:hover:bg-[var(--gray-10)] border border-[var(--border-default)] bg-surface"
-              )}
-              onClick={() => {
-                setIsSearchExpanded(true)
-                setTimeout(() => searchInputRef.current?.focus(), 50)
-              }}
-            >
-              <Search className="h-3.5 w-3.5 text-[var(--text-muted)]" />
-            </button>
+            <Tooltip content="Search" disabled={isSearchExpanded || !!searchQuery}>
+              <button
+                type="button"
+                className={cn(
+                  "absolute top-0 bottom-0 left-0 flex items-center justify-center rounded-full transition-all duration-300",
+                  isSearchExpanded || searchQuery
+                    ? "pointer-events-none w-8"
+                    : "h-8 w-8 cursor-pointer border border-[var(--border-default)] bg-surface hover:bg-[var(--gray-2)] dark:hover:bg-[var(--gray-10)]",
+                )}
+                onClick={() => {
+                  setIsSearchExpanded(true);
+                  setTimeout(() => searchInputRef.current?.focus(), 50);
+                }}
+              >
+                <Search className="h-3.5 w-3.5 text-[var(--text-muted)]" />
+              </button>
+            </Tooltip>
             <input
               ref={searchInputRef}
               className={cn(
                 "rounded-full border border-[var(--border-default)] bg-surface py-1.5 text-12 text-[var(--text-primary)] outline-none transition-all duration-300 focus:border-[var(--primary-9)] focus:ring-1 focus:ring-[var(--primary-9)]",
                 isSearchExpanded || searchQuery
                   ? "w-full pr-4 pl-8 opacity-100"
-                  : "w-0 pr-0 pl-0 opacity-0 border-transparent pointer-events-none"
+                  : "pointer-events-none w-0 border-transparent pr-0 pl-0 opacity-0",
               )}
               placeholder={searchPlaceholder}
               type="text"
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
               onFocus={() => setIsSearchExpanded(true)}
-              onBlur={() => {
-                if (!searchQuery) {
-                  setIsSearchExpanded(false)
-                }
-              }}
             />
           </div>
         )}
 
-        {actions && actions.length > 0 ? (
-          <div className='flex shrink-0 items-center gap-1.5'>
-            {actions.map((action) => (
-              <React.Fragment key={action.key}>{action.component}</React.Fragment>
-            ))}
+        {trailingActions ? (
+          <div className="flex shrink-0 items-center gap-1.5">
+            {trailingActions}
           </div>
-        ) : trailingActions ? (
-          <div className='flex shrink-0 items-center gap-1.5'>{trailingActions}</div>
         ) : null}
       </div>
+
+      {moreFiltersPanel}
     </div>
-  )
+  );
 }

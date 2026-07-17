@@ -346,7 +346,7 @@ const DataTable = <TData,>({
                                   className='size-4 shrink-0 text-[var(--primary-9)]'
                                   name='tabler:stack-2'
                                 />
-                                <span className='text-14 font-medium text-[var(--gray-13)]'>
+                                <span className='text-14 font-medium text-[var(--gray-13)] whitespace-nowrap'>
                                   {(row.original as any).group}
                                 </span>
                                 {groupItems.length > 0 && (

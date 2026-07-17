@@ -9,6 +9,10 @@ import DataTable from '@/components/base/data-table/DataTable'
 import Pagination from '@/components/base/pagination/Pagination'
 import type { DynamicRepositoryColumn } from '../api/folderApi'
 import type { ExplorerView, FileItem, RepositoryFilePage } from '../types/folderTypes'
+import {
+  getRepositoryFieldRawValue,
+  normalizeFieldKey,
+} from '../utils/repositoryFieldUtils'
 import { type BreadcrumbItem } from './Breadcrumbs'
 import { FolderFilterBar } from './FolderFilterBar'
 import { DynamicIcon } from './icons'
@@ -24,21 +28,27 @@ type AnyFileItem = FileItem & Record<string, any>
 
 type DocumentsListViewProps = {
   breadcrumbs: BreadcrumbItem[]
+  currentFolderGroupField?: string
   error?: string
   fileColumns?: DynamicRepositoryColumn[]
+  fileFilters?: Record<string, string>
   filePage?: RepositoryFilePage
   files: FileItem[]
+  folderContextFilters?: Record<string, string>
   loading?: boolean
   loadingPage?: boolean
   refreshing?: boolean
+  searchQuery?: string
   view: ExplorerView
   onAiSummary: (id: string) => void
   onBreadcrumbSelect: (id: string) => void
   onEdit: (id: string) => void
+  onFiltersChange?: (filters: Record<string, string>) => void
   onOpenFile: (id: string) => void
   onPageChange?: (page: number, cursor?: string | null) => void
   onPageSizeChange?: (pageSize: number) => void
   onRefresh?: () => void
+  onSearchChange?: (value: string) => void
   onShare: (id: string) => void
   onUpload?: () => void
   onWorkflow: (id: string) => void
@@ -76,13 +86,7 @@ const PRIMARY_NAME_KEYS = new Set([
   'document name',
 ])
 
-const normalizeKey = (key: string) =>
-  String(key || '')
-    .replace(/([a-z])([A-Z])/g, '$1 $2')
-    .replace(/[_-]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .toLowerCase()
+const normalizeKey = normalizeFieldKey
 
 const isPrimaryNameKey = (key: string) =>
   PRIMARY_NAME_KEYS.has(normalizeKey(key))
@@ -147,25 +151,23 @@ const formatAmountValue = (value: any) => {
   return numericValue.toLocaleString('en-IN', { maximumFractionDigits: 2 })
 }
 
-const getRepositoryFieldRawValue = (
+const getRepositoryFieldRawValueFromRow = (
   row: AnyFileItem,
   sqlColumnName: string,
-) => {
-  if (!row || !sqlColumnName) return undefined
-
-  const matchedKey = Object.keys(row).find(
-    (key) => key.toLowerCase() === sqlColumnName.toLowerCase(),
-  )
-
-  return matchedKey ? row[matchedKey] : undefined
-}
+  folderContextFilters: Record<string, string> = {},
+) => getRepositoryFieldRawValue(row, sqlColumnName, folderContextFilters)
 
 const getDisplayValue = (
   row: AnyFileItem,
   sqlColumnName: string,
   dataType?: string,
+  folderContextFilters: Record<string, string> = {},
 ) => {
-  const value = getRepositoryFieldRawValue(row, sqlColumnName)
+  const value = getRepositoryFieldRawValueFromRow(
+    row,
+    sqlColumnName,
+    folderContextFilters,
+  )
   if (value === undefined || value === null || value === '') return '-'
 
   const normalizedType = String(dataType || '').toLowerCase()
@@ -252,23 +254,29 @@ const buildRepositoryColumns = (
 
 export function DocumentsListView({
   breadcrumbs: _breadcrumbs,
+  currentFolderGroupField = '',
   error = '',
   fileColumns = [],
+  fileFilters = {},
   filePage,
   files,
+  folderContextFilters = {},
   loading = false,
   loadingPage = false,
   onAiSummary,
   onBreadcrumbSelect: _onBreadcrumbSelect,
   onEdit,
+  onFiltersChange,
   onOpenFile,
   onPageChange,
   onPageSizeChange,
   onRefresh,
+  onSearchChange,
   onShare,
   onUpload,
   onWorkflow,
   refreshing = false,
+  searchQuery: searchQueryProp = '',
   setView,
   view,
 }: DocumentsListViewProps) {
@@ -276,11 +284,22 @@ export function DocumentsListView({
   const [actionMenuPosition, setActionMenuPosition] =
     useState<ActionMenuPosition | null>(null)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
-  const [filters, setFilters] = useState<Record<string, string>>({})
-  const [searchQuery, setSearchQuery] = useState('')
+  const [searchQuery, setSearchQuery] = useState(searchQueryProp)
   const menuRef = useRef<HTMLDivElement | null>(null)
 
   const normalizedFiles = useMemo(() => files as AnyFileItem[], [files])
+
+  useEffect(() => {
+    setSearchQuery(searchQueryProp)
+  }, [searchQueryProp])
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      onSearchChange?.(searchQuery)
+    }, 300)
+
+    return () => window.clearTimeout(timer)
+  }, [onSearchChange, searchQuery])
 
   const columns = useMemo(
     () => buildRepositoryColumns(fileColumns),
@@ -301,27 +320,17 @@ export function DocumentsListView({
           )
   const isBusy = loading || loadingPage || refreshing
 
-  const searchedFiles = useMemo(() => {
-    const searchValue = searchQuery.trim().toLowerCase()
-
-    if (!searchValue) return normalizedFiles
-
-    return normalizedFiles.filter((file) =>
-      Object.values(file).some((value) =>
-        String(value ?? '')
-          .toLowerCase()
-          .includes(searchValue),
-      ),
-    )
-  }, [normalizedFiles, searchQuery])
-
+  // Server already applies filters/search; keep a light pass for status aliasing.
   const visibleFiles = useMemo(() => {
-    return searchedFiles.filter((file) =>
-      Object.entries(filters).every(([key, value]) => {
+    return normalizedFiles.filter((file) =>
+      Object.entries(fileFilters).every(([key, value]) => {
         if (!value) return true
 
-        if (key === '__status') {
-          return String(file.status ?? file.Status ?? '').trim() === value
+        if (key === '__status' || normalizeKey(key) === 'status') {
+          return String(file.status ?? file.Status ?? '')
+            .trim()
+            .toLowerCase()
+            .includes(value.trim().toLowerCase())
         }
 
         const matchedKey = Object.keys(file).find(
@@ -329,12 +338,19 @@ export function DocumentsListView({
         )
         const fieldValue = matchedKey
           ? file[matchedKey]
-          : getRepositoryFieldRawValue(file, key)
+          : getRepositoryFieldRawValueFromRow(
+              file,
+              key,
+              folderContextFilters,
+            )
 
-        return String(fieldValue ?? '').trim() === value
+        return String(fieldValue ?? '')
+          .trim()
+          .toLowerCase()
+          .includes(value.trim().toLowerCase())
       }),
     )
-  }, [searchedFiles, filters])
+  }, [folderContextFilters, normalizedFiles, fileFilters])
 
   const selectedVisibleCount = visibleFiles.filter((file) =>
     selectedIds.includes(getFileId(file)),
@@ -372,14 +388,18 @@ export function DocumentsListView({
   }
 
   const updateFilter = (key: string, value: string) => {
-    setFilters((prev) => ({ ...prev, [key]: value }))
+    const next = { ...fileFilters }
+    if (value) next[key] = value
+    else delete next[key]
+    onFiltersChange?.(next)
   }
 
-  const resetFilters = () => setFilters({})
+  const resetFilters = () => onFiltersChange?.({})
 
   const resetSearchAndFilters = () => {
     setSearchQuery('')
-    setFilters({})
+    onSearchChange?.('')
+    onFiltersChange?.({})
   }
 
   const closeAndRun = (callback: () => void) => {
@@ -478,7 +498,12 @@ export function DocumentsListView({
         if (column.key === '__status') {
           return String(row.status ?? row.Status ?? '').trim()
         }
-        return getDisplayValue(row, column.key, column.dataType)
+        return getDisplayValue(
+          row,
+          column.key,
+          column.dataType,
+          folderContextFilters,
+        )
       },
       cell: ({ row, getValue }) => {
         const value = String(getValue() ?? '-')
@@ -547,6 +572,7 @@ export function DocumentsListView({
   }, [
     allVisibleSelected,
     columns,
+    folderContextFilters,
     isBusy,
     onOpenFile,
     openActionMenu,
@@ -620,9 +646,11 @@ export function DocumentsListView({
     <div className='animate-in fade-in flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-surface text-sm text-gray-11 duration-300'>
       <div className='relative z-40 shrink-0 bg-surface px-6 py-2'>
         <FolderFilterBar
-          activeFilters={filters}
+          activeFilters={fileFilters}
+          currentFolderGroupField={currentFolderGroupField}
           fileColumns={fileColumns}
           files={normalizedFiles}
+          folderContextFilters={folderContextFilters}
           isBusy={isBusy}
           refreshing={refreshing}
           searchPlaceholder='Search invoice, supplier, PO...'

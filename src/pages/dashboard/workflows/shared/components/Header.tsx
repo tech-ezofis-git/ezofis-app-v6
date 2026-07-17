@@ -76,6 +76,8 @@ export default function DashboardCharts() {
   const [isTodayActionExpanded, setIsTodayActionExpanded] = React.useState(false)
   const [isProcessingExpanded, setIsProcessingExpanded] = React.useState(false)
   const [isSupplierFollowUpExpanded, setIsSupplierFollowUpExpanded] = React.useState(false)
+  const [isProfitabilityExpanded, setIsProfitabilityExpanded] = React.useState(true)
+  const [isSupplierConcentrationExpanded, setIsSupplierConcentrationExpanded] = React.useState(true)
 
   // Local filter states for non-store API filter fields
   const [department, setDepartment] = React.useState<string>('')
@@ -544,8 +546,8 @@ export default function DashboardCharts() {
         <div className="flex flex-col gap-4">
 
           {/* AI Insights + Supplier Radar */}
-          <div className="grid grid-cols-12 gap-4">
-            {isCommandCenterExpanded && (
+          {isCommandCenterExpanded && (
+            <div className="grid grid-cols-12 gap-4">
               <div className="col-span-12 lg:col-span-8 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
                 <div className="flex items-center justify-between mb-4">
                   <div>
@@ -563,38 +565,42 @@ export default function DashboardCharts() {
                   ))}
                 </ul>
               </div>
-            )}
-            <div className={cn("rounded-lg border border-border-default bg-surface p-5 shadow-xs transition-all duration-300", isCommandCenterExpanded ? "col-span-12 lg:col-span-4" : "col-span-12")}>
-              <h3 className="font-poppins text-14 font-semibold text-text-primary">
-                {dashboardData?.supplierRiskRadar?.title || 'Supplier Risk Radar'}
-              </h3>
-              <div className="font-inter text-11 text-text-muted mb-4">
-                {dashboardData?.supplierRiskRadar?.subtitle || 'Which vendors carry the most risk exposure?'}
-              </div>
-              <div className="h-56">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie data={radarData} cx="50%" cy="50%" innerRadius={45} outerRadius={65} paddingAngle={3} dataKey="value">
-                      {radarData.map((_entry: any, idx: number) => {
-                        const colors = ['#1E8E6F', '#0f7a86', '#B3261E']
-                        return <Cell key={idx} fill={colors[idx % colors.length]} />
-                      })}
-                    </Pie>
-                    <Tooltip formatter={(v: any) => [`${v}%`, 'Exposure']} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="flex justify-around font-inter text-11 mt-2">
-                <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded bg-success" />Low</span>
-                <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded bg-warning" />Medium</span>
-                <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded bg-red-9" />High</span>
+
+              <div className="col-span-12 lg:col-span-4 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
+                <h3 className="font-poppins text-14 font-semibold text-text-primary">
+                  {dashboardData?.supplierRiskRadar?.title || 'Supplier Risk Radar'}
+                </h3>
+                <div className="font-inter text-11 text-text-muted mb-4">
+                  {dashboardData?.supplierRiskRadar?.subtitle || 'Which vendors carry the most risk exposure?'}
+                </div>
+                <div className="h-56">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={radarData} cx="50%" cy="50%" innerRadius={45} outerRadius={65} paddingAngle={3} dataKey="value">
+                        {radarData.map((_entry: any, idx: number) => {
+                          const colors = ['#1E8E6F', '#0f7a86', '#B3261E']
+                          return <Cell key={idx} fill={colors[idx % colors.length]} />
+                        })}
+                      </Pie>
+                      <Tooltip formatter={(v: any) => [`${v}%`, 'Exposure']} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="flex justify-around font-inter text-11 mt-2">
+                  <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded bg-success" />Low</span>
+                  <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded bg-warning" />Medium</span>
+                  <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded bg-red-9" />High</span>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Profitability Section */}
           <div className="flex flex-col gap-4">
-            <div className="flex flex-wrap items-center justify-between gap-4 overflow-hidden rounded-lg bg-surface border border-border-default px-4 py-4 text-text-primary shadow-xs">
+            <div
+              className="cursor-pointer select-none transition-all duration-300 hover:shadow-sm hover:border-primary-9/40 hover:bg-primary-3/5 active:scale-[0.99] flex flex-wrap items-center justify-between gap-4 overflow-hidden rounded-lg bg-surface border border-border-default px-4 py-4 text-text-primary shadow-xs"
+              onClick={() => setIsProfitabilityExpanded(!isProfitabilityExpanded)}
+            >
               <div>
                 <h3 className="font-poppins text-14 font-semibold">Profitability &amp; Cash Position</h3>
                 <p className="font-inter text-11 text-text-secondary mt-0.5">Is payables growth eating margin · future liquidity needs</p>
@@ -612,77 +618,87 @@ export default function DashboardCharts() {
                   <span className="font-poppins text-[10px] font-medium tracking-wider text-text-secondary dark:text-gray-4 uppercase">Peak Week</span>
                   <span className="text-15 font-semibold text-primary-9">Week 3</span>
                 </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-12 gap-4">
-              <div className="col-span-12 lg:col-span-6 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
-                <h3 className="font-poppins text-14 font-semibold text-text-primary">
-                  {dashboardData?.profitVsApSpending?.title || 'Profit vs AP spending'}
-                </h3>
-                <div className="font-inter text-11 text-text-muted mb-4">
-                  {dashboardData?.profitVsApSpending?.subtitle || 'Dual axis spending trend comparison'}
-                </div>
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <ComposedChart data={profitVsApData}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                      <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                      <YAxis yAxisId="left" tick={{ fontSize: 11 }} label={{ value: 'AP Amount', angle: -90, position: 'insideLeft', style: { fontSize: 10 } }} />
-                      <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} label={{ value: 'Profit %', angle: 90, position: 'insideRight', style: { fontSize: 10 } }} />
-                      <Tooltip formatter={(v: any, name?: string) => name === 'Profit' ? [`${v}%`, name] : [fmtMoney(v), name || '']} />
-                      <Bar yAxisId="left" dataKey="AP" fill="#8300e6" radius={[4, 4, 0, 0]} barSize={20} />
-                      <Line yAxisId="right" type="monotone" dataKey="Profit" stroke="#19c1d4" strokeWidth={2.5} dot={{ r: 4 }} />
-                    </ComposedChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              <div className="col-span-12 lg:col-span-6 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
-                <h3 className="font-poppins text-14 font-semibold text-text-primary">
-                  {dashboardData?.monthlyPaymentTrend?.title || 'Monthly payment trend'}
-                </h3>
-                <div className="font-inter text-11 text-text-muted mb-4">
-                  {dashboardData?.monthlyPaymentTrend?.subtitle || 'Cash leaving the building, month by month'}
-                </div>
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={monthlyPaymentData}>
-                      <defs><linearGradient id="paymentGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#8300e6" stopOpacity={0.3} /><stop offset="95%" stopColor="#8300e6" stopOpacity={0.0} /></linearGradient></defs>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                      <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                      <YAxis tick={{ fontSize: 11 }} />
-                      <Tooltip formatter={(v: any) => [fmtMoney(v)]} />
-                      <Area type="monotone" dataKey="value" stroke="#8300e6" strokeWidth={2} fillOpacity={1} fill="url(#paymentGrad)" />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              <div className="col-span-12 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
-                <h3 className="font-poppins text-14 font-semibold text-text-primary">
-                  {dashboardData?.cashFlowForecast?.title || 'Cash out forecast'}
-                </h3>
-                <div className="font-inter text-11 text-text-muted mb-4">
-                  {dashboardData?.cashFlowForecast?.subtitle || 'Liquidity projection and cash needs over next 10 weeks'}
-                </div>
-                <div className="h-56">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={cashFlowData}>
-                      <defs><linearGradient id="forecastGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#5c21e6" stopOpacity={0.25} /><stop offset="95%" stopColor="#5c21e6" stopOpacity={0.0} /></linearGradient></defs>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                      <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                      <YAxis tick={{ fontSize: 11 }} />
-                      <Tooltip formatter={(v: any) => [fmtMoney(v)]} />
-                      <Area type="monotone" dataKey="value" stroke="#5c21e6" strokeWidth={2} fillOpacity={1} fill="url(#forecastGrad)" />
-                    </AreaChart>
-                  </ResponsiveContainer>
+                <div className="p-1.5 rounded-lg text-text-secondary transition-colors z-20 ml-2">
+                  {isProfitabilityExpanded ? <ChevronUp className="h-5 w-5 text-primary-9" /> : <ChevronDown className="h-5 w-5" />}
                 </div>
               </div>
             </div>
 
-            {/* Supplier Concentration Section */}
-            <div className="flex flex-wrap items-center justify-between gap-4 overflow-hidden rounded-lg bg-surface border border-border-default px-4 py-4 text-text-primary shadow-xs">
+            {isProfitabilityExpanded && (
+              <div className="grid grid-cols-12 gap-4">
+                <div className="col-span-12 lg:col-span-6 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
+                  <h3 className="font-poppins text-14 font-semibold text-text-primary">
+                    {dashboardData?.profitVsApSpending?.title || 'Profit vs AP spending'}
+                  </h3>
+                  <div className="font-inter text-11 text-text-muted mb-4">
+                    {dashboardData?.profitVsApSpending?.subtitle || 'Dual axis spending trend comparison'}
+                  </div>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <ComposedChart data={profitVsApData}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                        <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                        <YAxis yAxisId="left" tick={{ fontSize: 11 }} label={{ value: 'AP Amount', angle: -90, position: 'insideLeft', style: { fontSize: 10 } }} />
+                        <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} label={{ value: 'Profit %', angle: 90, position: 'insideRight', style: { fontSize: 10 } }} />
+                        <Tooltip formatter={(v: any, name?: string) => name === 'Profit' ? [`${v}%`, name] : [fmtMoney(v), name || '']} />
+                        <Bar yAxisId="left" dataKey="AP" fill="#8300e6" radius={[4, 4, 0, 0]} barSize={20} />
+                        <Line yAxisId="right" type="monotone" dataKey="Profit" stroke="#19c1d4" strokeWidth={2.5} dot={{ r: 4 }} />
+                      </ComposedChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                <div className="col-span-12 lg:col-span-6 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
+                  <h3 className="font-poppins text-14 font-semibold text-text-primary">
+                    {dashboardData?.monthlyPaymentTrend?.title || 'Monthly payment trend'}
+                  </h3>
+                  <div className="font-inter text-11 text-text-muted mb-4">
+                    {dashboardData?.monthlyPaymentTrend?.subtitle || 'Cash leaving the building, month by month'}
+                  </div>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={monthlyPaymentData}>
+                        <defs><linearGradient id="paymentGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#8300e6" stopOpacity={0.3} /><stop offset="95%" stopColor="#8300e6" stopOpacity={0.0} /></linearGradient></defs>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                        <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                        <YAxis tick={{ fontSize: 11 }} />
+                        <Tooltip formatter={(v: any) => [fmtMoney(v)]} />
+                        <Area type="monotone" dataKey="value" stroke="#8300e6" strokeWidth={2} fillOpacity={1} fill="url(#paymentGrad)" />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                <div className="col-span-12 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
+                  <h3 className="font-poppins text-14 font-semibold text-text-primary">
+                    {dashboardData?.cashFlowForecast?.title || 'Cash out forecast'}
+                  </h3>
+                  <div className="font-inter text-11 text-text-muted mb-4">
+                    {dashboardData?.cashFlowForecast?.subtitle || 'Liquidity projection and cash needs over next 10 weeks'}
+                  </div>
+                  <div className="h-56">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={cashFlowData}>
+                        <defs><linearGradient id="forecastGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#5c21e6" stopOpacity={0.25} /><stop offset="95%" stopColor="#5c21e6" stopOpacity={0.0} /></linearGradient></defs>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                        <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                        <YAxis tick={{ fontSize: 11 }} />
+                        <Tooltip formatter={(v: any) => [fmtMoney(v)]} />
+                        <Area type="monotone" dataKey="value" stroke="#5c21e6" strokeWidth={2} fillOpacity={1} fill="url(#forecastGrad)" />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Supplier Concentration Section */}
+          <div className="flex flex-col gap-4">
+            <div
+              className="cursor-pointer select-none transition-all duration-300 hover:shadow-sm hover:border-primary-9/40 hover:bg-primary-3/5 active:scale-[0.99] flex flex-wrap items-center justify-between gap-4 overflow-hidden rounded-lg bg-surface border border-border-default px-4 py-4 text-text-primary shadow-xs"
+              onClick={() => setIsSupplierConcentrationExpanded(!isSupplierConcentrationExpanded)}
+            >
               <div>
                 <h3 className="font-poppins text-14 font-semibold">Supplier Concentration &amp; Risk</h3>
                 <p className="font-inter text-11 text-text-secondary mt-0.5">Where spend concentrates · vendor risk exposure</p>
@@ -700,81 +716,89 @@ export default function DashboardCharts() {
                   <span className="font-poppins text-[10px] font-medium tracking-wider text-text-secondary dark:text-gray-4 uppercase">Top-3 Concentration</span>
                   <span className="text-15 font-semibold text-primary-9">44.0%</span>
                 </div>
+                <div className="p-1.5 rounded-lg text-text-secondary transition-colors z-20 ml-2">
+                  {isSupplierConcentrationExpanded ? <ChevronUp className="h-5 w-5 text-primary-9" /> : <ChevronDown className="h-5 w-5" />}
+                </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-12 gap-4">
-
-
-              <div className={cn("rounded-lg border border-border-default bg-surface p-5 shadow-xs transition-all duration-300", isCommandCenterExpanded ? "col-span-12 lg:col-span-4" : "col-span-12 lg:col-span-6")}>
-                <h3 className="font-poppins text-14 font-semibold text-text-primary">Top 10 suppliers by invoice value</h3>
-                <div className="font-inter text-11 text-text-muted mb-4">Concentration of invoice liabilities</div>
-                <div className="h-60">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={topSuppliersData} layout="vertical" margin={{ left: -10, right: 10 }}>
-                      <XAxis type="number" tick={{ fontSize: 10 }} />
-                      <YAxis dataKey="name" type="category" tick={{ fontSize: 10 }} width={90} />
-                      <Tooltip formatter={(v: any) => [fmtMoney(v)]} />
-                      <Bar dataKey="value" fill="#8300e6" radius={[0, 4, 4, 0]} barSize={12} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              {isCommandCenterExpanded && (
-                <div className="col-span-12 lg:col-span-4 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
-                  <h3 className="font-poppins text-14 font-semibold text-text-primary">Outstanding payables by supplier</h3>
-                  <div className="font-inter text-11 text-text-muted mb-4">Click a supplier's bar to drill down</div>
+            {isSupplierConcentrationExpanded && (
+              <div className="grid grid-cols-12 gap-4">
+                <div className={cn("rounded-lg border border-border-default bg-surface p-5 shadow-xs transition-all duration-300", isCommandCenterExpanded ? "col-span-12 lg:col-span-4" : "col-span-12 lg:col-span-6")}>
+                  <h3 className="font-poppins text-14 font-semibold text-text-primary">Top 10 suppliers by invoice value</h3>
+                  <div className="font-inter text-11 text-text-muted mb-4">Concentration of invoice liabilities</div>
                   <div className="h-60">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={outstandingSuppliersData} layout="vertical" margin={{ left: -10, right: 10 }}>
+                      <BarChart data={topSuppliersData} layout="vertical" margin={{ left: -10, right: 10 }}>
                         <XAxis type="number" tick={{ fontSize: 10 }} />
                         <YAxis dataKey="name" type="category" tick={{ fontSize: 10 }} width={90} />
                         <Tooltip formatter={(v: any) => [fmtMoney(v)]} />
-                        <Bar dataKey="value" fill="#5c21e6" radius={[0, 4, 4, 0]} barSize={12} onClick={(data: any) => { setDrillSupplier(data?.name ?? null); setActiveDrill('Outstanding Payables') }} className="cursor-pointer" />
+                        <Bar dataKey="value" fill="#8300e6" radius={[0, 4, 4, 0]} barSize={12} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
                 </div>
-              )}
 
-              <div className={cn("rounded-lg border border-border-default bg-surface p-5 shadow-xs transition-all duration-300", isCommandCenterExpanded ? "col-span-12 lg:col-span-4" : "col-span-12 lg:col-span-6")}>
-                <h3 className="font-poppins text-14 font-semibold text-text-primary">Department-wise spend</h3>
-                <div className="font-inter text-11 text-text-muted mb-4">Tile size reflects share of AP expenses</div>
-                <div className="grid grid-cols-2 gap-2 h-48">
-                  {departmentSpendData.map((dept: any) => (
-                    <div key={dept.name} className={cn("cursor-pointer rounded-lg p-2.5 flex flex-col justify-between transition-all hover:scale-[1.02]", dept.color)} onClick={() => { setSearchQuery(dept.name); setActiveDrill('Department Spend') }}>
-                      <span className="font-inter text-10 font-semibold">{dept.name}</span>
-                      <div className="flex justify-between items-baseline mt-1">
-                        <span className="font-poppins text-14 font-semibold">{dept.amt}</span>
-                        <span className="font-inter text-9 opacity-80">{dept.share}</span>
-                      </div>
+                {isCommandCenterExpanded && (
+                  <div className="col-span-12 lg:col-span-4 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
+                    <h3 className="font-poppins text-14 font-semibold text-text-primary">Outstanding payables by supplier</h3>
+                    <div className="font-inter text-11 text-text-muted mb-4">Click a supplier's bar to drill down</div>
+                    <div className="h-60">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={outstandingSuppliersData} layout="vertical" margin={{ left: -10, right: 10 }}>
+                          <XAxis type="number" tick={{ fontSize: 10 }} />
+                          <YAxis dataKey="name" type="category" tick={{ fontSize: 10 }} width={90} />
+                          <Tooltip formatter={(v: any) => [fmtMoney(v)]} />
+                          <Bar dataKey="value" fill="#5c21e6" radius={[0, 4, 4, 0]} barSize={12} onClick={(data: any) => { setDrillSupplier(data?.name ?? null); setActiveDrill('Outstanding Payables') }} className="cursor-pointer" />
+                        </BarChart>
+                      </ResponsiveContainer>
                     </div>
-                  ))}
-                </div>
-                <div className="font-inter text-10 text-text-muted mt-3">Click on a tile to filter workflow records.</div>
-              </div>
+                  </div>
+                )}
 
-              <div className="col-span-12 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
-                <h3 className="font-poppins text-14 font-semibold text-text-primary">Supplier geographic distribution</h3>
-                <div className="font-inter text-11 text-text-muted mb-4">Regional volume and spend exposure analysis</div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                  {geographyData.map((tile: any) => (
-                    <div key={tile.region} className="rounded-xl border border-border-default bg-gray-2 p-3">
-                      <div className="flex items-center justify-between font-inter text-12 font-semibold text-text-primary">
-                        <span className="flex items-center gap-1.5"><span className="text-16">{tile.flag}</span>{tile.region}</span>
-                        <span>{tile.value}</span>
+                <div className={cn("rounded-lg border border-border-default bg-surface p-5 shadow-xs transition-all duration-300", isCommandCenterExpanded ? "col-span-12 lg:col-span-4" : "col-span-12 lg:col-span-6")}>
+                  <h3 className="font-poppins text-14 font-semibold text-text-primary">Department-wise spend</h3>
+                  <div className="font-inter text-11 text-text-muted mb-4">Tile size reflects share of AP expenses</div>
+                  <div className="grid grid-cols-2 gap-2 h-48">
+                    {departmentSpendData.map((dept: any) => (
+                      <div key={dept.name} className={cn("cursor-pointer rounded-lg p-2.5 flex flex-col justify-between transition-all hover:scale-[1.02]", dept.color)} onClick={() => { setSearchQuery(dept.name); setActiveDrill('Department Spend') }}>
+                        <span className="font-inter text-10 font-semibold">{dept.name}</span>
+                        <div className="flex justify-between items-baseline mt-1">
+                          <span className="font-poppins text-14 font-semibold">{dept.amt}</span>
+                          <span className="font-inter text-9 opacity-80">{dept.share}</span>
+                        </div>
                       </div>
-                      <div className="h-1.5 w-full bg-border-default rounded-full overflow-hidden mt-3"><div className="h-full bg-primary-9" style={{ width: `${tile.pct}%` }} /></div>
-                      <div className="flex justify-between font-inter text-10 text-text-muted mt-2"><span>{tile.count}</span><span>{tile.pct}% share</span></div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
+                  <div className="font-inter text-10 text-text-muted mt-3">Click on a tile to filter workflow records.</div>
+                </div>
+
+                <div className="col-span-12 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
+                  <h3 className="font-poppins text-14 font-semibold text-text-primary">Supplier geographic distribution</h3>
+                  <div className="font-inter text-11 text-text-muted mb-4">Regional volume and spend exposure analysis</div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                    {geographyData.map((tile: any) => (
+                      <div key={tile.region} className="rounded-xl border border-border-default bg-gray-2 p-3">
+                        <div className="flex items-center justify-between font-inter text-12 font-semibold text-text-primary">
+                          <span className="flex items-center gap-1.5"><span className="text-16">{tile.flag}</span>{tile.region}</span>
+                          <span>{tile.value}</span>
+                        </div>
+                        <div className="h-1.5 w-full bg-border-default rounded-full overflow-hidden mt-3"><div className="h-full bg-primary-9" style={{ width: `${tile.pct}%` }} /></div>
+                        <div className="flex justify-between font-inter text-10 text-text-muted mt-2"><span>{tile.count}</span><span>{tile.pct}% share</span></div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
+          </div>
 
-            {/* Aging Section */}
-            <div className="flex flex-wrap items-center justify-between gap-4 overflow-hidden rounded-lg bg-surface border border-border-default px-4 py-4 text-text-primary shadow-xs">
+          {/* Aging Section */}
+          <div className="flex flex-col gap-4">
+            <div
+              className="cursor-pointer select-none transition-all duration-300 hover:shadow-sm hover:border-primary-9/40 hover:bg-primary-3/5 active:scale-[0.99] flex flex-wrap items-center justify-between gap-4 overflow-hidden rounded-lg bg-surface border border-border-default px-4 py-4 text-text-primary shadow-xs"
+              onClick={() => setIsSupplierFollowUpExpanded(!isSupplierFollowUpExpanded)}
+            >
               <div>
                 <h3 className="font-poppins text-14 font-semibold">Aging &amp; Process Oversight</h3>
                 <p className="font-inter text-11 text-text-secondary mt-0.5">Portfolio-level view of overdue exposure and approval cycles</p>
@@ -791,6 +815,9 @@ export default function DashboardCharts() {
                 <div className="text-center md:text-right flex flex-col gap-0.5">
                   <span className="font-poppins text-[10px] font-medium tracking-wider text-text-secondary dark:text-gray-4 uppercase">Approval Rate</span>
                   <span className="text-15 font-semibold text-success">94.2%</span>
+                </div>
+                <div className="p-1.5 rounded-lg text-text-secondary transition-colors z-20 ml-2">
+                  {isSupplierFollowUpExpanded ? <ChevronUp className="h-5 w-5 text-primary-9" /> : <ChevronDown className="h-5 w-5" />}
                 </div>
               </div>
             </div>

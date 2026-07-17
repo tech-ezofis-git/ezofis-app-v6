@@ -12,6 +12,7 @@ const ExportButton: React.FC<ExportButtonProps> = ({ onClick }) => {
       icon="tabler:download"
       aria-label="Export"
       variant="outline"
+      tooltip="Export"
       onClick={onClick}
     />
   )

@@ -210,11 +210,18 @@ const Table = ({ tabValue, onCreate }: TableProps) => {
           return true
         })
 
+        let groupValue = String(cluster.key)
+        if (groupValue.toUpperCase() === 'PUBLISHED') {
+          groupValue = 'Published'
+        } else if (groupValue.toUpperCase() === 'DRAFT') {
+          groupValue = 'Draft'
+        }
+
         return {
           groupCount: filteredItems.length,
           groupId: cluster.key,
           groupKey: 'flowstatus',
-          groupValue: cluster.key,
+          groupValue,
           items: filteredItems,
         }
       })

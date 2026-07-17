@@ -1,5 +1,5 @@
-// import avatar from '@/assets/avatar.jpg'
 import Avatar from '@/components/base/Avatar'
+import Tooltip from '@/components/base/Tooltip'
 import authUserStore from '@/stores/authUserStore'
 
 const UserMenuTrigger = () => {
@@ -27,12 +27,14 @@ const UserMenuTrigger = () => {
   }
 
   return (
-    <Avatar
-      className='ml-2 cursor-pointer'
-      image={imageUrl}
-      imageLabel='user picture'
-      initials={getInitials()}
-    />
+    <Tooltip content='User Profile' openDelay={500}>
+      <Avatar
+        className='ml-2 cursor-pointer'
+        image={imageUrl}
+        imageLabel='user picture'
+        initials={getInitials()}
+      />
+    </Tooltip>
   )
 }
 

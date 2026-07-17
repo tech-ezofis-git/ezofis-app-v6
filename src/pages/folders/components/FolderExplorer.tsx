@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo } from 'react'
 import { useFolderExplorer } from '../hooks/useFolderExplorer'
 import useFoldersTopbar from '../hooks/useFoldersTopbar'
 import { AiSummaryView } from './AiSummaryView'
@@ -13,8 +13,6 @@ import { TreeSidebar } from './TreeSidebar'
 import Upload from './Upload/Upload'
 
 export function FolderExplorer() {
-  const [fileFilters, setFileFilters] = useState<Record<string, string>>({})
-
   const {
     activeFolder,
     appView,
@@ -22,11 +20,16 @@ export function FolderExplorer() {
     changePageSize,
     changeServerPage,
     changeViewMode,
+    currentFolderGroupField,
     error,
     expandedIds,
     fileColumns,
+    fileFilters,
     filePage,
     files,
+    fileSearch,
+    folderContextFilters,
+    folderFilters,
     folderHasMore,
     folderPage,
     folders,
@@ -48,6 +51,9 @@ export function FolderExplorer() {
     getRepositoryIdFromFolder,
     getSelectedFileRow,
     setAppView,
+    setFileFilters,
+    setFileSearch,
+    setFolderFilters,
     setFolderSearch,
   } = useFolderExplorer()
 
@@ -169,21 +175,27 @@ export function FolderExplorer() {
       <div className='flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-surface-secondary text-sm text-gray-11'>
         <DocumentsListView
           breadcrumbs={breadcrumbs}
+          currentFolderGroupField={currentFolderGroupField}
           error={error}
           fileColumns={fileColumns}
+          fileFilters={fileFilters}
           filePage={filePage}
           files={files}
+          folderContextFilters={folderContextFilters}
           loading={loading}
           loadingPage={loadingPage}
           refreshing={refreshing}
+          searchQuery={fileSearch}
           view={viewMode}
           onAiSummary={(id) => openFileAction(id, 'aiSummary')}
           onBreadcrumbSelect={openFolder}
           onEdit={(id) => openFileAction(id, 'editMetadata')}
+          onFiltersChange={setFileFilters}
           onOpenFile={openFile}
           onPageChange={changeServerPage}
           onPageSizeChange={changePageSize}
           onRefresh={handleRefresh}
+          onSearchChange={setFileSearch}
           onShare={(id) => openFileAction(id, 'share')}
           onUpload={handleUpload}
           onWorkflow={(id) => openFileAction(id, 'workflow')}
@@ -196,15 +208,26 @@ export function FolderExplorer() {
   return (
     <div className='flex h-full min-h-0 flex-col bg-surface-secondary text-sm text-gray-11'>
       <ExplorerToolbar
+        currentFolderGroupField={currentFolderGroupField}
         disabled={isBusy}
         fileColumns={fileColumns}
+        fileFilters={fileFilters}
         files={files}
+        fileSearch={fileSearch}
+        folderContextFilters={folderContextFilters}
+        folderFilters={folderFilters}
+        folders={folders}
+        folderSearch={folderSearch}
+        loading={loading}
+        loadingFolders={loadingFolders}
         loadingPage={loadingPage}
         refreshing={refreshing}
         view={viewMode}
         setView={changeViewMode}
-        onFiltersChange={setFileFilters}
+        onFileFiltersChange={setFileFilters}
+        onFolderFiltersChange={setFolderFilters}
         onFolderSearchChange={setFolderSearch}
+        onFileSearchChange={setFileSearch}
         onRefresh={handleRefresh}
         onUpload={handleUpload}
       />
@@ -225,6 +248,8 @@ export function FolderExplorer() {
               fileFilters={fileFilters}
               filePage={filePage}
               files={files}
+              folderContextFilters={folderContextFilters}
+              folderFilters={folderFilters}
               folderHasMore={folderHasMore}
               folders={folders}
               folderSearch={folderSearch}

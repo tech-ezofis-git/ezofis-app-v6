@@ -19,6 +19,7 @@ import ListEmptyState from '@/components/common/ListEmptyState'
 import requestStore, {
   useProcessingStatusText,
 } from '@/pages/requests/stores/useRequestStore'
+import useAskAIStore from '@/components/common/ask-ai/stores/useAskAIStore'
 import cn from '@/utils/cn'
 import { formatDatetime } from '@/utils/dayjs'
 import HoverExpandableText from './HoverExpandableText'
@@ -932,9 +933,11 @@ const GridRowItem = memo(
       typeof row?._originalIndex === 'number' ? row._originalIndex : index
     const rowId = row?.id || row?.processId || `item-${originalIndex}`
 
-    const { jobMappings, jobStatuses, processingProcesses } = requestStore(
+    const { jobMappings, jobStatuses, processingProcesses, isPlaygroundOpen } = requestStore(
       (state) => state,
     )
+    const isAskAIOpen = useAskAIStore((state) => state.isOpen)
+    const isSidebarOpen = isPlaygroundOpen || isAskAIOpen
     const matchingProc = useMemo(() => {
       return processingProcesses.find(
         (p) => String(p.processId || p.id) === String(row.processId || row.id),
@@ -1083,7 +1086,10 @@ const GridRowItem = memo(
         <div className='flex min-w-0 flex-1 flex-col gap-1.5'>
           <div className='flex items-center gap-3'>
             <h3
-              className='truncate text-[15px] tracking-tight text-[var(--text-primary)] transition-colors group-hover:text-[var(--primary-9)] group-hover:underline'
+              className={cn(
+                'truncate text-[15px] tracking-tight text-[var(--text-primary)] transition-colors group-hover:text-[var(--primary-9)] group-hover:underline',
+                isSidebarOpen ? 'max-w-[140px] sm:max-w-[180px] md:max-w-[240px]' : 'max-w-none'
+              )}
               style={{ fontWeight: 500 }}
             >
               {invoiceNo}
@@ -1092,7 +1098,7 @@ const GridRowItem = memo(
               <HoverExpandableText
                 className='align-bottom text-[12px] font-medium text-[var(--gray-10)]'
                 fallbackText='Unknown Supplier'
-                normalMaxWidthClass='max-w-[120px] sm:max-w-[160px] md:max-w-[200px] lg:max-w-[260px]'
+                normalMaxWidthClass={isSidebarOpen ? 'max-w-[100px]' : 'max-w-[120px] sm:max-w-[160px] md:max-w-[200px] lg:max-w-[260px]'}
                 text={supplierName}
               />
             )}
@@ -1105,7 +1111,7 @@ const GridRowItem = memo(
           </div>
 
           {/* Sub-metadata row */}
-          <div className='flex items-center gap-4 text-[12px] font-medium text-[var(--gray-10)]'>
+          <div className='flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] font-medium text-[var(--gray-10)]'>
             {!row.isProcessing && (
               <div className='flex items-center gap-1.5'>
                 <Icon className='size-3.5' name='tabler:hash' />
@@ -1134,10 +1140,21 @@ const GridRowItem = memo(
                 )
               })()}
           </div>
+
+          {/* AI Insight inside Column 2 (stacked, visible ONLY when playground/chat/sidebar is open) */}
+          {!row.isProcessing && activeTab !== 'Processed' && aiInsight && isSidebarOpen && (
+            <div className='flex min-w-0 items-center gap-1.5 mt-0.5 text-[12px] font-medium text-[var(--primary-9)]'>
+              <Icon
+                className='size-3.5 shrink-0'
+                name='tabler:sparkles'
+              />
+              <span className='truncate' title={aiInsight}>{aiInsight}</span>
+            </div>
+          )}
         </div>
 
-        {/* AI Insight Line - Centered in middle of row */}
-        {!row.isProcessing && activeTab !== 'Processed' && aiInsight && (
+        {/* AI Insight Line - Centered in middle of row (visible ONLY when playground/chat/sidebar is closed) */}
+        {!row.isProcessing && activeTab !== 'Processed' && aiInsight && !isSidebarOpen && (
           <div className='flex min-w-0 flex-1 items-center justify-center px-4'>
             <div className='flex min-w-0 items-center gap-1.5'>
               <Icon

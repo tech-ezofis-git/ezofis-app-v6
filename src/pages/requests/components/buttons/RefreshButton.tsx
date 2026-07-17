@@ -12,6 +12,7 @@ const RefreshButton: React.FC<RefreshButtonProps> = ({ onClick }) => {
       icon="tabler:refresh"
       aria-label="Refresh"
       variant="outline"
+      tooltip="Refresh"
       onClick={onClick}
     />
   )
