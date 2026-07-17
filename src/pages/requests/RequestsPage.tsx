@@ -315,6 +315,19 @@ const RequestsPage = () => {
               workflow={workflow}
               setActiveTab={handleTabChange}
               setWorkflow={setWorkflow}
+              actionButtons={[
+                {
+                  id: 'new-request',
+                  label: 'New Request',
+                  icon: 'tabler:plus',
+                  color: 'primary',
+                  variant: 'solid',
+                  onClick: () => {
+                    console.log('am running')
+                    openNewRequest('request')
+                  }
+                }
+              ]}
             />
           )}
           {selectedItem && (

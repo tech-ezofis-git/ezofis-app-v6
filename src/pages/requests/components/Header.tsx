@@ -16,6 +16,16 @@ interface Props {
   metaData?: IRequestMeta
   setActiveTab: (val: string) => void
   setWorkflow: React.Dispatch<React.SetStateAction<Option | null>>
+  actionButtons?: {
+    id: string;
+    label?: string;
+    icon?: string;
+    color?: any;
+    variant?: any;
+    onClick: () => void;
+    disabled?: boolean;
+    tooltip?: string;
+  }[];
 }
 
 const Header = ({
@@ -27,12 +37,8 @@ const Header = ({
   workflow,
   setActiveTab,
   setWorkflow,
+  actionButtons,
 }: Props) => {
-  const openNewRequest = requestStore((state) => state.openNewRequest)
-  const handleOpenRequest = () => {
-    console.log('am running')
-    openNewRequest('request')
-  }
   const processedCount =
     Number(metaData?.completedCount ?? 0) + Number(metaData?.sentCount ?? 0)
   const inboxCount = Number(metaData?.inboxCount ?? 0)
@@ -77,14 +83,18 @@ const Header = ({
           }
           onChange={setWorkflow}
         />
-        <Button
-          color='primary'
-          icon='tabler:plus'
-          label='New Request'
-          size='lg'
-          variant='solid'
-          onClick={handleOpenRequest}
-        />
+        {actionButtons?.map((btn) => (
+          <Button
+            key={btn.id}
+            color={btn.color || 'primary'}
+            icon={btn.icon}
+            label={btn.label}
+            size='lg'
+            variant={btn.variant || 'solid'}
+            onClick={btn.onClick}
+            disabled={btn.disabled}
+          />
+        ))}
       </div>
     </div>
   )

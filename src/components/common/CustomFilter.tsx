@@ -4,7 +4,10 @@ import { ChevronDown, ChevronRight, Search, X } from "lucide-react";
 import Icon from "@/components/base/icon/Icon";
 import InputDate from "@/components/base/inputs/InputDate";
 import Tooltip from "@/components/base/Tooltip";
+import Button from "@/components/base/button/Button";
+import IconButton from "@/components/base/button/IconButton";
 import cn from "@/utils/cn";
+import type { ButtonColor, ButtonVariant } from "@/components/base/button/types";
 
 const MORE_FILTER_DEBOUNCE_MS = 350;
 const MORE_FILTER_PANEL_WIDTH = 388;
@@ -105,6 +108,18 @@ export interface FilterDefinition {
   width?: number;
 }
 
+export interface ActionButtonDef {
+  id: string;
+  label?: string;
+  icon?: string;
+  color?: ButtonColor;
+  variant?: ButtonVariant;
+  onClick: () => void;
+  disabled?: boolean;
+  tooltip?: string;
+  isIconButton?: boolean;
+}
+
 export interface CustomFilterProps {
   filters: FilterDefinition[];
   moreFilters?: FilterGroup[];
@@ -120,6 +135,9 @@ export interface CustomFilterProps {
   quickFilters?: QuickFilterOption[];
   activeQuickFilters?: string[];
   onQuickFilterToggle?: (id: string) => void;
+  actionButtons?: ActionButtonDef[];
+  viewMode?: "grid" | "table";
+  onViewModeChange?: (mode: "grid" | "table") => void;
   trailingActions?: React.ReactNode;
 }
 
@@ -138,6 +156,9 @@ export default function CustomFilter({
   quickFilters,
   activeQuickFilters,
   onQuickFilterToggle,
+  actionButtons,
+  viewMode,
+  onViewModeChange,
   trailingActions,
 }: CustomFilterProps) {
   const [activeFilterDropdown, setActiveFilterDropdown] = useState<
@@ -830,26 +851,27 @@ export default function CustomFilter({
             })}
 
           {moreFilters && moreFilters.length > 0 && (
-            <button
-              ref={moreFiltersButtonRef}
-              className={cn(
-                "flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border px-3.5 py-1 text-12 font-medium transition-all hover:bg-gray-3 dark:hover:bg-gray-10",
-                activeFilterDropdown === "more"
-                  ? "border-primary-9 bg-primary-3/50 text-primary-9"
-                  : "border-border-default bg-surface text-text-secondary",
-              )}
-              type="button"
-              onClick={() => {
-                if (activeFilterDropdown === "more") {
-                  setActiveFilterDropdown(null);
-                  return;
-                }
-                openMoreFilters(moreFiltersButtonRef.current);
-              }}
-            >
-              <span>{moreFiltersLabel}</span>
-              <ChevronDown className="h-3 w-3 opacity-60" />
-            </button>
+            <Tooltip content={moreFiltersLabel || "More filters"}>
+              <button
+                ref={moreFiltersButtonRef}
+                className={cn(
+                  "flex shrink-0 cursor-pointer items-center justify-center h-[30px] w-[30px] rounded-full border border-dashed transition-all",
+                  activeFilterDropdown === "more"
+                    ? "border-[var(--primary-6)] bg-[var(--primary-1)] text-[var(--primary-9)]"
+                    : "border-[var(--gray-6)] text-[var(--gray-10)] bg-transparent hover:bg-[var(--gray-2)] hover:text-[var(--gray-12)]",
+                )}
+                type="button"
+                onClick={() => {
+                  if (activeFilterDropdown === "more") {
+                    setActiveFilterDropdown(null);
+                    return;
+                  }
+                  openMoreFilters(moreFiltersButtonRef.current);
+                }}
+              >
+                <Icon name="tabler:plus" className="h-4 w-4" />
+              </button>
+            </Tooltip>
           )}
 
           {showReset && (
@@ -874,46 +896,128 @@ export default function CustomFilter({
         ) : (
           <div
             className={cn(
-              "relative flex items-center justify-end transition-all duration-300",
-              isSearchExpanded || searchQuery ? "w-60" : "w-8",
+              'flex h-8 items-center rounded-md border transition-all duration-300 select-none focus-within:border-primary-6',
+              isSearchExpanded || searchQuery
+                ? 'justify-start border-[var(--border-default)] bg-surface pr-1 pl-3 w-72'
+                : 'w-8 cursor-pointer justify-center border-[var(--border-default)] bg-surface text-gray-11 hover:bg-gray-4 hover:text-gray-12 active:scale-95',
             )}
+            onClick={() => {
+              if (!isSearchExpanded && !searchQuery) {
+                setIsSearchExpanded(true);
+                setTimeout(() => searchInputRef.current?.focus(), 50);
+              }
+            }}
           >
             <Tooltip content="Search" disabled={isSearchExpanded || !!searchQuery}>
+              <div className='flex shrink-0 items-center gap-1.5'>
+                <Icon
+                  name='lucide:search'
+                  className={cn(
+                    'size-4 shrink-0 transition-colors',
+                    isSearchExpanded || searchQuery ? 'text-gray-11' : 'text-gray-11 hover:text-gray-12',
+                  )}
+                />
+              </div>
+            </Tooltip>
+
+            <div
+              className={cn(
+                'h-full transition-[width] duration-300',
+                isSearchExpanded || searchQuery ? 'w-full flex-1' : 'w-0 flex-none overflow-hidden',
+              )}
+            >
+              <input
+                ref={searchInputRef}
+                placeholder={searchPlaceholder}
+                type='text'
+                value={searchQuery}
+                className={cn(
+                  'h-full w-full border-0 bg-transparent px-2 text-13 font-medium text-[var(--gray-13)] outline-none placeholder:text-[var(--gray-8)]',
+                  isSearchExpanded || searchQuery ? 'opacity-100' : 'pointer-events-none opacity-0',
+                )}
+                onChange={(e) => onSearchChange(e.target.value)}
+                onFocus={() => setIsSearchExpanded(true)}
+                onBlur={() => {
+                  // Only collapse if there's no query
+                  if (!searchQuery) setIsSearchExpanded(false);
+                }}
+              />
+            </div>
+          </div>
+        )}
+
+        {viewMode && onViewModeChange && (
+          <div className="flex shrink-0 cursor-pointer items-center gap-1 rounded-lg border border-[var(--border-default)] bg-[var(--gray-1)] p-1 ml-1">
+            <Tooltip content="Grid View" openDelay={500}>
               <button
                 type="button"
                 className={cn(
-                  "absolute top-0 bottom-0 left-0 flex items-center justify-center rounded-full transition-all duration-300",
-                  isSearchExpanded || searchQuery
-                    ? "pointer-events-none w-8"
-                    : "h-8 w-8 cursor-pointer border border-[var(--border-default)] bg-surface hover:bg-[var(--gray-2)] dark:hover:bg-[var(--gray-10)]",
+                  "cursor-pointer rounded-md px-2 py-1 transition-all duration-200",
+                  viewMode === "grid"
+                    ? "bg-surface text-[var(--primary-9)] shadow-sm"
+                    : "text-[var(--gray-10)] hover:text-[var(--gray-12)]"
                 )}
-                onClick={() => {
-                  setIsSearchExpanded(true);
-                  setTimeout(() => searchInputRef.current?.focus(), 50);
-                }}
+                onClick={() => onViewModeChange("grid")}
               >
-                <Search className="h-3.5 w-3.5 text-[var(--text-muted)]" />
+                <Icon className="size-4" name="tabler:layout-grid" />
               </button>
             </Tooltip>
-            <input
-              ref={searchInputRef}
-              className={cn(
-                "rounded-full border border-[var(--border-default)] bg-surface py-1.5 text-12 text-[var(--text-primary)] outline-none transition-all duration-300 focus:border-[var(--primary-9)] focus:ring-1 focus:ring-[var(--primary-9)]",
-                isSearchExpanded || searchQuery
-                  ? "w-full pr-4 pl-8 opacity-100"
-                  : "pointer-events-none w-0 border-transparent pr-0 pl-0 opacity-0",
-              )}
-              placeholder={searchPlaceholder}
-              type="text"
-              value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-              onFocus={() => setIsSearchExpanded(true)}
-            />
+            <Tooltip content="Table View" openDelay={500}>
+              <button
+                type="button"
+                className={cn(
+                  "cursor-pointer rounded-md px-2 py-1 transition-all duration-200",
+                  viewMode === "table"
+                    ? "bg-surface text-[var(--primary-9)] shadow-sm"
+                    : "text-[var(--gray-10)] hover:text-[var(--gray-12)]"
+                )}
+                onClick={() => onViewModeChange("table")}
+              >
+                <Icon className="size-4" name="tabler:table" />
+              </button>
+            </Tooltip>
+          </div>
+        )}
+
+        {actionButtons && actionButtons.length > 0 && (
+          <div className="flex shrink-0 items-center gap-1.5 ml-1">
+            {actionButtons.map((btn) => {
+              const btnEl = btn.isIconButton ? (
+                <IconButton
+                  key={btn.id}
+                  color={(btn.color as any) || "gray"}
+                  variant={btn.variant || "outline"}
+                  icon={btn.icon!}
+                  aria-label={btn.tooltip || btn.label || btn.id}
+                  onClick={btn.onClick}
+                  disabled={btn.disabled}
+                />
+              ) : (
+                <Button
+                  key={btn.id}
+                  color={btn.color || "primary"}
+                  variant={btn.variant || "solid"}
+                  icon={btn.icon}
+                  label={btn.label}
+                  onClick={btn.onClick}
+                  disabled={btn.disabled}
+                  size="md"
+                />
+              );
+
+              return btn.tooltip ? (
+                <Tooltip key={btn.id} content={btn.tooltip}>
+                  {btnEl}
+                </Tooltip>
+              ) : (
+                btnEl
+              );
+            })}
           </div>
         )}
 
         {trailingActions ? (
-          <div className="flex shrink-0 items-center gap-1.5">
+          <div className="flex shrink-0 items-center gap-1.5 ml-1">
             {trailingActions}
           </div>
         ) : null}

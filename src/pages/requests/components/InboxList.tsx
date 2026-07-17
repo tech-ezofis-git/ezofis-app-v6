@@ -1130,37 +1130,37 @@ const InboxList: React.FC<InboxListProps> = ({
           }}
           searchPlaceholder="Search invoice, supplier, PO..."
           customSearchComponent={<TableSearch table={table as any} />}
-          trailingActions={
-            <>
-              <div className='flex cursor-pointer items-center gap-1 rounded-lg border border-[var(--border-default)] bg-[var(--gray-1)] p-1'>
-                <Tooltip content="Grid View" openDelay={500}>
-                  <button
-                    className={`cursor-pointer rounded-md px-2 py-1 transition-all duration-200 ${viewMode === 'grid'
-                        ? 'bg-surface text-[var(--primary-9)] shadow-sm'
-                        : 'text-[var(--gray-10)] hover:text-[var(--gray-12)]'
-                      }`}
-                    onClick={() => setViewMode('grid')}
-                  >
-                    <Icon className='size-4' name='tabler:layout-grid' />
-                  </button>
-                </Tooltip>
-                <Tooltip content="Table View" openDelay={500}>
-                  <button
-                    className={`cursor-pointer rounded-md px-2 py-1 transition-all duration-200 ${viewMode === 'table'
-                        ? 'bg-surface text-[var(--primary-9)] shadow-sm'
-                        : 'text-[var(--gray-10)] hover:text-[var(--gray-12)]'
-                      }`}
-                    onClick={() => setViewMode('table')}
-                  >
-                    <Icon className='size-4' name='tabler:table' />
-                  </button>
-                </Tooltip>
-              </div>
-              <RefreshButton onClick={onRefresh} />
-              <ExportButton onClick={() => {}} />
-              <UploadPoButton label="Upload PO" onClick={handlePoSheet} />
-            </>
-          }
+          actionButtons={[
+            {
+              id: 'refresh',
+              icon: 'tabler:refresh',
+              onClick: onRefresh,
+              tooltip: 'Refresh',
+              isIconButton: true,
+              color: 'gray',
+              variant: 'outline'
+            },
+            {
+              id: 'export',
+              icon: 'tabler:download',
+              onClick: () => {},
+              tooltip: 'Export',
+              isIconButton: true,
+              color: 'gray',
+              variant: 'outline'
+            },
+            {
+              id: 'upload-po',
+              icon: 'tabler:upload',
+              onClick: handlePoSheet,
+              tooltip: 'Import PO Data',
+              isIconButton: true,
+              color: 'primary',
+              variant: 'outline'
+            }
+          ]}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
         />
       )}
       <div className='relative flex min-h-0 w-full flex-1 flex-col mt-2'>

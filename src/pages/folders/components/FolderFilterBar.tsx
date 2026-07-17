@@ -435,62 +435,30 @@ export function FolderFilterBar({
       searchPlaceholder={searchPlaceholder}
       searchQuery={searchQuery}
       showReset={hasActiveFilters}
-      trailingActions={
-        <>
-          <Tooltip content='Upload' position='top'>
-            <IconButton
-              aria-label='Upload'
-              disabled={isBusy}
-              icon='upload'
-              type='button'
-              onClick={() => onUpload?.()}
-            />
-          </Tooltip>
-
-          <Tooltip
-            content={refreshing ? 'Refreshing...' : 'Refresh'}
-            position='top'
-          >
-            <button
-              aria-label='Refresh'
-              className='inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-11 transition-all hover:bg-gray-4 hover:text-gray-12 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50'
-              disabled={isBusy}
-              type='button'
-              onClick={() => onRefresh?.()}
-            >
-              <RefreshCcw
-                className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`}
-              />
-            </button>
-          </Tooltip>
-
-          <div className='flex rounded-lg bg-gray-2 p-1'>
-            <Tooltip content='List view' position='top'>
-              <button
-                aria-label='List view'
-                className={`inline-flex h-8 w-8 items-center justify-center rounded-lg transition-all hover:bg-gray-4 hover:text-gray-12 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 ${view === 'list' ? 'bg-surface text-gray-13 shadow-sm' : 'text-gray-11'}`}
-                disabled={isBusy}
-                type='button'
-                onClick={() => setView('list')}
-              >
-                <List className='h-4 w-4' />
-              </button>
-            </Tooltip>
-
-            <Tooltip content='Grid view' position='top'>
-              <button
-                aria-label='Grid view'
-                className={`inline-flex h-8 w-8 items-center justify-center rounded-lg transition-all hover:bg-gray-4 hover:text-gray-12 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 ${view === 'grid' ? 'bg-surface text-gray-13 shadow-sm' : 'text-gray-11'}`}
-                disabled={isBusy}
-                type='button'
-                onClick={() => setView('grid')}
-              >
-                <LayoutGrid className='h-4 w-4' />
-              </button>
-            </Tooltip>
-          </div>
-        </>
-      }
+      actionButtons={[
+        {
+          id: 'upload',
+          icon: 'lucide:upload',
+          tooltip: 'Upload',
+          onClick: () => onUpload?.(),
+          disabled: isBusy,
+          isIconButton: true,
+          color: 'gray',
+          variant: 'outline'
+        },
+        {
+          id: 'refresh',
+          icon: refreshing ? 'tabler:loader-2' : 'lucide:refresh-ccw',
+          tooltip: refreshing ? 'Refreshing...' : 'Refresh',
+          onClick: () => onRefresh?.(),
+          disabled: isBusy,
+          isIconButton: true,
+          color: 'gray',
+          variant: 'outline'
+        }
+      ]}
+      viewMode={view === 'list' ? 'table' : 'grid'}
+      onViewModeChange={(mode) => setView(mode === 'table' ? 'list' : 'grid')}
       onFilterChange={onFilterChange}
       onReset={onResetFilters}
       onSearchChange={onSearchChange}
