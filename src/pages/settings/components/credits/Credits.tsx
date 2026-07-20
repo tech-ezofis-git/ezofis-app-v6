@@ -31,6 +31,8 @@ import {
 import SettingsPageHeader from '../SettingsPageHeader'
 import useSettingsTableToolbar from '../useSettingsTableToolbar'
 
+import CustomFilter from '@/components/common/CustomFilter'
+
 type UsagePeriod = 'today' | 'yesterday' | 'monthly' | 'quarterly' | 'yearly'
 
 const PERIOD_FILTERS: { label: string; value: UsagePeriod }[] = [
@@ -660,68 +662,64 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
   )
 
   return (
-    <div className='flex h-full min-h-0 flex-col'>
+    <div className='flex h-full min-h-0 flex-col bg-[var(--surface)]'>
       <SettingsPageHeader
-        leading={
-          <div className='flex flex-wrap items-center gap-2'>
-            <span className='text-12 font-medium text-gray-10'>Filters:</span>
-            {PERIOD_FILTERS.map((filter) => (
-              <FilterPill
-                active={period === filter.value}
-                key={filter.value}
-                onClick={() => setPeriod(filter.value)}
-              >
-                {filter.label}
-              </FilterPill>
-            ))}
-            {period === 'monthly' ? (
-              <>
-                <InputSelect
-                  className='w-[130px]'
-                  options={MONTH_OPTIONS}
-                  value={month}
-                  onChange={(value) => {
-                    if (value) setMonth(value)
-                  }}
-                />
-                <InputSelect
-                  className='w-[100px]'
-                  options={yearOptions}
-                  value={year}
-                  onChange={(value) => {
-                    if (value) setYear(value)
-                  }}
-                />
-              </>
-            ) : null}
-            {period === 'yearly' ? (
-              <InputSelect
-                className='w-[100px]'
-                options={yearOptions}
-                value={year}
-                onChange={(value) => {
-                  if (value) setYear(value)
-                }}
-              />
-            ) : null}
-          </div>
-        }
         title='Credit Usage'
-        actions={
-          <IconButton
-            ariaLabel='Refresh credit usage'
-            color='gray'
-            icon='lucide:rotate-cw'
-            loading={isFetching}
-            size='sm'
-            variant='outline'
-            onClick={() => void refetch()}
-          />
-        }
-        onBack={onBack}
       />
 
-      <div className='flex-1 overflow-y-auto p-6 md:p-8'>
+      <div className='flex-1 flex flex-col overflow-hidden px-6 py-4 md:px-8'>
+        <CustomFilter
+          filters={[
+            ...(period === 'monthly' ? [{ id: 'month', label: 'Month', options: MONTH_OPTIONS.map(o => ({ label: o.name, value: String(o.value || '') })) }] : []),
+            ...(period === 'monthly' || period === 'yearly' ? [{ id: 'year', label: 'Year', options: yearOptions.map(o => ({ label: o.name, value: String(o.value || '') })) }] : []),
+          ]}
+          activeFilters={{
+            month: String(month.value || ''),
+            year: String(year.value || ''),
+          }}
+          onFilterChange={(id, value) => {
+            if (id === 'month') {
+              const selected = MONTH_OPTIONS.find(o => o.value === value)
+              if (selected) setMonth(selected)
+            }
+            if (id === 'year') {
+              const selected = yearOptions.find(o => o.value === value)
+              if (selected) setYear(selected)
+            }
+          }}
+          onReset={() => {
+            setPeriod('monthly')
+            setMonth(MONTH_OPTIONS[currentMonthIndex] ?? MONTH_OPTIONS[0])
+            setYear({
+              id: String(currentYear),
+              name: String(currentYear),
+              value: String(currentYear),
+            })
+          }}
+          showReset={
+            period !== 'monthly' ||
+            month.value !== (MONTH_OPTIONS[currentMonthIndex] ?? MONTH_OPTIONS[0]).value ||
+            year.value !== String(currentYear)
+          }
+          quickFilters={PERIOD_FILTERS.map(f => ({ id: f.value, label: f.label }))}
+          activeQuickFilters={[period]}
+          onQuickFilterToggle={(id) => setPeriod(id as UsagePeriod)}
+          customSearchComponent={<div />}
+          onBack={onBack}
+          actionButtons={[
+            {
+              id: 'refresh',
+              icon: 'lucide:rotate-cw',
+              tooltip: 'Refresh credit usage',
+              onClick: () => void refetch(),
+              isIconButton: true,
+              color: 'gray',
+              variant: 'outline',
+            }
+          ]}
+        />
+
+        <div className='flex-1 overflow-y-auto mt-4'>
         <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6'>
           <MetricSummaryCard
             isLoading={isLoading}
@@ -833,6 +831,7 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
             onReload={() => void refetch()}
             onRowSizeChange={onRowSizeChange}
           />
+        </div>
         </div>
       </div>
     </div>

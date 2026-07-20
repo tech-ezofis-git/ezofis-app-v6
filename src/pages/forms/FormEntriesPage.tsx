@@ -46,9 +46,9 @@ const generateDummyEntries = (fields: Question[], count: number = 6) => {
     fields.length > 0
       ? fields
       : [
-          { id: 'f1', label: 'Initial Value', type: 'SHORT_TEXT' } as Question,
-          { id: 'f2', label: 'Status', type: 'SHORT_TEXT' } as Question,
-        ]
+        { id: 'f1', label: 'Initial Value', type: 'SHORT_TEXT' } as Question,
+        { id: 'f2', label: 'Status', type: 'SHORT_TEXT' } as Question,
+      ]
 
   return Array.from({ length: count }).map((_, idx) => {
     const entryId = `Entry #${idx + 1}`
@@ -163,7 +163,7 @@ const FormEntriesPage = () => {
   // Pagination states
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
-  
+
   const [activeFilters, setActiveFilters] = useState<Record<string, string>>({})
 
   // Active line items for the modal table explorer
@@ -459,7 +459,7 @@ const FormEntriesPage = () => {
 
   const filteredEntries = useMemo(() => {
     let list = activeList
-    
+
     // Apply Custom Filters
     list = list.filter((entry) => {
       let matches = true
@@ -484,7 +484,7 @@ const FormEntriesPage = () => {
 
     if (!searchVal.trim()) return list
     const q = searchVal.toLowerCase()
-    
+
     return list.filter((entry) => {
       if (entry.id.toLowerCase().includes(q)) return true
       const resolvedUserName = resolveUserName(entry.createdBy).toLowerCase()
@@ -568,7 +568,7 @@ const FormEntriesPage = () => {
         size: 180,
         renderCell: (row: any) => {
           const val = row.values?.[field.id]
-          
+
           // 1. Handle matched status badge
           if (isStatusCol && val) {
             const statusStr = String(val).trim()
@@ -773,7 +773,7 @@ const FormEntriesPage = () => {
   }, [entries, usersData])
 
   const dynamicFilters = useMemo(() => {
-    return fields.map((field) => {
+    return fields.map((field: any) => {
       const unique = new Set<string>()
       entries.forEach((e) => {
         const val = e.values?.[field.id]
@@ -783,9 +783,9 @@ const FormEntriesPage = () => {
         }
       })
       const options = Array.from(unique).map((val) => ({ label: val, value: val }))
-      
+
       if (options.length === 0) return null
-      
+
       return {
         id: field.id,
         label: field.label || field.id,
@@ -1013,7 +1013,7 @@ const FormEntriesPage = () => {
                             'Option A,Option B,Option C'
                           const delimiter =
                             field.settings?.specific?.separateOptionsUsing ===
-                            'COMMA'
+                              'COMMA'
                               ? ','
                               : '\n'
                           const opts = optString
@@ -1058,7 +1058,7 @@ const FormEntriesPage = () => {
                             'Option A,Option B,Option C'
                           const delimiter =
                             field.settings?.specific?.separateOptionsUsing ===
-                            'COMMA'
+                              'COMMA'
                               ? ','
                               : '\n'
                           const opts = optString
@@ -1118,7 +1118,7 @@ const FormEntriesPage = () => {
                             'Option A,Option B,Option C'
                           const delimiter =
                             field.settings?.specific?.separateOptionsUsing ===
-                            'COMMA'
+                              'COMMA'
                               ? ','
                               : '\n'
                           const opts = optString
@@ -1333,7 +1333,7 @@ const FormEntriesPage = () => {
             }}
             showReset={Object.keys(activeFilters).some(k => activeFilters[k]) || !!searchState?.value}
             searchQuery=""
-            onSearchChange={() => {}}
+            onSearchChange={() => { }}
             searchPlaceholder="Search entries..."
             customSearchComponent={<TableSearch table={table as any} />}
             actionButtons={[
@@ -1411,7 +1411,7 @@ const FormEntriesPage = () => {
                 onClick={() => setActiveLineItems(null)}
               />
             </div>
-            
+
             <div className='max-h-[400px] overflow-y-auto overflow-x-auto border border-gray-2 rounded-lg bg-white custom-scrollbar'>
               <table className='w-full text-left text-xs border-collapse'>
                 <thead>
