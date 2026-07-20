@@ -8,7 +8,11 @@ import Tooltip from '@/components/base/Tooltip'
 import type { DynamicRepositoryColumn } from '../api/folderApi'
 import { decodeRepositoryNodeId } from '../api/folderApi'
 import type { ExplorerView, FolderItem } from '../types/folderTypes'
-import type { ExplorerFilterMode } from '../utils/folderExplorerUtils'
+import type { ExplorerFilterMode, FolderFilterOptionsCache } from '../utils/folderExplorerUtils'
+import {
+  getCachedFilterOptionsForId,
+  mergeFilterOptionLists,
+} from '../utils/folderExplorerUtils'
 import {
   getRepositoryFieldStringValue,
   matchesFieldKey,
@@ -106,17 +110,17 @@ const getFilterValue = (
 
 const mergeUniqueOptions = (
   ...optionLists: Array<Array<{ label: string; value: string }>>
+) => mergeFilterOptionLists(...optionLists)
+
+const withActiveFilterOption = (
+  filterId: string,
+  options: Array<{ label: string; value: string }>,
+  activeFilters: Record<string, string> = {},
 ) => {
-  const map = new Map<string, { label: string; value: string }>()
-  optionLists.flat().forEach((option) => {
-    const value = String(option.value || '').trim()
-    if (!value) return
-    const key = value.toLowerCase()
-    if (!map.has(key)) map.set(key, { label: option.label || value, value })
-  })
-  return Array.from(map.values()).sort((left, right) =>
-    left.label.localeCompare(right.label),
-  )
+  const activeValue = String(activeFilters[filterId] || '').trim()
+  if (!activeValue) return options
+
+  return mergeUniqueOptions(options, [{ label: activeValue, value: activeValue }])
 }
 
 const buildFilterOptionsFromContext = (
@@ -258,6 +262,8 @@ type FolderFilterBarProps = {
   files: AnyFileItem[]
   filterMode?: ExplorerFilterMode
   folderContextFilters?: Record<string, string>
+  filterOptionsCache?: FolderFilterOptionsCache
+  folderFilterOptionSource?: FolderItem[]
   folders?: FolderItem[]
   isBusy?: boolean
   refreshing?: boolean
@@ -279,6 +285,8 @@ export function FolderFilterBar({
   files,
   filterMode = 'files',
   folderContextFilters = {},
+  filterOptionsCache = {},
+  folderFilterOptionSource = [],
   folders = [],
   isBusy = false,
   onFilterChange,
@@ -294,6 +302,11 @@ export function FolderFilterBar({
 }: FolderFilterBarProps) {
   const showFileFilters = filterMode === 'files' || filterMode === 'both'
   const showFolderFilters = filterMode === 'folders' || filterMode === 'both'
+  const folderOptionSource =
+    folderFilterOptionSource.length > 0 ? folderFilterOptionSource : folders
+
+  const getCachedOptionsForFilter = (filterId: string) =>
+    getCachedFilterOptionsForId(filterOptionsCache, filterId)
 
   const resolvedFileDefaultFilters = useMemo(
     () =>
@@ -304,17 +317,36 @@ export function FolderFilterBar({
     [fileColumns, files],
   )
 
-  const buildOptionsForFileFilter = (filterId: string) =>
-    mergeUniqueOptions(
-      buildFilterOptionsFromContext(filterId, folderContextFilters),
-      buildFilterOptionsFromFiles(files, filterId),
-      shouldIncludeFolderOptions(filterId, currentFolderGroupField)
-        ? buildFilterOptionsFromFolders(folders, filterId)
-        : [],
+  const buildOptionsForFileFilter = (filterId: string) => {
+    const cachedOptions = getCachedOptionsForFilter(filterId)
+    const isFolderStructureFilter =
+      shouldIncludeFolderOptions(filterId, currentFolderGroupField) ||
+      cachedOptions.length > 0
+
+    return withActiveFilterOption(
+      filterId,
+      mergeUniqueOptions(
+        cachedOptions,
+        buildFilterOptionsFromContext(filterId, folderContextFilters),
+        isFolderStructureFilter
+          ? buildFilterOptionsFromFolders(folderOptionSource, filterId)
+          : [],
+        buildFilterOptionsFromFiles(files, filterId),
+      ),
+      activeFilters,
     )
+  }
 
   const buildOptionsForFolderFilter = (filterId: string) =>
-    mergeUniqueOptions(buildFolderTableFilterOptions(folders, filterId))
+    withActiveFilterOption(
+      filterId,
+      mergeUniqueOptions(
+        getCachedOptionsForFilter(filterId),
+        buildFolderTableFilterOptions(folderOptionSource, filterId),
+        buildFilterOptionsFromFolders(folderOptionSource, filterId),
+      ),
+      activeFilters,
+    )
 
   const buildFolderFilterDefinitions = (): FilterDefinition[] =>
     DEFAULT_FOLDER_FILTER_SPECS.map((spec) => ({
@@ -365,11 +397,14 @@ export function FolderFilterBar({
 
     return []
   }, [
+    activeFilters,
     currentFolderGroupField,
     fileColumns,
+    filterOptionsCache,
     files,
     filterMode,
     folderContextFilters,
+    folderOptionSource,
     folders,
     resolvedFileDefaultFilters,
     showFileFilters,
@@ -414,12 +449,15 @@ export function FolderFilterBar({
       }
     })
   }, [
+    activeFilters,
     currentFolderGroupField,
     defaultFilters,
     fileColumns,
+    filterOptionsCache,
     files,
     filterMode,
     folderContextFilters,
+    folderOptionSource,
     folders,
     showFileFilters,
     showFolderFilters,
