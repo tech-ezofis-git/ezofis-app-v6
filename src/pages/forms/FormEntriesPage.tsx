@@ -772,6 +772,28 @@ const FormEntriesPage = () => {
     return Array.from(unique.entries()).map(([value, label]) => ({ label, value }))
   }, [entries, usersData])
 
+  const dynamicFilters = useMemo(() => {
+    return fields.map((field) => {
+      const unique = new Set<string>()
+      entries.forEach((e) => {
+        const val = e.values?.[field.id]
+        // Skip JSON arrays for dropdown options
+        if (val && !(typeof val === 'string' && val.trim().startsWith('['))) {
+          unique.add(String(val))
+        }
+      })
+      const options = Array.from(unique).map((val) => ({ label: val, value: val }))
+      
+      if (options.length === 0) return null
+      
+      return {
+        id: field.id,
+        label: field.label || field.id,
+        options,
+      }
+    }).filter(Boolean) as any[]
+  }, [fields, entries])
+
   // Skeleton Loader for initial fetching
   if (isPageLoading) {
     return (
@@ -1297,6 +1319,7 @@ const FormEntriesPage = () => {
                 label: "Created Date",
                 dataType: "date",
               },
+              ...dynamicFilters,
             ]}
             activeFilters={activeFilters}
             onFilterChange={(id, value) => {
