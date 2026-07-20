@@ -15,6 +15,9 @@ import IconButton from '@/components/base/button/IconButton'
 import DataTable from '@/components/base/data-table/DataTable'
 import useDataTable from '@/components/base/data-table/hooks/useDataTable'
 import useDataTableState from '@/components/base/data-table/hooks/useDataTableState'
+import TableSearch from '@/components/base/data-table/actions/TableSearch'
+import TableExport from '@/components/base/data-table/actions/TableExport'
+import CustomFilter from '@/components/common/CustomFilter'
 import Icon from '@/components/base/icon/Icon'
 import InputDate from '@/components/base/inputs/InputDate'
 import InputNumber from '@/components/base/inputs/InputNumber'
@@ -160,6 +163,8 @@ const FormEntriesPage = () => {
   // Pagination states
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+  
+  const [activeFilters, setActiveFilters] = useState<Record<string, string>>({})
 
   // Active line items for the modal table explorer
   const [activeLineItems, setActiveLineItems] = useState<{
@@ -295,6 +300,7 @@ const FormEntriesPage = () => {
     sortState,
     visibilityState,
     setExpandState,
+    setSearchState,
     setVisibilityState,
     ...restState
   } = useDataTableState({
@@ -452,16 +458,42 @@ const FormEntriesPage = () => {
   }, [tabValue, searchVal, sortState])
 
   const filteredEntries = useMemo(() => {
-    if (!searchVal.trim()) return activeList
+    let list = activeList
+    
+    // Apply Custom Filters
+    list = list.filter((entry) => {
+      let matches = true
+      Object.entries(activeFilters).forEach(([key, value]) => {
+        if (!value) return
+        if (key === 'createdAt' || key === 'modifiedAt') {
+          const filterDate = value.split('T')[0]
+          const rowDate = entry[key] ? String(entry[key]).split('T')[0] : ''
+          if (rowDate !== filterDate) matches = false
+        } else if (key === 'createdBy' || key === 'modifiedBy') {
+          if (entry[key] !== value) matches = false
+        } else {
+          // For dynamic fields in 'values' or other top level strings
+          const entryVal = entry[key] || entry.values?.[key]
+          if (!entryVal || !String(entryVal).toLowerCase().includes(String(value).toLowerCase())) {
+            matches = false
+          }
+        }
+      })
+      return matches
+    })
+
+    if (!searchVal.trim()) return list
     const q = searchVal.toLowerCase()
-    return activeList.filter((entry) => {
+    
+    return list.filter((entry) => {
       if (entry.id.toLowerCase().includes(q)) return true
-      if (entry.createdBy.toLowerCase().includes(q)) return true
+      const resolvedUserName = resolveUserName(entry.createdBy).toLowerCase()
+      if (resolvedUserName.includes(q)) return true
       return Object.values(entry.values).some((v) =>
         String(v).toLowerCase().includes(q),
       )
     })
-  }, [activeList, searchVal])
+  }, [activeList, searchVal, activeFilters])
 
   // Sorting
   const sortedAndFilteredEntries = useMemo(() => {
@@ -723,6 +755,7 @@ const FormEntriesPage = () => {
       sortState,
       visibilityState,
       setExpandState,
+      setSearchState,
       setVisibilityState,
       ...restState,
     },
@@ -730,6 +763,14 @@ const FormEntriesPage = () => {
 
   const isPageLoading = isLoading || isEntriesLoading
   const isPageError = isError || isEntriesError
+
+  const createdByOptions = useMemo(() => {
+    const unique = new Map<string, string>()
+    entries.forEach((e: any) => {
+      if (e.createdBy) unique.set(e.createdBy, resolveUserName(e.createdBy))
+    })
+    return Array.from(unique.entries()).map(([value, label]) => ({ label, value }))
+  }, [entries, usersData])
 
   // Skeleton Loader for initial fetching
   if (isPageLoading) {
@@ -1140,10 +1181,11 @@ const FormEntriesPage = () => {
     )
   }
 
+
   return (
-    <div className='bg-gray-50/10 flex h-full flex-col font-inter'>
-      {/* 1. TAB SUB-HEADER */}
-      <div className='flex h-14 shrink-0 items-center justify-between border-b border-gray-3 bg-white px-6 md:px-8'>
+    <div className='flex h-full flex-col bg-white'>
+      {/* 1. HEADER (Title, Back button, Browse/Trash Tabs) */}
+      <div className='flex items-center justify-between border-b border-gray-2 px-6 py-4'>
         <div className='flex items-center gap-4'>
           <IconButton
             color='gray'
@@ -1241,9 +1283,64 @@ const FormEntriesPage = () => {
       {/* 2. MAIN LAYOUT (Table view) */}
       <div className='relative flex flex-1 overflow-hidden'>
         <div className='bg-gray-50/50 flex flex-1 flex-col overflow-hidden p-6'>
-          <div className='min-h-0 flex-1 overflow-hidden'>
+          <CustomFilter
+            filters={[
+              {
+                id: "createdBy",
+                label: "Created By",
+                options: createdByOptions,
+              }
+            ]}
+            moreFilters={[
+              {
+                id: "createdAt",
+                label: "Created Date",
+                dataType: "date",
+              },
+            ]}
+            activeFilters={activeFilters}
+            onFilterChange={(id, value) => {
+              setActiveFilters((prev) => ({ ...prev, [id]: value }))
+              setPage(1)
+            }}
+            onReset={() => {
+              setActiveFilters({})
+              setSearchState({ id: '', value: '' })
+              setPage(1)
+            }}
+            showReset={Object.keys(activeFilters).some(k => activeFilters[k]) || !!searchState?.value}
+            searchQuery=""
+            onSearchChange={() => {}}
+            searchPlaceholder="Search entries..."
+            customSearchComponent={<TableSearch table={table as any} />}
+            actionButtons={[
+              {
+                id: 'refresh',
+                icon: 'tabler:refresh',
+                tooltip: 'Refresh',
+                onClick: () => {
+                  refetch()
+                  refetchEntries()
+                },
+                isIconButton: true,
+                color: 'gray',
+                variant: 'outline',
+                disabled: isPageLoading
+              }
+            ]}
+            trailingActions={
+              <TableExport table={table as any} />
+            }
+          />
+          <div className='min-h-0 flex-1 mt-2 overflow-hidden'>
             <DataTable
               actions={[]}
+              hideActionBar={true}
+              hideGrouping={true}
+              hideExport={true}
+              hideReload={true}
+              hideSearch={true}
+              hideFilters={true}
               isLoading={isPageLoading}
               isReLoading={isPageLoading}
               pageSize={pageSize}
