@@ -59,6 +59,9 @@ import SettingsSelectedChips from './SettingsSelectedChips'
 import SettingsSetupContent from './SettingsSetupContent'
 import SettingsSetupHeader from './SettingsSetupHeader'
 import useSettingsTableToolbar from './useSettingsTableToolbar'
+import CustomFilter from '@/components/common/CustomFilter'
+import TableSearch from '@/components/base/data-table/actions/TableSearch'
+import TableExport from '@/components/base/data-table/actions/TableExport'
 
 type AssignedUser = {
   email: string
@@ -1275,6 +1278,21 @@ function RoleList({
   onReload: () => void | Promise<void>
 }) {
   const tableSearchOptions = useSettingsTableSearch()
+  const [activeFilters, setActiveFilters] = useState<Record<string, string>>({})
+
+  const filteredRoles = useMemo(() => {
+    return roles.filter(role => {
+      let matches = true
+      Object.entries(activeFilters).forEach(([key, value]) => {
+        if (!value) return
+        if (key === 'type') {
+           if (String(role.type).toLowerCase() !== value.toLowerCase()) matches = false
+        }
+      })
+      return matches
+    })
+  }, [roles, activeFilters])
+
   const roleColumns = useMemo(
     () => [
       roleColumnHelper.display({
@@ -1390,11 +1408,11 @@ function RoleList({
     ...settingsTableCoreOptions,
     ...tableSearchOptions,
     columns: roleColumns,
-    data: roles,
+    data: filteredRoles,
     getRowId: (row) => row.id,
   })
 
-  const { rowSize, toolbar, onRowSizeChange } = useSettingsTableToolbar({
+  const { rowSize, onRowSizeChange } = useSettingsTableToolbar({
     isReLoading: isLoading,
     table: roleTable,
     onReload: () => {
@@ -1402,36 +1420,66 @@ function RoleList({
     },
   })
 
+  const typeOptions = useMemo(() => Array.from(new Set(roles.map(r => r.type).filter(Boolean))).map(t => ({label: t, value: t})), [roles])
+
   return (
     <>
       <SettingsPageHeader
         title='Roles & Permissions'
-        toolbar={toolbar}
-        actions={
-          <SettingsHeaderAddButton tooltip='Create Role' onClick={onCreate} />
-        }
-        onBack={onBack}
       />
 
       <div className='px-6 py-4 md:px-8'>
-        <DataTable
-          emptyDescription='Create a role to manage access permissions across the platform.'
-          emptyIcon='lucide:shield'
-          emptyTitle='No roles yet'
-          isLoading={isLoading}
-          isReLoading={isLoading}
-          pageSize={Math.max(6, roles.length || 6)}
-          rowSize={rowSize}
-          table={roleTable}
-          tableBodyMaxHeight='calc(100vh - 320px)'
-          hideActionBar
-          hideGrouping
-          stickyHeader
-          onReload={() => {
-            void onReload()
-          }}
-          onRowSizeChange={onRowSizeChange}
+        <CustomFilter
+             filters={[
+                { id: 'type', label: 'Type', options: typeOptions },
+             ]}
+             activeFilters={activeFilters}
+             onFilterChange={(id, val) => setActiveFilters(prev => ({...prev, [id]: val}))}
+             onReset={() => {
+                setActiveFilters({})
+                tableSearchOptions.onGlobalFilterChange({ id: '', value: '' })
+             }}
+             showReset={Object.keys(activeFilters).some(k => activeFilters[k]) || !!tableSearchOptions.state.globalFilter?.value}
+             customSearchComponent={<TableSearch table={roleTable as any} />}
+             onBack={onBack}
+             addButton={{
+               onClick: onCreate,
+               tooltip: 'Create Role'
+             }}
+             actionButtons={[
+               {
+                 id: 'refresh',
+                 icon: 'tabler:refresh',
+                 tooltip: 'Refresh',
+                 onClick: onReload,
+                 isIconButton: true,
+                 color: 'gray',
+                 variant: 'outline',
+                 disabled: isLoading,
+               }
+             ]}
+             trailingActions={<TableExport table={roleTable as any} />}
         />
+        <div className='mt-4'>
+          <DataTable
+            emptyDescription='Create a role to manage access permissions across the platform.'
+            emptyIcon='lucide:shield'
+            emptyTitle='No roles yet'
+            isLoading={isLoading}
+            isReLoading={isLoading}
+            pageSize={Math.max(6, roles.length || 6)}
+            rowSize={rowSize}
+            table={roleTable}
+            tableBodyMaxHeight='calc(100vh - 320px)'
+            hideActionBar
+            hideGrouping
+            stickyHeader
+            onReload={() => {
+              void onReload()
+            }}
+            onRowSizeChange={onRowSizeChange}
+          />
+        </div>
       </div>
     </>
   )
