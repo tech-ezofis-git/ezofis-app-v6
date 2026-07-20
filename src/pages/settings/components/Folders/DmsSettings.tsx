@@ -48,6 +48,7 @@ import {
 } from '../../helpers/settingsDataTable'
 import SettingsSortableDataTable from '../SettingsSortableDataTable'
 import SettingsPageHeader, {
+  type SettingsAddAction,
   SettingsHeaderAddButton,
 } from '../SettingsPageHeader'
 import SettingsFormSection from '../SettingsFormSection'
@@ -57,6 +58,9 @@ import FolderStorageConnectorPanel, {
   type CloudStorageOption,
 } from './FolderStorageConnectorPanel'
 import useSettingsTableToolbar from '../useSettingsTableToolbar'
+import CustomFilter from '@/components/common/CustomFilter'
+import TableSearch from '@/components/base/data-table/actions/TableSearch'
+import TableExport from '@/components/base/data-table/actions/TableExport'
 
 type DmsFolderConfigurationProps = {
   onBack?: () => void
@@ -428,17 +432,17 @@ const FOLDER_FIELD_ICON_KEYS = [
 ] as const
 
 const FOLDER_FIELD_ICON_LABELS: Record<(typeof FOLDER_FIELD_ICON_KEYS)[number], string> =
-  {
-    address: 'Address',
-    amount: 'Amount',
-    building: 'Supplier',
-    card: 'Card',
-    currency: 'Currency',
-    date: 'Date',
-    document: 'Document',
-    folder: 'Folder',
-    tax: 'Tax',
-  }
+{
+  address: 'Address',
+  amount: 'Amount',
+  building: 'Supplier',
+  card: 'Card',
+  currency: 'Currency',
+  date: 'Date',
+  document: 'Document',
+  folder: 'Folder',
+  tax: 'Tax',
+}
 
 const folderIconOptions: SelectOption[] = FOLDER_FIELD_ICON_KEYS.map((key) => ({
   iconKey: key,
@@ -579,7 +583,21 @@ export default function DmsFolderConfiguration({
   )
   const [userOptions, setUserOptions] = useState<SelectOption[]>([])
   const [repositories, setRepositories] = useState<RepositoryRow[]>([])
+  const [activeFilters, setActiveFilters] = useState<Record<string, string>>({})
   const [isLoadingRepositories, setIsLoadingRepositories] = useState(true)
+
+  const filteredRepositories = useMemo(() => {
+    return repositories.filter(repo => {
+      let matches = true
+      Object.entries(activeFilters).forEach(([key, value]) => {
+        if (!value) return
+        if (key === 'status') {
+          if (String(repo.status).toLowerCase() !== value.toLowerCase()) matches = false
+        }
+      })
+      return matches
+    })
+  }, [repositories, activeFilters])
 
   const openEditRepository = useCallback((repository: RepositoryRow) => {
     setFolderName(repository.name)
@@ -736,43 +754,72 @@ export default function DmsFolderConfiguration({
     }
   }
 
-  const repositoryTable = useRepositoryTable(repositories, {
+  const { table: repositoryTable, tableSearchOptions } = useRepositoryTable(filteredRepositories, {
     onEditRepository: openEditRepository,
   })
   const repositoryToolbar = useSettingsTableToolbar({
     isReLoading: isLoadingRepositories,
-    table: repositoryTable.table,
+    table: repositoryTable,
     onReload: () => {
       void loadRepositories()
     },
   })
 
+  const statusOptions = [
+    { label: 'Active', value: 'Active' },
+    { label: 'Inactive', value: 'Inactive' },
+  ]
+
   return (
     <div className='min-h-[90vh] bg-[var(--surface)]'>
       {!showWizard ? (
-        <>
+        <div className='flex-1 flex flex-col'>
           <SettingsPageHeader
-            actions={
-              <SettingsHeaderAddButton
-                tooltip='New Folder'
-                onClick={() => setShowWizard(true)}
-              />
-            }
             description='Create and manage folders with custom fields, storage, and versioning.'
             title='Folder Configuration'
-            toolbar={repositoryToolbar.toolbar}
-            onBack={onBack}
           />
 
-          <div className='px-6 md:px-8'>
-            <div className='py-4'>
+          <div className='px-6 py-4 md:px-8 flex-1 flex flex-col overflow-hidden'>
+            <CustomFilter
+              filters={[
+                { id: 'status', label: 'Status', options: statusOptions },
+              ]}
+              activeFilters={activeFilters}
+              onFilterChange={(id, val) => setActiveFilters(prev => ({ ...prev, [id]: val }))}
+              onReset={() => {
+                setActiveFilters({})
+                tableSearchOptions.onGlobalFilterChange({ id: '', value: '' })
+              }}
+              showReset={Object.keys(activeFilters).some(k => activeFilters[k]) || !!tableSearchOptions.state.globalFilter?.value}
+              customSearchComponent={<TableSearch table={repositoryTable as any} />}
+              onBack={onBack}
+              addButton={{
+                onClick: () => setShowWizard(true),
+                tooltip: 'New Folder'
+              }}
+              actionButtons={[
+                {
+                  id: 'refresh',
+                  icon: 'tabler:refresh',
+                  tooltip: 'Refresh',
+                  onClick: loadRepositories,
+                  isIconButton: true,
+                  color: 'gray',
+                  variant: 'outline',
+                  disabled: isLoadingRepositories,
+                }
+              ]}
+              trailingActions={<TableExport table={repositoryTable as any} />}
+            />
+            <div className='py-4 min-h-0 flex-1 overflow-hidden'>
               <DataTable
                 hideActionBar
                 isLoading={isLoadingRepositories}
                 isReLoading={isLoadingRepositories}
-                pageSize={repositories.length || 5}
+                pageSize={Math.max(5, repositories.length || 5)}
                 rowSize={repositoryToolbar.rowSize}
-                table={repositoryTable.table}
+                table={repositoryTable}
+                tableBodyMaxHeight='calc(100vh - 320px)'
                 stickyHeader
                 hideGrouping
                 onReload={() => {
@@ -782,7 +829,7 @@ export default function DmsFolderConfiguration({
               />
             </div>
           </div>
-        </>
+        </div>
       ) : (
         <>
           <SettingsSetupHeader
@@ -1112,11 +1159,11 @@ function FieldsTable({
         prev.map((field) =>
           field.id === id
             ? {
-                ...field,
-                iconKey: checked ? field.iconKey || 'folder' : undefined,
-                includeInFolderStructure: checked,
-                isMandatory: checked ? true : field.isMandatory,
-              }
+              ...field,
+              iconKey: checked ? field.iconKey || 'folder' : undefined,
+              includeInFolderStructure: checked,
+              isMandatory: checked ? true : field.isMandatory,
+            }
             : field,
         ),
       ),
@@ -1547,7 +1594,7 @@ function useRepositoryTable(
     getRowId: (row) => row.id,
   })
 
-  return { table }
+  return { table, tableSearchOptions }
 }
 
 function StorageCornerCheck() {
@@ -1579,51 +1626,51 @@ function StepNav({
   return (
     <div className='space-y-5'>
       {wizardSteps.map((item, index) => {
-          const isCompleted = step > item.id
-          const isActive = step === item.id
+        const isCompleted = step > item.id
+        const isActive = step === item.id
 
-          return (
-            <button
-              key={item.id}
-              type='button'
-              className={cn(
-                'group flex w-full items-center gap-4 rounded-[14px] px-3 py-3 text-left transition',
-                isActive && '',
+        return (
+          <button
+            key={item.id}
+            type='button'
+            className={cn(
+              'group flex w-full items-center gap-4 rounded-[14px] px-3 py-3 text-left transition',
+              isActive && '',
+            )}
+            onClick={() => setStep(item.id)}
+          >
+            <div className='relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--gray-3)]'>
+              {index < wizardSteps.length - 1 && (
+                <span className='absolute top-8 left-1/2 h-12 w-[1.5px] -translate-x-1/2 bg-[var(--gray-3)]' />
               )}
-              onClick={() => setStep(item.id)}
-            >
-              <div className='relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--gray-3)]'>
-                {index < wizardSteps.length - 1 && (
-                  <span className='absolute top-8 left-1/2 h-12 w-[1.5px] -translate-x-1/2 bg-[var(--gray-3)]' />
+
+              <span
+                className={cn(
+                  'z-10 flex h-8 w-8 items-center justify-center rounded-full transition',
+                  isCompleted
+                    ? 'bg-primary-3 text-primary-9'
+                    : 'bg-[var(--gray-3)] text-[var(--gray-10)]',
                 )}
+              >
+                {isCompleted ? (
+                  <Check size={14} />
+                ) : (
+                  <StepIcon step={item.id} />
+                )}
+              </span>
+            </div>
 
-                <span
-                  className={cn(
-                    'z-10 flex h-8 w-8 items-center justify-center rounded-full transition',
-                    isCompleted
-                      ? 'bg-primary-3 text-primary-9'
-                      : 'bg-[var(--gray-3)] text-[var(--gray-10)]',
-                  )}
-                >
-                  {isCompleted ? (
-                    <Check size={14} />
-                  ) : (
-                    <StepIcon step={item.id} />
-                  )}
-                </span>
+            <div className='min-w-0'>
+              <div className='text-sm font-semibold text-[var(--indigo-12)]'>
+                {item.title}
               </div>
-
-              <div className='min-w-0'>
-                <div className='text-sm font-semibold text-[var(--indigo-12)]'>
-                  {item.title}
-                </div>
-                <div className='mt-0.5 truncate text-xs text-gray-11'>
-                  {item.description}
-                </div>
+              <div className='mt-0.5 truncate text-xs text-gray-11'>
+                {item.description}
               </div>
-            </button>
-          )
-        })}
+            </div>
+          </button>
+        )
+      })}
     </div>
   )
 }
@@ -1693,7 +1740,7 @@ function WizardContent({
 
     if (!response.error && Array.isArray(response.data)) {
       response.data.forEach((repository: { fields?: Array<{ dataType?: string }> }) => {
-        ;(repository.fields || []).forEach((field) => {
+        ; (repository.fields || []).forEach((field) => {
           if (field.dataType) types.add(field.dataType)
         })
       })

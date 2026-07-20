@@ -10,7 +10,7 @@ import {
   Shield,
   UserCog,
 } from 'lucide-react'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import DataTable from '@/components/base/data-table/DataTable'
 import {
   settingsHeaderMeta,
@@ -19,6 +19,10 @@ import {
 } from '../helpers/settingsDataTable'
 import SettingsPageHeader from './SettingsPageHeader'
 import useSettingsTableToolbar from './useSettingsTableToolbar'
+import CustomFilter from '@/components/common/CustomFilter'
+import TableSearch from '@/components/base/data-table/actions/TableSearch'
+import TableExport from '@/components/base/data-table/actions/TableExport'
+
 type AuditEvent = {
   category:
     | 'Authentication'
@@ -140,6 +144,8 @@ const auditEvents: AuditEvent[] = [
 ]
 
 export default function AuditMonitoring({ onBack }: AuditUserProps) {
+  const [activeFilters, setActiveFilters] = useState<Record<string, string>>({})
+
   const todayEvents = auditEvents.filter((item) =>
     item.timestamp.startsWith('Jun 6'),
   ).length
@@ -150,18 +156,63 @@ export default function AuditMonitoring({ onBack }: AuditUserProps) {
     (item) => item.severity === 'critical',
   ).length
 
-  const eventsTable = useAuditEventsTable(auditEvents)
+  const filteredEvents = useMemo(() => {
+    return auditEvents.filter(event => {
+      let matches = true
+      Object.entries(activeFilters).forEach(([key, value]) => {
+        if (!value) return
+        if (key === 'category') {
+           if (event.category !== value) matches = false
+        }
+        if (key === 'severity') {
+           if (event.severity !== value) matches = false
+        }
+      })
+      return matches
+    })
+  }, [activeFilters])
+
+  const categoryOptions = useMemo(() => Array.from(new Set(auditEvents.map(e => e.category))).map(c => ({label: c, value: c})), [])
+  const severityOptions = useMemo(() => Array.from(new Set(auditEvents.map(e => e.severity))).map(s => ({label: s, value: s})), [])
+
+  const eventsTable = useAuditEventsTable(filteredEvents)
 
   return (
-    <div className='bg-[var(--surface)]'>
+    <div className='bg-[var(--surface)] flex-1 flex flex-col'>
       <SettingsPageHeader
         description='Track user activity, configuration changes, and security events across the platform.'
         title='Audit & Monitoring'
-        toolbar={eventsTable.toolbar}
-        onBack={onBack}
       />
-      <div className='max-h-[calc(100vh-150px)] overflow-y-auto px-6 py-4 md:px-8'>
-        <div className='grid grid-cols-4 gap-5'>
+      <div className='flex-1 flex flex-col overflow-hidden px-6 py-4 md:px-8'>
+        <CustomFilter
+          filters={[
+            { id: 'category', label: 'Category', options: categoryOptions },
+            { id: 'severity', label: 'Severity', options: severityOptions },
+          ]}
+          activeFilters={activeFilters}
+          onFilterChange={(id, val) => setActiveFilters(prev => ({...prev, [id]: val}))}
+          onReset={() => {
+            setActiveFilters({})
+            eventsTable.tableSearchOptions.onGlobalFilterChange({ id: '', value: '' })
+          }}
+          showReset={Object.keys(activeFilters).some(k => activeFilters[k]) || !!eventsTable.tableSearchOptions.state.globalFilter?.value}
+          customSearchComponent={<TableSearch table={eventsTable.table as any} />}
+          onBack={onBack}
+          actionButtons={[
+            {
+              id: 'refresh',
+              icon: 'tabler:refresh',
+              tooltip: 'Refresh',
+              onClick: () => undefined,
+              isIconButton: true,
+              color: 'gray',
+              variant: 'outline',
+            }
+          ]}
+          trailingActions={<TableExport table={eventsTable.table as any} />}
+        />
+
+        <div className='grid grid-cols-4 gap-5 my-4 shrink-0'>
           <StatCard
             icon={ClipboardList}
             label='Total Events'
@@ -181,19 +232,22 @@ export default function AuditMonitoring({ onBack }: AuditUserProps) {
           />
         </div>
 
-        <div className='py-4'>
-          <DataTable
-            hideActionBar
-            isLoading={false}
-            isReLoading={false}
-            pageSize={auditEvents.length || 8}
-            rowSize={eventsTable.rowSize}
-            table={eventsTable.table}
-            stickyHeader
-            hideGrouping
-            onReload={() => undefined}
-            onRowSizeChange={eventsTable.onRowSizeChange}
-          />
+        <div className='flex-1 flex flex-col overflow-hidden'>
+          <div className='min-h-0 flex-1 overflow-hidden'>
+            <DataTable
+              hideActionBar
+              isLoading={false}
+              isReLoading={false}
+              pageSize={Math.max(8, filteredEvents.length || 8)}
+              rowSize={eventsTable.rowSize}
+              table={eventsTable.table}
+              tableBodyMaxHeight='calc(100vh - 400px)'
+              stickyHeader
+              hideGrouping
+              onReload={() => undefined}
+              onRowSizeChange={eventsTable.onRowSizeChange}
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -299,6 +353,7 @@ function useAuditEventsTable(rows: AuditEvent[]) {
     onRowSizeChange,
     rowSize,
     table,
+    tableSearchOptions,
     toolbar,
   }
 }
