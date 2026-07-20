@@ -1207,7 +1207,7 @@ const FormEntriesPage = () => {
   return (
     <div className='flex h-full flex-col bg-white'>
       {/* 1. HEADER (Title, Back button, Browse/Trash Tabs) */}
-      <div className='flex items-center justify-between border-b border-gray-2 px-6 py-4'>
+      <div className='flex items-center justify-between border-b border-gray-2 px-6 '>
         <div className='flex items-center gap-4'>
           <IconButton
             color='gray'
