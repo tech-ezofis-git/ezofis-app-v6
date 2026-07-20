@@ -4,6 +4,7 @@ import {
   encodeRepositoryNodeId,
   foldersToTreeNodes,
 } from '../api/folderApi'
+import { getRepositoryFieldStringValue } from './repositoryFieldUtils'
 
 export const DEFAULT_PAGE_SIZE = 50
 export const DEFAULT_FOLDER_PAGE_SIZE = 100
@@ -11,6 +12,203 @@ export const FOLDER_SEARCH_DEBOUNCE_MS = 350
 
 /** Matches FolderTable visibility: files hide when there are 10+ folders. */
 export const FOLDER_FILES_SECTION_MAX_FOLDERS = 10
+
+export type FolderFilterOption = { label: string; value: string }
+export type FolderFilterOptionsCache = Record<string, FolderFilterOption[]>
+
+const normalizeFilterOptionKey = (value: string) =>
+  String(value || '')
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
+    .replace(/[_-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase()
+
+export const mergeFilterOptionLists = (
+  ...optionLists: Array<FolderFilterOption[]>
+): FolderFilterOption[] => {
+  const map = new Map<string, FolderFilterOption>()
+  optionLists.flat().forEach((option) => {
+    const value = String(option.value || '').trim()
+    if (!value) return
+    const key = value.toLowerCase()
+    if (!map.has(key)) map.set(key, { label: option.label || value, value })
+  })
+  return Array.from(map.values()).sort((left, right) =>
+    left.label.localeCompare(right.label),
+  )
+}
+
+export const extractFolderFilterOptionsFromFolders = (
+  folders: FolderItem[] = [],
+): FolderFilterOptionsCache => {
+  const cache: FolderFilterOptionsCache = {}
+
+  folders.forEach((folder) => {
+    const decoded = decodeRepositoryNodeId(folder.id)
+    if (!decoded || decoded.kind !== 'browse') return
+
+    const fieldKey = normalizeFilterOptionKey(decoded.groupField)
+    if (!fieldKey) return
+
+    const value = String(
+      decoded.groupValue || folder.title || decoded.label || '',
+    ).trim()
+    if (!value) return
+
+    cache[fieldKey] = mergeFilterOptionLists(cache[fieldKey] || [], [
+      { label: value, value },
+    ])
+  })
+
+  return cache
+}
+
+export const mergeFolderFilterOptionsCache = (
+  ...caches: Array<FolderFilterOptionsCache | undefined>
+): FolderFilterOptionsCache => {
+  return caches.reduce<FolderFilterOptionsCache>((previous, incoming = {}) => {
+    const next: FolderFilterOptionsCache = { ...previous }
+
+    Object.entries(incoming).forEach(([fieldKey, options]) => {
+      next[fieldKey] = mergeFilterOptionLists(previous[fieldKey] || [], options)
+    })
+
+    return next
+  }, {})
+}
+
+export const getCachedFilterOptionsForId = (
+  cache: FolderFilterOptionsCache = {},
+  filterId: string,
+): FolderFilterOption[] => {
+  const normalizedFilterId = normalizeFilterOptionKey(filterId)
+  if (cache[normalizedFilterId]?.length) return cache[normalizedFilterId]
+
+  const matchedEntry = Object.entries(cache).find(
+    ([fieldKey]) => normalizeFilterOptionKey(fieldKey) === normalizedFilterId,
+  )
+
+  return matchedEntry?.[1] || []
+}
+
+export const extractFolderTableFilterOptionsFromFolders = (
+  folders: FolderItem[] = [],
+): FolderFilterOptionsCache => {
+  const cache: FolderFilterOptionsCache = {}
+  const specs = [
+    {
+      id: '__folderName',
+      getValue: (folder: FolderItem) => String(folder.title || '').trim(),
+    },
+    {
+      id: '__folderItems',
+      getValue: (folder: FolderItem) => String(folder.itemsText || '').trim(),
+      isValid: (value: string) => Boolean(value) && value !== '-',
+    },
+    {
+      id: '__folderModified',
+      getValue: (folder: FolderItem) => String(folder.modifiedText || '').trim(),
+      isValid: (value: string) => Boolean(value) && value !== '-',
+    },
+  ] as const
+
+  specs.forEach((spec) => {
+    const { id, getValue } = spec
+    const isValid = 'isValid' in spec ? spec.isValid : undefined
+    const options = folders
+      .map(getValue)
+      .filter((value) => (isValid ? isValid(value) : Boolean(value)))
+      .map((value) => ({ label: value, value }))
+
+    if (!options.length) return
+
+    cache[normalizeFilterOptionKey(id)] = mergeFilterOptionLists([], options)
+  })
+
+  return cache
+}
+
+const FILE_OPTION_HIDDEN_KEYS = new Set([
+  'id',
+  'raw',
+  'storageproviderid',
+  'storageprovidercode',
+  'hasfilepath',
+  'filename',
+  'name',
+  '__name',
+  'fileversion',
+  'ocrpercent',
+  'workflowinstanceid',
+])
+
+export const discoverFileFieldKeys = (
+  files: Array<Record<string, any>> = [],
+  columns: Array<{ key?: string; label?: string }> = [],
+) => {
+  const keys = new Set<string>()
+
+  columns.forEach((column) => {
+    if (column.key) keys.add(column.key)
+    if (column.label) keys.add(column.label)
+  })
+
+  files.forEach((file) => {
+    Object.keys(file || {}).forEach((key) => {
+      if (!FILE_OPTION_HIDDEN_KEYS.has(normalizeFilterOptionKey(key))) {
+        keys.add(key)
+      }
+    })
+  })
+
+  return Array.from(keys)
+}
+
+export const buildFilterOptionsCacheFromData = ({
+  columns = [],
+  files = [],
+  folders = [],
+}: {
+  columns?: Array<{ key?: string; label?: string }>
+  files?: Array<Record<string, any>>
+  folders?: FolderItem[]
+}): FolderFilterOptionsCache =>
+  mergeFolderFilterOptionsCache(
+    extractFolderFilterOptionsFromFolders(folders),
+    extractFolderTableFilterOptionsFromFolders(folders),
+    extractFileFilterOptionsFromFiles(
+      files,
+      discoverFileFieldKeys(files, columns),
+    ),
+  )
+
+export const extractFileFilterOptionsFromFiles = (
+  files: Array<Record<string, any>> = [],
+  fieldKeys: string[] = [],
+): FolderFilterOptionsCache => {
+  const cache: FolderFilterOptionsCache = {}
+  if (!files.length || !fieldKeys.length) return cache
+
+  fieldKeys.forEach((fieldKey) => {
+    const normalizedFieldKey = normalizeFilterOptionKey(fieldKey)
+    if (!normalizedFieldKey) return
+
+    const options = files
+      .map((file) => getRepositoryFieldStringValue(file, fieldKey))
+      .filter((value) => value.length > 0)
+      .map((value) => ({ label: value, value }))
+
+    if (!options.length) return
+    cache[normalizedFieldKey] = mergeFilterOptionLists(
+      cache[normalizedFieldKey] || [],
+      options,
+    )
+  })
+
+  return cache
+}
 
 export type ExplorerFilterMode = 'folders' | 'files' | 'both' | 'none'
 

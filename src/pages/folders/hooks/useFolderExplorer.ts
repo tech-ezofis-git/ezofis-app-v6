@@ -19,9 +19,11 @@ import {
 import {
   DEFAULT_FOLDER_PAGE_SIZE,
   DEFAULT_PAGE_SIZE,
+  buildFilterOptionsCacheFromData,
   findNodeById,
   findPathToNode,
   FOLDER_SEARCH_DEBOUNCE_MS,
+  mergeFolderFilterOptionsCache,
   type FolderPageMeta,
   getChildIds,
   getFileId,
@@ -60,6 +62,12 @@ export function useFolderExplorer() {
   const [fileSearch, setFileSearch] = useState('')
   const [fileFilters, setFileFilters] = useState<Record<string, string>>({})
   const [folderFilters, setFolderFilters] = useState<Record<string, string>>({})
+  const [folderFilterOptionSource, setFolderFilterOptionSource] = useState<
+    FolderItem[]
+  >([])
+  const [filterOptionsCache, setFilterOptionsCache] = useState<
+    Record<string, { label: string; value: string }[]>
+  >({})
   const [currentFolderGroupField, setCurrentFolderGroupField] = useState('')
   const [refreshing, setRefreshing] = useState(false)
   const cursorByFolderRef = useRef<
@@ -81,6 +89,56 @@ export function useFolderExplorer() {
   folderFiltersRef.current = folderFilters
   folderSearchRef.current = folderSearch
   fileSearchRef.current = fileSearch
+
+  const hasActiveFolderBrowseQuery = (
+    nextFolderFilters: Record<string, string> = folderFiltersRef.current,
+    nextFolderSearch = folderSearchRef.current,
+  ) =>
+    Object.values(nextFolderFilters).some(Boolean) ||
+    Boolean(nextFolderSearch.trim())
+
+  const syncFolderFilterOptionSource = (
+    incomingFolders: FolderItem[] = [],
+    {
+      append = false,
+      folderFilters: nextFolderFilters = folderFiltersRef.current,
+      folderSearch: nextFolderSearch = folderSearchRef.current,
+    }: {
+      append?: boolean
+      folderFilters?: Record<string, string>
+      folderSearch?: string
+    } = {},
+  ) => {
+    if (hasActiveFolderBrowseQuery(nextFolderFilters, nextFolderSearch)) return
+
+    setFolderFilterOptionSource((previous) =>
+      append
+        ? mergeFoldersById(previous, incomingFolders)
+        : incomingFolders,
+    )
+  }
+
+  const syncFilterOptionsCache = ({
+    columns = [],
+    files = [],
+    folders = [],
+  }: {
+    columns?: DynamicRepositoryColumn[]
+    files?: FileItem[]
+    folders?: FolderItem[]
+  }) => {
+    if (!folders.length && !files.length) return
+
+    const extracted = buildFilterOptionsCacheFromData({
+      columns,
+      files: files as Array<Record<string, any>>,
+      folders,
+    })
+
+    setFilterOptionsCache((previous) =>
+      mergeFolderFilterOptionsCache(previous, extracted),
+    )
+  }
 
   const getSelectedFileRow = useCallback(
     (selectedFileId: string) =>
@@ -182,6 +240,19 @@ export function useFolderExplorer() {
           ? mergeFoldersById(previous, response.folders || [])
           : response.folders || [],
       )
+      syncFolderFilterOptionSource(response.folders || [], {
+        append: appendFolders,
+        folderFilters: folderFilters ?? folderFiltersRef.current,
+        folderSearch:
+          folderSearch !== undefined
+            ? folderSearch
+            : folderSearchRef.current,
+      })
+      syncFilterOptionsCache({
+        columns: response.fileColumns || [],
+        files: folderPageOnly ? [] : response.files || [],
+        folders: response.folders || [],
+      })
       setFiles((previous) => (folderPageOnly ? previous : response.files || []))
       setFileColumns(response.fileColumns || [])
       setCurrentFolderGroupField(response.currentFolderGroupField || '')
@@ -313,6 +384,8 @@ export function useFolderExplorer() {
     setFileSearch('')
     setFileFilters({})
     setFolderFilters({})
+    setFolderFilterOptionSource([])
+    setFilterOptionsCache({})
     loadSelectedRepository(activeFolder)
     loadFolderContent({
       folderId: activeFolder,
@@ -470,6 +543,14 @@ export function useFolderExplorer() {
       const nextFolderPage = getFolderPageMeta(response)
 
       setFolders((previous) => mergeFoldersById(previous, incomingFolders))
+      syncFolderFilterOptionSource(incomingFolders, {
+        append: true,
+        folderFilters: folderFiltersRef.current,
+        folderSearch: folderSearchRef.current,
+      })
+      syncFilterOptionsCache({
+        folders: incomingFolders,
+      })
       setFolderPage(nextFolderPage)
       lastRequestedFolderPageRef.current[activeFolder] = nextFolderPage.page
 
@@ -659,6 +740,8 @@ export function useFolderExplorer() {
     fileSearch,
     folderContextFilters,
     folderFilters,
+    folderFilterOptionSource,
+    filterOptionsCache,
     folderHasMore,
     folderPage,
     folders,
