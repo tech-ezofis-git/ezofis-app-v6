@@ -128,8 +128,8 @@ export interface CustomFilterProps {
   onFilterChange: (id: string, value: string) => void;
   onReset: () => void;
   showReset?: boolean;
-  searchQuery: string;
-  onSearchChange: (val: string) => void;
+  searchQuery?: string;
+  onSearchChange?: (val: string) => void;
   searchPlaceholder?: string;
   customSearchComponent?: React.ReactNode;
   quickFilters?: QuickFilterOption[];
@@ -139,6 +139,13 @@ export interface CustomFilterProps {
   viewMode?: "grid" | "table";
   onViewModeChange?: (mode: "grid" | "table") => void;
   trailingActions?: React.ReactNode;
+  onBack?: () => void;
+  addButton?: {
+    onClick: () => void;
+    label?: string;
+    tooltip?: string;
+    icon?: string;
+  };
 }
 
 export default function CustomFilter({
@@ -149,8 +156,8 @@ export default function CustomFilter({
   onFilterChange,
   onReset,
   showReset,
-  searchQuery,
-  onSearchChange,
+  searchQuery = "",
+  onSearchChange = () => {},
   searchPlaceholder = "Search...",
   customSearchComponent,
   quickFilters,
@@ -160,6 +167,8 @@ export default function CustomFilter({
   viewMode,
   onViewModeChange,
   trailingActions,
+  onBack,
+  addButton,
 }: CustomFilterProps) {
   const [activeFilterDropdown, setActiveFilterDropdown] = useState<
     string | null
@@ -587,6 +596,17 @@ export default function CustomFilter({
       ref={filtersRef}
       className="relative z-40 flex w-full items-center gap-2 rounded-lg border border-[var(--border-default)] bg-surface p-3 shadow-xs"
     >
+      {onBack && (
+        <IconButton
+          ariaLabel="Back"
+          color="gray"
+          icon="lucide:arrow-left"
+          size="sm"
+          variant="ghost"
+          className="shrink-0"
+          onClick={onBack}
+        />
+      )}
       {/* Filters wrap onto new lines when they overflow */}
       <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
           {quickFilters &&
@@ -1021,6 +1041,54 @@ export default function CustomFilter({
             {trailingActions}
           </div>
         ) : null}
+
+        {addButton && (
+          <div className="flex shrink-0 items-center ml-1">
+            {addButton.tooltip ? (
+              <Tooltip content={addButton.tooltip}>
+                {addButton.label ? (
+                  <Button
+                    color="primary"
+                    variant="solid"
+                    suffixIcon={addButton.icon || "lucide:plus"}
+                    label={addButton.label}
+                    onClick={addButton.onClick}
+                    size="md"
+                  />
+                ) : (
+                  <IconButton
+                    color="primary"
+                    variant="solid"
+                    icon={addButton.icon || "lucide:plus"}
+                    ariaLabel={addButton.tooltip}
+                    onClick={addButton.onClick}
+                    size="md"
+                  />
+                )}
+              </Tooltip>
+            ) : (
+              addButton.label ? (
+                <Button
+                  color="primary"
+                  variant="solid"
+                  suffixIcon={addButton.icon || "lucide:plus"}
+                  label={addButton.label}
+                  onClick={addButton.onClick}
+                  size="md"
+                />
+              ) : (
+                <IconButton
+                  color="primary"
+                  variant="solid"
+                  icon={addButton.icon || "lucide:plus"}
+                  ariaLabel="Add"
+                  onClick={addButton.onClick}
+                  size="md"
+                />
+              )
+            )}
+          </div>
+        )}
       </div>
 
       {moreFiltersPanel}

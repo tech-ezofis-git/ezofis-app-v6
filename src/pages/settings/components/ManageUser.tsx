@@ -18,6 +18,9 @@ import Menu from '@/components/base/menu/Menu'
 import MenuItem from '@/components/base/menu/MenuItem'
 import { createUser, getUsers, updateUser } from '@/api/v6/user'
 import { dummySettingsUsers, getDummyGroupOptions } from '../data/settingsDummyData'
+import CustomFilter from '@/components/common/CustomFilter'
+import TableSearch from '@/components/base/data-table/actions/TableSearch'
+import TableExport from '@/components/base/data-table/actions/TableExport'
 import {
   settingsHeaderMeta,
   settingsTableCoreOptions,
@@ -175,7 +178,23 @@ export default function ManageUser({ onBack }: ManageUserProps) {
   const [activeStep, setActiveStep] = useState(0)
   const [draftUser, setDraftUser] = useState<DraftUser>(emptyUser)
   const [originalUser, setOriginalUser] = useState<DraftUser | null>(null)
+  const [activeFilters, setActiveFilters] = useState<Record<string, string>>({})
   const [isSaving, setIsSaving] = useState(false)
+
+  const filteredUsers = useMemo(() => {
+    return users.filter(user => {
+      let matches = true
+      Object.entries(activeFilters).forEach(([key, value]) => {
+        if (!value) return
+
+        if (key === 'role' || key === 'loginType' || key === 'department' || key === 'status' || key === 'businessUnit' || key === 'location' || key === 'jobTitle') {
+          const userVal = String(user[key as keyof AppUser] || '')
+          if (userVal.toLowerCase() !== value.toLowerCase()) matches = false
+        }
+      })
+      return matches
+    })
+  }, [users, activeFilters])
 
   const tableSearchOptions = useSettingsTableSearch()
 
@@ -327,9 +346,9 @@ export default function ManageUser({ onBack }: ManageUserProps) {
 
       const createdUser = response.data
         ? mapApiUserToSettingsUser(
-            response.data as Record<string, unknown>,
-            users.length,
-          )
+          response.data as Record<string, unknown>,
+          users.length,
+        )
         : null
       const listResponse = await getUsers()
 
@@ -517,17 +536,23 @@ export default function ManageUser({ onBack }: ManageUserProps) {
     ...settingsTableCoreOptions,
     ...tableSearchOptions,
     columns: userColumns,
-    data: users,
+    data: filteredUsers,
     getRowId: (row) => String(row.id),
   })
 
-  const { onRowSizeChange, rowSize, toolbar } = useSettingsTableToolbar({
+  const { onRowSizeChange, rowSize } = useSettingsTableToolbar({
     isReLoading: isLoadingUsers,
     table: userTable,
     onReload: () => {
       void loadUsers()
     },
   })
+
+  const roleOptions = useMemo(() => Array.from(new Set(users.map(u => String(u.role)).filter(Boolean))).map(r => ({ label: r, value: r })), [users])
+  const loginTypeOptions = useMemo(() => Array.from(new Set(users.map(u => String(u.loginType)).filter(Boolean))).map(r => ({ label: r, value: r })), [users])
+  const departmentOptions = useMemo(() => Array.from(new Set(users.map(u => String(u.department)).filter(Boolean))).map(r => ({ label: r, value: r })), [users])
+  const statusOptions = useMemo(() => Array.from(new Set(users.map(u => String(u.status)).filter(Boolean))).map(r => ({ label: r, value: r })), [users])
+  const businessUnitOptions = useMemo(() => Array.from(new Set(users.map(u => String(u.businessUnit)).filter(Boolean))).map(r => ({ label: r, value: r })), [users])
 
   if (isSetupOpen) {
     return (
@@ -554,22 +579,51 @@ export default function ManageUser({ onBack }: ManageUserProps) {
     )
   }
   return (
-    <main className='bg-[var(--surface)]'>
-      <section className=''>
+    <main className='bg-[var(--surface)] h-full flex flex-col'>
+      <section className='flex-1 flex flex-col'>
         <SettingsPageHeader
-          actions={
-            <SettingsHeaderAddButton
-              tooltip='Add'
-              onClick={openAddUser}
-            />
-          }
           title='User Management'
-          toolbar={toolbar}
-          onBack={onBack}
         />
 
-        <div className='px-6 md:px-8'>
-          <div className='py-4'>
+        <div className='px-6 md:px-8 py-2 flex-1 flex flex-col overflow-hidden'>
+          <CustomFilter
+            filters={[
+              { id: 'role', label: 'Role', options: roleOptions },
+              { id: 'status', label: 'Status', options: statusOptions },
+            ]}
+            moreFilters={[
+              { id: 'department', label: 'Department', options: departmentOptions },
+              { id: 'loginType', label: 'Login Type', options: loginTypeOptions },
+              { id: 'businessUnit', label: 'Business Unit', options: businessUnitOptions },
+            ]}
+            activeFilters={activeFilters}
+            onFilterChange={(id, val) => setActiveFilters(prev => ({ ...prev, [id]: val }))}
+            onReset={() => {
+              setActiveFilters({})
+              tableSearchOptions.onGlobalFilterChange({ id: '', value: '' })
+            }}
+            showReset={Object.keys(activeFilters).some(k => activeFilters[k]) || !!tableSearchOptions.state.globalFilter?.value}
+            customSearchComponent={<TableSearch table={userTable as any} />}
+            onBack={onBack}
+            addButton={{
+              onClick: openAddUser,
+              tooltip: 'Add User'
+            }}
+            actionButtons={[
+              {
+                id: 'refresh',
+                icon: 'tabler:refresh',
+                tooltip: 'Refresh',
+                onClick: loadUsers,
+                isIconButton: true,
+                color: 'gray',
+                variant: 'outline',
+                disabled: isLoadingUsers,
+              }
+            ]}
+            trailingActions={<TableExport table={userTable as any} />}
+          />
+          <div className='py-4 min-h-0 flex-1 overflow-hidden'>
             <DataTable
               emptyDescription='Add a user to grant access to the platform and assign folder permissions.'
               emptyIcon='lucide:users'
@@ -1242,61 +1296,61 @@ function UserSetup({
         </aside>
 
         <SettingsSetupContent>
-            {activeStep === 0 && (
-              <LoginDetails
-                showErrors={showErrors}
-                user={draftUser}
-                onChange={onChange}
-              />
-            )}
-            {activeStep === 1 && (
-              <BusinessDetails
-                managerOptions={managerOptions}
-                showErrors={showErrors}
-                user={draftUser}
-                onChange={onChange}
-              />
-            )}
-            {activeStep === 2 && (
-              <GroupAssignment
-                groupOptions={groupOptions}
-                user={draftUser}
-                onChange={onChange}
-              />
-            )}
-            {activeStep === 3 && (
-              <Authentication user={draftUser} onChange={onChange} />
-            )}
-            {activeStep === 4 && <Review user={draftUser} />}
+          {activeStep === 0 && (
+            <LoginDetails
+              showErrors={showErrors}
+              user={draftUser}
+              onChange={onChange}
+            />
+          )}
+          {activeStep === 1 && (
+            <BusinessDetails
+              managerOptions={managerOptions}
+              showErrors={showErrors}
+              user={draftUser}
+              onChange={onChange}
+            />
+          )}
+          {activeStep === 2 && (
+            <GroupAssignment
+              groupOptions={groupOptions}
+              user={draftUser}
+              onChange={onChange}
+            />
+          )}
+          {activeStep === 3 && (
+            <Authentication user={draftUser} onChange={onChange} />
+          )}
+          {activeStep === 4 && <Review user={draftUser} />}
 
-            <div className='mt-8 flex items-center justify-between border-t border-[var(--border-default)] pt-6'>
-              <button
-                className='inline-flex h-10 items-center rounded-[5px] border border-[var(--border-default)] bg-surface px-5 text-[15px] font-semibold text-[var(--gray-13)] transition hover:bg-[var(--gray-2)] disabled:cursor-not-allowed disabled:opacity-50'
-                disabled={activeStep === 0}
-                onClick={handleBack}
-              >
-                Back
-              </button>
+          <div className='mt-8 flex items-center justify-between border-t border-[var(--border-default)] pt-6'>
+            <button
+              className='inline-flex h-10 items-center rounded-[5px] border border-[var(--border-default)] bg-surface px-5 text-[15px] font-semibold text-[var(--gray-13)] transition hover:bg-[var(--gray-2)] disabled:cursor-not-allowed disabled:opacity-50'
+              disabled={activeStep === 0}
+              onClick={handleBack}
+            >
+              Back
+            </button>
 
-              <div className='flex items-center gap-3'>
-                {activeStep === steps.length - 1 ? (
-                  <button
-                    className='h-10 rounded-[5px] bg-[var(--primary-9)] px-5 text-[15px] font-semibold text-white shadow-[var(--shadow-md)] transition hover:bg-[var(--primary-10)] disabled:cursor-not-allowed disabled:opacity-60'
-                    disabled={isSaving}
-                    onClick={handleSave}
-                  >
-                    {isSaving ? 'Saving...' : 'Save User'}
-                  </button>
-                ) : (
-                  <button
-                    className='h-10 rounded-[5px] bg-[var(--primary-9)] px-5 text-[15px] font-semibold text-white shadow-[var(--shadow-md)] transition hover:bg-[var(--primary-10)]'
-                    onClick={handleNext}
-                  >
-                    Next
-                  </button>
-                )}
-              </div>
+            <div className='flex items-center gap-3'>
+              {activeStep === steps.length - 1 ? (
+                <button
+                  className='h-10 rounded-[5px] bg-[var(--primary-9)] px-5 text-[15px] font-semibold text-white shadow-[var(--shadow-md)] transition hover:bg-[var(--primary-10)] disabled:cursor-not-allowed disabled:opacity-60'
+                  disabled={isSaving}
+                  onClick={handleSave}
+                >
+                  {isSaving ? 'Saving...' : 'Save User'}
+                </button>
+              ) : (
+                <button
+                  className='h-10 rounded-[5px] bg-[var(--primary-9)] px-5 text-[15px] font-semibold text-white shadow-[var(--shadow-md)] transition hover:bg-[var(--primary-10)]'
+                  onClick={handleNext}
+                >
+                  Next
+                </button>
+              )}
             </div>
+          </div>
         </SettingsSetupContent>
       </div>
     </main>
