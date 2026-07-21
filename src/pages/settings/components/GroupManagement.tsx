@@ -331,11 +331,11 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
         enableSorting: false,
         header: 'Members',
         id: 'members',
-        meta: settingsHeaderMeta.start,
+        meta: { ...settingsHeaderMeta.start, label: 'Members', disableEllipsis: true },
         minSize: 100,
         size: 110,
         cell: ({ row }) => (
-          <span className='rounded-[10px] border border-[var(--border-default)] bg-surface px-3 py-1 font-medium text-[var(--gray-13)]'>
+          <span className='inline-flex items-center rounded-[10px] border border-[var(--border-default)] bg-surface px-3 py-1 font-medium text-[var(--gray-13)]'>
             {row.original.members.length}
           </span>
         ),
@@ -344,7 +344,7 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
         enableSorting: false,
         header: 'Status',
         id: 'status',
-        meta: { ...settingsHeaderMeta.start, label: 'Status' },
+        meta: { ...settingsHeaderMeta.start, label: 'Status', disableEllipsis: true },
         minSize: 100,
         size: 110,
         cell: ({ getValue }) => <StatusBadge status={getValue()} />,

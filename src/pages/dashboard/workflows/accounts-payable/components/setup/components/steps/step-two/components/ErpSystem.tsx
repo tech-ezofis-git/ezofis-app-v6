@@ -1,4 +1,5 @@
-import { useRef, useState } from 'react'
+/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any */
+import { useEffect, useRef, useState } from 'react'
 // import MondayLogo from '@/assets/brands/monday.svg'
 // import OracleLogo from '@/assets/brands/oracle.svg'
 import QuickBooksLogo from '@/assets/brands/quickbooks.svg'
@@ -15,17 +16,17 @@ import {
   AnimateScale,
   AnimateSlideUp,
 } from '@/components/common/animations'
-import ApColumnMapping from './ApColumnMapping'
+import apSetupPayloads from '@/pages/dashboard/workflows/accounts-payable/constants/apSetupPayloads.json'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import { compareHeaderSimilarity } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/headerSimilarity'
-import { SYSTEM_TEMPLATE_COLUMNS } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/templateSchema'
-import { LINE_ITEM_TEMPLATE_COLUMNS } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/lineItemSchema'
 import { detectGroupingColumn } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/lineItemHelpers'
+import { LINE_ITEM_TEMPLATE_COLUMNS } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/lineItemSchema'
+import { SYSTEM_TEMPLATE_COLUMNS } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/templateSchema'
 import BrandCard from '../../components/BrandCard'
 import SectionHeader from '../../components/SectionHeader'
 import { OrDivider } from '../../components/StepLayout'
 import { extractHeadersAndData } from '../utils/fileParser'
-import apSetupPayloads from '@/pages/dashboard/workflows/accounts-payable/constants/apSetupPayloads.json'
+import ApColumnMapping from './ApColumnMapping'
 
 const items = [
   // { logo: SapLogo, name: 'SAP', value: 'SAP' },
@@ -48,24 +49,43 @@ const ErpSystem = () => {
   const fileInputRef = useRef<HTMLInputElement>(null)
   // const lineItemFileInputRef = useRef<HTMLInputElement>(null)
   const [isParsing, setIsParsing] = useState(false)
-  const [activeMappingTab, setActiveMappingTab] = useState<'header' | 'lineItems'>('header')
+  const [activeMappingTab, setActiveMappingTab] = useState<
+    'header' | 'lineItems'
+  >('header')
+  const [shouldScroll, setShouldScroll] = useState(false)
+  const mappingSectionRef = useRef<HTMLDivElement>(null)
 
-  const mappedHeaderCount = (erpSettings.uploadedColumns || []).filter((excelCol) =>
-    Object.values(erpSettings.mapping || {}).includes(excelCol)
+  // Scroll to mapping fields section once PO master field mapping is completed
+  useEffect(() => {
+    if (shouldScroll && mappingSectionRef.current) {
+      mappingSectionRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      })
+      setShouldScroll(false)
+    }
+  }, [shouldScroll])
+
+  const mappedHeaderCount = (erpSettings.uploadedColumns || []).filter(
+    (excelCol) => Object.values(erpSettings.mapping || {}).includes(excelCol),
   ).length
   const totalHeaderCount = (erpSettings.uploadedColumns || []).length
 
-  const mappedLineItemCount = (erpSettings.lineItemHeaders || []).filter((excelCol) =>
-    Object.values(erpSettings.lineItemMapping || {}).includes(excelCol)
+  const mappedLineItemCount = (erpSettings.lineItemHeaders || []).filter(
+    (excelCol) =>
+      Object.values(erpSettings.lineItemMapping || {}).includes(excelCol),
   ).length
   const totalLineItemCount = (erpSettings.lineItemHeaders || []).length
 
   const headerPoMapping = erpSettings.mapping?.['PO Number']
   const lineItemPoMapping = erpSettings.lineItemMapping?.['PO Number']
-  const hasLineItems = erpSettings.lineItemHeaders && erpSettings.lineItemHeaders.length > 0
-  const showPoMismatchWarning = hasLineItems && (
-    !headerPoMapping || !lineItemPoMapping || headerPoMapping !== lineItemPoMapping
-  )
+  const hasLineItems =
+    erpSettings.lineItemHeaders && erpSettings.lineItemHeaders.length > 0
+  const showPoMismatchWarning =
+    hasLineItems &&
+    (!headerPoMapping ||
+      !lineItemPoMapping ||
+      headerPoMapping !== lineItemPoMapping)
 
   /*
   const handleLineItemFileUpload = async (
@@ -141,11 +161,11 @@ const ErpSystem = () => {
       setIsParsing(true)
       try {
         const {
+          excelSheets,
           headers,
-          previewRows,
           lineItemHeaders: liHeaders,
           lineItemRows: liRows,
-          excelSheets,
+          previewRows,
         } = await extractHeadersAndData(file)
 
         // 1. Get headerFields from masterFormPayload (exclude type === 'TABLE')
@@ -155,15 +175,17 @@ const ErpSystem = () => {
         const headerFields = masterFields
           .filter((f: any) => f.type !== 'TABLE')
           .map((f: any) => ({
-            name: f.label,
             dataType: f.type,
+            name: f.label,
           }))
 
         // 2. Get lineItemFields from TABLE field settings.specific.tableColumns
         const tableField = masterFields.find((f: any) => f.type === 'TABLE')
-        const lineItemFields = (tableField?.settings?.specific?.tableColumns || []).map((col: any) => ({
-          name: col.label,
+        const lineItemFields = (
+          tableField?.settings?.specific?.tableColumns || []
+        ).map((col: any) => ({
           dataType: col.type,
+          name: col.label,
         }))
 
         // 3. Setup mappings with fallback to local similarity match
@@ -182,7 +204,9 @@ const ErpSystem = () => {
         const hasLineItems = liHeaders && liHeaders.length > 0
         if (hasLineItems) {
           LINE_ITEM_TEMPLATE_COLUMNS.forEach((col) => {
-            const match = liHeaders.find((u) => compareHeaderSimilarity(u, col.key))
+            const match = liHeaders.find((u) =>
+              compareHeaderSimilarity(u, col.key),
+            )
             if (match) {
               initialLineItemMapping[col.key] = match
             }
@@ -192,15 +216,15 @@ const ErpSystem = () => {
         // Try the API POST request
         try {
           const response = await fetch('/api-mapping/field-mapping', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
             body: JSON.stringify({
               excelSheets: excelSheets || [],
               headerFields,
               lineItemFields,
             }),
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            method: 'POST',
           })
 
           if (response.ok) {
@@ -217,7 +241,8 @@ const ErpSystem = () => {
                   if (key === 'Purchase Order') key = 'PO Number'
                   apiMapping[key] = item.excelField
                   const rawType = item.dataType || 'SHORT_TEXT'
-                  apiFieldDataTypes[key] = rawType === 'DROPDOWN' ? 'SINGLE_SELECT' : rawType
+                  apiFieldDataTypes[key] =
+                    rawType === 'DROPDOWN' ? 'SINGLE_SELECT' : rawType
                 }
               })
             }
@@ -229,7 +254,8 @@ const ErpSystem = () => {
                   if (key === 'Purchase Order') key = 'PO Number'
                   apiLineItemMapping[key] = item.excelField
                   const rawType = item.dataType || 'SHORT_TEXT'
-                  apiLineItemFieldDataTypes[key] = rawType === 'DROPDOWN' ? 'SINGLE_SELECT' : rawType
+                  apiLineItemFieldDataTypes[key] =
+                    rawType === 'DROPDOWN' ? 'SINGLE_SELECT' : rawType
                 }
               })
             }
@@ -248,12 +274,13 @@ const ErpSystem = () => {
           console.error('Failed to get mapping from endpoint:', apiErr)
         }
 
-        const headerPo = initialMapping['PO Number'] || initialMapping['Purchase Order']
+        const headerPo =
+          initialMapping['PO Number'] || initialMapping['Purchase Order']
         if (headerPo && liHeaders) {
           const matchedLiCol = liHeaders.find(
             (col) =>
               col.toLowerCase().trim() === headerPo.toLowerCase().trim() ||
-              compareHeaderSimilarity(col, headerPo)
+              compareHeaderSimilarity(col, headerPo),
           )
           if (matchedLiCol) {
             initialLineItemMapping['PO Number'] = matchedLiCol
@@ -274,9 +301,11 @@ const ErpSystem = () => {
         if (!detectedGroupCol && hasLineItems) {
           // 1. Same column name in both sheets (case-insensitive)
           const commonCol = liHeaders.find((liCol) =>
-            headers.some((h) => h.toLowerCase().trim() === liCol.toLowerCase().trim())
+            headers.some(
+              (h) => h.toLowerCase().trim() === liCol.toLowerCase().trim(),
+            ),
           )
-          
+
           if (commonCol) {
             detectedGroupCol = commonCol
           } else if (liHeaders.length > 0) {
@@ -287,8 +316,14 @@ const ErpSystem = () => {
 
         setErpSettings({
           ...erpSettings,
+          fieldDataTypes,
+          groupingColumn: detectedGroupCol,
           importMethod: 'upload',
           isConnected: true,
+          lineItemFieldDataTypes,
+          lineItemHeaders: hasLineItems ? liHeaders : [],
+          lineItemMapping: initialLineItemMapping,
+          lineItemRows: hasLineItems && liRows ? liRows : [],
           mapping: initialMapping,
           previewRows: previewRows,
           system: 'FILE_BASED_IMPORT',
@@ -296,15 +331,8 @@ const ErpSystem = () => {
           uploadedColumns: headers,
           uploadedTemplate: file,
           wantsFileBasedImport: true,
-          lineItemHeaders: hasLineItems ? liHeaders : [],
-          lineItemRows: hasLineItems && liRows ? liRows : [],
-          groupingColumn: detectedGroupCol,
-          lineItemMapping: initialLineItemMapping,
-          fieldDataTypes,
-          lineItemFieldDataTypes,
         })
-
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        setShouldScroll(true)
       } catch (err: any) {
         console.error(err)
         showToast({
@@ -439,32 +467,38 @@ const ErpSystem = () => {
               {!erpSettings.templateUploaded ? (
                 /* Beautiful dropzone layout when no file is uploaded */
                 <div
-                  className='mt-4 rounded-xl border border-dashed border-gray-3 hover:border-primary-9 bg-surface p-6 text-center transition-all cursor-pointer group'
+                  className='group mt-4 cursor-pointer rounded-xl border border-dashed border-gray-3 bg-surface p-6 text-center transition-all hover:border-primary-9'
                   onClick={isParsing ? undefined : handleUploadClick}
                 >
                   {isParsing ? (
                     <div className='flex flex-col items-center justify-center space-y-3 py-4'>
-                      <Icon className='size-8 text-primary-9 animate-spin' name='tabler:loader-2' />
+                      <Icon
+                        className='size-8 animate-spin text-primary-9'
+                        name='tabler:loader-2'
+                      />
                       <div>
                         <h3 className='text-14 font-semibold text-gray-13'>
                           Analyzing file and mapping fields...
                         </h3>
-                        <p className='mt-1.5 text-12 text-gray-11 animate-pulse'>
+                        <p className='mt-1.5 animate-pulse text-12 text-gray-11'>
                           Please wait a moment
                         </p>
                       </div>
                     </div>
                   ) : (
                     <div className='flex flex-col items-center justify-center space-y-3'>
-                      <div className='p-3 bg-gray-2 group-hover:bg-primary-2 rounded-full text-gray-11 group-hover:text-primary-9 transition-colors'>
+                      <div className='rounded-full bg-gray-2 p-3 text-gray-11 transition-colors group-hover:bg-primary-2 group-hover:text-primary-9'>
                         <Icon className='size-6' name='tabler:cloud-upload' />
                       </div>
                       <div>
-                        <h3 className='text-14 font-semibold text-gray-13 group-hover:text-primary-9 transition-colors'>
+                        <h3 className='text-14 font-semibold text-gray-13 transition-colors group-hover:text-primary-9'>
                           Upload PO Master File
                         </h3>
                         <p className='mt-1.5 text-12 text-gray-11'>
-                          Drag and drop your spreadsheet here, or <span className='text-primary-9 font-medium'>browse files</span>
+                          Drag and drop your spreadsheet here, or{' '}
+                          <span className='font-medium text-primary-9'>
+                            browse files
+                          </span>
                         </p>
                       </div>
                       <p className='text-11 text-gray-9'>
@@ -476,62 +510,74 @@ const ErpSystem = () => {
               ) : (
                 /* Premium layout when template is uploaded */
                 <div className='mt-4 rounded-xl border border-gray-3 bg-surface p-5 shadow-sm md:p-6'>
-                  <h3 className='text-15/5 font-semibold text-gray-13 mb-3'>
+                  <h3 className='mb-3 text-15/5 font-semibold text-gray-13'>
                     PO Master file received
                   </h3>
 
                   {/* Premium file details card */}
-                  <div className='flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-xl bg-gray-2 border border-gray-3 mb-4'>
-                    <div className='flex items-center gap-3 min-w-0'>
-                      <div className='p-2 bg-green-2 rounded-lg text-green-9 shrink-0'>
-                        <Icon className='size-6' name='tabler:file-spreadsheet' />
+                  <div className='mb-4 flex flex-col justify-between gap-4 rounded-xl border border-gray-3 bg-gray-2 p-4 md:flex-row md:items-center'>
+                    <div className='flex min-w-0 items-center gap-3'>
+                      <div className='shrink-0 rounded-lg bg-green-2 p-2 text-green-9'>
+                        <Icon
+                          className='size-6'
+                          name='tabler:file-spreadsheet'
+                        />
                       </div>
                       <div className='min-w-0'>
-                        <div className='font-semibold text-13 text-gray-13 truncate'>
+                        <div className='truncate text-13 font-semibold text-gray-13'>
                           {erpSettings.uploadedTemplate?.name}
                         </div>
-                        <div className='flex items-center gap-2 text-11 text-gray-11 mt-0.5'>
+                        <div className='mt-0.5 flex items-center gap-2 text-11 text-gray-11'>
                           <span>
-                            {erpSettings.uploadedTemplate?.name?.endsWith('.csv')
+                            {erpSettings.uploadedTemplate?.name?.endsWith(
+                              '.csv',
+                            )
                               ? 'CSV File'
                               : 'Excel Spreadsheet'}
                           </span>
                           <span>•</span>
-                          <span>{erpSettings.previewRows?.length || 0} Header Records</span>
-                          {erpSettings.lineItemHeaders && erpSettings.lineItemHeaders.length > 0 && (
-                            <>
-                              <span>•</span>
-                              <span>{erpSettings.lineItemRows?.length || 0} Line Items</span>
-                            </>
-                          )}
+                          <span>
+                            {erpSettings.previewRows?.length || 0} Header
+                            Records
+                          </span>
+                          {erpSettings.lineItemHeaders &&
+                            erpSettings.lineItemHeaders.length > 0 && (
+                              <>
+                                <span>•</span>
+                                <span>
+                                  {erpSettings.lineItemRows?.length || 0} Line
+                                  Items
+                                </span>
+                              </>
+                            )}
                         </div>
                       </div>
                     </div>
                     <div className='flex items-center gap-2 self-end md:self-auto'>
                       <Button
                         icon='tabler:refresh'
-                        size='xs'
-                        variant='outline'
                         label='Replace File'
                         loading={isParsing}
+                        size='xs'
+                        variant='outline'
                         onClick={handleUploadClick}
                       />
                       <button
+                        className='shrink-0 rounded-lg border border-gray-3 bg-surface p-2 text-gray-9 shadow-sm transition-all hover:bg-gray-3 hover:text-red-11 active:scale-95'
+                        title='Remove file'
                         type='button'
-                        className='p-2 text-gray-9 hover:text-red-11 hover:bg-gray-3 active:scale-95 transition-all rounded-lg border border-gray-3 bg-surface shadow-sm shrink-0'
                         onClick={() => {
                           setErpSettings({
                             ...erpSettings,
-                            templateUploaded: false,
-                            uploadedTemplate: null,
-                            uploadedLineItemTemplate: null,
-                            lineItemHeaders: [],
-                            lineItemRows: [],
                             groupingColumn: null,
+                            lineItemHeaders: [],
                             lineItemMapping: {},
+                            lineItemRows: [],
+                            templateUploaded: false,
+                            uploadedLineItemTemplate: null,
+                            uploadedTemplate: null,
                           })
                         }}
-                        title='Remove file'
                       >
                         <Icon className='size-4' name='tabler:trash' />
                       </button>
@@ -583,139 +629,185 @@ const ErpSystem = () => {
                     </div>
                   )} */}
                   {/* Mapping fields section inside the same card layout */}
-                  <div className='flex flex-col gap-4 mt-3 border-t border-gray-2 pt-3'>
+                  <div
+                    className='mt-3 flex flex-col gap-4 border-t border-gray-2 pt-3'
+                    ref={mappingSectionRef}
+                  >
                     <div className='flex items-center justify-between'>
                       <div>
-                        <h4 className='text-sm font-semibold text-gray-12'>Mapping Fields</h4>
-                        <p className='text-11 text-gray-11 mt-0.5'>
-                          Map the columns from your uploaded file to the platform schema.
+                        <h4 className='text-sm font-semibold text-gray-12'>
+                          Mapping Fields
+                        </h4>
+                        <p className='mt-0.5 text-11 text-gray-11'>
+                          Map the columns from your uploaded file to the
+                          platform schema.
                         </p>
                       </div>
                     </div>
 
                     <div className='flex flex-col gap-2'>
                       {showPoMismatchWarning && (
-                        <div className='flex items-center gap-2 rounded-lg border border-blue-5 bg-blue-2 px-3 py-2 text-12 text-blue-11 shadow-xs animate-in fade-in duration-300'>
-                          <Icon className='size-4 text-blue-9' name='tabler:info-circle' />
+                        <div className='animate-in fade-in flex items-center gap-2 rounded-lg border border-blue-5 bg-blue-2 px-3 py-2 text-12 text-blue-11 shadow-xs duration-300'>
+                          <Icon
+                            className='size-4 text-blue-9'
+                            name='tabler:info-circle'
+                          />
                           <span className='font-medium'>
-                            Line item info: PO Number mapping not matched. Please map the same PO Number column in both sections.
+                            Line item info: PO Number mapping not matched.
+                            Please map the same PO Number column in both
+                            sections.
                           </span>
                         </div>
                       )}
 
-                      {(!erpSettings.lineItemHeaders || erpSettings.lineItemHeaders.length === 0) && (
+                      {(!erpSettings.lineItemHeaders ||
+                        erpSettings.lineItemHeaders.length === 0) && (
                         <div className='flex flex-col gap-2.5'>
                           <div className='flex items-center gap-2 rounded-lg border border-blue-5 bg-blue-2 px-3 py-2 text-12 text-blue-11 shadow-xs'>
-                            <Icon className='size-4 text-blue-9' name='tabler:info-circle' />
+                            <Icon
+                              className='size-4 text-blue-9'
+                              name='tabler:info-circle'
+                            />
                             <span className='font-medium'>
-                              Line item info: No line item data found in this file.
+                              Line item info: No line item data found in this
+                              file.
                             </span>
                           </div>
                         </div>
                       )}
 
                       {/* Tab Switcher */}
-                      <div className='flex justify-start gap-4 mb-0'>
+                      <div className='mb-0 flex justify-start gap-4'>
                         <button
                           type='button'
-                          className={`pl-0 pr-2 py-2 text-13 font-semibold transition-all border-b-2 cursor-pointer flex items-center gap-1.5 text-left ${activeMappingTab === 'header'
+                          className={`flex cursor-pointer items-center gap-1.5 border-b-2 py-2 pr-2 pl-0 text-left text-13 font-semibold transition-all ${
+                            activeMappingTab === 'header'
                               ? 'border-primary-9 text-primary-9'
                               : 'border-transparent text-gray-11 hover:text-gray-13'
-                            }`}
+                          }`}
                           onClick={() => setActiveMappingTab('header')}
                         >
                           <span>Header Fields</span>
-                          <span className={`px-1.5 py-0.2 text-11 rounded-full ${activeMappingTab === 'header' ? 'bg-primary-2 text-primary-9' : 'bg-gray-2 text-gray-11'
-                            }`}>
+                          <span
+                            className={`py-0.2 rounded-full px-1.5 text-11 ${
+                              activeMappingTab === 'header'
+                                ? 'bg-primary-2 text-primary-9'
+                                : 'bg-gray-2 text-gray-11'
+                            }`}
+                          >
                             {mappedHeaderCount}/{totalHeaderCount}
                           </span>
                         </button>
-                        {erpSettings.lineItemHeaders && erpSettings.lineItemHeaders.length > 0 && (
-                          <button
-                            type='button'
-                            className={`pl-0 pr-2 py-2 text-13 font-semibold transition-all border-b-2 cursor-pointer flex items-center gap-1.5 text-left ${activeMappingTab === 'lineItems'
-                                ? 'border-primary-9 text-primary-9'
-                                : 'border-transparent text-gray-11 hover:text-gray-13'
+                        {erpSettings.lineItemHeaders &&
+                          erpSettings.lineItemHeaders.length > 0 && (
+                            <button
+                              type='button'
+                              className={`flex cursor-pointer items-center gap-1.5 border-b-2 py-2 pr-2 pl-0 text-left text-13 font-semibold transition-all ${
+                                activeMappingTab === 'lineItems'
+                                  ? 'border-primary-9 text-primary-9'
+                                  : 'border-transparent text-gray-11 hover:text-gray-13'
                               }`}
-                            onClick={() => setActiveMappingTab('lineItems')}
-                          >
-                            <span>Line Items</span>
-                            <span className={`px-1.5 py-0.2 text-11 rounded-full ${activeMappingTab === 'lineItems' ? 'bg-primary-2 text-primary-9' : 'bg-gray-2 text-gray-11'
-                              }`}>
-                              {mappedLineItemCount}/{totalLineItemCount}
-                            </span>
-                          </button>
-                        )}
+                              onClick={() => setActiveMappingTab('lineItems')}
+                            >
+                              <span>Line Items</span>
+                              <span
+                                className={`py-0.2 rounded-full px-1.5 text-11 ${
+                                  activeMappingTab === 'lineItems'
+                                    ? 'bg-primary-2 text-primary-9'
+                                    : 'bg-gray-2 text-gray-11'
+                                }`}
+                              >
+                                {mappedLineItemCount}/{totalLineItemCount}
+                              </span>
+                            </button>
+                          )}
                       </div>
                     </div>
 
                     {/* Tab Contents */}
-                      {activeMappingTab === 'header' && (
-                        <AnimateFadeIn delay={0.05}>
-                          <ApColumnMapping
-                            key="header-mapping"
-                            activeMappingTab="header"
-                            mapping={erpSettings.mapping || {}}
-                            previewRows={erpSettings.previewRows || []}
-                            uploadedColumns={erpSettings.uploadedColumns || []}
-                            fieldDataTypes={erpSettings.fieldDataTypes || {}}
-                            onUpdateMapping={(m, types) => {
-                              const headerPo = m['PO Number'] || m['Purchase Order']
-                              let nextLineItemMapping = { ...(erpSettings.lineItemMapping || {}) }
-                              if (headerPo && erpSettings.lineItemHeaders) {
-                                const matchedLiCol = erpSettings.lineItemHeaders.find(
+                    {activeMappingTab === 'header' && (
+                      <AnimateFadeIn delay={0.05}>
+                        <ApColumnMapping
+                          activeMappingTab='header'
+                          fieldDataTypes={erpSettings.fieldDataTypes || {}}
+                          key='header-mapping'
+                          mapping={erpSettings.mapping || {}}
+                          previewRows={erpSettings.previewRows || []}
+                          uploadedColumns={erpSettings.uploadedColumns || []}
+                          onUpdateMapping={(m, types) => {
+                            const headerPo =
+                              m['PO Number'] || m['Purchase Order']
+                            const nextLineItemMapping = {
+                              ...(erpSettings.lineItemMapping || {}),
+                            }
+                            if (headerPo && erpSettings.lineItemHeaders) {
+                              const matchedLiCol =
+                                erpSettings.lineItemHeaders.find(
                                   (col) =>
-                                    col.toLowerCase().trim() === headerPo.toLowerCase().trim() ||
-                                    compareHeaderSimilarity(col, headerPo)
+                                    col.toLowerCase().trim() ===
+                                      headerPo.toLowerCase().trim() ||
+                                    compareHeaderSimilarity(col, headerPo),
                                 )
-                                if (matchedLiCol) {
-                                  nextLineItemMapping['PO Number'] = matchedLiCol
-                                }
+                              if (matchedLiCol) {
+                                nextLineItemMapping['PO Number'] = matchedLiCol
                               }
-                              const finalLineItemPo = nextLineItemMapping['PO Number']
-                              const newGroupCol =
-                                headerPo &&
-                                finalLineItemPo &&
-                                (headerPo.toLowerCase().trim() === finalLineItemPo.toLowerCase().trim() ||
-                                  compareHeaderSimilarity(headerPo, finalLineItemPo))
-                                  ? finalLineItemPo
-                                  : null
-                              setErpSettings({
-                                ...erpSettings,
-                                mapping: m,
-                                fieldDataTypes: types,
-                                lineItemMapping: nextLineItemMapping,
-                                groupingColumn: newGroupCol,
-                              })
-                            }}
-                          />
-                        </AnimateFadeIn>
-                      )}
+                            }
+                            const finalLineItemPo =
+                              nextLineItemMapping['PO Number']
+                            const newGroupCol =
+                              headerPo &&
+                              finalLineItemPo &&
+                              (headerPo.toLowerCase().trim() ===
+                                finalLineItemPo.toLowerCase().trim() ||
+                                compareHeaderSimilarity(
+                                  headerPo,
+                                  finalLineItemPo,
+                                ))
+                                ? finalLineItemPo
+                                : null
+                            setErpSettings({
+                              ...erpSettings,
+                              fieldDataTypes: types,
+                              groupingColumn: newGroupCol,
+                              lineItemMapping: nextLineItemMapping,
+                              mapping: m,
+                            })
+                          }}
+                        />
+                      </AnimateFadeIn>
+                    )}
 
-                      {activeMappingTab === 'lineItems' && erpSettings.lineItemHeaders && erpSettings.lineItemHeaders.length > 0 && (
+                    {activeMappingTab === 'lineItems' &&
+                      erpSettings.lineItemHeaders &&
+                      erpSettings.lineItemHeaders.length > 0 && (
                         <AnimateFadeIn delay={0.05}>
                           <ApColumnMapping
-                            key="line-item-mapping"
-                            activeMappingTab="lineItems"
+                            activeMappingTab='lineItems'
+                            key='line-item-mapping'
                             mapping={erpSettings.lineItemMapping || {}}
                             previewRows={erpSettings.lineItemRows || []}
                             uploadedColumns={erpSettings.lineItemHeaders || []}
-                            fieldDataTypes={erpSettings.lineItemFieldDataTypes || {}}
+                            fieldDataTypes={
+                              erpSettings.lineItemFieldDataTypes || {}
+                            }
                             onUpdateMapping={(m, types) => {
-                              const headerPo = erpSettings.mapping?.['PO Number'] || erpSettings.mapping?.['Purchase Order']
+                              const headerPo =
+                                erpSettings.mapping?.['PO Number'] ||
+                                erpSettings.mapping?.['Purchase Order']
                               const lineItemPo = m['PO Number']
                               const newGroupCol =
                                 headerPo &&
                                 lineItemPo &&
-                                (headerPo.toLowerCase().trim() === lineItemPo.toLowerCase().trim() ||
+                                (headerPo.toLowerCase().trim() ===
+                                  lineItemPo.toLowerCase().trim() ||
                                   compareHeaderSimilarity(headerPo, lineItemPo))
                                   ? lineItemPo
                                   : null
                               setErpSettings({
                                 ...erpSettings,
-                                lineItemMapping: m,
-                                lineItemFieldDataTypes: types,
                                 groupingColumn: newGroupCol,
+                                lineItemFieldDataTypes: types,
+                                lineItemMapping: m,
                               })
                             }}
                           />

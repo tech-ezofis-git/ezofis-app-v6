@@ -340,8 +340,6 @@ const addCustomFieldsToPayloads = (
 
 const StepFour = () => {
   const erpSettings = setupStore((state) => state.erpSettings)
-  const emailSettings = setupStore((state) => state.emailSettings)
-  const storageSettings = setupStore((state) => state.storageSettings)
   const setStep = setupStore((state) => state.setStep)
   const closeSetup = setupStore((state) => state.closeSetup)
   const isApSetUpCompleted = setupStore((state) => state.isApSetUpCompleted)
@@ -616,32 +614,28 @@ const StepFour = () => {
         <AnimateFadeIn delay={0.4}>
           <div className='mx-auto grid w-full max-w-[900px] grid-cols-1 gap-4 sm:grid-cols-3'>
             <ProtocolCard
-              icon={emailSettings.provider === 'DIRECT_UPLOAD' ? 'tabler:upload' : 'tabler:mail'}
+              icon='tabler:database'
               iconBg='bg-blue-1 dark:bg-blue-9/20'
               iconColor='text-blue-9 dark:text-blue-4'
-              label='Capture Pipeline'
-              subtitle={emailSettings.email || 'Direct Upload Active'}
-              title={emailSettings.provider === 'gmail' ? 'Gmail Sync' : emailSettings.provider === 'outlook' ? 'Outlook Sync' : 'Manual Upload'}
-            />
-            <ProtocolCard
-              icon='tabler:database'
-              iconBg='bg-purple-1 dark:bg-purple-9/20'
-              iconColor='text-purple-9 dark:text-purple-4'
               label='Data Destination'
-              subtitle={(() => {
-                const headerCount = Object.values(erpSettings.mapping || {}).filter(v => v && v !== 'Skip to Import').length
-                const lineCount = Object.values(erpSettings.lineItemMapping || {}).filter(v => v && v !== 'Skip to Import').length
-                return `${headerCount} Header, ${lineCount} Line Items`
-              })()}
+              subtitle='Connected & Verified'
               title={getErpName()}
             />
             <ProtocolCard
-              icon='tabler:cloud-download'
+              icon='tabler:brain'
+              iconBg='bg-purple-1 dark:bg-purple-9/20'
+              iconColor='text-purple-9 dark:text-purple-4'
+              label='Intelligence Profile'
+              subtitle='99.8% Extraction Goal'
+              title='High Precision'
+            />
+            <ProtocolCard
+              icon='tabler:shield-check'
               iconBg='bg-green-1 dark:bg-green-9/20'
               iconColor='text-green-9 dark:text-green-4'
-              label='Storage Archive'
-              subtitle={storageSettings.isConnected ? 'Connected & Verified' : 'Default Cloud Archive'}
-              title={storageSettings.system === 'Included storage' ? 'EZOFIS Storage' : storageSettings.system}
+              label='Security Protocol'
+              subtitle='AES-256 Encrypted'
+              title='SOC2 Compliant'
             />
           </div>
         </AnimateFadeIn>

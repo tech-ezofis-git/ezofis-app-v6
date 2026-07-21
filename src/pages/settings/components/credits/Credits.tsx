@@ -4,10 +4,7 @@ import { useMemo, useState } from 'react'
 import {
   Bar,
   BarChart,
-  Cell,
   LabelList,
-  Pie,
-  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -151,31 +148,30 @@ function MetricSummaryCard({
   value: string
 }) {
   const trendStyles = {
-    down: 'border-red-3 bg-red-1 text-red-9',
-    neutral: 'border-gray-3 bg-gray-1 text-gray-11',
-    up: 'border-green-3 bg-green-1 text-green-9',
+    down: 'bg-red-2 text-red-11 border border-red-3',
+    neutral: 'bg-gray-2 text-text-muted border border-gray-3',
+    up: 'bg-success-light text-success border border-success/20',
   }
 
   return (
-    <div className='relative overflow-hidden rounded-xl border border-gray-3 bg-white p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md'>
-      <div className='absolute inset-x-0 top-0 h-1 bg-primary-9' />
-      <p className='text-[11px] font-semibold tracking-wide text-gray-11 uppercase'>
+    <div className='cursor-pointer rounded-lg border border-border-default bg-surface p-4 shadow-xs transition-all hover:-translate-y-0.5 border-t-3 border-t-primary-9'>
+      <div className='font-poppins text-8px font-semibold text-gray-11 uppercase'>
         {title}
-      </p>
-      <p className='mt-3 text-[28px] leading-none font-bold text-gray-13'>
+      </div>
+      <div className='font-poppins text-18 font-semibold text-text-primary mt-1.5'>
         {isLoading ? '—' : value}
-      </p>
+      </div>
       {trend ? (
-        <div className='mt-3 flex flex-wrap items-center gap-2'>
+        <div className='flex items-center gap-1.5 mt-2 text-11 font-semibold'>
           <span
             className={cn(
-              'rounded-md border px-2 py-0.5 text-[11px] font-semibold',
+              'rounded px-1.5 py-0.5 text-11 font-semibold',
               trendStyles[trendTone],
             )}
           >
             {trend}
           </span>
-          <span className='text-[11px] text-gray-10 lowercase'>
+          <span className='font-inter text-text-muted font-normal text-11'>
             vs last period
           </span>
         </div>
@@ -196,9 +192,9 @@ function ChartCard({
   return (
     <div className='flex flex-col rounded-xl bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md'>
       <div>
-        <h4 className='pl-0.5 font-poppins text-13 leading-none font-bold text-gray-13 capitalize'>
+        <div className='pl-0.5 capitalize font-poppins text-14 font-semibold text-text-primary'>
           {title}
-        </h4>
+        </div>
         {subtitle ? (
           <div className='mt-1 pl-0.5 text-[11px] text-gray-9 lowercase'>
             {subtitle}
@@ -351,109 +347,65 @@ function UsageTimelineChart({
 }
 
 function DistributionDonutChart({
-  centerLabel,
-  centerValue,
   data,
 }: {
-  centerLabel: string
-  centerValue: string
+  centerLabel?: string
+  centerValue?: string
   data: { color: string; credits: number; name: string }[]
 }) {
   const total = data.reduce((sum, item) => sum + item.credits, 0)
 
   if (data.length === 0) {
     return (
-      <div className='flex h-[220px] items-center justify-center text-13 text-gray-10'>
+      <div className='flex h-[180px] items-center justify-center text-13 text-gray-10'>
         No distribution data for this period.
       </div>
     )
   }
 
   return (
-    <div className='flex flex-col gap-4'>
-      <div className='flex items-center justify-center'>
-        <div className='relative h-[100px] w-[100px] shrink-0'>
-          <ResponsiveContainer height='100%' width='100%'>
-            <PieChart>
-              <Pie
-                cx='50%'
-                cy='50%'
-                data={data}
-                dataKey='credits'
-                innerRadius={34}
-                outerRadius={48}
-                paddingAngle={3}
-                stroke='none'
-              >
-                {data.map((entry, index) => (
-                  <Cell fill={entry.color} key={`cell-${index}`} />
-                ))}
-              </Pie>
-              <Tooltip
-                formatter={(value: any) => [`${formatNumber(value)} credits`]}
-                contentStyle={{
-                  border: 'none',
-                  borderRadius: '8px',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                  fontSize: '11px',
-                }}
-              />
-            </PieChart>
-          </ResponsiveContainer>
-          <div className='pointer-events-none absolute inset-0 flex flex-col items-center justify-center'>
-            <span className='font-poppins text-16 leading-none font-extrabold text-gray-13'>
-              {centerValue}
-            </span>
-            <span className='mt-0.5 text-[8px] font-medium text-gray-10 lowercase'>
-              {centerLabel}
-            </span>
-          </div>
-        </div>
-      </div>
+    <div className='flex flex-col gap-2.5 pt-1'>
+      {data.map((entry, index) => {
+        const percentage =
+          total > 0 ? Math.round((entry.credits / total) * 100) : 0
 
-      <div className='flex flex-col gap-2'>
-        {data.map((entry, index) => {
-          const percentage =
-            total > 0 ? Math.round((entry.credits / total) * 100) : 0
-
-          return (
-            <div
-              className='group flex cursor-pointer flex-col gap-1 rounded-lg p-1.5 transition-all hover:bg-gray-1 active:scale-95'
-              key={index}
-              title={`${formatNumber(entry.credits)} credits (${percentage}%)`}
-            >
-              <div className='flex items-center justify-between text-[11px] font-medium lowercase'>
-                <div className='flex items-center gap-2'>
-                  <div
-                    className='size-2.5 shrink-0 rounded-md transition-transform group-hover:scale-110'
-                    style={{ backgroundColor: entry.color }}
-                  />
-                  <span className='font-semibold text-gray-10 transition-colors group-hover:text-gray-13'>
-                    {entry.name}
-                  </span>
-                </div>
-                <div className='flex items-center gap-1.5'>
-                  <span className='font-bold text-gray-13'>
-                    {formatNumber(entry.credits)}
-                  </span>
-                  <span className='text-[9px] font-normal text-gray-10'>
-                    ({percentage}%)
-                  </span>
-                </div>
-              </div>
-              <div className='h-1 w-full overflow-hidden rounded-full bg-gray-2'>
+        return (
+          <div
+            className='group flex cursor-pointer flex-col gap-1.5 rounded-lg p-1.5 transition-all hover:bg-gray-1 active:scale-95'
+            key={index}
+            title={`${formatNumber(entry.credits)} credits (${percentage}%)`}
+          >
+            <div className='flex items-center justify-between text-[11px] font-medium lowercase'>
+              <div className='flex items-center gap-2 min-w-0'>
                 <div
-                  className='h-full rounded-full transition-all duration-500'
-                  style={{
-                    backgroundColor: entry.color,
-                    width: `${percentage}%`,
-                  }}
+                  className='size-2.5 shrink-0 rounded-md transition-transform group-hover:scale-110'
+                  style={{ backgroundColor: entry.color }}
                 />
+                <span className='font-semibold text-gray-10 truncate transition-colors group-hover:text-gray-13'>
+                  {entry.name}
+                </span>
+              </div>
+              <div className='flex items-center gap-1.5 shrink-0 ml-2'>
+                <span className='font-bold text-gray-13'>
+                  {formatNumber(entry.credits)}
+                </span>
+                <span className='text-[9px] font-normal text-gray-10'>
+                  ({percentage}%)
+                </span>
               </div>
             </div>
-          )
-        })}
-      </div>
+            <div className='h-1.5 w-full overflow-hidden rounded-full bg-gray-2'>
+              <div
+                className='h-full rounded-full transition-all duration-500'
+                style={{
+                  backgroundColor: entry.color,
+                  width: `${percentage}%`,
+                }}
+              />
+            </div>
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -720,118 +672,118 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
         />
 
         <div className='flex-1 overflow-y-auto mt-4'>
-        <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6'>
-          <MetricSummaryCard
-            isLoading={isLoading}
-            title='Credits Consumed'
-            trend={
-              usage
-                ? `${formatNumber(usage.totalCreditsConsumed)} total`
-                : undefined
-            }
-            value={formatNumber(usage?.totalCreditsConsumed ?? 0)}
-          />
-          <MetricSummaryCard
-            isLoading={isLoading}
-            title='Transactions'
-            trend={
-              usage ? `${usage.transactionCount} records` : undefined
-            }
-            value={formatNumber(usage?.transactionCount ?? 0)}
-          />
-          <MetricSummaryCard
-            isLoading={isLoading}
-            title='Top Activity Credits'
-            trend={topActivity ? topActivity.type.toLowerCase() : undefined}
-            value={formatNumber(topActivity?.creditsUsed ?? 0)}
-          />
-          <MetricSummaryCard
-            isLoading={isLoading}
-            title='Avg Credits / Txn'
-            trendTone='neutral'
-            value={formatNumber(avgCreditsPerTransaction)}
-          />
-          <MetricSummaryCard
-            isLoading={isLoading}
-            title='Peak Timeline'
-            trend={peakTimeline ? peakTimeline.label.toLowerCase() : undefined}
-            value={formatNumber(peakTimeline?.creditsUsed ?? 0)}
-          />
-          <MetricSummaryCard
-            isLoading={isLoading}
-            title='Active Agents'
-            trend={
-              consumptionByAgent.length > 0
-                ? `${consumptionByAgent.length} agents`
-                : undefined
-            }
-            value={formatNumber(consumptionByAgent.length)}
-          />
-        </div>
-
-        <div className='mt-5 grid grid-cols-1 gap-4 xl:grid-cols-2 2xl:grid-cols-4'>
-          <ChartCard
-            subtitle={`by agent · ${periodSubtitle}`}
-            title='Highest Credit Consumption'
-          >
-            <HorizontalConsumptionChart
-              data={highestConsumption.map((item) => ({
-                credits: item.credits,
-                name: item.name,
-              }))}
+          <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-6 2xl:grid-cols-6'>
+            <MetricSummaryCard
+              isLoading={isLoading}
+              title='Credits Consumed'
+              trend={
+                usage
+                  ? `${formatNumber(usage.totalCreditsConsumed)} total`
+                  : undefined
+              }
+              value={formatNumber(usage?.totalCreditsConsumed ?? 0)}
             />
-          </ChartCard>
-
-          <ChartCard
-            subtitle='credit trend across selected range'
-            title='Usage Timeline'
-          >
-            <UsageTimelineChart data={timelineData} />
-          </ChartCard>
-
-          <ChartCard
-            subtitle={`by activity · ${formatNumber(totalActivityCredits)} credits`}
-            title='Credit Distribution'
-          >
-            <DistributionDonutChart
-              centerLabel='credits'
-              centerValue={formatNumber(totalActivityCredits)}
-              data={consumptionByActivity}
+            <MetricSummaryCard
+              isLoading={isLoading}
+              title='Transactions'
+              trend={
+                usage ? `${usage.transactionCount} records` : undefined
+              }
+              value={formatNumber(usage?.transactionCount ?? 0)}
             />
-          </ChartCard>
-
-          <ChartCard
-            subtitle={`by agent · ${consumptionByAgent.length} agents`}
-            title='Overall Credit Split'
-          >
-            <DistributionDonutChart
-              centerLabel='agents'
-              centerValue={String(consumptionByAgent.length)}
-              data={consumptionByAgent}
+            <MetricSummaryCard
+              isLoading={isLoading}
+              title='Top Activity Credits'
+              trend={topActivity ? topActivity.type.toLowerCase() : undefined}
+              value={formatNumber(topActivity?.creditsUsed ?? 0)}
             />
-          </ChartCard>
-        </div>
-
-        <div className='mt-5 rounded-xl border border-gray-3 bg-white p-4 shadow-sm'>
-          <div className='mb-4 flex flex-wrap items-center justify-between gap-3'>
-            <h4 className='font-poppins text-13 font-bold text-gray-13 capitalize'>
-              Transaction Activity
-            </h4>
-            {toolbar}
+            <MetricSummaryCard
+              isLoading={isLoading}
+              title='Avg Credits / Txn'
+              trendTone='neutral'
+              value={formatNumber(avgCreditsPerTransaction)}
+            />
+            <MetricSummaryCard
+              isLoading={isLoading}
+              title='Peak Timeline'
+              trend={peakTimeline ? peakTimeline.label.toLowerCase() : undefined}
+              value={formatNumber(peakTimeline?.creditsUsed ?? 0)}
+            />
+            <MetricSummaryCard
+              isLoading={isLoading}
+              title='Active Agents'
+              trend={
+                consumptionByAgent.length > 0
+                  ? `${consumptionByAgent.length} agents`
+                  : undefined
+              }
+              value={formatNumber(consumptionByAgent.length)}
+            />
           </div>
-          <DataTable
-            hideActionBar
-            isLoading={isLoading}
-            isReLoading={isFetching}
-            pageSize={10}
-            rowSize={rowSize}
-            stickyHeader
-            table={transactionTable}
-            hideGrouping
-            onReload={() => void refetch()}
-            onRowSizeChange={onRowSizeChange}
-          />
-        </div>
+
+          <div className='mt-5 grid grid-cols-1 gap-4 xl:grid-cols-2 2xl:grid-cols-4'>
+            <ChartCard
+              subtitle={`by agent · ${periodSubtitle}`}
+              title='Highest Credit Consumption'
+            >
+              <HorizontalConsumptionChart
+                data={highestConsumption.map((item) => ({
+                  credits: item.credits,
+                  name: item.name,
+                }))}
+              />
+            </ChartCard>
+
+            <ChartCard
+              subtitle='credit trend across selected range'
+              title='Usage Timeline'
+            >
+              <UsageTimelineChart data={timelineData} />
+            </ChartCard>
+
+            <ChartCard
+              subtitle={`by activity · ${formatNumber(totalActivityCredits)} credits`}
+              title='Credit Distribution'
+            >
+              <DistributionDonutChart
+                centerLabel='credits'
+                centerValue={formatNumber(totalActivityCredits)}
+                data={consumptionByActivity}
+              />
+            </ChartCard>
+
+            <ChartCard
+              subtitle={`by agent · ${consumptionByAgent.length} agents`}
+              title='Overall Credit Split'
+            >
+              <DistributionDonutChart
+                centerLabel='agents'
+                centerValue={String(consumptionByAgent.length)}
+                data={consumptionByAgent}
+              />
+            </ChartCard>
+          </div>
+
+          <div className='mt-5 rounded-xl border border-gray-3 bg-white p-4 shadow-sm'>
+            <div className='mb-4 flex flex-wrap items-center justify-between gap-3'>
+              <h4 className='font-poppins text-13 font-bold text-gray-13 capitalize'>
+                Transaction Activity
+              </h4>
+              {toolbar}
+            </div>
+            <DataTable
+              hideActionBar
+              isLoading={isLoading}
+              isReLoading={isFetching}
+              pageSize={10}
+              rowSize={rowSize}
+              stickyHeader
+              table={transactionTable}
+              hideGrouping
+              onReload={() => void refetch()}
+              onRowSizeChange={onRowSizeChange}
+            />
+          </div>
         </div>
       </div>
     </div>

@@ -198,7 +198,7 @@ const WorkflowPreview = () => {
               <NodeCard
                 icon='lucide:bot'
                 subtitle='Extraction & Matching'
-                title='AP Agent'
+                title='AI Automation'
                 isAgent
               />
             </AnimateFadeIn>
@@ -304,7 +304,7 @@ const NodeCard = ({
               <Icon className='size-3.5 text-white' name={icon} />
             </motion.div>
             <span className='shrink-0 rounded border border-purple-7/60 bg-purple-8/50 px-1.5 py-0.5 text-[6px] font-bold tracking-wide text-white uppercase'>
-              AP Agent
+              AI Agent
             </span>
           </div>
           <h4 className='mt-2 text-[10px] leading-tight font-bold text-white break-words'>

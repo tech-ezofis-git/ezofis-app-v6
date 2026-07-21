@@ -4,7 +4,9 @@ import {
 } from '@tanstack/react-table'
 import {
   Check,
+  Key,
   MoreHorizontal,
+  Server,
   ShieldCheck,
   UserRound,
   UsersRound,
@@ -153,6 +155,48 @@ const loginTypes: LoginType[] = [
 ]
 
 const mfaMethods = ['Email OTP', 'Mobile OTP', 'Authenticator App']
+
+type LoginOption = {
+  description: string
+  icon: React.ReactNode
+  title: string
+  value: LoginType
+}
+
+const loginOptions: LoginOption[] = [
+  {
+    description: 'Email and password',
+    icon: <Key className='h-4 w-4 shrink-0 text-[var(--primary-9)]' />,
+    title: 'Password',
+    value: 'Password',
+  },
+  {
+    description: 'Sign in with Google',
+    icon: (
+      <svg className='h-4 w-4 shrink-0 text-[var(--primary-9)]' viewBox='0 0 24 24' fill='currentColor'>
+        <path d='M12.24 10.285V13.4h6.887c-.58 3.013-3.084 5.216-6.887 5.216-4.28 0-7.75-3.47-7.75-7.75s3.47-7.75 7.75-7.75c2.18 0 4.1.815 5.57 2.152l2.3-2.3C18.17 1.25 15.39 0 12.24 0 5.48 0 0 5.48 0 12.24s5.48 12.24 12.24 12.24c6.9 0 11.96-4.85 11.96-11.96 0-.82-.08-1.57-.22-2.24H12.24z' />
+      </svg>
+    ),
+    title: 'Google',
+    value: 'Google',
+  },
+  {
+    description: 'Sign in with Microsoft',
+    icon: (
+      <svg className='h-4 w-4 shrink-0 text-[var(--primary-9)]' viewBox='0 0 23 23' fill='currentColor'>
+        <path d='M0 0h11v11H0zM12 0h11v11H12zM0 12h11v11H0zM12 12h11v11H12z' />
+      </svg>
+    ),
+    title: 'Microsoft',
+    value: 'Microsoft',
+  },
+  {
+    description: 'Sign in with AD',
+    icon: <Server className='h-4 w-4 shrink-0 text-[var(--primary-9)]' />,
+    title: 'Active directory',
+    value: 'Active Directory',
+  },
+]
 
 const userColumnHelper = createColumnHelper<AppUser>()
 
@@ -379,7 +423,7 @@ export default function ManageUser({ onBack }: ManageUserProps) {
         header: '',
         id: 'avatar',
         maxSize: 48,
-        meta: settingsHeaderMeta.center,
+        meta: { ...settingsHeaderMeta.center, disableEllipsis: true },
         minSize: 48,
         size: 48,
         cell: ({ row }) => {
@@ -433,11 +477,11 @@ export default function ManageUser({ onBack }: ManageUserProps) {
         enableSorting: false,
         header: 'Role',
         id: 'role',
-        meta: { ...settingsHeaderMeta.start, label: 'Role' },
+        meta: { ...settingsHeaderMeta.start, label: 'Role', disableEllipsis: true },
         minSize: 130,
         size: 150,
         cell: ({ getValue }) => (
-          <span className='rounded-[10px] border border-[var(--border-default)] bg-surface px-3 py-1 font-medium text-[var(--gray-13)]'>
+          <span className='inline-flex items-center rounded-[10px] border border-[var(--border-default)] bg-surface px-3 py-1 font-medium text-[var(--gray-13)]'>
             {String(getValue())}
           </span>
         ),
@@ -447,7 +491,7 @@ export default function ManageUser({ onBack }: ManageUserProps) {
         enableSorting: false,
         header: 'Status',
         id: 'status',
-        meta: { ...settingsHeaderMeta.start, label: 'Status' },
+        meta: { ...settingsHeaderMeta.start, label: 'Status', disableEllipsis: true },
         minSize: 100,
         size: 110,
         cell: ({ getValue }) => <StatusBadge status={getValue()} />,
@@ -973,20 +1017,67 @@ function LoginDetails({
         onChange={(value) => onChange({ ...user, username: value })}
       />
 
-      <SettingsSelectField
-        error={getFieldRequiredError(
+      <div className='space-y-2'>
+        <label className='block text-xs font-semibold text-[var(--gray-13)]'>
+          Login Type *
+        </label>
+        <div className='grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4'>
+          {loginOptions.map((opt) => {
+            const isSelected = user.loginType === opt.value
+
+            return (
+              <button
+                key={opt.value}
+                type='button'
+                className={[
+                  'flex items-center gap-3 rounded-[12px] border p-3.5 text-left transition cursor-pointer',
+                  isSelected
+                    ? 'border-[var(--primary-8)] bg-[var(--primary-2)] ring-1 ring-[var(--primary-8)] shadow-sm'
+                    : 'border-[var(--border-default)] bg-surface hover:border-[var(--primary-5)]',
+                ].join(' ')}
+                onClick={() => onChange({ ...user, loginType: opt.value })}
+              >
+                <div
+                  className={[
+                    'flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition',
+                    isSelected
+                      ? 'border-[var(--primary-9)] bg-surface'
+                      : 'border-[var(--gray-7)] bg-surface',
+                  ].join(' ')}
+                >
+                  {isSelected && (
+                    <div className='h-2 w-2 rounded-full bg-[var(--primary-9)]' />
+                  )}
+                </div>
+
+                {opt.icon}
+
+                <div className='min-w-0 flex-1'>
+                  <div className='truncate text-xs font-semibold text-[var(--gray-13)]'>
+                    {opt.title}
+                  </div>
+                  <div className='truncate text-[11px] text-[var(--gray-10)] mt-0.5'>
+                    {opt.description}
+                  </div>
+                </div>
+              </button>
+            )
+          })}
+        </div>
+        {getFieldRequiredError(
           'Login Type',
           Boolean(showErrors),
           user.loginType,
-        )}
-        label='Login Type'
-        options={loginTypes}
-        required
-        value={user.loginType}
-        onChange={(value) =>
-          onChange({ ...user, loginType: value as LoginType })
-        }
-      />
+        ) ? (
+          <p className='text-xs text-[var(--red-9)]'>
+            {getFieldRequiredError(
+              'Login Type',
+              Boolean(showErrors),
+              user.loginType,
+            )}
+          </p>
+        ) : null}
+      </div>
 
       {user.loginType === 'Password' ? (
         <EzPasswordField
@@ -1075,7 +1166,7 @@ function StatusBadge({ status }: { status: UserStatus }) {
 
   return (
     <span
-      className={`rounded-[10px] border px-3 py-1 font-semibold ${className}`}
+      className={`inline-flex items-center rounded-[10px] border px-3 py-1 font-semibold ${className}`}
     >
       {status}
     </span>

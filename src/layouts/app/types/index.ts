@@ -2,6 +2,7 @@ export interface Menu {
   icon: string
   label: string
   route: string
+  permissionKey?: string
 }
 
 export interface MenuGroup {

@@ -76,8 +76,8 @@ export default function DashboardCharts() {
   const [isTodayActionExpanded, setIsTodayActionExpanded] = React.useState(false)
   const [isProcessingExpanded, setIsProcessingExpanded] = React.useState(false)
   const [isSupplierFollowUpExpanded, setIsSupplierFollowUpExpanded] = React.useState(false)
-  const [isProfitabilityExpanded, setIsProfitabilityExpanded] = React.useState(true)
-  const [isSupplierConcentrationExpanded, setIsSupplierConcentrationExpanded] = React.useState(true)
+  const [isProfitabilityExpanded, setIsProfitabilityExpanded] = React.useState(false)
+  const [isSupplierConcentrationExpanded, setIsSupplierConcentrationExpanded] = React.useState(false)
 
   // Local filter states for non-store API filter fields
   const [department, setDepartment] = React.useState<string>('')
@@ -724,7 +724,7 @@ export default function DashboardCharts() {
 
             {isSupplierConcentrationExpanded && (
               <div className="grid grid-cols-12 gap-4">
-                <div className={cn("rounded-lg border border-border-default bg-surface p-5 shadow-xs transition-all duration-300", isCommandCenterExpanded ? "col-span-12 lg:col-span-4" : "col-span-12 lg:col-span-6")}>
+                <div className={cn("rounded-lg border border-border-default bg-surface p-5 shadow-xs transition-all duration-300", isCommandCenterExpanded ? "col-span-12 lg:col-span-4" : "col-span-12 lg:col-span-4")}>
                   <h3 className="font-poppins text-14 font-semibold text-text-primary">Top 10 suppliers by invoice value</h3>
                   <div className="font-inter text-11 text-text-muted mb-4">Concentration of invoice liabilities</div>
                   <div className="h-60">
@@ -739,7 +739,7 @@ export default function DashboardCharts() {
                   </div>
                 </div>
 
-                {isCommandCenterExpanded && (
+                {isSupplierConcentrationExpanded && (
                   <div className="col-span-12 lg:col-span-4 rounded-lg border border-border-default bg-surface p-5 shadow-xs">
                     <h3 className="font-poppins text-14 font-semibold text-text-primary">Outstanding payables by supplier</h3>
                     <div className="font-inter text-11 text-text-muted mb-4">Click a supplier's bar to drill down</div>
@@ -756,7 +756,7 @@ export default function DashboardCharts() {
                   </div>
                 )}
 
-                <div className={cn("rounded-lg border border-border-default bg-surface p-5 shadow-xs transition-all duration-300", isCommandCenterExpanded ? "col-span-12 lg:col-span-4" : "col-span-12 lg:col-span-6")}>
+                <div className={cn("rounded-lg border border-border-default bg-surface p-5 shadow-xs transition-all duration-300", isCommandCenterExpanded ? "col-span-12 lg:col-span-4" : "col-span-12 lg:col-span-4")}>
                   <h3 className="font-poppins text-14 font-semibold text-text-primary">Department-wise spend</h3>
                   <div className="font-inter text-11 text-text-muted mb-4">Tile size reflects share of AP expenses</div>
                   <div className="grid grid-cols-2 gap-2 h-48">

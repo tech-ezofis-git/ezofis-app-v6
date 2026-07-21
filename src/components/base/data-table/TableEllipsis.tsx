@@ -45,7 +45,21 @@ export function shouldDisableTableEllipsis(
     id === '__select' ||
     id === '__name' ||
     id === 'name' ||
-    id.endsWith('actions')
+    id === 'avatar' ||
+    id === 'role' ||
+    id === 'status' ||
+    id === 'icon' ||
+    id === 'members' ||
+    id === 'type' ||
+    id === 'users' ||
+    id.endsWith('actions') ||
+    id.endsWith('status') ||
+    id.endsWith('avatar') ||
+    id.endsWith('role') ||
+    id.endsWith('icon') ||
+    id.endsWith('members') ||
+    id.endsWith('type') ||
+    id.endsWith('users')
   )
 }
 
