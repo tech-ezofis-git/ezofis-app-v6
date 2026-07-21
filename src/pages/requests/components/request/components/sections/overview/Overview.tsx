@@ -897,6 +897,7 @@ const FormCard = ({
   label,
   options = [],
   score,
+  poValue,
   type = 'text',
   value,
   isLoading = false,
@@ -909,6 +910,10 @@ const FormCard = ({
   useEffect(() => {
     setLocalValue(value)
   }, [value])
+
+  const isPerfectMatch = String(value).toLowerCase().trim() === String(poValue).toLowerCase().trim()
+  const effectiveScore = (score !== undefined && score !== null && Number(score) < 100 && isPerfectMatch) ? 100 : score
+  const showHint = poValue && !isPerfectMatch && Number(effectiveScore) !== 100
 
   const handleBlur = () => {
     setIsEditing(false)
@@ -1005,18 +1010,18 @@ const FormCard = ({
             <p className='text-[10px] font-semibold text-[var(--gray-11)]'>
               {label}
             </p>
-            {score !== undefined && score !== null && (
+            {effectiveScore !== undefined && effectiveScore !== null && (
               <span
                 className={cn(
                   'shrink-0 rounded border px-1.5 py-0.5 text-[9px] font-bold transition-colors',
-                  Number(score) >= 90
+                  Number(effectiveScore) >= 90
                     ? 'border-[var(--green-3)] bg-[var(--green-1)] text-[var(--green-9)]'
-                    : Number(score) >= 70
+                    : Number(effectiveScore) >= 70
                       ? 'border-[var(--orange-3)] bg-[var(--orange-1)] text-[var(--orange-9)]'
                       : 'border-[var(--red-3)] bg-[var(--red-1)] text-[var(--red-9)]',
                 )}
               >
-                {Math.round(Number(score))}%
+                {Math.round(Number(effectiveScore))}%
               </span>
             )}
           </div>
@@ -1052,37 +1057,51 @@ const FormCard = ({
           <p className='text-[10px] font-semibold text-[var(--gray-11)]'>
             {label}
           </p>
-          {score !== undefined && score !== null && (
+          {effectiveScore !== undefined && effectiveScore !== null && (
             <span
               className={cn(
                 'shrink-0 rounded border px-1.5 py-0.5 text-[9px] font-bold transition-colors',
-                Number(score) >= 90
+                Number(effectiveScore) >= 90
                   ? 'border-[var(--green-3)] bg-[var(--green-1)] text-[var(--green-9)]'
-                  : Number(score) >= 70
+                  : Number(effectiveScore) >= 70
                     ? 'border-[var(--orange-3)] bg-[var(--orange-1)] text-[var(--orange-9)]'
                     : 'border-[var(--red-3)] bg-[var(--red-1)] text-[var(--red-9)]',
               )}
             >
-              {Math.round(Number(score))}%
+              {Math.round(Number(effectiveScore))}%
             </span>
           )}
         </div>
         {isLoading ? (
           <div className='mt-1 h-4 w-28 animate-pulse rounded bg-[var(--gray-3)]' />
         ) : (
-          <p
-            className={cn(
-              'text-[13px] leading-tight font-semibold text-[var(--gray-13)] transition-colors group-hover:text-[var(--primary-9)]',
-              highlight && 'text-[var(--green-9)]',
-              (value === '-' ||
-                value === null ||
-                value === undefined ||
-                value === '') &&
-              'font-medium text-[var(--gray-9)]',
+          <div className='flex flex-col items-start gap-1'>
+            <p
+              className={cn(
+                'text-[13px] leading-tight font-semibold text-[var(--gray-13)] transition-colors group-hover:text-[var(--primary-9)]',
+                highlight && 'text-[var(--green-9)]',
+                (value === '-' ||
+                  value === null ||
+                  value === undefined ||
+                  value === '') &&
+                'font-medium text-[var(--gray-9)]',
+              )}
+            >
+              {value === null || value === undefined || value === '' ? '-' : value}
+            </p>
+            {showHint && (
+              <div 
+                className='inline-flex items-center gap-1 cursor-pointer rounded bg-[var(--blue-2)] px-2 py-0.5 text-[10px] text-[var(--blue-11)] transition-colors hover:bg-[var(--blue-3)]'
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setLocalValue(poValue)
+                  onChange?.(poValue)
+                }}
+              >
+                PO {label}: <span className='font-bold'>{poValue}</span>
+              </div>
             )}
-          >
-            {value === null || value === undefined || value === '' ? '-' : value}
-          </p>
+          </div>
         )}
       </div>
     </button>
@@ -1398,6 +1417,47 @@ const Overview = (props: any) => {
     for (const field of matchingFields) {
       if (field?.Field && normalizeName(field.Field) === cleanK) {
         return Number(field.Score)
+      }
+    }
+    return undefined
+  }
+
+  const getFieldPoValue = (key: string) => {
+    const normalizeName = (name: string) => {
+      const normalized = name.toLowerCase().trim()
+      if (
+        normalized === 'vendor name' ||
+        normalized === 'supplier name' ||
+        normalized === 'supplier' ||
+        normalized === 'vendor'
+      ) {
+        return 'supplier name'
+      }
+      if (
+        normalized === 'total due' ||
+        normalized === 'invoice amount' ||
+        normalized === 'invoice value' ||
+        normalized === 'amount' ||
+        normalized === 'total amount'
+      ) {
+        return 'total due'
+      }
+      if (
+        normalized === 'invoice number' ||
+        normalized === 'invoice no' ||
+        normalized === 'invoice no.'
+      ) {
+        return 'invoice number'
+      }
+      return normalized
+    }
+
+    const cleanK = normalizeName(key)
+    const matchingFields =
+      agentData?.debug?.['Side-by-side Field Matching'] || []
+    for (const field of matchingFields) {
+      if (field?.Field && normalizeName(field.Field) === cleanK) {
+        return field['PO Value']
       }
     }
     return undefined
@@ -4033,6 +4093,7 @@ const Overview = (props: any) => {
                                     label={key}
                                     options={getOptions(key)}
                                     score={getFieldScore(key)}
+                                    poValue={getFieldPoValue(key)}
                                     type={fieldType}
                                     value={displayValue}
                                     isLoading={isCurrentlyProcessing && (displayValue === null || displayValue === undefined || displayValue === '' || displayValue === '-')}
