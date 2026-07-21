@@ -10,6 +10,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type ReactNode,
 } from 'react'
 import DataTable from '@/components/base/data-table/DataTable'
 import IconButton from '@/components/base/button/IconButton'
@@ -120,9 +121,36 @@ const fileColumnHelper = createColumnHelper<FileRow>()
 
 type SplitViewMode = 'split' | 'folders-only' | 'files-only'
 
-const SPLIT_DIVIDER_HEIGHT = 44
+const SPLIT_DIVIDER_HEIGHT = 36
 const FULL_PANEL_FOLDER_HEIGHT = 'calc(100vh - 248px)'
 const FULL_PANEL_FILE_HEIGHT = 'calc(100vh - 300px)'
+
+const getSplitFolderBodyHeight = (folderCount: number) =>
+  Math.min(260, Math.max(56, folderCount * 52 + 44))
+
+const EXPLORER_CELL_META = {
+  className: 'align-bottom',
+  disableEllipsis: true,
+}
+const EXPLORER_VALUE_CLASS = 'text-sm font-normal leading-4 text-gray-12'
+const EXPLORER_NAME_BUTTON_CLASS =
+  'flex min-w-0 max-w-full items-end gap-1.5 text-left'
+const EXPLORER_NAME_TEXT_WRAP_CLASS = 'min-w-0 flex-1'
+const EXPLORER_NAME_TEXT_CLASS = 'text-sm font-normal leading-4 text-gray-12'
+const EXPLORER_ICON_WRAP_CLASS = 'inline-flex h-4 shrink-0 items-end'
+const EXPLORER_ICON_CLASS = 'size-4 text-[#4f5b88]'
+
+function ExplorerValue({ value }: { value: string }) {
+  return (
+    <div className='min-w-0 max-w-full'>
+      <EllipsisText
+        className={EXPLORER_VALUE_CLASS}
+        lines={1}
+        value={value}
+      />
+    </div>
+  )
+}
 
 const isHiddenFileKey = (key: string) => HIDDEN_FILE_KEYS.has(key.toLowerCase())
 
@@ -245,17 +273,7 @@ export default function FolderTableDataTableSplit({
 
   onWorkflow,
 }: FolderTableDataTableSplitProps) {
-  const splitContainerRef = useRef<HTMLDivElement | null>(null)
-  const dragStateRef = useRef<{ startY: number; startHeight: number } | null>(
-    null,
-  )
-  const pendingHeightRef = useRef<number | null>(null)
-  const dragRafRef = useRef<number | null>(null)
-  const [folderSectionHeight, setFolderSectionHeight] = useState<number | null>(
-    null,
-  )
   const [splitViewMode, setSplitViewMode] = useState<SplitViewMode>('split')
-  const [isDraggingDivider, setIsDraggingDivider] = useState(false)
 
   const visibleFileColumns = useMemo(
     () => fileColumns.filter((column) => !isHiddenFileKey(column.key)),
@@ -283,136 +301,89 @@ export default function FolderTableDataTableSplit({
     folders.length > 0 &&
     (files.length > 0 || loading || loadingPage) &&
     folders.length < FOLDER_FILES_SECTION_MAX_FOLDERS
-  const defaultFolderBodyHeight = Math.min(220, Math.max(96, folders.length * 56 + 52))
   const showFoldersPane = splitViewMode !== 'files-only'
   const showFilesPane = splitViewMode !== 'folders-only'
-  const canExpandFolders = splitViewMode !== 'folders-only'
-  const canExpandFiles = splitViewMode !== 'files-only'
-
-  const getSplitBounds = useCallback(() => {
-    const containerHeight = splitContainerRef.current?.clientHeight ?? 0
-    const minFolderHeight = 72
-    const minFileHeight = 120
-    const maxFolderHeight = Math.max(
-      minFolderHeight,
-      containerHeight - SPLIT_DIVIDER_HEIGHT - minFileHeight,
-    )
-    return { maxFolderHeight, minFolderHeight }
-  }, [])
-
-  const clampFolderHeight = useCallback(
-    (height: number) => {
-      const { maxFolderHeight, minFolderHeight } = getSplitBounds()
-      return Math.max(minFolderHeight, Math.min(maxFolderHeight, height))
-    },
-    [getSplitBounds],
-  )
-
-  const resolvedFolderBodyHeight = clampFolderHeight(
-    folderSectionHeight ?? defaultFolderBodyHeight,
-  )
-
-  const resolveSplitModeFromHeight = useCallback(
-    (height: number): SplitViewMode => {
-      const { maxFolderHeight, minFolderHeight } = getSplitBounds()
-      if (height <= minFolderHeight + 24) return 'files-only'
-      if (height >= maxFolderHeight - 24) return 'folders-only'
-      return 'split'
-    },
-    [getSplitBounds],
-  )
+  const isSplitView = splitViewMode === 'split'
 
   useEffect(() => {
     if (!canResizeSplit) {
-      setFolderSectionHeight(null)
       setSplitViewMode('split')
     }
   }, [canResizeSplit])
 
-  useEffect(() => {
-    if (!isDraggingDivider) return
+  const handleLeftViewClick = useCallback(() => {
+    setSplitViewMode((prev) => {
+      if (prev === 'split') return 'files-only'
+      if (prev === 'files-only') return 'folders-only'
+      return 'files-only'
+    })
+  }, [])
 
-    const handleMouseMove = (event: MouseEvent) => {
-      const dragState = dragStateRef.current
-      if (!dragState) return
+  const handleRightViewClick = useCallback(() => {
+    setSplitViewMode((prev) => (prev === 'split' ? 'folders-only' : 'split'))
+  }, [])
 
-      pendingHeightRef.current = clampFolderHeight(
-        dragState.startHeight + (event.clientY - dragState.startY),
-      )
+  const leftViewLabel =
+    splitViewMode === 'files-only' ? 'Show folders only' : 'Show files only'
+  const rightViewLabel = isSplitView
+    ? 'Show folders only'
+    : 'Show both folders and files'
 
-      if (dragRafRef.current) return
-      dragRafRef.current = window.requestAnimationFrame(() => {
-        const height = pendingHeightRef.current
-        if (height === null) {
-          dragRafRef.current = null
-          return
-        }
+  const renderSplitDivider = () => (
+    <div
+      className='relative my-2 flex shrink-0 items-center justify-center select-none'
+      style={{ height: SPLIT_DIVIDER_HEIGHT }}
+    >
+      <div className='pointer-events-none absolute top-1/2 right-0 left-0 h-px -translate-y-1/2 bg-gray-4' />
 
-        const nextMode = resolveSplitModeFromHeight(height)
-        setSplitViewMode(nextMode)
-        if (nextMode === 'split') {
-          setFolderSectionHeight(height)
-        }
-        dragRafRef.current = null
-      })
-    }
+      <div className='relative z-10 flex items-center gap-2'>
+        <IconButton
+          ariaLabel={leftViewLabel}
+          className='rounded-full bg-surface shadow-sm'
+          color='gray'
+          icon={
+            splitViewMode === 'files-only'
+              ? 'lucide:folder'
+              : 'lucide:file-text'
+          }
+          size='sm'
+          tooltip={leftViewLabel}
+          variant='outline'
+          onClick={handleLeftViewClick}
+        />
 
-    const handleMouseUp = () => {
-      setIsDraggingDivider(false)
-      dragStateRef.current = null
-      pendingHeightRef.current = null
-      if (dragRafRef.current) {
-        window.cancelAnimationFrame(dragRafRef.current)
-        dragRafRef.current = null
-      }
-      document.body.style.userSelect = ''
-      document.body.style.cursor = ''
-    }
+        <div className='flex items-center gap-1.5 rounded-full border border-gray-3 bg-surface px-3 py-0.5 text-xs font-bold text-gray-10 shadow-sm'>
+          {splitViewMode === 'files-only' ? (
+            <>
+              <DynamicIcon className='h-4 w-4 text-gray-8' name='folder' />
+              <span className='text-gray-8'>FOLDERS</span>
+              <span className='h-px w-5 bg-gray-4' />
+              <span className='text-gray-8'>{folders.length}</span>
+            </>
+          ) : (
+            <>
+              <DynamicIcon className='h-4 w-4 text-gray-8' name='fileText' />
+              <span className='text-gray-8'>FILES IN THIS FOLDER</span>
+              <span className='h-px w-5 bg-gray-4' />
+              <span className='text-gray-8'>{files.length}</span>
+            </>
+          )}
+        </div>
 
-    window.addEventListener('mousemove', handleMouseMove)
-    window.addEventListener('mouseup', handleMouseUp)
-    document.body.style.userSelect = 'none'
-    document.body.style.cursor = 'grabbing'
-
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove)
-      window.removeEventListener('mouseup', handleMouseUp)
-      if (dragRafRef.current) {
-        window.cancelAnimationFrame(dragRafRef.current)
-        dragRafRef.current = null
-      }
-      document.body.style.userSelect = ''
-      document.body.style.cursor = ''
-    }
-  }, [clampFolderHeight, isDraggingDivider, resolveSplitModeFromHeight])
-
-  const beginDividerDrag = useCallback((clientY: number) => {
-    setSplitViewMode('split')
-    setIsDraggingDivider(true)
-    dragStateRef.current = {
-      startHeight:
-        splitViewMode === 'files-only'
-          ? getSplitBounds().minFolderHeight
-          : splitViewMode === 'folders-only'
-            ? getSplitBounds().maxFolderHeight
-            : resolvedFolderBodyHeight,
-      startY: clientY,
-    }
-  }, [
-    getSplitBounds,
-    resolvedFolderBodyHeight,
-    splitViewMode,
-  ])
-
-  const handleDividerMouseDown = useCallback(
-    (event: React.MouseEvent<HTMLElement>) => {
-      if (event.button !== 0) return
-      if ((event.target as HTMLElement).closest('button')) return
-
-      event.preventDefault()
-      beginDividerDrag(event.clientY)
-    },
-    [beginDividerDrag],
+        <IconButton
+          ariaLabel={rightViewLabel}
+          className='rounded-full bg-surface shadow-sm'
+          color='gray'
+          icon={
+            isSplitView ? 'lucide:folder' : 'lucide:panels-top-bottom'
+          }
+          size='sm'
+          tooltip={rightViewLabel}
+          variant='outline'
+          onClick={handleRightViewClick}
+        />
+      </div>
+    </div>
   )
 
   return (
@@ -423,18 +394,15 @@ export default function FolderTableDataTableSplit({
         </div>
       ) : null}
 
-      <div
-        ref={splitContainerRef}
-        className={`flex min-h-0 flex-1 flex-col overflow-hidden bg-surface p-3 ${
-          splitViewMode === 'split' ? 'gap-3' : 'gap-0'
-        }`}
-      >
+      <div className='flex min-h-0 flex-1 flex-col gap-0 overflow-hidden bg-surface px-3 pt-2 pb-1'>
         {showFoldersPane ? (
           <FolderDataTableSection
             folderBodyMaxHeight={
               splitViewMode === 'folders-only'
                 ? FULL_PANEL_FOLDER_HEIGHT
-                : `${resolvedFolderBodyHeight}px`
+                : isSplitView
+                  ? `${getSplitFolderBodyHeight(folders.length)}px`
+                  : undefined
             }
             effectiveFolderTotal={effectiveFolderTotal}
             folderFilters={folderFilters}
@@ -443,6 +411,7 @@ export default function FolderTableDataTableSplit({
             hasFiles={filesHave}
             hasMoreFolders={hasMoreFolders}
             isExpanded={splitViewMode === 'folders-only'}
+            isSplitView={isSplitView}
             loading={loading}
             loadingFolders={loadingFolders}
             loadingPage={loadingPage}
@@ -452,101 +421,26 @@ export default function FolderTableDataTableSplit({
           />
         ) : null}
 
-        {canResizeSplit ? (
-          <div
-            className={`relative flex shrink-0 touch-none items-center justify-center select-none ${
-              isDraggingDivider
-                ? 'cursor-grabbing bg-gray-3/40'
-                : 'cursor-grab hover:bg-gray-3/30'
-            }`}
-            style={{ height: SPLIT_DIVIDER_HEIGHT }}
-            onMouseDown={handleDividerMouseDown}
-          >
-            <div className='pointer-events-none absolute top-1/2 right-0 left-0 h-px -translate-y-1/2 bg-gray-4' />
-
-            <div className='relative z-10 flex items-center gap-2'>
-              <div
-                className='shrink-0'
-                onMouseDown={(event) => event.stopPropagation()}
-              >
-                <IconButton
-                  ariaLabel='Show folders only'
-                  className='rounded-full bg-surface shadow-sm'
-                  color='gray'
-                  disabled={!canExpandFolders}
-                  icon='lucide:chevron-up'
-                  size='md'
-                  tooltip='Show folders only'
-                  variant='outline'
-                  onClick={() => {
-                    setSplitViewMode('folders-only')
-                    setFolderSectionHeight(getSplitBounds().maxFolderHeight)
-                  }}
-                />
-              </div>
-
-              <div
-                className={`flex items-center gap-2 rounded-full border border-gray-3 bg-surface px-4 py-1.5 text-xs font-bold text-gray-10 shadow-sm ${
-                  isDraggingDivider ? 'cursor-grabbing' : 'cursor-grab'
-                }`}
-              >
-                {splitViewMode === 'files-only' ? (
-                  <>
-                    <DynamicIcon className='h-4 w-4 text-gray-8' name='folder' />
-                    <span className='text-gray-8'>FOLDERS</span>
-                    <span className='h-px w-5 bg-gray-4' />
-                    <span className='text-gray-8'>{folders.length}</span>
-                  </>
-                ) : (
-                  <>
-                    <DynamicIcon className='h-4 w-4 text-gray-8' name='fileText' />
-                    <span className='text-gray-8'>FILES IN THIS FOLDER</span>
-                    <span className='h-px w-5 bg-gray-4' />
-                    <span className='text-gray-8'>{files.length}</span>
-                  </>
-                )}
-              </div>
-
-              <div
-                className='shrink-0'
-                onMouseDown={(event) => event.stopPropagation()}
-              >
-                <IconButton
-                  ariaLabel='Show files only'
-                  className='rounded-full bg-surface shadow-sm'
-                  color='gray'
-                  disabled={!canExpandFiles}
-                  icon='lucide:chevron-down'
-                  size='md'
-                  tooltip='Show files only'
-                  variant='outline'
-                  onClick={() => {
-                    setSplitViewMode('files-only')
-                    setFolderSectionHeight(getSplitBounds().minFolderHeight)
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-        ) : null}
+        {canResizeSplit && isSplitView ? renderSplitDivider() : null}
 
         {showFilesPane &&
         (files.length || loading || loadingPage) &&
         folders.length < FOLDER_FILES_SECTION_MAX_FOLDERS ? (
           <FileDataTableSection
             columns={visibleFileColumns}
-            customFolderHeight={
-              canResizeSplit && splitViewMode === 'split'
-                ? resolvedFolderBodyHeight
-                : undefined
-            }
             fileFilters={fileFilters}
             filePage={filePage}
             files={files}
             folderContextFilters={folderContextFilters}
             folderFilters={folderFilters}
             foldersLength={folders.length}
+            footerDivider={
+              canResizeSplit && splitViewMode === 'files-only'
+                ? renderSplitDivider()
+                : undefined
+            }
             isExpanded={splitViewMode === 'files-only'}
+            isSplitView={isSplitView}
             loading={loading}
             loadingPage={loadingPage}
             onAiSummary={onAiSummary}
@@ -558,6 +452,12 @@ export default function FolderTableDataTableSplit({
             onShare={onShare}
             onWorkflow={onWorkflow}
           />
+        ) : null}
+
+        {canResizeSplit &&
+        !isSplitView &&
+        splitViewMode !== 'files-only' ? (
+          renderSplitDivider()
         ) : null}
 
         {!loading &&
@@ -612,14 +512,15 @@ function EmptyState() {
 
 function FileDataTableSection({
   columns,
-  customFolderHeight,
   fileFilters = {},
   filePage,
   files,
   folderContextFilters = {},
   folderFilters = {},
   foldersLength,
+  footerDivider,
   isExpanded = false,
+  isSplitView = false,
   loading,
   loadingPage,
   onAiSummary,
@@ -632,14 +533,15 @@ function FileDataTableSection({
   onWorkflow,
 }: {
   columns: DynamicRepositoryColumn[]
-  customFolderHeight?: number
   fileFilters?: Record<string, string>
   filePage?: RepositoryFilePage
   files: FileItem[]
   folderContextFilters?: Record<string, string>
   folderFilters?: Record<string, string>
   foldersLength: number
+  footerDivider?: ReactNode
   isExpanded?: boolean
+  isSplitView?: boolean
   loading: boolean
   loadingPage: boolean
   onAiSummary: (id: string) => void
@@ -753,6 +655,7 @@ function FileDataTableSection({
         header: column.label,
         id: column.key,
         maxSize: sizing.maxSize,
+        meta: EXPLORER_CELL_META,
         minSize: sizing.minSize,
         size: sizing.size,
         cell: ({ row, getValue }) => {
@@ -762,19 +665,23 @@ function FileDataTableSection({
           if (index === 0) {
             return (
               <button
-                className='flex min-w-0 max-w-full items-center gap-3 text-left'
+                className={EXPLORER_NAME_BUTTON_CLASS}
                 type='button'
                 onClick={() => onOpenFile(fileId)}
               >
-                <DynamicIcon
-                  className='h-5 w-5 shrink-0 text-[#4f5b88]'
-                  name='fileText'
-                />
-                <EllipsisText
-                  className='font-semibold text-gray-13'
-                  lines={1}
-                  value={value}
-                />
+                <span className={EXPLORER_ICON_WRAP_CLASS}>
+                  <DynamicIcon
+                    className={EXPLORER_ICON_CLASS}
+                    name='fileText'
+                  />
+                </span>
+                <span className={EXPLORER_NAME_TEXT_WRAP_CLASS}>
+                  <EllipsisText
+                    className={EXPLORER_NAME_TEXT_CLASS}
+                    lines={1}
+                    value={value}
+                  />
+                </span>
               </button>
             )
           }
@@ -782,12 +689,12 @@ function FileDataTableSection({
           if (column.key === '__status') {
             const status = String(getValue() || '').trim()
             if (!status) {
-              return <span className='text-gray-10'>—</span>
+              return <span className={EXPLORER_VALUE_CLASS}>—</span>
             }
             return <StatusPill status={status} />
           }
 
-          return <span className='text-gray-10'>{value}</span>
+          return <ExplorerValue value={value} />
         },
       })
     })
@@ -800,15 +707,15 @@ function FileDataTableSection({
         header: '',
         id: 'actions',
         maxSize: 72,
+        meta: { ...EXPLORER_CELL_META, headerAlign: 'right' as const },
         minSize: 56,
         size: 64,
-        meta: { headerAlign: 'right' as const },
         cell: ({ row }) => {
           const fileId = row.original.id
 
           return (
             <div
-              className='flex justify-end'
+              className='flex items-end justify-end'
               onClick={(event) => event.stopPropagation()}
             >
               <Menu
@@ -917,20 +824,21 @@ function FileDataTableSection({
   const folderReservedHeight =
     isExpanded
       ? SPLIT_DIVIDER_HEIGHT + 24
-      : foldersLength > 0
-        ? (customFolderHeight ??
-            Math.min(220, Math.max(96, foldersLength * 56 + 52))) + 84
-        : 15
+      : isSplitView
+        ? getSplitFolderBodyHeight(foldersLength) + SPLIT_DIVIDER_HEIGHT + 32
+        : foldersLength > 0
+          ? Math.min(220, Math.max(96, foldersLength * 56 + 52)) + 84
+          : 15
 
   const fileTableMaxHeight = isExpanded
     ? FULL_PANEL_FILE_HEIGHT
-    : `calc(100vh - ${folderReservedHeight + 220}px)`
+    : `calc(100vh - ${folderReservedHeight + 200}px)`
 
   return (
     <section className='flex min-h-0 flex-1 flex-col overflow-hidden'>
       <div className='min-h-0 flex-1 overflow-hidden'>
         <DataTable
-          component={<div />}
+          hideActionBar
           isLoading={loading || loadingPage}
           isReLoading={loadingPage}
           pageSize={pageSize}
@@ -942,6 +850,8 @@ function FileDataTableSection({
           onReload={onReload || (() => undefined)}
         />
       </div>
+
+      {footerDivider}
 
       {filePage ? (
         <Pagination
@@ -984,6 +894,8 @@ function FolderDataTableSection({
 
   isExpanded = false,
 
+  isSplitView = false,
+
   loading,
 
   loadingFolders,
@@ -1008,6 +920,8 @@ function FolderDataTableSection({
   hasMoreFolders: boolean
 
   isExpanded?: boolean
+
+  isSplitView?: boolean
 
   loading: boolean
 
@@ -1081,6 +995,7 @@ function FolderDataTableSection({
         header: 'Name',
         id: 'name',
         maxSize: 360,
+        meta: EXPLORER_CELL_META,
         minSize: 200,
         size: 280,
         cell: ({ row }) => {
@@ -1088,21 +1003,25 @@ function FolderDataTableSection({
 
           return (
             <button
-              className='flex min-w-0 max-w-full items-center gap-3 text-left disabled:cursor-not-allowed disabled:opacity-60'
+              className={`${EXPLORER_NAME_BUTTON_CLASS} disabled:cursor-not-allowed disabled:opacity-60`}
               disabled={loadingFolders || loadingPage}
               type='button'
               onClick={() => onOpenFolder(row.original.id)}
             >
-              <DynamicIcon
-                className='h-5 w-5 shrink-0 text-[#4f5b88]'
-                name={folder.iconKey || 'folder'}
-              />
+              <span className={EXPLORER_ICON_WRAP_CLASS}>
+                <DynamicIcon
+                  className={EXPLORER_ICON_CLASS}
+                  name={folder.iconKey || 'folder'}
+                />
+              </span>
 
-              <EllipsisText
-                className='font-bold text-gray-13'
-                lines={1}
-                value={row.original.name}
-              />
+              <span className={EXPLORER_NAME_TEXT_WRAP_CLASS}>
+                <EllipsisText
+                  className={EXPLORER_NAME_TEXT_CLASS}
+                  lines={1}
+                  value={row.original.name}
+                />
+              </span>
             </button>
           )
         },
@@ -1112,10 +1031,11 @@ function FolderDataTableSection({
         header: 'Items',
         id: 'items',
         maxSize: 140,
+        meta: EXPLORER_CELL_META,
         minSize: 100,
         size: 120,
         cell: ({ getValue }) => (
-          <span className='text-gray-10'>{String(getValue() || '-')}</span>
+          <ExplorerValue value={String(getValue() || '-')} />
         ),
       }),
 
@@ -1123,10 +1043,11 @@ function FolderDataTableSection({
         header: 'Date Modified',
         id: 'modified',
         maxSize: 180,
+        meta: EXPLORER_CELL_META,
         minSize: 130,
         size: 150,
         cell: ({ getValue }) => (
-          <span className='text-gray-10'>{String(getValue() || '-')}</span>
+          <ExplorerValue value={String(getValue() || '-')} />
         ),
       }),
 
@@ -1136,6 +1057,7 @@ function FolderDataTableSection({
         header: '',
         id: 'actions',
         maxSize: 72,
+        meta: EXPLORER_CELL_META,
         minSize: 56,
         size: 64,
 
@@ -1144,7 +1066,7 @@ function FolderDataTableSection({
 
           return (
             <div
-              className='flex justify-end'
+              className='flex items-end justify-end'
               onClick={(event) => event.stopPropagation()}
             >
               <Menu
@@ -1208,13 +1130,17 @@ function FolderDataTableSection({
   return (
     <section
       className={
-        isExpanded || !hasFiles
+        isExpanded
           ? 'flex min-h-0 flex-1 flex-col overflow-hidden'
-          : 'shrink-0 overflow-hidden'
+          : isSplitView
+            ? 'shrink-0 overflow-hidden'
+            : hasFiles
+              ? 'shrink-0 overflow-hidden'
+              : 'flex min-h-0 flex-1 flex-col overflow-hidden'
       }
     >
       <DataTable
-        component={<div />}
+        hideActionBar
         hasMore={hasMoreFolders}
         isLoading={loadingFolders && !folders.length}
         isLoadingMore={loadingFolders}

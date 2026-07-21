@@ -133,22 +133,31 @@ export function StatusPill({ status }: { status: string }) {
 /** Single-line ellipsis; hover expands in place (no tooltip). For icon+text cells. */
 export function EllipsisText({
   className = '',
+  inline = false,
   lines = 1,
   value,
 }: {
   className?: string
+  inline?: boolean
   lines?: 1 | 2
   value: string
 }) {
   const text = value || '—'
-  const clampClass =
-    lines === 1
-      ? 'line-clamp-1 transition-all hover:line-clamp-none group-hover/dtcell:line-clamp-none'
-      : 'line-clamp-2 transition-all hover:line-clamp-none group-hover/dtcell:line-clamp-none'
+  const layoutClass = inline
+    ? 'inline-block min-w-0 max-w-full'
+    : 'block min-w-0 w-full max-w-full'
+
+  const singleLineClass =
+    'overflow-hidden text-ellipsis whitespace-nowrap hover:overflow-visible hover:whitespace-normal hover:text-clip group-hover/dtcell:overflow-visible group-hover/dtcell:whitespace-normal group-hover/dtcell:text-clip'
+
+  const multiLineClass =
+    'break-words [overflow-wrap:anywhere] line-clamp-2 transition-all hover:line-clamp-none group-hover/dtcell:line-clamp-none'
 
   return (
     <span
-      className={`block min-w-0 w-full max-w-full break-words [overflow-wrap:anywhere] ${clampClass} ${className}`}
+      className={`${layoutClass} ${
+        lines === 1 ? singleLineClass : multiLineClass
+      } ${className}`}
     >
       {text}
     </span>
