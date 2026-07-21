@@ -92,31 +92,59 @@ export default function SettingsMain() {
   const [activePage, setActivePage] = useState<string>('settings')
 
   if (activePage === 'user-management') {
-    return <ManageUser onBack={() => setActivePage('settings')} />
+    return (
+      <SettingsDetailShell>
+        <ManageUser onBack={() => setActivePage('settings')} />
+      </SettingsDetailShell>
+    )
   }
   if (activePage === 'roles-permissions') {
-    return <RolesPermissions onBack={() => setActivePage('settings')} />
+    return (
+      <SettingsDetailShell>
+        <RolesPermissions onBack={() => setActivePage('settings')} />
+      </SettingsDetailShell>
+    )
   }
   if (activePage === 'group-management') {
-    return <GroupManagement onBack={() => setActivePage('settings')} />
+    return (
+      <SettingsDetailShell>
+        <GroupManagement onBack={() => setActivePage('settings')} />
+      </SettingsDetailShell>
+    )
   }
 
   if (activePage === 'folder-configuration') {
-    return <DmsSettings onBack={() => setActivePage('settings')} />
+    return (
+      <SettingsDetailShell>
+        <DmsSettings onBack={() => setActivePage('settings')} />
+      </SettingsDetailShell>
+    )
   }
 
   if (activePage === 'audit-monitoring') {
-    return <AuditMonitoring onBack={() => setActivePage('settings')} />
+    return (
+      <SettingsDetailShell>
+        <AuditMonitoring onBack={() => setActivePage('settings')} />
+      </SettingsDetailShell>
+    )
   }
   if (activePage === "playground") {
     window.open("https://demo.ezofis.com/V6Playground/apikey.html", "_blank");
     setActivePage('settings')
   }
   if (activePage === 'credit') {
-    return <Credits onBack={() => setActivePage('settings')} />
+    return (
+      <SettingsDetailShell>
+        <Credits onBack={() => setActivePage('settings')} />
+      </SettingsDetailShell>
+    )
   }
 
   return <SettingsLanding onOpenPage={setActivePage} />
+}
+
+function SettingsDetailShell({ children }: { children: React.ReactNode }) {
+  return <div className='flex h-full min-h-0 flex-col'>{children}</div>
 }
 
 function SettingsLanding({

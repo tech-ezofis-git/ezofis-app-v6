@@ -86,7 +86,7 @@ const FormsPage = () => {
   const groupBy = ''
 
   const filterBy = useMemo(() => {
-    const filters = []
+    const filters: { condition: string; criteria: string; value: string }[] = []
 
     Object.entries(activeFilters).forEach(([key, value]) => {
       if (value) {

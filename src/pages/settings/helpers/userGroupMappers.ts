@@ -105,11 +105,11 @@ export const mapApiUserToSettingsUser = (
 ): SettingsUser => {
   const displayName = String(
     raw.value ||
-      raw.displayName ||
-      raw.name ||
-      raw.loginName ||
-      raw.userName ||
-      '',
+    raw.displayName ||
+    raw.name ||
+    raw.loginName ||
+    raw.userName ||
+    '',
   ).trim()
 
   const parsedName = splitName(displayName)
@@ -128,10 +128,10 @@ export const mapApiUserToSettingsUser = (
   const rawGroups = raw.groups || raw.groupNames || raw.groupList || []
   const groups = Array.isArray(rawGroups)
     ? rawGroups.map((group) =>
-        typeof group === 'string'
-          ? group
-          : String(group.groupName || group.name || group.value || ''),
-      ).filter(Boolean)
+      typeof group === 'string'
+        ? group
+        : String(group.groupName || group.name || group.value || ''),
+    ).filter(Boolean)
     : []
 
   return {
@@ -159,8 +159,8 @@ export const mapApiUserToSettingsUser = (
     location: String(raw.location || raw.Location || '—'),
     loginType: String(
       raw.loginType ||
-        raw.LoginType ||
-        mapAuthStrategyToLoginType(String(raw.authStrategy || '')),
+      raw.LoginType ||
+      mapAuthStrategyToLoginType(String(raw.authStrategy || '')),
     ),
     manager: String(raw.manager || raw.Manager || '—'),
     mfaEnabled: Boolean(raw.mfaEnabled ?? true),
@@ -191,31 +191,31 @@ export const mapApiGroupToSettingsGroup = (
   const membersSource = raw.members || raw.users || raw.userList || []
   const members = Array.isArray(membersSource)
     ? membersSource
-        .map((member) => {
-          if (typeof member === 'string') return member
-          return String(
-            member.displayName ||
-              member.value ||
-              member.name ||
-              member.loginName ||
-              member.email ||
-              member.id ||
-              '',
-          )
-        })
-        .filter(Boolean)
+      .map((member) => {
+        if (typeof member === 'string') return member
+        return String(
+          member.displayName ||
+          member.value ||
+          member.name ||
+          member.loginName ||
+          member.email ||
+          member.id ||
+          '',
+        )
+      })
+      .filter(Boolean)
     : []
 
   const memberIds = Array.isArray(membersSource)
     ? membersSource
-        .map((member, memberIndex) =>
-          String(
-            typeof member === 'object'
-              ? member.id || member.userId || member.value || memberIndex
-              : member,
-          ),
-        )
-        .filter(Boolean)
+      .map((member, memberIndex) =>
+        String(
+          typeof member === 'object'
+            ? member.id || member.userId || member.value || memberIndex
+            : member,
+        ),
+      )
+      .filter(Boolean)
     : []
 
   const memberCount =
@@ -230,12 +230,12 @@ export const mapApiGroupToSettingsGroup = (
     description: String(
       raw.description || raw.groupDescription || raw.caption || '—',
     ),
-    id: raw.id ?? raw.groupId ?? raw.value ?? index + 1,
+    id: raw.groupId ?? raw.id ?? raw.value ?? index + 1,
     memberIds: memberIds.length
       ? memberIds
       : Array.from({ length: memberCount }, (_, memberIndex) =>
-          String(memberIndex),
-        ),
+        String(memberIndex),
+      ),
     members: members.length
       ? members
       : Array.from({ length: memberCount }, () => ''),

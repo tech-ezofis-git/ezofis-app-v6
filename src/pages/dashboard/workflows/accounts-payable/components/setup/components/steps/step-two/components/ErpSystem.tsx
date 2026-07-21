@@ -18,6 +18,7 @@ import {
 } from '@/components/common/animations'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import { compareHeaderSimilarity, normalizeFieldMapping } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/headerSimilarity'
+import { getFieldMappingApiUrl } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/fieldMappingApi'
 import {
   HEADER_MAPPING_API_FIELDS,
   LINE_ITEM_MAPPING_API_FIELDS,
@@ -218,9 +219,11 @@ const ErpSystem = () => {
           })
         }
 
-        // Try the API POST request
-        try {
-          const response = await fetch('/api-mapping/field-mapping', {
+        // Try the field-mapping API when this host is configured for it
+        const fieldMappingUrl = getFieldMappingApiUrl()
+        if (fieldMappingUrl) {
+          try {
+            const response = await fetch(fieldMappingUrl, {
             body: JSON.stringify({
               excelSheets: excelSheets || [],
               headerFields,
@@ -294,6 +297,7 @@ const ErpSystem = () => {
           }
         } catch (apiErr) {
           console.error('Failed to get mapping from endpoint:', apiErr)
+        }
         }
 
         const normalizedLocalHeader = normalizeFieldMapping(

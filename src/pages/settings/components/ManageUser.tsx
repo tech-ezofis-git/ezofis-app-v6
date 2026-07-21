@@ -19,7 +19,7 @@ import Pagination from '@/components/base/pagination/Pagination'
 import InputText from '@/components/base/inputs/InputText'
 import Menu from '@/components/base/menu/Menu'
 import MenuItem from '@/components/base/menu/MenuItem'
-import { createUser, getUsers, updateUser } from '@/api/v6/user'
+import { createUser, deleteUser as deleteUserApi, getUsers, updateUser } from '@/api/v6/user'
 import { dummySettingsUsers, getDummyGroupOptions } from '../data/settingsDummyData'
 import CustomFilter from '@/components/common/CustomFilter'
 import TableSearch from '@/components/base/data-table/actions/TableSearch'
@@ -53,9 +53,7 @@ import {
 import SettingsFormSection from './SettingsFormSection'
 import SettingsSetupContent from './SettingsSetupContent'
 import SettingsSetupHeader from './SettingsSetupHeader'
-import SettingsPageHeader, {
-  SettingsHeaderAddButton,
-} from './SettingsPageHeader'
+import SettingsPageHeader from './SettingsPageHeader'
 import useSettingsTableToolbar from './useSettingsTableToolbar'
 
 type AppUser = SettingsUser
@@ -296,13 +294,26 @@ export default function ManageUser({ onBack }: ManageUserProps) {
     setIsSetupOpen(true)
   }
 
-  const deleteUser = (userId: string | number) => {
+  const deleteUser = async (userId: string | number) => {
     const confirmed = window.confirm(
       'Are you sure you want to delete this user?',
     )
     if (!confirmed) return
 
-    setUsers((current) => current.filter((user) => user.id !== userId))
+    setIsLoadingUsers(true)
+    try {
+      const response = await deleteUserApi(String(userId))
+
+      if (response.error) {
+        showToast({ message: response.error, variant: 'error' })
+        return
+      }
+
+      showToast({ message: 'User deleted successfully', variant: 'success' })
+      await loadUsers()
+    } finally {
+      setIsLoadingUsers(false)
+    }
   }
 
   const saveUser = async () => {
@@ -587,13 +598,14 @@ export default function ManageUser({ onBack }: ManageUserProps) {
     pagination,
     paginationModel,
   } = useSettingsTablePagination()
+
   const userTable = useReactTable({
     ...settingsTableCoreOptions,
     ...tableSearchOptions,
     ...paginationModel,
     columns: userColumns,
     data: filteredUsers,
-    getRowId: (row) => String(row.id),
+    getRowId: (row: AppUser) => String(row.id),
     onPaginationChange,
     state: {
       ...tableSearchOptions.state,
@@ -644,10 +656,9 @@ export default function ManageUser({ onBack }: ManageUserProps) {
       <section className='flex-1 flex flex-col'>
         <SettingsPageHeader
           title='User Management'
-          onBack={onBack}
         />
 
-        <div className='p-4 flex-1 flex flex-col overflow-hidden'>
+        <div className='px-6 md:px-8 py-2 flex-1 flex flex-col overflow-hidden'>
           <CustomFilter
             filters={[
               { id: 'role', label: 'Role', options: roleOptions },
@@ -666,6 +677,7 @@ export default function ManageUser({ onBack }: ManageUserProps) {
             }}
             showReset={Object.keys(activeFilters).some(k => activeFilters[k]) || !!tableSearchOptions.state.globalFilter?.value}
             customSearchComponent={<TableSearch table={userTable as any} />}
+            onBack={onBack}
             addButton={{
               onClick: openAddUser,
               tooltip: 'Add User'

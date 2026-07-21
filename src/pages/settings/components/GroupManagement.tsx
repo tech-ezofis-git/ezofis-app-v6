@@ -35,9 +35,7 @@ import SettingsSelectField from './SettingsSelectField'
 import SettingsSelectedChips from './SettingsSelectedChips'
 import SettingsSetupContent from './SettingsSetupContent'
 import SettingsSetupHeader from './SettingsSetupHeader'
-import SettingsPageHeader, {
-  SettingsHeaderAddButton,
-} from './SettingsPageHeader'
+import SettingsPageHeader from './SettingsPageHeader'
 import useSettingsTableToolbar from './useSettingsTableToolbar'
 import {
   settingsHeaderMeta,
@@ -207,15 +205,20 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
     )
     if (!confirmed) return
 
-    const response = await deleteGroupApi(String(groupId))
+    setIsLoadingGroups(true)
+    try {
+      const response = await deleteGroupApi(String(groupId))
 
-    if (response.error) {
-      showToast({ message: response.error, variant: 'error' })
-      return
+      if (response.error) {
+        showToast({ message: response.error, variant: 'error' })
+        return
+      }
+
+      showToast({ message: 'Group deleted successfully', variant: 'success' })
+      await loadGroups()
+    } finally {
+      setIsLoadingGroups(false)
     }
-
-    showToast({ message: 'Group deleted successfully', variant: 'success' })
-    await loadGroups()
   }, [loadGroups])
 
   const saveGroup = async () => {
@@ -427,7 +430,7 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
     ...paginationModel,
     columns: groupColumns,
     data: filteredGroups,
-    getRowId: (row) => String(row.id),
+    getRowId: (row: SettingsGroup) => String(row.id),
     onPaginationChange,
     state: {
       ...tableSearchOptions.state,

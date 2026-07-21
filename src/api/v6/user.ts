@@ -105,8 +105,9 @@ export type V6MenuItem = {
   isSystem?: boolean
   key?: string
   label?: string
+  name?: string
+  visible?: boolean
   menuId?: string
-name?: string
   routePath?: string
   sortOrder?: number
 }
@@ -190,6 +191,41 @@ export const updateUser = async (id: string, payload: UpdateV6UserPayload) => {
     response.error = getV6ApiErrorMessage(
       error?.response?.data,
       'Failed to update user',
+    )
+  }
+
+  return response
+}
+
+export const deleteUser = async (id: string) => {
+  const response: {
+    data: unknown
+    error: string
+  } = {
+    data: null,
+    error: '',
+  }
+
+  try {
+    const store = authUserStore.getState()
+    const tenantId = store.session?.tenantId || (store.identity as any)?.tenantId || ''
+
+    const { data, status } = await axiosV6({
+      headers: tenantId ? { 'X-Tenant-Id': tenantId } : undefined,
+      method: 'DELETE',
+      url: `/Users/${id}`,
+    })
+
+    if (status !== 200 && status !== 204) {
+      throw new Error('invalid status code')
+    }
+
+    response.data = data
+  } catch (error: any) {
+    console.error(error)
+    response.error = getV6ApiErrorMessage(
+      error?.response?.data,
+      'Failed to delete user',
     )
   }
 
@@ -806,6 +842,7 @@ export const usersApiV6 = {
   createUser,
   deleteGroup,
   deleteMenu,
+  deleteUser,
   getGroupById,
   getGroups,
   getMenuById,

@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import type { Column } from '@/components/base/data-table/types'
 import {
   mapWorkflowBrowseItem,
+  type WorkflowBrowseFilter,
   type WorkflowBrowsePayload,
 } from '@/api/v6/workflows'
 import { getWorkflowListQueryOptions } from '@/api/workflow/queries'
@@ -158,7 +159,7 @@ const Table = ({ onCreate }: TableProps) => {
     const sortCriteria =
       sortColumn && sortColumn !== 'flowstatus' ? sortColumn : 'name'
 
-    const filters = []
+    const filters: WorkflowBrowseFilter[] = []
 
     Object.entries(activeFilters).forEach(([key, value]) => {
       if (value) {
