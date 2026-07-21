@@ -18,6 +18,7 @@ import {
 } from '@/api/v6/user'
 import showToast from '@/components/base/toast/showToast'
 import DataTable from '@/components/base/data-table/DataTable'
+import Pagination from '@/components/base/pagination/Pagination'
 import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
 import InputText from '@/components/base/inputs/InputText'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
@@ -41,6 +42,7 @@ import useSettingsTableToolbar from './useSettingsTableToolbar'
 import {
   settingsHeaderMeta,
   settingsTableCoreOptions,
+  useSettingsTablePagination,
   useSettingsTableSearch,
 } from '../helpers/settingsDataTable'
 import { calculateGroupSetupProgress } from '../helpers/settingsSetupProgress'
@@ -409,12 +411,28 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
     [deleteGroup, isLoadingGroupDetails, openEditGroup],
   )
 
+  const {
+    onPageChange,
+    onPageSizeChange,
+    onPaginationChange,
+    page,
+    pageSize,
+    pagination,
+    paginationModel,
+  } = useSettingsTablePagination()
+
   const groupTable = useReactTable({
     ...settingsTableCoreOptions,
     ...tableSearchOptions,
+    ...paginationModel,
     columns: groupColumns,
     data: filteredGroups,
     getRowId: (row) => String(row.id),
+    onPaginationChange,
+    state: {
+      ...tableSearchOptions.state,
+      pagination,
+    },
   })
 
   const { onRowSizeChange, rowSize } = useSettingsTableToolbar({
@@ -449,14 +467,15 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
   }
 
   return (
-    <main className='bg-[var(--surface)]'>
-      <section>
+    <main className='bg-[var(--surface)] flex h-full flex-col'>
+      <section className='flex min-h-0 flex-1 flex-col'>
         <SettingsPageHeader
           description='Create logical groups to organize users by team, department, or function.'
           title='Group Management'
+          onBack={onBack}
         />
 
-        <div className='px-6 py-4 md:px-8 flex-1 flex flex-col overflow-hidden'>
+        <div className='p-4 flex-1 flex flex-col overflow-hidden'>
           <CustomFilter
             filters={[
               { id: 'status', label: 'Status', options: statusOptions },
@@ -469,7 +488,6 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
             }}
             showReset={Object.keys(activeFilters).some(k => activeFilters[k]) || !!tableSearchOptions.state.globalFilter?.value}
             customSearchComponent={<TableSearch table={groupTable as any} />}
-            onBack={onBack}
             addButton={{
               onClick: openCreateGroup,
               tooltip: 'Add Group'
@@ -488,24 +506,35 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
             ]}
             trailingActions={<TableExport table={groupTable as any} />}
           />
-          <div className='py-4 min-h-0 flex-1 overflow-hidden'>
-            <DataTable
-              emptyDescription='Create a group to organize users by team, department, or function.'
-              emptyIcon='lucide:users-round'
-              emptyTitle='No groups yet'
-              hideActionBar
-              isLoading={isLoadingGroups}
-              isReLoading={isLoadingGroups}
-              pageSize={Math.max(5, groups.length || 5)}
-              rowSize={rowSize}
-              table={groupTable}
-              tableBodyMaxHeight='calc(100vh - 320px)'
-              hideGrouping
-              stickyHeader
-              onReload={() => {
-                void loadGroups()
-              }}
-              onRowSizeChange={onRowSizeChange}
+          <div className='mt-2 min-h-0 flex-1 overflow-hidden flex flex-col'>
+            <div className='min-h-0 flex-1 overflow-hidden'>
+              <DataTable
+                emptyDescription='Create a group to organize users by team, department, or function.'
+                emptyIcon='lucide:users-round'
+                emptyTitle='No groups yet'
+                hideActionBar
+                isLoading={isLoadingGroups}
+                isReLoading={isLoadingGroups}
+                pageSize={pageSize}
+                rowSize={rowSize}
+                table={groupTable}
+                hideGrouping
+                stickyHeader
+                onReload={() => {
+                  void loadGroups()
+                }}
+                onRowSizeChange={onRowSizeChange}
+              />
+            </div>
+            <Pagination
+              className='mt-4 shrink-0'
+              itemLabel='Groups'
+              page={page}
+              pageSize={pageSize}
+              showPageNumbers={false}
+              totalItems={groupTable.getFilteredRowModel().rows.length}
+              onPageChange={onPageChange}
+              onPageSizeChange={onPageSizeChange}
             />
           </div>
         </div>

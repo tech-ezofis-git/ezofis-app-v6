@@ -1,11 +1,8 @@
 import { useNavigate } from '@tanstack/react-router'
-import { useState } from 'react'
-import Header from './components/header/Header'
 import Table from './components/Table'
 
 const WorkflowsPage = () => {
   const navigate = useNavigate()
-  const [tabValue, setTabValue] = useState<string>('All')
 
   const handleCreate = () => {
     // Note: workflow builder routing uses 'new' as template identifier parameter
@@ -17,13 +14,8 @@ const WorkflowsPage = () => {
 
   return (
     <div className='flex h-full flex-col'>
-      <Header
-        tabValue={tabValue}
-        onCreate={handleCreate}
-        onTabChange={setTabValue}
-      />
-      <div className='bg-gray-50/50 flex-1 overflow-hidden px-6 py-2'>
-        <Table tabValue={tabValue} onCreate={handleCreate} />
+      <div className='bg-gray-50/50 flex min-h-0 flex-1 flex-col overflow-hidden p-4'>
+        <Table onCreate={handleCreate} />
       </div>
     </div>
   )

@@ -27,11 +27,10 @@ import type { RowSize } from '@/components/base/data-table/types'
 import authUserStore from '@/stores/authUserStore'
 
 interface TableProps {
-  tabValue: string
   onCreate?: () => void
 }
 
-const Table = ({ tabValue, onCreate }: TableProps) => {
+const Table = ({ onCreate }: TableProps) => {
   const navigate = useNavigate()
   const columns: Column[] = [
     {
@@ -45,7 +44,6 @@ const Table = ({ tabValue, onCreate }: TableProps) => {
       ),
     },
     {
-      enableGrouping: true,
       id: 'flowstatus',
       label: 'Status',
       size: 140,
@@ -161,19 +159,6 @@ const Table = ({ tabValue, onCreate }: TableProps) => {
       sortColumn && sortColumn !== 'flowstatus' ? sortColumn : 'name'
 
     const filters = []
-    if (tabValue === 'Published') {
-      filters.push({
-        condition: 'IS_EQUALS_TO',
-        criteria: 'flowStatus',
-        value: 'PUBLISHED',
-      })
-    } else if (tabValue === 'Drafts') {
-      filters.push({
-        condition: 'IS_EQUALS_TO',
-        criteria: 'flowStatus',
-        value: 'DRAFT',
-      })
-    }
 
     Object.entries(activeFilters).forEach(([key, value]) => {
       if (value) {
@@ -204,7 +189,7 @@ const Table = ({ tabValue, onCreate }: TableProps) => {
               },
             ]
           : [],
-      groupBy: tabValue === 'All' ? 'flowstatus' : '',
+      groupBy: '',
       hasReport: true,
       hasSecurity: true,
       itemsPerPage: pageSize,
@@ -214,7 +199,7 @@ const Table = ({ tabValue, onCreate }: TableProps) => {
         order: sortState?.[0]?.desc ? 'DESC' : 'ASC',
       },
     }
-  }, [page, pageSize, sortState, tabValue])
+  }, [page, pageSize, sortState, activeFilters])
 
   const { data, isFetching, isPending, isRefetching, refetch } = useQuery(
     getWorkflowListQueryOptions(payload),
@@ -223,64 +208,24 @@ const Table = ({ tabValue, onCreate }: TableProps) => {
   const workflows = useMemo(() => {
     if (!data?.data?.length) return []
 
-    const groups = data.data
-      .map((cluster) => {
-        const items = (cluster.value ?? []).map((item) =>
-          mapWorkflowBrowseItem(item, cluster.key),
-        )
+    const items = data.data.flatMap((cluster) =>
+      (cluster.value ?? []).map((item) =>
+        mapWorkflowBrowseItem(item, cluster.key),
+      ),
+    )
 
-        // Filter items locally based on tabValue status
-        const filteredItems = items.filter((item) => {
-          const status = String(
-            item.flowstatus || item.flowStatus,
-          ).toLowerCase()
-          if (tabValue === 'Published') {
-            return status === 'published'
-          }
-          if (tabValue === 'Drafts') {
-            return status === 'draft'
-          }
-          return true
-        })
+    if (items.length === 0) return []
 
-        let groupValue = String(cluster.key)
-        if (groupValue.toUpperCase() === 'PUBLISHED') {
-          groupValue = 'Published'
-        } else if (groupValue.toUpperCase() === 'DRAFT') {
-          groupValue = 'Draft'
-        }
-
-        return {
-          groupCount: filteredItems.length,
-          groupId: cluster.key,
-          groupKey: 'flowstatus',
-          groupValue,
-          items: filteredItems,
-        }
-      })
-      .filter((group) => group.items.length > 0)
-
-    if (tabValue !== 'All') {
-      const allItems = groups.flatMap((group) => group.items)
-      if (allItems.length === 0) return []
-      return [
-        {
-          groupCount: allItems.length,
-          groupId: 'all',
-          groupKey: '',
-          groupValue: '',
-          items: allItems,
-        },
-      ]
-    }
-
-    const totalItems = data.meta?.totalItems ?? 0
-    const hasItems = groups.some((group) => group.items.length > 0)
-
-    if (totalItems === 0 || !hasItems) return []
-
-    return groups
-  }, [data, tabValue])
+    return [
+      {
+        groupCount: items.length,
+        groupId: 'all',
+        groupKey: '',
+        groupValue: '',
+        items,
+      },
+    ]
+  }, [data])
 
   const createdByOptions = useMemo(() => {
     const unique = new Map<string, string>()
@@ -355,7 +300,7 @@ const Table = ({ tabValue, onCreate }: TableProps) => {
   })
 
   return (
-    <div className='flex h-full flex-col px-2 py-1'>
+    <div className='flex h-full min-h-0 flex-col'>
       <CustomFilter
         filters={[
           {
@@ -416,8 +361,17 @@ const Table = ({ tabValue, onCreate }: TableProps) => {
             disabled: isFetching
           }
         ]}
+        addButton={
+          onCreate
+            ? {
+                icon: 'lucide:plus',
+                onClick: onCreate,
+                tooltip: 'New Workflow',
+              }
+            : undefined
+        }
       />
-      <div className='min-h-0 flex-1 mt-2'>
+      <div className='mt-2 min-h-0 flex-1 overflow-hidden'>
         <DataTable
           emptyPage='workflows'
           hideActionBar={true}
@@ -439,7 +393,7 @@ const Table = ({ tabValue, onCreate }: TableProps) => {
         />
       </div>
       <Pagination
-        className='mt-4'
+        className='mt-4 shrink-0'
         itemLabel='Workflows'
         page={page}
         pageSize={pageSize}

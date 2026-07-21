@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import cn from '@/utils/cn'
 
 /**
- * Single-line ellipsis by default.
+ * Two-line ellipsis by default.
  * On hover, expands in place to show the full text (wraps within the column width).
  * No tooltip.
  */
@@ -21,7 +21,7 @@ export default function TableEllipsis({
     <div
       className={cn(
         'min-w-0 max-w-full break-words [overflow-wrap:anywhere]',
-        'line-clamp-1 transition-all',
+        'line-clamp-2 transition-all',
         'hover:line-clamp-none group-hover/dtcell:line-clamp-none',
         className,
       )}

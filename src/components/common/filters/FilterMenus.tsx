@@ -63,9 +63,6 @@ export function CategoryFilterMenu({ label, options, selectedValues, onChange, o
                   />
                   <span>{opt.label}</span>
                 </div>
-                {opt.count !== undefined && (
-                  <span className="text-11 text-text-muted">{opt.count}</span>
-                )}
               </label>
             );
           })
@@ -221,9 +218,6 @@ export function NumberFilterMenu({ options, selectedValues, onChange, onClear }:
                 />
                 <span>{opt.label}</span>
               </div>
-              {opt.count !== undefined && (
-                <span className="text-11 text-text-muted">{opt.count}</span>
-              )}
             </label>
           );
         })}
@@ -316,14 +310,11 @@ export function DateFilterMenu({ options, selectedValues, onChange, onClear }: F
                 />
                 <span>{opt.label}</span>
               </div>
-              {opt.count !== undefined && (
-                <span className="text-11 text-text-muted">{opt.count}</span>
-              )}
             </label>
           );
         })}
       </div>
-      
+
       {selectedValues.length > 0 && (
         <div className="p-2 pt-0">
           <div className="mb-1 h-px bg-border-default mx-[-8px]" />

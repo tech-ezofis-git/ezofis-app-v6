@@ -1,8 +1,10 @@
 import {
   getCoreRowModel,
   getFilteredRowModel,
+  getPaginationRowModel,
   type ColumnFiltersState,
   type FilterFn,
+  type PaginationState,
   type Row,
 } from '@tanstack/react-table'
 import { useMemo, useState } from 'react'
@@ -77,5 +79,32 @@ export function useSettingsTableSearch() {
       state: { columnFilters, globalFilter },
     }),
     [columnFilters, globalFilter],
+  )
+}
+
+export function useSettingsTablePagination(initialPageSize = 10) {
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: initialPageSize,
+  })
+
+  return useMemo(
+    () => ({
+      onPageChange: (page: number) =>
+        setPagination((prev) => ({
+          ...prev,
+          pageIndex: Math.max(0, page - 1),
+        })),
+      onPageSizeChange: (pageSize: number) =>
+        setPagination({ pageIndex: 0, pageSize }),
+      onPaginationChange: setPagination,
+      page: pagination.pageIndex + 1,
+      pageSize: pagination.pageSize,
+      pagination,
+      paginationModel: {
+        getPaginationRowModel: getPaginationRowModel(),
+      },
+    }),
+    [pagination],
   )
 }

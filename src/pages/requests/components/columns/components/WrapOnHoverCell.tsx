@@ -1,4 +1,5 @@
 import React from 'react'
+import cn from '@/utils/cn'
 
 const CELL_TEXT = 'text-xs font-normal text-gray-12'
 
@@ -11,13 +12,13 @@ export default function WrapOnHoverCell({
 }) {
   return (
     <span
-      className={[
+      className={cn(
         CELL_TEXT,
-        'block min-w-0',
-        'truncate overflow-hidden text-ellipsis whitespace-nowrap',
-        'hover:overflow-visible hover:break-words hover:text-clip hover:whitespace-normal',
+        'block min-w-0 max-w-full break-words [overflow-wrap:anywhere]',
+        'line-clamp-2',
+        'hover:line-clamp-none',
         className,
-      ].join(' ')}
+      )}
     >
       {value}
     </span>

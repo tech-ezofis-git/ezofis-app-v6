@@ -1,7 +1,7 @@
 import React from "react";
-import { Download, Upload, RefreshCw, FileUp, FileDown } from "lucide-react";
-import Button from "@/components/base/button/Button";
 import IconButton from "@/components/base/button/IconButton";
+import Button from "@/components/base/button/Button";
+import Icon from "@/components/base/icon/Icon";
 
 export interface ToolbarAction {
   id: string;
@@ -17,46 +17,47 @@ export interface FilterToolbarProps {
   actions?: ToolbarAction[];
 }
 
+const resolveIconName = (icon?: string | React.ElementType): string | undefined => {
+  if (typeof icon !== "string") return undefined;
+  if (icon.includes(":")) return icon;
+
+  const legacyMap: Record<string, string> = {
+    download: "tabler:download",
+    upload: "tabler:upload",
+    refresh: "tabler:refresh",
+    export: "tabler:file-export",
+    import: "tabler:file-import",
+    columns: "tabler:columns",
+    filter: "tabler:filter",
+  };
+
+  return legacyMap[icon] || `lucide:${icon}`;
+};
+
 export function FilterToolbar({ actions }: FilterToolbarProps) {
   if (!actions || actions.length === 0) return null;
 
   return (
-    <div className="flex items-center gap-2 border-l border-border-default pl-2 ml-auto">
+    <div className="ml-auto flex items-center gap-1.5">
       {actions.map((action) => {
-        let IconComp: any = null;
-        
-        if (typeof action.icon === "string") {
-          switch (action.icon) {
-            case "download": IconComp = Download; break;
-            case "upload": IconComp = Upload; break;
-            case "refresh": IconComp = RefreshCw; break;
-            case "export": IconComp = FileUp; break;
-            case "import": IconComp = FileDown; break;
-            default: break;
-          }
-        } else {
-          IconComp = action.icon;
-        }
+        const iconName = resolveIconName(action.icon);
+        const IconComp =
+          typeof action.icon === "function" ? action.icon : null;
 
         if (action.isIconButton || !action.label) {
           return (
             <IconButton
               key={action.id}
-              tooltip={action.tooltip || action.label}
               ariaLabel={action.tooltip || action.label || action.id}
-              onClick={action.onClick}
-              disabled={action.disabled}
-              variant="ghost"
               color="gray"
+              disabled={action.disabled}
+              icon={iconName}
               size="sm"
-              icon={
-                typeof action.icon === "string" 
-                  ? (action.icon.includes(':') ? action.icon : (IconComp ? undefined : `lucide:${action.icon}`))
-                  : undefined
-              }
+              tooltip={action.tooltip || action.label}
+              variant="outline"
+              onClick={action.onClick}
             >
-              {IconComp && typeof action.icon === "string" && !action.icon.includes(':') && <IconComp className="h-4 w-4" />}
-              {IconComp && typeof action.icon !== "string" && <IconComp className="h-4 w-4" />}
+              {IconComp ? <IconComp className="h-4 w-4" /> : null}
             </IconButton>
           );
         }
@@ -64,16 +65,18 @@ export function FilterToolbar({ actions }: FilterToolbarProps) {
         return (
           <Button
             key={action.id}
-            variant="outline"
-            color="gray"
-            size="sm"
-            onClick={action.onClick}
-            disabled={action.disabled}
             className="flex items-center gap-1.5"
-            icon={typeof action.icon === "string" ? (action.icon.includes(':') ? action.icon : (IconComp ? undefined : `lucide:${action.icon}`)) : undefined}
+            color="gray"
+            disabled={action.disabled}
+            icon={iconName}
+            size="sm"
+            variant="outline"
+            onClick={action.onClick}
           >
-            {IconComp && typeof action.icon === "string" && !action.icon.includes(':') && <IconComp className="h-3.5 w-3.5" />}
-            {IconComp && typeof action.icon !== "string" && <IconComp className="h-3.5 w-3.5" />}
+            {IconComp ? <IconComp className="h-3.5 w-3.5" /> : null}
+            {!iconName && !IconComp && action.icon ? (
+              <Icon className="h-3.5 w-3.5" name="tabler:circle" />
+            ) : null}
             <span>{action.label}</span>
           </Button>
         );

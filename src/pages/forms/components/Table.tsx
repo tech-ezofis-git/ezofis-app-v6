@@ -30,8 +30,8 @@ const Table = ({
   // Component body simplified as columns and state are managed by parent
 
   return (
-    <div className='flex h-full flex-col px-2 py-1'>
-      <div className='min-h-0 flex-1'>
+    <div className='flex h-full min-h-0 flex-col'>
+      <div className='min-h-0 flex-1 overflow-hidden'>
         <DataTable
           emptyPage='forms'
           hideActionBar={true}
@@ -51,7 +51,7 @@ const Table = ({
         />
       </div>
       <Pagination
-        className='mt-4'
+        className='mt-4 shrink-0'
         itemLabel='Forms'
         page={page}
         pageSize={pageSize}

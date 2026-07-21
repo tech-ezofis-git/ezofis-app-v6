@@ -129,31 +129,25 @@ function SettingsLanding({
 
   return (
     <main className='overflow-y-auto bg-[var(--surface)]'>
-      {/* <section className='mb-4 border-b border-gray-3 bg-surface px-6 py-4 md:px-8'>
-        <p className='text-13/5 text-gray-11'>
-          Configure users, folders, roles, and platform settings
-        </p>
-      </section> */}
-
       <section
         aria-label='Settings administration modules'
-        className='mt-8 grid max-h-[calc(100vh-150px)] max-w-[93vw] grid-cols-1 gap-4 px-6 py-4 md:px-8 lg:grid-cols-2'
+        className='grid max-h-[calc(100vh-150px)] grid-cols-1 gap-4 p-4 lg:grid-cols-2'
       >
         {settingsItems.map((item) => {
           const Icon = item.icon
 
           return (
             <button
-              className='group grid min-h-[88px] w-full grid-cols-[40px_1fr_24px] items-start rounded-[12px] border border-[var(--border-default)] bg-[var(--surface-primary)] px-6 py-5 text-left shadow-[var(--shadow-sm)] transition hover:border-[var(--primary-7)] hover:shadow-[var(--shadow-md)]'
+              className='group flex min-h-[88px] w-full items-start gap-4 rounded-[12px] border border-[var(--border-default)] bg-[var(--surface-primary)] px-6 py-5 text-left shadow-[var(--shadow-sm)] transition hover:border-[var(--primary-7)] hover:shadow-[var(--shadow-md)]'
               key={item.key}
               type='button'
               onClick={() => onOpenPage(item.key)}
             >
-              <span className='flex h-8 w-8 items-center justify-center pt-1 text-[var(--primary-10)]'>
+              <span className='flex h-5 w-5 shrink-0 items-center justify-center text-[var(--primary-10)]'>
                 <Icon size={20} strokeWidth={1.9} />
               </span>
 
-              <span className='min-w-0'>
+              <span className='min-w-0 flex-1'>
                 <span className='block text-sm leading-5 font-semibold text-[var(--text-primary)]'>
                   {item.title}
                 </span>
@@ -164,7 +158,7 @@ function SettingsLanding({
               </span>
 
               <ChevronRight
-                className='mt-1 text-[var(--gray-8)] transition group-hover:translate-x-1 group-hover:text-[var(--primary-10)]'
+                className='mt-0.5 shrink-0 text-[var(--gray-8)] transition group-hover:translate-x-1 group-hover:text-[var(--primary-10)]'
                 size={20}
                 strokeWidth={1.8}
               />

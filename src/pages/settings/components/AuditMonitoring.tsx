@@ -12,9 +12,11 @@ import {
 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import DataTable from '@/components/base/data-table/DataTable'
+import Pagination from '@/components/base/pagination/Pagination'
 import {
   settingsHeaderMeta,
   settingsTableCoreOptions,
+  useSettingsTablePagination,
   useSettingsTableSearch,
 } from '../helpers/settingsDataTable'
 import SettingsPageHeader from './SettingsPageHeader'
@@ -178,12 +180,13 @@ export default function AuditMonitoring({ onBack }: AuditUserProps) {
   const eventsTable = useAuditEventsTable(filteredEvents)
 
   return (
-    <div className='bg-[var(--surface)] flex-1 flex flex-col'>
+    <div className='bg-[var(--surface)] flex h-full min-h-0 flex-col'>
       <SettingsPageHeader
         description='Track user activity, configuration changes, and security events across the platform.'
         title='Audit & Monitoring'
+        onBack={onBack}
       />
-      <div className='flex-1 flex flex-col overflow-hidden px-6 py-4 md:px-8'>
+      <div className='flex min-h-0 flex-1 flex-col overflow-hidden p-4'>
         <CustomFilter
           filters={[
             { id: 'category', label: 'Category', options: categoryOptions },
@@ -197,7 +200,6 @@ export default function AuditMonitoring({ onBack }: AuditUserProps) {
           }}
           showReset={Object.keys(activeFilters).some(k => activeFilters[k]) || !!eventsTable.tableSearchOptions.state.globalFilter?.value}
           customSearchComponent={<TableSearch table={eventsTable.table as any} />}
-          onBack={onBack}
           actionButtons={[
             {
               id: 'refresh',
@@ -214,23 +216,32 @@ export default function AuditMonitoring({ onBack }: AuditUserProps) {
 
 
 
-        <div className='flex-1 flex flex-col overflow-hidden my-4'>
-          <div className='min-h-0 flex-1 overflow-hidden'>
-            <DataTable
-              hideActionBar
-              isLoading={false}
-              isReLoading={false}
-              pageSize={Math.max(8, filteredEvents.length || 8)}
-              rowSize={eventsTable.rowSize}
-              table={eventsTable.table}
-              tableBodyMaxHeight='calc(100vh - 400px)'
-              stickyHeader
-              hideGrouping
-              onReload={() => undefined}
-              onRowSizeChange={eventsTable.onRowSizeChange}
+        <div className='mt-2 flex min-h-0 flex-1 flex-col overflow-hidden'>
+            <div className='min-h-0 flex-1 overflow-hidden'>
+              <DataTable
+                hideActionBar
+                isLoading={false}
+                isReLoading={false}
+                pageSize={eventsTable.pageSize}
+                rowSize={eventsTable.rowSize}
+                table={eventsTable.table}
+                stickyHeader
+                hideGrouping
+                onReload={() => undefined}
+                onRowSizeChange={eventsTable.onRowSizeChange}
+              />
+            </div>
+            <Pagination
+              className='mt-4 shrink-0'
+              itemLabel='Events'
+              page={eventsTable.page}
+              pageSize={eventsTable.pageSize}
+              showPageNumbers={false}
+              totalItems={eventsTable.table.getFilteredRowModel().rows.length}
+              onPageChange={eventsTable.onPageChange}
+              onPageSizeChange={eventsTable.onPageSizeChange}
             />
           </div>
-        </div>
       </div>
     </div>
   )
@@ -239,6 +250,15 @@ export default function AuditMonitoring({ onBack }: AuditUserProps) {
 function useAuditEventsTable(rows: AuditEvent[]) {
   const columnHelper = createColumnHelper<AuditEvent>()
   const tableSearchOptions = useSettingsTableSearch()
+  const {
+    onPageChange,
+    onPageSizeChange,
+    onPaginationChange,
+    page,
+    pageSize,
+    pagination,
+    paginationModel,
+  } = useSettingsTablePagination()
 
   const columns = useMemo(
     () => [
@@ -321,8 +341,14 @@ function useAuditEventsTable(rows: AuditEvent[]) {
   const table = useReactTable({
     ...settingsTableCoreOptions,
     ...tableSearchOptions,
+    ...paginationModel,
     columns,
     data: rows,
+    onPaginationChange,
+    state: {
+      ...tableSearchOptions.state,
+      pagination,
+    },
   })
 
   const { onRowSizeChange, rowSize, toolbar } = useSettingsTableToolbar({
@@ -332,7 +358,11 @@ function useAuditEventsTable(rows: AuditEvent[]) {
   })
 
   return {
+    onPageChange,
+    onPageSizeChange,
     onRowSizeChange,
+    page,
+    pageSize,
     rowSize,
     table,
     tableSearchOptions,

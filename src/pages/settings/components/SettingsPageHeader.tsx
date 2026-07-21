@@ -50,14 +50,14 @@ export default function SettingsPageHeader({
   useSettingsTopbar(breadcrumbConfig)
 
   const hasRightContent = Boolean(toolbar || actions)
-  const hasLeftContent = Boolean(onBack || leading)
+  const hasLeftContent = Boolean(leading)
 
   if (!hasLeftContent && !hasRightContent) {
     return null
   }
 
   return (
-    <div className='border-b border-gray-3 bg-surface px-6 py-4 md:px-8'>
+    <div className='border-b border-gray-3 bg-surface px-4 py-3'>
       <div
         className={cn(
           'flex flex-wrap items-center gap-4',
@@ -65,16 +65,6 @@ export default function SettingsPageHeader({
         )}
       >
         <div className='flex min-w-0 flex-1 flex-wrap items-center gap-3'>
-          {onBack ? (
-            <IconButton
-              ariaLabel='Back'
-              color='gray'
-              icon='lucide:arrow-left'
-              size='sm'
-              variant='ghost'
-              onClick={onBack}
-            />
-          ) : null}
           {leading}
         </div>
 

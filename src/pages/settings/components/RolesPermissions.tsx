@@ -31,6 +31,7 @@ import {
 import IconButton from '@/components/base/button/IconButton'
 import TableReload from '@/components/base/data-table/actions/TableReload'
 import DataTable from '@/components/base/data-table/DataTable'
+import Pagination from '@/components/base/pagination/Pagination'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
 import InputText from '@/components/base/inputs/InputText'
@@ -46,6 +47,7 @@ import {
 import {
   settingsHeaderMeta,
   settingsTableCoreOptions,
+  useSettingsTablePagination,
   useSettingsTableSearch,
 } from '../helpers/settingsDataTable'
 import { calculateRoleSetupProgress } from '../helpers/settingsSetupProgress'
@@ -513,7 +515,7 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
   }
 
   return (
-    <main className='min-h-full bg-[var(--surface)]'>
+    <main className='flex h-full min-h-0 flex-col bg-[var(--surface)]'>
       <RoleList
         isLoading={isLoadingRoles}
         isLoadingRoleDetails={isLoadingRoleDetails}
@@ -1278,6 +1280,15 @@ function RoleList({
   onReload: () => void | Promise<void>
 }) {
   const tableSearchOptions = useSettingsTableSearch()
+  const {
+    onPageChange,
+    onPageSizeChange,
+    onPaginationChange,
+    page,
+    pageSize,
+    pagination,
+    paginationModel,
+  } = useSettingsTablePagination()
   const [activeFilters, setActiveFilters] = useState<Record<string, string>>({})
 
   const filteredRoles = useMemo(() => {
@@ -1407,9 +1418,15 @@ function RoleList({
   const roleTable = useReactTable({
     ...settingsTableCoreOptions,
     ...tableSearchOptions,
+    ...paginationModel,
     columns: roleColumns,
     data: filteredRoles,
     getRowId: (row) => row.id,
+    onPaginationChange,
+    state: {
+      ...tableSearchOptions.state,
+      pagination,
+    },
   })
 
   const { rowSize, onRowSizeChange } = useSettingsTableToolbar({
@@ -1423,12 +1440,13 @@ function RoleList({
   const typeOptions = useMemo(() => Array.from(new Set(roles.map(r => r.type).filter(Boolean))).map(t => ({label: t, value: t})), [roles])
 
   return (
-    <>
+    <div className='flex h-full min-h-0 flex-col'>
       <SettingsPageHeader
         title='Roles & Permissions'
+        onBack={onBack}
       />
 
-      <div className='px-6 py-4 md:px-8'>
+      <div className='flex min-h-0 flex-1 flex-col overflow-hidden p-4'>
         <CustomFilter
              filters={[
                 { id: 'type', label: 'Type', options: typeOptions },
@@ -1441,7 +1459,6 @@ function RoleList({
              }}
              showReset={Object.keys(activeFilters).some(k => activeFilters[k]) || !!tableSearchOptions.state.globalFilter?.value}
              customSearchComponent={<TableSearch table={roleTable as any} />}
-             onBack={onBack}
              addButton={{
                onClick: onCreate,
                tooltip: 'Create Role'
@@ -1460,28 +1477,39 @@ function RoleList({
              ]}
              trailingActions={<TableExport table={roleTable as any} />}
         />
-        <div className='mt-4'>
-          <DataTable
-            emptyDescription='Create a role to manage access permissions across the platform.'
-            emptyIcon='lucide:shield'
-            emptyTitle='No roles yet'
-            isLoading={isLoading}
-            isReLoading={isLoading}
-            pageSize={Math.max(6, roles.length || 6)}
-            rowSize={rowSize}
-            table={roleTable}
-            tableBodyMaxHeight='calc(100vh - 320px)'
-            hideActionBar
-            hideGrouping
-            stickyHeader
-            onReload={() => {
-              void onReload()
-            }}
-            onRowSizeChange={onRowSizeChange}
+        <div className='mt-4 flex min-h-0 flex-1 flex-col overflow-hidden'>
+          <div className='min-h-0 flex-1 overflow-hidden'>
+            <DataTable
+              emptyDescription='Create a role to manage access permissions across the platform.'
+              emptyIcon='lucide:shield'
+              emptyTitle='No roles yet'
+              isLoading={isLoading}
+              isReLoading={isLoading}
+              pageSize={pageSize}
+              rowSize={rowSize}
+              table={roleTable}
+              hideActionBar
+              hideGrouping
+              stickyHeader
+              onReload={() => {
+                void onReload()
+              }}
+              onRowSizeChange={onRowSizeChange}
+            />
+          </div>
+          <Pagination
+            className='mt-4 shrink-0'
+            itemLabel='Roles'
+            page={page}
+            pageSize={pageSize}
+            showPageNumbers={false}
+            totalItems={roleTable.getFilteredRowModel().rows.length}
+            onPageChange={onPageChange}
+            onPageSizeChange={onPageSizeChange}
           />
         </div>
       </div>
-    </>
+    </div>
   )
 }
 
@@ -1589,7 +1617,7 @@ function TabBar({
   onToolbarSlotChange: (node: HTMLDivElement | null) => void
 }) {
   return (
-    <div className='flex min-h-14 flex-wrap items-center justify-between gap-3 border-b border-gray-3 bg-surface px-6 py-2 md:px-8'>
+    <div className='flex min-h-14 flex-wrap items-center justify-between gap-3 border-b border-gray-3 bg-surface px-4 py-2'>
       <div className='flex h-14 min-w-0 items-center'>
         {tabs.map((tab) => {
           const isActive = activeTab === tab.key

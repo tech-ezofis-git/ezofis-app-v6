@@ -35,7 +35,7 @@ export default function SettingsSetupHeader({
   useSettingsTopbar(breadcrumbConfig)
 
   return (
-    <header className='border-b border-[var(--border-default)] bg-surface px-6 py-4 md:px-8'>
+    <header className='border-b border-[var(--border-default)] bg-surface px-4 py-3'>
       <div className='flex items-start justify-between gap-5'>
         <div className='flex min-w-0 items-start gap-3'>
           <IconButton

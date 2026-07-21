@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Icon from '@/components/base/icon/Icon'
 import showToast from '@/components/base/toast/showToast'
 import Tooltip from '@/components/base/Tooltip'
-import { AnimateFadeIn } from '@/components/common/animations'
-import { compareHeaderSimilarity } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/headerSimilarity'
+import { compareHeaderSimilarity, normalizeFieldMapping, resolvePredefinedFieldKey } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/headerSimilarity'
+import { DEFAULT_FIELD_TYPES } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/mappingFieldDefaults'
 import { SYSTEM_TEMPLATE_COLUMNS } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/templateSchema'
 import { LINE_ITEM_TEMPLATE_COLUMNS } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/lineItemSchema'
 import cn from '@/utils/cn'
@@ -26,32 +26,8 @@ interface ApColumnMappingProps {
   activeMappingTab: 'header' | 'lineItems'
 }
 
-const DEFAULT_FIELD_TYPES: Record<string, string> = {
-  'PO Number': 'SHORT_TEXT',
-  'Supplier': 'SHORT_TEXT',
-  'Supplier Address': 'LONG_TEXT',
-  'Ship To Address': 'LONG_TEXT',
-  'PO Date': 'DATE',
-  'Terms': 'LONG_TEXT',
-  'Buyer': 'SHORT_TEXT',
-  'PO Amount': 'CURRENCY_AMOUNT',
-  'Currency': 'SINGLE_SELECT',
-  'Line ': 'NUMBER',
-  'Part Number': 'SHORT_TEXT',
-  'Description': 'LONG_TEXT',
-  'Quantity': 'NUMBER',
-  'UOM': 'SHORT_TEXT',
-  'Unit Cost': 'CURRENCY_AMOUNT',
-  'Tax': 'CURRENCY_AMOUNT',
-  'Extended': 'CURRENCY_AMOUNT',
-  'Req Date': 'DATE',
-  'Weight': 'NUMBER',
-  'G/L Account': 'SHORT_TEXT',
-  'Additional Notes': 'LONG_TEXT',
-}
-
 const DATA_TYPES = [
-  { id: 'SHORT_TEXT', name: 'Short Text', icon: 'tabler:abc' },
+  { id: 'SHORT_TEXT', name: 'Short Text', icon: 'lucide:type' },
   { id: 'LONG_TEXT', name: 'Long Text', icon: 'tabler:align-left' },
   { id: 'NUMBER', name: 'Number', icon: 'tabler:numbers' },
   { id: 'DATE', name: 'Date', icon: 'tabler:calendar' },
@@ -64,6 +40,31 @@ const DATA_TYPES = [
   { id: 'URL', name: 'Link', icon: 'tabler:link' },
 ]
 
+const FIELD_KIND_ICONS = {
+  predefined: { icon: 'tabler:template', className: 'text-gray-10' },
+  custom: { icon: 'tabler:circle-plus', className: 'text-purple-11' },
+} as const
+
+function isPredefinedField(
+  fieldKey: string,
+  templateSchema: readonly TemplateColumn[],
+) {
+  return resolvePredefinedFieldKey(fieldKey, templateSchema) !== null
+}
+
+function applyNormalizedMapping(
+  mapping: Record<string, string>,
+  fieldDataTypes: Record<string, string>,
+  templateSchema: readonly TemplateColumn[],
+) {
+  return normalizeFieldMapping(
+    mapping,
+    fieldDataTypes,
+    templateSchema,
+    DEFAULT_FIELD_TYPES,
+  )
+}
+
 export default function ApColumnMapping({
   mapping,
   previewRows,
@@ -75,13 +76,43 @@ export default function ApColumnMapping({
   const templateSchema: readonly TemplateColumn[] =
     activeMappingTab === 'header' ? SYSTEM_TEMPLATE_COLUMNS : LINE_ITEM_TEMPLATE_COLUMNS
 
+  const customFieldKeys = useMemo(
+    () =>
+      [...new Set(Object.keys(mapping))].filter(
+        (key) => !resolvePredefinedFieldKey(key, templateSchema),
+      ),
+    [mapping, templateSchema],
+  )
+
   const [activeDropdownRow, setActiveDropdownRow] = useState<string | null>(null)
   const [activeTypeDropdownRow, setActiveTypeDropdownRow] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [customFieldText, setCustomFieldText] = useState('')
+  const [sectionOpen, setSectionOpen] = useState<
+    Record<string, { predefined: boolean; custom: boolean }>
+  >({})
 
   const dropdownRef = useRef<HTMLDivElement>(null)
   const typeDropdownRef = useRef<HTMLDivElement>(null)
+
+  const getSectionState = (excelCol: string) =>
+    sectionOpen[excelCol] ?? { predefined: true, custom: true }
+
+  const toggleSection = (
+    excelCol: string,
+    section: 'predefined' | 'custom',
+  ) => {
+    setSectionOpen((prev) => {
+      const current = prev[excelCol] ?? { predefined: true, custom: true }
+      return {
+        ...prev,
+        [excelCol]: {
+          ...current,
+          [section]: !current[section],
+        },
+      }
+    })
+  }
 
 
   // Close dropdowns on click outside
@@ -98,6 +129,23 @@ export default function ApColumnMapping({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  // Normalize legacy/custom keys that match predefined fields
+  useEffect(() => {
+    const needsNormalization = Object.keys(mapping).some((key) => {
+      const resolved = resolvePredefinedFieldKey(key, templateSchema)
+      return resolved !== null && resolved !== key
+    })
+
+    if (!needsNormalization) return
+
+    const normalized = applyNormalizedMapping(
+      mapping,
+      fieldDataTypes,
+      templateSchema,
+    )
+    onUpdateMapping(normalized.mapping, normalized.fieldDataTypes)
+  }, [mapping, fieldDataTypes, templateSchema, onUpdateMapping])
+
   const handleSelectField = (excelCol: string, ezKey: string | null) => {
     const nextMapping = { ...mapping }
     const nextDataTypes = { ...fieldDataTypes }
@@ -106,20 +154,34 @@ export default function ApColumnMapping({
     Object.keys(nextMapping).forEach((key) => {
       if (nextMapping[key]?.toLowerCase().trim() === excelCol.toLowerCase().trim()) {
         delete nextMapping[key]
+        delete nextDataTypes[key]
       }
     })
 
     if (ezKey) {
+      const resolvedKey =
+        resolvePredefinedFieldKey(ezKey, templateSchema) ?? ezKey
       // Map new field
-      nextMapping[ezKey] = excelCol
+      nextMapping[resolvedKey] = excelCol
       // If it doesn't have a data type, assign a default
-      if (!nextDataTypes[ezKey]) {
-        nextDataTypes[ezKey] = DEFAULT_FIELD_TYPES[ezKey] || 'SHORT_TEXT'
+      if (!nextDataTypes[resolvedKey]) {
+        nextDataTypes[resolvedKey] =
+          nextDataTypes[ezKey] ||
+          DEFAULT_FIELD_TYPES[resolvedKey] ||
+          'SHORT_TEXT'
+      }
+      if (resolvedKey !== ezKey) {
+        delete nextDataTypes[ezKey]
       }
     }
 
+    const normalized = applyNormalizedMapping(
+      nextMapping,
+      nextDataTypes,
+      templateSchema,
+    )
 
-    onUpdateMapping(nextMapping, nextDataTypes)
+    onUpdateMapping(normalized.mapping, normalized.fieldDataTypes)
     setActiveDropdownRow(null)
     setSearchQuery('')
     setCustomFieldText('')
@@ -129,20 +191,10 @@ export default function ApColumnMapping({
     const trimmed = customName.trim()
     if (!trimmed) return
 
-    // Ensure it's not a duplicate of predefined fields
-    const matchesPredefined = templateSchema.some(
-      (col) => col.key.toLowerCase() === trimmed.toLowerCase()
-    )
-
-    if (matchesPredefined) {
-      // Match it with the predefined one instead
-      const predefined = templateSchema.find(
-        (col) => col.key.toLowerCase() === trimmed.toLowerCase()
-      )
-      if (predefined) {
-        handleSelectField(excelCol, predefined.key)
-        return
-      }
+    const predefinedKey = resolvePredefinedFieldKey(trimmed, templateSchema)
+    if (predefinedKey) {
+      handleSelectField(excelCol, predefinedKey)
+      return
     }
 
     const nextMapping = { ...mapping }
@@ -152,6 +204,7 @@ export default function ApColumnMapping({
     Object.keys(nextMapping).forEach((key) => {
       if (nextMapping[key]?.toLowerCase().trim() === excelCol.toLowerCase().trim()) {
         delete nextMapping[key]
+        delete nextDataTypes[key]
       }
     })
 
@@ -159,7 +212,13 @@ export default function ApColumnMapping({
     nextMapping[trimmed] = excelCol
     nextDataTypes[trimmed] = 'SHORT_TEXT' // default datatype for custom fields
 
-    onUpdateMapping(nextMapping, nextDataTypes)
+    const normalized = applyNormalizedMapping(
+      nextMapping,
+      nextDataTypes,
+      templateSchema,
+    )
+
+    onUpdateMapping(normalized.mapping, normalized.fieldDataTypes)
     setActiveDropdownRow(null)
     setSearchQuery('')
     setCustomFieldText('')
@@ -191,7 +250,13 @@ export default function ApColumnMapping({
       }
     })
 
-    onUpdateMapping(nextMapping, nextDataTypes)
+    const normalized = applyNormalizedMapping(
+      nextMapping,
+      nextDataTypes,
+      templateSchema,
+    )
+
+    onUpdateMapping(normalized.mapping, normalized.fieldDataTypes)
     showToast({
       message: 'Reset mappings to matching suggestions.',
       variant: 'default',
@@ -262,6 +327,11 @@ export default function ApColumnMapping({
                 (key) => mapping[key]?.toLowerCase().trim() === excelCol.toLowerCase().trim()
               )
               const hasMapping = !!mappedEzField
+              const selectedFieldKind = mappedEzField
+                ? isPredefinedField(mappedEzField, templateSchema)
+                  ? 'predefined'
+                  : 'custom'
+                : null
               const currentDataType = mappedEzField ? (fieldDataTypes[mappedEzField] || 'SHORT_TEXT') : 'SHORT_TEXT'
               const activeDataTypeObj = DATA_TYPES.find((t) => t.id === currentDataType) || DATA_TYPES[0]
 
@@ -279,6 +349,25 @@ export default function ApColumnMapping({
               const filteredOptions = options.filter((opt) =>
                 opt.key.toLowerCase().includes(searchQuery.toLowerCase())
               )
+              const filteredCustomFields = customFieldKeys.filter((key) =>
+                key.toLowerCase().includes(searchQuery.toLowerCase()),
+              )
+              const isSearching = searchQuery.trim().length > 0
+              const sectionState = getSectionState(excelCol)
+              const showAddCustomField =
+                !!customFieldText.trim() &&
+                !resolvePredefinedFieldKey(customFieldText.trim(), templateSchema) &&
+                !customFieldKeys.some(
+                  (key) =>
+                    key.toLowerCase() === customFieldText.trim().toLowerCase(),
+                )
+              const predefinedOpen =
+                sectionState.predefined ||
+                (isSearching && filteredOptions.length > 0)
+              const customOpen =
+                sectionState.custom ||
+                (isSearching &&
+                  (filteredCustomFields.length > 0 || showAddCustomField))
 
               return (
                 <div
@@ -305,10 +394,8 @@ export default function ApColumnMapping({
                   <div className="relative pl-2 min-w-0">
                     <div
                       className={cn(
-                        'flex items-center justify-between w-full h-9 px-3 rounded-lg border text-12 font-medium transition-all duration-200 select-none cursor-pointer',
-                        hasMapping
-                          ? 'border-primary-9 bg-primary-2 text-primary-12 shadow-sm'
-                          : 'border-gray-3 bg-surface hover:border-gray-4 text-gray-11'
+                        'flex items-center justify-between w-full h-9 px-3 rounded-lg border border-gray-3 bg-surface text-12 font-medium transition-all duration-200 select-none cursor-pointer hover:border-gray-4',
+                        hasMapping ? 'text-gray-12' : 'text-gray-11',
                       )}
                       onClick={(e) => {
                         e.stopPropagation()
@@ -321,7 +408,13 @@ export default function ApColumnMapping({
                       <div className="flex items-center gap-2 min-w-0">
                         {hasMapping ? (
                           <>
-                            <Icon className="size-3.5 text-primary-9 shrink-0" name="tabler:circle-check" />
+                            <Icon
+                              className={cn(
+                                'size-3.5 shrink-0',
+                                FIELD_KIND_ICONS[selectedFieldKind!].className,
+                              )}
+                              name={FIELD_KIND_ICONS[selectedFieldKind!].icon}
+                            />
                             <span className="truncate text-[13px] font-semibold">{mappedEzField}</span>
                           </>
                         ) : (
@@ -337,10 +430,10 @@ export default function ApColumnMapping({
                             <button
                               type="button"
                               className={cn(
-                                'p-1 hover:bg-primary-3 rounded-md transition-colors flex items-center justify-center border',
+                                'p-1 hover:bg-gray-2 rounded-md transition-colors flex items-center justify-center border',
                                 isTypeDropdownOpen
-                                  ? 'bg-primary-3 border-primary-9 text-primary-11'
-                                  : 'border-transparent text-primary-9 hover:text-primary-11'
+                                  ? 'bg-gray-2 border-gray-4 text-gray-12'
+                                  : 'border-transparent text-gray-9 hover:text-gray-11'
                               )}
                               onClick={(e) => {
                                 e.stopPropagation()
@@ -401,12 +494,11 @@ export default function ApColumnMapping({
                         onClick={(e) => e.stopPropagation()}
                       >
                         {/* Search field */}
-                        <div className="flex items-center gap-1.5 px-2 py-1 bg-gray-2 border border-gray-3 rounded-lg mb-2">
-                          <Icon className="size-4 text-gray-9" name="tabler:search" />
+                        <div className="border-b border-border-default/60 px-2 pb-2 mb-2">
                           <input
                             type="text"
                             placeholder="Search or enter custom name..."
-                            className="bg-transparent border-none text-12 font-medium text-gray-13 placeholder:text-gray-9 focus:outline-none w-full h-5"
+                            className="h-7 w-full border-none bg-transparent text-12 font-medium text-gray-13 placeholder:text-gray-9 focus:outline-none"
                             value={searchQuery}
                             onChange={(e) => {
                               setSearchQuery(e.target.value)
@@ -418,70 +510,128 @@ export default function ApColumnMapping({
 
                         {/* Dropdown Options List */}
                         <div className="max-h-52 overflow-y-auto custom-scrollbar space-y-0.5">
-                          {/* Option to skip / unmap */}
-                          {hasMapping && (
-                            <button
-                              type="button"
-                              className="w-full text-left px-2.5 py-1.5 rounded-lg text-12 font-medium text-red-11 hover:bg-red-2 hover:text-red-12 flex items-center gap-2 transition-all"
-                              onClick={() => handleSelectField(excelCol, null)}
-                            >
-                              <Icon className="size-4" name="tabler:circle-x" />
-                              <span>Skip this field (unmap)</span>
-                            </button>
-                          )}
+                          {/* Predefined fields */}
+                          <button
+                            type="button"
+                            className="flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-[10px] font-bold tracking-wider text-gray-9 transition-colors hover:bg-gray-2"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              toggleSection(excelCol, 'predefined')
+                            }}
+                          >
+                            <span>PREDEFINED FIELDS ({filteredOptions.length})</span>
+                            <Icon
+                              className={cn(
+                                'size-3.5 text-gray-8 transition-transform duration-200',
+                                predefinedOpen && 'rotate-180',
+                              )}
+                              name="tabler:chevron-down"
+                            />
+                          </button>
 
-                          {/* Predefined fields header */}
-                          <div className="px-2.5 pt-1.5 pb-0.5 text-[10px] font-bold text-gray-9 tracking-wider select-none">
-                            PREDEFINED FIELDS
-                          </div>
-
-                          {filteredOptions.length > 0 ? (
+                          {predefinedOpen &&
+                            (filteredOptions.length > 0 ? (
                             filteredOptions.map((opt) => (
                               <button
                                 key={opt.key}
                                 type="button"
                                 className={cn(
-                                  'w-full text-left px-2.5 py-1.5 rounded-lg text-12 font-medium flex items-center justify-between transition-all cursor-pointer',
+                                  'w-full text-left px-2.5 py-1.5 rounded-lg text-12 font-medium flex items-center justify-between gap-2 transition-all cursor-pointer',
                                   opt.isMappedToCurrent
-                                    ? 'bg-primary-2 text-primary-12'
-                                    : 'text-gray-12 hover:bg-gray-2 hover:text-gray-13'
+                                    ? 'bg-gray-2 text-gray-13'
+                                    : 'text-gray-12 hover:bg-gray-2 hover:text-gray-13',
                                 )}
                                 onClick={() => handleSelectField(excelCol, opt.key)}
                               >
                                 <span className="truncate">{opt.key}</span>
-                                {opt.required && !opt.isMappedToCurrent && !opt.isMappedToOther && (
-                                  <span className="text-[10px] bg-red-2 text-red-11 px-1.5 py-0.5 rounded-md font-semibold border border-red-5/40">
-                                    Required
-                                  </span>
-                                )}
-                                {opt.isMappedToOther && (
-                                  <span className="text-[10px] bg-gray-2 text-gray-8 px-1.5 py-0.5 rounded-md">
-                                    Mapped
-                                  </span>
-                                )}
                               </button>
                             ))
                           ) : (
                             <div className="px-2.5 py-1.5 text-11 text-gray-9 italic select-none">
                               No matching predefined fields
                             </div>
-                          )}
+                          ))}
 
-                          {/* Custom field addition */}
-                          {customFieldText.trim() && (
-                            <div className="border-t border-border-default/60 pt-1.5 mt-1.5">
+                          {(filteredCustomFields.length > 0 || showAddCustomField) && (
+                            <>
                               <button
                                 type="button"
-                                className="w-full text-left px-2.5 py-1.5 rounded-lg text-12 font-medium text-primary-12 bg-primary-2 border border-primary-9 hover:bg-primary-3 flex items-center gap-2 transition-all"
-                                onClick={() => handleCreateCustomField(excelCol, customFieldText)}
+                                className="mt-1 flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-[10px] font-bold tracking-wider text-gray-9 transition-colors hover:bg-gray-2"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  toggleSection(excelCol, 'custom')
+                                }}
                               >
-                                <Icon className="size-4 text-primary-9 shrink-0 animate-pulse" name="tabler:circle-plus" />
-                                <span className="truncate font-semibold">
-                                  Use custom field "{customFieldText.trim()}"
+                                <span>
+                                  CUSTOM FIELDS
+                                  {filteredCustomFields.length > 0 &&
+                                    ` (${filteredCustomFields.length})`}
                                 </span>
+                                <Icon
+                                  className={cn(
+                                    'size-3.5 text-gray-8 transition-transform duration-200',
+                                    customOpen && 'rotate-180',
+                                  )}
+                                  name="tabler:chevron-down"
+                                />
                               </button>
-                            </div>
+                              {customOpen && (
+                                <>
+                                  {filteredCustomFields.map((customKey) => {
+                                    const mappedCol = mapping[customKey]
+                                    const isMappedToCurrent = !!(
+                                      mappedCol &&
+                                      mappedCol.toLowerCase().trim() ===
+                                        excelCol.toLowerCase().trim()
+                                    )
+
+                                    return (
+                                      <button
+                                        key={customKey}
+                                        type="button"
+                                        className={cn(
+                                          'w-full text-left px-2.5 py-1.5 rounded-lg text-12 font-medium flex items-center justify-between gap-2 transition-all cursor-pointer',
+                                          isMappedToCurrent
+                                            ? 'bg-gray-2 text-gray-13'
+                                            : 'text-gray-12 hover:bg-gray-2 hover:text-gray-13',
+                                        )}
+                                        onClick={() => handleSelectField(excelCol, customKey)}
+                                      >
+                                        <span className="truncate">{customKey}</span>
+                                      </button>
+                                    )
+                                  })}
+                                  {showAddCustomField && (
+                                    <div className="border-t border-border-default/60 pt-1.5 mt-1.5">
+                                      <button
+                                        type="button"
+                                        className="w-full text-left px-2.5 py-1.5 rounded-lg text-12 font-medium text-gray-12 bg-gray-2 border border-gray-4 hover:bg-gray-3 transition-all"
+                                        onClick={() =>
+                                          handleCreateCustomField(excelCol, customFieldText)
+                                        }
+                                      >
+                                        <span className="truncate font-semibold">
+                                          Add custom field "{customFieldText.trim()}"
+                                        </span>
+                                      </button>
+                                    </div>
+                                  )}
+                                </>
+                              )}
+                            </>
                           )}
+                        </div>
+
+                        {/* Skip field */}
+                        <div className="border-t border-border-default/60 px-2 pt-2 mt-2">
+                          <button
+                            type="button"
+                            className="flex h-7 w-full items-center gap-2 text-left text-12 font-medium text-red-11 transition-colors hover:text-red-12"
+                            onClick={() => handleSelectField(excelCol, null)}
+                          >
+                            <Icon className="size-4 shrink-0" name="tabler:circle-x" />
+                            <span>Skip this field{hasMapping ? ' (unmap)' : ''}</span>
+                          </button>
                         </div>
                       </div>
                     )}
@@ -492,12 +642,8 @@ export default function ApColumnMapping({
           </div>
         </div>
 
-        {/* Legend/Status footer */}
-        <div className="flex items-center justify-between border-t border-border-default pt-3 mt-2 text-[11px] font-semibold text-gray-8 select-none">
-          <span className="flex items-center gap-1.5">
-            <Icon className="size-3.5 text-primary-9" name="tabler:info-square-rounded" />
-            <span>Type custom names to map non-standard fields</span>
-          </span>
+        {/* Status footer */}
+        <div className="flex flex-wrap items-center justify-end gap-3 border-t border-border-default pt-3 mt-2 text-[11px] font-semibold text-gray-8 select-none">
           <span className="flex items-center gap-1.5">
             <Icon className="size-3.5 text-green-11" name="tabler:shield-check" />
             <span>Form datatypes automatically saved</span>

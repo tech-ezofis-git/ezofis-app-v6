@@ -15,6 +15,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import InputPassword from '@/components/base/inputs/password/InputPassword'
 import showToast from '@/components/base/toast/showToast'
 import DataTable from '@/components/base/data-table/DataTable'
+import Pagination from '@/components/base/pagination/Pagination'
 import InputText from '@/components/base/inputs/InputText'
 import Menu from '@/components/base/menu/Menu'
 import MenuItem from '@/components/base/menu/MenuItem'
@@ -26,6 +27,7 @@ import TableExport from '@/components/base/data-table/actions/TableExport'
 import {
   settingsHeaderMeta,
   settingsTableCoreOptions,
+  useSettingsTablePagination,
   useSettingsTableSearch,
 } from '../helpers/settingsDataTable'
 import { calculateUserSetupProgress } from '../helpers/settingsSetupProgress'
@@ -576,12 +578,27 @@ export default function ManageUser({ onBack }: ManageUserProps) {
     ],
     [openEditUser, deleteUser],
   )
+  const {
+    onPageChange,
+    onPageSizeChange,
+    onPaginationChange,
+    page,
+    pageSize,
+    pagination,
+    paginationModel,
+  } = useSettingsTablePagination()
   const userTable = useReactTable({
     ...settingsTableCoreOptions,
     ...tableSearchOptions,
+    ...paginationModel,
     columns: userColumns,
     data: filteredUsers,
     getRowId: (row) => String(row.id),
+    onPaginationChange,
+    state: {
+      ...tableSearchOptions.state,
+      pagination,
+    },
   })
 
   const { onRowSizeChange, rowSize } = useSettingsTableToolbar({
@@ -627,9 +644,10 @@ export default function ManageUser({ onBack }: ManageUserProps) {
       <section className='flex-1 flex flex-col'>
         <SettingsPageHeader
           title='User Management'
+          onBack={onBack}
         />
 
-        <div className='px-6 md:px-8 py-2 flex-1 flex flex-col overflow-hidden'>
+        <div className='p-4 flex-1 flex flex-col overflow-hidden'>
           <CustomFilter
             filters={[
               { id: 'role', label: 'Role', options: roleOptions },
@@ -648,7 +666,6 @@ export default function ManageUser({ onBack }: ManageUserProps) {
             }}
             showReset={Object.keys(activeFilters).some(k => activeFilters[k]) || !!tableSearchOptions.state.globalFilter?.value}
             customSearchComponent={<TableSearch table={userTable as any} />}
-            onBack={onBack}
             addButton={{
               onClick: openAddUser,
               tooltip: 'Add User'
@@ -667,24 +684,35 @@ export default function ManageUser({ onBack }: ManageUserProps) {
             ]}
             trailingActions={<TableExport table={userTable as any} />}
           />
-          <div className='py-4 min-h-0 flex-1 overflow-hidden'>
-            <DataTable
-              emptyDescription='Add a user to grant access to the platform and assign folder permissions.'
-              emptyIcon='lucide:users'
-              emptyTitle='No users yet'
-              hideActionBar
-              isLoading={isLoadingUsers}
-              isReLoading={isLoadingUsers}
-              pageSize={Math.max(5, users.length || 5)}
-              rowSize={rowSize}
-              table={userTable}
-              tableBodyMaxHeight='calc(100vh - 320px)'
-              hideGrouping
-              stickyHeader
-              onReload={() => {
-                void loadUsers()
-              }}
-              onRowSizeChange={onRowSizeChange}
+          <div className='mt-2 min-h-0 flex-1 overflow-hidden flex flex-col'>
+            <div className='min-h-0 flex-1 overflow-hidden'>
+              <DataTable
+                emptyDescription='Add a user to grant access to the platform and assign folder permissions.'
+                emptyIcon='lucide:users'
+                emptyTitle='No users yet'
+                hideActionBar
+                isLoading={isLoadingUsers}
+                isReLoading={isLoadingUsers}
+                pageSize={pageSize}
+                rowSize={rowSize}
+                table={userTable}
+                hideGrouping
+                stickyHeader
+                onReload={() => {
+                  void loadUsers()
+                }}
+                onRowSizeChange={onRowSizeChange}
+              />
+            </div>
+            <Pagination
+              className='mt-4 shrink-0'
+              itemLabel='Users'
+              page={page}
+              pageSize={pageSize}
+              showPageNumbers={false}
+              totalItems={userTable.getFilteredRowModel().rows.length}
+              onPageChange={onPageChange}
+              onPageSizeChange={onPageSizeChange}
             />
           </div>
         </div>
