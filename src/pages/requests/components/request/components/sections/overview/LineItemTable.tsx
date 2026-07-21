@@ -593,9 +593,11 @@ export default function LineItemTable({
                     }
 
                     return (
-                      className={className}
-                      key={col.id}
-                      style={style}
+                      <td
+                        className={className}
+                        key={col.id}
+                        style={style}
+                      >
                         {cellContent}
                       </td>
                     )

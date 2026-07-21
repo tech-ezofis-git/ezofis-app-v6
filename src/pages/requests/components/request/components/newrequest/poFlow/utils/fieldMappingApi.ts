@@ -8,28 +8,21 @@ export const FIELD_MAPPING_API_URL =
  */
 const FIELD_MAPPING_DEV_PROXY_URL = '/api-mapping/field-mapping'
 
-const FIELD_MAPPING_HOSTS = new Set(['52.172.32.88', 'demoapp.ezofis.com'])
+const FIELD_MAPPING_HOSTS = new Set([
+  '52.172.32.88',
+  'demoapp.ezofis.com',
+  'localhost',
+  '127.0.0.1',
+])
 
 export function getFieldMappingApiUrl(): string | null {
   if (typeof window === 'undefined') return null
 
-  const { hostname, protocol } = window.location
+  const { hostname } = window.location
 
-  if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    return import.meta.env.DEV
-      ? FIELD_MAPPING_DEV_PROXY_URL
-      : FIELD_MAPPING_API_URL
+  if (FIELD_MAPPING_HOSTS.has(hostname)) {
+    return FIELD_MAPPING_API_URL
   }
 
-  if (!FIELD_MAPPING_HOSTS.has(hostname)) {
-    return null
-  }
-
-  // HTTPS cannot call the HTTP service directly; same-origin proxy must forward
-  // /api-mapping/field-mapping -> http://52.172.32.88:8095/api/v1/field-mapping
-  if (protocol === 'https:') {
-    return FIELD_MAPPING_DEV_PROXY_URL
-  }
-
-  return FIELD_MAPPING_API_URL
+  return null
 }
