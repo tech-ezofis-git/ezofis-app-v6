@@ -2,6 +2,8 @@ import { useState } from 'react'
 import Icon from '@/components/base/icon/Icon'
 import showToast from '@/components/base/toast/showToast'
 import useRequestDemoStore from '@/layouts/app/stores/useRequestDemoStore'
+import useAuthUserStore from '@/stores/authUserStore'
+import { axiosV6 } from '@/api/axios'
 
 const CATEGORIES = [
   { key: 'account', label: 'Account configuration', icon: 'lucide:settings', team: 'Support team' },
@@ -25,7 +27,7 @@ type FormState = {
 }
 
 const INITIAL_STATE: FormState = {
-  category: '',
+  category: 'demo',
   priority: 'normal',
   contactMethod: 'email',
   phone: '',
@@ -35,8 +37,11 @@ const INITIAL_STATE: FormState = {
 
 const RequestDemoForm = () => {
   const closeDemoForm = useRequestDemoStore((s) => s.closeDemoForm)
+  const session = useAuthUserStore((s) => s.session)
+  const user = useAuthUserStore((s) => s.user)
   const [form, setForm] = useState<FormState>(INITIAL_STATE)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [descriptionError, setDescriptionError] = useState(false)
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -44,6 +49,9 @@ const RequestDemoForm = () => {
     >,
   ) => {
     const { name, value, type } = e.target
+    if (name === 'description') {
+      setDescriptionError(false)
+    }
     setForm((prev) => ({
       ...prev,
       [name]:
@@ -51,20 +59,56 @@ const RequestDemoForm = () => {
     }))
   }
 
+  const selectedCategory = CATEGORIES.find(c => c.key === form.category)
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsSubmitting(true)
-    // Simulate network request
-    await new Promise((resolve) => setTimeout(resolve, 1200))
-    setIsSubmitting(false)
-    showToast({
-      message: 'Request sent successfully! Our team will be in touch.',
-      variant: 'success',
-    })
-    closeDemoForm()
-  }
 
-  const selectedCategory = CATEGORIES.find(c => c.key === form.category)
+    if (!form.description.trim()) {
+      setDescriptionError(true)
+      showToast({
+        message: 'Please describe your request.',
+        variant: 'error',
+      })
+      return
+    }
+
+    const finalPayload = {
+      supportCategory: form.category,
+      priorty: form.priority,
+      preferredContact: form.contactMethod,
+      phoneNO: form.phone,
+      requestDescription: form.description,
+      isEmailSend: form.consent,
+      helpWithLabel: selectedCategory?.label || '',
+      fullName: session?.name || session?.firstName || user?.name || '',
+      orgName: (session as any)?.displayName || session?.tenantId || '',
+      email: session?.email || user?.email || '',
+      tenantId: session?.tenantId || (session as any)?.id || '',
+    }
+
+    // Console log the final payload
+    console.log('Final Payload:', finalPayload)
+
+    setIsSubmitting(true)
+    
+    try {
+      await axiosV6.post('/support-tickets', finalPayload)
+      showToast({
+        message: 'Request sent successfully! Our team will be in touch.',
+        variant: 'success',
+      })
+      closeDemoForm()
+    } catch (error) {
+      console.error('Failed to submit support ticket:', error)
+      showToast({
+        message: 'Failed to send request. Please try again.',
+        variant: 'error',
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
   return (
     <div className='animate-in fade-in slide-in-from-bottom-8 duration-500 flex h-full min-h-0 flex-1 flex-col items-center overflow-y-auto bg-gray-1 py-8'>
@@ -211,14 +255,20 @@ const RequestDemoForm = () => {
                 placeholder="Describe how we can help you or what you'd like to accomplish"
                 rows={4}
                 maxLength={1000}
-                className='min-h-[110px] w-full resize-y rounded-lg border border-gray-4 bg-surface px-3 py-2.5 text-sm text-gray-13 outline-none placeholder:text-gray-8 transition-all hover:border-gray-6 focus:border-primary-7 focus:ring-2 focus:ring-primary-4'
+                className={`min-h-[110px] w-full resize-y rounded-lg border bg-surface px-3 py-2.5 text-sm text-gray-13 outline-none placeholder:text-gray-8 transition-all focus:ring-2 ${descriptionError
+                    ? 'border-red-9 focus:border-red-9 focus:ring-red-4'
+                    : 'border-gray-4 hover:border-gray-6 focus:border-primary-7 focus:ring-primary-4'
+                  }`}
                 value={form.description}
                 onChange={handleChange}
               />
-              <div className='absolute bottom-3 right-3 text-xs text-gray-9'>
+              <div className={`absolute bottom-3 right-3 text-xs ${descriptionError ? 'text-red-9' : 'text-gray-9'}`}>
                 {form.description.length}/1000
               </div>
             </div>
+            {descriptionError && (
+              <span className='text-xs font-medium text-red-9 mt-0.5'>Description is required</span>
+            )}
           </div>
 
           {/* Consent */}
