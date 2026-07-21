@@ -648,7 +648,6 @@ export default function ManageUser({ onBack }: ManageUserProps) {
             }}
             showReset={Object.keys(activeFilters).some(k => activeFilters[k]) || !!tableSearchOptions.state.globalFilter?.value}
             customSearchComponent={<TableSearch table={userTable as any} />}
-            onBack={onBack}
             addButton={{
               onClick: openAddUser,
               tooltip: 'Add User'
