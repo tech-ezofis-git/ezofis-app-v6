@@ -1,9 +1,14 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Icon from '@/components/base/icon/Icon'
 import showToast from '@/components/base/toast/showToast'
 import useRequestDemoStore from '@/layouts/app/stores/useRequestDemoStore'
+import {
+  createSupportTicket,
+  type CreateSupportTicketPayload,
+  type SupportTicketResponse,
+} from '@/api/v6/supportTickets'
 import useAuthUserStore from '@/stores/authUserStore'
-import { axiosV6 } from '@/api/axios'
+// import { axiosV6 } from '@/api/axios'
 
 const CATEGORIES = [
   { key: 'account', label: 'Account configuration', icon: 'lucide:settings', team: 'Support team' },
@@ -26,6 +31,8 @@ type FormState = {
   consent: boolean
 }
 
+type FormErrors = Partial<Record<keyof FormState, string>>
+
 const INITIAL_STATE: FormState = {
   category: 'demo',
   priority: 'normal',
@@ -40,8 +47,19 @@ const RequestDemoForm = () => {
   const session = useAuthUserStore((s) => s.session)
   const user = useAuthUserStore((s) => s.user)
   const [form, setForm] = useState<FormState>(INITIAL_STATE)
+  const [errors, setErrors] = useState<FormErrors>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [descriptionError, setDescriptionError] = useState(false)
+  const [successTicket, setSuccessTicket] = useState<SupportTicketResponse | null>(null)
+
+  const containerRef = useRef<HTMLDivElement>(null)
+  const successRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (successTicket) {
+      containerRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
+      successRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  }, [successTicket])
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -49,29 +67,35 @@ const RequestDemoForm = () => {
     >,
   ) => {
     const { name, value, type } = e.target
-    if (name === 'description') {
-      setDescriptionError(false)
-    }
     setForm((prev) => ({
       ...prev,
       [name]:
         type === 'checkbox' ? (e.target as HTMLInputElement).checked : value,
     }))
+    if (errors[name as keyof FormState]) {
+      setErrors((prev) => ({ ...prev, [name]: undefined }))
+    }
   }
-
-  const selectedCategory = CATEGORIES.find(c => c.key === form.category)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!form.description.trim()) {
-      setDescriptionError(true)
+    const newErrors: FormErrors = {}
+    if (!form.category) newErrors.category = 'Required'
+    if (!form.priority) newErrors.priority = 'Required'
+    if (!form.contactMethod) newErrors.contactMethod = 'Required'
+    if (!form.description.trim()) newErrors.description = 'Required'
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors)
       showToast({
-        message: 'Please describe your request.',
+        message: 'Please fill in all required fields.',
         variant: 'error',
       })
       return
     }
+
+    setErrors({})
 
     const finalPayload = {
       supportCategory: form.category,
@@ -80,7 +104,7 @@ const RequestDemoForm = () => {
       phoneNO: form.phone,
       requestDescription: form.description,
       isEmailSend: form.consent,
-      helpWithLabel: selectedCategory?.label || '',
+      // helpWithLabel: selectedCategory?.label || '',
       fullName: session?.name || session?.firstName || user?.name || '',
       orgName: (session as any)?.displayName || session?.tenantId || '',
       email: session?.email || user?.email || '',
@@ -91,27 +115,52 @@ const RequestDemoForm = () => {
     console.log('Final Payload:', finalPayload)
 
     setIsSubmitting(true)
-    
-    try {
-      await axiosV6.post('/support-tickets', finalPayload)
+
+    const selectedCategory = CATEGORIES.find((c) => c.key === form.category)
+    const payload: CreateSupportTicketPayload = {
+      supportCategory: selectedCategory?.label || form.category,
+      Priorty: form.priority.charAt(0).toUpperCase() + form.priority.slice(1),
+      PreferredContact: form.contactMethod === 'phone' ? 'Phone' : 'Email',
+      PhoneNO: form.phone.trim(),
+      RequestDescription: form.description.trim(),
+      isEmailSend: Boolean(form.consent),
+      fullName: session?.name || session?.firstName || user?.name || '',
+      orgName: (session as any)?.displayName || session?.tenantId || '',
+      email: session?.email || user?.email || '',
+      tenantId: session?.tenantId || (session as any)?.id || '',
+    }
+
+    const response = await createSupportTicket(payload)
+    setIsSubmitting(false)
+
+    if (response.error || !response.data || response.data.jiraSuccess === false) {
       showToast({
-        message: 'Request sent successfully! Our team will be in touch.',
-        variant: 'success',
-      })
-      closeDemoForm()
-    } catch (error) {
-      console.error('Failed to submit support ticket:', error)
-      showToast({
-        message: 'Failed to send request. Please try again.',
+        message: response.error || 'Failed to submit support ticket',
         variant: 'error',
       })
-    } finally {
-      setIsSubmitting(false)
+      return
     }
+
+    const ticketData = response.data || {}
+    const issueKey = ticketData.jiraIssueKey || ticketData.id || ''
+
+    const toastMsg = issueKey
+      ? `Your support request has been successfully submitted to the Ezofis Support Team.\nTicket Number: ${issueKey}`
+      : 'Your support request has been successfully submitted to the Ezofis Support Team.'
+
+    showToast({
+      message: toastMsg,
+      variant: 'success',
+    })
+
+    setSuccessTicket(ticketData)
+    setForm(INITIAL_STATE)
   }
 
+  const selectedCategory = CATEGORIES.find((c) => c.key === form.category)
+
   return (
-    <div className='animate-in fade-in slide-in-from-bottom-8 duration-500 flex h-full min-h-0 flex-1 flex-col items-center overflow-y-auto bg-gray-1 py-8'>
+    <div ref={containerRef} className='animate-in fade-in slide-in-from-bottom-8 duration-500 flex h-full min-h-0 flex-1 flex-col items-center overflow-y-auto bg-gray-1 py-8'>
       {/* Form card */}
       <div className='mx-6 w-full max-w-3xl rounded-2xl border border-gray-3 bg-surface p-8 shadow-sm'>
         {/* Title */}
@@ -136,8 +185,56 @@ const RequestDemoForm = () => {
           </button>
         </div>
 
-        <form className='space-y-5' noValidate onSubmit={handleSubmit}>
+        {successTicket ? (
+          <div ref={successRef} className='mb-6 flex flex-col items-center rounded-xl border border-green-3 bg-green-2/50 p-6 text-center animate-in fade-in'>
+            <div className='mb-3 flex size-12 items-center justify-center rounded-full bg-green-3 text-green-11'>
+              <Icon className='size-6' name='lucide:check-circle-2' />
+            </div>
+            <h3 className='text-lg font-bold text-gray-13'>
+              Support Request Submitted
+            </h3>
+            <p className='mt-1 max-w-md text-sm text-gray-11'>
+              Your support request has been successfully submitted to the Ezofis Support Team.
+            </p>
+            {successTicket.jiraIssueKey && (
+              <div className='mt-4 flex items-center gap-2 rounded-lg border border-gray-4 bg-surface px-4 py-2 text-sm font-semibold text-gray-13 shadow-xs'>
+                <span>Ticket Number:</span>
+                <span className='text-primary-9 font-bold'>
+                  {successTicket.jiraIssueKey}
+                </span>
+                {successTicket.jiraIssueUrl && (
+                  <a
+                    className='ml-2 inline-flex items-center gap-1 text-xs text-primary-9 underline hover:text-primary-10'
+                    href={successTicket.jiraIssueUrl}
+                    rel='noopener noreferrer'
+                    target='_blank'
+                  >
+                    View Ticket
+                    <Icon className='size-3.5' name='lucide:external-link' />
+                  </a>
+                )}
+              </div>
+            )}
+            <div className='mt-6 flex gap-3'>
+              <button
+                className='rounded-xl border border-gray-4 bg-surface px-5 py-2.5 text-sm font-semibold text-gray-13 transition-all hover:bg-gray-3'
+                type='button'
+                onClick={() => setSuccessTicket(null)}
+              >
+                Submit another request
+              </button>
+              <button
+                className='rounded-xl bg-primary-9 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-primary-10'
+                type='button'
+                onClick={closeDemoForm}
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        ) : null}
 
+        <form className='space-y-5' noValidate onSubmit={handleSubmit}>
           {/* Category */}
           <div className='flex flex-col gap-1.5'>
             <label className='text-sm font-semibold text-gray-13'>
@@ -149,18 +246,23 @@ const RequestDemoForm = () => {
                 <button
                   key={c.key}
                   type='button'
-                  onClick={() => setForm({ ...form, category: c.key })}
+                  onClick={() => {
+                    setForm({ ...form, category: c.key })
+                    setErrors((prev) => ({ ...prev, category: undefined }))
+                  }}
                   className={`flex items-center gap-3 rounded-xl border p-3 text-left transition-all ${form.category === c.key
                     ? 'border-primary-9 bg-primary-3/30'
+                    : errors.category
+                    ? 'border-red-9 bg-red-1'
                     : 'border-gray-4 bg-surface hover:border-primary-7'
                     }`}
                 >
                   <Icon
                     name={c.icon}
-                    className={`size-5 shrink-0 ${form.category === c.key ? 'text-primary-9' : 'text-gray-11'}`}
+                    className={`size-5 shrink-0 ${form.category === c.key ? 'text-primary-9' : errors.category ? 'text-red-9' : 'text-gray-11'}`}
                   />
                   <span
-                    className={`text-sm font-medium leading-none ${form.category === c.key ? 'text-primary-11' : 'text-gray-12'
+                    className={`text-sm font-medium leading-none ${form.category === c.key ? 'text-primary-11' : errors.category ? 'text-red-11' : 'text-gray-12'
                       }`}
                   >
                     {c.label}
@@ -179,11 +281,16 @@ const RequestDemoForm = () => {
                 <button
                   key={p}
                   type='button'
-                  onClick={() => setForm({ ...form, priority: p.toLowerCase() })}
+                  onClick={() => {
+                    setForm({ ...form, priority: p.toLowerCase() })
+                    setErrors((prev) => ({ ...prev, priority: undefined }))
+                  }}
                   className={`rounded-full border px-4 py-2 text-xs font-medium transition-all ${form.priority === p.toLowerCase()
                     ? p === 'Urgent'
                       ? 'border-red-9 bg-red-9 text-white'
                       : 'border-primary-9 bg-primary-9 text-white'
+                    : errors.priority
+                    ? 'border-red-9 bg-red-1 text-red-11'
                     : 'border-gray-4 bg-surface text-gray-11 hover:border-primary-7'
                     }`}
                 >
@@ -206,11 +313,14 @@ const RequestDemoForm = () => {
                 <button
                   key={m.id}
                   type='button'
-                  onClick={() =>
+                  onClick={() => {
                     setForm({ ...form, contactMethod: m.id as 'email' | 'phone' })
-                  }
+                    setErrors((prev) => ({ ...prev, contactMethod: undefined }))
+                  }}
                   className={`flex items-center gap-2 rounded-lg border px-3.5 py-2 text-sm font-medium transition-all ${form.contactMethod === m.id
                     ? 'border-primary-9 bg-primary-3/30 text-primary-11'
+                    : errors.contactMethod
+                    ? 'border-red-9 bg-red-1 text-red-11'
                     : 'border-gray-4 bg-surface text-gray-11 hover:border-primary-7'
                     }`}
                 >
@@ -255,20 +365,14 @@ const RequestDemoForm = () => {
                 placeholder="Describe how we can help you or what you'd like to accomplish"
                 rows={4}
                 maxLength={1000}
-                className={`min-h-[110px] w-full resize-y rounded-lg border bg-surface px-3 py-2.5 text-sm text-gray-13 outline-none placeholder:text-gray-8 transition-all focus:ring-2 ${descriptionError
-                    ? 'border-red-9 focus:border-red-9 focus:ring-red-4'
-                    : 'border-gray-4 hover:border-gray-6 focus:border-primary-7 focus:ring-primary-4'
-                  }`}
+                className={`min-h-[110px] w-full resize-y rounded-lg border bg-surface px-3 py-2.5 text-sm text-gray-13 outline-none placeholder:text-gray-8 transition-all hover:border-gray-6 focus:border-primary-7 focus:ring-2 focus:ring-primary-4 ${errors.description ? 'border-red-9' : 'border-gray-4'}`}
                 value={form.description}
                 onChange={handleChange}
               />
-              <div className={`absolute bottom-3 right-3 text-xs ${descriptionError ? 'text-red-9' : 'text-gray-9'}`}>
+              <div className='absolute bottom-3 right-3 text-xs text-gray-9'>
                 {form.description.length}/1000
               </div>
             </div>
-            {descriptionError && (
-              <span className='text-xs font-medium text-red-9 mt-0.5'>Description is required</span>
-            )}
           </div>
 
           {/* Consent */}
