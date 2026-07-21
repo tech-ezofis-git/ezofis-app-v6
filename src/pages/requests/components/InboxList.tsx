@@ -8,7 +8,7 @@ import type { TableGroup, WorkflowOption } from '../types'
 import requestStore from '../stores/useRequestStore'
 import { useDynamicColumns } from './columns/useDynamicColumns'
 import GridView from './GridView'
-import CustomFilter from '@/components/common/CustomFilter'
+import DynamicFilter from '@/components/common/DynamicFilter'
 import TableSearch from '@/components/base/data-table/actions/TableSearch'
 // import TableSort from '@/components/base/data-table/actions/TableSort'
 // import TableColumns from '@/components/base/data-table/actions/TableColumns'
@@ -303,6 +303,21 @@ const findInvoiceAmount = (row: any): string | null => {
 
   return null
 }
+const getHighValueThreshold = (rows: any[]) => {
+  let maxAmount = 0
+  rows.forEach((row) => {
+    const amtStr = findInvoiceAmount(row)
+    const amount = amtStr ? Number(amtStr.replace(/[^0-9.-]/g, '')) : 0
+    if (amount > maxAmount) maxAmount = amount
+  })
+  if (maxAmount === 0) return 10000
+  
+  let threshold = maxAmount * 0.8
+  if (threshold >= 1000) threshold = Math.floor(threshold / 1000) * 1000
+  else threshold = Math.floor(threshold / 100) * 100
+  
+  return Math.max(100, threshold)
+}
 
 const filterRowsByQuickFilters = (
   rows: any[],
@@ -310,12 +325,12 @@ const filterRowsByQuickFilters = (
   excludeCategory?: 'status' | 'amount' | 'overdue',
 ) => {
   const activeStatus = activeQuickFilters.filter(
-    (f) => f === 'matched' || f === 'discrepancies' || f.startsWith('status:'),
+    (f) => f === 'matched' || f === 'discrepancies' || f.startsWith('status:') || f.startsWith('discrepancies:'),
   )
   const activeAmount = activeQuickFilters.filter(
     (f) => f === 'highValue' || f.startsWith('amount:'),
   )
-  const activeOverdue = activeQuickFilters.filter((f) => f === 'overdue')
+  const activeDueDate = activeQuickFilters.filter((f) => f === 'overdue' || f.startsWith('due_date:') || f.startsWith('overdue:'))
   const activeSupplier = activeQuickFilters.filter((f) =>
     f.startsWith('supplier:'),
   )
@@ -323,11 +338,13 @@ const filterRowsByQuickFilters = (
   if (
     (excludeCategory === 'status' || activeStatus.length === 0) &&
     (excludeCategory === 'amount' || activeAmount.length === 0) &&
-    (excludeCategory === 'overdue' || activeOverdue.length === 0) &&
+    (excludeCategory === 'overdue' || activeDueDate.length === 0) &&
     activeSupplier.length === 0
   ) {
     return rows
   }
+
+  const dynamicHighValue = getHighValueThreshold(rows)
 
   return rows.filter((row: any) => {
     const isOvr = isOverdue(row)
@@ -354,7 +371,7 @@ const filterRowsByQuickFilters = (
 
     const amtStr = findInvoiceAmount(row)
     const amount = amtStr ? Number(amtStr.replace(/[^0-9.-]/g, '')) : 0
-    const isHigh = amount >= 10000
+    const isHigh = amount >= dynamicHighValue
 
     // 1. Check Status filters (OR within category)
     let matchesStatus = true
@@ -362,25 +379,31 @@ const filterRowsByQuickFilters = (
       matchesStatus = activeStatus.some((filter) => {
         if (filter === 'matched') return isMtc
         if (filter === 'discrepancies') return isDisc
-        if (filter.startsWith('status:')) {
-          const val = filter.split(':')[1].toUpperCase()
+        if (filter.startsWith('status:') || filter.startsWith('discrepancies:')) {
+          const parts = filter.split(':');
+          parts.shift();
+          const val = parts.join(':').toUpperCase()
           if (val === 'APPROVED' || val === 'MATCHED') {
-            return rawDecision === 'APPROVED' || rawDecision === 'MATCHED'
+            return rawDecision === 'APPROVED' || rawDecision === 'MATCHED' || rawDecision === 'FULLY MATCHED' || rawDecision === 'FULLY_MATCHED'
           }
-          if (val === 'PARTIALLY APPROVED' || val === 'PARTIALLY MATCHED' || val === 'PENDING') {
+          if (val === 'PARTIALLY APPROVED' || val === 'PARTIALLY MATCHED' || val === 'PARTIALLY_MATCHED' || val === 'PENDING') {
             return (
               rawDecision === 'PARTIALLY APPROVED' ||
               rawDecision === 'PARTIALLY MATCHED' ||
               rawDecision === 'PARTIALLY_APPROVED' ||
+              rawDecision === 'PARTIALLY_MATCHED' ||
+              rawDecision === 'PARTIAL MATCH' ||
               rawDecision === 'PENDING'
             )
           }
-          if (val === 'NOT MATCHED' || val === 'REJECTED') {
+          if (val === 'NOT MATCHED' || val === 'NOT_MATCHED' || val === 'REJECTED') {
             return (
               rawDecision === 'NOT MATCHED' ||
               rawDecision === 'NO MATCH' ||
               rawDecision === 'NO_MATCH' ||
-              rawDecision === 'REJECTED'
+              rawDecision === 'NOT_MATCHED' ||
+              rawDecision === 'REJECTED' ||
+              rawDecision === 'FAILED'
             )
           }
           return rawDecision === val
@@ -395,21 +418,104 @@ const filterRowsByQuickFilters = (
       matchesAmount = activeAmount.some((filter) => {
         if (filter === 'highValue') return isHigh
         if (filter.startsWith('amount:')) {
-          const val = filter.split(':')[1]
+          const val = filter.replace('amount:', '')
           if (val === 'lt1k') return amount > 0 && amount < 1000
           if (val === '1k_5k') return amount >= 1000 && amount < 5000
           if (val === '5k_10k') return amount >= 5000 && amount < 10000
           if (val === 'ge10k') return amount >= 10000
+          if (val.startsWith('custom:')) {
+            const [min, max] = val.replace('custom:', '').split('-').map(Number)
+            return amount >= min && amount <= max
+          }
+          if (val.includes('-')) {
+            const [min, max] = val.split('-').map(Number)
+            return amount >= min && amount < max
+          }
         }
         return false
       })
     }
 
-    // 3. Check Overdue filters (OR within category)
-    let matchesOverdue = true
-    if (excludeCategory !== 'overdue' && activeOverdue.length > 0) {
-      matchesOverdue = activeOverdue.some((filter) => {
-        if (filter === 'overdue') return isOvr
+    // 3. Check Overdue & Due Date filters (OR within category)
+    let matchesDueDate = true
+    if (excludeCategory !== 'overdue' && activeDueDate.length > 0) {
+      matchesDueDate = activeDueDate.some((filter) => {
+        if (filter === 'overdue' || filter === 'due_date:overdue') return isOvr
+        
+        if (filter.startsWith('due_date:') || filter.startsWith('overdue:')) {
+          const isOverdueCheck = filter.startsWith('overdue:');
+          const parts = filter.split(':');
+          parts.shift();
+          const val = parts.join(':');
+          
+          if (isOverdueCheck && !isOvr) return false;
+          if (val === 'overdue') return isOvr;
+          
+          const rowDateStr = extractDueDate(row)
+          if (!rowDateStr || rowDateStr === '-') {
+            // If there's no due date, the UI treats it as "0 days immediate".
+            // The user expects this to be caught by the "Today" filter.
+            if (val === 'today') return true
+            return false
+          }
+          
+          let rowDay: Date;
+          if (rowDateStr.includes('-')) {
+             const [y, m, d] = rowDateStr.split('-').map(Number);
+             rowDay = new Date(y, m - 1, d);
+          } else {
+             const fallback = new Date(rowDateStr);
+             rowDay = new Date(fallback.getFullYear(), fallback.getMonth(), fallback.getDate());
+          }
+          if (isNaN(rowDay.getTime())) return false
+
+          const now = new Date()
+          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+
+          if (val.startsWith('custom:')) {
+            const [startStr, endStr] = val.replace('custom:', '').split('_');
+            const [sy, sm, sd] = startStr.split('-').map(Number);
+            const [ey, em, ed] = endStr.split('-').map(Number);
+            const start = new Date(sy, sm - 1, sd).getTime();
+            const end = new Date(ey, em - 1, ed).getTime();
+            return rowDay.getTime() >= start && rowDay.getTime() <= end;
+          }
+
+          if (val === 'today') return rowDay.getTime() === today.getTime()
+          if (val === 'tomorrow') return rowDay.getTime() === today.getTime() + 86400000
+          if (val === 'next_7_days') return rowDay.getTime() >= today.getTime() && rowDay.getTime() <= today.getTime() + 7 * 86400000
+          if (val === 'next_30_days') return rowDay.getTime() >= today.getTime() && rowDay.getTime() <= today.getTime() + 30 * 86400000
+          
+          if (val === 'this_week') {
+            const startOfWeek = new Date(today.getTime() - today.getDay() * 86400000)
+            const endOfWeek = new Date(startOfWeek.getTime() + 6 * 86400000)
+            return rowDay.getTime() >= startOfWeek.getTime() && rowDay.getTime() <= endOfWeek.getTime()
+          }
+          if (val === 'this_month') return rowDay.getFullYear() === now.getFullYear() && rowDay.getMonth() === now.getMonth()
+          if (val === 'next_month') {
+            const nm = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+            return rowDay.getFullYear() === nm.getFullYear() && rowDay.getMonth() === nm.getMonth()
+          }
+          if (val === 'last_week') return rowDay.getTime() >= today.getTime() - 7 * 86400000 && rowDay.getTime() <= today.getTime()
+          if (val === 'last_month') {
+            const lm = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+            return rowDay.getFullYear() === lm.getFullYear() && rowDay.getMonth() === lm.getMonth()
+          }
+          if (val === 'last_3_months') {
+            const l3m = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate())
+            return rowDay.getTime() >= l3m.getTime() && rowDay.getTime() <= today.getTime()
+          }
+          if (val === 'last_6_months') {
+            const l6m = new Date(now.getFullYear(), now.getMonth() - 6, now.getDate())
+            return rowDay.getTime() >= l6m.getTime() && rowDay.getTime() <= today.getTime()
+          }
+          if (val === 'older') {
+            const lm = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+            return rowDay.getTime() < lm.getTime()
+          }
+          if (val === 'this_year') return rowDay.getFullYear() === now.getFullYear()
+          if (val === 'last_year') return rowDay.getFullYear() === now.getFullYear() - 1
+        }
         return false
       })
     }
@@ -430,7 +536,7 @@ const filterRowsByQuickFilters = (
       })
     }
 
-    return matchesStatus && matchesAmount && matchesOverdue && matchesSupplier
+    return matchesStatus && matchesAmount && matchesDueDate && matchesSupplier
   })
 }
 
@@ -774,10 +880,11 @@ const InboxList: React.FC<InboxListProps> = ({
       'amount',
     )
     let highValue = 0
+    const dynamicHighValue = getHighValueThreshold(flatRows)
     amountRows.forEach((row) => {
       const amtStr = findInvoiceAmount(row)
       const amount = amtStr ? Number(amtStr.replace(/[^0-9.-]/g, '')) : 0
-      if (amount >= 10000) {
+      if (amount >= dynamicHighValue) {
         highValue++
       }
     })
@@ -797,29 +904,42 @@ const InboxList: React.FC<InboxListProps> = ({
   }, [flatRows])
 
   const activeFiltersMap = useMemo(() => {
-    const map: Record<string, string> = {}
+    const map: Record<string, string[]> = {}
     activeQuickFilters.forEach(f => {
-      if (f.startsWith('status:')) map.status = f.split(':')[1]
-      if (f.startsWith('amount:')) map.amount = f.split(':')[1]
-      if (f.startsWith('supplier:')) map.supplier = f.split(':')[1]
-      if (f === 'matched') map.status = 'Approved'
-      if (f === 'discrepancies') map.status = 'Rejected'
-      if (f === 'highValue') map.amount = 'ge10k'
+      if (f.startsWith('status:')) { map.status = map.status || []; map.status.push(f.replace('status:', '')) }
+      if (f.startsWith('amount:')) { map.amount = map.amount || []; map.amount.push(f.replace('amount:', '')) }
+      if (f.startsWith('supplier:')) { map.supplier = map.supplier || []; map.supplier.push(f.replace('supplier:', '')) }
+      if (f === 'matched') { map.status = map.status || []; map.status.push('MATCHED') }
+      if (f === 'discrepancies') { map.status = map.status || []; map.status.push('NOT_MATCHED') }
+      if (f === 'discrepancies:NOT_MATCHED') { map.status = map.status || []; map.status.push('NOT_MATCHED') }
+      if (f === 'discrepancies:PARTIALLY_MATCHED') { map.status = map.status || []; map.status.push('PARTIALLY_MATCHED') }
+      if (f === 'highValue') { map.amount = map.amount || []; map.amount.push('ge10k') }
+      if (f === 'overdue' || f.startsWith('due_date:')) {
+        map.due_date = map.due_date || [];
+        map.due_date.push(f === 'overdue' ? 'overdue' : f.replace('due_date:', ''));
+      }
+      if (f.startsWith('overdue:')) {
+        map.due_date = map.due_date || [];
+        map.due_date.push(f.replace('overdue:', ''));
+      }
     })
     return map
   }, [activeQuickFilters])
 
-  const handleFilterChange = (id: string, value: string) => {
+  const handleFilterChange = (id: string, values: string | string[]) => {
     const store = requestStore.getState()
-    const newFilters = store.activeQuickFilters.filter(f => !f.startsWith(`${id}:`) && !['matched', 'discrepancies', 'highValue', 'overdue'].includes(f))
+    const newFilters = store.activeQuickFilters.filter(f => !f.startsWith(`${id}:`) && !f.startsWith(`overdue:`) && !f.startsWith(`discrepancies:`) && !['matched', 'discrepancies', 'highValue', 'overdue'].includes(f))
 
-    if (value) {
-      if (id === 'status' && value === 'Pending') {
+    const vals = Array.isArray(values) ? values : (values ? [values] : [])
+    vals.forEach(val => {
+      if (val === 'overdue_chip_alias') {
+        newFilters.push('overdue')
+      } else if (id === 'status' && val === 'Pending') {
         newFilters.push(`status:Partially Approved`)
       } else {
-        newFilters.push(`${id}:${value}`)
+        newFilters.push(`${id}:${val}`)
       }
-    }
+    })
 
     store.clearQuickFilters()
     newFilters.forEach(f => store.toggleQuickFilter(f))
@@ -1079,53 +1199,99 @@ const InboxList: React.FC<InboxListProps> = ({
   return (
     <div className='bg-primary flex min-h-0 flex-1 flex-col overflow-hidden px-6 py-2 md:px-6'>
       {!selectedItem && activeTab === 'Inbox' && (
-        <CustomFilter
+        <DynamicFilter
+          dataset={flatRows}
           quickFilters={[
-            { id: 'overdue', label: 'Overdue', icon: 'tabler:clock', count: counts.overdue },
+            { 
+              id: 'overdue', 
+              label: 'Overdue', 
+              icon: 'tabler:clock', 
+              count: counts.overdue,
+              type: 'date',
+              options: [
+                { label: 'All Overdue', value: 'overdue' },
+                { label: 'This Week', value: 'this_week' },
+                { label: 'Last Month', value: 'last_month' },
+                { label: 'Last 3 Months', value: 'last_3_months' },
+                { label: 'Last 6 Months', value: 'last_6_months' },
+                { label: 'Last Year', value: 'last_year' },
+                { label: 'Custom Range', value: 'custom' }
+              ]
+            },
             { id: 'matched', label: 'Auto-Matched', icon: 'tabler:circle-check', count: counts.matched },
-            { id: 'discrepancies', label: 'Discrepancies', icon: 'tabler:alert-triangle', count: counts.discrepancies },
-            { id: 'highValue', label: 'High Value (≥$10k)', icon: 'tabler:currency-dollar', count: counts.highValue }
+            { 
+              id: 'discrepancies', 
+              label: 'Discrepancies', 
+              icon: 'tabler:alert-triangle', 
+              count: counts.discrepancies,
+              type: 'category',
+              options: [
+                { label: 'All Discrepancies', value: 'discrepancies:discrepancies' },
+                { label: 'Not Matched', value: 'discrepancies:NOT_MATCHED' },
+                { label: 'Partially Matched', value: 'discrepancies:PARTIALLY_MATCHED' }
+              ]
+            },
+            { 
+              id: 'highValue', 
+              label: `High Value (≥$${getHighValueThreshold(flatRows) >= 1000 ? getHighValueThreshold(flatRows) / 1000 + 'k' : getHighValueThreshold(flatRows)})`, 
+              icon: 'tabler:currency-dollar', 
+              count: counts.highValue 
+            }
           ]}
           activeQuickFilters={activeQuickFilters}
           onQuickFilterToggle={(id) => requestStore.getState().toggleQuickFilter(id)}
-          filters={[
-            {
-              id: 'status',
+          fields={[
+            { 
+              id: 'status', 
               label: 'Request Status',
-              searchable: true,
-              searchPlaceholder: 'Search status...',
               options: [
-                { label: 'Matched', value: 'Approved' },
-                { label: 'Partially Matched', value: 'Pending' },
-                { label: 'Not Matched', value: 'Rejected' },
+                { label: 'Matched', value: 'MATCHED' },
+                { label: 'Not Matched', value: 'NOT_MATCHED' },
+                { label: 'Partially Matched', value: 'PARTIALLY_MATCHED' }
               ]
             },
-            {
-              id: 'supplier',
+            { 
+              id: 'Supplier Name', 
               label: 'Supplier',
-              searchable: true,
-              searchPlaceholder: 'Search suppliers...',
-              options: supplierNames.map(name => ({ label: name, value: name }))
-            }
-          ]}
-          moreFilters={[
+              valueGetter: (row) => getRowColumnValue(row, 'vendor')
+            },
+            { 
+              id: 'Invoice Value', 
+              label: 'PO Amount', 
+              type: 'number',
+              valueGetter: (row) => {
+                const amt = findInvoiceAmount(row);
+                return amt ? Number(amt.replace(/[^0-9.-]/g, '')) : null;
+              }
+            },
             {
-              id: 'amount',
-              label: 'PO Amount',
-              actions: [
-                { label: '< $1k', value: 'lt1k' },
-                { label: '$1k - $5k', value: '1k_5k' },
-                { label: '$5k - $10k', value: '5k_10k' },
-                { label: '≥ $10k', value: 'ge10k' },
-              ]
+              id: 'due_date',
+              label: 'Due Date',
+              type: 'date',
+              valueGetter: (row) => extractDueDate(row)
             }
           ]}
-          activeFilters={activeFiltersMap}
-          onFilterChange={handleFilterChange}
-          showReset={activeQuickFilters.length > 0 || Object.keys(activeFiltersMap).length > 0}
-          onReset={() => {
-            requestStore.getState().clearQuickFilters()
-            if (setFiltersState) setFiltersState([])
+          activeFilters={{
+            'status': activeFiltersMap.status || [],
+            'Supplier Name': activeFiltersMap.supplier || [],
+            'Invoice Value': activeFiltersMap.amount || [],
+            'due_date': activeFiltersMap.due_date || []
+          }}
+          onFilterChange={(id, values) => {
+             let mappedId = id;
+             if (id === 'Supplier Name') mappedId = 'supplier';
+             if (id === 'Invoice Value') mappedId = 'amount';
+             // special handling: if they toggle 'overdue' via the dropdown, handleFilterChange will push due_date:overdue.
+             // But we might want it to literally push the quickfilter 'overdue' instead of 'due_date:overdue'.
+             const finalValues = (Array.isArray(values) ? values : [values]).map(v => {
+                if (mappedId === 'due_date' && v === 'overdue') return 'overdue_chip_alias';
+                return v;
+             });
+             
+             handleFilterChange(mappedId, finalValues);
+          }}
+          onClearAll={() => {
+            requestStore.getState().clearQuickFilters();
           }}
           searchQuery={searchState?.value || ''}
           onSearchChange={(val) => {
@@ -1133,15 +1299,14 @@ const InboxList: React.FC<InboxListProps> = ({
           }}
           searchPlaceholder="Search invoice, supplier, PO..."
           customSearchComponent={<TableSearch table={table as any} />}
-          actionButtons={[
+          toolbarActions={[
             {
               id: 'refresh',
               icon: 'tabler:refresh',
               onClick: onRefresh,
               tooltip: 'Refresh',
               isIconButton: true,
-              color: 'gray',
-              variant: 'outline'
+              // Note: the old customFilter also passed color/variant, DynamicFilterToolbar standardizes this
             },
             {
               id: 'export',
@@ -1149,8 +1314,6 @@ const InboxList: React.FC<InboxListProps> = ({
               onClick: () => {},
               tooltip: 'Export',
               isIconButton: true,
-              color: 'gray',
-              variant: 'outline'
             },
             {
               id: 'upload-po',
@@ -1158,33 +1321,10 @@ const InboxList: React.FC<InboxListProps> = ({
               onClick: handlePoSheet,
               tooltip: 'Import PO Data',
               isIconButton: true,
-              color: 'primary',
-              variant: 'outline'
             }
           ]}
           viewMode={viewMode}
           onViewModeChange={setViewMode}
-          /* trailingActions={
-            viewMode === 'table' ? (
-              <div className="flex items-center gap-1.5 ml-1">
-                <Tooltip content="Sort">
-                  <div>
-                    <TableSort table={table as any} iconOnly />
-                  </div>
-                </Tooltip>
-                <Tooltip content="Hide/Show Columns">
-                  <div>
-                    <TableColumns table={table as any} iconOnly />
-                  </div>
-                </Tooltip>
-                <Tooltip content="Hide/Show Rows">
-                  <div>
-                    <TableRows rowSize={rowSize} onRowSizeChange={setRowSize} iconOnly />
-                  </div>
-                </Tooltip>
-              </div>
-            ) : null
-          } */
         />
       )}
       <div className='relative flex min-h-0 w-full flex-1 flex-col mt-2'>

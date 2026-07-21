@@ -30,6 +30,8 @@ export function FolderExplorer() {
     fileSearch,
     folderContextFilters,
     folderFilters,
+    folderFilterOptionSource,
+    filterOptionsCache,
     folderHasMore,
     folderPage,
     folders,
@@ -216,6 +218,8 @@ export function FolderExplorer() {
         fileSearch={fileSearch}
         folderContextFilters={folderContextFilters}
         folderFilters={folderFilters}
+        folderFilterOptionSource={folderFilterOptionSource}
+        filterOptionsCache={filterOptionsCache}
         folders={folders}
         folderSearch={folderSearch}
         loading={loading}

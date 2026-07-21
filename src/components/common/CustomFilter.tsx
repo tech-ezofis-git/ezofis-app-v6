@@ -681,9 +681,7 @@ export default function CustomFilter({
                         activeFilterDropdown === filter.id ? null : filter.id;
                       setActiveFilterDropdown(nextOpen);
                       skipMoreFilterDebounceRef.current = true;
-                      setFilterSearchQuery(
-                        nextOpen ? activeFilters[filter.id] || "" : "",
-                      );
+                      setFilterSearchQuery("");
                     }}
                   >
                     <span className="truncate">{displayLabel}</span>

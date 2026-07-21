@@ -5,6 +5,7 @@ import {
   getExplorerFilterMode,
   getExplorerSectionVisibility,
   type ExplorerFilterMode,
+  type FolderFilterOptionsCache,
 } from '../utils/folderExplorerUtils'
 import { FolderFilterBar, isFolderTableFilterId } from './FolderFilterBar'
 
@@ -17,6 +18,8 @@ type ExplorerToolbarProps = {
   fileSearch?: string
   folderContextFilters?: Record<string, string>
   folderFilters?: Record<string, string>
+  filterOptionsCache?: FolderFilterOptionsCache
+  folderFilterOptionSource?: FolderItem[]
   folders?: FolderItem[]
   folderSearch?: string
   loading?: boolean
@@ -63,6 +66,8 @@ export function ExplorerToolbar({
   fileSearch = '',
   folderContextFilters = {},
   folderFilters = {},
+  filterOptionsCache = {},
+  folderFilterOptionSource = [],
   folders = [],
   folderSearch = '',
   loading = false,
@@ -183,6 +188,7 @@ export function ExplorerToolbar({
     if (filterMode === 'both') {
       if (isFolderStructureFilter(id, fileColumns)) {
         applyFolderFilter(id, value)
+        applyFileFilter(id, value)
         return
       }
       applyFileFilter(id, value)
@@ -213,6 +219,8 @@ export function ExplorerToolbar({
         files={normalizedFiles}
         filterMode={filterMode}
         folderContextFilters={folderContextFilters}
+        filterOptionsCache={filterOptionsCache}
+        folderFilterOptionSource={folderFilterOptionSource}
         folders={folders}
         isBusy={isBusy}
         refreshing={refreshing}

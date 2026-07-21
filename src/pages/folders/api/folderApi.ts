@@ -142,6 +142,58 @@ const mergeFilters = (
   return merged
 }
 
+const FOLDER_TABLE_FILTER_IDS = new Set([
+  '__folderName',
+  '__folderItems',
+  '__folderModified',
+])
+
+/** Folder-table-only filters (Name, Items, Date Modified) must not hit the items API. */
+export const getFileRelevantFolderFilters = (
+  folderFilters: Record<string, string> = {},
+): Record<string, string> =>
+  Object.fromEntries(
+    Object.entries(folderFilters).filter(
+      ([key, value]) =>
+        !FOLDER_TABLE_FILTER_IDS.has(key) && Boolean(String(value ?? '').trim()),
+    ),
+  )
+
+export const mergeFileExplorerFilters = (
+  folderFilters: Record<string, string> = {},
+  fileFilters: Record<string, string> = {},
+) => ({
+  ...getFileRelevantFolderFilters(folderFilters),
+  ...fileFilters,
+})
+
+const buildFileUiFilters = (
+  request: FolderContentRequest,
+  fieldKeys: string[],
+  fields: Array<{ name?: string; sqlColumnName?: string }>,
+) => {
+  const fileRelevantFolderFilters = getFileRelevantFolderFilters(
+    request.folderFilters,
+  )
+  const explicitFileFilters = request.fileFilters ?? {}
+  const legacyFilters =
+    !request.folderFilters &&
+    !request.fileFilters &&
+    request.filters
+      ? request.filters
+      : {}
+
+  return buildApiFilters(
+    {
+      ...fileRelevantFolderFilters,
+      ...explicitFileFilters,
+      ...legacyFilters,
+    },
+    fieldKeys,
+    fields,
+  )
+}
+
 type BrowseFolderNode = {
   groupField: string
   groupValue: string
@@ -919,13 +971,7 @@ export const folderApi = {
       fieldKeys,
       fields,
     )
-    const fileUiFilters = buildApiFilters(
-      request.fileFilters ??
-        (request.folderFilters ? {} : request.filters) ??
-        {},
-      fieldKeys,
-      fields,
-    )
+    const fileUiFilters = buildFileUiFilters(request, fieldKeys, fields)
     const folderParentFilters = mergeFilters(filters, folderUiFilters)
     const fileItemFilters = mergeFilters(filters, fileUiFilters)
     const folderSearchText =
