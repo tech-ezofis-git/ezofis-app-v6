@@ -10,7 +10,7 @@ export const Route = createFileRoute('/_app')({
     pageTitle: 'App Layout',
   },
   beforeLoad: ({ location }) => {
-    const { isAuthenticated } = authUserStore.getState()
+    const { isAuthenticated, session } = authUserStore.getState()
 
     if (!isAuthenticated) {
       // adjust path to your actual sign-in route under _auth
@@ -25,6 +25,48 @@ export const Route = createFileRoute('/_app')({
         replace: true,
         to: '/',
       })
+    }
+
+    const sessionPermissions = session?.permissionKeys
+
+    if (sessionPermissions && sessionPermissions.length > 0) {
+      const routeToPermissionKey: Record<string, string> = {
+        '/requests': 'requests',
+        '/folders': 'folder',
+        '/workflows': 'workflow',
+        '/forms': 'forms',
+        '/settings': 'settings',
+        '/': 'dashboard',
+      }
+
+      const baseRoute = Object.keys(routeToPermissionKey).find((route) =>
+        route === '/'
+          ? location.pathname === '/'
+          : location.pathname.startsWith(route),
+      )
+
+      if (baseRoute) {
+        const requiredPermissionKey = routeToPermissionKey[baseRoute]
+        const permission = sessionPermissions.find(
+          (p) => p.key === requiredPermissionKey,
+        )
+
+        if (permission && permission.visible === false) {
+          const firstVisible = sessionPermissions.find((p) => p.visible)
+          const fallbackRoute = firstVisible
+            ? Object.keys(routeToPermissionKey).find(
+                (k) => routeToPermissionKey[k] === firstVisible.key,
+              ) || '/'
+            : '/'
+          
+          if (location.pathname !== fallbackRoute) {
+            throw redirect({
+              replace: true,
+              to: fallbackRoute,
+            })
+          }
+        }
+      }
     }
   },
 })
