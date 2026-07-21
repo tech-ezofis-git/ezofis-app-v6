@@ -25,8 +25,9 @@ export default function HoverExpandableText({
   const handleMouseEnter = () => {
     const el = containerRef.current
     if (el) {
-      // Measure overflow synchronously on hover
-      setIsOverflowing(el.scrollWidth > el.clientWidth)
+      setIsOverflowing(
+        el.scrollHeight > el.clientHeight + 1 || el.scrollWidth > el.clientWidth + 1,
+      )
     }
   }
 
@@ -40,7 +41,12 @@ export default function HoverExpandableText({
   return (
     <Tooltip content={text} disabled={!isOverflowing || isFallback}>
       <span
-        className={cn('inline-block truncate', normalMaxWidthClass, className)}
+        className={cn(
+          'inline-block min-w-0 break-words [overflow-wrap:anywhere]',
+          'line-clamp-2 hover:line-clamp-none',
+          normalMaxWidthClass,
+          className,
+        )}
         ref={containerRef}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}

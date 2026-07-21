@@ -29,6 +29,7 @@ import {
   type V6MenuItem,
 } from '@/api/v6/user'
 import DataTable from '@/components/base/data-table/DataTable'
+import Pagination from '@/components/base/pagination/Pagination'
 import InputNumber from '@/components/base/inputs/InputNumber'
 import InputText from '@/components/base/inputs/InputText'
 import Menu from '@/components/base/menu/Menu'
@@ -43,6 +44,7 @@ import {
 import {
   settingsHeaderMeta,
   settingsTableCoreOptions,
+  useSettingsTablePagination,
   useSettingsTableSearch,
 } from '../helpers/settingsDataTable'
 import SettingsFormSection from './SettingsFormSection'
@@ -445,12 +447,28 @@ export default function MenuProfileManagement({ onBack }: MenuProps) {
     [deleteMenu, isLoadingMenuDetails, openEditMenu],
   )
 
+  const {
+    onPageChange,
+    onPageSizeChange,
+    onPaginationChange,
+    page,
+    pageSize,
+    pagination,
+    paginationModel,
+  } = useSettingsTablePagination()
+
   const menuTable = useReactTable({
     ...settingsTableCoreOptions,
     ...tableSearchOptions,
+    ...paginationModel,
     columns: menuColumns,
     data: menus,
     getRowId: (row) => row.id,
+    onPaginationChange,
+    state: {
+      ...tableSearchOptions.state,
+      pagination,
+    },
   })
 
   const { onRowSizeChange, rowSize, toolbar } = useSettingsTableToolbar({
@@ -484,8 +502,8 @@ export default function MenuProfileManagement({ onBack }: MenuProps) {
   }
 
   return (
-    <main className='bg-[var(--surface)]'>
-      <section>
+    <main className='bg-[var(--surface)] flex h-full flex-col'>
+      <section className='flex min-h-0 flex-1 flex-col'>
         <SettingsPageHeader
           actions={
             <SettingsHeaderAddButton
@@ -499,25 +517,36 @@ export default function MenuProfileManagement({ onBack }: MenuProps) {
           onBack={onBack}
         />
 
-        <div className='px-6 md:px-8'>
-          <div className='py-4'>
-            <DataTable
-              emptyDescription='Create a menu to add custom navigation items.'
-              emptyIcon='lucide:menu'
-              emptyTitle='No menus yet'
-              hideActionBar
-              isLoading={isLoadingMenus}
-              isReLoading={isLoadingMenus}
-              pageSize={Math.max(6, menus.length || 6)}
-              rowSize={rowSize}
-              table={menuTable}
-              tableBodyMaxHeight='calc(100vh - 320px)'
-              hideGrouping
-              stickyHeader
-              onReload={() => {
-                void loadMenus()
-              }}
-              onRowSizeChange={onRowSizeChange}
+        <div className='flex min-h-0 flex-1 flex-col overflow-hidden p-4'>
+          <div className='flex min-h-0 flex-1 flex-col overflow-hidden'>
+            <div className='min-h-0 flex-1 overflow-hidden'>
+              <DataTable
+                emptyDescription='Create a menu to add custom navigation items.'
+                emptyIcon='lucide:menu'
+                emptyTitle='No menus yet'
+                hideActionBar
+                isLoading={isLoadingMenus}
+                isReLoading={isLoadingMenus}
+                pageSize={pageSize}
+                rowSize={rowSize}
+                table={menuTable}
+                hideGrouping
+                stickyHeader
+                onReload={() => {
+                  void loadMenus()
+                }}
+                onRowSizeChange={onRowSizeChange}
+              />
+            </div>
+            <Pagination
+              className='mt-4 shrink-0'
+              itemLabel='Menus'
+              page={page}
+              pageSize={pageSize}
+              showPageNumbers={false}
+              totalItems={menuTable.getFilteredRowModel().rows.length}
+              onPageChange={onPageChange}
+              onPageSizeChange={onPageSizeChange}
             />
           </div>
         </div>

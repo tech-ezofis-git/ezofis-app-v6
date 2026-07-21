@@ -8,7 +8,7 @@ import type { TableGroup, WorkflowOption } from '../types'
 import requestStore from '../stores/useRequestStore'
 import { useDynamicColumns } from './columns/useDynamicColumns'
 import GridView from './GridView'
-import DynamicFilter from '@/components/common/DynamicFilter'
+import DynamicFilter, { type DynamicFilterField } from '@/components/common/DynamicFilter'
 import TableSearch from '@/components/base/data-table/actions/TableSearch'
 // import TableSort from '@/components/base/data-table/actions/TableSort'
 // import TableColumns from '@/components/base/data-table/actions/TableColumns'
@@ -319,6 +319,136 @@ const getHighValueThreshold = (rows: any[]) => {
   return Math.max(100, threshold)
 }
 
+const KNOWN_QUICK_FILTERS = new Set([
+  'matched',
+  'discrepancies',
+  'highValue',
+  'overdue',
+])
+const KNOWN_FILTER_PREFIXES = [
+  'status:',
+  'amount:',
+  'supplier:',
+  'due_date:',
+  'overdue:',
+  'discrepancies:',
+]
+
+const isKnownQuickFilterToken = (filter: string) =>
+  KNOWN_QUICK_FILTERS.has(filter) ||
+  KNOWN_FILTER_PREFIXES.some((prefix) => filter.startsWith(prefix))
+
+const getGenericColumnFilters = (activeQuickFilters: string[]) => {
+  const byId: Record<string, string[]> = {}
+  for (const filter of activeQuickFilters) {
+    if (isKnownQuickFilterToken(filter)) continue
+    const idx = filter.indexOf(':')
+    if (idx <= 0) continue
+    const id = filter.slice(0, idx)
+    const val = filter.slice(idx + 1)
+    if (!id || !val) continue
+    ;(byId[id] ||= []).push(val)
+  }
+  return byId
+}
+
+const parseDay = (dateStr: string): Date | null => {
+  if (!dateStr || dateStr === '-') return null
+  if (dateStr.includes('-')) {
+    const [y, m, d] = dateStr.split('-').map(Number)
+    if (!y || !m || !d) return null
+    return new Date(y, m - 1, d)
+  }
+  const fallback = new Date(dateStr)
+  if (Number.isNaN(fallback.getTime())) return null
+  return new Date(fallback.getFullYear(), fallback.getMonth(), fallback.getDate())
+}
+
+const matchesNumericFilterValue = (raw: string, val: string): boolean => {
+  const num = Number(String(raw).replace(/[^0-9.-]/g, ''))
+  if (Number.isNaN(num)) return false
+  if (val.startsWith('custom:')) {
+    const [min, max] = val.replace('custom:', '').split('-').map(Number)
+    return num >= min && num <= max
+  }
+  if (/^-?\d+(\.\d+)?-\d+(\.\d+)?$/.test(val)) {
+    const [min, max] = val.split('-').map(Number)
+    return num >= min && num < max
+  }
+  return String(raw) === val
+}
+
+const matchesDateFilterValue = (rowDateStr: string, val: string, isOvr: boolean): boolean => {
+  if (val === 'overdue') return isOvr
+  if (!rowDateStr || rowDateStr === '-') {
+    return val === 'today'
+  }
+  const rowDay = parseDay(rowDateStr)
+  if (!rowDay) return false
+
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+
+  if (val.startsWith('custom:')) {
+    const [startStr, endStr] = val.replace('custom:', '').split('_')
+    const start = parseDay(startStr)
+    const end = parseDay(endStr)
+    if (!start || !end) return false
+    return rowDay.getTime() >= start.getTime() && rowDay.getTime() <= end.getTime()
+  }
+
+  if (val === 'today') return rowDay.getTime() === today.getTime()
+  if (val === 'tomorrow') return rowDay.getTime() === today.getTime() + 86400000
+  if (val === 'next_7_days')
+    return rowDay.getTime() >= today.getTime() && rowDay.getTime() <= today.getTime() + 7 * 86400000
+  if (val === 'next_30_days')
+    return rowDay.getTime() >= today.getTime() && rowDay.getTime() <= today.getTime() + 30 * 86400000
+  if (val === 'this_week') {
+    const startOfWeek = new Date(today.getTime() - today.getDay() * 86400000)
+    const endOfWeek = new Date(startOfWeek.getTime() + 6 * 86400000)
+    return rowDay.getTime() >= startOfWeek.getTime() && rowDay.getTime() <= endOfWeek.getTime()
+  }
+  if (val === 'this_month')
+    return rowDay.getFullYear() === now.getFullYear() && rowDay.getMonth() === now.getMonth()
+  if (val === 'next_month') {
+    const nm = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+    return rowDay.getFullYear() === nm.getFullYear() && rowDay.getMonth() === nm.getMonth()
+  }
+  return rowDateStr === val || rowDateStr.toLowerCase() === val.toLowerCase()
+}
+
+const rowMatchesGenericFilter = (
+  row: any,
+  colId: string,
+  values: string[],
+): boolean => {
+  const rowVal = getRowColumnValue(row, colId)
+  const isOvr = isOverdue(row)
+  const dueDateStr = extractDueDate(row)
+
+  return values.some((val) => {
+    if (
+      val === 'overdue' ||
+      val === 'today' ||
+      val === 'tomorrow' ||
+      val.startsWith('next_') ||
+      val.startsWith('this_') ||
+      val.startsWith('last_') ||
+      (val.startsWith('custom:') && val.includes('_'))
+    ) {
+      const dateSource =
+        colId === 'due_date' || colId.toLowerCase().includes('due')
+          ? dueDateStr
+          : rowVal
+      return matchesDateFilterValue(dateSource, val, isOvr)
+    }
+    if (val.startsWith('custom:') || /^-?\d+(\.\d+)?-\d+(\.\d+)?$/.test(val)) {
+      return matchesNumericFilterValue(rowVal, val)
+    }
+    return String(rowVal) === val || String(rowVal).toLowerCase() === val.toLowerCase()
+  })
+}
+
 const filterRowsByQuickFilters = (
   rows: any[],
   activeQuickFilters: string[],
@@ -334,12 +464,15 @@ const filterRowsByQuickFilters = (
   const activeSupplier = activeQuickFilters.filter((f) =>
     f.startsWith('supplier:'),
   )
+  const genericById = getGenericColumnFilters(activeQuickFilters)
+  const hasGenericFilters = Object.keys(genericById).length > 0
 
   if (
     (excludeCategory === 'status' || activeStatus.length === 0) &&
     (excludeCategory === 'amount' || activeAmount.length === 0) &&
     (excludeCategory === 'overdue' || activeDueDate.length === 0) &&
-    activeSupplier.length === 0
+    activeSupplier.length === 0 &&
+    !hasGenericFilters
   ) {
     return rows
   }
@@ -536,7 +669,21 @@ const filterRowsByQuickFilters = (
       })
     }
 
-    return matchesStatus && matchesAmount && matchesDueDate && matchesSupplier
+    // 5. Check form / generic column filters (AND across columns, OR within column)
+    let matchesGeneric = true
+    if (hasGenericFilters) {
+      matchesGeneric = Object.entries(genericById).every(([colId, values]) =>
+        rowMatchesGenericFilter(row, colId, values),
+      )
+    }
+
+    return (
+      matchesStatus &&
+      matchesAmount &&
+      matchesDueDate &&
+      matchesSupplier &&
+      matchesGeneric
+    )
   })
 }
 
@@ -905,26 +1052,75 @@ const InboxList: React.FC<InboxListProps> = ({
 
   const activeFiltersMap = useMemo(() => {
     const map: Record<string, string[]> = {}
-    activeQuickFilters.forEach(f => {
-      if (f.startsWith('status:')) { map.status = map.status || []; map.status.push(f.replace('status:', '')) }
-      if (f.startsWith('amount:')) { map.amount = map.amount || []; map.amount.push(f.replace('amount:', '')) }
-      if (f.startsWith('supplier:')) { map.supplier = map.supplier || []; map.supplier.push(f.replace('supplier:', '')) }
-      if (f === 'matched') { map.status = map.status || []; map.status.push('MATCHED') }
-      if (f === 'discrepancies') { map.status = map.status || []; map.status.push('NOT_MATCHED') }
-      if (f === 'discrepancies:NOT_MATCHED') { map.status = map.status || []; map.status.push('NOT_MATCHED') }
-      if (f === 'discrepancies:PARTIALLY_MATCHED') { map.status = map.status || []; map.status.push('PARTIALLY_MATCHED') }
-      if (f === 'highValue') { map.amount = map.amount || []; map.amount.push('ge10k') }
-      if (f === 'overdue' || f.startsWith('due_date:')) {
-        map.due_date = map.due_date || [];
-        map.due_date.push(f === 'overdue' ? 'overdue' : f.replace('due_date:', ''));
-      }
-      if (f.startsWith('overdue:')) {
-        map.due_date = map.due_date || [];
-        map.due_date.push(f.replace('overdue:', ''));
+    activeQuickFilters.forEach((f) => {
+      if (f.startsWith('status:')) {
+        map.status = map.status || []
+        map.status.push(f.replace('status:', ''))
+      } else if (f.startsWith('amount:')) {
+        map.amount = map.amount || []
+        map.amount.push(f.replace('amount:', ''))
+      } else if (f.startsWith('supplier:')) {
+        map.supplier = map.supplier || []
+        map.supplier.push(f.replace('supplier:', ''))
+      } else if (f === 'matched') {
+        map.status = map.status || []
+        map.status.push('MATCHED')
+      } else if (f === 'discrepancies') {
+        map.status = map.status || []
+        map.status.push('NOT_MATCHED')
+      } else if (f === 'discrepancies:NOT_MATCHED') {
+        map.status = map.status || []
+        map.status.push('NOT_MATCHED')
+      } else if (f === 'discrepancies:PARTIALLY_MATCHED') {
+        map.status = map.status || []
+        map.status.push('PARTIALLY_MATCHED')
+      } else if (f === 'highValue') {
+        map.amount = map.amount || []
+        map.amount.push('ge10k')
+      } else if (f === 'overdue' || f.startsWith('due_date:')) {
+        map.due_date = map.due_date || []
+        map.due_date.push(f === 'overdue' ? 'overdue' : f.replace('due_date:', ''))
+      } else if (f.startsWith('overdue:')) {
+        map.due_date = map.due_date || []
+        map.due_date.push(f.replace('overdue:', ''))
+      } else if (!isKnownQuickFilterToken(f) && f.includes(':')) {
+        const idx = f.indexOf(':')
+        const id = f.slice(0, idx)
+        const val = f.slice(idx + 1)
+        if (id && val) {
+          map[id] = map[id] || []
+          map[id].push(val)
+        }
       }
     })
     return map
   }, [activeQuickFilters])
+
+  const optionalFilterFields = useMemo<DynamicFilterField[]>(() => {
+    const skipIds = new Set(['actions', 'Supplier Name', 'supplier', 'vendor'])
+    const fields: DynamicFilterField[] = []
+    const seen = new Set<string>()
+
+    for (const col of columns as Array<{
+      id?: string
+      label?: string
+      isDisplayColumn?: boolean
+    }>) {
+      if (!col?.id || col.isDisplayColumn || skipIds.has(col.id)) continue
+      const label = String(col.label || col.id)
+      const lower = label.toLowerCase()
+      if (lower.includes('supplier') || lower.includes('vendor')) continue
+      if (seen.has(col.id)) continue
+      seen.add(col.id)
+      fields.push({
+        id: col.id,
+        label,
+        valueGetter: (row) => getRowColumnValue(row, col.id as string),
+      })
+    }
+
+    return fields
+  }, [columns])
 
   const handleFilterChange = (id: string, values: string | string[]) => {
     const store = requestStore.getState()
@@ -1205,7 +1401,7 @@ const InboxList: React.FC<InboxListProps> = ({
             { 
               id: 'overdue', 
               label: 'Overdue', 
-              icon: 'tabler:clock', 
+              icon: 'tabler:clock-exclamation', 
               count: counts.overdue,
               type: 'date',
               options: [
@@ -1241,54 +1437,29 @@ const InboxList: React.FC<InboxListProps> = ({
           activeQuickFilters={activeQuickFilters}
           onQuickFilterToggle={(id) => requestStore.getState().toggleQuickFilter(id)}
           fields={[
-            { 
-              id: 'status', 
-              label: 'Request Status',
-              options: [
-                { label: 'Matched', value: 'MATCHED' },
-                { label: 'Not Matched', value: 'NOT_MATCHED' },
-                { label: 'Partially Matched', value: 'PARTIALLY_MATCHED' }
-              ]
-            },
-            { 
-              id: 'Supplier Name', 
-              label: 'Supplier',
-              valueGetter: (row) => getRowColumnValue(row, 'vendor')
-            },
-            { 
-              id: 'Invoice Value', 
-              label: 'PO Amount', 
-              type: 'number',
-              valueGetter: (row) => {
-                const amt = findInvoiceAmount(row);
-                return amt ? Number(amt.replace(/[^0-9.-]/g, '')) : null;
-              }
-            },
             {
-              id: 'due_date',
-              label: 'Due Date',
-              type: 'date',
-              valueGetter: (row) => extractDueDate(row)
-            }
+              id: 'Supplier Name',
+              label: 'Supplier',
+              valueGetter: (row) => getRowColumnValue(row, 'vendor'),
+            },
           ]}
+          optionalFields={optionalFilterFields}
           activeFilters={{
-            'status': activeFiltersMap.status || [],
+            ...activeFiltersMap,
+            status: activeFiltersMap.status || [],
             'Supplier Name': activeFiltersMap.supplier || [],
             'Invoice Value': activeFiltersMap.amount || [],
-            'due_date': activeFiltersMap.due_date || []
+            due_date: activeFiltersMap.due_date || [],
           }}
           onFilterChange={(id, values) => {
-             let mappedId = id;
-             if (id === 'Supplier Name') mappedId = 'supplier';
-             if (id === 'Invoice Value') mappedId = 'amount';
-             // special handling: if they toggle 'overdue' via the dropdown, handleFilterChange will push due_date:overdue.
-             // But we might want it to literally push the quickfilter 'overdue' instead of 'due_date:overdue'.
-             const finalValues = (Array.isArray(values) ? values : [values]).map(v => {
-                if (mappedId === 'due_date' && v === 'overdue') return 'overdue_chip_alias';
-                return v;
-             });
-             
-             handleFilterChange(mappedId, finalValues);
+            let mappedId = id
+            if (id === 'Supplier Name') mappedId = 'supplier'
+            if (id === 'Invoice Value') mappedId = 'amount'
+            const finalValues = (Array.isArray(values) ? values : [values]).map((v) => {
+              if (mappedId === 'due_date' && v === 'overdue') return 'overdue_chip_alias'
+              return v
+            })
+            handleFilterChange(mappedId, finalValues)
           }}
           onClearAll={() => {
             requestStore.getState().clearQuickFilters();
@@ -1306,7 +1477,6 @@ const InboxList: React.FC<InboxListProps> = ({
               onClick: onRefresh,
               tooltip: 'Refresh',
               isIconButton: true,
-              // Note: the old customFilter also passed color/variant, DynamicFilterToolbar standardizes this
             },
             {
               id: 'export',
@@ -1321,7 +1491,7 @@ const InboxList: React.FC<InboxListProps> = ({
               onClick: handlePoSheet,
               tooltip: 'Import PO Data',
               isIconButton: true,
-            }
+            },
           ]}
           viewMode={viewMode}
           onViewModeChange={setViewMode}

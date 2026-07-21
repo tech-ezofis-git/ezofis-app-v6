@@ -12,6 +12,9 @@ import showToast from '@/components/base/toast/showToast'
 import { AnimateFadeIn } from '@/components/common/animations'
 import apSetupPayloads from '@/pages/dashboard/workflows/accounts-payable/constants/apSetupPayloads.json'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
+import { resolvePredefinedFieldKey } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/headerSimilarity'
+import { LINE_ITEM_TEMPLATE_COLUMNS } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/lineItemSchema'
+import { SYSTEM_TEMPLATE_COLUMNS } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/templateSchema'
 import requestStore from '@/pages/requests/stores/useRequestStore'
 import authUserStore from '@/stores/authUserStore'
 import { StepFooter, StepLayout } from '../components/StepLayout'
@@ -217,12 +220,33 @@ const addCustomFieldsToPayloads = (
     return result
   }
 
+  const isExistingPredefinedField = (
+    key: string,
+    knownLabels: string[],
+    templateColumns: readonly { key: string }[],
+  ) => {
+    const normalizedKey = key.trim().toLowerCase()
+    if (
+      knownLabels.some(
+        (label) => label.trim().toLowerCase() === normalizedKey,
+      )
+    ) {
+      return true
+    }
+    return resolvePredefinedFieldKey(key, templateColumns) !== null
+  }
+
   // --- 0. FOLDER CUSTOM FIELDS ---
   const folderFields = clonedFolder.fields || []
   const predefinedFolderNames = folderFields.map((f: any) => f.name)
 
   const customHeaderFieldsForFolder = Object.keys(mapping).filter(
-    (key) => !predefinedFolderNames.includes(key)
+    (key) =>
+      !isExistingPredefinedField(
+        key,
+        predefinedFolderNames,
+        SYSTEM_TEMPLATE_COLUMNS,
+      ),
   )
 
   if (customHeaderFieldsForFolder.length > 0) {
@@ -247,7 +271,12 @@ const addCustomFieldsToPayloads = (
   const predefinedMasterLabels = masterFields.map((f: any) => f.label)
 
   const customHeaderFields = Object.keys(mapping).filter(
-    (key) => !predefinedMasterLabels.includes(key)
+    (key) =>
+      !isExistingPredefinedField(
+        key,
+        predefinedMasterLabels,
+        SYSTEM_TEMPLATE_COLUMNS,
+      ),
   )
 
   if (customHeaderFields.length > 0) {
@@ -294,7 +323,12 @@ const addCustomFieldsToPayloads = (
     const predefinedColLabels = tableColumns.map((c: any) => c.label)
 
     const customLineItemFields = Object.keys(lineItemMapping).filter(
-      (key) => !predefinedColLabels.includes(key)
+      (key) =>
+        !isExistingPredefinedField(
+          key,
+          predefinedColLabels,
+          LINE_ITEM_TEMPLATE_COLUMNS,
+        ),
     )
 
     if (customLineItemFields.length > 0 && tableColumns.length > 0) {
@@ -318,7 +352,12 @@ const addCustomFieldsToPayloads = (
       const predefinedColLabels = tableColumns.map((c: any) => c.label)
 
       const customLineItemFields = Object.keys(lineItemMapping).filter(
-        (key) => !predefinedColLabels.includes(key)
+        (key) =>
+          !isExistingPredefinedField(
+            key,
+            predefinedColLabels,
+            LINE_ITEM_TEMPLATE_COLUMNS,
+          ),
       )
 
       if (customLineItemFields.length > 0 && tableColumns.length > 0) {

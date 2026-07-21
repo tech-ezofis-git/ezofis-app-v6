@@ -115,7 +115,7 @@ function TreeItem({
     <div>
       <div
         style={{ paddingLeft: `${8 + level * 22}px` }}
-        className={`group flex h-10 cursor-pointer items-center gap-2 rounded-lg pr-2 text-[15px] font-medium transition-all ${
+        className={`group flex min-h-10 cursor-pointer items-center gap-2 rounded-lg py-1.5 pr-2 text-[13px] font-medium transition-all ${
           isActive ? 'bg-blue-2 text-blue-11' : 'text-gray-12 hover:bg-gray-2'
         }`}
         onClick={handleNodeClick}
@@ -124,7 +124,7 @@ function TreeItem({
           disabled={!canExpand}
           title={isExpanded ? 'Collapse' : 'Expand'}
           type='button'
-          className={`flex h-6 w-6 items-center justify-center rounded-md transition-all ${
+          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md transition-all ${
             canExpand ? 'text-gray-11 hover:bg-gray-4' : 'text-transparent'
           }`}
           onClick={handleChevronClick}
@@ -144,7 +144,7 @@ function TreeItem({
           name={node.iconKey || node.title || 'folder'}
         />
 
-        <span className='min-w-0 flex-1 truncate' title={node.title}>
+        <span className='min-w-0 flex-1 break-words [overflow-wrap:anywhere] line-clamp-1 transition-all group-hover:line-clamp-none'>
           {node.title}
         </span>
 

@@ -26,6 +26,7 @@ import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
 import DataTable from '@/components/base/data-table/DataTable'
+import Pagination from '@/components/base/pagination/Pagination'
 import InputCheckbox from '@/components/base/inputs/InputCheckbox'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import InputText from '@/components/base/inputs/InputText'
@@ -44,6 +45,7 @@ import cn from '@/utils/cn'
 import {
   settingsHeaderMeta,
   settingsTableCoreOptions,
+  useSettingsTablePagination,
   useSettingsTableSearch,
 } from '../../helpers/settingsDataTable'
 import SettingsSortableDataTable from '../SettingsSortableDataTable'
@@ -754,7 +756,7 @@ export default function DmsFolderConfiguration({
     }
   }
 
-  const { table: repositoryTable, tableSearchOptions } = useRepositoryTable(filteredRepositories, {
+  const { table: repositoryTable, tableSearchOptions, pagination } = useRepositoryTable(filteredRepositories, {
     onEditRepository: openEditRepository,
   })
   const repositoryToolbar = useSettingsTableToolbar({
@@ -771,15 +773,16 @@ export default function DmsFolderConfiguration({
   ]
 
   return (
-    <div className='min-h-[90vh] bg-[var(--surface)]'>
+    <div className='flex h-full min-h-0 flex-col bg-[var(--surface)]'>
       {!showWizard ? (
-        <div className='flex-1 flex flex-col'>
+        <div className='flex min-h-0 flex-1 flex-col'>
           <SettingsPageHeader
             description='Create and manage folders with custom fields, storage, and versioning.'
             title='Folder Configuration'
+            onBack={onBack}
           />
 
-          <div className='px-6 py-4 md:px-8 flex-1 flex flex-col overflow-hidden'>
+          <div className='p-4 flex-1 flex flex-col overflow-hidden'>
             <CustomFilter
               filters={[
                 { id: 'status', label: 'Status', options: statusOptions },
@@ -792,7 +795,6 @@ export default function DmsFolderConfiguration({
               }}
               showReset={Object.keys(activeFilters).some(k => activeFilters[k]) || !!tableSearchOptions.state.globalFilter?.value}
               customSearchComponent={<TableSearch table={repositoryTable as any} />}
-              onBack={onBack}
               addButton={{
                 onClick: () => setShowWizard(true),
                 tooltip: 'New Folder'
@@ -811,21 +813,32 @@ export default function DmsFolderConfiguration({
               ]}
               trailingActions={<TableExport table={repositoryTable as any} />}
             />
-            <div className='py-4 min-h-0 flex-1 overflow-hidden'>
-              <DataTable
-                hideActionBar
-                isLoading={isLoadingRepositories}
-                isReLoading={isLoadingRepositories}
-                pageSize={Math.max(5, repositories.length || 5)}
-                rowSize={repositoryToolbar.rowSize}
-                table={repositoryTable}
-                tableBodyMaxHeight='calc(100vh - 320px)'
-                stickyHeader
-                hideGrouping
-                onReload={() => {
-                  void loadRepositories()
-                }}
-                onRowSizeChange={repositoryToolbar.onRowSizeChange}
+            <div className='mt-2 min-h-0 flex-1 overflow-hidden flex flex-col'>
+              <div className='min-h-0 flex-1 overflow-hidden'>
+                <DataTable
+                  hideActionBar
+                  isLoading={isLoadingRepositories}
+                  isReLoading={isLoadingRepositories}
+                  pageSize={pagination.pageSize}
+                  rowSize={repositoryToolbar.rowSize}
+                  table={repositoryTable}
+                  stickyHeader
+                  hideGrouping
+                  onReload={() => {
+                    void loadRepositories()
+                  }}
+                  onRowSizeChange={repositoryToolbar.onRowSizeChange}
+                />
+              </div>
+              <Pagination
+                className='mt-4 shrink-0'
+                itemLabel='Folders'
+                page={pagination.page}
+                pageSize={pagination.pageSize}
+                showPageNumbers={false}
+                totalItems={repositoryTable.getFilteredRowModel().rows.length}
+                onPageChange={pagination.onPageChange}
+                onPageSizeChange={pagination.onPageSizeChange}
               />
             </div>
           </div>
@@ -1466,6 +1479,15 @@ function useRepositoryTable(
 ) {
   const columnHelper = createColumnHelper<RepositoryRow>()
   const tableSearchOptions = useSettingsTableSearch()
+  const {
+    onPageChange,
+    onPageSizeChange,
+    onPaginationChange,
+    page,
+    pageSize,
+    pagination,
+    paginationModel,
+  } = useSettingsTablePagination()
 
   const columns = useMemo(
     () => [
@@ -1589,12 +1611,27 @@ function useRepositoryTable(
   const table = useReactTable({
     ...settingsTableCoreOptions,
     ...tableSearchOptions,
+    ...paginationModel,
     columns,
     data: rows,
     getRowId: (row) => row.id,
+    onPaginationChange,
+    state: {
+      ...tableSearchOptions.state,
+      pagination,
+    },
   })
 
-  return { table, tableSearchOptions }
+  return {
+    pagination: {
+      onPageChange,
+      onPageSizeChange,
+      page,
+      pageSize,
+    },
+    table,
+    tableSearchOptions,
+  }
 }
 
 function StorageCornerCheck() {

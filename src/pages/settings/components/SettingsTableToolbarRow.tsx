@@ -18,7 +18,7 @@ export default function SettingsTableToolbarRow({
   return (
     <div
       className={cn(
-        'flex flex-wrap items-center justify-end gap-2 border-b border-[var(--gray-2)] bg-surface px-6 py-2 md:px-8',
+        'flex flex-wrap items-center justify-end gap-2 border-b border-[var(--gray-2)] bg-surface px-4 py-2',
         className,
       )}
     >

@@ -17,12 +17,14 @@ import {
 } from '@/api/v6/billing'
 import IconButton from '@/components/base/button/IconButton'
 import DataTable from '@/components/base/data-table/DataTable'
+import Pagination from '@/components/base/pagination/Pagination'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import type { Option } from '@/types/option'
 import cn from '@/utils/cn'
 import {
   settingsHeaderMeta,
   settingsTableCoreOptions,
+  useSettingsTablePagination,
   useSettingsTableSearch,
 } from '../../helpers/settingsDataTable'
 import SettingsPageHeader from '../SettingsPageHeader'
@@ -154,7 +156,7 @@ function MetricSummaryCard({
   }
 
   return (
-    <div className='cursor-pointer rounded-lg border border-border-default bg-surface p-4 shadow-xs transition-all hover:-translate-y-0.5 border-t-3 border-t-primary-9'>
+    <div className='cursor-pointer rounded-lg border border-[var(--border-default)] border-t-[3px] border-t-primary-9 bg-surface p-4 shadow-[var(--shadow-sm)] transition-all hover:-translate-y-0.5'>
       <div className='font-poppins text-8px font-semibold text-gray-11 uppercase'>
         {title}
       </div>
@@ -190,7 +192,7 @@ function ChartCard({
   title: string
 }) {
   return (
-    <div className='flex flex-col rounded-xl bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md'>
+    <div className='flex flex-col rounded-xl border border-[var(--border-default)] bg-surface p-5 shadow-[var(--shadow-sm)] transition-all hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)]'>
       <div>
         <div className='pl-0.5 capitalize font-poppins text-14 font-semibold text-text-primary'>
           {title}
@@ -595,11 +597,27 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
     [columnHelper],
   )
 
+  const {
+    onPageChange,
+    onPageSizeChange,
+    onPaginationChange,
+    page,
+    pageSize,
+    pagination,
+    paginationModel,
+  } = useSettingsTablePagination()
+
   const transactionTable = useReactTable({
     ...settingsTableCoreOptions,
     ...tableSearchOptions,
+    ...paginationModel,
     columns,
     data: transactions,
+    onPaginationChange,
+    state: {
+      ...tableSearchOptions.state,
+      pagination,
+    },
   })
 
   const { onRowSizeChange, rowSize, toolbar } = useSettingsTableToolbar({
@@ -617,9 +635,10 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
     <div className='flex h-full min-h-0 flex-col bg-[var(--surface)]'>
       <SettingsPageHeader
         title='Credit Usage'
+        onBack={onBack}
       />
 
-      <div className='flex-1 flex flex-col overflow-hidden px-6 py-4 md:px-8'>
+      <div className='flex-1 flex flex-col overflow-hidden p-4'>
         <CustomFilter
           filters={[
             ...(period === 'monthly' ? [{ id: 'month', label: 'Month', options: MONTH_OPTIONS.map(o => ({ label: o.name, value: String(o.value || '') })) }] : []),
@@ -657,7 +676,6 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
           activeQuickFilters={[period]}
           onQuickFilterToggle={(id) => setPeriod(id as UsagePeriod)}
           customSearchComponent={<div />}
-          onBack={onBack}
           actionButtons={[
             {
               id: 'refresh',
@@ -764,24 +782,36 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
             </ChartCard>
           </div>
 
-          <div className='mt-5 rounded-xl border border-gray-3 bg-white p-4 shadow-sm'>
+          <div className='mt-5 flex min-h-[320px] flex-col rounded-xl border border-[var(--border-default)] bg-surface p-4 shadow-[var(--shadow-sm)]'>
             <div className='mb-4 flex flex-wrap items-center justify-between gap-3'>
               <h4 className='font-poppins text-13 font-bold text-gray-13 capitalize'>
                 Transaction Activity
               </h4>
               {toolbar}
             </div>
-            <DataTable
-              hideActionBar
-              isLoading={isLoading}
-              isReLoading={isFetching}
-              pageSize={10}
-              rowSize={rowSize}
-              stickyHeader
-              table={transactionTable}
-              hideGrouping
-              onReload={() => void refetch()}
-              onRowSizeChange={onRowSizeChange}
+            <div className='min-h-0 flex-1 overflow-hidden'>
+              <DataTable
+                hideActionBar
+                isLoading={isLoading}
+                isReLoading={isFetching}
+                pageSize={pageSize}
+                rowSize={rowSize}
+                stickyHeader
+                table={transactionTable}
+                hideGrouping
+                onReload={() => void refetch()}
+                onRowSizeChange={onRowSizeChange}
+              />
+            </div>
+            <Pagination
+              className='mt-4 shrink-0'
+              itemLabel='Transactions'
+              page={page}
+              pageSize={pageSize}
+              showPageNumbers={false}
+              totalItems={transactionTable.getFilteredRowModel().rows.length}
+              onPageChange={onPageChange}
+              onPageSizeChange={onPageSizeChange}
             />
           </div>
         </div>

@@ -20,7 +20,6 @@ import CustomFilter from '@/components/common/CustomFilter'
 import TableSearch from '@/components/base/data-table/actions/TableSearch'
 import TableExport from '@/components/base/data-table/actions/TableExport'
 import authUserStore from '@/stores/authUserStore'
-import Header from './components/header/Header'
 import Table from './components/Table'
 
 const mapItem = (item: any) => ({
@@ -59,7 +58,6 @@ const FormsPage = () => {
   const queryClient = useQueryClient()
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
-  const [tabValue, setTabValue] = useState<string>('All')
   const [deletingForm, setDeletingForm] = useState<any | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
@@ -85,26 +83,11 @@ const FormsPage = () => {
     initialVisibilityState,
   })
 
-  const groupBy = tabValue === 'All' ? 'publishOption' : ''
+  const groupBy = ''
 
   const filterBy = useMemo(() => {
     const filters = []
-    if (tabValue === 'Published') {
-      filters.push({
-        condition: 'IS_EQUALS_TO',
-        criteria: 'publishOption',
-        dataType: '',
-        value: 'PUBLISHED',
-      })
-    } else if (tabValue === 'Drafts') {
-      filters.push({
-        condition: 'IS_EQUALS_TO',
-        criteria: 'publishOption',
-        dataType: '',
-        value: 'DRAFT',
-      })
-    }
-    
+
     Object.entries(activeFilters).forEach(([key, value]) => {
       if (value) {
         if (key === 'createdAt' || key === 'modifiedAt') {
@@ -130,7 +113,7 @@ const FormsPage = () => {
           },
         ]
       : []
-  }, [tabValue, activeFilters])
+  }, [activeFilters])
 
   const { data, isFetching, isPending, isRefetching, refetch } = useQuery(
     getFormsListQueryOptions(page, pageSize, groupBy, filterBy),
@@ -159,7 +142,6 @@ const FormsPage = () => {
         ),
       },
       {
-        enableGrouping: true,
         id: 'status',
         label: 'Status',
         size: 140,
@@ -287,8 +269,6 @@ const FormsPage = () => {
           item.publishOption ||
           ''
         ).toUpperCase()
-        if (tabValue === 'Published' && option !== 'PUBLISHED') return false
-        if (tabValue === 'Drafts' && option !== 'DRAFT') return false
 
         let matches = true
         Object.entries(activeFilters).forEach(([key, value]) => {
@@ -322,35 +302,27 @@ const FormsPage = () => {
       }
 
       if (isGrouped) {
-        return rawList
-          .map((group: any) => {
-            let items: any[] = []
-            if (Array.isArray(group.value)) {
-              items = group.value
-            } else if (Array.isArray(group.data)) {
-              items = group.data
-            }
-            const mappedItems = items.map(mapItem)
+        const mappedItems = rawList.flatMap((group: any) => {
+          let items: any[] = []
+          if (Array.isArray(group.value)) {
+            items = group.value
+          } else if (Array.isArray(group.data)) {
+            items = group.data
+          }
+          return items.map(mapItem)
+        })
 
-            // Apply local filtering
-            const filteredItems = mappedItems.filter(filterLogic)
+        const filteredItems = mappedItems.filter(filterLogic)
 
-            let groupValue = String(group.key)
-            if (groupValue.toUpperCase() === 'PUBLISHED') {
-              groupValue = 'Published'
-            } else if (groupValue.toUpperCase() === 'DRAFT') {
-              groupValue = 'Draft'
-            }
-
-            return {
-              groupCount: filteredItems.length,
-              groupId: String(group.key),
-              groupKey: tabValue === 'All' ? 'publishOption' : 'type',
-              groupValue,
-              items: filteredItems,
-            }
-          })
-          .filter((group) => group.groupCount > 0)
+        return [
+          {
+            groupCount: filteredItems.length,
+            groupId: 'all',
+            groupKey: '',
+            groupValue: '',
+            items: filteredItems,
+          },
+        ]
       }
 
       // If not grouped, fallback to flat mapper
@@ -369,7 +341,7 @@ const FormsPage = () => {
     }
 
     return []
-  }, [data, tabValue, activeFilters, searchState])
+  }, [data, activeFilters, searchState])
 
   const totalItems = useMemo(() => {
     if (!data) return 0
@@ -433,9 +405,7 @@ const FormsPage = () => {
   }
 
   return (
-    <div className='flex h-full flex-col'>
-      <Header tabValue={tabValue} onTabChange={setTabValue} />
-
+    <div className='flex h-full min-h-0 flex-col'>
       {deletingForm && (
         <div className='animate-in fade-in slide-in-from-top-4 mx-6 mt-4 flex items-center justify-between gap-4 rounded-xl border border-red-3 bg-red-2 p-4 text-red-11 shadow-sm duration-300'>
           <div className='flex items-center gap-3'>
@@ -508,7 +478,7 @@ const FormsPage = () => {
         </div>
       )}
 
-      <div className='bg-gray-50/50 flex flex-col flex-1 overflow-hidden px-6 py-2'>
+      <div className='bg-gray-50/50 flex min-h-0 flex-1 flex-col overflow-hidden p-4'>
         <CustomFilter
           filters={[
             {
@@ -569,6 +539,11 @@ const FormsPage = () => {
               disabled: isFetching
             }
           ]}
+          addButton={{
+            icon: 'lucide:plus',
+            onClick: openFormBuilder,
+            tooltip: 'New Form',
+          }}
           trailingActions={
             <TableExport table={table as any} />
           }

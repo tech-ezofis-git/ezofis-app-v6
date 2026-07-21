@@ -10175,7 +10175,7 @@
                   {
                     "id": "l2amP5ayOsCaf14j30YQo",
                     "label": "Quantity",
-                    "type": "SHORT_TEXT",
+                    "type": "NUMBER",
                     "settings": {
                       "general": {
                         "hideLabel": false,
@@ -14339,7 +14339,7 @@
                   {
                     "id": "Roa4dSpf67Y7s0IsMyWJA",
                     "label": "Received Quantity",
-                    "type": "SHORT_TEXT",
+                    "type": "NUMBER",
                     "settings": {
                       "general": {
                         "hideLabel": false,
@@ -23028,7 +23028,7 @@
                   {
                     "id": "eewd3Jx-Kx1ub1ZcjBt7L",
                     "label": "Quantity",
-                    "type": "SHORT_TEXT",
+                    "type": "NUMBER",
                     "settings": {
                       "general": {
                         "hideLabel": false,
@@ -27627,7 +27627,7 @@
           "mailInitiate": {
             "mailSettingsId": 0,
             "connectorType": "gmail",
-            "connectorId": 52,
+            "connectorId": "",
             "conditions": {
               "hasAttachment": false,
               "attachment": {
@@ -27685,7 +27685,7 @@
           "partialApprove": true,
           "fullApprovalAction": "",
           "formEditAccess": "FULL",
-          "connectorId": 0,
+          "connectorId": "",
           "formEditControls": [],
           "formVisibilityAccess": true,
           "formSecureControls": [],
@@ -28007,7 +28007,7 @@
               "BACKORDER_DETECT",
               "DUPLICATE_DETECT"
             ],
-            "connectorId": 0
+            "connectorId": ""
           },
           "fileSettings": {
             "fileCheckList": [],
@@ -28545,7 +28545,7 @@
           },
           "hasFooter": false,
           "footerText": "",
-          "connectorId": 0
+          "connectorId": ""
         }
       },
       {
@@ -28746,7 +28746,7 @@
           "partialApprove": true,
           "fullApprovalAction": "",
           "formEditAccess": "FULL",
-          "connectorId": 0,
+          "connectorId": "",
           "formEditControls": [],
           "formVisibilityAccess": true,
           "formSecureControls": [],

@@ -16,9 +16,12 @@ import {
   AnimateScale,
   AnimateSlideUp,
 } from '@/components/common/animations'
-import apSetupPayloads from '@/pages/dashboard/workflows/accounts-payable/constants/apSetupPayloads.json'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
-import { compareHeaderSimilarity } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/headerSimilarity'
+import { compareHeaderSimilarity, normalizeFieldMapping } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/headerSimilarity'
+import {
+  HEADER_MAPPING_API_FIELDS,
+  LINE_ITEM_MAPPING_API_FIELDS,
+} from '@/pages/requests/components/request/components/newrequest/poFlow/utils/mappingFieldDefaults'
 import { detectGroupingColumn } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/lineItemHelpers'
 import { LINE_ITEM_TEMPLATE_COLUMNS } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/lineItemSchema'
 import { SYSTEM_TEMPLATE_COLUMNS } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/templateSchema'
@@ -159,6 +162,24 @@ const ErpSystem = () => {
     const file = event.target.files?.[0]
     if (file) {
       setIsParsing(true)
+
+      // Clear existing mappings immediately so the UI resets
+      setErpSettings({
+        ...erpSettings,
+        fieldDataTypes: {},
+        groupingColumn: null,
+        isConnected: false,
+        lineItemFieldDataTypes: {},
+        lineItemHeaders: [],
+        lineItemMapping: {},
+        lineItemRows: [],
+        mapping: {},
+        previewRows: [],
+        templateUploaded: false,
+        uploadedColumns: [],
+        uploadedTemplate: null,
+      })
+
       try {
         const {
           excelSheets,
@@ -168,27 +189,11 @@ const ErpSystem = () => {
           previewRows,
         } = await extractHeadersAndData(file)
 
-        // 1. Get headerFields from masterFormPayload (exclude type === 'TABLE')
-        const masterFormPayload = apSetupPayloads.masterFormPayload
-        const masterFields = masterFormPayload?.panels?.[0]?.fields || []
+        // Build API field lists from the same predefined schemas used in the mapping UI
+        const headerFields = HEADER_MAPPING_API_FIELDS
+        const lineItemFields = LINE_ITEM_MAPPING_API_FIELDS
 
-        const headerFields = masterFields
-          .filter((f: any) => f.type !== 'TABLE')
-          .map((f: any) => ({
-            dataType: f.type,
-            name: f.label,
-          }))
-
-        // 2. Get lineItemFields from TABLE field settings.specific.tableColumns
-        const tableField = masterFields.find((f: any) => f.type === 'TABLE')
-        const lineItemFields = (
-          tableField?.settings?.specific?.tableColumns || []
-        ).map((col: any) => ({
-          dataType: col.type,
-          name: col.label,
-        }))
-
-        // 3. Setup mappings with fallback to local similarity match
+        // Setup mappings with fallback to local similarity match
         let initialMapping: Record<string, string> = {}
         let initialLineItemMapping: Record<string, string> = {}
         let fieldDataTypes: Record<string, string> = {}
@@ -237,21 +242,28 @@ const ErpSystem = () => {
             if (data.headerFields && Array.isArray(data.headerFields)) {
               data.headerFields.forEach((item: any) => {
                 if (item.excelField && item.masterField) {
-                  let key = item.masterField
-                  if (key === 'Purchase Order') key = 'PO Number'
-                  apiMapping[key] = item.excelField
+                  apiMapping[item.masterField] = item.excelField
                   const rawType = item.dataType || 'SHORT_TEXT'
-                  apiFieldDataTypes[key] =
+                  apiFieldDataTypes[item.masterField] =
                     rawType === 'DROPDOWN' ? 'SINGLE_SELECT' : rawType
                 }
               })
             }
 
             if (data.lineItemFields && Array.isArray(data.lineItemFields)) {
+              // Build a lookup: excelColumn -> resolved predefined key from header mapping
+              // so line item fields sharing the same Excel column inherit the correct key
+              const headerExcelToKey: Record<string, string> = {}
+              Object.entries(apiMapping).forEach(([masterField, excelField]) => {
+                headerExcelToKey[excelField.toLowerCase().trim()] = masterField
+              })
+
               data.lineItemFields.forEach((item: any) => {
                 if (item.excelField && item.masterField) {
-                  let key = item.masterField
-                  if (key === 'Purchase Order') key = 'PO Number'
+                  const excelNorm = item.excelField.toLowerCase().trim()
+                  // If the same Excel column was already resolved in header fields, reuse that key
+                  const inheritedKey = headerExcelToKey[excelNorm]
+                  const key = inheritedKey ?? item.masterField
                   apiLineItemMapping[key] = item.excelField
                   const rawType = item.dataType || 'SHORT_TEXT'
                   apiLineItemFieldDataTypes[key] =
@@ -262,16 +274,44 @@ const ErpSystem = () => {
 
             // If we got mappings from API, use them
             if (Object.keys(apiMapping).length > 0) {
-              initialMapping = apiMapping
-              fieldDataTypes = apiFieldDataTypes
+              const normalizedHeader = normalizeFieldMapping(
+                apiMapping,
+                apiFieldDataTypes,
+                SYSTEM_TEMPLATE_COLUMNS,
+              )
+              initialMapping = normalizedHeader.mapping
+              fieldDataTypes = normalizedHeader.fieldDataTypes
             }
             if (Object.keys(apiLineItemMapping).length > 0) {
-              initialLineItemMapping = apiLineItemMapping
-              lineItemFieldDataTypes = apiLineItemFieldDataTypes
+              const normalizedLineItems = normalizeFieldMapping(
+                apiLineItemMapping,
+                apiLineItemFieldDataTypes,
+                LINE_ITEM_TEMPLATE_COLUMNS,
+              )
+              initialLineItemMapping = normalizedLineItems.mapping
+              lineItemFieldDataTypes = normalizedLineItems.fieldDataTypes
             }
           }
         } catch (apiErr) {
           console.error('Failed to get mapping from endpoint:', apiErr)
+        }
+
+        const normalizedLocalHeader = normalizeFieldMapping(
+          initialMapping,
+          fieldDataTypes,
+          SYSTEM_TEMPLATE_COLUMNS,
+        )
+        initialMapping = normalizedLocalHeader.mapping
+        fieldDataTypes = normalizedLocalHeader.fieldDataTypes
+
+        if (hasLineItems) {
+          const normalizedLocalLineItems = normalizeFieldMapping(
+            initialLineItemMapping,
+            lineItemFieldDataTypes,
+            LINE_ITEM_TEMPLATE_COLUMNS,
+          )
+          initialLineItemMapping = normalizedLocalLineItems.mapping
+          lineItemFieldDataTypes = normalizedLocalLineItems.fieldDataTypes
         }
 
         const headerPo =
@@ -449,7 +489,7 @@ const ErpSystem = () => {
               </p>
 
               {/* Download button */}
-              <div className='mb-4 flex justify-start'>
+              <div className='flex justify-start'>
                 <Button
                   icon='tabler:download'
                   label='Download PO Master Demo Data'

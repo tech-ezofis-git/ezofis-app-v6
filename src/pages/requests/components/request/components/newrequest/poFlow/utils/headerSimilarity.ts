@@ -42,6 +42,67 @@ export const compareHeaderSimilarity = (
   return getHeaderSimilarityScore(header1, header2) >= 0.8
 }
 
+export const PREDEFINED_FIELD_ALIASES: Record<string, string> = {
+  'Purchase Order': 'PO Number',
+}
+
+export function resolvePredefinedFieldKey(
+  fieldName: string,
+  templateColumns: readonly { key: string }[],
+): string | null {
+  const trimmed = fieldName.trim()
+  if (!trimmed) return null
+
+  const aliasedName = PREDEFINED_FIELD_ALIASES[trimmed] ?? trimmed
+
+  const exact = templateColumns.find((col) => col.key === aliasedName)
+  if (exact) return exact.key
+
+  const caseInsensitive = templateColumns.find(
+    (col) => col.key.trim().toLowerCase() === aliasedName.toLowerCase(),
+  )
+  if (caseInsensitive) return caseInsensitive.key
+
+  const similarity = templateColumns.find((col) =>
+    compareHeaderSimilarity(aliasedName, col.key.trim()),
+  )
+  if (similarity) return similarity.key
+
+  return null
+}
+
+export function normalizeFieldMapping(
+  mapping: Record<string, string>,
+  fieldDataTypes: Record<string, string>,
+  templateColumns: readonly { key: string }[],
+  defaultFieldTypes: Record<string, string> = {},
+): {
+  mapping: Record<string, string>
+  fieldDataTypes: Record<string, string>
+} {
+  const normalizedMapping: Record<string, string> = {}
+  const normalizedTypes: Record<string, string> = {}
+
+  for (const [rawKey, excelCol] of Object.entries(mapping)) {
+    const resolvedKey =
+      resolvePredefinedFieldKey(rawKey, templateColumns) ?? rawKey
+
+    normalizedMapping[resolvedKey] = excelCol
+
+    const rawType = fieldDataTypes[rawKey] ?? fieldDataTypes[resolvedKey]
+    const normalizedType =
+      rawType === 'DROPDOWN' ? 'SINGLE_SELECT' : rawType
+
+    if (normalizedType) {
+      normalizedTypes[resolvedKey] = normalizedType
+    } else if (defaultFieldTypes[resolvedKey]) {
+      normalizedTypes[resolvedKey] = defaultFieldTypes[resolvedKey]
+    }
+  }
+
+  return { mapping: normalizedMapping, fieldDataTypes: normalizedTypes }
+}
+
 export const findBestHeaderMatch = (
   targetHeader: string,
   availableHeaders: string[]

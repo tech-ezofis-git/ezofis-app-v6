@@ -1082,40 +1082,46 @@ const GridRowItem = memo(
           </div>
         </div>
 
-        {/* Main Content: Identity & Metadata */}
-        <div className='flex min-w-0 flex-1 flex-col gap-1.5'>
-          <div className='flex items-center gap-3'>
+        {/* Main Content: Identity & Metadata — always 2 lines */}
+        <div className='flex min-w-0 flex-1 flex-col gap-1'>
+          <div className='group/inv flex min-w-0 flex-nowrap items-center gap-2.5'>
             <h3
               className={cn(
-                'truncate text-[15px] tracking-tight text-[var(--text-primary)] transition-colors group-hover:text-[var(--primary-9)] group-hover:underline',
-                isSidebarOpen ? 'max-w-[140px] sm:max-w-[180px] md:max-w-[240px]' : 'max-w-none'
+                'min-w-0 shrink truncate text-[15px] tracking-tight text-[var(--text-primary)] transition-colors group-hover:text-[var(--primary-9)] group-hover:underline',
+                isSidebarOpen ? 'max-w-[120px] sm:max-w-[140px]' : 'max-w-[140px] sm:max-w-[180px] md:max-w-[220px]',
               )}
               style={{ fontWeight: 500 }}
+              title={String(invoiceNo || '')}
             >
               {invoiceNo}
             </h3>
             {!row.isProcessing && (
-              <HoverExpandableText
-                className='align-bottom text-[12px] font-medium text-[var(--gray-10)]'
-                fallbackText='Unknown Supplier'
-                normalMaxWidthClass={isSidebarOpen ? 'max-w-[100px]' : 'max-w-[120px] sm:max-w-[160px] md:max-w-[200px] lg:max-w-[260px]'}
-                text={supplierName}
-              />
+              <span
+                className={cn(
+                  'min-w-0 flex-1 truncate text-[12px] font-medium text-[var(--gray-10)]',
+                  isSidebarOpen ? 'max-w-[100px]' : 'max-w-[160px] sm:max-w-[200px] md:max-w-[260px]',
+                )}
+                title={supplierName === 'Unknown Supplier' ? undefined : supplierName}
+              >
+                {supplierName === 'Unknown Supplier' ? 'N/A' : supplierName}
+              </span>
             )}
-            <RowStatusBadge
-              activeTab={activeTab}
-              isProcessing={row.isProcessing}
-              originalIndex={originalIndex}
-              row={row}
-            />
+            <div className='shrink-0'>
+              <RowStatusBadge
+                activeTab={activeTab}
+                isProcessing={row.isProcessing}
+                originalIndex={originalIndex}
+                row={row}
+              />
+            </div>
           </div>
 
-          {/* Sub-metadata row */}
-          <div className='flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] font-medium text-[var(--gray-10)]'>
+          {/* Sub-metadata row — PO / GL / category stay on line 2 */}
+          <div className='flex min-w-0 flex-nowrap items-center gap-x-4 overflow-hidden text-[12px] font-medium text-[var(--gray-10)]'>
             {!row.isProcessing && (
-              <div className='flex items-center gap-1.5'>
-                <Icon className='size-3.5' name='tabler:hash' />
-                <span>{extractPONumber(row)}</span>
+              <div className='flex min-w-0 shrink-0 items-center gap-1.5'>
+                <Icon className='size-3.5 shrink-0' name='tabler:hash' />
+                <span className='truncate'>{extractPONumber(row)}</span>
               </div>
             )}
             {!row.isProcessing &&
@@ -1125,15 +1131,15 @@ const GridRowItem = memo(
                 return (
                   <>
                     {glNumber && (
-                      <div className='flex items-center gap-1.5 text-[var(--gray-8)]'>
-                        <Icon className='size-3.5' name='tabler:stack' />
-                        <span>{glNumber}</span>
+                      <div className='flex min-w-0 items-center gap-1.5 text-[var(--gray-8)]'>
+                        <Icon className='size-3.5 shrink-0' name='tabler:stack' />
+                        <span className='truncate'>{glNumber}</span>
                       </div>
                     )}
                     {category && (
-                      <div className='flex items-center gap-1.5 text-[var(--gray-8)]'>
-                        <Icon className='size-3.5' name='tabler:tag' />
-                        <span>{category}</span>
+                      <div className='flex min-w-0 items-center gap-1.5 text-[var(--gray-8)]'>
+                        <Icon className='size-3.5 shrink-0' name='tabler:tag' />
+                        <span className='truncate'>{category}</span>
                       </div>
                     )}
                   </>
@@ -1148,7 +1154,7 @@ const GridRowItem = memo(
                 className='size-3.5 shrink-0'
                 name='tabler:sparkles'
               />
-              <span className='truncate' title={aiInsight}>{aiInsight}</span>
+              <span className='line-clamp-2 break-words [overflow-wrap:anywhere] hover:line-clamp-none' title={aiInsight}>{aiInsight}</span>
             </div>
           )}
         </div>
@@ -1473,7 +1479,8 @@ const GridView = <TData,>({
   return (
     <>
       <div className='flex h-full flex-col overflow-hidden'>
-        <div className='sticky top-0 z-20 flex items-center justify-between border-b border-[var(--gray-2)] bg-surface/70 py-1 pr-4 pl-7 backdrop-blur-sm'>
+        {/* Temporarily hidden: Invoices group header */}
+        <div className='sticky top-0 z-20 hidden items-center justify-between border-b border-[var(--gray-2)] bg-surface/70 py-1 pr-4 pl-7 backdrop-blur-sm'>
           <div className='flex items-center gap-4'>
             {allItems.length > 0 && (
               <label className='relative flex cursor-pointer items-center'>
