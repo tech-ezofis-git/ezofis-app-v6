@@ -36,6 +36,10 @@ export interface DynamicRepositoryColumn {
 export interface FolderContentRequest {
   append?: boolean
   cursor?: string | null
+  /** UI filters for repository items Filters only */
+  fileFilters?: Record<string, string>
+  /** Search for repository items */
+  fileSearch?: string
   /**
    * @deprecated Prefer folderFilters / fileFilters.
    * Kept as a fallback merged into both when specific props are omitted.
@@ -43,8 +47,8 @@ export interface FolderContentRequest {
   filters?: Record<string, string>
   /** UI filters for browse/children ParentFilters only */
   folderFilters?: Record<string, string>
-  /** UI filters for repository items Filters only */
-  fileFilters?: Record<string, string>
+  /** Search for browse/children */
+  folderSearch?: string
   /** Grid tree sync: skip file fetch when only loading folder children */
   includeFiles?: boolean
   /** List view: load all repository files without folder filters */
@@ -53,10 +57,6 @@ export interface FolderContentRequest {
   pageSize?: number
   /** @deprecated Prefer folderSearch / fileSearch */
   search?: string
-  /** Search for browse/children */
-  folderSearch?: string
-  /** Search for repository items */
-  fileSearch?: string
   sortBy?: string
   sortOrder?: 'asc' | 'desc' | string
 }
@@ -155,7 +155,8 @@ export const getFileRelevantFolderFilters = (
   Object.fromEntries(
     Object.entries(folderFilters).filter(
       ([key, value]) =>
-        !FOLDER_TABLE_FILTER_IDS.has(key) && Boolean(String(value ?? '').trim()),
+        !FOLDER_TABLE_FILTER_IDS.has(key) &&
+        Boolean(String(value ?? '').trim()),
     ),
   )
 
@@ -177,9 +178,7 @@ const buildFileUiFilters = (
   )
   const explicitFileFilters = request.fileFilters ?? {}
   const legacyFilters =
-    !request.folderFilters &&
-    !request.fileFilters &&
-    request.filters
+    !request.folderFilters && !request.fileFilters && request.filters
       ? request.filters
       : {}
 
@@ -295,7 +294,16 @@ export const getFolderContextFilters = (
 }
 
 export const resolveCurrentFolderGroupField = (
-  structure: { folderFields?: Array<{ level: number; name: string; sqlColumnName: string }> } | null | undefined,
+  structure:
+    | {
+        folderFields?: Array<{
+          level: number
+          name: string
+          sqlColumnName: string
+        }>
+      }
+    | null
+    | undefined,
   parentFilters: Record<string, string> = {},
   apiGroupField?: string,
 ) => {
@@ -304,7 +312,9 @@ export const resolveCurrentFolderGroupField = (
   const folderFields = structure?.folderFields ?? []
   if (!folderFields.length) return ''
 
-  const sorted = [...folderFields].sort((left, right) => left.level - right.level)
+  const sorted = [...folderFields].sort(
+    (left, right) => left.level - right.level,
+  )
   const depth = Object.keys(parentFilters).length
   const field = sorted[depth]
 
@@ -415,14 +425,14 @@ const toWorkspaceDetail = (workspace: any): any => {
 const toFileItem = (row: Record<string, any>, index: number): FileItem => {
   const id = String(
     row.id ??
-    row.Id ??
-    row.itemId ??
-    row.ItemId ??
-    row.documentId ??
-    row.DocumentId ??
-    row.fileId ??
-    row.FileId ??
-    `file-${index}`,
+      row.Id ??
+      row.itemId ??
+      row.ItemId ??
+      row.documentId ??
+      row.DocumentId ??
+      row.fileId ??
+      row.FileId ??
+      `file-${index}`,
   )
 
   return {
@@ -808,10 +818,10 @@ export const folderApi = {
     request: {
       filters?: Record<string, string>
       folderFilters?: Record<string, string>
+      folderSearch?: string
       page?: number
       pageSize?: number
       search?: string
-      folderSearch?: string
     } = {},
   ): Promise<{
     folderPage: RepositoryFilePage
@@ -874,8 +884,7 @@ export const folderApi = {
       pageSize: request.pageSize ?? defaultGroupPageSize,
       parentFilters,
       pathId,
-      search:
-        (request.folderSearch ?? request.search)?.trim() || undefined,
+      search: (request.folderSearch ?? request.search)?.trim() || undefined,
     } as any)
 
     if (childrenResult.error) throw new Error(String(childrenResult.error))
@@ -940,7 +949,7 @@ export const folderApi = {
     const repository =
       decoded.kind === 'repository'
         ? ((await authApiV6.getRepositoryById(decoded.repositoryId))
-          .data as RepositoryDto)
+            .data as RepositoryDto)
         : undefined
     const fields = await getRepositoryFields(
       decoded.kind === 'repository'
@@ -951,13 +960,13 @@ export const folderApi = {
     const fieldIconMap = buildFieldIconMap(fields)
     const structure =
       decoded.kind === 'repository' ||
-        decoded.kind === 'browsePath' ||
-        decoded.kind === 'browse'
+      decoded.kind === 'browsePath' ||
+      decoded.kind === 'browse'
         ? await getRepositoryBrowseStructure(
-          decoded.kind === 'repository'
-            ? decoded.repositoryId
-            : decoded.repositoryId,
-        )
+            decoded.kind === 'repository'
+              ? decoded.repositoryId
+              : decoded.repositoryId,
+          )
         : null
     const { filters, pathId, repositoryId } = getDecodedRepositoryInfo(decoded)
     const fieldKeys = fields

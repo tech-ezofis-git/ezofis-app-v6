@@ -28,8 +28,8 @@ interface Props extends Omit<
   value: string | null
   maxDate?: string
   minDate?: string
-  valueFormat?: string
   popoverProps?: Record<string, any>
+  valueFormat?: string
   onChange: (value: string | null) => void
 }
 
@@ -41,13 +41,13 @@ const InputDate = forwardRef<HTMLInputElement, Props>(
       label,
       optional,
       placeholder = 'dd-mmm-yyyy',
+      popoverProps,
       required,
       tooltip,
       tooltipWidth,
       value,
       valueFormat = 'DD-MMM-YYYY',
       onChange,
-      popoverProps,
       ...rest
     },
     ref,

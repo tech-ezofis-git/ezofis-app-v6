@@ -1,9 +1,9 @@
 import {
+  type ColumnFiltersState,
+  type FilterFn,
   getCoreRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
-  type ColumnFiltersState,
-  type FilterFn,
   type PaginationState,
   type Row,
 } from '@tanstack/react-table'
@@ -51,7 +51,9 @@ export const settingsGlobalFilterFn: FilterFn<any> = (
 
   if (searchState.id) {
     const value = row.getValue(searchState.id)
-    return String(value ?? '').toLowerCase().includes(search)
+    return String(value ?? '')
+      .toLowerCase()
+      .includes(search)
   }
 
   return getRowSearchValues(row).some((value) =>
@@ -60,8 +62,35 @@ export const settingsGlobalFilterFn: FilterFn<any> = (
 }
 
 export const settingsTableSearchModel = {
-  getFilteredRowModel: getFilteredRowModel(),
   globalFilterFn: settingsGlobalFilterFn,
+  getFilteredRowModel: getFilteredRowModel(),
+}
+
+export function useSettingsTablePagination(initialPageSize = 10) {
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: initialPageSize,
+  })
+
+  return useMemo(
+    () => ({
+      page: pagination.pageIndex + 1,
+      pageSize: pagination.pageSize,
+      pagination,
+      paginationModel: {
+        getPaginationRowModel: getPaginationRowModel(),
+      },
+      onPageChange: (page: number) =>
+        setPagination((prev) => ({
+          ...prev,
+          pageIndex: Math.max(0, page - 1),
+        })),
+      onPageSizeChange: (pageSize: number) =>
+        setPagination({ pageIndex: 0, pageSize }),
+      onPaginationChange: setPagination,
+    }),
+    [pagination],
+  )
 }
 
 export function useSettingsTableSearch() {
@@ -74,37 +103,10 @@ export function useSettingsTableSearch() {
   return useMemo(
     () => ({
       ...settingsTableSearchModel,
+      state: { columnFilters, globalFilter },
       onColumnFiltersChange: setColumnFilters,
       onGlobalFilterChange: setGlobalFilter,
-      state: { columnFilters, globalFilter },
     }),
     [columnFilters, globalFilter],
-  )
-}
-
-export function useSettingsTablePagination(initialPageSize = 10) {
-  const [pagination, setPagination] = useState<PaginationState>({
-    pageIndex: 0,
-    pageSize: initialPageSize,
-  })
-
-  return useMemo(
-    () => ({
-      onPageChange: (page: number) =>
-        setPagination((prev) => ({
-          ...prev,
-          pageIndex: Math.max(0, page - 1),
-        })),
-      onPageSizeChange: (pageSize: number) =>
-        setPagination({ pageIndex: 0, pageSize }),
-      onPaginationChange: setPagination,
-      page: pagination.pageIndex + 1,
-      pageSize: pagination.pageSize,
-      pagination,
-      paginationModel: {
-        getPaginationRowModel: getPaginationRowModel(),
-      },
-    }),
-    [pagination],
   )
 }

@@ -1,8 +1,8 @@
-import { AnimatePresence, motion } from 'motion/react'
 import { Sparkles } from 'lucide-react'
+import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import Icon from '@/components/base/icon/Icon'
 import IconButton from '@/components/base/button/IconButton'
+import Icon from '@/components/base/icon/Icon'
 import Menu from '@/components/base/menu/Menu'
 import cn from '@/utils/cn'
 
@@ -15,60 +15,60 @@ type SearchItem = {
 
 const SEARCH_ITEMS: SearchItem[] = [
   {
+    answer:
+      'Open AP Agent from the top bar, complete your workspace profile, then create your first account under Settings → Organization to begin invoice intake.',
     id: '1',
     keywords: ['ap agent', 'start', 'account', 'onboard'],
     title: 'How do I start using AP Agent and create my first account?',
-    answer:
-      'Open AP Agent from the top bar, complete your workspace profile, then create your first account under Settings → Organization to begin invoice intake.',
   },
   {
+    answer:
+      'You can ingest invoices via email attachment capture, manual upload, scanner/OCR import, or connected ERP mailboxes for automatic extraction.',
     id: '2',
     keywords: ['invoice', 'ingest', 'upload', 'email', 'import'],
     title: 'What options does AP Agent offer for ingesting invoices?',
-    answer:
-      'You can ingest invoices via email attachment capture, manual upload, scanner/OCR import, or connected ERP mailboxes for automatic extraction.',
   },
   {
+    answer:
+      'Go to Vendor Management, review duplicate alerts, merge or dismiss matches, then verify bank and tax details before the first payment.',
     id: '3',
     keywords: ['vendor', 'supplier', 'verify', 'duplicate'],
     title: 'How do I verify vendors and resolve duplicate supplier alerts?',
-    answer:
-      'Go to Vendor Management, review duplicate alerts, merge or dismiss matches, then verify bank and tax details before the first payment.',
   },
   {
+    answer:
+      'Open Payments → Approvals to see pending items, amounts, and schedules. High-priority payments are highlighted for faster review.',
     id: '4',
     keywords: ['payment', 'approval', 'schedule', 'remittance'],
     title: 'Where can I review pending payment approvals and schedules?',
-    answer:
-      'Open Payments → Approvals to see pending items, amounts, and schedules. High-priority payments are highlighted for faster review.',
   },
   {
+    answer:
+      'Use repository search with filters like PO Number, invoice number, vendor, or date range to locate matching AP documents quickly.',
     id: '5',
     keywords: ['document', 'search', 'po', 'purchase order', 'repository'],
     title: 'How do I search documents, invoices, and PO records?',
-    answer:
-      'Use repository search with filters like PO Number, invoice number, vendor, or date range to locate matching AP documents quickly.',
   },
   {
+    answer:
+      'Purchase requests route through your configured approval chain. Track status in Requests and approve or reject from the request detail view.',
     id: '6',
     keywords: ['request', 'purchase request', 'approval workflow'],
     title: 'How do purchase requests and approval workflows work?',
-    answer:
-      'Purchase requests route through your configured approval chain. Track status in Requests and approve or reject from the request detail view.',
   },
   {
+    answer:
+      '2-way matches invoice to PO; 3-way also requires a goods receipt. Incomplete matches appear in Matching until all documents align.',
     id: '7',
     keywords: ['matching', '2-way', '3-way', 'goods receipt'],
     title: 'How does 2-way and 3-way invoice matching work?',
-    answer:
-      '2-way matches invoice to PO; 3-way also requires a goods receipt. Incomplete matches appear in Matching until all documents align.',
   },
   {
+    answer:
+      'This page helps you manage Accounts Payable requests — review status, discrepancies, supplier filters, and move matched items to verification.',
     id: '8',
     keywords: ['erp', 'sync', 'sap', 'intacct', 'export', 'page about'],
     title: 'What is this page about?',
-    answer:
-      'This page helps you manage Accounts Payable requests — review status, discrepancies, supplier filters, and move matched items to verification.',
   },
 ]
 
@@ -151,11 +151,11 @@ const GlobalSearch = () => {
 
     openAnswer(
       matched || {
+        answer:
+          'I searched AP help for your question. Try keywords like invoice, vendor, payment, request, matching, or ERP sync for a detailed answer.',
         id: 'custom',
         keywords: [],
         title: trimmed,
-        answer:
-          'I searched AP help for your question. Try keywords like invoice, vendor, payment, request, matching, or ERP sync for a detailed answer.',
       },
     )
   }
@@ -165,12 +165,12 @@ const GlobalSearch = () => {
 
   return (
     <Menu
+      className='!p-0'
       closeOnItemClick={false}
       offset={8}
       opened={opened}
       position='bottom-end'
       width={460}
-      className='!p-0'
       target={
         opened ? (
           <div
@@ -184,9 +184,9 @@ const GlobalSearch = () => {
             onMouseDown={(e) => e.stopPropagation()}
           >
             <input
-              ref={inputRef}
               className='min-w-0 flex-1 bg-transparent text-[13.5px] text-gray-13 outline-none placeholder:text-gray-9'
               placeholder='Search...'
+              ref={inputRef}
               value={query}
               onChange={(e) => {
                 setView('search')
@@ -278,7 +278,7 @@ const GlobalSearch = () => {
                     size={16}
                     strokeWidth={2}
                   />
-                  <h3 className='text-[14px] font-semibold leading-5 text-gray-13'>
+                  <h3 className='text-[14px] leading-5 font-semibold text-gray-13'>
                     {activeItem.title}
                   </h3>
                 </div>
@@ -296,7 +296,11 @@ const GlobalSearch = () => {
                 initial={{ opacity: 0 }}
                 key='idle'
               >
-                <Sparkles className='text-primary-8' size={22} strokeWidth={2} />
+                <Sparkles
+                  className='text-primary-8'
+                  size={22}
+                  strokeWidth={2}
+                />
                 <p className='text-sm font-medium text-gray-12'>
                   Start typing to search
                 </p>
@@ -315,12 +319,12 @@ const GlobalSearch = () => {
                 key='loading'
               >
                 <motion.div
+                  className='text-primary-9'
                   animate={{
                     opacity: [0.55, 1, 0.55],
                     rotate: [0, 8, -8, 0],
                     scale: [0.92, 1.1, 0.92],
                   }}
-                  className='text-primary-9'
                   transition={{
                     duration: 1.4,
                     ease: 'easeInOut',

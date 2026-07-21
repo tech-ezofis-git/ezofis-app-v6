@@ -18,7 +18,9 @@ type SettingsSelectFieldProps = {
   onChange: (value: string) => void
 }
 
-const toSelectOptions = (options: SelectOptionLike[] | string[]): SelectOptionLike[] => {
+const toSelectOptions = (
+  options: SelectOptionLike[] | string[],
+): SelectOptionLike[] => {
   if (!options.length) return []
 
   if (typeof options[0] === 'string') {

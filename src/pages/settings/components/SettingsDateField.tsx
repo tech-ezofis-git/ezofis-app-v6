@@ -15,10 +15,10 @@ export default function SettingsDateField({
 }: SettingsDateFieldProps) {
   return (
     <InputDate
-      clearable
       label={label}
       required={required}
       value={value || null}
+      clearable
       onChange={(nextValue) => onChange(nextValue || '')}
     />
   )

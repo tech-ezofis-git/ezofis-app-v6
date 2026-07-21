@@ -29,16 +29,19 @@ import {
   type V6RoleItem,
 } from '@/api/v6/user'
 import IconButton from '@/components/base/button/IconButton'
+import TableExport from '@/components/base/data-table/actions/TableExport'
 import TableReload from '@/components/base/data-table/actions/TableReload'
+import TableSearch from '@/components/base/data-table/actions/TableSearch'
 import DataTable from '@/components/base/data-table/DataTable'
-import Pagination from '@/components/base/pagination/Pagination'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
 import InputText from '@/components/base/inputs/InputText'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
 import Menu from '@/components/base/menu/Menu'
 import DropdownMenuItem from '@/components/base/menu/MenuItem'
+import Pagination from '@/components/base/pagination/Pagination'
 import showToast from '@/components/base/toast/showToast'
+import CustomFilter from '@/components/common/CustomFilter'
 import {
   getFieldRequiredError,
   getMissingRequiredLabels,
@@ -61,9 +64,6 @@ import SettingsSelectedChips from './SettingsSelectedChips'
 import SettingsSetupContent from './SettingsSetupContent'
 import SettingsSetupHeader from './SettingsSetupHeader'
 import useSettingsTableToolbar from './useSettingsTableToolbar'
-import CustomFilter from '@/components/common/CustomFilter'
-import TableSearch from '@/components/base/data-table/actions/TableSearch'
-import TableExport from '@/components/base/data-table/actions/TableExport'
 
 type AssignedUser = {
   email: string
@@ -363,11 +363,11 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
           current.map((item) =>
             item.id === role.id
               ? {
-                ...item,
-                permissions: role.permissions,
-                userIds: role.userIds,
-                users: role.users,
-              }
+                  ...item,
+                  permissions: role.permissions,
+                  userIds: role.userIds,
+                  users: role.users,
+                }
               : item,
           ),
         )
@@ -392,17 +392,19 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
     const payload: UpsertV6RolePayload & { permissionKeys?: any[] } = {
       description:
         newRoleDescription.trim() || 'Custom role configured by administrator',
-      permissions: newPermissions,
-      roleName: cleanName,
-      users: selectedUsers.map((user) => String(user.id)),
       permissionKeys: apiMenus.map((item) => {
-        const isEnabled = newPermissions.includes(normalizeCategorySlug(item.key || ''))
+        const isEnabled = newPermissions.includes(
+          normalizeCategorySlug(item.key || ''),
+        )
         return {
           key: item.key,
           name: item.name || item.label,
           visible: isEnabled,
         }
       }),
+      permissions: newPermissions,
+      roleName: cleanName,
+      users: selectedUsers.map((user) => String(user.id)),
     }
 
     setIsSavingRole(true)
@@ -446,7 +448,10 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
 
       const permissionKeys = (response.data as any)?.permissionKeys || []
       const permissionKeysMap = new Map<string, boolean>(
-        permissionKeys.map((pk: any) => [String(pk.key || '').toLowerCase(), pk.visible === true])
+        permissionKeys.map((pk: any) => [
+          String(pk.key || '').toLowerCase(),
+          pk.visible === true,
+        ]),
       )
 
       const updatedApiMenus = apiMenus.map((item) => {
@@ -470,10 +475,7 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
         ),
       )
       setNewPermissionRows(
-        mapPermissionsToRows(
-          role.permissions,
-          updatedApiMenus,
-        ),
+        mapPermissionsToRows(role.permissions, updatedApiMenus),
       )
 
       setCreateStep(0)
@@ -482,8 +484,6 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
       setIsLoadingRoleDetails(false)
     }
   }
-
-
 
   const toggleNewPermission = (categoryKey: string) => {
     setNewPermissionRows((current) =>
@@ -561,7 +561,10 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
         roles={roles}
         onBack={onBack}
         onCreate={() => {
-          const resetMenus = apiMenus.map((item) => ({ ...item, visible: true }))
+          const resetMenus = apiMenus.map((item) => ({
+            ...item,
+            visible: true,
+          }))
           setApiMenus(resetMenus)
           setNewPermissionRows(buildEmptyPermissionRows(resetMenus))
           setIsCreatingRole(true)
@@ -576,7 +579,9 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
 
 function buildEmptyPermissionRows(menus: V6MenuItem[]): PermissionRow[] {
   return buildPermissionCategoriesFromMenus(menus).map(({ key, name }) => {
-    const menuItem = menus.find((m) => normalizeCategorySlug(m.key || '') === key)
+    const menuItem = menus.find(
+      (m) => normalizeCategorySlug(m.key || '') === key,
+    )
     return {
       category: name,
       categoryKey: key,
@@ -1033,11 +1038,11 @@ function mapApiRoleToRole(role: V6RoleItem): Role {
     : []
   const users = Array.isArray(role.users)
     ? role.users
-      .map((user) => {
-        if (typeof user === 'string') return user
-        return String(user.id || user.userId || user.value || '')
-      })
-      .filter(Boolean)
+        .map((user) => {
+          if (typeof user === 'string') return user
+          return String(user.id || user.userId || user.value || '')
+        })
+        .filter(Boolean)
     : []
   const userCount =
     typeof role.userCount === 'number' ? role.userCount : users.length
@@ -1078,8 +1083,12 @@ function mapPermissionsToRows(
   }
 
   return categories.map((category) => {
-    const menuItem = menus.find((m) => normalizeCategorySlug(m.key || '') === category.key)
-    const isVisible = menuItem ? menuItem.visible === true : isPermissionEnabledForCategory(category.key, permissions)
+    const menuItem = menus.find(
+      (m) => normalizeCategorySlug(m.key || '') === category.key,
+    )
+    const isVisible = menuItem
+      ? menuItem.visible === true
+      : isPermissionEnabledForCategory(category.key, permissions)
     return {
       category: category.name,
       categoryKey: category.key,
@@ -1335,23 +1344,24 @@ function RoleList({
 }) {
   const tableSearchOptions = useSettingsTableSearch()
   const {
-    onPageChange,
-    onPageSizeChange,
-    onPaginationChange,
     page,
     pageSize,
     pagination,
     paginationModel,
+    onPageChange,
+    onPageSizeChange,
+    onPaginationChange,
   } = useSettingsTablePagination()
   const [activeFilters, setActiveFilters] = useState<Record<string, string>>({})
 
   const filteredRoles = useMemo(() => {
-    return roles.filter(role => {
+    return roles.filter((role) => {
       let matches = true
       Object.entries(activeFilters).forEach(([key, value]) => {
         if (!value) return
         if (key === 'type') {
-          if (String(role.type).toLowerCase() !== value.toLowerCase()) matches = false
+          if (String(role.type).toLowerCase() !== value.toLowerCase())
+            matches = false
         }
       })
       return matches
@@ -1403,7 +1413,11 @@ function RoleList({
         enableSorting: false,
         header: 'Type',
         id: 'type',
-        meta: { ...settingsHeaderMeta.start, label: 'Type', disableEllipsis: true },
+        meta: {
+          ...settingsHeaderMeta.start,
+          disableEllipsis: true,
+          label: 'Type',
+        },
         minSize: 140,
         size: 180,
         cell: ({ getValue }) => (
@@ -1443,8 +1457,8 @@ function RoleList({
             >
               <Menu
                 position='bottom-end'
-                withinPortal
                 width={144}
+                withinPortal
                 target={
                   <button
                     className='rounded-lg p-2 text-[var(--gray-13)] transition hover:bg-[var(--gray-2)] disabled:cursor-not-allowed disabled:opacity-50'
@@ -1463,8 +1477,8 @@ function RoleList({
                 <DropdownMenuItem
                   className='text-red-11'
                   icon='lucide:trash-2'
-                  label='Delete'
                   iconClass='text-red-11'
+                  label='Delete'
                   onClick={() => onDelete(role.id)}
                 />
               </Menu>
@@ -1482,12 +1496,12 @@ function RoleList({
     ...paginationModel,
     columns: roleColumns,
     data: filteredRoles,
-    getRowId: (row) => row.id,
-    onPaginationChange,
     state: {
       ...tableSearchOptions.state,
       pagination,
     },
+    getRowId: (row) => row.id,
+    onPaginationChange,
   })
 
   const { rowSize, onRowSizeChange } = useSettingsTableToolbar({
@@ -1498,45 +1512,51 @@ function RoleList({
     },
   })
 
-  const typeOptions = useMemo(() => Array.from(new Set(roles.map(r => r.type).filter(Boolean))).map(t => ({ label: t, value: t })), [roles])
+  const typeOptions = useMemo(
+    () =>
+      Array.from(new Set(roles.map((r) => r.type).filter(Boolean))).map(
+        (t) => ({ label: t, value: t }),
+      ),
+    [roles],
+  )
 
   return (
     <div className='flex h-full min-h-0 flex-col'>
-      <SettingsPageHeader
-        title='Roles & Permissions'
-        onBack={onBack}
-      />
+      <SettingsPageHeader title='Roles & Permissions' onBack={onBack} />
 
       <div className='flex min-h-0 flex-1 flex-col overflow-hidden p-4'>
         <CustomFilter
-          filters={[
-            { id: 'type', label: 'Type', options: typeOptions },
-          ]}
           activeFilters={activeFilters}
-          onFilterChange={(id, val) => setActiveFilters(prev => ({ ...prev, [id]: val }))}
+          customSearchComponent={<TableSearch table={roleTable as any} />}
+          filters={[{ id: 'type', label: 'Type', options: typeOptions }]}
+          trailingActions={<TableExport table={roleTable as any} />}
+          actionButtons={[
+            {
+              color: 'gray',
+              disabled: isLoading,
+              icon: 'tabler:refresh',
+              id: 'refresh',
+              isIconButton: true,
+              tooltip: 'Refresh',
+              variant: 'outline',
+              onClick: onReload,
+            },
+          ]}
+          addButton={{
+            tooltip: 'Create Role',
+            onClick: onCreate,
+          }}
+          showReset={
+            Object.keys(activeFilters).some((k) => activeFilters[k]) ||
+            !!tableSearchOptions.state.globalFilter?.value
+          }
+          onFilterChange={(id, val) =>
+            setActiveFilters((prev) => ({ ...prev, [id]: val }))
+          }
           onReset={() => {
             setActiveFilters({})
             tableSearchOptions.onGlobalFilterChange({ id: '', value: '' })
           }}
-          showReset={Object.keys(activeFilters).some(k => activeFilters[k]) || !!tableSearchOptions.state.globalFilter?.value}
-          customSearchComponent={<TableSearch table={roleTable as any} />}
-          addButton={{
-            onClick: onCreate,
-            tooltip: 'Create Role'
-          }}
-          actionButtons={[
-            {
-              id: 'refresh',
-              icon: 'tabler:refresh',
-              tooltip: 'Refresh',
-              onClick: onReload,
-              isIconButton: true,
-              color: 'gray',
-              variant: 'outline',
-              disabled: isLoading,
-            }
-          ]}
-          trailingActions={<TableExport table={roleTable as any} />}
         />
         <div className='mt-4 flex min-h-0 flex-1 flex-col overflow-hidden'>
           <div className='min-h-0 flex-1 overflow-hidden'>

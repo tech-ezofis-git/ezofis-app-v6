@@ -13,13 +13,13 @@ import TableReload from '@/components/base/data-table/actions/TableReload'
 // import SummaryBadge from '@/components/common/SummaryBadge'
 import Icon from '@/components/base/icon/Icon'
 import showToast from '@/components/base/toast/showToast'
+import useAskAIStore from '@/components/common/ask-ai/stores/useAskAIStore'
 // import RequestSummary from './RequestSummary'
 import FileSheet from '@/components/common/file-sheet/FileSheet'
 import ListEmptyState from '@/components/common/ListEmptyState'
 import requestStore, {
   useProcessingStatusText,
 } from '@/pages/requests/stores/useRequestStore'
-import useAskAIStore from '@/components/common/ask-ai/stores/useAskAIStore'
 import cn from '@/utils/cn'
 import { formatDatetime } from '@/utils/dayjs'
 import HoverExpandableText from './HoverExpandableText'
@@ -933,9 +933,8 @@ const GridRowItem = memo(
       typeof row?._originalIndex === 'number' ? row._originalIndex : index
     const rowId = row?.id || row?.processId || `item-${originalIndex}`
 
-    const { jobMappings, jobStatuses, processingProcesses, isPlaygroundOpen } = requestStore(
-      (state) => state,
-    )
+    const { isPlaygroundOpen, jobMappings, jobStatuses, processingProcesses } =
+      requestStore((state) => state)
     const isAskAIOpen = useAskAIStore((state) => state.isOpen)
     const isSidebarOpen = isPlaygroundOpen || isAskAIOpen
     const matchingProc = useMemo(() => {
@@ -1086,12 +1085,14 @@ const GridRowItem = memo(
         <div className='flex min-w-0 flex-1 flex-col gap-1'>
           <div className='group/inv flex min-w-0 flex-nowrap items-center gap-2.5'>
             <h3
-              className={cn(
-                'min-w-0 shrink truncate text-[15px] tracking-tight text-[var(--text-primary)] transition-colors group-hover:text-[var(--primary-9)] group-hover:underline',
-                isSidebarOpen ? 'max-w-[120px] sm:max-w-[140px]' : 'max-w-[140px] sm:max-w-[180px] md:max-w-[220px]',
-              )}
               style={{ fontWeight: 500 }}
               title={String(invoiceNo || '')}
+              className={cn(
+                'min-w-0 shrink truncate text-[15px] tracking-tight text-[var(--text-primary)] transition-colors group-hover:text-[var(--primary-9)] group-hover:underline',
+                isSidebarOpen
+                  ? 'max-w-[120px] sm:max-w-[140px]'
+                  : 'max-w-[140px] sm:max-w-[180px] md:max-w-[220px]',
+              )}
             >
               {invoiceNo}
             </h3>
@@ -1099,9 +1100,13 @@ const GridRowItem = memo(
               <span
                 className={cn(
                   'min-w-0 flex-1 truncate text-[12px] font-medium text-[var(--gray-10)]',
-                  isSidebarOpen ? 'max-w-[100px]' : 'max-w-[160px] sm:max-w-[200px] md:max-w-[260px]',
+                  isSidebarOpen
+                    ? 'max-w-[100px]'
+                    : 'max-w-[160px] sm:max-w-[200px] md:max-w-[260px]',
                 )}
-                title={supplierName === 'Unknown Supplier' ? undefined : supplierName}
+                title={
+                  supplierName === 'Unknown Supplier' ? undefined : supplierName
+                }
               >
                 {supplierName === 'Unknown Supplier' ? 'N/A' : supplierName}
               </span>
@@ -1132,7 +1137,10 @@ const GridRowItem = memo(
                   <>
                     {glNumber && (
                       <div className='flex min-w-0 items-center gap-1.5 text-[var(--gray-8)]'>
-                        <Icon className='size-3.5 shrink-0' name='tabler:stack' />
+                        <Icon
+                          className='size-3.5 shrink-0'
+                          name='tabler:stack'
+                        />
                         <span className='truncate'>{glNumber}</span>
                       </div>
                     )}
@@ -1148,33 +1156,41 @@ const GridRowItem = memo(
           </div>
 
           {/* AI Insight inside Column 2 (stacked, visible ONLY when playground/chat/sidebar is open) */}
-          {!row.isProcessing && activeTab !== 'Processed' && aiInsight && isSidebarOpen && (
-            <div className='flex min-w-0 items-center gap-1.5 mt-0.5 text-[12px] font-medium text-[var(--primary-9)]'>
-              <Icon
-                className='size-3.5 shrink-0'
-                name='tabler:sparkles'
-              />
-              <span className='line-clamp-2 break-words [overflow-wrap:anywhere] hover:line-clamp-none' title={aiInsight}>{aiInsight}</span>
-            </div>
-          )}
+          {!row.isProcessing &&
+            activeTab !== 'Processed' &&
+            aiInsight &&
+            isSidebarOpen && (
+              <div className='mt-0.5 flex min-w-0 items-center gap-1.5 text-[12px] font-medium text-[var(--primary-9)]'>
+                <Icon className='size-3.5 shrink-0' name='tabler:sparkles' />
+                <span
+                  className='line-clamp-2 [overflow-wrap:anywhere] break-words hover:line-clamp-none'
+                  title={aiInsight}
+                >
+                  {aiInsight}
+                </span>
+              </div>
+            )}
         </div>
 
         {/* AI Insight Line - Centered in middle of row (visible ONLY when playground/chat/sidebar is closed) */}
-        {!row.isProcessing && activeTab !== 'Processed' && aiInsight && !isSidebarOpen && (
-          <div className='flex min-w-0 flex-1 items-center justify-center px-4'>
-            <div className='flex min-w-0 items-center gap-1.5'>
-              <Icon
-                className='size-3.5 shrink-0 text-[var(--primary-9)]'
-                name='tabler:sparkles'
-              />
-              <HoverExpandableText
-                className='text-[13px] font-medium text-[var(--gray-11)]'
-                normalMaxWidthClass='max-w-[180px] sm:max-w-[240px] md:max-w-[320px] lg:max-w-[450px]'
-                text={aiInsight}
-              />
+        {!row.isProcessing &&
+          activeTab !== 'Processed' &&
+          aiInsight &&
+          !isSidebarOpen && (
+            <div className='flex min-w-0 flex-1 items-center justify-center px-4'>
+              <div className='flex min-w-0 items-center gap-1.5'>
+                <Icon
+                  className='size-3.5 shrink-0 text-[var(--primary-9)]'
+                  name='tabler:sparkles'
+                />
+                <HoverExpandableText
+                  className='text-[13px] font-medium text-[var(--gray-11)]'
+                  normalMaxWidthClass='max-w-[180px] sm:max-w-[240px] md:max-w-[320px] lg:max-w-[450px]'
+                  text={aiInsight}
+                />
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
         {/* Columns 1-4 perfectly aligned across all rows */}
         <div className='ml-auto flex shrink-0 items-center gap-6 select-none'>
@@ -1301,8 +1317,8 @@ interface GridViewProps<TData> {
   table: TanstackTable<TData>
   actions?: TableActionButton[]
   activeTab?: string
-  hideGrouping?: boolean
   hideExport?: boolean
+  hideGrouping?: boolean
   hideReload?: boolean
   isReloading?: boolean
   rowSize?: RowSize
@@ -1316,8 +1332,8 @@ const GridView = <TData,>({
   actions,
   activeTab,
   data,
-  hideGrouping: _hideGrouping,
   hideExport = false,
+  hideGrouping: _hideGrouping,
   hideReload = false,
   isLoading,
   isReloading,

@@ -14,9 +14,7 @@ import MenuSub from '@/components/base/menu/MenuSub'
 import Th from '@/components/base/table/Th'
 import cn from '@/utils/cn'
 import getColumnPinnedStyles from './helpers/getColumnPinnedStyles'
-import TableEllipsis, {
-  shouldDisableTableEllipsis,
-} from './TableEllipsis'
+import TableEllipsis, { shouldDisableTableEllipsis } from './TableEllipsis'
 
 interface Props<TData> extends ComponentProps<'th'> {
   header: Header<TData, unknown>
@@ -109,7 +107,10 @@ const TableHeaderCell = <TData,>({ header, style, table }: Props<TData>) => {
       }}
     >
       <div
-        className={cn('flex min-h-10 min-w-0 items-center py-1', headerAlignClassName)}
+        className={cn(
+          'flex min-h-10 min-w-0 items-center py-1',
+          headerAlignClassName,
+        )}
       >
         {/* display column */}
         {!isAccessorColumn && headerContent}

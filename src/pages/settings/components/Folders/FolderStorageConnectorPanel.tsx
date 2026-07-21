@@ -120,7 +120,9 @@ export default function FolderStorageConnectorPanel({
       if (event.data.type !== 'CONNECTION_SUCCESS') return
 
       const connectorName =
-        event.data.connector || event.data.connectorName || pendingConnectionName
+        event.data.connector ||
+        event.data.connectorName ||
+        pendingConnectionName
 
       if (connectorName) setPendingConnectionName(String(connectorName))
 
@@ -162,9 +164,13 @@ export default function FolderStorageConnectorPanel({
         ) : null}
 
         <div className='min-w-0 flex-1'>
-          <h3 className='text-base font-semibold text-gray-13'>{option.title}</h3>
+          <h3 className='text-base font-semibold text-gray-13'>
+            {option.title}
+          </h3>
           <p className='mt-1 text-sm text-gray-11'>{option.subtitle}</p>
-          <p className='mt-3 text-sm leading-6 text-gray-11'>{option.description}</p>
+          <p className='mt-3 text-sm leading-6 text-gray-11'>
+            {option.description}
+          </p>
         </div>
       </div>
 
@@ -177,8 +183,10 @@ export default function FolderStorageConnectorPanel({
         <InputSelect
           label='Connector'
           options={connectionOptions}
-          placeholder={isLoading ? 'Loading connectors...' : 'Select a connector'}
           value={selectedConnection}
+          placeholder={
+            isLoading ? 'Loading connectors...' : 'Select a connector'
+          }
           onChange={(selected) => {
             if (!selected) {
               onConnectorChange(null, null)

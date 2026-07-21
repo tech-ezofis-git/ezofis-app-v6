@@ -26,7 +26,8 @@ const SidebarCTA = () => {
 
       {/* Description */}
       <p className='mb-4 text-xs leading-relaxed text-primary-2 opacity-95'>
-        Streamline your Accounts Payable with intelligent PO matching, automated invoice routing, and seamless integrations.
+        Streamline your Accounts Payable with intelligent PO matching, automated
+        invoice routing, and seamless integrations.
       </p>
 
       {/* CTA Button */}

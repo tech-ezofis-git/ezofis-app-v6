@@ -4,15 +4,15 @@ import { axiosV6 } from './axios'
 import { getV6ApiErrorMessage } from './v6/auth'
 
 export interface EventLog {
-  id: number | string
+  category: string
+  createdAtUtc: string
   eventTitle: string
   eventType: string
+  id: number | string
+  ipAddress: string
+  severity: 'info' | 'warning' | 'critical' | string
   userDisplayName: string
   userEmail: string
-  category: string
-  severity: 'info' | 'warning' | 'critical' | string
-  ipAddress: string
-  createdAtUtc: string
 }
 
 export interface EventLogResponse {
@@ -24,20 +24,29 @@ export interface EventLogResponse {
 }
 
 export interface GetEventLogsParams {
-  page?: number
-  pageSize?: number
   category?: string
-  severity?: string
-  userEmail?: string
   dateFrom?: string
   dateTo?: string
+  page?: number
+  pageSize?: number
   search?: string
+  severity?: string
+  userEmail?: string
 }
 
 export const mapEventLog = (item: any): EventLog => {
   const record = (item || {}) as Record<string, any>
   return {
-    id: record.id ?? record.Id ?? record.eventLogId ?? 0,
+    category: String(record.category || record.Category || ''),
+    createdAtUtc: String(
+      record.createdAtUtc ||
+        record.CreatedAtUtc ||
+        record.timestamp ||
+        record.Timestamp ||
+        record.createdAt ||
+        record.CreatedAt ||
+        '',
+    ),
     eventTitle: String(
       record.eventTitle ||
         record.EventTitle ||
@@ -50,6 +59,13 @@ export const mapEventLog = (item: any): EventLog => {
     eventType: String(
       record.eventType || record.EventType || record.type || record.Type || '',
     ),
+    id: record.id ?? record.Id ?? record.eventLogId ?? 0,
+    ipAddress: String(
+      record.ipAddress || record.IpAddress || record.ip || record.IP || '',
+    ),
+    severity: String(
+      record.severity || record.Severity || 'info',
+    ).toLowerCase(),
     userDisplayName: String(
       record.userDisplayName ||
         record.UserDisplayName ||
@@ -64,20 +80,6 @@ export const mapEventLog = (item: any): EventLog => {
         record.UserEmail ||
         record.email ||
         record.Email ||
-        '',
-    ),
-    category: String(record.category || record.Category || ''),
-    severity: String(record.severity || record.Severity || 'info').toLowerCase(),
-    ipAddress: String(
-      record.ipAddress || record.IpAddress || record.ip || record.IP || '',
-    ),
-    createdAtUtc: String(
-      record.createdAtUtc ||
-        record.CreatedAtUtc ||
-        record.timestamp ||
-        record.Timestamp ||
-        record.createdAt ||
-        record.CreatedAt ||
         '',
     ),
   }
@@ -126,7 +128,9 @@ export const mapEventLogResponse = (
   }
 
   const page = Number(data.page ?? data.Page ?? params?.page ?? 1)
-  const pageSize = Number(data.pageSize ?? data.PageSize ?? params?.pageSize ?? 100)
+  const pageSize = Number(
+    data.pageSize ?? data.PageSize ?? params?.pageSize ?? 100,
+  )
   const computedTotalPages = pageSize > 0 ? Math.ceil(totalCount / pageSize) : 1
   const totalPages = Number(
     data.totalPages ?? data.TotalPages ?? computedTotalPages ?? 1,
@@ -155,7 +159,8 @@ export const getEventLogs = async (
 
   try {
     const store = authUserStore.getState()
-    const tenantId = store.session?.tenantId || (store.identity as any)?.tenantId || ''
+    const tenantId =
+      store.session?.tenantId || (store.identity as any)?.tenantId || ''
 
     const queryParams: Record<string, any> = {}
     if (params.page !== undefined) {

@@ -16,7 +16,7 @@ interface Props<TData> {
   iconOnly?: boolean
 }
 
-const TableSort = <TData,>({ table, iconOnly }: Props<TData>) => {
+const TableSort = <TData,>({ iconOnly, table }: Props<TData>) => {
   const sortDirections = ['Ascending', 'Descending']
   const sortState = table.getState().sorting
 

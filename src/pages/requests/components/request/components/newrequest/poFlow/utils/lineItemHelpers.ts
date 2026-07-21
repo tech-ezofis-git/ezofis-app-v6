@@ -75,15 +75,18 @@ export const groupLineItems = (
   rows: any[],
   groupCol: string,
 ): Record<string, any[]> => {
-  return rows.reduce((acc, row) => {
-    const key = String(row[groupCol] || '').trim()
-    if (!key) return acc // Skip empty keys
-    if (!acc[key]) {
-      acc[key] = []
-    }
-    acc[key].push(row)
-    return acc
-  }, {} as Record<string, any[]>)
+  return rows.reduce(
+    (acc, row) => {
+      const key = String(row[groupCol] || '').trim()
+      if (!key) return acc // Skip empty keys
+      if (!acc[key]) {
+        acc[key] = []
+      }
+      acc[key].push(row)
+      return acc
+    },
+    {} as Record<string, any[]>,
+  )
 }
 
 /**

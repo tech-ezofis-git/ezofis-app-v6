@@ -3,15 +3,15 @@ import { axiosV6 } from '../axios'
 import { getV6ApiErrorMessage } from './auth'
 
 export interface CreateSupportTicketPayload {
-  supportCategory: string
-  Priorty: string
-  PreferredContact: string
-  PhoneNO: string
-  RequestDescription: string
   isEmailSend: boolean
+  PhoneNO: string
+  PreferredContact: string
+  Priorty: string
+  RequestDescription: string
+  supportCategory: string
+  email?: string
   fullName?: string
   orgName?: string
-  email?: string
   tenantId?: string
 }
 
@@ -35,7 +35,8 @@ export const createSupportTicket = async (
 
   try {
     const store = authUserStore.getState()
-    const tenantId = store.session?.tenantId || (store.identity as any)?.tenantId || ''
+    const tenantId =
+      store.session?.tenantId || (store.identity as any)?.tenantId || ''
 
     const { data, status } = await axiosV6({
       data: payload,

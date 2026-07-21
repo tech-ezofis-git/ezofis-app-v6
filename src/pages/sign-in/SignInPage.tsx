@@ -19,7 +19,7 @@ const SignInPage = () => {
     search?.isnew === true
 
   const [view, setView] = useState<View>(
-    shareToken && email && isNew ? 'share-sign-in-form' : 'sign-in-form'
+    shareToken && email && isNew ? 'share-sign-in-form' : 'sign-in-form',
   )
 
   return (
@@ -30,7 +30,7 @@ const SignInPage = () => {
           <SignInForm onChangeView={() => setView('verification-form')} />
         )}
         {view === 'share-sign-in-form' && (
-          <ShareSignInForm shareToken={shareToken} email={email} />
+          <ShareSignInForm email={email} shareToken={shareToken} />
         )}
       </AnimateEntrancePop>
     </AnimatePresence>

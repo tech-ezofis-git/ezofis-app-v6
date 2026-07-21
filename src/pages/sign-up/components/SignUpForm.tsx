@@ -3,6 +3,7 @@ import { useGoogleLogin } from '@react-oauth/google'
 import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { apiRouter } from '@/api/apiRouter'
+import Alert from '@/components/base/Alert'
 import Button from '@/components/base/button/Button'
 import GoogleButton from '@/components/base/button/GoogleButton'
 import MicrosoftButton from '@/components/base/button/MicrosoftButton'
@@ -10,7 +11,6 @@ import Divider from '@/components/base/Divider'
 import Icon from '@/components/base/icon/Icon'
 import IconIllustrated from '@/components/base/icon/IconIllustrated'
 import InputText from '@/components/base/inputs/InputText'
-import Alert from '@/components/base/Alert'
 import Title from '@/components/base/Title'
 import showToast from '@/components/base/toast/showToast'
 import authUserStore from '@/stores/authUserStore'
@@ -248,9 +248,7 @@ const SignUpForm = ({ email, setEmail, onChangeView }: Props) => {
           onClick={handleEmailSendOtp}
         />
 
-        {error && (
-          <Alert text={error} variant='primary' className='mt-2' />
-        )}
+        {error && <Alert className='mt-2' text={error} variant='primary' />}
       </div>
     </>
   )

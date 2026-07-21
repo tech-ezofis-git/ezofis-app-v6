@@ -95,14 +95,14 @@ const StepThree = () => {
             </div>
           ) : (
             <Button
+              label='Continue'
+              suffixIcon='tabler:arrow-right'
               disabled={
                 !(
                   storageSettings.system === 'Included storage' ||
                   storageSettings.isConnected
                 )
               }
-              label='Continue'
-              suffixIcon='tabler:arrow-right'
               onClick={() => setStep(3)}
             />
           )}
@@ -112,8 +112,6 @@ const StepThree = () => {
       <AnimateFadeIn delay={0.3}>
         <StorageSystem />
       </AnimateFadeIn>
-
-
 
       {storageSettings.system === 'Included storage' && (
         <AnimateSlideUp delay={0.4}>

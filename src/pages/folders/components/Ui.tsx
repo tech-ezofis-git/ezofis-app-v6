@@ -101,6 +101,31 @@ export function PrimaryButton({
   )
 }
 export const Header = PageHeader
+/** Single-line ellipsis; hover expands in place (no tooltip). For icon+text cells. */
+export function EllipsisText({
+  className = '',
+  lines = 1,
+  value,
+}: {
+  className?: string
+  lines?: 1 | 2
+  value: string
+}) {
+  const text = value || '—'
+  const clampClass =
+    lines === 1
+      ? 'line-clamp-1 transition-all hover:line-clamp-none group-hover/dtcell:line-clamp-none'
+      : 'line-clamp-2 transition-all hover:line-clamp-none group-hover/dtcell:line-clamp-none'
+
+  return (
+    <span
+      className={`block w-full max-w-full min-w-0 [overflow-wrap:anywhere] break-words ${clampClass} ${className}`}
+    >
+      {text}
+    </span>
+  )
+}
+
 export function StatusPill({ status }: { status: string }) {
   const s = status.toLowerCase()
   const tone =
@@ -110,9 +135,7 @@ export function StatusPill({ status }: { status: string }) {
     s.includes('verified') ||
     s.includes('paid')
       ? 'border-green-6 bg-green-3 text-green-11'
-      : s.includes('approver') ||
-          s.includes('pending') ||
-          s.includes('high')
+      : s.includes('approver') || s.includes('pending') || s.includes('high')
         ? 'border-orange-6 bg-orange-3 text-orange-11'
         : s.includes('flag') || s.includes('reject')
           ? 'border-red-6 bg-red-3 text-red-11'
@@ -123,43 +146,9 @@ export function StatusPill({ status }: { status: string }) {
     <span
       className={`inline-flex max-w-full min-w-0 items-center rounded-full border px-2 py-0.5 text-xs font-medium ${tone}`}
     >
-      <span className='min-w-0 truncate transition-all group-hover/dtcell:overflow-visible group-hover/dtcell:whitespace-normal group-hover/dtcell:break-words'>
+      <span className='min-w-0 truncate transition-all group-hover/dtcell:overflow-visible group-hover/dtcell:break-words group-hover/dtcell:whitespace-normal'>
         {status}
       </span>
-    </span>
-  )
-}
-
-/** Single-line ellipsis; hover expands in place (no tooltip). For icon+text cells. */
-export function EllipsisText({
-  className = '',
-  inline = false,
-  lines = 1,
-  value,
-}: {
-  className?: string
-  inline?: boolean
-  lines?: 1 | 2
-  value: string
-}) {
-  const text = value || '—'
-  const layoutClass = inline
-    ? 'inline-block min-w-0 max-w-full'
-    : 'block min-w-0 w-full max-w-full'
-
-  const singleLineClass =
-    'overflow-hidden text-ellipsis whitespace-nowrap hover:overflow-visible hover:whitespace-normal hover:text-clip group-hover/dtcell:overflow-visible group-hover/dtcell:whitespace-normal group-hover/dtcell:text-clip'
-
-  const multiLineClass =
-    'break-words [overflow-wrap:anywhere] line-clamp-2 transition-all hover:line-clamp-none group-hover/dtcell:line-clamp-none'
-
-  return (
-    <span
-      className={`${layoutClass} ${
-        lines === 1 ? singleLineClass : multiLineClass
-      } ${className}`}
-    >
-      {text}
     </span>
   )
 }

@@ -6,10 +6,10 @@ import Icon from '@/components/base/icon/Icon'
 import Title from '@/components/base/Title'
 import useDashboardStore from '@/pages/dashboard/stores/useDashboardStore'
 import useSetupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
+import useFoldersTopbarStore from '@/pages/folders/stores/useFoldersTopbarStore'
 import requestStore from '@/pages/requests/stores/useRequestStore'
 import SettingsBreadcrumbs from '@/pages/settings/components/SettingsBreadcrumbs'
 import useSettingsTopbarStore from '@/pages/settings/stores/useSettingsTopbarStore'
-import useFoldersTopbarStore from '@/pages/folders/stores/useFoldersTopbarStore'
 import useWorkflowStore from '@/pages/workflows/stores/useWorkflowStore'
 
 const PageTitle = () => {
@@ -19,7 +19,9 @@ const PageTitle = () => {
   const { closeBuilder, isBuilderOpen } = useWorkflowStore((state) => state)
   const { role, setRole } = useDashboardStore()
   const isApSetUpCompleted = useSetupStore((state) => state.isApSetUpCompleted)
-  const settingsBreadcrumbs = useSettingsTopbarStore((state) => state.breadcrumbs)
+  const settingsBreadcrumbs = useSettingsTopbarStore(
+    (state) => state.breadcrumbs,
+  )
   const settingsNavigate = useSettingsTopbarStore((state) => state.onNavigate)
   const foldersBreadcrumbs = useFoldersTopbarStore((state) => state.breadcrumbs)
   const foldersNavigate = useFoldersTopbarStore((state) => state.onNavigate)
@@ -111,19 +113,21 @@ const PageTitle = () => {
         {pageTitle === 'Dashboard' && isApSetUpCompleted && (
           <div className='flex gap-0.5 rounded-lg border border-border-default bg-gray-2 p-1 dark:bg-gray-12'>
             <button
-              className={`cursor-pointer rounded-md px-3.5 py-1 text-12 font-semibold transition-all duration-150 ${role === 'management'
-                ? 'bg-primary-9 text-white shadow-sm'
-                : 'text-gray-11 hover:text-gray-13 hover:bg-gray-3 dark:hover:bg-gray-10'
-                }`}
+              className={`cursor-pointer rounded-md px-3.5 py-1 text-12 font-semibold transition-all duration-150 ${
+                role === 'management'
+                  ? 'bg-primary-9 text-white shadow-sm'
+                  : 'text-gray-11 hover:bg-gray-3 hover:text-gray-13 dark:hover:bg-gray-10'
+              }`}
               onClick={() => setRole('management')}
             >
               Management
             </button>
             <button
-              className={`cursor-pointer rounded-md px-3.5 py-1 text-12 font-semibold transition-all duration-150 ${role === 'ap'
-                ? 'bg-primary-9 text-white shadow-sm'
-                : 'text-gray-11 hover:text-gray-13 hover:bg-gray-3 dark:hover:bg-gray-10'
-                }`}
+              className={`cursor-pointer rounded-md px-3.5 py-1 text-12 font-semibold transition-all duration-150 ${
+                role === 'ap'
+                  ? 'bg-primary-9 text-white shadow-sm'
+                  : 'text-gray-11 hover:bg-gray-3 hover:text-gray-13 dark:hover:bg-gray-10'
+              }`}
               onClick={() => setRole('ap')}
             >
               AP Team

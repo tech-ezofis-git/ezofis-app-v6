@@ -8,10 +8,7 @@ export const FIELD_MAPPING_API_URL =
  */
 const FIELD_MAPPING_DEV_PROXY_URL = '/api-mapping/field-mapping'
 
-const FIELD_MAPPING_HOSTS = new Set([
-  '52.172.32.88',
-  'demoapp.ezofis.com',
-])
+const FIELD_MAPPING_HOSTS = new Set(['52.172.32.88', 'demoapp.ezofis.com'])
 
 export function getFieldMappingApiUrl(): string | null {
   if (typeof window === 'undefined') return null

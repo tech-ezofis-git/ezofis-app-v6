@@ -2,6 +2,17 @@ import authUserStore from '../../stores/authUserStore'
 import { axiosV6 } from '../axios'
 import { getV6ApiErrorMessage } from './auth'
 
+export type CreditsUsageBucket = {
+  creditsUsed: number
+  type: string
+}
+
+export type CreditsUsageMonthlyItem = {
+  details?: CreditsUsageBucket[]
+  month: string
+  total: number
+}
+
 export type CreditsUsagePeriod =
   | 'today'
   | 'yesterday'
@@ -13,37 +24,6 @@ export type CreditsUsageRequest = {
   month?: number
   period?: CreditsUsagePeriod
   year?: number
-}
-
-export type CreditsUsageBucket = {
-  creditsUsed: number
-  type: string
-}
-
-export type CreditsUsageTimelinePoint = {
-  bucketStartUtc?: string | null
-  creditsUsed: number
-  label: string
-}
-
-export type CreditsUsageMonthlyItem = {
-  details?: CreditsUsageBucket[]
-  month: string
-  total: number
-}
-
-export type CreditsUsageTransaction = {
-  activityType: string
-  createdAt: string
-  credit: number
-  id: number
-  identifyId?: number | string | null
-  identifyTable?: string | null
-  inputTokens?: number | null
-  outputTokens?: number | null
-  remarks?: string | null
-  subActivityType?: string | null
-  totalTokens?: number | null
 }
 
 export type CreditsUsageResponse = {
@@ -59,6 +39,26 @@ export type CreditsUsageResponse = {
   totalCreditsConsumed: number
   transactionCount: number
   transactions: CreditsUsageTransaction[]
+}
+
+export type CreditsUsageTimelinePoint = {
+  bucketStartUtc?: string | null
+  creditsUsed: number
+  label: string
+}
+
+export type CreditsUsageTransaction = {
+  activityType: string
+  createdAt: string
+  credit: number
+  id: number
+  identifyId?: number | string | null
+  identifyTable?: string | null
+  inputTokens?: number | null
+  outputTokens?: number | null
+  remarks?: string | null
+  subActivityType?: string | null
+  totalTokens?: number | null
 }
 
 const emptyCreditsUsage = (): CreditsUsageResponse => ({
@@ -134,8 +134,7 @@ const mapTransactions = (value: unknown): CreditsUsageTransaction[] => {
       createdAt: String(record.createdAt || ''),
       credit: toNumber(record.credit ?? record.creditsUsed),
       id: toNumber(record.id, index + 1),
-      identifyId:
-        record.identifyId == null ? null : String(record.identifyId),
+      identifyId: record.identifyId == null ? null : String(record.identifyId),
       identifyTable:
         record.identifyTable == null ? null : String(record.identifyTable),
       inputTokens:
@@ -144,18 +143,14 @@ const mapTransactions = (value: unknown): CreditsUsageTransaction[] => {
         record.outputTokens == null ? null : toNumber(record.outputTokens),
       remarks: record.remarks == null ? null : String(record.remarks),
       subActivityType:
-        record.subActivityType == null
-          ? null
-          : String(record.subActivityType),
+        record.subActivityType == null ? null : String(record.subActivityType),
       totalTokens:
         record.totalTokens == null ? null : toNumber(record.totalTokens),
     }
   })
 }
 
-export const mapCreditsUsageResponse = (
-  raw: unknown,
-): CreditsUsageResponse => {
+export const mapCreditsUsageResponse = (raw: unknown): CreditsUsageResponse => {
   const record = (raw || {}) as Record<string, unknown>
 
   return {

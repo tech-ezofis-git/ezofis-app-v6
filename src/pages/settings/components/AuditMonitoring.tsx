@@ -1,24 +1,18 @@
-import {
-  createColumnHelper,
-  useReactTable,
-} from '@tanstack/react-table'
-import {
-  Database,
-  LogIn,
-  Settings,
-  Shield,
-  UserCog,
-} from 'lucide-react'
+import { createColumnHelper, useReactTable } from '@tanstack/react-table'
+import { Database, LogIn, Settings, Shield, UserCog } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  type EventLog,
+  getEventLogs,
+  type GetEventLogsParams,
+} from '@/api/eventLogs'
+import TableExport from '@/components/base/data-table/actions/TableExport'
+import TableSearch from '@/components/base/data-table/actions/TableSearch'
 import DataTable from '@/components/base/data-table/DataTable'
 import Pagination from '@/components/base/pagination/Pagination'
 import showToast from '@/components/base/toast/showToast'
+import CustomFilter from '@/components/common/CustomFilter'
 import { formatDatetime } from '@/utils/dayjs'
-import {
-  getEventLogs,
-  type EventLog,
-  type GetEventLogsParams,
-} from '@/api/eventLogs'
 import {
   settingsHeaderMeta,
   settingsTableCoreOptions,
@@ -26,9 +20,6 @@ import {
 } from '../helpers/settingsDataTable'
 import SettingsPageHeader from './SettingsPageHeader'
 import useSettingsTableToolbar from './useSettingsTableToolbar'
-import CustomFilter from '@/components/common/CustomFilter'
-import TableSearch from '@/components/base/data-table/actions/TableSearch'
-import TableExport from '@/components/base/data-table/actions/TableExport'
 
 type AuditUserProps = {
   onBack?: () => void
@@ -57,47 +48,51 @@ export default function AuditMonitoring({ onBack }: AuditUserProps) {
   }, [])
 
   const eventsTable = useAuditEventsTable(eventsData)
-  const searchQuery = eventsTable.tableSearchOptions.state.globalFilter?.value || ''
+  const searchQuery =
+    eventsTable.tableSearchOptions.state.globalFilter?.value || ''
 
   // Track initial load vs subsequent loads
   const isInitialLoadRef = useRef(true)
 
-  const loadData = useCallback(async (signal?: AbortSignal) => {
-    if (isInitialLoadRef.current) {
-      setIsLoading(true)
-    } else {
-      setIsReLoading(true)
-    }
+  const loadData = useCallback(
+    async (signal?: AbortSignal) => {
+      if (isInitialLoadRef.current) {
+        setIsLoading(true)
+      } else {
+        setIsReLoading(true)
+      }
 
-    const params: GetEventLogsParams = {
-      page,
-      pageSize,
-      category: activeFilters.category || undefined,
-      severity: activeFilters.severity || undefined,
-      userEmail: activeFilters.userEmail || undefined,
-      dateFrom: activeFilters.dateFrom || undefined,
-      dateTo: activeFilters.dateTo || undefined,
-      search: searchQuery || undefined,
-    }
+      const params: GetEventLogsParams = {
+        category: activeFilters.category || undefined,
+        dateFrom: activeFilters.dateFrom || undefined,
+        dateTo: activeFilters.dateTo || undefined,
+        page,
+        pageSize,
+        search: searchQuery || undefined,
+        severity: activeFilters.severity || undefined,
+        userEmail: activeFilters.userEmail || undefined,
+      }
 
-    const response = await getEventLogs(params, { signal })
+      const response = await getEventLogs(params, { signal })
 
-    if (signal?.aborted) return
+      if (signal?.aborted) return
 
-    setIsLoading(false)
-    setIsReLoading(false)
+      setIsLoading(false)
+      setIsReLoading(false)
 
-    if (response.error) {
-      showToast({ message: response.error, variant: 'error' })
-      return
-    }
+      if (response.error) {
+        showToast({ message: response.error, variant: 'error' })
+        return
+      }
 
-    if (response.data) {
-      setEventsData(response.data.data)
-      setTotalCount(response.data.totalCount)
-      isInitialLoadRef.current = false
-    }
-  }, [page, pageSize, activeFilters, searchQuery])
+      if (response.data) {
+        setEventsData(response.data.data)
+        setTotalCount(response.data.totalCount)
+        isInitialLoadRef.current = false
+      }
+    },
+    [page, pageSize, activeFilters, searchQuery],
+  )
 
   useEffect(() => {
     const controller = new AbortController()
@@ -107,19 +102,25 @@ export default function AuditMonitoring({ onBack }: AuditUserProps) {
     }
   }, [loadData])
 
-  const categoryOptions = useMemo(() => [
-    { label: 'Authentication', value: 'Authentication' },
-    { label: 'User Management', value: 'User Management' },
-    { label: 'Security', value: 'Security' },
-    { label: 'Configuration', value: 'Configuration' },
-    { label: 'Data Access', value: 'Data Access' },
-  ], [])
+  const categoryOptions = useMemo(
+    () => [
+      { label: 'Authentication', value: 'Authentication' },
+      { label: 'User Management', value: 'User Management' },
+      { label: 'Security', value: 'Security' },
+      { label: 'Configuration', value: 'Configuration' },
+      { label: 'Data Access', value: 'Data Access' },
+    ],
+    [],
+  )
 
-  const severityOptions = useMemo(() => [
-    { label: 'Info', value: 'info' },
-    { label: 'Warning', value: 'warning' },
-    { label: 'Critical', value: 'critical' },
-  ], [])
+  const severityOptions = useMemo(
+    () => [
+      { label: 'Info', value: 'info' },
+      { label: 'Warning', value: 'warning' },
+      { label: 'Critical', value: 'critical' },
+    ],
+    [],
+  )
 
   const userEmailOptions = useMemo(() => {
     const emails = Array.from(
@@ -147,54 +148,61 @@ export default function AuditMonitoring({ onBack }: AuditUserProps) {
           title='Audit & Monitoring'
           onBack={onBack}
         />
-        <div className='p-4 flex-1 flex flex-col overflow-hidden'>
+        <div className='flex flex-1 flex-col overflow-hidden p-4'>
           <CustomFilter
+            activeFilters={activeFilters}
+            trailingActions={<TableExport table={eventsTable.table as any} />}
+            actionButtons={[
+              {
+                color: 'gray',
+                disabled: isLoading || isReLoading,
+                icon: 'tabler:refresh',
+                id: 'refresh',
+                isIconButton: true,
+                tooltip: 'Refresh',
+                variant: 'outline',
+                onClick: () => loadData(),
+              },
+            ]}
+            customSearchComponent={
+              <TableSearch table={eventsTable.table as any} />
+            }
             filters={[
               { id: 'category', label: 'Category', options: categoryOptions },
               { id: 'severity', label: 'Severity', options: severityOptions },
-              { id: 'userEmail', label: 'User Email', options: userEmailOptions, searchable: true },
+              {
+                id: 'userEmail',
+                label: 'User Email',
+                options: userEmailOptions,
+                searchable: true,
+              },
             ]}
             moreFilters={[
-              { id: 'dateFrom', label: 'Date From', dataType: 'date' },
-              { id: 'dateTo', label: 'Date To', dataType: 'date' },
+              { dataType: 'date', id: 'dateFrom', label: 'Date From' },
+              { dataType: 'date', id: 'dateTo', label: 'Date To' },
             ]}
-            activeFilters={activeFilters}
-            onFilterChange={handleFilterChange}
-            onReset={handleResetFilters}
             showReset={
               Object.keys(activeFilters).some((k) => activeFilters[k]) ||
               !!searchQuery
             }
-            customSearchComponent={<TableSearch table={eventsTable.table as any} />}
-            actionButtons={[
-              {
-                id: 'refresh',
-                icon: 'tabler:refresh',
-                tooltip: 'Refresh',
-                onClick: () => loadData(),
-                disabled: isLoading || isReLoading,
-                isIconButton: true,
-                color: 'gray',
-                variant: 'outline',
-              },
-            ]}
-            trailingActions={<TableExport table={eventsTable.table as any} />}
+            onFilterChange={handleFilterChange}
+            onReset={handleResetFilters}
           />
 
-          <div className='mt-2 min-h-0 flex-1 overflow-hidden flex flex-col'>
+          <div className='mt-2 flex min-h-0 flex-1 flex-col overflow-hidden'>
             <div className='min-h-0 flex-1 overflow-hidden'>
               <DataTable
                 emptyDescription='No audit events or monitoring logs available.'
                 emptyIcon='lucide:shield'
                 emptyTitle='No logs found'
-                hideActionBar
                 isLoading={isLoading}
                 isReLoading={isReLoading}
                 pageSize={pageSize}
                 rowSize={eventsTable.rowSize}
                 table={eventsTable.table}
-                stickyHeader
+                hideActionBar
                 hideGrouping
+                stickyHeader
                 onReload={() => loadData()}
                 onRowSizeChange={eventsTable.onRowSizeChange}
               />
@@ -214,6 +222,49 @@ export default function AuditMonitoring({ onBack }: AuditUserProps) {
         </div>
       </section>
     </main>
+  )
+}
+
+function CategoryCell({ category }: { category: EventLog['category'] }) {
+  const Icon =
+    category === 'Authentication'
+      ? LogIn
+      : category === 'User Management'
+        ? UserCog
+        : category === 'Security'
+          ? Shield
+          : category === 'Configuration'
+            ? Settings
+            : Database
+
+  return (
+    <div className='flex items-center gap-2 text-gray-13'>
+      <Icon className='shrink-0 text-gray-11' size={15} />
+      <span className='leading-tight'>{category || '-'}</span>
+    </div>
+  )
+}
+
+function cn(...values: Array<string | false | null | undefined>) {
+  return values.filter(Boolean).join(' ')
+}
+
+function SeverityBadge({ severity }: { severity: Severity }) {
+  const normalizedSeverity = (severity || 'info').toLowerCase()
+
+  return (
+    <span
+      className={cn(
+        'inline-flex rounded-[8px] border px-3 py-1 text-xs font-medium capitalize shadow-sm',
+        normalizedSeverity === 'info' && 'border-blue-5 bg-blue-2 text-blue-11',
+        normalizedSeverity === 'warning' &&
+          'border-orange-5 bg-orange-2 text-orange-11',
+        normalizedSeverity === 'critical' &&
+          'border-red-5 bg-red-2 text-red-11',
+      )}
+    >
+      {normalizedSeverity}
+    </span>
   )
 }
 
@@ -261,7 +312,9 @@ function useAuditEventsTable(rows: EventLog[]) {
         meta: { ...settingsHeaderMeta.start, label: 'Severity' },
         minSize: 110,
         size: 120,
-        cell: (info) => <SeverityBadge severity={info.getValue() as Severity} />,
+        cell: (info) => (
+          <SeverityBadge severity={info.getValue() as Severity} />
+        ),
       }),
       columnHelper.accessor('createdAtUtc', {
         enableSorting: false,
@@ -271,7 +324,9 @@ function useAuditEventsTable(rows: EventLog[]) {
         size: 170,
         cell: (info) => (
           <span className='text-sm text-gray-11'>
-            {info.getValue() ? formatDatetime(info.getValue(), 'datetime') : '-'}
+            {info.getValue()
+              ? formatDatetime(info.getValue(), 'datetime')
+              : '-'}
           </span>
         ),
       }),
@@ -286,58 +341,17 @@ function useAuditEventsTable(rows: EventLog[]) {
     data: rows,
   })
 
-  const { onRowSizeChange, rowSize, toolbar } = useSettingsTableToolbar({
+  const { rowSize, toolbar, onRowSizeChange } = useSettingsTableToolbar({
     isReLoading: false,
     table,
     onReload: () => undefined,
   })
 
   return {
-    onRowSizeChange,
     rowSize,
     table,
     tableSearchOptions,
     toolbar,
+    onRowSizeChange,
   }
-}
-
-function CategoryCell({ category }: { category: EventLog['category'] }) {
-  const Icon =
-    category === 'Authentication'
-      ? LogIn
-      : category === 'User Management'
-        ? UserCog
-        : category === 'Security'
-          ? Shield
-          : category === 'Configuration'
-            ? Settings
-            : Database
-
-  return (
-    <div className='flex items-center gap-2 text-gray-13'>
-      <Icon className='shrink-0 text-gray-11' size={15} />
-      <span className='leading-tight'>{category || '-'}</span>
-    </div>
-  )
-}
-
-function cn(...values: Array<string | false | null | undefined>) {
-  return values.filter(Boolean).join(' ')
-}
-
-function SeverityBadge({ severity }: { severity: Severity }) {
-  const normalizedSeverity = (severity || 'info').toLowerCase()
-
-  return (
-    <span
-      className={cn(
-        'inline-flex rounded-[8px] border px-3 py-1 text-xs font-medium capitalize shadow-sm',
-        normalizedSeverity === 'info' && 'border-blue-5 bg-blue-2 text-blue-11',
-        normalizedSeverity === 'warning' && 'border-orange-5 bg-orange-2 text-orange-11',
-        normalizedSeverity === 'critical' && 'border-red-5 bg-red-2 text-red-11',
-      )}
-    >
-      {normalizedSeverity}
-    </span>
-  )
 }

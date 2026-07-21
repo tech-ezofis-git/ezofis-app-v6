@@ -1,8 +1,8 @@
 import { motion } from 'motion/react'
 import Icon from '@/components/base/icon/Icon'
 import { AnimateFadeIn } from '@/components/common/animations'
-import cn from '@/utils/cn'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
+import cn from '@/utils/cn'
 
 const WorkflowPreview = () => {
   const { emailSettings } = setupStore()
@@ -113,9 +113,12 @@ const WorkflowPreview = () => {
 
               {/* Staggered Segment Pulses */}
               <motion.circle
-                animate={{ offsetDistance: ['0%', '100%'], opacity: [0, 1, 1, 0] }}
                 fill='var(--purple-5)'
                 r='3'
+                animate={{
+                  offsetDistance: ['0%', '100%'],
+                  opacity: [0, 1, 1, 0],
+                }}
                 style={{
                   filter: 'drop-shadow(0 0 4px var(--purple-4))',
                   offsetPath: `path("M 130 40 C 168 40, 168 110, 207 110")`,
@@ -130,9 +133,12 @@ const WorkflowPreview = () => {
               />
 
               <motion.circle
-                animate={{ offsetDistance: ['0%', '100%'], opacity: [0, 1, 1, 0] }}
                 fill='var(--purple-5)'
                 r='3'
+                animate={{
+                  offsetDistance: ['0%', '100%'],
+                  opacity: [0, 1, 1, 0],
+                }}
                 style={{
                   filter: 'drop-shadow(0 0 4px var(--purple-4))',
                   offsetPath: `path("M 337 110 C 375 110, 375 40, 413 40")`,
@@ -147,9 +153,12 @@ const WorkflowPreview = () => {
               />
 
               <motion.circle
-                animate={{ offsetDistance: ['0%', '100%'], opacity: [0, 1, 1, 0] }}
                 fill='var(--purple-5)'
                 r='3'
+                animate={{
+                  offsetDistance: ['0%', '100%'],
+                  opacity: [0, 1, 1, 0],
+                }}
                 style={{
                   filter: 'drop-shadow(0 0 4px var(--purple-4))',
                   offsetPath: `path("M 563 40 C 601 40, 601 110, 640 110")`,
@@ -235,17 +244,17 @@ const WorkflowPreview = () => {
 
 const NodeCard = ({
   icon,
-  isTrigger = false,
   isAgent = false,
   isEnd = false,
+  isTrigger = false,
   subtitle,
   title,
   widthClass = 'w-[130px]',
 }: {
   icon: string
-  isTrigger?: boolean
   isAgent?: boolean
   isEnd?: boolean
+  isTrigger?: boolean
   subtitle: string
   title: string
   widthClass?: string
@@ -258,40 +267,40 @@ const NodeCard = ({
       </div>
     )}
     <motion.div
+      transition={{ damping: 25, stiffness: 400, type: 'spring' }}
       className={cn(
         'relative z-10 flex flex-col rounded-md border p-2 shadow-[0_2px_6px_rgba(0,0,0,0.02)] transition-colors',
         widthClass,
         isAgent
           ? 'border-purple-8 bg-purple-9 text-white dark:border-purple-7 dark:bg-purple-9'
           : isEnd
-            ? 'border-green-9 bg-white dark:bg-gray-900 text-gray-12 dark:border-green-8'
-            : 'border-gray-3 bg-white dark:border-gray-8 dark:bg-gray-900 text-gray-12'
+            ? 'dark:bg-gray-900 border-green-9 bg-white text-gray-12 dark:border-green-8'
+            : 'dark:bg-gray-900 border-gray-3 bg-white text-gray-12 dark:border-gray-8',
       )}
-      transition={{ damping: 25, stiffness: 400, type: 'spring' }}
       whileHover={
         isAgent
           ? {
-            borderColor: 'var(--purple-3)',
-            boxShadow:
-              '0 10px 25px -5px rgba(168, 85, 247, 0.25), 0 8px 10px -6px rgba(168, 85, 247, 0.25)',
-            scale: 1.02,
-            y: -4,
-          }
+              borderColor: 'var(--purple-3)',
+              boxShadow:
+                '0 10px 25px -5px rgba(168, 85, 247, 0.25), 0 8px 10px -6px rgba(168, 85, 247, 0.25)',
+              scale: 1.02,
+              y: -4,
+            }
           : isEnd
             ? {
-              borderColor: 'var(--green-5)',
-              boxShadow:
-                '0 10px 25px -5px rgba(34, 197, 94, 0.15), 0 8px 10px -6px rgba(34, 197, 94, 0.15)',
-              scale: 1.02,
-              y: -4,
-            }
+                borderColor: 'var(--green-5)',
+                boxShadow:
+                  '0 10px 25px -5px rgba(34, 197, 94, 0.15), 0 8px 10px -6px rgba(34, 197, 94, 0.15)',
+                scale: 1.02,
+                y: -4,
+              }
             : {
-              borderColor: 'var(--purple-4)',
-              boxShadow:
-                '0 10px 25px -5px rgba(168, 85, 247, 0.1), 0 8px 10px -6px rgba(168, 85, 247, 0.1)',
-              scale: 1.02,
-              y: -4,
-            }
+                borderColor: 'var(--purple-4)',
+                boxShadow:
+                  '0 10px 25px -5px rgba(168, 85, 247, 0.1), 0 8px 10px -6px rgba(168, 85, 247, 0.1)',
+                scale: 1.02,
+                y: -4,
+              }
       }
     >
       {isAgent ? (
@@ -307,10 +316,10 @@ const NodeCard = ({
               AI Agent
             </span>
           </div>
-          <h4 className='mt-2 text-[10px] leading-tight font-bold text-white break-words'>
+          <h4 className='mt-2 text-[10px] leading-tight font-bold break-words text-white'>
             {title}
           </h4>
-          <p className='mt-1 text-[9px] leading-snug font-medium text-purple-2 break-words'>
+          <p className='mt-1 text-[9px] leading-snug font-medium break-words text-purple-2'>
             {subtitle}
           </p>
           <div className='mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-purple-8/40'>
@@ -320,19 +329,19 @@ const NodeCard = ({
       ) : (
         <div className='flex items-center gap-1.5'>
           <motion.div
+            whileHover={{ rotate: 5, scale: 1.1 }}
             className={cn(
               'flex h-6 w-6 shrink-0 items-center justify-center rounded border transition-colors',
-              'bg-gray-1 border-gray-2 group-hover:bg-purple-50 group-hover:border-purple-2 dark:bg-gray-800 dark:border-gray-7'
+              'group-hover:bg-purple-50 dark:bg-gray-800 border-gray-2 bg-gray-1 group-hover:border-purple-2 dark:border-gray-7',
             )}
-            whileHover={{ rotate: 5, scale: 1.1 }}
           >
             <Icon className='size-3.5' name={icon} />
           </motion.div>
-          <div className='flex-1 min-w-0'>
-            <h4 className='text-[9px] leading-tight font-bold text-gray-12 transition-colors group-hover:text-purple-7 break-words'>
+          <div className='min-w-0 flex-1'>
+            <h4 className='text-[9px] leading-tight font-bold break-words text-gray-12 transition-colors group-hover:text-purple-7'>
               {title}
             </h4>
-            <p className='mt-0.5 text-[8px] leading-tight font-medium text-gray-10 break-words'>
+            <p className='mt-0.5 text-[8px] leading-tight font-medium break-words text-gray-10'>
               {subtitle}
             </p>
           </div>

@@ -1,45 +1,90 @@
 import { useEffect, useRef, useState } from 'react'
-import Icon from '@/components/base/icon/Icon'
-import showToast from '@/components/base/toast/showToast'
-import useRequestDemoStore from '@/layouts/app/stores/useRequestDemoStore'
 import {
   createSupportTicket,
   type CreateSupportTicketPayload,
   type SupportTicketResponse,
 } from '@/api/v6/supportTickets'
+import Icon from '@/components/base/icon/Icon'
+import showToast from '@/components/base/toast/showToast'
+import useRequestDemoStore from '@/layouts/app/stores/useRequestDemoStore'
 import useAuthUserStore from '@/stores/authUserStore'
 // import { axiosV6 } from '@/api/axios'
 
 const CATEGORIES = [
-  { key: 'account', label: 'Account configuration', icon: 'lucide:settings', team: 'Support team' },
-  { key: 'ap', label: 'Accounts payable setup', icon: 'lucide:receipt', team: 'Implementation consultant' },
-  { key: 'po', label: 'PO Master Import', icon: 'lucide:file-input', team: 'Implementation consultant' },
-  { key: 'integration', label: 'Integration support', icon: 'lucide:plug', team: 'Engineering team' },
-  { key: 'explore', label: 'Explore the app features', icon: 'lucide:compass', team: 'Product team' },
-  { key: 'demo', label: 'Request a demo session', icon: 'lucide:presentation', team: 'Sales team' },
-  { key: 'consultant', label: 'Talk to an expert', icon: 'lucide:user', team: 'Consultant desk' },
-  { key: 'support', label: 'Connect for support', icon: 'lucide:headphones', team: 'Support team' },
-  { key: 'bug', label: 'Issue or bug to report', icon: 'lucide:bug', team: 'Engineering team' },
+  {
+    icon: 'lucide:settings',
+    key: 'account',
+    label: 'Account configuration',
+    team: 'Support team',
+  },
+  {
+    icon: 'lucide:receipt',
+    key: 'ap',
+    label: 'Accounts payable setup',
+    team: 'Implementation consultant',
+  },
+  {
+    icon: 'lucide:file-input',
+    key: 'po',
+    label: 'PO Master Import',
+    team: 'Implementation consultant',
+  },
+  {
+    icon: 'lucide:plug',
+    key: 'integration',
+    label: 'Integration support',
+    team: 'Engineering team',
+  },
+  {
+    icon: 'lucide:compass',
+    key: 'explore',
+    label: 'Explore the app features',
+    team: 'Product team',
+  },
+  {
+    icon: 'lucide:presentation',
+    key: 'demo',
+    label: 'Request a demo session',
+    team: 'Sales team',
+  },
+  {
+    icon: 'lucide:user',
+    key: 'consultant',
+    label: 'Talk to an expert',
+    team: 'Consultant desk',
+  },
+  {
+    icon: 'lucide:headphones',
+    key: 'support',
+    label: 'Connect for support',
+    team: 'Support team',
+  },
+  {
+    icon: 'lucide:bug',
+    key: 'bug',
+    label: 'Issue or bug to report',
+    team: 'Engineering team',
+  },
 ]
-
-type FormState = {
-  category: string
-  priority: string
-  contactMethod: 'email' | 'phone'
-  phone: string
-  description: string
-  consent: boolean
-}
 
 type FormErrors = Partial<Record<keyof FormState, string>>
 
+type FormState = {
+  category: string
+  consent: boolean
+  contactMethod: 'email' | 'phone'
+  description: string
+  phone: string
+  priority: string
+}
+
 const INITIAL_STATE: FormState = {
   category: 'demo',
-  priority: 'normal',
-  contactMethod: 'email',
-  phone: '',
-  description: '',
   consent: false,
+  contactMethod: 'email',
+  description: '',
+  phone: '',
+  priority: 'normal',
 }
 
 const RequestDemoForm = () => {
@@ -49,15 +94,19 @@ const RequestDemoForm = () => {
   const [form, setForm] = useState<FormState>(INITIAL_STATE)
   const [errors, setErrors] = useState<FormErrors>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [successTicket, setSuccessTicket] = useState<SupportTicketResponse | null>(null)
+  const [successTicket, setSuccessTicket] =
+    useState<SupportTicketResponse | null>(null)
 
   const containerRef = useRef<HTMLDivElement>(null)
   const successRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (successTicket) {
-      containerRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
-      successRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      containerRef.current?.scrollTo({ behavior: 'smooth', top: 0 })
+      successRef.current?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      })
     }
   }, [successTicket])
 
@@ -66,7 +115,7 @@ const RequestDemoForm = () => {
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
     >,
   ) => {
-    const { name, value, type } = e.target
+    const { name, type, value } = e.target
     setForm((prev) => ({
       ...prev,
       [name]:
@@ -98,16 +147,16 @@ const RequestDemoForm = () => {
     setErrors({})
 
     const finalPayload = {
-      supportCategory: form.category,
-      priorty: form.priority,
-      preferredContact: form.contactMethod,
-      phoneNO: form.phone,
-      requestDescription: form.description,
-      isEmailSend: form.consent,
+      email: session?.email || user?.email || '',
       // helpWithLabel: selectedCategory?.label || '',
       fullName: session?.name || session?.firstName || user?.name || '',
+      isEmailSend: form.consent,
       orgName: (session as any)?.displayName || session?.tenantId || '',
-      email: session?.email || user?.email || '',
+      phoneNO: form.phone,
+      preferredContact: form.contactMethod,
+      priorty: form.priority,
+      requestDescription: form.description,
+      supportCategory: form.category,
       tenantId: session?.tenantId || (session as any)?.id || '',
     }
 
@@ -118,22 +167,26 @@ const RequestDemoForm = () => {
 
     const selectedCategory = CATEGORIES.find((c) => c.key === form.category)
     const payload: CreateSupportTicketPayload = {
-      supportCategory: selectedCategory?.label || form.category,
-      Priorty: form.priority.charAt(0).toUpperCase() + form.priority.slice(1),
-      PreferredContact: form.contactMethod === 'phone' ? 'Phone' : 'Email',
-      PhoneNO: form.phone.trim(),
-      RequestDescription: form.description.trim(),
-      isEmailSend: Boolean(form.consent),
-      fullName: session?.name || session?.firstName || user?.name || '',
-      orgName: (session as any)?.displayName || session?.tenantId || '',
       email: session?.email || user?.email || '',
+      fullName: session?.name || session?.firstName || user?.name || '',
+      isEmailSend: Boolean(form.consent),
+      orgName: (session as any)?.displayName || session?.tenantId || '',
+      PhoneNO: form.phone.trim(),
+      PreferredContact: form.contactMethod === 'phone' ? 'Phone' : 'Email',
+      Priorty: form.priority.charAt(0).toUpperCase() + form.priority.slice(1),
+      RequestDescription: form.description.trim(),
+      supportCategory: selectedCategory?.label || form.category,
       tenantId: session?.tenantId || (session as any)?.id || '',
     }
 
     const response = await createSupportTicket(payload)
     setIsSubmitting(false)
 
-    if (response.error || !response.data || response.data.jiraSuccess === false) {
+    if (
+      response.error ||
+      !response.data ||
+      response.data.jiraSuccess === false
+    ) {
       showToast({
         message: response.error || 'Failed to submit support ticket',
         variant: 'error',
@@ -160,7 +213,10 @@ const RequestDemoForm = () => {
   const selectedCategory = CATEGORIES.find((c) => c.key === form.category)
 
   return (
-    <div ref={containerRef} className='animate-in fade-in slide-in-from-bottom-8 duration-500 flex h-full min-h-0 flex-1 flex-col items-center overflow-y-auto bg-gray-1 py-8'>
+    <div
+      className='animate-in fade-in slide-in-from-bottom-8 flex h-full min-h-0 flex-1 flex-col items-center overflow-y-auto bg-gray-1 py-8 duration-500'
+      ref={containerRef}
+    >
       {/* Form card */}
       <div className='mx-6 w-full max-w-3xl rounded-2xl border border-gray-3 bg-surface p-8 shadow-sm'>
         {/* Title */}
@@ -170,7 +226,8 @@ const RequestDemoForm = () => {
               Connect with the EZOFIS Team
             </h2>
             <p className='mt-2 text-sm leading-relaxed text-gray-11'>
-              Whether you need help with AP workflows, PO matching, or custom integrations, we'll route your request to the right experts.
+              Whether you need help with AP workflows, PO matching, or custom
+              integrations, we'll route your request to the right experts.
             </p>
           </div>
           <button
@@ -178,15 +235,15 @@ const RequestDemoForm = () => {
             type='button'
             onClick={closeDemoForm}
           >
-            <Icon
-              className='size-5 transition-transform'
-              name='lucide:x'
-            />
+            <Icon className='size-5 transition-transform' name='lucide:x' />
           </button>
         </div>
 
         {successTicket ? (
-          <div ref={successRef} className='mb-6 flex flex-col items-center rounded-xl border border-green-3 bg-green-2/50 p-6 text-center animate-in fade-in'>
+          <div
+            className='animate-in fade-in mb-6 flex flex-col items-center rounded-xl border border-green-3 bg-green-2/50 p-6 text-center'
+            ref={successRef}
+          >
             <div className='mb-3 flex size-12 items-center justify-center rounded-full bg-green-3 text-green-11'>
               <Icon className='size-6' name='lucide:check-circle-2' />
             </div>
@@ -194,12 +251,13 @@ const RequestDemoForm = () => {
               Support Request Submitted
             </h3>
             <p className='mt-1 max-w-md text-sm text-gray-11'>
-              Your support request has been successfully submitted to the Ezofis Support Team.
+              Your support request has been successfully submitted to the Ezofis
+              Support Team.
             </p>
             {successTicket.jiraIssueKey && (
               <div className='mt-4 flex items-center gap-2 rounded-lg border border-gray-4 bg-surface px-4 py-2 text-sm font-semibold text-gray-13 shadow-xs'>
                 <span>Ticket Number:</span>
-                <span className='text-primary-9 font-bold'>
+                <span className='font-bold text-primary-9'>
                   {successTicket.jiraIssueKey}
                 </span>
                 {successTicket.jiraIssueUrl && (
@@ -238,32 +296,41 @@ const RequestDemoForm = () => {
           {/* Category */}
           <div className='flex flex-col gap-1.5'>
             <label className='text-sm font-semibold text-gray-13'>
-              What do you need help with? <span className='text-red-9 font-bold'>*</span>
+              What do you need help with?{' '}
+              <span className='font-bold text-red-9'>*</span>
             </label>
-            <p className='mb-3 text-xs text-gray-11'>Pick the option that's closest to your situation.</p>
+            <p className='mb-3 text-xs text-gray-11'>
+              Pick the option that's closest to your situation.
+            </p>
             <div className='grid grid-cols-1 gap-2.5 sm:grid-cols-3'>
               {CATEGORIES.map((c) => (
                 <button
                   key={c.key}
                   type='button'
+                  className={`flex items-center gap-3 rounded-xl border p-3 text-left transition-all ${
+                    form.category === c.key
+                      ? 'border-primary-9 bg-primary-3/30'
+                      : errors.category
+                        ? 'border-red-9 bg-red-1'
+                        : 'border-gray-4 bg-surface hover:border-primary-7'
+                  }`}
                   onClick={() => {
                     setForm({ ...form, category: c.key })
                     setErrors((prev) => ({ ...prev, category: undefined }))
                   }}
-                  className={`flex items-center gap-3 rounded-xl border p-3 text-left transition-all ${form.category === c.key
-                    ? 'border-primary-9 bg-primary-3/30'
-                    : errors.category
-                    ? 'border-red-9 bg-red-1'
-                    : 'border-gray-4 bg-surface hover:border-primary-7'
-                    }`}
                 >
                   <Icon
-                    name={c.icon}
                     className={`size-5 shrink-0 ${form.category === c.key ? 'text-primary-9' : errors.category ? 'text-red-9' : 'text-gray-11'}`}
+                    name={c.icon}
                   />
                   <span
-                    className={`text-sm font-medium leading-none ${form.category === c.key ? 'text-primary-11' : errors.category ? 'text-red-11' : 'text-gray-12'
-                      }`}
+                    className={`text-sm leading-none font-medium ${
+                      form.category === c.key
+                        ? 'text-primary-11'
+                        : errors.category
+                          ? 'text-red-11'
+                          : 'text-gray-12'
+                    }`}
                   >
                     {c.label}
                   </span>
@@ -274,25 +341,30 @@ const RequestDemoForm = () => {
 
           {/* Priority */}
           <div className='flex flex-col gap-1.5'>
-            <label className='text-sm font-semibold text-gray-13'>Priority</label>
-            <p className='mb-2 text-xs text-gray-11'>How urgently does this need attention?</p>
+            <label className='text-sm font-semibold text-gray-13'>
+              Priority
+            </label>
+            <p className='mb-2 text-xs text-gray-11'>
+              How urgently does this need attention?
+            </p>
             <div className='flex flex-wrap gap-2'>
               {['Low', 'Normal', 'High', 'Urgent'].map((p) => (
                 <button
                   key={p}
                   type='button'
+                  className={`rounded-full border px-4 py-2 text-xs font-medium transition-all ${
+                    form.priority === p.toLowerCase()
+                      ? p === 'Urgent'
+                        ? 'border-red-9 bg-red-9 text-white'
+                        : 'border-primary-9 bg-primary-9 text-white'
+                      : errors.priority
+                        ? 'border-red-9 bg-red-1 text-red-11'
+                        : 'border-gray-4 bg-surface text-gray-11 hover:border-primary-7'
+                  }`}
                   onClick={() => {
                     setForm({ ...form, priority: p.toLowerCase() })
                     setErrors((prev) => ({ ...prev, priority: undefined }))
                   }}
-                  className={`rounded-full border px-4 py-2 text-xs font-medium transition-all ${form.priority === p.toLowerCase()
-                    ? p === 'Urgent'
-                      ? 'border-red-9 bg-red-9 text-white'
-                      : 'border-primary-9 bg-primary-9 text-white'
-                    : errors.priority
-                    ? 'border-red-9 bg-red-1 text-red-11'
-                    : 'border-gray-4 bg-surface text-gray-11 hover:border-primary-7'
-                    }`}
                 >
                   {p}
                 </button>
@@ -307,24 +379,28 @@ const RequestDemoForm = () => {
             </label>
             <div className='mb-2 flex flex-wrap gap-2'>
               {[
-                { id: 'email', label: 'Email', icon: 'lucide:mail' },
-                { id: 'phone', label: 'Phone call', icon: 'lucide:phone' },
+                { icon: 'lucide:mail', id: 'email', label: 'Email' },
+                { icon: 'lucide:phone', id: 'phone', label: 'Phone call' },
               ].map((m) => (
                 <button
                   key={m.id}
                   type='button'
+                  className={`flex items-center gap-2 rounded-lg border px-3.5 py-2 text-sm font-medium transition-all ${
+                    form.contactMethod === m.id
+                      ? 'border-primary-9 bg-primary-3/30 text-primary-11'
+                      : errors.contactMethod
+                        ? 'border-red-9 bg-red-1 text-red-11'
+                        : 'border-gray-4 bg-surface text-gray-11 hover:border-primary-7'
+                  }`}
                   onClick={() => {
-                    setForm({ ...form, contactMethod: m.id as 'email' | 'phone' })
+                    setForm({
+                      ...form,
+                      contactMethod: m.id as 'email' | 'phone',
+                    })
                     setErrors((prev) => ({ ...prev, contactMethod: undefined }))
                   }}
-                  className={`flex items-center gap-2 rounded-lg border px-3.5 py-2 text-sm font-medium transition-all ${form.contactMethod === m.id
-                    ? 'border-primary-9 bg-primary-3/30 text-primary-11'
-                    : errors.contactMethod
-                    ? 'border-red-9 bg-red-1 text-red-11'
-                    : 'border-gray-4 bg-surface text-gray-11 hover:border-primary-7'
-                    }`}
                 >
-                  <Icon name={m.icon} className='size-4' />
+                  <Icon className='size-4' name={m.icon} />
                   {m.label}
                 </button>
               ))}
@@ -335,11 +411,11 @@ const RequestDemoForm = () => {
                   Phone number
                 </label>
                 <input
+                  className='w-full rounded-lg border border-gray-4 bg-surface px-3 py-2.5 text-sm text-gray-13 transition-all outline-none placeholder:text-gray-8 hover:border-gray-6 focus:border-primary-7 focus:ring-2 focus:ring-primary-4'
                   id='phone'
                   name='phone'
-                  type='tel'
                   placeholder='+1 (555) 000-0000'
-                  className='w-full rounded-lg border border-gray-4 bg-surface px-3 py-2.5 text-sm text-gray-13 outline-none placeholder:text-gray-8 transition-all hover:border-gray-6 focus:border-primary-7 focus:ring-2 focus:ring-primary-4'
+                  type='tel'
                   value={form.phone}
                   onChange={handleChange}
                 />
@@ -353,23 +429,24 @@ const RequestDemoForm = () => {
               className='text-sm font-semibold text-gray-13'
               htmlFor='description'
             >
-              Describe your request <span className='text-red-9 font-bold'>*</span>
+              Describe your request{' '}
+              <span className='font-bold text-red-9'>*</span>
             </label>
             <p className='mb-2 text-xs text-gray-11'>
               Tell us about your requirements or what you'd like to cover.
             </p>
             <div className='relative'>
               <textarea
+                className={`min-h-[110px] w-full resize-y rounded-lg border bg-surface px-3 py-2.5 text-sm text-gray-13 transition-all outline-none placeholder:text-gray-8 hover:border-gray-6 focus:border-primary-7 focus:ring-2 focus:ring-primary-4 ${errors.description ? 'border-red-9' : 'border-gray-4'}`}
                 id='description'
+                maxLength={1000}
                 name='description'
                 placeholder="Describe how we can help you or what you'd like to accomplish"
                 rows={4}
-                maxLength={1000}
-                className={`min-h-[110px] w-full resize-y rounded-lg border bg-surface px-3 py-2.5 text-sm text-gray-13 outline-none placeholder:text-gray-8 transition-all hover:border-gray-6 focus:border-primary-7 focus:ring-2 focus:ring-primary-4 ${errors.description ? 'border-red-9' : 'border-gray-4'}`}
                 value={form.description}
                 onChange={handleChange}
               />
-              <div className='absolute bottom-3 right-3 text-xs text-gray-9'>
+              <div className='absolute right-3 bottom-3 text-xs text-gray-9'>
                 {form.description.length}/1000
               </div>
             </div>
@@ -379,11 +456,11 @@ const RequestDemoForm = () => {
           <div className='mt-5 flex flex-col gap-3'>
             <label className='flex cursor-pointer items-start gap-3'>
               <input
-                type='checkbox'
-                name='consent'
                 checked={form.consent}
-                onChange={handleChange}
                 className='mt-0.5 size-4 cursor-pointer accent-primary-9'
+                name='consent'
+                type='checkbox'
+                onChange={handleChange}
               />
               <span className='text-sm text-gray-13'>
                 We may email you for more information or updates
@@ -391,20 +468,20 @@ const RequestDemoForm = () => {
             </label>
             <p className='max-w-2xl text-xs leading-relaxed text-gray-10'>
               Some{' '}
-              <button type='button' className='text-primary-9 hover:underline'>
+              <button className='text-primary-9 hover:underline' type='button'>
                 account and system information
               </button>{' '}
-              may be sent to your request's assigned team. We'll use it to fix problems
-              and improve our services, subject to our{' '}
-              <button type='button' className='text-primary-9 hover:underline'>
+              may be sent to your request's assigned team. We'll use it to fix
+              problems and improve our services, subject to our{' '}
+              <button className='text-primary-9 hover:underline' type='button'>
                 Privacy Policy
               </button>{' '}
               and{' '}
-              <button type='button' className='text-primary-9 hover:underline'>
+              <button className='text-primary-9 hover:underline' type='button'>
                 Terms of Service
               </button>
               . We may email you for more information or updates. Go to{' '}
-              <button type='button' className='text-primary-9 hover:underline'>
+              <button className='text-primary-9 hover:underline' type='button'>
                 Legal help
               </button>{' '}
               to ask for content changes for legal reasons.
@@ -421,13 +498,16 @@ const RequestDemoForm = () => {
               once submitted
             </div>
             <button
-              type='submit'
-              disabled={isSubmitting}
               className='flex items-center gap-2 rounded-xl bg-primary-9 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:bg-primary-10 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-60'
+              disabled={isSubmitting}
+              type='submit'
             >
               {isSubmitting ? (
                 <>
-                  <Icon name='lucide:loader-2' className='size-4 animate-spin' />
+                  <Icon
+                    className='size-4 animate-spin'
+                    name='lucide:loader-2'
+                  />
                   Sending...
                 </>
               ) : (

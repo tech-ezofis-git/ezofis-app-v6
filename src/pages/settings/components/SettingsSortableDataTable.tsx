@@ -13,10 +13,14 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { flexRender, type Row, type Table as TanstackTable } from '@tanstack/react-table'
+import {
+  flexRender,
+  type Row,
+  type Table as TanstackTable,
+} from '@tanstack/react-table'
 import { GripVertical } from 'lucide-react'
-import TableHeaderCell from '@/components/base/data-table/TableHeaderCell'
 import getColumnPinnedStyles from '@/components/base/data-table/helpers/getColumnPinnedStyles'
+import TableHeaderCell from '@/components/base/data-table/TableHeaderCell'
 import Table from '@/components/base/table/Table'
 import Tbody from '@/components/base/table/Tbody'
 import Td from '@/components/base/table/Td'
@@ -26,7 +30,11 @@ import cn from '@/utils/cn'
 
 type SettingsSortableDataTableProps<TData> = {
   dragColumnId?: string
+  rowClassName?: string
+  selectedRowId?: string | null
+  table: TanstackTable<TData>
   getRowClassName?: (row: TData) => string | undefined
+  onReorder: (nextRows: TData[]) => void
   onRowClick?: (rowId: string) => void
   onRowMouseEnter?: (rowId: string) => void
   onRowMouseLeave?: () => void
@@ -35,100 +43,19 @@ type SettingsSortableDataTableProps<TData> = {
     newIndex: number,
     rows: TData[],
   ) => boolean
-  rowClassName?: string
-  selectedRowId?: string | null
-  table: TanstackTable<TData>
-  onReorder: (nextRows: TData[]) => void
-}
-
-function SortableDataRow<TData>({
-  dragColumnId,
-  getRowClassName,
-  onRowClick,
-  onRowMouseEnter,
-  onRowMouseLeave,
-  row,
-  rowClassName,
-  selectedRowId,
-  table,
-}: {
-  dragColumnId: string
-  getRowClassName?: (row: TData) => string | undefined
-  onRowClick?: (rowId: string) => void
-  onRowMouseEnter?: (rowId: string) => void
-  onRowMouseLeave?: () => void
-  row: Row<TData>
-  rowClassName?: string
-  selectedRowId?: string | null
-  table: TanstackTable<TData>
-}) {
-  const {
-    attributes,
-    isDragging,
-    listeners,
-    setActivatorNodeRef,
-    setNodeRef,
-    transform,
-    transition,
-  } = useSortable({ id: row.id })
-
-  return (
-    <tr
-      ref={setNodeRef}
-      className={cn(
-        'relative border-b border-[var(--gray-2)] transition-all [--pinned-bg:var(--surface)] hover:z-10 hover:bg-[var(--gray-1)] hover:shadow-sm hover:[--pinned-bg:var(--gray-1)] focus-within:z-40',
-        rowClassName,
-        getRowClassName?.(row.original),
-        selectedRowId === row.id && 'bg-primary-1',
-        isDragging && 'z-20 bg-[var(--gray-1)] opacity-90 shadow-md',
-      )}
-      style={{
-        transform: CSS.Transform.toString(transform),
-        transition,
-      }}
-      onClick={() => onRowClick?.(row.id)}
-      onMouseEnter={() => onRowMouseEnter?.(row.id)}
-      onMouseLeave={() => onRowMouseLeave?.()}
-    >
-      {row.getVisibleCells().map((cell) => (
-        <Td
-          key={cell.id}
-          style={getColumnPinnedStyles(cell.column, table)}
-          className={cn('py-2.5', cell.column.columnDef.meta?.className)}
-        >
-          {cell.column.id === dragColumnId ? (
-            <div className='flex justify-center'>
-              <button
-                ref={setActivatorNodeRef}
-                aria-label='Drag to reorder'
-                className='flex cursor-grab items-center text-gray-9 outline-none active:cursor-grabbing'
-                type='button'
-                {...attributes}
-                {...listeners}
-              >
-                <GripVertical size={16} />
-              </button>
-            </div>
-          ) : (
-            flexRender(cell.column.columnDef.cell, cell.getContext())
-          )}
-        </Td>
-      ))}
-    </tr>
-  )
 }
 
 export default function SettingsSortableDataTable<TData>({
   dragColumnId = 'drag',
+  rowClassName,
+  selectedRowId,
+  table,
   getRowClassName,
+  onReorder,
   onRowClick,
   onRowMouseEnter,
   onRowMouseLeave,
   onValidateReorder,
-  rowClassName,
-  selectedRowId,
-  table,
-  onReorder,
 }: SettingsSortableDataTableProps<TData>) {
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -148,10 +75,7 @@ export default function SettingsSortableDataTable<TData>({
     if (oldIndex === -1 || newIndex === -1) return
 
     const rowData = rows.map((row) => row.original)
-    if (
-      onValidateReorder &&
-      !onValidateReorder(oldIndex, newIndex, rowData)
-    ) {
+    if (onValidateReorder && !onValidateReorder(oldIndex, newIndex, rowData)) {
       return
     }
 
@@ -167,7 +91,10 @@ export default function SettingsSortableDataTable<TData>({
           sensors={sensors}
           onDragEnd={handleDragEnd}
         >
-          <SortableContext items={rowIds} strategy={verticalListSortingStrategy}>
+          <SortableContext
+            items={rowIds}
+            strategy={verticalListSortingStrategy}
+          >
             <Table
               className='table-fixed'
               style={{
@@ -193,12 +120,12 @@ export default function SettingsSortableDataTable<TData>({
                 {rows.map((row) => (
                   <SortableDataRow
                     dragColumnId={dragColumnId}
-                    getRowClassName={getRowClassName}
                     key={row.id}
                     row={row}
                     rowClassName={rowClassName}
                     selectedRowId={selectedRowId}
                     table={table}
+                    getRowClassName={getRowClassName}
                     onRowClick={onRowClick}
                     onRowMouseEnter={onRowMouseEnter}
                     onRowMouseLeave={onRowMouseLeave}
@@ -210,5 +137,82 @@ export default function SettingsSortableDataTable<TData>({
         </DndContext>
       </div>
     </div>
+  )
+}
+
+function SortableDataRow<TData>({
+  dragColumnId,
+  row,
+  rowClassName,
+  selectedRowId,
+  table,
+  getRowClassName,
+  onRowClick,
+  onRowMouseEnter,
+  onRowMouseLeave,
+}: {
+  dragColumnId: string
+  row: Row<TData>
+  rowClassName?: string
+  selectedRowId?: string | null
+  table: TanstackTable<TData>
+  getRowClassName?: (row: TData) => string | undefined
+  onRowClick?: (rowId: string) => void
+  onRowMouseEnter?: (rowId: string) => void
+  onRowMouseLeave?: () => void
+}) {
+  const {
+    attributes,
+    isDragging,
+    listeners,
+    transform,
+    transition,
+    setActivatorNodeRef,
+    setNodeRef,
+  } = useSortable({ id: row.id })
+
+  return (
+    <tr
+      ref={setNodeRef}
+      className={cn(
+        'relative border-b border-[var(--gray-2)] transition-all [--pinned-bg:var(--surface)] focus-within:z-40 hover:z-10 hover:bg-[var(--gray-1)] hover:shadow-sm hover:[--pinned-bg:var(--gray-1)]',
+        rowClassName,
+        getRowClassName?.(row.original),
+        selectedRowId === row.id && 'bg-primary-1',
+        isDragging && 'z-20 bg-[var(--gray-1)] opacity-90 shadow-md',
+      )}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+      }}
+      onClick={() => onRowClick?.(row.id)}
+      onMouseEnter={() => onRowMouseEnter?.(row.id)}
+      onMouseLeave={() => onRowMouseLeave?.()}
+    >
+      {row.getVisibleCells().map((cell) => (
+        <Td
+          className={cn('py-2.5', cell.column.columnDef.meta?.className)}
+          key={cell.id}
+          style={getColumnPinnedStyles(cell.column, table)}
+        >
+          {cell.column.id === dragColumnId ? (
+            <div className='flex justify-center'>
+              <button
+                aria-label='Drag to reorder'
+                className='flex cursor-grab items-center text-gray-9 outline-none active:cursor-grabbing'
+                ref={setActivatorNodeRef}
+                type='button'
+                {...attributes}
+                {...listeners}
+              >
+                <GripVertical size={16} />
+              </button>
+            </div>
+          ) : (
+            flexRender(cell.column.columnDef.cell, cell.getContext())
+          )}
+        </Td>
+      ))}
+    </tr>
   )
 }

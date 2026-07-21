@@ -1,20 +1,22 @@
 import {
+  BadgeDollarSign,
   ChevronRight,
   ClipboardList,
+  Code2,
   FolderOpen,
   Shield,
   UserRoundCheck,
-  Users, Code2, BadgeDollarSign,
+  Users,
 } from 'lucide-react'
 import React, { useMemo, useState } from 'react'
 import AuditMonitoring from './components/AuditMonitoring'
+import Credits from './components/credits/Credits'
 import DmsSettings from './components/Folders/DmsSettings'
 import GroupManagement from './components/GroupManagement'
 import ManageUser from './components/ManageUser'
 import RolesPermissions from './components/RolesPermissions'
-import Credits from './components/credits/Credits'
-import useSettingsTopbar from './hooks/useSettingsTopbar'
 import { createSettingsRootBreadcrumbs } from './helpers/settingsBreadcrumbs'
+import useSettingsTopbar from './hooks/useSettingsTopbar'
 type SettingsItem = {
   description: string
   icon: React.ElementType
@@ -128,8 +130,8 @@ export default function SettingsMain() {
       </SettingsDetailShell>
     )
   }
-  if (activePage === "playground") {
-    window.open("https://demo.ezofis.com/V6Playground/apikey.html", "_blank");
+  if (activePage === 'playground') {
+    window.open('https://demo.ezofis.com/V6Playground/apikey.html', '_blank')
     setActivePage('settings')
   }
   if (activePage === 'credit') {

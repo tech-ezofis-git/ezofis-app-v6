@@ -38,7 +38,8 @@ const StepTwo = () => {
       : 12
     : null
 
-  const initialOtherText = savedValue && !isPredefined ? (savedValue as string) : ''
+  const initialOtherText =
+    savedValue && !isPredefined ? (savedValue as string) : ''
 
   const [deptOption, setDeptOption] = useState<number | null>(initialOption)
   const [otherText, setOtherText] = useState<string>(initialOtherText)

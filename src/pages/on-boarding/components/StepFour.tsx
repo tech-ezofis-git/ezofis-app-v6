@@ -40,7 +40,8 @@ const StepFour = () => {
       : otherId
     : null
 
-  const initialOtherText = savedValue && !isPredefined ? (savedValue as string) : ''
+  const initialOtherText =
+    savedValue && !isPredefined ? (savedValue as string) : ''
 
   const [industryOption, setIndustryOption] = useState<number | null>(
     initialOption,

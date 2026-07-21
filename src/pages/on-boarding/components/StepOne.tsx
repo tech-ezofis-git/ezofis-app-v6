@@ -36,7 +36,8 @@ const StepOne = () => {
       : 6
     : null
 
-  const initialOtherText = savedValue && !isPredefined ? (savedValue as string) : ''
+  const initialOtherText =
+    savedValue && !isPredefined ? (savedValue as string) : ''
 
   const [roleOption, setRoleOption] = useState<number | null>(initialOption)
   const [otherText, setOtherText] = useState<string>(initialOtherText)

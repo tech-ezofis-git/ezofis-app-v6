@@ -118,7 +118,9 @@ export function ShareView({ onBack }: { onBack: () => void }) {
                   className='mr-2 h-4 w-4 shrink-0 text-green-11'
                   name='shield'
                 />
-                <span className='truncate'>{data.link || 'No link generated'}</span>
+                <span className='truncate'>
+                  {data.link || 'No link generated'}
+                </span>
               </div>
 
               <Button className='h-11 px-4 text-[14px] shadow-sm'>

@@ -2,39 +2,53 @@ import authUserStore from '../../stores/authUserStore'
 import { axiosV6 } from '../axios'
 import { getV6ApiErrorMessage } from './auth'
 
-export type V6UserListItem = {
-  authStrategy?: string
-  createdAtUtc?: string
-  displayName: string
-  email: string
-  firstName?: string
-  id: string
-  lastName?: string
-  role: string
+export type CreateV6GroupPayload = {
+  description: string
+  groupName?: string
+  users: string[]
+}
+
+export type CreateV6MenuPayload = {
+  key: string
+  label: string
+  routePath: string
+  sortOrder: number
 }
 
 export type CreateV6UserPayload = {
+  'accountExpiryDate': string
+  'authStrategy': string
   'Bussiness Unit': string
+  'department': string
+  'displayName': string
+  'email': string
   'Employee Id': string
+  'firstName': string
+  'forcePasswordResetOnLogin': string
+  'group': string[]
   'Job Title': string
+  'lastName': string
+  'location': string
+  'LoginType': string
+  'Manager': string
   'MFA Methods': string
-  LoginType: string
-  MFAuthentication: string
-  Manager: string
-  accountExpiryDate: string
-  authStrategy: string
-  department: string
-  displayName: string
-  email: string
-  firstName: string
-  forcePasswordResetOnLogin: string
-  group: string[]
-  lastName: string
-  location: string
-  password?: string
-  passwordExpiryDays: number
-  role: string
-  userName: string
+  'MFAuthentication': string
+  'password'?: string
+  'passwordExpiryDays': number
+  'role': string
+  'userName': string
+}
+
+export type UpdateV6GroupPayload = {
+  description?: string
+  groupName?: string
+  users?: string[]
+}
+
+export type UpdateV6MenuPayload = {
+  label: string
+  routePath: string
+  sortOrder: number
 }
 
 export type UpdateV6UserPayload = {
@@ -58,6 +72,36 @@ export type UpsertV6RolePayload = {
   users: string[]
 }
 
+export type V6GroupItem = {
+  createdAtUtc?: string
+  description?: string
+  groupId?: string
+  id?: string
+  memberCount?: number
+  name?: string
+  userCount?: number
+  users?: Array<string | V6GroupUser>
+}
+
+export type V6GroupUser = {
+  displayName?: string
+  email?: string
+  id?: string
+}
+
+export type V6MenuItem = {
+  createdAtUtc?: string
+  id?: string
+  isSystem?: boolean
+  key?: string
+  label?: string
+  menuId?: string
+  name?: string
+  routePath?: string
+  sortOrder?: number
+  visible?: boolean
+}
+
 export type V6RoleItem = {
   description?: string
   id?: string
@@ -70,59 +114,15 @@ export type V6RoleItem = {
   users?: Array<string | { id?: string; userId?: string; value?: string }>
 }
 
-export type V6GroupUser = {
-  displayName?: string
-  email?: string
-  id?: string
-}
-
-export type V6GroupItem = {
+export type V6UserListItem = {
+  authStrategy?: string
   createdAtUtc?: string
-  description?: string
-  groupId?: string
-  id?: string
-  memberCount?: number
-  name?: string
-  userCount?: number
-  users?: Array<string | V6GroupUser>
-}
-
-export type CreateV6GroupPayload = {
-  description: string
-  groupName?: string
-  users: string[]
-}
-
-export type UpdateV6GroupPayload = {
-  description?: string
-  groupName?: string
-  users?: string[]
-}
-
-export type V6MenuItem = {
-  createdAtUtc?: string
-  id?: string
-  isSystem?: boolean
-  key?: string
-  label?: string
-  name?: string
-  visible?: boolean
-  menuId?: string
-  routePath?: string
-  sortOrder?: number
-}
-
-export type CreateV6MenuPayload = {
-  key: string
-  label: string
-  routePath: string
-  sortOrder: number
-}
-
-export type UpdateV6MenuPayload = {
-  label: string
-  routePath: string
-  sortOrder: number
+  displayName: string
+  email: string
+  firstName?: string
+  id: string
+  lastName?: string
+  role: string
 }
 
 export const createUser = async (payload: CreateV6UserPayload) => {
@@ -208,7 +208,8 @@ export const deleteUser = async (id: string) => {
 
   try {
     const store = authUserStore.getState()
-    const tenantId = store.session?.tenantId || (store.identity as any)?.tenantId || ''
+    const tenantId =
+      store.session?.tenantId || (store.identity as any)?.tenantId || ''
 
     const { data, status } = await axiosV6({
       headers: tenantId ? { 'X-Tenant-Id': tenantId } : undefined,
@@ -843,18 +844,18 @@ export const usersApiV6 = {
   deleteGroup,
   deleteMenu,
   deleteUser,
-  getGroupById,
-  getGroups,
-  getMenuById,
-  getMenus,
-  getRoleById,
-  getUsers,
-  getRoles,
   updateGroup,
   updateMenu,
   updateRole,
   updateUser,
   updateUserConfiguration,
+  getGroupById,
+  getGroups,
+  getMenuById,
+  getMenus,
+  getRoleById,
+  getRoles,
+  getUsers,
 }
 
 export default usersApiV6

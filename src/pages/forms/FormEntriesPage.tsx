@@ -6,18 +6,15 @@ import type { Column } from '@/components/base/data-table/types'
 import type { Question } from '@/pages/form-builder/store/formStore'
 import formApi from '@/api/form/form'
 import userApi from '@/api/user'
-import authUserStore from '@/stores/authUserStore'
 import Badge from '@/components/base/Badge'
-import Modal from '@/components/base/Modal'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
+import TableExport from '@/components/base/data-table/actions/TableExport'
+import TableSearch from '@/components/base/data-table/actions/TableSearch'
 // DataTable and pagination imports
 import DataTable from '@/components/base/data-table/DataTable'
 import useDataTable from '@/components/base/data-table/hooks/useDataTable'
 import useDataTableState from '@/components/base/data-table/hooks/useDataTableState'
-import TableSearch from '@/components/base/data-table/actions/TableSearch'
-import TableExport from '@/components/base/data-table/actions/TableExport'
-import CustomFilter from '@/components/common/CustomFilter'
 import Icon from '@/components/base/icon/Icon'
 import InputDate from '@/components/base/inputs/InputDate'
 import InputNumber from '@/components/base/inputs/InputNumber'
@@ -25,10 +22,13 @@ import InputSelect from '@/components/base/inputs/InputSelect'
 import InputSwitch from '@/components/base/inputs/InputSwitch'
 import InputText from '@/components/base/inputs/InputText'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
+import Modal from '@/components/base/Modal'
 import Pagination from '@/components/base/pagination/Pagination'
 import Tab from '@/components/base/tabs/Tab'
 import Tabs from '@/components/base/tabs/Tabs'
 import showToast from '@/components/base/toast/showToast'
+import CustomFilter from '@/components/common/CustomFilter'
+import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
 
 // Helper to generate dynamic mock values based on field schema
@@ -46,9 +46,9 @@ const generateDummyEntries = (fields: Question[], count: number = 6) => {
     fields.length > 0
       ? fields
       : [
-        { id: 'f1', label: 'Initial Value', type: 'SHORT_TEXT' } as Question,
-        { id: 'f2', label: 'Status', type: 'SHORT_TEXT' } as Question,
-      ]
+          { id: 'f1', label: 'Initial Value', type: 'SHORT_TEXT' } as Question,
+          { id: 'f2', label: 'Status', type: 'SHORT_TEXT' } as Question,
+        ]
 
   return Array.from({ length: count }).map((_, idx) => {
     const entryId = `Entry #${idx + 1}`
@@ -168,16 +168,16 @@ const FormEntriesPage = () => {
 
   // Active line items for the modal table explorer
   const [activeLineItems, setActiveLineItems] = useState<{
-    rowId: string
     colLabel: string
     data: any[]
+    rowId: string
   } | null>(null)
 
   // Fetch users list for Created By resolution
   const { data: usersData } = useQuery({
     queryKey: ['users', 'list'],
     queryFn: async () => {
-      const { payload, error } = await userApi.getUserList()
+      const { error, payload } = await userApi.getUserList()
       if (error) throw new Error(error)
       return payload || []
     },
@@ -359,9 +359,11 @@ const FormEntriesPage = () => {
         }
 
         return {
-          id: e.itemId ? `Entry #${e.itemId}` : e.id || e.uid || `Entry #${Math.random()}`,
           createdAt: e.createdAt || new Date().toISOString(),
           createdBy: e.createdBy || 'unknown@ezofis.com',
+          id: e.itemId
+            ? `Entry #${e.itemId}`
+            : e.id || e.uid || `Entry #${Math.random()}`,
           isDeleted: !!e.isDeleted,
           values,
         }
@@ -474,7 +476,12 @@ const FormEntriesPage = () => {
         } else {
           // For dynamic fields in 'values' or other top level strings
           const entryVal = entry[key] || entry.values?.[key]
-          if (!entryVal || !String(entryVal).toLowerCase().includes(String(value).toLowerCase())) {
+          if (
+            !entryVal ||
+            !String(entryVal)
+              .toLowerCase()
+              .includes(String(value).toLowerCase())
+          ) {
             matches = false
           }
         }
@@ -556,7 +563,8 @@ const FormEntriesPage = () => {
 
     // Render dynamic columns from fields
     fields.forEach((field: Question) => {
-      const isStatusCol = (field.label || '').toLowerCase().trim() === 'matched status'
+      const isStatusCol =
+        (field.label || '').toLowerCase().trim() === 'matched status'
       const getFieldLabel = (key: string) => {
         const f = fields.find((item: Question) => item.id === key)
         return f?.label || key
@@ -574,11 +582,22 @@ const FormEntriesPage = () => {
             const statusStr = String(val).trim()
             let badgeColor: 'green' | 'red' | 'orange' | 'gray' = 'gray'
             const lowerStatus = statusStr.toLowerCase()
-            if (lowerStatus.includes('partially matched') || lowerStatus.includes('partial')) {
+            if (
+              lowerStatus.includes('partially matched') ||
+              lowerStatus.includes('partial')
+            ) {
               badgeColor = 'orange' // yellow/orange
-            } else if (lowerStatus.includes('not matched') || lowerStatus.includes('mismatch') || lowerStatus.includes('fail') || lowerStatus.includes('error')) {
+            } else if (
+              lowerStatus.includes('not matched') ||
+              lowerStatus.includes('mismatch') ||
+              lowerStatus.includes('fail') ||
+              lowerStatus.includes('error')
+            ) {
               badgeColor = 'red'
-            } else if (lowerStatus.includes('matched') || lowerStatus === 'match') {
+            } else if (
+              lowerStatus.includes('matched') ||
+              lowerStatus === 'match'
+            ) {
               badgeColor = 'green'
             }
             return <Badge color={badgeColor} label={statusStr} />
@@ -608,9 +627,9 @@ const FormEntriesPage = () => {
                   variant='ghost'
                   onClick={() =>
                     setActiveLineItems({
-                      rowId: row.id,
                       colLabel: field.label || 'Line Items',
                       data: parsedData,
+                      rowId: row.id,
                     })
                   }
                 />
@@ -769,29 +788,37 @@ const FormEntriesPage = () => {
     entries.forEach((e: any) => {
       if (e.createdBy) unique.set(e.createdBy, resolveUserName(e.createdBy))
     })
-    return Array.from(unique.entries()).map(([value, label]) => ({ label, value }))
+    return Array.from(unique.entries()).map(([value, label]) => ({
+      label,
+      value,
+    }))
   }, [entries, usersData])
 
   const dynamicFilters = useMemo(() => {
-    return fields.map((field: any) => {
-      const unique = new Set<string>()
-      entries.forEach((e) => {
-        const val = e.values?.[field.id]
-        // Skip JSON arrays for dropdown options
-        if (val && !(typeof val === 'string' && val.trim().startsWith('['))) {
-          unique.add(String(val))
+    return fields
+      .map((field: any) => {
+        const unique = new Set<string>()
+        entries.forEach((e) => {
+          const val = e.values?.[field.id]
+          // Skip JSON arrays for dropdown options
+          if (val && !(typeof val === 'string' && val.trim().startsWith('['))) {
+            unique.add(String(val))
+          }
+        })
+        const options = Array.from(unique).map((val) => ({
+          label: val,
+          value: val,
+        }))
+
+        if (options.length === 0) return null
+
+        return {
+          id: field.id,
+          label: field.label || field.id,
+          options,
         }
       })
-      const options = Array.from(unique).map((val) => ({ label: val, value: val }))
-
-      if (options.length === 0) return null
-
-      return {
-        id: field.id,
-        label: field.label || field.id,
-        options,
-      }
-    }).filter(Boolean) as any[]
+      .filter(Boolean) as any[]
   }, [fields, entries])
 
   // Skeleton Loader for initial fetching
@@ -1013,7 +1040,7 @@ const FormEntriesPage = () => {
                             'Option A,Option B,Option C'
                           const delimiter =
                             field.settings?.specific?.separateOptionsUsing ===
-                              'COMMA'
+                            'COMMA'
                               ? ','
                               : '\n'
                           const opts = optString
@@ -1058,7 +1085,7 @@ const FormEntriesPage = () => {
                             'Option A,Option B,Option C'
                           const delimiter =
                             field.settings?.specific?.separateOptionsUsing ===
-                              'COMMA'
+                            'COMMA'
                               ? ','
                               : '\n'
                           const opts = optString
@@ -1118,7 +1145,7 @@ const FormEntriesPage = () => {
                             'Option A,Option B,Option C'
                           const delimiter =
                             field.settings?.specific?.separateOptionsUsing ===
-                              'COMMA'
+                            'COMMA'
                               ? ','
                               : '\n'
                           const opts = optString
@@ -1203,11 +1230,10 @@ const FormEntriesPage = () => {
     )
   }
 
-
   return (
     <div className='flex h-full flex-col bg-white'>
       {/* 1. HEADER (Title, Back button, Browse/Trash Tabs) */}
-      <div className='flex items-center justify-between border-b border-gray-2 px-6 '>
+      <div className='flex items-center justify-between border-b border-gray-2 px-6'>
         <div className='flex items-center gap-4'>
           <IconButton
             color='gray'
@@ -1306,22 +1332,45 @@ const FormEntriesPage = () => {
       <div className='relative flex flex-1 overflow-hidden'>
         <div className='bg-gray-50/50 flex flex-1 flex-col overflow-hidden p-6'>
           <CustomFilter
+            activeFilters={activeFilters}
+            customSearchComponent={<TableSearch table={table as any} />}
+            searchPlaceholder='Search entries...'
+            searchQuery=''
+            trailingActions={<TableExport table={table as any} />}
+            actionButtons={[
+              {
+                color: 'gray',
+                disabled: isPageLoading,
+                icon: 'tabler:refresh',
+                id: 'refresh',
+                isIconButton: true,
+                tooltip: 'Refresh',
+                variant: 'outline',
+                onClick: () => {
+                  refetch()
+                  refetchEntries()
+                },
+              },
+            ]}
             filters={[
               {
-                id: "createdBy",
-                label: "Created By",
+                id: 'createdBy',
+                label: 'Created By',
                 options: createdByOptions,
-              }
+              },
             ]}
             moreFilters={[
               {
-                id: "createdAt",
-                label: "Created Date",
-                dataType: "date",
+                dataType: 'date',
+                id: 'createdAt',
+                label: 'Created Date',
               },
               ...dynamicFilters,
             ]}
-            activeFilters={activeFilters}
+            showReset={
+              Object.keys(activeFilters).some((k) => activeFilters[k]) ||
+              !!searchState?.value
+            }
             onFilterChange={(id, value) => {
               setActiveFilters((prev) => ({ ...prev, [id]: value }))
               setPage(1)
@@ -1331,39 +1380,17 @@ const FormEntriesPage = () => {
               setSearchState({ id: '', value: '' })
               setPage(1)
             }}
-            showReset={Object.keys(activeFilters).some(k => activeFilters[k]) || !!searchState?.value}
-            searchQuery=""
-            onSearchChange={() => { }}
-            searchPlaceholder="Search entries..."
-            customSearchComponent={<TableSearch table={table as any} />}
-            actionButtons={[
-              {
-                id: 'refresh',
-                icon: 'tabler:refresh',
-                tooltip: 'Refresh',
-                onClick: () => {
-                  refetch()
-                  refetchEntries()
-                },
-                isIconButton: true,
-                color: 'gray',
-                variant: 'outline',
-                disabled: isPageLoading
-              }
-            ]}
-            trailingActions={
-              <TableExport table={table as any} />
-            }
+            onSearchChange={() => {}}
           />
-          <div className='min-h-0 flex-1 mt-2 overflow-hidden'>
+          <div className='mt-2 min-h-0 flex-1 overflow-hidden'>
             <DataTable
               actions={[]}
               hideActionBar={true}
-              hideGrouping={true}
               hideExport={true}
+              hideFilters={true}
+              hideGrouping={true}
               hideReload={true}
               hideSearch={true}
-              hideFilters={true}
               isLoading={isPageLoading}
               isReLoading={isPageLoading}
               pageSize={pageSize}
@@ -1395,10 +1422,13 @@ const FormEntriesPage = () => {
         onClose={() => setActiveLineItems(null)}
       >
         {activeLineItems && (
-          <div className='flex flex-col font-inter p-6 bg-white rounded-lg'>
-            <div className='flex items-center justify-between mb-4 pb-2 border-b border-gray-2'>
+          <div className='flex flex-col rounded-lg bg-white p-6 font-inter'>
+            <div className='mb-4 flex items-center justify-between border-b border-gray-2 pb-2'>
               <div className='flex items-center gap-2'>
-                <Icon name='lucide:table' className='size-5 text-accent-primary' />
+                <Icon
+                  className='size-5 text-accent-primary'
+                  name='lucide:table'
+                />
                 <h3 className='text-sm font-bold text-gray-13'>
                   {activeLineItems.colLabel} — {activeLineItems.rowId}
                 </h3>
@@ -1412,15 +1442,15 @@ const FormEntriesPage = () => {
               />
             </div>
 
-            <div className='max-h-[400px] overflow-y-auto overflow-x-auto border border-gray-2 rounded-lg bg-white custom-scrollbar'>
-              <table className='w-full text-left text-xs border-collapse'>
+            <div className='custom-scrollbar max-h-[400px] overflow-x-auto overflow-y-auto rounded-lg border border-gray-2 bg-white'>
+              <table className='w-full border-collapse text-left text-xs'>
                 <thead>
-                  <tr className='border-b border-gray-2 bg-gray-50'>
+                  <tr className='bg-gray-50 border-b border-gray-2'>
                     {activeLineItems.data.length > 0 &&
                       Object.keys(activeLineItems.data[0]).map((k) => (
                         <th
+                          className='p-3 font-bold whitespace-nowrap text-gray-11'
                           key={k}
-                          className='p-3 font-bold text-gray-11 whitespace-nowrap'
                         >
                           {getFieldLabel(k)}
                         </th>
@@ -1430,13 +1460,13 @@ const FormEntriesPage = () => {
                 <tbody>
                   {activeLineItems.data.map((item: any, idx: number) => (
                     <tr
+                      className='hover:bg-gray-50/50 border-b border-gray-1 last:border-0'
                       key={idx}
-                      className='border-b border-gray-1 last:border-0 hover:bg-gray-50/50'
                     >
                       {Object.keys(item).map((k) => (
                         <td
+                          className='p-3 font-medium whitespace-nowrap text-gray-12'
                           key={k}
-                          className='p-3 font-medium text-gray-12 whitespace-nowrap'
                         >
                           {item[k]}
                         </td>

@@ -14,7 +14,7 @@ export default function WrapOnHoverCell({
     <span
       className={cn(
         CELL_TEXT,
-        'block min-w-0 max-w-full break-words [overflow-wrap:anywhere]',
+        'block max-w-full min-w-0 [overflow-wrap:anywhere] break-words',
         'line-clamp-2',
         'hover:line-clamp-none',
         className,
