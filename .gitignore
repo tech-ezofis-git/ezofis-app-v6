@@ -8,3 +8,4 @@ count.txt
 
 pnpm-lock.yaml
 .agent/skills/stitch-skills
+.agent/skills
