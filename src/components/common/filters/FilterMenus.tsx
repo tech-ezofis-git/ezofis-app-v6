@@ -148,13 +148,13 @@ export function CustomRangeMenu({
             <InputDate
               label="Start Date"
               value={String(start)}
-              onChange={(v) => setStart(v)}
+              onChange={(v) => setStart(v ?? "")}
               popoverProps={{ zIndex: 50005 }}
             />
             <InputDate
               label="End Date"
               value={String(end)}
-              onChange={(v) => setEnd(v)}
+              onChange={(v) => setEnd(v ?? "")}
               popoverProps={{ zIndex: 50005 }}
             />
           </>
