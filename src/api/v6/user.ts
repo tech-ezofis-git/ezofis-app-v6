@@ -106,6 +106,7 @@ export type V6MenuItem = {
   key?: string
   label?: string
   menuId?: string
+name?: string
   routePath?: string
   sortOrder?: number
 }

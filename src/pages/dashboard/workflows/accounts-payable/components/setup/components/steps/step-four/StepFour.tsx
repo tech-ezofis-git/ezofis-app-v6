@@ -80,36 +80,47 @@ const replacePlaceholders = (
   return obj
 }
 
-// const downloadFile = (file: File) => {
-//   const url = URL.createObjectURL(file)
-//   const a = document.createElement('a')
-//   a.href = url
-//   a.download = file.name
-//   document.body.appendChild(a)
-//   a.click()
-//   document.body.removeChild(a)
-//   URL.revokeObjectURL(url)
-// }
+const downloadFile = (file: File) => {
+  const url = URL.createObjectURL(file)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = file.name
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+}
 
 const updateFileHeaders = async (
   file: File,
   mapping: Record<string, string>,
+  lineItemMapping?: Record<string, string>,
 ): Promise<File> => {
   const fileName = file.name
   const fileExtension = fileName.split('.').pop()?.toLowerCase()
 
   return new Promise<File>((resolve, reject) => {
-    // Invert mapping: sourceField -> masterField
-    const invertedMapping: Record<string, string> = {}
-    Object.entries(mapping).forEach(([masterKey, sourceVal]) => {
-      if (sourceVal && sourceVal !== 'Skip to Import') {
-        invertedMapping[sourceVal.trim()] = masterKey
-      }
-    })
+    // Helper to invert mapping: sourceField -> masterField
+    const getInvertedMapping = (m: Record<string, string>) => {
+      const inverted: Record<string, string> = {}
+      Object.entries(m).forEach(([masterKey, sourceVal]) => {
+        if (sourceVal && sourceVal !== 'Skip to Import') {
+          inverted[sourceVal.trim()] = masterKey
+        }
+      })
+      return inverted
+    }
 
-    const translateHeader = (header: string) => {
+    const invertedHeaderMapping = getInvertedMapping(mapping)
+    const invertedLineItemMapping = lineItemMapping ? getInvertedMapping(lineItemMapping) : {}
+
+    const translateHeader = (header: string, isLineItem: boolean) => {
+      if (!header) return ''
       const trimmed = header.trim()
-      return invertedMapping[trimmed] || trimmed
+      if (isLineItem) {
+        return invertedLineItemMapping[trimmed] || trimmed
+      }
+      return invertedHeaderMapping[trimmed] || trimmed
     }
 
     if (fileExtension === 'csv') {
@@ -120,7 +131,7 @@ const updateFileHeaders = async (
           const lines = csvData.split('\n')
           if (lines.length > 0) {
             const headers = lines[0].split(',')
-            const updatedHeaders = headers.map(translateHeader)
+            const updatedHeaders = headers.map((h) => translateHeader(h, false))
             lines[0] = updatedHeaders.join(',')
           }
           const updatedCsv = new Blob([lines.join('\n')], {
@@ -129,7 +140,6 @@ const updateFileHeaders = async (
           const updatedFile = new File([updatedCsv], fileName, {
             type: 'text/csv',
           })
-          // downloadFile(updatedFile)
           resolve(updatedFile)
         }
       }
@@ -141,21 +151,30 @@ const updateFileHeaders = async (
         if (event.target?.result) {
           const data = event.target.result as ArrayBuffer
           const wb = XLSX.read(data, { type: 'array' })
-          const sheetName = wb.SheetNames[0]
-          const sheet = wb.Sheets[sheetName]
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const rows: any = XLSX.utils.sheet_to_json(sheet, { header: 1 })
 
-          if (rows.length > 0) {
-            const updatedHeaders = rows[0].map((h: string) =>
-              translateHeader(h),
-            )
-            rows[0] = updatedHeaders
+          // Translate Sheet 1 (Header Fields)
+          if (wb.SheetNames.length > 0) {
+            const sheetName1 = wb.SheetNames[0]
+            const sheet1 = wb.Sheets[sheetName1]
+            const rows1: any = XLSX.utils.sheet_to_json(sheet1, { header: 1 })
+            if (rows1.length > 0) {
+              const updatedHeaders1 = rows1[0].map((h: string) => translateHeader(h, false))
+              rows1[0] = updatedHeaders1
+              wb.Sheets[sheetName1] = XLSX.utils.aoa_to_sheet(rows1)
+            }
           }
 
-          const updatedSheet = XLSX.utils.aoa_to_sheet(rows)
-          // Update the first sheet in place to preserve other sheets in the workbook
-          wb.Sheets[sheetName] = updatedSheet
+          // Translate Sheet 2 (Line Items)
+          if (wb.SheetNames.length > 1 && lineItemMapping) {
+            const sheetName2 = wb.SheetNames[1]
+            const sheet2 = wb.Sheets[sheetName2]
+            const rows2: any = XLSX.utils.sheet_to_json(sheet2, { header: 1 })
+            if (rows2.length > 0) {
+              const updatedHeaders2 = rows2[0].map((h: string) => translateHeader(h, true))
+              rows2[0] = updatedHeaders2
+              wb.Sheets[sheetName2] = XLSX.utils.aoa_to_sheet(rows2)
+            }
+          }
 
           const updatedBlob = XLSX.write(wb, {
             bookType: 'xlsx',
@@ -164,7 +183,6 @@ const updateFileHeaders = async (
           const updatedFile = new File([updatedBlob], fileName, {
             type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
           })
-          // downloadFile(updatedFile)
           resolve(updatedFile)
         }
       }
@@ -176,8 +194,154 @@ const updateFileHeaders = async (
   })
 }
 
+const addCustomFieldsToPayloads = (
+  folderPayload: any,
+  masterFormPayload: any,
+  formPayload: any,
+  mapping: Record<string, string>,
+  lineItemMapping: Record<string, string>,
+  fieldDataTypes: Record<string, string>,
+  lineItemFieldDataTypes: Record<string, string>
+) => {
+  // Deep clone to avoid mutating the source JSON
+  const clonedFolder = JSON.parse(JSON.stringify(folderPayload))
+  const clonedMaster = JSON.parse(JSON.stringify(masterFormPayload))
+  const clonedForm = JSON.parse(JSON.stringify(formPayload))
+
+  const generateUid = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-'
+    let result = ''
+    for (let i = 0; i < 21; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length))
+    }
+    return result
+  }
+
+  // --- 0. FOLDER CUSTOM FIELDS ---
+  const folderFields = clonedFolder.fields || []
+  const predefinedFolderNames = folderFields.map((f: any) => f.name)
+
+  const customHeaderFieldsForFolder = Object.keys(mapping).filter(
+    (key) => !predefinedFolderNames.includes(key)
+  )
+
+  if (customHeaderFieldsForFolder.length > 0) {
+    let maxOrderId = folderFields.reduce((max: number, f: any) => Math.max(max, f.orderId || 0), 0)
+    customHeaderFieldsForFolder.forEach((customLabel) => {
+      maxOrderId += 1
+      const customFieldType = fieldDataTypes[customLabel] || 'SHORT_TEXT'
+      folderFields.push({
+        name: customLabel,
+        dataType: customFieldType,
+        level: 0,
+        isMandatory: false,
+        includeInFolderStructure: false,
+        orderId: maxOrderId,
+      })
+    })
+  }
+
+  // --- 1. HEADER CUSTOM FIELDS ---
+  const masterPanel = clonedMaster.panels?.[0]
+  const masterFields = masterPanel?.fields || []
+  const predefinedMasterLabels = masterFields.map((f: any) => f.label)
+
+  const customHeaderFields = Object.keys(mapping).filter(
+    (key) => !predefinedMasterLabels.includes(key)
+  )
+
+  if (customHeaderFields.length > 0) {
+    const templateField = masterFields[0]
+    const tableFieldIndex = masterFields.findIndex((f: any) => f.type === 'TABLE' || f.type === 'DYNAMIC_TABLE')
+    const insertIndex = tableFieldIndex !== -1 ? tableFieldIndex : masterFields.length
+
+    customHeaderFields.forEach((customLabel) => {
+      const customFieldType = fieldDataTypes[customLabel] || 'SHORT_TEXT'
+      const newField = JSON.parse(JSON.stringify(templateField))
+      newField.id = generateUid()
+      newField.label = customLabel
+      newField.type = customFieldType
+      if (newField.settings?.general) {
+        newField.settings.general.size = 'col-4'
+      }
+      masterFields.splice(insertIndex, 0, newField)
+    })
+
+    const formPanel1 = clonedForm.panels?.[1]
+    if (formPanel1) {
+      const formFields = formPanel1.fields || []
+      const formTableIndex = formFields.findIndex((f: any) => f.type === 'TABLE' || f.type === 'DYNAMIC_TABLE')
+      const formInsertIndex = formTableIndex !== -1 ? formTableIndex : formFields.length
+
+      customHeaderFields.forEach((customLabel) => {
+        const customFieldType = fieldDataTypes[customLabel] || 'SHORT_TEXT'
+        const newField = JSON.parse(JSON.stringify(templateField))
+        newField.id = generateUid()
+        newField.label = customLabel
+        newField.type = customFieldType
+        if (newField.settings?.general) {
+          newField.settings.general.size = 'col-4'
+        }
+        formFields.splice(formInsertIndex, 0, newField)
+      })
+    }
+  }
+
+  // --- 2. LINE ITEM CUSTOM FIELDS ---
+  const masterTableField = masterFields.find((f: any) => f.type === 'TABLE' || f.type === 'DYNAMIC_TABLE')
+  if (masterTableField) {
+    const tableColumns = masterTableField.settings?.specific?.tableColumns || []
+    const predefinedColLabels = tableColumns.map((c: any) => c.label)
+
+    const customLineItemFields = Object.keys(lineItemMapping).filter(
+      (key) => !predefinedColLabels.includes(key)
+    )
+
+    if (customLineItemFields.length > 0 && tableColumns.length > 0) {
+      const templateCol = tableColumns[0]
+      customLineItemFields.forEach((customLabel) => {
+        const colType = lineItemFieldDataTypes[customLabel] || 'SHORT_TEXT'
+        const newCol = JSON.parse(JSON.stringify(templateCol))
+        newCol.id = generateUid()
+        newCol.label = customLabel
+        newCol.type = colType
+        tableColumns.push(newCol)
+      })
+    }
+  }
+
+  const formPanel1 = clonedForm.panels?.[1]
+  if (formPanel1) {
+    const formTableField = (formPanel1.fields || []).find((f: any) => f.type === 'TABLE' || f.type === 'DYNAMIC_TABLE')
+    if (formTableField) {
+      const tableColumns = formTableField.settings?.specific?.tableColumns || []
+      const predefinedColLabels = tableColumns.map((c: any) => c.label)
+
+      const customLineItemFields = Object.keys(lineItemMapping).filter(
+        (key) => !predefinedColLabels.includes(key)
+      )
+
+      if (customLineItemFields.length > 0 && tableColumns.length > 0) {
+        const templateCol = tableColumns[0]
+        customLineItemFields.forEach((customLabel) => {
+          const colType = lineItemFieldDataTypes[customLabel] || 'SHORT_TEXT'
+          const newCol = JSON.parse(JSON.stringify(templateCol))
+          newCol.id = generateUid()
+          newCol.label = customLabel
+          newCol.type = colType
+          tableColumns.push(newCol)
+        })
+      }
+    }
+  }
+
+  return { folderPayload: clonedFolder, masterFormPayload: clonedMaster, formPayload: clonedForm }
+}
+
 const StepFour = () => {
   const erpSettings = setupStore((state) => state.erpSettings)
+  const emailSettings = setupStore((state) => state.emailSettings)
+  const storageSettings = setupStore((state) => state.storageSettings)
   const setStep = setupStore((state) => state.setStep)
   const closeSetup = setupStore((state) => state.closeSetup)
   const isApSetUpCompleted = setupStore((state) => state.isApSetUpCompleted)
@@ -200,11 +364,19 @@ const StepFour = () => {
     setIsSaving(true)
 
     try {
+      // 1.5 Inject any new custom fields mapped by the user
+      const { folderPayload: processedFolderPayload, masterFormPayload, formPayload } = addCustomFieldsToPayloads(
+        apSetupPayloads.folderPayload,
+        apSetupPayloads.masterFormPayload,
+        apSetupPayloads.formPayload,
+        erpSettings.mapping || {},
+        erpSettings.lineItemMapping || {},
+        erpSettings.fieldDataTypes || {},
+        erpSettings.lineItemFieldDataTypes || {}
+      )
+
       // 1. Create Folder
-      const folderPayload = {
-        ...apSetupPayloads.folderPayload,
-      }
-      const folderRes = await createRepository(folderPayload)
+      const folderRes = await createRepository(processedFolderPayload)
       if (folderRes.error) {
         showToast({
           message: `Failed to create Folder: ${folderRes.error}`,
@@ -229,10 +401,10 @@ const StepFour = () => {
       }
 
       // 2. Prepare Form payload with dynamic folderId placeholder replacement
-      const formPayload = replacePlaceholders(apSetupPayloads.formPayload, {
+      const processedFormPayload = replacePlaceholders(formPayload, {
         folderId,
       })
-      const formRes = await formApi.createForm(JSON.stringify(formPayload))
+      const formRes = await formApi.createForm(JSON.stringify(processedFormPayload))
       if (formRes.error) {
         showToast({
           message: `Failed to create Form: ${formRes.error}`,
@@ -253,7 +425,6 @@ const StepFour = () => {
       }
 
       // 3. Create Master Form
-      const masterFormPayload = apSetupPayloads.masterFormPayload
       const masterFormRes = await formApi.createForm(
         JSON.stringify(masterFormPayload),
       )
@@ -291,6 +462,7 @@ const StepFour = () => {
           file = await updateFileHeaders(
             erpSettings.uploadedTemplate,
             erpSettings.mapping,
+            erpSettings.lineItemMapping,
           )
         } else {
           const fileResponse = await fetch(poMasterUrl)
@@ -444,28 +616,32 @@ const StepFour = () => {
         <AnimateFadeIn delay={0.4}>
           <div className='mx-auto grid w-full max-w-[900px] grid-cols-1 gap-4 sm:grid-cols-3'>
             <ProtocolCard
-              icon='tabler:database'
+              icon={emailSettings.provider === 'DIRECT_UPLOAD' ? 'tabler:upload' : 'tabler:mail'}
               iconBg='bg-blue-1 dark:bg-blue-9/20'
               iconColor='text-blue-9 dark:text-blue-4'
+              label='Capture Pipeline'
+              subtitle={emailSettings.email || 'Direct Upload Active'}
+              title={emailSettings.provider === 'gmail' ? 'Gmail Sync' : emailSettings.provider === 'outlook' ? 'Outlook Sync' : 'Manual Upload'}
+            />
+            <ProtocolCard
+              icon='tabler:database'
+              iconBg='bg-purple-1 dark:bg-purple-9/20'
+              iconColor='text-purple-9 dark:text-purple-4'
               label='Data Destination'
-              subtitle='Connected & Verified'
+              subtitle={(() => {
+                const headerCount = Object.values(erpSettings.mapping || {}).filter(v => v && v !== 'Skip to Import').length
+                const lineCount = Object.values(erpSettings.lineItemMapping || {}).filter(v => v && v !== 'Skip to Import').length
+                return `${headerCount} Header, ${lineCount} Line Items`
+              })()}
               title={getErpName()}
             />
             <ProtocolCard
-              icon='tabler:brain'
-              iconBg='bg-purple-1 dark:bg-purple-9/20'
-              iconColor='text-purple-9 dark:text-purple-4'
-              label='Intelligence Profile'
-              subtitle='99.8% Extraction Goal'
-              title='High Precision'
-            />
-            <ProtocolCard
-              icon='tabler:shield-check'
+              icon='tabler:cloud-download'
               iconBg='bg-green-1 dark:bg-green-9/20'
               iconColor='text-green-9 dark:text-green-4'
-              label='Security Protocol'
-              subtitle='AES-256 Encrypted'
-              title='SOC2 Compliant'
+              label='Storage Archive'
+              subtitle={storageSettings.isConnected ? 'Connected & Verified' : 'Default Cloud Archive'}
+              title={storageSettings.system === 'Included storage' ? 'EZOFIS Storage' : storageSettings.system}
             />
           </div>
         </AnimateFadeIn>

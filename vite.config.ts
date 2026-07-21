@@ -22,4 +22,13 @@ export default defineConfig({
       '@': resolve(__dirname, './src'),
     },
   },
+  server: {
+    proxy: {
+      '/api-mapping': {
+        target: 'http://52.172.32.88:8095',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api-mapping/, '/api/v1'),
+      },
+    },
+  },
 })

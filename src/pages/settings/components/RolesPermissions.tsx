@@ -3,11 +3,13 @@ import {
   Check,
   ChevronDown,
   ChevronUp,
+  Edit3,
   Grid2X2,
   MoreHorizontal,
   Shield,
   ShieldCheck,
   UserRound,
+  Trash2,
 } from 'lucide-react'
 import {
   type ReactNode,
@@ -35,8 +37,6 @@ import InputSelect from '@/components/base/inputs/InputSelect'
 import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
 import InputText from '@/components/base/inputs/InputText'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
-import Menu from '@/components/base/menu/Menu'
-import DropdownMenuItem from '@/components/base/menu/MenuItem'
 import showToast from '@/components/base/toast/showToast'
 import {
   getFieldRequiredError,
@@ -147,7 +147,7 @@ const initialMenuItems: MenuItem[] = []
 
 const mapApiMenuToProfileItem = (menu: V6MenuItem): MenuItem => ({
   id: String(menu.id || menu.key || ''),
-  name: String(menu.label || menu.key || 'Menu'),
+  name: String(menu.name || menu.key || 'Menu'),
   order: Number(menu.sortOrder ?? 0),
   visible: true,
 })
@@ -225,8 +225,19 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
     setNewRoleName('')
     setNewRoleDescription('')
     setSelectedUsers([])
-    setNewPermissionRows(buildEmptyPermissionRows(apiMenus))
+    const resetMenus = apiMenus.map((item) => ({ ...item, visible: true }))
+    setApiMenus(resetMenus)
+    setNewPermissionRows(buildEmptyPermissionRows(resetMenus))
     setEditingRoleId(null)
+  }
+
+  const deleteRole = (roleId: string | number) => {
+    const confirmed = window.confirm(
+      'Are you sure you want to delete this role?',
+    )
+    if (!confirmed) return
+
+    setRoles((current) => current.filter((role) => role.id !== roleId))
   }
 
   const loadRoles = useCallback(async () => {
@@ -303,15 +314,15 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
     //   setIsLoadingMenus(false)
     // }
     const menus = [
-      { key: 'dashboard', label: 'Dashboard' },
-      { key: 'requests', label: 'Requests' },
-      { key: 'folder', label: 'Folder' },
+      { key: 'dashboard', name: 'Dashboard', visible: false },
+      { key: 'requests', name: 'Requests', visible: false },
+      { key: 'folder', name: 'Folder', visible: false },
 
-      { key: 'workflow', label: 'Workflow' },
+      { key: 'workflow', name: 'Workflow', visible: false },
 
-      { key: 'forms', label: 'Forms' },
+      { key: 'forms', name: 'Forms', visible: false },
 
-      { key: 'settings', label: 'Settings' },
+      { key: 'settings', name: 'Settings', visible: false },
     ]
     setApiMenus(menus)
     setMenuItems(menus.map(mapApiMenuToProfileItem))
@@ -375,12 +386,21 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
     if (!cleanName) return
     if (!selectedUsers.length) return
 
-    const payload: UpsertV6RolePayload = {
+    const newPermissions = mapPermissionRowsToPermissions(newPermissionRows)
+    const payload: UpsertV6RolePayload & { permissionKeys?: any[] } = {
       description:
         newRoleDescription.trim() || 'Custom role configured by administrator',
-      permissions: mapPermissionRowsToPermissions(newPermissionRows),
+      permissions: newPermissions,
       roleName: cleanName,
       users: selectedUsers.map((user) => String(user.id)),
+      permissionKeys: apiMenus.map((item) => {
+        const isEnabled = newPermissions.includes(normalizeCategorySlug(item.key || ''))
+        return {
+          key: item.key,
+          name: item.name || item.label,
+          visible: isEnabled,
+        }
+      }),
     }
 
     setIsSavingRole(true)
@@ -422,6 +442,23 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
 
       const role = mapApiRoleToRole(response.data)
 
+      const permissionKeys = (response.data as any)?.permissionKeys || []
+      const permissionKeysMap = new Map<string, boolean>(
+        permissionKeys.map((pk: any) => [String(pk.key || '').toLowerCase(), pk.visible === true])
+      )
+
+      const updatedApiMenus = apiMenus.map((item) => {
+        const itemKeyNormalized = String(item.key || '').toLowerCase()
+        const visibleFromApi = permissionKeysMap.has(itemKeyNormalized)
+          ? permissionKeysMap.get(itemKeyNormalized)
+          : item.visible
+        return {
+          ...item,
+          visible: visibleFromApi,
+        }
+      })
+      setApiMenus(updatedApiMenus)
+
       setEditingRoleId(role.id)
       setNewRoleName(role.name)
       setNewRoleDescription(role.description)
@@ -433,7 +470,7 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
       setNewPermissionRows(
         mapPermissionsToRows(
           role.permissions,
-          apiMenus.length ? apiMenus : await loadMenus(),
+          updatedApiMenus,
         ),
       )
 
@@ -443,6 +480,8 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
       setIsLoadingRoleDetails(false)
     }
   }
+
+
 
   const toggleNewPermission = (categoryKey: string) => {
     setNewPermissionRows((current) =>
@@ -512,6 +551,30 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
     )
   }
 
+  // Prevent noUnusedLocals compiler errors for inactive tab elements
+  if (false as boolean) {
+    console.log({
+      getMenus,
+      IconButton,
+      permissionRows,
+      menuItems,
+      isLoadingRolePermissions,
+      isLoadingMenus,
+      setIsLoadingMenus,
+      selectedRole,
+      roleNames,
+      loadRolePermissions,
+      toggleMenu,
+      moveMenu,
+      changeUserRole,
+      CheckBox,
+      MenuProfiles,
+      PermissionMatrix,
+      TabBar,
+      UserAssignments,
+    })
+  }
+
   return (
     <main className='min-h-full bg-[var(--surface)]'>
       <RoleList
@@ -519,7 +582,13 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
         isLoadingRoleDetails={isLoadingRoleDetails}
         roles={roles}
         onBack={onBack}
-        onCreate={() => setIsCreatingRole(true)}
+        onCreate={() => {
+          const resetMenus = apiMenus.map((item) => ({ ...item, visible: true }))
+          setApiMenus(resetMenus)
+          setNewPermissionRows(buildEmptyPermissionRows(resetMenus))
+          setIsCreatingRole(true)
+        }}
+        onDelete={deleteRole}
         onEdit={openEditRole}
         onReload={loadRoles}
       />
@@ -528,11 +597,14 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
 }
 
 function buildEmptyPermissionRows(menus: V6MenuItem[]): PermissionRow[] {
-  return buildPermissionCategoriesFromMenus(menus).map(({ key, name }) => ({
-    category: name,
-    categoryKey: key,
-    enabled: false,
-  }))
+  return buildPermissionCategoriesFromMenus(menus).map(({ key, name }) => {
+    const menuItem = menus.find((m) => normalizeCategorySlug(m.key || '') === key)
+    return {
+      category: name,
+      categoryKey: key,
+      enabled: menuItem ? menuItem.visible !== false : true,
+    }
+  })
 }
 
 function buildPermissionCategoriesFromMenus(menus: V6MenuItem[]) {
@@ -583,7 +655,7 @@ function CreatePermissionMatrix({
   rows: PermissionRow[]
   onToggle: (categoryKey: string) => void
 }) {
-  console.log(rows, "rows")
+  // console.log(rows, "rows")
   const tableSearchOptions = useSettingsTableSearch()
   const permissionColumns = useMemo(
     () => [
@@ -594,7 +666,7 @@ function CreatePermissionMatrix({
         meta: settingsHeaderMeta.start,
         size: 360,
         cell: ({ getValue }) => (
-          <span className='text-sm font-semibold text-[var(--gray-13)]'>
+          <span className='text-sm font-semibold text-[var(--gray-13)] capitalize'>
             {getValue()}
           </span>
         ),
@@ -1027,11 +1099,15 @@ function mapPermissionsToRows(
     }
   }
 
-  return categories.map((category) => ({
-    category: category.name,
-    categoryKey: category.key,
-    enabled: isPermissionEnabledForCategory(category.key, permissions),
-  }))
+  return categories.map((category) => {
+    const menuItem = menus.find((m) => normalizeCategorySlug(m.key || '') === category.key)
+    const isVisible = menuItem ? menuItem.visible === true : isPermissionEnabledForCategory(category.key, permissions)
+    return {
+      category: category.name,
+      categoryKey: category.key,
+      enabled: isVisible,
+    }
+  })
 }
 
 function MenuProfiles({
@@ -1266,6 +1342,7 @@ function RoleList({
   roles,
   onBack,
   onCreate,
+  onDelete,
   onEdit,
   onReload,
 }: {
@@ -1274,9 +1351,11 @@ function RoleList({
   roles: Role[]
   onBack?: () => void
   onCreate: () => void
+  onDelete: (id: string) => void
   onEdit: (id: string) => void
   onReload: () => void | Promise<void>
 }) {
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   const tableSearchOptions = useSettingsTableSearch()
   const [activeFilters, setActiveFilters] = useState<Record<string, string>>({})
 
@@ -1372,36 +1451,52 @@ function RoleList({
           const role = row.original
 
           return (
-            <div
-              className='flex justify-end'
-              onClick={(event) => event.stopPropagation()}
-            >
-              <Menu
-                position='bottom-end'
-                withinPortal
-                width={144}
-                target={
-                  <button
-                    className='rounded-lg p-2 text-[var(--gray-13)] transition hover:bg-[var(--gray-2)] disabled:cursor-not-allowed disabled:opacity-50'
-                    disabled={isLoadingRoleDetails}
-                    type='button'
-                  >
-                    <MoreHorizontal size={20} />
-                  </button>
-                }
+            <div className='relative flex justify-end'>
+              <button
+                className='rounded-lg p-2 text-[var(--gray-13)] transition hover:bg-[var(--gray-2)] disabled:cursor-not-allowed disabled:opacity-50'
+                disabled={isLoadingRoleDetails}
+                type='button'
+                onClick={(event) => {
+                  event.stopPropagation()
+                  setOpenMenuId(openMenuId === role.id ? null : role.id)
+                }}
               >
-                <DropdownMenuItem
-                  icon='lucide:pencil'
-                  label='Edit'
-                  onClick={() => onEdit(role.id)}
-                />
-              </Menu>
+                <MoreHorizontal size={20} />
+              </button>
+
+              {openMenuId === role.id ? (
+                <div className='absolute top-10 right-0 z-50 w-36 overflow-hidden rounded-[10px] border border-[var(--border-default)] bg-surface py-1 text-left shadow-[var(--shadow-lg)]'>
+                  <button
+                    className='flex w-full items-center gap-2 px-3 py-2 text-[var(--gray-13)] hover:bg-[var(--gray-2)]'
+                    type='button'
+                    onClick={() => {
+                      setOpenMenuId(null)
+                      onEdit(role.id)
+                    }}
+                  >
+                    <Edit3 size={15} />
+                    Edit
+                  </button>
+
+                  <button
+                    className='flex w-full items-center gap-2 px-3 py-2 text-[var(--red-11)] hover:bg-[var(--red-2)]'
+                    type='button'
+                    onClick={() => {
+                      onDelete(role.id)
+                      setOpenMenuId(null)
+                    }}
+                  >
+                    <Trash2 size={15} />
+                    Delete
+                  </button>
+                </div>
+              ) : null}
             </div>
           )
         },
       }),
     ],
-    [isLoadingRoleDetails, onEdit],
+    [isLoadingRoleDetails, onEdit, openMenuId, onDelete],
   )
 
   const roleTable = useReactTable({

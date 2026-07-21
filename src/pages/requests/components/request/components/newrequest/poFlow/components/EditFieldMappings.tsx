@@ -13,14 +13,14 @@ export const SYSTEM_TEMPLATE_COLUMNS = [
   },
   {
     desc: 'Entity supplying goods',
-    key: 'Vendor Name',
-    label: 'Vendor Name',
+    key: 'Supplier',
+    label: 'Supplier',
     required: true,
   },
   {
     desc: 'Supplier physical billing address',
-    key: 'Vendor Address',
-    label: 'Vendor Address',
+    key: 'Supplier Address',
+    label: 'Supplier Address',
     required: true,
   },
   {

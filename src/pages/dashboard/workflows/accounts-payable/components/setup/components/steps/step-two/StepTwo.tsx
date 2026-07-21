@@ -87,9 +87,7 @@ const StepTwo = () => {
     )
   )
 
-  const isGroupingMissing = hasLineItems && !erpSettings.groupingColumn
-
-  const isMappingComplete = isHeaderMappingComplete && isLineItemMappingComplete && !isGroupingMissing
+  const isMappingComplete = isHeaderMappingComplete && isLineItemMappingComplete
 
   const canContinue =
     erpSettings.system === 'PREDEFINED' ||

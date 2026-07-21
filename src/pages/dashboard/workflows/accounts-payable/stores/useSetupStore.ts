@@ -18,6 +18,8 @@ type ErpSettings = {
   isConnecting: boolean
   mapping?: Record<string, string>
   lineItemMapping?: Record<string, string>
+  fieldDataTypes?: Record<string, string>
+  lineItemFieldDataTypes?: Record<string, string>
   lineItemHeaders?: string[]
   lineItemRows?: any[]
   groupingColumn?: string | null
@@ -82,6 +84,8 @@ const initialErpSettings: ErpSettings = {
   isConnecting: false,
   mapping: {},
   lineItemMapping: {},
+  fieldDataTypes: {},
+  lineItemFieldDataTypes: {},
   lineItemHeaders: [],
   lineItemRows: [],
   groupingColumn: null,

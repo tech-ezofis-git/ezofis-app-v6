@@ -3,16 +3,9 @@ import posthog from 'posthog-js'
 import { create } from 'zustand'
 import type { User } from '@/schemas/user'
 import useSetupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
-import { getFromLocalStorage } from '@/utils/local-storage'
+import { getFromLocalStorage, setToLocalStorage } from '@/utils/local-storage'
 
 export type DefaultView = Record<string, unknown>
-export type ShareContext = {
-  shareToken: string
-  sourceItemId: string
-  sourceRepositoryId: string
-  sourceTenantId: string
-  workflowInstanceId?: string
-}
 export type Identity = {
   // V6 fields
   accessToken?: string
@@ -22,15 +15,30 @@ export type Identity = {
   token?: string
   tokenType?: string
 }
-
 export type Session = {
+  configuration?: number | string
   email: string
   firstName: string
   id: string
   lastName?: string
   name?: string
+  permissionKeys?: SessionPermission[] | null
   tenantId: string
-  configuration?: number | string
+}
+export type SessionPermission = {
+  [key: string]: unknown
+  id?: number | string
+  key?: string
+  menu?: string
+  name?: string
+  visible?: boolean
+}
+export type ShareContext = {
+  shareToken: string
+  sourceItemId: string
+  sourceRepositoryId: string
+  sourceTenantId: string
+  workflowInstanceId?: string
 }
 export type SignUpUserData = {
   email: string
@@ -163,20 +171,34 @@ const authUserStore = create<Store>()((set) => {
     setProfileMenu: (menus) => set(() => ({ profileMenus: menus })),
 
     setSession: (session) => {
-      if (session?.id) {
-        posthog.identify(session.id, {
-          email: session.email,
-          name: session.firstName,
-          tenantId: session.tenantId,
+      const nextSession = session
+        ? {
+            ...session,
+            permissionKeys: Array.isArray(session.permissionKeys)
+              ? session.permissionKeys
+              : null,
+          }
+        : null
+
+      if (nextSession?.id) {
+        posthog.identify(nextSession.id, {
+          email: nextSession.email,
+          name: nextSession.firstName,
+          tenantId: nextSession.tenantId,
         })
       }
-      if (session && 'configuration' in session) {
-        const isCompleted = String(session.configuration) !== '0'
+      if (nextSession && 'configuration' in nextSession) {
+        const isCompleted = String(nextSession.configuration) !== '0'
         const setupStoreState = useSetupStore.getState()
         setupStoreState.setisApSetUpCompleted(isCompleted)
         setupStoreState.setRestrictNavigationUntilApSetup(!isCompleted)
       }
-      set(() => ({ session }))
+
+      if (globalThis.window !== undefined && nextSession) {
+        setToLocalStorage(nextSession, 'session')
+      }
+
+      set(() => ({ session: nextSession }))
     },
 
     setShareContext: (context) => set(() => ({ shareContext: context })),

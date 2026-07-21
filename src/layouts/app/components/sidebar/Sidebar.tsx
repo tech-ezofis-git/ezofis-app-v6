@@ -1,4 +1,5 @@
 import { useLingui } from '@lingui/react/macro'
+import authUserStore from '@/stores/authUserStore'
 import type { Menus } from '../../types'
 import SidebarLarge from './sidebar-large/SidebarLarge'
 import SidebarSmall from './sidebar-small/SidebarSmall'
@@ -6,22 +7,29 @@ import SidebarSmall from './sidebar-small/SidebarSmall'
 const Sidebar = () => {
   const { t } = useLingui()
 
+  const sessionPermissions = authUserStore(
+    (state) => state.session?.permissionKeys,
+  )
+
   const menus: Menus = [
     {
       items: [
         {
           icon: 'lucide:layout-dashboard',
           label: t`Dashboard`,
+          permissionKey: 'dashboard',
           route: '/',
         },
         {
           icon: 'lucide:inbox',
           label: t`Requests`,
+          permissionKey: 'requests',
           route: '/requests',
         },
         {
           icon: 'lucide:folder',
           label: 'Folders',
+          permissionKey: 'folder',
           route: '/folders',
         },
         // {
@@ -37,16 +45,19 @@ const Sidebar = () => {
         {
           icon: 'lucide:workflow',
           label: 'Workflows',
+          permissionKey: 'workflow',
           route: '/workflows',
         },
         {
           icon: 'lucide:clipboard-list',
           label: 'Forms',
+          permissionKey: 'forms',
           route: '/forms',
         },
         {
           icon: 'lucide:settings',
           label: 'Settings',
+          permissionKey: 'settings',
           route: '/settings',
         },
         // {
@@ -89,10 +100,33 @@ const Sidebar = () => {
     // },
   ]
 
+  const permissionMap = new Map<string, boolean>(
+    (sessionPermissions || []).map((item) => [
+      item.key ?? '',
+      item.visible === true,
+    ]),
+  )
+
+  const filteredMenu =
+    !sessionPermissions || sessionPermissions.length === 0
+      ? menus
+      : menus
+          .map((section) => ({
+            ...section,
+            items: section.items.filter(
+              (item) =>
+                !item.permissionKey ||
+                permissionMap.get(item.permissionKey) === true,
+            ),
+          }))
+          .filter((section) => section.items.length > 0)
+
+  // console.log(filteredMenu)
+
   return (
     <>
-      <SidebarSmall menus={menus} />
-      <SidebarLarge menus={menus} />
+      <SidebarSmall menus={filteredMenu} />
+      <SidebarLarge menus={filteredMenu} />
     </>
   )
 }

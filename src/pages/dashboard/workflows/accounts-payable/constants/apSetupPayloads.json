@@ -16033,7 +16033,7 @@
           },
           {
             "id": "9KnUW2NMQ9ITcthlVwGBr",
-            "label": "Vendor Name",
+            "label": "Supplier",
             "type": "SHORT_TEXT",
             "settings": {
               "general": {
@@ -16233,7 +16233,7 @@
           },
           {
             "id": "1jy88I9xCKpx1tMgxsMeg",
-            "label": "Vendor Address",
+            "label": "Supplier Address",
             "type": "SHORT_TEXT",
             "settings": {
               "general": {
@@ -27972,7 +27972,7 @@
             "fieldScore": [
               {
                 "id": "U6lnVqTOaJu1aovsCFDyV",
-                "label": "Supplier Name",
+                "label": "Supplier",
                 "value": 25
               },
               {
