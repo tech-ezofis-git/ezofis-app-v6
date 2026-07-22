@@ -1595,6 +1595,9 @@ const Overview = (props: any) => {
     return db.documents[docId]?.relatedDocuments || { status: 'not_run' }
   })
 
+  // Attached Documents State
+  const [attachedDocs, setAttachedDocs] = useState<Record<string, boolean>>({})
+
   // Synchronize state when document ID changes
   useEffect(() => {
     if (!docId) return
@@ -1605,6 +1608,7 @@ const Overview = (props: any) => {
     setRelatedDocsState(
       db.documents[docId]?.relatedDocuments || { status: 'not_run' },
     )
+    setAttachedDocs({})
   }, [docId])
 
   // Tab sync for external updates (e.g. cross-tab events)
@@ -4287,91 +4291,69 @@ const Overview = (props: any) => {
                             <>
                               {/* Related Documents Gated Section */}
                               {relatedDocsState.status === 'not_run' && (
-                                <div className='animate-in fade-in mb-4 rounded-xl border border-[var(--gray-3)] bg-surface p-4 shadow-sm duration-300'>
-                                  <div className='flex flex-col justify-between gap-4 md:flex-row md:items-center'>
-                                    <div className='flex-1 space-y-1'>
-                                      <h4 className='flex items-center gap-1.5 text-xs font-bold text-[var(--gray-13)]'>
-                                        <Icon
-                                          className='h-4 w-4 text-[var(--gray-10)]'
-                                          name='tabler:files'
-                                        />
-                                        Related Documents
-                                      </h4>
-                                      <p className='text-[11px] leading-normal text-[var(--gray-10)]'>
-                                        Run a check to surface similar POs and
-                                        prior invoices from this supplier.
-                                      </p>
-                                    </div>
-                                    <button
-                                      className='inline-flex shrink-0 cursor-pointer items-center justify-center gap-1.5 self-start rounded-lg border-none bg-[var(--primary-9)] px-4 py-2 text-xs font-bold text-white shadow-sm transition-all hover:bg-[var(--primary-10)] active:scale-95 md:self-center'
-                                      onClick={handleFindRelatedDocumentsClick}
-                                    >
-                                      <Icon
-                                        className='h-4 w-4'
-                                        name='tabler:search'
-                                      />
-                                      Find Documents
-                                    </button>
+                                <div className='mb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg border border-[var(--gray-3)] bg-white px-3 py-2 shadow-sm border-l-4 border-l-[var(--primary-9)] animate-in fade-in slide-in-from-bottom-2 duration-500 fill-mode-both'>
+                                  <div className='flex items-center gap-2 text-xs text-[var(--gray-12)]'>
+                                    <Icon name='tabler:sparkles' className='h-4 w-4 text-[var(--primary-9)]' />
+                                    <span><strong className='font-semibold text-[var(--gray-13)]'>AI suggestion</strong> — Check for related purchase orders or invoices for this supplier.</span>
                                   </div>
+                                  <button 
+                                    className='relative inline-flex shrink-0 animate-pulse items-center gap-1.5 rounded-lg border border-[var(--primary-4)] bg-[var(--primary-2)] px-2.5 py-1 text-xs font-bold text-[var(--primary-9)] shadow-sm transition-all hover:scale-[1.02] hover:animate-none hover:bg-[var(--primary-3)] hover:text-[var(--primary-10)] active:scale-95'
+                                    onClick={handleFindRelatedDocumentsClick}
+                                  >
+                                    <Icon name='tabler:wand' className='h-3.5 w-3.5' />
+                                    Check for matches
+                                  </button>
                                 </div>
                               )}
                               {relatedDocsState.status === 'pending' && (
-                                <div className='animate-in fade-in mb-4 rounded-xl border border-[var(--gray-3)] bg-surface p-4 shadow-sm duration-300'>
-                                  <div className='flex items-center gap-3'>
-                                    <Icon
-                                      className='h-5 w-5 animate-spin text-[var(--primary-9)]'
-                                      name='tabler:loader-2'
-                                    />
-                                    <div className='space-y-1'>
-                                      <h4 className='text-xs font-bold text-[var(--gray-13)]'>
-                                        Related Documents
-                                      </h4>
-                                      <p className='animate-pulse text-[11px] font-medium text-[var(--gray-10)]'>
-                                        Searching related documents...
-                                      </p>
-                                    </div>
+                                <div className='mb-3 flex items-center justify-between rounded-lg border border-[var(--gray-3)] bg-white px-3 py-2 shadow-sm border-l-4 border-l-[var(--primary-9)] opacity-70 animate-in fade-in duration-300'>
+                                  <div className='flex items-center gap-2 text-xs text-[var(--gray-12)]'>
+                                    <Icon name='tabler:loader-2' className='h-4 w-4 animate-spin text-[var(--primary-9)]' />
+                                    <span><strong className='font-semibold text-[var(--gray-13)]'>AI is searching</strong> — Checking for related purchase orders or invoices...</span>
                                   </div>
                                 </div>
                               )}
                               {relatedDocsState.status === 'complete' && (
-                                <div className='animate-in fade-in mb-4 rounded-xl border border-[var(--gray-3)] bg-surface p-4 shadow-sm duration-300'>
-                                  <div className='space-y-3'>
-                                    <div className='flex items-center justify-between border-b border-[var(--gray-3)] pb-2'>
-                                      <h4 className='flex items-center gap-1.5 text-xs font-bold text-[var(--gray-13)]'>
-                                        <Icon
-                                          className='h-4 w-4 text-[var(--green-9)]'
-                                          name='tabler:circle-check'
-                                        />
-                                        Related Documents
-                                      </h4>
-                                      <span className='rounded border border-[var(--green-3)] bg-[var(--green-1)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--green-9)]'>
-                                        Completed
-                                      </span>
-                                    </div>
-
-                                    <p className='text-xs leading-relaxed font-medium text-[var(--gray-12)]'>
-                                      {relatedDocsState.data?.summary}
-                                    </p>
-
-                                    <div className='flex flex-wrap gap-2 pt-1'>
-                                      {relatedDocsState.data?.chips?.map(
-                                        (chip: any, idx: number) => (
-                                          <div
-                                            className='inline-flex items-center gap-1.5 rounded-md border border-[var(--gray-3)] bg-[var(--gray-2)] px-2 py-1 text-[11px] font-semibold text-[var(--gray-12)]'
-                                            key={idx}
-                                          >
-                                            <Icon
-                                              className='h-3 w-3 text-[var(--gray-10)]'
-                                              name='tabler:file-text'
-                                            />
-                                            <span>{chip.id}</span>
-                                            <span className='text-[10px] font-normal text-[var(--gray-9)]'>
-                                              ({chip.date})
-                                            </span>
+                                <div className='mb-3 rounded-xl border border-[var(--gray-3)] bg-white p-3.5 shadow-sm animate-in fade-in zoom-in-95 duration-500 fill-mode-both'>
+                                  <div className='mb-2.5 text-xs text-[var(--gray-12)]'>
+                                    {relatedDocsState.data?.chips?.length} matches found for <strong className='font-semibold'>{supplierName}</strong>
+                                  </div>
+                                  <div className='flex flex-wrap items-center gap-2'>
+                                    {relatedDocsState.data?.chips?.map((rawChip: any, idx: number) => {
+                                      const chip = {
+                                        ...rawChip,
+                                        type: rawChip.type || (rawChip.id.includes('PO') ? 'PO' : 'INV'),
+                                        confidence: rawChip.confidence || (idx === 0 ? 92 : idx === 1 ? 88 : 74),
+                                      };
+                                      return (
+                                        <div className='flex items-center rounded-xl border border-[var(--gray-3)] bg-white py-1 pl-2.5 pr-1 text-xs transition-colors hover:border-[var(--gray-4)] shadow-sm' key={chip.id}>
+                                          <div className='flex items-center gap-1.5 border-r border-[var(--gray-3)] pr-2'>
+                                            <div className='flex h-5 w-5 shrink-0 items-center justify-center rounded bg-red-2'>
+                                              <Icon name='tabler:file-type-pdf' className='h-3.5 w-3.5 text-red-9' />
+                                            </div>
+                                            <button 
+                                              className='font-semibold text-[var(--gray-13)] hover:text-[var(--primary-9)] hover:underline truncate hover:whitespace-normal break-all max-w-[120px] sm:max-w-[160px] text-left transition-colors'
+                                              title='View Document'
+                                            >
+                                              {chip.id}.pdf
+                                            </button>
+                                            <span className='text-[var(--gray-9)] tabular-nums text-[11px] shrink-0'>{chip.confidence}%</span>
                                           </div>
-                                        ),
-                                      )}
-                                    </div>
+                                          <div className='flex items-center gap-0.5 pl-1.5 shrink-0'>
+                                            <button 
+                                              className={cn(
+                                                'flex h-6 w-6 items-center justify-center rounded-full transition-colors',
+                                                attachedDocs[chip.id] ? 'bg-[var(--green-2)] text-[var(--green-9)]' : 'text-[var(--primary-9)] hover:bg-[var(--primary-2)]'
+                                              )}
+                                              title={attachedDocs[chip.id] ? 'Attached' : 'Attach to invoice'}
+                                              onClick={() => setAttachedDocs(prev => ({ ...prev, [chip.id]: !prev[chip.id] }))}
+                                            >
+                                              <Icon name={attachedDocs[chip.id] ? 'tabler:check' : 'tabler:plus'} className='h-3.5 w-3.5' />
+                                            </button>
+                                          </div>
+                                        </div>
+                                      )
+                                    })}
                                   </div>
                                 </div>
                               )}
@@ -4380,10 +4362,12 @@ const Overview = (props: any) => {
                                 enabled={true}
                                 formModel={formModel}
                                 instanceId={resolvedInstanceId}
+                                initialData={attachmentData || selectedItem?.attachments || []}
                                 processId={processId}
                                 selectedItem={selectedItem}
                                 transactionId={transactionId}
                                 workflowId={workflowId}
+                                mockAiDocs={Object.keys(attachedDocs).filter(k => attachedDocs[k])}
                                 repositoryId={
                                   repositoryId || selectedItem?.repositoryId
                                 }
