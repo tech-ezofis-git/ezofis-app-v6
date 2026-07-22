@@ -26,6 +26,9 @@ import Pagination from '@/components/base/pagination/Pagination'
 import showToast from '@/components/base/toast/showToast'
 import CustomFilter from '@/components/common/CustomFilter'
 import {
+  matchesCategoryFilterValue,
+} from '@/utils/filterUtils'
+import {
   dummySettingsUsers,
   getDummyGroupOptions,
 } from '../data/settingsDummyData'
@@ -238,7 +241,16 @@ export default function ManageUser({ onBack }: ManageUserProps) {
       Object.entries(activeFilters).forEach(([key, value]) => {
         if (!value) return
 
-        if (
+        if (key === 'name') {
+          const fullName = `${user.firstName} ${user.lastName}`.trim()
+          const haystack = `${fullName} ${user.email}`
+          if (
+            !matchesCategoryFilterValue(haystack, value, 'contains') &&
+            !matchesCategoryFilterValue(fullName, value)
+          ) {
+            matches = false
+          }
+        } else if (
           key === 'role' ||
           key === 'loginType' ||
           key === 'department' ||
@@ -247,8 +259,14 @@ export default function ManageUser({ onBack }: ManageUserProps) {
           key === 'location' ||
           key === 'jobTitle'
         ) {
-          const userVal = String(user[key as keyof AppUser] || '')
-          if (userVal.toLowerCase() !== value.toLowerCase()) matches = false
+          if (
+            !matchesCategoryFilterValue(
+              user[key as keyof AppUser],
+              value,
+            )
+          ) {
+            matches = false
+          }
         }
       })
       return matches
@@ -471,7 +489,7 @@ export default function ManageUser({ onBack }: ManageUserProps) {
           header: 'Name',
           id: 'name',
           meta: { ...settingsHeaderMeta.start, label: 'Name' },
-          minSize: 200,
+          minSize: 40,
           size: 260,
           cell: ({ row }) => {
             const user = row.original
@@ -495,7 +513,7 @@ export default function ManageUser({ onBack }: ManageUserProps) {
         header: 'Department',
         id: 'department',
         meta: { ...settingsHeaderMeta.start, label: 'Department' },
-        minSize: 120,
+        minSize: 40,
         size: 140,
         cell: ({ getValue }) => <span>{String(getValue() || '—')}</span>,
       }),
@@ -509,7 +527,7 @@ export default function ManageUser({ onBack }: ManageUserProps) {
           disableEllipsis: true,
           label: 'Role',
         },
-        minSize: 130,
+        minSize: 40,
         size: 150,
         cell: ({ getValue }) => (
           <span className='inline-flex items-center rounded-[10px] border border-[var(--border-default)] bg-surface px-3 py-1 font-medium text-[var(--gray-13)]'>
@@ -527,7 +545,7 @@ export default function ManageUser({ onBack }: ManageUserProps) {
           disableEllipsis: true,
           label: 'Status',
         },
-        minSize: 100,
+        minSize: 40,
         size: 110,
         cell: ({ getValue }) => <StatusBadge status={getValue()} />,
       }),
@@ -537,7 +555,7 @@ export default function ManageUser({ onBack }: ManageUserProps) {
         header: 'Login Type',
         id: 'loginType',
         meta: settingsHeaderMeta.start,
-        minSize: 120,
+        minSize: 40,
         size: 140,
         cell: ({ getValue }) => <span>{String(getValue() || '—')}</span>,
       }),
@@ -547,7 +565,7 @@ export default function ManageUser({ onBack }: ManageUserProps) {
         header: 'Last Login',
         id: 'lastLogin',
         meta: settingsHeaderMeta.start,
-        minSize: 110,
+        minSize: 40,
         size: 120,
         cell: ({ getValue }) => <span>{String(getValue() || '—')}</span>,
       }),
@@ -557,7 +575,7 @@ export default function ManageUser({ onBack }: ManageUserProps) {
         header: 'Created',
         id: 'created',
         meta: settingsHeaderMeta.start,
-        minSize: 110,
+        minSize: 40,
         size: 120,
         cell: ({ getValue }) => <span>{String(getValue() || '—')}</span>,
       }),
@@ -650,6 +668,20 @@ export default function ManageUser({ onBack }: ManageUserProps) {
       ),
     [users],
   )
+  const nameOptions = useMemo(
+    () =>
+      users
+        .map((u) => {
+          const label = `${u.firstName} ${u.lastName}`.trim()
+          return label ? { label, value: label } : null
+        })
+        .filter(Boolean)
+        .sort((a, b) => a!.label.localeCompare(b!.label)) as {
+        label: string
+        value: string
+      }[],
+    [users],
+  )
   const loginTypeOptions = useMemo(
     () =>
       Array.from(
@@ -706,7 +738,7 @@ export default function ManageUser({ onBack }: ManageUserProps) {
   return (
     <main className='flex h-full flex-col bg-[var(--surface)]'>
       <section className='flex flex-1 flex-col'>
-        <SettingsPageHeader title='User Management' />
+        <SettingsPageHeader title='User Management' onBack={onBack} />
 
         <div className='flex flex-1 flex-col overflow-hidden px-6 py-2 md:px-8'>
           <CustomFilter
@@ -730,6 +762,13 @@ export default function ManageUser({ onBack }: ManageUserProps) {
               onClick: openAddUser,
             }}
             filters={[
+              {
+                id: 'name',
+                label: 'Name',
+                options: nameOptions,
+                searchable: true,
+                searchPlaceholder: 'Search name...',
+              },
               { id: 'role', label: 'Role', options: roleOptions },
               { id: 'status', label: 'Status', options: statusOptions },
             ]}
@@ -754,7 +793,6 @@ export default function ManageUser({ onBack }: ManageUserProps) {
               Object.keys(activeFilters).some((k) => activeFilters[k]) ||
               !!tableSearchOptions.state.globalFilter?.value
             }
-            onBack={onBack}
             onFilterChange={(id, val) =>
               setActiveFilters((prev) => ({ ...prev, [id]: val }))
             }

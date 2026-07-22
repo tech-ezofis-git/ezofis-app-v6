@@ -20,6 +20,7 @@ import MenuItem from '@/components/base/menu/MenuItem'
 import Pagination from '@/components/base/pagination/Pagination'
 import showToast from '@/components/base/toast/showToast'
 import CustomFilter from '@/components/common/CustomFilter'
+import { matchesCategoryFilterValue } from '@/utils/filterUtils'
 import {
   getFieldRequiredError,
   getMissingRequiredLabels,
@@ -114,9 +115,12 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
       let matches = true
       Object.entries(activeFilters).forEach(([key, value]) => {
         if (!value) return
-        if (key === 'status') {
-          if (String(group.status).toLowerCase() !== value.toLowerCase())
+        if (key === 'name') {
+          if (!matchesCategoryFilterValue(group.name, value, 'contains')) {
             matches = false
+          }
+        } else if (key === 'status') {
+          if (!matchesCategoryFilterValue(group.status, value)) matches = false
         }
       })
       return matches
@@ -301,7 +305,7 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
           header: 'Group',
           id: 'group',
           meta: { ...settingsHeaderMeta.start, label: 'Group' },
-          minSize: 200,
+          minSize: 40,
           size: 240,
           cell: ({ row }) => {
             const group = row.original
@@ -324,7 +328,7 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
         header: 'Description',
         id: 'description',
         meta: { ...settingsHeaderMeta.start, label: 'Description' },
-        minSize: 180,
+        minSize: 40,
         size: 220,
         cell: ({ getValue }) => (
           <span className='block max-w-full truncate'>
@@ -341,7 +345,7 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
           disableEllipsis: true,
           label: 'Members',
         },
-        minSize: 100,
+        minSize: 40,
         size: 110,
         cell: ({ row }) => (
           <span className='inline-flex items-center rounded-[10px] border border-[var(--border-default)] bg-surface px-3 py-1 font-medium text-[var(--gray-13)]'>
@@ -358,7 +362,7 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
           disableEllipsis: true,
           label: 'Status',
         },
-        minSize: 100,
+        minSize: 40,
         size: 110,
         cell: ({ getValue }) => <StatusBadge status={getValue()} />,
       }),
@@ -367,7 +371,7 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
         header: 'Created',
         id: 'created',
         meta: settingsHeaderMeta.start,
-        minSize: 110,
+        minSize: 40,
         size: 120,
         cell: ({ getValue }) => <span>{String(getValue() || '—')}</span>,
       }),
@@ -508,6 +512,17 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
               onClick: openCreateGroup,
             }}
             filters={[
+              {
+                id: 'name',
+                label: 'Name',
+                options: groups
+                  .map((g) => String(g.name || '').trim())
+                  .filter(Boolean)
+                  .sort((a, b) => a.localeCompare(b))
+                  .map((name) => ({ label: name, value: name })),
+                searchable: true,
+                searchPlaceholder: 'Search name...',
+              },
               { id: 'status', label: 'Status', options: statusOptions },
             ]}
             showReset={

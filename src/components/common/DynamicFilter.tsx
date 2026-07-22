@@ -22,6 +22,21 @@ import { FilterToolbar, type ToolbarAction } from './filters/FilterToolbar'
 const FILTER_MENU_Z_INDEX = 50000
 const VIEWPORT_GAP = 8
 
+/** Shared chip shell — same size for default and added filter columns */
+const FILTER_CHIP_SHELL =
+  'inline-flex h-[30px] max-w-[280px] items-center gap-1 rounded-full border py-0 pl-3.5 text-12 font-medium transition-all'
+const FILTER_CHIP_ACTIVE =
+  'border-primary-9 bg-primary-3/50 text-primary-9'
+const FILTER_CHIP_INACTIVE =
+  'border-border-default bg-surface text-text-secondary'
+const FILTER_CHIP_CLEAR_BTN =
+  'inline-flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-full text-current opacity-60 transition-colors hover:bg-gray-3 hover:opacity-100'
+const FILTER_CHIP_COUNT =
+  'inline-flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-gray-3 px-1 text-10 font-medium text-text-primary tabular-nums'
+/** Keeps chip trailing space equal when no chevron / remove icon */
+const FILTER_CHIP_TRAILING =
+  'inline-flex size-5 shrink-0 items-center justify-center'
+
 export interface DynamicFilterField {
   id: string
   label: string
@@ -57,7 +72,7 @@ export interface QuickFilterOption {
   count?: number
   icon?: string
   options?: { label: string; value: string }[]
-  type?: 'date' | 'category'
+  type?: 'date' | 'category' | 'number'
 }
 
 export default function DynamicFilter({
@@ -246,22 +261,110 @@ export default function DynamicFilter({
       <div className='flex min-w-0 flex-1 flex-wrap items-center gap-2'>
         {quickFilters &&
           quickFilters.map((qf) => {
+            const prefixedValues =
+              activeQuickFilters
+                ?.filter((f) => f.startsWith(`${qf.id}:`))
+                .map((f) => f.replace(`${qf.id}:`, '')) || []
+            const amountValues =
+              qf.type === 'number'
+                ? activeQuickFilters
+                    ?.filter((f) => f.startsWith('amount:'))
+                    .map((f) => f.replace('amount:', '')) || []
+                : []
             const isActive =
               activeQuickFilters?.includes(qf.id) ||
               (qf.options &&
-                qf.options.some((opt) =>
-                  activeQuickFilters?.includes(opt.value),
-                ))
+                qf.options.some(
+                  (opt) =>
+                    activeQuickFilters?.includes(opt.value) ||
+                    prefixedValues.includes(opt.value) ||
+                    amountValues.includes(opt.value),
+                )) ||
+              prefixedValues.some((v) => v.startsWith('custom:')) ||
+              amountValues.some((v) => v.startsWith('custom:')) ||
+              (qf.type === 'number' && amountValues.length > 0)
             const isOpen = activeDropdown === `quick_${qf.id}`
+
+            let chipLabel = qf.label
+            let chipCount = 0
+            if (qf.type === 'date' && prefixedValues.length > 0) {
+              const selected = prefixedValues[0]
+              chipCount = prefixedValues.length
+              if (selected.startsWith('custom:')) {
+                const [start = '', end = ''] = selected
+                  .replace('custom:', '')
+                  .split('_')
+                const formatChipDate = (value: string) => {
+                  const parsed = new Date(value)
+                  if (Number.isNaN(parsed.getTime())) return value
+                  return parsed.toLocaleDateString('en-GB', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric',
+                  })
+                }
+                chipLabel = `${qf.label} : ${formatChipDate(start)} – ${formatChipDate(end)}`
+              } else {
+                const opt = qf.options?.find((o) => o.value === selected)
+                const optLabel = opt?.label || selected
+                // "All" stays as just the filter name (active), not "Filter : All"
+                chipLabel =
+                  optLabel.toLowerCase() === 'all'
+                    ? qf.label
+                    : `${qf.label} : ${optLabel}`
+              }
+            } else if (qf.type === 'number' && amountValues.length > 0) {
+              chipCount = amountValues.length
+              const customSelected = amountValues.find((v) =>
+                v.startsWith('custom:'),
+              )
+              if (customSelected) {
+                const [min = '', max = ''] = customSelected
+                  .replace('custom:', '')
+                  .split('-')
+                chipLabel = `${qf.label} : $${min} – $${max}`
+              } else {
+                const selectedOpts = amountValues
+                  .map((v) => qf.options?.find((o) => o.value === v))
+                  .filter(Boolean) as { label: string; value: string }[]
+                if (selectedOpts.length >= 1) {
+                  const optLabel = selectedOpts[0].label
+                  chipLabel =
+                    optLabel.toLowerCase() === 'all'
+                      ? qf.label
+                      : `${qf.label} : ${optLabel}`
+                } else if (amountValues.length >= 1) {
+                  chipLabel = `${qf.label} : ${amountValues[0]}`
+                }
+              }
+            } else if (qf.options?.length) {
+              const selectedOpts = qf.options.filter(
+                (opt) =>
+                  activeQuickFilters?.includes(opt.value) ||
+                  prefixedValues.includes(opt.value),
+              )
+              chipCount = selectedOpts.length
+              if (selectedOpts.length >= 1) {
+                const optLabel = selectedOpts[0].label
+                chipLabel =
+                  optLabel.toLowerCase() === 'all'
+                    ? qf.label
+                    : `${qf.label} : ${optLabel}`
+              }
+            }
 
             return (
               <div className='relative' key={qf.id}>
                 <button
                   className={cn(
-                    'flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1.5 text-12 font-medium transition-all',
+                    FILTER_CHIP_SHELL,
+                    'cursor-pointer gap-1.5',
+                    qf.options ? 'pr-1.5' : 'pr-3.5',
                     isActive || isOpen
-                      ? 'border-[var(--primary-9)] bg-[var(--primary-3)] text-[var(--primary-9)]'
-                      : 'border-[var(--border-default)] bg-surface text-[var(--text-secondary)] hover:bg-gray-3 dark:hover:bg-gray-10',
+                      ? FILTER_CHIP_ACTIVE
+                      : FILTER_CHIP_INACTIVE,
+                    !(isActive || isOpen) &&
+                      'hover:bg-gray-3 dark:hover:bg-gray-10',
                   )}
                   ref={(el) => {
                     buttonRefs.current[`quick_${qf.id}`] = el
@@ -275,31 +378,24 @@ export default function DynamicFilter({
                   }}
                 >
                   {qf.icon && (
-                    <Icon className='size-4 shrink-0' name={qf.icon} />
+                    <Icon className='size-3.5 shrink-0' name={qf.icon} />
                   )}
-                  <span>{qf.label}</span>
-                  {qf.count !== undefined && (
-                    <span
-                      className={cn(
-                        'text-10 flex items-center justify-center rounded-full px-1.5 py-0.5 font-bold',
-                        isActive
-                          ? 'bg-[var(--primary-4)] text-[var(--primary-9)]'
-                          : 'bg-gray-3 text-gray-11',
-                      )}
-                    >
-                      {qf.count}
+                  <span className='truncate'>{chipLabel}</span>
+                  {chipCount > 1 && (
+                    <span className={FILTER_CHIP_COUNT}>{chipCount}</span>
+                  )}
+                  {qf.options ? (
+                    <span className={FILTER_CHIP_TRAILING}>
+                      <ChevronDown className='h-3 w-3 opacity-60' />
                     </span>
-                  )}
-                  {qf.options && (
-                    <ChevronDown className='h-3.5 w-3.5 shrink-0 opacity-60' />
-                  )}
+                  ) : null}
                 </button>
 
                 {isOpen &&
                   dropdownPos &&
                   createPortal(
                     <div
-                      className='animate-in fade-in slide-in-from-top-2 fixed rounded-lg border border-border-default bg-surface shadow-md'
+                      className='animate-in fade-in slide-in-from-top-2 fixed overflow-hidden rounded-lg border border-border-default bg-surface shadow-md'
                       ref={dropdownPanelRef}
                       style={{
                         left: dropdownPos.left,
@@ -307,76 +403,122 @@ export default function DynamicFilter({
                         zIndex: FILTER_MENU_Z_INDEX,
                       }}
                     >
-                      <div className='flex w-56 flex-col gap-1 bg-surface p-2'>
-                        {qf.type === 'date' ? (
-                          <DateFilterMenu
-                            options={qf.options || []}
-                            selectedValues={
+                      {qf.type === 'date' ? (
+                        <DateFilterMenu
+                          options={qf.options || []}
+                          selectedValues={
+                            activeQuickFilters
+                              ?.filter((f) => f.startsWith(`${qf.id}:`))
+                              .map((f) => f.replace(`${qf.id}:`, '')) || []
+                          }
+                          onChange={(newValues) => {
+                            const oldValues =
                               activeQuickFilters
                                 ?.filter((f) => f.startsWith(`${qf.id}:`))
                                 .map((f) => f.replace(`${qf.id}:`, '')) || []
-                            }
-                            onChange={(newValues) => {
-                              const oldValues =
-                                activeQuickFilters
-                                  ?.filter((f) => f.startsWith(`${qf.id}:`))
-                                  .map((f) => f.replace(`${qf.id}:`, '')) || []
-                              const added = newValues.filter(
-                                (v) => !oldValues.includes(v),
-                              )
-                              const removed = oldValues.filter(
-                                (v) => !newValues.includes(v),
-                              )
+                            const added = newValues.filter(
+                              (v) => !oldValues.includes(v),
+                            )
+                            const removed = oldValues.filter(
+                              (v) => !newValues.includes(v),
+                            )
 
-                              added.forEach((v) =>
-                                onQuickFilterToggle?.(`${qf.id}:${v}`),
-                              )
-                              removed.forEach((v) =>
-                                onQuickFilterToggle?.(`${qf.id}:${v}`),
-                              )
-                            }}
-                            onClear={() => {
-                              const oldValues =
-                                activeQuickFilters
-                                  ?.filter((f) => f.startsWith(`${qf.id}:`))
-                                  .map((f) => f.replace(`${qf.id}:`, '')) || []
-                              oldValues.forEach((v) =>
-                                onQuickFilterToggle?.(`${qf.id}:${v}`),
-                              )
-                            }}
-                          />
-                        ) : (
-                          <div className='ez-scrollbar flex max-h-[220px] flex-col gap-0.5 overflow-y-auto'>
-                            {qf.options?.map((opt) => {
-                              const isSelected = activeQuickFilters?.includes(
-                                opt.value,
-                              )
-                              return (
-                                <label
-                                  key={opt.value}
-                                  className={cn(
-                                    'flex cursor-pointer items-center justify-between rounded px-2.5 py-1.5 text-12 font-medium transition-colors hover:bg-gray-2',
-                                    isSelected &&
-                                      'bg-primary-3/30 text-primary-9',
-                                  )}
-                                >
-                                  <div className='flex items-center gap-2'>
-                                    <input
-                                      checked={isSelected}
-                                      className='accent-primary-9'
-                                      type='checkbox'
-                                      onChange={() =>
-                                        onQuickFilterToggle?.(opt.value)
-                                      }
-                                    />
-                                    <span>{opt.label}</span>
-                                  </div>
-                                </label>
-                              )
-                            })}
-                          </div>
-                        )}
-                      </div>
+                            added.forEach((v) =>
+                              onQuickFilterToggle?.(`${qf.id}:${v}`),
+                            )
+                            removed.forEach((v) =>
+                              onQuickFilterToggle?.(`${qf.id}:${v}`),
+                            )
+                          }}
+                          onClear={() => {
+                            const oldValues =
+                              activeQuickFilters
+                                ?.filter((f) => f.startsWith(`${qf.id}:`))
+                                .map((f) => f.replace(`${qf.id}:`, '')) || []
+                            oldValues.forEach((v) =>
+                              onQuickFilterToggle?.(`${qf.id}:${v}`),
+                            )
+                          }}
+                        />
+                      ) : qf.type === 'number' ? (
+                        <NumberFilterMenu
+                          options={qf.options || []}
+                          selectedValues={
+                            activeQuickFilters
+                              ?.filter((f) => f.startsWith('amount:'))
+                              .map((f) => f.replace('amount:', '')) || []
+                          }
+                          onChange={(newValues) => {
+                            const oldValues =
+                              activeQuickFilters
+                                ?.filter((f) => f.startsWith('amount:'))
+                                .map((f) => f.replace('amount:', '')) || []
+                            const added = newValues.filter(
+                              (v) => !oldValues.includes(v),
+                            )
+                            const removed = oldValues.filter(
+                              (v) => !newValues.includes(v),
+                            )
+
+                            added.forEach((v) =>
+                              onQuickFilterToggle?.(`amount:${v}`),
+                            )
+                            removed.forEach((v) =>
+                              onQuickFilterToggle?.(`amount:${v}`),
+                            )
+                          }}
+                          onClear={() => {
+                            const oldValues =
+                              activeQuickFilters?.filter((f) =>
+                                f.startsWith('amount:'),
+                              ) || []
+                            oldValues.forEach((v) =>
+                              onQuickFilterToggle?.(v),
+                            )
+                            if (activeQuickFilters?.includes('highValue')) {
+                              onQuickFilterToggle?.('highValue')
+                            }
+                          }}
+                        />
+                      ) : (
+                        <CategoryFilterMenu
+                          label={qf.label}
+                          options={qf.options || []}
+                          selectedValues={
+                            qf.options
+                              ?.map((opt) => opt.value)
+                              .filter((v) =>
+                                activeQuickFilters?.includes(v),
+                              ) || []
+                          }
+                          onChange={(newValues) => {
+                            const optionValues =
+                              qf.options?.map((opt) => opt.value) || []
+                            const oldValues = optionValues.filter((v) =>
+                              activeQuickFilters?.includes(v),
+                            )
+                            const added = newValues.filter(
+                              (v) => !oldValues.includes(v),
+                            )
+                            const removed = oldValues.filter(
+                              (v) => !newValues.includes(v),
+                            )
+
+                            added.forEach((v) => onQuickFilterToggle?.(v))
+                            removed.forEach((v) => onQuickFilterToggle?.(v))
+                          }}
+                          onClear={() => {
+                            const optionValues =
+                              qf.options?.map((opt) => opt.value) || []
+                            optionValues
+                              .filter((v) => activeQuickFilters?.includes(v))
+                              .forEach((v) => onQuickFilterToggle?.(v))
+                            if (activeQuickFilters?.includes(qf.id)) {
+                              onQuickFilterToggle?.(qf.id)
+                            }
+                          }}
+                        />
+                      )}
                     </div>,
                     document.body,
                   )}
@@ -394,14 +536,20 @@ export default function DynamicFilter({
           const isOpen = activeDropdown === field.id
           const isOptional = optionalFields.some((f) => f.id === field.id)
           let displayLabel = field.label
-          let badgeCount = 0
           if (activeValues.length === 1) {
             const opt = options.find((o) => o.value === activeValues[0])
-            displayLabel = `${field.label}: ${opt ? opt.label : activeValues[0]}`
+            const optLabel = opt ? opt.label : activeValues[0]
+            displayLabel =
+              optLabel.toLowerCase() === 'all'
+                ? field.label
+                : `${field.label}: ${optLabel}`
           } else if (activeValues.length > 1) {
             const firstOpt = options.find((o) => o.value === activeValues[0])
-            displayLabel = `${field.label}: ${firstOpt ? firstOpt.label : activeValues[0]}`
-            badgeCount = activeValues.length - 1
+            const optLabel = firstOpt ? firstOpt.label : activeValues[0]
+            displayLabel =
+              optLabel.toLowerCase() === 'all'
+                ? field.label
+                : `${field.label}: ${optLabel}`
           }
 
           return (
@@ -411,10 +559,11 @@ export default function DynamicFilter({
             >
               <div
                 className={cn(
-                  'flex max-w-[280px] items-center gap-1 rounded-full border py-1 pr-1.5 pl-3.5 text-12 font-medium transition-all',
+                  FILTER_CHIP_SHELL,
+                  'pr-1.5',
                   isActive || isOpen
-                    ? 'border-primary-9 bg-primary-3/50 text-primary-9'
-                    : 'border-border-default bg-surface text-text-secondary',
+                    ? FILTER_CHIP_ACTIVE
+                    : FILTER_CHIP_INACTIVE,
                 )}
               >
                 <button
@@ -425,17 +574,21 @@ export default function DynamicFilter({
                   onClick={() => setActiveDropdown(isOpen ? null : field.id)}
                 >
                   <span className='truncate'>{displayLabel}</span>
-                  {badgeCount > 0 && (
-                    <span className='text-10 flex h-4 items-center justify-center rounded-full bg-primary-9 px-1.5 font-bold text-white shadow-sm'>
-                      +{badgeCount}
+                  {activeValues.length > 1 && (
+                    <span className={FILTER_CHIP_COUNT}>
+                      {activeValues.length}
                     </span>
                   )}
-                  <ChevronDown className='h-3 w-3 shrink-0 opacity-60' />
+                  {!isOptional && (
+                    <span className={FILTER_CHIP_TRAILING}>
+                      <ChevronDown className='h-3 w-3 opacity-60' />
+                    </span>
+                  )}
                 </button>
                 {isOptional && (
                   <button
                     aria-label={`Remove ${field.label} filter`}
-                    className='ml-0.5 rounded-full p-0.5 hover:bg-gray-3'
+                    className={FILTER_CHIP_CLEAR_BTN}
                     type='button'
                     onClick={(e) => {
                       e.stopPropagation()
@@ -446,7 +599,7 @@ export default function DynamicFilter({
                       setActiveDropdown(null)
                     }}
                   >
-                    <X className='h-3 w-3 opacity-60' />
+                    <X className='h-3 w-3' />
                   </button>
                 )}
               </div>
@@ -513,7 +666,7 @@ export default function DynamicFilter({
                 aria-label='Add filter'
                 type='button'
                 className={cn(
-                  'flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border border-dashed transition-all',
+                  'inline-flex h-[30px] w-[30px] shrink-0 cursor-pointer items-center justify-center rounded-full border transition-all',
                   activeDropdown === 'add_filter'
                     ? 'border-primary-9 bg-primary-3/50 text-primary-9'
                     : 'border-border-default bg-surface text-text-secondary hover:bg-gray-2',
@@ -586,17 +739,25 @@ export default function DynamicFilter({
         )}
 
         {onClearAll &&
-          // Check if any quick filters or dropdown filters are active
           ((activeQuickFilters && activeQuickFilters.length > 0) ||
+            addedFieldIds.length > 0 ||
             Object.values(activeFilters).some((v) =>
               Array.isArray(v) ? v.length > 0 : Boolean(v),
             )) && (
             <button
-              className='flex items-center gap-1.5 rounded-full border border-border-default bg-surface px-3 py-1.5 text-12 font-medium text-text-secondary transition-colors hover:bg-gray-2 hover:text-text-primary'
-              onClick={onClearAll}
+              className='cursor-pointer px-1 text-12 font-medium text-text-secondary transition-colors hover:text-text-primary hover:underline'
+              type='button'
+              onClick={() => {
+                // Remove newly added filter columns; keep default fields only
+                if (addedFieldIds.length > 0) {
+                  addedFieldIds.forEach((id) => onFilterChange(id, []))
+                  setAddedFieldIds([])
+                }
+                setActiveDropdown(null)
+                onClearAll()
+              }}
             >
-              <X className='h-3.5 w-3.5' />
-              Clear Filters
+              Reset
             </button>
           )}
       </div>

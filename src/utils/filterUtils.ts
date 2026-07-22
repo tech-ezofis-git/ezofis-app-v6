@@ -201,3 +201,165 @@ export function generateNumericBuckets(
     value: `${b.min}-${b.max}`,
   }))
 }
+
+/** Multi-select values stored in CustomFilter string API */
+export const FILTER_MULTI_SEP = '|'
+
+export const DEFAULT_DATE_RANGE_OPTIONS: FilterOption[] = [
+  { label: 'Today', value: 'today' },
+  { label: 'This week', value: 'this_week' },
+  { label: 'Last week', value: 'last_week' },
+  { label: 'This month', value: 'this_month' },
+  { label: 'Last month', value: 'last_month' },
+  { label: 'Last 3 months', value: 'last_3_months' },
+  { label: 'Last 6 months', value: 'last_6_months' },
+  { label: 'This year', value: 'this_year' },
+  { label: 'Last year', value: 'last_year' },
+  { label: 'Custom range', value: 'custom' },
+]
+
+export function parseFilterValues(
+  value: string | string[] | null | undefined,
+): string[] {
+  if (value == null || value === '') return []
+  if (Array.isArray(value)) return value.map(String).filter(Boolean)
+  const raw = String(value)
+  if (raw.includes(FILTER_MULTI_SEP)) {
+    return raw.split(FILTER_MULTI_SEP).map((v) => v.trim()).filter(Boolean)
+  }
+  return [raw]
+}
+
+export function serializeFilterValues(values: string[]): string {
+  return values.filter(Boolean).join(FILTER_MULTI_SEP)
+}
+
+export function isDateColumnType(dataType?: string) {
+  const normalized = String(dataType || '')
+    .trim()
+    .toLowerCase()
+  return (
+    normalized === 'date' ||
+    normalized === 'datetime' ||
+    normalized.includes('date')
+  )
+}
+
+export function isNumberColumnType(dataType?: string) {
+  const normalized = String(dataType || '')
+    .trim()
+    .toLowerCase()
+  return (
+    normalized === 'number' ||
+    normalized === 'numeric' ||
+    normalized === 'int' ||
+    normalized === 'integer' ||
+    normalized === 'decimal' ||
+    normalized === 'float' ||
+    normalized === 'currency' ||
+    normalized === 'amount' ||
+    normalized.includes('number')
+  )
+}
+
+const parseDay = (dateStr: string): Date | null => {
+  if (!dateStr || dateStr === '-') return null
+  if (dateStr.includes('T')) {
+    const [y, m, d] = dateStr.split('T')[0].split('-').map(Number)
+    if (!y || !m || !d) return null
+    return new Date(y, m - 1, d)
+  }
+  if (dateStr.includes('-')) {
+    const [y, m, d] = dateStr.split('-').map(Number)
+    if (!y || !m || !d) return null
+    return new Date(y, m - 1, d)
+  }
+  const fallback = new Date(dateStr)
+  if (Number.isNaN(fallback.getTime())) return null
+  return new Date(
+    fallback.getFullYear(),
+    fallback.getMonth(),
+    fallback.getDate(),
+  )
+}
+
+/** Match a row date against a date-range preset or custom:start_end value. */
+export function matchesDateRangeValue(
+  rowDateStr: string | null | undefined,
+  val: string,
+): boolean {
+  if (!val) return true
+  const rowDay = parseDay(String(rowDateStr || '').split('T')[0])
+  if (!rowDay) return false
+
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const t = rowDay.getTime()
+  const dayMs = 86400000
+
+  if (val.startsWith('custom:')) {
+    const [startStr, endStr] = val.replace('custom:', '').split('_')
+    const start = parseDay(startStr)
+    const end = parseDay(endStr)
+    if (!start || !end) return false
+    return t >= start.getTime() && t <= end.getTime()
+  }
+
+  if (val === 'today') return t === today.getTime()
+  if (val === 'this_week') {
+    const startOfWeek = new Date(today.getTime() - today.getDay() * dayMs)
+    const endOfWeek = new Date(startOfWeek.getTime() + 6 * dayMs)
+    return t >= startOfWeek.getTime() && t <= endOfWeek.getTime()
+  }
+  if (val === 'last_week') {
+    const startOfThisWeek = new Date(today.getTime() - today.getDay() * dayMs)
+    const startOfLastWeek = new Date(startOfThisWeek.getTime() - 7 * dayMs)
+    const endOfLastWeek = new Date(startOfThisWeek.getTime() - dayMs)
+    return t >= startOfLastWeek.getTime() && t <= endOfLastWeek.getTime()
+  }
+  if (val === 'this_month')
+    return (
+      rowDay.getFullYear() === now.getFullYear() &&
+      rowDay.getMonth() === now.getMonth()
+    )
+  if (val === 'last_month') {
+    const lm = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+    return (
+      rowDay.getFullYear() === lm.getFullYear() &&
+      rowDay.getMonth() === lm.getMonth()
+    )
+  }
+  if (val === 'last_3_months') {
+    const start = new Date(now.getFullYear(), now.getMonth() - 3, today.getDate())
+    return t >= start.getTime() && t <= today.getTime()
+  }
+  if (val === 'last_6_months') {
+    const start = new Date(now.getFullYear(), now.getMonth() - 6, today.getDate())
+    return t >= start.getTime() && t <= today.getTime()
+  }
+  if (val === 'this_year') return rowDay.getFullYear() === now.getFullYear()
+  if (val === 'last_year') return rowDay.getFullYear() === now.getFullYear() - 1
+
+  // Exact date (legacy InputDate value)
+  const exact = parseDay(val.split('T')[0])
+  if (exact) return t === exact.getTime()
+
+  return String(rowDateStr) === val
+}
+
+/** Match a row value against one or more selected category values. */
+export function matchesCategoryFilterValue(
+  rowValue: unknown,
+  filterValue: string | string[],
+  mode: 'equals' | 'contains' = 'equals',
+): boolean {
+  const selected = parseFilterValues(filterValue)
+  if (selected.length === 0) return true
+  const row = String(rowValue ?? '')
+  const rowLower = row.toLowerCase()
+  return selected.some((sel) => {
+    const selLower = sel.toLowerCase()
+    if (mode === 'contains') return rowLower.includes(selLower)
+    return rowLower === selLower
+  })
+}

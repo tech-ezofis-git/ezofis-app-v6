@@ -1,5 +1,12 @@
 import { flexRender, type Table as TanstackTable } from '@tanstack/react-table'
-import { type ComponentProps, useCallback, useRef, useState } from 'react'
+import {
+  type ComponentProps,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react'
 import type { MenuPage } from '@/components/common/menuPageEmptyStates'
 import Icon from '@/components/base/icon/Icon'
 import Skeleton from '@/components/base/Skeleton'
@@ -13,6 +20,9 @@ import ListEmptyState, {
 } from '@/components/common/ListEmptyState'
 import cn from '@/utils/cn'
 import type { RowSize } from './types'
+import fitColumnsToWidth, {
+  columnSizingEquals,
+} from './helpers/fitColumnsToWidth'
 import getColumnPinnedStyles from './helpers/getColumnPinnedStyles'
 import hasTableRowsWithData from './helpers/hasTableRowsWithData'
 import TableActionBar, { type TableActionButton } from './TableActionBar'
@@ -127,10 +137,12 @@ const DataTable = <TData,>({
   onRowSizeChange,
 }: Props<TData>) => {
   const [internalRowSize, setInternalRowSize] = useState<RowSize>('default')
+  const [containerWidth, setContainerWidth] = useState(0)
   const rowSize = rowSizeProp ?? internalRowSize
   const setRowSize = onRowSizeChange ?? setInternalRowSize
   const scrollRef = useRef<HTMLDivElement | null>(null)
   const loadMoreLockRef = useRef(false)
+  const hasUserResizedRef = useRef(false)
 
   const rows = table.getRowModel().rows
   const hasData = hasTableRowsWithData(table)
@@ -140,8 +152,11 @@ const DataTable = <TData,>({
   const showMenuEmptyPanel = showEmptyState && Boolean(emptyPage)
   const showTableLayout =
     hasData || (!showInitialLoading && !showMenuEmptyPanel)
-  const visibleColumnCount = Math.max(1, table.getVisibleLeafColumns().length)
+  const visibleColumns = table.getVisibleLeafColumns()
+  const visibleColumnCount = Math.max(1, visibleColumns.length)
+  const visibleColumnKey = visibleColumns.map((column) => column.id).join('|')
   const useScrollContainer = Boolean(tableBodyMaxHeight || onLoadMore)
+  const isResizingColumn = table.getState().columnSizingInfo.isResizingColumn
 
   const getCellPinnedStyle = useCallback(
     (column: any) =>
@@ -169,6 +184,49 @@ const DataTable = <TData,>({
       loadMoreLockRef.current = false
     }, 350)
   }, [hasMore, isLoadingMore, isLoading, loadMoreOffset, onLoadMore])
+
+  useEffect(() => {
+    if (isResizingColumn) {
+      hasUserResizedRef.current = true
+    }
+  }, [isResizingColumn])
+
+  useLayoutEffect(() => {
+    if (!showTableLayout) return
+
+    const container = scrollRef.current
+    if (!container) return
+
+    const updateWidth = () => {
+      setContainerWidth(container.clientWidth)
+    }
+
+    updateWidth()
+
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0]
+      if (!entry) return
+      setContainerWidth(entry.contentRect.width)
+    })
+
+    observer.observe(container)
+    return () => observer.disconnect()
+  }, [showTableLayout])
+
+  useLayoutEffect(() => {
+    if (!showTableLayout || hasUserResizedRef.current || containerWidth <= 0) {
+      return
+    }
+
+    const nextSizing = fitColumnsToWidth(table, containerWidth)
+    if (!nextSizing) return
+
+    if (columnSizingEquals(table.getState().columnSizing, nextSizing)) {
+      return
+    }
+
+    table.setColumnSizing(nextSizing)
+  }, [containerWidth, showTableLayout, table, visibleColumnKey])
 
   const renderTableContent = () => {
     if (showInitialLoading) {
@@ -231,7 +289,7 @@ const DataTable = <TData,>({
             className='table-fixed'
             style={{
               minWidth: '100%',
-              width: table.getTotalSize(),
+              width: Math.max(table.getTotalSize(), containerWidth || 0),
             }}
           >
             <Thead className={theadStickyClass}>
@@ -446,7 +504,7 @@ const DataTable = <TData,>({
                               'group/dtcell',
                               allowOverflow
                                 ? 'overflow-visible'
-                                : 'max-w-0 overflow-hidden',
+                                : 'max-w-0 overflow-visible',
                               rowSizeClassNames[rowSize],
                               cell.column.columnDef.meta?.className,
                             )}
@@ -505,7 +563,7 @@ const DataTable = <TData,>({
     <div
       className={cn(
         'flex w-full flex-col',
-        stickyHeader && 'max-h-full min-h-0',
+        stickyHeader && 'h-full min-h-0 flex-1',
       )}
     >
       {!hideActionBar && (

@@ -19,8 +19,13 @@ const StepOne = () => {
     const handleMessage = (event: MessageEvent) => {
       if (event.origin !== window.location.origin) return
       if (event.data.type === 'CONNECTION_SUCCESS') {
+        const connector =
+          typeof event.data.connector === 'string' ? event.data.connector : ''
+        const connectedEmail = session?.email || emailSettings.email || ''
         setEmailSettings({
           ...emailSettings,
+          account: connector || connectedEmail,
+          email: connectedEmail,
           isConnected: true,
           isConnecting: false,
         })
@@ -29,7 +34,7 @@ const StepOne = () => {
 
     window.addEventListener('message', handleMessage)
     return () => window.removeEventListener('message', handleMessage)
-  }, [emailSettings, setEmailSettings])
+  }, [emailSettings, session?.email, setEmailSettings])
 
   const handleConnect = () => {
     const tenantId = session?.tenantId

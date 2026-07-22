@@ -125,10 +125,14 @@ export default function DashboardCharts() {
   // Map store timeframe key to API period key
   const periodMap: Record<string, string> = {
     fy: 'fy',
+    last_month: 'lastmonth',
     lastmonth: 'lastmonth',
     month: 'thisMonth',
     quarter: 'quarter',
+    this_month: 'thisMonth',
+    this_week: 'week',
     thisMonth: 'thisMonth',
+    this_year: 'fy',
     today: 'today',
     week: 'week',
   }
@@ -138,7 +142,16 @@ export default function DashboardCharts() {
       setIsLoading(true)
       const payload: any = {
         includeInvoiceDetails: true,
-        period: periodMap[timeframe] || 'thisMonth',
+      }
+
+      if (timeframe.startsWith('custom:')) {
+        const [start = '', end = ''] = timeframe
+          .replace('custom:', '')
+          .split('_')
+        if (start) payload.fromUtc = `${start}T00:00:00.000Z`
+        if (end) payload.toUtc = `${end}T23:59:59.999Z`
+      } else {
+        payload.period = periodMap[timeframe] || 'thisMonth'
       }
 
       if (supplierCategory) payload.supplier = supplierCategory
@@ -386,15 +399,17 @@ export default function DashboardCharts() {
   const filtersProp = React.useMemo(
     () => [
       {
+        dataType: 'date',
         id: 'timeframe',
         label: 'Timeframe',
         options: [
           { label: 'Today', value: 'today' },
-          { label: 'This Week', value: 'week' },
-          { label: 'This Month', value: 'month' },
-          { label: 'Last Month', value: 'lastmonth' },
+          { label: 'This week', value: 'week' },
+          { label: 'This month', value: 'month' },
+          { label: 'Last month', value: 'lastmonth' },
           { label: 'Quarter', value: 'quarter' },
           { label: 'Financial Year', value: 'fy' },
+          { label: 'Custom range', value: 'custom' },
         ],
       },
       {
@@ -594,14 +609,11 @@ export default function DashboardCharts() {
           invoiceStatus: serverActiveFilters.status || '',
           status: serverActiveFilters.requestStatus || '',
           supplierCategory: serverActiveFilters.supplier || '',
-          timeframe:
-            serverActiveFilters.period === 'thisMonth'
-              ? 'month'
-              : serverActiveFilters.period || '',
+          timeframe: timeframe || 'month',
         }}
         showReset={
           !!(
-            timeframe !== 'month' ||
+            (timeframe && timeframe !== 'month') ||
             supplierCategory ||
             invoiceStatus ||
             currency ||
@@ -612,7 +624,7 @@ export default function DashboardCharts() {
           )
         }
         onFilterChange={(id, value) => {
-          if (id === 'timeframe') setTimeframe(value as any)
+          if (id === 'timeframe') setTimeframe(value || 'month')
           else if (id === 'supplierCategory')
             setSupplierCategory(value as string)
           else if (id === 'invoiceStatus') setInvoiceStatus(value as string)

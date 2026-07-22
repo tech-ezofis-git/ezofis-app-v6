@@ -13,6 +13,7 @@ import Pagination from '@/components/base/pagination/Pagination'
 import showToast from '@/components/base/toast/showToast'
 import CustomFilter from '@/components/common/CustomFilter'
 import { formatDatetime } from '@/utils/dayjs'
+import { parseFilterValues } from '@/utils/filterUtils'
 import {
   settingsHeaderMeta,
   settingsTableCoreOptions,
@@ -63,14 +64,18 @@ export default function AuditMonitoring({ onBack }: AuditUserProps) {
       }
 
       const params: GetEventLogsParams = {
-        category: activeFilters.category || undefined,
-        dateFrom: activeFilters.dateFrom || undefined,
-        dateTo: activeFilters.dateTo || undefined,
+        category: parseFilterValues(activeFilters.category)[0] || undefined,
+        dateFrom: activeFilters.dateFrom?.startsWith('custom:')
+          ? activeFilters.dateFrom.replace('custom:', '').split('_')[0]
+          : activeFilters.dateFrom || undefined,
+        dateTo: activeFilters.dateTo?.startsWith('custom:')
+          ? activeFilters.dateTo.replace('custom:', '').split('_')[1]
+          : activeFilters.dateTo || undefined,
         page,
         pageSize,
         search: searchQuery || undefined,
-        severity: activeFilters.severity || undefined,
-        userEmail: activeFilters.userEmail || undefined,
+        severity: parseFilterValues(activeFilters.severity)[0] || undefined,
+        userEmail: parseFilterValues(activeFilters.userEmail)[0] || undefined,
       }
 
       const response = await getEventLogs(params, { signal })
@@ -170,14 +175,13 @@ export default function AuditMonitoring({ onBack }: AuditUserProps) {
             filters={[
               { id: 'category', label: 'Category', options: categoryOptions },
               { id: 'severity', label: 'Severity', options: severityOptions },
+            ]}
+            moreFilters={[
               {
                 id: 'userEmail',
                 label: 'User Email',
                 options: userEmailOptions,
-                searchable: true,
               },
-            ]}
-            moreFilters={[
               { dataType: 'date', id: 'dateFrom', label: 'Date From' },
               { dataType: 'date', id: 'dateTo', label: 'Date To' },
             ]}

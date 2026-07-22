@@ -26,6 +26,11 @@ import CustomFilter from '@/components/common/CustomFilter'
 import FormStatusBadge from '@/components/common/FormStatusBadge'
 import authUserStore from '@/stores/authUserStore'
 import { formatDatetime } from '@/utils/dayjs'
+import {
+  matchesCategoryFilterValue,
+  matchesDateRangeValue,
+  parseFilterValues,
+} from '@/utils/filterUtils'
 
 interface TableProps {
   onCreate?: () => void
@@ -180,10 +185,12 @@ const Table = ({ onCreate }: TableProps) => {
         if (['createdBy', 'modifiedBy', 'flowStatus'].includes(key)) {
           condition = 'IS_EQUALS_TO'
         }
-        filters.push({
-          condition,
-          criteria: key,
-          value,
+        parseFilterValues(value).forEach((v) => {
+          filters.push({
+            condition,
+            criteria: key,
+            value: v,
+          })
         })
       }
     })
@@ -251,6 +258,19 @@ const Table = ({ onCreate }: TableProps) => {
     }))
   }, [workflows, loggedInUser])
 
+  const nameOptions = useMemo(() => {
+    const unique = new Set<string>()
+    workflows.forEach((group: any) => {
+      group.items.forEach((w: any) => {
+        const name = String(w.name || '').trim()
+        if (name) unique.add(name)
+      })
+    })
+    return Array.from(unique)
+      .sort((a, b) => a.localeCompare(b))
+      .map((name) => ({ label: name, value: name }))
+  }, [workflows])
+
   const modifiedByOptions = useMemo(() => {
     const unique = new Map<string, string>()
     workflows.forEach((group: any) => {
@@ -277,23 +297,20 @@ const Table = ({ onCreate }: TableProps) => {
             if (!value) return
 
             if (key === 'createdAt' || key === 'modifiedAt') {
-              const filterDate = value.split('T')[0]
-              const rowDate = w[key] ? String(w[key]).split('T')[0] : ''
-              if (rowDate !== filterDate) matches = false
+              if (!matchesDateRangeValue(w[key], value)) matches = false
             } else if (key === 'flowStatus') {
               const rowStatus = w.flowStatus || w.flowstatus
-              if (rowStatus !== value) matches = false
-            } else if (key === 'createdBy' || key === 'modifiedBy') {
-              if (w[key] !== value) matches = false
-            } else {
-              if (
-                !w[key] ||
-                !String(w[key])
-                  .toLowerCase()
-                  .includes(String(value).toLowerCase())
-              ) {
+              if (!matchesCategoryFilterValue(rowStatus, value)) matches = false
+            } else if (key === 'name') {
+              if (!matchesCategoryFilterValue(w.name, value, 'contains')) {
                 matches = false
               }
+            } else if (key === 'createdBy' || key === 'modifiedBy') {
+              if (!matchesCategoryFilterValue(w[key], value)) matches = false
+            } else if (
+              !matchesCategoryFilterValue(w[key], value, 'contains')
+            ) {
+              matches = false
             }
           })
 
@@ -364,6 +381,13 @@ const Table = ({ onCreate }: TableProps) => {
         }
         filters={[
           {
+            id: 'name',
+            label: 'Name',
+            options: nameOptions,
+            searchable: true,
+            searchPlaceholder: 'Search name...',
+          },
+          {
             id: 'flowStatus',
             label: 'Status',
             options: [
@@ -371,13 +395,13 @@ const Table = ({ onCreate }: TableProps) => {
               { label: 'Draft', value: 'DRAFT' },
             ],
           },
+        ]}
+        moreFilters={[
           {
             id: 'createdBy',
             label: 'Created By',
             options: createdByOptions,
           },
-        ]}
-        moreFilters={[
           {
             id: 'modifiedBy',
             label: 'Modified By',

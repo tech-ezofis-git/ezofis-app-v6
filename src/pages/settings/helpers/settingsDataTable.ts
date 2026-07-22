@@ -14,10 +14,13 @@ export const settingsTableDefaultColumn = {
   enableColumnFilter: true,
   filterFn: 'includesString' as const,
   minSize: 40,
+  size: 150,
 }
 
 export const settingsTableCoreOptions = {
+  columnResizeMode: 'onChange' as const,
   defaultColumn: settingsTableDefaultColumn,
+  enableColumnResizing: true,
   getCoreRowModel: getCoreRowModel(),
 }
 

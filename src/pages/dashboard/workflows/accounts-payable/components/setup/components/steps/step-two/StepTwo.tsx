@@ -32,8 +32,11 @@ const StepTwo = () => {
     const handleMessage = (event: MessageEvent) => {
       if (event.origin !== window.location.origin) return
       if (event.data.type === 'CONNECTION_SUCCESS') {
+        const connector =
+          typeof event.data.connector === 'string' ? event.data.connector : ''
         setErpSettings({
           ...erpSettings,
+          account: connector || session?.email || erpSettings.account || '',
           isConnected: true,
           isConnecting: false,
         })
@@ -42,7 +45,7 @@ const StepTwo = () => {
 
     window.addEventListener('message', handleMessage)
     return () => window.removeEventListener('message', handleMessage)
-  }, [erpSettings, setErpSettings])
+  }, [erpSettings, session?.email, setErpSettings])
 
   const handleConnect = () => {
     const tenantId = session?.tenantId

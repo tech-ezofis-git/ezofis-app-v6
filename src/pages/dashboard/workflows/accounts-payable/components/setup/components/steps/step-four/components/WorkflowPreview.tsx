@@ -2,51 +2,137 @@ import { motion } from 'motion/react'
 import Icon from '@/components/base/icon/Icon'
 import { AnimateFadeIn } from '@/components/common/animations'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
+import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
 
+const getUserDisplayName = (
+  session: {
+    email?: string
+    firstName?: string
+    lastName?: string
+    name?: string
+  } | null,
+) => {
+  if (!session) return 'Current User'
+  const fullName =
+    session.name?.trim() ||
+    [session.firstName, session.lastName].filter(Boolean).join(' ').trim()
+  return fullName || session.email || 'Current User'
+}
+
+const truncateLabel = (value: string, max = 22) => {
+  if (value.length <= max) return value
+  return `${value.slice(0, max - 1)}…`
+}
+
 const WorkflowPreview = () => {
-  const { emailSettings } = setupStore()
+  const { emailSettings, erpSettings, storageSettings } = setupStore()
+  const session = authUserStore((state) => state.session)
+  const userName = getUserDisplayName(session)
 
   const getStartNodeConfig = () => {
+    const connectedAccount =
+      emailSettings.email ||
+      emailSettings.account ||
+      session?.email ||
+      'Connected'
+
     switch (emailSettings.provider) {
       case 'gmail':
         return {
+          detail: 'Invoice document',
           icon: 'logos:google-gmail',
-          subtitle: emailSettings.email || 'Auto Sync',
+          subtitle: truncateLabel(connectedAccount, 18),
           title: 'Gmail',
         }
       case 'outlook':
         return {
+          detail: 'Invoice document',
           icon: 'logos:microsoft-outlook',
-          subtitle: emailSettings.email || 'Auto Sync',
+          subtitle: truncateLabel(connectedAccount, 18),
           title: 'Outlook',
         }
       case 'DIRECT_UPLOAD':
       default:
         return {
+          detail: 'Invoice document',
           icon: 'tabler:user-up',
-          subtitle: 'Inbox, Scan, API',
-          title: 'Manual / Upload',
+          subtitle: truncateLabel(userName, 18),
+          title: 'Manual Upload',
         }
     }
   }
 
-  const startNode = getStartNodeConfig()
+  const getStorageDisplayName = () => {
+    const system = storageSettings.system
+    if (!system || system === 'Included storage') {
+      return 'EZOFIS Storage'
+    }
+    if (system === 'OneDrive' || system === 'One Drive') {
+      return 'One Drive Storage'
+    }
+    if (system === 'Google Drive') {
+      return 'Google Drive Storage'
+    }
+    return `${system} Storage`
+  }
 
-  // Compact Staggered Path (Edge-to-Edge)
-  // Node 1 Right (130, 40) -> Node 2 Left (207, 110)
-  // Node 2 Right (337, 110) -> Node 3 Left (413, 40)
-  // Node 3 Right (563, 40) -> Node 4 Left (640, 110)
-  const flowPath =
-    'M 130 40 C 168 40, 168 110, 207 110 M 337 110 C 375 110, 375 40, 413 40 M 563 40 C 601 40, 601 110, 640 110'
+  const getAgentNodeConfig = () => {
+    const getErpLabel = () => {
+      if (erpSettings.system === 'PREDEFINED') {
+        return 'Demo Data'
+      }
+      if (
+        erpSettings.system === 'FILE_BASED_IMPORT' ||
+        erpSettings.wantsFileBasedImport
+      ) {
+        return 'Excel Import'
+      }
+      if (erpSettings.system === 'QuickBooks') {
+        return 'QuickBooks'
+      }
+      return erpSettings.system || 'ERP'
+    }
+
+    return {
+      detail: getErpLabel(),
+      extra: getStorageDisplayName(),
+      subtitle: 'Extract · Match · Validate',
+      title: 'AP Agent',
+    }
+  }
+
+  const getApproverNodeConfig = () => ({
+    detail: 'Verify & approve',
+    subtitle: truncateLabel(userName, 18),
+    title: 'Approver Review',
+  })
+
+  const getEndNodeConfig = () => ({
+    detail: 'Synced to ERP',
+    subtitle: 'Payment completed',
+    title: 'Process End',
+  })
+
+  const startNode = getStartNodeConfig()
+  const agentNode = getAgentNodeConfig()
+  const approverNode = getApproverNodeConfig()
+  const endNode = getEndNodeConfig()
+
+  // Smooth S-curves between staggered top/bottom nodes (viewBox 900 x 240)
+  // Cards centered in each column — edges: 188|243, 433|483, 643|708
+  const segment1 = 'M 188 42 C 188 130, 243 100, 243 188'
+  const segment2 = 'M 433 188 C 433 100, 483 130, 483 42'
+  const segment3 = 'M 643 42 C 643 130, 708 100, 708 188'
+  const flowPath = `${segment1} ${segment2} ${segment3}`
 
   const points = [
-    { x: 130, y: 40 },
-    { x: 207, y: 110 },
-    { x: 337, y: 110 },
-    { x: 413, y: 40 },
-    { x: 563, y: 40 },
-    { x: 640, y: 110 },
+    { x: 188, y: 42 },
+    { x: 243, y: 188 },
+    { x: 433, y: 188 },
+    { x: 483, y: 42 },
+    { x: 643, y: 42 },
+    { x: 708, y: 188 },
   ]
 
   return (
@@ -76,101 +162,88 @@ const WorkflowPreview = () => {
           }}
         />
 
-        {/* SVG Canvas for Connections */}
-        <div className='absolute inset-0 mx-auto w-full max-w-[850px] px-10'>
+        <div className='relative mx-auto h-[240px] w-full max-w-[900px] px-4'>
+          {/* SVG Canvas for Connections — same box as nodes */}
           <svg
-            className='pointer-events-none h-full w-full'
-            viewBox='0 0 770 150'
+            className='pointer-events-none absolute inset-0 h-full w-full'
+            preserveAspectRatio='none'
+            viewBox='0 0 900 240'
           >
             <g>
+              {/* Base track */}
               <path
                 className='fill-none stroke-gray-3 stroke-[1.5] dark:stroke-gray-8'
                 d={flowPath}
               />
 
+              {/* Moving dashed flow along the full path */}
               <motion.path
-                className='fill-none stroke-purple-5 stroke-[1.5]'
+                className='fill-none stroke-purple-5 stroke-[2]'
                 d={flowPath}
-                initial={{ opacity: 0, pathLength: 0 }}
+                initial={{ pathLength: 0, opacity: 0 }}
                 animate={{
                   opacity: 1,
                   pathLength: 1,
-                  strokeDashoffset: [0, -20],
+                  strokeDashoffset: [0, -24],
                 }}
-                style={{
-                  strokeDasharray: '6 4',
-                }}
+                style={{ strokeDasharray: '8 6' }}
                 transition={{
-                  opacity: { delay: 0.5, duration: 0.5 },
-                  pathLength: { delay: 0.5, duration: 1.5, ease: 'easeInOut' },
+                  opacity: { delay: 0.3, duration: 0.4 },
+                  pathLength: { delay: 0.3, duration: 1.2, ease: 'easeInOut' },
                   strokeDashoffset: {
-                    duration: 1,
+                    delay: 1.5,
+                    duration: 2,
                     ease: 'linear',
                     repeat: Infinity,
                   },
                 }}
               />
 
-              {/* Staggered Segment Pulses */}
-              <motion.circle
-                fill='var(--purple-5)'
-                r='3'
-                animate={{
-                  offsetDistance: ['0%', '100%'],
-                  opacity: [0, 1, 1, 0],
-                }}
-                style={{
-                  filter: 'drop-shadow(0 0 4px var(--purple-4))',
-                  offsetPath: `path("M 130 40 C 168 40, 168 110, 207 110")`,
-                }}
-                transition={{
-                  delay: 0,
-                  duration: 1.2,
-                  ease: 'linear',
-                  repeat: Infinity,
-                  repeatDelay: 2.4,
-                }}
-              />
-
-              <motion.circle
-                fill='var(--purple-5)'
-                r='3'
-                animate={{
-                  offsetDistance: ['0%', '100%'],
-                  opacity: [0, 1, 1, 0],
-                }}
-                style={{
-                  filter: 'drop-shadow(0 0 4px var(--purple-4))',
-                  offsetPath: `path("M 337 110 C 375 110, 375 40, 413 40")`,
-                }}
-                transition={{
-                  delay: 1.2,
-                  duration: 1.2,
-                  ease: 'linear',
-                  repeat: Infinity,
-                  repeatDelay: 2.4,
-                }}
-              />
-
-              <motion.circle
-                fill='var(--purple-5)'
-                r='3'
-                animate={{
-                  offsetDistance: ['0%', '100%'],
-                  opacity: [0, 1, 1, 0],
-                }}
-                style={{
-                  filter: 'drop-shadow(0 0 4px var(--purple-4))',
-                  offsetPath: `path("M 563 40 C 601 40, 601 110, 640 110")`,
-                }}
-                transition={{
-                  delay: 2.4,
-                  duration: 1.2,
-                  ease: 'linear',
-                  repeat: Infinity,
-                  repeatDelay: 2.4,
-                }}
-              />
+              {/* Flow pulses traveling over each curve */}
+              {[segment1, segment2, segment3].map((segment, index) => (
+                <g key={segment}>
+                  <circle
+                    fill='var(--purple-5)'
+                    r='3.5'
+                    style={{
+                      filter: 'drop-shadow(0 0 5px var(--purple-4))',
+                    }}
+                  >
+                    <animateMotion
+                      begin={`${index * 1.8}s`}
+                      calcMode='linear'
+                      dur='1.8s'
+                      path={segment}
+                      repeatCount='indefinite'
+                    />
+                    <animate
+                      attributeName='opacity'
+                      begin={`${index * 1.8}s`}
+                      dur='1.8s'
+                      keyTimes='0;0.12;0.85;1'
+                      repeatCount='indefinite'
+                      values='0;1;1;0'
+                    />
+                  </circle>
+                  <circle fill='white' opacity='0.9' r='1.5'>
+                    <animateMotion
+                      begin={`${index * 1.8}s`}
+                      calcMode='linear'
+                      dur='1.8s'
+                      path={segment}
+                      repeatCount='indefinite'
+                    />
+                    <animate
+                      attributeName='opacity'
+                      begin={`${index * 1.8}s`}
+                      dur='1.8s'
+                      keyTimes='0;0.12;0.85;1'
+                      repeatCount='indefinite'
+                      values='0;1;1;0'
+                    />
+                  </circle>
+                </g>
+              ))}
 
               {points.map((p, i) => (
                 <motion.circle
@@ -186,55 +259,63 @@ const WorkflowPreview = () => {
               ))}
             </g>
           </svg>
-        </div>
 
-        <div className='relative mx-auto flex h-[150px] max-w-[850px] justify-between px-10'>
-          {/* Node 1: Start (Top) */}
-          <div className='flex w-[130px] flex-col items-center pt-1'>
-            <AnimateFadeIn delay={0.1}>
-              <NodeCard
-                icon={startNode.icon}
-                subtitle={startNode.subtitle}
-                title={startNode.title}
-                isTrigger
-              />
-            </AnimateFadeIn>
-          </div>
+          <div className='relative grid h-full grid-cols-4 gap-0'>
+            {/* Node 1: Start (Top) */}
+            <div className='flex items-start justify-center pt-1'>
+              <AnimateFadeIn delay={0.1}>
+                <NodeCard
+                  detail={startNode.detail}
+                  icon={startNode.icon}
+                  subtitle={startNode.subtitle}
+                  title={startNode.title}
+                  widthClass='w-[150px]'
+                  isTrigger
+                />
+              </AnimateFadeIn>
+            </div>
 
-          {/* Node 2: Agent (Bottom) */}
-          <div className='flex w-[130px] flex-col items-center justify-end pb-1'>
-            <AnimateFadeIn delay={0.4}>
-              <NodeCard
-                icon='lucide:bot'
-                subtitle='Extraction & Matching'
-                title='AI Automation'
-                isAgent
-              />
-            </AnimateFadeIn>
-          </div>
+            {/* Node 2: Agent (Bottom) */}
+            <div className='flex items-end justify-center pb-1'>
+              <AnimateFadeIn delay={0.4}>
+                <NodeCard
+                  detail={agentNode.detail}
+                  extra={agentNode.extra}
+                  icon='lucide:bot'
+                  subtitle={agentNode.subtitle}
+                  title={agentNode.title}
+                  widthClass='w-[190px]'
+                  isAgent
+                />
+              </AnimateFadeIn>
+            </div>
 
-          {/* Node 3: Approver (Top) */}
-          <div className='flex w-[150px] flex-col items-center pt-1'>
-            <AnimateFadeIn delay={0.7}>
-              <NodeCard
-                icon='flat-color-icons:signature'
-                subtitle='Manual Sign-off'
-                title='Approver Review'
-                widthClass='w-[150px]'
-              />
-            </AnimateFadeIn>
-          </div>
+            {/* Node 3: Approver (Top) */}
+            <div className='flex items-start justify-center pt-1'>
+              <AnimateFadeIn delay={0.7}>
+                <NodeCard
+                  detail={approverNode.detail}
+                  icon='flat-color-icons:signature'
+                  subtitle={approverNode.subtitle}
+                  title={approverNode.title}
+                  widthClass='w-[160px]'
+                />
+              </AnimateFadeIn>
+            </div>
 
-          {/* Node 4: End (Bottom) */}
-          <div className='flex w-[130px] flex-col items-center justify-end pb-1'>
-            <AnimateFadeIn delay={1.0}>
-              <NodeCard
-                icon='flat-color-icons:ok'
-                subtitle='ERP Synced'
-                title='Process End'
-                isEnd
-              />
-            </AnimateFadeIn>
+            {/* Node 4: End (Bottom) */}
+            <div className='flex items-end justify-center pb-1'>
+              <AnimateFadeIn delay={1.0}>
+                <NodeCard
+                  detail={endNode.detail}
+                  icon='flat-color-icons:ok'
+                  subtitle={endNode.subtitle}
+                  title={endNode.title}
+                  widthClass='w-[160px]'
+                  isEnd
+                />
+              </AnimateFadeIn>
+            </div>
           </div>
         </div>
       </div>
@@ -243,6 +324,8 @@ const WorkflowPreview = () => {
 }
 
 const NodeCard = ({
+  detail,
+  extra,
   icon,
   isAgent = false,
   isEnd = false,
@@ -251,6 +334,8 @@ const NodeCard = ({
   title,
   widthClass = 'w-[130px]',
 }: {
+  detail?: string
+  extra?: string
   icon: string
   isAgent?: boolean
   isEnd?: boolean
@@ -305,7 +390,7 @@ const NodeCard = ({
     >
       {isAgent ? (
         <>
-          <div className='flex items-start justify-between gap-2'>
+          <div className='flex items-center justify-between gap-2'>
             <motion.div
               className='flex h-6 w-6 shrink-0 items-center justify-center rounded border border-purple-7/40 bg-purple-8/40 text-white transition-colors'
               whileHover={{ rotate: 5, scale: 1.1 }}
@@ -316,15 +401,22 @@ const NodeCard = ({
               AI Agent
             </span>
           </div>
-          <h4 className='mt-2 text-[10px] leading-tight font-bold break-words text-white'>
+          <h4 className='mt-2 whitespace-nowrap text-[10px] leading-tight font-bold text-white'>
             {title}
           </h4>
-          <p className='mt-1 text-[9px] leading-snug font-medium break-words text-purple-2'>
+          <p className='mt-1 whitespace-nowrap text-[10px] leading-snug font-medium text-purple-2'>
             {subtitle}
           </p>
-          <div className='mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-purple-8/40'>
-            <div className='h-full w-2/3 rounded-full bg-purple-3' />
-          </div>
+          {detail && (
+            <p className='mt-0.5 whitespace-nowrap text-[9px] leading-snug text-purple-3/90'>
+              {detail}
+            </p>
+          )}
+          {extra && (
+            <p className='mt-0.5 whitespace-nowrap text-[9px] leading-snug text-purple-3/90'>
+              {extra}
+            </p>
+          )}
         </>
       ) : (
         <div className='flex items-center gap-1.5'>
@@ -337,13 +429,21 @@ const NodeCard = ({
           >
             <Icon className='size-3.5' name={icon} />
           </motion.div>
-          <div className='min-w-0 flex-1'>
-            <h4 className='text-[9px] leading-tight font-bold break-words text-gray-12 transition-colors group-hover:text-purple-7'>
+          <div className='min-w-0 flex-1 overflow-hidden'>
+            <h4 className='truncate whitespace-nowrap text-[10px] leading-tight font-bold text-gray-12 transition-colors group-hover:text-purple-7'>
               {title}
             </h4>
-            <p className='mt-0.5 text-[8px] leading-tight font-medium break-words text-gray-10'>
+            <p
+              className='mt-0.5 truncate whitespace-nowrap text-[10px] leading-tight font-medium text-gray-10'
+              title={subtitle}
+            >
               {subtitle}
             </p>
+            {detail && (
+              <p className='mt-0.5 truncate whitespace-nowrap text-[9px] leading-tight text-gray-9'>
+                {detail}
+              </p>
+            )}
           </div>
         </div>
       )}

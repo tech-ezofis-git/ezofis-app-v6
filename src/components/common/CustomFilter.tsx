@@ -5,9 +5,20 @@ import type { ButtonColor, ButtonVariant } from '@/components/base/button/types'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
-import InputDate from '@/components/base/inputs/InputDate'
 import Tooltip from '@/components/base/Tooltip'
 import cn from '@/utils/cn'
+import {
+  DEFAULT_DATE_RANGE_OPTIONS,
+  isDateColumnType,
+  isNumberColumnType,
+  parseFilterValues,
+  serializeFilterValues,
+} from '@/utils/filterUtils'
+import {
+  CategoryFilterMenu,
+  DateFilterMenu,
+  NumberFilterMenu,
+} from './filters/FilterMenus'
 
 const MORE_FILTER_DEBOUNCE_MS = 350
 const MORE_FILTER_PANEL_WIDTH = 388
@@ -16,58 +27,46 @@ const MORE_FILTER_PANEL_HEIGHT = 260
 const FILTER_MENU_Z_INDEX = 50000
 const VIEWPORT_GAP = 8
 
+/** Shared chip shell — same size across all pages (dashboard, workflow, forms, settings) */
+const FILTER_CHIP_SHELL =
+  'inline-flex h-[30px] max-w-[280px] items-center gap-1 rounded-full border py-0 pl-3.5 text-12 font-medium transition-all'
+const FILTER_CHIP_ACTIVE =
+  'border-primary-9 bg-primary-3/50 text-primary-9'
+const FILTER_CHIP_INACTIVE =
+  'border-border-default bg-surface text-text-secondary'
+const FILTER_CHIP_CLEAR_BTN =
+  'inline-flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-full text-current opacity-60 transition-colors hover:bg-gray-3 hover:opacity-100'
+const FILTER_CHIP_TRAILING =
+  'inline-flex size-5 shrink-0 items-center justify-center'
+const FILTER_CHIP_COUNT =
+  'inline-flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-gray-3 px-1 text-10 font-medium text-text-primary tabular-nums'
+const FILTER_SEARCH_INPUT =
+  'w-full bg-transparent py-2.5 pr-3 pl-9 text-12 text-text-primary outline-none placeholder:text-text-muted'
+
 interface DropdownPosition {
   left: number
   top: number
   width: number
 }
 
-const isDateFilterType = (dataType?: string) => {
-  const normalized = String(dataType || '')
-    .trim()
-    .toLowerCase()
-  return (
-    normalized === 'date' ||
-    normalized === 'datetime' ||
-    normalized.includes('date')
-  )
-}
-
-/** Normalize picker value to API filter format: YYYY-MM-DDT00:00:00 */
-const toApiDateFilterValue = (value: string | Date | null | undefined) => {
-  if (value == null || value === '') return ''
-
-  let parsed: Date | null = null
-
-  if (value instanceof Date) {
-    parsed = value
-  } else {
-    const trimmed = String(value).trim()
-    if (!trimmed) return ''
-
-    // ISO / YYYY-MM-DD
-    parsed = new Date(trimmed)
-
-    // DD-MMM-YYYY (InputDate display format)
-    if (Number.isNaN(parsed.getTime())) {
-      const match = trimmed.match(/^(\d{1,2})[-/ ]([A-Za-z]{3})[-/ ](\d{4})$/)
-      if (match) {
-        parsed = new Date(`${match[2]} ${match[1]}, ${match[3]}`)
-      }
-    }
-  }
-
-  if (!parsed || Number.isNaN(parsed.getTime())) {
-    return typeof value === 'string' ? value.trim() : ''
-  }
-
-  const year = parsed.getFullYear()
-  const month = String(parsed.getMonth() + 1).padStart(2, '0')
-  const day = String(parsed.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}T00:00:00`
-}
-
 const formatDateChipLabel = (value: string) => {
+  if (value.startsWith('custom:')) {
+    const [start = '', end = ''] = value.replace('custom:', '').split('_')
+    const fmt = (v: string) => {
+      const parsed = new Date(v)
+      if (Number.isNaN(parsed.getTime())) return v
+      return parsed.toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      })
+    }
+    return `${fmt(start)} – ${fmt(end)}`
+  }
+
+  const preset = DEFAULT_DATE_RANGE_OPTIONS.find((o) => o.value === value)
+  if (preset) return preset.label
+
   const parsed = new Date(value)
   if (Number.isNaN(parsed.getTime())) return value
 
@@ -110,7 +109,6 @@ export interface CustomFilterProps {
   showReset?: boolean
   trailingActions?: React.ReactNode
   viewMode?: 'grid' | 'table'
-  onBack?: () => void
   onFilterChange: (id: string, value: string) => void
   onQuickFilterToggle?: (id: string) => void
   onReset: () => void
@@ -122,6 +120,7 @@ export interface FilterDefinition {
   id: string
   label: string
   options: FilterOption[]
+  dataType?: string
   searchable?: boolean
   searchPlaceholder?: string
   width?: number
@@ -163,7 +162,6 @@ export default function CustomFilter({
   showReset,
   trailingActions,
   viewMode,
-  onBack,
   onFilterChange,
   onQuickFilterToggle,
   onReset,
@@ -203,7 +201,7 @@ export default function CustomFilter({
     if (!anchor) return
 
     const filter = filters.find((item) => item.id === activeFilterDropdown)
-    const width = filter?.width || 240
+    const width = Math.min(filter?.width || 240, 280)
     const rect = anchor.getBoundingClientRect()
 
     let left = rect.left
@@ -213,7 +211,7 @@ export default function CustomFilter({
       left = Math.max(VIEWPORT_GAP, window.innerWidth - width - VIEWPORT_GAP)
     }
 
-    const estimatedHeight = 292
+    const estimatedHeight = 320
     if (top + estimatedHeight > window.innerHeight - VIEWPORT_GAP) {
       top = Math.max(VIEWPORT_GAP, rect.top - estimatedHeight - 6)
     }
@@ -333,7 +331,15 @@ export default function CustomFilter({
     const activeGroup = moreFilters?.find(
       (group) => group.id === activeFilterGroup,
     )
-    if (isDateFilterType(activeGroup?.dataType)) return
+    // Menu-driven filters manage values themselves (no free-text debounce)
+    if (
+      isDateColumnType(activeGroup?.dataType) ||
+      isNumberColumnType(activeGroup?.dataType) ||
+      (activeGroup?.options && activeGroup.options.length > 0) ||
+      (activeGroup?.actions && activeGroup.actions.length > 0)
+    ) {
+      return
+    }
 
     if (skipMoreFilterDebounceRef.current) {
       skipMoreFilterDebounceRef.current = false
@@ -390,6 +396,13 @@ export default function CustomFilter({
     onFilterChange,
   ])
 
+  const applyMultiFilter = useCallback(
+    (id: string, values: string[]) => {
+      onFilterChange(id, serializeFilterValues(values))
+    },
+    [onFilterChange],
+  )
+
   const moreFiltersPanel =
     activeFilterDropdown === 'more' &&
     morePanelPos &&
@@ -397,7 +410,7 @@ export default function CustomFilter({
     moreFilters.length > 0
       ? createPortal(
           <div
-            className='animate-in fade-in zoom-in-95 fixed flex max-h-[260px] overflow-hidden rounded-lg border border-border-default bg-surface shadow-md'
+            className='animate-in fade-in zoom-in-95 fixed flex max-h-[320px] overflow-hidden rounded-lg border border-border-default bg-surface shadow-md'
             ref={moreFiltersPanelRef}
             style={{
               left: morePanelPos.left,
@@ -405,7 +418,7 @@ export default function CustomFilter({
               zIndex: FILTER_MENU_Z_INDEX,
             }}
           >
-            <div className='ez-scrollbar flex max-h-[260px] w-[168px] flex-col overflow-y-auto border-r border-border-default bg-primary-3/30 p-1 dark:bg-gray-12'>
+            <div className='ez-scrollbar flex max-h-[320px] w-[168px] flex-col overflow-y-auto border-r border-border-default bg-primary-3/30 p-1 dark:bg-gray-12'>
               {moreFilters.map((group) => {
                 const IconComp = group.icon
                 const isActive = activeFilterGroup === group.id
@@ -415,7 +428,7 @@ export default function CustomFilter({
                     key={group.id}
                     type='button'
                     className={cn(
-                      'flex w-full cursor-pointer items-center justify-between rounded-md px-2.5 py-1.5 text-left text-12 font-medium transition-all',
+                      'flex w-full cursor-pointer items-center justify-between rounded-md px-2.5 py-1.5 text-left text-12 font-normal transition-all',
                       isActive
                         ? 'bg-primary-3 text-primary-9 dark:bg-primary-9 dark:text-white'
                         : 'text-text-secondary hover:bg-gray-2 dark:hover:bg-gray-10',
@@ -439,150 +452,104 @@ export default function CustomFilter({
               })}
             </div>
 
-            <div className='ez-scrollbar flex max-h-[260px] w-[220px] flex-col gap-2 overflow-y-auto bg-surface p-2.5'>
+            <div className='ez-scrollbar flex max-h-[320px] w-max max-w-64 flex-col overflow-hidden bg-surface'>
               {moreFilters.map((group) => {
                 if (activeFilterGroup !== group.id) return null
+                const selectedValues = parseFilterValues(activeFilters[group.id])
 
-                if (isDateFilterType(group.dataType)) {
-                  const dateValue = activeFilters[group.id] || null
+                if (isDateColumnType(group.dataType)) {
                   return (
-                    <React.Fragment key={group.id}>
-                      <div className='text-11 font-semibold text-text-muted'>
-                        Filter by {group.label}
-                      </div>
-                      <InputDate
-                        className='w-full'
-                        placeholder='Select date'
-                        value={dateValue}
-                        clearable
-                        popoverProps={{
-                          middlewares: { flip: true, shift: true },
-                          withinPortal: true,
-                          zIndex: FILTER_MENU_Z_INDEX + 1,
-                        }}
-                        onChange={(nextValue) => {
-                          const apiValue = toApiDateFilterValue(
-                            nextValue as string | Date | null,
-                          )
-                          if (!apiValue) {
-                            skipMoreFilterDebounceRef.current = true
-                            setFilterSearchQuery('')
-                            onFilterChange(group.id, '')
-                            return
-                          }
-
-                          skipMoreFilterDebounceRef.current = true
-                          setFilterSearchQuery(apiValue)
-                          onFilterChange(group.id, apiValue)
-                          // Close after apply so the value is committed first
-                          window.setTimeout(() => {
-                            setActiveFilterDropdown(null)
-                          }, 0)
-                        }}
-                      />
-                      {dateValue ? (
-                        <button
-                          className='w-full cursor-pointer rounded px-2 py-1.5 text-left text-12 font-medium text-text-secondary hover:bg-gray-2'
-                          type='button'
-                          onClick={() => {
-                            skipMoreFilterDebounceRef.current = true
-                            setFilterSearchQuery('')
-                            onFilterChange(group.id, '')
-                            setActiveFilterDropdown(null)
-                          }}
-                        >
-                          Clear {group.label}
-                        </button>
-                      ) : null}
-                    </React.Fragment>
+                    <DateFilterMenu
+                      key={group.id}
+                      options={group.options?.length ? group.options : DEFAULT_DATE_RANGE_OPTIONS}
+                      selectedValues={selectedValues}
+                      onChange={(vals) => {
+                        skipMoreFilterDebounceRef.current = true
+                        onFilterChange(group.id, vals[0] || '')
+                      }}
+                      onClear={() => {
+                        skipMoreFilterDebounceRef.current = true
+                        onFilterChange(group.id, '')
+                        setActiveFilterDropdown(null)
+                      }}
+                    />
                   )
                 }
 
+                if (isNumberColumnType(group.dataType)) {
+                  return (
+                    <NumberFilterMenu
+                      key={group.id}
+                      options={group.options || []}
+                      selectedValues={selectedValues}
+                      onChange={(vals) => {
+                        skipMoreFilterDebounceRef.current = true
+                        applyMultiFilter(group.id, vals)
+                      }}
+                      onClear={() => {
+                        skipMoreFilterDebounceRef.current = true
+                        onFilterChange(group.id, '')
+                        setActiveFilterDropdown(null)
+                      }}
+                    />
+                  )
+                }
+
+                if (group.options && group.options.length > 0) {
+                  return (
+                    <CategoryFilterMenu
+                      key={group.id}
+                      label={group.label}
+                      options={group.options}
+                      selectedValues={selectedValues}
+                      onChange={(vals) => {
+                        skipMoreFilterDebounceRef.current = true
+                        applyMultiFilter(group.id, vals)
+                      }}
+                      onClear={() => {
+                        skipMoreFilterDebounceRef.current = true
+                        onFilterChange(group.id, '')
+                        setActiveFilterDropdown(null)
+                      }}
+                    />
+                  )
+                }
+
+                if (group.actions && group.actions.length > 0) {
+                  return (
+                    <CategoryFilterMenu
+                      key={group.id}
+                      label={group.label}
+                      options={group.actions}
+                      selectedValues={selectedValues}
+                      onChange={(vals) => {
+                        skipMoreFilterDebounceRef.current = true
+                        applyMultiFilter(group.id, vals)
+                      }}
+                      onClear={() => {
+                        skipMoreFilterDebounceRef.current = true
+                        onFilterChange(group.id, '')
+                        setActiveFilterDropdown(null)
+                      }}
+                    />
+                  )
+                }
+
+                // Free-text fallback when no options are provided
                 return (
-                  <React.Fragment key={group.id}>
-                    {group.options && (
-                      <>
-                        <div className='relative'>
-                          <Search className='absolute top-1/2 left-2 h-3.5 w-3.5 -translate-y-1/2 text-text-muted' />
-                          <input
-                            className='w-full rounded-lg border border-border-default bg-gray-2 py-1 pr-3 pl-7 text-11 text-text-primary outline-none'
-                            placeholder={`Search ${group.label.toLowerCase()}...`}
-                            type='text'
-                            value={filterSearchQuery}
-                            onChange={(e) =>
-                              setFilterSearchQuery(e.target.value)
-                            }
-                          />
-                        </div>
-                        <div className='ez-scrollbar flex max-h-[180px] flex-col gap-0.5 overflow-y-auto'>
-                          <button
-                            type='button'
-                            className={cn(
-                              'w-full cursor-pointer rounded px-2 py-1.5 text-left text-12 font-medium text-text-primary transition-colors hover:bg-gray-2',
-                              !activeFilters[group.id] &&
-                                'bg-primary-3/30 font-semibold text-primary-9',
-                            )}
-                            onClick={() => {
-                              skipMoreFilterDebounceRef.current = true
-                              setFilterSearchQuery('')
-                              onFilterChange(group.id, '')
-                              setActiveFilterDropdown(null)
-                            }}
-                          >
-                            All {group.label}
-                          </button>
-                          {group.options
-                            .filter((item) =>
-                              item.label
-                                .toLowerCase()
-                                .includes(filterSearchQuery.toLowerCase()),
-                            )
-                            .map((item) => (
-                              <button
-                                key={item.value}
-                                type='button'
-                                className={cn(
-                                  'w-full cursor-pointer rounded px-2 py-1.5 text-left text-12 font-medium transition-colors hover:bg-gray-2',
-                                  activeFilters[group.id] === item.value
-                                    ? 'bg-primary-3/30 font-semibold text-primary-9'
-                                    : 'text-text-secondary',
-                                )}
-                                onClick={() => {
-                                  skipMoreFilterDebounceRef.current = true
-                                  setFilterSearchQuery(item.value)
-                                  onFilterChange(group.id, item.value)
-                                  setActiveFilterDropdown(null)
-                                }}
-                              >
-                                {item.label}
-                              </button>
-                            ))}
-                        </div>
-                      </>
-                    )}
-                    {group.actions && (
-                      <>
-                        <div className='mb-0.5 text-11 font-semibold text-text-muted'>
-                          Filter by {group.label}
-                        </div>
-                        <div className='flex flex-col gap-1.5'>
-                          {group.actions.map((action) => (
-                            <button
-                              className='w-full cursor-pointer rounded px-2 py-1.5 text-left text-12 font-medium text-text-secondary hover:bg-gray-2'
-                              key={action.value}
-                              type='button'
-                              onClick={() => {
-                                onFilterChange(group.id, action.value)
-                                setActiveFilterDropdown(null)
-                              }}
-                            >
-                              {action.label}
-                            </button>
-                          ))}
-                        </div>
-                      </>
-                    )}
-                  </React.Fragment>
+                  <div key={group.id} className='flex flex-col p-2'>
+                    <div className='relative border border-border-default rounded-md'>
+                      <Search className='absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-text-muted' />
+                      <input
+                        className={FILTER_SEARCH_INPUT}
+                        placeholder={`Filter ${group.label.toLowerCase()}...`}
+                        type='text'
+                        value={filterSearchQuery}
+                        autoFocus
+                        onChange={(e) => setFilterSearchQuery(e.target.value)}
+                      />
+                    </div>
+                  </div>
                 )
               })}
             </div>
@@ -593,20 +560,9 @@ export default function CustomFilter({
 
   return (
     <div
-      className='relative z-40 flex w-full items-center gap-2 rounded-lg border border-[var(--border-default)] bg-surface p-3 shadow-xs'
+      className='relative z-40 flex w-full shrink-0 items-center gap-2 rounded-lg border border-[var(--border-default)] bg-surface p-3 shadow-xs'
       ref={filtersRef}
     >
-      {onBack && (
-        <IconButton
-          ariaLabel='Back'
-          className='shrink-0'
-          color='gray'
-          icon='lucide:arrow-left'
-          size='sm'
-          variant='ghost'
-          onClick={onBack}
-        />
-      )}
       {/* Filters wrap onto new lines when they overflow */}
       <div className='flex min-w-0 flex-1 flex-wrap items-center gap-2'>
         {quickFilters &&
@@ -616,42 +572,50 @@ export default function CustomFilter({
               <button
                 key={qf.id}
                 className={cn(
-                  'flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1 text-12 font-medium transition-all',
-                  isActive
-                    ? 'border-[var(--primary-9)] bg-[var(--primary-3)] text-[var(--primary-9)]'
-                    : 'border-[var(--border-default)] bg-surface text-[var(--text-secondary)] hover:bg-gray-3 dark:hover:bg-gray-10',
+                  FILTER_CHIP_SHELL,
+                  'cursor-pointer gap-1.5 pr-3.5',
+                  isActive ? FILTER_CHIP_ACTIVE : FILTER_CHIP_INACTIVE,
+                  !isActive && 'hover:bg-gray-3 dark:hover:bg-gray-10',
                 )}
                 onClick={() => onQuickFilterToggle?.(qf.id)}
               >
                 {qf.icon && <Icon className='size-3.5' name={qf.icon} />}
-                <span>{qf.label}</span>
-                {qf.count !== undefined && (
-                  <span
-                    className={cn(
-                      'text-10 flex items-center justify-center rounded-full px-1.5 py-0.5 font-bold',
-                      isActive
-                        ? 'bg-[var(--primary-4)] text-[var(--primary-9)]'
-                        : 'bg-gray-3 text-gray-11',
-                    )}
-                  >
-                    {qf.count}
-                  </span>
-                )}
+                <span className='truncate'>{qf.label}</span>
               </button>
             )
           })}
 
         {filters.map((filter) => {
-          const activeValue = activeFilters[filter.id]
-          const activeOption = filter.options.find(
-            (o) => o.value === activeValue,
-          )
-          const displayLabel = activeOption
-            ? `${filter.label} : ${activeOption.label}`
-            : activeValue
-              ? `${filter.label} : ${activeValue}`
-              : filter.label
-          const isActive = !!activeValue || activeFilterDropdown === filter.id
+          const selectedValues = parseFilterValues(activeFilters[filter.id])
+          const firstValue = selectedValues[0] || ''
+          const firstOption = filter.options.find((o) => o.value === firstValue)
+          let displayLabel = filter.label
+          if (selectedValues.length === 1) {
+            const optionLabel = firstOption?.label || ''
+            const valueLabel = isDateColumnType(filter.dataType)
+              ? firstValue.startsWith('custom:')
+                ? formatDateChipLabel(firstValue)
+                : optionLabel || formatDateChipLabel(firstValue)
+              : optionLabel || firstValue
+            displayLabel =
+              valueLabel.toLowerCase() === 'all'
+                ? filter.label
+                : `${filter.label} : ${valueLabel}`
+          } else if (selectedValues.length > 1) {
+            const valueLabel = firstOption?.label || firstValue
+            displayLabel =
+              valueLabel.toLowerCase() === 'all'
+                ? filter.label
+                : `${filter.label} : ${valueLabel}`
+          }
+          const isActive =
+            selectedValues.length > 0 || activeFilterDropdown === filter.id
+          const isDate =
+            isDateColumnType(filter.dataType) ||
+            filter.id === 'timeframe' ||
+            /date|timeframe|period/i.test(filter.id) ||
+            /date|timeframe|period/i.test(filter.label)
+          const isNumber = isNumberColumnType(filter.dataType)
 
           return (
             <div
@@ -663,10 +627,9 @@ export default function CustomFilter({
             >
               <div
                 className={cn(
-                  'flex max-w-[240px] items-center gap-1 rounded-full border py-1 pr-1.5 pl-3.5 text-12 font-medium transition-all',
-                  isActive
-                    ? 'border-primary-9 bg-primary-3/50 text-primary-9'
-                    : 'border-border-default bg-surface text-text-secondary',
+                  FILTER_CHIP_SHELL,
+                  'pr-1.5',
+                  isActive ? FILTER_CHIP_ACTIVE : FILTER_CHIP_INACTIVE,
                 )}
               >
                 <button
@@ -684,13 +647,20 @@ export default function CustomFilter({
                   }}
                 >
                   <span className='truncate'>{displayLabel}</span>
-                  <ChevronDown className='h-3 w-3 shrink-0 opacity-60' />
+                  {selectedValues.length > 1 && (
+                    <span className={FILTER_CHIP_COUNT}>
+                      {selectedValues.length}
+                    </span>
+                  )}
+                  <span className={FILTER_CHIP_TRAILING}>
+                    <ChevronDown className='h-3 w-3 opacity-60' />
+                  </span>
                 </button>
-                {activeValue ? (
+                {selectedValues.length > 0 ? (
                   <Tooltip content={`Clear ${filter.label}`}>
                     <button
                       aria-label={`Clear ${filter.label}`}
-                      className='inline-flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center rounded-full text-primary-9 transition-colors hover:bg-primary-3'
+                      className={FILTER_CHIP_CLEAR_BTN}
                       type='button'
                       onClick={(event) => {
                         event.stopPropagation()
@@ -710,104 +680,59 @@ export default function CustomFilter({
                 filterDropdownPos &&
                 createPortal(
                   <div
-                    className='animate-in fade-in slide-in-from-top-2 fixed rounded-lg border border-border-default bg-surface p-3 shadow-md'
+                    className='animate-in fade-in slide-in-from-top-2 fixed overflow-hidden rounded-lg border border-border-default bg-surface shadow-md'
                     ref={filterDropdownPanelRef}
                     style={{
                       left: filterDropdownPos.left,
                       top: filterDropdownPos.top,
-                      width: filterDropdownPos.width,
                       zIndex: FILTER_MENU_Z_INDEX,
                     }}
                   >
-                    {filter.searchable && (
-                      <>
-                        <div className='relative mb-2'>
-                          <Search className='absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-text-muted' />
-                          <input
-                            className='w-full rounded-lg border border-border-default bg-gray-2 py-1 pr-3 pl-8 text-11 text-text-primary outline-none'
-                            type='text'
-                            value={filterSearchQuery}
-                            placeholder={
-                              filter.searchPlaceholder || 'Search...'
-                            }
-                            onChange={(e) =>
-                              setFilterSearchQuery(e.target.value)
-                            }
-                          />
-                        </div>
-                        <div className='mx-[-12px] my-2 h-px bg-border-default' />
-                      </>
-                    )}
-                    <div className='scrollbar flex max-h-[220px] flex-col gap-0.5 overflow-y-auto'>
-                      <button
-                        className={cn(
-                          'w-full cursor-pointer rounded px-2.5 py-1.5 text-left text-12 font-medium text-text-primary transition-colors hover:bg-gray-2',
-                          !activeValue &&
-                            'bg-primary-3/30 font-semibold text-primary-9',
-                        )}
-                        onClick={() => {
+                    {isDate ? (
+                      <DateFilterMenu
+                        options={
+                          filter.options.length > 0
+                            ? filter.options
+                            : DEFAULT_DATE_RANGE_OPTIONS
+                        }
+                        selectedValues={selectedValues}
+                        onChange={(vals) => {
                           skipMoreFilterDebounceRef.current = true
-                          setFilterSearchQuery('')
+                          onFilterChange(filter.id, vals[0] || '')
+                        }}
+                        onClear={() => {
                           onFilterChange(filter.id, '')
                           setActiveFilterDropdown(null)
                         }}
-                      >
-                        All {filter.label}
-                      </button>
-                      {(() => {
-                        const visibleOptions = filter.options.filter((item) =>
-                          filter.searchable && filterSearchQuery
-                            ? item.label
-                                .toLowerCase()
-                                .includes(filterSearchQuery.toLowerCase())
-                            : true,
-                        )
-
-                        if (visibleOptions.length === 0) {
-                          const typed = filterSearchQuery.trim()
-                          if (typed) {
-                            return (
-                              <button
-                                className='w-full cursor-pointer rounded px-2.5 py-1.5 text-left text-12 font-medium text-primary-9 transition-colors hover:bg-primary-3/30'
-                                type='button'
-                                onClick={() => {
-                                  skipMoreFilterDebounceRef.current = true
-                                  onFilterChange(filter.id, typed)
-                                  setActiveFilterDropdown(null)
-                                }}
-                              >
-                                Apply &quot;{typed}&quot;
-                              </button>
-                            )
-                          }
-
-                          return (
-                            <div className='px-2.5 py-2 text-12 text-text-muted'>
-                              Type to search or apply a value
-                            </div>
-                          )
-                        }
-
-                        return visibleOptions.map((item) => (
-                          <button
-                            key={item.value}
-                            className={cn(
-                              'w-full cursor-pointer rounded px-2.5 py-1.5 text-left text-12 font-medium text-text-primary transition-colors hover:bg-gray-2',
-                              activeValue === item.value &&
-                                'bg-primary-3/30 font-semibold text-primary-9',
-                            )}
-                            onClick={() => {
-                              skipMoreFilterDebounceRef.current = true
-                              setFilterSearchQuery(item.value)
-                              onFilterChange(filter.id, item.value)
-                              setActiveFilterDropdown(null)
-                            }}
-                          >
-                            {item.label}
-                          </button>
-                        ))
-                      })()}
-                    </div>
+                      />
+                    ) : isNumber ? (
+                      <NumberFilterMenu
+                        options={filter.options}
+                        selectedValues={selectedValues}
+                        onChange={(vals) => {
+                          skipMoreFilterDebounceRef.current = true
+                          applyMultiFilter(filter.id, vals)
+                        }}
+                        onClear={() => {
+                          onFilterChange(filter.id, '')
+                          setActiveFilterDropdown(null)
+                        }}
+                      />
+                    ) : (
+                      <CategoryFilterMenu
+                        label={filter.label}
+                        options={filter.options}
+                        selectedValues={selectedValues}
+                        onChange={(vals) => {
+                          skipMoreFilterDebounceRef.current = true
+                          applyMultiFilter(filter.id, vals)
+                        }}
+                        onClear={() => {
+                          onFilterChange(filter.id, '')
+                          setActiveFilterDropdown(null)
+                        }}
+                      />
+                    )}
                   </div>,
                   document.body,
                 )}
@@ -818,13 +743,30 @@ export default function CustomFilter({
         {moreFilters
           ?.filter((group) => Boolean(activeFilters[group.id]))
           .map((group) => {
-            const value = activeFilters[group.id]
+            const selectedValues = parseFilterValues(activeFilters[group.id])
+            const firstValue = selectedValues[0] || ''
+            const firstOption =
+              group.options?.find((o) => o.value === firstValue) ||
+              group.actions?.find((o) => o.value === firstValue)
             const isOpen =
               activeFilterDropdown === 'more' && activeFilterGroup === group.id
 
+            let valueLabel = firstValue
+            if (isDateColumnType(group.dataType)) {
+              valueLabel = formatDateChipLabel(firstValue)
+            } else if (firstOption) {
+              valueLabel = firstOption.label
+            }
+            const chipText =
+              valueLabel.toLowerCase() === 'all'
+                ? group.label
+                : `${group.label} : ${valueLabel}`
+
             return (
               <div className='relative' key={`chip-${group.id}`}>
-                <div className='flex max-w-[260px] items-center gap-1 rounded-full border border-primary-9 bg-primary-3/50 py-1 pr-1.5 pl-3.5 text-12 font-medium text-primary-9'>
+                <div
+                  className={cn(FILTER_CHIP_SHELL, 'pr-1.5', FILTER_CHIP_ACTIVE)}
+                >
                   <button
                     className='flex min-w-0 cursor-pointer items-center gap-1.5 hover:opacity-80'
                     type='button'
@@ -836,18 +778,17 @@ export default function CustomFilter({
                       openMoreFilters(event.currentTarget, group.id)
                     }}
                   >
-                    <span className='truncate'>
-                      {group.label} :{' '}
-                      {isDateFilterType(group.dataType)
-                        ? formatDateChipLabel(value)
-                        : value}
-                    </span>
-                    <ChevronDown className='h-3 w-3 shrink-0 opacity-60' />
+                    <span className='truncate'>{chipText}</span>
+                    {selectedValues.length > 1 && (
+                      <span className={FILTER_CHIP_COUNT}>
+                        {selectedValues.length}
+                      </span>
+                    )}
                   </button>
                   <Tooltip content={`Clear ${group.label}`}>
                     <button
                       aria-label={`Clear ${group.label}`}
-                      className='inline-flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center rounded-full text-primary-9 transition-colors hover:bg-primary-3'
+                      className={FILTER_CHIP_CLEAR_BTN}
                       type='button'
                       onClick={(event) => {
                         event.stopPropagation()
@@ -871,10 +812,10 @@ export default function CustomFilter({
               ref={moreFiltersButtonRef}
               type='button'
               className={cn(
-                'flex h-[30px] w-[30px] shrink-0 cursor-pointer items-center justify-center rounded-full border border-dashed transition-all',
+                'inline-flex h-[30px] w-[30px] shrink-0 cursor-pointer items-center justify-center rounded-full border transition-all',
                 activeFilterDropdown === 'more'
-                  ? 'border-[var(--primary-6)] bg-[var(--primary-1)] text-[var(--primary-9)]'
-                  : 'border-[var(--gray-6)] bg-transparent text-[var(--gray-10)] hover:bg-[var(--gray-2)] hover:text-[var(--gray-12)]',
+                  ? 'border-primary-9 bg-primary-3/50 text-primary-9'
+                  : 'border-border-default bg-surface text-text-secondary hover:bg-gray-2',
               )}
               onClick={() => {
                 if (activeFilterDropdown === 'more') {
@@ -884,14 +825,14 @@ export default function CustomFilter({
                 openMoreFilters(moreFiltersButtonRef.current)
               }}
             >
-              <Icon className='h-4 w-4' name='tabler:plus' />
+              <Icon className='h-3.5 w-3.5' name='tabler:plus' />
             </button>
           </Tooltip>
         )}
 
         {showReset && (
           <button
-            className='shrink-0 cursor-pointer rounded-full border border-border-default bg-gray-2 px-3.5 py-1 text-12 font-medium text-text-secondary transition-all hover:bg-gray-3'
+            className='shrink-0 cursor-pointer px-1 text-12 font-medium text-text-secondary transition-colors hover:text-text-primary hover:underline'
             type='button'
             onClick={() => {
               onReset()

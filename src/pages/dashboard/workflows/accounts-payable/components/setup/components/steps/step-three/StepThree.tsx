@@ -22,8 +22,11 @@ const StepThree = () => {
     const handleMessage = (event: MessageEvent) => {
       if (event.origin !== window.location.origin) return
       if (event.data.type === 'CONNECTION_SUCCESS') {
+        const connector =
+          typeof event.data.connector === 'string' ? event.data.connector : ''
         setStorageSettings({
           ...storageSettings,
+          account: connector || session?.email || storageSettings.account || '',
           isConnected: true,
           isConnecting: false,
         })
@@ -32,7 +35,7 @@ const StepThree = () => {
 
     window.addEventListener('message', handleMessage)
     return () => window.removeEventListener('message', handleMessage)
-  }, [storageSettings, setStorageSettings])
+  }, [session?.email, setStorageSettings, storageSettings])
 
   const handleConnect = () => {
     const tenantId = session?.tenantId

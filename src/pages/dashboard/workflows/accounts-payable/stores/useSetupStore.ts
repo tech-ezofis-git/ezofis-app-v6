@@ -1,6 +1,8 @@
 import { create } from 'zustand'
 
 type EmailSettings = {
+  /** Connected mailbox / connector display name */
+  account?: string
   email: string
   isConnected: boolean
   isConnecting: boolean
@@ -11,6 +13,8 @@ type EmailSettings = {
 }
 
 type ErpSettings = {
+  /** Connected ERP account / connector display name */
+  account?: string
   apiKey: string
   apiUrl: string
   fieldDataTypes?: Record<string, string>
@@ -34,6 +38,8 @@ type ErpSettings = {
 }
 
 type StorageSettings = {
+  /** Connected storage account / connector display name */
+  account?: string
   apiKey: string
   apiUrl: string
   isConnected: boolean
@@ -67,6 +73,7 @@ type Store = {
 }
 
 const initialEmailSettings: EmailSettings = {
+  account: '',
   email: '',
   isConnected: true,
   isConnecting: false,
@@ -77,6 +84,7 @@ const initialEmailSettings: EmailSettings = {
 }
 
 const initialErpSettings: ErpSettings = {
+  account: '',
   apiKey: '',
   apiUrl: '',
   fieldDataTypes: {},
@@ -100,6 +108,7 @@ const initialErpSettings: ErpSettings = {
 }
 
 const initialStorageSettings: StorageSettings = {
+  account: '',
   apiKey: '',
   apiUrl: '',
   isConnected: false,

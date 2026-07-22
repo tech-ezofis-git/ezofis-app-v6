@@ -20,6 +20,11 @@ import FormStatusBadge from '@/components/common/FormStatusBadge'
 import FormTypeBadge from '@/components/common/FormTypeBadge'
 import authUserStore from '@/stores/authUserStore'
 import { formatDatetime } from '@/utils/dayjs'
+import {
+  matchesCategoryFilterValue,
+  matchesDateRangeValue,
+  parseFilterValues,
+} from '@/utils/filterUtils'
 import Table from './components/Table'
 
 const mapItem = (item: any) => ({
@@ -99,10 +104,12 @@ const FormsPage = () => {
         if (['createdBy', 'modifiedBy'].includes(key)) {
           condition = 'IS_EQUALS_TO'
         }
-        filters.push({
-          condition,
-          criteria: key === 'status' ? 'publishOption' : key,
-          value,
+        parseFilterValues(value).forEach((v) => {
+          filters.push({
+            condition,
+            criteria: key === 'status' ? 'publishOption' : key,
+            value: v,
+          })
         })
       }
     })
@@ -161,7 +168,7 @@ const FormsPage = () => {
         label: 'Description',
         size: 240,
         renderCell: (row: any) => (
-          <span className='line-clamp-1 text-gray-10'>
+          <span className='text-gray-10'>
             {row._json?.settings?.general?.description ||
               row.description ||
               '-'}
@@ -276,22 +283,15 @@ const FormsPage = () => {
         Object.entries(activeFilters).forEach(([key, value]) => {
           if (!value) return
           if (key === 'createdAt' || key === 'modifiedAt') {
-            const filterDate = value.split('T')[0]
-            const rowDate = item[key] ? String(item[key]).split('T')[0] : ''
-            if (rowDate !== filterDate) matches = false
+            if (!matchesDateRangeValue(item[key], value)) matches = false
           } else if (key === 'status') {
-            if (option !== value) matches = false
+            if (!matchesCategoryFilterValue(option, value)) matches = false
           } else if (key === 'createdBy' || key === 'modifiedBy') {
-            if (item[key] !== value) matches = false
-          } else {
-            if (
-              !item[key] ||
-              !String(item[key])
-                .toLowerCase()
-                .includes(String(value).toLowerCase())
-            ) {
-              matches = false
-            }
+            if (!matchesCategoryFilterValue(item[key], value)) matches = false
+          } else if (
+            !matchesCategoryFilterValue(item[key], value, 'contains')
+          ) {
+            matches = false
           }
         })
 
@@ -382,6 +382,17 @@ const FormsPage = () => {
       value,
     }))
   }, [forms, loggedInUser])
+
+  const nameOptions = useMemo(() => {
+    const unique = new Set<string>()
+    forms.flatMap((g) => g.items).forEach((w: any) => {
+      const name = String(w.name || '').trim()
+      if (name) unique.add(name)
+    })
+    return Array.from(unique)
+      .sort((a, b) => a.localeCompare(b))
+      .map((name) => ({ label: name, value: name }))
+  }, [forms])
 
   const modifiedByOptions = useMemo(() => {
     const unique = new Map<string, string>()
@@ -523,6 +534,13 @@ const FormsPage = () => {
           }}
           filters={[
             {
+              id: 'name',
+              label: 'Name',
+              options: nameOptions,
+              searchable: true,
+              searchPlaceholder: 'Search name...',
+            },
+            {
               id: 'status',
               label: 'Status',
               options: [
@@ -530,13 +548,13 @@ const FormsPage = () => {
                 { label: 'Draft', value: 'DRAFT' },
               ],
             },
+          ]}
+          moreFilters={[
             {
               id: 'createdBy',
               label: 'Created By',
               options: createdByOptions,
             },
-          ]}
-          moreFilters={[
             {
               id: 'modifiedBy',
               label: 'Modified By',
@@ -568,7 +586,7 @@ const FormsPage = () => {
           }}
           onSearchChange={() => {}}
         />
-        <div className='mt-2 min-h-0 flex-1'>
+        <div className='mt-2 min-h-0 flex-1 overflow-hidden'>
           <Table
             isLoading={isPending}
             isRefetching={isFetching || isRefetching}

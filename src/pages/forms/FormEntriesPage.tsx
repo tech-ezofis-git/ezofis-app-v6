@@ -30,6 +30,10 @@ import showToast from '@/components/base/toast/showToast'
 import CustomFilter from '@/components/common/CustomFilter'
 import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
+import {
+  matchesCategoryFilterValue,
+  matchesDateRangeValue,
+} from '@/utils/filterUtils'
 
 // Helper to generate dynamic mock values based on field schema
 const generateDummyEntries = (fields: Question[], count: number = 6) => {
@@ -468,20 +472,12 @@ const FormEntriesPage = () => {
       Object.entries(activeFilters).forEach(([key, value]) => {
         if (!value) return
         if (key === 'createdAt' || key === 'modifiedAt') {
-          const filterDate = value.split('T')[0]
-          const rowDate = entry[key] ? String(entry[key]).split('T')[0] : ''
-          if (rowDate !== filterDate) matches = false
+          if (!matchesDateRangeValue(entry[key], value)) matches = false
         } else if (key === 'createdBy' || key === 'modifiedBy') {
-          if (entry[key] !== value) matches = false
+          if (!matchesCategoryFilterValue(entry[key], value)) matches = false
         } else {
-          // For dynamic fields in 'values' or other top level strings
           const entryVal = entry[key] || entry.values?.[key]
-          if (
-            !entryVal ||
-            !String(entryVal)
-              .toLowerCase()
-              .includes(String(value).toLowerCase())
-          ) {
+          if (!matchesCategoryFilterValue(entryVal, value, 'contains')) {
             matches = false
           }
         }
@@ -820,6 +816,20 @@ const FormEntriesPage = () => {
       })
       .filter(Boolean) as any[]
   }, [fields, entries])
+
+  const nameFieldFilter = useMemo(() => {
+    return (
+      dynamicFilters.find((f) =>
+        String(f.label || f.id)
+          .toLowerCase()
+          .includes('name'),
+      ) || null
+    )
+  }, [dynamicFilters])
+
+  const moreEntryFilters = useMemo(() => {
+    return dynamicFilters.filter((f) => f.id !== nameFieldFilter?.id)
+  }, [dynamicFilters, nameFieldFilter])
 
   // Skeleton Loader for initial fetching
   if (isPageLoading) {
@@ -1353,6 +1363,17 @@ const FormEntriesPage = () => {
               },
             ]}
             filters={[
+              ...(nameFieldFilter
+                ? [
+                    {
+                      id: nameFieldFilter.id,
+                      label: nameFieldFilter.label || 'Name',
+                      options: nameFieldFilter.options || [],
+                      searchable: true,
+                      searchPlaceholder: 'Search name...',
+                    },
+                  ]
+                : []),
               {
                 id: 'createdBy',
                 label: 'Created By',
@@ -1365,7 +1386,7 @@ const FormEntriesPage = () => {
                 id: 'createdAt',
                 label: 'Created Date',
               },
-              ...dynamicFilters,
+              ...moreEntryFilters,
             ]}
             showReset={
               Object.keys(activeFilters).some((k) => activeFilters[k]) ||

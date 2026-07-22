@@ -38,6 +38,7 @@ import showToast from '@/components/base/toast/showToast'
 import CustomFilter from '@/components/common/CustomFilter'
 import { DynamicIcon } from '@/pages/folders/components/icons'
 import cn from '@/utils/cn'
+import { matchesCategoryFilterValue } from '@/utils/filterUtils'
 import {
   settingsHeaderMeta,
   settingsTableCoreOptions,
@@ -588,9 +589,12 @@ export default function DmsFolderConfiguration({
       let matches = true
       Object.entries(activeFilters).forEach(([key, value]) => {
         if (!value) return
-        if (key === 'status') {
-          if (String(repo.status).toLowerCase() !== value.toLowerCase())
+        if (key === 'name') {
+          if (!matchesCategoryFilterValue(repo.name, value, 'contains')) {
             matches = false
+          }
+        } else if (key === 'status') {
+          if (!matchesCategoryFilterValue(repo.status, value)) matches = false
         }
       })
       return matches
@@ -805,6 +809,17 @@ export default function DmsFolderConfiguration({
                 <TableSearch table={repositoryTable as any} />
               }
               filters={[
+                {
+                  id: 'name',
+                  label: 'Name',
+                  options: repositories
+                    .map((r) => String(r.name || '').trim())
+                    .filter(Boolean)
+                    .sort((a, b) => a.localeCompare(b))
+                    .map((name) => ({ label: name, value: name })),
+                  searchable: true,
+                  searchPlaceholder: 'Search name...',
+                },
                 { id: 'status', label: 'Status', options: statusOptions },
               ]}
               showReset={
@@ -1162,7 +1177,7 @@ function FieldsTable({
         header: 'Field Name',
         id: 'fieldName',
         meta: settingsHeaderMeta.start,
-        minSize: 280,
+        minSize: 40,
         size: 360,
         cell: ({ row }) => {
           const rowId = row.original.id
@@ -1218,7 +1233,7 @@ function FieldsTable({
         header: 'Type',
         id: 'dataType',
         meta: settingsHeaderMeta.start,
-        minSize: 150,
+        minSize: 40,
         size: 170,
         cell: ({ row }) => {
           const rowId = row.original.id
@@ -1262,7 +1277,7 @@ function FieldsTable({
         header: 'Folder',
         id: 'folder',
         meta: settingsHeaderMeta.center,
-        minSize: 90,
+        minSize: 40,
         size: 100,
         cell: ({ row }) => {
           const rowId = row.original.id
@@ -1294,7 +1309,7 @@ function FieldsTable({
         header: 'Mandatory',
         id: 'isMandatory',
         meta: settingsHeaderMeta.center,
-        minSize: 110,
+        minSize: 40,
         size: 120,
         cell: ({ row }) => {
           const rowId = row.original.id
@@ -1598,7 +1613,7 @@ function useRepositoryTable(
         enableSorting: false,
         header: 'Folder',
         meta: { ...settingsHeaderMeta.start, label: 'Folder' },
-        minSize: 220,
+        minSize: 40,
         size: 260,
         cell: ({ row }) => (
           <div className='min-w-0'>
@@ -1615,7 +1630,7 @@ function useRepositoryTable(
         enableSorting: false,
         header: 'Storage',
         meta: { ...settingsHeaderMeta.start, label: 'Storage' },
-        minSize: 120,
+        minSize: 40,
         size: 140,
         cell: (info) => (
           <span className='rounded-lg border border-gray-3 px-3 py-1 text-xs font-medium'>
@@ -1627,7 +1642,7 @@ function useRepositoryTable(
         enableSorting: false,
         header: 'Documents',
         meta: settingsHeaderMeta.start,
-        minSize: 130,
+        minSize: 40,
         size: 150,
         cell: (info) => `${info.getValue().toLocaleString()} documents`,
       }),
@@ -1635,7 +1650,7 @@ function useRepositoryTable(
         enableSorting: false,
         header: 'Status',
         meta: { ...settingsHeaderMeta.start, label: 'Status' },
-        minSize: 100,
+        minSize: 40,
         size: 110,
         cell: (info) => (
           <span

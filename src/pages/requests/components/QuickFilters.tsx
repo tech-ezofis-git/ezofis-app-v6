@@ -129,7 +129,7 @@ const QuickFilters: React.FC<QuickFiltersProps> = ({ counts, data }) => {
       inactiveBadgeClass: 'bg-[var(--gray-3)] text-[var(--gray-11)]',
       inactiveClass:
         'bg-[var(--gray-1)] border-[var(--gray-3)] text-[var(--gray-10)] hover:bg-[var(--gray-2)] hover:text-[var(--gray-12)]',
-      label: 'Auto-Matched',
+      label: 'Matched',
     },
     {
       activeBadgeClass: 'bg-[var(--orange-9)] text-white',

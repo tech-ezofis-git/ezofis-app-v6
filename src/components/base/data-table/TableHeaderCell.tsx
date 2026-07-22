@@ -97,7 +97,7 @@ const TableHeaderCell = <TData,>({ header, style, table }: Props<TData>) => {
 
   return (
     <Th
-      className='group/dtcell min-h-10 max-w-0 overflow-hidden bg-[var(--gray-2)] py-0 [--pinned-bg:var(--gray-2)]'
+      className='group/dtcell min-h-10 max-w-0 overflow-visible bg-[var(--gray-2)] py-0 [--pinned-bg:var(--gray-2)]'
       key={header.id}
       style={{
         ...getColumnPinnedStyles(column, table),

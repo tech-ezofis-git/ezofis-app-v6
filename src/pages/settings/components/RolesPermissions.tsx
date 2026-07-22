@@ -42,6 +42,7 @@ import DropdownMenuItem from '@/components/base/menu/MenuItem'
 import Pagination from '@/components/base/pagination/Pagination'
 import showToast from '@/components/base/toast/showToast'
 import CustomFilter from '@/components/common/CustomFilter'
+import { matchesCategoryFilterValue } from '@/utils/filterUtils'
 import {
   getFieldRequiredError,
   getMissingRequiredLabels,
@@ -1246,7 +1247,7 @@ function PermissionMatrix({
         header: 'Category',
         id: 'category',
         meta: settingsHeaderMeta.start,
-        minSize: 200,
+        minSize: 40,
         size: 240,
         cell: ({ getValue }) => (
           <span className='text-sm font-semibold text-[var(--gray-13)]'>
@@ -1259,7 +1260,7 @@ function PermissionMatrix({
         header: 'Access',
         id: 'access',
         meta: settingsHeaderMeta.center,
-        minSize: 120,
+        minSize: 40,
         size: 140,
         cell: ({ row }) => (
           <div className='flex justify-center'>
@@ -1359,9 +1360,12 @@ function RoleList({
       let matches = true
       Object.entries(activeFilters).forEach(([key, value]) => {
         if (!value) return
-        if (key === 'type') {
-          if (String(role.type).toLowerCase() !== value.toLowerCase())
+        if (key === 'name') {
+          if (!matchesCategoryFilterValue(role.name, value, 'contains')) {
             matches = false
+          }
+        } else if (key === 'type') {
+          if (!matchesCategoryFilterValue(role.type, value)) matches = false
         }
       })
       return matches
@@ -1392,7 +1396,7 @@ function RoleList({
         header: 'Role',
         id: 'role',
         meta: { ...settingsHeaderMeta.start, label: 'Role' },
-        minSize: 280,
+        minSize: 40,
         size: 360,
         cell: ({ row }) => {
           const role = row.original
@@ -1418,7 +1422,7 @@ function RoleList({
           disableEllipsis: true,
           label: 'Type',
         },
-        minSize: 140,
+        minSize: 40,
         size: 180,
         cell: ({ getValue }) => (
           <span className='inline-flex items-center rounded-[8px] border border-[var(--border-default)] bg-surface px-3 py-1 text-xs font-semibold text-[var(--gray-13)]'>
@@ -1431,7 +1435,7 @@ function RoleList({
         header: 'Users',
         id: 'users',
         meta: { ...settingsHeaderMeta.start, disableEllipsis: true },
-        minSize: 120,
+        minSize: 40,
         size: 160,
         cell: ({ getValue }) => (
           <span className='inline-flex items-center rounded-[8px] bg-[var(--gray-2)] px-4 py-1 text-sm font-semibold text-[var(--gray-13)]'>
@@ -1528,7 +1532,20 @@ function RoleList({
         <CustomFilter
           activeFilters={activeFilters}
           customSearchComponent={<TableSearch table={roleTable as any} />}
-          filters={[{ id: 'type', label: 'Type', options: typeOptions }]}
+          filters={[
+            {
+              id: 'name',
+              label: 'Name',
+              options: roles
+                .map((r) => String(r.name || '').trim())
+                .filter(Boolean)
+                .sort((a, b) => a.localeCompare(b))
+                .map((name) => ({ label: name, value: name })),
+              searchable: true,
+              searchPlaceholder: 'Search name...',
+            },
+            { id: 'type', label: 'Type', options: typeOptions },
+          ]}
           trailingActions={<TableExport table={roleTable as any} />}
           actionButtons={[
             {
@@ -1784,7 +1801,7 @@ function UserAssignments({
         header: 'User',
         id: 'name',
         meta: { ...settingsHeaderMeta.start, label: 'User' },
-        minSize: 160,
+        minSize: 40,
         size: 200,
         cell: ({ getValue }) => (
           <span className='text-sm font-semibold text-[var(--gray-13)]'>
@@ -1797,7 +1814,7 @@ function UserAssignments({
         header: 'Email',
         id: 'email',
         meta: { ...settingsHeaderMeta.start, label: 'Email' },
-        minSize: 200,
+        minSize: 40,
         size: 240,
         cell: ({ getValue }) => (
           <span className='text-sm text-[var(--gray-11)]'>{getValue()}</span>
@@ -1808,7 +1825,7 @@ function UserAssignments({
         header: 'Current Role',
         id: 'role',
         meta: { ...settingsHeaderMeta.start, label: 'Current Role' },
-        minSize: 140,
+        minSize: 40,
         size: 160,
         cell: ({ getValue }) => (
           <span className='rounded-[8px] bg-[var(--gray-2)] px-3 py-1 text-xs font-semibold text-[var(--gray-13)]'>
@@ -1821,7 +1838,7 @@ function UserAssignments({
         header: 'Change Role',
         id: 'changeRole',
         meta: settingsHeaderMeta.start,
-        minSize: 220,
+        minSize: 40,
         size: 240,
         cell: ({ row }) => {
           const roleOptions = roleNames.map((role) => ({

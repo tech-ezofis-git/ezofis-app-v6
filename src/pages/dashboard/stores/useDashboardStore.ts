@@ -9,7 +9,8 @@ type DashboardState = {
   role: 'management' | 'ap'
   searchQuery: string
   supplierCategory: string
-  timeframe: 'today' | 'week' | 'month' | 'lastmonth' | 'quarter' | 'fy'
+  /** Preset key (today, week, month, …) or custom:YYYY-MM-DD_YYYY-MM-DD */
+  timeframe: string
 
   resetFilters: () => void
   setCurrency: (currency: string) => void
@@ -20,9 +21,7 @@ type DashboardState = {
   setRole: (role: 'management' | 'ap') => void
   setSearchQuery: (query: string) => void
   setSupplierCategory: (category: string) => void
-  setTimeframe: (
-    timeframe: 'today' | 'week' | 'month' | 'lastmonth' | 'quarter' | 'fy',
-  ) => void
+  setTimeframe: (timeframe: string) => void
 }
 
 const useDashboardStore = create<DashboardState>()((set) => ({

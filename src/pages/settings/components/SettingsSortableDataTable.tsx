@@ -19,6 +19,10 @@ import {
   type Table as TanstackTable,
 } from '@tanstack/react-table'
 import { GripVertical } from 'lucide-react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import fitColumnsToWidth, {
+  columnSizingEquals,
+} from '@/components/base/data-table/helpers/fitColumnsToWidth'
 import getColumnPinnedStyles from '@/components/base/data-table/helpers/getColumnPinnedStyles'
 import TableHeaderCell from '@/components/base/data-table/TableHeaderCell'
 import Table from '@/components/base/table/Table'
@@ -62,9 +66,54 @@ export default function SettingsSortableDataTable<TData>({
       activationConstraint: { distance: 6 },
     }),
   )
+  const scrollRef = useRef<HTMLDivElement | null>(null)
+  const hasUserResizedRef = useRef(false)
+  const [containerWidth, setContainerWidth] = useState(0)
 
   const rows = table.getRowModel().rows
   const rowIds = rows.map((row) => row.id)
+  const visibleColumnKey = table
+    .getVisibleLeafColumns()
+    .map((column) => column.id)
+    .join('|')
+  const isResizingColumn = table.getState().columnSizingInfo.isResizingColumn
+
+  useEffect(() => {
+    if (isResizingColumn) {
+      hasUserResizedRef.current = true
+    }
+  }, [isResizingColumn])
+
+  useLayoutEffect(() => {
+    const container = scrollRef.current
+    if (!container) return
+
+    const updateWidth = () => {
+      setContainerWidth(container.clientWidth)
+    }
+
+    updateWidth()
+
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0]
+      if (!entry) return
+      setContainerWidth(entry.contentRect.width)
+    })
+
+    observer.observe(container)
+    return () => observer.disconnect()
+  }, [])
+
+  useLayoutEffect(() => {
+    if (hasUserResizedRef.current || containerWidth <= 0) return
+
+    const nextSizing = fitColumnsToWidth(table, containerWidth)
+    if (!nextSizing) return
+
+    if (columnSizingEquals(table.getState().columnSizing, nextSizing)) return
+
+    table.setColumnSizing(nextSizing)
+  }, [containerWidth, table, visibleColumnKey])
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
@@ -85,7 +134,7 @@ export default function SettingsSortableDataTable<TData>({
 
   return (
     <div className='w-full overflow-hidden rounded-xl border border-[var(--gray-3)] bg-surface shadow-sm'>
-      <div className='w-full overflow-x-auto'>
+      <div className='w-full overflow-x-auto' ref={scrollRef}>
         <DndContext
           collisionDetection={closestCenter}
           sensors={sensors}
@@ -99,7 +148,7 @@ export default function SettingsSortableDataTable<TData>({
               className='table-fixed'
               style={{
                 minWidth: '100%',
-                width: table.getTotalSize(),
+                width: Math.max(table.getTotalSize(), containerWidth || 0),
               }}
             >
               <Thead className='sticky top-0 z-10 bg-[var(--gray-2)] shadow-sm'>
@@ -191,7 +240,10 @@ function SortableDataRow<TData>({
     >
       {row.getVisibleCells().map((cell) => (
         <Td
-          className={cn('py-2.5', cell.column.columnDef.meta?.className)}
+          className={cn(
+            'max-w-0 overflow-visible py-2.5',
+            cell.column.columnDef.meta?.className,
+          )}
           key={cell.id}
           style={getColumnPinnedStyles(cell.column, table)}
         >

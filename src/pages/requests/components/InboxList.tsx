@@ -321,6 +321,97 @@ const getHighValueThreshold = (rows: any[]) => {
   return Math.max(100, threshold)
 }
 
+const formatAmountLabel = (value: number) => {
+  if (value >= 1000) {
+    const asK = value / 1000
+    const rounded = Number.isInteger(asK) ? asK : Number(asK.toFixed(1))
+    return `$${rounded}k`
+  }
+  return `$${Math.round(value).toLocaleString()}`
+}
+
+const getAmountRangeOptions = (rows: any[]) => {
+  const amounts = rows
+    .map((row) => {
+      const amtStr = findInvoiceAmount(row)
+      return amtStr ? Number(amtStr.replace(/[^0-9.-]/g, '')) : NaN
+    })
+    .filter((n) => typeof n === 'number' && !Number.isNaN(n) && n > 0)
+
+  if (amounts.length === 0) {
+    return [
+      { label: '< $1k', value: '0-1000' },
+      { label: '$1k – $5k', value: '1000-5000' },
+      { label: '$5k – $10k', value: '5000-10000' },
+      { label: '≥ $10k', value: '10000-999999999' },
+      { label: 'Custom range', value: 'custom' },
+    ]
+  }
+
+  const min = Math.min(...amounts)
+  const max = Math.max(...amounts)
+
+  if (min === max) {
+    return [
+      {
+        label: formatAmountLabel(min),
+        value: `${min}-${min}`,
+      },
+      { label: 'Custom range', value: 'custom' },
+    ]
+  }
+
+  const range = max - min
+  let bucketCount = 4
+  if (range < 1000) bucketCount = 3
+  else if (range > 50000) bucketCount = 5
+
+  let bucketSize = range / bucketCount
+  const magnitude = Math.pow(10, Math.floor(Math.log10(Math.max(bucketSize, 1))))
+  bucketSize = Math.ceil(bucketSize / magnitude) * magnitude
+
+  const start = Math.floor(min / bucketSize) * bucketSize
+  const options: { label: string; value: string }[] = []
+
+  for (let edge = start; edge < max; edge += bucketSize) {
+    const from = Math.max(0, edge)
+    const to = edge + bucketSize
+    const isLast = to >= max
+    const upper = isLast ? Math.ceil(max) : to
+
+    if (isLast) {
+      options.push({
+        label: `≥ ${formatAmountLabel(from)}`,
+        value: `${from}-999999999`,
+      })
+      break
+    }
+
+    if (from <= 0) {
+      options.push({
+        label: `< ${formatAmountLabel(upper)}`,
+        value: `0-${upper}`,
+      })
+      continue
+    }
+
+    options.push({
+      label: `${formatAmountLabel(from)} – ${formatAmountLabel(upper)}`,
+      value: `${from}-${upper}`,
+    })
+  }
+
+  return options.length > 0
+    ? [...options, { label: 'Custom range', value: 'custom' }]
+    : [
+        {
+          label: `≥ ${formatAmountLabel(min)}`,
+          value: `${min}-999999999`,
+        },
+        { label: 'Custom range', value: 'custom' },
+      ]
+}
+
 const KNOWN_QUICK_FILTERS = new Set([
   'matched',
   'discrepancies',
@@ -530,14 +621,20 @@ const filterRowsByQuickFilters = (
         '',
     ).toUpperCase()
 
-    const isMtc = rawDecision === 'APPROVED' || rawDecision === 'MATCHED'
+    const isMtc =
+      rawDecision === 'APPROVED' ||
+      rawDecision === 'MATCHED' ||
+      rawDecision === 'FULLY MATCHED' ||
+      rawDecision === 'FULLY_MATCHED'
     const isDisc =
       rawDecision === 'PARTIALLY APPROVED' ||
       rawDecision === 'PARTIALLY MATCHED' ||
-      rawDecision === 'REJECTED' ||
+      rawDecision === 'PARTIALLY_APPROVED' ||
+      rawDecision === 'PARTIALLY_MATCHED' ||
       rawDecision === 'NOT MATCHED' ||
+      rawDecision === 'NOT_MATCHED' ||
       rawDecision === 'NO MATCH' ||
-      row.isDuplicateInvoice === true
+      rawDecision === 'NO_MATCH'
 
     const amtStr = findInvoiceAmount(row)
     const amount = amtStr ? Number(amtStr.replace(/[^0-9.-]/g, '')) : 0
@@ -616,6 +713,8 @@ const filterRowsByQuickFilters = (
           }
           if (val.includes('-')) {
             const [min, max] = val.split('-').map(Number)
+            if (Number.isNaN(min) || Number.isNaN(max)) return false
+            if (max >= 999999999) return amount >= min
             return amount >= min && amount < max
           }
         }
@@ -1078,73 +1177,6 @@ const InboxList: React.FC<InboxListProps> = ({
 
   const activeQuickFilters = requestStore((state) => state.activeQuickFilters)
 
-  const counts = useMemo(() => {
-    // For overdue count, filter by Status and Amount (ignore Overdue)
-    const overdueRows = filterRowsByQuickFilters(
-      flatRows,
-      activeQuickFilters,
-      'overdue',
-    )
-    let overdue = 0
-    overdueRows.forEach((row) => {
-      if (isOverdue(row)) overdue++
-    })
-
-    // For status counts, filter by Amount and Overdue (ignore Status)
-    const statusRows = filterRowsByQuickFilters(
-      flatRows,
-      activeQuickFilters,
-      'status',
-    )
-    let matched = 0
-    let discrepancies = 0
-    statusRows.forEach((row) => {
-      const parsedForm = getParsedFormData(row)
-      const agentData =
-        row._agentResponse || row._agentData?.[0] || row._agentData || {}
-      const rawDecision = String(
-        parsedForm['2MH_BMDFEVKsU0uAQjoI1'] ||
-          agentData?.decision ||
-          row.decision ||
-          row.status ||
-          '',
-      ).toUpperCase()
-
-      if (rawDecision === 'APPROVED' || rawDecision === 'MATCHED') {
-        matched++
-      }
-
-      if (
-        rawDecision === 'PARTIALLY APPROVED' ||
-        rawDecision === 'PARTIALLY MATCHED' ||
-        rawDecision === 'REJECTED' ||
-        rawDecision === 'NOT MATCHED' ||
-        rawDecision === 'NO MATCH' ||
-        row.isDuplicateInvoice === true
-      ) {
-        discrepancies++
-      }
-    })
-
-    // For amount counts, filter by Status and Overdue (ignore Amount)
-    const amountRows = filterRowsByQuickFilters(
-      flatRows,
-      activeQuickFilters,
-      'amount',
-    )
-    let highValue = 0
-    const dynamicHighValue = getHighValueThreshold(flatRows)
-    amountRows.forEach((row) => {
-      const amtStr = findInvoiceAmount(row)
-      const amount = amtStr ? Number(amtStr.replace(/[^0-9.-]/g, '')) : 0
-      if (amount >= dynamicHighValue) {
-        highValue++
-      }
-    })
-
-    return { discrepancies, highValue, matched, overdue }
-  }, [flatRows, activeQuickFilters])
-
   const supplierNames = useMemo(() => {
     const set = new Set<string>()
     flatRows.forEach((row: any) => {
@@ -1155,6 +1187,11 @@ const InboxList: React.FC<InboxListProps> = ({
     })
     return Array.from(set).sort((a, b) => a.localeCompare(b))
   }, [flatRows])
+
+  const amountRangeOptions = useMemo(
+    () => getAmountRangeOptions(flatRows),
+    [flatRows],
+  )
 
   const activeFiltersMap = useMemo(() => {
     const map: Record<string, string[]> = {}
@@ -1180,9 +1217,6 @@ const InboxList: React.FC<InboxListProps> = ({
       } else if (f === 'discrepancies:PARTIALLY_MATCHED') {
         map.status = map.status || []
         map.status.push('PARTIALLY_MATCHED')
-      } else if (f === 'highValue') {
-        map.amount = map.amount || []
-        map.amount.push('ge10k')
       } else if (f === 'overdue' || f.startsWith('due_date:')) {
         map.due_date = map.due_date || []
         map.due_date.push(
@@ -1205,7 +1239,15 @@ const InboxList: React.FC<InboxListProps> = ({
   }, [activeQuickFilters])
 
   const optionalFilterFields = useMemo<DynamicFilterField[]>(() => {
-    const skipIds = new Set(['actions', 'Supplier Name', 'supplier', 'vendor'])
+    const skipIds = new Set([
+      'actions',
+      'Supplier Name',
+      'supplier',
+      'vendor',
+      'amount',
+      'Invoice Value',
+      'Total Value',
+    ])
     const fields: DynamicFilterField[] = []
     const seen = new Set<string>()
 
@@ -1217,7 +1259,15 @@ const InboxList: React.FC<InboxListProps> = ({
       if (!col?.id || col.isDisplayColumn || skipIds.has(col.id)) continue
       const label = String(col.label || col.id)
       const lower = label.toLowerCase()
-      if (lower.includes('supplier') || lower.includes('vendor')) continue
+      if (
+        lower.includes('supplier') ||
+        lower.includes('vendor') ||
+        lower.includes('total value') ||
+        lower.includes('invoice value') ||
+        lower === 'amount'
+      ) {
+        continue
+      }
       if (seen.has(col.id)) continue
       seen.add(col.id)
       fields.push({
@@ -1559,9 +1609,10 @@ const InboxList: React.FC<InboxListProps> = ({
           searchQuery={searchState?.value || ''}
           viewMode={viewMode}
           activeFilters={{
-            ...activeFiltersMap,
+            ...Object.fromEntries(
+              Object.entries(activeFiltersMap).filter(([key]) => key !== 'amount'),
+            ),
             'due_date': activeFiltersMap.due_date || [],
-            'Invoice Value': activeFiltersMap.amount || [],
             'status': activeFiltersMap.status || [],
             'Supplier Name': activeFiltersMap.supplier || [],
           }}
@@ -1574,35 +1625,32 @@ const InboxList: React.FC<InboxListProps> = ({
           ]}
           quickFilters={[
             {
-              count: counts.overdue,
               icon: 'tabler:clock-exclamation',
               id: 'overdue',
               label: 'Overdue',
               options: [
-                { label: 'All Overdue', value: 'overdue' },
-                { label: 'This Week', value: 'this_week' },
-                { label: 'Last Month', value: 'last_month' },
-                { label: 'Last 3 Months', value: 'last_3_months' },
-                { label: 'Last 6 Months', value: 'last_6_months' },
-                { label: 'Last Year', value: 'last_year' },
-                { label: 'Custom Range', value: 'custom' },
+                { label: 'All', value: 'overdue' },
+                { label: 'This week', value: 'this_week' },
+                { label: 'Last month', value: 'last_month' },
+                { label: 'Last 3 months', value: 'last_3_months' },
+                { label: 'Last 6 months', value: 'last_6_months' },
+                { label: 'Last year', value: 'last_year' },
+                { label: 'Custom range', value: 'custom' },
               ],
               type: 'date',
             },
             {
-              count: counts.matched,
               icon: 'tabler:circle-check',
               id: 'matched',
-              label: 'Auto-Matched',
+              label: 'Matched',
             },
             {
-              count: counts.discrepancies,
               icon: 'tabler:alert-triangle',
               id: 'discrepancies',
               label: 'Discrepancies',
               options: [
                 {
-                  label: 'All Discrepancies',
+                  label: 'All',
                   value: 'discrepancies:discrepancies',
                 },
                 { label: 'Not Matched', value: 'discrepancies:NOT_MATCHED' },
@@ -1614,10 +1662,11 @@ const InboxList: React.FC<InboxListProps> = ({
               type: 'category',
             },
             {
-              count: counts.highValue,
               icon: 'tabler:currency-dollar',
               id: 'highValue',
-              label: `High Value (≥$${getHighValueThreshold(flatRows) >= 1000 ? getHighValueThreshold(flatRows) / 1000 + 'k' : getHighValueThreshold(flatRows)})`,
+              label: 'High Value',
+              options: amountRangeOptions,
+              type: 'number',
             },
           ]}
           toolbarActions={[
