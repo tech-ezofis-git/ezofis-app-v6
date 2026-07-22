@@ -1,72 +1,72 @@
-import {
-  createColumnHelper,
-  useReactTable,
-} from '@tanstack/react-table'
 import { Combobox as MantineCombobox, useCombobox } from '@mantine/core'
+import { createColumnHelper, useReactTable } from '@tanstack/react-table'
+import { Check, Folder, Link2 } from 'lucide-react'
 import {
-  Check,
-  Folder,
-  Link2,
-} from 'lucide-react'
-import {
-  useCallback,
   type Dispatch,
   type ReactNode,
   type SetStateAction,
+  useCallback,
   useEffect,
   useMemo,
   useRef,
   useState,
 } from 'react'
+import type { Option } from '@/types/option'
+import { createRepository } from '@/api/createFolder'
+import { getRepositorys } from '@/api/v6/folder/folder'
+import { getUsers } from '@/api/v6/user'
 import GoogleDriveLogo from '@/assets/brands/googledrive.svg'
 import OneDriveLogo from '@/assets/brands/onedrive.svg'
-import { getRepositorys } from '@/api/v6/folder/folder'
-import { createRepository } from '@/api/createFolder'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
-import Icon from '@/components/base/icon/Icon'
+import TableExport from '@/components/base/data-table/actions/TableExport'
+import TableSearch from '@/components/base/data-table/actions/TableSearch'
 import DataTable from '@/components/base/data-table/DataTable'
-import Pagination from '@/components/base/pagination/Pagination'
+import Icon from '@/components/base/icon/Icon'
 import InputCheckbox from '@/components/base/inputs/InputCheckbox'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import InputText from '@/components/base/inputs/InputText'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
-import showToast from '@/components/base/toast/showToast'
-import Menu from '@/components/base/menu/Menu'
-import MenuItem from '@/components/base/menu/MenuItem'
 import ComboboxOptions from '@/components/base/inputs/select/ComboboxOptions'
 import ComboboxSearch from '@/components/base/inputs/select/ComboboxSearch'
-import useLocalSearch from '@/components/base/inputs/shared/hooks/useLocalSearch'
 import { classNames as inputSharedClassNames } from '@/components/base/inputs/shared/constants'
-import type { Option } from '@/types/option'
-import { getUsers } from '@/api/v6/user'
+import useLocalSearch from '@/components/base/inputs/shared/hooks/useLocalSearch'
+import Menu from '@/components/base/menu/Menu'
+import MenuItem from '@/components/base/menu/MenuItem'
+import Pagination from '@/components/base/pagination/Pagination'
+import showToast from '@/components/base/toast/showToast'
+import CustomFilter from '@/components/common/CustomFilter'
 import { DynamicIcon } from '@/pages/folders/components/icons'
 import cn from '@/utils/cn'
+import { matchesCategoryFilterValue } from '@/utils/filterUtils'
 import {
   settingsHeaderMeta,
   settingsTableCoreOptions,
   useSettingsTablePagination,
   useSettingsTableSearch,
 } from '../../helpers/settingsDataTable'
-import SettingsSortableDataTable from '../SettingsSortableDataTable'
+import SettingsFormSection from '../SettingsFormSection'
 import SettingsPageHeader, {
   type SettingsAddAction,
   SettingsHeaderAddButton,
 } from '../SettingsPageHeader'
-import SettingsFormSection from '../SettingsFormSection'
-import SettingsSetupHeader from '../SettingsSetupHeader'
 import SettingsSetupContent from '../SettingsSetupContent'
+import SettingsSetupHeader from '../SettingsSetupHeader'
+import SettingsSortableDataTable from '../SettingsSortableDataTable'
+import useSettingsTableToolbar from '../useSettingsTableToolbar'
 import FolderStorageConnectorPanel, {
   type CloudStorageOption,
 } from './FolderStorageConnectorPanel'
-import useSettingsTableToolbar from '../useSettingsTableToolbar'
-import CustomFilter from '@/components/common/CustomFilter'
-import TableSearch from '@/components/base/data-table/actions/TableSearch'
-import TableExport from '@/components/base/data-table/actions/TableExport'
 
 type DmsFolderConfigurationProps = {
   onBack?: () => void
 }
+type FieldDisplayRow = FieldRow & {
+  ancestorContinues: boolean[]
+  depth: number
+  isLastAtDepth: boolean
+}
+
 type FieldRow = {
   dataType: string
   fieldName: string
@@ -77,12 +77,6 @@ type FieldRow = {
   level: number
   orderId: number
   system?: boolean
-}
-
-type FieldDisplayRow = FieldRow & {
-  ancestorContinues: boolean[]
-  depth: number
-  isLastAtDepth: boolean
 }
 
 type RepositoryRow = {
@@ -113,7 +107,9 @@ type WizardStepItem = {
   title: string
 }
 
-const extractRepositories = (payload: unknown): Array<Record<string, unknown>> => {
+const extractRepositories = (
+  payload: unknown,
+): Array<Record<string, unknown>> => {
   if (!payload) return []
   if (Array.isArray(payload)) return payload
 
@@ -279,7 +275,6 @@ const wizardSteps: WizardStepItem[] = [
   { description: 'ERP and sync mapping', id: 5, title: 'Integrations' },
 ]
 
-
 type StorageOption = {
   comingSoon: boolean
   connectorType?: string
@@ -433,8 +428,10 @@ const FOLDER_FIELD_ICON_KEYS = [
   'address',
 ] as const
 
-const FOLDER_FIELD_ICON_LABELS: Record<(typeof FOLDER_FIELD_ICON_KEYS)[number], string> =
-{
+const FOLDER_FIELD_ICON_LABELS: Record<
+  (typeof FOLDER_FIELD_ICON_KEYS)[number],
+  string
+> = {
   address: 'Address',
   amount: 'Amount',
   building: 'Supplier',
@@ -580,21 +577,24 @@ export default function DmsFolderConfiguration({
   const [description, setDescription] = useState('')
 
   const [folderOwner, setFolderOwner] = useState<SelectOption | null>(null)
-  const [folderCoordinator, setFolderCoordinator] = useState<SelectOption | null>(
-    null,
-  )
+  const [folderCoordinator, setFolderCoordinator] =
+    useState<SelectOption | null>(null)
   const [userOptions, setUserOptions] = useState<SelectOption[]>([])
   const [repositories, setRepositories] = useState<RepositoryRow[]>([])
   const [activeFilters, setActiveFilters] = useState<Record<string, string>>({})
   const [isLoadingRepositories, setIsLoadingRepositories] = useState(true)
 
   const filteredRepositories = useMemo(() => {
-    return repositories.filter(repo => {
+    return repositories.filter((repo) => {
       let matches = true
       Object.entries(activeFilters).forEach(([key, value]) => {
         if (!value) return
-        if (key === 'status') {
-          if (String(repo.status).toLowerCase() !== value.toLowerCase()) matches = false
+        if (key === 'name') {
+          if (!matchesCategoryFilterValue(repo.name, value, 'contains')) {
+            matches = false
+          }
+        } else if (key === 'status') {
+          if (!matchesCategoryFilterValue(repo.status, value)) matches = false
         }
       })
       return matches
@@ -624,7 +624,9 @@ export default function DmsFolderConfiguration({
 
       const rows = extractRepositories(response.data)
         .map((repository) => mapRepositoryToRow(repository))
-        .filter((repository): repository is RepositoryRow => repository !== null)
+        .filter(
+          (repository): repository is RepositoryRow => repository !== null,
+        )
 
       setRepositories(rows)
     } finally {
@@ -676,10 +678,7 @@ export default function DmsFolderConfiguration({
       const selectedStorageOption =
         storageOptions.find((item) => item.id === storage) ?? storageOptions[0]
 
-      if (
-        isCloudStorageOption(selectedStorageOption) &&
-        !storageConnectorId
-      ) {
+      if (isCloudStorageOption(selectedStorageOption) && !storageConnectorId) {
         showToast({
           message: `Connect ${selectedStorageOption.title} and select a connector before continuing.`,
           variant: 'error',
@@ -756,7 +755,11 @@ export default function DmsFolderConfiguration({
     }
   }
 
-  const { table: repositoryTable, tableSearchOptions, pagination } = useRepositoryTable(filteredRepositories, {
+  const {
+    pagination,
+    table: repositoryTable,
+    tableSearchOptions,
+  } = useRepositoryTable(filteredRepositories, {
     onEditRepository: openEditRepository,
   })
   const repositoryToolbar = useSettingsTableToolbar({
@@ -782,48 +785,66 @@ export default function DmsFolderConfiguration({
             onBack={onBack}
           />
 
-          <div className='p-4 flex-1 flex flex-col overflow-hidden'>
+          <div className='flex flex-1 flex-col overflow-hidden p-4'>
             <CustomFilter
+              activeFilters={activeFilters}
+              trailingActions={<TableExport table={repositoryTable as any} />}
+              actionButtons={[
+                {
+                  color: 'gray',
+                  disabled: isLoadingRepositories,
+                  icon: 'tabler:refresh',
+                  id: 'refresh',
+                  isIconButton: true,
+                  tooltip: 'Refresh',
+                  variant: 'outline',
+                  onClick: loadRepositories,
+                },
+              ]}
+              addButton={{
+                tooltip: 'New Folder',
+                onClick: () => setShowWizard(true),
+              }}
+              customSearchComponent={
+                <TableSearch table={repositoryTable as any} />
+              }
               filters={[
+                {
+                  id: 'name',
+                  label: 'Name',
+                  options: repositories
+                    .map((r) => String(r.name || '').trim())
+                    .filter(Boolean)
+                    .sort((a, b) => a.localeCompare(b))
+                    .map((name) => ({ label: name, value: name })),
+                  searchable: true,
+                  searchPlaceholder: 'Search name...',
+                },
                 { id: 'status', label: 'Status', options: statusOptions },
               ]}
-              activeFilters={activeFilters}
-              onFilterChange={(id, val) => setActiveFilters(prev => ({ ...prev, [id]: val }))}
+              showReset={
+                Object.keys(activeFilters).some((k) => activeFilters[k]) ||
+                !!tableSearchOptions.state.globalFilter?.value
+              }
+              onFilterChange={(id, val) =>
+                setActiveFilters((prev) => ({ ...prev, [id]: val }))
+              }
               onReset={() => {
                 setActiveFilters({})
                 tableSearchOptions.onGlobalFilterChange({ id: '', value: '' })
               }}
-              showReset={Object.keys(activeFilters).some(k => activeFilters[k]) || !!tableSearchOptions.state.globalFilter?.value}
-              customSearchComponent={<TableSearch table={repositoryTable as any} />}
-              addButton={{
-                onClick: () => setShowWizard(true),
-                tooltip: 'New Folder'
-              }}
-              actionButtons={[
-                {
-                  id: 'refresh',
-                  icon: 'tabler:refresh',
-                  tooltip: 'Refresh',
-                  onClick: loadRepositories,
-                  isIconButton: true,
-                  color: 'gray',
-                  variant: 'outline',
-                  disabled: isLoadingRepositories,
-                }
-              ]}
-              trailingActions={<TableExport table={repositoryTable as any} />}
             />
-            <div className='mt-2 min-h-0 flex-1 overflow-hidden flex flex-col'>
+            <div className='mt-2 flex min-h-0 flex-1 flex-col overflow-hidden'>
               <div className='min-h-0 flex-1 overflow-hidden'>
                 <DataTable
-                  hideActionBar
                   isLoading={isLoadingRepositories}
                   isReLoading={isLoadingRepositories}
                   pageSize={pagination.pageSize}
                   rowSize={repositoryToolbar.rowSize}
                   table={repositoryTable}
-                  stickyHeader
+                  hideActionBar
                   hideGrouping
+                  stickyHeader
                   onReload={() => {
                     void loadRepositories()
                   }}
@@ -848,18 +869,20 @@ export default function DmsFolderConfiguration({
           <SettingsSetupHeader
             moduleTitle='Folder Configuration'
             progress={(step / wizardSteps.length) * 100}
-            setupTitle='New Folder'
             stepDescription={
               wizardSteps.find((item) => item.id === step)?.description || ''
             }
-            stepTitle={wizardSteps.find((item) => item.id === step)?.title || ''}
+            stepTitle={
+              wizardSteps.find((item) => item.id === step)?.title || ''
+            }
+            setupTitle='New Folder'
             onBackToSettings={onBack}
             onCancelSetup={closeWizard}
           />
 
           <div className='grid min-h-[calc(100vh-96px)] grid-cols-1 lg:grid-cols-[296px_1fr]'>
             <aside className='border-r border-[var(--border-default)] bg-[var(--surface)] px-4 py-9'>
-              <StepNav setStep={setStep} step={step} />
+              <StepNav step={step} setStep={setStep} />
             </aside>
 
             <SettingsSetupContent fullWidth>
@@ -874,6 +897,7 @@ export default function DmsFolderConfiguration({
                 storage={storage}
                 storageConnectorId={storageConnectorId}
                 storageConnectorLabel={storageConnectorLabel}
+                userOptions={userOptions}
                 versioning={versioning}
                 setDescription={setDescription}
                 setDisplayMode={setDisplayMode}
@@ -882,9 +906,8 @@ export default function DmsFolderConfiguration({
                 setFolderName={setFolderName}
                 setFolderOwner={setFolderOwner}
                 setStorage={handleStorageChange}
-                onStorageConnectorChange={handleStorageConnectorChange}
-                userOptions={userOptions}
                 setVersioning={setVersioning}
+                onStorageConnectorChange={handleStorageConnectorChange}
               />
 
               <div className='mt-8 flex items-center justify-between border-t border-[var(--border-default)] pt-6'>
@@ -924,6 +947,44 @@ export default function DmsFolderConfiguration({
           </div>
         </>
       )}
+    </div>
+  )
+}
+
+function FieldNameCell({
+  children,
+  field,
+}: {
+  children: ReactNode
+  field: FieldRow
+}) {
+  return (
+    <div className='flex min-h-9 min-w-0 items-center'>
+      <FieldTreeIcon
+        iconKey={getFieldIconKey(field)}
+        isFolder={field.includeInFolderStructure}
+      />
+      <div className='min-w-0 flex-1'>{children}</div>
+    </div>
+  )
+}
+
+function FieldNameTreeCell({
+  children,
+  depth,
+  iconKey,
+  isLastAtDepth,
+}: {
+  children: ReactNode
+  depth: number
+  iconKey: string
+  isLastAtDepth: boolean
+}) {
+  return (
+    <div className='flex min-h-9 min-w-0 items-center'>
+      <FieldTreeLines depth={depth} isLastAtDepth={isLastAtDepth} />
+      <FieldTreeIcon iconKey={iconKey} isFolder />
+      <div className='min-w-0 flex-1'>{children}</div>
     </div>
   )
 }
@@ -999,7 +1060,7 @@ function FieldNameWithIconInput({
 
       <MantineCombobox.Dropdown
         classNames={{
-          dropdown: 'z-[200] border border-gray-3  p-0 shadow-md',
+          dropdown: 'z-[200] border border-gray-3 p-0 shadow-md',
         }}
       >
         <ComboboxSearch
@@ -1033,119 +1094,30 @@ function FieldNameWithIconInput({
 
   return (
     <InputText
-      ref={inputRef}
       classNames={{ input: heightClass }}
       leftSection={leftSection}
       leftSectionPointerEvents='auto'
       placeholder={placeholder}
+      ref={inputRef}
+      value={value}
       styles={{
         wrapper: {
           '--input-left-section-width': showIconPicker ? '44px' : '36px',
         } as React.CSSProperties,
       }}
-      value={value}
       onBlur={onBlur}
       onChange={onChange}
     />
   )
 }
 
-function FieldTreeLines({
-  depth,
-  isLastAtDepth,
-}: {
-  depth: number
-  isLastAtDepth: boolean
-}) {
-  if (depth === 0) return null
-
-  return (
-    <div
-      className='relative mr-1 shrink-0 self-stretch'
-      style={{
-        marginLeft: (depth - 1) * FIELD_TREE_STEP,
-        width: FIELD_TREE_STEP,
-      }}
-    >
-      <span
-        className='absolute top-0 left-1/2 w-px -translate-x-1/2 bg-gray-5'
-        style={{ height: '50%' }}
-      />
-      <span
-        className='absolute top-1/2 left-1/2 h-px bg-gray-5'
-        style={{ width: FIELD_TREE_STEP / 2 }}
-      />
-      {!isLastAtDepth ? (
-        <span className='absolute top-1/2 bottom-0 left-1/2 w-px -translate-x-1/2 bg-gray-5' />
-      ) : null}
-    </div>
-  )
-}
-
-function FieldTreeIcon({
-  iconKey,
-  isFolder,
-}: {
-  iconKey: string
-  isFolder: boolean
-}) {
-  return (
-    <span
-      className={cn(
-        'mr-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-md',
-        isFolder ? 'bg-primary-3 text-primary-9' : 'bg-blue-3 text-blue-9',
-      )}
-    >
-      <DynamicIcon className='h-3.5 w-3.5' name={iconKey} />
-    </span>
-  )
-}
-
-function FieldNameTreeCell({
-  children,
-  depth,
-  iconKey,
-  isLastAtDepth,
-}: {
-  children: ReactNode
-  depth: number
-  iconKey: string
-  isLastAtDepth: boolean
-}) {
-  return (
-    <div className='flex min-h-9 min-w-0 items-center'>
-      <FieldTreeLines depth={depth} isLastAtDepth={isLastAtDepth} />
-      <FieldTreeIcon iconKey={iconKey} isFolder />
-      <div className='min-w-0 flex-1'>{children}</div>
-    </div>
-  )
-}
-
-function FieldNameCell({
-  children,
-  field,
-}: {
-  children: ReactNode
-  field: FieldRow
-}) {
-  return (
-    <div className='flex min-h-9 min-w-0 items-center'>
-      <FieldTreeIcon
-        iconKey={getFieldIconKey(field)}
-        isFolder={field.includeInFolderStructure}
-      />
-      <div className='min-w-0 flex-1'>{children}</div>
-    </div>
-  )
-}
-
 function FieldsTable({
-  fieldTypeOptions,
   fields,
+  fieldTypeOptions,
   setFields,
 }: {
-  fieldTypeOptions: SelectOption[]
   fields: FieldRow[]
+  fieldTypeOptions: SelectOption[]
   setFields: Dispatch<SetStateAction<FieldRow[]>>
 }) {
   const [editingRowId, setEditingRowId] = useState<string | null>(null)
@@ -1172,11 +1144,11 @@ function FieldsTable({
         prev.map((field) =>
           field.id === id
             ? {
-              ...field,
-              iconKey: checked ? field.iconKey || 'folder' : undefined,
-              includeInFolderStructure: checked,
-              isMandatory: checked ? true : field.isMandatory,
-            }
+                ...field,
+                iconKey: checked ? field.iconKey || 'folder' : undefined,
+                includeInFolderStructure: checked,
+                isMandatory: checked ? true : field.isMandatory,
+              }
             : field,
         ),
       ),
@@ -1205,7 +1177,7 @@ function FieldsTable({
         header: 'Field Name',
         id: 'fieldName',
         meta: settingsHeaderMeta.start,
-        minSize: 280,
+        minSize: 40,
         size: 360,
         cell: ({ row }) => {
           const rowId = row.original.id
@@ -1261,7 +1233,7 @@ function FieldsTable({
         header: 'Type',
         id: 'dataType',
         meta: settingsHeaderMeta.start,
-        minSize: 150,
+        minSize: 40,
         size: 170,
         cell: ({ row }) => {
           const rowId = row.original.id
@@ -1280,6 +1252,7 @@ function FieldsTable({
               <InputSelect
                 classNames={{ input: 'h-8 text-12' }}
                 options={fieldTypeOptions}
+                width='target'
                 value={
                   fieldTypeOptions.find(
                     (option) => option.value === row.original.dataType,
@@ -1287,7 +1260,6 @@ function FieldsTable({
                   fieldTypeOptions[0] ||
                   null
                 }
-                width='target'
                 onChange={(selected) => {
                   if (!selected?.value) return
                   updateField(rowId, {
@@ -1305,7 +1277,7 @@ function FieldsTable({
         header: 'Folder',
         id: 'folder',
         meta: settingsHeaderMeta.center,
-        minSize: 90,
+        minSize: 40,
         size: 100,
         cell: ({ row }) => {
           const rowId = row.original.id
@@ -1337,7 +1309,7 @@ function FieldsTable({
         header: 'Mandatory',
         id: 'isMandatory',
         meta: settingsHeaderMeta.center,
-        minSize: 110,
+        minSize: 40,
         size: 120,
         cell: ({ row }) => {
           const rowId = row.original.id
@@ -1459,196 +1431,67 @@ function FieldsTable({
 
   return (
     <SettingsSortableDataTable
+      rowClassName='group'
+      table={table}
       getRowClassName={(row) =>
         !row.includeInFolderStructure ? 'bg-[var(--gray-1)]/70' : undefined
       }
-      rowClassName='group'
-      table={table}
       onReorder={handleReorder}
       onValidateReorder={handleValidateReorder}
     />
   )
 }
-function useRepositoryTable(
-  rows: RepositoryRow[],
-  {
-    onEditRepository,
-  }: {
-    onEditRepository: (repository: RepositoryRow) => void
-  },
-) {
-  const columnHelper = createColumnHelper<RepositoryRow>()
-  const tableSearchOptions = useSettingsTableSearch()
-  const {
-    onPageChange,
-    onPageSizeChange,
-    onPaginationChange,
-    page,
-    pageSize,
-    pagination,
-    paginationModel,
-  } = useSettingsTablePagination()
 
-  const columns = useMemo(
-    () => [
-      columnHelper.display({
-        enableResizing: false,
-        enableSorting: false,
-        header: '',
-        id: 'icon',
-        maxSize: 48,
-        meta: settingsHeaderMeta.center,
-        minSize: 48,
-        size: 48,
-        cell: () => (
-          <div className='flex justify-center'>
-            <div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-primary-3 text-primary-9'>
-              <Folder size={16} />
-            </div>
-          </div>
-        ),
-      }),
-      columnHelper.accessor('name', {
-        enableSorting: false,
-        header: 'Folder',
-        meta: { ...settingsHeaderMeta.start, label: 'Folder' },
-        minSize: 220,
-        size: 260,
-        cell: ({ row }) => (
-          <div className='min-w-0'>
-            <div className='truncate font-semibold text-gray-13'>
-              {row.original.name}
-            </div>
-            <div className='truncate text-xs text-gray-11'>
-              Owner: {row.original.owner}
-            </div>
-          </div>
-        ),
-      }),
-      columnHelper.accessor('storage', {
-        enableSorting: false,
-        header: 'Storage',
-        meta: { ...settingsHeaderMeta.start, label: 'Storage' },
-        minSize: 120,
-        size: 140,
-        cell: (info) => (
-          <span className='rounded-lg border border-gray-3 px-3 py-1 text-xs font-medium'>
-            {info.getValue()}
-          </span>
-        ),
-      }),
-      columnHelper.accessor('documents', {
-        enableSorting: false,
-        header: 'Documents',
-        meta: settingsHeaderMeta.start,
-        minSize: 130,
-        size: 150,
-        cell: (info) => `${info.getValue().toLocaleString()} documents`,
-      }),
-      columnHelper.accessor('status', {
-        enableSorting: false,
-        header: 'Status',
-        meta: { ...settingsHeaderMeta.start, label: 'Status' },
-        minSize: 100,
-        size: 110,
-        cell: (info) => (
-          <span
-            className={cn(
-              'rounded-lg px-3 py-1 text-xs font-semibold capitalize',
-              info.getValue() === 'active'
-                ? 'bg-primary-9 text-white'
-                : 'bg-gray-2 text-gray-13',
-            )}
-          >
-            {info.getValue()}
-          </span>
-        ),
-      }),
-      columnHelper.display({
-        enableResizing: false,
-        enableSorting: false,
-        header: 'Actions',
-        id: 'actions',
-        meta: settingsHeaderMeta.end,
-        minSize: 72,
-        size: 72,
-        cell: ({ row }) => {
-          const repository = row.original
-
-          return (
-            <div
-              className='flex justify-end'
-              onClick={(event) => event.stopPropagation()}
-            >
-              <Menu
-                position='bottom-end'
-                width={160}
-                withinPortal
-                target={
-                  <IconButton
-                    color='gray'
-                    icon='lucide:more-horizontal'
-                    size='md'
-                    variant='ghost'
-                  />
-                }
-              >
-                <MenuItem
-                  icon='lucide:pencil'
-                  label='Edit'
-                  onClick={() => onEditRepository(repository)}
-                />
-                <MenuItem disabled icon='lucide:settings' label='Settings' />
-              </Menu>
-            </div>
-          )
-        },
-      }),
-    ],
-    [columnHelper, onEditRepository],
-  )
-
-  const table = useReactTable({
-    ...settingsTableCoreOptions,
-    ...tableSearchOptions,
-    ...paginationModel,
-    columns,
-    data: rows,
-    getRowId: (row) => row.id,
-    onPaginationChange,
-    state: {
-      ...tableSearchOptions.state,
-      pagination,
-    },
-  })
-
-  return {
-    pagination: {
-      onPageChange,
-      onPageSizeChange,
-      page,
-      pageSize,
-    },
-    table,
-    tableSearchOptions,
-  }
-}
-
-function StorageCornerCheck() {
+function FieldTreeIcon({
+  iconKey,
+  isFolder,
+}: {
+  iconKey: string
+  isFolder: boolean
+}) {
   return (
-    <span className='pointer-events-none absolute top-0 right-0 h-6 w-6 overflow-hidden rounded-tr-[9px]'>
-      <span
-        className='absolute top-0 right-0 h-full w-full bg-primary-9'
-        style={{ clipPath: 'polygon(100% 0, 0 0, 100% 100%)' }}
-      />
-      <Check
-        className='absolute top-0.5 right-0.5 h-3 w-3 text-white'
-        strokeWidth={3}
-      />
+    <span
+      className={cn(
+        'mr-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-md',
+        isFolder ? 'bg-primary-3 text-primary-9' : 'bg-blue-3 text-blue-9',
+      )}
+    >
+      <DynamicIcon className='h-3.5 w-3.5' name={iconKey} />
     </span>
   )
 }
 
+function FieldTreeLines({
+  depth,
+  isLastAtDepth,
+}: {
+  depth: number
+  isLastAtDepth: boolean
+}) {
+  if (depth === 0) return null
+
+  return (
+    <div
+      className='relative mr-1 shrink-0 self-stretch'
+      style={{
+        marginLeft: (depth - 1) * FIELD_TREE_STEP,
+        width: FIELD_TREE_STEP,
+      }}
+    >
+      <span
+        className='absolute top-0 left-1/2 w-px -translate-x-1/2 bg-gray-5'
+        style={{ height: '50%' }}
+      />
+      <span
+        className='absolute top-1/2 left-1/2 h-px bg-gray-5'
+        style={{ width: FIELD_TREE_STEP / 2 }}
+      />
+      {!isLastAtDepth ? (
+        <span className='absolute top-1/2 bottom-0 left-1/2 w-px -translate-x-1/2 bg-gray-5' />
+      ) : null}
+    </div>
+  )
+}
 function StepIcon({ step }: { step: WizardStep }) {
   return <span className='text-xs font-bold'>{step}</span>
 }
@@ -1712,6 +1555,186 @@ function StepNav({
   )
 }
 
+function StorageCornerCheck() {
+  return (
+    <span className='pointer-events-none absolute top-0 right-0 h-6 w-6 overflow-hidden rounded-tr-[9px]'>
+      <span
+        className='absolute top-0 right-0 h-full w-full bg-primary-9'
+        style={{ clipPath: 'polygon(100% 0, 0 0, 100% 100%)' }}
+      />
+      <Check
+        className='absolute top-0.5 right-0.5 h-3 w-3 text-white'
+        strokeWidth={3}
+      />
+    </span>
+  )
+}
+
+function useRepositoryTable(
+  rows: RepositoryRow[],
+  {
+    onEditRepository,
+  }: {
+    onEditRepository: (repository: RepositoryRow) => void
+  },
+) {
+  const columnHelper = createColumnHelper<RepositoryRow>()
+  const tableSearchOptions = useSettingsTableSearch()
+  const {
+    page,
+    pageSize,
+    pagination,
+    paginationModel,
+    onPageChange,
+    onPageSizeChange,
+    onPaginationChange,
+  } = useSettingsTablePagination()
+
+  const columns = useMemo(
+    () => [
+      columnHelper.display({
+        enableResizing: false,
+        enableSorting: false,
+        header: '',
+        id: 'icon',
+        maxSize: 48,
+        meta: settingsHeaderMeta.center,
+        minSize: 48,
+        size: 48,
+        cell: () => (
+          <div className='flex justify-center'>
+            <div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-primary-3 text-primary-9'>
+              <Folder size={16} />
+            </div>
+          </div>
+        ),
+      }),
+      columnHelper.accessor('name', {
+        enableSorting: false,
+        header: 'Folder',
+        meta: { ...settingsHeaderMeta.start, label: 'Folder' },
+        minSize: 40,
+        size: 260,
+        cell: ({ row }) => (
+          <div className='min-w-0'>
+            <div className='truncate font-semibold text-gray-13'>
+              {row.original.name}
+            </div>
+            <div className='truncate text-xs text-gray-11'>
+              Owner: {row.original.owner}
+            </div>
+          </div>
+        ),
+      }),
+      columnHelper.accessor('storage', {
+        enableSorting: false,
+        header: 'Storage',
+        meta: { ...settingsHeaderMeta.start, label: 'Storage' },
+        minSize: 40,
+        size: 140,
+        cell: (info) => (
+          <span className='rounded-lg border border-gray-3 px-3 py-1 text-xs font-medium'>
+            {info.getValue()}
+          </span>
+        ),
+      }),
+      columnHelper.accessor('documents', {
+        enableSorting: false,
+        header: 'Documents',
+        meta: settingsHeaderMeta.start,
+        minSize: 40,
+        size: 150,
+        cell: (info) => `${info.getValue().toLocaleString()} documents`,
+      }),
+      columnHelper.accessor('status', {
+        enableSorting: false,
+        header: 'Status',
+        meta: { ...settingsHeaderMeta.start, label: 'Status' },
+        minSize: 40,
+        size: 110,
+        cell: (info) => (
+          <span
+            className={cn(
+              'rounded-lg px-3 py-1 text-xs font-semibold capitalize',
+              info.getValue() === 'active'
+                ? 'bg-primary-9 text-white'
+                : 'bg-gray-2 text-gray-13',
+            )}
+          >
+            {info.getValue()}
+          </span>
+        ),
+      }),
+      columnHelper.display({
+        enableResizing: false,
+        enableSorting: false,
+        header: 'Actions',
+        id: 'actions',
+        meta: settingsHeaderMeta.end,
+        minSize: 72,
+        size: 72,
+        cell: ({ row }) => {
+          const repository = row.original
+
+          return (
+            <div
+              className='flex justify-end'
+              onClick={(event) => event.stopPropagation()}
+            >
+              <Menu
+                position='bottom-end'
+                width={160}
+                withinPortal
+                target={
+                  <IconButton
+                    color='gray'
+                    icon='lucide:more-horizontal'
+                    size='md'
+                    variant='ghost'
+                  />
+                }
+              >
+                <MenuItem
+                  icon='lucide:pencil'
+                  label='Edit'
+                  onClick={() => onEditRepository(repository)}
+                />
+                <MenuItem icon='lucide:settings' label='Settings' disabled />
+              </Menu>
+            </div>
+          )
+        },
+      }),
+    ],
+    [columnHelper, onEditRepository],
+  )
+
+  const table = useReactTable({
+    ...settingsTableCoreOptions,
+    ...tableSearchOptions,
+    ...paginationModel,
+    columns,
+    data: rows,
+    state: {
+      ...tableSearchOptions.state,
+      pagination,
+    },
+    getRowId: (row) => row.id,
+    onPaginationChange,
+  })
+
+  return {
+    pagination: {
+      page,
+      pageSize,
+      onPageChange,
+      onPageSizeChange,
+    },
+    table,
+    tableSearchOptions,
+  }
+}
+
 function WizardContent({
   description,
   displayMode,
@@ -1719,11 +1742,11 @@ function WizardContent({
   folderCoordinator,
   folderName,
   folderOwner,
-  onStorageConnectorChange,
   step,
   storage,
   storageConnectorId,
   storageConnectorLabel,
+  userOptions,
   versioning,
   setDescription,
   setDisplayMode,
@@ -1732,8 +1755,8 @@ function WizardContent({
   setFolderName,
   setFolderOwner,
   setStorage,
-  userOptions,
   setVersioning,
+  onStorageConnectorChange,
 }: {
   description: string
   displayMode: string
@@ -1741,24 +1764,24 @@ function WizardContent({
   folderCoordinator: SelectOption | null
   folderName: string
   folderOwner: SelectOption | null
-  onStorageConnectorChange: (
-    connectorId: string | null,
-    connectorLabel: string | null,
-  ) => void
   setDescription: Dispatch<SetStateAction<string>>
   setDisplayMode: Dispatch<SetStateAction<string>>
   setFields: Dispatch<SetStateAction<FieldRow[]>>
   setFolderCoordinator: Dispatch<SetStateAction<SelectOption | null>>
   setFolderName: Dispatch<SetStateAction<string>>
   setFolderOwner: Dispatch<SetStateAction<SelectOption | null>>
-  setStorage: (nextStorage: string) => void
-  userOptions: SelectOption[]
   setVersioning: Dispatch<SetStateAction<string>>
   step: WizardStep
   storage: string
   storageConnectorId: string | null
   storageConnectorLabel: string | null
+  userOptions: SelectOption[]
   versioning: string
+  onStorageConnectorChange: (
+    connectorId: string | null,
+    connectorLabel: string | null,
+  ) => void
+  setStorage: (nextStorage: string) => void
 }) {
   const [newFieldName, setNewFieldName] = useState('')
   const [newFieldType, setNewFieldType] = useState('SHORT_TEXT')
@@ -1776,11 +1799,13 @@ function WizardContent({
     const response = await getRepositorys()
 
     if (!response.error && Array.isArray(response.data)) {
-      response.data.forEach((repository: { fields?: Array<{ dataType?: string }> }) => {
-        ; (repository.fields || []).forEach((field) => {
-          if (field.dataType) types.add(field.dataType)
-        })
-      })
+      response.data.forEach(
+        (repository: { fields?: Array<{ dataType?: string }> }) => {
+          ;(repository.fields || []).forEach((field) => {
+            if (field.dataType) types.add(field.dataType)
+          })
+        },
+      )
     }
 
     setFieldTypeOptions(toFieldTypeOptions(Array.from(types)))
@@ -1801,7 +1826,9 @@ function WizardContent({
         {
           dataType: newFieldType,
           fieldName: trimmedName,
-          iconKey: newIsFolder ? String(newFieldIcon?.value || 'folder') : undefined,
+          iconKey: newIsFolder
+            ? String(newFieldIcon?.value || 'folder')
+            : undefined,
           id: `${trimmedName}-${Date.now()}`,
           includeInFolderStructure: newIsFolder,
           isMandatory: newIsFolder || newIsMandatory,
@@ -1841,8 +1868,6 @@ function WizardContent({
           onChange={setDescription}
         />
 
-
-
         <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
           <InputSelect
             label='Folder Owner'
@@ -1879,9 +1904,9 @@ function WizardContent({
 
             return (
               <button
+                disabled={isDisabled}
                 key={item.id}
                 type='button'
-                disabled={isDisabled}
                 className={cn(
                   'relative flex min-h-[132px] w-full flex-col items-center justify-center gap-2 rounded-[12px] border p-4 text-center transition',
                   isSelected
@@ -1941,7 +1966,9 @@ function WizardContent({
     return (
       <div className='space-y-5'>
         <div>
-          <h3 className='font-bold text-gray-13'>Folder Fields Configuration</h3>
+          <h3 className='font-bold text-gray-13'>
+            Folder Fields Configuration
+          </h3>
           <p className='text-sm text-gray-11'>
             Configure metadata fields for documents stored in this folder.
           </p>
@@ -1993,15 +2020,19 @@ function WizardContent({
                 Type
               </label>
               <InputSelect
-                classNames={{ input: cn(inputSharedClassNames.input, 'text-13') }}
                 options={fieldTypeOptions}
                 placeholder='Field type'
+                width='target'
+                classNames={{
+                  input: cn(inputSharedClassNames.input, 'text-13'),
+                }}
                 value={
-                  fieldTypeOptions.find((option) => option.value === newFieldType) ||
+                  fieldTypeOptions.find(
+                    (option) => option.value === newFieldType,
+                  ) ||
                   fieldTypeOptions[0] ||
                   null
                 }
-                width='target'
                 onChange={(selected) => {
                   if (!selected) return
                   setNewFieldType(String(selected.value || selected.name))
@@ -2023,10 +2054,7 @@ function WizardContent({
             </div>
 
             <div>
-              <div
-                aria-hidden
-                className='mb-1.5 hidden h-4 lg:block'
-              />
+              <div className='mb-1.5 hidden h-4 lg:block' aria-hidden />
               <Button
                 className='h-9 w-full whitespace-nowrap lg:w-auto'
                 icon='lucide:plus'
@@ -2039,8 +2067,8 @@ function WizardContent({
         </div>
 
         <FieldsTable
-          fieldTypeOptions={fieldTypeOptions}
           fields={fields}
+          fieldTypeOptions={fieldTypeOptions}
           setFields={setFields}
         />
       </div>
@@ -2081,7 +2109,9 @@ function WizardContent({
                   {isSelected ? <StorageCornerCheck /> : null}
 
                   <div className='font-semibold text-gray-13'>{item.title}</div>
-                  <div className='mt-1 text-sm text-gray-11'>{item.subtitle}</div>
+                  <div className='mt-1 text-sm text-gray-11'>
+                    {item.subtitle}
+                  </div>
                   <code className='mt-auto inline-block w-full truncate rounded-[6px] bg-gray-2 px-2 py-1.5 text-xs text-gray-11'>
                     {item.sample}
                   </code>
@@ -2122,7 +2152,9 @@ function WizardContent({
                     ) : null}
                   </span>
 
-                  <span className='text-sm font-semibold text-gray-13'>{item}</span>
+                  <span className='text-sm font-semibold text-gray-13'>
+                    {item}
+                  </span>
                 </button>
               )
             })}

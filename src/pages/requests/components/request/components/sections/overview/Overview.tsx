@@ -1,4 +1,4 @@
-import { Viewer, Worker, SpecialZoomLevel } from '@react-pdf-viewer/core'
+import { SpecialZoomLevel, Viewer, Worker } from '@react-pdf-viewer/core'
 import { searchPlugin } from '@react-pdf-viewer/search'
 import {
   Briefcase,
@@ -15,14 +15,14 @@ import {
   Wallet,
   Wand2,
 } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import type { ApiPlaygroundContext } from '@/components/playground/ApiPlayground'
 import fileApi from '@/api/file/file'
 import BarLoader from '@/components/base/BarLoader'
 import Icon from '@/components/base/icon/Icon'
 import InputDate from '@/components/base/inputs/InputDate'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import showToast from '@/components/base/toast/showToast'
-import type { ApiPlaygroundContext } from '@/components/playground/ApiPlayground'
 import PaidActionApiTrigger from '@/components/playground/PaidActionApiTrigger'
 import { useAttachments } from '@/pages/requests/hooks/useAttachments'
 import { useComments } from '@/pages/requests/hooks/useComments'
@@ -43,9 +43,9 @@ import {
   resolveFieldMeta,
 } from '../../../Request'
 import Attachments from '../attachment/Attachments'
-import LineItemTable from './LineItemTable'
 import Comments from '../comment/Comments'
 import History from '../history/History'
+import LineItemTable from './LineItemTable'
 
 // --- Helpers ---
 
@@ -537,7 +537,7 @@ const extractDueDate = (row: any, agentData: any, formModel?: any): string => {
           d.setDate(d.getDate() + days)
           val = d.toISOString().split('T')[0]
         }
-      } catch (e) { }
+      } catch (e) {}
     }
   }
 
@@ -701,17 +701,17 @@ const getSupplierValidationDisplay = (agentData: any, formModel: any) => {
 
 const FALLBACK_PO_COLS_MAP: Record<string, string> = {
   '2z2Rh5MpXEaiHSaWlMThr': 'Line',
-  'eEpfRP5JIbS8aFle8J615': 'Part Number',
   '8nVIWBIeCFM6wgC7JOlzL': 'Class',
-  'ZpY63z5PRSjClud4PDpKV': 'Description',
+  'eEpfRP5JIbS8aFle8J615': 'Part Number',
+  'eewd3Jx-Kx1ub1ZcjBt7L': 'Qty',
+  'gRh9236whOB_ri9TtFaKq': 'Amount',
   'hy5p0sTmR4l7MkX5sWIuE': 'UOM',
   'ja59TImIXkfIm_EIy2dxJ': 'Tax Rate',
-  'eewd3Jx-Kx1ub1ZcjBt7L': 'Qty',
-  'STqVWjmFqexaezHTRAkFG': 'Rate',
-  'gRh9236whOB_ri9TtFaKq': 'Amount',
-  'Ywg9Bc_J8IyRglLcnrAWl': 'Date',
+  'JXmxAE-HiQMv119GGn5N6': 'Ref Code',
   'kXPikEE9xLRxtpE9lGwFo': 'Weight',
-  'JXmxAE-HiQMv119GGn5N6': 'Ref Code'
+  'STqVWjmFqexaezHTRAkFG': 'Rate',
+  'Ywg9Bc_J8IyRglLcnrAWl': 'Date',
+  'ZpY63z5PRSjClud4PDpKV': 'Description',
 }
 
 const getPoTableColumnsMapping = (formJson: any) => {
@@ -894,13 +894,13 @@ const DetailReportView = ({
 const FormCard = ({
   highlight = false,
   icon: Icon,
+  isLoading = false,
   label,
   options = [],
   score,
   poValue,
   type = 'text',
   value,
-  isLoading = false,
   onChange,
   onFocus,
 }: any) => {
@@ -946,9 +946,9 @@ const FormCard = ({
     const selectedOption =
       typeof localValue === 'string' && localValue !== '-'
         ? options.find(
-          (opt: any) =>
-            String(opt.id).toLowerCase() === localValue.toLowerCase(),
-        ) || (localValue ? { id: localValue, name: localValue } : null)
+            (opt: any) =>
+              String(opt.id).toLowerCase() === localValue.toLowerCase(),
+          ) || (localValue ? { id: localValue, name: localValue } : null)
         : null
 
     inputElement = (
@@ -1144,8 +1144,6 @@ const skeletonRows = ['skeleton-row-0', 'skeleton-row-1', 'skeleton-row-2']
 const LINE_ITEM_SCORE_WIDTH = 55
 const LINE_ITEM_ACTION_WIDTH = 38
 // const LINE_ITEM_DEFAULT_WIDTH = 50
-
-
 
 const isLineItemAmountColumn = (key: string) => {
   const normalizedKey = key.toLowerCase().replace(/[\s_-]+/g, '')
@@ -1362,9 +1360,9 @@ const Overview = (props: any) => {
   const resolvedInstanceId = useMemo(() => {
     return String(
       selectedItem?.workflowInstanceId ||
-      selectedItem?.instanceId ||
-      processId ||
-      '',
+        selectedItem?.instanceId ||
+        processId ||
+        '',
     )
   }, [selectedItem, processId])
 
@@ -1772,37 +1770,38 @@ const Overview = (props: any) => {
 
     return {
       endpoints: [
-
         {
-          id: 'get_request',
-          title: 'Get Request Details',
-          description: 'Retrieve full metadata and extracted data for a specific request.',
-          method: 'GET',
           apiPath: `/api/v6/requests/${document.requestNo || 'REQ-1'}`,
+          description:
+            'Retrieve full metadata and extracted data for a specific request.',
+          id: 'get_request',
+          method: 'GET',
           requestPayload: null,
           responsePayload: {
+            data: document,
             success: true,
-            data: document
-          }
+          },
+          title: 'Get Request Details',
         },
         {
-          id: 'move_next',
-          title: 'Move to Next Stage',
-          description: 'Approve and transition the specified request to the next step in its workflow.',
-          method: 'POST',
           apiPath: `/api/v6/requests/${document.requestNo || 'REQ-1'}/move-next`,
+          description:
+            'Approve and transition the specified request to the next step in its workflow.',
+          id: 'move_next',
+          method: 'POST',
           requestPayload: {
             action: 'approve',
-            comments: 'Verified automatically.'
+            comments: 'Verified automatically.',
           },
           responsePayload: {
-            success: true,
             message: 'Request successfully moved to the next stage.',
+            nextStage: 'Manager Approval',
+            success: true,
             transactionId: document.requestNo || 'REQ-1',
-            nextStage: 'Manager Approval'
-          }
-        }
-      ]
+          },
+          title: 'Move to Next Stage',
+        },
+      ],
     }
   }, [agentData, formModel, poVal, selectedItem, supplierName])
 
@@ -1834,11 +1833,15 @@ const Overview = (props: any) => {
   }, [selectedItem])
 
   const poLineItemsKey = useMemo(() => {
-    let key = formModel ? Object.keys(formModel).find((k) => k.toLowerCase().startsWith('awai')) : null
+    let key = formModel
+      ? Object.keys(formModel).find((k) => k.toLowerCase().startsWith('awai'))
+      : null
     if (key) return key
 
     if (parsedFormData) {
-      key = Object.keys(parsedFormData).find((k) => k.toLowerCase().startsWith('awai'))
+      key = Object.keys(parsedFormData).find((k) =>
+        k.toLowerCase().startsWith('awai'),
+      )
     }
     return key || null
   }, [formModel, parsedFormData])
@@ -1862,13 +1865,15 @@ const Overview = (props: any) => {
   }, [formModel, parsedFormData, poLineItemsKey])
 
   const poColMap = useMemo(() => {
-    return getPoTableColumnsMapping(selectedWorkflow?.formJson || formDefinition)
+    return getPoTableColumnsMapping(
+      selectedWorkflow?.formJson || formDefinition,
+    )
   }, [selectedWorkflow, formDefinition])
 
   const poLineItems = useMemo(() => {
     return rawPoLineItems.map((item: any, idx: number) => {
       const mappedItem: any = {
-        _id: item._id || `po-li-${idx}-${Date.now()}`
+        _id: item._id || `po-li-${idx}-${Date.now()}`,
       }
 
       Object.entries(item).forEach(([k, v]) => {
@@ -1905,56 +1910,68 @@ const Overview = (props: any) => {
   }, [poLineItems, poColMap])
 
   const poDynamicWidths = useMemo(() => {
-    if (!poLineItems || poLineItems.length === 0) return [60, 100, 100];
-    const widths: number[] = [];
+    if (!poLineItems || poLineItems.length === 0) return [60, 100, 100]
+    const widths: number[] = []
 
-    const totalsByKey: Record<string, string> = {};
+    const totalsByKey: Record<string, string> = {}
     poDynamicColumns.forEach((colKey: string) => {
       const normalizedKey = colKey.toLowerCase()
-      if (normalizedKey.includes('amount') || normalizedKey.includes('total') || normalizedKey === 'price' || normalizedKey === 'rate') {
+      if (
+        normalizedKey.includes('amount') ||
+        normalizedKey.includes('total') ||
+        normalizedKey === 'price' ||
+        normalizedKey === 'rate'
+      ) {
         const total = poLineItems.reduce((sum: number, item: any) => {
-          let val = item[colKey] ?? '';
-          const strVal = String(val);
-          const num = Number.parseFloat(strVal.replace(/[^0-9.-]+/g, ''));
-          return sum + (Number.isNaN(num) ? 0 : num);
-        }, 0);
-        const formattedTotal = total.toLocaleString(undefined, { maximumFractionDigits: 2, minimumFractionDigits: 2 });
-        totalsByKey[colKey] = formattedTotal;
+          const val = item[colKey] ?? ''
+          const strVal = String(val)
+          const num = Number.parseFloat(strVal.replace(/[^0-9.-]+/g, ''))
+          return sum + (Number.isNaN(num) ? 0 : num)
+        }, 0)
+        const formattedTotal = total.toLocaleString(undefined, {
+          maximumFractionDigits: 2,
+          minimumFractionDigits: 2,
+        })
+        totalsByKey[colKey] = formattedTotal
       }
-    });
+    })
 
     poDynamicColumns.forEach((colKey: string, index: number) => {
-      let maxChars = colKey.length;
-      if (colKey.toLowerCase().includes('line')) maxChars = 2;
-      if (colKey.toLowerCase() === 'uom') maxChars = 4;
+      let maxChars = colKey.length
+      if (colKey.toLowerCase().includes('line')) maxChars = 2
+      if (colKey.toLowerCase() === 'uom') maxChars = 4
       poLineItems.forEach((item: any) => {
-        const val = item[colKey] ?? '';
-        const str = String(val);
-        if (str.length > maxChars) maxChars = str.length;
-      });
+        const val = item[colKey] ?? ''
+        const str = String(val)
+        if (str.length > maxChars) maxChars = str.length
+      })
       if (totalsByKey[colKey]) {
-        if (totalsByKey[colKey].length > maxChars) maxChars = totalsByKey[colKey].length;
+        if (totalsByKey[colKey].length > maxChars)
+          maxChars = totalsByKey[colKey].length
       }
 
-      widths[index] = Math.min(100, Math.max(35, Math.ceil(maxChars * 8.0) + 24));
-    });
+      widths[index] = Math.min(
+        100,
+        Math.max(35, Math.ceil(maxChars * 8.0) + 24),
+      )
+    })
 
-    return widths;
+    return widths
   }, [poLineItems, poDynamicColumns])
 
   const poScrollContainerRef = useRef<HTMLDivElement>(null)
   const [poAtEnd, setPoAtEnd] = useState(false)
   const updatePoScrollEdges = useCallback(() => {
-    if (!poScrollContainerRef.current) return;
-    const el = poScrollContainerRef.current;
-    setPoAtEnd(Math.ceil(el.scrollLeft + el.clientWidth) >= el.scrollWidth - 1);
-  }, []);
+    if (!poScrollContainerRef.current) return
+    const el = poScrollContainerRef.current
+    setPoAtEnd(Math.ceil(el.scrollLeft + el.clientWidth) >= el.scrollWidth - 1)
+  }, [])
 
   useEffect(() => {
-    updatePoScrollEdges();
-    window.addEventListener('resize', updatePoScrollEdges);
-    return () => window.removeEventListener('resize', updatePoScrollEdges);
-  }, [poLineItems, poDynamicWidths, updatePoScrollEdges]);
+    updatePoScrollEdges()
+    window.addEventListener('resize', updatePoScrollEdges)
+    return () => window.removeEventListener('resize', updatePoScrollEdges)
+  }, [poLineItems, poDynamicWidths, updatePoScrollEdges])
 
   useEffect(() => {
     console.log('=== DATA SOURCE & TABLES DEBUG ===')
@@ -1969,11 +1986,14 @@ const Overview = (props: any) => {
     fieldLabel: string,
     value: any,
   ) => {
-    const originalKey = Array.from(poColMap.entries()).find(
-      ([_, label]) => label === fieldLabel,
-    )?.[0] || Object.entries(FALLBACK_PO_COLS_MAP).find(
-      ([_, label]) => label === fieldLabel,
-    )?.[0] || fieldLabel
+    const originalKey =
+      Array.from(poColMap.entries()).find(
+        ([_, label]) => label === fieldLabel,
+      )?.[0] ||
+      Object.entries(FALLBACK_PO_COLS_MAP).find(
+        ([_, label]) => label === fieldLabel,
+      )?.[0] ||
+      fieldLabel
 
     setFormModel?.((prevForm: any) => {
       const nextForm = { ...prevForm }
@@ -2262,111 +2282,144 @@ const Overview = (props: any) => {
   }, [rawLineItems])
 
   const dynamicWidths = useMemo(() => {
-    if (!lineItems || lineItems.length === 0) return [60, 100, 100];
-    const widths: number[] = [];
+    if (!lineItems || lineItems.length === 0) return [60, 100, 100]
+    const widths: number[] = []
 
     // 1. Compute totals first for amount columns
-    const totalsByKey: Record<string, string> = {};
+    const totalsByKey: Record<string, string> = {}
     if (isDynamicTable && dynamicColumns && lineItems) {
       dynamicColumns.forEach((colKey: string) => {
-        if (colKey.toLowerCase().includes('amount') || colKey.toLowerCase().includes('total') || colKey.toLowerCase() === 'price') {
+        if (
+          colKey.toLowerCase().includes('amount') ||
+          colKey.toLowerCase().includes('total') ||
+          colKey.toLowerCase() === 'price'
+        ) {
           const total = lineItems.reduce((sum: number, item: any) => {
-            let val = item[colKey]?.['Invoice Value'] ?? item[colKey] ?? '';
-            const strVal = String(val);
-            const num = Number.parseFloat(strVal.replace(/[^0-9.-]+/g, ''));
-            return sum + (Number.isNaN(num) ? 0 : num);
-          }, 0);
-          const formattedTotal = total.toLocaleString(undefined, { maximumFractionDigits: 2, minimumFractionDigits: 2 });
-          totalsByKey[colKey] = formattedTotal;
+            const val = item[colKey]?.['Invoice Value'] ?? item[colKey] ?? ''
+            const strVal = String(val)
+            const num = Number.parseFloat(strVal.replace(/[^0-9.-]+/g, ''))
+            return sum + (Number.isNaN(num) ? 0 : num)
+          }, 0)
+          const formattedTotal = total.toLocaleString(undefined, {
+            maximumFractionDigits: 2,
+            minimumFractionDigits: 2,
+          })
+          totalsByKey[colKey] = formattedTotal
         }
-      });
+      })
     } else if (lineItems) {
       const total = lineItems.reduce((sum: number, item: any) => {
-        let val = item.Amount?.['Invoice Value'] ?? item.amount ?? item.Amount ?? '';
-        const num = Number.parseFloat(String(val).replace(/[^0-9.-]+/g, ''));
-        return sum + (Number.isNaN(num) ? 0 : num);
-      }, 0);
-      totalsByKey['amount'] = total.toLocaleString(undefined, { maximumFractionDigits: 2, minimumFractionDigits: 2 });
+        const val =
+          item.Amount?.['Invoice Value'] ?? item.amount ?? item.Amount ?? ''
+        const num = Number.parseFloat(String(val).replace(/[^0-9.-]+/g, ''))
+        return sum + (Number.isNaN(num) ? 0 : num)
+      }, 0)
+      totalsByKey['amount'] = total.toLocaleString(undefined, {
+        maximumFractionDigits: 2,
+        minimumFractionDigits: 2,
+      })
     }
 
     if (isDynamicTable && dynamicColumns) {
       dynamicColumns.forEach((colKey: string, index: number) => {
-        let maxChars = colKey.length;
-        if (colKey.toLowerCase().includes('line')) maxChars = 2;
-        if (colKey.toLowerCase() === 'uom') maxChars = 4;
+        let maxChars = colKey.length
+        if (colKey.toLowerCase().includes('line')) maxChars = 2
+        if (colKey.toLowerCase() === 'uom') maxChars = 4
         lineItems.forEach((item: any) => {
-          const val = item[colKey]?.['Invoice Value'] ?? item[colKey] ?? '';
-          const str = String(val);
-          if (str.length > maxChars) maxChars = str.length;
-        });
+          const val = item[colKey]?.['Invoice Value'] ?? item[colKey] ?? ''
+          const str = String(val)
+          if (str.length > maxChars) maxChars = str.length
+        })
         if (totalsByKey[colKey]) {
-          if (totalsByKey[colKey].length > maxChars) maxChars = totalsByKey[colKey].length;
+          if (totalsByKey[colKey].length > maxChars)
+            maxChars = totalsByKey[colKey].length
         }
 
         if (colKey.toLowerCase().includes('line')) {
-          widths[index] = Math.min(80, Math.max(35, Math.ceil(maxChars * 8.0) + 24));
+          widths[index] = Math.min(
+            80,
+            Math.max(35, Math.ceil(maxChars * 8.0) + 24),
+          )
         } else {
-          widths[index] = Math.min(80, Math.max(35, Math.ceil(maxChars * 8.0) + 24));
+          widths[index] = Math.min(
+            80,
+            Math.max(35, Math.ceil(maxChars * 8.0) + 24),
+          )
         }
-      });
+      })
     } else {
-      const cols = ['no', 'description', 'quantity', 'rate', 'amount'];
+      const cols = ['no', 'description', 'quantity', 'rate', 'amount']
       cols.forEach((col: string, index: number) => {
-        let maxChars = col.length;
-        if (col === 'no') maxChars = 2; // Keep line no smaller
+        let maxChars = col.length
+        if (col === 'no') maxChars = 2 // Keep line no smaller
         lineItems.forEach((item: any) => {
-          let val = '';
-          if (col === 'description') val = item.Description?.['Invoice Value'] ?? item.description ?? item.item_no ?? item.itemNo ?? '';
-          else if (col === 'quantity') val = item.Quantity?.['Invoice Value'] ?? item.quantity ?? '';
-          else if (col === 'rate') val = item.Price?.['Invoice Value'] ?? item.rate ?? item.unit_price ?? item.price ?? '';
-          else if (col === 'amount') val = item.Amount?.['Invoice Value'] ?? item.amount ?? item.Amount ?? '';
-          const str = String(val);
-          if (str.length > maxChars) maxChars = str.length;
-        });
+          let val = ''
+          if (col === 'description')
+            val =
+              item.Description?.['Invoice Value'] ??
+              item.description ??
+              item.item_no ??
+              item.itemNo ??
+              ''
+          else if (col === 'quantity')
+            val = item.Quantity?.['Invoice Value'] ?? item.quantity ?? ''
+          else if (col === 'rate')
+            val =
+              item.Price?.['Invoice Value'] ??
+              item.rate ??
+              item.unit_price ??
+              item.price ??
+              ''
+          else if (col === 'amount')
+            val =
+              item.Amount?.['Invoice Value'] ?? item.amount ?? item.Amount ?? ''
+          const str = String(val)
+          if (str.length > maxChars) maxChars = str.length
+        })
         if (col === 'amount' && totalsByKey['amount']) {
-          if (totalsByKey['amount'].length > maxChars) maxChars = totalsByKey['amount'].length;
+          if (totalsByKey['amount'].length > maxChars)
+            maxChars = totalsByKey['amount'].length
         }
 
         if (col === 'description') {
-          widths[index] = Math.max(120, Math.ceil(maxChars * 8.0) + 24);
+          widths[index] = Math.max(120, Math.ceil(maxChars * 8.0) + 24)
         } else {
-          widths[index] = Math.min(80, Math.max(35, Math.ceil(maxChars * 8.0) + 24));
+          widths[index] = Math.min(
+            80,
+            Math.max(35, Math.ceil(maxChars * 8.0) + 24),
+          )
         }
-      });
+      })
     }
-    return widths;
-  }, [lineItems, isDynamicTable, dynamicColumns]);
+    return widths
+  }, [lineItems, isDynamicTable, dynamicColumns])
 
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [atEnd, setAtEnd] = useState(false);
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const [atEnd, setAtEnd] = useState(false)
 
   const updateScrollEdges = useCallback(() => {
-    if (!scrollContainerRef.current) return;
-    const el = scrollContainerRef.current;
-    setAtEnd(Math.ceil(el.scrollLeft + el.clientWidth) >= el.scrollWidth - 1);
-  }, []);
+    if (!scrollContainerRef.current) return
+    const el = scrollContainerRef.current
+    setAtEnd(Math.ceil(el.scrollLeft + el.clientWidth) >= el.scrollWidth - 1)
+  }, [])
 
   useEffect(() => {
-    updateScrollEdges();
-    window.addEventListener('resize', updateScrollEdges);
-    return () => window.removeEventListener('resize', updateScrollEdges);
-  }, [lineItems, dynamicWidths, updateScrollEdges]);
+    updateScrollEdges()
+    window.addEventListener('resize', updateScrollEdges)
+    return () => window.removeEventListener('resize', updateScrollEdges)
+  }, [lineItems, dynamicWidths, updateScrollEdges])
 
   const hasAnyScore = useMemo(() => {
     return lineItems.some((item: any, index: number) => {
       const matchData =
-        agentData?.debug?.[
-        'Side-by-side Line Item matching'
-        ]?.[index]
+        agentData?.debug?.['Side-by-side Line Item matching']?.[index]
       const lineScore =
-        matchData?.['Line Score'] ??
-        item['Line Score'] ??
-        item?.score
+        matchData?.['Line Score'] ?? item['Line Score'] ?? item?.score
       return lineScore !== undefined && lineScore !== null
     })
   }, [lineItems, agentData])
 
-  const currentScoreWidth = hasAnyScore ? LINE_ITEM_SCORE_WIDTH : 0;
+  const currentScoreWidth = hasAnyScore ? LINE_ITEM_SCORE_WIDTH : 0
 
   const syncLineItemsToFormModel = (updatedItems: any[]) => {
     const sanitizeItems = (items: any[]) => {
@@ -2538,9 +2591,6 @@ const Overview = (props: any) => {
       install: (pluginFunctions: any) => {
         viewerRef.current = pluginFunctions
       },
-      onZoom: (e: any) => {
-        setScale(e.scale)
-      },
       onViewerStateChange: (viewerState: any) => {
         if (viewerState && viewerState.scale) {
           setScale((prev) =>
@@ -2548,6 +2598,9 @@ const Overview = (props: any) => {
           )
         }
         return viewerState
+      },
+      onZoom: (e: any) => {
+        setScale(e.scale)
       },
     }),
     [],
@@ -2637,9 +2690,9 @@ const Overview = (props: any) => {
 
       const repoId = String(
         selectedFile?.repositoryId ||
-        selectedItem?.repositoryId ||
-        repositoryId ||
-        '',
+          selectedItem?.repositoryId ||
+          repositoryId ||
+          '',
       ).trim()
       const itemId = String(
         selectedFile?.itemId || selectedFile?.id || selectedItem?.itemId || '',
@@ -2785,9 +2838,9 @@ const Overview = (props: any) => {
                 <div
                   className='animate-scan absolute h-[1px] bg-[var(--primary-8)] shadow-[0_0_6px_var(--primary-9)]'
                   style={{
+                    animationDuration: '8s',
                     left: scannerBounds.left,
                     right: scannerBounds.right,
-                    animationDuration: '8s',
                   }}
                 />
               </div>
@@ -2903,10 +2956,10 @@ const Overview = (props: any) => {
                 {eligibleFields.filter((key) =>
                   key.toLowerCase().includes(searchFilter.toLowerCase()),
                 ).length === 0 && (
-                    <div className='px-3 py-2 text-center text-xs font-medium text-[var(--gray-9)]'>
-                      No matching fields
-                    </div>
-                  )}
+                  <div className='px-3 py-2 text-center text-xs font-medium text-[var(--gray-9)]'>
+                    No matching fields
+                  </div>
+                )}
               </div>
             </menu>
           )}
@@ -2926,9 +2979,9 @@ const Overview = (props: any) => {
                       analysisCardCount <= 3 && 'grid-cols-1 sm:grid-cols-3',
                       analysisCardCount === 4 && 'grid-cols-2 lg:grid-cols-4',
                       analysisCardCount === 5 &&
-                      'grid-cols-2 lg:grid-cols-3 xl:grid-cols-5',
+                        'grid-cols-2 lg:grid-cols-3 xl:grid-cols-5',
                       analysisCardCount >= 6 &&
-                      'grid-cols-2 lg:grid-cols-3 xl:grid-cols-6',
+                        'grid-cols-2 lg:grid-cols-3 xl:grid-cols-6',
                     )}
                   >
                     {(() => {
@@ -3006,22 +3059,21 @@ const Overview = (props: any) => {
                         }
                         statusContent={
                           <button
-                            className='relative inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-[var(--primary-4)] bg-[var(--primary-2)] px-2.5 py-1 text-[10px] font-bold text-[var(--primary-9)] shadow-sm animate-pulse transition-all hover:scale-[1.02] hover:bg-[var(--primary-3)] hover:text-[var(--primary-10)] active:scale-95 hover:animate-none'
+                            className='relative inline-flex shrink-0 animate-pulse items-center gap-1.5 rounded-lg border border-[var(--primary-4)] bg-[var(--primary-2)] px-2.5 py-1 text-[10px] font-bold text-[var(--primary-9)] shadow-sm transition-all hover:scale-[1.02] hover:animate-none hover:bg-[var(--primary-3)] hover:text-[var(--primary-10)] active:scale-95'
                             type='button'
                             onClick={(e) => {
                               e.stopPropagation() // don't also fire the card's onClick
                               handleVerifySupplierClick()
                             }}
                           >
-                            <Icon name='lucide:bot' className='size-3.5' />
+                            <Icon className='size-3.5' name='lucide:bot' />
                             Verify
                           </button>
                         }
                         onClick={() => {
                           showToast({
-                            message: "Please click 'Verify' to check if this supplier is legitimate and prevent fraud.",
-
-
+                            message:
+                              "Please click 'Verify' to check if this supplier is legitimate and prevent fraud.",
                           })
                         }}
                       />
@@ -3090,7 +3142,7 @@ const Overview = (props: any) => {
                       />
                     )}
                     {showBackOrder &&
-                      backOrderDisplay?.status === 'Detected' ? (
+                    backOrderDisplay?.status === 'Detected' ? (
                       <AnalysisCard
                         align='right'
                         icon={PackageX}
@@ -3481,16 +3533,16 @@ const Overview = (props: any) => {
                                 </div>
                                 {(agentData?.gl_validation?.reason ||
                                   agentData?.gl_matching?.reason) && (
-                                    <div className='mt-1 flex flex-col gap-1 border-t border-[var(--gray-3)] pt-2'>
-                                      <span className='font-semibold text-[var(--gray-11)]'>
-                                        Matching Rationale
-                                      </span>
-                                      <span className='leading-normal font-medium text-[var(--gray-12)]'>
-                                        {agentData?.gl_validation?.reason ||
-                                          agentData?.gl_matching?.reason}
-                                      </span>
-                                    </div>
-                                  )}
+                                  <div className='mt-1 flex flex-col gap-1 border-t border-[var(--gray-3)] pt-2'>
+                                    <span className='font-semibold text-[var(--gray-11)]'>
+                                      Matching Rationale
+                                    </span>
+                                    <span className='leading-normal font-medium text-[var(--gray-12)]'>
+                                      {agentData?.gl_validation?.reason ||
+                                        agentData?.gl_matching?.reason}
+                                    </span>
+                                  </div>
+                                )}
                               </div>
                             </div>
                             <div className='space-y-4'>
@@ -3607,18 +3659,18 @@ const Overview = (props: any) => {
                                 )}
                                 {agentData?.matter_validation
                                   ?.validation_details?.reason && (
-                                    <div className='mt-1 flex flex-col gap-1 border-t border-[var(--gray-3)] pt-2'>
-                                      <span className='font-semibold text-[var(--gray-11)]'>
-                                        Compliance Note
-                                      </span>
-                                      <span className='text-[11px] leading-normal font-medium text-[var(--gray-12)]'>
-                                        {
-                                          agentData.matter_validation
-                                            .validation_details.reason
-                                        }
-                                      </span>
-                                    </div>
-                                  )}
+                                  <div className='mt-1 flex flex-col gap-1 border-t border-[var(--gray-3)] pt-2'>
+                                    <span className='font-semibold text-[var(--gray-11)]'>
+                                      Compliance Note
+                                    </span>
+                                    <span className='text-[11px] leading-normal font-medium text-[var(--gray-12)]'>
+                                      {
+                                        agentData.matter_validation
+                                          .validation_details.reason
+                                      }
+                                    </span>
+                                  </div>
+                                )}
                               </div>
                             </div>
                             <div className='space-y-4'>
@@ -3672,8 +3724,8 @@ const Overview = (props: any) => {
                                   activeBackOrderTab === 'current'
                                     ? backOrder?.recommendation
                                     : MOCK_PREVIOUS_BACKORDERS[
-                                      activeBackOrderTab
-                                    ]?.recommendation
+                                        activeBackOrderTab
+                                      ]?.recommendation
                                 const recMeta =
                                   getRecommendationMeta(currentRec)
                                 return (
@@ -3733,8 +3785,8 @@ const Overview = (props: any) => {
                               activeBackOrderTab === 'current'
                                 ? backOrder
                                 : MOCK_PREVIOUS_BACKORDERS[
-                                activeBackOrderTab
-                                ] || {}
+                                    activeBackOrderTab
+                                  ] || {}
                             const items = currentData?.missing_qty_by_item || []
 
                             const currencySymbol =
@@ -3806,8 +3858,8 @@ const Overview = (props: any) => {
                                 activeBackOrderTab === 'current'
                                   ? backOrder
                                   : MOCK_PREVIOUS_BACKORDERS[
-                                  activeBackOrderTab
-                                  ] || {}
+                                      activeBackOrderTab
+                                    ] || {}
 
                               return (
                                 <div className='animate-in fade-in slide-in-from-top-2 rounded-xl border border-[var(--orange-3)] bg-[var(--orange-1)]/30 p-4 shadow-xs duration-300'>
@@ -3839,8 +3891,8 @@ const Overview = (props: any) => {
                                 activeBackOrderTab === 'current'
                                   ? backOrder
                                   : MOCK_PREVIOUS_BACKORDERS[
-                                  activeBackOrderTab
-                                  ] || {}
+                                      activeBackOrderTab
+                                    ] || {}
 
                               const items =
                                 currentData?.missing_qty_by_item || []
@@ -4007,144 +4059,163 @@ const Overview = (props: any) => {
                     <>
                       {activeTab === 'summary' && (
                         <div className='grid flex-1 grid-cols-2 gap-x-4 gap-y-2 overflow-y-auto p-4'>
-                          {(!formModel ||
-                            Object.keys(formModel).length === 0 ||
-                            !Object.values(formModel).some(
-                              hasMeaningfulScalarValue,
-                            ))
+                          {!formModel ||
+                          Object.keys(formModel).length === 0 ||
+                          !Object.values(formModel).some(
+                            hasMeaningfulScalarValue,
+                          )
                             ? [
-                              'Supplier Name',
-                              'Invoice Number',
-                              'Invoice Date',
-                              'Invoice Amount',
-                              'PO Number',
-                              'Payment Terms',
-                              'Currency',
-                              'Tax Amount',
-                            ].map((label) => (
-                              <FormCard
-                                icon={getFieldIcon(label)}
-                                key={label}
-                                label={label}
-                                options={getOptions(label)}
-                                type={getFieldType(label)}
-                                value={'-'}
-                                isLoading={isCurrentlyProcessing}
-                                onChange={(newVal: string) => handleFieldChange(label, newVal)}
-                                onFocus={(val: any) => handleFieldFocus(val, label)}
-                              />
-                            ))
-                            : Object.entries(formModel || {})
-                              .filter(([key, val]) => {
-                                if (typeof val === 'object' && val !== null) {
-                                  if ('Invoice Value' in val) {
-                                    return true
+                                'Supplier Name',
+                                'Invoice Number',
+                                'Invoice Date',
+                                'Invoice Amount',
+                                'PO Number',
+                                'Payment Terms',
+                                'Currency',
+                                'Tax Amount',
+                              ].map((label) => (
+                                <FormCard
+                                  icon={getFieldIcon(label)}
+                                  isLoading={isCurrentlyProcessing}
+                                  key={label}
+                                  label={label}
+                                  options={getOptions(label)}
+                                  type={getFieldType(label)}
+                                  value={'-'}
+                                  onChange={(newVal: string) =>
+                                    handleFieldChange(label, newVal)
                                   }
-                                  return false
-                                }
-                                if (typeof val === 'string') {
-                                  const trimmed = val.trim()
-                                  if (
-                                    trimmed.startsWith('[') &&
-                                    trimmed.endsWith(']')
-                                  )
+                                  onFocus={(val: any) =>
+                                    handleFieldFocus(val, label)
+                                  }
+                                />
+                              ))
+                            : Object.entries(formModel || {})
+                                .filter(([key, val]) => {
+                                  if (typeof val === 'object' && val !== null) {
+                                    if ('Invoice Value' in val) {
+                                      return true
+                                    }
                                     return false
+                                  }
+                                  if (typeof val === 'string') {
+                                    const trimmed = val.trim()
+                                    if (
+                                      trimmed.startsWith('[') &&
+                                      trimmed.endsWith(']')
+                                    )
+                                      return false
+                                    if (
+                                      trimmed.startsWith('{') &&
+                                      trimmed.endsWith('}')
+                                    )
+                                      return false
+                                  }
+
                                   if (
-                                    trimmed.startsWith('{') &&
-                                    trimmed.endsWith('}')
+                                    !allowedLabels ||
+                                    allowedLabels.size === 0
+                                  ) {
+                                    return hasMeaningfulScalarValue(val)
+                                  }
+
+                                  return (
+                                    allowedLabels.has(key) ||
+                                    hasMeaningfulScalarValue(val)
                                   )
-                                    return false
-                                }
-
-                                if (
-                                  !allowedLabels ||
-                                  allowedLabels.size === 0
-                                ) {
-                                  return hasMeaningfulScalarValue(val)
-                                }
-
-                                return (
-                                  allowedLabels.has(key) ||
-                                  hasMeaningfulScalarValue(val)
-                                )
-                              })
-                              .map(([key, val]) => {
-                                const rawVal =
-                                  val &&
+                                })
+                                .map(([key, val]) => {
+                                  const rawVal =
+                                    val &&
                                     typeof val === 'object' &&
                                     'Invoice Value' in val
-                                    ? val['Invoice Value']
-                                    : val
+                                      ? val['Invoice Value']
+                                      : val
 
-                                const fieldType = getFieldType(key)
-                                const displayValue =
-                                  fieldType === 'date' &&
+                                  const fieldType = getFieldType(key)
+                                  const displayValue =
+                                    fieldType === 'date' &&
                                     (rawVal === null ||
                                       rawVal === undefined ||
                                       rawVal === '' ||
                                       rawVal === '-')
-                                    ? null
-                                    : rawVal || '-'
+                                      ? null
+                                      : rawVal || '-'
 
-                                return (
-                                  <FormCard
-                                    icon={getFieldIcon(key)}
-                                    key={key}
-                                    label={key}
-                                    options={getOptions(key)}
-                                    score={getFieldScore(key)}
+                                  return (
+                                    <FormCard
+                                      icon={getFieldIcon(key)}
+                                      key={key}
+                                      label={key}
+                                      options={getOptions(key)}
+                                      score={getFieldScore(key)}
                                     poValue={getFieldPoValue(key)}
-                                    type={fieldType}
-                                    value={displayValue}
-                                    isLoading={isCurrentlyProcessing && (displayValue === null || displayValue === undefined || displayValue === '' || displayValue === '-')}
-                                    highlight={
-                                      key.toLowerCase().includes('total') ||
-                                      key.toLowerCase().includes('due')
-                                    }
-                                    onChange={(newVal: string) =>
-                                      handleFieldChange(key, newVal)
-                                    }
-                                    onFocus={(val: any) =>
-                                      handleFieldFocus(val, key)
-                                    }
-                                  />
-                                )
-                              })}
+                                      type={fieldType}
+                                      value={displayValue}
+                                      highlight={
+                                        key.toLowerCase().includes('total') ||
+                                        key.toLowerCase().includes('due')
+                                      }
+                                      isLoading={
+                                        isCurrentlyProcessing &&
+                                        (displayValue === null ||
+                                          displayValue === undefined ||
+                                          displayValue === '' ||
+                                          displayValue === '-')
+                                      }
+                                      onChange={(newVal: string) =>
+                                        handleFieldChange(key, newVal)
+                                      }
+                                      onFocus={(val: any) =>
+                                        handleFieldFocus(val, key)
+                                      }
+                                    />
+                                  )
+                                })}
                         </div>
                       )}
                       {activeTab === 'line_items' && (
-                        <div className='flex-1 overflow-y-auto p-4 space-y-6'>
+                        <div className='flex-1 space-y-6 overflow-y-auto p-4'>
                           {/* PO Line Items Section */}
                           {poLineItems.length > 0 && (
                             <div className='space-y-2.5'>
                               <div className='flex items-center justify-between'>
-                                <h4 className='text-xs font-bold tracking-tight text-[var(--gray-13)] flex items-center gap-1.5'>
-                                  <Icon className='h-4 w-4 text-[var(--orange-9)]' name='tabler:shopping-cart' />
+                                <h4 className='flex items-center gap-1.5 text-xs font-bold tracking-tight text-[var(--gray-13)]'>
+                                  <Icon
+                                    className='h-4 w-4 text-[var(--orange-9)]'
+                                    name='tabler:shopping-cart'
+                                  />
                                   PO Line Items ({poLineItems.length})
                                 </h4>
                               </div>
-                              <div className='overflow-hidden rounded-xl border border-[var(--gray-3)] bg-surface relative'>
+                              <div className='relative overflow-hidden rounded-xl border border-[var(--gray-3)] bg-surface'>
                                 <div
-                                  className="w-full h-full overflow-x-auto overflow-y-hidden"
+                                  className='h-full w-full overflow-x-auto overflow-y-hidden'
                                   ref={poScrollContainerRef}
                                   onScroll={updatePoScrollEdges}
                                 >
                                   <LineItemTable
-                                    lineItems={poLineItems}
-                                    dynamicColumns={poDynamicColumns}
-                                    isDynamicTable={true}
-                                    formModel={formModel}
                                     agentData={agentData}
-                                    isCurrentlyProcessing={isCurrentlyProcessing}
-                                    currentScoreWidth={0}
-                                    LINE_ITEM_ACTION_WIDTH={LINE_ITEM_ACTION_WIDTH}
-                                    skeletonRows={skeletonRows}
-                                    hasAnyScore={false}
-                                    dynamicWidths={poDynamicWidths}
-                                    handleLineItemChange={handlePoLineItemChange}
-                                    handleFieldFocus={handleFieldFocus}
                                     atEnd={poAtEnd}
+                                    currentScoreWidth={0}
+                                    dynamicColumns={poDynamicColumns}
+                                    dynamicWidths={poDynamicWidths}
+                                    formModel={formModel}
+                                    handleFieldFocus={handleFieldFocus}
+                                    hasAnyScore={false}
                                     hideFooter={true}
+                                    isDynamicTable={true}
+                                    lineItems={poLineItems}
+                                    skeletonRows={skeletonRows}
+                                    handleLineItemChange={
+                                      handlePoLineItemChange
+                                    }
+                                    isCurrentlyProcessing={
+                                      isCurrentlyProcessing
+                                    }
+                                    LINE_ITEM_ACTION_WIDTH={
+                                      LINE_ITEM_ACTION_WIDTH
+                                    }
                                   />
                                 </div>
                               </div>
@@ -4152,36 +4223,47 @@ const Overview = (props: any) => {
                           )}
 
                           {/* Invoice Line Items Section */}
-                          <div className={cn('space-y-2.5', poLineItems.length > 0 && 'pt-4 border-t border-[var(--gray-3)]')}>
+                          <div
+                            className={cn(
+                              'space-y-2.5',
+                              poLineItems.length > 0 &&
+                                'border-t border-[var(--gray-3)] pt-4',
+                            )}
+                          >
                             <div className='flex items-center justify-between'>
-                              <h4 className='text-xs font-bold tracking-tight text-[var(--gray-13)] flex items-center gap-1.5'>
-                                <Icon className='h-4 w-4 text-[var(--primary-9)]' name='tabler:file-invoice' />
+                              <h4 className='flex items-center gap-1.5 text-xs font-bold tracking-tight text-[var(--gray-13)]'>
+                                <Icon
+                                  className='h-4 w-4 text-[var(--primary-9)]'
+                                  name='tabler:file-invoice'
+                                />
                                 Invoice Line Items ({lineItems.length})
                               </h4>
                             </div>
-                            <div className='overflow-hidden rounded-xl border border-[var(--gray-3)] bg-surface relative'>
+                            <div className='relative overflow-hidden rounded-xl border border-[var(--gray-3)] bg-surface'>
                               <div
-                                className="w-full h-full overflow-x-auto overflow-y-hidden"
+                                className='h-full w-full overflow-x-auto overflow-y-hidden'
                                 ref={scrollContainerRef}
                                 onScroll={updateScrollEdges}
                               >
                                 <LineItemTable
-                                  lineItems={lineItems}
-                                  dynamicColumns={dynamicColumns}
-                                  isDynamicTable={isDynamicTable}
-                                  formModel={formModel}
                                   agentData={agentData}
-                                  isCurrentlyProcessing={isCurrentlyProcessing}
-                                  currentScoreWidth={currentScoreWidth}
-                                  LINE_ITEM_ACTION_WIDTH={LINE_ITEM_ACTION_WIDTH}
-                                  skeletonRows={skeletonRows}
-                                  hasAnyScore={hasAnyScore}
-                                  dynamicWidths={dynamicWidths}
-                                  handleAddItem={handleAddItem}
-                                  handleRemoveItem={handleRemoveItem}
-                                  handleLineItemChange={handleLineItemChange}
-                                  handleFieldFocus={handleFieldFocus}
                                   atEnd={atEnd}
+                                  currentScoreWidth={currentScoreWidth}
+                                  dynamicColumns={dynamicColumns}
+                                  dynamicWidths={dynamicWidths}
+                                  formModel={formModel}
+                                  handleAddItem={handleAddItem}
+                                  handleFieldFocus={handleFieldFocus}
+                                  handleLineItemChange={handleLineItemChange}
+                                  handleRemoveItem={handleRemoveItem}
+                                  hasAnyScore={hasAnyScore}
+                                  isCurrentlyProcessing={isCurrentlyProcessing}
+                                  isDynamicTable={isDynamicTable}
+                                  lineItems={lineItems}
+                                  skeletonRows={skeletonRows}
+                                  LINE_ITEM_ACTION_WIDTH={
+                                    LINE_ITEM_ACTION_WIDTH
+                                  }
                                 />
                               </div>
                             </div>

@@ -313,21 +313,21 @@ const RequestsPage = () => {
               isLoading={isLoading}
               metaData={metaData}
               workflow={workflow}
-              setActiveTab={handleTabChange}
-              setWorkflow={setWorkflow}
               actionButtons={[
                 {
+                  color: 'primary',
+                  icon: 'tabler:plus',
                   id: 'new-request',
                   label: 'New Request',
-                  icon: 'tabler:plus',
-                  color: 'primary',
                   variant: 'solid',
                   onClick: () => {
                     console.log('am running')
                     openNewRequest('request')
-                  }
-                }
+                  },
+                },
               ]}
+              setActiveTab={handleTabChange}
+              setWorkflow={setWorkflow}
             />
           )}
           {selectedItem && (
@@ -355,10 +355,10 @@ const RequestsPage = () => {
                 selectedItem={selectedItem}
                 totalItems={inboxResult?.totalItems || 0}
                 viewMode={viewMode}
-                setViewMode={setViewMode}
                 workflow={selectedWorkflow}
                 setPage={setPage}
                 setPageSize={setPageSize}
+                setViewMode={setViewMode}
                 onGroupByChange={setGroupBy}
                 onRefresh={refetch}
                 onRowClick={handleRowClick}

@@ -34,26 +34,26 @@ export const mapDraftUserToCreatePayload = (
     user.username
 
   const payload: CreateV6UserPayload = {
+    'accountExpiryDate': toIsoDate(user.accountExpiryDate),
+    'authStrategy': mapAuthStrategy(user.loginType),
     'Bussiness Unit': user.businessUnit,
-    'Employee Id': user.employeeId,
-    'Job Title': user.jobTitle,
-    'MFA Methods': user.mfaMethods.join(', '),
-    LoginType: user.loginType,
-    MFAuthentication: user.mfaEnabled ? 'Yes' : 'No',
-    Manager: user.manager,
-    accountExpiryDate: toIsoDate(user.accountExpiryDate),
-    authStrategy: mapAuthStrategy(user.loginType),
-    department: user.department,
+    'department': user.department,
     displayName,
-    email: user.email,
-    firstName: user.firstName,
-    forcePasswordResetOnLogin: user.forcePasswordReset ? 'Yes' : 'No',
-    group: user.groups,
-    lastName: user.lastName,
-    location: user.location,
-    passwordExpiryDays: user.passwordExpiryDays,
-    role: user.role,
-    userName: user.username || user.email.split('@')[0] || '',
+    'email': user.email,
+    'Employee Id': user.employeeId,
+    'firstName': user.firstName,
+    'forcePasswordResetOnLogin': user.forcePasswordReset ? 'Yes' : 'No',
+    'group': user.groups,
+    'Job Title': user.jobTitle,
+    'lastName': user.lastName,
+    'location': user.location,
+    'LoginType': user.loginType,
+    'Manager': user.manager,
+    'MFA Methods': user.mfaMethods.join(', '),
+    'MFAuthentication': user.mfaEnabled ? 'Yes' : 'No',
+    'passwordExpiryDays': user.passwordExpiryDays,
+    'role': user.role,
+    'userName': user.username || user.email.split('@')[0] || '',
   }
 
   if (user.loginType === 'Password' && user.password.trim()) {
@@ -64,9 +64,7 @@ export const mapDraftUserToCreatePayload = (
 }
 
 const getDisplayName = (user: DraftSettingsUser) =>
-  `${user.firstName} ${user.lastName}`.trim() ||
-  user.firstName ||
-  user.username
+  `${user.firstName} ${user.lastName}`.trim() || user.firstName || user.username
 
 const normalizeField = (value: string) => {
   const trimmed = value.trim()
@@ -79,7 +77,9 @@ export const mapDraftUserToUpdatePayload = (
 ): UpdateV6UserPayload => {
   const payload: UpdateV6UserPayload = {}
 
-  if (normalizeField(current.firstName) !== normalizeField(original.firstName)) {
+  if (
+    normalizeField(current.firstName) !== normalizeField(original.firstName)
+  ) {
     payload.firstName = current.firstName
   }
 
@@ -95,7 +95,9 @@ export const mapDraftUserToUpdatePayload = (
     payload.role = current.role
   }
 
-  if (normalizeField(current.department) !== normalizeField(original.department)) {
+  if (
+    normalizeField(current.department) !== normalizeField(original.department)
+  ) {
     payload.department = current.department
   }
 

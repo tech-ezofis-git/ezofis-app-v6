@@ -1,7 +1,7 @@
 import { type Table as TanstackTable } from '@tanstack/react-table'
 import { useCallback, useRef, useState } from 'react'
-import TableActionBar from '@/components/base/data-table/TableActionBar'
 import type { RowSize } from '@/components/base/data-table/types'
+import TableActionBar from '@/components/base/data-table/TableActionBar'
 
 type UseSettingsTableToolbarProps<TData> = {
   hideGrouping?: boolean
@@ -27,19 +27,19 @@ export default function useSettingsTableToolbar<TData>({
   const toolbar = (
     <TableActionBar
       className='mb-0'
-      compact
       hideGrouping={hideGrouping}
       isReloading={isReLoading}
       rowSize={rowSize}
       table={table}
+      compact
       onReload={handleReload}
       onRowSizeChange={setRowSize}
     />
   )
 
   return {
-    onRowSizeChange: setRowSize,
     rowSize,
     toolbar,
+    onRowSizeChange: setRowSize,
   }
 }

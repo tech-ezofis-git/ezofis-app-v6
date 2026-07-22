@@ -23,11 +23,12 @@ export default function transformColumns(
   enableRowSelection?: boolean,
 ) {
   const transformedColumns = columns.map((column) => {
+    const isActionsColumn = column.id === 'actions'
     const config = {
       enableGrouping: column.enableGrouping ?? false,
       enableHiding: column.enableHiding ?? true,
       enablePinning: column.enablePinning ?? true,
-      enableResizing: column.enableResizing ?? true,
+      enableResizing: column.enableResizing ?? !isActionsColumn,
       enableSorting: column.enableSorting ?? true,
       header: column.hideHeader ? '' : column.label,
       id: column.id,

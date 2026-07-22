@@ -17,8 +17,8 @@ export default function SettingsSelectedChips({
       <div className='ez-scrollbar flex max-h-36 flex-wrap gap-2 overflow-y-auto'>
         {items.map((item) => (
           <div
-            key={item.id}
             className='inline-flex h-7 max-w-full items-center gap-1 rounded bg-purple-2 px-2 text-13 font-medium text-purple-11'
+            key={item.id}
           >
             <span className='truncate'>{item.name}</span>
             <IconButton

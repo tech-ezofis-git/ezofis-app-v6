@@ -97,8 +97,8 @@ export const ProcessingBackgroundManager = () => {
                   .getState()
                   .updateProcessingProcess(String(processId), {
                     id: jobData.instanceId,
-                    processId: jobData.instanceId,
                     isCompleted,
+                    processId: jobData.instanceId,
                     stage,
                     ...jobData,
                   })
@@ -181,10 +181,10 @@ export const ProcessingBackgroundManager = () => {
               ['Verifier', 'Approved', 'Completed'].includes(stage)
 
             updateProcessingProcess(processId, {
+              isCompleted,
               lastUpdated: new Date(),
               stage,
               stageType,
-              isCompleted,
               ...item,
             })
 

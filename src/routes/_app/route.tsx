@@ -31,12 +31,12 @@ export const Route = createFileRoute('/_app')({
 
     if (sessionPermissions && sessionPermissions.length > 0) {
       const routeToPermissionKey: Record<string, string> = {
-        '/requests': 'requests',
-        '/folders': 'folder',
-        '/workflows': 'workflow',
-        '/forms': 'forms',
-        '/settings': 'settings',
         '/': 'dashboard',
+        '/folders': 'folder',
+        '/forms': 'forms',
+        '/requests': 'requests',
+        '/settings': 'settings',
+        '/workflows': 'workflow',
       }
 
       const baseRoute = Object.keys(routeToPermissionKey).find((route) =>
@@ -58,7 +58,7 @@ export const Route = createFileRoute('/_app')({
                 (k) => routeToPermissionKey[k] === firstVisible.key,
               ) || '/'
             : '/'
-          
+
           if (location.pathname !== fallbackRoute) {
             throw redirect({
               replace: true,

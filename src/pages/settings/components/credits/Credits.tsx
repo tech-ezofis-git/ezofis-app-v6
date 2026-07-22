@@ -10,16 +10,17 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+import type { Option } from '@/types/option'
 import {
-  getCreditsUsage,
   type CreditsUsageBucket,
   type CreditsUsageTransaction,
+  getCreditsUsage,
 } from '@/api/v6/billing'
 import IconButton from '@/components/base/button/IconButton'
 import DataTable from '@/components/base/data-table/DataTable'
-import Pagination from '@/components/base/pagination/Pagination'
 import InputSelect from '@/components/base/inputs/InputSelect'
-import type { Option } from '@/types/option'
+import Pagination from '@/components/base/pagination/Pagination'
+import CustomFilter from '@/components/common/CustomFilter'
 import cn from '@/utils/cn'
 import {
   settingsHeaderMeta,
@@ -29,8 +30,6 @@ import {
 } from '../../helpers/settingsDataTable'
 import SettingsPageHeader from '../SettingsPageHeader'
 import useSettingsTableToolbar from '../useSettingsTableToolbar'
-
-import CustomFilter from '@/components/common/CustomFilter'
 
 type UsagePeriod = 'today' | 'yesterday' | 'monthly' | 'quarterly' | 'yearly'
 
@@ -68,350 +67,6 @@ const CHART_COLORS = [
 const MAX_TABLE_ROWS = 200
 const MAX_CHART_ITEMS = 10
 
-function formatNumber(value: number) {
-  return new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 }).format(
-    value,
-  )
-}
-
-function formatPeriodSubtitle(
-  period: UsagePeriod,
-  month: Option,
-  year: Option,
-  periodLabel?: string,
-) {
-  if (periodLabel) {
-    return periodLabel.toLowerCase()
-  }
-
-  if (period === 'monthly') {
-    return `${month.name.toLowerCase()} ${year.name}`
-  }
-
-  if (period === 'yearly') {
-    return `calendar year ${year.name}`
-  }
-
-  return period.replaceAll('_', ' ')
-}
-
-function mapBucketsToChartData(buckets: CreditsUsageBucket[]) {
-  return buckets.map((item, index) => ({
-    color: CHART_COLORS[index % CHART_COLORS.length],
-    credits: item.creditsUsed,
-    name: item.type,
-  }))
-}
-
-function findTopBucket(buckets: CreditsUsageBucket[]) {
-  if (buckets.length === 0) return null
-
-  return buckets.reduce((top, item) =>
-    item.creditsUsed > top.creditsUsed ? item : top,
-  )
-}
-
-function FilterPill({
-  active,
-  children,
-  onClick,
-}: {
-  active: boolean
-  children: React.ReactNode
-  onClick: () => void
-}) {
-  return (
-    <button
-      className={cn(
-        'rounded-full border px-3 py-1 text-12 font-medium transition-all active:scale-95',
-        active
-          ? 'border-primary-9 bg-primary-9 text-white shadow-sm'
-          : 'border-gray-3 bg-white text-gray-11 shadow-sm hover:bg-gray-1',
-      )}
-      type='button'
-      onClick={onClick}
-    >
-      {children}
-    </button>
-  )
-}
-
-function MetricSummaryCard({
-  isLoading,
-  title,
-  trend,
-  trendTone = 'neutral',
-  value,
-}: {
-  isLoading: boolean
-  title: string
-  trend?: string
-  trendTone?: 'down' | 'neutral' | 'up'
-  value: string
-}) {
-  const trendStyles = {
-    down: 'bg-red-2 text-red-11 border border-red-3',
-    neutral: 'bg-gray-2 text-text-muted border border-gray-3',
-    up: 'bg-success-light text-success border border-success/20',
-  }
-
-  return (
-    <div className='cursor-pointer rounded-lg border border-[var(--border-default)] border-t-[3px] border-t-primary-9 bg-surface p-4 shadow-[var(--shadow-sm)] transition-all hover:-translate-y-0.5'>
-      <div className='font-poppins text-8px font-semibold text-gray-11 uppercase'>
-        {title}
-      </div>
-      <div className='font-poppins text-18 font-semibold text-text-primary mt-1.5'>
-        {isLoading ? '—' : value}
-      </div>
-      {trend ? (
-        <div className='flex items-center gap-1.5 mt-2 text-11 font-semibold'>
-          <span
-            className={cn(
-              'rounded px-1.5 py-0.5 text-11 font-semibold',
-              trendStyles[trendTone],
-            )}
-          >
-            {trend}
-          </span>
-          <span className='font-inter text-text-muted font-normal text-11'>
-            vs last period
-          </span>
-        </div>
-      ) : null}
-    </div>
-  )
-}
-
-function ChartCard({
-  children,
-  subtitle,
-  title,
-}: {
-  children: React.ReactNode
-  subtitle?: string
-  title: string
-}) {
-  return (
-    <div className='flex flex-col rounded-xl border border-[var(--border-default)] bg-surface p-5 shadow-[var(--shadow-sm)] transition-all hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)]'>
-      <div>
-        <div className='pl-0.5 capitalize font-poppins text-14 font-semibold text-text-primary'>
-          {title}
-        </div>
-        {subtitle ? (
-          <div className='mt-1 pl-0.5 text-[11px] text-gray-9 lowercase'>
-            {subtitle}
-          </div>
-        ) : null}
-      </div>
-      <div className='mt-6 flex flex-1 flex-col justify-center'>{children}</div>
-    </div>
-  )
-}
-
-function HorizontalConsumptionChart({
-  data,
-}: {
-  data: { credits: number; name: string }[]
-}) {
-  const chartData = data.map((item) => ({
-    ...item,
-    displayValue: `${formatNumber(item.credits)} credits`,
-  }))
-
-  if (chartData.length === 0) {
-    return (
-      <div className='flex h-[200px] items-center justify-center text-13 text-gray-10'>
-        No consumption data for this period.
-      </div>
-    )
-  }
-
-  return (
-    <ResponsiveContainer height={200} width='100%'>
-      <BarChart
-        data={chartData}
-        layout='vertical'
-        margin={{ bottom: 0, left: -20, right: 40, top: 0 }}
-      >
-        <defs>
-          <linearGradient id='creditConsumptionGradient' x1='0' x2='1' y1='0' y2='0'>
-            <stop offset='0%' stopColor='var(--primary-6)' stopOpacity={0.7} />
-            <stop offset='100%' stopColor='var(--primary-9)' stopOpacity={0.95} />
-          </linearGradient>
-        </defs>
-        <XAxis type='number' hide />
-        <YAxis
-          axisLine={false}
-          dataKey='name'
-          tick={{ fill: 'var(--gray-10)', fontSize: 11, fontWeight: 550 }}
-          tickLine={false}
-          type='category'
-          width={100}
-        />
-        <Tooltip
-          cursor={{ fill: 'var(--gray-2)', opacity: 0.15 }}
-          formatter={(val: any) => [`${formatNumber(val)} credits`, 'Credits']}
-          contentStyle={{
-            border: 'none',
-            borderRadius: '8px',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-            fontSize: '11px',
-          }}
-        />
-        <Bar
-          barSize={14}
-          dataKey='credits'
-          fill='url(#creditConsumptionGradient)'
-          radius={[0, 6, 6, 0]}
-        >
-          <LabelList
-            dataKey='displayValue'
-            fill='var(--gray-11)'
-            fontSize={10}
-            fontWeight={650}
-            offset={8}
-            position='right'
-          />
-        </Bar>
-      </BarChart>
-    </ResponsiveContainer>
-  )
-}
-
-function UsageTimelineChart({
-  data,
-}: {
-  data: { credits: number; label: string }[]
-}) {
-  if (data.length === 0) {
-    return (
-      <div className='flex h-[180px] items-center justify-center text-13 text-gray-10'>
-        No timeline data for this period.
-      </div>
-    )
-  }
-
-  return (
-    <ResponsiveContainer height={180} width='100%'>
-      <BarChart data={data} margin={{ bottom: 0, left: -25, right: 0, top: 20 }}>
-        <defs>
-          <linearGradient id='creditTimelineGradient' x1='0' x2='0' y1='0' y2='1'>
-            <stop offset='0%' stopColor='var(--primary-9)' stopOpacity={0.9} />
-            <stop offset='100%' stopColor='var(--primary-4)' stopOpacity={0.4} />
-          </linearGradient>
-        </defs>
-        <XAxis
-          axisLine={false}
-          dataKey='label'
-          dy={10}
-          tick={{ fill: 'var(--gray-10)', fontSize: 11, fontWeight: 550 }}
-          tickLine={false}
-        />
-        <Tooltip
-          cursor={{ fill: 'var(--gray-2)', opacity: 0.15 }}
-          formatter={(val: any) => [`${formatNumber(val)} credits`, 'Credits']}
-          contentStyle={{
-            border: 'none',
-            borderRadius: '8px',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-            fontSize: '11px',
-          }}
-        />
-        <Bar
-          barSize={28}
-          dataKey='credits'
-          fill='url(#creditTimelineGradient)'
-          radius={[6, 6, 0, 0]}
-        >
-          <LabelList
-            dataKey='credits'
-            position='top'
-            content={(props: any) => {
-              const { value, width = 0, x = 0, y = 0 } = props
-              return (
-                <text
-                  fill='var(--gray-11)'
-                  fontSize={10}
-                  fontWeight={650}
-                  textAnchor='middle'
-                  x={x + width / 2}
-                  y={y - 8}
-                >
-                  {formatNumber(Number(value ?? 0))}
-                </text>
-              )
-            }}
-          />
-        </Bar>
-      </BarChart>
-    </ResponsiveContainer>
-  )
-}
-
-function DistributionDonutChart({
-  data,
-}: {
-  centerLabel?: string
-  centerValue?: string
-  data: { color: string; credits: number; name: string }[]
-}) {
-  const total = data.reduce((sum, item) => sum + item.credits, 0)
-
-  if (data.length === 0) {
-    return (
-      <div className='flex h-[180px] items-center justify-center text-13 text-gray-10'>
-        No distribution data for this period.
-      </div>
-    )
-  }
-
-  return (
-    <div className='flex flex-col gap-2.5 pt-1'>
-      {data.map((entry, index) => {
-        const percentage =
-          total > 0 ? Math.round((entry.credits / total) * 100) : 0
-
-        return (
-          <div
-            className='group flex cursor-pointer flex-col gap-1.5 rounded-lg p-1.5 transition-all hover:bg-gray-1 active:scale-95'
-            key={index}
-            title={`${formatNumber(entry.credits)} credits (${percentage}%)`}
-          >
-            <div className='flex items-center justify-between text-[11px] font-medium lowercase'>
-              <div className='flex items-center gap-2 min-w-0'>
-                <div
-                  className='size-2.5 shrink-0 rounded-md transition-transform group-hover:scale-110'
-                  style={{ backgroundColor: entry.color }}
-                />
-                <span className='font-semibold text-gray-10 truncate transition-colors group-hover:text-gray-13'>
-                  {entry.name}
-                </span>
-              </div>
-              <div className='flex items-center gap-1.5 shrink-0 ml-2'>
-                <span className='font-bold text-gray-13'>
-                  {formatNumber(entry.credits)}
-                </span>
-                <span className='text-[9px] font-normal text-gray-10'>
-                  ({percentage}%)
-                </span>
-              </div>
-            </div>
-            <div className='h-1.5 w-full overflow-hidden rounded-full bg-gray-2'>
-              <div
-                className='h-full rounded-full transition-all duration-500'
-                style={{
-                  backgroundColor: entry.color,
-                  width: `${percentage}%`,
-                }}
-              />
-            </div>
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
 export default function Credits({ onBack }: { onBack?: () => void }) {
   const currentYear = new Date().getFullYear()
   const currentMonthIndex = new Date().getMonth()
@@ -434,7 +89,13 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
     [currentYear],
   )
 
-  const { data: usage, isFetching, isLoading, refetch } = useQuery({
+  const {
+    data: usage,
+    isFetching,
+    isLoading,
+    refetch,
+  } = useQuery({
+    queryKey: ['settings', 'credits-usage', period, month.value, year.value],
     queryFn: async () => {
       const response = await getCreditsUsage({
         month: period === 'monthly' ? Number(month.value) : undefined,
@@ -451,7 +112,6 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
 
       return response.data
     },
-    queryKey: ['settings', 'credits-usage', period, month.value, year.value],
   })
 
   const transactions = useMemo(
@@ -539,9 +199,7 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
           if (!value) return '—'
 
           const date = new Date(value)
-          return Number.isNaN(date.getTime())
-            ? value
-            : date.toLocaleString()
+          return Number.isNaN(date.getTime()) ? value : date.toLocaleString()
         },
       }),
       columnHelper.accessor('activityType', {
@@ -598,13 +256,13 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
   )
 
   const {
-    onPageChange,
-    onPageSizeChange,
-    onPaginationChange,
     page,
     pageSize,
     pagination,
     paginationModel,
+    onPageChange,
+    onPageSizeChange,
+    onPaginationChange,
   } = useSettingsTablePagination()
 
   const transactionTable = useReactTable({
@@ -613,14 +271,14 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
     ...paginationModel,
     columns,
     data: transactions,
-    onPaginationChange,
     state: {
       ...tableSearchOptions.state,
       pagination,
     },
+    onPaginationChange,
   })
 
-  const { onRowSizeChange, rowSize, toolbar } = useSettingsTableToolbar({
+  const { rowSize, toolbar, onRowSizeChange } = useSettingsTableToolbar({
     isReLoading: isFetching,
     table: transactionTable,
     onReload: () => void refetch(),
@@ -633,31 +291,74 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
 
   return (
     <div className='flex h-full min-h-0 flex-col bg-[var(--surface)]'>
-      <SettingsPageHeader
-        title='Credit Usage'
-        onBack={onBack}
-      />
+      <SettingsPageHeader title='Credit Usage' onBack={onBack} />
 
-      <div className='flex-1 flex flex-col overflow-hidden p-4'>
+      <div className='flex flex-1 flex-col overflow-hidden p-4'>
         <CustomFilter
-          filters={[
-            ...(period === 'monthly' ? [{ id: 'month', label: 'Month', options: MONTH_OPTIONS.map(o => ({ label: o.name, value: String(o.value || '') })) }] : []),
-            ...(period === 'monthly' || period === 'yearly' ? [{ id: 'year', label: 'Year', options: yearOptions.map(o => ({ label: o.name, value: String(o.value || '') })) }] : []),
+          activeQuickFilters={[period]}
+          customSearchComponent={<div />}
+          actionButtons={[
+            {
+              color: 'gray',
+              icon: 'lucide:rotate-cw',
+              id: 'refresh',
+              isIconButton: true,
+              tooltip: 'Refresh credit usage',
+              variant: 'outline',
+              onClick: () => void refetch(),
+            },
           ]}
           activeFilters={{
             month: String(month.value || ''),
             year: String(year.value || ''),
           }}
+          filters={[
+            ...(period === 'monthly'
+              ? [
+                  {
+                    id: 'month',
+                    label: 'Month',
+                    options: MONTH_OPTIONS.map((o) => ({
+                      label: o.name,
+                      value: String(o.value || ''),
+                    })),
+                  },
+                ]
+              : []),
+            ...(period === 'monthly' || period === 'yearly'
+              ? [
+                  {
+                    id: 'year',
+                    label: 'Year',
+                    options: yearOptions.map((o) => ({
+                      label: o.name,
+                      value: String(o.value || ''),
+                    })),
+                  },
+                ]
+              : []),
+          ]}
+          quickFilters={PERIOD_FILTERS.map((f) => ({
+            id: f.value,
+            label: f.label,
+          }))}
+          showReset={
+            period !== 'monthly' ||
+            month.value !==
+              (MONTH_OPTIONS[currentMonthIndex] ?? MONTH_OPTIONS[0]).value ||
+            year.value !== String(currentYear)
+          }
           onFilterChange={(id, value) => {
             if (id === 'month') {
-              const selected = MONTH_OPTIONS.find(o => o.value === value)
+              const selected = MONTH_OPTIONS.find((o) => o.value === value)
               if (selected) setMonth(selected)
             }
             if (id === 'year') {
-              const selected = yearOptions.find(o => o.value === value)
+              const selected = yearOptions.find((o) => o.value === value)
               if (selected) setYear(selected)
             }
           }}
+          onQuickFilterToggle={(id) => setPeriod(id as UsagePeriod)}
           onReset={() => {
             setPeriod('monthly')
             setMonth(MONTH_OPTIONS[currentMonthIndex] ?? MONTH_OPTIONS[0])
@@ -667,46 +368,24 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
               value: String(currentYear),
             })
           }}
-          showReset={
-            period !== 'monthly' ||
-            month.value !== (MONTH_OPTIONS[currentMonthIndex] ?? MONTH_OPTIONS[0]).value ||
-            year.value !== String(currentYear)
-          }
-          quickFilters={PERIOD_FILTERS.map(f => ({ id: f.value, label: f.label }))}
-          activeQuickFilters={[period]}
-          onQuickFilterToggle={(id) => setPeriod(id as UsagePeriod)}
-          customSearchComponent={<div />}
-          actionButtons={[
-            {
-              id: 'refresh',
-              icon: 'lucide:rotate-cw',
-              tooltip: 'Refresh credit usage',
-              onClick: () => void refetch(),
-              isIconButton: true,
-              color: 'gray',
-              variant: 'outline',
-            }
-          ]}
         />
 
-        <div className='flex-1 overflow-y-auto mt-4'>
+        <div className='mt-4 flex-1 overflow-y-auto'>
           <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-6 2xl:grid-cols-6'>
             <MetricSummaryCard
               isLoading={isLoading}
               title='Credits Consumed'
+              value={formatNumber(usage?.totalCreditsConsumed ?? 0)}
               trend={
                 usage
                   ? `${formatNumber(usage.totalCreditsConsumed)} total`
                   : undefined
               }
-              value={formatNumber(usage?.totalCreditsConsumed ?? 0)}
             />
             <MetricSummaryCard
               isLoading={isLoading}
               title='Transactions'
-              trend={
-                usage ? `${usage.transactionCount} records` : undefined
-              }
+              trend={usage ? `${usage.transactionCount} records` : undefined}
               value={formatNumber(usage?.transactionCount ?? 0)}
             />
             <MetricSummaryCard
@@ -724,18 +403,20 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
             <MetricSummaryCard
               isLoading={isLoading}
               title='Peak Timeline'
-              trend={peakTimeline ? peakTimeline.label.toLowerCase() : undefined}
               value={formatNumber(peakTimeline?.creditsUsed ?? 0)}
+              trend={
+                peakTimeline ? peakTimeline.label.toLowerCase() : undefined
+              }
             />
             <MetricSummaryCard
               isLoading={isLoading}
               title='Active Agents'
+              value={formatNumber(consumptionByAgent.length)}
               trend={
                 consumptionByAgent.length > 0
                   ? `${consumptionByAgent.length} agents`
                   : undefined
               }
-              value={formatNumber(consumptionByAgent.length)}
             />
           </div>
 
@@ -791,14 +472,14 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
             </div>
             <div className='min-h-0 flex-1 overflow-hidden'>
               <DataTable
-                hideActionBar
                 isLoading={isLoading}
                 isReLoading={isFetching}
                 pageSize={pageSize}
                 rowSize={rowSize}
-                stickyHeader
                 table={transactionTable}
+                hideActionBar
                 hideGrouping
+                stickyHeader
                 onReload={() => void refetch()}
                 onRowSizeChange={onRowSizeChange}
               />
@@ -817,5 +498,372 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
         </div>
       </div>
     </div>
+  )
+}
+
+function ChartCard({
+  children,
+  subtitle,
+  title,
+}: {
+  children: React.ReactNode
+  subtitle?: string
+  title: string
+}) {
+  return (
+    <div className='flex flex-col rounded-xl border border-[var(--border-default)] bg-surface p-5 shadow-[var(--shadow-sm)] transition-all hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)]'>
+      <div>
+        <div className='pl-0.5 font-poppins text-14 font-semibold text-text-primary capitalize'>
+          {title}
+        </div>
+        {subtitle ? (
+          <div className='mt-1 pl-0.5 text-[11px] text-gray-9 lowercase'>
+            {subtitle}
+          </div>
+        ) : null}
+      </div>
+      <div className='mt-6 flex flex-1 flex-col justify-center'>{children}</div>
+    </div>
+  )
+}
+
+function DistributionDonutChart({
+  data,
+}: {
+  centerLabel?: string
+  centerValue?: string
+  data: { color: string; credits: number; name: string }[]
+}) {
+  const total = data.reduce((sum, item) => sum + item.credits, 0)
+
+  if (data.length === 0) {
+    return (
+      <div className='flex h-[180px] items-center justify-center text-13 text-gray-10'>
+        No distribution data for this period.
+      </div>
+    )
+  }
+
+  return (
+    <div className='flex flex-col gap-2.5 pt-1'>
+      {data.map((entry, index) => {
+        const percentage =
+          total > 0 ? Math.round((entry.credits / total) * 100) : 0
+
+        return (
+          <div
+            className='group flex cursor-pointer flex-col gap-1.5 rounded-lg p-1.5 transition-all hover:bg-gray-1 active:scale-95'
+            key={index}
+            title={`${formatNumber(entry.credits)} credits (${percentage}%)`}
+          >
+            <div className='flex items-center justify-between text-[11px] font-medium lowercase'>
+              <div className='flex min-w-0 items-center gap-2'>
+                <div
+                  className='size-2.5 shrink-0 rounded-md transition-transform group-hover:scale-110'
+                  style={{ backgroundColor: entry.color }}
+                />
+                <span className='truncate font-semibold text-gray-10 transition-colors group-hover:text-gray-13'>
+                  {entry.name}
+                </span>
+              </div>
+              <div className='ml-2 flex shrink-0 items-center gap-1.5'>
+                <span className='font-bold text-gray-13'>
+                  {formatNumber(entry.credits)}
+                </span>
+                <span className='text-[9px] font-normal text-gray-10'>
+                  ({percentage}%)
+                </span>
+              </div>
+            </div>
+            <div className='h-1.5 w-full overflow-hidden rounded-full bg-gray-2'>
+              <div
+                className='h-full rounded-full transition-all duration-500'
+                style={{
+                  backgroundColor: entry.color,
+                  width: `${percentage}%`,
+                }}
+              />
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function FilterPill({
+  active,
+  children,
+  onClick,
+}: {
+  active: boolean
+  children: React.ReactNode
+  onClick: () => void
+}) {
+  return (
+    <button
+      type='button'
+      className={cn(
+        'rounded-full border px-3 py-1 text-12 font-medium transition-all active:scale-95',
+        active
+          ? 'border-primary-9 bg-primary-9 text-white shadow-sm'
+          : 'border-gray-3 bg-white text-gray-11 shadow-sm hover:bg-gray-1',
+      )}
+      onClick={onClick}
+    >
+      {children}
+    </button>
+  )
+}
+
+function findTopBucket(buckets: CreditsUsageBucket[]) {
+  if (buckets.length === 0) return null
+
+  return buckets.reduce((top, item) =>
+    item.creditsUsed > top.creditsUsed ? item : top,
+  )
+}
+
+function formatNumber(value: number) {
+  return new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 }).format(
+    value,
+  )
+}
+
+function formatPeriodSubtitle(
+  period: UsagePeriod,
+  month: Option,
+  year: Option,
+  periodLabel?: string,
+) {
+  if (periodLabel) {
+    return periodLabel.toLowerCase()
+  }
+
+  if (period === 'monthly') {
+    return `${month.name.toLowerCase()} ${year.name}`
+  }
+
+  if (period === 'yearly') {
+    return `calendar year ${year.name}`
+  }
+
+  return period.replaceAll('_', ' ')
+}
+
+function HorizontalConsumptionChart({
+  data,
+}: {
+  data: { credits: number; name: string }[]
+}) {
+  const chartData = data.map((item) => ({
+    ...item,
+    displayValue: `${formatNumber(item.credits)} credits`,
+  }))
+
+  if (chartData.length === 0) {
+    return (
+      <div className='flex h-[200px] items-center justify-center text-13 text-gray-10'>
+        No consumption data for this period.
+      </div>
+    )
+  }
+
+  return (
+    <ResponsiveContainer height={200} width='100%'>
+      <BarChart
+        data={chartData}
+        layout='vertical'
+        margin={{ bottom: 0, left: -20, right: 40, top: 0 }}
+      >
+        <defs>
+          <linearGradient
+            id='creditConsumptionGradient'
+            x1='0'
+            x2='1'
+            y1='0'
+            y2='0'
+          >
+            <stop offset='0%' stopColor='var(--primary-6)' stopOpacity={0.7} />
+            <stop
+              offset='100%'
+              stopColor='var(--primary-9)'
+              stopOpacity={0.95}
+            />
+          </linearGradient>
+        </defs>
+        <XAxis type='number' hide />
+        <YAxis
+          axisLine={false}
+          dataKey='name'
+          tick={{ fill: 'var(--gray-10)', fontSize: 11, fontWeight: 550 }}
+          tickLine={false}
+          type='category'
+          width={100}
+        />
+        <Tooltip
+          cursor={{ fill: 'var(--gray-2)', opacity: 0.15 }}
+          formatter={(val: any) => [`${formatNumber(val)} credits`, 'Credits']}
+          contentStyle={{
+            border: 'none',
+            borderRadius: '8px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+            fontSize: '11px',
+          }}
+        />
+        <Bar
+          barSize={14}
+          dataKey='credits'
+          fill='url(#creditConsumptionGradient)'
+          radius={[0, 6, 6, 0]}
+        >
+          <LabelList
+            dataKey='displayValue'
+            fill='var(--gray-11)'
+            fontSize={10}
+            fontWeight={650}
+            offset={8}
+            position='right'
+          />
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer>
+  )
+}
+
+function mapBucketsToChartData(buckets: CreditsUsageBucket[]) {
+  return buckets.map((item, index) => ({
+    color: CHART_COLORS[index % CHART_COLORS.length],
+    credits: item.creditsUsed,
+    name: item.type,
+  }))
+}
+
+function MetricSummaryCard({
+  isLoading,
+  title,
+  trend,
+  trendTone = 'neutral',
+  value,
+}: {
+  isLoading: boolean
+  title: string
+  trend?: string
+  trendTone?: 'down' | 'neutral' | 'up'
+  value: string
+}) {
+  const trendStyles = {
+    down: 'bg-red-2 text-red-11 border border-red-3',
+    neutral: 'bg-gray-2 text-text-muted border border-gray-3',
+    up: 'bg-success-light text-success border border-success/20',
+  }
+
+  return (
+    <div className='cursor-pointer rounded-lg border border-t-[3px] border-[var(--border-default)] border-t-primary-9 bg-surface p-4 shadow-[var(--shadow-sm)] transition-all hover:-translate-y-0.5'>
+      <div className='text-8px font-poppins font-semibold text-gray-11 uppercase'>
+        {title}
+      </div>
+      <div className='mt-1.5 font-poppins text-18 font-semibold text-text-primary'>
+        {isLoading ? '—' : value}
+      </div>
+      {trend ? (
+        <div className='mt-2 flex items-center gap-1.5 text-11 font-semibold'>
+          <span
+            className={cn(
+              'rounded px-1.5 py-0.5 text-11 font-semibold',
+              trendStyles[trendTone],
+            )}
+          >
+            {trend}
+          </span>
+          <span className='font-inter text-11 font-normal text-text-muted'>
+            vs last period
+          </span>
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
+function UsageTimelineChart({
+  data,
+}: {
+  data: { credits: number; label: string }[]
+}) {
+  if (data.length === 0) {
+    return (
+      <div className='flex h-[180px] items-center justify-center text-13 text-gray-10'>
+        No timeline data for this period.
+      </div>
+    )
+  }
+
+  return (
+    <ResponsiveContainer height={180} width='100%'>
+      <BarChart
+        data={data}
+        margin={{ bottom: 0, left: -25, right: 0, top: 20 }}
+      >
+        <defs>
+          <linearGradient
+            id='creditTimelineGradient'
+            x1='0'
+            x2='0'
+            y1='0'
+            y2='1'
+          >
+            <stop offset='0%' stopColor='var(--primary-9)' stopOpacity={0.9} />
+            <stop
+              offset='100%'
+              stopColor='var(--primary-4)'
+              stopOpacity={0.4}
+            />
+          </linearGradient>
+        </defs>
+        <XAxis
+          axisLine={false}
+          dataKey='label'
+          dy={10}
+          tick={{ fill: 'var(--gray-10)', fontSize: 11, fontWeight: 550 }}
+          tickLine={false}
+        />
+        <Tooltip
+          cursor={{ fill: 'var(--gray-2)', opacity: 0.15 }}
+          formatter={(val: any) => [`${formatNumber(val)} credits`, 'Credits']}
+          contentStyle={{
+            border: 'none',
+            borderRadius: '8px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+            fontSize: '11px',
+          }}
+        />
+        <Bar
+          barSize={28}
+          dataKey='credits'
+          fill='url(#creditTimelineGradient)'
+          radius={[6, 6, 0, 0]}
+        >
+          <LabelList
+            dataKey='credits'
+            position='top'
+            content={(props: any) => {
+              const { value, width = 0, x = 0, y = 0 } = props
+              return (
+                <text
+                  fill='var(--gray-11)'
+                  fontSize={10}
+                  fontWeight={650}
+                  textAnchor='middle'
+                  x={x + width / 2}
+                  y={y - 8}
+                >
+                  {formatNumber(Number(value ?? 0))}
+                </text>
+              )
+            }}
+          />
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer>
   )
 }

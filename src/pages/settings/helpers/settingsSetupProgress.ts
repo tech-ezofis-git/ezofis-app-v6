@@ -3,27 +3,6 @@ import type { SettingsGroup, SettingsUser } from './userGroupMappers'
 const isFilled = (value: string | number | null | undefined) =>
   Boolean(String(value ?? '').trim())
 
-export function calculateUserSetupProgress(user: SettingsUser) {
-  const checks = [
-    isFilled(user.firstName),
-    isFilled(user.lastName),
-    isFilled(user.email),
-    isFilled(user.username),
-    isFilled(user.accountExpiryDate),
-    isFilled(user.jobTitle),
-    isFilled(user.employeeId),
-    isFilled(user.department),
-    isFilled(user.businessUnit),
-    isFilled(user.manager),
-    isFilled(user.location),
-    user.groups.length > 0,
-    !user.mfaEnabled || user.mfaMethods.length > 0,
-  ]
-
-  const filled = checks.filter(Boolean).length
-  return Math.round((filled / checks.length) * 100)
-}
-
 export function calculateGroupSetupProgress(
   group: SettingsGroup,
   memberCount: number,
@@ -69,6 +48,27 @@ export function calculateRoleSetupProgress(
     isFilled(description),
     selectedUserCount > 0,
     enabledPermissionCount > 0,
+  ]
+
+  const filled = checks.filter(Boolean).length
+  return Math.round((filled / checks.length) * 100)
+}
+
+export function calculateUserSetupProgress(user: SettingsUser) {
+  const checks = [
+    isFilled(user.firstName),
+    isFilled(user.lastName),
+    isFilled(user.email),
+    isFilled(user.username),
+    isFilled(user.accountExpiryDate),
+    isFilled(user.jobTitle),
+    isFilled(user.employeeId),
+    isFilled(user.department),
+    isFilled(user.businessUnit),
+    isFilled(user.manager),
+    isFilled(user.location),
+    user.groups.length > 0,
+    !user.mfaEnabled || user.mfaMethods.length > 0,
   ]
 
   const filled = checks.filter(Boolean).length

@@ -46,6 +46,37 @@ export const PREDEFINED_FIELD_ALIASES: Record<string, string> = {
   'Purchase Order': 'PO Number',
 }
 
+export function normalizeFieldMapping(
+  mapping: Record<string, string>,
+  fieldDataTypes: Record<string, string>,
+  templateColumns: readonly { key: string }[],
+  defaultFieldTypes: Record<string, string> = {},
+): {
+  fieldDataTypes: Record<string, string>
+  mapping: Record<string, string>
+} {
+  const normalizedMapping: Record<string, string> = {}
+  const normalizedTypes: Record<string, string> = {}
+
+  for (const [rawKey, excelCol] of Object.entries(mapping)) {
+    const resolvedKey =
+      resolvePredefinedFieldKey(rawKey, templateColumns) ?? rawKey
+
+    normalizedMapping[resolvedKey] = excelCol
+
+    const rawType = fieldDataTypes[rawKey] ?? fieldDataTypes[resolvedKey]
+    const normalizedType = rawType === 'DROPDOWN' ? 'SINGLE_SELECT' : rawType
+
+    if (normalizedType) {
+      normalizedTypes[resolvedKey] = normalizedType
+    } else if (defaultFieldTypes[resolvedKey]) {
+      normalizedTypes[resolvedKey] = defaultFieldTypes[resolvedKey]
+    }
+  }
+
+  return { fieldDataTypes: normalizedTypes, mapping: normalizedMapping }
+}
+
 export function resolvePredefinedFieldKey(
   fieldName: string,
   templateColumns: readonly { key: string }[],
@@ -71,46 +102,14 @@ export function resolvePredefinedFieldKey(
   return null
 }
 
-export function normalizeFieldMapping(
-  mapping: Record<string, string>,
-  fieldDataTypes: Record<string, string>,
-  templateColumns: readonly { key: string }[],
-  defaultFieldTypes: Record<string, string> = {},
-): {
-  mapping: Record<string, string>
-  fieldDataTypes: Record<string, string>
-} {
-  const normalizedMapping: Record<string, string> = {}
-  const normalizedTypes: Record<string, string> = {}
-
-  for (const [rawKey, excelCol] of Object.entries(mapping)) {
-    const resolvedKey =
-      resolvePredefinedFieldKey(rawKey, templateColumns) ?? rawKey
-
-    normalizedMapping[resolvedKey] = excelCol
-
-    const rawType = fieldDataTypes[rawKey] ?? fieldDataTypes[resolvedKey]
-    const normalizedType =
-      rawType === 'DROPDOWN' ? 'SINGLE_SELECT' : rawType
-
-    if (normalizedType) {
-      normalizedTypes[resolvedKey] = normalizedType
-    } else if (defaultFieldTypes[resolvedKey]) {
-      normalizedTypes[resolvedKey] = defaultFieldTypes[resolvedKey]
-    }
-  }
-
-  return { mapping: normalizedMapping, fieldDataTypes: normalizedTypes }
-}
-
 export const findBestHeaderMatch = (
   targetHeader: string,
-  availableHeaders: string[]
+  availableHeaders: string[],
 ): string | undefined => {
   // First pass: look for 100% match after normalization
   const normalizedTarget = normalize(targetHeader)
   const exactMatch = availableHeaders.find(
-    (h) => normalize(h) === normalizedTarget
+    (h) => normalize(h) === normalizedTarget,
   )
   if (exactMatch) return exactMatch
 

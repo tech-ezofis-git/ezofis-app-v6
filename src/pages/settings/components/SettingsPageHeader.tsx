@@ -7,8 +7,8 @@ import { createSettingsListBreadcrumbs } from '../helpers/settingsBreadcrumbs'
 import useSettingsTopbar from '../hooks/useSettingsTopbar'
 
 export type SettingsAddAction = {
-  onClick: () => void
   tooltip: string
+  onClick: () => void
 }
 
 type SettingsPageHeaderProps = {
@@ -20,7 +20,10 @@ type SettingsPageHeaderProps = {
   onBack?: () => void
 }
 
-export function SettingsHeaderAddButton({ onClick, tooltip }: SettingsAddAction) {
+export function SettingsHeaderAddButton({
+  tooltip,
+  onClick,
+}: SettingsAddAction) {
   return (
     <Tooltip content={tooltip} position='top'>
       <IconButton
@@ -38,9 +41,9 @@ export function SettingsHeaderAddButton({ onClick, tooltip }: SettingsAddAction)
 export default function SettingsPageHeader({
   actions,
   leading,
-  onBack,
   title,
   toolbar,
+  onBack,
 }: SettingsPageHeaderProps) {
   const breadcrumbConfig = useMemo(
     () => createSettingsListBreadcrumbs(title, onBack),

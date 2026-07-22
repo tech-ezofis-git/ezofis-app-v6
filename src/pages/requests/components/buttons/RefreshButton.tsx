@@ -8,11 +8,11 @@ interface RefreshButtonProps {
 const RefreshButton: React.FC<RefreshButtonProps> = ({ onClick }) => {
   return (
     <IconButton
-      color="gray"
-      icon="tabler:refresh"
-      aria-label="Refresh"
-      variant="outline"
-      tooltip="Refresh"
+      aria-label='Refresh'
+      color='gray'
+      icon='tabler:refresh'
+      tooltip='Refresh'
+      variant='outline'
       onClick={onClick}
     />
   )

@@ -1,12 +1,12 @@
 import { useQuery } from '@tanstack/react-query'
 import workflowsApiV6 from '@/api/v6/workflows'
 import type { InboxItem, TableGroup, WorkflowOption } from '../types'
+import requestStore from '../stores/useRequestStore'
 import {
   countInboxSplit,
   filterInboxItemsByTab,
   isDuplicatedInboxItem,
 } from '../utils/inboxList.utils'
-import requestStore from '../stores/useRequestStore'
 import { getActionsForActivity } from '../utils/workflow.utils'
 
 const transformProcess = (
@@ -60,25 +60,31 @@ const transformProcess = (
     }
   }
 
-  const hasAgentResponse = !!(parsedAgentResponse && Object.keys(parsedAgentResponse).length > 0)
+  const hasAgentResponse = !!(
+    parsedAgentResponse && Object.keys(parsedAgentResponse).length > 0
+  )
 
-  const isStatusMatched = String(process.status || '').toUpperCase() === 'MATCHED'
-  const isDecisionMatched = String(process.decision || '').toUpperCase() === 'MATCHED'
-  const isReviewMatched = String(process.review || '').toUpperCase() === 'MATCHED'
+  const isStatusMatched =
+    String(process.status || '').toUpperCase() === 'MATCHED'
+  const isDecisionMatched =
+    String(process.decision || '').toUpperCase() === 'MATCHED'
+  const isReviewMatched =
+    String(process.review || '').toUpperCase() === 'MATCHED'
 
   const status = isStatusMatched && !hasAgentResponse ? '' : process.status
-  const decision = isDecisionMatched && !hasAgentResponse ? '' : process.decision
+  const decision =
+    isDecisionMatched && !hasAgentResponse ? '' : process.decision
   const review = isReviewMatched && !hasAgentResponse ? '' : process.review
 
   const processCopy = {
     ...process,
-    status,
     decision,
-    review,
     formData: {
       ...(typeof process.formData === 'object' ? process.formData : {}),
       fields: fieldsSource,
     },
+    review,
+    status,
   }
 
   const dynamicFields = fieldsSource
@@ -145,32 +151,36 @@ const transformProcess = (
     requestNo: requestNo,
     ...(isAgentProcessing
       ? (() => {
-        const rowId = processId || process.id
-        const storeState = requestStore.getState()
-        const jobStatuses = storeState.jobStatuses || {}
-        const jobMappings = storeState.jobMappings || {}
+          const rowId = processId || process.id
+          const storeState = requestStore.getState()
+          const jobStatuses = storeState.jobStatuses || {}
+          const jobMappings = storeState.jobMappings || {}
 
-        let matchedJobStatus = jobStatuses[String(rowId)]
-        if (!matchedJobStatus && process.apAgentJobId) {
-          const mappedJobId = jobMappings[String(process.apAgentJobId)]
-          if (mappedJobId) {
-            matchedJobStatus = jobStatuses[String(mappedJobId)] || jobStatuses[`job-${mappedJobId}`]
+          let matchedJobStatus = jobStatuses[String(rowId)]
+          if (!matchedJobStatus && process.apAgentJobId) {
+            const mappedJobId = jobMappings[String(process.apAgentJobId)]
+            if (mappedJobId) {
+              matchedJobStatus =
+                jobStatuses[String(mappedJobId)] ||
+                jobStatuses[`job-${mappedJobId}`]
+            }
+            if (!matchedJobStatus) {
+              matchedJobStatus = jobStatuses[`job-${process.apAgentJobId}`]
+            }
           }
-          if (!matchedJobStatus) {
-            matchedJobStatus = jobStatuses[`job-${process.apAgentJobId}`]
+
+          const isCompleted = matchedJobStatus?.isCompleted || false
+          const stage = matchedJobStatus?.stage || process.stage || 'Start'
+          const statusVal = isCompleted
+            ? matchedJobStatus?.decision || (hasAgentResponse ? 'Matched' : '')
+            : 'Progressing'
+
+          return {
+            isProcessing: !isCompleted,
+            stage,
+            status: statusVal,
           }
-        }
-
-        const isCompleted = matchedJobStatus?.isCompleted || false
-        const stage = matchedJobStatus?.stage || process.stage || 'Start'
-        const statusVal = isCompleted ? (matchedJobStatus?.decision || (hasAgentResponse ? 'Matched' : '')) : 'Progressing'
-
-        return {
-          isProcessing: !isCompleted,
-          stage,
-          status: statusVal,
-        }
-      })()
+        })()
       : {}),
   }
 }
@@ -453,15 +463,15 @@ export const useInboxData = (
       const filteredGroupedData =
         activeTab === 'Inbox' || activeTab === 'Exceptions'
           ? groupedData
-            .map((group) => {
-              const items = filterInboxItemsByTab(group.items, activeTab)
-              return {
-                ...group,
-                groupCount: items.length,
-                items,
-              }
-            })
-            .filter((group) => group.items.length > 0)
+              .map((group) => {
+                const items = filterInboxItemsByTab(group.items, activeTab)
+                return {
+                  ...group,
+                  groupCount: items.length,
+                  items,
+                }
+              })
+              .filter((group) => group.items.length > 0)
           : groupedData
 
       return {

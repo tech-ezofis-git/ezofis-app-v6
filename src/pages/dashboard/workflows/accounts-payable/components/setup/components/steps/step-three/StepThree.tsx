@@ -22,8 +22,11 @@ const StepThree = () => {
     const handleMessage = (event: MessageEvent) => {
       if (event.origin !== window.location.origin) return
       if (event.data.type === 'CONNECTION_SUCCESS') {
+        const connector =
+          typeof event.data.connector === 'string' ? event.data.connector : ''
         setStorageSettings({
           ...storageSettings,
+          account: connector || session?.email || storageSettings.account || '',
           isConnected: true,
           isConnecting: false,
         })
@@ -32,7 +35,7 @@ const StepThree = () => {
 
     window.addEventListener('message', handleMessage)
     return () => window.removeEventListener('message', handleMessage)
-  }, [storageSettings, setStorageSettings])
+  }, [session?.email, setStorageSettings, storageSettings])
 
   const handleConnect = () => {
     const tenantId = session?.tenantId
@@ -95,14 +98,14 @@ const StepThree = () => {
             </div>
           ) : (
             <Button
+              label='Continue'
+              suffixIcon='tabler:arrow-right'
               disabled={
                 !(
                   storageSettings.system === 'Included storage' ||
                   storageSettings.isConnected
                 )
               }
-              label='Continue'
-              suffixIcon='tabler:arrow-right'
               onClick={() => setStep(3)}
             />
           )}
@@ -112,8 +115,6 @@ const StepThree = () => {
       <AnimateFadeIn delay={0.3}>
         <StorageSystem />
       </AnimateFadeIn>
-
-
 
       {storageSettings.system === 'Included storage' && (
         <AnimateSlideUp delay={0.4}>

@@ -316,20 +316,20 @@ export default function History({
               const descLower = safeLower(h.description)
               if (descLower.includes('review: matched')) {
                 matchBadge = {
-                  label: 'Matched',
                   color: 'border-green-3 bg-green-1 text-green-9',
+                  label: 'Matched',
                 }
                 // if (descLower.trim() === 'review: matched') showDesc = false
               } else if (descLower.includes('partially matched')) {
                 matchBadge = {
-                  label: 'Partially Matched',
                   color: 'border-orange-3 bg-orange-1 text-orange-9',
+                  label: 'Partially Matched',
                 }
                 // if (descLower.trim() === 'review: partially matched') showDesc = false
               } else if (descLower.includes('not matched')) {
                 matchBadge = {
-                  label: 'Not Matched',
                   color: 'border-red-3 bg-red-1 text-red-9',
+                  label: 'Not Matched',
                 }
                 // if (descLower.trim() === 'review: not matched') showDesc = false
               }
@@ -362,9 +362,17 @@ export default function History({
                   }
                 }
               } else {
-                const isLatest = isChronological ? idx === flows.length - 1 : idx === 0
+                const isLatest = isChronological
+                  ? idx === flows.length - 1
+                  : idx === 0
                 if (isLatest) {
-                  const isTerminal = safeLower(title).includes('complet') || safeLower(h.status).includes('complet') || safeLower(h.stage).includes('complet') || safeLower(title).includes('approv') || safeLower(title).includes('reject') || safeLower(title).includes('end')
+                  const isTerminal =
+                    safeLower(title).includes('complet') ||
+                    safeLower(h.status).includes('complet') ||
+                    safeLower(h.stage).includes('complet') ||
+                    safeLower(title).includes('approv') ||
+                    safeLower(title).includes('reject') ||
+                    safeLower(title).includes('end')
                   const diffMs = Math.abs(Date.now() - currentDate.getTime())
                   if (diffMs > 0) {
                     const formatted = formatDuration(diffMs)
@@ -399,7 +407,7 @@ export default function History({
                     {matchBadge && (
                       <span
                         className={cn(
-                          'shrink-0 rounded border px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider',
+                          'shrink-0 rounded border px-1.5 py-0.5 text-[9px] font-bold tracking-wider uppercase',
                           matchBadge.color,
                         )}
                       >
@@ -417,7 +425,9 @@ export default function History({
                       <Icon
                         className={cn(
                           'size-3.5 shrink-0',
-                          actor === 'AI Agent' ? 'text-[var(--primary-9)]' : 'text-gray-8'
+                          actor === 'AI Agent'
+                            ? 'text-[var(--primary-9)]'
+                            : 'text-gray-8',
                         )}
                         name={
                           actor === 'AI Agent'

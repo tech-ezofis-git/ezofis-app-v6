@@ -1,58 +1,69 @@
 import { create } from 'zustand'
 
 type DashboardState = {
-  role: 'management' | 'ap'
-  timeframe: 'today' | 'week' | 'month' | 'lastmonth' | 'quarter' | 'fy'
-  supplierCategory: string
-  invoiceStatus: string
   currency: string
-  searchQuery: string
-  drillSupplier: string | null
   drillAgingBucket: string | null
   drillStatus: string | null
+  drillSupplier: string | null
+  invoiceStatus: string
+  role: 'management' | 'ap'
+  searchQuery: string
+  supplierCategory: string
+  /** Preset key (today, week, month, …) or custom:YYYY-MM-DD_YYYY-MM-DD */
+  timeframe: string
 
-  setRole: (role: 'management' | 'ap') => void
-  setTimeframe: (timeframe: 'today' | 'week' | 'month' | 'lastmonth' | 'quarter' | 'fy') => void
-  setSupplierCategory: (category: string) => void
-  setInvoiceStatus: (status: string) => void
+  resetFilters: () => void
   setCurrency: (currency: string) => void
-  setSearchQuery: (query: string) => void
-  setDrillSupplier: (supplier: string | null) => void
   setDrillAgingBucket: (bucket: string | null) => void
   setDrillStatus: (status: string | null) => void
-  resetFilters: () => void
+  setDrillSupplier: (supplier: string | null) => void
+  setInvoiceStatus: (status: string) => void
+  setRole: (role: 'management' | 'ap') => void
+  setSearchQuery: (query: string) => void
+  setSupplierCategory: (category: string) => void
+  setTimeframe: (timeframe: string) => void
 }
 
 const useDashboardStore = create<DashboardState>()((set) => ({
-  role: 'management',
-  timeframe: 'month', // "This Month"
-  supplierCategory: '',
-  invoiceStatus: '',
   currency: '',
-  searchQuery: '',
-  drillSupplier: null,
   drillAgingBucket: null,
   drillStatus: null,
+  drillSupplier: null,
+  invoiceStatus: '',
+  role: 'management',
+  searchQuery: '',
+  supplierCategory: '',
+  timeframe: 'month', // "This Month"
 
-  setRole: (role) => set({ role, drillSupplier: null, drillAgingBucket: null, drillStatus: null }),
-  setTimeframe: (timeframe) => set({ timeframe }),
-  setSupplierCategory: (supplierCategory) => set({ supplierCategory }),
-  setInvoiceStatus: (invoiceStatus) => set({ invoiceStatus }),
+  resetFilters: () =>
+    set({
+      currency: '',
+      drillAgingBucket: null,
+      drillStatus: null,
+      drillSupplier: null,
+      invoiceStatus: '',
+      searchQuery: '',
+      supplierCategory: '',
+      timeframe: 'month',
+    }),
   setCurrency: (currency) => set({ currency }),
+  setDrillAgingBucket: (drillAgingBucket) =>
+    set({ drillAgingBucket, drillStatus: null, drillSupplier: null }),
+  setDrillStatus: (drillStatus) =>
+    set({ drillAgingBucket: null, drillStatus, drillSupplier: null }),
+  setDrillSupplier: (drillSupplier) =>
+    set({ drillAgingBucket: null, drillStatus: null, drillSupplier }),
+  setInvoiceStatus: (invoiceStatus) => set({ invoiceStatus }),
+  setRole: (role) =>
+    set({
+      drillAgingBucket: null,
+      drillStatus: null,
+      drillSupplier: null,
+      role,
+    }),
   setSearchQuery: (searchQuery) => set({ searchQuery }),
-  setDrillSupplier: (drillSupplier) => set({ drillSupplier, drillAgingBucket: null, drillStatus: null }),
-  setDrillAgingBucket: (drillAgingBucket) => set({ drillAgingBucket, drillSupplier: null, drillStatus: null }),
-  setDrillStatus: (drillStatus) => set({ drillStatus, drillSupplier: null, drillAgingBucket: null }),
-  resetFilters: () => set({
-    timeframe: 'month',
-    supplierCategory: '',
-    invoiceStatus: '',
-    currency: '',
-    searchQuery: '',
-    drillSupplier: null,
-    drillAgingBucket: null,
-    drillStatus: null,
-  }),
+  setSupplierCategory: (supplierCategory) => set({ supplierCategory }),
+  setTimeframe: (timeframe) => set({ timeframe }),
 }))
 
 export default useDashboardStore

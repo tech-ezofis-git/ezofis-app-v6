@@ -1,12 +1,5 @@
-import {
-  createColumnHelper,
-  useReactTable,
-} from '@tanstack/react-table'
-import {
-  Check,
-  MoreHorizontal,
-  UsersRound,
-} from 'lucide-react'
+import { createColumnHelper, useReactTable } from '@tanstack/react-table'
+import { Check, MoreHorizontal, UsersRound } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   createGroup as createGroupApi,
@@ -16,29 +9,23 @@ import {
   getUsers,
   updateGroup as updateGroupApi,
 } from '@/api/v6/user'
-import showToast from '@/components/base/toast/showToast'
+import TableExport from '@/components/base/data-table/actions/TableExport'
+import TableSearch from '@/components/base/data-table/actions/TableSearch'
 import DataTable from '@/components/base/data-table/DataTable'
-import Pagination from '@/components/base/pagination/Pagination'
 import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
 import InputText from '@/components/base/inputs/InputText'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
 import Menu from '@/components/base/menu/Menu'
 import MenuItem from '@/components/base/menu/MenuItem'
+import Pagination from '@/components/base/pagination/Pagination'
+import showToast from '@/components/base/toast/showToast'
+import CustomFilter from '@/components/common/CustomFilter'
+import { matchesCategoryFilterValue } from '@/utils/filterUtils'
 import {
-  mapApiGroupsToSettingsGroups,
-  mapUsersToOptions,
-  type SettingsGroup,
-  type SettingsOption,
-} from '../helpers/userGroupMappers'
-import SettingsFormSection from './SettingsFormSection'
-import SettingsSelectField from './SettingsSelectField'
-import SettingsSelectedChips from './SettingsSelectedChips'
-import SettingsSetupContent from './SettingsSetupContent'
-import SettingsSetupHeader from './SettingsSetupHeader'
-import SettingsPageHeader, {
-  SettingsHeaderAddButton,
-} from './SettingsPageHeader'
-import useSettingsTableToolbar from './useSettingsTableToolbar'
+  getFieldRequiredError,
+  getMissingRequiredLabels,
+  getRequiredFieldErrorMessage,
+} from '../helpers/requiredFieldErrors'
 import {
   settingsHeaderMeta,
   settingsTableCoreOptions,
@@ -47,15 +34,18 @@ import {
 } from '../helpers/settingsDataTable'
 import { calculateGroupSetupProgress } from '../helpers/settingsSetupProgress'
 import {
-  getFieldRequiredError,
-  getMissingRequiredLabels,
-  getRequiredFieldErrorMessage,
-} from '../helpers/requiredFieldErrors'
-import CustomFilter from '@/components/common/CustomFilter'
-import TableSearch from '@/components/base/data-table/actions/TableSearch'
-import TableExport from '@/components/base/data-table/actions/TableExport'
-
-type GroupStepKey = 'details' | 'members' | 'review'
+  mapApiGroupsToSettingsGroups,
+  mapUsersToOptions,
+  type SettingsGroup,
+  type SettingsOption,
+} from '../helpers/userGroupMappers'
+import SettingsFormSection from './SettingsFormSection'
+import SettingsPageHeader from './SettingsPageHeader'
+import SettingsSelectedChips from './SettingsSelectedChips'
+import SettingsSelectField from './SettingsSelectField'
+import SettingsSetupContent from './SettingsSetupContent'
+import SettingsSetupHeader from './SettingsSetupHeader'
+import useSettingsTableToolbar from './useSettingsTableToolbar'
 
 type GroupStep = {
   caption: string
@@ -63,6 +53,8 @@ type GroupStep = {
   key: GroupStepKey
   title: string
 }
+
+type GroupStepKey = 'details' | 'members' | 'review'
 
 const groupSteps: GroupStep[] = [
   {
@@ -119,12 +111,16 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
   const [selectedMembers, setSelectedMembers] = useState<SettingsOption[]>([])
 
   const filteredGroups = useMemo(() => {
-    return groups.filter(group => {
+    return groups.filter((group) => {
       let matches = true
       Object.entries(activeFilters).forEach(([key, value]) => {
         if (!value) return
-        if (key === 'status') {
-          if (String(group.status).toLowerCase() !== value.toLowerCase()) matches = false
+        if (key === 'name') {
+          if (!matchesCategoryFilterValue(group.name, value, 'contains')) {
+            matches = false
+          }
+        } else if (key === 'status') {
+          if (!matchesCategoryFilterValue(group.status, value)) matches = false
         }
       })
       return matches
@@ -172,51 +168,62 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
     setIsSetupOpen(true)
   }
 
-  const openEditGroup = useCallback(async (group: SettingsGroup) => {
-    setIsLoadingGroupDetails(true)
+  const openEditGroup = useCallback(
+    async (group: SettingsGroup) => {
+      setIsLoadingGroupDetails(true)
 
-    try {
-      const response = await getGroupById(String(group.id))
+      try {
+        const response = await getGroupById(String(group.id))
 
-      if (response.error || !response.data) {
-        showToast({
-          message: response.error || 'Failed to load group',
-          variant: 'error',
-        })
-        return
+        if (response.error || !response.data) {
+          showToast({
+            message: response.error || 'Failed to load group',
+            variant: 'error',
+          })
+          return
+        }
+
+        const mappedGroup = mapApiGroupsToSettingsGroups([response.data])[0]
+        setEditingGroupId(mappedGroup.id)
+        setDraftGroup(mappedGroup)
+        setSelectedMembers(
+          userOptions.filter((option) =>
+            mappedGroup.memberIds.includes(String(option.id)),
+          ),
+        )
+        setActiveStep(0)
+        setIsSetupOpen(true)
+      } finally {
+        setIsLoadingGroupDetails(false)
       }
+    },
+    [userOptions],
+  )
 
-      const mappedGroup = mapApiGroupsToSettingsGroups([response.data])[0]
-      setEditingGroupId(mappedGroup.id)
-      setDraftGroup(mappedGroup)
-      setSelectedMembers(
-        userOptions.filter((option) =>
-          mappedGroup.memberIds.includes(String(option.id)),
-        ),
+  const deleteGroup = useCallback(
+    async (groupId: string | number) => {
+      const confirmed = window.confirm(
+        'Are you sure you want to delete this group?',
       )
-      setActiveStep(0)
-      setIsSetupOpen(true)
-    } finally {
-      setIsLoadingGroupDetails(false)
-    }
-  }, [userOptions])
+      if (!confirmed) return
 
-  const deleteGroup = useCallback(async (groupId: string | number) => {
-    const confirmed = window.confirm(
-      'Are you sure you want to delete this group?',
-    )
-    if (!confirmed) return
+      setIsLoadingGroups(true)
+      try {
+        const response = await deleteGroupApi(String(groupId))
 
-    const response = await deleteGroupApi(String(groupId))
+        if (response.error) {
+          showToast({ message: response.error, variant: 'error' })
+          return
+        }
 
-    if (response.error) {
-      showToast({ message: response.error, variant: 'error' })
-      return
-    }
-
-    showToast({ message: 'Group deleted successfully', variant: 'success' })
-    await loadGroups()
-  }, [loadGroups])
+        showToast({ message: 'Group deleted successfully', variant: 'success' })
+        await loadGroups()
+      } finally {
+        setIsLoadingGroups(false)
+      }
+    },
+    [loadGroups],
+  )
 
   const saveGroup = async () => {
     const description = draftGroup.description.trim()
@@ -298,7 +305,7 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
           header: 'Group',
           id: 'group',
           meta: { ...settingsHeaderMeta.start, label: 'Group' },
-          minSize: 200,
+          minSize: 40,
           size: 240,
           cell: ({ row }) => {
             const group = row.original
@@ -321,7 +328,7 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
         header: 'Description',
         id: 'description',
         meta: { ...settingsHeaderMeta.start, label: 'Description' },
-        minSize: 180,
+        minSize: 40,
         size: 220,
         cell: ({ getValue }) => (
           <span className='block max-w-full truncate'>
@@ -333,8 +340,12 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
         enableSorting: false,
         header: 'Members',
         id: 'members',
-        meta: { ...settingsHeaderMeta.start, label: 'Members', disableEllipsis: true },
-        minSize: 100,
+        meta: {
+          ...settingsHeaderMeta.start,
+          disableEllipsis: true,
+          label: 'Members',
+        },
+        minSize: 40,
         size: 110,
         cell: ({ row }) => (
           <span className='inline-flex items-center rounded-[10px] border border-[var(--border-default)] bg-surface px-3 py-1 font-medium text-[var(--gray-13)]'>
@@ -346,8 +357,12 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
         enableSorting: false,
         header: 'Status',
         id: 'status',
-        meta: { ...settingsHeaderMeta.start, label: 'Status', disableEllipsis: true },
-        minSize: 100,
+        meta: {
+          ...settingsHeaderMeta.start,
+          disableEllipsis: true,
+          label: 'Status',
+        },
+        minSize: 40,
         size: 110,
         cell: ({ getValue }) => <StatusBadge status={getValue()} />,
       }),
@@ -356,7 +371,7 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
         header: 'Created',
         id: 'created',
         meta: settingsHeaderMeta.start,
-        minSize: 110,
+        minSize: 40,
         size: 120,
         cell: ({ getValue }) => <span>{String(getValue() || '—')}</span>,
       }),
@@ -378,8 +393,8 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
             >
               <Menu
                 position='bottom-end'
-                withinPortal
                 width={160}
+                withinPortal
                 target={
                   <button
                     className='rounded-lg p-2 text-[var(--gray-13)] transition hover:bg-[var(--gray-2)] disabled:cursor-not-allowed disabled:opacity-50'
@@ -412,13 +427,13 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
   )
 
   const {
-    onPageChange,
-    onPageSizeChange,
-    onPaginationChange,
     page,
     pageSize,
     pagination,
     paginationModel,
+    onPageChange,
+    onPageSizeChange,
+    onPaginationChange,
   } = useSettingsTablePagination()
 
   const groupTable = useReactTable({
@@ -427,15 +442,15 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
     ...paginationModel,
     columns: groupColumns,
     data: filteredGroups,
-    getRowId: (row) => String(row.id),
-    onPaginationChange,
     state: {
       ...tableSearchOptions.state,
       pagination,
     },
+    getRowId: (row: SettingsGroup) => String(row.id),
+    onPaginationChange,
   })
 
-  const { onRowSizeChange, rowSize } = useSettingsTableToolbar({
+  const { rowSize, onRowSizeChange } = useSettingsTableToolbar({
     isReLoading: isLoadingGroups,
     table: groupTable,
     onReload: () => {
@@ -467,7 +482,7 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
   }
 
   return (
-    <main className='bg-[var(--surface)] flex h-full flex-col'>
+    <main className='flex h-full flex-col bg-[var(--surface)]'>
       <section className='flex min-h-0 flex-1 flex-col'>
         <SettingsPageHeader
           description='Create logical groups to organize users by team, department, or function.'
@@ -475,49 +490,65 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
           onBack={onBack}
         />
 
-        <div className='p-4 flex-1 flex flex-col overflow-hidden'>
+        <div className='flex flex-1 flex-col overflow-hidden p-4'>
           <CustomFilter
+            activeFilters={activeFilters}
+            customSearchComponent={<TableSearch table={groupTable as any} />}
+            trailingActions={<TableExport table={groupTable as any} />}
+            actionButtons={[
+              {
+                color: 'gray',
+                disabled: isLoadingGroups,
+                icon: 'tabler:refresh',
+                id: 'refresh',
+                isIconButton: true,
+                tooltip: 'Refresh',
+                variant: 'outline',
+                onClick: loadGroups,
+              },
+            ]}
+            addButton={{
+              tooltip: 'Add Group',
+              onClick: openCreateGroup,
+            }}
             filters={[
+              {
+                id: 'name',
+                label: 'Name',
+                options: groups
+                  .map((g) => String(g.name || '').trim())
+                  .filter(Boolean)
+                  .sort((a, b) => a.localeCompare(b))
+                  .map((name) => ({ label: name, value: name })),
+                searchable: true,
+                searchPlaceholder: 'Search name...',
+              },
               { id: 'status', label: 'Status', options: statusOptions },
             ]}
-            activeFilters={activeFilters}
-            onFilterChange={(id, val) => setActiveFilters(prev => ({ ...prev, [id]: val }))}
+            showReset={
+              Object.keys(activeFilters).some((k) => activeFilters[k]) ||
+              !!tableSearchOptions.state.globalFilter?.value
+            }
+            onFilterChange={(id, val) =>
+              setActiveFilters((prev) => ({ ...prev, [id]: val }))
+            }
             onReset={() => {
               setActiveFilters({})
               tableSearchOptions.onGlobalFilterChange({ id: '', value: '' })
             }}
-            showReset={Object.keys(activeFilters).some(k => activeFilters[k]) || !!tableSearchOptions.state.globalFilter?.value}
-            customSearchComponent={<TableSearch table={groupTable as any} />}
-            addButton={{
-              onClick: openCreateGroup,
-              tooltip: 'Add Group'
-            }}
-            actionButtons={[
-              {
-                id: 'refresh',
-                icon: 'tabler:refresh',
-                tooltip: 'Refresh',
-                onClick: loadGroups,
-                isIconButton: true,
-                color: 'gray',
-                variant: 'outline',
-                disabled: isLoadingGroups,
-              }
-            ]}
-            trailingActions={<TableExport table={groupTable as any} />}
           />
-          <div className='mt-2 min-h-0 flex-1 overflow-hidden flex flex-col'>
+          <div className='mt-2 flex min-h-0 flex-1 flex-col overflow-hidden'>
             <div className='min-h-0 flex-1 overflow-hidden'>
               <DataTable
                 emptyDescription='Create a group to organize users by team, department, or function.'
                 emptyIcon='lucide:users-round'
                 emptyTitle='No groups yet'
-                hideActionBar
                 isLoading={isLoadingGroups}
                 isReLoading={isLoadingGroups}
                 pageSize={pageSize}
                 rowSize={rowSize}
                 table={groupTable}
+                hideActionBar
                 hideGrouping
                 stickyHeader
                 onReload={() => {
@@ -656,9 +687,9 @@ function GroupSetup({
       <SettingsSetupHeader
         moduleTitle='Group Management'
         progress={progress}
-        setupTitle={editingGroupId ? 'Edit Group' : 'Create Group'}
         stepDescription={activeStepConfig.description}
         stepTitle={activeStepConfig.title}
+        setupTitle={editingGroupId ? 'Edit Group' : 'Create Group'}
         onBackToSettings={onBackToSettings}
         onCancelSetup={onCancel}
       />
@@ -713,28 +744,26 @@ function GroupSetup({
           {activeStep === 0 ? (
             <SettingsFormSection>
               <InputText
+                label='Group Name *'
+                placeholder='e.g. Finance Team'
+                value={draftGroup.name}
                 error={getFieldRequiredError(
                   'Group Name',
                   showErrors,
                   draftGroup.name,
                 )}
-                label='Group Name *'
-                placeholder='e.g. Finance Team'
-                value={draftGroup.name}
-                onChange={(value) =>
-                  onChange({ ...draftGroup, name: value })
-                }
+                onChange={(value) => onChange({ ...draftGroup, name: value })}
               />
               <InputTextarea
+                label='Description *'
+                minRows={4}
+                placeholder='Describe the purpose of this group...'
+                value={draftGroup.description}
                 error={getFieldRequiredError(
                   'Description',
                   showErrors,
                   draftGroup.description,
                 )}
-                label='Description *'
-                minRows={4}
-                placeholder='Describe the purpose of this group...'
-                value={draftGroup.description}
                 onChange={(value) =>
                   onChange({ ...draftGroup, description: value })
                 }
@@ -742,9 +771,7 @@ function GroupSetup({
               <SettingsSelectField
                 label='Status'
                 options={['Active', 'Inactive']}
-                value={
-                  draftGroup.status === 'inactive' ? 'Inactive' : 'Active'
-                }
+                value={draftGroup.status === 'inactive' ? 'Inactive' : 'Active'}
                 onChange={(value) =>
                   onChange({
                     ...draftGroup,
@@ -806,8 +833,8 @@ function GroupSetup({
                     value={
                       selectedMembers.length
                         ? selectedMembers
-                          .map((member) => member.name)
-                          .join(', ')
+                            .map((member) => member.name)
+                            .join(', ')
                         : '—'
                     }
                   />
@@ -859,15 +886,6 @@ function GroupStepIcon({ step }: { step: GroupStepKey }) {
   return <Check size={14} />
 }
 
-function SummaryItem({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <span className='font-semibold text-[var(--gray-11)]'>{label}: </span>
-      <span className='ml-2 text-[var(--gray-10)]'>{value}</span>
-    </div>
-  )
-}
-
 function StatusBadge({ status }: { status: SettingsGroup['status'] }) {
   const tone =
     status === 'active'
@@ -880,5 +898,14 @@ function StatusBadge({ status }: { status: SettingsGroup['status'] }) {
     >
       {status}
     </span>
+  )
+}
+
+function SummaryItem({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <span className='font-semibold text-[var(--gray-11)]'>{label}: </span>
+      <span className='ml-2 text-[var(--gray-10)]'>{value}</span>
+    </div>
   )
 }

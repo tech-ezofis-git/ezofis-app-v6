@@ -29,8 +29,6 @@ const TableSearch = <TData,>({ table }: Props<TData>) => {
     }
   })
 
-
-
   const columns = table
     .getAllLeafColumns()
     .filter((c) => c.accessorFn && c.getIsVisible() && c.getCanFilter())
@@ -69,7 +67,10 @@ const TableSearch = <TData,>({ table }: Props<TData>) => {
   const handleContainerClick = () => {
     if (!isExpanded) {
       setIsExpanded(true)
-      setTimeout(() => document.getElementById('table-search-input')?.focus(), 50)
+      setTimeout(
+        () => document.getElementById('table-search-input')?.focus(),
+        50,
+      )
     } else {
       document.getElementById('table-search-input')?.focus()
     }
@@ -119,13 +120,15 @@ const TableSearch = <TData,>({ table }: Props<TData>) => {
       >
         <input
           id='table-search-input'
-          placeholder={selectedColumnLabel ? `Search ${selectedColumnLabel}` : 'Search'}
           type='text'
           value={inputValue}
           className={cn(
             'h-full w-full border-0 bg-transparent px-2 text-13 font-medium text-gray-12 outline-0 placeholder:text-gray-11',
             isExpanded ? 'opacity-100' : 'pointer-events-none opacity-0',
           )}
+          placeholder={
+            selectedColumnLabel ? `Search ${selectedColumnLabel}` : 'Search'
+          }
           onChange={(e) => {
             setInputValue(e.target.value)
             handleValueChange(e.target.value)

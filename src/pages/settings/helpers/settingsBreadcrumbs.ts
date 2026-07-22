@@ -1,19 +1,13 @@
 export const SETTINGS_ROOT_LABEL = 'Settings'
 
-export type SettingsBreadcrumbItem = {
-  key?: string
-  label: string
-}
-
 export type SettingsBreadcrumbConfig = {
   items: SettingsBreadcrumbItem[]
   onNavigate?: (key: string) => void
 }
 
-export function createSettingsRootBreadcrumbs(): SettingsBreadcrumbConfig {
-  return {
-    items: [{ label: SETTINGS_ROOT_LABEL }],
-  }
+export type SettingsBreadcrumbItem = {
+  key?: string
+  label: string
 }
 
 export function createSettingsListBreadcrumbs(
@@ -30,6 +24,12 @@ export function createSettingsListBreadcrumbs(
           if (key === 'settings') onBackToSettings()
         }
       : undefined,
+  }
+}
+
+export function createSettingsRootBreadcrumbs(): SettingsBreadcrumbConfig {
+  return {
+    items: [{ label: SETTINGS_ROOT_LABEL }],
   }
 }
 

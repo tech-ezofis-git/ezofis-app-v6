@@ -1,20 +1,22 @@
 import {
+  BadgeDollarSign,
   ChevronRight,
   ClipboardList,
+  Code2,
   FolderOpen,
   Shield,
   UserRoundCheck,
-  Users, Code2, BadgeDollarSign,
+  Users,
 } from 'lucide-react'
 import React, { useMemo, useState } from 'react'
 import AuditMonitoring from './components/AuditMonitoring'
+import Credits from './components/credits/Credits'
 import DmsSettings from './components/Folders/DmsSettings'
 import GroupManagement from './components/GroupManagement'
 import ManageUser from './components/ManageUser'
 import RolesPermissions from './components/RolesPermissions'
-import Credits from './components/credits/Credits'
-import useSettingsTopbar from './hooks/useSettingsTopbar'
 import { createSettingsRootBreadcrumbs } from './helpers/settingsBreadcrumbs'
+import useSettingsTopbar from './hooks/useSettingsTopbar'
 type SettingsItem = {
   description: string
   icon: React.ElementType
@@ -92,31 +94,59 @@ export default function SettingsMain() {
   const [activePage, setActivePage] = useState<string>('settings')
 
   if (activePage === 'user-management') {
-    return <ManageUser onBack={() => setActivePage('settings')} />
+    return (
+      <SettingsDetailShell>
+        <ManageUser onBack={() => setActivePage('settings')} />
+      </SettingsDetailShell>
+    )
   }
   if (activePage === 'roles-permissions') {
-    return <RolesPermissions onBack={() => setActivePage('settings')} />
+    return (
+      <SettingsDetailShell>
+        <RolesPermissions onBack={() => setActivePage('settings')} />
+      </SettingsDetailShell>
+    )
   }
   if (activePage === 'group-management') {
-    return <GroupManagement onBack={() => setActivePage('settings')} />
+    return (
+      <SettingsDetailShell>
+        <GroupManagement onBack={() => setActivePage('settings')} />
+      </SettingsDetailShell>
+    )
   }
 
   if (activePage === 'folder-configuration') {
-    return <DmsSettings onBack={() => setActivePage('settings')} />
+    return (
+      <SettingsDetailShell>
+        <DmsSettings onBack={() => setActivePage('settings')} />
+      </SettingsDetailShell>
+    )
   }
 
   if (activePage === 'audit-monitoring') {
-    return <AuditMonitoring onBack={() => setActivePage('settings')} />
+    return (
+      <SettingsDetailShell>
+        <AuditMonitoring onBack={() => setActivePage('settings')} />
+      </SettingsDetailShell>
+    )
   }
-  if (activePage === "playground") {
-    window.open("https://demo.ezofis.com/V6Playground/apikey.html", "_blank");
+  if (activePage === 'playground') {
+    window.open('https://demo.ezofis.com/V6Playground/apikey.html', '_blank')
     setActivePage('settings')
   }
   if (activePage === 'credit') {
-    return <Credits onBack={() => setActivePage('settings')} />
+    return (
+      <SettingsDetailShell>
+        <Credits onBack={() => setActivePage('settings')} />
+      </SettingsDetailShell>
+    )
   }
 
   return <SettingsLanding onOpenPage={setActivePage} />
+}
+
+function SettingsDetailShell({ children }: { children: React.ReactNode }) {
+  return <div className='flex h-full min-h-0 flex-col'>{children}</div>
 }
 
 function SettingsLanding({

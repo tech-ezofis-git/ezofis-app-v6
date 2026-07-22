@@ -16,12 +16,12 @@ type SettingsSetupHeaderProps = {
 
 export default function SettingsSetupHeader({
   moduleTitle,
-  onBackToSettings,
-  onCancelSetup,
   progress,
-  setupTitle,
   stepDescription,
   stepTitle,
+  setupTitle,
+  onBackToSettings,
+  onCancelSetup,
 }: SettingsSetupHeaderProps) {
   const breadcrumbConfig = useMemo(
     () =>

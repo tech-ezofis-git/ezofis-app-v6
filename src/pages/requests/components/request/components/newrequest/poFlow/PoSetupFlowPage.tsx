@@ -4,20 +4,24 @@ import formApi from '@/api/form/form'
 import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
 import showToast from '@/components/base/toast/showToast'
-import { AnimateEntrancePop, AnimateFadeIn, AnimateSlideUp } from '@/components/common/animations'
+import {
+  AnimateEntrancePop,
+  AnimateFadeIn,
+  AnimateSlideUp,
+} from '@/components/common/animations'
 import ColumnMapping from '@/components/common/ColumnMapping'
 import requestStore from '@/pages/requests/stores/useRequestStore'
 import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
 import { downloadTemplate, PO_ACCEPT } from '../utils'
 import { findBestHeaderMatch } from './utils/headerSimilarity'
-import { SYSTEM_TEMPLATE_COLUMNS } from './utils/templateSchema'
-import { LINE_ITEM_TEMPLATE_COLUMNS } from './utils/lineItemSchema'
 import {
-  mergeLineItemSheets,
   detectGroupingColumn,
+  mergeLineItemSheets,
   transformMappedRows,
 } from './utils/lineItemHelpers'
+import { LINE_ITEM_TEMPLATE_COLUMNS } from './utils/lineItemSchema'
+import { SYSTEM_TEMPLATE_COLUMNS } from './utils/templateSchema'
 
 export type UploadState =
   | 'idle'
@@ -64,16 +68,19 @@ export default function PoSetupFlowPage({ onClose }: Props) {
   // Line item details
   const [lineItemHeaders, setLineItemHeaders] = useState<string[]>([])
   const [lineItemRows, setLineItemRows] = useState<any[]>([])
-  const [lineItemMapping, setLineItemMapping] = useState<Record<string, string>>({})
+  const [lineItemMapping, setLineItemMapping] = useState<
+    Record<string, string>
+  >({})
   const [groupingColumn, setGroupingColumn] = useState<string | null>(null)
-
 
   // Timeline step states
   const [step1State, setStep1State] = useState<StepState>('waiting')
   const [step2State, setStep2State] = useState<StepState>('waiting')
   const [step3State, setStep3State] = useState<StepState>('waiting')
   const [step4State, setStep4State] = useState<StepState>('waiting')
-  const [activeMappingTab, setActiveMappingTab] = useState<'header' | 'lineItem'>('header')
+  const [activeMappingTab, setActiveMappingTab] = useState<
+    'header' | 'lineItem'
+  >('header')
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isDragOver, setIsDragOver] = useState(false)
@@ -93,19 +100,20 @@ export default function PoSetupFlowPage({ onClose }: Props) {
 
   // Parse CSV payload (CSV can only have 1 sheet, so we reject it per business rules)
   const parseCsv = async (): Promise<any> => {
-    throw new Error('This workbook contains only one worksheet. PO Import requires both Header and Line Item data. Please upload an Excel file containing at least two worksheets.')
+    throw new Error(
+      'This workbook contains only one worksheet. PO Import requires both Header and Line Item data. Please upload an Excel file containing at least two worksheets.',
+    )
   }
-
 
   // Extract Columns and Row Count from uploaded File
   const extractHeadersAndData = async (
     file: File,
-  ): Promise<{ 
-    headers: string[]; 
-    previewRows: any[]; 
-    rowCount: number;
-    lineItemHeaders: string[];
-    lineItemRows: any[];
+  ): Promise<{
+    headers: string[]
+    lineItemHeaders: string[]
+    lineItemRows: any[]
+    previewRows: any[]
+    rowCount: number
   }> => {
     const name = file.name.toLowerCase()
     if (name.endsWith('.csv')) return parseCsv()
@@ -119,7 +127,9 @@ export default function PoSetupFlowPage({ onClose }: Props) {
       try {
         const wb = XLSX.read(u8, { type: 'array' })
         if (wb.SheetNames.length < 2) {
-          throw new Error('This workbook contains only one worksheet. PO Import requires both Header and Line Item data. Please upload an Excel file containing at least two worksheets.')
+          throw new Error(
+            'This workbook contains only one worksheet. PO Import requires both Header and Line Item data. Please upload an Excel file containing at least two worksheets.',
+          )
         }
 
         // Sheet 1: Header
@@ -137,7 +147,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
         const rowCount = allHeaderRows.length
 
         // Sheets 2..N: Line Items
-        const lineItemSheetsData: { headers: string[], rows: any[] }[] = []
+        const lineItemSheetsData: { headers: string[]; rows: any[] }[] = []
         for (let i = 1; i < wb.SheetNames.length; i++) {
           const liWs = wb.Sheets[wb.SheetNames[i]]
           const liRawRows = XLSX.utils.sheet_to_json(liWs, {
@@ -152,12 +162,12 @@ export default function PoSetupFlowPage({ onClose }: Props) {
 
         const mergedLineItems = mergeLineItemSheets(lineItemSheetsData)
 
-        return { 
-          headers, 
-          previewRows, 
-          rowCount, 
+        return {
+          headers,
           lineItemHeaders: mergedLineItems.headers,
-          lineItemRows: mergedLineItems.rows
+          lineItemRows: mergedLineItems.rows,
+          previewRows,
+          rowCount,
         }
       } catch {
         return parseCsv()
@@ -179,9 +189,9 @@ export default function PoSetupFlowPage({ onClose }: Props) {
       setLineItemRows(result.lineItemRows || [])
 
       // Initial Grouping setup
-      const detectedGroupCol = detectGroupingColumn(result.lineItemHeaders) || null
+      const detectedGroupCol =
+        detectGroupingColumn(result.lineItemHeaders) || null
       setGroupingColumn(detectedGroupCol)
-
 
       // Simulate upload/parse progress bar smoothly
       let currentProgress = 0
@@ -193,7 +203,11 @@ export default function PoSetupFlowPage({ onClose }: Props) {
 
           setTimeout(() => {
             setUploadState('processing')
-            runTimelineSimulation(result.headers, result.rowCount, result.lineItemHeaders || [])
+            runTimelineSimulation(
+              result.headers,
+              result.rowCount,
+              result.lineItemHeaders || [],
+            )
           }, 300)
         } else {
           setUploadProgress(currentProgress)
@@ -211,7 +225,11 @@ export default function PoSetupFlowPage({ onClose }: Props) {
   }
 
   // Simulation run for Stage 2 Ingestion timeline
-  const runTimelineSimulation = (headers: string[], rowsCount: number, liHeaders: string[]) => {
+  const runTimelineSimulation = (
+    headers: string[],
+    rowsCount: number,
+    liHeaders: string[],
+  ) => {
     setUploadedColumns(headers)
     setRowCount(rowsCount)
 
@@ -303,11 +321,14 @@ export default function PoSetupFlowPage({ onClose }: Props) {
             invertedHeaderMapping[xlVal.trim()] = sysKey
           }
         })
-        const translateHeader = (header: string) => invertedHeaderMapping[header.trim()] || header.trim()
-        
+        const translateHeader = (header: string) =>
+          invertedHeaderMapping[header.trim()] || header.trim()
+
         const firstSheetName = wb.SheetNames[0]
         const headerSheet = wb.Sheets[firstSheetName]
-        const headerRows: any = XLSX.utils.sheet_to_json(headerSheet, { header: 1 })
+        const headerRows: any = XLSX.utils.sheet_to_json(headerSheet, {
+          header: 1,
+        })
         if (headerRows.length > 0) {
           headerRows[0] = headerRows[0].map(translateHeader)
         }
@@ -315,18 +336,23 @@ export default function PoSetupFlowPage({ onClose }: Props) {
 
         // 2. Process Line Items (Merge into new Sheet 2)
         // transformMappedRows outputs an array of objects where keys are ONLY the mapped system keys.
-        const transformedLineItems = transformMappedRows(lineItemRows, liMapping)
-        
+        const transformedLineItems = transformMappedRows(
+          lineItemRows,
+          liMapping,
+        )
+
         // We need to write this back as an AOA to properly form a sheet, ensuring columns are system fields.
         // We'll collect all used system fields.
-        const liSystemFields = Object.keys(liMapping).filter(k => liMapping[k] && liMapping[k] !== 'Skip to Import')
-        
+        const liSystemFields = Object.keys(liMapping).filter(
+          (k) => liMapping[k] && liMapping[k] !== 'Skip to Import',
+        )
+
         const liAoa: any[][] = [liSystemFields]
-        transformedLineItems.forEach(row => {
-          const rowArr = liSystemFields.map(field => row[field] ?? '')
+        transformedLineItems.forEach((row) => {
+          const rowArr = liSystemFields.map((field) => row[field] ?? '')
           liAoa.push(rowArr)
         })
-        
+
         const updatedLiSheet = XLSX.utils.aoa_to_sheet(liAoa)
 
         // 3. Construct new Workbook with exactly two sheets
@@ -347,7 +373,6 @@ export default function PoSetupFlowPage({ onClose }: Props) {
       }
     })
   }
-
 
   // Upload API submission
   const sendUpdatedFile = async (file: File) => {
@@ -387,13 +412,17 @@ export default function PoSetupFlowPage({ onClose }: Props) {
     setStep4State('active')
 
     try {
-      const updatedFile = await updateFileHeaders(uploadedFile, mapping, lineItemMapping)
+      const updatedFile = await updateFileHeaders(
+        uploadedFile,
+        mapping,
+        lineItemMapping,
+      )
       // Simulate final saving in Step 4 for 1200ms
       await new Promise((resolve) => setTimeout(resolve, 1200))
-      
+
       // Trigger download so the user can inspect it
       downloadFile(updatedFile)
-      
+
       await sendUpdatedFile(updatedFile)
       setStep4State('done')
     } catch (error) {
@@ -476,8 +505,6 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                 </p>
               </AnimateSlideUp>
 
-
-
               {/* Drop Zone / Selection state */}
               <AnimateSlideUp className='w-full' delay={0.1}>
                 {uploadState === 'idle' ? (
@@ -524,20 +551,27 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                         </p>
                         <div className='mt-3 flex justify-center'>
                           <button
+                            className='inline-flex cursor-pointer items-center gap-1.5 text-[12px] font-medium text-primary-9 hover:text-primary-10 hover:underline'
+                            disabled={isDownloading}
                             type='button'
-                            className='inline-flex items-center gap-1.5 text-[12px] font-medium text-primary-9 hover:text-primary-10 hover:underline cursor-pointer'
                             onClick={(e) => {
                               e.stopPropagation() // Prevent triggering file input click
                               handleDownload()
                             }}
-                            disabled={isDownloading}
                           >
                             {isDownloading ? (
                               <span className='size-3 animate-spin rounded-full border-2 border-primary-9 border-t-transparent' />
                             ) : (
-                              <Icon className='size-3.5' name='tabler:download' />
+                              <Icon
+                                className='size-3.5'
+                                name='tabler:download'
+                              />
                             )}
-                            <span>{isDownloading ? 'Downloading...' : 'Download PO Template'}</span>
+                            <span>
+                              {isDownloading
+                                ? 'Downloading...'
+                                : 'Download PO Template'}
+                            </span>
                           </button>
                         </div>
                       </div>
@@ -609,7 +643,10 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                       title: 'PO Master Update',
                     },
                   ].map((item, idx) => (
-                    <AnimateEntrancePop delay={0.2 + idx * 0.1} key={item.title}>
+                    <AnimateEntrancePop
+                      delay={0.2 + idx * 0.1}
+                      key={item.title}
+                    >
                       <div className='group flex h-full flex-col gap-2 rounded-xl border border-[var(--gray-3)] bg-surface p-5 shadow-sm transition-all duration-300 hover:shadow-md'>
                         <span className='truncate text-[9px] font-bold tracking-wider text-[var(--gray-10)] uppercase'>
                           {item.label}
@@ -643,7 +680,9 @@ export default function PoSetupFlowPage({ onClose }: Props) {
       )}
 
       {/* SCREEN 2: INGESTION TIMELINE SCREEN */}
-      {(uploadState === 'processing' || uploadState === 'ready' || uploadState === 'lineItemMapping') && (
+      {(uploadState === 'processing' ||
+        uploadState === 'ready' ||
+        uploadState === 'lineItemMapping') && (
         <AnimateFadeIn className='flex h-full w-full flex-col overflow-hidden'>
           {/* Header */}
           <div className='flex h-13 shrink-0 items-center gap-2 border-b border-border-default bg-gradient-to-b from-gray-1 to-gray-2 px-4'>
@@ -923,7 +962,9 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                       </span>
                     </div>
                     <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
-                      <span className='text-gray-11'>Fields Needing Review</span>
+                      <span className='text-gray-11'>
+                        Fields Needing Review
+                      </span>
                       <span className='font-bold text-gray-12'>
                         {step3State === 'done' ? '0 fields' : '4 fields'}
                       </span>
@@ -932,10 +973,13 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                 )}
 
                 {uploadState === 'ready' && (
-                  <div className='flex flex-col gap-4 mt-2'>
+                  <div className='mt-2 flex flex-col gap-4'>
                     {!groupingColumn && (
                       <div className='flex items-center gap-2 rounded-lg border border-blue-5 bg-blue-2 px-3 py-2 text-12 text-blue-11 shadow-xs'>
-                        <Icon className='size-4 text-blue-9' name='tabler:info-circle' />
+                        <Icon
+                          className='size-4 text-blue-9'
+                          name='tabler:info-circle'
+                        />
                         <span className='font-medium'>
                           Line item info: PO Number column could not be matched.
                         </span>
@@ -943,10 +987,10 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                     )}
 
                     {/* Tab Switcher */}
-                    <div className='flex justify-start gap-4 mb-0'>
+                    <div className='mb-0 flex justify-start gap-4'>
                       <button
                         type='button'
-                        className={`pl-0 pr-2 py-2 text-13 font-semibold transition-all border-b-2 cursor-pointer flex items-center gap-1.5 text-left ${
+                        className={`flex cursor-pointer items-center gap-1.5 border-b-2 py-2 pr-2 pl-0 text-left text-13 font-semibold transition-all ${
                           activeMappingTab === 'header'
                             ? 'border-primary-9 text-primary-9'
                             : 'border-transparent text-gray-11 hover:text-gray-13'
@@ -954,15 +998,19 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                         onClick={() => setActiveMappingTab('header')}
                       >
                         <span>Header Fields</span>
-                        <span className={`px-1.5 py-0.2 text-11 rounded-full ${
-                          activeMappingTab === 'header' ? 'bg-primary-2 text-primary-9' : 'bg-gray-2 text-gray-9'
-                        }`}>
+                        <span
+                          className={`py-0.2 rounded-full px-1.5 text-11 ${
+                            activeMappingTab === 'header'
+                              ? 'bg-primary-2 text-primary-9'
+                              : 'bg-gray-2 text-gray-9'
+                          }`}
+                        >
                           {Object.keys(mapping).length}/{systemColumns.length}
                         </span>
                       </button>
                       <button
                         type='button'
-                        className={`pl-0 pr-2 py-2 text-13 font-semibold transition-all border-b-2 cursor-pointer flex items-center gap-1.5 text-left ${
+                        className={`flex cursor-pointer items-center gap-1.5 border-b-2 py-2 pr-2 pl-0 text-left text-13 font-semibold transition-all ${
                           activeMappingTab === 'lineItem'
                             ? 'border-primary-9 text-primary-9'
                             : 'border-transparent text-gray-11 hover:text-gray-13'
@@ -970,10 +1018,15 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                         onClick={() => setActiveMappingTab('lineItem')}
                       >
                         <span>Line Items</span>
-                        <span className={`px-1.5 py-0.2 text-11 rounded-full ${
-                          activeMappingTab === 'lineItem' ? 'bg-primary-2 text-primary-9' : 'bg-gray-2 text-gray-9'
-                        }`}>
-                          {Object.keys(lineItemMapping).length}/{LINE_ITEM_TEMPLATE_COLUMNS.length}
+                        <span
+                          className={`py-0.2 rounded-full px-1.5 text-11 ${
+                            activeMappingTab === 'lineItem'
+                              ? 'bg-primary-2 text-primary-9'
+                              : 'bg-gray-2 text-gray-9'
+                          }`}
+                        >
+                          {Object.keys(lineItemMapping).length}/
+                          {LINE_ITEM_TEMPLATE_COLUMNS.length}
                         </span>
                       </button>
                     </div>
@@ -983,52 +1036,60 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                       {activeMappingTab === 'header' && (
                         <div className='animate-in fade-in duration-300'>
                           <ColumnMapping
-                            key='header-mapping'
-                            title='Header Mapping'
                             isConfirmLoading={false}
+                            key='header-mapping'
                             mapping={mapping}
                             previewRows={previewRows}
                             showActionsRow={false}
+                            title='Header Mapping'
                             uploadedColumns={uploadedColumns}
-                            onChangeMapping={setMapping}
                             simple
+                            onChangeMapping={setMapping}
                           />
                         </div>
                       )}
                       {activeMappingTab === 'lineItem' && (
                         <div className='animate-in fade-in duration-300'>
                           <ColumnMapping
-                            key='line-item-mapping'
-                            title='Line Item Mapping'
+                            autoScrollAndHighlight={false}
                             isConfirmLoading={false}
+                            key='line-item-mapping'
                             mapping={lineItemMapping}
                             previewRows={lineItemRows}
                             showActionsRow={false}
-                            uploadedColumns={lineItemHeaders}
-                            templateSchema={LINE_ITEM_TEMPLATE_COLUMNS}
                             showGrouping={false}
-                            autoScrollAndHighlight={false}
-                            onChangeMapping={setLineItemMapping}
+                            templateSchema={LINE_ITEM_TEMPLATE_COLUMNS}
+                            title='Line Item Mapping'
+                            uploadedColumns={lineItemHeaders}
                             simple
+                            onChangeMapping={setLineItemMapping}
                           />
                         </div>
                       )}
                     </div>
                     <div className='flex justify-end gap-3 pt-2'>
-                      <Button variant='outline' onClick={() => {
-                        setUploadState('idle')
-                        setUploadedFile(null)
-                        setMapping({})
-                        setPreviewRows([])
-                      }}>
+                      <Button
+                        variant='outline'
+                        onClick={() => {
+                          setUploadState('idle')
+                          setUploadedFile(null)
+                          setMapping({})
+                          setPreviewRows([])
+                        }}
+                      >
                         Cancel
                       </Button>
                       <Button
-                        disabled={!groupingColumn || 
-                          systemColumns.some(col => col.required && !mapping[col.key]) ||
-                          LINE_ITEM_TEMPLATE_COLUMNS.some(col => col.required && !lineItemMapping[col.key])
-                        }
                         loading={isSubmitting}
+                        disabled={
+                          !groupingColumn ||
+                          systemColumns.some(
+                            (col) => col.required && !mapping[col.key],
+                          ) ||
+                          LINE_ITEM_TEMPLATE_COLUMNS.some(
+                            (col) => col.required && !lineItemMapping[col.key],
+                          )
+                        }
                         onClick={handleManualConfirm}
                       >
                         Confirm & Ingest

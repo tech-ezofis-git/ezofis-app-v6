@@ -280,7 +280,9 @@ export const setSharePassword = async (payload: {
         password: payload.password,
         shareToken: payload.shareToken,
       }),
-      headers: payload.tenantId ? { 'X-Tenant-Id': payload.tenantId } : undefined,
+      headers: payload.tenantId
+        ? { 'X-Tenant-Id': payload.tenantId }
+        : undefined,
       method: 'POST',
       url: `/auth/share/set-password`,
     })
@@ -319,7 +321,9 @@ export const shareSocialLogin = async (payload: {
         provider: payload.provider,
         shareToken: payload.shareToken,
       }),
-      headers: payload.tenantId ? { 'X-Tenant-Id': payload.tenantId } : undefined,
+      headers: payload.tenantId
+        ? { 'X-Tenant-Id': payload.tenantId }
+        : undefined,
       method: 'POST',
       url: `/auth/share/social-login`,
     })
@@ -344,7 +348,10 @@ export const shareSocialLogin = async (payload: {
   return response
 }
 
-export const emailValidate = async (tenantId: number | string, payload: any) => {
+export const emailValidate = async (
+  tenantId: number | string,
+  payload: any,
+) => {
   const response: any = { data: '', error: '' }
   try {
     const { data, status } = await axiosV6({
@@ -360,24 +367,27 @@ export const emailValidate = async (tenantId: number | string, payload: any) => 
     if (e?.response?.status === 404) {
       response.error = 'user account not found'
     } else {
-      response.error = getV6ApiErrorMessage(e?.response?.data, 'error logging in')
+      response.error = getV6ApiErrorMessage(
+        e?.response?.data,
+        'error logging in',
+      )
     }
   }
   return response
 }
 
 export const authApiV6 = {
+  emailValidate,
   login,
   sendMailOTP,
+  shareSocialLogin,
   signUp,
   socialLogin,
   verifyMailOTP,
   getSession,
-  getTenants,
   getSharePreview,
+  getTenants,
   setSharePassword,
-  shareSocialLogin,
-  emailValidate,
 }
 
 export default authApiV6

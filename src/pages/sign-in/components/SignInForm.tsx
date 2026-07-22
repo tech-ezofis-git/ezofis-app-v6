@@ -1,11 +1,12 @@
 import { useMsal } from '@azure/msal-react'
 import { useGoogleLogin } from '@react-oauth/google'
 import { useNavigate } from '@tanstack/react-router'
+import { useSearch } from '@tanstack/react-router'
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useMemo, useState } from 'react'
-import { useSearch } from '@tanstack/react-router'
 import apiRouter from '@/api/apiRouter'
 import authApiV6 from '@/api/v6/auth'
+import Alert from '@/components/base/Alert'
 import Button from '@/components/base/button/Button'
 import GoogleButton from '@/components/base/button/GoogleButton'
 import MicrosoftButton from '@/components/base/button/MicrosoftButton'
@@ -15,7 +16,6 @@ import IconIllustrated from '@/components/base/icon/IconIllustrated'
 import InputCheckbox from '@/components/base/inputs/InputCheckbox'
 import InputText from '@/components/base/inputs/InputText'
 import InputPassword from '@/components/base/inputs/password/InputPassword'
-import Alert from '@/components/base/Alert'
 import Title from '@/components/base/Title'
 import showToast from '@/components/base/toast/showToast'
 import { AnimateSlideLeft } from '@/components/common/animations'
@@ -50,7 +50,7 @@ const SignInForm = ({ onChangeView }: Props) => {
 
   useEffect(() => {
     if (shareToken) {
-      authApiV6.getSharePreview(shareToken).then(res => {
+      authApiV6.getSharePreview(shareToken).then((res) => {
         if (res.data?.sourceTenantId) {
           setShareTenantId(res.data.sourceTenantId)
         }
@@ -155,7 +155,10 @@ const SignInForm = ({ onChangeView }: Props) => {
     }
 
     const targetTenantId = tenantId || shareTenantId || undefined
-    const { data, error, status } = await apiRouter.socialLogin(payload, targetTenantId)
+    const { data, error, status } = await apiRouter.socialLogin(
+      payload,
+      targetTenantId,
+    )
 
     if (error) {
       setError(error)
@@ -207,7 +210,10 @@ const SignInForm = ({ onChangeView }: Props) => {
       }
 
       const targetTenantId = tenantId || shareTenantId || undefined
-      const { data, error, status } = await apiRouter.login(payload, targetTenantId)
+      const { data, error, status } = await apiRouter.login(
+        payload,
+        targetTenantId,
+      )
 
       if (error) {
         setLoading(false)
@@ -613,7 +619,7 @@ const SignInForm = ({ onChangeView }: Props) => {
                 />
               </div>
               {error && (
-                <Alert text={error} variant='primary' className='mt-2' />
+                <Alert className='mt-2' text={error} variant='primary' />
               )}
             </>
           ) : (
@@ -645,7 +651,7 @@ const SignInForm = ({ onChangeView }: Props) => {
                 />
               </div>
               {error && (
-                <Alert text={error} variant='primary' className='mt-2' />
+                <Alert className='mt-2' text={error} variant='primary' />
               )}
             </>
           )}
@@ -757,9 +763,7 @@ const SignInForm = ({ onChangeView }: Props) => {
             onClick={validate}
           />
 
-          {error && (
-            <Alert text={error} variant='primary' className='mt-2' />
-          )}
+          {error && <Alert className='mt-2' text={error} variant='primary' />}
 
           {/* Social section – Vue used <SocialAuths>, here we expose Google + Microsoft directly */}
           {!checkAdLogin && (

@@ -9,13 +9,13 @@ interface UploadPoButtonProps {
 
 const UploadPoButton: React.FC<UploadPoButtonProps> = ({ label, onClick }) => {
   return (
-    <Tooltip content="Import PO Data" position="top">
+    <Tooltip content='Import PO Data' position='top'>
       <div>
         <IconButton
-          color="primary"
-          icon="tabler:upload"
           aria-label={label}
-          variant="outline"
+          color='primary'
+          icon='tabler:upload'
+          variant='outline'
           onClick={onClick}
         />
       </div>

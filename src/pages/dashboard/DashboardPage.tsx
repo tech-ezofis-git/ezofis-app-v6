@@ -17,7 +17,7 @@ const DashboardPage = () => {
   }
 
   return (
-    <div className='bg-gray-1 flex h-full flex-col overflow-y-auto'>
+    <div className='flex h-full flex-col overflow-y-auto bg-gray-1'>
       {isApSetUpCompleted && (
         <AnimateSlideUp delay={0.1}>
           <DashboardCharts />

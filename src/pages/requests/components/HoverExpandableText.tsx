@@ -26,7 +26,8 @@ export default function HoverExpandableText({
     const el = containerRef.current
     if (el) {
       setIsOverflowing(
-        el.scrollHeight > el.clientHeight + 1 || el.scrollWidth > el.clientWidth + 1,
+        el.scrollHeight > el.clientHeight + 1 ||
+          el.scrollWidth > el.clientWidth + 1,
       )
     }
   }
@@ -41,13 +42,13 @@ export default function HoverExpandableText({
   return (
     <Tooltip content={text} disabled={!isOverflowing || isFallback}>
       <span
+        ref={containerRef}
         className={cn(
-          'inline-block min-w-0 break-words [overflow-wrap:anywhere]',
+          'inline-block min-w-0 [overflow-wrap:anywhere] break-words',
           'line-clamp-2 hover:line-clamp-none',
           normalMaxWidthClass,
           className,
         )}
-        ref={containerRef}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >

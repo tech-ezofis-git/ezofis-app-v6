@@ -88,7 +88,13 @@ export function useHistory(
           milestoneLower === 'ocr' ||
           String(item.stageType || '').toLowerCase() === 'ap_agent'
 
-        const rawActor = item.actionUser || item.actionUserName || item.performedByUserName || item.modifiedByName || item.createdByName || ''
+        const rawActor =
+          item.actionUser ||
+          item.actionUserName ||
+          item.performedByUserName ||
+          item.modifiedByName ||
+          item.createdByName ||
+          ''
         const user = isApAgentNode ? 'AI Agent' : rawActor
 
         return {
@@ -96,7 +102,8 @@ export function useHistory(
           actionAt: item.occurredAtUtc || null,
           actionStatus: item.actionStatus ?? 1,
           actionUser: user || null,
-          actionUserEmail: item.actionUserEmail || item.actionUser || user || null,
+          actionUserEmail:
+            item.actionUserEmail || item.actionUser || user || null,
           activityId: item.activityId || `v6-step-${idx}`,
           agentType,
           description: item.description || '',

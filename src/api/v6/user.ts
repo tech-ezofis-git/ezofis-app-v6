@@ -2,39 +2,53 @@ import authUserStore from '../../stores/authUserStore'
 import { axiosV6 } from '../axios'
 import { getV6ApiErrorMessage } from './auth'
 
-export type V6UserListItem = {
-  authStrategy?: string
-  createdAtUtc?: string
-  displayName: string
-  email: string
-  firstName?: string
-  id: string
-  lastName?: string
-  role: string
+export type CreateV6GroupPayload = {
+  description: string
+  groupName?: string
+  users: string[]
+}
+
+export type CreateV6MenuPayload = {
+  key: string
+  label: string
+  routePath: string
+  sortOrder: number
 }
 
 export type CreateV6UserPayload = {
+  'accountExpiryDate': string
+  'authStrategy': string
   'Bussiness Unit': string
+  'department': string
+  'displayName': string
+  'email': string
   'Employee Id': string
+  'firstName': string
+  'forcePasswordResetOnLogin': string
+  'group': string[]
   'Job Title': string
+  'lastName': string
+  'location': string
+  'LoginType': string
+  'Manager': string
   'MFA Methods': string
-  LoginType: string
-  MFAuthentication: string
-  Manager: string
-  accountExpiryDate: string
-  authStrategy: string
-  department: string
-  displayName: string
-  email: string
-  firstName: string
-  forcePasswordResetOnLogin: string
-  group: string[]
-  lastName: string
-  location: string
-  password?: string
-  passwordExpiryDays: number
-  role: string
-  userName: string
+  'MFAuthentication': string
+  'password'?: string
+  'passwordExpiryDays': number
+  'role': string
+  'userName': string
+}
+
+export type UpdateV6GroupPayload = {
+  description?: string
+  groupName?: string
+  users?: string[]
+}
+
+export type UpdateV6MenuPayload = {
+  label: string
+  routePath: string
+  sortOrder: number
 }
 
 export type UpdateV6UserPayload = {
@@ -58,6 +72,36 @@ export type UpsertV6RolePayload = {
   users: string[]
 }
 
+export type V6GroupItem = {
+  createdAtUtc?: string
+  description?: string
+  groupId?: string
+  id?: string
+  memberCount?: number
+  name?: string
+  userCount?: number
+  users?: Array<string | V6GroupUser>
+}
+
+export type V6GroupUser = {
+  displayName?: string
+  email?: string
+  id?: string
+}
+
+export type V6MenuItem = {
+  createdAtUtc?: string
+  id?: string
+  isSystem?: boolean
+  key?: string
+  label?: string
+  menuId?: string
+  name?: string
+  routePath?: string
+  sortOrder?: number
+  visible?: boolean
+}
+
 export type V6RoleItem = {
   description?: string
   id?: string
@@ -70,58 +114,15 @@ export type V6RoleItem = {
   users?: Array<string | { id?: string; userId?: string; value?: string }>
 }
 
-export type V6GroupUser = {
-  displayName?: string
-  email?: string
-  id?: string
-}
-
-export type V6GroupItem = {
+export type V6UserListItem = {
+  authStrategy?: string
   createdAtUtc?: string
-  description?: string
-  groupId?: string
-  id?: string
-  memberCount?: number
-  name?: string
-  userCount?: number
-  users?: Array<string | V6GroupUser>
-}
-
-export type CreateV6GroupPayload = {
-  description: string
-  groupName?: string
-  users: string[]
-}
-
-export type UpdateV6GroupPayload = {
-  description?: string
-  groupName?: string
-  users?: string[]
-}
-
-export type V6MenuItem = {
-  createdAtUtc?: string
-  id?: string
-  isSystem?: boolean
-  key?: string
-  label?: string
-  menuId?: string
-name?: string
-  routePath?: string
-  sortOrder?: number
-}
-
-export type CreateV6MenuPayload = {
-  key: string
-  label: string
-  routePath: string
-  sortOrder: number
-}
-
-export type UpdateV6MenuPayload = {
-  label: string
-  routePath: string
-  sortOrder: number
+  displayName: string
+  email: string
+  firstName?: string
+  id: string
+  lastName?: string
+  role: string
 }
 
 export const createUser = async (payload: CreateV6UserPayload) => {
@@ -190,6 +191,42 @@ export const updateUser = async (id: string, payload: UpdateV6UserPayload) => {
     response.error = getV6ApiErrorMessage(
       error?.response?.data,
       'Failed to update user',
+    )
+  }
+
+  return response
+}
+
+export const deleteUser = async (id: string) => {
+  const response: {
+    data: unknown
+    error: string
+  } = {
+    data: null,
+    error: '',
+  }
+
+  try {
+    const store = authUserStore.getState()
+    const tenantId =
+      store.session?.tenantId || (store.identity as any)?.tenantId || ''
+
+    const { data, status } = await axiosV6({
+      headers: tenantId ? { 'X-Tenant-Id': tenantId } : undefined,
+      method: 'DELETE',
+      url: `/Users/${id}`,
+    })
+
+    if (status !== 200 && status !== 204) {
+      throw new Error('invalid status code')
+    }
+
+    response.data = data
+  } catch (error: any) {
+    console.error(error)
+    response.error = getV6ApiErrorMessage(
+      error?.response?.data,
+      'Failed to delete user',
     )
   }
 
@@ -806,18 +843,19 @@ export const usersApiV6 = {
   createUser,
   deleteGroup,
   deleteMenu,
-  getGroupById,
-  getGroups,
-  getMenuById,
-  getMenus,
-  getRoleById,
-  getUsers,
-  getRoles,
+  deleteUser,
   updateGroup,
   updateMenu,
   updateRole,
   updateUser,
   updateUserConfiguration,
+  getGroupById,
+  getGroups,
+  getMenuById,
+  getMenus,
+  getRoleById,
+  getRoles,
+  getUsers,
 }
 
 export default usersApiV6

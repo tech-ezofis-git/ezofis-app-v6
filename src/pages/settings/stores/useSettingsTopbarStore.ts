@@ -11,16 +11,13 @@ type SettingsTopbarState = {
   ) => void
 }
 
-const DEFAULT_BREADCRUMBS: SettingsBreadcrumbItem[] = [
-  { label: 'Settings' },
-]
+const DEFAULT_BREADCRUMBS: SettingsBreadcrumbItem[] = [{ label: 'Settings' }]
 
 const useSettingsTopbarStore = create<SettingsTopbarState>((set) => ({
   breadcrumbs: DEFAULT_BREADCRUMBS,
-  onNavigate: undefined,
   reset: () => set({ breadcrumbs: DEFAULT_BREADCRUMBS, onNavigate: undefined }),
-  setBreadcrumbs: (breadcrumbs, onNavigate) =>
-    set({ breadcrumbs, onNavigate }),
+  setBreadcrumbs: (breadcrumbs, onNavigate) => set({ breadcrumbs, onNavigate }),
+  onNavigate: undefined,
 }))
 
 export default useSettingsTopbarStore

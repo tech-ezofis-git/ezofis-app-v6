@@ -1,243 +1,241 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
-import { ChevronDown, ChevronRight, Search, X } from "lucide-react";
-import Icon from "@/components/base/icon/Icon";
-import InputDate from "@/components/base/inputs/InputDate";
-import Tooltip from "@/components/base/Tooltip";
-import Button from "@/components/base/button/Button";
-import IconButton from "@/components/base/button/IconButton";
-import cn from "@/utils/cn";
-import type { ButtonColor, ButtonVariant } from "@/components/base/button/types";
+import { ChevronDown, ChevronRight, Search, X } from 'lucide-react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
+import type { ButtonColor, ButtonVariant } from '@/components/base/button/types'
+import Button from '@/components/base/button/Button'
+import IconButton from '@/components/base/button/IconButton'
+import Icon from '@/components/base/icon/Icon'
+import Tooltip from '@/components/base/Tooltip'
+import cn from '@/utils/cn'
+import {
+  DEFAULT_DATE_RANGE_OPTIONS,
+  isDateColumnType,
+  isNumberColumnType,
+  parseFilterValues,
+  serializeFilterValues,
+} from '@/utils/filterUtils'
+import {
+  CategoryFilterMenu,
+  DateFilterMenu,
+  NumberFilterMenu,
+} from './filters/FilterMenus'
 
-const MORE_FILTER_DEBOUNCE_MS = 350;
-const MORE_FILTER_PANEL_WIDTH = 388;
-const MORE_FILTER_PANEL_HEIGHT = 260;
+const MORE_FILTER_DEBOUNCE_MS = 350
+const MORE_FILTER_PANEL_WIDTH = 388
+const MORE_FILTER_PANEL_HEIGHT = 260
 /** Same layer as More filters panel; above toolbar/table content */
-const FILTER_MENU_Z_INDEX = 50000;
-const VIEWPORT_GAP = 8;
+const FILTER_MENU_Z_INDEX = 50000
+const VIEWPORT_GAP = 8
+
+/** Shared chip shell — same size across all pages (dashboard, workflow, forms, settings) */
+const FILTER_CHIP_SHELL =
+  'inline-flex h-[30px] max-w-[280px] items-center gap-1 rounded-full border py-0 pl-3.5 text-12 font-medium transition-all'
+const FILTER_CHIP_ACTIVE =
+  'border-primary-9 bg-primary-3/50 text-primary-9'
+const FILTER_CHIP_INACTIVE =
+  'border-border-default bg-surface text-text-secondary'
+const FILTER_CHIP_CLEAR_BTN =
+  'inline-flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-full text-current opacity-60 transition-colors hover:bg-gray-3 hover:opacity-100'
+const FILTER_CHIP_TRAILING =
+  'inline-flex size-5 shrink-0 items-center justify-center'
+const FILTER_CHIP_COUNT =
+  'inline-flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-gray-3 px-1 text-10 font-medium text-text-primary tabular-nums'
+const FILTER_SEARCH_INPUT =
+  'w-full bg-transparent py-2.5 pr-3 pl-9 text-12 text-text-primary outline-none placeholder:text-text-muted'
 
 interface DropdownPosition {
-  top: number;
-  left: number;
-  width: number;
+  left: number
+  top: number
+  width: number
 }
-
-const isDateFilterType = (dataType?: string) => {
-  const normalized = String(dataType || "")
-    .trim()
-    .toLowerCase();
-  return (
-    normalized === "date" ||
-    normalized === "datetime" ||
-    normalized.includes("date")
-  );
-};
-
-/** Normalize picker value to API filter format: YYYY-MM-DDT00:00:00 */
-const toApiDateFilterValue = (value: string | Date | null | undefined) => {
-  if (value == null || value === "") return "";
-
-  let parsed: Date | null = null;
-
-  if (value instanceof Date) {
-    parsed = value;
-  } else {
-    const trimmed = String(value).trim();
-    if (!trimmed) return "";
-
-    // ISO / YYYY-MM-DD
-    parsed = new Date(trimmed);
-
-    // DD-MMM-YYYY (InputDate display format)
-    if (Number.isNaN(parsed.getTime())) {
-      const match = trimmed.match(/^(\d{1,2})[-/ ]([A-Za-z]{3})[-/ ](\d{4})$/);
-      if (match) {
-        parsed = new Date(`${match[2]} ${match[1]}, ${match[3]}`);
-      }
-    }
-  }
-
-  if (!parsed || Number.isNaN(parsed.getTime())) {
-    return typeof value === "string" ? value.trim() : "";
-  }
-
-  const year = parsed.getFullYear();
-  const month = String(parsed.getMonth() + 1).padStart(2, "0");
-  const day = String(parsed.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}T00:00:00`;
-};
 
 const formatDateChipLabel = (value: string) => {
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return value;
+  if (value.startsWith('custom:')) {
+    const [start = '', end = ''] = value.replace('custom:', '').split('_')
+    const fmt = (v: string) => {
+      const parsed = new Date(v)
+      if (Number.isNaN(parsed.getTime())) return v
+      return parsed.toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      })
+    }
+    return `${fmt(start)} – ${fmt(end)}`
+  }
 
-  return parsed.toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-};
+  const preset = DEFAULT_DATE_RANGE_OPTIONS.find((o) => o.value === value)
+  if (preset) return preset.label
 
-export interface QuickFilterOption {
-  id: string;
-  label: string;
-  icon?: string;
-  count?: number;
-}
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) return value
 
-export interface FilterOption {
-  label: string;
-  value: string;
-}
-
-export interface FilterGroup {
-  id: string;
-  label: string;
-  icon?: React.ComponentType<{ className?: string }>;
-  dataType?: string;
-  options?: FilterOption[];
-  actions?: FilterOption[]; // Used for buttons like High Value / Low Value
-}
-
-export interface FilterDefinition {
-  id: string;
-  label: string;
-  options: FilterOption[];
-  searchable?: boolean;
-  searchPlaceholder?: string;
-  width?: number;
+  return parsed.toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  })
 }
 
 export interface ActionButtonDef {
-  id: string;
-  label?: string;
-  icon?: string;
-  color?: ButtonColor;
-  variant?: ButtonVariant;
-  onClick: () => void;
-  disabled?: boolean;
-  tooltip?: string;
-  isIconButton?: boolean;
+  id: string
+  color?: ButtonColor
+  disabled?: boolean
+  icon?: string
+  isIconButton?: boolean
+  label?: string
+  tooltip?: string
+  variant?: ButtonVariant
+  onClick: () => void
 }
 
 export interface CustomFilterProps {
-  filters: FilterDefinition[];
-  moreFilters?: FilterGroup[];
-  moreFiltersLabel?: string;
-  activeFilters: Record<string, string>;
-  onFilterChange: (id: string, value: string) => void;
-  onReset: () => void;
-  showReset?: boolean;
-  searchQuery?: string;
-  onSearchChange?: (val: string) => void;
-  searchPlaceholder?: string;
-  customSearchComponent?: React.ReactNode;
-  quickFilters?: QuickFilterOption[];
-  activeQuickFilters?: string[];
-  onQuickFilterToggle?: (id: string) => void;
-  actionButtons?: ActionButtonDef[];
-  viewMode?: "grid" | "table";
-  onViewModeChange?: (mode: "grid" | "table") => void;
-  trailingActions?: React.ReactNode;
-  onBack?: () => void;
+  activeFilters: Record<string, string>
+  filters: FilterDefinition[]
+  actionButtons?: ActionButtonDef[]
+  activeQuickFilters?: string[]
   addButton?: {
-    onClick: () => void;
-    label?: string;
-    tooltip?: string;
-    icon?: string;
-  };
+    icon?: string
+    label?: string
+    tooltip?: string
+    onClick: () => void
+  }
+  customSearchComponent?: React.ReactNode
+  moreFilters?: FilterGroup[]
+  moreFiltersLabel?: string
+  quickFilters?: QuickFilterOption[]
+  searchPlaceholder?: string
+  searchQuery?: string
+  showReset?: boolean
+  trailingActions?: React.ReactNode
+  viewMode?: 'grid' | 'table'
+  onFilterChange: (id: string, value: string) => void
+  onQuickFilterToggle?: (id: string) => void
+  onReset: () => void
+  onSearchChange?: (val: string) => void
+  onViewModeChange?: (mode: 'grid' | 'table') => void
+}
+
+export interface FilterDefinition {
+  id: string
+  label: string
+  options: FilterOption[]
+  dataType?: string
+  searchable?: boolean
+  searchPlaceholder?: string
+  width?: number
+}
+
+export interface FilterGroup {
+  id: string
+  label: string
+  actions?: FilterOption[] // Used for buttons like High Value / Low Value
+  dataType?: string
+  icon?: React.ComponentType<{ className?: string }>
+  options?: FilterOption[]
+}
+
+export interface FilterOption {
+  label: string
+  value: string
+}
+
+export interface QuickFilterOption {
+  id: string
+  label: string
+  count?: number
+  icon?: string
 }
 
 export default function CustomFilter({
+  actionButtons,
+  activeFilters,
+  activeQuickFilters,
+  addButton,
+  customSearchComponent,
   filters,
   moreFilters,
-  moreFiltersLabel = "More filters",
-  activeFilters,
-  onFilterChange,
-  onReset,
-  showReset,
-  searchQuery = "",
-  onSearchChange = () => {},
-  searchPlaceholder = "Search...",
-  customSearchComponent,
+  moreFiltersLabel = 'More filters',
   quickFilters,
-  activeQuickFilters,
-  onQuickFilterToggle,
-  actionButtons,
-  viewMode,
-  onViewModeChange,
+  searchPlaceholder = 'Search...',
+  searchQuery = '',
+  showReset,
   trailingActions,
-  onBack,
-  addButton,
+  viewMode,
+  onFilterChange,
+  onQuickFilterToggle,
+  onReset,
+  onSearchChange = () => {},
+  onViewModeChange,
 }: CustomFilterProps) {
   const [activeFilterDropdown, setActiveFilterDropdown] = useState<
     string | null
-  >(null);
+  >(null)
   const [activeFilterGroup, setActiveFilterGroup] = useState<string | null>(
     moreFilters && moreFilters.length > 0 ? moreFilters[0].id : null,
-  );
-  const [filterSearchQuery, setFilterSearchQuery] = useState("");
-  const [isSearchExpanded, setIsSearchExpanded] = useState(true);
+  )
+  const [filterSearchQuery, setFilterSearchQuery] = useState('')
+  const [isSearchExpanded, setIsSearchExpanded] = useState(true)
   const [morePanelPos, setMorePanelPos] = useState<{
-    top: number;
-    left: number;
-  } | null>(null);
+    left: number
+    top: number
+  } | null>(null)
   const [filterDropdownPos, setFilterDropdownPos] =
-    useState<DropdownPosition | null>(null);
-  const searchInputRef = useRef<HTMLInputElement>(null);
-  const filtersRef = useRef<HTMLDivElement>(null);
-  const moreFiltersButtonRef = useRef<HTMLButtonElement>(null);
-  const moreFiltersPanelRef = useRef<HTMLDivElement>(null);
-  const filterDropdownPanelRef = useRef<HTMLDivElement>(null);
-  const filterButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
-  const morePanelAnchorRef = useRef<HTMLElement | null>(null);
-  const skipMoreFilterDebounceRef = useRef(false);
+    useState<DropdownPosition | null>(null)
+  const searchInputRef = useRef<HTMLInputElement>(null)
+  const filtersRef = useRef<HTMLDivElement>(null)
+  const moreFiltersButtonRef = useRef<HTMLButtonElement>(null)
+  const moreFiltersPanelRef = useRef<HTMLDivElement>(null)
+  const filterDropdownPanelRef = useRef<HTMLDivElement>(null)
+  const filterButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({})
+  const morePanelAnchorRef = useRef<HTMLElement | null>(null)
+  const skipMoreFilterDebounceRef = useRef(false)
 
   const updateFilterDropdownPosition = useCallback(() => {
-    if (!activeFilterDropdown || activeFilterDropdown === "more") {
-      setFilterDropdownPos(null);
-      return;
+    if (!activeFilterDropdown || activeFilterDropdown === 'more') {
+      setFilterDropdownPos(null)
+      return
     }
 
-    const anchor = filterButtonRefs.current[activeFilterDropdown];
-    if (!anchor) return;
+    const anchor = filterButtonRefs.current[activeFilterDropdown]
+    if (!anchor) return
 
-    const filter = filters.find((item) => item.id === activeFilterDropdown);
-    const width = filter?.width || 240;
-    const rect = anchor.getBoundingClientRect();
+    const filter = filters.find((item) => item.id === activeFilterDropdown)
+    const width = Math.min(filter?.width || 240, 280)
+    const rect = anchor.getBoundingClientRect()
 
-    let left = rect.left;
-    let top = rect.bottom + 6;
+    let left = rect.left
+    let top = rect.bottom + 6
 
     if (left + width > window.innerWidth - VIEWPORT_GAP) {
-      left = Math.max(VIEWPORT_GAP, window.innerWidth - width - VIEWPORT_GAP);
+      left = Math.max(VIEWPORT_GAP, window.innerWidth - width - VIEWPORT_GAP)
     }
 
-    const estimatedHeight = 292;
+    const estimatedHeight = 320
     if (top + estimatedHeight > window.innerHeight - VIEWPORT_GAP) {
-      top = Math.max(VIEWPORT_GAP, rect.top - estimatedHeight - 6);
+      top = Math.max(VIEWPORT_GAP, rect.top - estimatedHeight - 6)
     }
 
-    setFilterDropdownPos({ top, left, width });
-  }, [activeFilterDropdown, filters]);
+    setFilterDropdownPos({ left, top, width })
+  }, [activeFilterDropdown, filters])
 
   const updateMorePanelPosition = useCallback(() => {
-    const anchor = morePanelAnchorRef.current || moreFiltersButtonRef.current;
-    if (!anchor) return;
+    const anchor = morePanelAnchorRef.current || moreFiltersButtonRef.current
+    if (!anchor) return
 
-    const rect = anchor.getBoundingClientRect();
-    let left = rect.left;
-    let top = rect.bottom + 6;
+    const rect = anchor.getBoundingClientRect()
+    let left = rect.left
+    let top = rect.bottom + 6
 
     if (left + MORE_FILTER_PANEL_WIDTH > window.innerWidth - 8) {
-      left = Math.max(8, window.innerWidth - MORE_FILTER_PANEL_WIDTH - 8);
+      left = Math.max(8, window.innerWidth - MORE_FILTER_PANEL_WIDTH - 8)
     }
     if (top + MORE_FILTER_PANEL_HEIGHT > window.innerHeight - 8) {
-      top = Math.max(8, rect.top - MORE_FILTER_PANEL_HEIGHT - 6);
+      top = Math.max(8, rect.top - MORE_FILTER_PANEL_HEIGHT - 6)
     }
 
-    setMorePanelPos({ left, top });
-  }, []);
+    setMorePanelPos({ left, top })
+  }, [])
 
   const openMoreFilters = useCallback(
     (anchor: HTMLElement | null, groupId?: string | null) => {
@@ -246,109 +244,117 @@ export default function CustomFilter({
         activeFilterGroup ||
         moreFilters?.find((group) => !activeFilters[group.id])?.id ||
         moreFilters?.[0]?.id ||
-        null;
+        null
 
-      morePanelAnchorRef.current = anchor;
-      setActiveFilterGroup(nextGroup);
-      setActiveFilterDropdown("more");
-      skipMoreFilterDebounceRef.current = true;
-      setFilterSearchQuery(nextGroup ? activeFilters[nextGroup] || "" : "");
+      morePanelAnchorRef.current = anchor
+      setActiveFilterGroup(nextGroup)
+      setActiveFilterDropdown('more')
+      skipMoreFilterDebounceRef.current = true
+      setFilterSearchQuery(nextGroup ? activeFilters[nextGroup] || '' : '')
     },
     [activeFilterGroup, activeFilters, moreFilters],
-  );
+  )
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      const target = event.target as Node;
-      const element = target instanceof Element ? target : target.parentElement;
-      const inBar = Boolean(filtersRef.current?.contains(target));
-      const inPanel = Boolean(moreFiltersPanelRef.current?.contains(target));
+      const target = event.target as Node
+      const element = target instanceof Element ? target : target.parentElement
+      const inBar = Boolean(filtersRef.current?.contains(target))
+      const inPanel = Boolean(moreFiltersPanelRef.current?.contains(target))
       const inFilterDropdown = Boolean(
         filterDropdownPanelRef.current?.contains(target),
-      );
+      )
       // Date picker / Mantine portals render outside the panel
       const inDatePicker = Boolean(
         element?.closest(
           [
-            "[data-portal]",
-            "[data-mantine-portal]",
-            "[data-dates-dropdown]",
-            ".mantine-Popover-dropdown",
-            ".mantine-DatePicker-dropdown",
-            ".mantine-DateInput-dropdown",
-            ".mantine-DatePickerInput-dropdown",
-          ].join(", "),
+            '[data-portal]',
+            '[data-mantine-portal]',
+            '[data-dates-dropdown]',
+            '.mantine-Popover-dropdown',
+            '.mantine-DatePicker-dropdown',
+            '.mantine-DateInput-dropdown',
+            '.mantine-DatePickerInput-dropdown',
+          ].join(', '),
         ),
-      );
+      )
 
       if (!inBar && !inPanel && !inFilterDropdown && !inDatePicker) {
-        setActiveFilterDropdown(null);
+        setActiveFilterDropdown(null)
       }
     }
 
     // Use click (not mousedown) so date selection onChange runs first
-    document.addEventListener("click", handleClickOutside, true);
+    document.addEventListener('click', handleClickOutside, true)
     return () => {
-      document.removeEventListener("click", handleClickOutside, true);
-    };
-  }, []);
+      document.removeEventListener('click', handleClickOutside, true)
+    }
+  }, [])
 
   useEffect(() => {
-    if (!activeFilterDropdown || activeFilterDropdown === "more") {
-      setFilterDropdownPos(null);
-      return;
+    if (!activeFilterDropdown || activeFilterDropdown === 'more') {
+      setFilterDropdownPos(null)
+      return
     }
 
-    updateFilterDropdownPosition();
-    const onReposition = () => updateFilterDropdownPosition();
-    window.addEventListener("resize", onReposition);
-    window.addEventListener("scroll", onReposition, true);
+    updateFilterDropdownPosition()
+    const onReposition = () => updateFilterDropdownPosition()
+    window.addEventListener('resize', onReposition)
+    window.addEventListener('scroll', onReposition, true)
 
     return () => {
-      window.removeEventListener("resize", onReposition);
-      window.removeEventListener("scroll", onReposition, true);
-    };
-  }, [activeFilterDropdown, updateFilterDropdownPosition]);
+      window.removeEventListener('resize', onReposition)
+      window.removeEventListener('scroll', onReposition, true)
+    }
+  }, [activeFilterDropdown, updateFilterDropdownPosition])
 
   useEffect(() => {
-    if (activeFilterDropdown !== "more") {
-      setMorePanelPos(null);
-      morePanelAnchorRef.current = null;
-      return;
+    if (activeFilterDropdown !== 'more') {
+      setMorePanelPos(null)
+      morePanelAnchorRef.current = null
+      return
     }
 
-    updateMorePanelPosition();
-    const onReposition = () => updateMorePanelPosition();
-    window.addEventListener("resize", onReposition);
-    window.addEventListener("scroll", onReposition, true);
+    updateMorePanelPosition()
+    const onReposition = () => updateMorePanelPosition()
+    window.addEventListener('resize', onReposition)
+    window.addEventListener('scroll', onReposition, true)
     return () => {
-      window.removeEventListener("resize", onReposition);
-      window.removeEventListener("scroll", onReposition, true);
-    };
-  }, [activeFilterDropdown, updateMorePanelPosition]);
+      window.removeEventListener('resize', onReposition)
+      window.removeEventListener('scroll', onReposition, true)
+    }
+  }, [activeFilterDropdown, updateMorePanelPosition])
 
   useEffect(() => {
-    if (activeFilterDropdown !== "more" || !activeFilterGroup) return;
+    if (activeFilterDropdown !== 'more' || !activeFilterGroup) return
 
     const activeGroup = moreFilters?.find(
       (group) => group.id === activeFilterGroup,
-    );
-    if (isDateFilterType(activeGroup?.dataType)) return;
-
-    if (skipMoreFilterDebounceRef.current) {
-      skipMoreFilterDebounceRef.current = false;
-      return;
+    )
+    // Menu-driven filters manage values themselves (no free-text debounce)
+    if (
+      isDateColumnType(activeGroup?.dataType) ||
+      isNumberColumnType(activeGroup?.dataType) ||
+      (activeGroup?.options && activeGroup.options.length > 0) ||
+      (activeGroup?.actions && activeGroup.actions.length > 0)
+    ) {
+      return
     }
 
-    const trimmed = filterSearchQuery.trim();
-    const current = String(activeFilters[activeFilterGroup] ?? "").trim();
-    if (trimmed === current) return;
+    if (skipMoreFilterDebounceRef.current) {
+      skipMoreFilterDebounceRef.current = false
+      return
+    }
+
+    const trimmed = filterSearchQuery.trim()
+    const current = String(activeFilters[activeFilterGroup] ?? '').trim()
+    if (trimmed === current) return
 
     const timer = window.setTimeout(() => {
-      onFilterChange(activeFilterGroup, trimmed);
-    }, MORE_FILTER_DEBOUNCE_MS);
+      onFilterChange(activeFilterGroup, trimmed)
+    }, MORE_FILTER_DEBOUNCE_MS)
 
-    return () => window.clearTimeout(timer);
+    return () => window.clearTimeout(timer)
   }, [
     activeFilterDropdown,
     activeFilterGroup,
@@ -356,559 +362,491 @@ export default function CustomFilter({
     filterSearchQuery,
     moreFilters,
     onFilterChange,
-  ]);
+  ])
 
   // Default filter dropdown: apply typed value when options are empty
   useEffect(() => {
-    if (!activeFilterDropdown || activeFilterDropdown === "more") return;
+    if (!activeFilterDropdown || activeFilterDropdown === 'more') return
 
     const activeFilter = filters.find(
       (filter) => filter.id === activeFilterDropdown,
-    );
-    if (!activeFilter?.searchable) return;
-    if (activeFilter.options.length > 0) return;
+    )
+    if (!activeFilter?.searchable) return
+    if (activeFilter.options.length > 0) return
 
     if (skipMoreFilterDebounceRef.current) {
-      skipMoreFilterDebounceRef.current = false;
-      return;
+      skipMoreFilterDebounceRef.current = false
+      return
     }
 
-    const trimmed = filterSearchQuery.trim();
-    const current = String(activeFilters[activeFilterDropdown] ?? "").trim();
-    if (trimmed === current) return;
+    const trimmed = filterSearchQuery.trim()
+    const current = String(activeFilters[activeFilterDropdown] ?? '').trim()
+    if (trimmed === current) return
 
     const timer = window.setTimeout(() => {
-      onFilterChange(activeFilterDropdown, trimmed);
-    }, MORE_FILTER_DEBOUNCE_MS);
+      onFilterChange(activeFilterDropdown, trimmed)
+    }, MORE_FILTER_DEBOUNCE_MS)
 
-    return () => window.clearTimeout(timer);
+    return () => window.clearTimeout(timer)
   }, [
     activeFilterDropdown,
     activeFilters,
     filterSearchQuery,
     filters,
     onFilterChange,
-  ]);
+  ])
+
+  const applyMultiFilter = useCallback(
+    (id: string, values: string[]) => {
+      onFilterChange(id, serializeFilterValues(values))
+    },
+    [onFilterChange],
+  )
 
   const moreFiltersPanel =
-    activeFilterDropdown === "more" &&
+    activeFilterDropdown === 'more' &&
     morePanelPos &&
     moreFilters &&
     moreFilters.length > 0
       ? createPortal(
           <div
+            className='animate-in fade-in zoom-in-95 fixed flex max-h-[320px] overflow-hidden rounded-lg border border-border-default bg-surface shadow-md'
             ref={moreFiltersPanelRef}
-            className="fixed flex max-h-[260px] overflow-hidden rounded-lg border border-border-default bg-surface shadow-md animate-in fade-in zoom-in-95"
             style={{
-              top: morePanelPos.top,
               left: morePanelPos.left,
+              top: morePanelPos.top,
               zIndex: FILTER_MENU_Z_INDEX,
             }}
           >
-            <div className="ez-scrollbar flex max-h-[260px] w-[168px] flex-col overflow-y-auto border-r border-border-default bg-primary-3/30 p-1 dark:bg-gray-12">
+            <div className='ez-scrollbar flex max-h-[320px] w-[168px] flex-col overflow-y-auto border-r border-border-default bg-primary-3/30 p-1 dark:bg-gray-12'>
               {moreFilters.map((group) => {
-                const IconComp = group.icon;
-                const isActive = activeFilterGroup === group.id;
-                const hasValue = Boolean(activeFilters[group.id]);
+                const IconComp = group.icon
+                const isActive = activeFilterGroup === group.id
+                const hasValue = Boolean(activeFilters[group.id])
                 return (
                   <button
                     key={group.id}
+                    type='button'
                     className={cn(
-                      "flex w-full cursor-pointer items-center justify-between rounded-md px-2.5 py-1.5 text-left text-12 font-medium transition-all",
+                      'flex w-full cursor-pointer items-center justify-between rounded-md px-2.5 py-1.5 text-left text-12 font-normal transition-all',
                       isActive
-                        ? "bg-primary-3 text-primary-9 dark:bg-primary-9 dark:text-white"
-                        : "text-text-secondary hover:bg-gray-2 dark:hover:bg-gray-10",
-                      hasValue && !isActive && "text-primary-9",
+                        ? 'bg-primary-3 text-primary-9 dark:bg-primary-9 dark:text-white'
+                        : 'text-text-secondary hover:bg-gray-2 dark:hover:bg-gray-10',
+                      hasValue && !isActive && 'text-primary-9',
                     )}
-                    type="button"
                     onClick={() => {
-                      setActiveFilterGroup(group.id);
-                      skipMoreFilterDebounceRef.current = true;
-                      setFilterSearchQuery(activeFilters[group.id] || "");
+                      setActiveFilterGroup(group.id)
+                      skipMoreFilterDebounceRef.current = true
+                      setFilterSearchQuery(activeFilters[group.id] || '')
                     }}
                   >
-                    <span className="flex min-w-0 items-center gap-1.5">
+                    <span className='flex min-w-0 items-center gap-1.5'>
                       {IconComp && (
-                        <IconComp className="h-3.5 w-3.5 shrink-0" />
+                        <IconComp className='h-3.5 w-3.5 shrink-0' />
                       )}
-                      <span className="truncate">{group.label}</span>
+                      <span className='truncate'>{group.label}</span>
                     </span>
-                    <ChevronRight className="h-3 w-3 shrink-0 opacity-60" />
+                    <ChevronRight className='h-3 w-3 shrink-0 opacity-60' />
                   </button>
-                );
+                )
               })}
             </div>
 
-            <div className="ez-scrollbar flex max-h-[260px] w-[220px] flex-col gap-2 overflow-y-auto bg-surface p-2.5">
+            <div className='ez-scrollbar flex max-h-[320px] w-max max-w-64 flex-col overflow-hidden bg-surface'>
               {moreFilters.map((group) => {
-                if (activeFilterGroup !== group.id) return null;
+                if (activeFilterGroup !== group.id) return null
+                const selectedValues = parseFilterValues(activeFilters[group.id])
 
-                if (isDateFilterType(group.dataType)) {
-                  const dateValue = activeFilters[group.id] || null;
+                if (isDateColumnType(group.dataType)) {
                   return (
-                    <React.Fragment key={group.id}>
-                      <div className="text-11 font-semibold text-text-muted">
-                        Filter by {group.label}
-                      </div>
-                      <InputDate
-                        className="w-full"
-                        clearable
-                        placeholder="Select date"
-                        popoverProps={{
-                          withinPortal: true,
-                          zIndex: FILTER_MENU_Z_INDEX + 1,
-                          middlewares: { flip: true, shift: true },
-                        }}
-                        value={dateValue}
-                        onChange={(nextValue) => {
-                          const apiValue = toApiDateFilterValue(
-                            nextValue as string | Date | null,
-                          );
-                          if (!apiValue) {
-                            skipMoreFilterDebounceRef.current = true;
-                            setFilterSearchQuery("");
-                            onFilterChange(group.id, "");
-                            return;
-                          }
-
-                          skipMoreFilterDebounceRef.current = true;
-                          setFilterSearchQuery(apiValue);
-                          onFilterChange(group.id, apiValue);
-                          // Close after apply so the value is committed first
-                          window.setTimeout(() => {
-                            setActiveFilterDropdown(null);
-                          }, 0);
-                        }}
-                      />
-                      {dateValue ? (
-                        <button
-                          className="w-full cursor-pointer rounded px-2 py-1.5 text-left text-12 font-medium text-text-secondary hover:bg-gray-2"
-                          type="button"
-                          onClick={() => {
-                            skipMoreFilterDebounceRef.current = true;
-                            setFilterSearchQuery("");
-                            onFilterChange(group.id, "");
-                            setActiveFilterDropdown(null);
-                          }}
-                        >
-                          Clear {group.label}
-                        </button>
-                      ) : null}
-                    </React.Fragment>
-                  );
+                    <DateFilterMenu
+                      key={group.id}
+                      options={group.options?.length ? group.options : DEFAULT_DATE_RANGE_OPTIONS}
+                      selectedValues={selectedValues}
+                      onChange={(vals) => {
+                        skipMoreFilterDebounceRef.current = true
+                        onFilterChange(group.id, vals[0] || '')
+                      }}
+                      onClear={() => {
+                        skipMoreFilterDebounceRef.current = true
+                        onFilterChange(group.id, '')
+                        setActiveFilterDropdown(null)
+                      }}
+                    />
+                  )
                 }
 
+                if (isNumberColumnType(group.dataType)) {
+                  return (
+                    <NumberFilterMenu
+                      key={group.id}
+                      options={group.options || []}
+                      selectedValues={selectedValues}
+                      onChange={(vals) => {
+                        skipMoreFilterDebounceRef.current = true
+                        applyMultiFilter(group.id, vals)
+                      }}
+                      onClear={() => {
+                        skipMoreFilterDebounceRef.current = true
+                        onFilterChange(group.id, '')
+                        setActiveFilterDropdown(null)
+                      }}
+                    />
+                  )
+                }
+
+                if (group.options && group.options.length > 0) {
+                  return (
+                    <CategoryFilterMenu
+                      key={group.id}
+                      label={group.label}
+                      options={group.options}
+                      selectedValues={selectedValues}
+                      onChange={(vals) => {
+                        skipMoreFilterDebounceRef.current = true
+                        applyMultiFilter(group.id, vals)
+                      }}
+                      onClear={() => {
+                        skipMoreFilterDebounceRef.current = true
+                        onFilterChange(group.id, '')
+                        setActiveFilterDropdown(null)
+                      }}
+                    />
+                  )
+                }
+
+                if (group.actions && group.actions.length > 0) {
+                  return (
+                    <CategoryFilterMenu
+                      key={group.id}
+                      label={group.label}
+                      options={group.actions}
+                      selectedValues={selectedValues}
+                      onChange={(vals) => {
+                        skipMoreFilterDebounceRef.current = true
+                        applyMultiFilter(group.id, vals)
+                      }}
+                      onClear={() => {
+                        skipMoreFilterDebounceRef.current = true
+                        onFilterChange(group.id, '')
+                        setActiveFilterDropdown(null)
+                      }}
+                    />
+                  )
+                }
+
+                // Free-text fallback when no options are provided
                 return (
-                  <React.Fragment key={group.id}>
-                    {group.options && (
-                      <>
-                        <div className="relative">
-                          <Search className="absolute top-1/2 left-2 h-3.5 w-3.5 -translate-y-1/2 text-text-muted" />
-                          <input
-                            className="w-full rounded-lg border border-border-default bg-gray-2 py-1 pr-3 pl-7 text-11 text-text-primary outline-none"
-                            placeholder={`Search ${group.label.toLowerCase()}...`}
-                            type="text"
-                            value={filterSearchQuery}
-                            onChange={(e) =>
-                              setFilterSearchQuery(e.target.value)
-                            }
-                          />
-                        </div>
-                        <div className="ez-scrollbar flex max-h-[180px] flex-col gap-0.5 overflow-y-auto">
-                          <button
-                            className={cn(
-                              "w-full cursor-pointer rounded px-2 py-1.5 text-left text-12 font-medium text-text-primary transition-colors hover:bg-gray-2",
-                              !activeFilters[group.id] &&
-                                "bg-primary-3/30 font-semibold text-primary-9",
-                            )}
-                            type="button"
-                            onClick={() => {
-                              skipMoreFilterDebounceRef.current = true;
-                              setFilterSearchQuery("");
-                              onFilterChange(group.id, "");
-                              setActiveFilterDropdown(null);
-                            }}
-                          >
-                            All {group.label}
-                          </button>
-                          {group.options
-                            .filter((item) =>
-                              item.label
-                                .toLowerCase()
-                                .includes(filterSearchQuery.toLowerCase()),
-                            )
-                            .map((item) => (
-                              <button
-                                key={item.value}
-                                className={cn(
-                                  "w-full cursor-pointer rounded px-2 py-1.5 text-left text-12 font-medium transition-colors hover:bg-gray-2",
-                                  activeFilters[group.id] === item.value
-                                    ? "bg-primary-3/30 font-semibold text-primary-9"
-                                    : "text-text-secondary",
-                                )}
-                                type="button"
-                                onClick={() => {
-                                  skipMoreFilterDebounceRef.current = true;
-                                  setFilterSearchQuery(item.value);
-                                  onFilterChange(group.id, item.value);
-                                  setActiveFilterDropdown(null);
-                                }}
-                              >
-                                {item.label}
-                              </button>
-                            ))}
-                        </div>
-                      </>
-                    )}
-                    {group.actions && (
-                      <>
-                        <div className="mb-0.5 text-11 font-semibold text-text-muted">
-                          Filter by {group.label}
-                        </div>
-                        <div className="flex flex-col gap-1.5">
-                          {group.actions.map((action) => (
-                            <button
-                              key={action.value}
-                              className="w-full cursor-pointer rounded px-2 py-1.5 text-left text-12 font-medium text-text-secondary hover:bg-gray-2"
-                              type="button"
-                              onClick={() => {
-                                onFilterChange(group.id, action.value);
-                                setActiveFilterDropdown(null);
-                              }}
-                            >
-                              {action.label}
-                            </button>
-                          ))}
-                        </div>
-                      </>
-                    )}
-                  </React.Fragment>
-                );
+                  <div key={group.id} className='flex flex-col p-2'>
+                    <div className='relative border border-border-default rounded-md'>
+                      <Search className='absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-text-muted' />
+                      <input
+                        className={FILTER_SEARCH_INPUT}
+                        placeholder={`Filter ${group.label.toLowerCase()}...`}
+                        type='text'
+                        value={filterSearchQuery}
+                        autoFocus
+                        onChange={(e) => setFilterSearchQuery(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                )
               })}
             </div>
           </div>,
           document.body,
         )
-      : null;
+      : null
 
   return (
     <div
+      className='relative z-40 flex w-full shrink-0 items-center gap-2 rounded-lg border border-[var(--border-default)] bg-surface p-3 shadow-xs'
       ref={filtersRef}
-      className="relative z-40 flex w-full items-center gap-2 rounded-lg border border-[var(--border-default)] bg-surface p-3 shadow-xs"
     >
-      {onBack && (
-        <IconButton
-          ariaLabel="Back"
-          color="gray"
-          icon="lucide:arrow-left"
-          size="sm"
-          variant="ghost"
-          className="shrink-0"
-          onClick={onBack}
-        />
-      )}
       {/* Filters wrap onto new lines when they overflow */}
-      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-          {quickFilters &&
-            quickFilters.map((qf) => {
-              const isActive = activeQuickFilters?.includes(qf.id);
-              return (
-                <button
-                  key={qf.id}
-                  className={cn(
-                    "flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1 text-12 font-medium transition-all",
-                    isActive
-                      ? "border-[var(--primary-9)] bg-[var(--primary-3)] text-[var(--primary-9)]"
-                      : "border-[var(--border-default)] bg-surface text-[var(--text-secondary)] hover:bg-gray-3 dark:hover:bg-gray-10",
-                  )}
-                  onClick={() => onQuickFilterToggle?.(qf.id)}
-                >
-                  {qf.icon && <Icon className="size-3.5" name={qf.icon} />}
-                  <span>{qf.label}</span>
-                  {qf.count !== undefined && (
-                    <span
-                      className={cn(
-                        "flex items-center justify-center rounded-full px-1.5 py-0.5 text-10 font-bold",
-                        isActive
-                          ? "bg-[var(--primary-4)] text-[var(--primary-9)]"
-                          : "bg-gray-3 text-gray-11",
-                      )}
-                    >
-                      {qf.count}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-
-          {filters.map((filter) => {
-            const activeValue = activeFilters[filter.id];
-            const activeOption = filter.options.find(
-              (o) => o.value === activeValue,
-            );
-            const displayLabel = activeOption
-              ? `${filter.label} : ${activeOption.label}`
-              : activeValue
-                ? `${filter.label} : ${activeValue}`
-                : filter.label;
-            const isActive =
-              !!activeValue || activeFilterDropdown === filter.id;
-
+      <div className='flex min-w-0 flex-1 flex-wrap items-center gap-2'>
+        {quickFilters &&
+          quickFilters.map((qf) => {
+            const isActive = activeQuickFilters?.includes(qf.id)
             return (
-              <div
-                key={filter.id}
+              <button
+                key={qf.id}
                 className={cn(
-                  "relative",
-                  activeFilterDropdown === filter.id && "z-[10000]",
+                  FILTER_CHIP_SHELL,
+                  'cursor-pointer gap-1.5 pr-3.5',
+                  isActive ? FILTER_CHIP_ACTIVE : FILTER_CHIP_INACTIVE,
+                  !isActive && 'hover:bg-gray-3 dark:hover:bg-gray-10',
                 )}
+                onClick={() => onQuickFilterToggle?.(qf.id)}
               >
-                <div
-                  className={cn(
-                    "flex max-w-[240px] items-center gap-1 rounded-full border py-1 pr-1.5 pl-3.5 text-12 font-medium transition-all",
-                    isActive
-                      ? "border-primary-9 bg-primary-3/50 text-primary-9"
-                      : "border-border-default bg-surface text-text-secondary",
-                  )}
-                >
-                  <button
-                    ref={(node) => {
-                      filterButtonRefs.current[filter.id] = node;
-                    }}
-                    className="flex min-w-0 cursor-pointer items-center gap-1.5 hover:opacity-80"
-                    type="button"
-                    onClick={() => {
-                      const nextOpen =
-                        activeFilterDropdown === filter.id ? null : filter.id;
-                      setActiveFilterDropdown(nextOpen);
-                      skipMoreFilterDebounceRef.current = true;
-                      setFilterSearchQuery("");
-                    }}
-                  >
-                    <span className="truncate">{displayLabel}</span>
-                    <ChevronDown className="h-3 w-3 shrink-0 opacity-60" />
-                  </button>
-                  {activeValue ? (
-                    <Tooltip content={`Clear ${filter.label}`}>
-                      <button
-                        aria-label={`Clear ${filter.label}`}
-                        className="inline-flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center rounded-full text-primary-9 transition-colors hover:bg-primary-3"
-                        type="button"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          onFilterChange(filter.id, "");
-                          if (activeFilterDropdown === filter.id) {
-                            setActiveFilterDropdown(null);
-                          }
-                        }}
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </Tooltip>
-                  ) : null}
-                </div>
-
-                {activeFilterDropdown === filter.id &&
-                  filterDropdownPos &&
-                  createPortal(
-                    <div
-                      ref={filterDropdownPanelRef}
-                      className="fixed rounded-lg border border-border-default bg-surface p-3 shadow-md animate-in fade-in slide-in-from-top-2"
-                      style={{
-                        top: filterDropdownPos.top,
-                        left: filterDropdownPos.left,
-                        width: filterDropdownPos.width,
-                        zIndex: FILTER_MENU_Z_INDEX,
-                      }}
-                    >
-                      {filter.searchable && (
-                        <>
-                          <div className="relative mb-2">
-                            <Search className="absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-text-muted" />
-                            <input
-                              className="w-full rounded-lg border border-border-default bg-gray-2 py-1 pr-3 pl-8 text-11 text-text-primary outline-none"
-                              placeholder={
-                                filter.searchPlaceholder || "Search..."
-                              }
-                              type="text"
-                              value={filterSearchQuery}
-                              onChange={(e) =>
-                                setFilterSearchQuery(e.target.value)
-                              }
-                            />
-                          </div>
-                          <div className="mx-[-12px] my-2 h-px bg-border-default" />
-                        </>
-                      )}
-                      <div className="scrollbar flex max-h-[220px] flex-col gap-0.5 overflow-y-auto">
-                        <button
-                          className={cn(
-                            "w-full cursor-pointer rounded px-2.5 py-1.5 text-left text-12 font-medium text-text-primary transition-colors hover:bg-gray-2",
-                            !activeValue &&
-                              "bg-primary-3/30 font-semibold text-primary-9",
-                          )}
-                          onClick={() => {
-                            skipMoreFilterDebounceRef.current = true;
-                            setFilterSearchQuery("");
-                            onFilterChange(filter.id, "");
-                            setActiveFilterDropdown(null);
-                          }}
-                        >
-                          All {filter.label}
-                        </button>
-                        {(() => {
-                          const visibleOptions = filter.options.filter(
-                            (item) =>
-                              filter.searchable && filterSearchQuery
-                                ? item.label
-                                    .toLowerCase()
-                                    .includes(filterSearchQuery.toLowerCase())
-                                : true,
-                          );
-
-                          if (visibleOptions.length === 0) {
-                            const typed = filterSearchQuery.trim();
-                            if (typed) {
-                              return (
-                                <button
-                                  className="w-full cursor-pointer rounded px-2.5 py-1.5 text-left text-12 font-medium text-primary-9 transition-colors hover:bg-primary-3/30"
-                                  type="button"
-                                  onClick={() => {
-                                    skipMoreFilterDebounceRef.current = true;
-                                    onFilterChange(filter.id, typed);
-                                    setActiveFilterDropdown(null);
-                                  }}
-                                >
-                                  Apply &quot;{typed}&quot;
-                                </button>
-                              );
-                            }
-
-                            return (
-                              <div className="px-2.5 py-2 text-12 text-text-muted">
-                                Type to search or apply a value
-                              </div>
-                            );
-                          }
-
-                          return visibleOptions.map((item) => (
-                            <button
-                              key={item.value}
-                              className={cn(
-                                "w-full cursor-pointer rounded px-2.5 py-1.5 text-left text-12 font-medium text-text-primary transition-colors hover:bg-gray-2",
-                                activeValue === item.value &&
-                                  "bg-primary-3/30 font-semibold text-primary-9",
-                              )}
-                              onClick={() => {
-                                skipMoreFilterDebounceRef.current = true;
-                                setFilterSearchQuery(item.value);
-                                onFilterChange(filter.id, item.value);
-                                setActiveFilterDropdown(null);
-                              }}
-                            >
-                              {item.label}
-                            </button>
-                          ));
-                        })()}
-                      </div>
-                    </div>,
-                    document.body,
-                  )}
-              </div>
-            );
+                {qf.icon && <Icon className='size-3.5' name={qf.icon} />}
+                <span className='truncate'>{qf.label}</span>
+              </button>
+            )
           })}
 
-          {moreFilters
-            ?.filter((group) => Boolean(activeFilters[group.id]))
-            .map((group) => {
-              const value = activeFilters[group.id];
-              const isOpen =
-                activeFilterDropdown === "more" &&
-                activeFilterGroup === group.id;
+        {filters.map((filter) => {
+          const selectedValues = parseFilterValues(activeFilters[filter.id])
+          const firstValue = selectedValues[0] || ''
+          const firstOption = filter.options.find((o) => o.value === firstValue)
+          let displayLabel = filter.label
+          if (selectedValues.length === 1) {
+            const optionLabel = firstOption?.label || ''
+            const valueLabel = isDateColumnType(filter.dataType)
+              ? firstValue.startsWith('custom:')
+                ? formatDateChipLabel(firstValue)
+                : optionLabel || formatDateChipLabel(firstValue)
+              : optionLabel || firstValue
+            displayLabel =
+              valueLabel.toLowerCase() === 'all'
+                ? filter.label
+                : `${filter.label} : ${valueLabel}`
+          } else if (selectedValues.length > 1) {
+            const valueLabel = firstOption?.label || firstValue
+            displayLabel =
+              valueLabel.toLowerCase() === 'all'
+                ? filter.label
+                : `${filter.label} : ${valueLabel}`
+          }
+          const isActive =
+            selectedValues.length > 0 || activeFilterDropdown === filter.id
+          const isDate =
+            isDateColumnType(filter.dataType) ||
+            filter.id === 'timeframe' ||
+            /date|timeframe|period/i.test(filter.id) ||
+            /date|timeframe|period/i.test(filter.label)
+          const isNumber = isNumberColumnType(filter.dataType)
 
-              return (
-                <div key={`chip-${group.id}`} className="relative">
-                  <div className="flex max-w-[260px] items-center gap-1 rounded-full border border-primary-9 bg-primary-3/50 py-1 pr-1.5 pl-3.5 text-12 font-medium text-primary-9">
+          return (
+            <div
+              key={filter.id}
+              className={cn(
+                'relative',
+                activeFilterDropdown === filter.id && 'z-[10000]',
+              )}
+            >
+              <div
+                className={cn(
+                  FILTER_CHIP_SHELL,
+                  'pr-1.5',
+                  isActive ? FILTER_CHIP_ACTIVE : FILTER_CHIP_INACTIVE,
+                )}
+              >
+                <button
+                  className='flex min-w-0 cursor-pointer items-center gap-1.5 hover:opacity-80'
+                  type='button'
+                  ref={(node) => {
+                    filterButtonRefs.current[filter.id] = node
+                  }}
+                  onClick={() => {
+                    const nextOpen =
+                      activeFilterDropdown === filter.id ? null : filter.id
+                    setActiveFilterDropdown(nextOpen)
+                    skipMoreFilterDebounceRef.current = true
+                    setFilterSearchQuery('')
+                  }}
+                >
+                  <span className='truncate'>{displayLabel}</span>
+                  {selectedValues.length > 1 && (
+                    <span className={FILTER_CHIP_COUNT}>
+                      {selectedValues.length}
+                    </span>
+                  )}
+                  <span className={FILTER_CHIP_TRAILING}>
+                    <ChevronDown className='h-3 w-3 opacity-60' />
+                  </span>
+                </button>
+                {selectedValues.length > 0 ? (
+                  <Tooltip content={`Clear ${filter.label}`}>
                     <button
-                      className="flex min-w-0 cursor-pointer items-center gap-1.5 hover:opacity-80"
-                      type="button"
+                      aria-label={`Clear ${filter.label}`}
+                      className={FILTER_CHIP_CLEAR_BTN}
+                      type='button'
                       onClick={(event) => {
-                        if (isOpen) {
-                          setActiveFilterDropdown(null);
-                          return;
+                        event.stopPropagation()
+                        onFilterChange(filter.id, '')
+                        if (activeFilterDropdown === filter.id) {
+                          setActiveFilterDropdown(null)
                         }
-                        openMoreFilters(event.currentTarget, group.id);
                       }}
                     >
-                      <span className="truncate">
-                        {group.label} :{" "}
-                        {isDateFilterType(group.dataType)
-                          ? formatDateChipLabel(value)
-                          : value}
-                      </span>
-                      <ChevronDown className="h-3 w-3 shrink-0 opacity-60" />
+                      <X className='h-3 w-3' />
                     </button>
-                    <Tooltip content={`Clear ${group.label}`}>
-                      <button
-                        aria-label={`Clear ${group.label}`}
-                        className="inline-flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center rounded-full text-primary-9 transition-colors hover:bg-primary-3"
-                        type="button"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          skipMoreFilterDebounceRef.current = true;
-                          setFilterSearchQuery("");
-                          onFilterChange(group.id, "");
-                          if (isOpen) setActiveFilterDropdown(null);
+                  </Tooltip>
+                ) : null}
+              </div>
+
+              {activeFilterDropdown === filter.id &&
+                filterDropdownPos &&
+                createPortal(
+                  <div
+                    className='animate-in fade-in slide-in-from-top-2 fixed overflow-hidden rounded-lg border border-border-default bg-surface shadow-md'
+                    ref={filterDropdownPanelRef}
+                    style={{
+                      left: filterDropdownPos.left,
+                      top: filterDropdownPos.top,
+                      zIndex: FILTER_MENU_Z_INDEX,
+                    }}
+                  >
+                    {isDate ? (
+                      <DateFilterMenu
+                        options={
+                          filter.options.length > 0
+                            ? filter.options
+                            : DEFAULT_DATE_RANGE_OPTIONS
+                        }
+                        selectedValues={selectedValues}
+                        onChange={(vals) => {
+                          skipMoreFilterDebounceRef.current = true
+                          onFilterChange(filter.id, vals[0] || '')
                         }}
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </Tooltip>
-                  </div>
-                </div>
-              );
-            })}
-
-          {moreFilters && moreFilters.length > 0 && (
-            <Tooltip content={moreFiltersLabel || "More filters"}>
-              <button
-                ref={moreFiltersButtonRef}
-                className={cn(
-                  "flex shrink-0 cursor-pointer items-center justify-center h-[30px] w-[30px] rounded-full border border-dashed transition-all",
-                  activeFilterDropdown === "more"
-                    ? "border-[var(--primary-6)] bg-[var(--primary-1)] text-[var(--primary-9)]"
-                    : "border-[var(--gray-6)] text-[var(--gray-10)] bg-transparent hover:bg-[var(--gray-2)] hover:text-[var(--gray-12)]",
+                        onClear={() => {
+                          onFilterChange(filter.id, '')
+                          setActiveFilterDropdown(null)
+                        }}
+                      />
+                    ) : isNumber ? (
+                      <NumberFilterMenu
+                        options={filter.options}
+                        selectedValues={selectedValues}
+                        onChange={(vals) => {
+                          skipMoreFilterDebounceRef.current = true
+                          applyMultiFilter(filter.id, vals)
+                        }}
+                        onClear={() => {
+                          onFilterChange(filter.id, '')
+                          setActiveFilterDropdown(null)
+                        }}
+                      />
+                    ) : (
+                      <CategoryFilterMenu
+                        label={filter.label}
+                        options={filter.options}
+                        selectedValues={selectedValues}
+                        onChange={(vals) => {
+                          skipMoreFilterDebounceRef.current = true
+                          applyMultiFilter(filter.id, vals)
+                        }}
+                        onClear={() => {
+                          onFilterChange(filter.id, '')
+                          setActiveFilterDropdown(null)
+                        }}
+                      />
+                    )}
+                  </div>,
+                  document.body,
                 )}
-                type="button"
-                onClick={() => {
-                  if (activeFilterDropdown === "more") {
-                    setActiveFilterDropdown(null);
-                    return;
-                  }
-                  openMoreFilters(moreFiltersButtonRef.current);
-                }}
-              >
-                <Icon name="tabler:plus" className="h-4 w-4" />
-              </button>
-            </Tooltip>
-          )}
+            </div>
+          )
+        })}
 
-          {showReset && (
+        {moreFilters
+          ?.filter((group) => Boolean(activeFilters[group.id]))
+          .map((group) => {
+            const selectedValues = parseFilterValues(activeFilters[group.id])
+            const firstValue = selectedValues[0] || ''
+            const firstOption =
+              group.options?.find((o) => o.value === firstValue) ||
+              group.actions?.find((o) => o.value === firstValue)
+            const isOpen =
+              activeFilterDropdown === 'more' && activeFilterGroup === group.id
+
+            let valueLabel = firstValue
+            if (isDateColumnType(group.dataType)) {
+              valueLabel = formatDateChipLabel(firstValue)
+            } else if (firstOption) {
+              valueLabel = firstOption.label
+            }
+            const chipText =
+              valueLabel.toLowerCase() === 'all'
+                ? group.label
+                : `${group.label} : ${valueLabel}`
+
+            return (
+              <div className='relative' key={`chip-${group.id}`}>
+                <div
+                  className={cn(FILTER_CHIP_SHELL, 'pr-1.5', FILTER_CHIP_ACTIVE)}
+                >
+                  <button
+                    className='flex min-w-0 cursor-pointer items-center gap-1.5 hover:opacity-80'
+                    type='button'
+                    onClick={(event) => {
+                      if (isOpen) {
+                        setActiveFilterDropdown(null)
+                        return
+                      }
+                      openMoreFilters(event.currentTarget, group.id)
+                    }}
+                  >
+                    <span className='truncate'>{chipText}</span>
+                    {selectedValues.length > 1 && (
+                      <span className={FILTER_CHIP_COUNT}>
+                        {selectedValues.length}
+                      </span>
+                    )}
+                  </button>
+                  <Tooltip content={`Clear ${group.label}`}>
+                    <button
+                      aria-label={`Clear ${group.label}`}
+                      className={FILTER_CHIP_CLEAR_BTN}
+                      type='button'
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        skipMoreFilterDebounceRef.current = true
+                        setFilterSearchQuery('')
+                        onFilterChange(group.id, '')
+                        if (isOpen) setActiveFilterDropdown(null)
+                      }}
+                    >
+                      <X className='h-3 w-3' />
+                    </button>
+                  </Tooltip>
+                </div>
+              </div>
+            )
+          })}
+
+        {moreFilters && moreFilters.length > 0 && (
+          <Tooltip content={moreFiltersLabel || 'More filters'}>
             <button
-              className="shrink-0 cursor-pointer rounded-full border border-border-default bg-gray-2 px-3.5 py-1 text-12 font-medium text-text-secondary transition-all hover:bg-gray-3"
-              type="button"
+              ref={moreFiltersButtonRef}
+              type='button'
+              className={cn(
+                'inline-flex h-[30px] w-[30px] shrink-0 cursor-pointer items-center justify-center rounded-full border transition-all',
+                activeFilterDropdown === 'more'
+                  ? 'border-primary-9 bg-primary-3/50 text-primary-9'
+                  : 'border-border-default bg-surface text-text-secondary hover:bg-gray-2',
+              )}
               onClick={() => {
-                onReset();
-                setFilterSearchQuery("");
-                setActiveFilterDropdown(null);
+                if (activeFilterDropdown === 'more') {
+                  setActiveFilterDropdown(null)
+                  return
+                }
+                openMoreFilters(moreFiltersButtonRef.current)
               }}
             >
-              Reset
+              <Icon className='h-3.5 w-3.5' name='tabler:plus' />
             </button>
-          )}
+          </Tooltip>
+        )}
+
+        {showReset && (
+          <button
+            className='shrink-0 cursor-pointer px-1 text-12 font-medium text-text-secondary transition-colors hover:text-text-primary hover:underline'
+            type='button'
+            onClick={() => {
+              onReset()
+              setFilterSearchQuery('')
+              setActiveFilterDropdown(null)
+            }}
+          >
+            Reset
+          </button>
+        )}
       </div>
 
       {/* Actions stay vertically centered while filters wrap */}
-      <div className="flex shrink-0 items-center justify-end gap-1.5 self-center">
+      <div className='flex shrink-0 items-center justify-end gap-1.5 self-center'>
         {customSearchComponent ? (
           customSearchComponent
         ) : (
@@ -916,23 +854,28 @@ export default function CustomFilter({
             className={cn(
               'flex h-8 items-center rounded-md border transition-all duration-300 select-none focus-within:border-primary-6',
               isSearchExpanded || searchQuery
-                ? 'justify-start border-[var(--border-default)] bg-surface pr-1 pl-3 w-72'
+                ? 'w-72 justify-start border-[var(--border-default)] bg-surface pr-1 pl-3'
                 : 'w-8 cursor-pointer justify-center border-[var(--border-default)] bg-surface text-gray-11 hover:bg-gray-4 hover:text-gray-12 active:scale-95',
             )}
             onClick={() => {
               if (!isSearchExpanded && !searchQuery) {
-                setIsSearchExpanded(true);
-                setTimeout(() => searchInputRef.current?.focus(), 50);
+                setIsSearchExpanded(true)
+                setTimeout(() => searchInputRef.current?.focus(), 50)
               }
             }}
           >
-            <Tooltip content="Search" disabled={isSearchExpanded || !!searchQuery}>
+            <Tooltip
+              content='Search'
+              disabled={isSearchExpanded || !!searchQuery}
+            >
               <div className='flex shrink-0 items-center gap-1.5'>
                 <Icon
                   name='lucide:search'
                   className={cn(
                     'size-4 shrink-0 transition-colors',
-                    isSearchExpanded || searchQuery ? 'text-gray-11' : 'text-gray-11 hover:text-gray-12',
+                    isSearchExpanded || searchQuery
+                      ? 'text-gray-11'
+                      : 'text-gray-11 hover:text-gray-12',
                   )}
                 />
               </div>
@@ -941,149 +884,151 @@ export default function CustomFilter({
             <div
               className={cn(
                 'h-full transition-[width] duration-300',
-                isSearchExpanded || searchQuery ? 'w-full flex-1' : 'w-0 flex-none overflow-hidden',
+                isSearchExpanded || searchQuery
+                  ? 'w-full flex-1'
+                  : 'w-0 flex-none overflow-hidden',
               )}
             >
               <input
-                ref={searchInputRef}
                 placeholder={searchPlaceholder}
+                ref={searchInputRef}
                 type='text'
                 value={searchQuery}
                 className={cn(
                   'h-full w-full border-0 bg-transparent px-2 text-13 font-medium text-[var(--gray-13)] outline-none placeholder:text-[var(--gray-8)]',
-                  isSearchExpanded || searchQuery ? 'opacity-100' : 'pointer-events-none opacity-0',
+                  isSearchExpanded || searchQuery
+                    ? 'opacity-100'
+                    : 'pointer-events-none opacity-0',
                 )}
-                onChange={(e) => onSearchChange(e.target.value)}
-                onFocus={() => setIsSearchExpanded(true)}
                 onBlur={() => {
                   // Only collapse if there's no query
-                  if (!searchQuery) setIsSearchExpanded(false);
+                  if (!searchQuery) setIsSearchExpanded(false)
                 }}
+                onChange={(e) => onSearchChange(e.target.value)}
+                onFocus={() => setIsSearchExpanded(true)}
               />
             </div>
           </div>
         )}
 
         {viewMode && onViewModeChange && (
-          <div className="flex shrink-0 cursor-pointer items-center gap-1 rounded-lg border border-[var(--border-default)] bg-[var(--gray-1)] p-1 ml-1">
-            <Tooltip content="Grid View" openDelay={500}>
+          <div className='ml-1 flex shrink-0 cursor-pointer items-center gap-1 rounded-lg border border-[var(--border-default)] bg-[var(--gray-1)] p-1'>
+            <Tooltip content='Grid View' openDelay={500}>
               <button
-                type="button"
+                type='button'
                 className={cn(
-                  "cursor-pointer rounded-md px-2 py-1 transition-all duration-200",
-                  viewMode === "grid"
-                    ? "bg-surface text-[var(--primary-9)] shadow-sm"
-                    : "text-[var(--gray-10)] hover:text-[var(--gray-12)]"
+                  'cursor-pointer rounded-md px-2 py-1 transition-all duration-200',
+                  viewMode === 'grid'
+                    ? 'bg-surface text-[var(--primary-9)] shadow-sm'
+                    : 'text-[var(--gray-10)] hover:text-[var(--gray-12)]',
                 )}
-                onClick={() => onViewModeChange("grid")}
+                onClick={() => onViewModeChange('grid')}
               >
-                <Icon className="size-4" name="tabler:layout-grid" />
+                <Icon className='size-4' name='tabler:layout-grid' />
               </button>
             </Tooltip>
-            <Tooltip content="Table View" openDelay={500}>
+            <Tooltip content='Table View' openDelay={500}>
               <button
-                type="button"
+                type='button'
                 className={cn(
-                  "cursor-pointer rounded-md px-2 py-1 transition-all duration-200",
-                  viewMode === "table"
-                    ? "bg-surface text-[var(--primary-9)] shadow-sm"
-                    : "text-[var(--gray-10)] hover:text-[var(--gray-12)]"
+                  'cursor-pointer rounded-md px-2 py-1 transition-all duration-200',
+                  viewMode === 'table'
+                    ? 'bg-surface text-[var(--primary-9)] shadow-sm'
+                    : 'text-[var(--gray-10)] hover:text-[var(--gray-12)]',
                 )}
-                onClick={() => onViewModeChange("table")}
+                onClick={() => onViewModeChange('table')}
               >
-                <Icon className="size-4" name="tabler:table" />
+                <Icon className='size-4' name='tabler:table' />
               </button>
             </Tooltip>
           </div>
         )}
 
         {actionButtons && actionButtons.length > 0 && (
-          <div className="flex shrink-0 items-center gap-1.5 ml-1">
+          <div className='ml-1 flex shrink-0 items-center gap-1.5'>
             {actionButtons.map((btn) => {
               const btnEl = btn.isIconButton ? (
                 <IconButton
-                  key={btn.id}
-                  color={(btn.color as any) || "gray"}
-                  variant={btn.variant || "outline"}
-                  icon={btn.icon!}
                   aria-label={btn.tooltip || btn.label || btn.id}
-                  onClick={btn.onClick}
+                  color={(btn.color as any) || 'gray'}
                   disabled={btn.disabled}
+                  icon={btn.icon!}
+                  key={btn.id}
+                  variant={btn.variant || 'outline'}
+                  onClick={btn.onClick}
                 />
               ) : (
                 <Button
-                  key={btn.id}
-                  color={btn.color || "primary"}
-                  variant={btn.variant || "solid"}
-                  icon={btn.icon}
-                  label={btn.label}
-                  onClick={btn.onClick}
+                  color={btn.color || 'primary'}
                   disabled={btn.disabled}
-                  size="md"
+                  icon={btn.icon}
+                  key={btn.id}
+                  label={btn.label}
+                  size='md'
+                  variant={btn.variant || 'solid'}
+                  onClick={btn.onClick}
                 />
-              );
+              )
 
               return btn.tooltip ? (
-                <Tooltip key={btn.id} content={btn.tooltip}>
+                <Tooltip content={btn.tooltip} key={btn.id}>
                   {btnEl}
                 </Tooltip>
               ) : (
                 btnEl
-              );
+              )
             })}
           </div>
         )}
 
         {trailingActions ? (
-          <div className="flex shrink-0 items-center gap-1.5 ml-1">
+          <div className='ml-1 flex shrink-0 items-center gap-1.5'>
             {trailingActions}
           </div>
         ) : null}
 
         {addButton && (
-          <div className="flex shrink-0 items-center ml-1">
+          <div className='ml-1 flex shrink-0 items-center'>
             {addButton.tooltip ? (
               <Tooltip content={addButton.tooltip}>
                 {addButton.label ? (
                   <Button
-                    color="primary"
-                    variant="solid"
-                    suffixIcon={addButton.icon || "lucide:plus"}
+                    color='primary'
                     label={addButton.label}
+                    size='md'
+                    suffixIcon={addButton.icon || 'lucide:plus'}
+                    variant='solid'
                     onClick={addButton.onClick}
-                    size="md"
                   />
                 ) : (
                   <IconButton
-                    color="primary"
-                    variant="solid"
-                    icon={addButton.icon || "lucide:plus"}
                     ariaLabel={addButton.tooltip}
+                    color='primary'
+                    icon={addButton.icon || 'lucide:plus'}
+                    size='md'
+                    variant='solid'
                     onClick={addButton.onClick}
-                    size="md"
                   />
                 )}
               </Tooltip>
+            ) : addButton.label ? (
+              <Button
+                color='primary'
+                label={addButton.label}
+                size='md'
+                suffixIcon={addButton.icon || 'lucide:plus'}
+                variant='solid'
+                onClick={addButton.onClick}
+              />
             ) : (
-              addButton.label ? (
-                <Button
-                  color="primary"
-                  variant="solid"
-                  suffixIcon={addButton.icon || "lucide:plus"}
-                  label={addButton.label}
-                  onClick={addButton.onClick}
-                  size="md"
-                />
-              ) : (
-                <IconButton
-                  color="primary"
-                  variant="solid"
-                  icon={addButton.icon || "lucide:plus"}
-                  ariaLabel="Add"
-                  onClick={addButton.onClick}
-                  size="md"
-                />
-              )
+              <IconButton
+                ariaLabel='Add'
+                color='primary'
+                icon={addButton.icon || 'lucide:plus'}
+                size='md'
+                variant='solid'
+                onClick={addButton.onClick}
+              />
             )}
           </div>
         )}
@@ -1091,5 +1036,5 @@ export default function CustomFilter({
 
       {moreFiltersPanel}
     </div>
-  );
+  )
 }

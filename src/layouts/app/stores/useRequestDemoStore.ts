@@ -2,14 +2,14 @@ import { create } from 'zustand'
 
 type Store = {
   isDemoFormOpen: boolean
-  openDemoForm: () => void
   closeDemoForm: () => void
+  openDemoForm: () => void
 }
 
 const useRequestDemoStore = create<Store>()((set) => ({
   isDemoFormOpen: false,
-  openDemoForm: () => set({ isDemoFormOpen: true }),
   closeDemoForm: () => set({ isDemoFormOpen: false }),
+  openDemoForm: () => set({ isDemoFormOpen: true }),
 }))
 
 export default useRequestDemoStore

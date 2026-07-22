@@ -32,16 +32,16 @@ interface Props<TData> extends ComponentProps<'div'> {
   /** ✅ Custom action buttons */
   actions?: TableActionButton[]
   className?: string
-  component?: any
   /** Keeps all controls grouped without a growing spacer. */
   compact?: boolean
-  hideGrouping?: boolean
-
-  hideTableActions?: boolean
+  component?: any
   hideExport?: boolean
+
+  hideFilters?: boolean
+  hideGrouping?: boolean
   hideReload?: boolean
   hideSearch?: boolean
-  hideFilters?: boolean
+  hideTableActions?: boolean
   onReload: () => void
   onRowSizeChange: (rowSize: RowSize) => void
 }
@@ -51,12 +51,12 @@ const TableActionBar = <TData,>({
   className,
   compact = false,
   component,
-  hideGrouping = false,
-  hideTableActions = false,
   hideExport = false,
+  hideFilters = false,
+  hideGrouping = false,
   hideReload = false,
   hideSearch = false,
-  hideFilters = false,
+  hideTableActions = false,
   isReloading,
   rowSize,
   table,
@@ -106,7 +106,9 @@ const TableActionBar = <TData,>({
             <TableRows rowSize={rowSize} onRowSizeChange={onRowSizeChange} />
           )}
           {!hideExport && <TableExport table={table} />}
-          {!hideReload && <TableReload isReloading={isReloading} onReload={onReload} />}
+          {!hideReload && (
+            <TableReload isReloading={isReloading} onReload={onReload} />
+          )}
 
           {/* ✅ right side (after built-in buttons) */}
           {!!rightActions.length && (

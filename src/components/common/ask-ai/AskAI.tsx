@@ -46,24 +46,6 @@ import {
 import Tooltip from '@/components/base/Tooltip'
 import useAskAIStore from './stores/useAskAIStore'
 
-type TextBlock =
-  | {
-      type: 'paragraph'
-      text: string
-    }
-  | {
-      type: 'bullets'
-      title?: string
-      variant?: 'dot' | string
-      items: Array<{ label: string; value: string | number }>
-    }
-  | {
-      type: 'card'
-      title: string
-      subtitle?: string
-      fields: Array<{ label: string; value: string | number }>
-    }
-
 type AskAiAnswer = {
   action?: Record<string, unknown>
   actionContext?: Record<string, unknown>
@@ -92,6 +74,24 @@ type Message = {
 }
 
 type Role = 'user' | 'ai' | 'status'
+
+type TextBlock =
+  | {
+      text: string
+      type: 'paragraph'
+    }
+  | {
+      items: Array<{ label: string; value: string | number }>
+      title?: string
+      type: 'bullets'
+      variant?: 'dot' | string
+    }
+  | {
+      fields: Array<{ label: string; value: string | number }>
+      subtitle?: string
+      title: string
+      type: 'card'
+    }
 
 const AI_STATUS_WORDS = [
   'Thinking…',
@@ -134,23 +134,22 @@ const sampleAnswers: AskAiAnswer[] = [
     conversation_id: 'sample-invoices-001',
     text: {
       blocks: [
-        { type: 'paragraph', text: "Here's what I found for you!" },
+        { text: "Here's what I found for you!", type: 'paragraph' },
         {
-          type: 'paragraph',
           text: 'Found 3 supplier invoices awaiting review in Accounts Payable.',
+          type: 'paragraph',
         },
         {
-          type: 'bullets',
           items: [
             { label: 'Status', value: 'Awaiting review' },
             { label: 'Document type', value: 'Supplier invoice' },
             { label: 'Period', value: 'Last 7 days' },
           ],
           title: 'Filters Applied',
+          type: 'bullets',
           variant: 'dot',
         },
         {
-          type: 'card',
           fields: [
             { label: 'Invoice No', value: 'INV-4821' },
             { label: 'Vendor', value: 'Rajan Suppliers' },
@@ -159,9 +158,9 @@ const sampleAnswers: AskAiAnswer[] = [
           ],
           subtitle: 'GST invoice · Pending review',
           title: 'INV-4821',
+          type: 'card',
         },
         {
-          type: 'card',
           fields: [
             { label: 'Invoice No', value: 'INV-4818' },
             { label: 'Vendor', value: 'Hexaware Services' },
@@ -170,6 +169,7 @@ const sampleAnswers: AskAiAnswer[] = [
           ],
           subtitle: 'Service invoice · Pending review',
           title: 'INV-4818',
+          type: 'card',
         },
       ],
     },
@@ -179,22 +179,21 @@ const sampleAnswers: AskAiAnswer[] = [
     conversation_id: 'sample-requests-002',
     text: {
       blocks: [
-        { type: 'paragraph', text: "Here's what I found for you!" },
+        { text: "Here's what I found for you!", type: 'paragraph' },
         {
-          type: 'paragraph',
           text: 'There are 2 open purchase requests pending approval.',
+          type: 'paragraph',
         },
         {
-          type: 'bullets',
           items: [
             { label: 'Request type', value: 'Purchase request' },
             { label: 'Status', value: 'Pending approval' },
           ],
           title: 'Filters Applied',
+          type: 'bullets',
           variant: 'dot',
         },
         {
-          type: 'card',
           fields: [
             { label: 'Request No', value: 'PR-2204' },
             { label: 'Requester', value: 'Priya Nair' },
@@ -203,9 +202,9 @@ const sampleAnswers: AskAiAnswer[] = [
           ],
           subtitle: 'Purchase request · Pending approval',
           title: 'PR-2204',
+          type: 'card',
         },
         {
-          type: 'card',
           fields: [
             { label: 'Request No', value: 'PR-2197' },
             { label: 'Requester', value: 'Arun Mehta' },
@@ -214,6 +213,7 @@ const sampleAnswers: AskAiAnswer[] = [
           ],
           subtitle: 'Purchase request · Pending approval',
           title: 'PR-2197',
+          type: 'card',
         },
       ],
     },
@@ -223,22 +223,21 @@ const sampleAnswers: AskAiAnswer[] = [
     conversation_id: 'sample-payments-003',
     text: {
       blocks: [
-        { type: 'paragraph', text: "Here's what I found for you!" },
+        { text: "Here's what I found for you!", type: 'paragraph' },
         {
-          type: 'paragraph',
           text: 'Located payment documents and remittance advices for this month.',
+          type: 'paragraph',
         },
         {
-          type: 'bullets',
           items: [
             { label: 'Document type', value: 'Payment / Remittance' },
             { label: 'Period', value: 'Jul 2026' },
           ],
           title: 'Filters Applied',
+          type: 'bullets',
           variant: 'dot',
         },
         {
-          type: 'card',
           fields: [
             { label: 'Payment No', value: 'PAY-9032' },
             { label: 'Vendor', value: 'Rajan Suppliers' },
@@ -247,6 +246,7 @@ const sampleAnswers: AskAiAnswer[] = [
           ],
           subtitle: 'Remittance advice · Posted',
           title: 'PAY-9032',
+          type: 'card',
         },
       ],
     },
@@ -256,22 +256,21 @@ const sampleAnswers: AskAiAnswer[] = [
     conversation_id: 'sample-matching-004',
     text: {
       blocks: [
-        { type: 'paragraph', text: "Here's what I found for you!" },
+        { text: "Here's what I found for you!", type: 'paragraph' },
         {
-          type: 'paragraph',
           text: '2 invoices need 2-way or 3-way matching before payment.',
+          type: 'paragraph',
         },
         {
-          type: 'bullets',
           items: [
             { label: 'Match status', value: 'Incomplete' },
             { label: 'Match type', value: '2-way / 3-way' },
           ],
           title: 'Filters Applied',
+          type: 'bullets',
           variant: 'dot',
         },
         {
-          type: 'card',
           fields: [
             { label: 'Invoice No', value: 'INV-4790' },
             { label: 'PO Number', value: 'PO-1001' },
@@ -280,9 +279,9 @@ const sampleAnswers: AskAiAnswer[] = [
           ],
           subtitle: 'PO-1001 · Matching incomplete',
           title: 'INV-4790',
+          type: 'card',
         },
         {
-          type: 'card',
           fields: [
             { label: 'Invoice No', value: 'INV-4785' },
             { label: 'PO Number', value: 'PO-0988' },
@@ -291,6 +290,7 @@ const sampleAnswers: AskAiAnswer[] = [
           ],
           subtitle: 'PO-0988 · Matching incomplete',
           title: 'INV-4785',
+          type: 'card',
         },
       ],
     },
@@ -300,22 +300,21 @@ const sampleAnswers: AskAiAnswer[] = [
     conversation_id: 'sample-summary-005',
     text: {
       blocks: [
-        { type: 'paragraph', text: "Here's your AP summary for this week!" },
+        { text: "Here's your AP summary for this week!", type: 'paragraph' },
         {
-          type: 'paragraph',
           text: 'Accounts payable activity is up 12% vs last week across invoices and requests.',
+          type: 'paragraph',
         },
         {
-          type: 'bullets',
           items: [
             { label: 'Period', value: 'This week' },
             { label: 'Scope', value: 'AP documents & requests' },
           ],
           title: 'Filters Applied',
+          type: 'bullets',
           variant: 'dot',
         },
         {
-          type: 'card',
           fields: [
             { label: 'Invoices received', value: 48 },
             { label: 'Requests opened', value: 12 },
@@ -324,6 +323,7 @@ const sampleAnswers: AskAiAnswer[] = [
           ],
           subtitle: 'Accounts Payable · Weekly snapshot',
           title: 'AP weekly summary',
+          type: 'card',
         },
       ],
     },
@@ -369,19 +369,18 @@ const poSampleAnswer: AskAiAnswer = {
   conversation_id: 'edef830c-a654-482d-a749-1993cebacfb5',
   text: {
     blocks: [
-      { type: 'paragraph', text: "Here's what I found for you!" },
+      { text: "Here's what I found for you!", type: 'paragraph' },
       {
-        type: 'paragraph',
         text: 'The PO number for PO-1001 is PO-1001.',
+        type: 'paragraph',
       },
       {
-        type: 'bullets',
         items: [{ label: 'PO Number', value: 'PO-1001' }],
         title: 'Filters Applied',
+        type: 'bullets',
         variant: 'dot',
       },
       {
-        type: 'card',
         fields: [
           { label: 'PO Number', value: 'PO-1001' },
           { label: 'Total Documents', value: 2 },
@@ -389,6 +388,7 @@ const poSampleAnswer: AskAiAnswer = {
         ],
         subtitle: 'PO PO-1001',
         title: 'PO-1001',
+        type: 'card',
       },
     ],
   },
@@ -396,7 +396,10 @@ const poSampleAnswer: AskAiAnswer = {
 
 const paragraphTextFromBlocks = (blocks: TextBlock[]) =>
   blocks
-    .filter((b): b is Extract<TextBlock, { type: 'paragraph' }> => b.type === 'paragraph')
+    .filter(
+      (b): b is Extract<TextBlock, { type: 'paragraph' }> =>
+        b.type === 'paragraph',
+    )
     .map((b) => b.text)
     .join('\n')
 
@@ -417,7 +420,10 @@ async function fetchAskAIAnswer(question: string): Promise<AskAiAnswer> {
     return sampleAnswers[suggestionIndex]
   }
 
-  if (q.includes('invoice') && (q.includes('match') || q.includes('2-way') || q.includes('3-way'))) {
+  if (
+    q.includes('invoice') &&
+    (q.includes('match') || q.includes('2-way') || q.includes('3-way'))
+  ) {
     return sampleAnswers[3]
   }
   if (q.includes('payment') || q.includes('remittance')) {
@@ -437,18 +443,18 @@ async function fetchAskAIAnswer(question: string): Promise<AskAiAnswer> {
     conversation_id: 'sample-fallback-000',
     text: {
       blocks: [
-        { type: 'paragraph', text: "Here's what I found for you!" },
+        { text: "Here's what I found for you!", type: 'paragraph' },
         {
-          type: 'paragraph',
           text: 'I searched AP documents, invoices, and requests for your query. Try a suggestion below for a structured sample result.',
+          type: 'paragraph',
         },
         {
-          type: 'bullets',
           items: [
             { label: 'Scope', value: 'Invoices, requests, payments' },
             { label: 'Tip', value: 'Use a predefined question for rich cards' },
           ],
           title: 'Search context',
+          type: 'bullets',
           variant: 'dot',
         },
       ],
@@ -585,13 +591,13 @@ const uid = () =>
 /** Same Sparkles icon — soft AI “thinking” sparkle while loading. */
 const SparkIconLoading = ({ size = 18 }: { size?: number }) => (
   <motion.div
+    className='inline-flex text-[var(--primary-9)]'
+    transition={{ duration: 1.6, ease: 'easeInOut', repeat: Infinity }}
     animate={{
       opacity: [0.55, 1, 0.55],
       rotate: [0, 8, -8, 0],
       scale: [0.92, 1.12, 0.92],
     }}
-    className='inline-flex text-[var(--primary-9)]'
-    transition={{ duration: 1.6, ease: 'easeInOut', repeat: Infinity }}
   >
     <Sparkles size={size} strokeWidth={2} />
   </motion.div>
@@ -640,13 +646,13 @@ const CallingLoader = () => (
 )
 
 const TypewriterReply = ({
+  text,
   onComplete,
   onProgress,
-  text,
 }: {
+  text: string
   onComplete?: () => void
   onProgress?: () => void
-  text: string
 }) => {
   const [count, setCount] = useState(0)
   const completedRef = useRef(false)
@@ -708,10 +714,13 @@ const StaggeredCards = ({
 
   useEffect(() => {
     if (visibleCount >= items.length) return
-    const timer = window.setTimeout(() => {
-      setVisibleCount((prev) => prev + 1)
-      onProgress?.()
-    }, visibleCount === 0 ? 120 : 380)
+    const timer = window.setTimeout(
+      () => {
+        setVisibleCount((prev) => prev + 1)
+        onProgress?.()
+      },
+      visibleCount === 0 ? 120 : 380,
+    )
     return () => window.clearTimeout(timer)
   }, [items.length, onProgress, visibleCount])
 
@@ -773,10 +782,16 @@ const AskAI = () => {
         id: sessionId,
         messages: nextMessages
           .filter((m) => m.role !== 'status')
-          .map(({ isTyping: _isTyping, revealExtras: _revealExtras, ...rest }) => ({
-            ...rest,
-            revealExtras: true,
-          })),
+          .map(
+            ({
+              isTyping: _isTyping,
+              revealExtras: _revealExtras,
+              ...rest
+            }) => ({
+              ...rest,
+              revealExtras: true,
+            }),
+          ),
         subtitle: lastAi.text,
         title: existing?.title || firstUser.text,
       }
@@ -799,7 +814,9 @@ const AskAI = () => {
   }
 
   const loadHistory = (item: HistoryItem) => {
-    setMessages(item.messages.map((m) => ({ ...m, isTyping: false, revealExtras: true })))
+    setMessages(
+      item.messages.map((m) => ({ ...m, isTyping: false, revealExtras: true })),
+    )
     setCurrentHistoryId(item.id)
     setView('chat')
   }
@@ -818,7 +835,10 @@ const AskAI = () => {
     if (credits <= 0) return
 
     const userMessage: Message = { id: uid(), role: 'user', text }
-    const baseMessages = [...messages.filter((m) => m.role !== 'status'), userMessage]
+    const baseMessages = [
+      ...messages.filter((m) => m.role !== 'status'),
+      userMessage,
+    ]
 
     setMessages(baseMessages)
     setInput('')
@@ -1297,15 +1317,14 @@ const AnswerBlock = ({ block }: { block: TextBlock }) => {
       <div className='grid grid-cols-2'>
         {block.fields.map((field, index) => (
           <div
+            key={`${field.label}-${index}`}
             className={`border-b border-[var(--border)] px-3 py-2 ${
               index % 2 === 0 ? 'border-r' : ''
             } ${
-              block.fields.length % 2 === 1 &&
-              index === block.fields.length - 1
+              block.fields.length % 2 === 1 && index === block.fields.length - 1
                 ? 'col-span-2 border-r-0'
                 : ''
             }`}
-            key={`${field.label}-${index}`}
           >
             <div className='mb-0.5 text-[10px] tracking-[.3px] text-[var(--text3)] uppercase'>
               {field.label}

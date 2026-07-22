@@ -15,7 +15,7 @@ const isLineItemAmountColumn = (key: string) => {
 const getLineItemTextClass = (isNumeric = false) =>
   cn(
     'block w-full overflow-hidden text-ellipsis whitespace-nowrap',
-    isNumeric && 'text-right'
+    isNumeric && 'text-right',
   )
 
 const getRawVal = (obj: any, pathKey: string) => {
@@ -54,52 +54,52 @@ const formatHeaderLabel = (key: string) => {
 }
 
 export interface LineItemTableProps {
-  lineItems: any[]
-  dynamicColumns: string[]
-  isDynamicTable: boolean
-  formModel: any
   agentData: any
-  isCurrentlyProcessing: boolean
   currentScoreWidth: number
-  LINE_ITEM_ACTION_WIDTH: number
-  skeletonRows: string[]
-  hasAnyScore: boolean
+  dynamicColumns: string[]
   dynamicWidths: number[]
-  handleAddItem?: () => void
-  handleRemoveItem?: (index: number) => void
-  handleLineItemChange?: (index: number, field: string, value: any) => void
-  handleFieldFocus?: (value: any, field: string) => void
+  formModel: any
+  hasAnyScore: boolean
+  isCurrentlyProcessing: boolean
+  isDynamicTable: boolean
+  LINE_ITEM_ACTION_WIDTH: number
+  lineItems: any[]
+  skeletonRows: string[]
   atEnd?: boolean
   hideFooter?: boolean
+  handleAddItem?: () => void
+  handleFieldFocus?: (value: any, field: string) => void
+  handleLineItemChange?: (index: number, field: string, value: any) => void
+  handleRemoveItem?: (index: number) => void
 }
 
 interface ColumnConfig {
   id: string
-  type: 'dynamic' | 'description' | 'qty' | 'rate' | 'amount' | 'score' | 'action'
-  key?: string
-  isNumeric: boolean
   isAmount: boolean
+  isNumeric: boolean
+  type: 'dynamic' | 'description' | 'qty' | 'rate' | 'amount' | 'score' | 'action'
   dynamicIndex?: number
+  key?: string
 }
 
 export default function LineItemTable({
-  lineItems,
-  dynamicColumns,
-  isDynamicTable,
-  formModel,
   agentData,
-  isCurrentlyProcessing,
-  currentScoreWidth,
-  LINE_ITEM_ACTION_WIDTH,
-  skeletonRows,
-  hasAnyScore,
-  dynamicWidths,
-  handleAddItem,
-  handleRemoveItem,
-  handleLineItemChange,
-  handleFieldFocus,
   atEnd = false,
+  currentScoreWidth,
+  dynamicColumns,
+  dynamicWidths,
+  formModel,
+  handleAddItem,
+  handleFieldFocus,
+  handleLineItemChange,
+  handleRemoveItem,
+  hasAnyScore,
   hideFooter = false,
+  isCurrentlyProcessing,
+  isDynamicTable,
+  LINE_ITEM_ACTION_WIDTH,
+  lineItems,
+  skeletonRows,
 }: LineItemTableProps) {
   const allColumns: ColumnConfig[] = []
   if (isDynamicTable) {
@@ -112,28 +112,43 @@ export default function LineItemTable({
         colKey.toLowerCase().includes('amount') ||
         colKey.toLowerCase().includes('total')
       allColumns.push({
-        id: `dynamic-${colKey}-${idx}`,
-        type: 'dynamic',
-        key: colKey,
-        isNumeric,
-        isAmount: isLineItemAmountColumn(colKey),
         dynamicIndex: idx,
+        id: `dynamic-${colKey}-${idx}`,
+        isAmount: isLineItemAmountColumn(colKey),
+        isNumeric,
+        key: colKey,
+        type: 'dynamic',
       })
     })
   } else {
     allColumns.push(
-      { id: 'description', type: 'description', isNumeric: false, isAmount: false },
-      { id: 'qty', type: 'qty', isNumeric: true, isAmount: false },
-      { id: 'rate', type: 'rate', isNumeric: true, isAmount: false },
-      { id: 'amount', type: 'amount', isNumeric: true, isAmount: true }
+      {
+        id: 'description',
+        type: 'description',
+        isNumeric: false,
+        isAmount: false,
+      },
+      { id: 'qty', isAmount: false, isNumeric: true, type: 'qty' },
+      { id: 'rate', isAmount: false, isNumeric: true, type: 'rate' },
+      { id: 'amount', isAmount: true, isNumeric: true, type: 'amount' },
     )
   }
 
   if (hasAnyScore) {
-    allColumns.push({ id: 'score', type: 'score', isNumeric: true, isAmount: false })
+    allColumns.push({
+      id: 'score',
+      type: 'score',
+      isNumeric: true,
+      isAmount: false,
+    })
   }
   if (handleAddItem || handleRemoveItem) {
-    allColumns.push({ id: 'action', type: 'action', isNumeric: false, isAmount: false })
+    allColumns.push({
+      id: 'action',
+      type: 'action',
+      isNumeric: false,
+      isAmount: false,
+    })
   }
 
   const getColWidth = (col: ColumnConfig, _idx: number): number => {
@@ -161,12 +176,14 @@ export default function LineItemTable({
 
     const isAction = col.type === 'action'
     const className = cn(
-      isAction ? 'p-1 text-center' : 'px-3 py-2 text-[11px] font-semibold text-[var(--gray-11)]',
+      isAction
+        ? 'p-1 text-center'
+        : 'px-3 py-2 text-[11px] font-semibold text-[var(--gray-11)]',
       col.isNumeric && 'text-right',
       'border-b border-[var(--gray-3)]',
       !isLastCol && 'border-r border-[var(--gray-3)]',
       isAmount && !atEnd && 'border-l border-[var(--gray-3)]',
-      (isStickyLeft || isStickyRight) && cn('sticky z-20', bgClass)
+      (isStickyLeft || isStickyRight) && cn('sticky z-20', bgClass),
     )
 
     const style: CSSProperties = {}
@@ -209,16 +226,21 @@ export default function LineItemTable({
     const isAction = col.type === 'action'
     const isScore = col.type === 'score'
     const isQtyOrRate = col.type === 'qty' || col.type === 'rate'
-    
+
     const className = cn(
-      isAction ? 'px-2 py-0.5 text-center' :
-      isScore ? 'px-3 py-2 font-semibold' : 'px-2 py-0.5 font-semibold',
+      isAction
+        ? 'px-2 py-0.5 text-center'
+        : isScore
+          ? 'px-3 py-2 font-semibold'
+          : 'px-2 py-0.5 font-semibold',
       isQtyOrRate ? 'text-[var(--gray-11)]' : 'text-[var(--gray-13)]',
       col.isNumeric && 'text-right',
-      borderT ? 'border-t border-[var(--gray-3)]' : 'border-b border-[var(--gray-3)]',
+      borderT
+        ? 'border-t border-[var(--gray-3)]'
+        : 'border-b border-[var(--gray-3)]',
       !isLastCol && 'border-r border-[var(--gray-3)]',
       isAmount && !atEnd && 'border-l border-[var(--gray-3)]',
-      (isStickyLeft || isStickyRight) && cn('sticky z-20', bgClass)
+      (isStickyLeft || isStickyRight) && cn('sticky z-20', bgClass),
     )
 
     const style: CSSProperties = {}
@@ -319,13 +341,21 @@ export default function LineItemTable({
       <thead className='border-b border-[var(--gray-3)] bg-[var(--gray-1)]'>
         <tr>
           {allColumns.map((col, i) => {
-            const { className, style } = getColStyleAndClass(i, 'bg-[var(--gray-1)]')
+            const { className, style } = getColStyleAndClass(
+              i,
+              'bg-[var(--gray-1)]',
+            )
 
             let headerContent: React.ReactNode = null
             if (col.type === 'dynamic') {
               const isAmountColumn = col.isAmount
               headerContent = (
-                <div className={cn(getLineItemTextClass(col.isNumeric), 'flex flex-col gap-0.5')}>
+                <div
+                  className={cn(
+                    getLineItemTextClass(col.isNumeric),
+                    'flex flex-col gap-0.5',
+                  )}
+                >
                   <span>{formatHeaderLabel(col.key || '')}</span>
                   {isAmountColumn && currencyStr ? (
                     <span className='text-[10px] leading-none opacity-70'>
@@ -335,14 +365,25 @@ export default function LineItemTable({
                 </div>
               )
             } else if (col.type === 'description') {
-              headerContent = <span className={getLineItemTextClass()}>Description</span>
+              headerContent = (
+                <span className={getLineItemTextClass()}>Description</span>
+              )
             } else if (col.type === 'qty') {
-              headerContent = <span className={getLineItemTextClass(true)}>Qty</span>
+              headerContent = (
+                <span className={getLineItemTextClass(true)}>Qty</span>
+              )
             } else if (col.type === 'rate') {
-              headerContent = <span className={getLineItemTextClass(true)}>Rate</span>
+              headerContent = (
+                <span className={getLineItemTextClass(true)}>Rate</span>
+              )
             } else if (col.type === 'amount') {
               headerContent = (
-                <div className={cn(getLineItemTextClass(true), 'flex flex-col items-end gap-0.5')}>
+                <div
+                  className={cn(
+                    getLineItemTextClass(true),
+                    'flex flex-col items-end gap-0.5',
+                  )}
+                >
                   <span>Amount</span>
                   {currencyStr ? (
                     <span className='text-[10px] leading-none opacity-70'>
@@ -352,7 +393,9 @@ export default function LineItemTable({
                 </div>
               )
             } else if (col.type === 'score') {
-              headerContent = <span className={getLineItemTextClass(true)}>Score</span>
+              headerContent = (
+                <span className={getLineItemTextClass(true)}>Score</span>
+              )
             } else if (col.type === 'action') {
               headerContent = handleAddItem ? (
                 <button
@@ -367,11 +410,7 @@ export default function LineItemTable({
             }
 
             return (
-              <th
-                key={col.id}
-                className={className}
-                style={style}
-              >
+              <th key={col.id} className={className} style={style}>
                 {headerContent}
               </th>
             )
@@ -381,185 +420,219 @@ export default function LineItemTable({
       <tbody className=''>
         {isCurrentlyProcessing && lineItems.length === 0
           ? skeletonRows.map((rowKey) => (
-            <tr className='group transition-colors' key={rowKey}>
-              {allColumns.map((col, i) => {
-                const { className, style } = getColCellConfig(i, 'bg-surface')
-                
-                const cellClassName = cn(
-                  className.replace('py-0.5', 'py-3').replace('py-2', 'py-3')
-                )
-
-                let cellContent: React.ReactNode = null
-                if (col.type === 'action') {
-                  cellContent = null
-                } else if (col.type === 'score') {
-                  cellContent = <div className='ml-auto h-4 w-12 animate-pulse rounded bg-[var(--gray-3)]' />
-                } else {
-                  const isDescription = col.type === 'description' || (col.type === 'dynamic' && col.dynamicIndex === 0)
-                  cellContent = (
-                    <div
-                      className={cn(
-                        'h-4 animate-pulse rounded bg-[var(--gray-3)]',
-                        isDescription ? 'w-5/6' : 'ml-auto w-12'
-                      )}
-                    />
-                  )
-                }
-
-                return (
-                  <td
-                    key={col.id}
-                    className={cellClassName}
-                    style={style}
-                  >
-                    {cellContent}
-                  </td>
-                )
-              })}
-            </tr>
-          ))
-          : lineItems.map((item: any, index: number) => {
-            const matchData = agentData?.debug?.['Side-by-side Line Item matching']?.[index]
-            const lineScore =
-              matchData?.['Line Score'] ?? item['Line Score'] ?? item?.score
-            const isMatch =
-              (lineScore !== undefined && lineScore !== null
-                ? Number(lineScore) >= 90
-                : false) || item?.status === 'MATCH'
-
-            const rowBgClass = isMatch ? 'bg-surface' : 'bg-[var(--red-1)]'
-
-            return (
-              <tr
-                key={item._id}
-                className={cn(
-                  'group transition-colors',
-                  isMatch
-                    ? 'hover:bg-[var(--gray-1)]'
-                    : 'bg-[var(--red-1)]/30 hover:bg-[var(--red-1)]/50'
-                )}
-              >
+              <tr className='group transition-colors' key={rowKey}>
                 {allColumns.map((col, i) => {
-                  const { className, style } = getColCellConfig(i, rowBgClass)
+                  const { className, style } = getColCellConfig(i, 'bg-surface')
+
+                  const cellClassName = cn(
+                    className.replace('py-0.5', 'py-3').replace('py-2', 'py-3'),
+                  )
 
                   let cellContent: React.ReactNode = null
-                  if (col.type === 'score') {
-                    if (lineScore === undefined || lineScore === null) {
-                      cellContent = <span className='text-[11px] text-gray-9'>-</span>
-                    } else {
-                      const scoreNum = Number(lineScore)
-                      cellContent = (
-                        <span
-                          className={cn('text-xs font-bold', {
-                            'text-[var(--green-9)]': scoreNum >= 90,
-                            'text-[var(--orange-9)]':
-                              scoreNum >= 70 && scoreNum < 90,
-                            'text-[var(--red-9)]': scoreNum < 70,
-                          })}
-                        >
-                          {scoreNum.toFixed(0)}%
-                        </span>
-                      )
-                    }
-                  } else if (col.type === 'action') {
-                    cellContent = handleRemoveItem ? (
-                      <button
-                        className='rounded p-1 text-[var(--red-9)] transition-all hover:bg-[var(--red-2)] hover:text-[var(--red-11)] active:scale-95'
-                        title='Remove Item'
-                        type='button'
-                        onClick={() => handleRemoveItem(index)}
-                      >
-                        <Trash2 className='h-3.5 w-3.5' />
-                      </button>
-                    ) : null
-                  } else {
-                    const cellVal = getCellVal(item, col)
-                    const changeKey = getColChangeKey(col)
-                    const focusKey = getColFocusKey(col)
-                    const isGray11 = col.type === 'qty' || col.type === 'rate' || (col.type === 'dynamic' && col.isNumeric && !col.isAmount)
-
+                  if (col.type === 'action') {
+                    cellContent = null
+                  } else if (col.type === 'score') {
                     cellContent = (
-                      <div className='group/cell relative h-full min-h-[24px] w-full'>
-                        <div
-                          className={cn(
-                            'invisible w-full min-w-0 break-words whitespace-nowrap px-1.5 py-1 text-xs font-semibold group-hover/cell:whitespace-normal',
-                            col.isNumeric && 'text-right'
-                          )}
-                        >
-                          {cellVal || ' '}
-                        </div>
-                        <textarea
-                          rows={1}
-                          value={cellVal}
-                          className={cn(
-                            'absolute inset-0 h-full min-h-full w-full resize-none overflow-hidden whitespace-nowrap rounded border-none bg-transparent px-1.5 py-1 text-xs font-semibold transition-all hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:outline-none focus:ring-1 focus:ring-[var(--primary-3)] group-hover/cell:whitespace-normal group-hover/cell:break-words',
-                            isGray11
-                              ? 'text-right text-[var(--gray-11)]'
-                              : col.isNumeric
-                              ? 'text-right text-[var(--gray-13)]'
-                              : 'text-[var(--gray-13)]'
-                          )}
-                          onBlur={(e) => {
-                            if (!handleLineItemChange) return
-                            if (
-                              col.type === 'rate' ||
-                              col.type === 'amount' ||
-                              (col.type === 'dynamic' &&
-                                (changeKey.toLowerCase().includes('price') ||
-                                  changeKey.toLowerCase().includes('rate') ||
-                                  changeKey.toLowerCase().includes('amount') ||
-                                  changeKey.toLowerCase().includes('total')))
-                            ) {
-                              const num = Number.parseFloat(
-                                e.target.value.replace(/[^0-9.-]+/g, '')
-                              )
-                              if (!Number.isNaN(num)) {
-                                handleLineItemChange(index, changeKey, num.toFixed(2))
-                                return
-                              }
-                            }
-                            handleLineItemChange(index, changeKey, e.target.value)
-                          }}
-                          onChange={(e) =>
-                            handleLineItemChange?.(index, changeKey, e.target.value)
-                          }
-                          onFocus={() => handleFieldFocus?.(cellVal, focusKey)}
-                        />
-                      </div>
+                      <div className='ml-auto h-4 w-12 animate-pulse rounded bg-[var(--gray-3)]' />
+                    )
+                  } else {
+                    const isDescription =
+                      col.type === 'description' ||
+                      (col.type === 'dynamic' && col.dynamicIndex === 0)
+                    cellContent = (
+                      <div
+                        className={cn(
+                          'h-4 animate-pulse rounded bg-[var(--gray-3)]',
+                          isDescription ? 'w-5/6' : 'ml-auto w-12',
+                        )}
+                      />
                     )
                   }
 
                   return (
-                    <td
-                      key={col.id}
-                      className={className}
-                      style={style}
-                    >
+                    <td key={col.id} className={cellClassName} style={style}>
                       {cellContent}
                     </td>
                   )
                 })}
               </tr>
-            )
-          })}
+            ))
+          : lineItems.map((item: any, index: number) => {
+              const matchData =
+                agentData?.debug?.['Side-by-side Line Item matching']?.[index]
+              const lineScore =
+                matchData?.['Line Score'] ?? item['Line Score'] ?? item?.score
+              const isMatch =
+                (lineScore !== undefined && lineScore !== null
+                  ? Number(lineScore) >= 90
+                  : false) || item?.status === 'MATCH'
+
+              const rowBgClass = isMatch ? 'bg-surface' : 'bg-[var(--red-1)]'
+
+              return (
+                <tr
+                  key={item._id}
+                  className={cn(
+                    'group transition-colors',
+                    isMatch
+                      ? 'hover:bg-[var(--gray-1)]'
+                      : 'bg-[var(--red-1)]/30 hover:bg-[var(--red-1)]/50',
+                  )}
+                >
+                  {allColumns.map((col, i) => {
+                    const { className, style } = getColCellConfig(i, rowBgClass)
+
+                    let cellContent: React.ReactNode = null
+                    if (col.type === 'score') {
+                      if (lineScore === undefined || lineScore === null) {
+                        cellContent = (
+                          <span className='text-[11px] text-gray-9'>-</span>
+                        )
+                      } else {
+                        const scoreNum = Number(lineScore)
+                        cellContent = (
+                          <span
+                            className={cn('text-xs font-bold', {
+                              'text-[var(--green-9)]': scoreNum >= 90,
+                              'text-[var(--orange-9)]':
+                                scoreNum >= 70 && scoreNum < 90,
+                              'text-[var(--red-9)]': scoreNum < 70,
+                            })}
+                          >
+                            {scoreNum.toFixed(0)}%
+                          </span>
+                        )
+                      }
+                    } else if (col.type === 'action') {
+                      cellContent = handleRemoveItem ? (
+                        <button
+                          className='rounded p-1 text-[var(--red-9)] transition-all hover:bg-[var(--red-2)] hover:text-[var(--red-11)] active:scale-95'
+                          title='Remove Item'
+                          type='button'
+                          onClick={() => handleRemoveItem(index)}
+                        >
+                          <Trash2 className='h-3.5 w-3.5' />
+                        </button>
+                      ) : null
+                    } else {
+                      const cellVal = getCellVal(item, col)
+                      const changeKey = getColChangeKey(col)
+                      const focusKey = getColFocusKey(col)
+                      const isGray11 =
+                        col.type === 'qty' ||
+                        col.type === 'rate' ||
+                        (col.type === 'dynamic' &&
+                          col.isNumeric &&
+                          !col.isAmount)
+
+                      cellContent = (
+                        <div className='group/cell relative h-full min-h-[24px] w-full'>
+                          <div
+                            className={cn(
+                              'invisible w-full min-w-0 px-1.5 py-1 text-xs font-semibold break-words whitespace-nowrap group-hover/cell:whitespace-normal',
+                              col.isNumeric && 'text-right',
+                            )}
+                          >
+                            {cellVal || ' '}
+                          </div>
+                          <textarea
+                            rows={1}
+                            value={cellVal}
+                            className={cn(
+                              'absolute inset-0 h-full min-h-full w-full resize-none overflow-hidden rounded border-none bg-transparent px-1.5 py-1 text-xs font-semibold whitespace-nowrap transition-all group-hover/cell:break-words group-hover/cell:whitespace-normal hover:bg-[var(--gray-2)]/30 focus:bg-surface focus:ring-1 focus:ring-[var(--primary-3)] focus:outline-none',
+                              isGray11
+                                ? 'text-right text-[var(--gray-11)]'
+                                : col.isNumeric
+                                  ? 'text-right text-[var(--gray-13)]'
+                                  : 'text-[var(--gray-13)]',
+                            )}
+                            onBlur={(e) => {
+                              if (!handleLineItemChange) return
+                              if (
+                                col.type === 'rate' ||
+                                col.type === 'amount' ||
+                                (col.type === 'dynamic' &&
+                                  (changeKey.toLowerCase().includes('price') ||
+                                    changeKey.toLowerCase().includes('rate') ||
+                                    changeKey
+                                      .toLowerCase()
+                                      .includes('amount') ||
+                                    changeKey.toLowerCase().includes('total')))
+                              ) {
+                                const num = Number.parseFloat(
+                                  e.target.value.replace(/[^0-9.-]+/g, ''),
+                                )
+                                if (!Number.isNaN(num)) {
+                                  handleLineItemChange(
+                                    index,
+                                    changeKey,
+                                    num.toFixed(2),
+                                  )
+                                  return
+                                }
+                              }
+                              handleLineItemChange(
+                                index,
+                                changeKey,
+                                e.target.value,
+                              )
+                            }}
+                            onChange={(e) =>
+                              handleLineItemChange?.(
+                                index,
+                                changeKey,
+                                e.target.value,
+                              )
+                            }
+                            onFocus={() =>
+                              handleFieldFocus?.(cellVal, focusKey)
+                            }
+                          />
+                        </div>
+                      )
+                    }
+
+                    return (
+                      <td
+                        className={className}
+                        key={col.id}
+                        style={style}
+                      >
+                        {cellContent}
+                      </td>
+                    )
+                  })}
+                </tr>
+              )
+            })}
       </tbody>
       {lineItems.length > 0 && !hideFooter && (
         <tfoot className='sticky bottom-0 z-30 bg-[var(--gray-1)]'>
           <tr>
             {allColumns.map((col, i) => {
-              const { className, style } = getColCellConfig(i, 'bg-[var(--gray-1)]', true)
+              const { className, style } = getColCellConfig(
+                i,
+                'bg-[var(--gray-1)]',
+                true,
+              )
 
               let footerClassName = cn(
                 className
                   .replace('py-0.5', 'py-1.5')
                   .replace('py-2', 'py-1.5')
                   .split(' ')
-                  .filter(cls => !cls.startsWith('border-r') && !cls.startsWith('border-l'))
-                  .join(' ')
+                  .filter(
+                    (cls) =>
+                      !cls.startsWith('border-r') &&
+                      !cls.startsWith('border-l'),
+                  )
+                  .join(' '),
               )
               const footerStyle = { ...style }
 
-              const amountIdx = allColumns.findIndex(c => c.type === 'amount' || c.isAmount)
+              const amountIdx = allColumns.findIndex(
+                (c) => c.type === 'amount' || c.isAmount,
+              )
               const isTotalCell = amountIdx !== -1 && i === amountIdx - 1
 
               if (isTotalCell) {
@@ -572,7 +645,7 @@ export default function LineItemTable({
 
                 footerClassName = cn(
                   footerClassName,
-                  'sticky z-20 bg-[var(--gray-1)]'
+                  'sticky z-20 bg-[var(--gray-1)]',
                 )
 
                 footerStyle.position = 'sticky'
@@ -586,18 +659,24 @@ export default function LineItemTable({
               let cellContent: React.ReactNode = null
               if (isTotalCell) {
                 cellContent = (
-                  <span className='block w-full text-xs font-bold text-[var(--gray-13)] px-1.5 text-right'>
+                  <span className='block w-full px-1.5 text-right text-xs font-bold text-[var(--gray-13)]'>
                     Total
                   </span>
                 )
-              } else if (col.type === 'amount' || (col.type === 'dynamic' && col.isAmount)) {
+              } else if (
+                col.type === 'amount' ||
+                (col.type === 'dynamic' && col.isAmount)
+              ) {
                 cellContent = (
-                  <span className='block w-full overflow-hidden text-ellipsis whitespace-nowrap text-xs font-bold text-[var(--gray-13)] text-right px-1.5'>
+                  <span className='block w-full overflow-hidden px-1.5 text-right text-xs font-bold text-ellipsis whitespace-nowrap text-[var(--gray-13)]'>
                     {lineItems
                       .reduce((sum: number, item: any) => {
-                        const val = col.type === 'dynamic' && col.key ? getRawVal(item, col.key) : getLineItemAmount(item)
+                        const val =
+                          col.type === 'dynamic' && col.key
+                            ? getRawVal(item, col.key)
+                            : getLineItemAmount(item)
                         const num = Number.parseFloat(
-                          String(val).replace(/[^0-9.-]+/g, '')
+                          String(val).replace(/[^0-9.-]+/g, ''),
                         )
                         return sum + (Number.isNaN(num) ? 0 : num)
                       }, 0)
@@ -611,8 +690,8 @@ export default function LineItemTable({
 
               return (
                 <td
-                  key={`footer-${col.id}`}
                   className={footerClassName}
+                  key={`footer-${col.id}`}
                   style={footerStyle}
                 >
                   {cellContent}
