@@ -35,17 +35,17 @@ const Table = ({
         <DataTable
           emptyPage='forms'
           hideActionBar={true}
-          hideGrouping={true}
           hideExport={true}
+          hideFilters={true}
+          hideGrouping={true}
+          hideGroupItemCountOnHover={true}
           hideReload={true}
           hideSearch={true}
-          hideFilters={true}
           isLoading={isLoading}
           isReLoading={isRefetching}
           pageSize={pageSize}
           stickyHeader={true}
           table={table}
-          hideGroupItemCountOnHover={true}
           onEmptyPrimaryAction={onCreate}
           onReload={onReload}
         />

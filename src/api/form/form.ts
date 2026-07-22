@@ -228,11 +228,11 @@ const formApi = {
   createForm,
   deleteForm,
   deleteFormEntry,
-  getFormEntries,
   listAllForms,
   updateForm,
   uploadMasterFile,
   getFormDataById,
+  getFormEntries,
   getForms,
 }
 

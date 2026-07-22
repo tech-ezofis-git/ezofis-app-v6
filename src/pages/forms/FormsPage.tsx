@@ -7,19 +7,24 @@ import formApi from '@/api/form/form'
 import { getFormsListQueryOptions } from '@/api/form/queries'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
+import TableExport from '@/components/base/data-table/actions/TableExport'
+import TableSearch from '@/components/base/data-table/actions/TableSearch'
 import useDataTable from '@/components/base/data-table/hooks/useDataTable'
 import useDataTableState from '@/components/base/data-table/hooks/useDataTableState'
 import Icon from '@/components/base/icon/Icon'
 import Menu from '@/components/base/menu/Menu'
 import MenuItem from '@/components/base/menu/MenuItem'
 import showToast from '@/components/base/toast/showToast'
+import CustomFilter from '@/components/common/CustomFilter'
 import FormStatusBadge from '@/components/common/FormStatusBadge'
 import FormTypeBadge from '@/components/common/FormTypeBadge'
-import { formatDatetime } from '@/utils/dayjs'
-import CustomFilter from '@/components/common/CustomFilter'
-import TableSearch from '@/components/base/data-table/actions/TableSearch'
-import TableExport from '@/components/base/data-table/actions/TableExport'
 import authUserStore from '@/stores/authUserStore'
+import { formatDatetime } from '@/utils/dayjs'
+import {
+  matchesCategoryFilterValue,
+  matchesDateRangeValue,
+  parseFilterValues,
+} from '@/utils/filterUtils'
 import Table from './components/Table'
 
 const mapItem = (item: any) => ({
@@ -63,7 +68,9 @@ const FormsPage = () => {
 
   const [activeFilters, setActiveFilters] = useState<Record<string, string>>({})
   const session = authUserStore((state) => state.session)
-  const loggedInUser = session?.firstName ? `${session.firstName} ${session.lastName || ''}`.trim() : session?.email || '-'
+  const loggedInUser = session?.firstName
+    ? `${session.firstName} ${session.lastName || ''}`.trim()
+    : session?.email || '-'
 
   const initialVisibilityState = {
     createdAt: true,
@@ -86,7 +93,7 @@ const FormsPage = () => {
   const groupBy = ''
 
   const filterBy = useMemo(() => {
-    const filters = []
+    const filters: { condition: string; criteria: string; value: string }[] = []
 
     Object.entries(activeFilters).forEach(([key, value]) => {
       if (value) {
@@ -97,10 +104,12 @@ const FormsPage = () => {
         if (['createdBy', 'modifiedBy'].includes(key)) {
           condition = 'IS_EQUALS_TO'
         }
-        filters.push({
-          condition,
-          criteria: key === 'status' ? 'publishOption' : key,
-          value,
+        parseFilterValues(value).forEach((v) => {
+          filters.push({
+            condition,
+            criteria: key === 'status' ? 'publishOption' : key,
+            value: v,
+          })
         })
       }
     })
@@ -159,7 +168,7 @@ const FormsPage = () => {
         label: 'Description',
         size: 240,
         renderCell: (row: any) => (
-          <span className='line-clamp-1 text-gray-10'>
+          <span className='text-gray-10'>
             {row._json?.settings?.general?.description ||
               row.description ||
               '-'}
@@ -274,23 +283,23 @@ const FormsPage = () => {
         Object.entries(activeFilters).forEach(([key, value]) => {
           if (!value) return
           if (key === 'createdAt' || key === 'modifiedAt') {
-            const filterDate = value.split('T')[0]
-            const rowDate = item[key] ? String(item[key]).split('T')[0] : ''
-            if (rowDate !== filterDate) matches = false
+            if (!matchesDateRangeValue(item[key], value)) matches = false
           } else if (key === 'status') {
-            if (option !== value) matches = false
+            if (!matchesCategoryFilterValue(option, value)) matches = false
           } else if (key === 'createdBy' || key === 'modifiedBy') {
-            if (item[key] !== value) matches = false
-          } else {
-            if (!item[key] || !String(item[key]).toLowerCase().includes(String(value).toLowerCase())) {
-              matches = false
-            }
+            if (!matchesCategoryFilterValue(item[key], value)) matches = false
+          } else if (
+            !matchesCategoryFilterValue(item[key], value, 'contains')
+          ) {
+            matches = false
           }
         })
 
         if (searchState?.value) {
           const query = searchState.value.toLowerCase()
-          const searchCols = searchState.id ? [searchState.id] : Object.keys(item)
+          const searchCols = searchState.id
+            ? [searchState.id]
+            : Object.keys(item)
           const matchesSearch = searchCols.some((colKey) => {
             const val = item[colKey]
             return val != null && String(val).toLowerCase().includes(query)
@@ -368,16 +377,37 @@ const FormsPage = () => {
     allItems.forEach((w: any) => {
       if (w.createdBy) unique.set(w.createdBy, w.createdByName || loggedInUser)
     })
-    return Array.from(unique.entries()).map(([value, label]) => ({ label, value }))
+    return Array.from(unique.entries()).map(([value, label]) => ({
+      label,
+      value,
+    }))
   }, [forms, loggedInUser])
+
+  const nameOptions = useMemo(() => {
+    const unique = new Set<string>()
+    forms.flatMap((g) => g.items).forEach((w: any) => {
+      const name = String(w.name || '').trim()
+      if (name) unique.add(name)
+    })
+    return Array.from(unique)
+      .sort((a, b) => a.localeCompare(b))
+      .map((name) => ({ label: name, value: name }))
+  }, [forms])
 
   const modifiedByOptions = useMemo(() => {
     const unique = new Map<string, string>()
     const allItems = forms.flatMap((g) => g.items)
     allItems.forEach((w: any) => {
-      if (w.modifiedBy) unique.set(w.modifiedBy, w.modifiedByName || w.createdByName || loggedInUser)
+      if (w.modifiedBy)
+        unique.set(
+          w.modifiedBy,
+          w.modifiedByName || w.createdByName || loggedInUser,
+        )
     })
-    return Array.from(unique.entries()).map(([value, label]) => ({ label, value }))
+    return Array.from(unique.entries()).map(([value, label]) => ({
+      label,
+      value,
+    }))
   }, [forms, loggedInUser])
 
   const { table } = useDataTable({
@@ -480,39 +510,71 @@ const FormsPage = () => {
 
       <div className='bg-gray-50/50 flex min-h-0 flex-1 flex-col overflow-hidden p-4'>
         <CustomFilter
+          activeFilters={activeFilters}
+          customSearchComponent={<TableSearch table={table as any} />}
+          searchPlaceholder='Search forms...'
+          searchQuery=''
+          trailingActions={<TableExport table={table as any} />}
+          actionButtons={[
+            {
+              color: 'gray',
+              disabled: isFetching,
+              icon: 'tabler:refresh',
+              id: 'refresh',
+              isIconButton: true,
+              tooltip: 'Refresh',
+              variant: 'outline',
+              onClick: () => refetch(),
+            },
+          ]}
+          addButton={{
+            icon: 'lucide:plus',
+            tooltip: 'New Form',
+            onClick: openFormBuilder,
+          }}
           filters={[
             {
-              id: "status",
-              label: "Status",
-              options: [
-                { label: "Published", value: "PUBLISHED" },
-                { label: "Draft", value: "DRAFT" }
-              ]
+              id: 'name',
+              label: 'Name',
+              options: nameOptions,
+              searchable: true,
+              searchPlaceholder: 'Search name...',
             },
             {
-              id: "createdBy",
-              label: "Created By",
-              options: createdByOptions,
-            }
+              id: 'status',
+              label: 'Status',
+              options: [
+                { label: 'Published', value: 'PUBLISHED' },
+                { label: 'Draft', value: 'DRAFT' },
+              ],
+            },
           ]}
           moreFilters={[
             {
-              id: "modifiedBy",
-              label: "Modified By",
+              id: 'createdBy',
+              label: 'Created By',
+              options: createdByOptions,
+            },
+            {
+              id: 'modifiedBy',
+              label: 'Modified By',
               options: modifiedByOptions,
             },
             {
-              id: "createdAt",
-              label: "Created Date",
-              dataType: "date",
+              dataType: 'date',
+              id: 'createdAt',
+              label: 'Created Date',
             },
             {
-              id: "modifiedAt",
-              label: "Modified Date",
-              dataType: "date",
-            }
+              dataType: 'date',
+              id: 'modifiedAt',
+              label: 'Modified Date',
+            },
           ]}
-          activeFilters={activeFilters}
+          showReset={
+            Object.keys(activeFilters).some((k) => activeFilters[k]) ||
+            !!searchState?.value
+          }
           onFilterChange={(id, value) => {
             setActiveFilters((prev) => ({ ...prev, [id]: value }))
             setPage(1)
@@ -522,33 +584,9 @@ const FormsPage = () => {
             setSearchState({ id: '', value: '' })
             setPage(1)
           }}
-          showReset={Object.keys(activeFilters).some(k => activeFilters[k]) || !!searchState?.value}
-          searchQuery=""
           onSearchChange={() => {}}
-          searchPlaceholder="Search forms..."
-          customSearchComponent={<TableSearch table={table as any} />}
-          actionButtons={[
-            {
-              id: 'refresh',
-              icon: 'tabler:refresh',
-              tooltip: 'Refresh',
-              onClick: () => refetch(),
-              isIconButton: true,
-              color: 'gray',
-              variant: 'outline',
-              disabled: isFetching
-            }
-          ]}
-          addButton={{
-            icon: 'lucide:plus',
-            onClick: openFormBuilder,
-            tooltip: 'New Form',
-          }}
-          trailingActions={
-            <TableExport table={table as any} />
-          }
         />
-        <div className='min-h-0 flex-1 mt-2'>
+        <div className='mt-2 min-h-0 flex-1 overflow-hidden'>
           <Table
             isLoading={isPending}
             isRefetching={isFetching || isRefetching}

@@ -203,7 +203,7 @@ export default function SuccessCelebration() {
   }, [])
 
   return (
-    <div className='animate-in fade-in fixed inset-0 z-[9999] flex items-center justify-center bg-black/5 backdrop-blur-sm p-4 duration-300'>
+    <div className='animate-in fade-in fixed inset-0 z-[9999] flex items-center justify-center bg-black/5 p-4 backdrop-blur-sm duration-300'>
       {/* Center Glassmorphic Success Card */}
       <div className='animate-in zoom-in-95 relative z-20 flex w-full max-w-md flex-col items-center overflow-hidden rounded-2xl border border-border-default bg-surface-primary/90 p-8 text-center shadow-2xl backdrop-blur-lg duration-300 dark:bg-surface-secondary/90'>
         {/* Card-contained Canvas Confetti Shower */}
@@ -253,8 +253,8 @@ export default function SuccessCelebration() {
             initial={{ opacity: 0, y: 15 }}
             transition={{ delay: 0.4, duration: 0.4 }}
           >
-            Your workflow is now active and ready to process invoices. Redirecting
-            you to your requests dashboard...
+            Your workflow is now active and ready to process invoices.
+            Redirecting you to your requests dashboard...
           </motion.p>
 
           {/* Indeterminate loader */}

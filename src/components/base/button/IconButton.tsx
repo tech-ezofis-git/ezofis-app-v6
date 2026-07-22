@@ -1,9 +1,9 @@
 import { type ComponentProps, forwardRef, type ReactNode } from 'react'
 import Icon from '@/components/base/icon/Icon'
+import Tooltip from '@/components/base/Tooltip'
 import cn from '@/utils/cn'
 import type { ButtonColor, ButtonSize, ButtonVariant } from './types'
 import { getVariantClassName } from './helpers'
-import Tooltip from '@/components/base/Tooltip'
 
 interface Props extends ComponentProps<'button'> {
   ariaLabel?: string
@@ -15,8 +15,8 @@ interface Props extends ComponentProps<'button'> {
   iconClass?: string
   loading?: boolean
   size?: ButtonSize
-  variant?: ButtonVariant
   tooltip?: string
+  variant?: ButtonVariant
 }
 
 const sizeClassName: Record<ButtonSize, string> = {
@@ -39,8 +39,8 @@ const IconButton = forwardRef<HTMLButtonElement, Props>(
       iconClass,
       loading,
       size = 'md',
-      variant = 'solid',
       tooltip,
+      variant = 'solid',
       ...props
     },
     ref,

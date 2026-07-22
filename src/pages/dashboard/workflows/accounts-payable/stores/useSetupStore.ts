@@ -1,6 +1,8 @@
 import { create } from 'zustand'
 
 type EmailSettings = {
+  /** Connected mailbox / connector display name */
+  account?: string
   email: string
   isConnected: boolean
   isConnecting: boolean
@@ -11,29 +13,33 @@ type EmailSettings = {
 }
 
 type ErpSettings = {
+  /** Connected ERP account / connector display name */
+  account?: string
   apiKey: string
   apiUrl: string
+  fieldDataTypes?: Record<string, string>
+  groupingColumn?: string | null
   importMethod?: 'upload' | 'import'
   isConnected: boolean
   isConnecting: boolean
-  mapping?: Record<string, string>
-  lineItemMapping?: Record<string, string>
-  fieldDataTypes?: Record<string, string>
   lineItemFieldDataTypes?: Record<string, string>
   lineItemHeaders?: string[]
+  lineItemMapping?: Record<string, string>
   lineItemRows?: any[]
-  groupingColumn?: string | null
+  mapping?: Record<string, string>
   previewRows?: any[]
   selectedFormName?: string | null
   system: string
   templateUploaded?: boolean
   uploadedColumns?: string[]
-  uploadedTemplate?: File | null
   uploadedLineItemTemplate?: File | null
+  uploadedTemplate?: File | null
   wantsFileBasedImport?: boolean
 }
 
 type StorageSettings = {
+  /** Connected storage account / connector display name */
+  account?: string
   apiKey: string
   apiUrl: string
   isConnected: boolean
@@ -67,6 +73,7 @@ type Store = {
 }
 
 const initialEmailSettings: EmailSettings = {
+  account: '',
   email: '',
   isConnected: true,
   isConnecting: false,
@@ -77,29 +84,31 @@ const initialEmailSettings: EmailSettings = {
 }
 
 const initialErpSettings: ErpSettings = {
+  account: '',
   apiKey: '',
   apiUrl: '',
+  fieldDataTypes: {},
+  groupingColumn: null,
   importMethod: 'upload',
   isConnected: true,
   isConnecting: false,
-  mapping: {},
-  lineItemMapping: {},
-  fieldDataTypes: {},
   lineItemFieldDataTypes: {},
   lineItemHeaders: [],
+  lineItemMapping: {},
   lineItemRows: [],
-  groupingColumn: null,
+  mapping: {},
   previewRows: [],
   selectedFormName: null,
   system: 'PREDEFINED',
   templateUploaded: false,
   uploadedColumns: [],
-  uploadedTemplate: null,
   uploadedLineItemTemplate: null,
+  uploadedTemplate: null,
   wantsFileBasedImport: false,
 }
 
 const initialStorageSettings: StorageSettings = {
+  account: '',
   apiKey: '',
   apiUrl: '',
   isConnected: false,

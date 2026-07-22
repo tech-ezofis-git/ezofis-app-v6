@@ -132,9 +132,10 @@ export const userSession = async () => {
   return await authApiV6.getSession()
 }
 
-
-
-export const savePreQuestions = async (userId: string | number, payload: any) => {
+export const savePreQuestions = async (
+  userId: string | number,
+  payload: any,
+) => {
   const response: any = {
     data: '',
     error: '',
@@ -151,12 +152,16 @@ export const savePreQuestions = async (userId: string | number, payload: any) =>
     response.data = data
   } catch (e: any) {
     console.error(e)
-    response.error = e.response?.data?.message || e.message || 'error saving pre-questions'
+    response.error =
+      e.response?.data?.message || e.message || 'error saving pre-questions'
   }
   return response
 }
 
-export const saveUserConfiguration = async (userId: string | number, payload: { message: string }) => {
+export const saveUserConfiguration = async (
+  userId: string | number,
+  payload: { message: string },
+) => {
   const response: any = {
     data: '',
     error: '',
@@ -173,21 +178,24 @@ export const saveUserConfiguration = async (userId: string | number, payload: { 
     response.data = data
   } catch (e: any) {
     console.error(e)
-    response.error = e.response?.data?.message || e.message || 'error saving user configuration'
+    response.error =
+      e.response?.data?.message ||
+      e.message ||
+      'error saving user configuration'
   }
   return response
 }
 
 export const apiRouter = {
   login,
+  savePreQuestions,
+  saveUserConfiguration,
   sendMailOTP,
   signUp,
   socialLogin,
   userSession,
   verifyMailOTP,
   getApiVersion,
-  savePreQuestions,
-  saveUserConfiguration,
 }
 
 export default apiRouter

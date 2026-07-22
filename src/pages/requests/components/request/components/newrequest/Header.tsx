@@ -9,7 +9,12 @@ interface Props {
   onOpenPlayground?: () => void
 }
 
-const Header = ({ badge, title = 'New Request', onClose, onOpenPlayground }: Props) => {
+const Header = ({
+  badge,
+  title = 'New Request',
+  onClose,
+  onOpenPlayground,
+}: Props) => {
   return (
     <div className='flex h-13 items-center justify-between gap-2 border-b border-gray-3 bg-gradient-to-b from-gray-1 to-gray-2 px-2'>
       <div className='flex items-center gap-1.5'>
@@ -43,7 +48,10 @@ const Header = ({ badge, title = 'New Request', onClose, onOpenPlayground }: Pro
                 type='button'
                 onClick={onOpenPlayground}
               >
-                <Icon className='h-4 w-4 text-white' name='tabler:plug-connected' />
+                <Icon
+                  className='h-4 w-4 text-white'
+                  name='tabler:plug-connected'
+                />
               </button>
             </Tooltip>
           </div>

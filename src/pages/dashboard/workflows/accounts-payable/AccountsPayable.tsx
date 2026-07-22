@@ -1,7 +1,7 @@
 import { AnimatePresence } from 'motion/react'
 import Integrations from './components/Integrations'
-import Steps from './components/setup/components/Steps'
 import Overview from './components/Overview'
+import Steps from './components/setup/components/Steps'
 import SetupCallout from './components/SetupCallout'
 import setupStore from './stores/useSetupStore'
 

@@ -11,12 +11,12 @@ const parseCsv = async (
   csvFileOrText: File | string,
   fileName?: string,
 ): Promise<{
+  excelSheets?: { columns: string[]; sheetName: string }[]
   headers: string[]
-  previewRows: any[]
-  rowCount: number
   lineItemHeaders?: string[]
   lineItemRows?: any[]
-  excelSheets?: { sheetName: string; columns: string[] }[]
+  previewRows: any[]
+  rowCount: number
 }> => {
   return new Promise((resolve, reject) => {
     Papa.parse(csvFileOrText as any, {
@@ -31,12 +31,14 @@ const parseCsv = async (
 
         if (!fields.length) reject(new Error('No header row found in CSV.'))
         else {
-          const sheetName = fileName ? fileName.replace(/\.[^/.]+$/, '') : 'Sheet1'
+          const sheetName = fileName
+            ? fileName.replace(/\.[^/.]+$/, '')
+            : 'Sheet1'
           resolve({
+            excelSheets: [{ columns: fields, sheetName }],
             headers: fields,
             previewRows,
             rowCount,
-            excelSheets: [{ sheetName, columns: fields }],
           })
         }
       },
@@ -48,12 +50,12 @@ const parseCsv = async (
 export const extractHeadersAndData = async (
   file: File,
 ): Promise<{
+  excelSheets?: { columns: string[]; sheetName: string }[]
   headers: string[]
-  previewRows: any[]
-  rowCount: number
   lineItemHeaders?: string[]
   lineItemRows?: any[]
-  excelSheets?: { sheetName: string; columns: string[] }[]
+  previewRows: any[]
+  rowCount: number
 }> => {
   const name = file.name.toLowerCase()
   if (name.endsWith('.csv')) return parseCsv(file, file.name)
@@ -104,16 +106,16 @@ export const extractHeadersAndData = async (
         }) as unknown[][]
         const sHeaderRow = sRows?.[0] ?? []
         const columns = sHeaderRow.map(normalizeHeader).filter(Boolean)
-        return { sheetName, columns }
+        return { columns, sheetName }
       })
 
       return {
+        excelSheets,
         headers,
-        previewRows,
-        rowCount,
         lineItemHeaders,
         lineItemRows,
-        excelSheets,
+        previewRows,
+        rowCount,
       }
     } catch {
       const text = await file.text()

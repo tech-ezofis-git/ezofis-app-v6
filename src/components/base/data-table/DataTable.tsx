@@ -2,6 +2,8 @@ import { flexRender, type Table as TanstackTable } from '@tanstack/react-table'
 import {
   type ComponentProps,
   useCallback,
+  useEffect,
+  useLayoutEffect,
   useRef,
   useState,
 } from 'react'
@@ -18,6 +20,9 @@ import ListEmptyState, {
 } from '@/components/common/ListEmptyState'
 import cn from '@/utils/cn'
 import type { RowSize } from './types'
+import fitColumnsToWidth, {
+  columnSizingEquals,
+} from './helpers/fitColumnsToWidth'
 import getColumnPinnedStyles from './helpers/getColumnPinnedStyles'
 import hasTableRowsWithData from './helpers/hasTableRowsWithData'
 import TableActionBar, { type TableActionButton } from './TableActionBar'
@@ -36,22 +41,22 @@ interface Props<TData> extends ComponentProps<'table'> {
   /** ✅ Custom actions for action bar */
   actions?: TableActionButton[]
   component?: any
-  /** Menu page for contextual empty states (initial vs filtered). */
-  emptyPage?: MenuPage
   emptyDescription?: string
   emptyIcon?: string
+  /** Menu page for contextual empty states (initial vs filtered). */
+  emptyPage?: MenuPage
   emptyTitle?: string
   /** Infinite-scroll / load-more support */
   hasMore?: boolean
-  hideGrouping?: boolean
   /** Hides the built-in table action bar (search, export, etc.). */
   hideActionBar?: boolean
   hideExport?: boolean
-  hideReload?: boolean
-  hideSearch?: boolean
   hideFilters?: boolean
+  hideGrouping?: boolean
   /** Hides "N Items" on group rows but keeps the same row spacing. */
   hideGroupItemCountOnHover?: boolean
+  hideReload?: boolean
+  hideSearch?: boolean
   isLoading?: boolean
 
   isLoadingMore?: boolean
@@ -102,18 +107,18 @@ const getStickyColumnStyle = <TData,>(
 const DataTable = <TData,>({
   actions,
   component,
-  emptyPage,
   emptyDescription,
   emptyIcon,
+  emptyPage,
   emptyTitle,
   hasMore = false,
   hideActionBar = false,
   hideExport = false,
-  hideReload = false,
-  hideSearch = false,
   hideFilters = false,
   hideGrouping = false,
   hideGroupItemCountOnHover = false,
+  hideReload = false,
+  hideSearch = false,
   isLoading,
   isLoadingMore = false,
   isReLoading,
@@ -132,10 +137,12 @@ const DataTable = <TData,>({
   onRowSizeChange,
 }: Props<TData>) => {
   const [internalRowSize, setInternalRowSize] = useState<RowSize>('default')
+  const [containerWidth, setContainerWidth] = useState(0)
   const rowSize = rowSizeProp ?? internalRowSize
   const setRowSize = onRowSizeChange ?? setInternalRowSize
   const scrollRef = useRef<HTMLDivElement | null>(null)
   const loadMoreLockRef = useRef(false)
+  const hasUserResizedRef = useRef(false)
 
   const rows = table.getRowModel().rows
   const hasData = hasTableRowsWithData(table)
@@ -145,8 +152,11 @@ const DataTable = <TData,>({
   const showMenuEmptyPanel = showEmptyState && Boolean(emptyPage)
   const showTableLayout =
     hasData || (!showInitialLoading && !showMenuEmptyPanel)
-  const visibleColumnCount = Math.max(1, table.getVisibleLeafColumns().length)
+  const visibleColumns = table.getVisibleLeafColumns()
+  const visibleColumnCount = Math.max(1, visibleColumns.length)
+  const visibleColumnKey = visibleColumns.map((column) => column.id).join('|')
   const useScrollContainer = Boolean(tableBodyMaxHeight || onLoadMore)
+  const isResizingColumn = table.getState().columnSizingInfo.isResizingColumn
 
   const getCellPinnedStyle = useCallback(
     (column: any) =>
@@ -174,6 +184,49 @@ const DataTable = <TData,>({
       loadMoreLockRef.current = false
     }, 350)
   }, [hasMore, isLoadingMore, isLoading, loadMoreOffset, onLoadMore])
+
+  useEffect(() => {
+    if (isResizingColumn) {
+      hasUserResizedRef.current = true
+    }
+  }, [isResizingColumn])
+
+  useLayoutEffect(() => {
+    if (!showTableLayout) return
+
+    const container = scrollRef.current
+    if (!container) return
+
+    const updateWidth = () => {
+      setContainerWidth(container.clientWidth)
+    }
+
+    updateWidth()
+
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0]
+      if (!entry) return
+      setContainerWidth(entry.contentRect.width)
+    })
+
+    observer.observe(container)
+    return () => observer.disconnect()
+  }, [showTableLayout])
+
+  useLayoutEffect(() => {
+    if (!showTableLayout || hasUserResizedRef.current || containerWidth <= 0) {
+      return
+    }
+
+    const nextSizing = fitColumnsToWidth(table, containerWidth)
+    if (!nextSizing) return
+
+    if (columnSizingEquals(table.getState().columnSizing, nextSizing)) {
+      return
+    }
+
+    table.setColumnSizing(nextSizing)
+  }, [containerWidth, showTableLayout, table, visibleColumnKey])
 
   const renderTableContent = () => {
     if (showInitialLoading) {
@@ -225,9 +278,9 @@ const DataTable = <TData,>({
           style={
             tableBodyMaxHeight
               ? {
-                maxHeight: tableBodyMaxHeight,
-                minHeight: tableBodyMaxHeight,
-              }
+                  maxHeight: tableBodyMaxHeight,
+                  minHeight: tableBodyMaxHeight,
+                }
               : undefined
           }
           onScroll={useScrollContainer ? handleScroll : undefined}
@@ -236,7 +289,7 @@ const DataTable = <TData,>({
             className='table-fixed'
             style={{
               minWidth: '100%',
-              width: table.getTotalSize(),
+              width: Math.max(table.getTotalSize(), containerWidth || 0),
             }}
           >
             <Thead className={theadStickyClass}>
@@ -346,7 +399,7 @@ const DataTable = <TData,>({
                                   className='size-4 shrink-0 text-[var(--primary-9)]'
                                   name='tabler:stack-2'
                                 />
-                                <span className='text-14 font-medium text-[var(--gray-13)] whitespace-nowrap'>
+                                <span className='text-14 font-medium whitespace-nowrap text-[var(--gray-13)]'>
                                   {(row.original as any).group}
                                 </span>
                                 {groupItems.length > 0 && (
@@ -411,7 +464,7 @@ const DataTable = <TData,>({
                                       className={cn(
                                         'flex items-center gap-1.5 rounded border border-transparent bg-[var(--green-2)] px-3 py-1.5 text-[11px] font-normal text-[var(--green-11)] transition-all group-hover/header:border-[var(--green-5)] group-hover/header:bg-[var(--green-3)]',
                                         hideGroupItemCountOnHover &&
-                                        'pointer-events-none invisible',
+                                          'pointer-events-none invisible',
                                       )}
                                     >
                                       <Icon
@@ -440,23 +493,24 @@ const DataTable = <TData,>({
                           cell.column.id,
                           cell.column.columnDef.meta?.disableEllipsis,
                         )
-                        const pinnedStyle = getCellPinnedStyle(cell.column) || {}
+                        const pinnedStyle =
+                          getCellPinnedStyle(cell.column) || {}
 
                         return (
                           <Td
                             key={cell.id}
-                            data-datatable-actions={
-                              allowOverflow ? true : undefined
-                            }
                             style={pinnedStyle}
                             className={cn(
                               'group/dtcell',
                               allowOverflow
                                 ? 'overflow-visible'
-                                : 'max-w-0 overflow-hidden',
+                                : 'max-w-0 overflow-visible',
                               rowSizeClassNames[rowSize],
                               cell.column.columnDef.meta?.className,
                             )}
+                            data-datatable-actions={
+                              allowOverflow ? true : undefined
+                            }
                           >
                             <TableEllipsis
                               disabled={shouldDisableTableEllipsis(
@@ -509,7 +563,7 @@ const DataTable = <TData,>({
     <div
       className={cn(
         'flex w-full flex-col',
-        stickyHeader && 'max-h-full min-h-0',
+        stickyHeader && 'h-full min-h-0 flex-1',
       )}
     >
       {!hideActionBar && (
@@ -517,11 +571,11 @@ const DataTable = <TData,>({
           actions={actions} // ✅ pass through
           className={cn('mb-4')}
           component={component}
-          hideGrouping={hideGrouping}
           hideExport={hideExport}
+          hideFilters={hideFilters}
+          hideGrouping={hideGrouping}
           hideReload={hideReload}
           hideSearch={hideSearch}
-          hideFilters={hideFilters}
           isReloading={isReLoading}
           rowSize={rowSize}
           table={table}

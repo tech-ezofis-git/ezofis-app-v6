@@ -8,8 +8,8 @@ interface Props {
   value: string
   description?: string
   icon?: string
-  logo?: string
   loading?: boolean
+  logo?: string
   onClick: () => void
 }
 
@@ -79,17 +79,22 @@ const BrandCard = ({
           className='flex size-5 shrink-0 items-center justify-center'
           initial={{ opacity: 0, scale: 0.5 }}
         >
-          <Icon className='size-5 animate-spin text-gray-10' name='tabler:loader-2' />
+          <Icon
+            className='size-5 animate-spin text-gray-10'
+            name='tabler:loader-2'
+          />
         </motion.div>
-      ) : checked && (
-        <motion.div
-          animate={{ opacity: 1, scale: 1 }}
-          className='flex size-5 shrink-0 items-center justify-center rounded-full bg-green-9'
-          initial={{ opacity: 0, scale: 0.5 }}
-          transition={{ duration: 0.2, type: 'spring' }}
-        >
-          <Icon className='size-3 text-white' name='tabler:check' />
-        </motion.div>
+      ) : (
+        checked && (
+          <motion.div
+            animate={{ opacity: 1, scale: 1 }}
+            className='flex size-5 shrink-0 items-center justify-center rounded-full bg-green-9'
+            initial={{ opacity: 0, scale: 0.5 }}
+            transition={{ duration: 0.2, type: 'spring' }}
+          >
+            <Icon className='size-3 text-white' name='tabler:check' />
+          </motion.div>
+        )
       )}
     </motion.button>
   )

@@ -1,9 +1,9 @@
 import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import * as XLSX from 'xlsx'
+import apiRouter from '@/api/apiRouter'
 import { createRepository } from '@/api/createFolder'
 import formApi from '@/api/form/form'
-import apiRouter from '@/api/apiRouter'
 import workflowApi from '@/api/workflow/workflow'
 import poMasterUrl from '@/assets/PO Master.xlsx?url'
 import Button from '@/components/base/button/Button'
@@ -115,7 +115,9 @@ const updateFileHeaders = async (
     }
 
     const invertedHeaderMapping = getInvertedMapping(mapping)
-    const invertedLineItemMapping = lineItemMapping ? getInvertedMapping(lineItemMapping) : {}
+    const invertedLineItemMapping = lineItemMapping
+      ? getInvertedMapping(lineItemMapping)
+      : {}
 
     const translateHeader = (header: string, isLineItem: boolean) => {
       if (!header) return ''
@@ -161,7 +163,9 @@ const updateFileHeaders = async (
             const sheet1 = wb.Sheets[sheetName1]
             const rows1: any = XLSX.utils.sheet_to_json(sheet1, { header: 1 })
             if (rows1.length > 0) {
-              const updatedHeaders1 = rows1[0].map((h: string) => translateHeader(h, false))
+              const updatedHeaders1 = rows1[0].map((h: string) =>
+                translateHeader(h, false),
+              )
               rows1[0] = updatedHeaders1
               wb.Sheets[sheetName1] = XLSX.utils.aoa_to_sheet(rows1)
             }
@@ -173,7 +177,9 @@ const updateFileHeaders = async (
             const sheet2 = wb.Sheets[sheetName2]
             const rows2: any = XLSX.utils.sheet_to_json(sheet2, { header: 1 })
             if (rows2.length > 0) {
-              const updatedHeaders2 = rows2[0].map((h: string) => translateHeader(h, true))
+              const updatedHeaders2 = rows2[0].map((h: string) =>
+                translateHeader(h, true),
+              )
               rows2[0] = updatedHeaders2
               wb.Sheets[sheetName2] = XLSX.utils.aoa_to_sheet(rows2)
             }
@@ -204,7 +210,7 @@ const addCustomFieldsToPayloads = (
   mapping: Record<string, string>,
   lineItemMapping: Record<string, string>,
   fieldDataTypes: Record<string, string>,
-  lineItemFieldDataTypes: Record<string, string>
+  lineItemFieldDataTypes: Record<string, string>,
 ) => {
   // Deep clone to avoid mutating the source JSON
   const clonedFolder = JSON.parse(JSON.stringify(folderPayload))
@@ -212,7 +218,8 @@ const addCustomFieldsToPayloads = (
   const clonedForm = JSON.parse(JSON.stringify(formPayload))
 
   const generateUid = () => {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-'
+    const chars =
+      'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-'
     let result = ''
     for (let i = 0; i < 21; i++) {
       result += chars.charAt(Math.floor(Math.random() * chars.length))
@@ -227,9 +234,7 @@ const addCustomFieldsToPayloads = (
   ) => {
     const normalizedKey = key.trim().toLowerCase()
     if (
-      knownLabels.some(
-        (label) => label.trim().toLowerCase() === normalizedKey,
-      )
+      knownLabels.some((label) => label.trim().toLowerCase() === normalizedKey)
     ) {
       return true
     }
@@ -250,16 +255,19 @@ const addCustomFieldsToPayloads = (
   )
 
   if (customHeaderFieldsForFolder.length > 0) {
-    let maxOrderId = folderFields.reduce((max: number, f: any) => Math.max(max, f.orderId || 0), 0)
+    let maxOrderId = folderFields.reduce(
+      (max: number, f: any) => Math.max(max, f.orderId || 0),
+      0,
+    )
     customHeaderFieldsForFolder.forEach((customLabel) => {
       maxOrderId += 1
       const customFieldType = fieldDataTypes[customLabel] || 'SHORT_TEXT'
       folderFields.push({
-        name: customLabel,
         dataType: customFieldType,
-        level: 0,
-        isMandatory: false,
         includeInFolderStructure: false,
+        isMandatory: false,
+        level: 0,
+        name: customLabel,
         orderId: maxOrderId,
       })
     })
@@ -281,8 +289,11 @@ const addCustomFieldsToPayloads = (
 
   if (customHeaderFields.length > 0) {
     const templateField = masterFields[0]
-    const tableFieldIndex = masterFields.findIndex((f: any) => f.type === 'TABLE' || f.type === 'DYNAMIC_TABLE')
-    const insertIndex = tableFieldIndex !== -1 ? tableFieldIndex : masterFields.length
+    const tableFieldIndex = masterFields.findIndex(
+      (f: any) => f.type === 'TABLE' || f.type === 'DYNAMIC_TABLE',
+    )
+    const insertIndex =
+      tableFieldIndex !== -1 ? tableFieldIndex : masterFields.length
 
     customHeaderFields.forEach((customLabel) => {
       const customFieldType = fieldDataTypes[customLabel] || 'SHORT_TEXT'
@@ -299,8 +310,11 @@ const addCustomFieldsToPayloads = (
     const formPanel1 = clonedForm.panels?.[1]
     if (formPanel1) {
       const formFields = formPanel1.fields || []
-      const formTableIndex = formFields.findIndex((f: any) => f.type === 'TABLE' || f.type === 'DYNAMIC_TABLE')
-      const formInsertIndex = formTableIndex !== -1 ? formTableIndex : formFields.length
+      const formTableIndex = formFields.findIndex(
+        (f: any) => f.type === 'TABLE' || f.type === 'DYNAMIC_TABLE',
+      )
+      const formInsertIndex =
+        formTableIndex !== -1 ? formTableIndex : formFields.length
 
       customHeaderFields.forEach((customLabel) => {
         const customFieldType = fieldDataTypes[customLabel] || 'SHORT_TEXT'
@@ -317,7 +331,9 @@ const addCustomFieldsToPayloads = (
   }
 
   // --- 2. LINE ITEM CUSTOM FIELDS ---
-  const masterTableField = masterFields.find((f: any) => f.type === 'TABLE' || f.type === 'DYNAMIC_TABLE')
+  const masterTableField = masterFields.find(
+    (f: any) => f.type === 'TABLE' || f.type === 'DYNAMIC_TABLE',
+  )
   if (masterTableField) {
     const tableColumns = masterTableField.settings?.specific?.tableColumns || []
     const predefinedColLabels = tableColumns.map((c: any) => c.label)
@@ -346,7 +362,9 @@ const addCustomFieldsToPayloads = (
 
   const formPanel1 = clonedForm.panels?.[1]
   if (formPanel1) {
-    const formTableField = (formPanel1.fields || []).find((f: any) => f.type === 'TABLE' || f.type === 'DYNAMIC_TABLE')
+    const formTableField = (formPanel1.fields || []).find(
+      (f: any) => f.type === 'TABLE' || f.type === 'DYNAMIC_TABLE',
+    )
     if (formTableField) {
       const tableColumns = formTableField.settings?.specific?.tableColumns || []
       const predefinedColLabels = tableColumns.map((c: any) => c.label)
@@ -374,7 +392,11 @@ const addCustomFieldsToPayloads = (
     }
   }
 
-  return { folderPayload: clonedFolder, masterFormPayload: clonedMaster, formPayload: clonedForm }
+  return {
+    folderPayload: clonedFolder,
+    formPayload: clonedForm,
+    masterFormPayload: clonedMaster,
+  }
 }
 
 const StepFour = () => {
@@ -402,14 +424,18 @@ const StepFour = () => {
 
     try {
       // 1.5 Inject any new custom fields mapped by the user
-      const { folderPayload: processedFolderPayload, masterFormPayload, formPayload } = addCustomFieldsToPayloads(
+      const {
+        folderPayload: processedFolderPayload,
+        formPayload,
+        masterFormPayload,
+      } = addCustomFieldsToPayloads(
         apSetupPayloads.folderPayload,
         apSetupPayloads.masterFormPayload,
         apSetupPayloads.formPayload,
         erpSettings.mapping || {},
         erpSettings.lineItemMapping || {},
         erpSettings.fieldDataTypes || {},
-        erpSettings.lineItemFieldDataTypes || {}
+        erpSettings.lineItemFieldDataTypes || {},
       )
 
       // 1. Create Folder
@@ -441,7 +467,9 @@ const StepFour = () => {
       const processedFormPayload = replacePlaceholders(formPayload, {
         folderId,
       })
-      const formRes = await formApi.createForm(JSON.stringify(processedFormPayload))
+      const formRes = await formApi.createForm(
+        JSON.stringify(processedFormPayload),
+      )
       if (formRes.error) {
         showToast({
           message: `Failed to create Form: ${formRes.error}`,

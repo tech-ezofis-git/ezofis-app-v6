@@ -494,15 +494,15 @@ const updateProcessInStore = (apAgentJobId: string | number, jobData: any) => {
       )
       const updatedProcesses = hasJobProcess
         ? state.processingProcesses.map((p) =>
-          String(p.processId || p.id) === jobKey
-            ? {
-              ...p,
-              apAgentJobId: null,
-              id: jobData.instanceId,
-              processId: jobData.instanceId,
-            }
-            : p,
-        )
+            String(p.processId || p.id) === jobKey
+              ? {
+                  ...p,
+                  apAgentJobId: null,
+                  id: jobData.instanceId,
+                  processId: jobData.instanceId,
+                }
+              : p,
+          )
         : state.processingProcesses
 
       return {
@@ -946,10 +946,10 @@ const Request = ({
 
   const hasAgentDecision = request
     ? !!(
-      request.review ||
-      request._agentData?.[0]?.decision ||
-      request.completedAtUtc
-    )
+        request.review ||
+        request._agentData?.[0]?.decision ||
+        request.completedAtUtc
+      )
     : false
   const isCurrentlyProcessing =
     !hasAgentDecision && initialProcessing && !jobStatus?.isCompleted
@@ -1153,8 +1153,8 @@ const Request = ({
           typeof selectedItem?.agentResponse === 'string'
             ? selectedItem.agentResponse
             : JSON.stringify(
-              selectedItem?.agentResponse || request?.agentResponse || {},
-            ),
+                selectedItem?.agentResponse || request?.agentResponse || {},
+              ),
         comments: '',
         formData: formDataStr,
         formEntryId: Number(
@@ -1251,10 +1251,10 @@ const Request = ({
           fields:
             Object.keys(formModel).length > 0
               ? mapFormModelToPayloadFields(
-                formModel,
-                selectedWorkflow,
-                request?._formDefinition,
-              )
+                  formModel,
+                  selectedWorkflow,
+                  request?._formDefinition,
+                )
               : selectedItem?.formData?.fields || {},
           formEntryId: selectedItem?.formData?.formEntryId,
           formId: rawWorkflowData?.wFormId,
@@ -1515,30 +1515,45 @@ const Request = ({
       statusBadge = finalStatusBadge
     }
   }
-  console.log(selectedItem, "Selected Item")
+  console.log(selectedItem, 'Selected Item')
 
-  const handleShare = async (shares: { email: string; action: number }[], message: string) => {
+  const handleShare = async (
+    shares: { action: number; email: string }[],
+    message: string,
+  ) => {
     const instanceId =
       selectedItem?.workflowInstanceId || request?.workflowInstanceId
     const repositoryId =
-      selectedItem?.repositoryId || request?.repositoryId || rawWorkflowData?.repositoryId
+      selectedItem?.repositoryId ||
+      request?.repositoryId ||
+      rawWorkflowData?.repositoryId
     const itemId =
-      selectedItem?.itemId || request?.itemId || selectedItem?.fileId || request?.fileId
+      selectedItem?.itemId ||
+      request?.itemId ||
+      selectedItem?.fileId ||
+      request?.fileId
 
     if (!instanceId) {
-      showToast({ message: 'No instance ID available to share', variant: 'error' })
+      showToast({
+        message: 'No instance ID available to share',
+        variant: 'error',
+      })
       return false
     }
 
     try {
       if (shares.length > 0) {
-        await Promise.all(shares.map(share => workflowsApiV6.shareFile(String(instanceId), {
-          email: share.email,
-          repositoryId: String(repositoryId || ''),
-          itemId: String(itemId || ''),
-          message,
-          action: share.action,
-        })))
+        await Promise.all(
+          shares.map((share) =>
+            workflowsApiV6.shareFile(String(instanceId), {
+              action: share.action,
+              email: share.email,
+              itemId: String(itemId || ''),
+              message,
+              repositoryId: String(repositoryId || ''),
+            }),
+          ),
+        )
       }
       showToast({ message: 'Request shared successfully', variant: 'success' })
       return true
@@ -1580,19 +1595,19 @@ const Request = ({
             formModel?.['invoice_number'] ||
             formModel?.['invoice_no'] ||
             currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-            'Invoice No'
+              'Invoice No'
             ] ||
             currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-            'invoice_no'
+              'invoice_no'
             ] ||
             currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-            'Invoice Number'
+              'Invoice Number'
             ] ||
             currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-            'invoice_number'
+              'invoice_number'
             ] ||
             currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-            'invoice_num'
+              'invoice_num'
             ] ||
             currentAgentData?.['kvcYuknkDumkTenjvrVLj'] ||
             selectedItem?.reqNo ||
@@ -1601,7 +1616,12 @@ const Request = ({
             selectedItem?.requestNo ||
             'REQ - ...'
           }
-          ticketUserId={selectedItem?.userId || request?.userId || authUserStore.getState().session?.id || undefined}
+          ticketUserId={
+            selectedItem?.userId ||
+            request?.userId ||
+            authUserStore.getState().session?.id ||
+            undefined
+          }
           setRightView={setRightView}
           onApprove={handleVerifier}
           onBack={onBack || closeRequest}

@@ -30,10 +30,10 @@ export function FolderExplorer() {
     filePage,
     files,
     fileSearch,
-    folderContextFilters,
-    folderFilters,
-    folderFilterOptionSource,
     filterOptionsCache,
+    folderContextFilters,
+    folderFilterOptionSource,
+    folderFilters,
     folderHasMore,
     folderPage,
     folders,
@@ -194,6 +194,7 @@ export function FolderExplorer() {
           refreshing={refreshing}
           searchQuery={fileSearch}
           view={viewMode}
+          setView={changeViewMode}
           onAiSummary={(id) => openFileAction(id, 'aiSummary')}
           onBreadcrumbSelect={openFolder}
           onEdit={(id) => openFileAction(id, 'editMetadata')}
@@ -210,7 +211,6 @@ export function FolderExplorer() {
           onShare={(id) => openFileAction(id, 'share')}
           onUpload={handleUpload}
           onWorkflow={(id) => openFileAction(id, 'workflow')}
-          setView={changeViewMode}
         />
       </div>
     )
@@ -225,10 +225,10 @@ export function FolderExplorer() {
         fileFilters={fileFilters}
         files={files}
         fileSearch={fileSearch}
-        folderContextFilters={folderContextFilters}
-        folderFilters={folderFilters}
-        folderFilterOptionSource={folderFilterOptionSource}
         filterOptionsCache={filterOptionsCache}
+        folderContextFilters={folderContextFilters}
+        folderFilterOptionSource={folderFilterOptionSource}
+        folderFilters={folderFilters}
         folders={folders}
         folderSearch={folderSearch}
         loading={loading}
@@ -238,13 +238,13 @@ export function FolderExplorer() {
         view={viewMode}
         setView={changeViewMode}
         onFileFiltersChange={setFileFilters}
+        onFileSearchChange={setFileSearch}
         onFolderFiltersChange={setFolderFilters}
         onFilterMenuOpenChange={(id) => {
           if (id) beginFilterDefer()
           else commitFilterDefer()
         }}
         onFolderSearchChange={setFolderSearch}
-        onFileSearchChange={setFileSearch}
         onRefresh={handleRefresh}
         onUpload={handleUpload}
       />

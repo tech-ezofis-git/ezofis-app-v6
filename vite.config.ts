@@ -25,8 +25,8 @@ export default defineConfig({
   server: {
     proxy: {
       '/api-mapping': {
-        target: 'http://52.172.32.88:8095',
         changeOrigin: true,
+        target: 'http://52.172.32.88:8095',
         rewrite: (path) => path.replace(/^\/api-mapping/, '/api/v1'),
       },
     },

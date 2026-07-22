@@ -2,12 +2,18 @@ import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
 import type { Column } from '@/components/base/data-table/types'
+import type { RowSize } from '@/components/base/data-table/types'
 import {
   mapWorkflowBrowseItem,
+  type WorkflowBrowseFilter,
   type WorkflowBrowsePayload,
 } from '@/api/v6/workflows'
 import { getWorkflowListQueryOptions } from '@/api/workflow/queries'
 import IconButton from '@/components/base/button/IconButton'
+import TableColumns from '@/components/base/data-table/actions/TableColumns'
+import TableRows from '@/components/base/data-table/actions/TableRows'
+import TableSearch from '@/components/base/data-table/actions/TableSearch'
+import TableSort from '@/components/base/data-table/actions/TableSort'
 import DataTable from '@/components/base/data-table/DataTable'
 import useDataTable from '@/components/base/data-table/hooks/useDataTable'
 import useDataTableState from '@/components/base/data-table/hooks/useDataTableState'
@@ -15,16 +21,16 @@ import Menu from '@/components/base/menu/Menu'
 import MenuItem from '@/components/base/menu/MenuItem'
 import Pagination from '@/components/base/pagination/Pagination'
 import showToast from '@/components/base/toast/showToast'
-import FormStatusBadge from '@/components/common/FormStatusBadge'
-import { formatDatetime } from '@/utils/dayjs'
-import CustomFilter from '@/components/common/CustomFilter'
 import Tooltip from '@/components/base/Tooltip'
-import TableSearch from '@/components/base/data-table/actions/TableSearch'
-import TableSort from '@/components/base/data-table/actions/TableSort'
-import TableColumns from '@/components/base/data-table/actions/TableColumns'
-import TableRows from '@/components/base/data-table/actions/TableRows'
-import type { RowSize } from '@/components/base/data-table/types'
+import CustomFilter from '@/components/common/CustomFilter'
+import FormStatusBadge from '@/components/common/FormStatusBadge'
 import authUserStore from '@/stores/authUserStore'
+import { formatDatetime } from '@/utils/dayjs'
+import {
+  matchesCategoryFilterValue,
+  matchesDateRangeValue,
+  parseFilterValues,
+} from '@/utils/filterUtils'
 
 interface TableProps {
   onCreate?: () => void
@@ -65,14 +71,14 @@ const Table = ({ onCreate }: TableProps) => {
       id: 'createdBy',
       label: 'Created By',
       size: 140,
-      renderCell: (row: any) =>
-        String(row.createdByName || loggedInUser),
+      renderCell: (row: any) => String(row.createdByName || loggedInUser),
     },
     {
       id: 'createdAt',
       label: 'Created At',
       size: 180,
-      renderCell: (row: any) => formatDatetime(row.createdAt as string, 'datetime'),
+      renderCell: (row: any) =>
+        formatDatetime(row.createdAt as string, 'datetime'),
     },
     {
       id: 'modifiedBy',
@@ -142,7 +148,14 @@ const Table = ({ onCreate }: TableProps) => {
     description: true,
   }
 
-  const { expandState, groupState, sortState, searchState, setSearchState, ...rest } = useDataTableState({
+  const {
+    expandState,
+    groupState,
+    searchState,
+    sortState,
+    setSearchState,
+    ...rest
+  } = useDataTableState({
     initialVisibilityState,
   })
   const [page, setPage] = useState(1)
@@ -151,14 +164,16 @@ const Table = ({ onCreate }: TableProps) => {
   const [activeFilters, setActiveFilters] = useState<Record<string, string>>({})
 
   const session = authUserStore((state) => state.session)
-  const loggedInUser = session?.firstName ? `${session.firstName} ${session.lastName || ''}`.trim() : session?.email || '-'
+  const loggedInUser = session?.firstName
+    ? `${session.firstName} ${session.lastName || ''}`.trim()
+    : session?.email || '-'
 
   const payload = useMemo((): WorkflowBrowsePayload => {
     const sortColumn = sortState?.[0]?.id
     const sortCriteria =
       sortColumn && sortColumn !== 'flowstatus' ? sortColumn : 'name'
 
-    const filters = []
+    const filters: WorkflowBrowseFilter[] = []
 
     Object.entries(activeFilters).forEach(([key, value]) => {
       if (value) {
@@ -170,10 +185,12 @@ const Table = ({ onCreate }: TableProps) => {
         if (['createdBy', 'modifiedBy', 'flowStatus'].includes(key)) {
           condition = 'IS_EQUALS_TO'
         }
-        filters.push({
-          condition,
-          criteria: key,
-          value,
+        parseFilterValues(value).forEach((v) => {
+          filters.push({
+            condition,
+            criteria: key,
+            value: v,
+          })
         })
       }
     })
@@ -231,20 +248,44 @@ const Table = ({ onCreate }: TableProps) => {
     const unique = new Map<string, string>()
     workflows.forEach((group: any) => {
       group.items.forEach((w: any) => {
-        if (w.createdBy) unique.set(w.createdBy, w.createdByName || loggedInUser)
+        if (w.createdBy)
+          unique.set(w.createdBy, w.createdByName || loggedInUser)
       })
     })
-    return Array.from(unique.entries()).map(([value, label]) => ({ label, value }))
+    return Array.from(unique.entries()).map(([value, label]) => ({
+      label,
+      value,
+    }))
   }, [workflows, loggedInUser])
+
+  const nameOptions = useMemo(() => {
+    const unique = new Set<string>()
+    workflows.forEach((group: any) => {
+      group.items.forEach((w: any) => {
+        const name = String(w.name || '').trim()
+        if (name) unique.add(name)
+      })
+    })
+    return Array.from(unique)
+      .sort((a, b) => a.localeCompare(b))
+      .map((name) => ({ label: name, value: name }))
+  }, [workflows])
 
   const modifiedByOptions = useMemo(() => {
     const unique = new Map<string, string>()
     workflows.forEach((group: any) => {
       group.items.forEach((w: any) => {
-        if (w.modifiedBy) unique.set(w.modifiedBy, w.modifiedByName || w.createdByName || loggedInUser)
+        if (w.modifiedBy)
+          unique.set(
+            w.modifiedBy,
+            w.modifiedByName || w.createdByName || loggedInUser,
+          )
       })
     })
-    return Array.from(unique.entries()).map(([value, label]) => ({ label, value }))
+    return Array.from(unique.entries()).map(([value, label]) => ({
+      label,
+      value,
+    }))
   }, [workflows, loggedInUser])
 
   const filteredWorkflows = useMemo(() => {
@@ -254,39 +295,43 @@ const Table = ({ onCreate }: TableProps) => {
           let matches = true
           Object.entries(activeFilters).forEach(([key, value]) => {
             if (!value) return
-            
+
             if (key === 'createdAt' || key === 'modifiedAt') {
-              const filterDate = value.split('T')[0]
-              const rowDate = w[key] ? String(w[key]).split('T')[0] : ''
-              if (rowDate !== filterDate) matches = false
+              if (!matchesDateRangeValue(w[key], value)) matches = false
             } else if (key === 'flowStatus') {
               const rowStatus = w.flowStatus || w.flowstatus
-              if (rowStatus !== value) matches = false
-            } else if (key === 'createdBy' || key === 'modifiedBy') {
-              if (w[key] !== value) matches = false
-            } else {
-              if (!w[key] || !String(w[key]).toLowerCase().includes(String(value).toLowerCase())) {
+              if (!matchesCategoryFilterValue(rowStatus, value)) matches = false
+            } else if (key === 'name') {
+              if (!matchesCategoryFilterValue(w.name, value, 'contains')) {
                 matches = false
               }
+            } else if (key === 'createdBy' || key === 'modifiedBy') {
+              if (!matchesCategoryFilterValue(w[key], value)) matches = false
+            } else if (
+              !matchesCategoryFilterValue(w[key], value, 'contains')
+            ) {
+              matches = false
             }
           })
-          
+
           if (searchState?.value) {
             const query = searchState.value.toLowerCase()
-            const searchCols = searchState.id ? [searchState.id] : Object.keys(w)
+            const searchCols = searchState.id
+              ? [searchState.id]
+              : Object.keys(w)
             const matchesSearch = searchCols.some((colKey) => {
               const val = w[colKey]
               return val != null && String(val).toLowerCase().includes(query)
             })
             if (!matchesSearch) matches = false
           }
-          
+
           return matches
         })
         return {
           ...group,
-          items: filteredItems,
           groupCount: filteredItems.length,
+          items: filteredItems,
         }
       })
       .filter((group: any) => group.items.length > 0)
@@ -296,45 +341,87 @@ const Table = ({ onCreate }: TableProps) => {
     columns,
     enableRowSelection: false,
     rows: filteredWorkflows,
-    state: { expandState, groupState, sortState, searchState, setSearchState, ...rest },
+    state: {
+      expandState,
+      groupState,
+      searchState,
+      sortState,
+      setSearchState,
+      ...rest,
+    },
   })
 
   return (
     <div className='flex h-full min-h-0 flex-col'>
       <CustomFilter
+        activeFilters={activeFilters}
+        customSearchComponent={<TableSearch table={table as any} />}
+        searchPlaceholder='Search workflows...'
+        searchQuery=''
+        actionButtons={[
+          {
+            color: 'gray',
+            disabled: isFetching,
+            icon: 'tabler:refresh',
+            id: 'refresh',
+            isIconButton: true,
+            tooltip: 'Refresh',
+            variant: 'outline',
+            onClick: () => refetch(),
+          },
+        ]}
+        addButton={
+          onCreate
+            ? {
+                icon: 'lucide:plus',
+                tooltip: 'New Workflow',
+                onClick: onCreate,
+              }
+            : undefined
+        }
         filters={[
           {
-            id: "flowStatus",
-            label: "Status",
-            options: [
-              { label: "Published", value: "PUBLISHED" },
-              { label: "Draft", value: "DRAFT" }
-            ]
+            id: 'name',
+            label: 'Name',
+            options: nameOptions,
+            searchable: true,
+            searchPlaceholder: 'Search name...',
           },
           {
-            id: "createdBy",
-            label: "Created By",
-            options: createdByOptions,
-          }
+            id: 'flowStatus',
+            label: 'Status',
+            options: [
+              { label: 'Published', value: 'PUBLISHED' },
+              { label: 'Draft', value: 'DRAFT' },
+            ],
+          },
         ]}
         moreFilters={[
           {
-            id: "modifiedBy",
-            label: "Modified By",
+            id: 'createdBy',
+            label: 'Created By',
+            options: createdByOptions,
+          },
+          {
+            id: 'modifiedBy',
+            label: 'Modified By',
             options: modifiedByOptions,
           },
           {
-            id: "createdAt",
-            label: "Created Date",
-            dataType: "date",
+            dataType: 'date',
+            id: 'createdAt',
+            label: 'Created Date',
           },
           {
-            id: "modifiedAt",
-            label: "Modified Date",
-            dataType: "date",
-          }
+            dataType: 'date',
+            id: 'modifiedAt',
+            label: 'Modified Date',
+          },
         ]}
-        activeFilters={activeFilters}
+        showReset={
+          Object.keys(activeFilters).some((k) => activeFilters[k]) ||
+          !!searchState?.value
+        }
         onFilterChange={(id, value) => {
           setActiveFilters((prev) => ({ ...prev, [id]: value }))
           setPage(1)
@@ -344,52 +431,27 @@ const Table = ({ onCreate }: TableProps) => {
           setSearchState({ id: '', value: '' })
           setPage(1)
         }}
-        showReset={Object.keys(activeFilters).some(k => activeFilters[k]) || !!searchState?.value}
-        searchQuery=""
         onSearchChange={() => {}}
-        searchPlaceholder="Search workflows..."
-        customSearchComponent={<TableSearch table={table as any} />}
-        actionButtons={[
-          {
-            id: 'refresh',
-            icon: 'tabler:refresh',
-            tooltip: 'Refresh',
-            onClick: () => refetch(),
-            isIconButton: true,
-            color: 'gray',
-            variant: 'outline',
-            disabled: isFetching
-          }
-        ]}
-        addButton={
-          onCreate
-            ? {
-                icon: 'lucide:plus',
-                onClick: onCreate,
-                tooltip: 'New Workflow',
-              }
-            : undefined
-        }
       />
       <div className='mt-2 min-h-0 flex-1 overflow-hidden'>
         <DataTable
           emptyPage='workflows'
           hideActionBar={true}
-          hideGrouping={true}
           hideExport={true}
+          hideFilters={true}
+          hideGrouping={true}
           hideReload={true}
           hideSearch={true}
-          hideFilters={true}
-          rowSize={rowSize}
-          onRowSizeChange={setRowSize}
           isLoading={isPending}
           isReLoading={isFetching || isRefetching}
           pageSize={pageSize}
+          rowSize={rowSize}
           stickyHeader={true}
           table={table}
           hideGroupItemCountOnHover
           onEmptyPrimaryAction={onCreate}
           onReload={refetch}
+          onRowSizeChange={setRowSize}
         />
       </div>
       <Pagination

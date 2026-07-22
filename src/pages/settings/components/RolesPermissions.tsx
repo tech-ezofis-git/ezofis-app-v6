@@ -29,16 +29,20 @@ import {
   type V6RoleItem,
 } from '@/api/v6/user'
 import IconButton from '@/components/base/button/IconButton'
+import TableExport from '@/components/base/data-table/actions/TableExport'
 import TableReload from '@/components/base/data-table/actions/TableReload'
+import TableSearch from '@/components/base/data-table/actions/TableSearch'
 import DataTable from '@/components/base/data-table/DataTable'
-import Pagination from '@/components/base/pagination/Pagination'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
 import InputText from '@/components/base/inputs/InputText'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
 import Menu from '@/components/base/menu/Menu'
 import DropdownMenuItem from '@/components/base/menu/MenuItem'
+import Pagination from '@/components/base/pagination/Pagination'
 import showToast from '@/components/base/toast/showToast'
+import CustomFilter from '@/components/common/CustomFilter'
+import { matchesCategoryFilterValue } from '@/utils/filterUtils'
 import {
   getFieldRequiredError,
   getMissingRequiredLabels,
@@ -61,9 +65,6 @@ import SettingsSelectedChips from './SettingsSelectedChips'
 import SettingsSetupContent from './SettingsSetupContent'
 import SettingsSetupHeader from './SettingsSetupHeader'
 import useSettingsTableToolbar from './useSettingsTableToolbar'
-import CustomFilter from '@/components/common/CustomFilter'
-import TableSearch from '@/components/base/data-table/actions/TableSearch'
-import TableExport from '@/components/base/data-table/actions/TableExport'
 
 type AssignedUser = {
   email: string
@@ -149,7 +150,7 @@ const initialMenuItems: MenuItem[] = []
 
 const mapApiMenuToProfileItem = (menu: V6MenuItem): MenuItem => ({
   id: String(menu.id || menu.key || ''),
-  name: String(menu.label || menu.key || 'Menu'),
+  name: String(menu.name || menu.key || 'Menu'),
   order: Number(menu.sortOrder ?? 0),
   visible: true,
 })
@@ -227,8 +228,19 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
     setNewRoleName('')
     setNewRoleDescription('')
     setSelectedUsers([])
-    setNewPermissionRows(buildEmptyPermissionRows(apiMenus))
+    const resetMenus = apiMenus.map((item) => ({ ...item, visible: true }))
+    setApiMenus(resetMenus)
+    setNewPermissionRows(buildEmptyPermissionRows(resetMenus))
     setEditingRoleId(null)
+  }
+
+  const deleteRole = (roleId: string | number) => {
+    const confirmed = window.confirm(
+      'Are you sure you want to delete this role?',
+    )
+    if (!confirmed) return
+
+    setRoles((current) => current.filter((role) => role.id !== roleId))
   }
 
   const loadRoles = useCallback(async () => {
@@ -305,15 +317,15 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
     //   setIsLoadingMenus(false)
     // }
     const menus = [
-      { key: 'dashboard', label: 'Dashboard' },
-      { key: 'requests', label: 'Requests' },
-      { key: 'folder', label: 'Folder' },
+      { key: 'dashboard', name: 'Dashboard', visible: false },
+      { key: 'requests', name: 'Requests', visible: false },
+      { key: 'folder', name: 'Folder', visible: false },
 
-      { key: 'workflow', label: 'Workflow' },
+      { key: 'workflow', name: 'Workflow', visible: false },
 
-      { key: 'forms', label: 'Forms' },
+      { key: 'forms', name: 'Forms', visible: false },
 
-      { key: 'settings', label: 'Settings' },
+      { key: 'settings', name: 'Settings', visible: false },
     ]
     setApiMenus(menus)
     setMenuItems(menus.map(mapApiMenuToProfileItem))
@@ -352,11 +364,11 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
           current.map((item) =>
             item.id === role.id
               ? {
-                ...item,
-                permissions: role.permissions,
-                userIds: role.userIds,
-                users: role.users,
-              }
+                  ...item,
+                  permissions: role.permissions,
+                  userIds: role.userIds,
+                  users: role.users,
+                }
               : item,
           ),
         )
@@ -377,10 +389,21 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
     if (!cleanName) return
     if (!selectedUsers.length) return
 
-    const payload: UpsertV6RolePayload = {
+    const newPermissions = mapPermissionRowsToPermissions(newPermissionRows)
+    const payload: UpsertV6RolePayload & { permissionKeys?: any[] } = {
       description:
         newRoleDescription.trim() || 'Custom role configured by administrator',
-      permissions: mapPermissionRowsToPermissions(newPermissionRows),
+      permissionKeys: apiMenus.map((item) => {
+        const isEnabled = newPermissions.includes(
+          normalizeCategorySlug(item.key || ''),
+        )
+        return {
+          key: item.key,
+          name: item.name || item.label,
+          visible: isEnabled,
+        }
+      }),
+      permissions: newPermissions,
       roleName: cleanName,
       users: selectedUsers.map((user) => String(user.id)),
     }
@@ -424,6 +447,26 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
 
       const role = mapApiRoleToRole(response.data)
 
+      const permissionKeys = (response.data as any)?.permissionKeys || []
+      const permissionKeysMap = new Map<string, boolean>(
+        permissionKeys.map((pk: any) => [
+          String(pk.key || '').toLowerCase(),
+          pk.visible === true,
+        ]),
+      )
+
+      const updatedApiMenus = apiMenus.map((item) => {
+        const itemKeyNormalized = String(item.key || '').toLowerCase()
+        const visibleFromApi = permissionKeysMap.has(itemKeyNormalized)
+          ? permissionKeysMap.get(itemKeyNormalized)
+          : item.visible
+        return {
+          ...item,
+          visible: visibleFromApi,
+        }
+      })
+      setApiMenus(updatedApiMenus)
+
       setEditingRoleId(role.id)
       setNewRoleName(role.name)
       setNewRoleDescription(role.description)
@@ -433,10 +476,7 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
         ),
       )
       setNewPermissionRows(
-        mapPermissionsToRows(
-          role.permissions,
-          apiMenus.length ? apiMenus : await loadMenus(),
-        ),
+        mapPermissionsToRows(role.permissions, updatedApiMenus),
       )
 
       setCreateStep(0)
@@ -521,7 +561,16 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
         isLoadingRoleDetails={isLoadingRoleDetails}
         roles={roles}
         onBack={onBack}
-        onCreate={() => setIsCreatingRole(true)}
+        onCreate={() => {
+          const resetMenus = apiMenus.map((item) => ({
+            ...item,
+            visible: true,
+          }))
+          setApiMenus(resetMenus)
+          setNewPermissionRows(buildEmptyPermissionRows(resetMenus))
+          setIsCreatingRole(true)
+        }}
+        onDelete={deleteRole}
         onEdit={openEditRole}
         onReload={loadRoles}
       />
@@ -530,11 +579,16 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
 }
 
 function buildEmptyPermissionRows(menus: V6MenuItem[]): PermissionRow[] {
-  return buildPermissionCategoriesFromMenus(menus).map(({ key, name }) => ({
-    category: name,
-    categoryKey: key,
-    enabled: false,
-  }))
+  return buildPermissionCategoriesFromMenus(menus).map(({ key, name }) => {
+    const menuItem = menus.find(
+      (m) => normalizeCategorySlug(m.key || '') === key,
+    )
+    return {
+      category: name,
+      categoryKey: key,
+      enabled: menuItem ? menuItem.visible !== false : true,
+    }
+  })
 }
 
 function buildPermissionCategoriesFromMenus(menus: V6MenuItem[]) {
@@ -585,7 +639,7 @@ function CreatePermissionMatrix({
   rows: PermissionRow[]
   onToggle: (categoryKey: string) => void
 }) {
-  console.log(rows, "rows")
+  // console.log(rows, "rows")
   const tableSearchOptions = useSettingsTableSearch()
   const permissionColumns = useMemo(
     () => [
@@ -596,7 +650,7 @@ function CreatePermissionMatrix({
         meta: settingsHeaderMeta.start,
         size: 360,
         cell: ({ getValue }) => (
-          <span className='text-sm font-semibold text-[var(--gray-13)]'>
+          <span className='text-sm font-semibold text-[var(--gray-13)] capitalize'>
             {getValue()}
           </span>
         ),
@@ -985,11 +1039,11 @@ function mapApiRoleToRole(role: V6RoleItem): Role {
     : []
   const users = Array.isArray(role.users)
     ? role.users
-      .map((user) => {
-        if (typeof user === 'string') return user
-        return String(user.id || user.userId || user.value || '')
-      })
-      .filter(Boolean)
+        .map((user) => {
+          if (typeof user === 'string') return user
+          return String(user.id || user.userId || user.value || '')
+        })
+        .filter(Boolean)
     : []
   const userCount =
     typeof role.userCount === 'number' ? role.userCount : users.length
@@ -1029,11 +1083,19 @@ function mapPermissionsToRows(
     }
   }
 
-  return categories.map((category) => ({
-    category: category.name,
-    categoryKey: category.key,
-    enabled: isPermissionEnabledForCategory(category.key, permissions),
-  }))
+  return categories.map((category) => {
+    const menuItem = menus.find(
+      (m) => normalizeCategorySlug(m.key || '') === category.key,
+    )
+    const isVisible = menuItem
+      ? menuItem.visible === true
+      : isPermissionEnabledForCategory(category.key, permissions)
+    return {
+      category: category.name,
+      categoryKey: category.key,
+      enabled: isVisible,
+    }
+  })
 }
 
 function MenuProfiles({
@@ -1185,7 +1247,7 @@ function PermissionMatrix({
         header: 'Category',
         id: 'category',
         meta: settingsHeaderMeta.start,
-        minSize: 200,
+        minSize: 40,
         size: 240,
         cell: ({ getValue }) => (
           <span className='text-sm font-semibold text-[var(--gray-13)]'>
@@ -1198,7 +1260,7 @@ function PermissionMatrix({
         header: 'Access',
         id: 'access',
         meta: settingsHeaderMeta.center,
-        minSize: 120,
+        minSize: 40,
         size: 140,
         cell: ({ row }) => (
           <div className='flex justify-center'>
@@ -1268,6 +1330,7 @@ function RoleList({
   roles,
   onBack,
   onCreate,
+  onDelete,
   onEdit,
   onReload,
 }: {
@@ -1276,28 +1339,33 @@ function RoleList({
   roles: Role[]
   onBack?: () => void
   onCreate: () => void
+  onDelete: (id: string) => void
   onEdit: (id: string) => void
   onReload: () => void | Promise<void>
 }) {
   const tableSearchOptions = useSettingsTableSearch()
   const {
-    onPageChange,
-    onPageSizeChange,
-    onPaginationChange,
     page,
     pageSize,
     pagination,
     paginationModel,
+    onPageChange,
+    onPageSizeChange,
+    onPaginationChange,
   } = useSettingsTablePagination()
   const [activeFilters, setActiveFilters] = useState<Record<string, string>>({})
 
   const filteredRoles = useMemo(() => {
-    return roles.filter(role => {
+    return roles.filter((role) => {
       let matches = true
       Object.entries(activeFilters).forEach(([key, value]) => {
         if (!value) return
-        if (key === 'type') {
-           if (String(role.type).toLowerCase() !== value.toLowerCase()) matches = false
+        if (key === 'name') {
+          if (!matchesCategoryFilterValue(role.name, value, 'contains')) {
+            matches = false
+          }
+        } else if (key === 'type') {
+          if (!matchesCategoryFilterValue(role.type, value)) matches = false
         }
       })
       return matches
@@ -1328,7 +1396,7 @@ function RoleList({
         header: 'Role',
         id: 'role',
         meta: { ...settingsHeaderMeta.start, label: 'Role' },
-        minSize: 280,
+        minSize: 40,
         size: 360,
         cell: ({ row }) => {
           const role = row.original
@@ -1349,8 +1417,12 @@ function RoleList({
         enableSorting: false,
         header: 'Type',
         id: 'type',
-        meta: { ...settingsHeaderMeta.start, label: 'Type', disableEllipsis: true },
-        minSize: 140,
+        meta: {
+          ...settingsHeaderMeta.start,
+          disableEllipsis: true,
+          label: 'Type',
+        },
+        minSize: 40,
         size: 180,
         cell: ({ getValue }) => (
           <span className='inline-flex items-center rounded-[8px] border border-[var(--border-default)] bg-surface px-3 py-1 text-xs font-semibold text-[var(--gray-13)]'>
@@ -1363,7 +1435,7 @@ function RoleList({
         header: 'Users',
         id: 'users',
         meta: { ...settingsHeaderMeta.start, disableEllipsis: true },
-        minSize: 120,
+        minSize: 40,
         size: 160,
         cell: ({ getValue }) => (
           <span className='inline-flex items-center rounded-[8px] bg-[var(--gray-2)] px-4 py-1 text-sm font-semibold text-[var(--gray-13)]'>
@@ -1389,8 +1461,8 @@ function RoleList({
             >
               <Menu
                 position='bottom-end'
-                withinPortal
                 width={144}
+                withinPortal
                 target={
                   <button
                     className='rounded-lg p-2 text-[var(--gray-13)] transition hover:bg-[var(--gray-2)] disabled:cursor-not-allowed disabled:opacity-50'
@@ -1406,13 +1478,20 @@ function RoleList({
                   label='Edit'
                   onClick={() => onEdit(role.id)}
                 />
+                <DropdownMenuItem
+                  className='text-red-11'
+                  icon='lucide:trash-2'
+                  iconClass='text-red-11'
+                  label='Delete'
+                  onClick={() => onDelete(role.id)}
+                />
               </Menu>
             </div>
           )
         },
       }),
     ],
-    [isLoadingRoleDetails, onEdit],
+    [isLoadingRoleDetails, onEdit, onDelete],
   )
 
   const roleTable = useReactTable({
@@ -1421,12 +1500,12 @@ function RoleList({
     ...paginationModel,
     columns: roleColumns,
     data: filteredRoles,
-    getRowId: (row) => row.id,
-    onPaginationChange,
     state: {
       ...tableSearchOptions.state,
       pagination,
     },
+    getRowId: (row) => row.id,
+    onPaginationChange,
   })
 
   const { rowSize, onRowSizeChange } = useSettingsTableToolbar({
@@ -1437,45 +1516,64 @@ function RoleList({
     },
   })
 
-  const typeOptions = useMemo(() => Array.from(new Set(roles.map(r => r.type).filter(Boolean))).map(t => ({label: t, value: t})), [roles])
+  const typeOptions = useMemo(
+    () =>
+      Array.from(new Set(roles.map((r) => r.type).filter(Boolean))).map(
+        (t) => ({ label: t, value: t }),
+      ),
+    [roles],
+  )
 
   return (
     <div className='flex h-full min-h-0 flex-col'>
-      <SettingsPageHeader
-        title='Roles & Permissions'
-        onBack={onBack}
-      />
+      <SettingsPageHeader title='Roles & Permissions' onBack={onBack} />
 
       <div className='flex min-h-0 flex-1 flex-col overflow-hidden p-4'>
         <CustomFilter
-             filters={[
-                { id: 'type', label: 'Type', options: typeOptions },
-             ]}
-             activeFilters={activeFilters}
-             onFilterChange={(id, val) => setActiveFilters(prev => ({...prev, [id]: val}))}
-             onReset={() => {
-                setActiveFilters({})
-                tableSearchOptions.onGlobalFilterChange({ id: '', value: '' })
-             }}
-             showReset={Object.keys(activeFilters).some(k => activeFilters[k]) || !!tableSearchOptions.state.globalFilter?.value}
-             customSearchComponent={<TableSearch table={roleTable as any} />}
-             addButton={{
-               onClick: onCreate,
-               tooltip: 'Create Role'
-             }}
-             actionButtons={[
-               {
-                 id: 'refresh',
-                 icon: 'tabler:refresh',
-                 tooltip: 'Refresh',
-                 onClick: onReload,
-                 isIconButton: true,
-                 color: 'gray',
-                 variant: 'outline',
-                 disabled: isLoading,
-               }
-             ]}
-             trailingActions={<TableExport table={roleTable as any} />}
+          activeFilters={activeFilters}
+          customSearchComponent={<TableSearch table={roleTable as any} />}
+          filters={[
+            {
+              id: 'name',
+              label: 'Name',
+              options: roles
+                .map((r) => String(r.name || '').trim())
+                .filter(Boolean)
+                .sort((a, b) => a.localeCompare(b))
+                .map((name) => ({ label: name, value: name })),
+              searchable: true,
+              searchPlaceholder: 'Search name...',
+            },
+            { id: 'type', label: 'Type', options: typeOptions },
+          ]}
+          trailingActions={<TableExport table={roleTable as any} />}
+          actionButtons={[
+            {
+              color: 'gray',
+              disabled: isLoading,
+              icon: 'tabler:refresh',
+              id: 'refresh',
+              isIconButton: true,
+              tooltip: 'Refresh',
+              variant: 'outline',
+              onClick: onReload,
+            },
+          ]}
+          addButton={{
+            tooltip: 'Create Role',
+            onClick: onCreate,
+          }}
+          showReset={
+            Object.keys(activeFilters).some((k) => activeFilters[k]) ||
+            !!tableSearchOptions.state.globalFilter?.value
+          }
+          onFilterChange={(id, val) =>
+            setActiveFilters((prev) => ({ ...prev, [id]: val }))
+          }
+          onReset={() => {
+            setActiveFilters({})
+            tableSearchOptions.onGlobalFilterChange({ id: '', value: '' })
+          }}
         />
         <div className='mt-4 flex min-h-0 flex-1 flex-col overflow-hidden'>
           <div className='min-h-0 flex-1 overflow-hidden'>
@@ -1703,7 +1801,7 @@ function UserAssignments({
         header: 'User',
         id: 'name',
         meta: { ...settingsHeaderMeta.start, label: 'User' },
-        minSize: 160,
+        minSize: 40,
         size: 200,
         cell: ({ getValue }) => (
           <span className='text-sm font-semibold text-[var(--gray-13)]'>
@@ -1716,7 +1814,7 @@ function UserAssignments({
         header: 'Email',
         id: 'email',
         meta: { ...settingsHeaderMeta.start, label: 'Email' },
-        minSize: 200,
+        minSize: 40,
         size: 240,
         cell: ({ getValue }) => (
           <span className='text-sm text-[var(--gray-11)]'>{getValue()}</span>
@@ -1727,7 +1825,7 @@ function UserAssignments({
         header: 'Current Role',
         id: 'role',
         meta: { ...settingsHeaderMeta.start, label: 'Current Role' },
-        minSize: 140,
+        minSize: 40,
         size: 160,
         cell: ({ getValue }) => (
           <span className='rounded-[8px] bg-[var(--gray-2)] px-3 py-1 text-xs font-semibold text-[var(--gray-13)]'>
@@ -1740,7 +1838,7 @@ function UserAssignments({
         header: 'Change Role',
         id: 'changeRole',
         meta: settingsHeaderMeta.start,
-        minSize: 220,
+        minSize: 40,
         size: 240,
         cell: ({ row }) => {
           const roleOptions = roleNames.map((role) => ({

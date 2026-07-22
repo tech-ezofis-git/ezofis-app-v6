@@ -4,9 +4,7 @@ const isFilled = (value: string | number | null | undefined) =>
 export const getMissingRequiredLabels = (
   fields: Array<{ label: string; value: string | number | null | undefined }>,
 ) =>
-  fields
-    .filter((field) => !isFilled(field.value))
-    .map((field) => field.label)
+  fields.filter((field) => !isFilled(field.value)).map((field) => field.label)
 
 export const getRequiredFieldErrorMessage = (labels: string[]) => {
   if (!labels.length) return ''

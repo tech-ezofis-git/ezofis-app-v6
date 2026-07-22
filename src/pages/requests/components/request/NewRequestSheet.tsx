@@ -1,9 +1,9 @@
 import { useState } from 'react'
+import ApiPlayground from '@/components/playground/ApiPlayground'
 import requestStore from '../../stores/useRequestStore'
 import NewRequestFileUpload from './components/newrequest/FileUpload'
 import Header from './components/newrequest/Header'
 import PoSetupFlowPage from './components/newrequest/poFlow/PoSetupFlowPage'
-import ApiPlayground from '@/components/playground/ApiPlayground'
 
 interface Props {
   onClose: () => void
@@ -15,25 +15,25 @@ const NewRequestSheet = ({ onClose }: Props) => {
 
   const newRequestEndpoints = [
     {
-      id: 'create_request',
-      title: 'Create Request API',
-      description: 'Create a new document request programmatically.',
-      method: 'POST',
       apiPath: '/api/v6/requests',
+      description: 'Create a new document request programmatically.',
+      id: 'create_request',
+      method: 'POST',
       requestPayload: {
+        metadata: {
+          department: 'Finance',
+        },
+        priority: 'high',
         title: 'New Request',
         type: 'invoice',
-        priority: 'high',
-        metadata: {
-          department: 'Finance'
-        }
       },
       responsePayload: {
-        success: true,
         message: 'Request created successfully',
+        status: 'Draft',
+        success: true,
         transactionId: 'REQ-NEW-12345',
-        status: 'Draft'
-      }
+      },
+      title: 'Create Request API',
     },
     // {
     //   id: 'list_master_data',

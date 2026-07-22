@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import Icon from '@/components/base/icon/Icon'
 
+interface CountryResult {
+  name: string
+}
+
 interface Props {
   value: string
   onChange: (country: string) => void
-}
-
-interface CountryResult {
-  name: string
 }
 
 const CountryCombobox = ({ value, onChange }: Props) => {
@@ -59,10 +59,10 @@ const CountryCombobox = ({ value, onChange }: Props) => {
       const res = await fetch(
         `https://api.restcountries.com/countries/v5?q=${encodeURIComponent(val.trim())}&limit=10`,
         {
-          signal: abortRef.current.signal,
           headers: {
             Authorization: 'Bearer rc_live_d559b6801a504a21805cd2ef7f6a2d54',
           },
+          signal: abortRef.current.signal,
         },
       )
 
@@ -106,7 +106,7 @@ const CountryCombobox = ({ value, onChange }: Props) => {
       <div className='relative'>
         <input
           autoComplete='off'
-          className='w-full rounded-lg border border-gray-4 bg-surface px-3 py-2.5 pr-8 text-sm text-gray-13 outline-none placeholder:text-gray-8 transition-all hover:border-gray-6 focus:border-primary-7 focus:ring-2 focus:ring-primary-4'
+          className='w-full rounded-lg border border-gray-4 bg-surface px-3 py-2.5 pr-8 text-sm text-gray-13 transition-all outline-none placeholder:text-gray-8 hover:border-gray-6 focus:border-primary-7 focus:ring-2 focus:ring-primary-4'
           id='country'
           name='country'
           placeholder='Search country...'
@@ -150,11 +150,16 @@ const CountryCombobox = ({ value, onChange }: Props) => {
         </ul>
       )}
 
-      {isOpen && !isLoading && inputValue.trim().length > 0 && results.length === 0 && (
-        <div className='animate-in fade-in absolute top-[calc(100%+4px)] left-0 z-30 w-full rounded-xl border border-gray-3 bg-surface px-3 py-3 shadow-lg duration-150'>
-          <p className='text-center text-xs text-gray-9'>No countries found</p>
-        </div>
-      )}
+      {isOpen &&
+        !isLoading &&
+        inputValue.trim().length > 0 &&
+        results.length === 0 && (
+          <div className='animate-in fade-in absolute top-[calc(100%+4px)] left-0 z-30 w-full rounded-xl border border-gray-3 bg-surface px-3 py-3 shadow-lg duration-150'>
+            <p className='text-center text-xs text-gray-9'>
+              No countries found
+            </p>
+          </div>
+        )}
     </div>
   )
 }

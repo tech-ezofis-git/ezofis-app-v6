@@ -88,7 +88,11 @@ export const getRepositoryFieldRawValue = (
   if (!contextKey) return undefined
 
   const contextValue = contextFilters[contextKey]
-  if (contextValue === undefined || contextValue === null || contextValue === '') {
+  if (
+    contextValue === undefined ||
+    contextValue === null ||
+    contextValue === ''
+  ) {
     return undefined
   }
 

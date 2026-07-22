@@ -133,7 +133,7 @@ const VerifyEmailForm = ({ onBack }: Props) => {
 
       {onBack && (
         <Button
-          className='w-full justify-center underline -mt-2'
+          className='-mt-2 w-full justify-center underline'
           color='gray'
           label='Try with a different email'
           variant='ghost'

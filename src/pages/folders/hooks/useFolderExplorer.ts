@@ -17,19 +17,19 @@ import {
   getFolderContextFilters,
 } from '../api/folderApi'
 import {
+  buildFilterOptionsCacheFromData,
   DEFAULT_FOLDER_PAGE_SIZE,
   DEFAULT_PAGE_SIZE,
-  buildFilterOptionsCacheFromData,
   findNodeById,
   findPathToNode,
   FOLDER_SEARCH_DEBOUNCE_MS,
-  mergeFolderFilterOptionsCache,
   type FolderPageMeta,
   getChildIds,
   getFileId,
   getFolderPageMeta,
   getRepositoryIdFromFolder,
   getRepositoryRootNodeId,
+  mergeFolderFilterOptionsCache,
   mergeFoldersById,
   syncTreeChildren,
   updateTreeNode,
@@ -130,9 +130,7 @@ export function useFolderExplorer() {
     if (hasActiveFolderBrowseQuery(nextFolderFilters, nextFolderSearch)) return
 
     setFolderFilterOptionSource((previous) =>
-      append
-        ? mergeFoldersById(previous, incomingFolders)
-        : incomingFolders,
+      append ? mergeFoldersById(previous, incomingFolders) : incomingFolders,
     )
   }
 
@@ -200,32 +198,32 @@ export function useFolderExplorer() {
   const loadFolderContent = async ({
     appendFolders = false,
     cursor = null,
+    fileFilters,
+    fileSearch,
+    folderFilters,
     folderId,
     folderPageOnly = false,
-    folderFilters,
-    fileFilters,
+    folderSearch,
     includeFiles,
     listAllFiles,
     page = 1,
     pageOnly = false,
     pageSizeValue = pageSize,
-    folderSearch,
-    fileSearch,
     syncTree = true,
   }: {
     appendFolders?: boolean
     cursor?: string | null
+    fileFilters?: Record<string, string>
+    fileSearch?: string
+    folderFilters?: Record<string, string>
     folderId: string
     folderPageOnly?: boolean
-    folderFilters?: Record<string, string>
-    fileFilters?: Record<string, string>
+    folderSearch?: string
     includeFiles?: boolean
     listAllFiles?: boolean
     page?: number
     pageOnly?: boolean
     pageSizeValue?: number
-    folderSearch?: string
-    fileSearch?: string
     syncTree?: boolean
   }) => {
     const requestId = ++requestSeqRef.current
@@ -239,20 +237,20 @@ export function useFolderExplorer() {
     try {
       const response = await folderApi.getFolderContent(folderId, {
         cursor,
-        folderFilters: folderFilters ?? folderFiltersRef.current,
         fileFilters: fileFilters ?? fileFiltersRef.current,
-        includeFiles,
-        listAllFiles: listAllFiles ?? viewMode === 'list',
-        page,
-        pageSize: pageSizeValue,
-        folderSearch:
-          folderSearch !== undefined
-            ? folderSearch
-            : folderSearchRef.current.trim() || undefined,
         fileSearch:
           fileSearch !== undefined
             ? fileSearch
             : fileSearchRef.current.trim() || undefined,
+        folderFilters: folderFilters ?? folderFiltersRef.current,
+        folderSearch:
+          folderSearch !== undefined
+            ? folderSearch
+            : folderSearchRef.current.trim() || undefined,
+        includeFiles,
+        listAllFiles: listAllFiles ?? viewMode === 'list',
+        page,
+        pageSize: pageSizeValue,
       })
 
       if (requestId !== requestSeqRef.current) return response
@@ -269,9 +267,7 @@ export function useFolderExplorer() {
         append: appendFolders,
         folderFilters: folderFilters ?? folderFiltersRef.current,
         folderSearch:
-          folderSearch !== undefined
-            ? folderSearch
-            : folderSearchRef.current,
+          folderSearch !== undefined ? folderSearch : folderSearchRef.current,
       })
       syncFilterOptionsCache({
         columns: response.fileColumns || [],
@@ -413,14 +409,14 @@ export function useFolderExplorer() {
     setFilterOptionsCache({})
     loadSelectedRepository(activeFolder)
     loadFolderContent({
-      folderId: activeFolder,
-      folderFilters: {},
       fileFilters: {},
+      fileSearch: '',
+      folderFilters: {},
+      folderId: activeFolder,
+      folderSearch: '',
       listAllFiles: viewMode === 'list',
       page: 1,
       pageSizeValue: pageSizeRef.current,
-      folderSearch: '',
-      fileSearch: '',
     }).catch(() => undefined)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeFolder, viewMode])
@@ -440,14 +436,14 @@ export function useFolderExplorer() {
 
       try {
         await loadFolderContent({
-          folderId: activeFolder,
-          folderFilters: folderFiltersRef.current,
           fileFilters: fileFiltersRef.current,
+          fileSearch: fileSearch.trim(),
+          folderFilters: folderFiltersRef.current,
+          folderId: activeFolder,
+          folderSearch: folderSearch.trim(),
           listAllFiles: viewMode === 'list',
           page: 1,
           pageSizeValue: pageSizeRef.current,
-          folderSearch: folderSearch.trim(),
-          fileSearch: fileSearch.trim(),
           syncTree: viewMode === 'grid',
         })
       } catch (exception: any) {
@@ -480,14 +476,14 @@ export function useFolderExplorer() {
     lastRequestedFolderPageRef.current[activeFolder] = 1
 
     loadFolderContent({
-      folderId: activeFolder,
-      folderFilters,
       fileFilters,
+      fileSearch: fileSearchRef.current.trim(),
+      folderFilters,
+      folderId: activeFolder,
+      folderSearch: folderSearchRef.current.trim(),
       listAllFiles: viewMode === 'list',
       page: 1,
       pageSizeValue: pageSizeRef.current,
-      folderSearch: folderSearchRef.current.trim(),
-      fileSearch: fileSearchRef.current.trim(),
       syncTree: viewMode === 'grid',
     }).catch(() => undefined)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -597,9 +593,9 @@ export function useFolderExplorer() {
     try {
       const response = await folderApi.getFolderChildren(activeFolder, {
         folderFilters: folderFiltersRef.current,
+        folderSearch: folderSearch.trim(),
         page: nextPage,
         pageSize: effectivePageSize,
-        folderSearch: folderSearch.trim(),
       })
 
       const incomingFolders = response?.folders || []
@@ -650,15 +646,15 @@ export function useFolderExplorer() {
 
     await loadFolderContent({
       cursor: cursor ?? cachedCursor ?? null,
-      folderId: activeFolder,
-      folderFilters: folderFiltersRef.current,
       fileFilters: fileFiltersRef.current,
+      fileSearch: fileSearchRef.current.trim() || undefined,
+      folderFilters: folderFiltersRef.current,
+      folderId: activeFolder,
+      folderSearch: folderSearchRef.current.trim() || undefined,
       listAllFiles: viewMode === 'list',
       page: safePage,
       pageOnly: true,
       pageSizeValue: pageSizeRef.current,
-      folderSearch: folderSearchRef.current.trim() || undefined,
-      fileSearch: fileSearchRef.current.trim() || undefined,
       syncTree: false,
     }).catch(() => undefined)
   }
@@ -672,15 +668,15 @@ export function useFolderExplorer() {
 
     void loadFolderContent({
       cursor: null,
-      folderId: activeFolder,
-      folderFilters: folderFiltersRef.current,
       fileFilters: fileFiltersRef.current,
+      fileSearch: fileSearchRef.current.trim() || undefined,
+      folderFilters: folderFiltersRef.current,
+      folderId: activeFolder,
+      folderSearch: folderSearchRef.current.trim() || undefined,
       listAllFiles: viewMode === 'list',
       page: 1,
       pageOnly: true,
       pageSizeValue: nextPageSize,
-      folderSearch: folderSearchRef.current.trim() || undefined,
-      fileSearch: fileSearchRef.current.trim() || undefined,
       syncTree: false,
     }).catch(() => undefined)
   }
@@ -761,16 +757,16 @@ export function useFolderExplorer() {
       await loadFolderContent({
         appendFolders: false,
         cursor: null,
+        fileFilters: fileFiltersRef.current,
+        fileSearch: fileSearchRef.current.trim() || undefined,
+        folderFilters: folderFiltersRef.current,
         folderId: activeFolder,
         folderPageOnly: false,
-        folderFilters: folderFiltersRef.current,
-        fileFilters: fileFiltersRef.current,
+        folderSearch: folderSearchRef.current.trim() || undefined,
         listAllFiles: viewMode === 'list',
         page: filePage?.page || 1,
         pageOnly: false,
         pageSizeValue: pageSizeRef.current,
-        folderSearch: folderSearchRef.current.trim() || undefined,
-        fileSearch: fileSearchRef.current.trim() || undefined,
         syncTree: true,
       })
     } catch {
@@ -778,12 +774,7 @@ export function useFolderExplorer() {
     } finally {
       setRefreshing(false)
     }
-  }, [
-    activeFolder,
-    refreshing,
-    filePage?.page,
-    viewMode,
-  ])
+  }, [activeFolder, refreshing, filePage?.page, viewMode])
   return {
     activeFolder,
     appView,
@@ -803,10 +794,10 @@ export function useFolderExplorer() {
     filePage,
     files,
     fileSearch,
-    folderContextFilters,
-    folderFilters,
-    folderFilterOptionSource,
     filterOptionsCache,
+    folderContextFilters,
+    folderFilterOptionSource,
+    folderFilters,
     folderHasMore,
     folderPage,
     folders,

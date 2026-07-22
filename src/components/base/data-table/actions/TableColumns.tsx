@@ -15,7 +15,7 @@ interface Props<TData> {
   iconOnly?: boolean
 }
 
-const TableColumns = <TData,>({ table, iconOnly }: Props<TData>) => {
+const TableColumns = <TData,>({ iconOnly, table }: Props<TData>) => {
   const orderState = table.getState().columnOrder
   const columns = table
     .getAllLeafColumns()

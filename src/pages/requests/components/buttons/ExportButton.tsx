@@ -8,11 +8,11 @@ interface ExportButtonProps {
 const ExportButton: React.FC<ExportButtonProps> = ({ onClick }) => {
   return (
     <IconButton
-      color="gray"
-      icon="tabler:download"
-      aria-label="Export"
-      variant="outline"
-      tooltip="Export"
+      aria-label='Export'
+      color='gray'
+      icon='tabler:download'
+      tooltip='Export'
+      variant='outline'
       onClick={onClick}
     />
   )

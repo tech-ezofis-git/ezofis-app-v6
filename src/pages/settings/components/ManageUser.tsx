@@ -1,7 +1,4 @@
-import {
-  createColumnHelper,
-  useReactTable,
-} from '@tanstack/react-table'
+import { createColumnHelper, useReactTable } from '@tanstack/react-table'
 import {
   Check,
   Key,
@@ -12,18 +9,39 @@ import {
   UsersRound,
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import InputPassword from '@/components/base/inputs/password/InputPassword'
-import showToast from '@/components/base/toast/showToast'
+import {
+  createUser,
+  deleteUser as deleteUserApi,
+  getUsers,
+  updateUser,
+} from '@/api/v6/user'
+import TableExport from '@/components/base/data-table/actions/TableExport'
+import TableSearch from '@/components/base/data-table/actions/TableSearch'
 import DataTable from '@/components/base/data-table/DataTable'
-import Pagination from '@/components/base/pagination/Pagination'
 import InputText from '@/components/base/inputs/InputText'
+import InputPassword from '@/components/base/inputs/password/InputPassword'
 import Menu from '@/components/base/menu/Menu'
 import MenuItem from '@/components/base/menu/MenuItem'
-import { createUser, getUsers, updateUser } from '@/api/v6/user'
-import { dummySettingsUsers, getDummyGroupOptions } from '../data/settingsDummyData'
+import Pagination from '@/components/base/pagination/Pagination'
+import showToast from '@/components/base/toast/showToast'
 import CustomFilter from '@/components/common/CustomFilter'
-import TableSearch from '@/components/base/data-table/actions/TableSearch'
-import TableExport from '@/components/base/data-table/actions/TableExport'
+import {
+  matchesCategoryFilterValue,
+} from '@/utils/filterUtils'
+import {
+  dummySettingsUsers,
+  getDummyGroupOptions,
+} from '../data/settingsDummyData'
+import {
+  type DraftSettingsUser,
+  mapDraftUserToCreatePayload,
+  mapDraftUserToUpdatePayload,
+} from '../helpers/mapCreateUserPayload'
+import {
+  getFieldRequiredError,
+  getMissingRequiredLabels,
+  getRequiredFieldErrorMessage,
+} from '../helpers/requiredFieldErrors'
 import {
   settingsHeaderMeta,
   settingsTableCoreOptions,
@@ -32,30 +50,18 @@ import {
 } from '../helpers/settingsDataTable'
 import { calculateUserSetupProgress } from '../helpers/settingsSetupProgress'
 import {
-  mapApiUserToSettingsUser,
   mapApiUsersToSettingsUsers,
+  mapApiUserToSettingsUser,
   mapUsersToManagerOptions,
   type SettingsOption,
   type SettingsUser,
 } from '../helpers/userGroupMappers'
 import SettingsDateField from './SettingsDateField'
-import SettingsSelectField from './SettingsSelectField'
-import {
-  mapDraftUserToCreatePayload,
-  mapDraftUserToUpdatePayload,
-  type DraftSettingsUser,
-} from '../helpers/mapCreateUserPayload'
-import {
-  getFieldRequiredError,
-  getMissingRequiredLabels,
-  getRequiredFieldErrorMessage,
-} from '../helpers/requiredFieldErrors'
 import SettingsFormSection from './SettingsFormSection'
+import SettingsPageHeader from './SettingsPageHeader'
+import SettingsSelectField from './SettingsSelectField'
 import SettingsSetupContent from './SettingsSetupContent'
 import SettingsSetupHeader from './SettingsSetupHeader'
-import SettingsPageHeader, {
-  SettingsHeaderAddButton,
-} from './SettingsPageHeader'
 import useSettingsTableToolbar from './useSettingsTableToolbar'
 
 type AppUser = SettingsUser
@@ -134,13 +140,7 @@ const emptyUser: DraftUser = {
   username: '',
 }
 
-const departments = [
-  'Administration',
-  'Finance',
-  'IT',
-  'Legal',
-  'Procurement',
-]
+const departments = ['Administration', 'Finance', 'IT', 'Legal', 'Procurement']
 const jobTitles = ['Executive', 'Manager']
 const roles = [
   'Administrator',
@@ -175,7 +175,11 @@ const loginOptions: LoginOption[] = [
   {
     description: 'Sign in with Google',
     icon: (
-      <svg className='h-4 w-4 shrink-0 text-[var(--primary-9)]' viewBox='0 0 24 24' fill='currentColor'>
+      <svg
+        className='h-4 w-4 shrink-0 text-[var(--primary-9)]'
+        fill='currentColor'
+        viewBox='0 0 24 24'
+      >
         <path d='M12.24 10.285V13.4h6.887c-.58 3.013-3.084 5.216-6.887 5.216-4.28 0-7.75-3.47-7.75-7.75s3.47-7.75 7.75-7.75c2.18 0 4.1.815 5.57 2.152l2.3-2.3C18.17 1.25 15.39 0 12.24 0 5.48 0 0 5.48 0 12.24s5.48 12.24 12.24 12.24c6.9 0 11.96-4.85 11.96-11.96 0-.82-.08-1.57-.22-2.24H12.24z' />
       </svg>
     ),
@@ -185,7 +189,11 @@ const loginOptions: LoginOption[] = [
   {
     description: 'Sign in with Microsoft',
     icon: (
-      <svg className='h-4 w-4 shrink-0 text-[var(--primary-9)]' viewBox='0 0 23 23' fill='currentColor'>
+      <svg
+        className='h-4 w-4 shrink-0 text-[var(--primary-9)]'
+        fill='currentColor'
+        viewBox='0 0 23 23'
+      >
         <path d='M0 0h11v11H0zM12 0h11v11H12zM0 12h11v11H0zM12 12h11v11H12z' />
       </svg>
     ),
@@ -228,14 +236,37 @@ export default function ManageUser({ onBack }: ManageUserProps) {
   const [isSaving, setIsSaving] = useState(false)
 
   const filteredUsers = useMemo(() => {
-    return users.filter(user => {
+    return users.filter((user) => {
       let matches = true
       Object.entries(activeFilters).forEach(([key, value]) => {
         if (!value) return
 
-        if (key === 'role' || key === 'loginType' || key === 'department' || key === 'status' || key === 'businessUnit' || key === 'location' || key === 'jobTitle') {
-          const userVal = String(user[key as keyof AppUser] || '')
-          if (userVal.toLowerCase() !== value.toLowerCase()) matches = false
+        if (key === 'name') {
+          const fullName = `${user.firstName} ${user.lastName}`.trim()
+          const haystack = `${fullName} ${user.email}`
+          if (
+            !matchesCategoryFilterValue(haystack, value, 'contains') &&
+            !matchesCategoryFilterValue(fullName, value)
+          ) {
+            matches = false
+          }
+        } else if (
+          key === 'role' ||
+          key === 'loginType' ||
+          key === 'department' ||
+          key === 'status' ||
+          key === 'businessUnit' ||
+          key === 'location' ||
+          key === 'jobTitle'
+        ) {
+          if (
+            !matchesCategoryFilterValue(
+              user[key as keyof AppUser],
+              value,
+            )
+          ) {
+            matches = false
+          }
         }
       })
       return matches
@@ -257,9 +288,7 @@ export default function ManageUser({ onBack }: ManageUserProps) {
       }
 
       setUsers(
-        response.data.length
-          ? mapApiUsersToSettingsUsers(response.data)
-          : [],
+        response.data.length ? mapApiUsersToSettingsUsers(response.data) : [],
       )
     } finally {
       setIsLoadingUsers(false)
@@ -296,13 +325,26 @@ export default function ManageUser({ onBack }: ManageUserProps) {
     setIsSetupOpen(true)
   }
 
-  const deleteUser = (userId: string | number) => {
+  const deleteUser = async (userId: string | number) => {
     const confirmed = window.confirm(
       'Are you sure you want to delete this user?',
     )
     if (!confirmed) return
 
-    setUsers((current) => current.filter((user) => user.id !== userId))
+    setIsLoadingUsers(true)
+    try {
+      const response = await deleteUserApi(String(userId))
+
+      if (response.error) {
+        showToast({ message: response.error, variant: 'error' })
+        return
+      }
+
+      showToast({ message: 'User deleted successfully', variant: 'success' })
+      await loadUsers()
+    } finally {
+      setIsLoadingUsers(false)
+    }
   }
 
   const saveUser = async () => {
@@ -318,8 +360,7 @@ export default function ManageUser({ onBack }: ManageUserProps) {
     const missingLabels = getMissingRequiredUserLabels(normalizedUser)
 
     if (missingLabels.length) {
-      const nextStep =
-        missingLabels.every((label) => label === 'Role') ? 1 : 0
+      const nextStep = missingLabels.every((label) => label === 'Role') ? 1 : 0
       setActiveStep(nextStep)
       showToast({
         message: getRequiredFieldErrorMessage(missingLabels),
@@ -392,9 +433,9 @@ export default function ManageUser({ onBack }: ManageUserProps) {
 
       const createdUser = response.data
         ? mapApiUserToSettingsUser(
-          response.data as Record<string, unknown>,
-          users.length,
-        )
+            response.data as Record<string, unknown>,
+            users.length,
+          )
         : null
       const listResponse = await getUsers()
 
@@ -448,7 +489,7 @@ export default function ManageUser({ onBack }: ManageUserProps) {
           header: 'Name',
           id: 'name',
           meta: { ...settingsHeaderMeta.start, label: 'Name' },
-          minSize: 200,
+          minSize: 40,
           size: 260,
           cell: ({ row }) => {
             const user = row.original
@@ -458,7 +499,9 @@ export default function ManageUser({ onBack }: ManageUserProps) {
                 <div className='truncate font-semibold text-[var(--gray-13)]'>
                   {user.firstName} {user.lastName}
                 </div>
-                <div className='truncate text-[var(--gray-10)]'>{user.email}</div>
+                <div className='truncate text-[var(--gray-10)]'>
+                  {user.email}
+                </div>
               </div>
             )
           },
@@ -470,7 +513,7 @@ export default function ManageUser({ onBack }: ManageUserProps) {
         header: 'Department',
         id: 'department',
         meta: { ...settingsHeaderMeta.start, label: 'Department' },
-        minSize: 120,
+        minSize: 40,
         size: 140,
         cell: ({ getValue }) => <span>{String(getValue() || '—')}</span>,
       }),
@@ -479,8 +522,12 @@ export default function ManageUser({ onBack }: ManageUserProps) {
         enableSorting: false,
         header: 'Role',
         id: 'role',
-        meta: { ...settingsHeaderMeta.start, label: 'Role', disableEllipsis: true },
-        minSize: 130,
+        meta: {
+          ...settingsHeaderMeta.start,
+          disableEllipsis: true,
+          label: 'Role',
+        },
+        minSize: 40,
         size: 150,
         cell: ({ getValue }) => (
           <span className='inline-flex items-center rounded-[10px] border border-[var(--border-default)] bg-surface px-3 py-1 font-medium text-[var(--gray-13)]'>
@@ -493,8 +540,12 @@ export default function ManageUser({ onBack }: ManageUserProps) {
         enableSorting: false,
         header: 'Status',
         id: 'status',
-        meta: { ...settingsHeaderMeta.start, label: 'Status', disableEllipsis: true },
-        minSize: 100,
+        meta: {
+          ...settingsHeaderMeta.start,
+          disableEllipsis: true,
+          label: 'Status',
+        },
+        minSize: 40,
         size: 110,
         cell: ({ getValue }) => <StatusBadge status={getValue()} />,
       }),
@@ -504,7 +555,7 @@ export default function ManageUser({ onBack }: ManageUserProps) {
         header: 'Login Type',
         id: 'loginType',
         meta: settingsHeaderMeta.start,
-        minSize: 120,
+        minSize: 40,
         size: 140,
         cell: ({ getValue }) => <span>{String(getValue() || '—')}</span>,
       }),
@@ -514,7 +565,7 @@ export default function ManageUser({ onBack }: ManageUserProps) {
         header: 'Last Login',
         id: 'lastLogin',
         meta: settingsHeaderMeta.start,
-        minSize: 110,
+        minSize: 40,
         size: 120,
         cell: ({ getValue }) => <span>{String(getValue() || '—')}</span>,
       }),
@@ -524,7 +575,7 @@ export default function ManageUser({ onBack }: ManageUserProps) {
         header: 'Created',
         id: 'created',
         meta: settingsHeaderMeta.start,
-        minSize: 110,
+        minSize: 40,
         size: 120,
         cell: ({ getValue }) => <span>{String(getValue() || '—')}</span>,
       }),
@@ -547,8 +598,8 @@ export default function ManageUser({ onBack }: ManageUserProps) {
             >
               <Menu
                 position='bottom-end'
-                withinPortal
                 width={144}
+                withinPortal
                 target={
                   <button
                     className='rounded-lg p-2 text-[var(--gray-13)] transition hover:bg-[var(--gray-2)]'
@@ -579,29 +630,30 @@ export default function ManageUser({ onBack }: ManageUserProps) {
     [openEditUser, deleteUser],
   )
   const {
-    onPageChange,
-    onPageSizeChange,
-    onPaginationChange,
     page,
     pageSize,
     pagination,
     paginationModel,
+    onPageChange,
+    onPageSizeChange,
+    onPaginationChange,
   } = useSettingsTablePagination()
+
   const userTable = useReactTable({
     ...settingsTableCoreOptions,
     ...tableSearchOptions,
     ...paginationModel,
     columns: userColumns,
     data: filteredUsers,
-    getRowId: (row) => String(row.id),
-    onPaginationChange,
     state: {
       ...tableSearchOptions.state,
       pagination,
     },
+    getRowId: (row: AppUser) => String(row.id),
+    onPaginationChange,
   })
 
-  const { onRowSizeChange, rowSize } = useSettingsTableToolbar({
+  const { rowSize, onRowSizeChange } = useSettingsTableToolbar({
     isReLoading: isLoadingUsers,
     table: userTable,
     onReload: () => {
@@ -609,11 +661,55 @@ export default function ManageUser({ onBack }: ManageUserProps) {
     },
   })
 
-  const roleOptions = useMemo(() => Array.from(new Set(users.map(u => String(u.role)).filter(Boolean))).map(r => ({ label: r, value: r })), [users])
-  const loginTypeOptions = useMemo(() => Array.from(new Set(users.map(u => String(u.loginType)).filter(Boolean))).map(r => ({ label: r, value: r })), [users])
-  const departmentOptions = useMemo(() => Array.from(new Set(users.map(u => String(u.department)).filter(Boolean))).map(r => ({ label: r, value: r })), [users])
-  const statusOptions = useMemo(() => Array.from(new Set(users.map(u => String(u.status)).filter(Boolean))).map(r => ({ label: r, value: r })), [users])
-  const businessUnitOptions = useMemo(() => Array.from(new Set(users.map(u => String(u.businessUnit)).filter(Boolean))).map(r => ({ label: r, value: r })), [users])
+  const roleOptions = useMemo(
+    () =>
+      Array.from(new Set(users.map((u) => String(u.role)).filter(Boolean))).map(
+        (r) => ({ label: r, value: r }),
+      ),
+    [users],
+  )
+  const nameOptions = useMemo(
+    () =>
+      users
+        .map((u) => {
+          const label = `${u.firstName} ${u.lastName}`.trim()
+          return label ? { label, value: label } : null
+        })
+        .filter(Boolean)
+        .sort((a, b) => a!.label.localeCompare(b!.label)) as {
+        label: string
+        value: string
+      }[],
+    [users],
+  )
+  const loginTypeOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(users.map((u) => String(u.loginType)).filter(Boolean)),
+      ).map((r) => ({ label: r, value: r })),
+    [users],
+  )
+  const departmentOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(users.map((u) => String(u.department)).filter(Boolean)),
+      ).map((r) => ({ label: r, value: r })),
+    [users],
+  )
+  const statusOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(users.map((u) => String(u.status)).filter(Boolean)),
+      ).map((r) => ({ label: r, value: r })),
+    [users],
+  )
+  const businessUnitOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(users.map((u) => String(u.businessUnit)).filter(Boolean)),
+      ).map((r) => ({ label: r, value: r })),
+    [users],
+  )
 
   if (isSetupOpen) {
     return (
@@ -622,8 +718,8 @@ export default function ManageUser({ onBack }: ManageUserProps) {
         draftUser={draftUser}
         editingUserId={editingUserId}
         groupOptions={groupOptions}
-        managerOptions={managerOptions}
         isSaving={isSaving}
+        managerOptions={managerOptions}
         onBack={() => setActiveStep((step) => Math.max(step - 1, 0))}
         onBackToSettings={onBack}
         onCancel={() => {
@@ -640,62 +736,83 @@ export default function ManageUser({ onBack }: ManageUserProps) {
     )
   }
   return (
-    <main className='bg-[var(--surface)] h-full flex flex-col'>
-      <section className='flex-1 flex flex-col'>
-        <SettingsPageHeader
-          title='User Management'
-          onBack={onBack}
-        />
+    <main className='flex h-full flex-col bg-[var(--surface)]'>
+      <section className='flex flex-1 flex-col'>
+        <SettingsPageHeader title='User Management' onBack={onBack} />
 
-        <div className='p-4 flex-1 flex flex-col overflow-hidden'>
+        <div className='flex flex-1 flex-col overflow-hidden px-6 py-2 md:px-8'>
           <CustomFilter
+            activeFilters={activeFilters}
+            customSearchComponent={<TableSearch table={userTable as any} />}
+            trailingActions={<TableExport table={userTable as any} />}
+            actionButtons={[
+              {
+                color: 'gray',
+                disabled: isLoadingUsers,
+                icon: 'tabler:refresh',
+                id: 'refresh',
+                isIconButton: true,
+                tooltip: 'Refresh',
+                variant: 'outline',
+                onClick: loadUsers,
+              },
+            ]}
+            addButton={{
+              tooltip: 'Add User',
+              onClick: openAddUser,
+            }}
             filters={[
+              {
+                id: 'name',
+                label: 'Name',
+                options: nameOptions,
+                searchable: true,
+                searchPlaceholder: 'Search name...',
+              },
               { id: 'role', label: 'Role', options: roleOptions },
               { id: 'status', label: 'Status', options: statusOptions },
             ]}
             moreFilters={[
-              { id: 'department', label: 'Department', options: departmentOptions },
-              { id: 'loginType', label: 'Login Type', options: loginTypeOptions },
-              { id: 'businessUnit', label: 'Business Unit', options: businessUnitOptions },
+              {
+                id: 'department',
+                label: 'Department',
+                options: departmentOptions,
+              },
+              {
+                id: 'loginType',
+                label: 'Login Type',
+                options: loginTypeOptions,
+              },
+              {
+                id: 'businessUnit',
+                label: 'Business Unit',
+                options: businessUnitOptions,
+              },
             ]}
-            activeFilters={activeFilters}
-            onFilterChange={(id, val) => setActiveFilters(prev => ({ ...prev, [id]: val }))}
+            showReset={
+              Object.keys(activeFilters).some((k) => activeFilters[k]) ||
+              !!tableSearchOptions.state.globalFilter?.value
+            }
+            onFilterChange={(id, val) =>
+              setActiveFilters((prev) => ({ ...prev, [id]: val }))
+            }
             onReset={() => {
               setActiveFilters({})
               tableSearchOptions.onGlobalFilterChange({ id: '', value: '' })
             }}
-            showReset={Object.keys(activeFilters).some(k => activeFilters[k]) || !!tableSearchOptions.state.globalFilter?.value}
-            customSearchComponent={<TableSearch table={userTable as any} />}
-            addButton={{
-              onClick: openAddUser,
-              tooltip: 'Add User'
-            }}
-            actionButtons={[
-              {
-                id: 'refresh',
-                icon: 'tabler:refresh',
-                tooltip: 'Refresh',
-                onClick: loadUsers,
-                isIconButton: true,
-                color: 'gray',
-                variant: 'outline',
-                disabled: isLoadingUsers,
-              }
-            ]}
-            trailingActions={<TableExport table={userTable as any} />}
           />
-          <div className='mt-2 min-h-0 flex-1 overflow-hidden flex flex-col'>
+          <div className='mt-2 flex min-h-0 flex-1 flex-col overflow-hidden'>
             <div className='min-h-0 flex-1 overflow-hidden'>
               <DataTable
                 emptyDescription='Add a user to grant access to the platform and assign folder permissions.'
                 emptyIcon='lucide:users'
                 emptyTitle='No users yet'
-                hideActionBar
                 isLoading={isLoadingUsers}
                 isReLoading={isLoadingUsers}
                 pageSize={pageSize}
                 rowSize={rowSize}
                 table={userTable}
+                hideActionBar
                 hideGrouping
                 stickyHeader
                 onReload={() => {
@@ -833,11 +950,11 @@ function BusinessDetails({
         />
 
         <SettingsSelectField
-          clearable
           label='Manager'
           options={managerOptions}
           placeholder='Select'
           value={user.manager}
+          clearable
           onChange={(value) => onChange({ ...user, manager: value })}
         />
 
@@ -853,8 +970,8 @@ function BusinessDetails({
         error={getFieldRequiredError('Role', Boolean(showErrors), user.role)}
         label='Role'
         options={roles}
-        required
         value={user.role}
+        required
         onChange={(value) => onChange({ ...user, role: value })}
       />
     </SettingsFormSection>
@@ -878,8 +995,8 @@ function EzPasswordField({
       error={error}
       label={label}
       required={required}
-      showPlaceholder
       value={value}
+      showPlaceholder
       onChange={onChange}
     />
   )
@@ -923,6 +1040,34 @@ function EzTextField({
 
 function getInitials(firstName: string, lastName: string) {
   return `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase() || 'U'
+}
+
+function getMissingRequiredUserLabels(user: DraftUser, step?: number) {
+  if (step === 2 || step === 3) return []
+
+  if (step === 1) {
+    return getMissingRequiredLabels([{ label: 'Role', value: user.role }])
+  }
+
+  const loginFields = [
+    { label: 'First Name', value: user.firstName },
+    { label: 'Last Name', value: user.lastName },
+    { label: 'Email Address', value: user.email },
+    { label: 'Login Type', value: user.loginType },
+  ]
+
+  if (user.loginType === 'Password') {
+    loginFields.push({ label: 'Password', value: user.password })
+  }
+
+  if (step === 0) {
+    return getMissingRequiredLabels(loginFields)
+  }
+
+  return getMissingRequiredLabels([
+    ...loginFields,
+    { label: 'Role', value: user.role },
+  ])
 }
 
 function GroupAssignment({
@@ -998,43 +1143,43 @@ function LoginDetails({
     <SettingsFormSection>
       <div className='grid grid-cols-1 gap-5 md:grid-cols-2'>
         <EzTextField
+          label='First Name'
+          placeholder='Enter first name'
+          value={user.firstName}
+          required
           error={getFieldRequiredError(
             'First Name',
             Boolean(showErrors),
             user.firstName,
           )}
-          label='First Name'
-          placeholder='Enter first name'
-          value={user.firstName}
-          required
           onChange={(value) => onChange({ ...user, firstName: value })}
         />
 
         <EzTextField
+          label='Last Name'
+          placeholder='Enter last name'
+          value={user.lastName}
+          required
           error={getFieldRequiredError(
             'Last Name',
             Boolean(showErrors),
             user.lastName,
           )}
-          label='Last Name'
-          placeholder='Enter last name'
-          value={user.lastName}
-          required
           onChange={(value) => onChange({ ...user, lastName: value })}
         />
       </div>
 
       <EzTextField
-        error={getFieldRequiredError(
-          'Email Address',
-          Boolean(showErrors),
-          user.email,
-        )}
         label='Email Address'
         placeholder='user@company.com'
         type='email'
         value={user.email}
         required
+        error={getFieldRequiredError(
+          'Email Address',
+          Boolean(showErrors),
+          user.email,
+        )}
         onChange={(value) => onChange({ ...user, email: value })}
       />
 
@@ -1058,9 +1203,9 @@ function LoginDetails({
                 key={opt.value}
                 type='button'
                 className={[
-                  'flex items-center gap-3 rounded-[12px] border p-3.5 text-left transition cursor-pointer',
+                  'flex cursor-pointer items-center gap-3 rounded-[12px] border p-3.5 text-left transition',
                   isSelected
-                    ? 'border-[var(--primary-8)] bg-[var(--primary-2)] ring-1 ring-[var(--primary-8)] shadow-sm'
+                    ? 'border-[var(--primary-8)] bg-[var(--primary-2)] shadow-sm ring-1 ring-[var(--primary-8)]'
                     : 'border-[var(--border-default)] bg-surface hover:border-[var(--primary-5)]',
                 ].join(' ')}
                 onClick={() => onChange({ ...user, loginType: opt.value })}
@@ -1084,7 +1229,7 @@ function LoginDetails({
                   <div className='truncate text-xs font-semibold text-[var(--gray-13)]'>
                     {opt.title}
                   </div>
-                  <div className='truncate text-[11px] text-[var(--gray-10)] mt-0.5'>
+                  <div className='mt-0.5 truncate text-[11px] text-[var(--gray-10)]'>
                     {opt.description}
                   </div>
                 </div>
@@ -1109,14 +1254,14 @@ function LoginDetails({
 
       {user.loginType === 'Password' ? (
         <EzPasswordField
+          label='Password'
+          value={user.password}
+          required
           error={getFieldRequiredError(
             'Password',
             Boolean(showErrors),
             user.password,
           )}
-          label='Password'
-          value={user.password}
-          required
           onChange={(value) => onChange({ ...user, password: value })}
         />
       ) : null}
@@ -1361,9 +1506,9 @@ function UserSetup({
       <SettingsSetupHeader
         moduleTitle='User Management'
         progress={progress}
-        setupTitle={editingUserId ? 'Edit User' : 'Create User'}
         stepDescription={activeStepConfig.description}
         stepTitle={activeStepConfig.title}
+        setupTitle={editingUserId ? 'Edit User' : 'Create User'}
         onBackToSettings={onBackToSettings}
         onCancelSetup={onCancel}
       />
@@ -1474,32 +1619,4 @@ function UserSetup({
       </div>
     </main>
   )
-}
-
-function getMissingRequiredUserLabels(user: DraftUser, step?: number) {
-  if (step === 2 || step === 3) return []
-
-  if (step === 1) {
-    return getMissingRequiredLabels([{ label: 'Role', value: user.role }])
-  }
-
-  const loginFields = [
-    { label: 'First Name', value: user.firstName },
-    { label: 'Last Name', value: user.lastName },
-    { label: 'Email Address', value: user.email },
-    { label: 'Login Type', value: user.loginType },
-  ]
-
-  if (user.loginType === 'Password') {
-    loginFields.push({ label: 'Password', value: user.password })
-  }
-
-  if (step === 0) {
-    return getMissingRequiredLabels(loginFields)
-  }
-
-  return getMissingRequiredLabels([
-    ...loginFields,
-    { label: 'Role', value: user.role },
-  ])
 }

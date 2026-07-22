@@ -12,23 +12,24 @@ interface Props {
   allWorkflows: Option[] | null
   isLoading: boolean
   workflow: Option | null
+  actionButtons?: {
+    color?: any
+    disabled?: boolean
+    icon?: string
+    id: string
+    label?: string
+    tooltip?: string
+    variant?: any
+    onClick: () => void
+  }[]
   exceptionsCount?: number
   metaData?: IRequestMeta
   setActiveTab: (val: string) => void
   setWorkflow: React.Dispatch<React.SetStateAction<Option | null>>
-  actionButtons?: {
-    id: string;
-    label?: string;
-    icon?: string;
-    color?: any;
-    variant?: any;
-    onClick: () => void;
-    disabled?: boolean;
-    tooltip?: string;
-  }[];
 }
 
 const Header = ({
+  actionButtons,
   activeTab,
   allWorkflows,
   exceptionsCount,
@@ -37,13 +38,11 @@ const Header = ({
   workflow,
   setActiveTab,
   setWorkflow,
-  actionButtons,
 }: Props) => {
   const processedCount =
     Number(metaData?.completedCount ?? 0) + Number(metaData?.sentCount ?? 0)
   const inboxCount = Number(metaData?.inboxCount ?? 0)
   const resolvedExceptionsCount = exceptionsCount ?? 0
-
 
   console.log(allWorkflows)
 
@@ -85,14 +84,14 @@ const Header = ({
         />
         {actionButtons?.map((btn) => (
           <Button
-            key={btn.id}
             color={btn.color || 'primary'}
+            disabled={btn.disabled}
             icon={btn.icon}
+            key={btn.id}
             label={btn.label}
             size='lg'
             variant={btn.variant || 'solid'}
             onClick={btn.onClick}
-            disabled={btn.disabled}
           />
         ))}
       </div>

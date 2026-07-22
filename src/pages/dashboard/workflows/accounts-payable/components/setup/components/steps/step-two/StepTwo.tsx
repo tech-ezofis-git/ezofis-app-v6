@@ -3,8 +3,8 @@ import Alert from '@/components/base/Alert'
 import Button from '@/components/base/button/Button'
 import { AnimateFadeIn, AnimateSlideUp } from '@/components/common/animations'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
-import { SYSTEM_TEMPLATE_COLUMNS } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/templateSchema'
 import { LINE_ITEM_TEMPLATE_COLUMNS } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/lineItemSchema'
+import { SYSTEM_TEMPLATE_COLUMNS } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/templateSchema'
 import authUserStore from '@/stores/authUserStore'
 import { StepFooter, StepLayout } from '../components/StepLayout'
 import ErpSystem from './components/ErpSystem'
@@ -32,8 +32,11 @@ const StepTwo = () => {
     const handleMessage = (event: MessageEvent) => {
       if (event.origin !== window.location.origin) return
       if (event.data.type === 'CONNECTION_SUCCESS') {
+        const connector =
+          typeof event.data.connector === 'string' ? event.data.connector : ''
         setErpSettings({
           ...erpSettings,
+          account: connector || session?.email || erpSettings.account || '',
           isConnected: true,
           isConnecting: false,
         })
@@ -42,7 +45,7 @@ const StepTwo = () => {
 
     window.addEventListener('message', handleMessage)
     return () => window.removeEventListener('message', handleMessage)
-  }, [erpSettings, setErpSettings])
+  }, [erpSettings, session?.email, setErpSettings])
 
   const handleConnect = () => {
     const tenantId = session?.tenantId
@@ -66,7 +69,9 @@ const StepTwo = () => {
     window.open(url, '_blank')
   }
 
-  const requiredHeaderColumns = SYSTEM_TEMPLATE_COLUMNS.filter((c) => c.required)
+  const requiredHeaderColumns = SYSTEM_TEMPLATE_COLUMNS.filter(
+    (c) => c.required,
+  )
   const isHeaderMappingComplete =
     requiredHeaderColumns.length > 0 &&
     requiredHeaderColumns.every(
@@ -75,17 +80,20 @@ const StepTwo = () => {
         erpSettings.mapping[col.key] !== 'Skip to Import',
     )
 
-  const hasLineItems = erpSettings.lineItemHeaders && erpSettings.lineItemHeaders.length > 0
-  const requiredLineItemColumns = LINE_ITEM_TEMPLATE_COLUMNS.filter((c) => c.required)
-
-  const isLineItemMappingComplete = !hasLineItems || (
-    requiredLineItemColumns.length > 0 &&
-    requiredLineItemColumns.every(
-      (col) =>
-        !!erpSettings.lineItemMapping?.[col.key] &&
-        erpSettings.lineItemMapping[col.key] !== 'Skip to Import',
-    )
+  const hasLineItems =
+    erpSettings.lineItemHeaders && erpSettings.lineItemHeaders.length > 0
+  const requiredLineItemColumns = LINE_ITEM_TEMPLATE_COLUMNS.filter(
+    (c) => c.required,
   )
+
+  const isLineItemMappingComplete =
+    !hasLineItems ||
+    (requiredLineItemColumns.length > 0 &&
+      requiredLineItemColumns.every(
+        (col) =>
+          !!erpSettings.lineItemMapping?.[col.key] &&
+          erpSettings.lineItemMapping[col.key] !== 'Skip to Import',
+      ))
 
   const isMappingComplete = isHeaderMappingComplete && isLineItemMappingComplete
 

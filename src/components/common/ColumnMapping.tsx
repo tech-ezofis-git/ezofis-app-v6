@@ -1,3 +1,4 @@
+import dayjs from 'dayjs'
 import { useEffect, useRef, useState } from 'react'
 import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
@@ -7,7 +8,6 @@ import Tooltip from '@/components/base/Tooltip'
 import { AnimateFadeIn } from '@/components/common/animations'
 import { findBestHeaderMatch } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/headerSimilarity'
 import { SYSTEM_TEMPLATE_COLUMNS } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/templateSchema'
-import dayjs from 'dayjs'
 import cn from '@/utils/cn'
 
 export interface TemplateColumn {
@@ -21,51 +21,51 @@ interface ColumnMappingProps {
   previewRows: any[]
   uploadedColumns: string[]
   autoScrollAndHighlight?: boolean
+  availableGroupIds?: string[]
+  confirmButtonText?: string
+  groupedPreviewRows?: any[]
+  groupingColumn?: string | null
   isConfirmLoading?: boolean
+  previewGroupId?: string
   showActionsRow?: boolean
+  // Grouping Props
+  showGrouping?: boolean
+
+  simple?: boolean
+  templateSchema?: readonly TemplateColumn[]
+  title?: string
+  totalGroupsCount?: number
+  totalRowsCount?: number
   onCancel?: () => void
   onChangeMapping: (mapping: Record<string, string>) => void
   onConfirm?: () => void
-  confirmButtonText?: string
-  title?: string
-  templateSchema?: readonly TemplateColumn[]
-
-  // Grouping Props
-  showGrouping?: boolean
-  groupingColumn?: string | null
   onGroupingColumnChange?: (col: string | null) => void
-  availableGroupIds?: string[]
-  previewGroupId?: string
   onPreviewGroupChange?: (id: string) => void
-  groupedPreviewRows?: any[]
-  totalGroupsCount?: number
-  totalRowsCount?: number
-  simple?: boolean
 }
 
 export default function ColumnMapping({
   autoScrollAndHighlight = true,
+  availableGroupIds = [],
+  confirmButtonText,
+  groupedPreviewRows = [],
+  groupingColumn,
   isConfirmLoading = false,
   mapping,
+  previewGroupId,
   previewRows,
   showActionsRow = false,
+  showGrouping = false,
+  simple = false,
+  templateSchema = SYSTEM_TEMPLATE_COLUMNS,
+  title,
+  totalGroupsCount = 0,
+  totalRowsCount = 0,
   uploadedColumns,
   onCancel,
   onChangeMapping,
   onConfirm,
-  confirmButtonText,
-  title,
-  templateSchema = SYSTEM_TEMPLATE_COLUMNS,
-  showGrouping = false,
-  groupingColumn,
   onGroupingColumnChange,
-  availableGroupIds = [],
-  previewGroupId,
   onPreviewGroupChange,
-  groupedPreviewRows = [],
-  totalGroupsCount = 0,
-  totalRowsCount = 0,
-  simple = false,
 }: ColumnMappingProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [isHighlightActive, setIsHighlightActive] = useState(false)
@@ -142,13 +142,13 @@ export default function ColumnMapping({
         className={cn(
           'animate-in fade-in slide-in-from-top-2 transition-all duration-1000',
           simple
-            ? 'mt-0 space-y-3 border border-border-default rounded-xl pt-2.5 pb-4 px-4 bg-surface-primary shadow-sm'
+            ? 'mt-0 space-y-3 rounded-xl border border-border-default bg-surface-primary px-4 pt-2.5 pb-4 shadow-sm'
             : cn(
                 'mt-4 space-y-4 rounded-xl border p-5 shadow-sm',
                 isHighlightActive
                   ? 'border-primary-9 bg-primary-1/10 shadow-md ring-4 shadow-primary-9/5 ring-primary-9/20'
                   : 'border-border-default bg-surface-primary',
-              )
+              ),
         )}
       >
         {!simple && (
@@ -175,23 +175,21 @@ export default function ColumnMapping({
         )}
 
         {showGrouping && (
-          <div className='flex flex-col gap-4 border-b border-border-default pb-4 pt-1'>
+          <div className='flex flex-col gap-4 border-b border-border-default pt-1 pb-4'>
             <div className='flex items-center justify-between'>
               <div className='flex flex-col'>
                 <span className='text-[12px] font-bold text-gray-12'>
                   Grouping
                 </span>
-                <span className='text-[11px] text-gray-8'>
-                  Group By Column
-                </span>
+                <span className='text-[11px] text-gray-8'>Group By Column</span>
               </div>
               <div className='w-[200px]'>
                 <InputSelect
                   className='w-full'
+                  options={uploadedColumns.map((c) => ({ id: c, name: c }))}
                   placeholder='Select group column...'
                   clearable
                   searchable
-                  options={uploadedColumns.map((c) => ({ id: c, name: c }))}
                   styles={{
                     input: {
                       fontSize: '12px',
@@ -255,11 +253,17 @@ export default function ColumnMapping({
                     } else {
                       const num = Number(rawVal)
                       if (!isNaN(num) && num > 30000 && num < 60000) {
-                        const parsedDate = new Date(Math.round((num - 25569) * 86400 * 1000))
+                        const parsedDate = new Date(
+                          Math.round((num - 25569) * 86400 * 1000),
+                        )
                         previewVal = dayjs(parsedDate).format('YYYY-MM-DD')
                       } else {
                         const parsed = dayjs(rawVal)
-                        if (parsed.isValid() && parsed.format() !== 'Invalid Date' && isNaN(Number(rawVal))) {
+                        if (
+                          parsed.isValid() &&
+                          parsed.format() !== 'Invalid Date' &&
+                          isNaN(Number(rawVal))
+                        ) {
                           previewVal = parsed.format('YYYY-MM-DD')
                         } else {
                           previewVal = String(rawVal)
@@ -278,7 +282,7 @@ export default function ColumnMapping({
                   >
                     {/* Column 1: System Field */}
                     <div className='flex min-w-0 items-center gap-1.5'>
-                      <span className='truncate text-[13px] font-semibold text-gray-12 hover:whitespace-normal hover:overflow-visible hover:break-words'>
+                      <span className='truncate text-[13px] font-semibold text-gray-12 hover:overflow-visible hover:break-words hover:whitespace-normal'>
                         {col.key}
                       </span>
                       {col.required && (
@@ -331,9 +335,7 @@ export default function ColumnMapping({
                     </div>
 
                     {/* Column 3: Preview Value */}
-                    <div
-                      className='truncate text-[12px] font-medium text-gray-8 hover:whitespace-normal hover:overflow-visible hover:break-words'
-                    >
+                    <div className='truncate text-[12px] font-medium text-gray-8 hover:overflow-visible hover:break-words hover:whitespace-normal'>
                       {selectedVal === 'Skip to Import' ? (
                         <span className='italic'>Skipped</span>
                       ) : previewVal ? (
@@ -363,9 +365,9 @@ export default function ColumnMapping({
               <div className='w-[200px]'>
                 <InputSelect
                   className='w-full'
+                  options={availableGroupIds.map((id) => ({ id, name: id }))}
                   placeholder='Select PO to preview...'
                   searchable
-                  options={availableGroupIds.map((id) => ({ id, name: id }))}
                   styles={{
                     input: {
                       fontSize: '12px',
@@ -394,9 +396,16 @@ export default function ColumnMapping({
                   <tr className='border-b border-border-default'>
                     {templateSchema.map((col) => {
                       // Only show mapped columns in the preview table
-                      if (!mapping[col.key] || mapping[col.key] === 'Skip to Import') return null
+                      if (
+                        !mapping[col.key] ||
+                        mapping[col.key] === 'Skip to Import'
+                      )
+                        return null
                       return (
-                        <th key={col.key} className='px-3 py-2 font-bold whitespace-nowrap text-gray-12'>
+                        <th
+                          className='px-3 py-2 font-bold whitespace-nowrap text-gray-12'
+                          key={col.key}
+                        >
                           {col.key}
                         </th>
                       )
@@ -405,12 +414,16 @@ export default function ColumnMapping({
                 </thead>
                 <tbody className='divide-y divide-border-default'>
                   {groupedPreviewRows.map((row, idx) => (
-                    <tr key={idx} className='hover:bg-surface-hover'>
+                    <tr className='hover:bg-surface-hover' key={idx}>
                       {templateSchema.map((col) => {
                         const excelHeader = mapping[col.key]
-                        if (!excelHeader || excelHeader === 'Skip to Import') return null
+                        if (!excelHeader || excelHeader === 'Skip to Import')
+                          return null
                         return (
-                          <td key={col.key} className='px-3 py-1.5 whitespace-nowrap truncate max-w-[150px]'>
+                          <td
+                            className='max-w-[150px] truncate px-3 py-1.5 whitespace-nowrap'
+                            key={col.key}
+                          >
                             {String(row[excelHeader] ?? '')}
                           </td>
                         )
@@ -419,7 +432,10 @@ export default function ColumnMapping({
                   ))}
                   {groupedPreviewRows.length === 0 && (
                     <tr>
-                      <td colSpan={templateSchema.length} className='px-3 py-4 text-center italic text-gray-8'>
+                      <td
+                        className='px-3 py-4 text-center text-gray-8 italic'
+                        colSpan={templateSchema.length}
+                      >
                         No line items found for this group.
                       </td>
                     </tr>

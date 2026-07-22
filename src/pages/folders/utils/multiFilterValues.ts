@@ -1,23 +1,17 @@
-/** Delimiter for multi-select filter values stored in Record<string, string>. */
-export const MULTI_FILTER_SEP = '||'
+import {
+  FILTER_MULTI_SEP,
+  parseFilterValues,
+  serializeFilterValues,
+} from '@/utils/filterUtils'
 
-export const splitFilterValues = (value?: string | null): string[] => {
-  const trimmed = String(value ?? '').trim()
-  if (!trimmed) return []
-  if (trimmed.includes(MULTI_FILTER_SEP)) {
-    return trimmed
-      .split(MULTI_FILTER_SEP)
-      .map((part) => part.trim())
-      .filter(Boolean)
-  }
-  return [trimmed]
-}
+/** Delimiter for multi-select filter values stored in Record<string, string>. */
+export const MULTI_FILTER_SEP = FILTER_MULTI_SEP
+
+export const splitFilterValues = (value?: string | null): string[] =>
+  parseFilterValues(value)
 
 export const joinFilterValues = (values: string[]): string =>
-  values
-    .map((value) => String(value || '').trim())
-    .filter(Boolean)
-    .join(MULTI_FILTER_SEP)
+  serializeFilterValues(values)
 
 export const toggleFilterValue = (
   current: string | null | undefined,

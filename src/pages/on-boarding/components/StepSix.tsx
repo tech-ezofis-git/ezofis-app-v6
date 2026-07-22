@@ -1,9 +1,9 @@
 import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
+import { savePreQuestions } from '@/api/apiRouter'
 import InputCheckboxCard from '@/components/base/inputs/InputCheckboxCard'
 import InputText from '@/components/base/inputs/InputText'
 import showToast from '@/components/base/toast/showToast'
-import { savePreQuestions } from '@/api/apiRouter'
 import authUserStore from '@/stores/authUserStore'
 import onBoardingStore from '../stores/onBoardingStore'
 import StepFooter from './StepFooter'
@@ -48,12 +48,12 @@ const StepSix = () => {
   const isOtherChecked = initialOptionIds.includes(7)
   const initialOtherText = isOtherChecked
     ? savedNames.find(
-      (sn) =>
-        !businessChallenges
-          .map((x) => x.name)
-          .filter((n) => n !== 'Other')
-          .includes(sn),
-    ) || ''
+        (sn) =>
+          !businessChallenges
+            .map((x) => x.name)
+            .filter((n) => n !== 'Other')
+            .includes(sn),
+      ) || ''
     : ''
 
   const [selectedIds, setSelectedIds] = useState<number[]>(initialOptionIds)
@@ -98,8 +98,8 @@ const StepSix = () => {
       const answers = onBoardingStore.getState().answers
       const formattedPayload = {
         questions: Object.entries(answers).map(([qText, qAns]) => ({
-          question: qText,
           answer: qAns,
+          question: qText,
         })),
       }
 
@@ -108,7 +108,10 @@ const StepSix = () => {
         throw new Error('User session not found')
       }
 
-      console.log('Sending onboarding answers payload to API:', formattedPayload)
+      console.log(
+        'Sending onboarding answers payload to API:',
+        formattedPayload,
+      )
 
       const response = await savePreQuestions(userId, formattedPayload)
       if (response.error) {

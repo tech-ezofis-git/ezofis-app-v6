@@ -46,19 +46,19 @@ export interface SelectionProps {
 }
 
 export interface SelectProps extends InputProps {
-  autoOpen?: boolean
   options: Option[]
+  autoOpen?: boolean
   creatable?: boolean
   dropdownFooter?: ReactNode
   iconOnly?: boolean
   leftSection?: ReactNode
-  onDropdownClose?: () => void
-  onDropdownOpen?: () => void
   position?: ComboboxProps['position']
   rightSectionIcon?: string
   searchable?: boolean
   searchPlaceholder?: string
   width?: ComboboxProps['width']
+  onDropdownClose?: () => void
+  onDropdownOpen?: () => void
 }
 
 export type SelectVariant = 'single' | 'multiple'
