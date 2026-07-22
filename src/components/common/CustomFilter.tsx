@@ -15,6 +15,37 @@ const MORE_FILTER_PANEL_HEIGHT = 260;
 /** Same layer as More filters panel; above toolbar/table content */
 const FILTER_MENU_Z_INDEX = 50000;
 const VIEWPORT_GAP = 8;
+/** Multi-select value delimiter (must match folder multiFilterValues). */
+const MULTI_FILTER_SEP = "||";
+
+const splitMultiFilterValues = (value?: string | null): string[] => {
+  const trimmed = String(value ?? "").trim();
+  if (!trimmed) return [];
+  if (trimmed.includes(MULTI_FILTER_SEP)) {
+    return trimmed
+      .split(MULTI_FILTER_SEP)
+      .map((part) => part.trim())
+      .filter(Boolean);
+  }
+  return [trimmed];
+};
+
+const joinMultiFilterValues = (values: string[]) =>
+  values
+    .map((value) => String(value || "").trim())
+    .filter(Boolean)
+    .join(MULTI_FILTER_SEP);
+
+const toggleMultiFilterValue = (
+  current: string | null | undefined,
+  value: string,
+) => {
+  const selected = splitMultiFilterValues(current);
+  const next = selected.includes(value)
+    ? selected.filter((item) => item !== value)
+    : [...selected, value];
+  return joinMultiFilterValues(next);
+};
 
 interface DropdownPosition {
   top: number;
@@ -126,6 +157,10 @@ export interface CustomFilterProps {
   moreFiltersLabel?: string;
   activeFilters: Record<string, string>;
   onFilterChange: (id: string, value: string) => void;
+  /** Fired when a primary filter menu opens (`id`) or closes (`null`). */
+  onFilterMenuOpenChange?: (id: string | null) => void;
+  /** When true, primary filters use checkbox multi-select (menu stays open). */
+  multiSelect?: boolean;
   onReset: () => void;
   showReset?: boolean;
   searchQuery?: string;
@@ -154,6 +189,8 @@ export default function CustomFilter({
   moreFiltersLabel = "More filters",
   activeFilters,
   onFilterChange,
+  onFilterMenuOpenChange,
+  multiSelect = false,
   onReset,
   showReset,
   searchQuery = "",
@@ -192,6 +229,20 @@ export default function CustomFilter({
   const filterButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const morePanelAnchorRef = useRef<HTMLElement | null>(null);
   const skipMoreFilterDebounceRef = useRef(false);
+  const previousFilterDropdownRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const previous = previousFilterDropdownRef.current;
+    const next =
+      activeFilterDropdown && activeFilterDropdown !== "more"
+        ? activeFilterDropdown
+        : null;
+
+    if (previous === next) return;
+
+    previousFilterDropdownRef.current = next;
+    onFilterMenuOpenChange?.(next);
+  }, [activeFilterDropdown, onFilterMenuOpenChange]);
 
   const updateFilterDropdownPosition = useCallback(() => {
     if (!activeFilterDropdown || activeFilterDropdown === "more") {
@@ -643,14 +694,26 @@ export default function CustomFilter({
 
           {filters.map((filter) => {
             const activeValue = activeFilters[filter.id];
+            const selectedValues = splitMultiFilterValues(activeValue);
             const activeOption = filter.options.find(
               (o) => o.value === activeValue,
             );
-            const displayLabel = activeOption
-              ? `${filter.label} : ${activeOption.label}`
-              : activeValue
-                ? `${filter.label} : ${activeValue}`
-                : filter.label;
+            const multiDisplay =
+              selectedValues.length === 0
+                ? ""
+                : selectedValues.length === 1
+                  ? filter.options.find((o) => o.value === selectedValues[0])
+                      ?.label || selectedValues[0]
+                  : `${selectedValues.length} selected`;
+            const displayLabel = multiSelect
+              ? multiDisplay
+                ? `${filter.label} : ${multiDisplay}`
+                : filter.label
+              : activeOption
+                ? `${filter.label} : ${activeOption.label}`
+                : activeValue
+                  ? `${filter.label} : ${activeValue}`
+                  : filter.label;
             const isActive =
               !!activeValue || activeFilterDropdown === filter.id;
 
@@ -740,21 +803,23 @@ export default function CustomFilter({
                         </>
                       )}
                       <div className="scrollbar flex max-h-[220px] flex-col gap-0.5 overflow-y-auto">
-                        <button
-                          className={cn(
-                            "w-full cursor-pointer rounded px-2.5 py-1.5 text-left text-12 font-medium text-text-primary transition-colors hover:bg-gray-2",
-                            !activeValue &&
-                              "bg-primary-3/30 font-semibold text-primary-9",
-                          )}
-                          onClick={() => {
-                            skipMoreFilterDebounceRef.current = true;
-                            setFilterSearchQuery("");
-                            onFilterChange(filter.id, "");
-                            setActiveFilterDropdown(null);
-                          }}
-                        >
-                          All {filter.label}
-                        </button>
+                        {!multiSelect ? (
+                          <button
+                            className={cn(
+                              "w-full cursor-pointer rounded px-2.5 py-1.5 text-left text-12 font-medium text-text-primary transition-colors hover:bg-gray-2",
+                              !activeValue &&
+                                "bg-primary-3/30 font-semibold text-primary-9",
+                            )}
+                            onClick={() => {
+                              skipMoreFilterDebounceRef.current = true;
+                              setFilterSearchQuery("");
+                              onFilterChange(filter.id, "");
+                              setActiveFilterDropdown(null);
+                            }}
+                          >
+                            All {filter.label}
+                          </button>
+                        ) : null}
                         {(() => {
                           const visibleOptions = filter.options.filter(
                             (item) =>
@@ -774,6 +839,16 @@ export default function CustomFilter({
                                   type="button"
                                   onClick={() => {
                                     skipMoreFilterDebounceRef.current = true;
+                                    if (multiSelect) {
+                                      onFilterChange(
+                                        filter.id,
+                                        toggleMultiFilterValue(
+                                          activeValue,
+                                          typed,
+                                        ),
+                                      );
+                                      return;
+                                    }
                                     onFilterChange(filter.id, typed);
                                     setActiveFilterDropdown(null);
                                   }}
@@ -788,6 +863,41 @@ export default function CustomFilter({
                                 Type to search or apply a value
                               </div>
                             );
+                          }
+
+                          if (multiSelect) {
+                            return visibleOptions.map((item) => {
+                              const isSelected = selectedValues.includes(
+                                item.value,
+                              );
+                              return (
+                                <label
+                                  key={item.value}
+                                  className={cn(
+                                    "flex cursor-pointer items-center gap-2 rounded px-2.5 py-1.5 text-12 font-medium transition-colors hover:bg-gray-2",
+                                    isSelected &&
+                                      "bg-primary-3/30 text-primary-9",
+                                  )}
+                                >
+                                  <input
+                                    checked={isSelected}
+                                    className="accent-primary-9"
+                                    type="checkbox"
+                                    onChange={() => {
+                                      skipMoreFilterDebounceRef.current = true;
+                                      onFilterChange(
+                                        filter.id,
+                                        toggleMultiFilterValue(
+                                          activeValue,
+                                          item.value,
+                                        ),
+                                      );
+                                    }}
+                                  />
+                                  <span>{item.label}</span>
+                                </label>
+                              );
+                            });
                           }
 
                           return visibleOptions.map((item) => (
@@ -810,6 +920,22 @@ export default function CustomFilter({
                           ));
                         })()}
                       </div>
+                      {multiSelect && selectedValues.length > 0 ? (
+                        <div className="pt-2">
+                          <div className="mx-[-12px] mb-1 h-px bg-border-default" />
+                          <button
+                            className="w-full rounded px-2.5 py-1.5 text-left text-12 font-medium text-text-secondary hover:bg-gray-2"
+                            type="button"
+                            onClick={() => {
+                              skipMoreFilterDebounceRef.current = true;
+                              onFilterChange(filter.id, "");
+                              setActiveFilterDropdown(null);
+                            }}
+                          >
+                            Clear Selection
+                          </button>
+                        </div>
+                      ) : null}
                     </div>,
                     document.body,
                   )}

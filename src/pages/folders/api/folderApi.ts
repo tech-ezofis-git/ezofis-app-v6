@@ -108,33 +108,44 @@ const resolveApiFilterKey = (
   return lookupKey.replace(/\s+/g, '')
 }
 
-/** Map UI filter ids to API field names and drop empty values. */
+/** Map UI filter ids to API field names and drop empty values.
+ * Multi-select (`a||b`) becomes a string array so the API can OR-match.
+ */
 export const buildApiFilters = (
   filters: Record<string, string> = {},
   fieldKeys: string[] = [],
   fields: Array<{ name?: string; sqlColumnName?: string }> = [],
-): Record<string, string> => {
-  const apiFilters: Record<string, string> = {}
+): Record<string, string | string[]> => {
+  const apiFilters: Record<string, string | string[]> = {}
 
   Object.entries(filters).forEach(([key, rawValue]) => {
-    const value = String(rawValue ?? '').trim()
-    if (!value) return
+    const parts = String(rawValue ?? '')
+      .split('||')
+      .map((part) => part.trim())
+      .filter(Boolean)
+    if (!parts.length) return
 
     const apiKey = resolveApiFilterKey(key, fields, fieldKeys)
     if (!apiKey) return
 
-    apiFilters[apiKey] = value
+    apiFilters[apiKey] = parts.length === 1 ? parts[0] : parts
   })
 
   return apiFilters
 }
 
 const mergeFilters = (
-  ...groups: Array<Record<string, string> | undefined>
-): Record<string, string> => {
-  const merged: Record<string, string> = {}
+  ...groups: Array<Record<string, string | string[]> | undefined>
+): Record<string, string | string[]> => {
+  const merged: Record<string, string | string[]> = {}
   groups.forEach((group) => {
     Object.entries(group || {}).forEach(([key, value]) => {
+      if (Array.isArray(value)) {
+        const parts = value.map((part) => String(part ?? '').trim()).filter(Boolean)
+        if (parts.length) merged[key] = parts.length === 1 ? parts[0] : parts
+        return
+      }
+
       const trimmed = String(value ?? '').trim()
       if (trimmed) merged[key] = trimmed
     })
@@ -980,7 +991,7 @@ export const folderApi = {
       (request.fileSearch ?? request.search)?.trim() || undefined
 
     const fetchRepositoryFiles = async (
-      itemFilters: Record<string, string>,
+      itemFilters: Record<string, string | string[]>,
       searchText?: string,
     ) => {
       const itemResult = await getRepositoryItems({

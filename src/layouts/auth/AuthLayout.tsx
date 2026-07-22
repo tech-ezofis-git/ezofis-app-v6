@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { useLocation } from '@tanstack/react-router'
+import { useIsMobile } from '@/pages/mobile'
 import AuthFooter from './components/AuthFooter'
 import AuthHeader from './components/AuthHeader'
 import Features from './components/Features'
@@ -11,8 +12,17 @@ interface Props {
 
 const AuthLayout = ({ children }: Props) => {
   const location = useLocation()
+  const isMobile = useIsMobile()
   const isResetPassword =
     location.pathname.replace(/\/$/, '') === '/reset-password'
+
+  if (isMobile) {
+    return (
+      <div className='h-dvh overflow-hidden bg-surface-primary'>
+        {children}
+      </div>
+    )
+  }
 
   return (
     <div

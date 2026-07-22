@@ -74,6 +74,7 @@ import { Route as AppSettingsRouteImport } from './routes/_app/settings'
 import { Route as AppRequestsRouteImport } from './routes/_app/requests'
 import { Route as AppReportsRouteImport } from './routes/_app/reports'
 import { Route as AppPortalsRouteImport } from './routes/_app/portals'
+import { Route as AppMobilePreviewRouteImport } from './routes/_app/mobile-preview'
 import { Route as AppHelpCenterRouteImport } from './routes/_app/help-center'
 import { Route as AppFormsRouteImport } from './routes/_app/forms'
 import { Route as AppFoldersRouteImport } from './routes/_app/folders'
@@ -411,6 +412,11 @@ const AppPortalsRoute = AppPortalsRouteImport.update({
   path: '/portals',
   getParentRoute: () => AppRouteRoute,
 } as any)
+const AppMobilePreviewRoute = AppMobilePreviewRouteImport.update({
+  id: '/mobile-preview',
+  path: '/mobile-preview',
+  getParentRoute: () => AppRouteRoute,
+} as any)
 const AppHelpCenterRoute = AppHelpCenterRouteImport.update({
   id: '/help-center',
   path: '/help-center',
@@ -465,6 +471,7 @@ export interface FileRoutesByFullPath {
   '/folders': typeof AppFoldersRoute
   '/forms': typeof AppFormsRoute
   '/help-center': typeof AppHelpCenterRoute
+  '/mobile-preview': typeof AppMobilePreviewRoute
   '/portals': typeof AppPortalsRoute
   '/reports': typeof AppReportsRoute
   '/requests': typeof AppRequestsRoute
@@ -538,6 +545,7 @@ export interface FileRoutesByTo {
   '/folders': typeof AppFoldersRoute
   '/forms': typeof AppFormsRoute
   '/help-center': typeof AppHelpCenterRoute
+  '/mobile-preview': typeof AppMobilePreviewRoute
   '/portals': typeof AppPortalsRoute
   '/reports': typeof AppReportsRoute
   '/requests': typeof AppRequestsRoute
@@ -615,6 +623,7 @@ export interface FileRoutesById {
   '/_app/folders': typeof AppFoldersRoute
   '/_app/forms': typeof AppFormsRoute
   '/_app/help-center': typeof AppHelpCenterRoute
+  '/_app/mobile-preview': typeof AppMobilePreviewRoute
   '/_app/portals': typeof AppPortalsRoute
   '/_app/reports': typeof AppReportsRoute
   '/_app/requests': typeof AppRequestsRoute
@@ -691,6 +700,7 @@ export interface FileRouteTypes {
     | '/folders'
     | '/forms'
     | '/help-center'
+    | '/mobile-preview'
     | '/portals'
     | '/reports'
     | '/requests'
@@ -764,6 +774,7 @@ export interface FileRouteTypes {
     | '/folders'
     | '/forms'
     | '/help-center'
+    | '/mobile-preview'
     | '/portals'
     | '/reports'
     | '/requests'
@@ -840,6 +851,7 @@ export interface FileRouteTypes {
     | '/_app/folders'
     | '/_app/forms'
     | '/_app/help-center'
+    | '/_app/mobile-preview'
     | '/_app/portals'
     | '/_app/reports'
     | '/_app/requests'
@@ -1378,6 +1390,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppPortalsRouteImport
       parentRoute: typeof AppRouteRoute
     }
+    '/_app/mobile-preview': {
+      id: '/_app/mobile-preview'
+      path: '/mobile-preview'
+      fullPath: '/mobile-preview'
+      preLoaderRoute: typeof AppMobilePreviewRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
     '/_app/help-center': {
       id: '/_app/help-center'
       path: '/help-center'
@@ -1448,6 +1467,7 @@ interface AppRouteRouteChildren {
   AppFoldersRoute: typeof AppFoldersRoute
   AppFormsRoute: typeof AppFormsRoute
   AppHelpCenterRoute: typeof AppHelpCenterRoute
+  AppMobilePreviewRoute: typeof AppMobilePreviewRoute
   AppPortalsRoute: typeof AppPortalsRoute
   AppReportsRoute: typeof AppReportsRoute
   AppRequestsRoute: typeof AppRequestsRoute
@@ -1464,6 +1484,7 @@ const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppFoldersRoute: AppFoldersRoute,
   AppFormsRoute: AppFormsRoute,
   AppHelpCenterRoute: AppHelpCenterRoute,
+  AppMobilePreviewRoute: AppMobilePreviewRoute,
   AppPortalsRoute: AppPortalsRoute,
   AppReportsRoute: AppReportsRoute,
   AppRequestsRoute: AppRequestsRoute,
