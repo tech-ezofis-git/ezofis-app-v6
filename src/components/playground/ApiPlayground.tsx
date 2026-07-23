@@ -73,6 +73,28 @@ const DEFAULT_DOCUMENT: Required<
 
 const stringifyJson = (value: unknown) => JSON.stringify(value, null, 2) || ''
 
+/** Show start + end of token, mask the middle */
+const maskApiKey = (key: string) => {
+  if (!key) return ''
+  if (key.length <= 12) return `${key.slice(0, 4)}${'•'.repeat(6)}`
+  return `${key.slice(0, 10)}${'•'.repeat(8)}${key.slice(-4)}`
+}
+
+/** Shared typography — matches app filter / chip standard */
+const TEXT_MUTED = 'text-12 font-medium text-text-muted'
+const TEXT_SECONDARY = 'text-12 font-medium text-text-secondary'
+const TEXT_PRIMARY = 'text-12 font-medium text-text-primary'
+const TEXT_SECTION = 'text-12 font-medium text-text-secondary'
+const TEXT_CODE = 'font-mono text-12 font-medium'
+/** HTTP method chips only (GET / POST / …) */
+const TEXT_METHOD = 'text-11 font-medium uppercase tracking-wide'
+/** Status chips — same size as method, normal casing */
+const TEXT_STATUS = 'text-11 font-medium'
+const BTN_PRIMARY =
+  'inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border-none bg-primary-9 px-3 py-1.5 text-12 font-medium text-white shadow-sm transition-all hover:bg-primary-10 active:scale-95'
+const BTN_SECONDARY =
+  'inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border-none bg-gray-2 px-3 py-1.5 text-12 font-medium text-text-primary shadow-sm transition-all hover:bg-gray-3 active:scale-95'
+
 export const ApiPlayground = ({
   context,
   onClose,
@@ -145,22 +167,60 @@ export const ApiPlayground = ({
     setTimeout(() => setCopiedId(null), 2000)
   }
 
-  return (
-    <div className='flex h-full flex-col bg-surface font-sans text-gray-13'>
-      {/* Top Header */}
-      <div className='flex items-center justify-between border-b border-[var(--gray-3)] bg-[var(--gray-1)] px-4 py-3'>
-        <div className='flex items-center gap-2'>
+  const displayToken = showKey ? apiKey : maskApiKey(apiKey)
+
+  const tokenRow = apiKey ? (
+    <div className='flex max-w-full items-center gap-2 overflow-hidden rounded-md border border-border-default bg-surface px-2 py-1.5'>
+      <span className={cn(TEXT_MUTED, 'shrink-0 select-none')}>Token:</span>
+      <span
+        className={cn(
+          TEXT_CODE,
+          'min-w-0 flex-1 truncate break-all text-text-primary',
+        )}
+        title={showKey ? apiKey : undefined}
+      >
+        {displayToken}
+      </span>
+      <div className='flex shrink-0 items-center gap-0.5'>
+        <button
+          className='flex cursor-pointer items-center justify-center rounded border-none bg-transparent p-1 text-text-muted transition-colors hover:bg-gray-2 hover:text-text-primary'
+          title={showKey ? 'Hide token' : 'Show token'}
+          type='button'
+          onClick={() => setShowKey((prev) => !prev)}
+        >
           <Icon
-            className='h-4 w-4 text-[var(--primary-9)]'
-            name='tabler:file-description'
+            className='h-3.5 w-3.5'
+            name={showKey ? 'tabler:eye-off' : 'tabler:eye'}
           />
-          <span className='text-xs font-bold tracking-wider text-[var(--gray-12)] uppercase'>
-            API Docs
-          </span>
+        </button>
+        <button
+          className='flex cursor-pointer items-center justify-center rounded border-none bg-transparent p-1 text-text-muted transition-colors hover:bg-gray-2 hover:text-text-primary'
+          title='Copy token'
+          type='button'
+          onClick={() => copyToClipboard(apiKey, 'generated-api-key')}
+        >
+          <Icon
+            className='h-3.5 w-3.5'
+            name={
+              copiedId === 'generated-api-key' ? 'tabler:check' : 'tabler:copy'
+            }
+          />
+        </button>
+      </div>
+    </div>
+  ) : null
+
+  return (
+    <div className='flex h-full flex-col bg-surface font-sans text-text-primary'>
+      {/* Top Header */}
+      <div className='flex items-center justify-between border-b border-border-default bg-gray-1 px-3 py-2'>
+        <div className='flex items-center gap-1.5'>
+          <Icon className='h-4 w-4 text-primary-9' name='tabler:file-description' />
+          <span className={TEXT_PRIMARY}>API Docs</span>
         </div>
-        <div className='flex items-center gap-3'>
+        <div className='flex items-center gap-2'>
           <a
-            className='decoration-none inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border-none bg-[var(--primary-9)] px-3 py-1.5 text-[11px] font-bold text-white shadow-sm transition-all hover:bg-[var(--primary-10)] active:scale-95'
+            className={BTN_PRIMARY}
             href={playgroundUrl}
             rel='noopener noreferrer'
             target='_blank'
@@ -169,8 +229,9 @@ export const ApiPlayground = ({
             Try Playground
           </a>
           <button
-            className='cursor-pointer rounded-md border-none bg-transparent p-1 text-[var(--gray-11)] transition-colors hover:bg-[var(--gray-2)] hover:text-[var(--gray-13)]'
+            className='cursor-pointer rounded-md border-none bg-transparent p-1 text-text-secondary transition-colors hover:bg-gray-2 hover:text-text-primary'
             title='Close Panel'
+            type='button'
             onClick={onClose}
           >
             <Icon className='h-4 w-4' name='tabler:x' />
@@ -179,148 +240,107 @@ export const ApiPlayground = ({
       </div>
 
       {/* Main Content Area */}
-      <div className='scrollbar flex-1 space-y-6 overflow-y-auto p-4'>
+      <div className='scrollbar flex-1 space-y-3 overflow-y-auto p-3'>
         {/* Intro */}
-        <div className='animate-in fade-in slide-in-from-top-4 space-y-2 duration-300'>
-          <p className='text-xs leading-relaxed text-[var(--gray-11)]'>
-            {config.description ||
-              (endpoints.length > 0
-                ? `This API documentation details how to ${new Intl.ListFormat(
-                    'en',
-                  ).format(
-                    endpoints.map((e) => e.title.toLowerCase()),
-                  )}. You can use this interactive sandbox to test these endpoints.`
-                : 'This API documentation details the available endpoints, required payloads, and interactive sandbox testing environments.')}
-          </p>
-        </div>
+        <p className={cn(TEXT_SECONDARY, 'leading-snug')}>
+          {config.description ||
+            (endpoints.length > 0
+              ? `This API documentation details how to ${new Intl.ListFormat(
+                  'en',
+                ).format(
+                  endpoints.map((e) => e.title.toLowerCase()),
+                )}. You can use this interactive sandbox to test these endpoints.`
+              : 'This API documentation details the available endpoints, required payloads, and interactive sandbox testing environments.')}
+        </p>
 
         {/* API Authentication Setup Card */}
         <div
           className={cn(
-            'animate-in fade-in slide-in-from-top-4 rounded-xl border shadow-sm transition-all duration-300',
+            'rounded-lg border shadow-sm transition-all',
             isKeyGenerated
-              ? 'border-[var(--green-3)] bg-[var(--green-1)] text-[var(--green-9)]'
-              : 'border-dashed border-[var(--orange-3)] bg-[var(--orange-1)] text-[var(--orange-9)]',
+              ? 'border-green-3 bg-green-1 text-green-9'
+              : 'border-dashed border-orange-3 bg-orange-1 text-orange-9',
             isKeyGenerated && !isKeyGeneratedNow
-              ? 'p-2 px-3'
-              : 'flex flex-col gap-3.5 p-4',
+              ? 'px-2.5 py-2'
+              : 'flex flex-col gap-2 p-3',
           )}
         >
           {isKeyGenerated && !isKeyGeneratedNow ? (
-            <div className='flex items-center justify-between gap-3'>
-              <div className='flex min-w-0 items-start gap-2.5'>
-                <div className='mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--green-2)] font-bold text-[var(--green-9)] shadow-sm'>
-                  <Icon className='h-3 w-3' name='tabler:check' />
+            <div className='flex flex-col gap-1.5'>
+              <div className='flex items-center justify-between gap-2'>
+                <div className='flex min-w-0 items-center gap-2'>
+                  <div className='flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-green-9 bg-white text-green-9'>
+                    <Icon className='h-3 w-3' name='tabler:check' />
+                  </div>
+                  <div className='flex min-w-0 flex-col gap-0.5'>
+                    <span className={TEXT_PRIMARY}>API Key</span>
+                    <span
+                      className={cn(
+                        TEXT_STATUS,
+                        'inline-flex w-fit items-center rounded border border-green-9 bg-white px-1.5 py-0.5 text-green-9',
+                      )}
+                    >
+                      Setup completed
+                    </span>
+                  </div>
                 </div>
-                <div className='flex min-w-0 flex-col gap-0.5'>
-                  <span className='text-xs font-bold tracking-wider text-[var(--gray-12)]'>
-                    API Key
-                  </span>
-                  <span className='inline-flex w-fit items-center gap-1 rounded border border-[var(--green-3)] bg-[var(--green-2)] px-1.5 py-0.5 text-[9px] font-extrabold tracking-wide text-[var(--green-9)] uppercase shadow-sm'>
-                    Setup Completed
-                  </span>
-                </div>
+                <button
+                  className={cn(BTN_SECONDARY, 'shrink-0 px-2.5')}
+                  type='button'
+                  onClick={generateApiKey}
+                >
+                  <Icon className='h-3.5 w-3.5' name='tabler:refresh' />
+                  Regenerate
+                </button>
               </div>
-              <button
-                className='inline-flex shrink-0 cursor-pointer items-center justify-center gap-1 rounded border-none bg-[var(--gray-2)] px-2.5 py-1.5 text-[9px] font-extrabold text-[var(--gray-12)] uppercase shadow-sm transition-all duration-200 hover:bg-[var(--gray-3)] hover:text-[var(--gray-13)] active:scale-95'
-                onClick={generateApiKey}
-              >
-                <Icon className='h-3 w-3' name='tabler:refresh' />
-                Regenerate
-              </button>
+              {tokenRow}
             </div>
           ) : (
-            <div className='flex items-start gap-3'>
+            <div className='flex items-start gap-2.5'>
               <div
                 className={cn(
-                  'flex h-7 w-7 shrink-0 items-center justify-center rounded-lg font-bold shadow-sm',
+                  'flex h-6 w-6 shrink-0 items-center justify-center rounded-full border bg-white font-medium',
                   isKeyGenerated
-                    ? 'bg-[var(--green-2)] text-[var(--green-9)]'
-                    : 'bg-[var(--orange-2)] text-[var(--orange-9)]',
+                    ? 'border-green-9 text-green-9'
+                    : 'border-orange-9 text-orange-9',
                 )}
               >
                 <Icon
-                  className='h-4 w-4'
-                  name={isKeyGenerated ? 'tabler:circle-check' : 'tabler:key'}
+                  className='h-3.5 w-3.5'
+                  name={isKeyGenerated ? 'tabler:check' : 'tabler:key'}
                 />
               </div>
-              <div className='min-w-0 flex-1 space-y-2'>
-                <div className='flex flex-wrap items-center justify-between gap-2'>
-                  <h4 className='text-[11px] font-extrabold tracking-wider text-[var(--gray-12)] uppercase'>
+              <div className='min-w-0 flex-1 space-y-1.5'>
+                <div className='flex flex-wrap items-center justify-between gap-1.5'>
+                  <h4 className={TEXT_PRIMARY}>
                     {isKeyGenerated
-                      ? 'Authentication Setup Active'
-                      : 'Authentication Required'}
+                      ? 'Authentication setup active'
+                      : 'Authentication required'}
                   </h4>
                   {isKeyGenerated && (
-                    <span className='inline-flex items-center gap-1 rounded border border-[var(--green-3)] bg-[var(--green-2)] px-1.5 py-0.5 text-[9px] font-extrabold tracking-wide text-[var(--green-9)] uppercase shadow-sm'>
+                    <span
+                      className={cn(
+                        TEXT_STATUS,
+                        'inline-flex items-center gap-1 rounded border border-green-9 bg-white px-1.5 py-0.5 text-green-9',
+                      )}
+                    >
                       <Icon className='h-3 w-3' name='tabler:check' />
-                      Step Completed
+                      Step completed
                     </span>
                   )}
                 </div>
-                <p className='text-xs leading-relaxed text-[var(--gray-11)]'>
+                <p className={cn(TEXT_SECONDARY, 'leading-snug')}>
                   {isKeyGenerated
-                    ? 'Your sandbox API key has been created successfully. Copy it now, as it will be hidden for security once you close this panel.'
+                    ? 'Your sandbox API key is ready. The token is partially masked — use Show to reveal it, or Copy to use it as a Bearer token.'
                     : 'You must generate a sandbox API key to authorize the interactive sandbox. This token will act as a Bearer authorization token.'}
                 </p>
 
-                {isKeyGenerated && (
-                  <div className='flex flex-col gap-1.5'>
-                    <div className='mt-1 flex max-w-full items-center gap-2 overflow-hidden rounded-lg border border-[var(--gray-3)] bg-surface px-2.5 py-1.5 font-mono text-[11px] shadow-inner'>
-                      <span className='shrink-0 font-bold text-[var(--gray-10)] select-none'>
-                        Token:
-                      </span>
-                      <span className='flex-1 truncate font-semibold break-all text-[var(--gray-13)]'>
-                        {showKey ? apiKey : 'ez_live_••••••••••••••••'}
-                      </span>
-                      <div className='flex shrink-0 items-center gap-1'>
-                        <button
-                          className='flex cursor-pointer items-center justify-center rounded border-none bg-transparent p-1 text-[var(--gray-9)] transition-colors hover:bg-[var(--gray-2)] hover:text-[var(--gray-12)]'
-                          title={showKey ? 'Hide Key' : 'Show Key'}
-                          onClick={() => setShowKey(!showKey)}
-                        >
-                          <Icon
-                            className='h-3.5 w-3.5'
-                            name={showKey ? 'tabler:eye-off' : 'tabler:eye'}
-                          />
-                        </button>
-                        <button
-                          className='flex cursor-pointer items-center justify-center rounded border-none bg-transparent p-1 text-[var(--gray-9)] transition-colors hover:bg-[var(--gray-2)] hover:text-[var(--gray-12)]'
-                          title='Copy API Key'
-                          onClick={() =>
-                            copyToClipboard(apiKey, 'generated-api-key')
-                          }
-                        >
-                          <Icon
-                            className='h-3.5 w-3.5'
-                            name={
-                              copiedId === 'generated-api-key'
-                                ? 'tabler:check'
-                                : 'tabler:copy'
-                            }
-                          />
-                        </button>
-                      </div>
-                    </div>
-                    <span className='flex items-center gap-1 text-[10px] font-medium text-[var(--orange-9)]'>
-                      <Icon
-                        className='h-3.5 w-3.5'
-                        name='tabler:alert-triangle'
-                      />
-                      For security, you cannot view or copy this key after
-                      closing this view.
-                    </span>
-                  </div>
-                )}
+                {isKeyGenerated && tokenRow}
 
-                <div className='flex items-center gap-2 pt-1.5'>
+                <div className='flex items-center gap-2'>
                   <button
-                    className={cn(
-                      'inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border-none px-3.5 py-1.5 text-[11px] font-bold shadow-sm transition-all duration-200 active:scale-95',
-                      isKeyGenerated
-                        ? 'bg-[var(--gray-2)] text-[var(--gray-12)] hover:bg-[var(--gray-3)] hover:text-[var(--gray-13)]'
-                        : 'bg-[var(--primary-9)] text-white hover:bg-[var(--primary-10)]',
-                    )}
+                    className={isKeyGenerated ? BTN_SECONDARY : BTN_PRIMARY}
+                    type='button'
                     onClick={generateApiKey}
                   >
                     <Icon
@@ -335,7 +355,7 @@ export const ApiPlayground = ({
           )}
         </div>
 
-        <div className='space-y-4'>
+        <div className='space-y-2'>
           {endpoints.map((endpoint) => {
             const isExpanded = expandedEndpoints[endpoint.id]
 
@@ -363,47 +383,49 @@ export const ApiPlayground = ({
 
             return (
               <div
-                className='overflow-hidden rounded-xl border border-[var(--gray-3)] bg-surface shadow-sm'
+                className='overflow-hidden rounded-lg border border-border-default bg-surface'
                 key={endpoint.id}
               >
                 {/* Accordion Header */}
                 <button
-                  className='flex w-full cursor-pointer items-center justify-between border-none bg-[var(--gray-1)] px-4 py-3 text-left transition-colors hover:bg-[var(--gray-2)]'
+                  className='flex w-full cursor-pointer items-center justify-between border-none bg-gray-1 px-3 py-2 text-left transition-colors hover:bg-gray-2'
+                  type='button'
                   onClick={() => toggleEndpoint(endpoint.id)}
                 >
-                  <div className='flex min-w-0 flex-1 flex-col gap-1 pr-4'>
-                    <div className='flex items-center gap-2'>
+                  <div className='flex min-w-0 flex-1 flex-col gap-0.5 pr-2'>
+                    <div className='flex items-center gap-1.5'>
                       <span
                         className={cn(
-                          'shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-extrabold uppercase',
+                          TEXT_METHOD,
+                          'shrink-0 rounded border bg-white px-1.5 py-0.5',
                           endpoint.method === 'GET'
-                            ? 'border-[var(--blue-3)] bg-[var(--blue-1)] text-[var(--blue-9)]'
+                            ? 'border-blue-9 text-blue-9'
                             : endpoint.method === 'POST'
-                              ? 'border-[var(--green-3)] bg-[var(--green-1)] text-[var(--green-9)]'
+                              ? 'border-green-9 text-green-9'
                               : endpoint.method === 'PUT'
-                                ? 'border-[var(--orange-3)] bg-[var(--orange-1)] text-[var(--orange-9)]'
+                                ? 'border-orange-9 text-orange-9'
                                 : endpoint.method === 'DELETE'
-                                  ? 'border-[var(--red-3)] bg-[var(--red-1)] text-[var(--red-9)]'
-                                  : 'border-[var(--gray-3)] bg-[var(--gray-2)] text-[var(--gray-11)]',
+                                  ? 'border-red-9 text-red-9'
+                                  : 'border-border-default text-text-secondary',
                         )}
                       >
                         {endpoint.method}
                       </span>
-                      <span className='truncate text-xs font-bold text-[var(--gray-13)]'>
+                      <span className={cn(TEXT_PRIMARY, 'truncate')}>
                         {endpoint.title}
                       </span>
                     </div>
                     {!isExpanded && endpoint.description && (
-                      <span className='truncate text-[10px] text-[var(--gray-11)] hover:overflow-visible hover:whitespace-normal'>
+                      <span className={cn(TEXT_MUTED, 'truncate')}>
                         {endpoint.description}
                       </span>
                     )}
                   </div>
-                  <div className='flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-[var(--gray-3)]'>
+                  <div className='flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white ring-1 ring-border-default'>
                     <Icon
                       name='tabler:chevron-down'
                       className={cn(
-                        'h-4 w-4 text-[var(--gray-11)] transition-transform duration-300',
+                        'h-3.5 w-3.5 text-text-secondary transition-transform duration-200',
                         isExpanded ? 'rotate-180' : 'rotate-0',
                       )}
                     />
@@ -412,21 +434,19 @@ export const ApiPlayground = ({
 
                 {/* Accordion Content */}
                 {isExpanded && (
-                  <div className='animate-in slide-in-from-top-2 fade-in space-y-6 border-t border-[var(--gray-3)] p-4 duration-300'>
+                  <div className='space-y-3 border-t border-border-default p-3'>
                     {endpoint.description && (
-                      <p className='text-xs leading-relaxed text-[var(--gray-11)]'>
+                      <p className={cn(TEXT_SECONDARY, 'leading-snug')}>
                         {endpoint.description}
                       </p>
                     )}
 
                     {/* Full Endpoint Details */}
-                    <div className='space-y-2.5'>
-                      <div className='flex items-center justify-between'>
-                        <h4 className='text-[10px] font-bold tracking-wider text-[var(--gray-11)] uppercase'>
-                          Endpoint URL
-                        </h4>
+                    <div className='space-y-1.5'>
+                      <div className='flex items-center justify-between gap-2'>
+                        <h4 className={TEXT_SECTION}>Endpoint URL</h4>
                         <a
-                          className='decoration-none inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border-none bg-[var(--primary-9)] px-3 py-1.5 text-[11px] font-bold text-white shadow-sm transition-all hover:bg-[var(--primary-10)] active:scale-95'
+                          className={BTN_PRIMARY}
                           href={playgroundUrl}
                           rel='noopener noreferrer'
                           target='_blank'
@@ -438,13 +458,19 @@ export const ApiPlayground = ({
                           Try it out
                         </a>
                       </div>
-                      <div className='flex items-start gap-2 rounded-lg border border-[var(--gray-3)] bg-[var(--gray-1)] px-3 py-2 text-xs'>
-                        <span className='mt-0.5 flex-1 font-mono font-semibold break-all text-[var(--gray-12)]'>
+                      <div className='flex items-start gap-1.5 rounded-md border border-border-default bg-gray-1 px-2.5 py-1.5'>
+                        <span
+                          className={cn(
+                            TEXT_CODE,
+                            'flex-1 break-all text-text-primary',
+                          )}
+                        >
                           {fullApiEndpoint}
                         </span>
                         <button
-                          className='flex cursor-pointer items-center justify-center rounded border-none bg-transparent p-1 text-[var(--gray-9)] transition-colors hover:bg-[var(--gray-3)] hover:text-[var(--gray-12)]'
+                          className='flex cursor-pointer items-center justify-center rounded border-none bg-transparent p-0.5 text-text-muted transition-colors hover:bg-gray-3 hover:text-text-primary'
                           title='Copy Endpoint'
+                          type='button'
                           onClick={() =>
                             copyToClipboard(
                               fullApiEndpoint,
@@ -465,12 +491,15 @@ export const ApiPlayground = ({
                     </div>
 
                     {/* Headers */}
-                    <div className='space-y-2'>
-                      <h4 className='text-[10px] font-bold tracking-wider text-[var(--gray-11)] uppercase'>
-                        Headers
-                      </h4>
-                      <div className='overflow-hidden rounded-lg border border-[var(--gray-3)] bg-surface text-xs'>
-                        <div className='grid grid-cols-3 border-b border-[var(--gray-3)] bg-[var(--gray-1)] px-3 py-1.5 text-[9px] font-bold tracking-wider text-[var(--gray-11)] uppercase'>
+                    <div className='space-y-1.5'>
+                      <h4 className={TEXT_SECTION}>Headers</h4>
+                      <div className='overflow-hidden rounded-md border border-border-default bg-surface'>
+                        <div
+                          className={cn(
+                            TEXT_SECTION,
+                            'grid grid-cols-3 border-b border-border-default bg-gray-1 px-2.5 py-1',
+                          )}
+                        >
                           <span>Header</span>
                           <span className='col-span-2'>Value</span>
                         </div>
@@ -479,16 +508,15 @@ export const ApiPlayground = ({
                             <div
                               key={key}
                               className={cn(
-                                'grid grid-cols-3 px-3 py-2 font-mono text-[11px]',
+                                TEXT_CODE,
+                                'grid grid-cols-3 px-2.5 py-1.5',
                                 index <
                                   Object.entries(requestHeaders).length - 1 &&
-                                  'border-b border-[var(--gray-3)]',
+                                  'border-b border-border-default',
                               )}
                             >
-                              <span className='font-bold text-[var(--gray-12)]'>
-                                {key}
-                              </span>
-                              <span className='col-span-2 text-[var(--gray-11)]'>
+                              <span className='text-text-primary'>{key}</span>
+                              <span className='col-span-2 text-text-secondary'>
                                 {value}
                               </span>
                             </div>
@@ -499,13 +527,17 @@ export const ApiPlayground = ({
 
                     {/* Request Payload */}
                     {endpoint.requestPayload && (
-                      <div className='relative space-y-2'>
-                        <div className='flex items-center justify-between'>
-                          <h4 className='text-[10px] font-bold tracking-wider text-[var(--gray-11)] uppercase'>
-                            Request Payload
-                          </h4>
+                      <div className='space-y-1.5'>
+                        <div className='flex items-center justify-between gap-2'>
+                          <h4 className={TEXT_SECTION}>Request Payload</h4>
                           <button
-                            className='flex cursor-pointer items-center gap-1 border-none bg-transparent text-[10px] font-bold text-[var(--primary-9)] transition-colors hover:text-[var(--primary-10)]'
+                            className='flex cursor-pointer items-center justify-center rounded border-none bg-transparent p-0.5 text-text-muted transition-colors hover:bg-gray-3 hover:text-text-primary'
+                            title={
+                              copiedId === `payload-${endpoint.id}`
+                                ? 'Copied!'
+                                : 'Copy'
+                            }
+                            type='button'
                             onClick={() =>
                               copyToClipboard(
                                 stringifyJson(endpoint.requestPayload),
@@ -521,27 +553,31 @@ export const ApiPlayground = ({
                                   : 'tabler:copy'
                               }
                             />
-                            <span>
-                              {copiedId === `payload-${endpoint.id}`
-                                ? 'Copied!'
-                                : 'Copy'}
-                            </span>
                           </button>
                         </div>
-                        <pre className='scrollbar overflow-x-auto rounded-lg border border-[var(--gray-12)] bg-[var(--gray-13)] p-3 font-mono text-[11px] leading-relaxed whitespace-pre-wrap text-[var(--green-9)] select-all'>
+                        <pre
+                          className={cn(
+                            TEXT_CODE,
+                            'scrollbar overflow-x-auto rounded-md border border-gray-12 bg-gray-13 p-2.5 leading-snug whitespace-pre-wrap text-green-9 select-all',
+                          )}
+                        >
                           {stringifyJson(endpoint.requestPayload)}
                         </pre>
                       </div>
                     )}
 
                     {/* cURL Snippet */}
-                    <div className='relative space-y-2'>
-                      <div className='flex items-center justify-between'>
-                        <h4 className='text-[10px] font-bold tracking-wider text-[var(--gray-11)] uppercase'>
-                          cURL Example
-                        </h4>
+                    <div className='space-y-1.5'>
+                      <div className='flex items-center justify-between gap-2'>
+                        <h4 className={TEXT_SECTION}>cURL Example</h4>
                         <button
-                          className='flex cursor-pointer items-center gap-1 border-none bg-transparent text-[10px] font-bold text-[var(--primary-9)] transition-colors hover:text-[var(--primary-10)]'
+                          className='flex cursor-pointer items-center justify-center rounded border-none bg-transparent p-0.5 text-text-muted transition-colors hover:bg-gray-3 hover:text-text-primary'
+                          title={
+                            copiedId === `curl-${endpoint.id}`
+                              ? 'Copied!'
+                              : 'Copy'
+                          }
+                          type='button'
                           onClick={() =>
                             copyToClipboard(curlCode, `curl-${endpoint.id}`)
                           }
@@ -554,25 +590,28 @@ export const ApiPlayground = ({
                                 : 'tabler:copy'
                             }
                           />
-                          <span>
-                            {copiedId === `curl-${endpoint.id}`
-                              ? 'Copied!'
-                              : 'Copy'}
-                          </span>
                         </button>
                       </div>
-                      <pre className='scrollbar overflow-x-auto rounded-lg border border-[var(--gray-12)] bg-[var(--gray-13)] p-3 font-mono text-[11px] leading-relaxed whitespace-pre-wrap text-[var(--blue-9)] select-all'>
+                      <pre
+                        className={cn(
+                          TEXT_CODE,
+                          'scrollbar overflow-x-auto rounded-md border border-gray-12 bg-gray-13 p-2.5 leading-snug whitespace-pre-wrap text-blue-9 select-all',
+                        )}
+                      >
                         {curlCode}
                       </pre>
                     </div>
 
                     {/* Response Snippet */}
                     {endpoint.responsePayload && (
-                      <div className='relative space-y-2'>
-                        <h4 className='text-[10px] font-bold tracking-wider text-[var(--gray-11)] uppercase'>
-                          Response Payload
-                        </h4>
-                        <pre className='scrollbar overflow-x-auto rounded-lg border border-[var(--gray-12)] bg-[var(--gray-13)] p-3 font-mono text-[11px] leading-relaxed whitespace-pre-wrap text-[var(--orange-9)]'>
+                      <div className='space-y-1.5'>
+                        <h4 className={TEXT_SECTION}>Response Payload</h4>
+                        <pre
+                          className={cn(
+                            TEXT_CODE,
+                            'scrollbar overflow-x-auto rounded-md border border-gray-12 bg-gray-13 p-2.5 leading-snug whitespace-pre-wrap text-orange-9',
+                          )}
+                        >
                           {stringifyJson(endpoint.responsePayload)}
                         </pre>
                       </div>

@@ -175,7 +175,7 @@
 .nested-table-cell { background: var(--surface-muted); }
 
 .pie-section { min-height: 360px; }
-.pie-chart-card { display: grid; grid-template-columns: 240px 1fr; gap: 24px; align-items: center; padding: 24px; }
+.pie-chart-card { display: grid; grid-template-columns: 240px 1fr; gap: 24px; align-items: start; padding: 24px; }
 .pie-chart { width: 220px; height: 220px; border-radius: 50%; box-shadow: inset 0 0 0 18px color-mix(in srgb, var(--surface) 22%, transparent); }
 .pie-legend { display: grid; gap: 10px; }
 .pie-legend-row { display: grid; grid-template-columns: 14px 1fr auto; align-items: center; gap: 10px; font-size: 0.9rem; color: var(--text-primary); }
@@ -185,5 +185,5 @@
 @media (max-width: 1100px) {
   .top-grid,
   .middle-grid { grid-template-columns: 1fr; }
-  .pie-chart-card { grid-template-columns: 1fr; justify-items: center; }
+  .pie-chart-card { grid-template-columns: 1fr; justify-items: start; }
 }

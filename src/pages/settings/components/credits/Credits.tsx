@@ -17,11 +17,17 @@ import {
   getCreditsUsage,
 } from '@/api/v6/billing'
 import IconButton from '@/components/base/button/IconButton'
+import TableExport from '@/components/base/data-table/actions/TableExport'
+import TableSearch from '@/components/base/data-table/actions/TableSearch'
 import DataTable from '@/components/base/data-table/DataTable'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import Pagination from '@/components/base/pagination/Pagination'
 import CustomFilter from '@/components/common/CustomFilter'
 import cn from '@/utils/cn'
+import {
+  matchesCategoryFilterValue,
+  matchesDateRangeValue,
+} from '@/utils/filterUtils'
 import {
   settingsHeaderMeta,
   settingsTableCoreOptions,
@@ -64,6 +70,44 @@ const CHART_COLORS = [
   'var(--secondary-9)',
   'var(--orange-9)',
 ]
+
+/** Outline badge tones for activity type (white bg + colored border/text) */
+const ACTIVITY_TYPE_BADGE_TONES = [
+  'border-primary-9 text-primary-9',
+  'border-blue-9 text-blue-9',
+  'border-green-9 text-green-9',
+  'border-orange-9 text-orange-9',
+  'border-violet-9 text-violet-9',
+  'border-cyan-9 text-cyan-9',
+  'border-pink-9 text-pink-9',
+  'border-red-9 text-red-9',
+] as const
+
+function getActivityTypeBadgeTone(activityType: string) {
+  const key = activityType.trim().toLowerCase()
+  if (!key) return ACTIVITY_TYPE_BADGE_TONES[0]
+
+  // Prefer semantic colors for common activity names
+  if (key.includes('ocr') || key.includes('scan'))
+    return 'border-cyan-9 text-cyan-9'
+  if (key.includes('ap') || key.includes('payable') || key.includes('invoice'))
+    return 'border-blue-9 text-blue-9'
+  if (key.includes('summary') || key.includes('document'))
+    return 'border-violet-9 text-violet-9'
+  if (key.includes('valid') || key.includes('match') || key.includes('supplier'))
+    return 'border-green-9 text-green-9'
+  if (key.includes('duplicate') || key.includes('error') || key.includes('fail'))
+    return 'border-red-9 text-red-9'
+  if (key.includes('order') || key.includes('back'))
+    return 'border-orange-9 text-orange-9'
+
+  let hash = 0
+  for (let i = 0; i < key.length; i += 1) {
+    hash = (hash + key.charCodeAt(i) * (i + 1)) % ACTIVITY_TYPE_BADGE_TONES.length
+  }
+  return ACTIVITY_TYPE_BADGE_TONES[hash]
+}
+
 const MAX_TABLE_ROWS = 200
 const MAX_CHART_ITEMS = 10
 
@@ -118,6 +162,78 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
     () => (usage?.transactions ?? []).slice(0, MAX_TABLE_ROWS),
     [usage?.transactions],
   )
+  const [transactionFilters, setTransactionFilters] = useState<
+    Record<string, string>
+  >({})
+
+  const activityFilterOptions = useMemo(() => {
+    const values = new Set<string>()
+    transactions.forEach((row) => {
+      if (row.activityType) values.add(row.activityType)
+    })
+    return Array.from(values)
+      .sort((a, b) => a.localeCompare(b))
+      .map((value) => ({ label: value, value }))
+  }, [transactions])
+
+  const referenceFilterOptions = useMemo(() => {
+    const values = new Set<string>()
+    transactions.forEach((row) => {
+      if (row.identifyTable) values.add(row.identifyTable)
+    })
+    return Array.from(values)
+      .sort((a, b) => a.localeCompare(b))
+      .map((value) => ({ label: value, value }))
+  }, [transactions])
+
+  const subActivityFilterOptions = useMemo(() => {
+    const values = new Set<string>()
+    transactions.forEach((row) => {
+      if (row.subActivityType) values.add(row.subActivityType)
+    })
+    return Array.from(values)
+      .sort((a, b) => a.localeCompare(b))
+      .map((value) => ({ label: value, value }))
+  }, [transactions])
+
+  const filteredTransactions = useMemo(() => {
+    return transactions.filter((row) => {
+      const activityFilter = transactionFilters.activityType
+      if (
+        activityFilter &&
+        !matchesCategoryFilterValue(row.activityType, activityFilter)
+      ) {
+        return false
+      }
+
+      const referenceFilter = transactionFilters.identifyTable
+      if (
+        referenceFilter &&
+        !matchesCategoryFilterValue(row.identifyTable, referenceFilter)
+      ) {
+        return false
+      }
+
+      const subActivityFilter = transactionFilters.subActivityType
+      if (
+        subActivityFilter &&
+        !matchesCategoryFilterValue(row.subActivityType, subActivityFilter)
+      ) {
+        return false
+      }
+
+      const dateFilter = transactionFilters.createdAt
+      if (
+        dateFilter &&
+        !matchesDateRangeValue(row.createdAt, dateFilter)
+      ) {
+        return false
+      }
+
+      return true
+    })
+  }, [transactions, transactionFilters])
+
   const periodSubtitle = formatPeriodSubtitle(
     period,
     month,
@@ -192,8 +308,9 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
         enableSorting: false,
         header: 'Date',
         meta: { ...settingsHeaderMeta.start, label: 'Date' },
-        minSize: 160,
-        size: 180,
+        minSize: 120,
+        size: 150,
+        maxSize: 170,
         cell: ({ getValue }) => {
           const value = getValue()
           if (!value) return '—'
@@ -204,51 +321,61 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
       }),
       columnHelper.accessor('activityType', {
         enableSorting: false,
-        header: 'Activity',
-        meta: { ...settingsHeaderMeta.start, label: 'Activity' },
-        minSize: 180,
-        size: 220,
-        cell: ({ row }) => (
-          <div className='min-w-0'>
-            <div className='truncate font-medium text-gray-13'>
-              {row.original.activityType}
-            </div>
-            {row.original.subActivityType ? (
-              <div className='truncate text-xs text-gray-11'>
-                {row.original.subActivityType}
-              </div>
-            ) : null}
-          </div>
-        ),
+        header: 'Category',
+        meta: { ...settingsHeaderMeta.start, label: 'Category' },
+        minSize: 110,
+        size: 140,
+        maxSize: 180,
+        cell: ({ getValue }) => {
+          const value = getValue()
+          if (!value) return '—'
+          return (
+            <span
+              className={cn(
+                'inline-flex max-w-full items-center truncate rounded border bg-white px-1.5 py-0.5 text-11 font-medium',
+                getActivityTypeBadgeTone(value),
+              )}
+            >
+              {value}
+            </span>
+          )
+        },
+      }),
+      columnHelper.accessor('subActivityType', {
+        enableSorting: false,
+        header: 'Action',
+        meta: { ...settingsHeaderMeta.start, label: 'Action' },
+        minSize: 220,
+        size: 280,
+        cell: ({ getValue }) => getValue() || '—',
       }),
       columnHelper.accessor('credit', {
         enableSorting: false,
         header: 'Credits',
         meta: { ...settingsHeaderMeta.end, label: 'Credits' },
-        minSize: 100,
-        size: 120,
+        minSize: 80,
+        size: 90,
+        maxSize: 110,
         cell: ({ getValue }) => formatNumber(Number(getValue() ?? 0)),
       }),
       columnHelper.accessor('remarks', {
         enableSorting: false,
         header: 'Remarks',
         meta: { ...settingsHeaderMeta.start, label: 'Remarks' },
-        minSize: 180,
-        size: 220,
+        minSize: 240,
+        size: 320,
         cell: ({ getValue }) => getValue() || '—',
       }),
       columnHelper.accessor('identifyTable', {
         enableSorting: false,
         header: 'Reference',
         meta: { ...settingsHeaderMeta.start, label: 'Reference' },
-        minSize: 140,
-        size: 160,
+        minSize: 100,
+        size: 130,
+        maxSize: 160,
         cell: ({ row }) => {
           const tableName = row.original.identifyTable
-          const identifyId = row.original.identifyId
-          if (!tableName && identifyId == null) return '—'
-          if (identifyId == null) return tableName
-          return `${tableName ?? 'record'} #${identifyId}`
+          return tableName?.trim() ? tableName : '—'
         },
       }),
     ],
@@ -270,7 +397,7 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
     ...tableSearchOptions,
     ...paginationModel,
     columns,
-    data: transactions,
+    data: filteredTransactions,
     state: {
       ...tableSearchOptions.state,
       pagination,
@@ -278,11 +405,15 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
     onPaginationChange,
   })
 
-  const { rowSize, toolbar, onRowSizeChange } = useSettingsTableToolbar({
+  const { rowSize, onRowSizeChange } = useSettingsTableToolbar({
     isReLoading: isFetching,
     table: transactionTable,
     onReload: () => void refetch(),
   })
+
+  const hasTransactionFilters =
+    Object.values(transactionFilters).some(Boolean) ||
+    !!tableSearchOptions.state.globalFilter?.value
 
   const totalActivityCredits = consumptionByActivity.reduce(
     (sum, item) => sum + item.credits,
@@ -422,7 +553,7 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
 
           <div className='mt-5 grid grid-cols-1 gap-4 xl:grid-cols-2 2xl:grid-cols-4'>
             <ChartCard
-              subtitle={`by agent · ${periodSubtitle}`}
+              subtitle={`Top agents by credit usage · ${periodSubtitle}`}
               title='Highest Credit Consumption'
             >
               <HorizontalConsumptionChart
@@ -434,14 +565,16 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
             </ChartCard>
 
             <ChartCard
-              subtitle='credit trend across selected range'
+              subtitle='Credit usage trend across the selected period'
               title='Usage Timeline'
             >
               <UsageTimelineChart data={timelineData} />
             </ChartCard>
 
             <ChartCard
-              subtitle={`by activity · ${formatNumber(totalActivityCredits)} credits`}
+              badge={`${formatNumber(totalActivityCredits)} credits`}
+              badgeTone='green'
+              subtitle='Credits consumed by each activity'
               title='Credit Distribution'
             >
               <DistributionDonutChart
@@ -452,7 +585,9 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
             </ChartCard>
 
             <ChartCard
-              subtitle={`by agent · ${consumptionByAgent.length} agents`}
+              badge={`${consumptionByAgent.length} agents`}
+              badgeTone='blue'
+              subtitle='Credits consumed by each agent'
               title='Overall Credit Split'
             >
               <DistributionDonutChart
@@ -464,13 +599,66 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
           </div>
 
           <div className='mt-5 flex min-h-[320px] flex-col rounded-xl border border-[var(--border-default)] bg-surface p-4 shadow-[var(--shadow-sm)]'>
-            <div className='mb-4 flex flex-wrap items-center justify-between gap-3'>
-              <h4 className='font-poppins text-13 font-bold text-gray-13 capitalize'>
-                Transaction Activity
-              </h4>
-              {toolbar}
-            </div>
-            <div className='min-h-0 flex-1 overflow-hidden'>
+            <h4 className='mb-3 pl-0.5 font-poppins text-14 font-semibold text-text-primary'>
+              Transaction Activity
+            </h4>
+            <CustomFilter
+              activeFilters={transactionFilters}
+              customSearchComponent={
+                <TableSearch table={transactionTable as any} />
+              }
+              trailingActions={
+                <TableExport table={transactionTable as any} />
+              }
+              actionButtons={[
+                {
+                  color: 'gray',
+                  disabled: isLoading || isFetching,
+                  icon: 'tabler:refresh',
+                  id: 'refresh-transactions',
+                  isIconButton: true,
+                  tooltip: 'Refresh',
+                  variant: 'outline',
+                  onClick: () => void refetch(),
+                },
+              ]}
+              filters={[
+                {
+                  id: 'activityType',
+                  label: 'Category',
+                  options: activityFilterOptions,
+                },
+                {
+                  dataType: 'date',
+                  id: 'createdAt',
+                  label: 'Date',
+                  options: [],
+                },
+              ]}
+              moreFilters={[
+                {
+                  id: 'identifyTable',
+                  label: 'Reference',
+                  options: referenceFilterOptions,
+                },
+                {
+                  id: 'subActivityType',
+                  label: 'Action',
+                  options: subActivityFilterOptions,
+                },
+              ]}
+              showReset={hasTransactionFilters}
+              onFilterChange={(id, value) => {
+                setTransactionFilters((prev) => ({ ...prev, [id]: value }))
+                onPageChange(1)
+              }}
+              onReset={() => {
+                setTransactionFilters({})
+                tableSearchOptions.onGlobalFilterChange({ id: '', value: '' })
+                onPageChange(1)
+              }}
+            />
+            <div className='mt-2 min-h-0 flex-1 overflow-hidden'>
               <DataTable
                 isLoading={isLoading}
                 isReLoading={isFetching}
@@ -502,27 +690,50 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
 }
 
 function ChartCard({
+  badge,
+  badgeTone = 'primary',
   children,
   subtitle,
   title,
 }: {
+  badge?: string
+  badgeTone?: 'blue' | 'green' | 'primary'
   children: React.ReactNode
   subtitle?: string
   title: string
 }) {
+  const badgeToneClass =
+    badgeTone === 'green'
+      ? 'border-green-9 text-green-9'
+      : badgeTone === 'blue'
+        ? 'border-blue-9 text-blue-9'
+        : 'border-primary-9 text-primary-9'
+
   return (
     <div className='flex flex-col rounded-xl border border-[var(--border-default)] bg-surface p-5 shadow-[var(--shadow-sm)] transition-all hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)]'>
-      <div>
-        <div className='pl-0.5 font-poppins text-14 font-semibold text-text-primary capitalize'>
-          {title}
-        </div>
-        {subtitle ? (
-          <div className='mt-1 pl-0.5 text-[11px] text-gray-9 lowercase'>
-            {subtitle}
+      <div className='flex items-start justify-between gap-2'>
+        <div className='min-w-0'>
+          <div className='pl-0.5 font-poppins text-14 font-semibold text-text-primary capitalize'>
+            {title}
           </div>
+          {subtitle ? (
+            <div className='mt-1 pl-0.5 text-12 font-medium text-text-secondary'>
+              {subtitle}
+            </div>
+          ) : null}
+        </div>
+        {badge ? (
+          <span
+            className={cn(
+              'inline-flex shrink-0 items-center rounded border bg-white px-1.5 py-0.5 text-11 font-medium whitespace-nowrap',
+              badgeToneClass,
+            )}
+          >
+            {badge}
+          </span>
         ) : null}
       </div>
-      <div className='mt-6 flex flex-1 flex-col justify-center'>{children}</div>
+      <div className='mt-6 flex flex-1 flex-col'>{children}</div>
     </div>
   )
 }

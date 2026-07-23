@@ -293,19 +293,15 @@ export function CustomRangeMenu({
 
   return (
     <div className='flex w-52 flex-col gap-3 bg-surface p-3'>
-      <div className='flex items-center gap-2'>
-        <button
-          aria-label='Back'
-          className='inline-flex cursor-pointer items-center gap-1 text-12 font-medium text-text-secondary transition-colors hover:text-text-primary'
-          type='button'
-          onClick={onCancel}
-        >
-          <ChevronRight className='h-3.5 w-3.5 rotate-180' />
-          Back
-        </button>
-      </div>
-
-      <div className='text-12 font-medium text-text-primary'>Custom Range</div>
+      <button
+        aria-label='Back'
+        className='inline-flex cursor-pointer items-center gap-1.5 self-start text-12 font-medium text-text-primary transition-colors hover:text-text-secondary'
+        type='button'
+        onClick={onCancel}
+      >
+        <ChevronRight className='h-3.5 w-3.5 shrink-0 rotate-180' />
+        Custom Range
+      </button>
 
       <div className='flex flex-col gap-2'>
         {type === 'number' ? (
