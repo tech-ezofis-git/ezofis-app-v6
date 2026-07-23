@@ -547,7 +547,7 @@ export default function Attachments({
             const icon = getFileIcon(ext)
             const styles = getFileIconClasses(ext)
             const sizeStr = formatBytes(file.fileSize)
-            const displayName = file.name || file.fileName || 'Untitled'
+            const displayName = file.name || file.name || 'Untitled'
             const hasExt =
               ext && displayName.toLowerCase().endsWith('.' + ext.toLowerCase())
             const displayTitle =

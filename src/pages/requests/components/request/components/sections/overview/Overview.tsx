@@ -537,7 +537,7 @@ const extractDueDate = (row: any, agentData: any, formModel?: any): string => {
           d.setDate(d.getDate() + days)
           val = d.toISOString().split('T')[0]
         }
-      } catch (e) {}
+      } catch (e) { }
     }
   }
 
@@ -946,9 +946,9 @@ const FormCard = ({
     const selectedOption =
       typeof localValue === 'string' && localValue !== '-'
         ? options.find(
-            (opt: any) =>
-              String(opt.id).toLowerCase() === localValue.toLowerCase(),
-          ) || (localValue ? { id: localValue, name: localValue } : null)
+          (opt: any) =>
+            String(opt.id).toLowerCase() === localValue.toLowerCase(),
+        ) || (localValue ? { id: localValue, name: localValue } : null)
         : null
 
     inputElement = (
@@ -1090,7 +1090,7 @@ const FormCard = ({
               {value === null || value === undefined || value === '' ? '-' : value}
             </p>
             {showHint && (
-              <div 
+              <div
                 className='inline-flex items-center gap-1 cursor-pointer rounded bg-[var(--blue-2)] px-2 py-0.5 text-[10px] text-[var(--blue-11)] transition-colors hover:bg-[var(--blue-3)]'
                 onClick={(e) => {
                   e.stopPropagation()
@@ -1098,7 +1098,7 @@ const FormCard = ({
                   onChange?.(poValue)
                 }}
               >
-                PO {label}: <span className='font-bold'>{poValue}</span>
+                PO Data: <span className='font-bold'>{poValue}</span>
               </div>
             )}
           </div>
@@ -1360,9 +1360,9 @@ const Overview = (props: any) => {
   const resolvedInstanceId = useMemo(() => {
     return String(
       selectedItem?.workflowInstanceId ||
-        selectedItem?.instanceId ||
-        processId ||
-        '',
+      selectedItem?.instanceId ||
+      processId ||
+      '',
     )
   }, [selectedItem, processId])
 
@@ -2694,9 +2694,9 @@ const Overview = (props: any) => {
 
       const repoId = String(
         selectedFile?.repositoryId ||
-          selectedItem?.repositoryId ||
-          repositoryId ||
-          '',
+        selectedItem?.repositoryId ||
+        repositoryId ||
+        '',
       ).trim()
       const itemId = String(
         selectedFile?.itemId || selectedFile?.id || selectedItem?.itemId || '',
@@ -2960,10 +2960,10 @@ const Overview = (props: any) => {
                 {eligibleFields.filter((key) =>
                   key.toLowerCase().includes(searchFilter.toLowerCase()),
                 ).length === 0 && (
-                  <div className='px-3 py-2 text-center text-xs font-medium text-[var(--gray-9)]'>
-                    No matching fields
-                  </div>
-                )}
+                    <div className='px-3 py-2 text-center text-xs font-medium text-[var(--gray-9)]'>
+                      No matching fields
+                    </div>
+                  )}
               </div>
             </menu>
           )}
@@ -2983,9 +2983,9 @@ const Overview = (props: any) => {
                       analysisCardCount <= 3 && 'grid-cols-1 sm:grid-cols-3',
                       analysisCardCount === 4 && 'grid-cols-2 lg:grid-cols-4',
                       analysisCardCount === 5 &&
-                        'grid-cols-2 lg:grid-cols-3 xl:grid-cols-5',
+                      'grid-cols-2 lg:grid-cols-3 xl:grid-cols-5',
                       analysisCardCount >= 6 &&
-                        'grid-cols-2 lg:grid-cols-3 xl:grid-cols-6',
+                      'grid-cols-2 lg:grid-cols-3 xl:grid-cols-6',
                     )}
                   >
                     {(() => {
@@ -3146,7 +3146,7 @@ const Overview = (props: any) => {
                       />
                     )}
                     {showBackOrder &&
-                    backOrderDisplay?.status === 'Detected' ? (
+                      backOrderDisplay?.status === 'Detected' ? (
                       <AnalysisCard
                         align='right'
                         icon={PackageX}
@@ -3537,16 +3537,16 @@ const Overview = (props: any) => {
                                 </div>
                                 {(agentData?.gl_validation?.reason ||
                                   agentData?.gl_matching?.reason) && (
-                                  <div className='mt-1 flex flex-col gap-1 border-t border-[var(--gray-3)] pt-2'>
-                                    <span className='font-semibold text-[var(--gray-11)]'>
-                                      Matching Rationale
-                                    </span>
-                                    <span className='leading-normal font-medium text-[var(--gray-12)]'>
-                                      {agentData?.gl_validation?.reason ||
-                                        agentData?.gl_matching?.reason}
-                                    </span>
-                                  </div>
-                                )}
+                                    <div className='mt-1 flex flex-col gap-1 border-t border-[var(--gray-3)] pt-2'>
+                                      <span className='font-semibold text-[var(--gray-11)]'>
+                                        Matching Rationale
+                                      </span>
+                                      <span className='leading-normal font-medium text-[var(--gray-12)]'>
+                                        {agentData?.gl_validation?.reason ||
+                                          agentData?.gl_matching?.reason}
+                                      </span>
+                                    </div>
+                                  )}
                               </div>
                             </div>
                             <div className='space-y-4'>
@@ -3663,18 +3663,18 @@ const Overview = (props: any) => {
                                 )}
                                 {agentData?.matter_validation
                                   ?.validation_details?.reason && (
-                                  <div className='mt-1 flex flex-col gap-1 border-t border-[var(--gray-3)] pt-2'>
-                                    <span className='font-semibold text-[var(--gray-11)]'>
-                                      Compliance Note
-                                    </span>
-                                    <span className='text-[11px] leading-normal font-medium text-[var(--gray-12)]'>
-                                      {
-                                        agentData.matter_validation
-                                          .validation_details.reason
-                                      }
-                                    </span>
-                                  </div>
-                                )}
+                                    <div className='mt-1 flex flex-col gap-1 border-t border-[var(--gray-3)] pt-2'>
+                                      <span className='font-semibold text-[var(--gray-11)]'>
+                                        Compliance Note
+                                      </span>
+                                      <span className='text-[11px] leading-normal font-medium text-[var(--gray-12)]'>
+                                        {
+                                          agentData.matter_validation
+                                            .validation_details.reason
+                                        }
+                                      </span>
+                                    </div>
+                                  )}
                               </div>
                             </div>
                             <div className='space-y-4'>
@@ -3728,8 +3728,8 @@ const Overview = (props: any) => {
                                   activeBackOrderTab === 'current'
                                     ? backOrder?.recommendation
                                     : MOCK_PREVIOUS_BACKORDERS[
-                                        activeBackOrderTab
-                                      ]?.recommendation
+                                      activeBackOrderTab
+                                    ]?.recommendation
                                 const recMeta =
                                   getRecommendationMeta(currentRec)
                                 return (
@@ -3789,8 +3789,8 @@ const Overview = (props: any) => {
                               activeBackOrderTab === 'current'
                                 ? backOrder
                                 : MOCK_PREVIOUS_BACKORDERS[
-                                    activeBackOrderTab
-                                  ] || {}
+                                activeBackOrderTab
+                                ] || {}
                             const items = currentData?.missing_qty_by_item || []
 
                             const currencySymbol =
@@ -3862,8 +3862,8 @@ const Overview = (props: any) => {
                                 activeBackOrderTab === 'current'
                                   ? backOrder
                                   : MOCK_PREVIOUS_BACKORDERS[
-                                      activeBackOrderTab
-                                    ] || {}
+                                  activeBackOrderTab
+                                  ] || {}
 
                               return (
                                 <div className='animate-in fade-in slide-in-from-top-2 rounded-xl border border-[var(--orange-3)] bg-[var(--orange-1)]/30 p-4 shadow-xs duration-300'>
@@ -3895,8 +3895,8 @@ const Overview = (props: any) => {
                                 activeBackOrderTab === 'current'
                                   ? backOrder
                                   : MOCK_PREVIOUS_BACKORDERS[
-                                      activeBackOrderTab
-                                    ] || {}
+                                  activeBackOrderTab
+                                  ] || {}
 
                               const items =
                                 currentData?.missing_qty_by_item || []
@@ -4064,118 +4064,118 @@ const Overview = (props: any) => {
                       {activeTab === 'summary' && (
                         <div className='grid flex-1 grid-cols-2 gap-x-4 gap-y-2 overflow-y-auto p-4'>
                           {!formModel ||
-                          Object.keys(formModel).length === 0 ||
-                          !Object.values(formModel).some(
-                            hasMeaningfulScalarValue,
-                          )
+                            Object.keys(formModel).length === 0 ||
+                            !Object.values(formModel).some(
+                              hasMeaningfulScalarValue,
+                            )
                             ? [
-                                'Supplier Name',
-                                'Invoice Number',
-                                'Invoice Date',
-                                'Invoice Amount',
-                                'PO Number',
-                                'Payment Terms',
-                                'Currency',
-                                'Tax Amount',
-                              ].map((label) => (
-                                <FormCard
-                                  icon={getFieldIcon(label)}
-                                  isLoading={isCurrentlyProcessing}
-                                  key={label}
-                                  label={label}
-                                  options={getOptions(label)}
-                                  type={getFieldType(label)}
-                                  value={'-'}
-                                  onChange={(newVal: string) =>
-                                    handleFieldChange(label, newVal)
-                                  }
-                                  onFocus={(val: any) =>
-                                    handleFieldFocus(val, label)
-                                  }
-                                />
-                              ))
+                              'Supplier Name',
+                              'Invoice Number',
+                              'Invoice Date',
+                              'Invoice Amount',
+                              'PO Number',
+                              'Payment Terms',
+                              'Currency',
+                              'Tax Amount',
+                            ].map((label) => (
+                              <FormCard
+                                icon={getFieldIcon(label)}
+                                isLoading={isCurrentlyProcessing}
+                                key={label}
+                                label={label}
+                                options={getOptions(label)}
+                                type={getFieldType(label)}
+                                value={'-'}
+                                onChange={(newVal: string) =>
+                                  handleFieldChange(label, newVal)
+                                }
+                                onFocus={(val: any) =>
+                                  handleFieldFocus(val, label)
+                                }
+                              />
+                            ))
                             : Object.entries(formModel || {})
-                                .filter(([key, val]) => {
-                                  if (typeof val === 'object' && val !== null) {
-                                    if ('Invoice Value' in val) {
-                                      return true
-                                    }
-                                    return false
+                              .filter(([key, val]) => {
+                                if (typeof val === 'object' && val !== null) {
+                                  if ('Invoice Value' in val) {
+                                    return true
                                   }
-                                  if (typeof val === 'string') {
-                                    const trimmed = val.trim()
-                                    if (
-                                      trimmed.startsWith('[') &&
-                                      trimmed.endsWith(']')
-                                    )
-                                      return false
-                                    if (
-                                      trimmed.startsWith('{') &&
-                                      trimmed.endsWith('}')
-                                    )
-                                      return false
-                                  }
-
+                                  return false
+                                }
+                                if (typeof val === 'string') {
+                                  const trimmed = val.trim()
                                   if (
-                                    !allowedLabels ||
-                                    allowedLabels.size === 0
-                                  ) {
-                                    return hasMeaningfulScalarValue(val)
-                                  }
-
-                                  return (
-                                    allowedLabels.has(key) ||
-                                    hasMeaningfulScalarValue(val)
+                                    trimmed.startsWith('[') &&
+                                    trimmed.endsWith(']')
                                   )
-                                })
-                                .map(([key, val]) => {
-                                  const rawVal =
-                                    val &&
+                                    return false
+                                  if (
+                                    trimmed.startsWith('{') &&
+                                    trimmed.endsWith('}')
+                                  )
+                                    return false
+                                }
+
+                                if (
+                                  !allowedLabels ||
+                                  allowedLabels.size === 0
+                                ) {
+                                  return hasMeaningfulScalarValue(val)
+                                }
+
+                                return (
+                                  allowedLabels.has(key) ||
+                                  hasMeaningfulScalarValue(val)
+                                )
+                              })
+                              .map(([key, val]) => {
+                                const rawVal =
+                                  val &&
                                     typeof val === 'object' &&
                                     'Invoice Value' in val
-                                      ? val['Invoice Value']
-                                      : val
+                                    ? val['Invoice Value']
+                                    : val
 
-                                  const fieldType = getFieldType(key)
-                                  const displayValue =
-                                    fieldType === 'date' &&
+                                const fieldType = getFieldType(key)
+                                const displayValue =
+                                  fieldType === 'date' &&
                                     (rawVal === null ||
                                       rawVal === undefined ||
                                       rawVal === '' ||
                                       rawVal === '-')
-                                      ? null
-                                      : rawVal || '-'
+                                    ? null
+                                    : rawVal || '-'
 
-                                  return (
-                                    <FormCard
-                                      icon={getFieldIcon(key)}
-                                      key={key}
-                                      label={key}
-                                      options={getOptions(key)}
-                                      score={getFieldScore(key)}
+                                return (
+                                  <FormCard
+                                    icon={getFieldIcon(key)}
+                                    key={key}
+                                    label={key}
+                                    options={getOptions(key)}
+                                    score={getFieldScore(key)}
                                     poValue={getFieldPoValue(key)}
-                                      type={fieldType}
-                                      value={displayValue}
-                                      highlight={
-                                        key.toLowerCase().includes('total') ||
-                                        key.toLowerCase().includes('due')
-                                      }
-                                      isLoading={
-                                        isCurrentlyProcessing &&
-                                        (displayValue === null ||
-                                          displayValue === undefined ||
-                                          displayValue === '' ||
-                                          displayValue === '-')
-                                      }
-                                      onChange={(newVal: string) =>
-                                        handleFieldChange(key, newVal)
-                                      }
-                                      onFocus={(val: any) =>
-                                        handleFieldFocus(val, key)
-                                      }
-                                    />
-                                  )
-                                })}
+                                    type={fieldType}
+                                    value={displayValue}
+                                    highlight={
+                                      key.toLowerCase().includes('total') ||
+                                      key.toLowerCase().includes('due')
+                                    }
+                                    isLoading={
+                                      isCurrentlyProcessing &&
+                                      (displayValue === null ||
+                                        displayValue === undefined ||
+                                        displayValue === '' ||
+                                        displayValue === '-')
+                                    }
+                                    onChange={(newVal: string) =>
+                                      handleFieldChange(key, newVal)
+                                    }
+                                    onFocus={(val: any) =>
+                                      handleFieldFocus(val, key)
+                                    }
+                                  />
+                                )
+                              })}
                         </div>
                       )}
                       {activeTab === 'line_items' && (
@@ -4231,7 +4231,7 @@ const Overview = (props: any) => {
                             className={cn(
                               'space-y-2.5',
                               poLineItems.length > 0 &&
-                                'border-t border-[var(--gray-3)] pt-4',
+                              'border-t border-[var(--gray-3)] pt-4',
                             )}
                           >
                             <div className='flex items-center justify-between'>
@@ -4296,7 +4296,7 @@ const Overview = (props: any) => {
                                     <Icon name='tabler:sparkles' className='h-4 w-4 text-[var(--primary-9)]' />
                                     <span><strong className='font-semibold text-[var(--gray-13)]'>AI suggestion</strong> — Check for related purchase orders or invoices for this supplier.</span>
                                   </div>
-                                  <button 
+                                  <button
                                     className='relative inline-flex shrink-0 animate-pulse items-center gap-1.5 rounded-lg border border-[var(--primary-4)] bg-[var(--primary-2)] px-2.5 py-1 text-xs font-bold text-[var(--primary-9)] shadow-sm transition-all hover:scale-[1.02] hover:animate-none hover:bg-[var(--primary-3)] hover:text-[var(--primary-10)] active:scale-95'
                                     onClick={handleFindRelatedDocumentsClick}
                                   >
@@ -4331,7 +4331,7 @@ const Overview = (props: any) => {
                                             <div className='flex h-5 w-5 shrink-0 items-center justify-center rounded bg-red-2'>
                                               <Icon name='tabler:file-type-pdf' className='h-3.5 w-3.5 text-red-9' />
                                             </div>
-                                            <button 
+                                            <button
                                               className='font-semibold text-[var(--gray-13)] hover:text-[var(--primary-9)] hover:underline truncate hover:whitespace-normal break-all max-w-[120px] sm:max-w-[160px] text-left transition-colors'
                                               title='View Document'
                                             >
@@ -4340,7 +4340,7 @@ const Overview = (props: any) => {
                                             <span className='text-[var(--gray-9)] tabular-nums text-[11px] shrink-0'>{chip.confidence}%</span>
                                           </div>
                                           <div className='flex items-center gap-0.5 pl-1.5 shrink-0'>
-                                            <button 
+                                            <button
                                               className={cn(
                                                 'flex h-6 w-6 items-center justify-center rounded-full transition-colors',
                                                 attachedDocs[chip.id] ? 'bg-[var(--green-2)] text-[var(--green-9)]' : 'text-[var(--primary-9)] hover:bg-[var(--primary-2)]'
