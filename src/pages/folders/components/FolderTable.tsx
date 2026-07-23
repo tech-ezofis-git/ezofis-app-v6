@@ -341,31 +341,31 @@ export default function FolderTableDataTableSplit({
           ariaLabel={leftViewLabel}
           className='rounded-full bg-surface shadow-sm'
           color='gray'
-          icon={
-            splitViewMode === 'files-only'
-              ? 'lucide:folder'
-              : 'lucide:file-text'
-          }
+          icon='lucide:chevron-up'
           size='sm'
           tooltip={leftViewLabel}
           variant='outline'
           onClick={handleLeftViewClick}
         />
 
-        <div className='flex items-center gap-1.5 rounded-full border border-gray-3 bg-surface px-3 py-0.5 text-xs font-bold text-gray-10 shadow-sm'>
+        <div className='flex items-end gap-1.5 rounded-full border border-gray-3 bg-surface px-3 py-0.5 text-xs font-bold text-gray-10 shadow-sm'>
           {splitViewMode === 'files-only' ? (
             <>
-              <DynamicIcon className='h-4 w-4 text-gray-8' name='folder' />
-              <span className='text-gray-8'>FOLDERS</span>
-              <span className='h-px w-5 bg-gray-4' />
-              <span className='text-gray-8'>{folders.length}</span>
+              <DynamicIcon className='h-3.5 w-3.5 shrink-0 text-gray-8' name='folder' />
+              <span className='leading-none text-gray-8'>FOLDERS</span>
+              <span className='inline-flex h-[1em] items-center self-end'>
+                <span className='h-px w-5 bg-gray-4' />
+              </span>
+              <span className='leading-none text-gray-8'>{folders.length}</span>
             </>
           ) : (
             <>
-              <DynamicIcon className='h-4 w-4 text-gray-8' name='fileText' />
-              <span className='text-gray-8'>FILES IN THIS FOLDER</span>
-              <span className='h-px w-5 bg-gray-4' />
-              <span className='text-gray-8'>{files.length}</span>
+              <DynamicIcon className='h-3.5 w-3.5 shrink-0 text-gray-8' name='fileText' />
+              <span className='leading-none text-gray-8'>FILES IN THIS FOLDER</span>
+              <span className='inline-flex h-[1em] items-center self-end'>
+                <span className='h-px w-5 bg-gray-4' />
+              </span>
+              <span className='leading-none text-gray-8'>{files.length}</span>
             </>
           )}
         </div>
@@ -374,9 +374,7 @@ export default function FolderTableDataTableSplit({
           ariaLabel={rightViewLabel}
           className='rounded-full bg-surface shadow-sm'
           color='gray'
-          icon={
-            isSplitView ? 'lucide:folder' : 'lucide:panels-top-bottom'
-          }
+          icon='lucide:chevron-down'
           size='sm'
           tooltip={rightViewLabel}
           variant='outline'
@@ -390,7 +388,7 @@ export default function FolderTableDataTableSplit({
     <div className='animate-in fade-in relative flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-surface duration-300'>
       {(refreshing || loading) && !loadingPage && !loadingFolders ? (
         <div className='absolute top-0 right-0 left-0 z-30 h-1 overflow-hidden bg-[#edf0fb]'>
-          <div className='h-full w-1/3 animate-[ez-loading_1.1s_ease-in-out_infinite] rounded-full bg-primary-9' />
+          <div className='h-full origin-left animate-[ez-loading-fill_4s_ease-in-out_infinite] rounded-full bg-primary-9' />
         </div>
       ) : null}
 
@@ -398,7 +396,7 @@ export default function FolderTableDataTableSplit({
         {showFoldersPane ? (
           <FolderDataTableSection
             folderBodyMaxHeight={
-              splitViewMode === 'folders-only'
+              splitViewMode === 'folders-only' || !canResizeSplit
                 ? FULL_PANEL_FOLDER_HEIGHT
                 : isSplitView
                   ? `${getSplitFolderBodyHeight(folders.length)}px`
@@ -410,8 +408,8 @@ export default function FolderTableDataTableSplit({
             folderSearch={folderSearch}
             hasFiles={filesHave}
             hasMoreFolders={hasMoreFolders}
-            isExpanded={splitViewMode === 'folders-only'}
-            isSplitView={isSplitView}
+            isExpanded={splitViewMode === 'folders-only' || !canResizeSplit}
+            isSplitView={canResizeSplit && isSplitView}
             loading={loading}
             loadingFolders={loadingFolders}
             loadingPage={loadingPage}
@@ -424,8 +422,8 @@ export default function FolderTableDataTableSplit({
         {canResizeSplit && isSplitView ? renderSplitDivider() : null}
 
         {showFilesPane &&
-        (files.length || loading || loadingPage) &&
-        folders.length < FOLDER_FILES_SECTION_MAX_FOLDERS ? (
+          (files.length || loading || loadingPage) &&
+          folders.length < FOLDER_FILES_SECTION_MAX_FOLDERS ? (
           <FileDataTableSection
             columns={visibleFileColumns}
             fileFilters={fileFilters}
@@ -455,32 +453,32 @@ export default function FolderTableDataTableSplit({
         ) : null}
 
         {canResizeSplit &&
-        !isSplitView &&
-        splitViewMode !== 'files-only' ? (
+          !isSplitView &&
+          splitViewMode !== 'files-only' ? (
           renderSplitDivider()
         ) : null}
 
         {!loading &&
-        !loadingPage &&
-        !loadingFolders &&
-        !folders.length &&
-        !files.length ? (
+          !loadingPage &&
+          !loadingFolders &&
+          !folders.length &&
+          !files.length ? (
           <EmptyState />
         ) : null}
       </div>
 
       <style>{`
-
-        @keyframes ez-loading {
-
-          0% { transform: translateX(-120%); }
-
-          50% { transform: translateX(140%); }
-
-          100% { transform: translateX(320%); }
-
+        @keyframes ez-loading-fill {
+          0% {
+            transform: scaleX(0);
+          }
+          80% {
+            transform: scaleX(1);
+          }
+          100% {
+            transform: scaleX(1);
+          }
         }
-
       `}</style>
     </div>
   )
@@ -607,8 +605,8 @@ function FileDataTableSection({
           __name: getPrimaryFileName(file),
           __status: String(
             (file as any)?.status ??
-              (file as any)?.Status ??
-              '',
+            (file as any)?.Status ??
+            '',
           ),
           id: getFileId(file),
           raw: file,
@@ -652,7 +650,7 @@ function FileDataTableSection({
 
       return fileColumnHelper.accessor((row) => row[column.key], {
         enableResizing: !isPinnedColumn,
-        header: column.label,
+        header: () => <EllipsisText lines={1} value={column.label} />,
         id: column.key,
         maxSize: sizing.maxSize,
         meta: EXPLORER_CELL_META,
@@ -813,9 +811,9 @@ function FileDataTableSection({
       : filePage?.hasMore
         ? Math.max(currentPage * pageSize + 1, filteredFiles.length)
         : Math.max(
-            (currentPage - 1) * pageSize + filteredFiles.length,
-            filteredFiles.length,
-          )
+          (currentPage - 1) * pageSize + filteredFiles.length,
+          filteredFiles.length,
+        )
 
   const showFiles = filteredFiles.length || files.length || loading || loadingPage
 
@@ -854,29 +852,31 @@ function FileDataTableSection({
       {footerDivider}
 
       {filePage ? (
-        <Pagination
-          itemLabel='Files'
-          page={currentPage}
-          pageSize={pageSize}
-          showPageNumbers={false}
-          totalItems={totalCount}
-          onPageChange={(nextPage) => {
-            if (loadingPage) return
+        <div className='shrink-0 px-1 pt-3 pb-2'>
+          <Pagination
+            itemLabel='Files'
+            page={currentPage}
+            pageSize={pageSize}
+            showPageNumbers={false}
+            totalItems={totalCount}
+            onPageChange={(nextPage) => {
+              if (loadingPage) return
 
-            if (nextPage === currentPage) return
+              if (nextPage === currentPage) return
 
-            if (nextPage < currentPage) {
-              onPageChange?.(nextPage, null)
-              return
-            }
+              if (nextPage < currentPage) {
+                onPageChange?.(nextPage, null)
+                return
+              }
 
-            onPageChange?.(nextPage, filePage?.nextCursor || null)
-          }}
-          onPageSizeChange={(nextPageSize) => {
-            if (loadingPage) return
-            onPageSizeChange?.(nextPageSize)
-          }}
-        />
+              onPageChange?.(nextPage, filePage?.nextCursor || null)
+            }}
+            onPageSizeChange={(nextPageSize) => {
+              if (loadingPage) return
+              onPageSizeChange?.(nextPageSize)
+            }}
+          />
+        </div>
       ) : null}
     </section>
   )
@@ -992,7 +992,7 @@ function FolderDataTableSection({
   const folderColumns = useMemo(
     () => [
       folderColumnHelper.accessor('name', {
-        header: 'Name',
+        header: () => <EllipsisText lines={1} value='Name' />,
         id: 'name',
         maxSize: 360,
         meta: EXPLORER_CELL_META,
@@ -1028,7 +1028,7 @@ function FolderDataTableSection({
       }),
 
       folderColumnHelper.accessor('items', {
-        header: 'Items',
+        header: () => <EllipsisText lines={1} value='Items' />,
         id: 'items',
         maxSize: 140,
         meta: EXPLORER_CELL_META,
@@ -1040,7 +1040,7 @@ function FolderDataTableSection({
       }),
 
       folderColumnHelper.accessor('modified', {
-        header: 'Date Modified',
+        header: () => <EllipsisText lines={1} value='Date Modified' />,
         id: 'modified',
         maxSize: 180,
         meta: EXPLORER_CELL_META,

@@ -8,12 +8,7 @@ import { type MouseEvent, useEffect, useMemo, useRef, useState } from 'react'
 import DataTable from '@/components/base/data-table/DataTable'
 import Pagination from '@/components/base/pagination/Pagination'
 import type { DynamicRepositoryColumn } from '../api/folderApi'
-import type {
-  ExplorerView,
-  FileItem,
-  FolderItem,
-  RepositoryFilePage,
-} from '../types/folderTypes'
+import type { ExplorerView, FileItem, FolderItem, RepositoryFilePage } from '../types/folderTypes'
 import type { FolderFilterOptionsCache } from '../utils/folderExplorerUtils'
 import {
   getRepositoryFieldRawValue,
@@ -277,10 +272,6 @@ export function DocumentsListView({
   folders = [],
   loading = false,
   loadingPage = false,
-  refreshing = false,
-  searchQuery: searchQueryProp = '',
-  view,
-  setView,
   onAiSummary,
   onBreadcrumbSelect: _onBreadcrumbSelect,
   onEdit,
@@ -294,6 +285,10 @@ export function DocumentsListView({
   onShare,
   onUpload,
   onWorkflow,
+  refreshing = false,
+  searchQuery: searchQueryProp = '',
+  setView,
+  view,
 }: DocumentsListViewProps) {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   const [actionMenuPosition, setActionMenuPosition] =
@@ -353,7 +348,11 @@ export function DocumentsListView({
         )
         const fieldValue = matchedKey
           ? file[matchedKey]
-          : getRepositoryFieldRawValueFromRow(file, key, folderContextFilters)
+          : getRepositoryFieldRawValueFromRow(
+              file,
+              key,
+              folderContextFilters,
+            )
 
         return matchesAnyFilterValue(String(fieldValue ?? ''), value)
       }),
@@ -454,8 +453,8 @@ export function DocumentsListView({
 
   const dataTableColumns = useMemo<ColumnDef<AnyFileItem>[]>(() => {
     const selectColumn: ColumnDef<AnyFileItem> = {
-      enableSorting: false,
       id: 'selection',
+      enableSorting: false,
       maxSize: 44,
       minSize: 44,
       size: 44,
@@ -498,9 +497,9 @@ export function DocumentsListView({
       enableResizing: column.key !== '__name',
       header: () => <EllipsisText lines={1} value={column.label} />,
       id: column.key,
-      maxSize: column.key === '__name' ? 340 : 320,
       minSize: column.minWidth || 160,
       size: column.minWidth || 160,
+      maxSize: column.key === '__name' ? 340 : 320,
       meta: { disableEllipsis: true },
       accessorFn: (row) => {
         if (column.key === '__name') return getPrimaryFileName(row)
@@ -562,9 +561,9 @@ export function DocumentsListView({
       header: '',
       id: 'actions',
       maxSize: 72,
-      meta: { headerAlign: 'right' as const },
       minSize: 56,
       size: 64,
+      meta: { headerAlign: 'right' as const },
       cell: ({ row }) => {
         const fileId = getFileId(row.original)
 
@@ -608,6 +607,9 @@ export function DocumentsListView({
     },
     enableColumnResizing: true,
     enableSorting: true,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getRowId: (row) => getFileId(row),
     initialState: {
       columnPinning: {
         left: ['selection', '__name'],
@@ -615,9 +617,6 @@ export function DocumentsListView({
       },
     },
     manualPagination: true,
-    getCoreRowModel: getCoreRowModel(),
-    getRowId: (row) => getFileId(row),
-    getSortedRowModel: getSortedRowModel(),
   })
 
   useEffect(() => {
@@ -675,17 +674,17 @@ export function DocumentsListView({
           searchPlaceholder='Search invoice, supplier, PO...'
           searchQuery={searchQuery}
           view={view}
-          setView={setView}
           onFilterChange={updateFilter}
           onFilterMenuOpenChange={onFilterMenuOpenChange}
           onRefresh={handleRefresh}
           onResetFilters={resetFilters}
           onSearchChange={setSearchQuery}
           onUpload={onUpload}
+          setView={setView}
         />
       </div>
 
-      <div className='flex min-h-0 flex-1 flex-col overflow-hidden px-6 pt-2 pb-2'>
+      <div className='flex min-h-0 flex-1 flex-col overflow-hidden px-6 pb-2 pt-2'>
         <section className='flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden'>
           {visibleFiles.length === 0 &&
           !loading &&
@@ -695,7 +694,8 @@ export function DocumentsListView({
               <DynamicIcon className='h-8 w-8 text-gray-8' name='search' />
               <b className='text-gray-13'>No documents found</b>
               <p className='text-sm text-gray-10'>
-                Try changing the file search or resetting the selected filters.
+                Try changing the file search or resetting the selected
+                filters.
               </p>
               <Button
                 className='mt-2 h-9 px-4 text-sm'
@@ -711,9 +711,9 @@ export function DocumentsListView({
               isLoading={loading || loadingPage || refreshing}
               pageSize={Math.max(5, visibleFiles.length || pageSize)}
               table={table}
-              hideGrouping
               isSticky
               stickyHeader
+              hideGrouping
               isReLoading={
                 refreshing ||
                 loadingPage ||

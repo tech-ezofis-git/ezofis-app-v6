@@ -4,7 +4,7 @@ import {
   serializeFilterValues,
 } from '@/utils/filterUtils'
 
-/** Delimiter for multi-select filter values stored in Record<string, string>. */
+/** Delimiter for multi-select filter values (aligned with shared filterUtils). */
 export const MULTI_FILTER_SEP = FILTER_MULTI_SEP
 
 export const splitFilterValues = (value?: string | null): string[] =>

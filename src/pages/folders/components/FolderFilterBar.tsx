@@ -1,17 +1,14 @@
 import { LayoutGrid, List, RefreshCcw } from 'lucide-react'
 import { useMemo } from 'react'
-import Tooltip from '@/components/base/Tooltip'
 import CustomFilter, {
   type FilterDefinition,
   type FilterGroup,
 } from '@/components/common/CustomFilter'
+import Tooltip from '@/components/base/Tooltip'
 import type { DynamicRepositoryColumn } from '../api/folderApi'
-import type { ExplorerView, FolderItem } from '../types/folderTypes'
-import type {
-  ExplorerFilterMode,
-  FolderFilterOptionsCache,
-} from '../utils/folderExplorerUtils'
 import { decodeRepositoryNodeId } from '../api/folderApi'
+import type { ExplorerView, FolderItem } from '../types/folderTypes'
+import type { ExplorerFilterMode, FolderFilterOptionsCache } from '../utils/folderExplorerUtils'
 import {
   getCachedFilterOptionsForId,
   mergeFilterOptionLists,
@@ -47,16 +44,16 @@ const DEFAULT_FOLDER_FILTER_SPECS = [
 
 /** Default file filters — same property keys as repository items. */
 const DEFAULT_FILE_FILTER_SPECS = [
-  { aliases: ['status', 'Status', '__status'], id: 'status', label: 'Status' },
+  { id: 'status', label: 'Status', aliases: ['status', 'Status', '__status'] },
   {
-    aliases: ['supplier', 'Supplier'],
     id: 'supplier',
     label: 'Supplier',
+    aliases: ['supplier', 'Supplier'],
   },
   {
-    aliases: ['documentType', 'DocumentType'],
     id: 'documentType',
     label: 'Document Type',
+    aliases: ['documentType', 'DocumentType'],
   },
 ] as const
 
@@ -108,7 +105,8 @@ const getFilterValue = (
   item: AnyFileItem,
   filterId: string,
   folderContextFilters: Record<string, string> = {},
-) => getRepositoryFieldStringValue(item, filterId, folderContextFilters)
+) =>
+  getRepositoryFieldStringValue(item, filterId, folderContextFilters)
 
 const mergeUniqueOptions = (
   ...optionLists: Array<Array<{ label: string; value: string }>>
@@ -141,7 +139,10 @@ const buildFilterOptionsFromContext = (
   return [{ label: value, value }]
 }
 
-const buildFilterOptionsFromFiles = (files: AnyFileItem[], filterId: string) =>
+const buildFilterOptionsFromFiles = (
+  files: AnyFileItem[],
+  filterId: string,
+) =>
   files
     .map((file) => getRepositoryFieldStringValue(file, filterId))
     .filter((value) => value.length > 0)
@@ -233,7 +234,8 @@ export const matchesFolderTableFilters = (
 export const filterFolders = (
   folders: FolderItem[],
   filters: Record<string, string>,
-) => folders.filter((folder) => matchesFolderTableFilters(folder, filters))
+) =>
+  folders.filter((folder) => matchesFolderTableFilters(folder, filters))
 
 export const matchesFolderFileFilters = (
   file: AnyFileItem,
@@ -264,8 +266,8 @@ type FolderFilterBarProps = {
   fileColumns?: DynamicRepositoryColumn[]
   files: AnyFileItem[]
   filterMode?: ExplorerFilterMode
-  filterOptionsCache?: FolderFilterOptionsCache
   folderContextFilters?: Record<string, string>
+  filterOptionsCache?: FolderFilterOptionsCache
   folderFilterOptionSource?: FolderItem[]
   folders?: FolderItem[]
   isBusy?: boolean
@@ -288,22 +290,22 @@ export function FolderFilterBar({
   fileColumns = [],
   files,
   filterMode = 'files',
-  filterOptionsCache = {},
   folderContextFilters = {},
+  filterOptionsCache = {},
   folderFilterOptionSource = [],
   folders = [],
   isBusy = false,
-  refreshing = false,
-  searchPlaceholder = 'Search files...',
-  searchQuery,
-  view,
-  setView,
   onFilterChange,
   onFilterMenuOpenChange,
   onRefresh,
   onResetFilters,
   onSearchChange,
   onUpload,
+  refreshing = false,
+  searchPlaceholder = 'Search files...',
+  searchQuery,
+  setView,
+  view,
 }: FolderFilterBarProps) {
   const showFileFilters = filterMode === 'files' || filterMode === 'both'
   const showFolderFilters = filterMode === 'folders' || filterMode === 'both'
@@ -435,9 +437,7 @@ export function FolderFilterBar({
     const folderDefaultFilters = showFolderFilters
       ? buildFolderFilterDefinitions()
       : []
-    const fileDefaultFilters = showFileFilters
-      ? buildFileFilterDefinitions()
-      : []
+    const fileDefaultFilters = showFileFilters ? buildFileFilterDefinitions() : []
 
     if (filterMode === 'folders') return folderDefaultFilters
     if (filterMode === 'files') return fileDefaultFilters
@@ -495,9 +495,9 @@ export function FolderFilterBar({
       )
 
       return {
-        dataType: column.dataType,
         id: filterId,
         label: column.label || column.key,
+        dataType: column.dataType,
         options: isDateColumn(column.dataType)
           ? undefined
           : buildOptionsForFileFilter(filterId),
@@ -529,34 +529,34 @@ export function FolderFilterBar({
       searchPlaceholder={searchPlaceholder}
       searchQuery={searchQuery}
       showReset={hasActiveFilters}
-      viewMode={view === 'list' ? 'table' : 'grid'}
       actionButtons={[
         {
-          color: 'gray',
-          disabled: isBusy,
-          icon: 'lucide:upload',
           id: 'upload',
-          isIconButton: true,
+          icon: 'lucide:upload',
           tooltip: 'Upload',
-          variant: 'outline',
           onClick: () => onUpload?.(),
+          disabled: isBusy,
+          isIconButton: true,
+          color: 'gray',
+          variant: 'outline'
         },
         {
-          color: 'gray',
-          disabled: isBusy,
-          icon: refreshing ? 'tabler:loader-2' : 'lucide:refresh-ccw',
           id: 'refresh',
-          isIconButton: true,
+          icon: refreshing ? 'tabler:loader-2' : 'lucide:refresh-ccw',
           tooltip: refreshing ? 'Refreshing...' : 'Refresh',
-          variant: 'outline',
           onClick: () => onRefresh?.(),
-        },
+          disabled: isBusy,
+          isIconButton: true,
+          color: 'gray',
+          variant: 'outline'
+        }
       ]}
+      viewMode={view === 'list' ? 'table' : 'grid'}
+      onViewModeChange={(mode) => setView(mode === 'table' ? 'list' : 'grid')}
       onFilterChange={onFilterChange}
       onFilterMenuOpenChange={onFilterMenuOpenChange}
       onReset={onResetFilters}
       onSearchChange={onSearchChange}
-      onViewModeChange={(mode) => setView(mode === 'table' ? 'list' : 'grid')}
     />
   )
 }

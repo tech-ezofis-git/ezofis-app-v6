@@ -144,7 +144,7 @@ function TreeItem({
           name={node.iconKey || node.title || 'folder'}
         />
 
-        <span className='line-clamp-1 min-w-0 flex-1 [overflow-wrap:anywhere] break-words transition-all group-hover:line-clamp-none'>
+        <span className='min-w-0 flex-1 break-words [overflow-wrap:anywhere] line-clamp-1 transition-all group-hover:line-clamp-none'>
           {node.title}
         </span>
 

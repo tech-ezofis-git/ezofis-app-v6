@@ -104,14 +104,13 @@ export const extractFolderTableFilterOptionsFromFolders = (
     },
     {
       id: '__folderItems',
-      isValid: (value: string) => Boolean(value) && value !== '-',
       getValue: (folder: FolderItem) => String(folder.itemsText || '').trim(),
+      isValid: (value: string) => Boolean(value) && value !== '-',
     },
     {
       id: '__folderModified',
+      getValue: (folder: FolderItem) => String(folder.modifiedText || '').trim(),
       isValid: (value: string) => Boolean(value) && value !== '-',
-      getValue: (folder: FolderItem) =>
-        String(folder.modifiedText || '').trim(),
     },
   ] as const
 
@@ -214,18 +213,18 @@ export const extractFileFilterOptionsFromFiles = (
 export type ExplorerFilterMode = 'folders' | 'files' | 'both' | 'none'
 
 export const getExplorerSectionVisibility = ({
-  filesLength,
   folderSearch = '',
   foldersLength,
+  filesLength,
   hasActiveFileFilters = false,
   hasActiveFolderFilters = false,
   loading = false,
   loadingFolders = false,
   loadingPage = false,
 }: {
-  filesLength: number
   folderSearch?: string
   foldersLength: number
+  filesLength: number
   hasActiveFileFilters?: boolean
   hasActiveFolderFilters?: boolean
   loading?: boolean
@@ -243,14 +242,14 @@ export const getExplorerSectionVisibility = ({
       foldersLength < FOLDER_FILES_SECTION_MAX_FOLDERS) ||
     (hasActiveFileFilters && foldersLength < FOLDER_FILES_SECTION_MAX_FOLDERS)
 
-  return { showFilesSection, showFoldersSection }
+  return { showFoldersSection, showFilesSection }
 }
 
 export const getExplorerFilterMode = (visibility: {
-  showFilesSection: boolean
   showFoldersSection: boolean
+  showFilesSection: boolean
 }): ExplorerFilterMode => {
-  const { showFilesSection, showFoldersSection } = visibility
+  const { showFoldersSection, showFilesSection } = visibility
   if (showFoldersSection && showFilesSection) return 'both'
   if (showFilesSection) return 'files'
   if (showFoldersSection) return 'folders'

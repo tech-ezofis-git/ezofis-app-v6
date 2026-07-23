@@ -51,15 +51,13 @@ import {
 } from 'lucide-react'
 
 export const iconMap = {
-  address: MapPin,
-
-  amount: Banknote,
   archive: Archive,
+
   arrowDown: ArrowDown,
   arrowLeft: ArrowLeft,
-
   arrowRight: ArrowRight,
   arrowUp: ArrowUp,
+
   bot: Bot,
   building: Building2,
   calendar: Calendar,
@@ -90,6 +88,8 @@ export const iconMap = {
   mail: Mail,
   messageSquare: MessageSquare,
   more: MoreHorizontal,
+  amount: Banknote,
+  address: MapPin,
   paperclip: Paperclip,
   play: PlayCircle,
   printer: Printer,
