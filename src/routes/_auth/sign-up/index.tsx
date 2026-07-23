@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { AdaptiveScreen, MobileSignUpFlow } from '@/pages/mobile'
 import SignUpPage from '@/pages/sign-up/SignUpPage'
 
 export const Route = createFileRoute('/_auth/sign-up/')({
@@ -9,5 +10,10 @@ export const Route = createFileRoute('/_auth/sign-up/')({
 })
 
 function RouteComponent() {
-  return <SignUpPage />
+  return (
+    <AdaptiveScreen
+      mobile={<MobileSignUpFlow />}
+      web={<SignUpPage />}
+    />
+  )
 }

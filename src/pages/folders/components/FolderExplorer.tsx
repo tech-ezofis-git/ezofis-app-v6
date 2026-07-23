@@ -17,9 +17,11 @@ export function FolderExplorer() {
     activeFolder,
     appView,
     breadcrumbs,
+    beginFilterDefer,
     changePageSize,
     changeServerPage,
     changeViewMode,
+    commitFilterDefer,
     currentFolderGroupField,
     error,
     expandedIds,
@@ -184,6 +186,9 @@ export function FolderExplorer() {
           filePage={filePage}
           files={files}
           folderContextFilters={folderContextFilters}
+          filterOptionsCache={filterOptionsCache}
+          folderFilterOptionSource={folderFilterOptionSource}
+          folders={folders}
           loading={loading}
           loadingPage={loadingPage}
           refreshing={refreshing}
@@ -194,6 +199,10 @@ export function FolderExplorer() {
           onBreadcrumbSelect={openFolder}
           onEdit={(id) => openFileAction(id, 'editMetadata')}
           onFiltersChange={setFileFilters}
+          onFilterMenuOpenChange={(id) => {
+            if (id) beginFilterDefer()
+            else commitFilterDefer()
+          }}
           onOpenFile={openFile}
           onPageChange={changeServerPage}
           onPageSizeChange={changePageSize}
@@ -231,6 +240,10 @@ export function FolderExplorer() {
         onFileFiltersChange={setFileFilters}
         onFileSearchChange={setFileSearch}
         onFolderFiltersChange={setFolderFilters}
+        onFilterMenuOpenChange={(id) => {
+          if (id) beginFilterDefer()
+          else commitFilterDefer()
+        }}
         onFolderSearchChange={setFolderSearch}
         onRefresh={handleRefresh}
         onUpload={handleUpload}

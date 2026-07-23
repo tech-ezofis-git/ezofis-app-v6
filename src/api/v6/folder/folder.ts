@@ -334,7 +334,7 @@ export interface RepositoryItemsQuery {
   cursor?: string | null
   dateFrom?: string
   dateTo?: string
-  filters?: Record<string, string>
+  filters?: Record<string, string | string[]>
   page?: number
   pageSize?: number
   search?: string

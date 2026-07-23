@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { AdaptiveScreen, CompleteSetupScreen } from '@/pages/mobile'
 import ResetPasswordPage from '@/pages/reset-password/ResetPasswordPage'
 
 export const Route = createFileRoute('/_auth/reset-password/')({
@@ -9,5 +10,10 @@ export const Route = createFileRoute('/_auth/reset-password/')({
 })
 
 function RouteComponent() {
-  return <ResetPasswordPage />
+  return (
+    <AdaptiveScreen
+      mobile={<CompleteSetupScreen />}
+      web={<ResetPasswordPage />}
+    />
+  )
 }

@@ -16,6 +16,7 @@ import {
   getCachedFilterOptionsForId,
   mergeFilterOptionLists,
 } from '../utils/folderExplorerUtils'
+import { matchesAnyFilterValue, splitFilterValues } from '../utils/multiFilterValues'
 import {
   getRepositoryFieldStringValue,
   matchesFieldKey,
@@ -38,10 +39,9 @@ const HIDDEN_FILTER_KEYS = new Set([
   'workflowinstanceid',
 ])
 
-/** Folder table filters — match Name, Items, Date Modified columns. */
+/** Folder table filters — match Name, Date Modified columns. */
 const DEFAULT_FOLDER_FILTER_SPECS = [
   { id: '__folderName', label: 'Name' },
-  { id: '__folderItems', label: 'Items' },
   { id: '__folderModified', label: 'Date Modified' },
 ] as const
 
@@ -119,12 +119,13 @@ const withActiveFilterOption = (
   options: Array<{ label: string; value: string }>,
   activeFilters: Record<string, string> = {},
 ) => {
-  const activeValue = String(activeFilters[filterId] || '').trim()
-  if (!activeValue) return options
+  const activeValues = splitFilterValues(activeFilters[filterId])
+  if (!activeValues.length) return options
 
-  return mergeUniqueOptions(options, [
-    { label: activeValue, value: activeValue },
-  ])
+  return mergeUniqueOptions(
+    options,
+    activeValues.map((value) => ({ label: value, value })),
+  )
 }
 
 const buildFilterOptionsFromContext = (
@@ -223,9 +224,10 @@ export const matchesFolderTableFilters = (
   Object.entries(filters).every(([key, value]) => {
     if (!value || !isFolderTableFilterId(key)) return true
 
-    return getFolderTableFilterValue(folder, key)
-      .toLowerCase()
-      .includes(value.trim().toLowerCase())
+    return matchesAnyFilterValue(
+      getFolderTableFilterValue(folder, key),
+      value,
+    )
   })
 
 export const filterFolders = (
@@ -241,9 +243,10 @@ export const matchesFolderFileFilters = (
   Object.entries(filters).every(([key, value]) => {
     if (!value) return true
 
-    return getFilterValue(file, key, folderContextFilters)
-      .toLowerCase()
-      .includes(value.trim().toLowerCase())
+    return matchesAnyFilterValue(
+      getFilterValue(file, key, folderContextFilters),
+      value,
+    )
   })
 
 export const filterFolderFiles = (
@@ -271,6 +274,7 @@ type FolderFilterBarProps = {
   searchQuery: string
   view: ExplorerView
   onFilterChange: (id: string, value: string) => void
+  onFilterMenuOpenChange?: (id: string | null) => void
   onRefresh?: () => void
   onResetFilters: () => void
   onSearchChange: (value: string) => void
@@ -295,6 +299,7 @@ export function FolderFilterBar({
   view,
   setView,
   onFilterChange,
+  onFilterMenuOpenChange,
   onRefresh,
   onResetFilters,
   onSearchChange,
@@ -302,11 +307,38 @@ export function FolderFilterBar({
 }: FolderFilterBarProps) {
   const showFileFilters = filterMode === 'files' || filterMode === 'both'
   const showFolderFilters = filterMode === 'folders' || filterMode === 'both'
-  const folderOptionSource =
+  const folderBaseline =
     folderFilterOptionSource.length > 0 ? folderFilterOptionSource : folders
 
-  const getCachedOptionsForFilter = (filterId: string) =>
-    getCachedFilterOptionsForId(filterOptionsCache, filterId)
+  const isSavedFilter = (filterId: string) => {
+    const direct = String(activeFilters[filterId] || '').trim()
+    if (direct) return true
+
+    const normalizedFilterId = normalizeKey(filterId)
+    return Object.entries(activeFilters).some(
+      ([key, value]) =>
+        Boolean(String(value || '').trim()) &&
+        normalizeKey(key) === normalizedFilterId,
+    )
+  }
+
+  /** Other currently saved folder filters (excludes the filter being opened). */
+  const getSiblingFolderFilters = (filterId: string) => {
+    const normalizedExclude = normalizeKey(filterId)
+    return Object.fromEntries(
+      Object.entries(activeFilters).filter(([key, value]) => {
+        if (!String(value || '').trim()) return false
+        if (!isFolderTableFilterId(key)) return false
+        return normalizeKey(key) !== normalizedExclude
+      }),
+    )
+  }
+
+  /** Cache only for currently saved filters; new filters use fresh data. */
+  const getCachedOptionsForFilter = (filterId: string) => {
+    if (!isSavedFilter(filterId)) return []
+    return getCachedFilterOptionsForId(filterOptionsCache, filterId)
+  }
 
   const resolvedFileDefaultFilters = useMemo(
     () =>
@@ -319,6 +351,18 @@ export function FolderFilterBar({
 
   const buildOptionsForFileFilter = (filterId: string) => {
     const cachedOptions = getCachedOptionsForFilter(filterId)
+    const siblingFilteredFiles = filterFolderFiles(
+      files,
+      Object.fromEntries(
+        Object.entries(activeFilters).filter(([key, value]) => {
+          if (!String(value || '').trim()) return false
+          if (isFolderTableFilterId(key)) return false
+          return normalizeKey(key) !== normalizeKey(filterId)
+        }),
+      ),
+      folderContextFilters,
+    )
+
     const isFolderStructureFilter =
       shouldIncludeFolderOptions(filterId, currentFolderGroupField) ||
       cachedOptions.length > 0
@@ -329,24 +373,33 @@ export function FolderFilterBar({
         cachedOptions,
         buildFilterOptionsFromContext(filterId, folderContextFilters),
         isFolderStructureFilter
-          ? buildFilterOptionsFromFolders(folderOptionSource, filterId)
+          ? buildFilterOptionsFromFolders(
+              filterFolders(folderBaseline, getSiblingFolderFilters(filterId)),
+              filterId,
+            )
           : [],
-        buildFilterOptionsFromFiles(files, filterId),
+        buildFilterOptionsFromFiles(siblingFilteredFiles, filterId),
       ),
       activeFilters,
     )
   }
 
-  const buildOptionsForFolderFilter = (filterId: string) =>
-    withActiveFilterOption(
+  const buildOptionsForFolderFilter = (filterId: string) => {
+    const optionSource = filterFolders(
+      folderBaseline,
+      getSiblingFolderFilters(filterId),
+    )
+
+    return withActiveFilterOption(
       filterId,
       mergeUniqueOptions(
         getCachedOptionsForFilter(filterId),
-        buildFolderTableFilterOptions(folderOptionSource, filterId),
-        buildFilterOptionsFromFolders(folderOptionSource, filterId),
+        buildFolderTableFilterOptions(optionSource, filterId),
+        buildFilterOptionsFromFolders(optionSource, filterId),
       ),
       activeFilters,
     )
+  }
 
   const buildFolderFilterDefinitions = (): FilterDefinition[] =>
     DEFAULT_FOLDER_FILTER_SPECS.map((spec) => ({
@@ -406,7 +459,7 @@ export function FolderFilterBar({
     files,
     filterMode,
     folderContextFilters,
-    folderOptionSource,
+    folderBaseline,
     folders,
     resolvedFileDefaultFilters,
     showFileFilters,
@@ -459,7 +512,7 @@ export function FolderFilterBar({
     files,
     filterMode,
     folderContextFilters,
-    folderOptionSource,
+    folderBaseline,
     folders,
     showFileFilters,
     showFolderFilters,
@@ -472,6 +525,7 @@ export function FolderFilterBar({
       activeFilters={activeFilters}
       filters={defaultFilters}
       moreFilters={moreFilters}
+      multiSelect
       searchPlaceholder={searchPlaceholder}
       searchQuery={searchQuery}
       showReset={hasActiveFilters}
@@ -499,6 +553,7 @@ export function FolderFilterBar({
         },
       ]}
       onFilterChange={onFilterChange}
+      onFilterMenuOpenChange={onFilterMenuOpenChange}
       onReset={onResetFilters}
       onSearchChange={onSearchChange}
       onViewModeChange={(mode) => setView(mode === 'table' ? 'list' : 'grid')}

@@ -31,6 +31,7 @@ type ExplorerToolbarProps = {
   onFileSearchChange?: (value: string) => void
   onFolderFiltersChange?: (filters: Record<string, string>) => void
   onFolderSearchChange?: (value: string) => void
+  onFilterMenuOpenChange?: (id: string | null) => void
   onRefresh?: () => void
   onUpload?: () => void
   setView: (view: ExplorerView) => void
@@ -80,6 +81,7 @@ export function ExplorerToolbar({
   onFileSearchChange,
   onFolderFiltersChange,
   onFolderSearchChange,
+  onFilterMenuOpenChange,
   onRefresh,
   onUpload,
 }: ExplorerToolbarProps) {
@@ -235,6 +237,7 @@ export function ExplorerToolbar({
         }
         setView={setView}
         onFilterChange={handleFilterChange}
+        onFilterMenuOpenChange={onFilterMenuOpenChange}
         onRefresh={onRefresh}
         onResetFilters={handleResetFilters}
         onSearchChange={setSearchQuery}

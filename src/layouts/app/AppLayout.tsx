@@ -5,6 +5,7 @@ import authApi from '@/api/auth'
 import AskAI from '@/components/common/ask-ai/AskAI'
 import useAskAIStore from '@/components/common/ask-ai/stores/useAskAIStore'
 import useSetupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
+import { useIsMobile } from '@/pages/mobile'
 import requestStore from '../../pages/requests/stores/useRequestStore'
 import NewRequest from './components/NewRequest'
 import RequestDemoForm from './components/RequestDemoForm'
@@ -29,6 +30,7 @@ const AppLayout = ({ children }: Props) => {
   const restrictNavigationUntilApSetup = useSetupStore(
     (state) => state.restrictNavigationUntilApSetup,
   )
+  const isMobile = useIsMobile()
 
   useEffect(() => {
     if (isNewRequestOpen) {
@@ -63,6 +65,16 @@ const AppLayout = ({ children }: Props) => {
       navigate({ replace: true, to: '/' })
     }
   }, [isApSetUpCompleted, restrictNavigationUntilApSetup, pathname, navigate])
+
+  if (isMobile) {
+    return (
+      <div className='flex min-h-dvh flex-col bg-surface-secondary'>
+        <div className='flex h-dvh min-h-0 flex-1 flex-col overflow-hidden'>
+          {children}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <>

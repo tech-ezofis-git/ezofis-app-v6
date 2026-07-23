@@ -11,12 +11,15 @@ import type { DynamicRepositoryColumn } from '../api/folderApi'
 import type {
   ExplorerView,
   FileItem,
+  FolderItem,
   RepositoryFilePage,
 } from '../types/folderTypes'
+import type { FolderFilterOptionsCache } from '../utils/folderExplorerUtils'
 import {
   getRepositoryFieldRawValue,
   normalizeFieldKey,
 } from '../utils/repositoryFieldUtils'
+import { matchesAnyFilterValue } from '../utils/multiFilterValues'
 import { type BreadcrumbItem } from './Breadcrumbs'
 import { FolderFilterBar } from './FolderFilterBar'
 import { DynamicIcon } from './icons'
@@ -39,6 +42,9 @@ type DocumentsListViewProps = {
   filePage?: RepositoryFilePage
   files: FileItem[]
   folderContextFilters?: Record<string, string>
+  filterOptionsCache?: FolderFilterOptionsCache
+  folderFilterOptionSource?: FolderItem[]
+  folders?: FolderItem[]
   loading?: boolean
   loadingPage?: boolean
   refreshing?: boolean
@@ -48,6 +54,7 @@ type DocumentsListViewProps = {
   onBreadcrumbSelect: (id: string) => void
   onEdit: (id: string) => void
   onFiltersChange?: (filters: Record<string, string>) => void
+  onFilterMenuOpenChange?: (id: string | null) => void
   onOpenFile: (id: string) => void
   onPageChange?: (page: number, cursor?: string | null) => void
   onPageSizeChange?: (pageSize: number) => void
@@ -265,6 +272,9 @@ export function DocumentsListView({
   filePage,
   files,
   folderContextFilters = {},
+  filterOptionsCache = {},
+  folderFilterOptionSource = [],
+  folders = [],
   loading = false,
   loadingPage = false,
   refreshing = false,
@@ -275,6 +285,7 @@ export function DocumentsListView({
   onBreadcrumbSelect: _onBreadcrumbSelect,
   onEdit,
   onFiltersChange,
+  onFilterMenuOpenChange,
   onOpenFile,
   onPageChange,
   onPageSizeChange,
@@ -324,17 +335,17 @@ export function DocumentsListView({
           )
   const isBusy = loading || loadingPage || refreshing
 
-  // Server already applies filters/search; keep a light pass for status aliasing.
+  // Client OR-match for multi-select (same field); AND across different fields.
   const visibleFiles = useMemo(() => {
     return normalizedFiles.filter((file) =>
       Object.entries(fileFilters).every(([key, value]) => {
         if (!value) return true
 
         if (key === '__status' || normalizeKey(key) === 'status') {
-          return String(file.status ?? file.Status ?? '')
-            .trim()
-            .toLowerCase()
-            .includes(value.trim().toLowerCase())
+          return matchesAnyFilterValue(
+            String(file.status ?? file.Status ?? '').trim(),
+            value,
+          )
         }
 
         const matchedKey = Object.keys(file).find(
@@ -344,10 +355,7 @@ export function DocumentsListView({
           ? file[matchedKey]
           : getRepositoryFieldRawValueFromRow(file, key, folderContextFilters)
 
-        return String(fieldValue ?? '')
-          .trim()
-          .toLowerCase()
-          .includes(value.trim().toLowerCase())
+        return matchesAnyFilterValue(String(fieldValue ?? ''), value)
       }),
     )
   }, [folderContextFilters, normalizedFiles, fileFilters])
@@ -488,11 +496,12 @@ export function DocumentsListView({
 
     const dynamicColumns: ColumnDef<AnyFileItem>[] = columns.map((column) => ({
       enableResizing: column.key !== '__name',
-      header: column.label,
+      header: () => <EllipsisText lines={1} value={column.label} />,
       id: column.key,
       maxSize: column.key === '__name' ? 340 : 320,
       minSize: column.minWidth || 160,
       size: column.minWidth || 160,
+      meta: { disableEllipsis: true },
       accessorFn: (row) => {
         if (column.key === '__name') return getPrimaryFileName(row)
         if (column.key === '__status') {
@@ -537,7 +546,13 @@ export function DocumentsListView({
           return <StatusPill status={status} />
         }
 
-        return <span className='text-gray-10'>{value}</span>
+        return (
+          <EllipsisText
+            className='text-sm font-normal leading-4 text-gray-10'
+            lines={1}
+            value={value}
+          />
+        )
       },
     }))
 
@@ -650,7 +665,11 @@ export function DocumentsListView({
           currentFolderGroupField={currentFolderGroupField}
           fileColumns={fileColumns}
           files={normalizedFiles}
+          filterMode='files'
           folderContextFilters={folderContextFilters}
+          filterOptionsCache={filterOptionsCache}
+          folderFilterOptionSource={folderFilterOptionSource}
+          folders={folders}
           isBusy={isBusy}
           refreshing={refreshing}
           searchPlaceholder='Search invoice, supplier, PO...'
@@ -658,6 +677,7 @@ export function DocumentsListView({
           view={view}
           setView={setView}
           onFilterChange={updateFilter}
+          onFilterMenuOpenChange={onFilterMenuOpenChange}
           onRefresh={handleRefresh}
           onResetFilters={resetFilters}
           onSearchChange={setSearchQuery}
@@ -705,7 +725,7 @@ export function DocumentsListView({
         </section>
       </div>
 
-      <div className='z-50 shrink-0 border-t border-gray-3 bg-surface px-6 py-1 shadow-[0_-6px_18px_rgba(15,23,42,0.08)]'>
+      <div className='z-50 shrink-0 border-t border-gray-3 bg-surface px-6 py-3 shadow-[0_-6px_18px_rgba(15,23,42,0.08)]'>
         <Pagination
           itemLabel='Files'
           page={currentPage}

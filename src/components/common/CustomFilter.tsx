@@ -102,6 +102,8 @@ export interface CustomFilterProps {
   }
   customSearchComponent?: React.ReactNode
   isLoading?: boolean
+  /** Accepted for callers; category menus already support multi-select. */
+  multiSelect?: boolean
   moreFilters?: FilterGroup[]
   moreFiltersLabel?: string
   quickFilters?: QuickFilterOption[]
@@ -111,6 +113,8 @@ export interface CustomFilterProps {
   trailingActions?: React.ReactNode
   viewMode?: 'grid' | 'table'
   onFilterChange: (id: string, value: string) => void
+  /** Fired when a primary filter menu opens (`id`) or closes (`null`). */
+  onFilterMenuOpenChange?: (id: string | null) => void
   onQuickFilterToggle?: (id: string) => void
   onReset: () => void
   onSearchChange?: (val: string) => void
@@ -158,6 +162,7 @@ export default function CustomFilter({
   isLoading = false,
   moreFilters,
   moreFiltersLabel = 'More filters',
+  multiSelect: _multiSelect = false,
   quickFilters,
   searchPlaceholder = 'Search...',
   searchQuery = '',
@@ -165,6 +170,7 @@ export default function CustomFilter({
   trailingActions,
   viewMode,
   onFilterChange,
+  onFilterMenuOpenChange,
   onQuickFilterToggle,
   onReset,
   onSearchChange = () => {},
@@ -192,6 +198,20 @@ export default function CustomFilter({
   const filterButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({})
   const morePanelAnchorRef = useRef<HTMLElement | null>(null)
   const skipMoreFilterDebounceRef = useRef(false)
+  const previousFilterDropdownRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    const previous = previousFilterDropdownRef.current
+    const next =
+      activeFilterDropdown && activeFilterDropdown !== 'more'
+        ? activeFilterDropdown
+        : null
+
+    if (previous === next) return
+
+    previousFilterDropdownRef.current = next
+    onFilterMenuOpenChange?.(next)
+  }, [activeFilterDropdown, onFilterMenuOpenChange])
 
   const updateFilterDropdownPosition = useCallback(() => {
     if (!activeFilterDropdown || activeFilterDropdown === 'more') {

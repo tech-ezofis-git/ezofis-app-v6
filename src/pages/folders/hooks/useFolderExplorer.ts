@@ -60,8 +60,8 @@ export function useFolderExplorer() {
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
   const [folderSearch, setFolderSearch] = useState('')
   const [fileSearch, setFileSearch] = useState('')
-  const [fileFilters, setFileFilters] = useState<Record<string, string>>({})
-  const [folderFilters, setFolderFilters] = useState<Record<string, string>>({})
+  const [fileFilters, setFileFiltersState] = useState<Record<string, string>>({})
+  const [folderFilters, setFolderFiltersState] = useState<Record<string, string>>({})
   const [folderFilterOptionSource, setFolderFilterOptionSource] = useState<
     FolderItem[]
   >([])
@@ -83,12 +83,30 @@ export function useFolderExplorer() {
   const fileSearchRef = useRef(fileSearch)
   const skipFilterReloadRef = useRef(false)
   const skipSearchReloadRef = useRef(false)
+  const deferFilterApiRef = useRef(false)
+  const deferFilterSnapshotRef = useRef('')
 
   pageSizeRef.current = pageSize
   fileFiltersRef.current = fileFilters
   folderFiltersRef.current = folderFilters
   folderSearchRef.current = folderSearch
   fileSearchRef.current = fileSearch
+
+  const getFilterSnapshot = () =>
+    JSON.stringify({
+      file: fileFiltersRef.current,
+      folder: folderFiltersRef.current,
+    })
+
+  const setFileFilters = useCallback((next: Record<string, string>) => {
+    fileFiltersRef.current = next
+    setFileFiltersState(next)
+  }, [])
+
+  const setFolderFilters = useCallback((next: Record<string, string>) => {
+    folderFiltersRef.current = next
+    setFolderFiltersState(next)
+  }, [])
 
   const hasActiveFolderBrowseQuery = (
     nextFolderFilters: Record<string, string> = folderFiltersRef.current,
@@ -126,6 +144,13 @@ export function useFolderExplorer() {
     folders?: FolderItem[]
   }) => {
     if (!folders.length && !files.length) return
+
+    const hasActiveFilters =
+      Object.values(fileFiltersRef.current).some(Boolean) ||
+      Object.values(folderFiltersRef.current).some(Boolean)
+
+    // Keep baseline cache for currently saved filters; don't merge filtered results.
+    if (hasActiveFilters) return
 
     const extracted = buildFilterOptionsCacheFromData({
       columns,
@@ -443,6 +468,9 @@ export function useFolderExplorer() {
       return
     }
 
+    // Multi-select: keep local filtering while menu is open; API runs on close.
+    if (deferFilterApiRef.current) return
+
     cursorByFolderRef.current[activeFolder] = { 1: null }
     folderLoadLockRef.current = false
     lastRequestedFolderPageRef.current[activeFolder] = 1
@@ -460,6 +488,41 @@ export function useFolderExplorer() {
     }).catch(() => undefined)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fileFilters, folderFilters])
+
+  const beginFilterDefer = useCallback(() => {
+    deferFilterApiRef.current = true
+    deferFilterSnapshotRef.current = getFilterSnapshot()
+  }, [])
+
+  const commitFilterDefer = useCallback(() => {
+    if (!deferFilterApiRef.current) return
+
+    // Wait one tick so the last checkbox selection is in refs before commit.
+    queueMicrotask(() => {
+      if (!deferFilterApiRef.current) return
+      deferFilterApiRef.current = false
+
+      if (getFilterSnapshot() === deferFilterSnapshotRef.current) return
+
+      if (!activeFolder) return
+
+      cursorByFolderRef.current[activeFolder] = { 1: null }
+      folderLoadLockRef.current = false
+      lastRequestedFolderPageRef.current[activeFolder] = 1
+
+      loadFolderContent({
+        folderId: activeFolder,
+        folderFilters: folderFiltersRef.current,
+        fileFilters: fileFiltersRef.current,
+        listAllFiles: viewMode === 'list',
+        page: 1,
+        pageSizeValue: pageSizeRef.current,
+        folderSearch: folderSearchRef.current.trim(),
+        fileSearch: fileSearchRef.current.trim(),
+        syncTree: viewMode === 'grid',
+      }).catch(() => undefined)
+    })
+  }, [activeFolder, viewMode])
 
   const openFolder = async (id: string) => {
     if (loading || loadingPage) return
@@ -716,10 +779,12 @@ export function useFolderExplorer() {
     activeFolder,
     appView,
     breadcrumbs,
+    beginFilterDefer,
     canGoBackInExplorer,
     changePageSize,
     changeServerPage,
     changeViewMode,
+    commitFilterDefer,
     currentFolderGroupField,
     currentTitle,
     error,

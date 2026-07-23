@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { AdaptiveScreen, FoldersScreen } from '@/pages/mobile'
 import FoldersPage from '@/pages/folders/FoldersPage'
 
 export const Route = createFileRoute('/_app/folders')({
@@ -9,5 +10,10 @@ export const Route = createFileRoute('/_app/folders')({
 })
 
 function RouteComponent() {
-  return <FoldersPage />
+  return (
+    <AdaptiveScreen
+      mobile={<FoldersScreen />}
+      web={<FoldersPage />}
+    />
+  )
 }

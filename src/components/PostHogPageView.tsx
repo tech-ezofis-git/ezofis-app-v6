@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 import { useEffect } from 'react'
 import { posthog } from '@/lib/posthog'
 import { router } from '@/lib/tanstack-router/router'
@@ -13,6 +14,7 @@ export function PostHogPageView() {
         path,
       })
     }
+    // posthog setup
 
     // Initial page view
     capture()
