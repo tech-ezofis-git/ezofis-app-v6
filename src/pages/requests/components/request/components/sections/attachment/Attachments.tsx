@@ -31,6 +31,7 @@ type Props = {
     files: Array<{ id: string | number; name: string }>,
   ) => void
   onSelect?: (file: AttachmentItem) => void
+  mockAiDocs?: string[]
 }
 
 function cn(...inputs: ClassValue[]) {
@@ -237,13 +238,32 @@ export default function Attachments({
   selectedItem,
   workflowId,
   onSelect,
-}: Props) {
+  onOpenHistory,
+  onOpenMailShare,
+  mockAiDocs,
+  initialData,
+}: Props & { initialData?: any[] }) {
   const targetInstanceId = instanceId || processId
   const {
-    data: files = [],
+    data: _files = [],
     isLoading,
     refetch,
-  } = useAttachments(workflowId, targetInstanceId, enabled)
+  } = useAttachments(workflowId, targetInstanceId, enabled, initialData)
+
+  const files = [
+    ...(mockAiDocs || []).map((docId) => ({
+      id: `mock-${docId}`,
+      name: `${docId}.pdf`,
+      contentType: 'application/pdf',
+      createdAt: new Date().toISOString(),
+      uploadedBy: 'AI Match',
+      isAiMatch: true,
+      fileSize: 0,
+      repositoryId: '',
+    })),
+    ..._files,
+  ]
+
   console.log('[Attachments] Loaded files list:', files)
   const { session } = authUserStore.getState()
   const tenantId = session?.tenantId || ''
@@ -507,7 +527,7 @@ export default function Attachments({
 
       {/* List */}
       <div className='flex flex-col gap-2'>
-        {isLoading ? (
+        {isLoading && files.length === 0 ? (
           <div className='flex flex-col items-center justify-center py-10 text-gray-8'>
             <Icon className='mb-2 size-6 animate-spin' name='tabler:loader' />
             <span className='text-12'>Loading attachments...</span>
@@ -556,6 +576,12 @@ export default function Attachments({
                     >
                       {displayTitle}
                     </span>
+                    {file.isAiMatch && (
+                      <span className='inline-flex items-center gap-1 rounded bg-[var(--primary-2)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--primary-9)] shrink-0'>
+                        <Icon name='tabler:sparkles' className='size-3' />
+                        Added via AI match
+                      </span>
+                    )}
                     {sizeStr && (
                       <span className='shrink-0 text-[11px] font-normal text-gray-8'>
                         ({sizeStr})
@@ -563,28 +589,28 @@ export default function Attachments({
                     )}
                   </div>
                   <div className='mt-0.5 flex items-center gap-2'>
-                    {/* {ext && (
+                    {file.isAiMatch ? (
+                      <span className='text-[11px] text-[var(--gray-9)]'>
+                        Added just now · from AI cross-reference
+                      </span>
+                    ) : (
                       <>
-                        <span className='text-[11px] font-medium tracking-wide text-gray-9 uppercase'>
-                          {ext}
+                        <span className='text-[11px] text-gray-8'>
+                          {file.createdAt
+                            ? new Date(file.createdAt).toLocaleDateString()
+                            : 'Unknown date'}
                         </span>
-                        <span className='size-0.5 rounded-full bg-gray-4' />
-                      </>
-                    )} */}
-                    <span className='text-[11px] text-gray-8'>
-                      {file.createdAt
-                        ? new Date(file.createdAt).toLocaleDateString()
-                        : 'Unknown date'}
-                    </span>
-                    {file.uploadedBy && (
-                      <>
-                        <span className='size-0.5 rounded-full bg-gray-4' />
-                        <span
-                          className='max-w-[250px] truncate text-[11px] text-gray-8'
-                          title={`Uploaded by: ${file.uploadedBy}`}
-                        >
-                          {file.uploadedBy}
-                        </span>
+                        {file.uploadedBy && (
+                          <>
+                            <span className='size-0.5 rounded-full bg-gray-4' />
+                            <span
+                              className='line-clamp-1 max-w-[120px] text-[11px] font-medium text-gray-9'
+                              title={file.uploadedBy}
+                            >
+                              {file.uploadedBy}
+                            </span>
+                          </>
+                        )}
                       </>
                     )}
                   </div>

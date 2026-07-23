@@ -23,19 +23,57 @@ export type AttachmentItem = {
   repositoryId?: number | string
   stageName?: string
   uploadedBy?: string
+  isAiMatch?: boolean
 }
+
+const normalizeList = (list: any[]) => list.map((x: any) => ({
+  ...x,
+  createdAt: x.createdAt ?? x.createdAtUtc ?? x.occurredAtUtc ?? '',
+  id: x.id ?? x.itemId ?? x.fileId ?? '',
+  name: x.name ?? x.fileName ?? '-',
+  uploadedBy:
+    x.uploadedBy ??
+    x.createdByName ??
+    x.createdByEmail ??
+    x.createdBy ??
+    '',
+}))
 
 export function useAttachments(
   workflowId?: number | string,
   instanceId?: number | string,
   enabled?: boolean,
+  initialData?: any[],
 ) {
-  const [data, setData] = useState<AttachmentItem[]>([])
-  const [isLoading, setIsLoading] = useState(false)
+  const [data, setData] = useState<AttachmentItem[]>(() => 
+    initialData ? normalizeList(initialData) : []
+  )
+  const [isLoading, setIsLoading] = useState(() => {
+    return enabled !== false && !!workflowId && !!instanceId
+  })
   const [error, setError] = useState<any>(null)
 
+  useEffect(() => {
+    if (initialData) {
+      setData((prev) => {
+        if (prev.length !== initialData.length) return normalizeList(initialData)
+        // simple ID check
+        const prevIds = prev.map((x) => x.id).join(',')
+        const newIds = initialData.map((x: any) => x.id ?? x.itemId ?? x.fileId ?? '').join(',')
+        if (prevIds !== newIds) return normalizeList(initialData)
+        return prev
+      })
+    }
+  }, [initialData])
+
   const refetch = useCallback(async () => {
-    if (!workflowId || !instanceId) return
+    const defaultData = initialData ? normalizeList(initialData) : []
+    if (!workflowId || !instanceId) {
+      setData(defaultData)
+      setIsLoading(false)
+      return
+    }
+    setData(defaultData) // Show initial data immediately instead of empty array
     setIsLoading(true)
     setError(null)
 
@@ -56,20 +94,7 @@ export function useAttachments(
             ? res.data.items
             : []
 
-      const normalized = list.map((x: any) => ({
-        ...x,
-        createdAt: x.createdAt ?? x.createdAtUtc ?? x.occurredAtUtc ?? '',
-        id: x.id ?? x.itemId ?? x.fileId ?? '',
-        name: x.name ?? x.fileName ?? '-',
-        uploadedBy:
-          x.uploadedBy ??
-          x.createdByName ??
-          x.createdByEmail ??
-          x.createdBy ??
-          '',
-      }))
-
-      setData(normalized)
+      setData(normalizeList(list))
     } catch (e) {
       console.error('Error fetching V6 instance attachments:', e)
       setError(e)

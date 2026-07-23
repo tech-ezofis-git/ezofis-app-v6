@@ -34,9 +34,45 @@ interface CustomConfig extends InternalAxiosRequestConfig {
   metadata?: { startTime: Date }
   skipDecryption?: boolean
   skipEncryption?: boolean
+  skipCancellation?: boolean
+}
+
+// --- Request Cancellation Logic ---
+const pendingRequests = new Map<string, AbortController>()
+
+const generateRequestKey = (config: InternalAxiosRequestConfig) => {
+  return [config.method, config.url, JSON.stringify(config.params || {})].join('&')
+}
+
+const addPendingRequest = (config: CustomConfig) => {
+  if (config.skipCancellation) return
+  const requestKey = generateRequestKey(config)
+
+  if (pendingRequests.has(requestKey)) {
+    const previousController = pendingRequests.get(requestKey)
+    previousController?.abort('Cancelled by new identical request')
+  }
+
+  const controller = new AbortController()
+  config.signal = controller.signal
+  pendingRequests.set(requestKey, controller)
+}
+
+const removePendingRequest = (config: CustomConfig) => {
+  if (config.skipCancellation) return
+  const requestKey = generateRequestKey(config)
+  pendingRequests.delete(requestKey)
 }
 
 // --- Request Interceptor ---
+_axios.interceptors.request.use(
+  (config: CustomConfig) => {
+    addPendingRequest(config)
+    return config
+  },
+  (error) => Promise.reject(error),
+)
+
 axiosCrypto.interceptors.request.use(
   async (config: CustomConfig) => {
     const store = authUserStore.getState()
@@ -54,6 +90,7 @@ axiosCrypto.interceptors.request.use(
     }
 
     config.metadata = { startTime: new Date() }
+    addPendingRequest(config)
     return config
   },
   (error) => Promise.reject(error),
@@ -62,6 +99,7 @@ axiosCrypto.interceptors.request.use(
 // --- Response Interceptor ---
 axiosCrypto.interceptors.response.use(
   async (response: AxiosResponse) => {
+    removePendingRequest(response.config as CustomConfig)
     const config = response.config as CustomConfig
     const store = authUserStore.getState()
     const key = store?.identity?.key
@@ -88,6 +126,14 @@ axiosCrypto.interceptors.response.use(
     return response
   },
   async (error: AxiosError) => {
+    if (error.config) {
+      removePendingRequest(error.config as CustomConfig)
+    }
+
+    if (axios.isCancel(error)) {
+      return Promise.reject(error)
+    }
+
     const store = authUserStore.getState()
     const key = store?.identity?.key
     const iv = store?.identity?.iv
@@ -126,20 +172,35 @@ axiosCrypto.interceptors.response.use(
 
 // --- V6 Request Interceptor (Auth Token) ---
 axiosV6.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => {
+  (config: CustomConfig) => {
     const store = authUserStore.getState()
     const accessToken = store?.identity?.accessToken
 
     if (accessToken) {
       config.headers.set('Authorization', `Bearer ${accessToken}`)
     }
+    
+    addPendingRequest(config)
     return config
   },
   (error) => Promise.reject(error),
 )
 
-// --- Shared 401 Response Error Interceptor for unencrypted instances ---
+// --- Shared Response Interceptors for unencrypted instances ---
+const handleResponseSuccess = (response: AxiosResponse) => {
+  removePendingRequest(response.config as CustomConfig)
+  return response
+}
+
 const handleResponseError = (error: AxiosError) => {
+  if (error.config) {
+    removePendingRequest(error.config as CustomConfig)
+  }
+
+  if (axios.isCancel(error)) {
+    return Promise.reject(error)
+  }
+
   if (error.response?.status === 401) {
     const store = authUserStore.getState()
     store.resetAuthState()
@@ -153,6 +214,6 @@ const handleResponseError = (error: AxiosError) => {
   return Promise.reject(error)
 }
 
-_axios.interceptors.response.use((response) => response, handleResponseError)
+_axios.interceptors.response.use(handleResponseSuccess, handleResponseError)
 
-axiosV6.interceptors.response.use((response) => response, handleResponseError)
+axiosV6.interceptors.response.use(handleResponseSuccess, handleResponseError)
