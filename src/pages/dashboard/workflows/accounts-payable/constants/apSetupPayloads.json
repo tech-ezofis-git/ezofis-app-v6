@@ -103,15 +103,15 @@
         "orderId": 12
       },
       {
-        "name": "Supplier Address",
-        "dataType": "LONG_TEXT",
+        "name": "Due Date",
+        "dataType": "DATE",
         "level": 0,
         "isMandatory": false,
         "includeInFolderStructure": false,
         "orderId": 13
       },
       {
-        "name": "Ship To Address",
+        "name": "Supplier Address",
         "dataType": "LONG_TEXT",
         "level": 0,
         "isMandatory": false,
@@ -119,7 +119,7 @@
         "orderId": 14
       },
       {
-        "name": "Pay To Address",
+        "name": "Ship To Address",
         "dataType": "LONG_TEXT",
         "level": 0,
         "isMandatory": false,
@@ -127,12 +127,20 @@
         "orderId": 15
       },
       {
+        "name": "Pay To Address",
+        "dataType": "LONG_TEXT",
+        "level": 0,
+        "isMandatory": false,
+        "includeInFolderStructure": false,
+        "orderId": 16
+      },
+      {
         "name": "Invoice Extracted Line Item",
         "dataType": "DYNAMIC_TABLE",
         "level": 0,
         "isMandatory": false,
         "includeInFolderStructure": false,
-        "orderId": 16
+        "orderId": 17
       },
       {
         "name": "Matched Status",
@@ -140,7 +148,7 @@
         "level": 0,
         "isMandatory": false,
         "includeInFolderStructure": false,
-        "orderId": 17
+        "orderId": 18
       }
     ]
   },
@@ -6187,6 +6195,221 @@
                 "columnNameInAPI": []
               }
             },
+            "displayLabel": ""
+          },
+          {
+            "id": "792IWMnNXLKyfXjCGcowU",
+            "label": "Due Date",
+            "type": "DATE",
+            "settings": {
+              "general": {
+                "hideLabel": false,
+                "size": "col-4",
+                "visibility": "NORMAL",
+                "placeholder": "",
+                "tooltip": "",
+                "dividerType": "SOLID",
+                "url": ""
+              },
+              "specific": {
+                "optionsType": "CUSTOM",
+                "masterTable": "",
+                "masterTableColumn": "",
+                "customOptions": "Option 1,Option 2",
+                "separateOptionsUsing": "COMMA",
+                "allowToAddNewOptions": false,
+                "optionsPerLine": 0,
+                "defaultValue": "CUSTOM",
+                "autoGenerateValue": {
+                  "prefix": "Form",
+                  "suffix": "DATE_TIME"
+                },
+                "customDefaultValue": "",
+                "showColumnTotal": false,
+                "allowMultipleFiles": false,
+                "ratingIcon": "STAR",
+                "ratingIconCount": 5,
+                "allowHalfRating": false,
+                "allowMultipleSignatures": false,
+                "tableColumns": [],
+                "tableRowsType": "ON_DEMAND",
+                "tableFixedRowCount": 0,
+                "qrValue": false,
+                "tableFixedRowLabels": [],
+                "matrixColumns": [
+                  {
+                    "id": "9Ge4njyxjrIeOzyUinOMi",
+                    "label": "column"
+                  },
+                  {
+                    "id": "c5Z_IkCU8Z60jJIqErDPf",
+                    "label": "column"
+                  },
+                  {
+                    "id": "5Odtdr_yweopdlwF8Yrfz",
+                    "label": "column"
+                  }
+                ],
+                "matrixRows": [
+                  {
+                    "id": "k4WZwwz08CAg1pXbIR9hH",
+                    "label": "row"
+                  },
+                  {
+                    "id": "2goikFOCeMOFnT0Br2FdM",
+                    "label": "row"
+                  },
+                  {
+                    "id": "OlbOWymLUd_MUcmL54EcF",
+                    "label": "row"
+                  }
+                ],
+                "matrixType": "SHORT_TEXT",
+                "matrixTypeSettings": {},
+                "textContent": "",
+                "fibFields": [],
+                "tabList": [
+                  {
+                    "id": "8GXw-wDnTiaqUxwMrDCUl",
+                    "label": "tab 1",
+                    "value": "tab 1",
+                    "panel": 0
+                  },
+                  {
+                    "id": "dVd_v9Wfmxv0EKlX6rlfl",
+                    "label": "tab 2",
+                    "value": "tab 2",
+                    "panel": 0
+                  }
+                ],
+                "popupTriggerType": "BUTTON",
+                "secondaryPanel": "",
+                "mappedFieldId": "",
+                "mappedColumnId": "",
+                "nestedListMaxLevel": 3,
+                "nestedList": [
+                  {
+                    "id": "n-sm-c908IOAwMqpKNh3e",
+                    "label": "Item 1",
+                    "level": 1,
+                    "showChildren": true,
+                    "children": []
+                  },
+                  {
+                    "id": "cHpYt1-NlP-icemQKamOC",
+                    "label": "Item 2",
+                    "level": 1,
+                    "showChildren": true,
+                    "children": []
+                  }
+                ],
+                "nestedListItemsPerLine": [],
+                "nestedListFieldType": "SHORT_TEXT",
+                "nestedListTypeSettings": {},
+                "formula": "",
+                "loginType": "EZOFIS_LOGIN",
+                "additionalLoginTypes": [
+                  "GOOGLE_LOGIN",
+                  "MICROSOFT_LOGIN"
+                ],
+                "masterFormTableColumns": [],
+                "repositoryId": 0,
+                "repositoryField": "",
+                "repositoryFieldParent": "",
+                "addressMatchingFields": [
+                  {
+                    "id": "H5Qa48Ll7s1TQSUb-qeEl",
+                    "addressColumn": "CITY",
+                    "selectFieldColumn": []
+                  },
+                  {
+                    "id": "h0E5O-5eoI2ql5X5Q3k2D",
+                    "addressColumn": "COUNTRY",
+                    "selectFieldColumn": []
+                  },
+                  {
+                    "id": "QucB2ldL1tCfSXzdlKNb0",
+                    "addressColumn": "STATE",
+                    "selectFieldColumn": []
+                  },
+                  {
+                    "id": "rW3U7MJt1pSAg8eeumexc",
+                    "addressColumn": "POSTALCODE",
+                    "selectFieldColumn": []
+                  }
+                ],
+                "formSyncField": [],
+                "defaultValueInSelectField": "NONE",
+                "specificCurrencyOptions": [],
+                "isSameMaster": true,
+                "specificCountryOptions": [],
+                "currencyParentField": ""
+              },
+              "validation": {
+                "fieldRule": "OPTIONAL",
+                "contentRule": "",
+                "minimum": "",
+                "maximum": "",
+                "allowedFileTypes": [],
+                "maxFileSize": 10,
+                "dateRange": "NONE",
+                "timeRange": "NONE",
+                "maxiDays": 0,
+                "miniDays": 0,
+                "maxiTime": 0,
+                "miniTime": 0,
+                "answerIndicator": "NO",
+                "documentExpiryField": "",
+                "enableSettings": [
+                  {
+                    "id": "uYzBxbJGQOMQhrAl9xnsr",
+                    "value": "",
+                    "controls": []
+                  }
+                ],
+                "mandatorySettings": [
+                  {
+                    "id": "wnkqYoU9-wyUMO-HK-DBX",
+                    "value": "",
+                    "controls": []
+                  }
+                ],
+                "readonlySettings": [
+                  {
+                    "id": "m8K_DoqvhW53m7E-SOnU1",
+                    "value": "",
+                    "controls": []
+                  }
+                ],
+                "timeFormat": "12",
+                "hasCalculatedField": false,
+                "verificationRequired": false,
+                "requiredValidation": "ANY"
+              },
+              "aiSettings": {
+                "formControlValidate": {
+                  "optionsType": "",
+                  "masterFormId": 0,
+                  "masterFormColumn": [],
+                  "formFields": "",
+                  "existingFormFields": [],
+                  "conditionFields": []
+                },
+                "fileDataValidate": [],
+                "imageFileValidate": {
+                  "optionsType": "",
+                  "formFields": []
+                }
+              },
+              "lookupSettings": {
+                "connection": "",
+                "connectionId": "",
+                "hubName": "",
+                "columnName": "",
+                "parentField": ""
+              }
+            },
+            "dateFilter": 0,
             "displayLabel": ""
           },
           {
@@ -18433,6 +18656,203 @@
             "displayLabel": ""
           },
           {
+            "id": "kjQFGFMRYBzLnAz9Yrx_c",
+            "label": "Due Date",
+            "type": "DATE",
+            "settings": {
+              "general": {
+                "hideLabel": false,
+                "size": "col-4",
+                "visibility": "NORMAL",
+                "placeholder": "",
+                "tooltip": "",
+                "dividerType": "SOLID",
+                "url": ""
+              },
+              "specific": {
+                "optionsType": "CUSTOM",
+                "masterTable": "",
+                "masterTableColumn": "",
+                "customOptions": "Option 1,Option 2",
+                "separateOptionsUsing": "COMMA",
+                "allowToAddNewOptions": false,
+                "optionsPerLine": 0,
+                "defaultValue": "CUSTOM",
+                "autoGenerateValue": {
+                  "prefix": "Form",
+                  "suffix": "DATE_TIME"
+                },
+                "customDefaultValue": "",
+                "showColumnTotal": false,
+                "allowMultipleFiles": false,
+                "ratingIcon": "STAR",
+                "ratingIconCount": 5,
+                "allowHalfRating": false,
+                "allowMultipleSignatures": false,
+                "tableColumns": [],
+                "tableRowsType": "ON_DEMAND",
+                "tableFixedRowCount": 0,
+                "qrValue": false,
+                "tableFixedRowLabels": [],
+                "matrixColumns": [
+                  {
+                    "id": "SBCyC5t2x88qzRQycW_EH",
+                    "label": "column"
+                  },
+                  {
+                    "id": "Ge4zgOklVwxgbu03Nd013",
+                    "label": "column"
+                  },
+                  {
+                    "id": "S6RLBmEhSoPD46yGNgPLZ",
+                    "label": "column"
+                  }
+                ],
+                "matrixRows": [
+                  {
+                    "id": "Bac4tbbRkaqDK1x0L_4EK",
+                    "label": "row"
+                  },
+                  {
+                    "id": "k6S8ctzwi4Dm1EEM-0iVD",
+                    "label": "row"
+                  },
+                  {
+                    "id": "tXzczU3P9C8TOvu094Y-z",
+                    "label": "row"
+                  }
+                ],
+                "matrixType": "SHORT_TEXT",
+                "matrixTypeSettings": {},
+                "textContent": "",
+                "fibFields": [],
+                "tabList": [
+                  {
+                    "id": "zEb1PED0QqruafMm6Gvfr",
+                    "label": "tab 1",
+                    "value": "tab 1",
+                    "panel": 0
+                  },
+                  {
+                    "id": "W0TOK7mw5BdXjzAPzN3gW",
+                    "label": "tab 2",
+                    "value": "tab 2",
+                    "panel": 0
+                  }
+                ],
+                "popupTriggerType": "BUTTON",
+                "secondaryPanel": "",
+                "mappedFieldId": "",
+                "mappedColumnId": "",
+                "nestedListMaxLevel": 3,
+                "nestedList": [
+                  {
+                    "id": "U6T8DDS3qSw9z5ZpyYeTP",
+                    "label": "Item 1",
+                    "level": 1,
+                    "showChildren": true,
+                    "children": []
+                  },
+                  {
+                    "id": "DGhgwDBcCIWlO7wFNObzJ",
+                    "label": "Item 2",
+                    "level": 1,
+                    "showChildren": true,
+                    "children": []
+                  }
+                ],
+                "nestedListItemsPerLine": [],
+                "nestedListFieldType": "SHORT_TEXT",
+                "nestedListTypeSettings": {},
+                "formula": "",
+                "loginType": "EZOFIS_LOGIN",
+                "additionalLoginTypes": [
+                  "GOOGLE_LOGIN",
+                  "MICROSOFT_LOGIN"
+                ],
+                "masterFormTableColumns": [],
+                "repositoryId": 0,
+                "repositoryField": "",
+                "repositoryFieldParent": "",
+                "addressMatchingFields": [
+                  {
+                    "id": "89JFuCMoZVGF-ty1l4C1m",
+                    "addressColumn": "CITY",
+                    "selectFieldColumn": []
+                  },
+                  {
+                    "id": "hEnr4qb91lz1Sj7ZZlSeW",
+                    "addressColumn": "COUNTRY",
+                    "selectFieldColumn": []
+                  },
+                  {
+                    "id": "Mw_R-RGz9ArMS2pyq3wmO",
+                    "addressColumn": "STATE",
+                    "selectFieldColumn": []
+                  },
+                  {
+                    "id": "SpQSbR1GzmAd4sK88pN0i",
+                    "addressColumn": "POSTALCODE",
+                    "selectFieldColumn": []
+                  }
+                ],
+                "formSyncField": [],
+                "defaultValueInSelectField": "NONE",
+                "isSameMaster": true,
+                "specificCurrencyOptions": [],
+                "specificCountryOptions": []
+              },
+              "validation": {
+                "fieldRule": "OPTIONAL",
+                "contentRule": "",
+                "minimum": "",
+                "maximum": "",
+                "allowedFileTypes": [],
+                "maxFileSize": 10,
+                "dateRange": "NONE",
+                "timeRange": "NONE",
+                "maxiDays": 0,
+                "miniDays": 0,
+                "maxiTime": 0,
+                "miniTime": 0,
+                "answerIndicator": "NO",
+                "requiredValidation": "ANY",
+                "documentExpiryField": "",
+                "enableSettings": [],
+                "mandatorySettings": [],
+                "readonlySettings": [],
+                "timeFormat": "12",
+                "hasCalculatedField": false,
+                "verificationRequired": false
+              },
+              "aiSettings": {
+                "formControlValidate": {
+                  "optionsType": "",
+                  "masterFormId": 0,
+                  "masterFormColumn": [],
+                  "formFields": "",
+                  "existingFormFields": [],
+                  "conditionFields": []
+                },
+                "fileDataValidate": [],
+                "imageFileValidate": {
+                  "optionsType": "",
+                  "formFields": []
+                }
+              },
+              "lookupSettings": {
+                "connection": "",
+                "connectionId": 0,
+                "hubName": "",
+                "columnName": "",
+                "parentField": "",
+                "syncFieldsForAPI": [],
+                "columnNameInAPI": []
+              }
+            },
+            "displayLabel": ""
+          },
+          {
             "id": "BUVrssdlNs_18C7hddJMW",
             "label": "Buyer",
             "type": "SHORT_TEXT",
@@ -27626,7 +28046,7 @@
           "mlStatusField": "",
           "mailInitiate": {
             "mailSettingsId": 0,
-            "connectorType": "gmail",
+            "connectorType": "",
             "connectorId": "",
             "conditions": {
               "hasAttachment": false,

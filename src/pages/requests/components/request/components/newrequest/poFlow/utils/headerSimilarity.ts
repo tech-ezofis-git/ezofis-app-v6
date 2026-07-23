@@ -1,15 +1,15 @@
 // utils/headerSimilarity.ts
 
 // Normalize headers (trim, remove non-alphanumeric chars, and convert to lowercase)
-const normalize = (str: string) =>
-  str
+const normalize = (str: string | null | undefined) =>
+  String(str ?? '')
     .trim()
     .replace(/[^a-zA-Z0-9]/g, '')
     .toLowerCase()
 
 export const getHeaderSimilarityScore = (
-  header1: string,
-  header2: string,
+  header1: string | null | undefined,
+  header2: string | null | undefined,
 ): number => {
   const normalizedHeader1 = normalize(header1)
   const normalizedHeader2 = normalize(header2)
@@ -36,8 +36,8 @@ export const getHeaderSimilarityScore = (
 
 // Keep this for backward compatibility if needed, but prefer findBestHeaderMatch
 export const compareHeaderSimilarity = (
-  header1: string,
-  header2: string,
+  header1: string | null | undefined,
+  header2: string | null | undefined,
 ): boolean => {
   return getHeaderSimilarityScore(header1, header2) >= 0.8
 }
@@ -47,9 +47,9 @@ export const PREDEFINED_FIELD_ALIASES: Record<string, string> = {
 }
 
 export function normalizeFieldMapping(
-  mapping: Record<string, string>,
-  fieldDataTypes: Record<string, string>,
-  templateColumns: readonly { key: string }[],
+  mapping: Record<string, string> = {},
+  fieldDataTypes: Record<string, string> = {},
+  templateColumns: readonly { key: string }[] = [],
   defaultFieldTypes: Record<string, string> = {},
 ): {
   fieldDataTypes: Record<string, string>
@@ -58,18 +58,18 @@ export function normalizeFieldMapping(
   const normalizedMapping: Record<string, string> = {}
   const normalizedTypes: Record<string, string> = {}
 
-  for (const [rawKey, excelCol] of Object.entries(mapping)) {
+  for (const [rawKey, excelCol] of Object.entries(mapping || {})) {
     const resolvedKey =
       resolvePredefinedFieldKey(rawKey, templateColumns) ?? rawKey
 
     normalizedMapping[resolvedKey] = excelCol
 
-    const rawType = fieldDataTypes[rawKey] ?? fieldDataTypes[resolvedKey]
+    const rawType = fieldDataTypes?.[rawKey] ?? fieldDataTypes?.[resolvedKey]
     const normalizedType = rawType === 'DROPDOWN' ? 'SINGLE_SELECT' : rawType
 
     if (normalizedType) {
       normalizedTypes[resolvedKey] = normalizedType
-    } else if (defaultFieldTypes[resolvedKey]) {
+    } else if (defaultFieldTypes?.[resolvedKey]) {
       normalizedTypes[resolvedKey] = defaultFieldTypes[resolvedKey]
     }
   }
@@ -78,23 +78,24 @@ export function normalizeFieldMapping(
 }
 
 export function resolvePredefinedFieldKey(
-  fieldName: string,
-  templateColumns: readonly { key: string }[],
+  fieldName: string | null | undefined,
+  templateColumns: readonly { key: string }[] = [],
 ): string | null {
-  const trimmed = fieldName.trim()
+  const trimmed = String(fieldName ?? '').trim()
   if (!trimmed) return null
 
   const aliasedName = PREDEFINED_FIELD_ALIASES[trimmed] ?? trimmed
+  const columns = templateColumns || []
 
-  const exact = templateColumns.find((col) => col.key === aliasedName)
+  const exact = columns.find((col) => col.key === aliasedName)
   if (exact) return exact.key
 
-  const caseInsensitive = templateColumns.find(
+  const caseInsensitive = columns.find(
     (col) => col.key.trim().toLowerCase() === aliasedName.toLowerCase(),
   )
   if (caseInsensitive) return caseInsensitive.key
 
-  const similarity = templateColumns.find((col) =>
+  const similarity = columns.find((col) =>
     compareHeaderSimilarity(aliasedName, col.key.trim()),
   )
   if (similarity) return similarity.key

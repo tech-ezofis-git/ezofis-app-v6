@@ -98,37 +98,28 @@ export function generateCategoryOptions(
 }
 
 /**
+ * Common due-date filter presets (past + today + near future).
+ */
+export const DEFAULT_DATE_RANGE_OPTIONS: FilterOption[] = [
+  { label: 'Overdue', value: 'overdue' },
+  { label: 'Today', value: 'today' },
+  { label: 'Tomorrow', value: 'tomorrow' },
+  { label: 'This week', value: 'this_week' },
+  { label: 'Next 7 days', value: 'next_7_days' },
+  { label: 'This month', value: 'this_month' },
+  { label: 'Last month', value: 'last_month' },
+  { label: 'Custom Range', value: 'custom' },
+]
+
+/**
  * Generates relative date ranges based on available data.
  */
 export function generateDateRanges(
-  dataset: any[],
-  fieldKey: string,
-  valueGetter?: (item: any) => any,
+  _dataset: any[],
+  _fieldKey: string,
+  _valueGetter?: (item: any) => any,
 ): FilterOption[] {
-  const dates = dataset
-    .map((item) => new Date(valueGetter ? valueGetter(item) : item[fieldKey]))
-    .filter((date) => !isNaN(date.getTime()))
-
-  const ranges: FilterOption[] = []
-
-  // For due dates, we need future-facing filters
-  ranges.push({ label: 'Overdue', value: 'overdue' })
-  ranges.push({ label: 'Today', value: 'today' })
-  ranges.push({ label: 'Tomorrow', value: 'tomorrow' })
-  ranges.push({ label: 'Next 7 Days', value: 'next_7_days' })
-  ranges.push({ label: 'Next 30 Days', value: 'next_30_days' })
-  ranges.push({ label: 'This Month', value: 'this_month' })
-  ranges.push({ label: 'Next Month', value: 'next_month' })
-  ranges.push({ label: 'Last Week', value: 'last_week' })
-  ranges.push({ label: 'Last Month', value: 'last_month' })
-  ranges.push({ label: 'Last 3 Months', value: 'last_3_months' })
-  ranges.push({ label: 'This Year', value: 'this_year' })
-  ranges.push({ label: 'Last Year', value: 'last_year' })
-
-  // Custom option for date picker (if implemented later)
-  ranges.push({ label: 'Custom Range...', value: 'custom' })
-
-  return ranges
+  return [...DEFAULT_DATE_RANGE_OPTIONS]
 }
 
 /**
@@ -204,19 +195,6 @@ export function generateNumericBuckets(
 
 /** Multi-select values stored in CustomFilter string API */
 export const FILTER_MULTI_SEP = '|'
-
-export const DEFAULT_DATE_RANGE_OPTIONS: FilterOption[] = [
-  { label: 'Today', value: 'today' },
-  { label: 'This week', value: 'this_week' },
-  { label: 'Last week', value: 'last_week' },
-  { label: 'This month', value: 'this_month' },
-  { label: 'Last month', value: 'last_month' },
-  { label: 'Last 3 months', value: 'last_3_months' },
-  { label: 'Last 6 months', value: 'last_6_months' },
-  { label: 'This year', value: 'this_year' },
-  { label: 'Last year', value: 'last_year' },
-  { label: 'Custom range', value: 'custom' },
-]
 
 export function parseFilterValues(
   value: string | string[] | null | undefined,
@@ -306,6 +284,12 @@ export function matchesDateRangeValue(
   }
 
   if (val === 'today') return t === today.getTime()
+  if (val === 'tomorrow') return t === today.getTime() + dayMs
+  if (val === 'overdue') return t < today.getTime()
+  if (val === 'next_7_days')
+    return t >= today.getTime() && t <= today.getTime() + 7 * dayMs
+  if (val === 'next_30_days')
+    return t >= today.getTime() && t <= today.getTime() + 30 * dayMs
   if (val === 'this_week') {
     const startOfWeek = new Date(today.getTime() - today.getDay() * dayMs)
     const endOfWeek = new Date(startOfWeek.getTime() + 6 * dayMs)
@@ -322,6 +306,13 @@ export function matchesDateRangeValue(
       rowDay.getFullYear() === now.getFullYear() &&
       rowDay.getMonth() === now.getMonth()
     )
+  if (val === 'next_month') {
+    const nm = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+    return (
+      rowDay.getFullYear() === nm.getFullYear() &&
+      rowDay.getMonth() === nm.getMonth()
+    )
+  }
   if (val === 'last_month') {
     const lm = new Date(now.getFullYear(), now.getMonth() - 1, 1)
     return (
@@ -353,7 +344,9 @@ export function matchesCategoryFilterValue(
   filterValue: string | string[],
   mode: 'equals' | 'contains' = 'equals',
 ): boolean {
-  const selected = parseFilterValues(filterValue)
+  const selected = parseFilterValues(filterValue).filter(
+    (sel) => sel !== '__all__' && sel.toLowerCase() !== 'all',
+  )
   if (selected.length === 0) return true
   const row = String(rowValue ?? '')
   const rowLower = row.toLowerCase()

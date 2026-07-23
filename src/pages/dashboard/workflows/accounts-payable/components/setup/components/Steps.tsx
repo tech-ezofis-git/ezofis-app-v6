@@ -8,13 +8,17 @@ import {
   AnimateSlideRight,
   AnimateSlideUp,
 } from '@/components/common/animations'
+import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
+import { LINE_ITEM_TEMPLATE_COLUMNS } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/lineItemSchema'
+import { SYSTEM_TEMPLATE_COLUMNS } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/templateSchema'
 import cn from '@/utils/cn'
-import setupStore from '../../../stores/useSetupStore'
 import StepFour from './steps/step-four/StepFour'
 import StepOne from './steps/step-one/StepOne'
 import StepThree from './steps/step-three/StepThree'
 import StepTwo from './steps/step-two/StepTwo'
 // import StepZero from './steps/StepZero'
+
+const OAUTH_ERP_SYSTEMS = ['QuickBooks'] as const
 
 const steps = [
   {
@@ -43,9 +47,124 @@ const steps = [
   },
 ]
 
+const isEmailStepComplete = (emailSettings?: {
+  isConnected?: boolean
+  provider?: string
+} | null) => Boolean(emailSettings?.provider && emailSettings?.isConnected)
+
+const isErpStepComplete = (erpSettings?: {
+  isConnected?: boolean
+  lineItemHeaders?: string[]
+  lineItemMapping?: Record<string, string>
+  mapping?: Record<string, string>
+  system?: string
+  templateUploaded?: boolean
+} | null) => {
+  if (!erpSettings?.system) return false
+  if (erpSettings.system === 'PREDEFINED') return true
+
+  if (erpSettings.system === 'FILE_BASED_IMPORT') {
+    const mapping = erpSettings.mapping || {}
+    const lineItemMapping = erpSettings.lineItemMapping || {}
+    const lineItemHeaders = erpSettings.lineItemHeaders || []
+
+    const requiredHeaderColumns = SYSTEM_TEMPLATE_COLUMNS.filter(
+      (c) => c.required,
+    )
+    const isHeaderMappingComplete =
+      requiredHeaderColumns.length > 0 &&
+      requiredHeaderColumns.every(
+        (col) =>
+          !!mapping[col.key] && mapping[col.key] !== 'Skip to Import',
+      )
+
+    const hasLineItems = lineItemHeaders.length > 0
+    const requiredLineItemColumns = LINE_ITEM_TEMPLATE_COLUMNS.filter(
+      (c) => c.required,
+    )
+    const isLineItemMappingComplete =
+      !hasLineItems ||
+      (requiredLineItemColumns.length > 0 &&
+        requiredLineItemColumns.every(
+          (col) =>
+            !!lineItemMapping[col.key] &&
+            lineItemMapping[col.key] !== 'Skip to Import',
+        ))
+
+    return (
+      !!erpSettings.templateUploaded &&
+      isHeaderMappingComplete &&
+      isLineItemMappingComplete
+    )
+  }
+
+  const isOAuthErp = OAUTH_ERP_SYSTEMS.includes(
+    erpSettings.system as (typeof OAUTH_ERP_SYSTEMS)[number],
+  )
+
+  return isOAuthErp
+    ? !!erpSettings.isConnected
+    : Boolean(erpSettings.system && erpSettings.isConnected)
+}
+
+const isStorageStepComplete = (storageSettings?: {
+  isConnected?: boolean
+  system?: string
+} | null) =>
+  storageSettings?.system === 'Included storage' ||
+  !!storageSettings?.isConnected
+
+const getSetupProgress = (state: {
+  emailSettings?: {
+    isConnected?: boolean
+    provider?: string
+  } | null
+  erpSettings?: {
+    isConnected?: boolean
+    lineItemHeaders?: string[]
+    lineItemMapping?: Record<string, string>
+    mapping?: Record<string, string>
+    system?: string
+    templateUploaded?: boolean
+  } | null
+  isApSetUpCompleted?: boolean
+  step?: number
+  storageSettings?: {
+    isConnected?: boolean
+    system?: string
+  } | null
+}) => {
+  if (state?.isApSetUpCompleted) return 100
+
+  const currentStep = Math.max(0, Math.min(state?.step ?? 0, steps.length - 1))
+
+  // Step 4 is review-only — show 90% once reached with prior steps configured
+  if (currentStep === 3) {
+    const priorStepsReady =
+      isEmailStepComplete(state?.emailSettings) &&
+      isErpStepComplete(state?.erpSettings) &&
+      isStorageStepComplete(state?.storageSettings)
+    return priorStepsReady ? 90 : 75
+  }
+
+  const stepConfigured = [
+    isEmailStepComplete(state?.emailSettings),
+    isErpStepComplete(state?.erpSettings),
+    isStorageStepComplete(state?.storageSettings),
+  ]
+
+  let completedSteps = 0
+  for (let i = 0; i <= currentStep && i < stepConfigured.length; i++) {
+    if (stepConfigured[i]) completedSteps += 1
+  }
+
+  return Math.round((completedSteps / steps.length) * 100)
+}
+
 const Steps = () => {
   const step = setupStore((state) => state.step)
   const setStep = setupStore((state) => state.setStep)
+  const progress = setupStore(getSetupProgress)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -67,15 +186,6 @@ const Steps = () => {
       })
     })
   }, [step])
-
-  const isApSetUpCompleted = setupStore((state) => state.isApSetUpCompleted)
-
-  const progress =
-    step === 3
-      ? isApSetUpCompleted
-        ? 100
-        : 90
-      : Math.round(((step + 1) / steps.length) * 100)
 
   // Color mapping based on progress percentage
   const getProgressStyles = () => {

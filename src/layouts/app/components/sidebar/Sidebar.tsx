@@ -107,6 +107,9 @@ const Sidebar = () => {
     ]),
   )
 
+  // TEMP: always show Requests/Forms until role permission persistence is fixed
+  const temporarilyAlwaysVisible = new Set(['requests', 'forms'])
+
   const filteredMenu =
     !sessionPermissions || sessionPermissions.length === 0
       ? menus
@@ -116,6 +119,7 @@ const Sidebar = () => {
             items: section.items.filter(
               (item) =>
                 !item.permissionKey ||
+                temporarilyAlwaysVisible.has(item.permissionKey) ||
                 permissionMap.get(item.permissionKey) === true,
             ),
           }))

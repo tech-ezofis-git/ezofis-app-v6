@@ -26,8 +26,9 @@ const parseCsv = async (
         const fields = (results.meta?.fields ?? [])
           .map(normalizeHeader)
           .filter(Boolean)
-        const rowCount = results.data.length
-        const previewRows = results.data.slice(0, 15)
+        const data = Array.isArray(results.data) ? results.data : []
+        const rowCount = data.length
+        const previewRows = data.slice(0, 15)
 
         if (!fields.length) reject(new Error('No header row found in CSV.'))
         else {

@@ -20,44 +20,47 @@ const getUserDisplayName = (
   return fullName || session.email || 'Current User'
 }
 
-const truncateLabel = (value: string, max = 22) => {
-  if (value.length <= max) return value
-  return `${value.slice(0, max - 1)}…`
+const truncateLabel = (value: string | null | undefined, max = 22) => {
+  const text = String(value ?? '')
+  if (text.length <= max) return text
+  return `${text.slice(0, max - 1)}…`
 }
 
 const WorkflowPreview = () => {
-  const { emailSettings, erpSettings, storageSettings } = setupStore()
+  const emailSettings = setupStore((state) => state.emailSettings)
+  const erpSettings = setupStore((state) => state.erpSettings)
+  const storageSettings = setupStore((state) => state.storageSettings)
   const session = authUserStore((state) => state.session)
   const userName = getUserDisplayName(session)
 
   const getStartNodeConfig = () => {
     const connectedAccount =
-      emailSettings.email ||
       emailSettings.account ||
+      emailSettings.email ||
       session?.email ||
       'Connected'
 
     switch (emailSettings.provider) {
       case 'gmail':
         return {
-          detail: 'Invoice document',
+          detail: 'Reads invoice documents from email',
           icon: 'logos:google-gmail',
-          subtitle: truncateLabel(connectedAccount, 18),
+          subtitle: connectedAccount,
           title: 'Gmail',
         }
       case 'outlook':
         return {
-          detail: 'Invoice document',
+          detail: 'Reads invoice documents from email',
           icon: 'logos:microsoft-outlook',
-          subtitle: truncateLabel(connectedAccount, 18),
+          subtitle: connectedAccount,
           title: 'Outlook',
         }
       case 'DIRECT_UPLOAD':
       default:
         return {
-          detail: 'Invoice document',
+          detail: 'Upload invoice documents manually',
           icon: 'tabler:user-up',
-          subtitle: truncateLabel(userName, 18),
+          subtitle: userName,
           title: 'Manual Upload',
         }
     }
@@ -66,32 +69,37 @@ const WorkflowPreview = () => {
   const getStorageDisplayName = () => {
     const system = storageSettings.system
     if (!system || system === 'Included storage') {
-      return 'EZOFIS Storage'
+      return 'Files saved to EZOFIS Storage'
     }
     if (system === 'OneDrive' || system === 'One Drive') {
-      return 'One Drive Storage'
+      return 'Files saved to OneDrive Storage'
     }
     if (system === 'Google Drive') {
-      return 'Google Drive Storage'
+      return 'Files saved to Google Drive Storage'
     }
-    return `${system} Storage`
+    if (system === 'GCP') {
+      return 'Files saved to GCP Storage'
+    }
+    return `Files saved to ${system} Storage`
   }
 
   const getAgentNodeConfig = () => {
     const getErpLabel = () => {
       if (erpSettings.system === 'PREDEFINED') {
-        return 'Demo Data'
+        return 'Invoice matching with demo PO'
       }
       if (
         erpSettings.system === 'FILE_BASED_IMPORT' ||
         erpSettings.wantsFileBasedImport
       ) {
-        return 'Excel Import'
+        return 'Invoice matching with your PO'
       }
       if (erpSettings.system === 'QuickBooks') {
-        return 'QuickBooks'
+        return 'Invoice matching via QuickBooks'
       }
-      return erpSettings.system || 'ERP'
+      return erpSettings.system
+        ? `Invoice matching via ${erpSettings.system}`
+        : 'Invoice matching via ERP'
     }
 
     return {
@@ -108,11 +116,19 @@ const WorkflowPreview = () => {
     title: 'Approver Review',
   })
 
-  const getEndNodeConfig = () => ({
-    detail: 'Synced to ERP',
-    subtitle: 'Payment completed',
-    title: 'Process End',
-  })
+  const getEndNodeConfig = () => {
+    const hasConnectedErp =
+      !!erpSettings.system &&
+      erpSettings.system !== 'PREDEFINED' &&
+      erpSettings.system !== 'FILE_BASED_IMPORT' &&
+      !erpSettings.wantsFileBasedImport
+
+    return {
+      detail: hasConnectedErp ? `Synced to ${erpSettings.system}` : undefined,
+      subtitle: 'Payment completed',
+      title: 'Process End',
+    }
+  }
 
   const startNode = getStartNodeConfig()
   const agentNode = getAgentNodeConfig()
@@ -262,14 +278,15 @@ const WorkflowPreview = () => {
 
           <div className='relative grid h-full grid-cols-4 gap-0'>
             {/* Node 1: Start (Top) */}
-            <div className='flex items-start justify-center pt-1'>
+            <div className='flex items-start justify-center pt-1 pl-6 sm:pl-8'>
               <AnimateFadeIn delay={0.1}>
                 <NodeCard
                   detail={startNode.detail}
                   icon={startNode.icon}
+                  showFullText
                   subtitle={startNode.subtitle}
                   title={startNode.title}
-                  widthClass='w-[150px]'
+                  widthClass='w-[190px]'
                   isTrigger
                 />
               </AnimateFadeIn>
@@ -330,6 +347,7 @@ const NodeCard = ({
   isAgent = false,
   isEnd = false,
   isTrigger = false,
+  showFullText = false,
   subtitle,
   title,
   widthClass = 'w-[130px]',
@@ -340,6 +358,7 @@ const NodeCard = ({
   isAgent?: boolean
   isEnd?: boolean
   isTrigger?: boolean
+  showFullText?: boolean
   subtitle: string
   title: string
   widthClass?: string
@@ -408,12 +427,12 @@ const NodeCard = ({
             {subtitle}
           </p>
           {detail && (
-            <p className='mt-0.5 whitespace-nowrap text-[9px] leading-snug text-purple-3/90'>
+            <p className='mt-0.5 truncate text-[9px] leading-snug text-purple-3/90'>
               {detail}
             </p>
           )}
           {extra && (
-            <p className='mt-0.5 whitespace-nowrap text-[9px] leading-snug text-purple-3/90'>
+            <p className='mt-0.5 truncate text-[9px] leading-snug text-purple-3/90'>
               {extra}
             </p>
           )}
@@ -434,13 +453,26 @@ const NodeCard = ({
               {title}
             </h4>
             <p
-              className='mt-0.5 truncate whitespace-nowrap text-[10px] leading-tight font-medium text-gray-10'
               title={subtitle}
+              className={cn(
+                'mt-0.5 text-[10px] leading-tight font-medium text-gray-10',
+                showFullText
+                  ? 'break-all break-all whitespace-normal'
+                  : 'truncate whitespace-nowrap',
+              )}
             >
               {subtitle}
             </p>
             {detail && (
-              <p className='mt-0.5 truncate whitespace-nowrap text-[9px] leading-tight text-gray-9'>
+              <p
+                title={detail}
+                className={cn(
+                  'mt-0.5 text-[9px] leading-tight text-gray-9',
+                  showFullText
+                    ? 'wrap-anywhere break-words whitespace-normal'
+                    : 'truncate whitespace-nowrap',
+                )}
+              >
                 {detail}
               </p>
             )}

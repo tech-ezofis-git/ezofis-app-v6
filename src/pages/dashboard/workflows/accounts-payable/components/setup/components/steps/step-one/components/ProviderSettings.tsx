@@ -93,12 +93,23 @@ const ProviderSettings = () => {
               <AnimationComponent delay={0.25 + index * 0.08} key={item.value}>
                 <BrandCard
                   checked={emailSettings.provider === item.value}
+                  description={
+                    emailSettings.provider === item.value &&
+                    emailSettings.isConnected
+                      ? emailSettings.account ||
+                        emailSettings.email ||
+                        'Connected'
+                      : undefined
+                  }
                   logo={item.logo}
                   name={item.name}
                   value={item.value}
                   onClick={() =>
                     setEmailSettings({
                       ...emailSettings,
+                      account: '',
+                      connectorId: '',
+                      email: '',
                       isConnected: false,
                       isConnecting: false,
                       provider: item.value,

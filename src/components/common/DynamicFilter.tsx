@@ -52,6 +52,8 @@ export interface DynamicFilterProps {
   fields: DynamicFilterField[]
   activeQuickFilters?: string[]
   customSearchComponent?: React.ReactNode
+  /** True while list data is fetching after a filter apply */
+  isLoading?: boolean
   /** Extra filters available via the "Add filter" menu (not shown by default). */
   optionalFields?: DynamicFilterField[]
   quickFilters?: QuickFilterOption[]
@@ -81,6 +83,7 @@ export default function DynamicFilter({
   customSearchComponent,
   dataset,
   fields,
+  isLoading = false,
   optionalFields = [],
   quickFilters,
   searchPlaceholder = 'Search...',
@@ -382,7 +385,9 @@ export default function DynamicFilter({
                   )}
                   <span className='truncate'>{chipLabel}</span>
                   {chipCount > 1 && (
-                    <span className={FILTER_CHIP_COUNT}>{chipCount}</span>
+                    <span className={FILTER_CHIP_COUNT}>
+                      +{chipCount - 1}
+                    </span>
                   )}
                   {qf.options ? (
                     <span className={FILTER_CHIP_TRAILING}>
@@ -442,6 +447,7 @@ export default function DynamicFilter({
                         />
                       ) : qf.type === 'number' ? (
                         <NumberFilterMenu
+                          isLoading={isLoading}
                           options={qf.options || []}
                           selectedValues={
                             activeQuickFilters
@@ -482,6 +488,7 @@ export default function DynamicFilter({
                         />
                       ) : (
                         <CategoryFilterMenu
+                          isLoading={isLoading}
                           label={qf.label}
                           options={qf.options || []}
                           selectedValues={
@@ -532,11 +539,26 @@ export default function DynamicFilter({
             type: 'unknown',
           }
           const activeValues = getActiveArray(activeFilters[field.id])
+          const itemOptionValues = options
+            .filter(
+              (o) =>
+                o.value !== '__all__' &&
+                o.value.toLowerCase() !== 'all' &&
+                !/^all(\s|$)/i.test(o.label),
+            )
+            .map((o) => o.value)
+          const isAllActive =
+            activeValues.includes('__all__') ||
+            activeValues.some((v) => v.toLowerCase() === 'all') ||
+            (itemOptionValues.length > 0 &&
+              itemOptionValues.every((v) => activeValues.includes(v)))
           const isActive = activeValues.length > 0
           const isOpen = activeDropdown === field.id
           const isOptional = optionalFields.some((f) => f.id === field.id)
           let displayLabel = field.label
-          if (activeValues.length === 1) {
+          if (isAllActive) {
+            displayLabel = field.label
+          } else if (activeValues.length === 1) {
             const opt = options.find((o) => o.value === activeValues[0])
             const optLabel = opt ? opt.label : activeValues[0]
             displayLabel =
@@ -574,9 +596,9 @@ export default function DynamicFilter({
                   onClick={() => setActiveDropdown(isOpen ? null : field.id)}
                 >
                   <span className='truncate'>{displayLabel}</span>
-                  {activeValues.length > 1 && (
+                  {!isAllActive && activeValues.length > 1 && (
                     <span className={FILTER_CHIP_COUNT}>
-                      {activeValues.length}
+                      +{activeValues.length - 1}
                     </span>
                   )}
                   {!isOptional && (
@@ -620,6 +642,7 @@ export default function DynamicFilter({
                     type === 'boolean' ||
                     type === 'unknown' ? (
                       <CategoryFilterMenu
+                        isLoading={isLoading}
                         label={field.label}
                         options={options}
                         selectedValues={activeValues}
@@ -631,6 +654,7 @@ export default function DynamicFilter({
                       />
                     ) : type === 'number' ? (
                       <NumberFilterMenu
+                        isLoading={isLoading}
                         options={options}
                         selectedValues={activeValues}
                         onChange={(vals) => onFilterChange(field.id, vals)}
@@ -716,7 +740,7 @@ export default function DynamicFilter({
                     ) : (
                       filteredAddableFields.map((field) => (
                         <button
-                          className='flex w-full items-center rounded-md px-2.5 py-1.5 text-left text-12 font-medium text-text-secondary transition-colors hover:bg-gray-2 hover:text-text-primary'
+                          className='flex w-full items-center rounded-md px-2.5 py-1.5 text-left text-12 font-normal text-text-primary transition-colors hover:bg-gray-2'
                           key={field.id}
                           type='button'
                           onClick={() => {

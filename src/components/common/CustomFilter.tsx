@@ -101,6 +101,7 @@ export interface CustomFilterProps {
     onClick: () => void
   }
   customSearchComponent?: React.ReactNode
+  isLoading?: boolean
   moreFilters?: FilterGroup[]
   moreFiltersLabel?: string
   quickFilters?: QuickFilterOption[]
@@ -154,6 +155,7 @@ export default function CustomFilter({
   addButton,
   customSearchComponent,
   filters,
+  isLoading = false,
   moreFilters,
   moreFiltersLabel = 'More filters',
   quickFilters,
@@ -422,17 +424,15 @@ export default function CustomFilter({
               {moreFilters.map((group) => {
                 const IconComp = group.icon
                 const isActive = activeFilterGroup === group.id
-                const hasValue = Boolean(activeFilters[group.id])
                 return (
                   <button
                     key={group.id}
                     type='button'
                     className={cn(
-                      'flex w-full cursor-pointer items-center justify-between rounded-md px-2.5 py-1.5 text-left text-12 font-normal transition-all',
+                      'flex w-full cursor-pointer items-center justify-between rounded-md px-2.5 py-1.5 text-left text-12 font-normal text-text-primary transition-all',
                       isActive
                         ? 'bg-primary-3 text-primary-9 dark:bg-primary-9 dark:text-white'
-                        : 'text-text-secondary hover:bg-gray-2 dark:hover:bg-gray-10',
-                      hasValue && !isActive && 'text-primary-9',
+                        : 'hover:bg-gray-2 dark:hover:bg-gray-10',
                     )}
                     onClick={() => {
                       setActiveFilterGroup(group.id)
@@ -480,6 +480,7 @@ export default function CustomFilter({
                   return (
                     <NumberFilterMenu
                       key={group.id}
+                      isLoading={isLoading}
                       options={group.options || []}
                       selectedValues={selectedValues}
                       onChange={(vals) => {
@@ -499,6 +500,7 @@ export default function CustomFilter({
                   return (
                     <CategoryFilterMenu
                       key={group.id}
+                      isLoading={isLoading}
                       label={group.label}
                       options={group.options}
                       selectedValues={selectedValues}
@@ -519,6 +521,7 @@ export default function CustomFilter({
                   return (
                     <CategoryFilterMenu
                       key={group.id}
+                      isLoading={isLoading}
                       label={group.label}
                       options={group.actions}
                       selectedValues={selectedValues}
@@ -649,7 +652,7 @@ export default function CustomFilter({
                   <span className='truncate'>{displayLabel}</span>
                   {selectedValues.length > 1 && (
                     <span className={FILTER_CHIP_COUNT}>
-                      {selectedValues.length}
+                      +{selectedValues.length - 1}
                     </span>
                   )}
                   <span className={FILTER_CHIP_TRAILING}>
@@ -707,6 +710,7 @@ export default function CustomFilter({
                       />
                     ) : isNumber ? (
                       <NumberFilterMenu
+                        isLoading={isLoading}
                         options={filter.options}
                         selectedValues={selectedValues}
                         onChange={(vals) => {
@@ -720,6 +724,7 @@ export default function CustomFilter({
                       />
                     ) : (
                       <CategoryFilterMenu
+                        isLoading={isLoading}
                         label={filter.label}
                         options={filter.options}
                         selectedValues={selectedValues}
@@ -781,7 +786,7 @@ export default function CustomFilter({
                     <span className='truncate'>{chipText}</span>
                     {selectedValues.length > 1 && (
                       <span className={FILTER_CHIP_COUNT}>
-                        {selectedValues.length}
+                        +{selectedValues.length - 1}
                       </span>
                     )}
                   </button>

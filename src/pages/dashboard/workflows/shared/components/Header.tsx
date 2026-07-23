@@ -409,7 +409,7 @@ export default function DashboardCharts() {
           { label: 'Last month', value: 'lastmonth' },
           { label: 'Quarter', value: 'quarter' },
           { label: 'Financial Year', value: 'fy' },
-          { label: 'Custom range', value: 'custom' },
+          { label: 'Custom Range', value: 'custom' },
         ],
       },
       {

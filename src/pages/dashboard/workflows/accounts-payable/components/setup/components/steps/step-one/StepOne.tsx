@@ -3,6 +3,7 @@ import Alert from '@/components/base/Alert'
 import Button from '@/components/base/button/Button'
 import Divider from '@/components/base/Divider'
 import { AnimateFadeIn, AnimateSlideUp } from '@/components/common/animations'
+import { openApOAuthAuthorize } from '@/pages/dashboard/workflows/accounts-payable/utils/oauthAuthorize'
 import authUserStore from '@/stores/authUserStore'
 import setupStore from '../../../../../stores/useSetupStore'
 import { StepFooter, StepLayout } from '../components/StepLayout'
@@ -18,45 +19,52 @@ const StepOne = () => {
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       if (event.origin !== window.location.origin) return
-      if (event.data.type === 'CONNECTION_SUCCESS') {
-        const connector =
-          typeof event.data.connector === 'string' ? event.data.connector : ''
-        const connectedEmail = session?.email || emailSettings.email || ''
-        setEmailSettings({
-          ...emailSettings,
-          account: connector || connectedEmail,
-          email: connectedEmail,
-          isConnected: true,
-          isConnecting: false,
-        })
-      }
+      if (event.data.type !== 'CONNECTION_SUCCESS') return
+
+      const externalAccountEmail =
+        typeof event.data.externalAccountEmail === 'string'
+          ? event.data.externalAccountEmail
+          : typeof event.data.email === 'string'
+            ? event.data.email
+            : ''
+      const connectorId =
+        typeof event.data.connectorId === 'string'
+          ? event.data.connectorId
+          : ''
+      const connector =
+        typeof event.data.connector === 'string' ? event.data.connector : ''
+      const current = setupStore.getState().emailSettings
+      const connectedEmail =
+        externalAccountEmail || session?.email || current.email || ''
+
+      setEmailSettings({
+        ...current,
+        account: connectedEmail || connector,
+        connectorId,
+        email: connectedEmail,
+        isConnected: true,
+        isConnecting: false,
+      })
     }
 
     window.addEventListener('message', handleMessage)
     return () => window.removeEventListener('message', handleMessage)
-  }, [emailSettings, session?.email, setEmailSettings])
+  }, [session?.email, setEmailSettings])
 
-  const handleConnect = () => {
-    const tenantId = session?.tenantId
-
+  const handleConnect = async () => {
     setEmailSettings({
       ...emailSettings,
       isConnecting: true,
     })
 
-    const now = new Date()
-    const day = now.getDate().toString().padStart(2, '0')
-    const month = now.toLocaleString('default', { month: 'short' })
-    const year = now.getFullYear()
-    const hours = now.getHours().toString().padStart(2, '0')
-    const minutes = now.getMinutes().toString().padStart(2, '0')
-
-    const provider = emailSettings.provider
-    const connectionName = `${provider}-${day}${month}${year}-${hours}${minutes}`
-    const location = window.location
-    const url = `https://ezcloudauth.azurewebsites.net/api/authorize?tenantid=${tenantId}&envtype=trial&connectorname=${encodeURIComponent(connectionName)}&provider=${provider.toLowerCase()}&resulturl=${location.origin}/auth/`
-
-    window.open(url, '_blank')
+    const { error } = await openApOAuthAuthorize(emailSettings.provider)
+    if (error) {
+      console.error(error)
+      setEmailSettings({
+        ...emailSettings,
+        isConnecting: false,
+      })
+    }
   }
 
   return (
@@ -145,7 +153,11 @@ const StepOne = () => {
         emailSettings.provider !== 'DIRECT_UPLOAD' && (
           <AnimateSlideUp delay={0.4}>
             <Alert
-              text={`Your ${emailSettings.provider.charAt(0).toUpperCase() + emailSettings.provider.slice(1)} account has been connected successfully.`}
+              text={
+                emailSettings.account || emailSettings.email
+                  ? `Connected as ${emailSettings.account || emailSettings.email}`
+                  : `Your ${emailSettings.provider.charAt(0).toUpperCase() + emailSettings.provider.slice(1)} account has been connected successfully.`
+              }
               variant='green'
             />
           </AnimateSlideUp>

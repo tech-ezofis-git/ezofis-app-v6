@@ -1500,16 +1500,30 @@ const Request = ({
   }
 
   let statusBadge = ''
-  if (apAgentJobId && jobStatus && !jobStatus.isCompleted) {
+  if (
+    isCurrentlyProcessing &&
+    apAgentJobId &&
+    jobStatus &&
+    !jobStatus.isCompleted
+  ) {
     // statusBadge = jobStatus.stage
     if (displayMessage) {
       statusBadge += `${displayMessage}`
     }
-  } else if (apAgentJobId && (!jobStatus || !jobStatus.isCompleted)) {
+  } else if (
+    isCurrentlyProcessing &&
+    apAgentJobId &&
+    (!jobStatus || !jobStatus.isCompleted)
+  ) {
     statusBadge = 'Fetching necessary Data...'
   } else {
     // If job completed but we don't have agentDecision yet, show a loader status
-    if (apAgentJobId && jobStatus && !agentDecision) {
+    if (
+      isCurrentlyProcessing &&
+      apAgentJobId &&
+      jobStatus &&
+      !agentDecision
+    ) {
       statusBadge = 'Finalizing Results...'
     } else {
       statusBadge = finalStatusBadge

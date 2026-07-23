@@ -87,7 +87,9 @@ const Integrations = () => {
       account:
         emailSettings.provider === 'DIRECT_UPLOAD'
           ? 'N/A'
-          : emailSettings.email || 'Not configured',
+          : emailSettings.account ||
+            emailSettings.email ||
+            'Not configured',
       icon: getEmailIcon(),
       iconBgColor: getEmailIconBg(),
       iconColor: getEmailIconColor(),
@@ -99,10 +101,12 @@ const Integrations = () => {
       account:
         erpSettings.system === 'PREDEFINED'
           ? 'System Default'
-          : erpSettings.importMethod === 'import'
-            ? erpSettings.selectedFormName || 'Not configured'
-            : erpSettings.uploadedTemplate?.name ||
-              (erpSettings.wantsFileBasedImport ? 'N/A' : 'Not configured'),
+          : erpSettings.system === 'QuickBooks'
+            ? erpSettings.account || 'Not configured'
+            : erpSettings.importMethod === 'import'
+              ? erpSettings.selectedFormName || 'Not configured'
+              : erpSettings.uploadedTemplate?.name ||
+                (erpSettings.wantsFileBasedImport ? 'N/A' : 'Not configured'),
       icon: getErpIcon(),
       iconBgColor: getErpIconBg(),
       iconColor: getErpIconColor(),
@@ -119,7 +123,9 @@ const Integrations = () => {
       account:
         storageSettings.system === 'Included storage'
           ? 'Basic'
-          : storageSettings.apiUrl || 'Basic',
+          : storageSettings.account ||
+            storageSettings.apiUrl ||
+            'Not configured',
       icon: 'tabler:cloud-filled',
       iconBgColor: getStorageIconBg(),
       iconColor: getStorageIconColor(),

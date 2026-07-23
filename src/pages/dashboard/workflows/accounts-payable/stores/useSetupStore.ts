@@ -3,6 +3,7 @@ import { create } from 'zustand'
 type EmailSettings = {
   /** Connected mailbox / connector display name */
   account?: string
+  connectorId?: string
   email: string
   isConnected: boolean
   isConnecting: boolean
@@ -17,11 +18,13 @@ type ErpSettings = {
   account?: string
   apiKey: string
   apiUrl: string
+  connectorId?: string
   fieldDataTypes?: Record<string, string>
   groupingColumn?: string | null
   importMethod?: 'upload' | 'import'
   isConnected: boolean
   isConnecting: boolean
+  isParsingTemplate?: boolean
   lineItemFieldDataTypes?: Record<string, string>
   lineItemHeaders?: string[]
   lineItemMapping?: Record<string, string>
@@ -42,6 +45,7 @@ type StorageSettings = {
   account?: string
   apiKey: string
   apiUrl: string
+  connectorId?: string
   isConnected: boolean
   isConnecting: boolean
   system: string
@@ -74,6 +78,7 @@ type Store = {
 
 const initialEmailSettings: EmailSettings = {
   account: '',
+  connectorId: '',
   email: '',
   isConnected: true,
   isConnecting: false,
@@ -87,11 +92,13 @@ const initialErpSettings: ErpSettings = {
   account: '',
   apiKey: '',
   apiUrl: '',
+  connectorId: '',
   fieldDataTypes: {},
   groupingColumn: null,
   importMethod: 'upload',
   isConnected: true,
   isConnecting: false,
+  isParsingTemplate: false,
   lineItemFieldDataTypes: {},
   lineItemHeaders: [],
   lineItemMapping: {},
@@ -111,6 +118,7 @@ const initialStorageSettings: StorageSettings = {
   account: '',
   apiKey: '',
   apiUrl: '',
+  connectorId: '',
   isConnected: false,
   isConnecting: false,
   system: 'Included storage',

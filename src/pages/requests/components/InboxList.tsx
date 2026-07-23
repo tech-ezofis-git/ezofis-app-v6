@@ -9,6 +9,7 @@ import Tooltip from '@/components/base/Tooltip'
 import DynamicFilter, {
   type DynamicFilterField,
 } from '@/components/common/DynamicFilter'
+import { DEFAULT_DATE_RANGE_OPTIONS } from '@/utils/filterUtils'
 import type { TableGroup, WorkflowOption } from '../types'
 import requestStore from '../stores/useRequestStore'
 // import TableSort from '@/components/base/data-table/actions/TableSort'
@@ -344,7 +345,7 @@ const getAmountRangeOptions = (rows: any[]) => {
       { label: '$1k – $5k', value: '1000-5000' },
       { label: '$5k – $10k', value: '5000-10000' },
       { label: '≥ $10k', value: '10000-999999999' },
-      { label: 'Custom range', value: 'custom' },
+      { label: 'Custom Range', value: 'custom' },
     ]
   }
 
@@ -357,7 +358,7 @@ const getAmountRangeOptions = (rows: any[]) => {
         label: formatAmountLabel(min),
         value: `${min}-${min}`,
       },
-      { label: 'Custom range', value: 'custom' },
+      { label: 'Custom Range', value: 'custom' },
     ]
   }
 
@@ -402,13 +403,13 @@ const getAmountRangeOptions = (rows: any[]) => {
   }
 
   return options.length > 0
-    ? [...options, { label: 'Custom range', value: 'custom' }]
+    ? [...options, { label: 'Custom Range', value: 'custom' }]
     : [
         {
           label: `≥ ${formatAmountLabel(min)}`,
           value: `${min}-999999999`,
         },
-        { label: 'Custom range', value: 'custom' },
+        { label: 'Custom Range', value: 'custom' },
       ]
 }
 
@@ -520,6 +521,15 @@ const matchesDateFilterValue = (
       rowDay.getTime() <= endOfWeek.getTime()
     )
   }
+  if (val === 'last_week') {
+    const startOfThisWeek = new Date(today.getTime() - today.getDay() * 86400000)
+    const startOfLastWeek = new Date(startOfThisWeek.getTime() - 7 * 86400000)
+    const endOfLastWeek = new Date(startOfThisWeek.getTime() - 86400000)
+    return (
+      rowDay.getTime() >= startOfLastWeek.getTime() &&
+      rowDay.getTime() <= endOfLastWeek.getTime()
+    )
+  }
   if (val === 'this_month')
     return (
       rowDay.getFullYear() === now.getFullYear() &&
@@ -532,6 +542,27 @@ const matchesDateFilterValue = (
       rowDay.getMonth() === nm.getMonth()
     )
   }
+  if (val === 'last_month') {
+    const lm = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+    return (
+      rowDay.getFullYear() === lm.getFullYear() &&
+      rowDay.getMonth() === lm.getMonth()
+    )
+  }
+  if (val === 'last_3_months') {
+    const start = new Date(now.getFullYear(), now.getMonth() - 3, today.getDate())
+    return (
+      rowDay.getTime() >= start.getTime() && rowDay.getTime() <= today.getTime()
+    )
+  }
+  if (val === 'last_6_months') {
+    const start = new Date(now.getFullYear(), now.getMonth() - 6, today.getDate())
+    return (
+      rowDay.getTime() >= start.getTime() && rowDay.getTime() <= today.getTime()
+    )
+  }
+  if (val === 'this_year') return rowDay.getFullYear() === now.getFullYear()
+  if (val === 'last_year') return rowDay.getFullYear() === now.getFullYear() - 1
   return rowDateStr === val || rowDateStr.toLowerCase() === val.toLowerCase()
 }
 
@@ -811,11 +842,21 @@ const filterRowsByQuickFilters = (
               rowDay.getMonth() === nm.getMonth()
             )
           }
-          if (val === 'last_week')
-            return (
-              rowDay.getTime() >= today.getTime() - 7 * 86400000 &&
-              rowDay.getTime() <= today.getTime()
+          if (val === 'last_week') {
+            const startOfThisWeek = new Date(
+              today.getTime() - today.getDay() * 86400000,
             )
+            const startOfLastWeek = new Date(
+              startOfThisWeek.getTime() - 7 * 86400000,
+            )
+            const endOfLastWeek = new Date(
+              startOfThisWeek.getTime() - 86400000,
+            )
+            return (
+              rowDay.getTime() >= startOfLastWeek.getTime() &&
+              rowDay.getTime() <= endOfLastWeek.getTime()
+            )
+          }
           if (val === 'last_month') {
             const lm = new Date(now.getFullYear(), now.getMonth() - 1, 1)
             return (
@@ -1604,6 +1645,7 @@ const InboxList: React.FC<InboxListProps> = ({
           activeQuickFilters={activeQuickFilters}
           customSearchComponent={<TableSearch table={table as any} />}
           dataset={flatRows}
+          isLoading={isLoading || isRefetching}
           optionalFields={optionalFilterFields}
           searchPlaceholder='Search invoice, supplier, PO...'
           searchQuery={searchState?.value || ''}
@@ -1625,18 +1667,10 @@ const InboxList: React.FC<InboxListProps> = ({
           ]}
           quickFilters={[
             {
-              icon: 'tabler:clock-exclamation',
-              id: 'overdue',
-              label: 'Overdue',
-              options: [
-                { label: 'All', value: 'overdue' },
-                { label: 'This week', value: 'this_week' },
-                { label: 'Last month', value: 'last_month' },
-                { label: 'Last 3 months', value: 'last_3_months' },
-                { label: 'Last 6 months', value: 'last_6_months' },
-                { label: 'Last year', value: 'last_year' },
-                { label: 'Custom range', value: 'custom' },
-              ],
+              icon: 'tabler:calendar-due',
+              id: 'due_date',
+              label: 'Due Date',
+              options: DEFAULT_DATE_RANGE_OPTIONS,
               type: 'date',
             },
             {

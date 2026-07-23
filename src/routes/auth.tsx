@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { motion } from 'motion/react'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import connectorApi from '@/api/connector'
 import {
   AnimateFadeIn,
   AnimateScale,
@@ -55,43 +56,135 @@ const Sparkles = () => {
   )
 }
 
+type AuthSearch = {
+  connector?: string
+  connectorId?: string
+  connectorOAuth?: string
+  grant?: string
+  provider?: string
+}
+
 export const Route = createFileRoute('/auth')({
   component: AuthPage,
+  validateSearch: (search: Record<string, unknown>): AuthSearch => ({
+    connector: typeof search.connector === 'string' ? search.connector : undefined,
+    connectorId:
+      typeof search.connectorId === 'string' ? search.connectorId : undefined,
+    connectorOAuth:
+      typeof search.connectorOAuth === 'string'
+        ? search.connectorOAuth
+        : undefined,
+    grant: typeof search.grant === 'string' ? search.grant : undefined,
+    provider: typeof search.provider === 'string' ? search.provider : undefined,
+  }),
 })
 
 function AuthPage() {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { connector, grant, provider } = Route.useSearch() as any
+  const { connector, connectorId, connectorOAuth, grant, provider } =
+    Route.useSearch()
 
-  const hasSentMessage = useRef(false)
+  const hasCompleted = useRef(false)
+  const [status, setStatus] = useState<'loading' | 'success' | 'error'>(
+    () => {
+      if (connectorOAuth === 'success' && connectorId) return 'loading'
+      if (grant === 'success') return 'success'
+      return 'error'
+    },
+  )
+  const [connectedEmail, setConnectedEmail] = useState('')
 
   useEffect(() => {
-    if (grant === 'success' && !hasSentMessage.current) {
-      hasSentMessage.current = true
-      // Send message to parent window
+    if (hasCompleted.current) return
+
+    const notifyAndClose = (payload: {
+      connector?: string
+      connectorId?: string
+      email?: string
+      externalAccountEmail?: string
+      provider?: string
+    }) => {
+      hasCompleted.current = true
+      setStatus('success')
+
       if (window.opener) {
         window.opener.postMessage(
           {
-            connector,
-            provider,
+            ...payload,
             type: 'CONNECTION_SUCCESS',
           },
           window.location.origin,
         )
       }
 
-      // Close the window after a short delay
       const timer = setTimeout(() => {
         window.close()
-      }, 1500)
+      }, 1200)
 
       return () => clearTimeout(timer)
     }
-  }, [grant, provider, connector])
+
+    // Legacy ezcloudauth callback: ?grant=success&connector=...&provider=...
+    if (grant === 'success') {
+      return notifyAndClose({ connector, provider })
+    }
+
+    // New connector OAuth callback:
+    // ?connectorOAuth=success&connectorId=...&provider=GMAIL
+    if (connectorOAuth === 'success' && connectorId) {
+      let cancelled = false
+
+      const loadConnector = async () => {
+        const response = await connectorApi.getConnectorById(connectorId)
+        if (cancelled) return
+
+        if (response.error || !response.payload) {
+          hasCompleted.current = true
+          setStatus('error')
+          return
+        }
+
+        const details = response.payload
+        const email = details.externalAccountEmail || ''
+        setConnectedEmail(email)
+
+        notifyAndClose({
+          connector: details.name || connectorId,
+          connectorId: details.id,
+          email,
+          externalAccountEmail: email,
+          provider: details.providerCode || provider,
+        })
+      }
+
+      void loadConnector()
+      return () => {
+        cancelled = true
+      }
+    }
+
+    hasCompleted.current = true
+    setStatus('error')
+  }, [connector, connectorId, connectorOAuth, grant, provider])
 
   return (
     <div className='flex h-screen w-full flex-col items-center justify-center gap-4 bg-gray-1'>
-      {grant === 'success' ? (
+      {status === 'loading' ? (
+        <>
+          <AnimateScale delay={0.1}>
+            <div className='flex h-16 w-16 items-center justify-center rounded-full bg-gray-2 text-primary-9'>
+              <div className='h-8 w-8 animate-spin rounded-full border-2 border-primary-9 border-t-transparent' />
+            </div>
+          </AnimateScale>
+          <AnimateSlideUp delay={0.2}>
+            <h1 className='text-xl font-semibold text-gray-12'>
+              Completing connection...
+            </h1>
+          </AnimateSlideUp>
+          <AnimateFadeIn delay={0.3}>
+            <p className='text-gray-11'>Fetching your connected account.</p>
+          </AnimateFadeIn>
+        </>
+      ) : status === 'success' ? (
         <>
           <AnimateScale delay={0.1}>
             <div className='relative flex items-center justify-center'>
@@ -120,7 +213,9 @@ function AuthPage() {
           </AnimateSlideUp>
           <AnimateFadeIn delay={0.3}>
             <p className='text-gray-11'>
-              You can close this tab and return to the editor.
+              {connectedEmail
+                ? `Connected as ${connectedEmail}. Closing this tab...`
+                : 'You can close this tab and return to the editor.'}
             </p>
           </AnimateFadeIn>
         </>

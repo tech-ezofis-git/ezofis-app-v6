@@ -610,7 +610,7 @@ const computeDueDateInfo = (
     statusType = daysDiff <= 15 ? 'warning' : 'info'
   } else if (daysDiff < 0) {
     daysText = `${Math.abs(daysDiff)} days`
-    calculationText = 'overdue'
+    calculationText = 'Overdue'
     statusType = 'danger'
   } else {
     daysText = '0 days'

@@ -16,8 +16,8 @@ import {
   AnimateScale,
   AnimateSlideUp,
 } from '@/components/common/animations'
+import { axiosV6 } from '@/api/axios'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
-import { getFieldMappingApiUrl } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/fieldMappingApi'
 import {
   compareHeaderSimilarity,
   normalizeFieldMapping,
@@ -29,6 +29,7 @@ import {
   LINE_ITEM_MAPPING_API_FIELDS,
 } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/mappingFieldDefaults'
 import { SYSTEM_TEMPLATE_COLUMNS } from '@/pages/requests/components/request/components/newrequest/poFlow/utils/templateSchema'
+import authUserStore from '@/stores/authUserStore'
 import BrandCard from '../../components/BrandCard'
 import SectionHeader from '../../components/SectionHeader'
 import { OrDivider } from '../../components/StepLayout'
@@ -173,6 +174,7 @@ const ErpSystem = () => {
         fieldDataTypes: {},
         groupingColumn: null,
         isConnected: false,
+        isParsingTemplate: true,
         lineItemFieldDataTypes: {},
         lineItemHeaders: [],
         lineItemMapping: {},
@@ -204,16 +206,19 @@ const ErpSystem = () => {
         let lineItemFieldDataTypes: Record<string, string> = {}
 
         SYSTEM_TEMPLATE_COLUMNS.forEach((col) => {
-          const match = headers.find((u) => compareHeaderSimilarity(u, col.key))
+          const match = (headers || []).find((u) =>
+            compareHeaderSimilarity(u, col.key),
+          )
           if (match) {
             initialMapping[col.key] = match
           }
         })
 
-        const hasLineItems = liHeaders && liHeaders.length > 0
+        const safeLiHeaders = liHeaders || []
+        const hasLineItems = safeLiHeaders.length > 0
         if (hasLineItems) {
           LINE_ITEM_TEMPLATE_COLUMNS.forEach((col) => {
-            const match = liHeaders.find((u) =>
+            const match = safeLiHeaders.find((u) =>
               compareHeaderSimilarity(u, col.key),
             )
             if (match) {
@@ -222,88 +227,87 @@ const ErpSystem = () => {
           })
         }
 
-        // Try the field-mapping API when this host is configured for it
-        const fieldMappingUrl = getFieldMappingApiUrl()
-        if (fieldMappingUrl) {
-          try {
-            const response = await fetch(fieldMappingUrl, {
-              body: JSON.stringify({
-                excelSheets: excelSheets || [],
-                headerFields,
-                lineItemFields,
-              }),
+        // Map fields via the v6 field-mapping API
+        try {
+          const tenantId = authUserStore.getState().session?.tenantId || ''
+          const { data, status } = await axiosV6.post(
+            '/field-mapping',
+            {
+              excelSheets: excelSheets || [],
+              headerFields,
+              lineItemFields,
+            },
+            {
               headers: {
-                'Content-Type': 'application/json',
+                'X-Tenant-Id': String(tenantId),
               },
-              method: 'POST',
-            })
+            },
+          )
 
-            if (response.ok) {
-              const data = await response.json()
-              const apiMapping: Record<string, string> = {}
-              const apiLineItemMapping: Record<string, string> = {}
-              const apiFieldDataTypes: Record<string, string> = {}
-              const apiLineItemFieldDataTypes: Record<string, string> = {}
+          if (status === 200 && data) {
+            const apiMapping: Record<string, string> = {}
+            const apiLineItemMapping: Record<string, string> = {}
+            const apiFieldDataTypes: Record<string, string> = {}
+            const apiLineItemFieldDataTypes: Record<string, string> = {}
 
-              if (data.headerFields && Array.isArray(data.headerFields)) {
-                data.headerFields.forEach((item: any) => {
-                  if (item.excelField && item.masterField) {
-                    apiMapping[item.masterField] = item.excelField
-                    const rawType = item.dataType || 'SHORT_TEXT'
-                    apiFieldDataTypes[item.masterField] =
-                      rawType === 'DROPDOWN' ? 'SINGLE_SELECT' : rawType
-                  }
-                })
-              }
-
-              if (data.lineItemFields && Array.isArray(data.lineItemFields)) {
-                // Build a lookup: excelColumn -> resolved predefined key from header mapping
-                // so line item fields sharing the same Excel column inherit the correct key
-                const headerExcelToKey: Record<string, string> = {}
-                Object.entries(apiMapping).forEach(
-                  ([masterField, excelField]) => {
-                    headerExcelToKey[excelField.toLowerCase().trim()] =
-                      masterField
-                  },
-                )
-
-                data.lineItemFields.forEach((item: any) => {
-                  if (item.excelField && item.masterField) {
-                    const excelNorm = item.excelField.toLowerCase().trim()
-                    // If the same Excel column was already resolved in header fields, reuse that key
-                    const inheritedKey = headerExcelToKey[excelNorm]
-                    const key = inheritedKey ?? item.masterField
-                    apiLineItemMapping[key] = item.excelField
-                    const rawType = item.dataType || 'SHORT_TEXT'
-                    apiLineItemFieldDataTypes[key] =
-                      rawType === 'DROPDOWN' ? 'SINGLE_SELECT' : rawType
-                  }
-                })
-              }
-
-              // If we got mappings from API, use them
-              if (Object.keys(apiMapping).length > 0) {
-                const normalizedHeader = normalizeFieldMapping(
-                  apiMapping,
-                  apiFieldDataTypes,
-                  SYSTEM_TEMPLATE_COLUMNS,
-                )
-                initialMapping = normalizedHeader.mapping
-                fieldDataTypes = normalizedHeader.fieldDataTypes
-              }
-              if (Object.keys(apiLineItemMapping).length > 0) {
-                const normalizedLineItems = normalizeFieldMapping(
-                  apiLineItemMapping,
-                  apiLineItemFieldDataTypes,
-                  LINE_ITEM_TEMPLATE_COLUMNS,
-                )
-                initialLineItemMapping = normalizedLineItems.mapping
-                lineItemFieldDataTypes = normalizedLineItems.fieldDataTypes
-              }
+            if (data.headerFields && Array.isArray(data.headerFields)) {
+              data.headerFields.forEach((item: any) => {
+                if (item.excelField && item.masterField) {
+                  apiMapping[item.masterField] = item.excelField
+                  const rawType = item.dataType || 'SHORT_TEXT'
+                  apiFieldDataTypes[item.masterField] =
+                    rawType === 'DROPDOWN' ? 'SINGLE_SELECT' : rawType
+                }
+              })
             }
-          } catch (apiErr) {
-            console.error('Failed to get mapping from endpoint:', apiErr)
+
+            if (data.lineItemFields && Array.isArray(data.lineItemFields)) {
+              // Build a lookup: excelColumn -> resolved predefined key from header mapping
+              // so line item fields sharing the same Excel column inherit the correct key
+              const headerExcelToKey: Record<string, string> = {}
+              Object.entries(apiMapping).forEach(
+                ([masterField, excelField]) => {
+                  headerExcelToKey[excelField.toLowerCase().trim()] =
+                    masterField
+                },
+              )
+
+              data.lineItemFields.forEach((item: any) => {
+                if (item.excelField && item.masterField) {
+                  const excelNorm = item.excelField.toLowerCase().trim()
+                  // If the same Excel column was already resolved in header fields, reuse that key
+                  const inheritedKey = headerExcelToKey[excelNorm]
+                  const key = inheritedKey ?? item.masterField
+                  apiLineItemMapping[key] = item.excelField
+                  const rawType = item.dataType || 'SHORT_TEXT'
+                  apiLineItemFieldDataTypes[key] =
+                    rawType === 'DROPDOWN' ? 'SINGLE_SELECT' : rawType
+                }
+              })
+            }
+
+            // If we got mappings from API, use them
+            if (Object.keys(apiMapping).length > 0) {
+              const normalizedHeader = normalizeFieldMapping(
+                apiMapping,
+                apiFieldDataTypes,
+                SYSTEM_TEMPLATE_COLUMNS,
+              )
+              initialMapping = normalizedHeader.mapping
+              fieldDataTypes = normalizedHeader.fieldDataTypes
+            }
+            if (Object.keys(apiLineItemMapping).length > 0) {
+              const normalizedLineItems = normalizeFieldMapping(
+                apiLineItemMapping,
+                apiLineItemFieldDataTypes,
+                LINE_ITEM_TEMPLATE_COLUMNS,
+              )
+              initialLineItemMapping = normalizedLineItems.mapping
+              lineItemFieldDataTypes = normalizedLineItems.fieldDataTypes
+            }
           }
+        } catch (apiErr) {
+          console.error('Failed to get mapping from endpoint:', apiErr)
         }
 
         const normalizedLocalHeader = normalizeFieldMapping(
@@ -326,8 +330,8 @@ const ErpSystem = () => {
 
         const headerPo =
           initialMapping['PO Number'] || initialMapping['Purchase Order']
-        if (headerPo && liHeaders) {
-          const matchedLiCol = liHeaders.find(
+        if (headerPo && safeLiHeaders.length > 0) {
+          const matchedLiCol = safeLiHeaders.find(
             (col) =>
               col.toLowerCase().trim() === headerPo.toLowerCase().trim() ||
               compareHeaderSimilarity(col, headerPo),
@@ -350,17 +354,17 @@ const ErpSystem = () => {
 
         if (!detectedGroupCol && hasLineItems) {
           // 1. Same column name in both sheets (case-insensitive)
-          const commonCol = liHeaders.find((liCol) =>
-            headers.some(
+          const commonCol = safeLiHeaders.find((liCol) =>
+            (headers || []).some(
               (h) => h.toLowerCase().trim() === liCol.toLowerCase().trim(),
             ),
           )
 
           if (commonCol) {
             detectedGroupCol = commonCol
-          } else if (liHeaders.length > 0) {
+          } else if (safeLiHeaders.length > 0) {
             // 2. May be first column on both sheets
-            detectedGroupCol = liHeaders[0]
+            detectedGroupCol = safeLiHeaders[0]
           }
         }
 
@@ -370,15 +374,16 @@ const ErpSystem = () => {
           groupingColumn: detectedGroupCol,
           importMethod: 'upload',
           isConnected: true,
+          isParsingTemplate: false,
           lineItemFieldDataTypes,
-          lineItemHeaders: hasLineItems ? liHeaders : [],
+          lineItemHeaders: hasLineItems ? safeLiHeaders : [],
           lineItemMapping: initialLineItemMapping,
           lineItemRows: hasLineItems && liRows ? liRows : [],
           mapping: initialMapping,
-          previewRows: previewRows,
+          previewRows: previewRows || [],
           system: 'FILE_BASED_IMPORT',
           templateUploaded: true,
-          uploadedColumns: headers,
+          uploadedColumns: headers || [],
           uploadedTemplate: file,
           wantsFileBasedImport: true,
         })
@@ -390,6 +395,10 @@ const ErpSystem = () => {
             err.message ||
             'Failed to parse file. Please upload a valid CSV or Excel file.',
           variant: 'error',
+        })
+        setErpSettings({
+          ...setupStore.getState().erpSettings,
+          isParsingTemplate: false,
         })
       } finally {
         setIsParsing(false)
@@ -438,6 +447,7 @@ const ErpSystem = () => {
                   importMethod: 'upload',
                   isConnected: true,
                   isConnecting: false,
+                  isParsingTemplate: false,
                   system: 'PREDEFINED',
                   wantsFileBasedImport: false,
                 })
@@ -457,6 +467,7 @@ const ErpSystem = () => {
                   importMethod: 'upload',
                   isConnected: erpSettings.templateUploaded || false,
                   isConnecting: false,
+                  isParsingTemplate: false,
                   system: 'FILE_BASED_IMPORT',
                   wantsFileBasedImport: true,
                 })
@@ -888,7 +899,13 @@ const ErpSystem = () => {
             return (
               <AnimationComponent delay={0.25 + index * 0.08} key={item.value}>
                 <BrandCard
-                  description={item.description}
+                  description={
+                    erpSettings.system === item.value &&
+                    erpSettings.isConnected &&
+                    erpSettings.account
+                      ? erpSettings.account
+                      : item.description
+                  }
                   logo={item.logo}
                   name={item.name}
                   value={item.value}
@@ -899,6 +916,8 @@ const ErpSystem = () => {
                   onClick={() =>
                     setErpSettings({
                       ...erpSettings,
+                      account: '',
+                      connectorId: '',
                       isConnected: false,
                       isConnecting: false,
                       system: item.value,

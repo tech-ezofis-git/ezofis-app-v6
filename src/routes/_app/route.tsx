@@ -47,6 +47,15 @@ export const Route = createFileRoute('/_app')({
 
       if (baseRoute) {
         const requiredPermissionKey = routeToPermissionKey[baseRoute]
+
+        // TEMP: allow Requests/Forms until role permission persistence is fixed
+        if (
+          requiredPermissionKey === 'requests' ||
+          requiredPermissionKey === 'forms'
+        ) {
+          return
+        }
+
         const permission = sessionPermissions.find(
           (p) => p.key === requiredPermissionKey,
         )

@@ -102,9 +102,151 @@ export const addConnector = async (payload: any) => {
   return _response
 }
 
+export type OAuthProviderCode =
+  | 'GMAIL'
+  | 'OUTLOOK'
+  | 'QUICKBOOKS'
+  | 'GOOGLE_DRIVE'
+  | 'GCP'
+
+export interface AuthorizeOAuthPayload {
+  name: string
+  providerCode: OAuthProviderCode
+  successRedirectUrl: string
+}
+
+const extractAuthorizeUrl = (data: unknown): string => {
+  if (typeof data === 'string' && data.startsWith('http')) return data
+  if (!data || typeof data !== 'object') return ''
+
+  const obj = data as Record<string, unknown>
+  const candidates = [
+    obj.authorizationUrl,
+    obj.authorizeUrl,
+    obj.authUrl,
+    obj.url,
+    obj.redirectUrl,
+    obj.value,
+  ]
+
+  for (const candidate of candidates) {
+    if (typeof candidate === 'string' && candidate.startsWith('http')) {
+      return candidate
+    }
+  }
+
+  if (obj.data !== undefined) {
+    return extractAuthorizeUrl(obj.data)
+  }
+
+  return ''
+}
+
+export const authorizeOAuth = async (payload: AuthorizeOAuthPayload) => {
+  const _response = {
+    error: '',
+    payload: '' as string,
+  }
+
+  try {
+    const store = authUserStore.getState()
+    const tenantId = store.session?.tenantId || ''
+
+    const response = await axiosV6.post(
+      '/connector/oauth/authorize',
+      payload,
+      {
+        headers: {
+          'X-Tenant-Id': tenantId,
+        },
+      },
+    )
+    const { data, status } = response
+
+    if (status !== 200 && status !== 201) {
+      throw new Error('invalid status code')
+    }
+
+    const authorizeUrl = extractAuthorizeUrl(data)
+    if (!authorizeUrl) {
+      throw new Error('authorize url missing in response')
+    }
+
+    _response.payload = authorizeUrl
+  } catch (e: any) {
+    console.error(e)
+    _response.error =
+      e?.response?.data?.message ||
+      e?.message ||
+      'error authorizing oauth connector'
+  }
+
+  return _response
+}
+
+export interface ConnectorDetails {
+  createdAtUtc?: string
+  createdBy?: string
+  createdByEmail?: string
+  externalAccountEmail?: string | null
+  id: string
+  isDefault?: boolean
+  isDeleted?: boolean
+  modifiedAtUtc?: string
+  modifiedBy?: string | null
+  modifiedByEmail?: string
+  name?: string
+  oAuthStatus?: string
+  providerCode?: string
+  tenantId?: string
+  tokenExpiresAtUtc?: string
+}
+
+export const getConnectorById = async (connectorId: string) => {
+  const _response = {
+    error: '',
+    payload: null as ConnectorDetails | null,
+  }
+
+  try {
+    const store = authUserStore.getState()
+    const tenantId = store.session?.tenantId || ''
+
+    const response = await axiosV6.get(`/connector/${connectorId}`, {
+      headers: {
+        'X-Tenant-Id': tenantId,
+      },
+    })
+    const { data, status } = response
+
+    if (status !== 200) {
+      throw new Error('invalid status code')
+    }
+
+    const details =
+      data?.data && typeof data.data === 'object' ? data.data : data
+
+    if (!details?.id) {
+      throw new Error('connector details missing')
+    }
+
+    _response.payload = details as ConnectorDetails
+  } catch (e: any) {
+    console.error(e)
+    _response.error =
+      e?.response?.data?.message ||
+      e?.message ||
+      'error fetching connector details'
+  }
+
+  return _response
+}
+
 export const connectorApi = {
   addConnector,
+  authorizeOAuth,
   getConnection,
+  getConnectorById,
 }
 
 export default connectorApi

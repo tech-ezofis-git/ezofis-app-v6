@@ -3,14 +3,10 @@ import Alert from '@/components/base/Alert'
 import Button from '@/components/base/button/Button'
 import { AnimateFadeIn, AnimateSlideUp } from '@/components/common/animations'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
+import { openApOAuthAuthorize } from '@/pages/dashboard/workflows/accounts-payable/utils/oauthAuthorize'
 import authUserStore from '@/stores/authUserStore'
 import { StepFooter, StepLayout } from '../components/StepLayout'
 import StorageSystem from './components/StorageSystem'
-
-const getStorageProvider = (system: string) => {
-  if (system === 'Google Drive') return 'gcp'
-  return system.toLowerCase()
-}
 
 const StepThree = () => {
   const setStep = setupStore((state) => state.setStep)
@@ -21,42 +17,54 @@ const StepThree = () => {
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       if (event.origin !== window.location.origin) return
-      if (event.data.type === 'CONNECTION_SUCCESS') {
-        const connector =
-          typeof event.data.connector === 'string' ? event.data.connector : ''
-        setStorageSettings({
-          ...storageSettings,
-          account: connector || session?.email || storageSettings.account || '',
-          isConnected: true,
-          isConnecting: false,
-        })
-      }
+      if (event.data.type !== 'CONNECTION_SUCCESS') return
+
+      const externalAccountEmail =
+        typeof event.data.externalAccountEmail === 'string'
+          ? event.data.externalAccountEmail
+          : typeof event.data.email === 'string'
+            ? event.data.email
+            : ''
+      const connectorId =
+        typeof event.data.connectorId === 'string'
+          ? event.data.connectorId
+          : ''
+      const connector =
+        typeof event.data.connector === 'string' ? event.data.connector : ''
+      const current = setupStore.getState().storageSettings
+
+      setStorageSettings({
+        ...current,
+        account:
+          externalAccountEmail ||
+          connector ||
+          session?.email ||
+          current.account ||
+          '',
+        connectorId,
+        isConnected: true,
+        isConnecting: false,
+      })
     }
 
     window.addEventListener('message', handleMessage)
     return () => window.removeEventListener('message', handleMessage)
-  }, [session?.email, setStorageSettings, storageSettings])
+  }, [session?.email, setStorageSettings])
 
-  const handleConnect = () => {
-    const tenantId = session?.tenantId
-
+  const handleConnect = async () => {
     setStorageSettings({
       ...storageSettings,
       isConnecting: true,
     })
 
-    const now = new Date()
-    const day = now.getDate().toString().padStart(2, '0')
-    const month = now.toLocaleString('default', { month: 'short' })
-    const year = now.getFullYear()
-    const hours = now.getHours().toString().padStart(2, '0')
-    const minutes = now.getMinutes().toString().padStart(2, '0')
-
-    const provider = getStorageProvider(storageSettings.system)
-    const connectionName = `${provider}-${day}${month}${year}-${hours}${minutes}`
-    const url = `https://ezcloudauth.azurewebsites.net/api/authorize?tenantid=${tenantId}&envtype=trial&connectorname=${encodeURIComponent(connectionName)}&provider=${provider}&resulturl=${window.location.origin}/auth/`
-
-    window.open(url, '_blank')
+    const { error } = await openApOAuthAuthorize(storageSettings.system)
+    if (error) {
+      console.error(error)
+      setStorageSettings({
+        ...storageSettings,
+        isConnecting: false,
+      })
+    }
   }
 
   return (
@@ -130,7 +138,11 @@ const StepThree = () => {
         storageSettings.system !== 'Included storage' && (
           <AnimateSlideUp delay={0.4}>
             <Alert
-              text={`Your ${storageSettings.system} account has been connected successfully.`}
+              text={
+                storageSettings.account
+                  ? `Connected as ${storageSettings.account}`
+                  : `Your ${storageSettings.system} account has been connected successfully.`
+              }
               variant='green'
             />
           </AnimateSlideUp>

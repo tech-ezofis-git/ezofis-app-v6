@@ -882,7 +882,7 @@ const TermsColumn = ({ row }: TermsColumnProps) => {
         : 'border-[var(--blue-4)] bg-[var(--blue-2)] text-[var(--blue-11)]'
   } else if (daysDiff < 0) {
     topText = `${Math.abs(daysDiff)} days`
-    bottomText = 'overdue'
+    bottomText = 'Overdue'
     calculationTheme =
       'border-[var(--red-4)] bg-[var(--red-2)] text-[var(--red-11)]'
   } else {
@@ -1099,7 +1099,7 @@ const GridRowItem = memo(
             {!row.isProcessing && (
               <span
                 className={cn(
-                  'min-w-0 flex-1 truncate text-[12px] font-medium text-[var(--gray-10)]',
+                  'min-w-0 shrink truncate text-[12px] font-medium text-[var(--gray-10)]',
                   isSidebarOpen
                     ? 'max-w-[100px]'
                     : 'max-w-[160px] sm:max-w-[200px] md:max-w-[260px]',

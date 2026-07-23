@@ -51,10 +51,10 @@ const FIELD_KIND_ICONS = {
 
 export default function ApColumnMapping({
   activeMappingTab,
-  fieldDataTypes,
-  mapping,
-  previewRows,
-  uploadedColumns,
+  fieldDataTypes = {},
+  mapping = {},
+  previewRows = [],
+  uploadedColumns = [],
   onUpdateMapping,
 }: ApColumnMappingProps) {
   const templateSchema: readonly TemplateColumn[] =
@@ -424,10 +424,7 @@ export default function ApColumnMapping({
                   {/* Column 3: EZOFIS Field Selector */}
                   <div className='relative min-w-0 pl-2'>
                     <div
-                      className={cn(
-                        'flex h-9 w-full cursor-pointer items-center justify-between rounded-lg border border-gray-3 bg-surface px-3 text-12 font-medium transition-all duration-200 select-none hover:border-gray-4',
-                        hasMapping ? 'text-gray-12' : 'text-gray-11',
-                      )}
+                      className='flex h-9 w-full cursor-pointer items-center justify-between rounded-lg border border-gray-3 bg-surface px-3 text-13 font-medium text-gray-12 transition-all duration-200 select-none hover:border-gray-4'
                       onClick={(e) => {
                         e.stopPropagation()
                         setActiveTypeDropdownRow(null)
@@ -446,12 +443,12 @@ export default function ApColumnMapping({
                                 FIELD_KIND_ICONS[selectedFieldKind!].className,
                               )}
                             />
-                            <span className='truncate text-[13px] font-semibold'>
+                            <span className='truncate text-13 font-medium text-gray-12'>
                               {mappedEzField}
                             </span>
                           </>
                         ) : (
-                          <span className='text-gray-9 italic'>
+                          <span className='truncate text-13 font-normal text-gray-8'>
                             Skip this field
                           </span>
                         )}
@@ -468,7 +465,7 @@ export default function ApColumnMapping({
                             <button
                               type='button'
                               className={cn(
-                                'flex items-center justify-center rounded-md border p-1 transition-colors hover:bg-gray-2',
+                                'flex size-5 items-center justify-center rounded-md border transition-colors hover:bg-gray-2',
                                 isTypeDropdownOpen
                                   ? 'border-gray-4 bg-gray-2 text-gray-12'
                                   : 'border-transparent text-gray-9 hover:text-gray-11',
@@ -482,7 +479,7 @@ export default function ApColumnMapping({
                               }}
                             >
                               <Icon
-                                className='size-4'
+                                className='size-3.5 shrink-0'
                                 name={activeDataTypeObj.icon}
                               />
                             </button>
@@ -491,7 +488,7 @@ export default function ApColumnMapping({
                         <Icon
                           name='tabler:chevron-down'
                           className={cn(
-                            'size-4 text-gray-9 transition-transform duration-200',
+                            'size-3.5 shrink-0 text-gray-9 transition-transform duration-200',
                             isDropdownOpen && 'rotate-180',
                           )}
                         />
@@ -505,7 +502,7 @@ export default function ApColumnMapping({
                         ref={typeDropdownRef}
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <div className='mb-1 border-b border-border-default/60 px-2.5 pb-1 text-[10px] font-bold tracking-wider text-gray-9 select-none'>
+                        <div className='mb-1 border-b border-border-default/60 px-2.5 pb-1 text-[10px] font-bold tracking-wider text-gray-9 uppercase select-none'>
                           Choose Datatype
                         </div>
                         <div className='custom-scrollbar max-h-56 overflow-y-auto'>
@@ -514,9 +511,9 @@ export default function ApColumnMapping({
                               key={type.id}
                               type='button'
                               className={cn(
-                                'flex w-full items-center gap-2 px-3 py-1.5 text-left text-12 font-medium transition-colors hover:bg-gray-2',
+                                'flex min-h-8 w-full items-center gap-2 px-3 py-1.5 text-left text-13 font-medium transition-colors hover:bg-gray-2',
                                 currentDataType === type.id
-                                  ? 'bg-primary-1/10 text-primary-9'
+                                  ? 'bg-gray-2 text-gray-13'
                                   : 'text-gray-12 hover:text-gray-13',
                               )}
                               onClick={() =>
@@ -524,10 +521,10 @@ export default function ApColumnMapping({
                               }
                             >
                               <Icon
-                                className='size-4 shrink-0'
+                                className='size-3.5 shrink-0'
                                 name={type.icon}
                               />
-                              <span>{type.name}</span>
+                              <span className='truncate'>{type.name}</span>
                             </button>
                           ))}
                         </div>
@@ -544,7 +541,7 @@ export default function ApColumnMapping({
                         {/* Search field */}
                         <div className='mb-2 border-b border-border-default/60 px-2 pb-2'>
                           <input
-                            className='h-7 w-full border-none bg-transparent text-12 font-medium text-gray-13 placeholder:text-gray-9 focus:outline-none'
+                            className='h-7 w-full border-none bg-transparent text-13 font-medium text-gray-12 placeholder:font-normal placeholder:text-gray-8 focus:outline-none'
                             placeholder='Search or enter custom name...'
                             type='text'
                             value={searchQuery}
@@ -560,7 +557,7 @@ export default function ApColumnMapping({
                         <div className='custom-scrollbar max-h-52 space-y-0.5 overflow-y-auto'>
                           {/* Predefined fields */}
                           <button
-                            className='flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-[10px] font-bold tracking-wider text-gray-9 transition-colors hover:bg-gray-2'
+                            className='flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-[10px] font-bold tracking-wider text-gray-9 uppercase transition-colors hover:bg-gray-2'
                             type='button'
                             onClick={(e) => {
                               e.stopPropagation()
@@ -568,7 +565,7 @@ export default function ApColumnMapping({
                             }}
                           >
                             <span>
-                              PREDEFINED FIELDS ({filteredOptions.length})
+                              Predefined fields ({filteredOptions.length})
                             </span>
                             <Icon
                               name='tabler:chevron-down'
@@ -586,7 +583,7 @@ export default function ApColumnMapping({
                                   key={opt.key}
                                   type='button'
                                   className={cn(
-                                    'flex w-full cursor-pointer items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 text-left text-12 font-medium transition-all',
+                                    'flex min-h-8 w-full cursor-pointer items-center justify-between gap-2 rounded-md px-2.5 py-1.5 text-left text-13 font-medium transition-colors',
                                     opt.isMappedToCurrent
                                       ? 'bg-gray-2 text-gray-13'
                                       : 'text-gray-12 hover:bg-gray-2 hover:text-gray-13',
@@ -599,7 +596,7 @@ export default function ApColumnMapping({
                                 </button>
                               ))
                             ) : (
-                              <div className='px-2.5 py-1.5 text-11 text-gray-9 italic select-none'>
+                              <div className='px-2.5 py-1.5 text-13 font-normal text-gray-8 select-none'>
                                 No matching predefined fields
                               </div>
                             ))}
@@ -608,7 +605,7 @@ export default function ApColumnMapping({
                             showAddCustomField) && (
                             <>
                               <button
-                                className='mt-1 flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-[10px] font-bold tracking-wider text-gray-9 transition-colors hover:bg-gray-2'
+                                className='mt-1 flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-[10px] font-bold tracking-wider text-gray-9 uppercase transition-colors hover:bg-gray-2'
                                 type='button'
                                 onClick={(e) => {
                                   e.stopPropagation()
@@ -616,7 +613,7 @@ export default function ApColumnMapping({
                                 }}
                               >
                                 <span>
-                                  CUSTOM FIELDS
+                                  Custom fields
                                   {filteredCustomFields.length > 0 &&
                                     ` (${filteredCustomFields.length})`}
                                 </span>
@@ -643,7 +640,7 @@ export default function ApColumnMapping({
                                         key={customKey}
                                         type='button'
                                         className={cn(
-                                          'flex w-full cursor-pointer items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 text-left text-12 font-medium transition-all',
+                                          'flex min-h-8 w-full cursor-pointer items-center justify-between gap-2 rounded-md px-2.5 py-1.5 text-left text-13 font-medium transition-colors',
                                           isMappedToCurrent
                                             ? 'bg-gray-2 text-gray-13'
                                             : 'text-gray-12 hover:bg-gray-2 hover:text-gray-13',
@@ -661,7 +658,7 @@ export default function ApColumnMapping({
                                   {showAddCustomField && (
                                     <div className='mt-1.5 border-t border-border-default/60 pt-1.5'>
                                       <button
-                                        className='w-full rounded-lg border border-gray-4 bg-gray-2 px-2.5 py-1.5 text-left text-12 font-medium text-gray-12 transition-all hover:bg-gray-3'
+                                        className='w-full rounded-md border border-gray-4 bg-gray-2 px-2.5 py-1.5 text-left text-13 font-medium text-gray-12 transition-colors hover:bg-gray-3'
                                         type='button'
                                         onClick={() =>
                                           handleCreateCustomField(
@@ -670,7 +667,7 @@ export default function ApColumnMapping({
                                           )
                                         }
                                       >
-                                        <span className='truncate font-semibold'>
+                                        <span className='truncate'>
                                           Add custom field "
                                           {customFieldText.trim()}"
                                         </span>
@@ -686,12 +683,12 @@ export default function ApColumnMapping({
                         {/* Skip field */}
                         <div className='mt-2 border-t border-border-default/60 px-2 pt-2'>
                           <button
-                            className='flex h-7 w-full items-center gap-2 text-left text-12 font-medium text-red-11 transition-colors hover:text-red-12'
+                            className='flex min-h-8 w-full items-center gap-2 text-left text-13 font-medium text-red-11 transition-colors hover:text-red-12'
                             type='button'
                             onClick={() => handleSelectField(excelCol, null)}
                           >
                             <Icon
-                              className='size-4 shrink-0'
+                              className='size-3.5 shrink-0'
                               name='tabler:circle-x'
                             />
                             <span>

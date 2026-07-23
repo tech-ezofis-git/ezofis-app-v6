@@ -11,7 +11,6 @@ import {
   AnimateScale,
   AnimateSlideUp,
 } from '@/components/common/animations'
-// import Icon from '@/components/base/icon/Icon'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import BrandCard from '../../components/BrandCard'
 import SectionHeader from '../../components/SectionHeader'
@@ -25,8 +24,25 @@ const includedStorageItem = {
   value: 'Included storage',
 }
 
-const cloudStorageProviders = [
-  { logo: GoogleDriveLogo, name: 'Google Drive', value: 'Google Drive' },
+const cloudStorageProviders: Array<{
+  description: string
+  name: string
+  value: string
+  icon?: string
+  logo?: string
+}> = [
+  {
+    description: 'Store invoice documents in Google Drive.',
+    logo: GoogleDriveLogo,
+    name: 'Google Drive',
+    value: 'Google Drive',
+  },
+  {
+    description: 'Store invoice documents in Google Cloud Storage.',
+    icon: 'logos:google-cloud',
+    name: 'GCP',
+    value: 'GCP',
+  },
   // { logo: OneDriveLogo, name: 'OneDrive', value: 'OneDrive' },
   // {
   //   logo: DropboxLogo,
@@ -84,6 +100,8 @@ const StorageSystem = () => {
             onClick={() =>
               setStorageSettings({
                 ...storageSettings,
+                account: '',
+                connectorId: '',
                 isConnected: true,
                 isConnecting: false,
                 system: includedStorageItem.value,
@@ -103,20 +121,29 @@ const StorageSystem = () => {
             title='Cloud Integrations'
           />
         </AnimateSlideUp>
-        <div className='grid grid-cols-1 gap-3'>
+        <div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
           {cloudStorageProviders.map((item, index) => {
             const AnimationComponent =
               animationVariants[index % animationVariants.length]
+            const isSelected = storageSettings.system === item.value
             return (
               <AnimationComponent delay={0.25 + index * 0.08} key={item.value}>
                 <BrandCard
-                  checked={storageSettings.system === item.value}
+                  checked={isSelected}
+                  icon={item.icon}
                   logo={item.logo}
                   name={item.name}
                   value={item.value}
+                  description={
+                    isSelected && storageSettings.isConnected
+                      ? storageSettings.account || 'Connected'
+                      : item.description
+                  }
                   onClick={() =>
                     setStorageSettings({
                       ...storageSettings,
+                      account: '',
+                      connectorId: '',
                       isConnected: false,
                       isConnecting: false,
                       system: item.value,

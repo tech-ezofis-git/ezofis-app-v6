@@ -83,6 +83,42 @@ const replacePlaceholders = (
   return obj
 }
 
+const getMailInitiateConnectorType = (provider: string) => {
+  if (provider === 'gmail') return 'GMAIL'
+  if (provider === 'outlook') return 'OUTLOOK'
+  return ''
+}
+
+const applyMailInitiateConnector = (
+  workflowPayload: any,
+  emailSettings: {
+    connectorId?: string
+    provider?: string
+  },
+) => {
+  const connectorType = getMailInitiateConnectorType(
+    emailSettings.provider || '',
+  )
+  const connectorId =
+    connectorType && emailSettings.connectorId ? emailSettings.connectorId : ''
+
+  const blocks = Array.isArray(workflowPayload?.blocks)
+    ? workflowPayload.blocks
+    : []
+
+  for (const block of blocks) {
+    if (block?.type !== 'START' || !block.settings?.mailInitiate) continue
+
+    block.settings.mailInitiate = {
+      ...block.settings.mailInitiate,
+      connectorId,
+      connectorType,
+    }
+  }
+
+  return workflowPayload
+}
+
 const downloadFile = (file: File) => {
   const url = URL.createObjectURL(file)
   const a = document.createElement('a')
@@ -400,6 +436,7 @@ const addCustomFieldsToPayloads = (
 }
 
 const StepFour = () => {
+  const emailSettings = setupStore((state) => state.emailSettings)
   const erpSettings = setupStore((state) => state.erpSettings)
   const setStep = setupStore((state) => state.setStep)
   const closeSetup = setupStore((state) => state.closeSetup)
@@ -575,14 +612,14 @@ const StepFour = () => {
       const session = authUserStore.getState().session
       const userId = session?.id || ''
 
-      const workflowPayload = replacePlaceholders(
-        apSetupPayloads.workflowPayload,
-        {
+      const workflowPayload = applyMailInitiateConnector(
+        replacePlaceholders(apSetupPayloads.workflowPayload, {
           folderId,
           formId,
           masterFormId,
           userId,
-        },
+        }),
+        emailSettings,
       )
       const workflowRes = await workflowApi.createWorkflow(workflowPayload)
       if (workflowRes.error) {
