@@ -1,13 +1,21 @@
 {
   "include": [
-    "**/*.ts",
-    "**/*.tsx",
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "vite.config.ts",
     "eslint.config.js",
     "prettier.config.js",
-    "vite.config.js",
-    "lingui.config.js"
+    "lingui.config.js",
+    "capacitor.config.ts"
   ],
-  "exclude": ["src/pages/dashboard - Copy"],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "coverage",
+    "android",
+    "ios",
+    "src/pages/dashboard - Copy"
+  ],
 
   "compilerOptions": {
     "target": "ES2022",

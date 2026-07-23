@@ -313,7 +313,7 @@ export const resolveCurrentFolderGroupField = (
       }
     | null
     | undefined,
-  parentFilters: Record<string, string> = {},
+  parentFilters: Record<string, string | string[]> = {},
   apiGroupField?: string,
 ) => {
   if (apiGroupField) return apiGroupField
