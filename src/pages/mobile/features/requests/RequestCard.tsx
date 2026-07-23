@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react'
 import cn from '@/utils/cn'
-import { Badge } from '../../components/primitives/Badge'
 import { Icon } from '../../components/primitives/Icon'
 
 export type RequestCardTone = 'error' | 'success' | 'warning' | 'accent'
@@ -9,6 +8,7 @@ export type RequestCardData = {
   id: string
   vendor: string
   reference: string
+  po?: string
   amount: string
   status: string
   statusTone: RequestCardTone
@@ -16,80 +16,91 @@ export type RequestCardData = {
   aiNote?: string
 }
 
-const iconToneClass: Record<RequestCardTone, string> = {
-  error: 'bg-red-3 text-error-main',
-  success: 'bg-success-subtle text-success-main',
-  warning: 'bg-orange-3 text-warning-main',
-  accent: 'bg-accent-soft text-accent-primary',
+const badgeClass: Record<RequestCardTone, string> = {
+  error: 'bg-[var(--red-3)] text-[var(--red-9)]',
+  success: 'bg-[var(--green-3)] text-[var(--green-9)]',
+  warning: 'bg-[var(--orange-3)] text-[var(--orange-9)]',
+  accent: 'bg-[var(--primary-3)] text-[var(--primary-9)]',
 }
 
-const badgeTone: Record<
-  RequestCardTone,
-  'error' | 'success' | 'warning' | 'accent'
-> = {
-  error: 'error',
-  success: 'success',
-  warning: 'warning',
-  accent: 'accent',
+const iconToneClass: Record<RequestCardTone, string> = {
+  error: 'bg-[var(--red-3)] text-[var(--red-9)]',
+  success: 'bg-[var(--green-3)] text-[var(--green-9)]',
+  warning: 'bg-[var(--orange-3)] text-[var(--orange-9)]',
+  accent: 'bg-[var(--primary-3)] text-[var(--primary-9)]',
 }
 
 type RequestCardProps = {
   item: RequestCardData
+  index?: number
   onSelect?: (id: string) => void
 }
 
-export function RequestCard({ item, onSelect }: RequestCardProps) {
+export function RequestCard({ item, index = 0, onSelect }: RequestCardProps) {
   return (
     <button
       className={cn(
-        'w-full rounded-xl border border-border-default bg-surface-primary p-2.5 text-left shadow-sm transition-all',
-        'animate-in fade-in slide-in-from-bottom-2 duration-300 hover:bg-surface-hover active:scale-[0.99]',
+        'w-full rounded-[5px] border border-[var(--gray-3)] bg-surface-primary px-3.5 py-3 text-left shadow-[0_2px_8px_rgba(15,23,42,0.08)] transition-all',
+        'animate-in fade-in slide-in-from-bottom-2 duration-300 active:scale-[0.99]',
       )}
+      style={{
+        animationDelay: `${Math.min(index, 8) * 35}ms`,
+        animationFillMode: 'both',
+      }}
       type='button'
       onClick={() => onSelect?.(item.id)}
     >
-      <div className='flex items-start gap-2'>
-        <RequestCardIcon tone={item.statusTone} />
+      <div className='flex items-start gap-2.5'>
+        <span
+          className={cn(
+            'inline-flex size-9 shrink-0 items-center justify-center rounded-xl',
+            iconToneClass[item.statusTone],
+          )}
+        >
+          <Icon className='size-4' name='FileText' />
+        </span>
+
         <div className='min-w-0 flex-1'>
-          <div className='flex items-start justify-between gap-2'>
-            <div className='min-w-0'>
-              <p className='truncate text-12 font-semibold text-text-primary'>
-                {item.vendor}
-              </p>
-              <p className='mt-0.5 truncate text-11 text-text-muted'>
-                {item.reference}
-              </p>
-            </div>
-            <p className='shrink-0 text-12 font-semibold text-text-primary'>
+          {/* Row 1: invoice | amount */}
+          <div className='flex items-start justify-between gap-3'>
+            <p className='min-w-0 truncate text-[13px] font-semibold leading-tight text-[var(--gray-13)]'>
+              {item.reference}
+            </p>
+            <p className='shrink-0 text-right text-[13px] font-bold tabular-nums leading-tight text-[var(--gray-13)]'>
               {item.amount}
             </p>
           </div>
-          <div className='mt-1.5 flex flex-wrap items-center gap-1.5'>
-            <Badge tone={badgeTone[item.statusTone]}>{item.status}</Badge>
-            <span className='text-11 text-text-muted'>{item.meta}</span>
-          </div>
-          {item.aiNote ? (
-            <p className='mt-1.5 flex items-center gap-1 text-11 font-medium text-accent-primary'>
-              <Icon className='size-3' name='Sparkles' />
-              <span className='truncate'>{item.aiNote}</span>
+
+          {/* Row 2: PO | status badge */}
+          <div className='mt-1 flex items-center justify-between gap-3'>
+            <p className='min-w-0 truncate text-[11px] leading-tight text-[var(--gray-9)]'>
+              {item.po || item.vendor}
             </p>
-          ) : null}
+            <span
+              className={cn(
+                'inline-flex shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold leading-none',
+                badgeClass[item.statusTone],
+              )}
+            >
+              {item.status}
+            </span>
+          </div>
         </div>
       </div>
-    </button>
-  )
-}
 
-function RequestCardIcon({ tone }: { tone: RequestCardTone }) {
-  return (
-    <span
-      className={cn(
-        'inline-flex size-8 shrink-0 items-center justify-center rounded-full',
-        iconToneClass[tone],
-      )}
-    >
-      <Icon className='size-3.5' name='FileText' />
-    </span>
+      <div className='mt-3 flex items-center justify-between border-t border-[var(--gray-3)] pt-2.5'>
+        <span className='inline-flex min-w-0 items-center gap-1 text-[11px] text-[var(--gray-9)]'>
+          <Icon className='size-3 shrink-0' name='Calendar' />
+          <span className='truncate'>
+            {item.meta && item.meta !== '—' ? item.meta : 'No due date'}
+          </span>
+        </span>
+        <span className='inline-flex shrink-0 items-center gap-0.5 text-[11px] font-semibold text-[var(--primary-9)]'>
+          See Details
+          <Icon className='size-3.5' name='ChevronRight' />
+        </span>
+      </div>
+    </button>
   )
 }
 
@@ -98,7 +109,15 @@ type FilterChipProps = {
   count: number
   icon: ReactNode
   active?: boolean
+  tone?: RequestCardTone
   onClick?: () => void
+}
+
+const filterIdleClass: Record<RequestCardTone, string> = {
+  error: 'bg-surface text-[var(--red-9)]',
+  success: 'bg-surface text-[var(--gray-11)]',
+  warning: 'bg-surface text-[var(--gray-11)]',
+  accent: 'bg-surface text-[var(--gray-11)]',
 }
 
 export function FilterChip({
@@ -106,22 +125,53 @@ export function FilterChip({
   count,
   icon,
   active,
+  tone = 'accent',
   onClick,
 }: FilterChipProps) {
   return (
     <button
       className={cn(
-        'inline-flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1.5 text-11 font-medium transition-all active:scale-95',
+        'inline-flex h-7 shrink-0 items-center gap-1 rounded-full px-2.5 text-[11px] font-medium transition-all active:scale-95',
         active
-          ? 'border-accent-primary bg-accent-soft text-accent-primary'
-          : 'border-border-default bg-surface-primary text-text-secondary hover:bg-surface-hover',
+          ? 'bg-[var(--primary-9)] font-semibold text-white'
+          : filterIdleClass[tone],
       )}
       type='button'
       onClick={onClick}
     >
-      {icon}
-      <span>{label}</span>
-      <span className='font-bold'>{count}</span>
+      <span className={cn(active ? 'text-white' : undefined)}>{icon}</span>
+      <span>
+        {label} ({count})
+      </span>
     </button>
+  )
+}
+
+export function RequestCardSkeleton({ index = 0 }: { index?: number }) {
+  return (
+    <div
+      className={cn(
+        'rounded-[5px] border border-[var(--gray-3)] bg-surface-primary px-3.5 py-3 shadow-[0_2px_8px_rgba(15,23,42,0.08)]',
+        'animate-in fade-in slide-in-from-bottom-2 duration-300',
+      )}
+      style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}
+    >
+      <div className='flex items-start gap-2.5'>
+        <div className='size-9 animate-pulse rounded-xl bg-[var(--gray-3)]' />
+        <div className='min-w-0 flex-1 space-y-2'>
+          <div className='flex justify-between gap-3'>
+            <div className='h-3 w-20 animate-pulse rounded bg-[var(--gray-3)]' />
+            <div className='h-3 w-16 animate-pulse rounded bg-[var(--gray-3)]' />
+          </div>
+          <div className='flex justify-between gap-3'>
+            <div className='h-2.5 w-16 animate-pulse rounded bg-[var(--gray-3)]' />
+            <div className='h-4 w-14 animate-pulse rounded-full bg-[var(--gray-3)]' />
+          </div>
+        </div>
+      </div>
+      <div className='mt-3 border-t border-[var(--gray-3)] pt-2.5'>
+        <div className='h-2.5 w-28 animate-pulse rounded bg-[var(--gray-3)]' />
+      </div>
+    </div>
   )
 }

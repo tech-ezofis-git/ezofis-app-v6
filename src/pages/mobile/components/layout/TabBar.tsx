@@ -27,7 +27,7 @@ export function TabBar({ activeId, onChange }: TabBarProps) {
   return (
     <nav
       aria-label='Primary'
-      className='shrink-0 border-t border-border-default bg-surface-primary px-1.5 pt-1 pb-[max(0.35rem,env(safe-area-inset-bottom))]'
+      className='shrink-0 border-t border-[var(--gray-3)] bg-surface-primary px-1.5 pt-1 pb-[max(0.35rem,env(safe-area-inset-bottom))]'
     >
       <ul className='flex items-stretch justify-between gap-1'>
         {TABS.map((tab) => {
@@ -37,16 +37,29 @@ export function TabBar({ activeId, onChange }: TabBarProps) {
               <button
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'flex w-full flex-col items-center gap-0.5 rounded-lg px-0.5 py-1 text-11 font-medium transition-all active:scale-95',
+                  'flex w-full flex-col items-center gap-0.5 px-0.5 py-1.5 text-11 font-medium transition-all active:scale-95',
                   active
-                    ? 'bg-accent-soft text-accent-primary'
-                    : 'text-text-muted hover:bg-surface-hover',
+                    ? 'text-[var(--gray-9)]'
+                    : 'text-[var(--gray-9)] hover:text-[var(--gray-11)]',
                 )}
                 type='button'
                 onClick={() => onChange(tab.id)}
               >
-                <Icon className='size-4' name={tab.icon} />
-                <span className='truncate'>{tab.label}</span>
+                <Icon
+                  className={cn(
+                    'size-4',
+                    active ? 'text-[var(--primary-9)]' : undefined,
+                  )}
+                  name={tab.icon}
+                />
+                <span
+                  className={cn(
+                    'truncate',
+                    active ? 'text-[var(--primary-9)]' : undefined,
+                  )}
+                >
+                  {tab.label}
+                </span>
               </button>
             </li>
           )

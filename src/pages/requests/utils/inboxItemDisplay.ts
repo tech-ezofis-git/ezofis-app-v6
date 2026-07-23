@@ -9,6 +9,7 @@ export type InboxCardData = {
   id: string
   vendor: string
   reference: string
+  po?: string
   amount: string
   status: string
   statusTone: InboxCardTone
@@ -314,7 +315,8 @@ export const mapInboxItemToRequestCard = (row: any): InboxCardData => {
     row.documentNumber ||
     row.requestNo ||
     `INV-${id}`
-  const po = extractPONumber(row)
+  const poRaw = extractPONumber(row)
+  const po = poRaw && poRaw !== 'N/A' ? poRaw : ''
   const amount = formatAmount(findInvoiceAmount(row))
   const decision = getItemDecision(row).toUpperCase()
   const overdue = isOverdue(row)
@@ -356,8 +358,9 @@ export const mapInboxItemToRequestCard = (row: any): InboxCardData => {
     aiNote: agent?.ai_insight || agent?.aiInsight || undefined,
     id,
     meta,
+    po,
     raw: row,
-    reference: po && po !== 'N/A' ? `${invoice} · ${po}` : String(invoice),
+    reference: String(invoice),
     status,
     statusTone,
     vendor: String(vendor),

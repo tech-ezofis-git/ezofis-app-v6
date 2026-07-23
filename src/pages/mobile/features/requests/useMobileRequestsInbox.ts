@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Option } from '@/types/option'
 import formApi from '@/api/form/form'
 import workflowsApiV6, {
@@ -16,9 +16,12 @@ import {
 
 export type MobileInboxTab = 'Inbox' | 'Exceptions' | 'Processed'
 
-const PAGE_SIZE = 100
+const PAGE_SIZE = 20
 
 type WorkflowLoadStatus = 'loading' | 'ready' | 'empty'
+
+const rowKey = (item: any) =>
+  String(item.processId || item.workflowInstanceId || item.id || '')
 
 export function useMobileRequestsInbox() {
   const {
@@ -32,6 +35,7 @@ export function useMobileRequestsInbox() {
 
   const [activeTab, setActiveTab] = useState<MobileInboxTab>('Inbox')
   const [page, setPage] = useState(1)
+  const [accumulatedRows, setAccumulatedRows] = useState<any[]>([])
   const [workflowLoadStatus, setWorkflowLoadStatus] =
     useState<WorkflowLoadStatus>('loading')
   const [allWorkflows, setAllWorkflows] = useState<Option[]>([])
@@ -39,6 +43,9 @@ export function useMobileRequestsInbox() {
   const [metaData, setMetaData] = useState<IRequestMeta>()
   const [selectedWorkflow, setSelectedWorkflow] =
     useState<WorkflowOption | null>(null)
+
+  const lastMergedPageRef = useRef(0)
+  const listResetKey = `${selectedWorkflow?.id ?? ''}:${activeTab}`
 
   const loadSelectedWorkflow = useCallback(
     async (workflowId: string, workflowName?: string) => {
@@ -144,6 +151,9 @@ export function useMobileRequestsInbox() {
       !currentId || String(workflow.id) !== String(currentId)
     if (!isNewWorkflow) return
     clearQuickFilters()
+    setPage(1)
+    setAccumulatedRows([])
+    lastMergedPageRef.current = 0
     void loadSelectedWorkflow(String(workflow.id), workflow.name)
     // Only re-run when the chosen workflow id changes (same as web RequestsPage).
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -153,24 +163,48 @@ export function useMobileRequestsInbox() {
     setRequestListTab(activeTab)
     clearQuickFilters()
     setPage(1)
+    setAccumulatedRows([])
+    lastMergedPageRef.current = 0
   }, [activeTab, clearQuickFilters, setRequestListTab])
 
   const {
     data: inboxResult,
+    dataUpdatedAt,
     isFetching,
     isPending,
     refetch,
   } = useInboxData(selectedWorkflow, page, PAGE_SIZE, [], activeTab)
 
-  const flatRows = useMemo(
-    () => flattenInboxGroups(inboxResult?.data || []),
-    [inboxResult?.data],
-  )
+  // Merge pages for infinite scroll
+  useEffect(() => {
+    if (!inboxResult) return
+    const rows = flattenInboxGroups(inboxResult.data || [])
+
+    if (page === 1) {
+      setAccumulatedRows(rows)
+      lastMergedPageRef.current = 1
+      return
+    }
+
+    if (lastMergedPageRef.current >= page) return
+
+    setAccumulatedRows((prev) => {
+      const seen = new Set(prev.map(rowKey))
+      const next = rows.filter((row) => {
+        const key = rowKey(row)
+        if (!key || seen.has(key)) return false
+        seen.add(key)
+        return true
+      })
+      return next.length ? [...prev, ...next] : prev
+    })
+    lastMergedPageRef.current = page
+  }, [dataUpdatedAt, inboxResult, listResetKey, page])
 
   const filteredRows = useMemo(() => {
-    if (activeTab !== 'Inbox') return flatRows
-    return filterRowsByQuickFilters(flatRows, activeQuickFilters)
-  }, [activeQuickFilters, activeTab, flatRows])
+    if (activeTab !== 'Inbox') return accumulatedRows
+    return filterRowsByQuickFilters(accumulatedRows, activeQuickFilters)
+  }, [accumulatedRows, activeQuickFilters, activeTab])
 
   const cards = useMemo(
     () => filteredRows.map(mapInboxItemToRequestCard),
@@ -178,24 +212,30 @@ export function useMobileRequestsInbox() {
   )
 
   const filterCounts = useMemo(
-    () => countQuickFilterMatches(flatRows),
-    [flatRows],
+    () => countQuickFilterMatches(accumulatedRows),
+    [accumulatedRows],
   )
 
-  const totalItems = Number(inboxResult?.totalItems ?? filteredRows.length)
+  const totalItems = Number(
+    inboxResult?.totalItems ?? accumulatedRows.length,
+  )
+
+  const hasMore = accumulatedRows.length < totalItems && totalItems > 0
 
   const tabCounts = useMemo(
     () => ({
       exceptions: Number(inboxResult?.exceptionsCount ?? 0),
       invoices: Number(
-        inboxResult?.inboxTabCount ?? metaData?.inboxCount ?? flatRows.length,
+        inboxResult?.inboxTabCount ??
+          metaData?.inboxCount ??
+          accumulatedRows.length,
       ),
       processed:
         Number(metaData?.completedCount ?? 0) +
         Number(metaData?.sentCount ?? 0),
     }),
     [
-      flatRows.length,
+      accumulatedRows.length,
       inboxResult?.exceptionsCount,
       inboxResult?.inboxTabCount,
       metaData?.completedCount,
@@ -207,9 +247,7 @@ export function useMobileRequestsInbox() {
   const handleOpenRequest = useCallback(
     (cardId: string) => {
       const row = filteredRows.find(
-        (item) =>
-          String(item.processId || item.workflowInstanceId || item.id) ===
-          String(cardId),
+        (item) => rowKey(item) === String(cardId),
       ) as InboxItem | undefined
       if (!row || !selectedWorkflow?.id) return
       openRequest(
@@ -237,8 +275,24 @@ export function useMobileRequestsInbox() {
     [allWorkflows],
   )
 
-  const rangeStart = filteredRows.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1
-  const rangeEnd = Math.min(page * PAGE_SIZE, totalItems || filteredRows.length)
+  const loadMore = useCallback(() => {
+    if (isFetching || isPending || !hasMore) return
+    setPage((prev) => prev + 1)
+  }, [hasMore, isFetching, isPending])
+
+  const refresh = useCallback(async () => {
+    setPage(1)
+    lastMergedPageRef.current = 0
+    await refetch()
+  }, [refetch])
+
+  const isInitialLoading =
+    workflowLoadStatus === 'loading' ||
+    (!!selectedWorkflow && isPending && page === 1 && cards.length === 0)
+
+  const isLoadingMore = isFetching && page > 1
+  const showTopLoader =
+    isInitialLoading || (isFetching && page === 1 && cards.length > 0)
 
   return {
     activeQuickFilters,
@@ -249,21 +303,23 @@ export function useMobileRequestsInbox() {
     handleOpenRequest,
     handleQuickFilter,
     handleSelectWorkflow,
+    hasMore,
+    isInitialLoading,
     isLoading:
       workflowLoadStatus === 'loading' ||
-      (!!selectedWorkflow && isPending),
-    isRefreshing: isFetching,
+      (!!selectedWorkflow && isPending && page === 1),
+    isLoadingMore,
+    isRefreshing: isFetching && page === 1,
+    loadMore,
     page,
     pageSize: PAGE_SIZE,
-    rangeEnd,
-    rangeStart,
-    refetch,
+    refetch: refresh,
     selectedWorkflow,
     selectedWorkflowId: selectedWorkflow?.id ?? workflow?.id ?? null,
     setActiveTab,
-    setPage,
+    showTopLoader,
     tabCounts,
-    totalItems: totalItems || filteredRows.length,
+    totalItems: totalItems || accumulatedRows.length,
     workflowLoadStatus,
     workflowName: selectedWorkflow?.name || workflow?.name || 'Accounts Payable',
   }
