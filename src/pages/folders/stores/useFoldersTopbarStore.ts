@@ -15,9 +15,10 @@ const DEFAULT_BREADCRUMBS: SettingsBreadcrumbItem[] = [{ label: 'Folders' }]
 
 const useFoldersTopbarStore = create<FoldersTopbarState>((set) => ({
   breadcrumbs: DEFAULT_BREADCRUMBS,
-  reset: () => set({ breadcrumbs: DEFAULT_BREADCRUMBS, onNavigate: undefined }),
-  setBreadcrumbs: (breadcrumbs, onNavigate) => set({ breadcrumbs, onNavigate }),
   onNavigate: undefined,
+  reset: () => set({ breadcrumbs: DEFAULT_BREADCRUMBS, onNavigate: undefined }),
+  setBreadcrumbs: (breadcrumbs, onNavigate) =>
+    set({ breadcrumbs, onNavigate }),
 }))
 
 export default useFoldersTopbarStore
