@@ -12,6 +12,8 @@ export type Identity = {
   expiresIn?: number
   iv?: string
   key?: string
+  /** Persisted from login X-Tenant-Id when session payload omits it */
+  tenantId?: string
   token?: string
   tokenType?: string
 }

@@ -8,6 +8,13 @@ import UserMenu from './components/user-menu/UserMenu'
 
 const Topbar = () => {
   const openAskAI = useAskAIStore((state) => state.open)
+  const isAskAIOpen = useAskAIStore((state) => state.isOpen)
+
+  const handleOpenAskAI = () => {
+    // Read from store directly so HMR / stale closures can't block open.
+    useAskAIStore.getState().open()
+  }
+
   return (
     <header className='flex h-14 items-center justify-between border-b border-gray-3 bg-gradient-to-b from-gray-1 to-gray-2 pr-6 pl-4'>
       <div className='flex items-center gap-2'>
@@ -21,12 +28,16 @@ const Topbar = () => {
         <GlobalSearch />
         <IconButton
           ariaLabel='Ask AI'
-          className='text-gray-11 hover:text-gray-13'
+          className={
+            isAskAIOpen
+              ? 'text-primary-11 hover:text-primary-12'
+              : 'text-gray-11 hover:text-gray-13'
+          }
           color='gray'
           icon='lucide:bot'
           tooltip='Ask AI'
           variant='ghost'
-          onClick={openAskAI}
+          onClick={handleOpenAskAI}
         />
         <IconButton
           ariaLabel='Quick Help'

@@ -1,4 +1,6 @@
-import { useCallback, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
+import useAskAiActionStore from '@/components/common/ask-ai/stores/useAskAiActionStore'
+import { encodeRepositoryNodeId } from '../api/folderApi'
 import { useFolderExplorer } from '../hooks/useFolderExplorer'
 import useFoldersTopbar from '../hooks/useFoldersTopbar'
 import { AiSummaryView } from './AiSummaryView'
@@ -62,6 +64,94 @@ export function FolderExplorer() {
   } = useFolderExplorer()
 
   const isBusy = loading || loadingPage || refreshing
+  const pendingAskAiAction = useAskAiActionStore((state) => state.pending)
+  const setPageContext = useAskAiActionStore((state) => state.setPageContext)
+  const clearPending = useAskAiActionStore((state) => state.clearPending)
+  const applyingAskAiRef = useRef(false)
+
+  const currentRepositoryId = String(
+    selectedRepository?.id || getRepositoryIdFromFolder(activeFolder) || '',
+  )
+
+  useEffect(() => {
+    setPageContext({
+      actionFrom: 'Repository',
+      specificId: currentRepositoryId,
+    })
+    return () => {
+      const latest = useAskAiActionStore.getState().pageContext
+      if (latest?.actionFrom === 'Repository') {
+        useAskAiActionStore.getState().clearContext()
+      }
+    }
+  }, [currentRepositoryId, setPageContext])
+
+  useEffect(() => {
+    if (!pendingAskAiAction || pendingAskAiAction.target !== 'Repository') {
+      return
+    }
+    if (applyingAskAiRef.current) return
+    if (tree.length === 0) return
+    if (loading || loadingPage) return
+
+    applyingAskAiRef.current = true
+    let cancelled = false
+
+    const apply = async () => {
+      try {
+        const repoId = String(pendingAskAiAction.repositoryId || '').trim()
+        const filters = pendingAskAiAction.filters || {}
+
+        if (viewMode !== 'list') {
+          changeViewMode('list')
+          // viewMode change clears filters via explorer effect; retry after settle
+          applyingAskAiRef.current = false
+          return
+        }
+
+        if (
+          repoId &&
+          currentRepositoryId.toLowerCase() !== repoId.toLowerCase()
+        ) {
+          const nodeId = encodeRepositoryNodeId({
+            kind: 'repository',
+            label: pendingAskAiAction.repositoryLabel || 'Repository',
+            repositoryId: repoId,
+          })
+          await openFolder(nodeId)
+          // Folder switch clears filters; leave pending so effect re-runs.
+          applyingAskAiRef.current = false
+          return
+        }
+
+        await new Promise((resolve) => window.setTimeout(resolve, 120))
+        if (cancelled) return
+
+        if (Object.keys(filters).length > 0) {
+          setFileFilters(filters)
+        }
+        clearPending()
+      } finally {
+        applyingAskAiRef.current = false
+      }
+    }
+
+    void apply()
+    return () => {
+      cancelled = true
+    }
+  }, [
+    changeViewMode,
+    clearPending,
+    currentRepositoryId,
+    loading,
+    loadingPage,
+    openFolder,
+    pendingAskAiAction,
+    setFileFilters,
+    tree.length,
+    viewMode,
+  ])
 
   const handleBreadcrumbNavigate = useCallback(
     (key: string) => {

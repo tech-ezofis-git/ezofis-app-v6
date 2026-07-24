@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import useAskAiActionStore from '@/components/common/ask-ai/stores/useAskAiActionStore'
 import type { Column } from '@/components/base/data-table/types'
 import type { RowSize } from '@/components/base/data-table/types'
 import {
@@ -162,6 +163,30 @@ const Table = ({ onCreate }: TableProps) => {
   const [pageSize, setPageSize] = useState(100)
   const [rowSize, setRowSize] = useState<RowSize>('default')
   const [activeFilters, setActiveFilters] = useState<Record<string, string>>({})
+
+  const pendingAskAiAction = useAskAiActionStore((state) => state.pending)
+  const setPageContext = useAskAiActionStore((state) => state.setPageContext)
+  const clearPending = useAskAiActionStore((state) => state.clearPending)
+
+  useEffect(() => {
+    setPageContext({
+      actionFrom: 'Workflow',
+      specificId: '',
+    })
+    return () => {
+      const latest = useAskAiActionStore.getState().pageContext
+      if (latest?.actionFrom === 'Workflow') {
+        useAskAiActionStore.getState().clearContext()
+      }
+    }
+  }, [setPageContext])
+
+  useEffect(() => {
+    if (!pendingAskAiAction || pendingAskAiAction.target !== 'Workflow') return
+    setActiveFilters(pendingAskAiAction.filters || {})
+    setPage(1)
+    clearPending()
+  }, [clearPending, pendingAskAiAction])
 
   const session = authUserStore((state) => state.session)
   const loggedInUser = session?.firstName

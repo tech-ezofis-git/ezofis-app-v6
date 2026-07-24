@@ -1,3 +1,4 @@
+import dayjs from 'dayjs'
 import type { FolderItem, TreeNode } from '../types/folderTypes'
 import {
   decodeRepositoryNodeId,
@@ -12,6 +13,18 @@ export const FOLDER_SEARCH_DEBOUNCE_MS = 350
 
 /** Matches FolderTable visibility: files hide when there are 10+ folders. */
 export const FOLDER_FILES_SECTION_MAX_FOLDERS = 10
+
+/** Display folder modified timestamps as local DD-MM-YYYY (e.g. 23-07-2026). */
+export function formatFolderModifiedDate(value?: string | null) {
+  const raw = String(value || '').trim()
+  if (!raw || raw === '-') return '-'
+
+  const cleaned = raw.replace(/^modified\s+/i, '')
+  const parsed = dayjs(cleaned)
+  if (!parsed.isValid()) return raw
+
+  return parsed.format('DD-MM-YYYY')
+}
 
 export type FolderFilterOption = { label: string; value: string }
 export type FolderFilterOptionsCache = Record<string, FolderFilterOption[]>
@@ -109,7 +122,8 @@ export const extractFolderTableFilterOptionsFromFolders = (
     },
     {
       id: '__folderModified',
-      getValue: (folder: FolderItem) => String(folder.modifiedText || '').trim(),
+      getValue: (folder: FolderItem) =>
+        formatFolderModifiedDate(folder.modifiedText),
       isValid: (value: string) => Boolean(value) && value !== '-',
     },
   ] as const

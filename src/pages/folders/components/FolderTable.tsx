@@ -27,6 +27,7 @@ import type {
 } from '../types/folderTypes'
 import {
   FOLDER_FILES_SECTION_MAX_FOLDERS,
+  formatFolderModifiedDate,
 } from '../utils/folderExplorerUtils'
 import { getRepositoryFieldStringValue } from '../utils/repositoryFieldUtils'
 import { filterFolderFiles, filterFolders } from './FolderFilterBar'
@@ -953,7 +954,7 @@ function FolderDataTableSection({
 
         items: folder.itemsText || '-',
 
-        modified: folder.modifiedText || '-',
+        modified: formatFolderModifiedDate(folder.modifiedText),
 
         name: folder.title,
 
