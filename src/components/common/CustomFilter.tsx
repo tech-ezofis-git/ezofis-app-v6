@@ -506,6 +506,7 @@ export default function CustomFilter({
                       onChange={(vals) => {
                         skipMoreFilterDebounceRef.current = true
                         applyMultiFilter(group.id, vals)
+                        setActiveFilterDropdown(null)
                       }}
                       onClear={() => {
                         skipMoreFilterDebounceRef.current = true
@@ -527,6 +528,7 @@ export default function CustomFilter({
                       onChange={(vals) => {
                         skipMoreFilterDebounceRef.current = true
                         applyMultiFilter(group.id, vals)
+                        setActiveFilterDropdown(null)
                       }}
                       onClear={() => {
                         skipMoreFilterDebounceRef.current = true
@@ -548,6 +550,7 @@ export default function CustomFilter({
                       onChange={(vals) => {
                         skipMoreFilterDebounceRef.current = true
                         applyMultiFilter(group.id, vals)
+                        setActiveFilterDropdown(null)
                       }}
                       onClear={() => {
                         skipMoreFilterDebounceRef.current = true
@@ -736,6 +739,8 @@ export default function CustomFilter({
                         onChange={(vals) => {
                           skipMoreFilterDebounceRef.current = true
                           applyMultiFilter(filter.id, vals)
+                          // Close so folders page commits deferred filters and calls API on Apply
+                          setActiveFilterDropdown(null)
                         }}
                         onClear={() => {
                           onFilterChange(filter.id, '')
@@ -751,6 +756,8 @@ export default function CustomFilter({
                         onChange={(vals) => {
                           skipMoreFilterDebounceRef.current = true
                           applyMultiFilter(filter.id, vals)
+                          // Close so folders page commits deferred filters and calls API on Apply
+                          setActiveFilterDropdown(null)
                         }}
                         onClear={() => {
                           onFilterChange(filter.id, '')

@@ -1,6 +1,17 @@
+import axios from 'axios'
 import authUserStore from '../../../stores/authUserStore'
 import { setToLocalStorage } from '../../../utils/local-storage'
 import { axiosV6 } from '../../axios'
+
+const isRequestCanceled = (error: unknown) => {
+  const err = error as { code?: string; name?: string; message?: string }
+  return (
+    axios.isCancel(error) ||
+    err?.name === 'CanceledError' ||
+    err?.code === 'ERR_CANCELED' ||
+    /cancel/i.test(String(err?.message || ''))
+  )
+}
 
 export interface BrowseChildGroupDto {
   name: string
@@ -204,12 +215,19 @@ export const getRepositoryById = async (id: string) => {
   try {
     const { data, status } = await axiosV6({
       method: 'GET',
+      // Folder explorer loads repository details + content in parallel; do not
+      // abort one of those identical GETs or the UI surfaces a false error.
+      skipCancellation: true,
       url: `/repositories/${id}`,
     })
 
     if (status !== 200) throw 'invalid status code'
     response.data = unwrap(data)
   } catch (e: any) {
+    if (isRequestCanceled(e)) {
+      response.canceled = true
+      return response
+    }
     console.error(e)
     response.error = e?.response?.data || 'error fetching repository'
   }
@@ -223,12 +241,17 @@ export const getRepositoryBrowseStructure = async (id: string) => {
   try {
     const { data, status } = await axiosV6({
       method: 'GET',
+      skipCancellation: true,
       url: `/repositories/${id}/browse/structure`,
     })
 
     if (status !== 200) throw 'invalid status code'
     response.data = unwrap(data)
   } catch (e: any) {
+    if (isRequestCanceled(e)) {
+      response.canceled = true
+      return response
+    }
     console.error(e)
     response.error =
       e?.response?.data || 'error fetching repository browse structure'
@@ -273,6 +296,11 @@ export const getRepositoryBrowseChildren = async (payload: {
     if (status !== 200) throw 'invalid status code'
     response.data = unwrap(data)
   } catch (e: any) {
+    // Identical in-flight requests are aborted by axios; don't treat as failure.
+    if (isRequestCanceled(e)) {
+      response.canceled = true
+      return response
+    }
     console.error(e)
     response.error = e?.response?.data || 'error fetching repository children'
   }

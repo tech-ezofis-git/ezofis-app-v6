@@ -115,36 +115,36 @@ function TreeItem({
     <div>
       <div
         style={{ paddingLeft: `${8 + level * 22}px` }}
-        className={`group flex min-h-10 cursor-pointer items-center gap-2 rounded-lg py-1.5 pr-2 text-[13px] font-medium transition-all ${
+        className={`group flex min-h-10 cursor-pointer items-end gap-2 rounded-lg py-1.5 pr-2 text-[13px] font-medium leading-none transition-all ${
           isActive ? 'bg-blue-2 text-blue-11' : 'text-gray-12 hover:bg-gray-2'
         }`}
         onClick={handleNodeClick}
       >
-        <button
-          disabled={!canExpand}
-          title={isExpanded ? 'Collapse' : 'Expand'}
-          type='button'
-          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md transition-all ${
-            canExpand ? 'text-gray-11 hover:bg-gray-4' : 'text-transparent'
-          }`}
-          onClick={handleChevronClick}
-        >
+        {/* Always reserve chevron width so folder icons share one vertical column */}
+        <div className='flex h-5 w-6 shrink-0 items-end justify-center'>
           {canExpand ? (
-            <DynamicIcon
-              className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
-              name='chevronRight'
-            />
+            <button
+              title={isExpanded ? 'Collapse' : 'Expand'}
+              type='button'
+              className='flex h-5 w-6 items-center justify-center rounded-md text-gray-11 transition-all hover:bg-gray-4'
+              onClick={handleChevronClick}
+            >
+              <DynamicIcon
+                className={`block size-4 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+                name='chevronRight'
+              />
+            </button>
           ) : (
-            <span className='h-4 w-4' />
+            <span aria-hidden className='h-5 w-6' />
           )}
-        </button>
+        </div>
 
         <DynamicIcon
-          className={`h-5 w-5 shrink-0 ${isActive ? 'text-blue-10' : 'text-gray-11'}`}
+          className={`block size-5 shrink-0 ${isActive ? 'text-blue-10' : 'text-gray-11'}`}
           name={node.iconKey || node.title || 'folder'}
         />
 
-        <span className='min-w-0 flex-1 break-words [overflow-wrap:anywhere] line-clamp-1 transition-all group-hover:line-clamp-none'>
+        <span className='min-w-0 flex-1 leading-none break-words [overflow-wrap:anywhere] line-clamp-1 transition-all group-hover:line-clamp-none'>
           {node.title}
         </span>
 

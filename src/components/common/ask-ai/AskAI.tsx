@@ -856,7 +856,7 @@ const AskAI = () => {
 
 const WelcomeView = ({ onSend }: { onSend: (value: string) => void }) => (
   <div className='px-5 pt-7 pb-4'>
-    <div className='mb-5 text-[var(--text2)]'>
+    <div className='mb-5 text-[var(--gray-7)]'>
       <Bot size={40} strokeWidth={1.75} />
     </div>
     <h2 className='mb-2 text-[19px] font-bold tracking-[-.3px] text-[var(--text1)]'>

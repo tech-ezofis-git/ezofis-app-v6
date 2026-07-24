@@ -262,6 +262,14 @@ const defaultPage = 1
 const defaultGroupPageSize = 100
 const defaultItemPageSize = 50
 
+const throwIfCanceled = (result: { canceled?: boolean }) => {
+  if (!result.canceled) return
+  const cancelError = new Error('canceled')
+  ;(cancelError as any).code = 'ERR_CANCELED'
+  ;(cancelError as any).name = 'CanceledError'
+  throw cancelError
+}
+
 export const encodeRepositoryNodeId = (payload: FolderNodePayload) => {
   const json = JSON.stringify(payload)
   const encoded =
@@ -455,6 +463,7 @@ const getRepositoryBrowseStructure = async (repositoryId: string) => {
   }
 
   const result = await authApiV6.getRepositoryBrowseStructure(repositoryId)
+  throwIfCanceled(result)
   if (result.error) throw new Error(String(result.error))
 
   const structure = (result.data || {
@@ -570,6 +579,7 @@ const getRepositoryFields = async (
 ) => {
   if (fallback?.fields?.length) return fallback.fields
   const result = await authApiV6.getRepositoryById(repositoryId)
+  throwIfCanceled(result)
   if (result.error) throw new Error(String(result.error))
   return (result.data as RepositoryDto)?.fields ?? []
 }
@@ -896,6 +906,13 @@ export const folderApi = {
         (request.folderSearch ?? request.search)?.trim() || undefined,
     } as any)
 
+    if ((childrenResult as any).canceled) {
+      const cancelError = new Error('canceled')
+      ;(cancelError as any).code = 'ERR_CANCELED'
+      ;(cancelError as any).name = 'CanceledError'
+      throw cancelError
+    }
+
     if (childrenResult.error) throw new Error(String(childrenResult.error))
 
     const folders = normalizeChildren(
@@ -955,11 +972,17 @@ export const folderApi = {
       }
     }
 
-    const repository =
-      decoded.kind === 'repository'
-        ? ((await authApiV6.getRepositoryById(decoded.repositoryId))
-          .data as RepositoryDto)
-        : undefined
+    let repository: RepositoryDto | undefined
+    if (decoded.kind === 'repository') {
+      const repositoryResult = await authApiV6.getRepositoryById(
+        decoded.repositoryId,
+      )
+      throwIfCanceled(repositoryResult)
+      if (repositoryResult.error) {
+        throw new Error(String(repositoryResult.error))
+      }
+      repository = repositoryResult.data as RepositoryDto
+    }
     const fields = await getRepositoryFields(
       decoded.kind === 'repository'
         ? decoded.repositoryId
@@ -1087,6 +1110,13 @@ export const folderApi = {
         search: folderSearchText,
       } as any)
 
+      if ((childrenResult as any).canceled) {
+        const cancelError = new Error('canceled')
+        ;(cancelError as any).code = 'ERR_CANCELED'
+        ;(cancelError as any).name = 'CanceledError'
+        throw cancelError
+      }
+
       if (childrenResult.error) throw new Error(String(childrenResult.error))
       currentFolderGroupField = resolveCurrentFolderGroupField(
         structure,
@@ -1143,6 +1173,7 @@ export const folderApi = {
 
   async getRepositoryFullData(repositoryId: string): Promise<RepositoryDto> {
     const result = await authApiV6.getRepositoryById(repositoryId)
+    throwIfCanceled(result)
     if (result.error) throw new Error(String(result.error))
     return result.data as RepositoryDto
   },

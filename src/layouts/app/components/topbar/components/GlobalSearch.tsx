@@ -1,95 +1,41 @@
 import { Sparkles } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from '@tanstack/react-router'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
 import Menu from '@/components/base/menu/Menu'
+import useAskAiActionStore from '@/components/common/ask-ai/stores/useAskAiActionStore'
 import cn from '@/utils/cn'
-
-type SearchItem = {
-  answer: string
-  id: string
-  keywords: string[]
-  title: string
-}
-
-const SEARCH_ITEMS: SearchItem[] = [
-  {
-    answer:
-      'Open AP Agent from the top bar, complete your workspace profile, then create your first account under Settings → Organization to begin invoice intake.',
-    id: '1',
-    keywords: ['ap agent', 'start', 'account', 'onboard'],
-    title: 'How do I start using AP Agent and create my first account?',
-  },
-  {
-    answer:
-      'You can ingest invoices via email attachment capture, manual upload, scanner/OCR import, or connected ERP mailboxes for automatic extraction.',
-    id: '2',
-    keywords: ['invoice', 'ingest', 'upload', 'email', 'import'],
-    title: 'What options does AP Agent offer for ingesting invoices?',
-  },
-  {
-    answer:
-      'Go to Vendor Management, review duplicate alerts, merge or dismiss matches, then verify bank and tax details before the first payment.',
-    id: '3',
-    keywords: ['vendor', 'supplier', 'verify', 'duplicate'],
-    title: 'How do I verify vendors and resolve duplicate supplier alerts?',
-  },
-  {
-    answer:
-      'Open Payments → Approvals to see pending items, amounts, and schedules. High-priority payments are highlighted for faster review.',
-    id: '4',
-    keywords: ['payment', 'approval', 'schedule', 'remittance'],
-    title: 'Where can I review pending payment approvals and schedules?',
-  },
-  {
-    answer:
-      'Use repository search with filters like PO Number, invoice number, vendor, or date range to locate matching AP documents quickly.',
-    id: '5',
-    keywords: ['document', 'search', 'po', 'purchase order', 'repository'],
-    title: 'How do I search documents, invoices, and PO records?',
-  },
-  {
-    answer:
-      'Purchase requests route through your configured approval chain. Track status in Requests and approve or reject from the request detail view.',
-    id: '6',
-    keywords: ['request', 'purchase request', 'approval workflow'],
-    title: 'How do purchase requests and approval workflows work?',
-  },
-  {
-    answer:
-      '2-way matches invoice to PO; 3-way also requires a goods receipt. Incomplete matches appear in Matching until all documents align.',
-    id: '7',
-    keywords: ['matching', '2-way', '3-way', 'goods receipt'],
-    title: 'How does 2-way and 3-way invoice matching work?',
-  },
-  {
-    answer:
-      'This page helps you manage Accounts Payable requests — review status, discrepancies, supplier filters, and move matched items to verification.',
-    id: '8',
-    keywords: ['erp', 'sync', 'sap', 'intacct', 'export', 'page about'],
-    title: 'What is this page about?',
-  },
-]
-
-type ViewMode = 'search' | 'answer'
+import {
+  fetchGlobalSearch,
+  getSearchHitDate,
+  getSearchHitIcon,
+  getSearchHitTitle,
+  type GlobalSearchHit,
+} from './globalSearchApi'
 
 const GlobalSearch = () => {
+  const navigate = useNavigate()
+  const pageContext = useAskAiActionStore((state) => state.pageContext)
+  const setPending = useAskAiActionStore((state) => state.setPending)
+
   const [opened, setOpened] = useState(false)
   const [query, setQuery] = useState('')
   const [debouncedQuery, setDebouncedQuery] = useState('')
   const [loading, setLoading] = useState(false)
-  const [view, setView] = useState<ViewMode>('search')
-  const [activeItem, setActiveItem] = useState<SearchItem | null>(null)
+  const [results, setResults] = useState<GlobalSearchHit[]>([])
+  const [error, setError] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
+  const requestIdRef = useRef(0)
 
   useEffect(() => {
     if (!opened) {
       setQuery('')
       setDebouncedQuery('')
       setLoading(false)
-      setView('search')
-      setActiveItem(null)
+      setResults([])
+      setError('')
       return
     }
 
@@ -101,67 +47,86 @@ const GlobalSearch = () => {
   }, [opened])
 
   useEffect(() => {
-    if (view !== 'search') return
     const trimmed = query.trim()
     if (!trimmed) {
       setDebouncedQuery('')
       setLoading(false)
+      setResults([])
+      setError('')
       return
     }
 
     setLoading(true)
-    setDebouncedQuery('')
+    setError('')
     const timer = window.setTimeout(() => {
       setDebouncedQuery(trimmed)
-      setLoading(false)
-    }, 500)
+    }, 400)
 
     return () => window.clearTimeout(timer)
-  }, [query, view])
+  }, [query])
 
-  const results = useMemo(() => {
-    if (!debouncedQuery) return []
-    const q = debouncedQuery.toLowerCase()
-    return SEARCH_ITEMS.filter(
-      (item) =>
-        item.title.toLowerCase().includes(q) ||
-        item.answer.toLowerCase().includes(q) ||
-        item.keywords.some((k) => k.includes(q) || q.includes(k)),
-    )
-  }, [debouncedQuery])
+  useEffect(() => {
+    if (!debouncedQuery) {
+      setResults([])
+      setLoading(false)
+      return
+    }
 
-  const openAnswer = (item: SearchItem) => {
-    setActiveItem(item)
-    setQuery(item.title)
-    setView('answer')
-    setLoading(false)
+    const requestId = ++requestIdRef.current
+    setLoading(true)
+
+    void fetchGlobalSearch({
+      actionFrom: pageContext?.actionFrom || 'Repository',
+      query: debouncedQuery,
+      specificId: pageContext?.specificId || '',
+    })
+      .then((hits) => {
+        if (requestId !== requestIdRef.current) return
+        setResults(hits)
+        setError('')
+      })
+      .catch((err: unknown) => {
+        if (requestId !== requestIdRef.current) return
+        setResults([])
+        setError(
+          err instanceof Error ? err.message : 'Could not complete search.',
+        )
+      })
+      .finally(() => {
+        if (requestId === requestIdRef.current) setLoading(false)
+      })
+  }, [debouncedQuery, pageContext?.actionFrom, pageContext?.specificId])
+
+  const openHit = (hit: GlobalSearchHit) => {
+    const repositoryId = String(hit.id?.repositoryId || '').trim()
+    const itemId = String(hit.id?.itemId || '').trim()
+    const title = getSearchHitTitle(hit)
+    const type = String(hit.type || '').toLowerCase()
+
+    if (type.includes('workflow') || type.includes('process')) {
+      setPending({
+        filters: {},
+        target: 'Workflow',
+        workflowId: String(hit.id?.workflowId || ''),
+      })
+      void navigate({ to: '/workflows' })
+    } else {
+      setPending({
+        fileSearch: title,
+        filters: {},
+        openItemId: itemId || undefined,
+        repositoryId: repositoryId || undefined,
+        repositoryLabel: 'Repository',
+        target: 'Repository',
+      })
+      void navigate({ to: '/folders' })
+    }
+
+    setOpened(false)
   }
 
-  const askCurrentQuery = () => {
-    const trimmed = query.trim()
-    if (!trimmed) return
-
-    const matched =
-      results[0] ||
-      SEARCH_ITEMS.find(
-        (item) =>
-          item.title.toLowerCase() === trimmed.toLowerCase() ||
-          item.keywords.some((k) => trimmed.toLowerCase().includes(k)),
-      )
-
-    openAnswer(
-      matched || {
-        answer:
-          'I searched AP help for your question. Try keywords like invoice, vendor, payment, request, matching, or ERP sync for a detailed answer.',
-        id: 'custom',
-        keywords: [],
-        title: trimmed,
-      },
-    )
-  }
-
-  const showIdle = !query.trim() && !loading && view === 'search'
-  const showResults = view === 'search' && !loading && Boolean(debouncedQuery)
+  const showIdle = !query.trim() && !loading
+  const showResults = !loading && Boolean(debouncedQuery)
 
   return (
     <Menu
@@ -188,31 +153,17 @@ const GlobalSearch = () => {
               placeholder='Search...'
               ref={inputRef}
               value={query}
-              onChange={(e) => {
-                setView('search')
-                setActiveItem(null)
-                setQuery(e.target.value)
-              }}
+              onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => {
                 e.stopPropagation()
-                if (e.key === 'Enter') {
-                  e.preventDefault()
-                  askCurrentQuery()
-                }
                 if (e.key === 'Escape') setOpened(false)
-                if (e.key === 'Backspace' && view === 'answer' && !query) {
-                  setView('search')
-                }
               }}
             />
             <button
               aria-label='Search'
               className='grid size-7 shrink-0 place-items-center rounded-md text-gray-11 transition-colors hover:bg-gray-4 hover:text-gray-13'
               type='button'
-              onClick={(e) => {
-                e.stopPropagation()
-                askCurrentQuery()
-              }}
+              onClick={(e) => e.stopPropagation()}
             >
               <Icon name='lucide:search' />
             </button>
@@ -252,43 +203,7 @@ const GlobalSearch = () => {
 
         <div className='max-h-[420px] min-h-[200px] overflow-y-auto'>
           <AnimatePresence mode='wait'>
-            {view === 'answer' && activeItem && (
-              <motion.div
-                animate={{ opacity: 1, y: 0 }}
-                className='px-4 py-4'
-                exit={{ opacity: 0, y: 8 }}
-                initial={{ opacity: 0, y: 8 }}
-                key='answer'
-                transition={{ duration: 0.22 }}
-              >
-                <button
-                  className='mb-3 inline-flex items-center gap-1 text-xs font-medium text-primary-9 hover:underline'
-                  type='button'
-                  onClick={() => {
-                    setView('search')
-                    setActiveItem(null)
-                  }}
-                >
-                  <Icon name='lucide:arrow-left' />
-                  Back to results
-                </button>
-                <div className='mb-2 flex items-start gap-2'>
-                  <Sparkles
-                    className='mt-0.5 shrink-0 text-primary-9'
-                    size={16}
-                    strokeWidth={2}
-                  />
-                  <h3 className='text-[14px] leading-5 font-semibold text-gray-13'>
-                    {activeItem.title}
-                  </h3>
-                </div>
-                <p className='pl-6 text-[13px] leading-6 text-gray-11'>
-                  {activeItem.answer}
-                </p>
-              </motion.div>
-            )}
-
-            {view === 'search' && showIdle && (
+            {showIdle && (
               <motion.div
                 animate={{ opacity: 1 }}
                 className='flex flex-col items-center justify-center gap-2 px-6 py-14 text-center'
@@ -305,12 +220,13 @@ const GlobalSearch = () => {
                   Start typing to search
                 </p>
                 <p className='max-w-[280px] text-xs leading-5 text-gray-10'>
-                  Ask about invoices, documents, requests, vendors, or AP Agent.
+                  Search documents, folders, requests, and more across your
+                  workspace.
                 </p>
               </motion.div>
             )}
 
-            {view === 'search' && loading && (
+            {loading && (
               <motion.div
                 animate={{ opacity: 1 }}
                 className='flex flex-col items-center justify-center gap-3 px-4 py-14'
@@ -319,12 +235,12 @@ const GlobalSearch = () => {
                 key='loading'
               >
                 <motion.div
-                  className='text-primary-9'
                   animate={{
                     opacity: [0.55, 1, 0.55],
                     rotate: [0, 8, -8, 0],
                     scale: [0.92, 1.1, 0.92],
                   }}
+                  className='text-primary-9'
                   transition={{
                     duration: 1.4,
                     ease: 'easeInOut',
@@ -340,7 +256,19 @@ const GlobalSearch = () => {
               </motion.div>
             )}
 
-            {showResults && results.length === 0 && (
+            {showResults && error && (
+              <motion.div
+                animate={{ opacity: 1 }}
+                className='px-4 py-12 text-center text-sm text-gray-10'
+                exit={{ opacity: 0 }}
+                initial={{ opacity: 0 }}
+                key='error'
+              >
+                {error}
+              </motion.div>
+            )}
+
+            {showResults && !error && results.length === 0 && (
               <motion.div
                 animate={{ opacity: 1 }}
                 className='px-4 py-12 text-center text-sm text-gray-10'
@@ -348,11 +276,11 @@ const GlobalSearch = () => {
                 initial={{ opacity: 0 }}
                 key='empty'
               >
-                No related answers for “{debouncedQuery}”.
+                No results for “{debouncedQuery}”.
               </motion.div>
             )}
 
-            {showResults && results.length > 0 && (
+            {showResults && !error && results.length > 0 && (
               <motion.ul
                 animate={{ opacity: 1 }}
                 className='flex flex-col py-1'
@@ -360,33 +288,48 @@ const GlobalSearch = () => {
                 initial={{ opacity: 0 }}
                 key='list'
               >
-                {results.map((item, index) => (
-                  <motion.li
-                    animate={{ opacity: 1, y: 0 }}
-                    initial={{ opacity: 0, y: 8 }}
-                    key={item.id}
-                    transition={{ delay: index * 0.05, duration: 0.22 }}
-                  >
-                    <button
-                      className='flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-primary-2'
-                      type='button'
-                      onClick={() => openAnswer(item)}
+                {results.map((hit, index) => {
+                  const title = getSearchHitTitle(hit)
+                  const date = getSearchHitDate(hit)
+                  const icon = getSearchHitIcon(hit.type)
+                  const key =
+                    hit.id?.itemId ||
+                    `${hit.type}-${title}-${date}-${index}`
+
+                  return (
+                    <motion.li
+                      animate={{ opacity: 1, y: 0 }}
+                      initial={{ opacity: 0, y: 8 }}
+                      key={key}
+                      transition={{ delay: Math.min(index, 12) * 0.03, duration: 0.2 }}
                     >
-                      <Sparkles
-                        className='shrink-0 text-primary-9'
-                        size={16}
-                        strokeWidth={2}
-                      />
-                      <span className='min-w-0 flex-1 text-[13.5px] leading-5 text-gray-12'>
-                        {item.title}
-                      </span>
-                      <Icon
-                        className='shrink-0 text-primary-7'
-                        name='lucide:chevron-right'
-                      />
-                    </button>
-                  </motion.li>
-                ))}
+                      <button
+                        className='flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-primary-2'
+                        type='button'
+                        onClick={() => openHit(hit)}
+                      >
+                        <span className='min-w-0 flex-1'>
+                          <span className='block truncate text-[13.5px] leading-5 font-medium text-gray-13'>
+                            {title}
+                          </span>
+                          <span className='mt-1 flex items-center gap-1.5 text-[12px] text-gray-10'>
+                            <Icon
+                              className='size-3.5 shrink-0 text-primary-9'
+                              name={icon}
+                            />
+                            <span className='truncate'>
+                              {date || hit.type || 'Result'}
+                            </span>
+                          </span>
+                        </span>
+                        <Icon
+                          className='shrink-0 text-primary-7'
+                          name='lucide:chevron-right'
+                        />
+                      </button>
+                    </motion.li>
+                  )
+                })}
               </motion.ul>
             )}
           </AnimatePresence>

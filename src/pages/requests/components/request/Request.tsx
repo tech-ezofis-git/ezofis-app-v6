@@ -606,7 +606,8 @@ const useJobPolling = (
   apAgentJobId: string | number | undefined,
   onJobData?: (jobData: any) => void,
 ) => {
-  const [jobStatus, setJobStatus] = useState<{
+  const { jobStatuses, processingProcesses } = requestStore()
+  const [localStatus, setLocalStatus] = useState<{
     hangfireStatus: string
     isCompleted?: boolean
     message: string
@@ -619,8 +620,42 @@ const useJobPolling = (
     onJobDataRef.current = onJobData
   }, [onJobData])
 
+  const isPollingExternally = useMemo(() => {
+    return processingProcesses.some((p) => String(p.apAgentJobId) === String(apAgentJobId))
+  }, [processingProcesses, apAgentJobId])
+
+  const jobKey = apAgentJobId ? `job-${apAgentJobId}` : ''
+  const globalJobStatus = jobStatuses[jobKey]
+  const prevJobStatusPercentRef = useRef<number | undefined>(undefined)
+  const prevJobStatusStageRef = useRef<string | undefined>(undefined)
+
+  // Listen to external global store updates if being polled externally
   useEffect(() => {
-    if (!apAgentJobId) return
+    if (isPollingExternally && globalJobStatus) {
+      const hasChanged = 
+        globalJobStatus.percent !== prevJobStatusPercentRef.current || 
+        globalJobStatus.stage !== prevJobStatusStageRef.current
+
+      if (hasChanged) {
+        setLocalStatus({
+          hangfireStatus: globalJobStatus.hangfireStatus || '',
+          isCompleted: globalJobStatus.isCompleted,
+          message: globalJobStatus.message || '',
+          percent: globalJobStatus.percent,
+          stage: globalJobStatus.stage || '',
+        })
+        if (onJobDataRef.current) {
+          onJobDataRef.current(globalJobStatus)
+        }
+        prevJobStatusPercentRef.current = globalJobStatus.percent
+        prevJobStatusStageRef.current = globalJobStatus.stage
+      }
+    }
+  }, [globalJobStatus, isPollingExternally])
+
+  // Fallback to local polling if not handled by ProcessingBackgroundManager
+  useEffect(() => {
+    if (!apAgentJobId || isPollingExternally) return
 
     let intervalId: any = null
 
@@ -630,7 +665,7 @@ const useJobPolling = (
           String(apAgentJobId),
         )
         if (res.data) {
-          handleJobData(apAgentJobId, res.data, setJobStatus, () => {
+          handleJobData(apAgentJobId, res.data, setLocalStatus, () => {
             if (intervalId) clearInterval(intervalId)
           })
           if (onJobDataRef.current) {
@@ -648,9 +683,9 @@ const useJobPolling = (
     return () => {
       if (intervalId) clearInterval(intervalId)
     }
-  }, [apAgentJobId])
+  }, [apAgentJobId, isPollingExternally])
 
-  return jobStatus
+  return localStatus
 }
 
 const parseFieldsSource = (formData: any): any => {

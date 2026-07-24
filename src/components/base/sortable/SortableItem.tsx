@@ -9,9 +9,16 @@ interface Props {
   id: string
   className?: string
   handlerClassName?: string
+  trailing?: ReactNode
 }
 
-const SortableItem = ({ children, className, handlerClassName, id }: Props) => {
+const SortableItem = ({
+  children,
+  className,
+  handlerClassName,
+  id,
+  trailing,
+}: Props) => {
   const { attributes, listeners, transform, transition, setNodeRef } =
     useSortable({ id })
 
@@ -40,6 +47,7 @@ const SortableItem = ({ children, className, handlerClassName, id }: Props) => {
           name='lucide:grip-vertical'
         />
       </div>
+      {trailing}
     </div>
   )
 }

@@ -708,6 +708,9 @@ export default function DmsFolderConfiguration({
       isMandatory: boolean
     }>
     folderName: string
+    integrations?: string
+    storage?: string
+    versioning?: string
   }) => {
     const mappedFields = payload.fields.map((field, index) => {
       const includeInFolderStructure = Boolean(field.includeInFolderStructure)
@@ -734,6 +737,14 @@ export default function DmsFolderConfiguration({
         : defaultFields,
     )
     setFolderOwner(resolveCurrentUserOwner())
+    if (payload.storage) {
+      setStorage(payload.storage)
+      setStorageConnectorId(null)
+      setStorageConnectorLabel(null)
+    }
+    if (payload.versioning) {
+      setVersioning(payload.versioning)
+    }
     setShowAiBuilder(false)
     setStep(1)
     setShowWizard(true)

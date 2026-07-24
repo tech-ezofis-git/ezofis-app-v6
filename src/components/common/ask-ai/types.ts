@@ -74,7 +74,9 @@ export type AskAiAnswer = {
 export type AskAiCtaMode = 'navigate' | 'apply'
 
 export type AskAiPendingAction = {
+  fileSearch?: string
   filters: Record<string, string>
+  openItemId?: string
   repositoryId?: string
   repositoryLabel?: string
   target: 'Repository' | 'Workflow'

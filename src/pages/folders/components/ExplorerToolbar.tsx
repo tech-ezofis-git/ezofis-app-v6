@@ -160,7 +160,7 @@ export function ExplorerToolbar({
     return () => window.clearTimeout(timer)
   }, [filterMode, onFileSearchChange, onFolderSearchChange, searchQuery])
 
-  const isBusy = refreshing || loadingPage || disabled
+  const isBusy = refreshing || loading || loadingPage || disabled
 
   const applyFolderFilter = (id: string, value: string) => {
     const next = { ...folderFilters }

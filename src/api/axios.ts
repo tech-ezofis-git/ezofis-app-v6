@@ -61,7 +61,12 @@ const addPendingRequest = (config: CustomConfig) => {
 const removePendingRequest = (config: CustomConfig) => {
   if (config.skipCancellation) return
   const requestKey = generateRequestKey(config)
-  pendingRequests.delete(requestKey)
+  const controller = pendingRequests.get(requestKey)
+  // Only clear if this response/error belongs to the controller still tracked
+  // for the key (a superseded request must not drop the newer in-flight one).
+  if (controller && config.signal === controller.signal) {
+    pendingRequests.delete(requestKey)
+  }
 }
 
 // --- Request Interceptor ---
