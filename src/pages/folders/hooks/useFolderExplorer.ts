@@ -191,6 +191,13 @@ export function useFolderExplorer() {
       setSelectedRepository(repository as RepositoryDetail)
       return repository
     } catch (exception: any) {
+      const isCanceled =
+        exception?.code === 'ERR_CANCELED' ||
+        exception?.name === 'CanceledError' ||
+        /cancel/i.test(String(exception?.message || ''))
+
+      if (isCanceled) return null
+
       setSelectedRepository(null)
       setError(exception?.message || 'Unable to load repository details')
       return null
@@ -306,6 +313,14 @@ export function useFolderExplorer() {
 
       return response
     } catch (exception: any) {
+      const isCanceled =
+        exception?.code === 'ERR_CANCELED' ||
+        exception?.name === 'CanceledError' ||
+        /cancel/i.test(String(exception?.message || ''))
+
+      // Aborted duplicate requests must not wipe explorer state.
+      if (isCanceled) return undefined
+
       if (requestId === requestSeqRef.current) {
         if (folderPageOnly) {
           setError('')
@@ -352,6 +367,9 @@ export function useFolderExplorer() {
       setTree((previous) =>
         syncTreeChildren(previous, folderId, response.folders),
       )
+    } catch {
+      // Ignore failures here (including aborted duplicate children calls).
+      // Selecting a folder reloads content via the activeFolder effect.
     } finally {
       setTreeLoadingId(null)
       setTree((previous) =>
@@ -530,16 +548,22 @@ export function useFolderExplorer() {
 
   const openFolder = async (id: string) => {
     if (loading || loadingPage) return
+    if (id === activeFolder) {
+      setAppView('explorer')
+      return
+    }
+
+    // Selection only — content + repository details load in the activeFolder
+    // effect. Calling ensureTreeChildrenLoaded / loadSelectedRepository here
+    // fired a duplicate browse/children request; axios aborted the first and
+    // the aborted load cleared the explorer to an empty state.
     setActiveFolder(id)
     setAppView('explorer')
-    await loadSelectedRepository(id)
 
     const path = findPathToNode(tree, id)
     setExpandedIds((previous) =>
       Array.from(new Set([...(path.length ? path : previous), id])),
     )
-
-    await ensureTreeChildrenLoaded(id)
   }
 
   const toggleFolder = async (id: string) => {

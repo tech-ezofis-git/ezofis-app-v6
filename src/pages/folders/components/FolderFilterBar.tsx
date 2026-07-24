@@ -525,6 +525,7 @@ export function FolderFilterBar({
     <CustomFilter
       activeFilters={activeFilters}
       filters={defaultFilters}
+      isLoading={isBusy}
       moreFilters={moreFilters}
       multiSelect
       searchPlaceholder={searchPlaceholder}

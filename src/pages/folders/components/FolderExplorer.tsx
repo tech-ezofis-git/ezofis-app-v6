@@ -3,6 +3,7 @@ import useAskAiActionStore from '@/components/common/ask-ai/stores/useAskAiActio
 import { encodeRepositoryNodeId } from '../api/folderApi'
 import { useFolderExplorer } from '../hooks/useFolderExplorer'
 import useFoldersTopbar from '../hooks/useFoldersTopbar'
+import { findRepositoryNodeId } from '../utils/folderExplorerUtils'
 import { AiSummaryView } from './AiSummaryView'
 import { DocumentDetailsView } from './DocumentDetailsView'
 import { DocumentsListView } from './DocumentsListView'
@@ -113,11 +114,14 @@ export function FolderExplorer() {
           repoId &&
           currentRepositoryId.toLowerCase() !== repoId.toLowerCase()
         ) {
-          const nodeId = encodeRepositoryNodeId({
-            kind: 'repository',
-            label: pendingAskAiAction.repositoryLabel || 'Repository',
-            repositoryId: repoId,
-          })
+          const treeNodeId = findRepositoryNodeId(tree, repoId)
+          const nodeId =
+            treeNodeId ||
+            encodeRepositoryNodeId({
+              kind: 'repository',
+              label: pendingAskAiAction.repositoryLabel || 'Repository',
+              repositoryId: repoId,
+            })
           await openFolder(nodeId)
           // Folder switch clears filters; leave pending so effect re-runs.
           applyingAskAiRef.current = false
@@ -129,6 +133,12 @@ export function FolderExplorer() {
 
         if (Object.keys(filters).length > 0) {
           setFileFilters(filters)
+        }
+        if (pendingAskAiAction.fileSearch?.trim()) {
+          setFileSearch(pendingAskAiAction.fileSearch.trim())
+        }
+        if (pendingAskAiAction.openItemId?.trim()) {
+          openFile(pendingAskAiAction.openItemId.trim())
         }
         clearPending()
       } finally {
@@ -146,9 +156,12 @@ export function FolderExplorer() {
     currentRepositoryId,
     loading,
     loadingPage,
+    openFile,
     openFolder,
     pendingAskAiAction,
     setFileFilters,
+    setFileSearch,
+    tree,
     tree.length,
     viewMode,
   ])

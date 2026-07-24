@@ -336,6 +336,36 @@ export const getRepositoryIdFromFolder = (folderId: string) => {
   return ''
 }
 
+/** Resolve the sidebar tree node id for a repository GUID (label-safe). */
+export const findRepositoryNodeId = (
+  tree: TreeNode[],
+  repositoryId: string,
+): string => {
+  const target = String(repositoryId || '').trim().toLowerCase()
+  if (!target) return ''
+
+  const walk = (nodes: TreeNode[]): string => {
+    for (const node of nodes) {
+      const decoded = decodeRepositoryNodeId(node.id)
+      if (
+        decoded?.kind === 'repository' &&
+        String(decoded.repositoryId || '')
+          .trim()
+          .toLowerCase() === target
+      ) {
+        return node.id
+      }
+      if (node.children?.length) {
+        const nested = walk(node.children)
+        if (nested) return nested
+      }
+    }
+    return ''
+  }
+
+  return walk(tree)
+}
+
 export const getRepositoryRootNodeId = (folderId: string, tree: TreeNode[]) => {
   const decoded = decodeRepositoryNodeId(folderId)
 
