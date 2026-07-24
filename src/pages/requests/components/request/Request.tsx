@@ -494,15 +494,15 @@ const updateProcessInStore = (apAgentJobId: string | number, jobData: any) => {
       )
       const updatedProcesses = hasJobProcess
         ? state.processingProcesses.map((p) =>
-            String(p.processId || p.id) === jobKey
-              ? {
-                  ...p,
-                  apAgentJobId: null,
-                  id: jobData.instanceId,
-                  processId: jobData.instanceId,
-                }
-              : p,
-          )
+          String(p.processId || p.id) === jobKey
+            ? {
+              ...p,
+              apAgentJobId: null,
+              id: jobData.instanceId,
+              processId: jobData.instanceId,
+            }
+            : p,
+        )
         : state.processingProcesses
 
       return {
@@ -629,21 +629,14 @@ const useJobPolling = (
   const prevJobStatusPercentRef = useRef<number | undefined>(undefined)
   const prevJobStatusStageRef = useRef<string | undefined>(undefined)
 
-  // Listen to external global store updates if being polled externally
+  // Listen to external global store updates to trigger callbacks
   useEffect(() => {
     if (isPollingExternally && globalJobStatus) {
-      const hasChanged = 
-        globalJobStatus.percent !== prevJobStatusPercentRef.current || 
+      const hasChanged =
+        globalJobStatus.percent !== prevJobStatusPercentRef.current ||
         globalJobStatus.stage !== prevJobStatusStageRef.current
 
       if (hasChanged) {
-        setLocalStatus({
-          hangfireStatus: globalJobStatus.hangfireStatus || '',
-          isCompleted: globalJobStatus.isCompleted,
-          message: globalJobStatus.message || '',
-          percent: globalJobStatus.percent,
-          stage: globalJobStatus.stage || '',
-        })
         if (onJobDataRef.current) {
           onJobDataRef.current(globalJobStatus)
         }
@@ -684,6 +677,16 @@ const useJobPolling = (
       if (intervalId) clearInterval(intervalId)
     }
   }, [apAgentJobId, isPollingExternally])
+
+  if (isPollingExternally && globalJobStatus) {
+    return {
+      hangfireStatus: globalJobStatus.hangfireStatus || '',
+      isCompleted: globalJobStatus.isCompleted,
+      message: globalJobStatus.message || '',
+      percent: globalJobStatus.percent,
+      stage: globalJobStatus.stage || '',
+    }
+  }
 
   return localStatus
 }
@@ -981,10 +984,10 @@ const Request = ({
 
   const hasAgentDecision = request
     ? !!(
-        request.review ||
-        request._agentData?.[0]?.decision ||
-        request.completedAtUtc
-      )
+      request.review ||
+      request._agentData?.[0]?.decision ||
+      request.completedAtUtc
+    )
     : false
   const isCurrentlyProcessing =
     !hasAgentDecision && initialProcessing && !jobStatus?.isCompleted
@@ -1188,8 +1191,8 @@ const Request = ({
           typeof selectedItem?.agentResponse === 'string'
             ? selectedItem.agentResponse
             : JSON.stringify(
-                selectedItem?.agentResponse || request?.agentResponse || {},
-              ),
+              selectedItem?.agentResponse || request?.agentResponse || {},
+            ),
         comments: '',
         formData: formDataStr,
         formEntryId: Number(
@@ -1286,10 +1289,10 @@ const Request = ({
           fields:
             Object.keys(formModel).length > 0
               ? mapFormModelToPayloadFields(
-                  formModel,
-                  selectedWorkflow,
-                  request?._formDefinition,
-                )
+                formModel,
+                selectedWorkflow,
+                request?._formDefinition,
+              )
               : selectedItem?.formData?.fields || {},
           formEntryId: selectedItem?.formData?.formEntryId,
           formId: rawWorkflowData?.wFormId,
@@ -1550,7 +1553,7 @@ const Request = ({
     apAgentJobId &&
     (!jobStatus || !jobStatus.isCompleted)
   ) {
-    statusBadge = 'Fetching necessary Data...'
+    statusBadge = 'Preparing your request...'
   } else {
     // If job completed but we don't have agentDecision yet, show a loader status
     if (
@@ -1644,19 +1647,19 @@ const Request = ({
             formModel?.['invoice_number'] ||
             formModel?.['invoice_no'] ||
             currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-              'Invoice No'
+            'Invoice No'
             ] ||
             currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-              'invoice_no'
+            'invoice_no'
             ] ||
             currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-              'Invoice Number'
+            'Invoice Number'
             ] ||
             currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-              'invoice_number'
+            'invoice_number'
             ] ||
             currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-              'invoice_num'
+            'invoice_num'
             ] ||
             currentAgentData?.['kvcYuknkDumkTenjvrVLj'] ||
             selectedItem?.reqNo ||
