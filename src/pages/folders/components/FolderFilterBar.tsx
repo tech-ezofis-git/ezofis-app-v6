@@ -10,6 +10,7 @@ import { decodeRepositoryNodeId } from '../api/folderApi'
 import type { ExplorerView, FolderItem } from '../types/folderTypes'
 import type { ExplorerFilterMode, FolderFilterOptionsCache } from '../utils/folderExplorerUtils'
 import {
+  formatFolderModifiedDate,
   getCachedFilterOptionsForId,
   mergeFilterOptionLists,
 } from '../utils/folderExplorerUtils'
@@ -198,7 +199,7 @@ const buildFolderTableFilterOptions = (
 
   if (filterId === '__folderModified') {
     return folders
-      .map((folder) => String(folder.modifiedText || '').trim())
+      .map((folder) => formatFolderModifiedDate(folder.modifiedText))
       .filter((value) => value && value !== '-')
       .map((value) => ({ label: value, value }))
   }
@@ -210,7 +211,7 @@ const getFolderTableFilterValue = (folder: FolderItem, filterId: string) => {
   if (filterId === '__folderName') return String(folder.title || '').trim()
   if (filterId === '__folderItems') return String(folder.itemsText || '').trim()
   if (filterId === '__folderModified') {
-    return String(folder.modifiedText || '').trim()
+    return formatFolderModifiedDate(folder.modifiedText)
   }
   return ''
 }

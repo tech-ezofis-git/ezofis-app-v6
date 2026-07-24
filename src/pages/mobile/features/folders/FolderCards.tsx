@@ -26,11 +26,11 @@ const formatFolderDate = (value?: string) => {
     return raw.slice(0, 10)
   }
 
-  return date.toLocaleDateString(undefined, {
-    day: 'numeric',
-    month: 'short',
+  return date.toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: '2-digit',
     year: 'numeric',
-  })
+  }).replace(/\//g, '-')
 }
 
 const getFolderMeta = (folder: FolderItem) => {

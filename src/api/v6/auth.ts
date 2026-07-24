@@ -1,5 +1,8 @@
 import authUserStore from '../../stores/authUserStore'
-import { setToLocalStorage } from '../../utils/local-storage'
+import {
+  getFromLocalStorage,
+  setToLocalStorage,
+} from '../../utils/local-storage'
 import { axiosV6 } from '../axios'
 
 export const getV6ApiErrorMessage = (
@@ -166,9 +169,14 @@ export const login = async (payload: {
     if (status !== 200) throw new Error('invalid status code')
 
     if (data) {
-      setToLocalStorage(data, 'identity')
+      const identityWithTenant = {
+        ...data,
+        tenantId: payload.tenantId,
+      }
+      setToLocalStorage(identityWithTenant, 'identity')
+      setToLocalStorage(String(payload.tenantId), 'tenantId', 'STRING')
       const { setIdentity } = authUserStore.getState()
-      setIdentity(data)
+      setIdentity(identityWithTenant)
       response.data = 'Success'
     } else {
       response.error = 'No data returned'
@@ -193,10 +201,22 @@ export const getSession = async () => {
     if (status !== 200) throw new Error('invalid status code')
 
     if (data) {
-      setToLocalStorage(data, 'session')
+      const store = authUserStore.getState()
+      const fallbackTenantId =
+        (store.identity as any)?.tenantId ||
+        (getFromLocalStorage('tenantId', 'STRING') as string) ||
+        ''
+      const sessionData = {
+        ...data,
+        tenantId: data.tenantId || fallbackTenantId || data.TenantId || '',
+      }
+      setToLocalStorage(sessionData, 'session')
+      if (sessionData.tenantId) {
+        setToLocalStorage(String(sessionData.tenantId), 'tenantId', 'STRING')
+      }
       const { setSession } = authUserStore.getState()
-      setSession(data)
-      response.data = data
+      setSession(sessionData)
+      response.data = sessionData
     }
   } catch (e: any) {
     console.error(e)
@@ -230,9 +250,14 @@ export const socialLogin = async (payload: {
     if (status !== 200) throw new Error('invalid status code')
 
     if (data) {
-      setToLocalStorage(data, 'identity')
+      const identityWithTenant = {
+        ...data,
+        tenantId: payload.tenantId,
+      }
+      setToLocalStorage(identityWithTenant, 'identity')
+      setToLocalStorage(String(payload.tenantId), 'tenantId', 'STRING')
       const { setIdentity } = authUserStore.getState()
-      setIdentity(data)
+      setIdentity(identityWithTenant)
       response.data = 'Success'
     } else {
       response.error = 'No data returned'

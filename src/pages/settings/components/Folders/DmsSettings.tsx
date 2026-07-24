@@ -37,6 +37,7 @@ import Pagination from '@/components/base/pagination/Pagination'
 import showToast from '@/components/base/toast/showToast'
 import CustomFilter from '@/components/common/CustomFilter'
 import { DynamicIcon } from '@/pages/folders/components/icons'
+import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
 import { matchesCategoryFilterValue } from '@/utils/filterUtils'
 import {
@@ -54,10 +55,10 @@ import SettingsSetupContent from '../SettingsSetupContent'
 import SettingsSetupHeader from '../SettingsSetupHeader'
 import SettingsSortableDataTable from '../SettingsSortableDataTable'
 import useSettingsTableToolbar from '../useSettingsTableToolbar'
+import AiFolderBuilder from './AiFolderBuilder'
 import FolderStorageConnectorPanel, {
   type CloudStorageOption,
 } from './FolderStorageConnectorPanel'
-
 type DmsFolderConfigurationProps = {
   onBack?: () => void
 }
@@ -502,7 +503,8 @@ const buildAncestorContinues = (
 }
 
 const buildUnifiedFieldRows = (fields: FieldRow[]): FieldDisplayRow[] => {
-  const sorted = [...fields].sort((left, right) => left.orderId - right.orderId)
+  // Keep folder-structure fields first as a tree, then metadata fields flat.
+  const sorted = recalculateFieldHierarchy(fields)
   const withDepth = sorted.map((field) => ({
     ...field,
     depth: field.includeInFolderStructure ? Math.max(0, field.level - 1) : 0,
@@ -561,6 +563,7 @@ export default function DmsFolderConfiguration({
   onBack,
 }: DmsFolderConfigurationProps) {
   const [showWizard, setShowWizard] = useState(false)
+  const [showAiBuilder, setShowAiBuilder] = useState(false)
   const [step, setStep] = useState<WizardStep>(1)
   const [fields, setFields] = useState<FieldRow[]>(defaultFields)
   const [storage, setStorage] = useState('EZOFIS Drive')
@@ -602,6 +605,7 @@ export default function DmsFolderConfiguration({
   }, [repositories, activeFilters])
 
   const openEditRepository = useCallback((repository: RepositoryRow) => {
+    setShowAiBuilder(false)
     setFolderName(repository.name)
     setShowWizard(true)
     setStep(1)
@@ -657,6 +661,86 @@ export default function DmsFolderConfiguration({
     setStep(1)
     setStorageConnectorId(null)
     setStorageConnectorLabel(null)
+  }
+
+  const openManualBuilder = () => {
+    setShowAiBuilder(false)
+    setFolderName('')
+    setDescription('')
+    setFields(defaultFields)
+    setStep(1)
+    setShowWizard(true)
+  }
+
+  const openAiBuilder = () => {
+    setShowWizard(false)
+    setShowAiBuilder(true)
+  }
+
+  const resolveCurrentUserOwner = useCallback((): SelectOption | null => {
+    const session = authUserStore.getState().session
+    if (!session?.id) return null
+
+    const fromOptions = userOptions.find(
+      (user) => user.id === session.id || user.value === session.id,
+    )
+    if (fromOptions) return fromOptions
+
+    const name =
+      session.name?.trim() ||
+      `${session.firstName || ''} ${session.lastName || ''}`.trim() ||
+      session.email
+
+    return {
+      id: session.id,
+      name,
+      value: session.id,
+    }
+  }, [userOptions])
+
+  const handleAiBuilderApply = (payload: {
+    description: string
+    fields: Array<{
+      dataType: string
+      fieldName: string
+      iconKey?: string
+      includeInFolderStructure: boolean
+      isMandatory: boolean
+    }>
+    folderName: string
+  }) => {
+    const mappedFields = payload.fields.map((field, index) => {
+      const includeInFolderStructure = Boolean(field.includeInFolderStructure)
+
+      return {
+        dataType: field.dataType || 'SHORT_TEXT',
+        fieldName: field.fieldName,
+        iconKey: includeInFolderStructure
+          ? field.iconKey || 'folder'
+          : field.iconKey || 'document',
+        id: crypto.randomUUID(),
+        includeInFolderStructure,
+        isMandatory: Boolean(field.isMandatory),
+        level: 0,
+        orderId: index + 1,
+      }
+    })
+
+    setFolderName(payload.folderName)
+    setDescription(payload.description)
+    setFields(
+      mappedFields.length > 0
+        ? recalculateFieldHierarchy(mappedFields)
+        : defaultFields,
+    )
+    setFolderOwner(resolveCurrentUserOwner())
+    setShowAiBuilder(false)
+    setStep(1)
+    setShowWizard(true)
+    showToast({
+      message: 'AI folder setup applied. Review and finish configuration.',
+      variant: 'success',
+    })
   }
 
   const handleStorageChange = (nextStorage: string) => {
@@ -777,7 +861,12 @@ export default function DmsFolderConfiguration({
 
   return (
     <div className='flex h-full min-h-0 flex-col bg-[var(--surface)]'>
-      {!showWizard ? (
+      {showAiBuilder ? (
+        <AiFolderBuilder
+          onBack={() => setShowAiBuilder(false)}
+          onApply={handleAiBuilderApply}
+        />
+      ) : !showWizard ? (
         <div className='flex min-h-0 flex-1 flex-col'>
           <SettingsPageHeader
             description='Create and manage folders with custom fields, storage, and versioning.'
@@ -788,7 +877,37 @@ export default function DmsFolderConfiguration({
           <div className='flex flex-1 flex-col overflow-hidden p-4'>
             <CustomFilter
               activeFilters={activeFilters}
-              trailingActions={<TableExport table={repositoryTable as any} />}
+              trailingActions={
+                <>
+                  <TableExport table={repositoryTable as any} />
+                  <Menu
+                    position='bottom-end'
+                    width={200}
+                    withinPortal
+                    target={
+                      <IconButton
+                        ariaLabel='New Folder'
+                        color='primary'
+                        icon='lucide:plus'
+                        size='md'
+                        tooltip='New Folder'
+                        variant='solid'
+                      />
+                    }
+                  >
+                    <MenuItem
+                      icon='lucide:wrench'
+                      label='Manual builder'
+                      onClick={openManualBuilder}
+                    />
+                    <MenuItem
+                      icon='lucide:sparkles'
+                      label='AI builder'
+                      onClick={openAiBuilder}
+                    />
+                  </Menu>
+                </>
+              }
               actionButtons={[
                 {
                   color: 'gray',
@@ -801,10 +920,6 @@ export default function DmsFolderConfiguration({
                   onClick: loadRepositories,
                 },
               ]}
-              addButton={{
-                tooltip: 'New Folder',
-                onClick: () => setShowWizard(true),
-              }}
               customSearchComponent={
                 <TableSearch table={repositoryTable as any} />
               }
@@ -1122,6 +1237,23 @@ function FieldsTable({
 }) {
   const [editingRowId, setEditingRowId] = useState<string | null>(null)
 
+  useEffect(() => {
+    setFields((prev) => {
+      const next = recalculateFieldHierarchy(prev)
+      const unchanged =
+        prev.length === next.length &&
+        prev.every(
+          (field, index) =>
+            field.id === next[index]?.id &&
+            field.level === next[index]?.level &&
+            field.orderId === next[index]?.orderId &&
+            field.includeInFolderStructure ===
+              next[index]?.includeInFolderStructure,
+        )
+      return unchanged ? prev : next
+    })
+  }, [setFields])
+
   const displayRows = useMemo(() => buildUnifiedFieldRows(fields), [fields])
 
   const updateField = (id: string, patch: Partial<FieldRow>) => {
@@ -1157,6 +1289,13 @@ function FieldsTable({
 
   const toggleRowEdit = (rowId: string) => {
     setEditingRowId((current) => (current === rowId ? null : rowId))
+  }
+
+  const deleteField = (id: string) => {
+    setFields((prev) =>
+      recalculateFieldHierarchy(prev.filter((field) => field.id !== id)),
+    )
+    setEditingRowId((current) => (current === id ? null : current))
   }
 
   const columns = useMemo(
@@ -1352,17 +1491,17 @@ function FieldsTable({
         enableResizing: false,
         enableSorting: false,
         header: '',
-        id: 'edit',
-        maxSize: 52,
+        id: 'actions',
+        maxSize: 88,
         meta: settingsHeaderMeta.center,
-        minSize: 52,
-        size: 52,
+        minSize: 88,
+        size: 88,
         cell: ({ row }) => {
           const rowId = row.original.id
           const isRowEditing = editingRowId === rowId
 
           return (
-            <div className='flex justify-center'>
+            <div className='flex items-center justify-center gap-0.5'>
               <IconButton
                 ariaLabel={isRowEditing ? 'Done editing' : 'Edit field'}
                 color='gray'
@@ -1370,6 +1509,14 @@ function FieldsTable({
                 size='sm'
                 variant='ghost'
                 onClick={() => toggleRowEdit(rowId)}
+              />
+              <IconButton
+                ariaLabel='Delete field'
+                color='gray'
+                icon='lucide:trash-2'
+                size='sm'
+                variant='ghost'
+                onClick={() => deleteField(rowId)}
               />
             </div>
           )

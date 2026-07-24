@@ -1,4 +1,4 @@
-import {
+﻿import {
   ArrowLeft,
   ArrowRight,
   BadgeHelp,
@@ -27,13 +27,14 @@ import {
   Plus,
   ScanLine,
   Send,
-  Sparkles,
+  Bot,
   Store,
   Table2,
   Trash2,
   X,
 } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
+import { useLocation, useNavigate } from '@tanstack/react-router'
 import {
   type CSSProperties,
   type ReactElement,
@@ -44,15 +45,22 @@ import {
   useState,
 } from 'react'
 import Tooltip from '@/components/base/Tooltip'
+import Icon from '@/components/base/icon/Icon'
+import {
+  browseFilterByToUiFilters,
+  hasBrowsableAction,
+  postChatbotMessage,
+  resolveAskAiPageContext,
+} from './chatbotApi'
+import useAskAiActionStore from './stores/useAskAiActionStore'
 import useAskAIStore from './stores/useAskAIStore'
-
-type AskAiAnswer = {
-  action?: Record<string, unknown>
-  actionContext?: Record<string, unknown>
-  actionTo?: string
-  conversation_id: string
-  text: { blocks: TextBlock[] }
-}
+import type {
+  AskAiAnswer,
+  AskAiActionContext,
+  AskAiBrowseRequest,
+  AskAiCtaMode,
+  AskAiTextBlock as TextBlock,
+} from './types'
 
 type HistoryItem = {
   createdAt: string
@@ -65,7 +73,11 @@ type HistoryItem = {
 }
 
 type Message = {
+  actionContext?: AskAiActionContext
+  actionTo?: string
   blocks?: TextBlock[]
+  browseRequest?: AskAiBrowseRequest
+  ctaMode?: AskAiCtaMode | null
   id: string
   isTyping?: boolean
   revealExtras?: boolean
@@ -74,24 +86,6 @@ type Message = {
 }
 
 type Role = 'user' | 'ai' | 'status'
-
-type TextBlock =
-  | {
-      text: string
-      type: 'paragraph'
-    }
-  | {
-      items: Array<{ label: string; value: string | number }>
-      title?: string
-      type: 'bullets'
-      variant?: 'dot' | string
-    }
-  | {
-      fields: Array<{ label: string; value: string | number }>
-      subtitle?: string
-      title: string
-      type: 'card'
-    }
 
 const AI_STATUS_WORDS = [
   'Thinking…',
@@ -128,272 +122,6 @@ const suggestions = [
   },
 ]
 
-const sampleAnswers: AskAiAnswer[] = [
-  {
-    actionTo: 'Repository',
-    conversation_id: 'sample-invoices-001',
-    text: {
-      blocks: [
-        { text: "Here's what I found for you!", type: 'paragraph' },
-        {
-          text: 'Found 3 supplier invoices awaiting review in Accounts Payable.',
-          type: 'paragraph',
-        },
-        {
-          items: [
-            { label: 'Status', value: 'Awaiting review' },
-            { label: 'Document type', value: 'Supplier invoice' },
-            { label: 'Period', value: 'Last 7 days' },
-          ],
-          title: 'Filters Applied',
-          type: 'bullets',
-          variant: 'dot',
-        },
-        {
-          fields: [
-            { label: 'Invoice No', value: 'INV-4821' },
-            { label: 'Vendor', value: 'Rajan Suppliers' },
-            { label: 'Amount', value: '$12,450.00' },
-            { label: 'Due date', value: '22 Jul 2026' },
-          ],
-          subtitle: 'GST invoice · Pending review',
-          title: 'INV-4821',
-          type: 'card',
-        },
-        {
-          fields: [
-            { label: 'Invoice No', value: 'INV-4818' },
-            { label: 'Vendor', value: 'Hexaware Services' },
-            { label: 'Amount', value: '$8,920.50' },
-            { label: 'Due date', value: '18 Jul 2026' },
-          ],
-          subtitle: 'Service invoice · Pending review',
-          title: 'INV-4818',
-          type: 'card',
-        },
-      ],
-    },
-  },
-  {
-    actionTo: 'Repository',
-    conversation_id: 'sample-requests-002',
-    text: {
-      blocks: [
-        { text: "Here's what I found for you!", type: 'paragraph' },
-        {
-          text: 'There are 2 open purchase requests pending approval.',
-          type: 'paragraph',
-        },
-        {
-          items: [
-            { label: 'Request type', value: 'Purchase request' },
-            { label: 'Status', value: 'Pending approval' },
-          ],
-          title: 'Filters Applied',
-          type: 'bullets',
-          variant: 'dot',
-        },
-        {
-          fields: [
-            { label: 'Request No', value: 'PR-2204' },
-            { label: 'Requester', value: 'Priya Nair' },
-            { label: 'Amount', value: '$4,350.00' },
-            { label: 'Department', value: 'Operations' },
-          ],
-          subtitle: 'Purchase request · Pending approval',
-          title: 'PR-2204',
-          type: 'card',
-        },
-        {
-          fields: [
-            { label: 'Request No', value: 'PR-2197' },
-            { label: 'Requester', value: 'Arun Mehta' },
-            { label: 'Amount', value: '$1,280.00' },
-            { label: 'Department', value: 'Finance' },
-          ],
-          subtitle: 'Purchase request · Pending approval',
-          title: 'PR-2197',
-          type: 'card',
-        },
-      ],
-    },
-  },
-  {
-    actionTo: 'Repository',
-    conversation_id: 'sample-payments-003',
-    text: {
-      blocks: [
-        { text: "Here's what I found for you!", type: 'paragraph' },
-        {
-          text: 'Located payment documents and remittance advices for this month.',
-          type: 'paragraph',
-        },
-        {
-          items: [
-            { label: 'Document type', value: 'Payment / Remittance' },
-            { label: 'Period', value: 'Jul 2026' },
-          ],
-          title: 'Filters Applied',
-          type: 'bullets',
-          variant: 'dot',
-        },
-        {
-          fields: [
-            { label: 'Payment No', value: 'PAY-9032' },
-            { label: 'Vendor', value: 'Rajan Suppliers' },
-            { label: 'Amount', value: '$12,450.00' },
-            { label: 'Paid on', value: '09 Jul 2026' },
-          ],
-          subtitle: 'Remittance advice · Posted',
-          title: 'PAY-9032',
-          type: 'card',
-        },
-      ],
-    },
-  },
-  {
-    actionTo: 'Repository',
-    conversation_id: 'sample-matching-004',
-    text: {
-      blocks: [
-        { text: "Here's what I found for you!", type: 'paragraph' },
-        {
-          text: '2 invoices need 2-way or 3-way matching before payment.',
-          type: 'paragraph',
-        },
-        {
-          items: [
-            { label: 'Match status', value: 'Incomplete' },
-            { label: 'Match type', value: '2-way / 3-way' },
-          ],
-          title: 'Filters Applied',
-          type: 'bullets',
-          variant: 'dot',
-        },
-        {
-          fields: [
-            { label: 'Invoice No', value: 'INV-4790' },
-            { label: 'PO Number', value: 'PO-1001' },
-            { label: 'Match type', value: '3-way' },
-            { label: 'Missing', value: 'Goods receipt' },
-          ],
-          subtitle: 'PO-1001 · Matching incomplete',
-          title: 'INV-4790',
-          type: 'card',
-        },
-        {
-          fields: [
-            { label: 'Invoice No', value: 'INV-4785' },
-            { label: 'PO Number', value: 'PO-0988' },
-            { label: 'Match type', value: '2-way' },
-            { label: 'Missing', value: 'PO line match' },
-          ],
-          subtitle: 'PO-0988 · Matching incomplete',
-          title: 'INV-4785',
-          type: 'card',
-        },
-      ],
-    },
-  },
-  {
-    actionTo: 'Repository',
-    conversation_id: 'sample-summary-005',
-    text: {
-      blocks: [
-        { text: "Here's your AP summary for this week!", type: 'paragraph' },
-        {
-          text: 'Accounts payable activity is up 12% vs last week across invoices and requests.',
-          type: 'paragraph',
-        },
-        {
-          items: [
-            { label: 'Period', value: 'This week' },
-            { label: 'Scope', value: 'AP documents & requests' },
-          ],
-          title: 'Filters Applied',
-          type: 'bullets',
-          variant: 'dot',
-        },
-        {
-          fields: [
-            { label: 'Invoices received', value: 48 },
-            { label: 'Requests opened', value: 12 },
-            { label: 'Pending approval', value: 9 },
-            { label: 'Matched & ready', value: 31 },
-          ],
-          subtitle: 'Accounts Payable · Weekly snapshot',
-          title: 'AP weekly summary',
-          type: 'card',
-        },
-      ],
-    },
-  },
-]
-
-/** Exact match sample for PO-style answers using the provided API shape. */
-const poSampleAnswer: AskAiAnswer = {
-  action: {
-    browse_request: {
-      contentSearchValue: '',
-      currentPage: 1,
-      filterBy: [
-        {
-          filters: [
-            {
-              arrayValue: ['PO-1001'],
-              condition: 'IS_EQUALS_TO',
-              criteria: 'PO Number',
-              criteriaArray: ['PO Number'],
-              dataType: 'SHORT_TEXT',
-              id: 'DU4SYnCjVJL2d5jMcgGI5',
-              value: '["PO-1001"]',
-            },
-          ],
-          groupCondition: '',
-          id: 's-ezGkc-7wOTfDgOyO_2c',
-        },
-      ],
-      fuzzy: 8,
-      groupBy: '',
-      itemsPerPage: 100,
-      level: 0,
-      mode: 'BROWSE',
-      parentNodeId: 0,
-      repositoryId: 214,
-      searchType: 1,
-      sortBy: { criteria: '', order: 'ASC' },
-    },
-  },
-  actionContext: { repositoryId: 214, workspaceId: 35 },
-  actionTo: 'Repository',
-  conversation_id: 'edef830c-a654-482d-a749-1993cebacfb5',
-  text: {
-    blocks: [
-      { text: "Here's what I found for you!", type: 'paragraph' },
-      {
-        text: 'The PO number for PO-1001 is PO-1001.',
-        type: 'paragraph',
-      },
-      {
-        items: [{ label: 'PO Number', value: 'PO-1001' }],
-        title: 'Filters Applied',
-        type: 'bullets',
-        variant: 'dot',
-      },
-      {
-        fields: [
-          { label: 'PO Number', value: 'PO-1001' },
-          { label: 'Total Documents', value: 2 },
-          { label: 'Repository', value: 'Access2PayRep' },
-        ],
-        subtitle: 'PO PO-1001',
-        title: 'PO-1001',
-        type: 'card',
-      },
-    ],
-  },
-}
-
 const paragraphTextFromBlocks = (blocks: TextBlock[]) =>
   blocks
     .filter(
@@ -403,64 +131,48 @@ const paragraphTextFromBlocks = (blocks: TextBlock[]) =>
     .map((b) => b.text)
     .join('\n')
 
-async function fetchAskAIAnswer(question: string): Promise<AskAiAnswer> {
-  await new Promise((resolve) => setTimeout(resolve, 550))
-  const q = question.toLowerCase()
+function resolveCtaMode(
+  answer: AskAiAnswer,
+  pathname: string,
+  currentSpecificId: string,
+): AskAiCtaMode | null {
+  if (!hasBrowsableAction(answer)) return null
 
-  if (q.includes('po-1001') || q.includes('po number')) {
-    return poSampleAnswer
-  }
-
-  const suggestionIndex = suggestions.findIndex(
-    (item) =>
-      item.query.toLowerCase() === q ||
-      item.label.toLowerCase().replace(/\.$/, '') === q.replace(/\.$/, ''),
-  )
-  if (suggestionIndex >= 0) {
-    return sampleAnswers[suggestionIndex]
+  const target = String(answer.actionTo || '').toLowerCase()
+  const browse = answer.action?.browse_request
+  const filters = browseFilterByToUiFilters(browse?.filterBy)
+  if (!Object.keys(filters).length && target !== 'repository' && target !== 'workflow') {
+    return null
   }
 
-  if (
-    q.includes('invoice') &&
-    (q.includes('match') || q.includes('2-way') || q.includes('3-way'))
-  ) {
-    return sampleAnswers[3]
-  }
-  if (q.includes('payment') || q.includes('remittance')) {
-    return sampleAnswers[2]
-  }
-  if (q.includes('purchase request') || q.includes('pending approval')) {
-    return sampleAnswers[1]
-  }
-  if (q.includes('summar') || q.includes('this week')) {
-    return sampleAnswers[4]
-  }
-  if (q.includes('invoice') || q.includes('supplier')) {
-    return sampleAnswers[0]
+  if (target === 'repository') {
+    const repoId = String(
+      answer.actionContext?.repositoryId ?? browse?.repositoryId ?? '',
+    ).trim()
+    const onFolders = pathname.startsWith('/folders')
+    const sameRepo =
+      onFolders &&
+      repoId &&
+      currentSpecificId &&
+      String(currentSpecificId).toLowerCase() === repoId.toLowerCase()
+    return sameRepo ? 'apply' : 'navigate'
   }
 
-  return {
-    conversation_id: 'sample-fallback-000',
-    text: {
-      blocks: [
-        { text: "Here's what I found for you!", type: 'paragraph' },
-        {
-          text: 'I searched AP documents, invoices, and requests for your query. Try a suggestion below for a structured sample result.',
-          type: 'paragraph',
-        },
-        {
-          items: [
-            { label: 'Scope', value: 'Invoices, requests, payments' },
-            { label: 'Tip', value: 'Use a predefined question for rich cards' },
-          ],
-          title: 'Search context',
-          type: 'bullets',
-          variant: 'dot',
-        },
-      ],
-    },
+  if (target === 'workflow') {
+    const onWorkflows = pathname.startsWith('/workflows')
+    return onWorkflows ? 'apply' : 'navigate'
   }
+
+  return null
 }
+
+async function fetchAskAIAnswer(
+  question: string,
+  pageContext: { actionFrom: string; specificId: string },
+): Promise<AskAiAnswer> {
+  return postChatbotMessage(question, pageContext)
+}
+
 
 const iconMap: Record<string, LucideIconType> = {
   add: Plus,
@@ -588,7 +300,15 @@ const uid = () =>
   typeof crypto !== 'undefined' && crypto.randomUUID
     ? crypto.randomUUID()
     : String(Date.now() + Math.random())
-/** Same Sparkles icon — soft AI “thinking” sparkle while loading. */
+/** Header sparkle — same tabler:sparkles icon as request AI Insights. */
+const AiSparkleIcon = ({ size = 18 }: { size?: number }) => (
+  <Icon
+    className='shrink-0 text-[var(--primary-9)]'
+    name='tabler:sparkles'
+    style={{ height: size, width: size }}
+  />
+)
+
 const SparkIconLoading = ({ size = 18 }: { size?: number }) => (
   <motion.div
     className='inline-flex text-[var(--primary-9)]'
@@ -599,7 +319,7 @@ const SparkIconLoading = ({ size = 18 }: { size?: number }) => (
       scale: [0.92, 1.12, 0.92],
     }}
   >
-    <Sparkles size={size} strokeWidth={2} />
+    <AiSparkleIcon size={size} />
   </motion.div>
 )
 
@@ -623,14 +343,14 @@ const useAiStatusWord = (active: boolean) => {
 const CallingLoader = () => (
   <div className='px-[18px] py-4'>
     <div className='flex items-center gap-2.5'>
-      <div className='shrink-0 text-[var(--primary-9)]'>
-        <Sparkles size={16} strokeWidth={2} />
+      <div className='shrink-0 text-[var(--text2)]'>
+        <Bot size={16} strokeWidth={1.75} />
       </div>
       <div className='flex items-center gap-1.5'>
         {[0, 1, 2].map((dot) => (
           <motion.span
             animate={{ opacity: [0.35, 1, 0.35], y: [0, -3, 0] }}
-            className='size-2 rounded-full bg-[var(--primary-9)]'
+            className='size-2 rounded-full bg-[var(--text3)]'
             key={dot}
             transition={{
               delay: dot * 0.16,
@@ -660,7 +380,7 @@ const TypewriterReply = ({
   useEffect(() => {
     completedRef.current = false
     setCount(0)
-    // ~2–3.5s typed reply depending on length (not instant)
+    // ~2-3.5s typed reply depending on length (not instant)
     const step = Math.max(1, Math.ceil(text.length / 160))
     const timer = window.setInterval(() => {
       setCount((prev) => {
@@ -743,6 +463,10 @@ const StaggeredCards = ({
 const AskAI = () => {
   const isOpen = useAskAIStore((state: any) => state.isOpen)
   const close = useAskAIStore((state: any) => state.close)
+  const navigate = useNavigate()
+  const { pathname } = useLocation()
+  const pageContext = useAskAiActionStore((state) => state.pageContext)
+  const setPending = useAskAiActionStore((state) => state.setPending)
 
   const [view, setView] = useState<ViewMode>('chat')
   const [messages, setMessages] = useState<Message[]>([])
@@ -756,6 +480,10 @@ const AskAI = () => {
   const hasMessages = messages.length > 0
   const canSend = input.trim().length > 0 && !busy
   const aiStatusWord = useAiStatusWord(busy && view === 'chat')
+  const resolvedPageContext = useMemo(
+    () => resolveAskAiPageContext(pathname, pageContext),
+    [pageContext, pathname],
+  )
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -829,6 +557,40 @@ const AskAI = () => {
     )
   }
 
+  const applyAnswerAction = (msg: Message) => {
+    const target = String(msg.actionTo || '').toLowerCase()
+    if (target !== 'repository' && target !== 'workflow') return
+
+    const browse = msg.browseRequest
+    const filters = browseFilterByToUiFilters(browse?.filterBy)
+    const repositoryId = String(
+      msg.actionContext?.repositoryId ?? browse?.repositoryId ?? '',
+    ).trim()
+    const workflowId = String(msg.actionContext?.workflowId ?? '').trim()
+
+    if (target === 'repository') {
+      setPending({
+        filters,
+        repositoryId,
+        repositoryLabel: 'Repository',
+        target: 'Repository',
+      })
+      if (!pathname.startsWith('/folders')) {
+        void navigate({ to: '/folders' })
+      }
+      return
+    }
+
+    setPending({
+      filters,
+      target: 'Workflow',
+      workflowId,
+    })
+    if (!pathname.startsWith('/workflows')) {
+      void navigate({ to: '/workflows' })
+    }
+  }
+
   const sendMessage = async (value?: string) => {
     const text = (value ?? input).trim()
     if (!text || busy) return
@@ -848,17 +610,27 @@ const AskAI = () => {
     try {
       // Keep loading (border loop) for at least 4s so answers are not instant
       const answer = await Promise.all([
-        fetchAskAIAnswer(text),
+        fetchAskAIAnswer(text, resolvedPageContext),
         new Promise<void>((resolve) => {
           window.setTimeout(resolve, 4000)
         }),
       ]).then(([result]) => result)
 
+      const blocks = answer.text?.blocks || []
       const replyText =
-        paragraphTextFromBlocks(answer.text.blocks) ||
+        paragraphTextFromBlocks(blocks) ||
         'I found matching documents based on your search.'
+      const ctaMode = resolveCtaMode(
+        answer,
+        pathname,
+        resolvedPageContext.specificId,
+      )
       const aiMessage: Message = {
-        blocks: answer.text.blocks,
+        actionContext: answer.actionContext,
+        actionTo: answer.actionTo,
+        blocks,
+        browseRequest: answer.action?.browse_request,
+        ctaMode,
         id: uid(),
         isTyping: true,
         revealExtras: false,
@@ -874,11 +646,15 @@ const AskAI = () => {
       setMessages(finalMessages)
       saveHistory(finalMessages, creditsUsed, nextCredits)
       setCredits(nextCredits)
-    } catch {
+    } catch (error) {
       // Still respect the minimum wait feel on errors
       await new Promise<void>((resolve) => {
         window.setTimeout(resolve, 1200)
       })
+      const detail =
+        error instanceof Error && error.message
+          ? error.message
+          : 'Please check the chatbot API and try again.'
       setMessages([
         ...baseMessages,
         {
@@ -886,7 +662,7 @@ const AskAI = () => {
           isTyping: true,
           revealExtras: false,
           role: 'ai',
-          text: 'Unable to complete the AI search. Please check the API endpoint and try again.',
+          text: `Unable to complete the AI search. ${detail}`,
         },
       ])
     } finally {
@@ -897,34 +673,33 @@ const AskAI = () => {
   const shellStyle = useMemo(
     () =>
       ({
-        '--bg': 'var(--surface)',
-        '--bg2': 'var(--surface-muted)',
-        '--bg3': 'var(--primary-2)',
-        '--border': 'var(--border-default)',
-        '--border2': 'var(--border-strong)',
-        '--green': 'var(--green-9)',
-        '--green-bg': 'var(--green-3)',
-        '--purple': 'var(--primary-9)',
-        '--purple-light': 'var(--primary-3)',
-        '--spark1': 'var(--primary-8)',
-        '--teal': 'var(--secondary-9)',
-        '--text1': 'var(--text-primary)',
-        '--text2': 'var(--text-secondary)',
-        '--text3': 'var(--text-muted)',
+        '--bg': 'var(--surface, #ffffff)',
+        '--bg2': 'var(--surface-muted, #f7f7f8)',
+        '--bg3': 'var(--primary-2, #f3e8ff)',
+        '--border': 'var(--border-default, #e5e5e5)',
+        '--border2': 'var(--border-strong, #d4d4d4)',
+        '--green': 'var(--green-9, #30a46c)',
+        '--green-bg': 'var(--green-3, #e6f6ed)',
+        '--purple': 'var(--primary-9, #7c3aed)',
+        '--purple-light': 'var(--primary-3, #f3e8ff)',
+        '--spark1': 'var(--primary-8, #8b5cf6)',
+        '--teal': 'var(--secondary-9, #0d9488)',
+        '--text1': 'var(--text-primary, #171717)',
+        '--text2': 'var(--text-secondary, #525252)',
+        '--text3': 'var(--text-muted, #a3a3a3)',
       }) as CSSProperties,
     [],
   )
 
   return (
-    <AnimatePresence>
-      {isOpen && (
+    <>
+      {isOpen ? (
         <motion.aside
-          animate={{ x: 0 }}
-          className="fixed top-0 right-0 bottom-0 z-[9999] flex w-[420px] max-w-[calc(100vw-16px)] flex-col overflow-hidden border-l border-[var(--border)] bg-[var(--bg)] font-['Inter',system-ui,sans-serif]"
-          exit={{ x: 440 }}
-          initial={{ x: 440 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="fixed top-0 right-0 bottom-0 z-[9999] flex w-[420px] max-w-[calc(100vw-16px)] flex-col overflow-hidden border-l border-[var(--border)] bg-[var(--bg)] font-['Inter',system-ui,sans-serif] shadow-[-8px_0_24px_rgba(0,0,0,.06)]"
+          initial={{ opacity: 0.96, x: 28 }}
           style={shellStyle}
-          transition={{ duration: 0.22, ease: 'easeOut' }}
+          transition={{ duration: 0.18, ease: 'easeOut' }}
         >
           <div className='flex shrink-0 items-center gap-2 border-b border-[var(--border)] px-4 pt-3.5 pb-3'>
             {view === 'history' ? (
@@ -939,11 +714,11 @@ const AskAI = () => {
                 />
               </HeaderIconButton>
             ) : (
-              <div className='relative grid size-8 shrink-0 place-items-center text-[var(--primary-9)]'>
+              <div className='relative grid size-8 shrink-0 place-items-center'>
                 {busy ? (
                   <SparkIconLoading size={18} />
                 ) : (
-                  <Sparkles size={18} strokeWidth={2} />
+                  <AiSparkleIcon size={18} />
                 )}
               </div>
             )}
@@ -1015,6 +790,7 @@ const AskAI = () => {
                   <ChatMessage
                     key={msg.id}
                     msg={msg}
+                    onActionClick={() => applyAnswerAction(msg)}
                     onTypingComplete={() => finishTyping(msg.id)}
                     onTypingProgress={() =>
                       bottomRef.current?.scrollIntoView({ behavior: 'auto' })
@@ -1033,7 +809,7 @@ const AskAI = () => {
                 <div className='mb-2 text-[12.5px] text-[var(--text2)]'>
                   <strong className='text-[var(--text1)]'>{credits}</strong> of{' '}
                   <strong className='text-[var(--text1)]'>15</strong> calls
-                  remaining ·{' '}
+                  remaining -{' '}
                   <button
                     className='font-medium text-[var(--purple)]'
                     type='button'
@@ -1048,7 +824,7 @@ const AskAI = () => {
                   <div className='px-3.5 pt-2.5 pb-1'>
                     <textarea
                       className='max-h-[100px] min-h-[34px] w-full resize-none bg-transparent text-[13.5px] leading-[1.5] text-[var(--text1)] outline-none placeholder:text-[var(--text3)]'
-                      placeholder='Ask about invoices, documents, or requests…'
+                      placeholder='Ask about invoices, documents, or requests...'
                       rows={1}
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
@@ -1080,21 +856,21 @@ const AskAI = () => {
             </>
           )}
         </motion.aside>
-      )}
-    </AnimatePresence>
+      ) : null}
+    </>
   )
 }
 
 const WelcomeView = ({ onSend }: { onSend: (value: string) => void }) => (
   <div className='px-5 pt-7 pb-4'>
-    <div className='mb-5 text-[var(--primary-9)]'>
-      <Sparkles size={40} strokeWidth={2} />
+    <div className='mb-5 text-[var(--text2)]'>
+      <Bot size={40} strokeWidth={1.75} />
     </div>
     <h2 className='mb-2 text-[19px] font-bold tracking-[-.3px] text-[var(--text1)]'>
       How can I assist you?
     </h2>
     <p className='mb-[22px] text-[13.5px] leading-[1.55] text-[var(--text2)]'>
-      Search invoices, documents, and accounts payable requests — or ask me
+      Search invoices, documents, and accounts payable requests - or ask me
       anything.
     </p>
     <div className='flex flex-col'>
@@ -1131,8 +907,8 @@ const HistoryView = ({
   <div className='px-4 py-4'>
     {history.length === 0 ? (
       <div className='flex h-[calc(100vh-110px)] flex-col items-center justify-center text-center'>
-        <div className='mb-4 text-[var(--primary-9)]'>
-          <Sparkles size={28} strokeWidth={2} />
+        <div className='mb-4 text-[var(--text2)]'>
+          <Bot size={28} strokeWidth={1.75} />
         </div>
         <div className='text-[15px] font-semibold text-[var(--text1)]'>
           No chat history yet
@@ -1194,10 +970,12 @@ const HistoryView = ({
 
 const ChatMessage = ({
   msg,
+  onActionClick,
   onTypingComplete,
   onTypingProgress,
 }: {
   msg: Message
+  onActionClick?: () => void
   onTypingComplete?: () => void
   onTypingProgress?: () => void
 }) => {
@@ -1226,6 +1004,12 @@ const ChatMessage = ({
   const paragraphs = msg.text.split('\n').filter(Boolean)
   const showExtras = Boolean(msg.revealExtras)
   const richBlocks = blocks.filter((b) => b.type !== 'paragraph')
+  const ctaLabel =
+    msg.ctaMode === 'apply'
+      ? 'Click here to apply the filter'
+      : msg.ctaMode === 'navigate'
+        ? 'Click here to go to that page'
+        : null
 
   return (
     <motion.div
@@ -1235,8 +1019,8 @@ const ChatMessage = ({
       transition={{ duration: 0.22 }}
     >
       <div className='flex items-start gap-2.5'>
-        <div className='mt-1 shrink-0 text-[var(--primary-9)]'>
-          <Sparkles size={16} strokeWidth={2} />
+        <div className='mt-1 shrink-0 text-[var(--text2)]'>
+          <Bot size={16} strokeWidth={1.75} />
         </div>
         <div className='min-w-0 flex-1 pt-0.5 text-[13.5px] leading-[1.72] text-[var(--text1)]'>
           {msg.isTyping ? (
@@ -1262,6 +1046,17 @@ const ChatMessage = ({
               ))}
               onProgress={onTypingProgress}
             />
+          )}
+
+          {showExtras && ctaLabel && (
+            <button
+              className='mt-1 mb-1 inline-flex items-center gap-1.5 text-[13px] font-semibold text-[var(--purple)] underline-offset-2 hover:underline'
+              type='button'
+              onClick={onActionClick}
+            >
+              <UiIcon className='size-3.5' name='external' />
+              {ctaLabel}
+            </button>
           )}
         </div>
       </div>

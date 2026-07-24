@@ -1,5 +1,3 @@
-import AskAI from '@/components/common/ask-ai/AskAI'
-import useAskAIStore from '@/components/common/ask-ai/stores/useAskAIStore'
 import { useFormStore } from '@/pages/form-builder/store/formStore'
 import Form from './components/form/Form'
 import PublishSidebar from './components/form/PublishSidebar'
@@ -10,7 +8,6 @@ import WelcomeScreen from './components/welcome/WelcomeScreen'
 const Build = () => {
   const isPublishOpen = useFormStore((state) => state.isPublishOpen)
   const isSidebarOpen = useFormStore((state) => state.isSidebarOpen)
-  const isAskAIOpen = useAskAIStore((state) => state.isOpen)
   const panels = useFormStore((state) => state.panels)
 
   const hasPanels = panels.length > 0
@@ -34,7 +31,7 @@ const Build = () => {
         </div>
       </div>
 
-      {(isSidebarOpen || isPublishOpen || isAskAIOpen) && (
+      {(isSidebarOpen || isPublishOpen) && (
         <div className='animate-in slide-in-from-right relative z-20 h-full w-[400px] shrink-0 border-l border-gray-2 bg-white shadow-xl duration-300'>
           {isPublishOpen ? (
             <div
@@ -42,13 +39,6 @@ const Build = () => {
               key='publish'
             >
               <PublishSidebar />
-            </div>
-          ) : isAskAIOpen ? (
-            <div
-              className='animate-in fade-in slide-in-from-right-4 h-full duration-500'
-              key='ai'
-            >
-              <AskAI />
             </div>
           ) : (
             <div

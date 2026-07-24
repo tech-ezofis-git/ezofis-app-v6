@@ -1,4 +1,4 @@
-import type { HTMLAttributes, ReactNode } from 'react'
+import type { HTMLAttributes, ReactNode, Ref, UIEventHandler } from 'react'
 import cn from '@/utils/cn'
 
 type ScreenShellProps = HTMLAttributes<HTMLDivElement> & {
@@ -39,16 +39,22 @@ export function ScreenShell({
 export function ScreenScroll({
   children,
   className,
+  onScroll,
+  scrollRef,
 }: {
   children: ReactNode
   className?: string
+  onScroll?: UIEventHandler<HTMLDivElement>
+  scrollRef?: Ref<HTMLDivElement>
 }) {
   return (
     <div
+      ref={scrollRef}
       className={cn(
         'no-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain',
         className,
       )}
+      onScroll={onScroll}
     >
       {children}
     </div>

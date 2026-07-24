@@ -1,43 +1,60 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import cn from '@/utils/cn'
-import { AppBar, IconButton } from '../../components/layout/AppBar'
+import { IconButton } from '../../components/layout/AppBar'
 import { ScreenScroll, ScreenShell } from '../../components/layout/ScreenShell'
 import { TabBar, type TabBarItemId } from '../../components/layout/TabBar'
 import { Icon } from '../../components/primitives/Icon'
-import { FilterChip, RequestCard } from './RequestCard'
+import {
+  FilterChip,
+  RequestCard,
+  RequestCardSkeleton,
+  type RequestCardTone,
+} from './RequestCard'
 import {
   useMobileRequestsInbox,
   type MobileInboxTab,
 } from './useMobileRequestsInbox'
 
-const FILTERS = [
-  { id: 'overdue', label: 'Overdue', icon: 'Clock' as const, countKey: 'overdue' as const },
+const FILTERS: {
+  id: string
+  label: string
+  icon: 'Clock' | 'CircleCheck' | 'TriangleAlert' | 'DollarSign'
+  countKey: 'overdue' | 'matched' | 'discrepancies' | 'high'
+  tone: RequestCardTone
+}[] = [
+  { id: 'overdue', label: 'Overdue', icon: 'Clock', countKey: 'overdue', tone: 'error' },
   {
     id: 'matched',
     label: 'Matched',
-    icon: 'CircleCheck' as const,
-    countKey: 'matched' as const,
+    icon: 'CircleCheck',
+    countKey: 'matched',
+    tone: 'success',
   },
   {
     id: 'discrepancies',
-    label: 'Discrepancies',
-    icon: 'TriangleAlert' as const,
-    countKey: 'discrepancies' as const,
+    label: 'Discrepancy',
+    icon: 'TriangleAlert',
+    countKey: 'discrepancies',
+    tone: 'warning',
   },
   {
     id: 'highValue',
     label: 'High value',
-    icon: 'DollarSign' as const,
-    countKey: 'high' as const,
+    icon: 'DollarSign',
+    countKey: 'high',
+    tone: 'accent',
   },
 ]
 
-const TABS: { id: MobileInboxTab; label: string; countKey: 'invoices' | 'exceptions' | 'processed' }[] =
-  [
-    { id: 'Inbox', label: 'Invoices', countKey: 'invoices' },
-    { id: 'Exceptions', label: 'Exceptions', countKey: 'exceptions' },
-    { id: 'Processed', label: 'Processed', countKey: 'processed' },
-  ]
+const TABS: {
+  id: MobileInboxTab
+  label: string
+  countKey: 'invoices' | 'exceptions' | 'processed'
+}[] = [
+  { id: 'Inbox', label: 'Invoices', countKey: 'invoices' },
+  { id: 'Exceptions', label: 'Exceptions', countKey: 'exceptions' },
+  { id: 'Processed', label: 'Processed', countKey: 'processed' },
+]
 
 type RequestsInboxScreenProps = {
   onOpenRequest?: (id: string) => void
@@ -50,6 +67,8 @@ export function RequestsInboxScreen({
 }: RequestsInboxScreenProps) {
   const [tabBarId, setTabBarId] = useState<TabBarItemId>('inbox')
   const [workflowPickerOpen, setWorkflowPickerOpen] = useState(false)
+  const loadMoreRef = useRef<HTMLDivElement | null>(null)
+  const scrollRef = useRef<HTMLDivElement | null>(null)
 
   const {
     activeQuickFilters,
@@ -60,15 +79,14 @@ export function RequestsInboxScreen({
     handleOpenRequest,
     handleQuickFilter,
     handleSelectWorkflow,
-    isLoading,
-    isRefreshing,
-    page,
-    rangeEnd,
-    rangeStart,
+    hasMore,
+    isInitialLoading,
+    isLoadingMore,
+    loadMore,
     refetch,
     selectedWorkflowId,
     setActiveTab,
-    setPage,
+    showTopLoader,
     tabCounts,
     totalItems,
     workflowLoadStatus,
@@ -77,10 +95,32 @@ export function RequestsInboxScreen({
 
   const emptyMessage = useMemo(() => {
     if (workflowLoadStatus === 'empty') return 'No workflows available'
-    if (isLoading) return 'Loading requests…'
-    if (cards.length === 0) return 'No requests found'
+    if (isInitialLoading) return null
+    if (cards.length === 0) return 'No other pending invoices'
     return null
-  }, [cards.length, isLoading, workflowLoadStatus])
+  }, [cards.length, isInitialLoading, workflowLoadStatus])
+
+  const onIntersect = useCallback(
+    (entries: IntersectionObserverEntry[]) => {
+      if (entries.some((entry) => entry.isIntersecting)) {
+        loadMore()
+      }
+    },
+    [loadMore],
+  )
+
+  useEffect(() => {
+    const node = loadMoreRef.current
+    if (!node || !hasMore) return
+
+    const observer = new IntersectionObserver(onIntersect, {
+      root: scrollRef.current,
+      rootMargin: '180px 0px',
+      threshold: 0,
+    })
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [hasMore, onIntersect, cards.length])
 
   return (
     <ScreenShell
@@ -94,90 +134,115 @@ export function RequestsInboxScreen({
         />
       }
       header={
-        <AppBar
-          subtitle={
+        <header className='relative shrink-0 border-b border-[var(--gray-3)] bg-surface-primary pt-[max(0.5rem,env(safe-area-inset-top))]'>
+          <div className='relative flex h-11 items-center px-1.5'>
+            <IconButton
+              aria-label='Workflows'
+              className='z-10 size-9 shrink-0'
+              onClick={() => setWorkflowPickerOpen((v) => !v)}
+            >
+              <Icon className='size-4' name='Menu' />
+            </IconButton>
+
             <button
-              className='inline-flex max-w-[70vw] items-center gap-0.5 text-11 text-text-muted transition-opacity hover:opacity-80 active:scale-95'
+              className='absolute inset-x-12 truncate text-center text-[15px] font-semibold text-[var(--primary-9)] active:opacity-80'
               type='button'
               onClick={() => setWorkflowPickerOpen((v) => !v)}
             >
-              <span className='truncate'>{workflowName}</span>
-              <Icon className='size-3 shrink-0' name='ChevronDown' />
+              {workflowName}
             </button>
-          }
-          title='Requests'
-          trailing={
-            <>
+
+            <div className='z-10 ml-auto flex shrink-0 items-center'>
               <IconButton
                 aria-label='Refresh'
+                className='size-9'
                 onClick={() => void refetch()}
               >
                 <Icon
-                  className={cn('size-4', isRefreshing && 'animate-spin')}
+                  className={cn('size-4', showTopLoader && 'animate-spin')}
                   name='RefreshCw'
                 />
               </IconButton>
-              <IconButton aria-label='Search'>
+              <IconButton aria-label='Search' className='size-9'>
                 <Icon className='size-4' name='Search' />
               </IconButton>
-              <IconButton aria-label='Notifications' className='relative'>
-                <Icon className='size-4' name='Bell' />
-              </IconButton>
-            </>
-          }
-        />
+            </div>
+          </div>
+
+          <div
+            aria-hidden
+            className='pointer-events-none absolute inset-x-0 bottom-0 h-[2px] overflow-hidden'
+          >
+            {showTopLoader ? (
+              <div className='absolute inset-y-0 w-1/3 rounded-full bg-[var(--primary-9)] animate-[mobile-load_1.05s_ease-in-out_infinite]' />
+            ) : null}
+          </div>
+
+          {workflowPickerOpen && allWorkflows.length > 0 ? (
+            <div className='mx-3 mb-1 rounded-xl border border-border-default/70 bg-surface-primary p-1 shadow-sm'>
+              <div className='no-scrollbar flex max-h-40 flex-col gap-0.5 overflow-y-auto'>
+                {allWorkflows.map((wf) => (
+                  <button
+                    className={cn(
+                      'rounded-lg px-2.5 py-2 text-left text-[12px] transition-colors active:scale-[0.99]',
+                      String(wf.id) === String(selectedWorkflowId)
+                        ? 'bg-[var(--primary-3)] font-semibold text-[var(--primary-9)]'
+                        : 'font-medium text-[var(--gray-11)]',
+                    )}
+                    key={String(wf.id)}
+                    type='button'
+                    onClick={() => {
+                      handleSelectWorkflow(String(wf.id))
+                      setWorkflowPickerOpen(false)
+                    }}
+                  >
+                    {wf.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+        </header>
       }
     >
-      {workflowPickerOpen && allWorkflows.length > 0 ? (
-        <div className='shrink-0 border-b border-border-default bg-surface-primary px-3 py-2'>
-          <div className='no-scrollbar flex max-h-40 flex-col gap-1 overflow-y-auto'>
-            {allWorkflows.map((wf) => (
-              <button
-                className={cn(
-                  'rounded-lg px-2.5 py-2 text-left text-12 transition-colors',
-                  String(wf.id) === String(selectedWorkflowId)
-                    ? 'bg-accent-soft font-semibold text-accent-primary'
-                    : 'text-text-secondary hover:bg-surface-hover',
-                )}
-                key={String(wf.id)}
-                type='button'
-                onClick={() => {
-                  handleSelectWorkflow(String(wf.id))
-                  setWorkflowPickerOpen(false)
-                }}
-              >
-                {wf.name}
-              </button>
-            ))}
-          </div>
-        </div>
-      ) : null}
+      <style>{`
+        @keyframes mobile-load {
+          0% { left: -35%; }
+          50% { left: 45%; }
+          100% { left: 110%; }
+        }
+      `}</style>
 
-      <div className='shrink-0 border-b border-border-default bg-surface-primary px-3'>
-        <div className='flex gap-3'>
+      {/* Underline tabs */}
+      <div className='shrink-0 border-b border-[var(--gray-3)] bg-surface-primary px-3'>
+        <div className='flex'>
           {TABS.map((tab) => {
             const active = tab.id === activeTab
             const count = tabCounts[tab.countKey]
             return (
               <button
-                className={
+                className={cn(
+                  'flex-1 border-b-2 py-2.5 text-center text-[12px] transition-colors',
                   active
-                    ? 'border-b-2 border-accent-primary py-2 text-12 font-semibold text-accent-primary transition-all'
-                    : 'border-b-2 border-transparent py-2 text-12 font-medium text-text-muted transition-all hover:text-text-secondary'
-                }
+                    ? 'border-[var(--primary-9)] font-semibold text-[var(--primary-9)]'
+                    : 'border-transparent font-medium text-[var(--gray-9)]',
+                )}
                 key={tab.id}
                 type='button'
                 onClick={() => setActiveTab(tab.id)}
               >
-                {tab.label} ({count})
+                <span className='truncate'>
+                  {tab.label} ({count})
+                </span>
               </button>
             )
           })}
         </div>
       </div>
 
+      {/* Capsule filters */}
       {activeTab === 'Inbox' ? (
-        <div className='no-scrollbar shrink-0 flex gap-1.5 overflow-x-auto border-b border-border-default bg-surface-primary px-3 py-2'>
+        <div className='no-scrollbar shrink-0 flex gap-2 overflow-x-auto px-3 py-2.5'>
           {FILTERS.map((filter) => (
             <FilterChip
               active={activeQuickFilters.includes(filter.id)}
@@ -185,62 +250,73 @@ export function RequestsInboxScreen({
               icon={<Icon className='size-3' name={filter.icon} />}
               key={filter.id}
               label={filter.label}
+              tone={filter.tone}
               onClick={() => handleQuickFilter(filter.id)}
             />
           ))}
         </div>
       ) : null}
 
-      <ScreenScroll className='px-3 py-2.5'>
-        <div className='flex flex-col gap-2'>
-          {emptyMessage ? (
+      <ScreenScroll className='px-3 py-2.5' scrollRef={scrollRef}>
+        <div className='flex flex-col gap-2.5 pb-2'>
+          {isInitialLoading ? (
+            <>
+              {[0, 1, 2, 3].map((i) => (
+                <RequestCardSkeleton index={i} key={i} />
+              ))}
+            </>
+          ) : emptyMessage ? (
             <div className='flex flex-col items-center justify-center gap-2 py-16 text-center'>
-              {isLoading ? (
-                <Icon
-                  className='size-5 animate-spin text-accent-primary'
-                  name='LoaderCircle'
-                />
-              ) : (
-                <Icon className='size-5 text-text-muted' name='Inbox' />
-              )}
-              <p className='text-12 text-text-muted'>{emptyMessage}</p>
+              <Icon className='size-8 text-text-muted/50' name='ClipboardList' />
+              <p className='text-[12px] text-text-muted'>{emptyMessage}</p>
             </div>
           ) : (
-            cards.map((item) => (
-              <RequestCard
-                item={item}
-                key={item.id}
-                onSelect={(id) => {
-                  handleOpenRequest(id)
-                  onOpenRequest?.(id)
-                }}
-              />
-            ))
+            <>
+              {cards.map((item, index) => (
+                <RequestCard
+                  index={index}
+                  item={item}
+                  key={item.id}
+                  onSelect={(id) => {
+                    handleOpenRequest(id)
+                    onOpenRequest?.(id)
+                  }}
+                />
+              ))}
+              {!hasMore && !isLoadingMore ? (
+                <div className='flex flex-col items-center gap-1.5 py-6 text-center'>
+                  <Icon
+                    className='size-7 text-text-muted/40'
+                    name='ClipboardList'
+                  />
+                  <p className='text-[11px] text-text-muted'>
+                    No other pending invoices
+                  </p>
+                </div>
+              ) : null}
+            </>
           )}
 
-          {!emptyMessage ? (
-            <div className='flex items-center justify-between gap-2 pb-1 pt-0.5'>
-              <p className='text-11 text-text-muted'>
-                Showing {rangeStart}–{rangeEnd} of {totalItems} requests
-              </p>
-              <div className='flex items-center gap-1'>
-                <IconButton
-                  aria-label='Previous page'
-                  className='!size-7'
-                  disabled={page <= 1}
-                  onClick={() => setPage(Math.max(1, page - 1))}
-                >
-                  <Icon className='size-3.5' name='ChevronLeft' />
-                </IconButton>
-                <IconButton
-                  aria-label='Next page'
-                  className='!size-7'
-                  disabled={rangeEnd >= totalItems}
-                  onClick={() => setPage(page + 1)}
-                >
-                  <Icon className='size-3.5' name='ChevronRight' />
-                </IconButton>
-              </div>
+          {!isInitialLoading && cards.length > 0 ? (
+            <div
+              className='flex min-h-9 items-center justify-center py-1.5'
+              ref={loadMoreRef}
+            >
+              {isLoadingMore ? (
+                <div className='flex items-center gap-1.5'>
+                  <Icon
+                    className='size-3.5 animate-spin text-[var(--primary-9)]'
+                    name='LoaderCircle'
+                  />
+                  <span className='text-[10px] text-text-muted'>
+                    Loading more…
+                  </span>
+                </div>
+              ) : hasMore ? (
+                <span className='text-[10px] text-text-muted'>
+                  Scroll to load more
+                </span>
+              ) : null}
             </div>
           ) : null}
         </div>
