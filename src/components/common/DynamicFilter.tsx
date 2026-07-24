@@ -24,7 +24,7 @@ const VIEWPORT_GAP = 8
 
 /** Shared chip shell — same size for default and added filter columns */
 const FILTER_CHIP_SHELL =
-  'inline-flex h-[30px] max-w-[280px] items-center gap-1 rounded-full border py-0 pl-3.5 text-12 font-medium transition-all'
+  'inline-flex h-[30px] max-w-[280px] items-center gap-1 rounded-full border py-0 pl-3.5 text-12 font-normal transition-all'
 const FILTER_CHIP_ACTIVE =
   'border-primary-9 bg-primary-3/50 text-primary-9'
 const FILTER_CHIP_INACTIVE =

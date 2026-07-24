@@ -47,7 +47,7 @@ const AddSectionButton = ({ onClick, onSelectTemplate }: Props) => {
             </Menu.Label>
 
             <Menu.Item
-              className='mb-0.5 rounded-lg font-bold text-gray-12 hover:bg-accent-soft/10'
+              className='mb-0.5 rounded-lg font-normal text-gray-12 hover:bg-accent-soft/10'
               leftSection={
                 <Icon
                   className='text-accent-primary'
@@ -62,7 +62,7 @@ const AddSectionButton = ({ onClick, onSelectTemplate }: Props) => {
             </Menu.Item>
 
             <Menu.Item
-              className='hover:bg-orange-50 mb-0.5 rounded-lg font-bold text-gray-12'
+              className='hover:bg-orange-50 mb-0.5 rounded-lg font-normal text-gray-12'
               leftSection={
                 <Icon
                   className='text-orange-500'
@@ -77,7 +77,7 @@ const AddSectionButton = ({ onClick, onSelectTemplate }: Props) => {
             </Menu.Item>
 
             <Menu.Item
-              className='hover:bg-pink-50 rounded-lg font-bold text-gray-12'
+              className='hover:bg-pink-50 rounded-lg font-normal text-gray-12'
               leftSection={
                 <Icon
                   className='text-pink-500'

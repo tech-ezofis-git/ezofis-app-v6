@@ -6,6 +6,7 @@ const PROVIDER_CODE_BY_VALUE: Record<string, OAuthProviderCode> = {
   QuickBooks: 'QUICKBOOKS',
   'Google Drive': 'GOOGLE_DRIVE',
   GCP: 'GCP',
+  OneDrive: 'ONEDRIVE',
 }
 
 export const getApOAuthProviderCode = (

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 // import { motion } from 'motion/react'
 // import CustomLogo from '@/assets/brands/email.svg'
 // import MsExchangeLogo from '@/assets/brands/exchange.svg'
@@ -15,6 +16,7 @@ import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useS
 import BrandCard from '../../components/BrandCard'
 import SectionHeader from '../../components/SectionHeader'
 import { OrDivider } from '../../components/StepLayout'
+import SwitchIntegrationConfirm from '../../components/SwitchIntegrationConfirm'
 
 const directUploadItem = {
   description: 'Quick Drop',
@@ -34,9 +36,18 @@ const emailProviders = [
   // { logo: CustomLogo, name: 'Custom (IMAP)', value: 'Custom' },
 ]
 
+const getProviderLabel = (value: string) => {
+  if (value === directUploadItem.value) return 'Direct Upload'
+  return emailProviders.find((p) => p.value === value)?.name || value
+}
+
 const ProviderSettings = () => {
   const emailSettings = setupStore((state) => state.emailSettings)
   const setEmailSettings = setupStore((state) => state.setEmailSettings)
+  const [pendingSwitch, setPendingSwitch] = useState<{
+    name: string
+    apply: () => void
+  } | null>(null)
 
   const animationVariants = [
     AnimateSlideUp,
@@ -46,8 +57,35 @@ const ProviderSettings = () => {
     AnimateFadeIn,
   ]
 
+  const requestSwitch = (nextValue: string, nextName: string, apply: () => void) => {
+    if (emailSettings.provider === nextValue) return
+
+    const needsConfirm =
+      emailSettings.isConnected &&
+      emailSettings.provider !== 'DIRECT_UPLOAD' &&
+      emailSettings.provider !== nextValue
+
+    if (needsConfirm) {
+      setPendingSwitch({ apply, name: nextName })
+      return
+    }
+
+    apply()
+  }
+
   return (
     <div className='space-y-6'>
+      <SwitchIntegrationConfirm
+        opened={Boolean(pendingSwitch)}
+        currentName={getProviderLabel(emailSettings.provider)}
+        nextName={pendingSwitch?.name}
+        onCancel={() => setPendingSwitch(null)}
+        onConfirm={() => {
+          pendingSwitch?.apply()
+          setPendingSwitch(null)
+        }}
+      />
+
       {/* File Upload Section */}
       <div>
         <AnimateSlideUp delay={0.1}>
@@ -59,16 +97,26 @@ const ProviderSettings = () => {
         <AnimateSlideUp delay={0.15}>
           <BrandCard
             checked={emailSettings.provider === directUploadItem.value}
+            connected={
+              emailSettings.provider === directUploadItem.value &&
+              emailSettings.isConnected
+            }
             description={directUploadItem.description}
             icon={directUploadItem.icon}
             name={directUploadItem.name}
             value={directUploadItem.value}
             onClick={() =>
-              setEmailSettings({
-                ...emailSettings,
-                isConnected: directUploadItem.value === 'DIRECT_UPLOAD',
-                isConnecting: false,
-                provider: directUploadItem.value,
+              requestSwitch(directUploadItem.value, 'Direct Upload', () => {
+                const current = setupStore.getState().emailSettings
+                setEmailSettings({
+                  ...current,
+                  account: '',
+                  connectorId: '',
+                  email: '',
+                  isConnected: true,
+                  isConnecting: false,
+                  provider: directUploadItem.value,
+                })
               })
             }
           />
@@ -93,6 +141,10 @@ const ProviderSettings = () => {
               <AnimationComponent delay={0.25 + index * 0.08} key={item.value}>
                 <BrandCard
                   checked={emailSettings.provider === item.value}
+                  connected={
+                    emailSettings.provider === item.value &&
+                    emailSettings.isConnected
+                  }
                   description={
                     emailSettings.provider === item.value &&
                     emailSettings.isConnected
@@ -105,14 +157,17 @@ const ProviderSettings = () => {
                   name={item.name}
                   value={item.value}
                   onClick={() =>
-                    setEmailSettings({
-                      ...emailSettings,
-                      account: '',
-                      connectorId: '',
-                      email: '',
-                      isConnected: false,
-                      isConnecting: false,
-                      provider: item.value,
+                    requestSwitch(item.value, item.name, () => {
+                      const current = setupStore.getState().emailSettings
+                      setEmailSettings({
+                        ...current,
+                        account: '',
+                        connectorId: '',
+                        email: '',
+                        isConnected: false,
+                        isConnecting: false,
+                        provider: item.value,
+                      })
                     })
                   }
                 />

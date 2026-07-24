@@ -158,7 +158,7 @@ const getFileIcon = (ext: string): string => {
     gif: 'tabler:photo',
     jpeg: 'tabler:photo',
     jpg: 'tabler:photo',
-    pdf: 'tabler:file-type-pdf',
+    pdf: 'vscode-icons:file-type-pdf2',
     png: 'tabler:photo',
     ppt: 'tabler:file-type-ppt',
     pptx: 'tabler:file-type-ppt',

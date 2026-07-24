@@ -262,7 +262,7 @@ function Field({
               value={value}
               className={`h-9 w-full appearance-none rounded-lg border border-gray-3 bg-white ${
                 dot ? 'pl-8' : 'pl-3'
-              } pr-9 text-[13px] font-medium text-gray-13 shadow-sm transition-all outline-none hover:border-gray-5 focus:border-blue-8 focus:ring-2 focus:ring-blue-3`}
+              } pr-9 text-[13px] font-normal text-gray-13 shadow-sm transition-all outline-none hover:border-gray-5 focus:border-blue-8 focus:ring-2 focus:ring-blue-3`}
               onChange={(e) => onChange?.(e.target.value)}
             >
               {options.map((option) => (

@@ -9,7 +9,7 @@ import Tooltip from '@/components/base/Tooltip'
 import DynamicFilter, {
   type DynamicFilterField,
 } from '@/components/common/DynamicFilter'
-import { DEFAULT_DATE_RANGE_OPTIONS } from '@/utils/filterUtils'
+import { DUE_DATE_FILTER_OPTIONS } from '@/utils/filterUtils'
 import type { TableGroup, WorkflowOption } from '../types'
 import requestStore from '../stores/useRequestStore'
 // import TableSort from '@/components/base/data-table/actions/TableSort'
@@ -21,6 +21,7 @@ import RefreshButton from './buttons/RefreshButton'
 import UploadPoButton from './buttons/UploadPoButton'
 import { useDynamicColumns } from './columns/useDynamicColumns'
 import GridView from './GridView'
+import { extractDueDate } from '@/pages/requests/utils/inboxItemDisplay'
 
 interface InboxListProps {
   data: TableGroup[]
@@ -88,53 +89,6 @@ const getParsedFormData = (row: any): any => {
     }
   }
   return {}
-}
-
-const extractDueDate = (row: any): string => {
-  if (!row) return '-'
-  const agentData = row._agentData?.[0] || row._agentData || {}
-  const parsedForm = getParsedFormData(row)
-
-  let val =
-    parsedForm['Due Date'] ||
-    parsedForm['due_date'] ||
-    parsedForm['Due_Date'] ||
-    row.dueDate ||
-    row.due_date ||
-    row.payment_terms?.due_date ||
-    row.paymentTerms?.due_date ||
-    row.paymentTerms?.dueDate ||
-    row.formData?.fields?.['Due Date'] ||
-    row.formData?.fields?.['due_date'] ||
-    row.formData?.fields?.['Due_Date'] ||
-    row.formData?.['Due Date'] ||
-    row.formData?.['due_date'] ||
-    row.formData?.['Due_Date'] ||
-    agentData?.payment_terms?.due_date ||
-    agentData?.['Extracted Invoice JSON']?.invoice_header?.['Due Date'] ||
-    agentData?.['Extracted Invoice JSON']?.invoice_header?.['due_date'] ||
-    agentData?.po_matching?.due_date
-
-  if ((!val || val === '-') && parsedForm['9F6tPVHoRnmONGx3kYJu2']) {
-    const invDateStr = parsedForm['9F6tPVHoRnmONGx3kYJu2']
-    const termsStr = parsedForm['vxnKCXsXkz8_acPogKe'] || ''
-    const numMatch = /\d+/.exec(termsStr)
-    if (numMatch) {
-      const days = Number.parseInt(numMatch[0], 10)
-      try {
-        const d = new Date(invDateStr)
-        if (!Number.isNaN(d.getTime())) {
-          d.setDate(d.getDate() + days)
-          val = d.toISOString().split('T')[0]
-        }
-      } catch (error) {
-        console.debug('Failed to parse date fallback:', error)
-      }
-    }
-  }
-
-  if (!val || val === '-') return '-'
-  return String(val)
 }
 
 const isOverdue = (row: any) => {
@@ -482,11 +436,12 @@ const matchesDateFilterValue = (
   isOvr: boolean,
 ): boolean => {
   if (val === 'overdue') return isOvr
-  if (!rowDateStr || rowDateStr === '-') {
-    return val === 'today'
-  }
+  const hasNoDueDate = !rowDateStr || rowDateStr === '-'
+  if (val === 'no_due_date') return hasNoDueDate
+  if (hasNoDueDate) return false
+
   const rowDay = parseDay(rowDateStr)
-  if (!rowDay) return false
+  if (!rowDay) return val === 'no_due_date'
 
   const now = new Date()
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
@@ -508,11 +463,28 @@ const matchesDateFilterValue = (
       rowDay.getTime() >= today.getTime() &&
       rowDay.getTime() <= today.getTime() + 7 * 86400000
     )
+  if (val === 'next_15_days')
+    return (
+      rowDay.getTime() >= today.getTime() &&
+      rowDay.getTime() <= today.getTime() + 15 * 86400000
+    )
   if (val === 'next_30_days')
     return (
       rowDay.getTime() >= today.getTime() &&
       rowDay.getTime() <= today.getTime() + 30 * 86400000
     )
+  if (val === 'days_2_to_7')
+    return (
+      rowDay.getTime() >= today.getTime() + 2 * 86400000 &&
+      rowDay.getTime() <= today.getTime() + 7 * 86400000
+    )
+  if (val === 'days_8_to_30')
+    return (
+      rowDay.getTime() >= today.getTime() + 8 * 86400000 &&
+      rowDay.getTime() <= today.getTime() + 30 * 86400000
+    )
+  if (val === 'after_30_days')
+    return rowDay.getTime() > today.getTime() + 30 * 86400000
   if (val === 'this_week') {
     const startOfWeek = new Date(today.getTime() - today.getDay() * 86400000)
     const endOfWeek = new Date(startOfWeek.getTime() + 6 * 86400000)
@@ -770,11 +742,9 @@ const filterRowsByQuickFilters = (
 
           const rowDateStr = extractDueDate(row)
           if (!rowDateStr || rowDateStr === '-') {
-            // If there's no due date, the UI treats it as "0 days immediate".
-            // The user expects this to be caught by the "Today" filter.
-            if (val === 'today') return true
-            return false
+            return val === 'no_due_date'
           }
+          if (val === 'no_due_date') return false
 
           let rowDay: Date
           if (rowDateStr.includes('-')) {
@@ -788,7 +758,7 @@ const filterRowsByQuickFilters = (
               fallback.getDate(),
             )
           }
-          if (isNaN(rowDay.getTime())) return false
+          if (isNaN(rowDay.getTime())) return val === 'no_due_date'
 
           const now = new Date()
           const today = new Date(
@@ -814,11 +784,28 @@ const filterRowsByQuickFilters = (
               rowDay.getTime() >= today.getTime() &&
               rowDay.getTime() <= today.getTime() + 7 * 86400000
             )
+          if (val === 'next_15_days')
+            return (
+              rowDay.getTime() >= today.getTime() &&
+              rowDay.getTime() <= today.getTime() + 15 * 86400000
+            )
           if (val === 'next_30_days')
             return (
               rowDay.getTime() >= today.getTime() &&
               rowDay.getTime() <= today.getTime() + 30 * 86400000
             )
+          if (val === 'days_2_to_7')
+            return (
+              rowDay.getTime() >= today.getTime() + 2 * 86400000 &&
+              rowDay.getTime() <= today.getTime() + 7 * 86400000
+            )
+          if (val === 'days_8_to_30')
+            return (
+              rowDay.getTime() >= today.getTime() + 8 * 86400000 &&
+              rowDay.getTime() <= today.getTime() + 30 * 86400000
+            )
+          if (val === 'after_30_days')
+            return rowDay.getTime() > today.getTime() + 30 * 86400000
 
           if (val === 'this_week') {
             const startOfWeek = new Date(
@@ -1670,7 +1657,7 @@ const InboxList: React.FC<InboxListProps> = ({
               icon: 'tabler:calendar-due',
               id: 'due_date',
               label: 'Due Date',
-              options: DEFAULT_DATE_RANGE_OPTIONS,
+              options: DUE_DATE_FILTER_OPTIONS,
               type: 'date',
             },
             {

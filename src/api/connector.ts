@@ -108,6 +108,7 @@ export type OAuthProviderCode =
   | 'QUICKBOOKS'
   | 'GOOGLE_DRIVE'
   | 'GCP'
+  | 'ONEDRIVE'
 
 export interface AuthorizeOAuthPayload {
   name: string

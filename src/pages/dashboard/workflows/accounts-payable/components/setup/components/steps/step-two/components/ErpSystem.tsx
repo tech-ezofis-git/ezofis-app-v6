@@ -33,6 +33,7 @@ import authUserStore from '@/stores/authUserStore'
 import BrandCard from '../../components/BrandCard'
 import SectionHeader from '../../components/SectionHeader'
 import { OrDivider } from '../../components/StepLayout'
+import SwitchIntegrationConfirm from '../../components/SwitchIntegrationConfirm'
 import { extractHeadersAndData } from '../utils/fileParser'
 import ApColumnMapping from './ApColumnMapping'
 
@@ -62,6 +63,36 @@ const ErpSystem = () => {
   >('header')
   const [shouldScroll, setShouldScroll] = useState(false)
   const mappingSectionRef = useRef<HTMLDivElement>(null)
+  const [pendingSwitch, setPendingSwitch] = useState<{
+    name: string
+    apply: () => void
+  } | null>(null)
+
+  const getErpLabel = (value: string) => {
+    if (value === 'PREDEFINED') return 'Use demo data'
+    if (value === 'FILE_BASED_IMPORT') return 'Upload PO master file'
+    return items.find((item) => item.value === value)?.name || value
+  }
+
+  const requestSwitch = (
+    nextValue: string,
+    nextName: string,
+    apply: () => void,
+  ) => {
+    if (erpSettings.system === nextValue) return
+
+    const isOAuthConnected =
+      erpSettings.isConnected &&
+      erpSettings.system !== 'PREDEFINED' &&
+      erpSettings.system !== 'FILE_BASED_IMPORT'
+
+    if (isOAuthConnected && erpSettings.system !== nextValue) {
+      setPendingSwitch({ apply, name: nextName })
+      return
+    }
+
+    apply()
+  }
 
   // Scroll to mapping fields section once PO master field mapping is completed
   useEffect(() => {
@@ -423,6 +454,17 @@ const ErpSystem = () => {
 
   return (
     <div className='space-y-6'>
+      <SwitchIntegrationConfirm
+        opened={Boolean(pendingSwitch)}
+        currentName={getErpLabel(erpSettings.system)}
+        nextName={pendingSwitch?.name}
+        onCancel={() => setPendingSwitch(null)}
+        onConfirm={() => {
+          pendingSwitch?.apply()
+          setPendingSwitch(null)
+        }}
+      />
+
       {/* PO Master Data Section */}
       <div>
         <AnimateSlideUp delay={0.1}>
@@ -437,19 +479,27 @@ const ErpSystem = () => {
           <AnimateSlideUp delay={0.15}>
             <BrandCard
               checked={erpSettings.system === 'PREDEFINED'}
+              connected={
+                erpSettings.system === 'PREDEFINED' && erpSettings.isConnected
+              }
               description='Try the platform with sample invoices and records.'
               icon='tabler:database-search'
               name='Use demo data'
               value='PREDEFINED'
               onClick={() => {
-                setErpSettings({
-                  ...erpSettings,
-                  importMethod: 'upload',
-                  isConnected: true,
-                  isConnecting: false,
-                  isParsingTemplate: false,
-                  system: 'PREDEFINED',
-                  wantsFileBasedImport: false,
+                requestSwitch('PREDEFINED', 'Use demo data', () => {
+                  const current = setupStore.getState().erpSettings
+                  setErpSettings({
+                    ...current,
+                    account: '',
+                    connectorId: '',
+                    importMethod: 'upload',
+                    isConnected: true,
+                    isConnecting: false,
+                    isParsingTemplate: false,
+                    system: 'PREDEFINED',
+                    wantsFileBasedImport: false,
+                  })
                 })
               }}
             />
@@ -457,20 +507,33 @@ const ErpSystem = () => {
           <AnimateSlideUp delay={0.2}>
             <BrandCard
               checked={erpSettings.system === 'FILE_BASED_IMPORT'}
+              connected={
+                erpSettings.system === 'FILE_BASED_IMPORT' &&
+                erpSettings.templateUploaded
+              }
               description='Import your records via CSV or Excel.'
               icon='tabler:table-import'
               name='Upload PO master file'
               value='FILE_BASED_IMPORT'
               onClick={() => {
-                setErpSettings({
-                  ...erpSettings,
-                  importMethod: 'upload',
-                  isConnected: erpSettings.templateUploaded || false,
-                  isConnecting: false,
-                  isParsingTemplate: false,
-                  system: 'FILE_BASED_IMPORT',
-                  wantsFileBasedImport: true,
-                })
+                requestSwitch(
+                  'FILE_BASED_IMPORT',
+                  'Upload PO master file',
+                  () => {
+                    const current = setupStore.getState().erpSettings
+                    setErpSettings({
+                      ...current,
+                      account: '',
+                      connectorId: '',
+                      importMethod: 'upload',
+                      isConnected: current.templateUploaded || false,
+                      isConnecting: false,
+                      isParsingTemplate: false,
+                      system: 'FILE_BASED_IMPORT',
+                      wantsFileBasedImport: true,
+                    })
+                  },
+                )
               }}
             />
           </AnimateSlideUp>
@@ -913,15 +976,23 @@ const ErpSystem = () => {
                     erpSettings.system === item.value &&
                     !isFileBasedImportSelected
                   }
+                  connected={
+                    erpSettings.system === item.value &&
+                    !isFileBasedImportSelected &&
+                    erpSettings.isConnected
+                  }
                   onClick={() =>
-                    setErpSettings({
-                      ...erpSettings,
-                      account: '',
-                      connectorId: '',
-                      isConnected: false,
-                      isConnecting: false,
-                      system: item.value,
-                      wantsFileBasedImport: false,
+                    requestSwitch(item.value, item.name, () => {
+                      const current = setupStore.getState().erpSettings
+                      setErpSettings({
+                        ...current,
+                        account: '',
+                        connectorId: '',
+                        isConnected: false,
+                        isConnecting: false,
+                        system: item.value,
+                        wantsFileBasedImport: false,
+                      })
                     })
                   }
                 />

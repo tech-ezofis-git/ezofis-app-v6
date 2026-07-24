@@ -43,6 +43,16 @@ const StepTwo = () => {
         typeof event.data.connector === 'string' ? event.data.connector : ''
       const current = setupStore.getState().erpSettings
 
+      // Ignore late OAuth success after the user switched away from ERP OAuth
+      if (
+        !current.system ||
+        !OAUTH_ERP_SYSTEMS.includes(
+          current.system as (typeof OAUTH_ERP_SYSTEMS)[number],
+        )
+      ) {
+        return
+      }
+
       setErpSettings({
         ...current,
         account:

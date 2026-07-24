@@ -33,6 +33,16 @@ const StepThree = () => {
         typeof event.data.connector === 'string' ? event.data.connector : ''
       const current = setupStore.getState().storageSettings
 
+      // Ignore late OAuth success after the user switched away from cloud storage
+      if (
+        !current.system ||
+        current.system === 'Included storage' ||
+        current.system === 'Default Storage' ||
+        current.system === 'Available Storage'
+      ) {
+        return
+      }
+
       setStorageSettings({
         ...current,
         account:

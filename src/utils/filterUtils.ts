@@ -98,16 +98,28 @@ export function generateCategoryOptions(
 }
 
 /**
- * Common due-date filter presets (past + today + near future).
+ * Generic date filter presets (created/modified dates, etc.).
  */
 export const DEFAULT_DATE_RANGE_OPTIONS: FilterOption[] = [
-  { label: 'Overdue', value: 'overdue' },
   { label: 'Today', value: 'today' },
   { label: 'Tomorrow', value: 'tomorrow' },
   { label: 'This week', value: 'this_week' },
   { label: 'Next 7 days', value: 'next_7_days' },
   { label: 'This month', value: 'this_month' },
   { label: 'Last month', value: 'last_month' },
+  { label: 'Custom Range', value: 'custom' },
+]
+
+/**
+ * Due-date presets for Requests inbox triage.
+ */
+export const DUE_DATE_FILTER_OPTIONS: FilterOption[] = [
+  { label: 'Overdue', value: 'overdue' },
+  { label: 'Due Today', value: 'today' },
+  { label: 'Due in Next 7 Days', value: 'next_7_days' },
+  { label: 'Due in Next 15 Days', value: 'next_15_days' },
+  { label: 'Due in Next 1 Month', value: 'next_1_month' },
+  { label: 'No Due Date', value: 'no_due_date' },
   { label: 'Custom Range', value: 'custom' },
 ]
 
@@ -267,6 +279,12 @@ export function matchesDateRangeValue(
   val: string,
 ): boolean {
   if (!val) return true
+  const hasNoDueDate =
+    !rowDateStr ||
+    rowDateStr === '-' ||
+    String(rowDateStr).trim() === ''
+  if (val === 'no_due_date') return hasNoDueDate
+
   const rowDay = parseDay(String(rowDateStr || '').split('T')[0])
   if (!rowDay) return false
 
@@ -288,8 +306,15 @@ export function matchesDateRangeValue(
   if (val === 'overdue') return t < today.getTime()
   if (val === 'next_7_days')
     return t >= today.getTime() && t <= today.getTime() + 7 * dayMs
+  if (val === 'next_15_days')
+    return t >= today.getTime() && t <= today.getTime() + 15 * dayMs
   if (val === 'next_30_days')
     return t >= today.getTime() && t <= today.getTime() + 30 * dayMs
+  if (val === 'days_2_to_7')
+    return t >= today.getTime() + 2 * dayMs && t <= today.getTime() + 7 * dayMs
+  if (val === 'days_8_to_30')
+    return t >= today.getTime() + 8 * dayMs && t <= today.getTime() + 30 * dayMs
+  if (val === 'after_30_days') return t > today.getTime() + 30 * dayMs
   if (val === 'this_week') {
     const startOfWeek = new Date(today.getTime() - today.getDay() * dayMs)
     const endOfWeek = new Date(startOfWeek.getTime() + 6 * dayMs)

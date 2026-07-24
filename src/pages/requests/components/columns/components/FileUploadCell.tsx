@@ -22,7 +22,7 @@ function getFileIcon(fileName: string): string {
 
   switch (ext) {
     case 'pdf':
-      return 'tabler:file-type-pdf'
+      return 'vscode-icons:file-type-pdf2'
     case 'doc':
     case 'docx':
       return 'tabler:file-type-doc'

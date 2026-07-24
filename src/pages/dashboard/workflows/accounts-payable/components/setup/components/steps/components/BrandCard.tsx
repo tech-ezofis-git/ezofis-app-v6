@@ -6,6 +6,8 @@ interface Props {
   checked: boolean
   name: string
   value: string
+  /** When false while checked, shows selected (not connected) styling. Defaults to checked. */
+  connected?: boolean
   description?: string
   icon?: string
   loading?: boolean
@@ -15,6 +17,7 @@ interface Props {
 
 const BrandCard = ({
   checked,
+  connected,
   description,
   icon,
   loading,
@@ -22,6 +25,22 @@ const BrandCard = ({
   name,
   onClick,
 }: Props) => {
+  const isConnected = connected ?? checked
+  const isSelectedOnly = checked && !isConnected
+
+  let cardClass =
+    'border-gray-4 bg-surface hover:border-gray-5 hover:bg-gray-2'
+  if (isConnected) {
+    cardClass = 'border-green-9 bg-green-1 shadow-sm ring-2 ring-green-9/25'
+  } else if (isSelectedOnly) {
+    cardClass =
+      'border-primary-9 bg-primary-1 shadow-sm ring-2 ring-primary-9/20'
+  }
+
+  let titleClass = 'text-gray-13'
+  if (isConnected) titleClass = 'text-green-11'
+  else if (isSelectedOnly) titleClass = 'text-primary-12'
+
   return (
     <motion.button
       aria-pressed={checked}
@@ -32,9 +51,7 @@ const BrandCard = ({
       className={cn(
         'group relative flex h-full min-h-[76px] w-full flex-row items-center justify-between gap-3 rounded-lg border px-4 py-3.5 text-left transition-all duration-200',
         loading ? 'cursor-not-allowed opacity-70' : 'cursor-pointer',
-        checked
-          ? 'border-green-9 bg-green-1 shadow-sm ring-2 ring-green-9/25'
-          : 'border-gray-4 bg-surface hover:border-gray-5 hover:bg-gray-2',
+        cardClass,
       )}
       onClick={onClick}
     >
@@ -42,7 +59,9 @@ const BrandCard = ({
         <div
           className={cn(
             'relative flex size-9 shrink-0 items-center justify-center rounded-md p-1.5 transition-all duration-200',
-            checked ? 'bg-white shadow-sm' : 'bg-gray-2 group-hover:bg-gray-3',
+            isConnected || isSelectedOnly
+              ? 'bg-white shadow-sm'
+              : 'bg-gray-2 group-hover:bg-gray-3',
           )}
         >
           {icon ? (
@@ -50,7 +69,7 @@ const BrandCard = ({
               name={icon}
               className={cn(
                 'size-5',
-                checked ? 'text-green-11' : 'text-primary-11',
+                isConnected ? 'text-green-11' : 'text-primary-11',
               )}
             />
           ) : logo ? (
@@ -61,7 +80,7 @@ const BrandCard = ({
           <div
             className={cn(
               'truncate text-14/5 font-medium transition-colors',
-              checked ? 'text-green-11' : 'text-gray-13',
+              titleClass,
             )}
           >
             {name}
@@ -85,7 +104,7 @@ const BrandCard = ({
           />
         </motion.div>
       ) : (
-        checked && (
+        isConnected && (
           <motion.div
             animate={{ opacity: 1, scale: 1 }}
             className='flex size-5 shrink-0 items-center justify-center rounded-full bg-green-9'

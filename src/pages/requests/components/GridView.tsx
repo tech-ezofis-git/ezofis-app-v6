@@ -20,8 +20,10 @@ import ListEmptyState from '@/components/common/ListEmptyState'
 import requestStore, {
   useProcessingStatusText,
 } from '@/pages/requests/stores/useRequestStore'
+import { extractDueDate } from '@/pages/requests/utils/inboxItemDisplay'
 import cn from '@/utils/cn'
 import { formatDatetime } from '@/utils/dayjs'
+import dayjs from 'dayjs'
 import HoverExpandableText from './HoverExpandableText'
 
 const GridRowSkeleton = ({ index }: { index: number }) => {
@@ -570,57 +572,6 @@ const findCategory = (row: any): string | null => {
   return null
 }
 
-const extractDueDate = (row: any): string => {
-  if (!row) return '-'
-  const agentData = row._agentData?.[0] || row._agentData || {}
-  const parsedForm = getParsedFormData(row)
-
-  let val =
-    parsedForm['Due Date'] ||
-    parsedForm['due_date'] ||
-    parsedForm['Due_Date'] ||
-    row.dueDate ||
-    row.due_date ||
-    row.payment_terms?.due_date ||
-    row.paymentTerms?.due_date ||
-    row.paymentTerms?.dueDate ||
-    row.formData?.fields?.['Due Date'] ||
-    row.formData?.fields?.['due_date'] ||
-    row.formData?.fields?.['Due_Date'] ||
-    row.formData?.['Due Date'] ||
-    row.formData?.['due_date'] ||
-    row.formData?.['Due_Date'] ||
-    agentData?.payment_terms?.due_date ||
-    agentData?.['Extracted Invoice JSON']?.invoice_header?.['Due Date'] ||
-    agentData?.['Extracted Invoice JSON']?.invoice_header?.['due_date'] ||
-    agentData?.po_matching?.due_date
-
-  if ((!val || val === '-') && parsedForm['9F6tPVHoRnmONGx3kYJu2']) {
-    const invDateStr = parsedForm['9F6tPVHoRnmONGx3kYJu2']
-    const termsStr = parsedForm['vxnKCXsXkz8_acPogKe'] || ''
-    const numMatch = /\d+/.exec(termsStr)
-    if (numMatch) {
-      const days = Number.parseInt(numMatch[0], 10)
-      try {
-        const d = new Date(invDateStr)
-        if (!Number.isNaN(d.getTime())) {
-          d.setDate(d.getDate() + days)
-          val = d.toISOString().split('T')[0]
-        }
-      } catch (error) {
-        console.debug('Failed to parse date fallback:', error)
-      }
-    }
-  }
-
-  if (!val || val === '-') return '-'
-  try {
-    return formatDatetime(val as string, 'date')
-  } catch {
-    return String(val)
-  }
-}
-
 const extractValueFromTermObj = (termObj: any) => {
   if (!termObj || typeof termObj !== 'object') return termObj
   return (
@@ -638,6 +589,12 @@ const extractPaymentTerms = (row: any): string => {
 
   if (isValidTerm(parsedForm['vxnKCXsXkz8_acPogKe'])) {
     return String(parsedForm['vxnKCXsXkz8_acPogKe'])
+  }
+  if (isValidTerm(parsedForm['vxnKCXs-Xkz8_acPog-Ke'])) {
+    return String(parsedForm['vxnKCXs-Xkz8_acPog-Ke'])
+  }
+  if (isValidTerm(parsedForm['BsPnOsYv6F1fbzWsTpXCW'])) {
+    return String(parsedForm['BsPnOsYv6F1fbzWsTpXCW'])
   }
 
   // check termObj
@@ -677,17 +634,10 @@ const calculateDaysDifference = (
   dueDateStr: any,
 ): number | null => {
   if (!invoiceDateStr || !dueDateStr || dueDateStr === '-') return null
-  try {
-    const invDate = new Date(invoiceDateStr)
-    const dueDate = new Date(dueDateStr)
-    if (Number.isNaN(invDate.getTime()) || Number.isNaN(dueDate.getTime()))
-      return null
-    const diffTime = dueDate.getTime() - invDate.getTime()
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-    return diffDays
-  } catch {
-    return null
-  }
+  const invDate = dayjs(invoiceDateStr)
+  const dueDate = dayjs(dueDateStr)
+  if (!invDate.isValid() || !dueDate.isValid()) return null
+  return dueDate.startOf('day').diff(invDate.startOf('day'), 'day')
 }
 
 const extractInvoiceDate = (row: any): string => {
@@ -862,20 +812,20 @@ const TermsColumn = ({ row }: TermsColumnProps) => {
     if (numMatch) {
       const days = Number.parseInt(numMatch[0], 10)
       topText = `${days} days`
-      bottomText = 'in due'
+      bottomText = 'In due'
       calculationTheme =
         days <= 15
           ? 'border-[var(--orange-4)] bg-[var(--orange-2)] text-[var(--orange-11)]'
           : 'border-[var(--blue-4)] bg-[var(--blue-2)] text-[var(--blue-11)]'
     } else {
       topText = '0 days'
-      bottomText = 'immediate'
+      bottomText = 'Immediate'
       calculationTheme =
         'border-[var(--red-4)] bg-[var(--red-2)] text-[var(--red-11)]'
     }
   } else if (daysDiff > 0) {
     topText = `${daysDiff} days`
-    bottomText = 'in due'
+    bottomText = 'In due'
     calculationTheme =
       daysDiff <= 15
         ? 'border-[var(--orange-4)] bg-[var(--orange-2)] text-[var(--orange-11)]'
@@ -887,7 +837,7 @@ const TermsColumn = ({ row }: TermsColumnProps) => {
       'border-[var(--red-4)] bg-[var(--red-2)] text-[var(--red-11)]'
   } else {
     topText = '0 days'
-    bottomText = 'immediate'
+    bottomText = 'Immediate'
     calculationTheme =
       'border-[var(--red-4)] bg-[var(--red-2)] text-[var(--red-11)]'
   }
@@ -1086,30 +1036,21 @@ const GridRowItem = memo(
           <div className='group/inv flex min-w-0 flex-nowrap items-center gap-2.5'>
             <h3
               style={{ fontWeight: 500 }}
-              title={String(invoiceNo || '')}
-              className={cn(
-                'min-w-0 shrink truncate text-[15px] tracking-tight text-[var(--text-primary)] transition-colors group-hover:text-[var(--primary-9)] group-hover:underline',
-                isSidebarOpen
-                  ? 'max-w-[120px] sm:max-w-[140px]'
-                  : 'max-w-[140px] sm:max-w-[180px] md:max-w-[220px]',
-              )}
+              className='shrink-0 text-[15px] tracking-tight whitespace-nowrap text-[var(--text-primary)] transition-colors group-hover:text-[var(--primary-9)] group-hover:underline'
             >
               {invoiceNo}
             </h3>
             {!row.isProcessing && (
-              <span
-                className={cn(
-                  'min-w-0 shrink truncate text-[12px] font-medium text-[var(--gray-10)]',
+              <HoverExpandableText
+                className='text-[12px] font-medium text-[var(--gray-10)]'
+                fallbackText='Unknown Supplier'
+                normalMaxWidthClass={
                   isSidebarOpen
                     ? 'max-w-[100px]'
-                    : 'max-w-[160px] sm:max-w-[200px] md:max-w-[260px]',
-                )}
-                title={
-                  supplierName === 'Unknown Supplier' ? undefined : supplierName
+                    : 'max-w-[160px] sm:max-w-[200px] md:max-w-[260px]'
                 }
-              >
-                {supplierName === 'Unknown Supplier' ? 'N/A' : supplierName}
-              </span>
+                text={supplierName}
+              />
             )}
             <div className='shrink-0'>
               <RowStatusBadge
@@ -1126,7 +1067,11 @@ const GridRowItem = memo(
             {!row.isProcessing && (
               <div className='flex min-w-0 shrink-0 items-center gap-1.5'>
                 <Icon className='size-3.5 shrink-0' name='tabler:hash' />
-                <span className='truncate'>{extractPONumber(row)}</span>
+                <HoverExpandableText
+                  className='text-[12px] font-medium text-[var(--gray-10)]'
+                  normalMaxWidthClass='max-w-[100px]'
+                  text={extractPONumber(row)}
+                />
               </div>
             )}
             {!row.isProcessing &&
@@ -1141,13 +1086,21 @@ const GridRowItem = memo(
                           className='size-3.5 shrink-0'
                           name='tabler:stack'
                         />
-                        <span className='truncate'>{glNumber}</span>
+                        <HoverExpandableText
+                          className='text-[12px] font-medium text-[var(--gray-8)]'
+                          normalMaxWidthClass='max-w-[90px]'
+                          text={glNumber}
+                        />
                       </div>
                     )}
                     {category && (
                       <div className='flex min-w-0 items-center gap-1.5 text-[var(--gray-8)]'>
                         <Icon className='size-3.5 shrink-0' name='tabler:tag' />
-                        <span className='truncate'>{category}</span>
+                        <HoverExpandableText
+                          className='text-[12px] font-medium text-[var(--gray-8)]'
+                          normalMaxWidthClass='max-w-[100px]'
+                          text={category}
+                        />
                       </div>
                     )}
                   </>
@@ -1162,12 +1115,13 @@ const GridRowItem = memo(
             isSidebarOpen && (
               <div className='mt-0.5 flex min-w-0 items-center gap-1.5 text-[12px] font-medium text-[var(--primary-9)]'>
                 <Icon className='size-3.5 shrink-0' name='tabler:sparkles' />
-                <span
-                  className='line-clamp-2 [overflow-wrap:anywhere] break-words hover:line-clamp-none'
-                  title={aiInsight}
-                >
-                  {aiInsight}
-                </span>
+                <HoverExpandableText
+                  className='text-[12px] font-medium text-[var(--primary-9)]'
+                  expandStyle='inline'
+                  maxLines={2}
+                  normalMaxWidthClass='max-w-[180px]'
+                  text={aiInsight}
+                />
               </div>
             )}
         </div>
@@ -1185,6 +1139,8 @@ const GridRowItem = memo(
                 />
                 <HoverExpandableText
                   className='text-[13px] font-medium text-[var(--gray-11)]'
+                  expandStyle='inline'
+                  maxLines={2}
                   normalMaxWidthClass='max-w-[180px] sm:max-w-[240px] md:max-w-[320px] lg:max-w-[450px]'
                   text={aiInsight}
                 />
@@ -1195,7 +1151,7 @@ const GridRowItem = memo(
         {/* Columns 1-4 perfectly aligned across all rows */}
         <div className='ml-auto flex shrink-0 items-center gap-6 select-none'>
           {row.isProcessing ? (
-            <div className='relative flex w-[249px] items-center justify-end gap-2 pr-4'>
+            <div className='relative flex w-[196px] items-center justify-end gap-2 pr-4'>
               <span className='animate-pulse text-[12px] font-semibold whitespace-nowrap text-[var(--orange-9)]'>
                 {statusText}
               </span>
@@ -1203,12 +1159,12 @@ const GridRowItem = memo(
           ) : (
             <>
               {/* Column 3: Terms & Due Calculation */}
-              <div className='flex w-[110px] shrink-0 flex-col items-center justify-center text-center'>
+              <div className='flex w-[84px] shrink-0 flex-col items-center justify-center text-center'>
                 <TermsColumn row={row} />
               </div>
 
               {/* Column 4: Invoice Value & Date */}
-              <div className='flex w-[115px] shrink-0 flex-col items-end'>
+              <div className='flex w-[88px] shrink-0 flex-col items-end'>
                 <span className='text-[15px] leading-none font-semibold tracking-tight text-[var(--text-primary)] tabular-nums'>
                   {amount !== null && !Number.isNaN(amount) ? (
                     `$${amount.toLocaleString(undefined, {

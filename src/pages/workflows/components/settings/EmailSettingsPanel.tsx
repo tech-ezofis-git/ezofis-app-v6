@@ -229,7 +229,7 @@ export default function EmailSettingsPanel({
                       className={
                         !nodeData.connection
                           ? 'text-gray-9'
-                          : 'font-medium text-gray-13'
+                          : 'font-normal text-gray-13'
                       }
                     >
                       {allConnectionOptions.find(
@@ -263,8 +263,8 @@ export default function EmailSettingsPanel({
                                 className={cn(
                                   'w-full px-3 py-2 text-left text-sm transition-colors',
                                   String(nodeData.connection) === option.value
-                                    ? 'bg-primary-1 font-medium text-primary-9'
-                                    : 'text-gray-13 hover:bg-gray-2',
+                                    ? 'bg-primary-1 font-normal text-primary-9'
+                                    : 'font-normal text-gray-13 hover:bg-gray-2',
                                 )}
                                 onClick={() => {
                                   updateNodeData('connection', option.value)
@@ -284,7 +284,7 @@ export default function EmailSettingsPanel({
                             )}
 
                             <button
-                              className='flex w-full items-center gap-2 px-3 py-2 text-left text-sm font-medium text-primary-9 transition-colors hover:bg-primary-1'
+                              className='flex w-full items-center gap-2 px-3 py-2 text-left text-sm font-normal text-primary-9 transition-colors hover:bg-primary-1'
                               onClick={() => setIsCreatingConnection(true)}
                             >
                               <Icon className='h-4 w-4' name='lucide:plus' />

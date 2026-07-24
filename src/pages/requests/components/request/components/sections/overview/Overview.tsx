@@ -20,6 +20,7 @@ import type { ApiPlaygroundContext } from '@/components/playground/ApiPlayground
 import fileApi from '@/api/file/file'
 import BarLoader from '@/components/base/BarLoader'
 import Icon from '@/components/base/icon/Icon'
+import IconAI from '@/components/base/icon/IconAI'
 import InputDate from '@/components/base/inputs/InputDate'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import showToast from '@/components/base/toast/showToast'
@@ -444,6 +445,18 @@ const extractPaymentTerms = (
     ) {
       return String(formModel['vxnKCXsXkz8_acPogKe'])
     }
+    if (
+      formModel['vxnKCXs-Xkz8_acPog-Ke'] &&
+      formModel['vxnKCXs-Xkz8_acPog-Ke'] !== '-'
+    ) {
+      return String(formModel['vxnKCXs-Xkz8_acPog-Ke'])
+    }
+    if (
+      formModel['BsPnOsYv6F1fbzWsTpXCW'] &&
+      formModel['BsPnOsYv6F1fbzWsTpXCW'] !== '-'
+    ) {
+      return String(formModel['BsPnOsYv6F1fbzWsTpXCW'])
+    }
     const keys = ['Payment Terms', 'payment_terms', 'Terms', 'terms']
     for (const k of keys) {
       if (formModel[k] && formModel[k] !== '-') {
@@ -460,6 +473,18 @@ const extractPaymentTerms = (
     parsedForm['vxnKCXsXkz8_acPogKe'] !== '-'
   ) {
     return String(parsedForm['vxnKCXsXkz8_acPogKe'])
+  }
+  if (
+    parsedForm['vxnKCXs-Xkz8_acPog-Ke'] &&
+    parsedForm['vxnKCXs-Xkz8_acPog-Ke'] !== '-'
+  ) {
+    return String(parsedForm['vxnKCXs-Xkz8_acPog-Ke'])
+  }
+  if (
+    parsedForm['BsPnOsYv6F1fbzWsTpXCW'] &&
+    parsedForm['BsPnOsYv6F1fbzWsTpXCW'] !== '-'
+  ) {
+    return String(parsedForm['BsPnOsYv6F1fbzWsTpXCW'])
   }
 
   const fromRow = getFromObjectOrVal(row.payment_terms ?? row.paymentTerms)
@@ -486,6 +511,8 @@ const extractPaymentTerms = (
 const extractDueDate = (row: any, agentData: any, formModel?: any): string => {
   if (formModel) {
     const val =
+      formModel['792IWMnNXLKyfXjCGcowU'] ||
+      formModel['kjQFGFMRYBzLnAz9Yrx_c'] ||
       formModel['Due Date'] ||
       formModel['due_date'] ||
       formModel['Due_Date'] ||
@@ -497,6 +524,8 @@ const extractDueDate = (row: any, agentData: any, formModel?: any): string => {
   const parsedForm = getParsedFormData(row)
 
   let val =
+    parsedForm['792IWMnNXLKyfXjCGcowU'] ||
+    parsedForm['kjQFGFMRYBzLnAz9Yrx_c'] ||
     parsedForm['Due Date'] ||
     parsedForm['due_date'] ||
     parsedForm['Due_Date'] ||
@@ -505,6 +534,8 @@ const extractDueDate = (row: any, agentData: any, formModel?: any): string => {
     row.payment_terms?.due_date ||
     row.paymentTerms?.due_date ||
     row.paymentTerms?.dueDate ||
+    row.formData?.fields?.['792IWMnNXLKyfXjCGcowU'] ||
+    row.formData?.fields?.['kjQFGFMRYBzLnAz9Yrx_c'] ||
     row.formData?.fields?.['Due Date'] ||
     row.formData?.fields?.['due_date'] ||
     row.formData?.fields?.['Due_Date'] ||
@@ -516,6 +547,7 @@ const extractDueDate = (row: any, agentData: any, formModel?: any): string => {
     agentData?.['Extracted Invoice JSON']?.invoice_header?.['due_date'] ||
     agentData?.po_matching?.due_date
 
+  // Only if due date is missing, calculate from invoice date + terms
   if (
     (!val || val === '-') &&
     (parsedForm['9F6tPVHoRnmONGx3kYJu2'] ||
@@ -526,7 +558,11 @@ const extractDueDate = (row: any, agentData: any, formModel?: any): string => {
       parsedForm['9F6tPVHoRnmONGx3kYJu2']
     const termsStr =
       formModel?.['vxnKCXsXkz8_acPogKe'] ||
+      formModel?.['vxnKCXs-Xkz8_acPog-Ke'] ||
+      formModel?.['BsPnOsYv6F1fbzWsTpXCW'] ||
       parsedForm['vxnKCXsXkz8_acPogKe'] ||
+      parsedForm['vxnKCXs-Xkz8_acPog-Ke'] ||
+      parsedForm['BsPnOsYv6F1fbzWsTpXCW'] ||
       ''
     const numMatch = /\d+/.exec(String(termsStr))
     if (numMatch) {
@@ -597,16 +633,16 @@ const computeDueDateInfo = (
     if (numMatch) {
       const days = Number.parseInt(numMatch[0], 10)
       daysText = `${days} days`
-      calculationText = 'in due'
+      calculationText = 'In due'
       statusType = days <= 15 ? 'warning' : 'info'
     } else {
       daysText = '0 days'
-      calculationText = 'immediate'
+      calculationText = 'Immediate'
       statusType = 'danger'
     }
   } else if (daysDiff > 0) {
     daysText = `${daysDiff} days`
-    calculationText = 'in due'
+    calculationText = 'In due'
     statusType = daysDiff <= 15 ? 'warning' : 'info'
   } else if (daysDiff < 0) {
     daysText = `${Math.abs(daysDiff)} days`
@@ -614,7 +650,7 @@ const computeDueDateInfo = (
     statusType = 'danger'
   } else {
     daysText = '0 days'
-    calculationText = 'immediate'
+    calculationText = 'Immediate'
     statusType = 'danger'
   }
 
@@ -1075,7 +1111,7 @@ const FormCard = ({
         {isLoading ? (
           <div className='mt-1 h-4 w-28 animate-pulse rounded bg-[var(--gray-3)]' />
         ) : (
-          <div className='flex flex-col items-start gap-1'>
+          <div className='flex flex-col items-start gap-1.5'>
             <p
               className={cn(
                 'text-[13px] leading-tight font-semibold text-[var(--gray-13)] transition-colors group-hover:text-[var(--primary-9)]',
@@ -1091,14 +1127,39 @@ const FormCard = ({
             </p>
             {showHint && (
               <div
-                className='inline-flex items-center gap-1 cursor-pointer rounded bg-[var(--blue-2)] px-2 py-0.5 text-[10px] text-[var(--blue-11)] transition-colors hover:bg-[var(--blue-3)]'
+                role='button'
+                tabIndex={0}
+                title={`Apply PO Master value: ${poValue}`}
+                className='group/suggest flex w-full max-w-full cursor-pointer flex-col gap-0.5 rounded-md border border-[var(--primary-4)] bg-[var(--primary-2)] px-2 py-1.5 text-left transition-colors hover:border-[var(--primary-6)] hover:bg-[var(--primary-3)]'
                 onClick={(e) => {
                   e.stopPropagation()
                   setLocalValue(poValue)
                   onChange?.(poValue)
                 }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    setLocalValue(poValue)
+                    onChange?.(poValue)
+                  }
+                }}
               >
-                PO Data: <span className='font-bold'>{poValue}</span>
+                <div className='flex items-center gap-1.5 text-[10px] font-semibold text-[var(--primary-11)]'>
+                  <IconAI className='size-3.5 shrink-0' />
+                  <span>AI suggestion</span>
+                  <span className='font-normal text-[var(--primary-9)]/70'>
+                    · from PO Master
+                  </span>
+                </div>
+                <div className='flex min-w-0 items-center justify-between gap-2 pl-4'>
+                  <span className='truncate text-[12px] font-semibold text-[var(--gray-13)]'>
+                    {poValue}
+                  </span>
+                  <span className='shrink-0 text-[10px] font-semibold text-[var(--primary-9)] opacity-80 group-hover/suggest:opacity-100'>
+                    Use
+                  </span>
+                </div>
               </div>
             )}
           </div>
@@ -4293,7 +4354,7 @@ const Overview = (props: any) => {
                               {relatedDocsState.status === 'not_run' && (
                                 <div className='mb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg border border-[var(--gray-3)] bg-white px-3 py-2 shadow-sm border-l-4 border-l-[var(--primary-9)] animate-in fade-in slide-in-from-bottom-2 duration-500 fill-mode-both'>
                                   <div className='flex items-center gap-2 text-xs text-[var(--gray-12)]'>
-                                    <Icon name='tabler:sparkles' className='h-4 w-4 text-[var(--primary-9)]' />
+                                    <IconAI className='size-4 shrink-0' />
                                     <span><strong className='font-semibold text-[var(--gray-13)]'>AI suggestion</strong> — Check for related purchase orders or invoices for this supplier.</span>
                                   </div>
                                   <button
@@ -4308,15 +4369,32 @@ const Overview = (props: any) => {
                               {relatedDocsState.status === 'pending' && (
                                 <div className='mb-3 flex items-center justify-between rounded-lg border border-[var(--gray-3)] bg-white px-3 py-2 shadow-sm border-l-4 border-l-[var(--primary-9)] opacity-70 animate-in fade-in duration-300'>
                                   <div className='flex items-center gap-2 text-xs text-[var(--gray-12)]'>
-                                    <Icon name='tabler:loader-2' className='h-4 w-4 animate-spin text-[var(--primary-9)]' />
+                                    <IconAI className='size-4 shrink-0' animate />
                                     <span><strong className='font-semibold text-[var(--gray-13)]'>AI is searching</strong> — Checking for related purchase orders or invoices...</span>
                                   </div>
                                 </div>
                               )}
                               {relatedDocsState.status === 'complete' && (
-                                <div className='mb-3 rounded-xl border border-[var(--gray-3)] bg-white p-3.5 shadow-sm animate-in fade-in zoom-in-95 duration-500 fill-mode-both'>
-                                  <div className='mb-2.5 text-xs text-[var(--gray-12)]'>
-                                    {relatedDocsState.data?.chips?.length} matches found for <strong className='font-semibold'>{supplierName}</strong>
+                                <div className='mb-3 rounded-xl border border-[var(--gray-3)] bg-white p-3.5 shadow-sm border-l-4 border-l-[var(--primary-9)] animate-in fade-in zoom-in-95 duration-500 fill-mode-both'>
+                                  <div className='mb-2.5 flex items-start gap-2 text-xs text-[var(--gray-12)]'>
+                                    <IconAI className='mt-0.5 size-4 shrink-0' />
+                                    <div className='min-w-0'>
+                                      <div>
+                                        <strong className='font-semibold text-[var(--gray-13)]'>AI suggestion</strong>
+                                        <span className='text-[var(--gray-11)]'>
+                                          {' '}
+                                          — Related purchase orders or invoices for this supplier.
+                                        </span>
+                                      </div>
+                                      <div className='mt-0.5 text-[var(--gray-12)]'>
+                                        <strong className='font-semibold text-[var(--gray-13)]'>
+                                          {relatedDocsState.data?.chips?.length ?? 0}
+                                        </strong>
+                                        {' '}
+                                        matches found for{' '}
+                                        <strong className='font-semibold'>{supplierName}</strong>
+                                      </div>
+                                    </div>
                                   </div>
                                   <div className='flex flex-wrap items-center gap-2'>
                                     {relatedDocsState.data?.chips?.map((rawChip: any, idx: number) => {
@@ -4328,8 +4406,8 @@ const Overview = (props: any) => {
                                       return (
                                         <div className='flex items-center rounded-xl border border-[var(--gray-3)] bg-white py-1 pl-2.5 pr-1 text-xs transition-colors hover:border-[var(--gray-4)] shadow-sm' key={chip.id}>
                                           <div className='flex items-center gap-1.5 border-r border-[var(--gray-3)] pr-2'>
-                                            <div className='flex h-5 w-5 shrink-0 items-center justify-center rounded bg-red-2'>
-                                              <Icon name='tabler:file-type-pdf' className='h-3.5 w-3.5 text-red-9' />
+                                            <div className='flex h-5 w-5 shrink-0 items-center justify-center'>
+                                              <Icon name='vscode-icons:file-type-pdf2' className='h-4 w-4' />
                                             </div>
                                             <button
                                               className='font-semibold text-[var(--gray-13)] hover:text-[var(--primary-9)] hover:underline truncate hover:whitespace-normal break-all max-w-[120px] sm:max-w-[160px] text-left transition-colors'

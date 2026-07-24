@@ -18,9 +18,11 @@ import {
   isParentField,
   isTableType,
 } from '@/pages/requests/utils/dynamicTable.utils'
+import { extractDueDate } from '@/pages/requests/utils/inboxItemDisplay'
 import { safeParse } from '@/pages/requests/utils/workflow.utils'
 import cn from '@/utils/cn'
 import { formatDatetime } from '@/utils/dayjs'
+import dayjs from 'dayjs'
 import type { WorkflowOption } from '../../types'
 import requestStore from '../../stores/useRequestStore'
 import HoverExpandableText from '../HoverExpandableText'
@@ -609,55 +611,6 @@ const findCategory = (row: any): string | null => {
   return null
 }
 
-const extractDueDate = (row: any): string => {
-  if (!row) return '-'
-  const agentData = row._agentData?.[0] || row._agentData || {}
-  const parsedForm = getParsedFormData(row)
-
-  let val =
-    parsedForm['Due Date'] ||
-    parsedForm['due_date'] ||
-    parsedForm['Due_Date'] ||
-    row.dueDate ||
-    row.due_date ||
-    row.payment_terms?.due_date ||
-    row.paymentTerms?.due_date ||
-    row.paymentTerms?.dueDate ||
-    row.formData?.fields?.['Due Date'] ||
-    row.formData?.fields?.['due_date'] ||
-    row.formData?.fields?.['Due_Date'] ||
-    row.formData?.['Due Date'] ||
-    row.formData?.['due_date'] ||
-    row.formData?.['Due_Date'] ||
-    agentData?.payment_terms?.due_date ||
-    agentData?.['Extracted Invoice JSON']?.invoice_header?.['Due Date'] ||
-    agentData?.['Extracted Invoice JSON']?.invoice_header?.['due_date'] ||
-    agentData?.po_matching?.due_date
-
-  if ((!val || val === '-') && parsedForm['9F6tPVHoRnmONGx3kYJu2']) {
-    const invDateStr = parsedForm['9F6tPVHoRnmONGx3kYJu2']
-    const termsStr = parsedForm['vxnKCXsXkz8_acPogKe'] || ''
-    const numMatch = /\d+/.exec(termsStr)
-    if (numMatch) {
-      const days = parseInt(numMatch[0], 10)
-      try {
-        const d = new Date(invDateStr)
-        if (!isNaN(d.getTime())) {
-          d.setDate(d.getDate() + days)
-          val = d.toISOString().split('T')[0]
-        }
-      } catch (e) {}
-    }
-  }
-
-  if (!val || val === '-') return '-'
-  try {
-    return formatDatetime(val as string, 'date')
-  } catch {
-    return String(val)
-  }
-}
-
 const getFromObjectOrVal = (obj: any): string | null => {
   if (!obj) return null
   if (typeof obj !== 'object') return String(obj)
@@ -685,6 +638,18 @@ const extractPaymentTerms = (row: any): string => {
     parsedForm['vxnKCXsXkz8_acPogKe'] !== '-'
   ) {
     return String(parsedForm['vxnKCXsXkz8_acPogKe'])
+  }
+  if (
+    parsedForm['vxnKCXs-Xkz8_acPog-Ke'] &&
+    parsedForm['vxnKCXs-Xkz8_acPog-Ke'] !== '-'
+  ) {
+    return String(parsedForm['vxnKCXs-Xkz8_acPog-Ke'])
+  }
+  if (
+    parsedForm['BsPnOsYv6F1fbzWsTpXCW'] &&
+    parsedForm['BsPnOsYv6F1fbzWsTpXCW'] !== '-'
+  ) {
+    return String(parsedForm['BsPnOsYv6F1fbzWsTpXCW'])
   }
 
   const fromRow = getFromObjectOrVal(row.payment_terms ?? row.paymentTerms)
@@ -790,17 +755,10 @@ const calculateDaysDifference = (
   dueDateStr: any,
 ): number | null => {
   if (!invoiceDateStr || !dueDateStr || dueDateStr === '-') return null
-  try {
-    const invDate = new Date(invoiceDateStr)
-    const dueDate = new Date(dueDateStr)
-    if (Number.isNaN(invDate.getTime()) || Number.isNaN(dueDate.getTime()))
-      return null
-    const diffTime = dueDate.getTime() - invDate.getTime()
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-    return diffDays
-  } catch {
-    return null
-  }
+  const invDate = dayjs(invoiceDateStr)
+  const dueDate = dayjs(dueDateStr)
+  if (!invDate.isValid() || !dueDate.isValid()) return null
+  return dueDate.startOf('day').diff(invDate.startOf('day'), 'day')
 }
 
 const computeDueDateInfo = (
@@ -1541,6 +1499,8 @@ const getBaseColumns = (
             />
             <HoverExpandableText
               className='text-[13px] font-medium text-[var(--gray-11)]'
+              expandStyle='inline'
+              maxLines={2}
               normalMaxWidthClass='max-w-[220px]'
               text={aiInsight}
             />
@@ -1568,7 +1528,7 @@ const getBaseColumns = (
     {
       id: 'termsDueDate',
       label: 'Due & Terms',
-      size: 160,
+      size: 120,
       renderCell: (row: any) => {
         const terms = extractPaymentTerms(row)
         const dueDate = extractDueDate(row)
@@ -1595,7 +1555,7 @@ const getBaseColumns = (
     {
       id: 'amount',
       label: 'Total Value',
-      size: 140,
+      size: 110,
       renderCell: (row: any) => {
         const amtStr = findInvoiceAmount(row)
         const amount = amtStr ? Number(amtStr.replace(/[^0-9.-]/g, '')) : null

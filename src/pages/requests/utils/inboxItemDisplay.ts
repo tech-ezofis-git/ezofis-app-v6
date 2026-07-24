@@ -131,25 +131,97 @@ export const extractPONumber = (row: any): string => {
   )
 }
 
+const DUE_DATE_FORM_KEYS = [
+  '792IWMnNXLKyfXjCGcowU',
+  'kjQFGFMRYBzLnAz9Yrx_c',
+  'Due Date',
+  'due_date',
+  'Due_Date',
+  'DueDate',
+]
+
+const TERMS_FORM_KEYS = [
+  'vxnKCXsXkz8_acPogKe',
+  'vxnKCXs-Xkz8_acPog-Ke',
+  'BsPnOsYv6F1fbzWsTpXCW',
+  'Payment Terms',
+  'payment_terms',
+  'Terms',
+  'terms',
+]
+
+const INVOICE_DATE_FORM_KEYS = [
+  '9F6tPVHoRnmONGx3kYJu2',
+  'Invoice Date',
+  'invoice_date',
+  'invoiceDate',
+]
+
+const normalizeFormValue = (val: unknown): string | null => {
+  if (val == null || val === '-' || val === '') return null
+  if (typeof val === 'object') {
+    const nested =
+      (val as any).value ??
+      (val as any).val ??
+      (val as any).text ??
+      (val as any)['Due Date']
+    return isNonEmptyString(nested) ? String(nested).trim() : null
+  }
+  const str = String(val).trim()
+  return str && str !== '-' ? str : null
+}
+
+const pickFromForm = (
+  parsedForm: Record<string, any>,
+  keys: string[],
+): string | null => {
+  for (const key of keys) {
+    const found = normalizeFormValue(parsedForm[key])
+    if (found) return found
+  }
+  // Label/id match when keys differ slightly
+  for (const key of Object.keys(parsedForm || {})) {
+    const normalized = key.toLowerCase().replace(/[^a-z0-9]/g, '')
+    if (
+      keys.some((k) => k.toLowerCase().replace(/[^a-z0-9]/g, '') === normalized)
+    ) {
+      const found = normalizeFormValue(parsedForm[key])
+      if (found) return found
+    }
+  }
+  return null
+}
+
+export const extractPaymentTermsFromForm = (row: any): string => {
+  const parsedForm = getParsedFormData(row)
+  return pickFromForm(parsedForm, TERMS_FORM_KEYS) || '-'
+}
+
 export const extractDueDate = (row: any): string => {
   const parsedForm = getParsedFormData(row)
   const agent = getAgentDataFromItem(row)
+  const header = agent?.['Extracted Invoice JSON']?.invoice_header
 
+  // 1) Prefer Due Date from the form control
   let val =
-    parsedForm['Due Date'] ||
-    parsedForm['due_date'] ||
-    parsedForm['Due_Date'] ||
-    row.dueDate ||
-    row.due_date ||
+    pickFromForm(parsedForm, DUE_DATE_FORM_KEYS) ||
+    searchByKeys(parsedForm, DUE_DATE_FORM_KEYS) ||
+    (row.dueDate ? String(row.dueDate) : null) ||
+    (row.due_date ? String(row.due_date) : null) ||
+    searchByKeys(header, ['Due Date', 'DueDate', 'due_date']) ||
     agent?.payment_terms?.due_date ||
-    agent?.['Extracted Invoice JSON']?.invoice_header?.['Due Date'] ||
-    agent?.['Extracted Invoice JSON']?.invoice_header?.['due_date']
+    agent?.po_matching?.due_date ||
+    null
 
-  if ((!val || val === '-') && parsedForm['9F6tPVHoRnmONGx3kYJu2']) {
-    const invDateStr = parsedForm['9F6tPVHoRnmONGx3kYJu2']
-    const termsStr = parsedForm['vxnKCXsXkz8_acPogKe'] || ''
+  // 2) Only if due date is missing, calculate from invoice date + terms
+  if (!val || val === '-') {
+    const invDateStr = pickFromForm(parsedForm, INVOICE_DATE_FORM_KEYS)
+    const termsStr =
+      pickFromForm(parsedForm, TERMS_FORM_KEYS) ||
+      searchByKeys(header, ['Payment Terms', 'Terms', 'terms']) ||
+      ''
     const numMatch = /\d+/.exec(String(termsStr))
-    if (numMatch) {
+    if (invDateStr && numMatch) {
       const days = Number.parseInt(numMatch[0], 10)
       const d = new Date(invDateStr)
       if (!Number.isNaN(d.getTime())) {
@@ -163,12 +235,23 @@ export const extractDueDate = (row: any): string => {
   return String(val)
 }
 
+
 export const isOverdue = (row: any) => {
   const dueDateStr = extractDueDate(row)
   if (!dueDateStr || dueDateStr === '-') return false
   try {
     const dueDate = new Date(dueDateStr)
-    if (Number.isNaN(dueDate.getTime())) return false
+    if (Number.isNaN(dueDate.getTime())) {
+      // dayjs-friendly formats like DD-MMM-YYYY
+      const parts = String(dueDateStr).trim()
+      const parsed = Date.parse(parts)
+      if (Number.isNaN(parsed)) return false
+      const d = new Date(parsed)
+      d.setHours(0, 0, 0, 0)
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      return d < today
+    }
     const today = new Date()
     today.setHours(0, 0, 0, 0)
     dueDate.setHours(0, 0, 0, 0)

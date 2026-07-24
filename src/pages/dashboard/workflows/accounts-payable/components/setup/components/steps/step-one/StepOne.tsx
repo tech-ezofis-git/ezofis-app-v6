@@ -37,6 +37,15 @@ const StepOne = () => {
       const connectedEmail =
         externalAccountEmail || session?.email || current.email || ''
 
+      // Ignore late OAuth success after the user switched away from email OAuth
+      if (
+        !current.provider ||
+        current.provider === 'DIRECT_UPLOAD' ||
+        current.provider === 'Custom'
+      ) {
+        return
+      }
+
       setEmailSettings({
         ...current,
         account: connectedEmail || connector,
@@ -153,11 +162,7 @@ const StepOne = () => {
         emailSettings.provider !== 'DIRECT_UPLOAD' && (
           <AnimateSlideUp delay={0.4}>
             <Alert
-              text={
-                emailSettings.account || emailSettings.email
-                  ? `Connected as ${emailSettings.account || emailSettings.email}`
-                  : `Your ${emailSettings.provider.charAt(0).toUpperCase() + emailSettings.provider.slice(1)} account has been connected successfully.`
-              }
+              text='Invoice emails will be read from this inbox and sent for processing automatically.'
               variant='green'
             />
           </AnimateSlideUp>
