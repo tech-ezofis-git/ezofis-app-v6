@@ -1706,7 +1706,7 @@ const InboxList: React.FC<InboxListProps> = ({
               onClick: () => {},
             },
             {
-              icon: 'tabler:upload',
+              icon: 'tabler:table-import',
               id: 'upload-po',
               isIconButton: true,
               tooltip: 'Import PO Data',

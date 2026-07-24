@@ -220,11 +220,7 @@ const StepTwo = () => {
         erpSettings.system !== 'FILE_BASED_IMPORT' && (
           <AnimateSlideUp delay={0.4}>
             <Alert
-              text={
-                erpSettings.account
-                  ? `Connected as ${erpSettings.account}`
-                  : `Your ${erpSettings.system} account has been connected successfully.`
-              }
+              text='Your QuickBooks account is connected. PO and supplier data will be used to match and validate invoices.'
               variant='green'
             />
           </AnimateSlideUp>

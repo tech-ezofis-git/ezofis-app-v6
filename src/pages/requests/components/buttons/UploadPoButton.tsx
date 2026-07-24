@@ -14,7 +14,7 @@ const UploadPoButton: React.FC<UploadPoButtonProps> = ({ label, onClick }) => {
         <IconButton
           aria-label={label}
           color='primary'
-          icon='tabler:upload'
+          icon='tabler:table-import'
           variant='outline'
           onClick={onClick}
         />

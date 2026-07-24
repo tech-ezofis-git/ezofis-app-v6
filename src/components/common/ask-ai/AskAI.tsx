@@ -45,6 +45,7 @@ import {
   useState,
 } from 'react'
 import Tooltip from '@/components/base/Tooltip'
+import AiSparkleIcon from '@/components/base/icon/AiSparkleIcon'
 import Icon from '@/components/base/icon/Icon'
 import {
   browseFilterByToUiFilters,
@@ -300,14 +301,6 @@ const uid = () =>
   typeof crypto !== 'undefined' && crypto.randomUUID
     ? crypto.randomUUID()
     : String(Date.now() + Math.random())
-/** Header sparkle — same tabler:sparkles icon as request AI Insights. */
-const AiSparkleIcon = ({ size = 18 }: { size?: number }) => (
-  <Icon
-    className='shrink-0 text-[var(--primary-9)]'
-    name='tabler:sparkles'
-    style={{ height: size, width: size }}
-  />
-)
 
 const SparkIconLoading = ({ size = 18 }: { size?: number }) => (
   <motion.div

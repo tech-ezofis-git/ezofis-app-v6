@@ -452,7 +452,7 @@ const Header: React.FC<HeaderProps> = ({
             <div className='flex items-center gap-2'>
               {poNumber && poNumber !== '-' && poNumber !== 'N/A' && (
                 <span className='animate-in fade-in slide-in-from-left-2 rounded-full border border-[var(--gray-3)] bg-[var(--gray-1)] px-3 py-1 text-[11px] font-semibold text-[var(--gray-11)] duration-300'>
-                  {poNumber}
+                  {`# ${poNumber.replace(/^#\s*/, '')}`}
                 </span>
               )}
               {status &&

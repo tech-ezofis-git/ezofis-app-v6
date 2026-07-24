@@ -51,7 +51,7 @@ const WorkflowPreview = () => {
       case 'outlook':
         return {
           detail: 'Reads invoice documents from email',
-          icon: 'logos:microsoft-outlook',
+          icon: 'vscode-icons:file-type-outlook',
           subtitle: connectedAccount,
           title: 'Outlook',
         }
@@ -312,7 +312,7 @@ const WorkflowPreview = () => {
               <AnimateFadeIn delay={0.7}>
                 <NodeCard
                   detail={approverNode.detail}
-                  icon='flat-color-icons:signature'
+                  icon='tabler:user-check'
                   subtitle={approverNode.subtitle}
                   title={approverNode.title}
                   widthClass='w-[160px]'

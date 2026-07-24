@@ -308,7 +308,7 @@ export function matchesDateRangeValue(
     return t >= today.getTime() && t <= today.getTime() + 7 * dayMs
   if (val === 'next_15_days')
     return t >= today.getTime() && t <= today.getTime() + 15 * dayMs
-  if (val === 'next_30_days')
+  if (val === 'next_1_month')
     return t >= today.getTime() && t <= today.getTime() + 30 * dayMs
   if (val === 'days_2_to_7')
     return t >= today.getTime() + 2 * dayMs && t <= today.getTime() + 7 * dayMs

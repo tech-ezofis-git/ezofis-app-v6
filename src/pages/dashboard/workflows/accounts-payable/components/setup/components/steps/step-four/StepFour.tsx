@@ -119,6 +119,85 @@ const applyMailInitiateConnector = (
   return workflowPayload
 }
 
+const applyApAgentSettings = (
+  workflowPayload: any,
+  erpSettings: {
+    connectorId?: string
+    system?: string
+    wantsFileBasedImport?: boolean
+  },
+  masterFormId: string | number,
+) => {
+  const isQuickBooks = erpSettings.system === 'QuickBooks'
+  const isFormResource =
+    erpSettings.system === 'PREDEFINED' ||
+    erpSettings.system === 'FILE_BASED_IMPORT' ||
+    !!erpSettings.wantsFileBasedImport
+
+  const blocks = Array.isArray(workflowPayload?.blocks)
+    ? workflowPayload.blocks
+    : []
+
+  for (const block of blocks) {
+    if (block?.type !== 'AP_AGENT' || !block.settings?.apAgent) continue
+
+    if (isQuickBooks) {
+      block.settings.apAgent = {
+        ...block.settings.apAgent,
+        connectorId: erpSettings.connectorId || '',
+        formId: '',
+        resource: 'QUICKBOOKS',
+      }
+      continue
+    }
+
+    if (isFormResource) {
+      block.settings.apAgent = {
+        ...block.settings.apAgent,
+        connectorId: '',
+        formId: masterFormId,
+        resource: 'FORM',
+      }
+    }
+  }
+
+  return workflowPayload
+}
+
+const getStorageProviderCode = (system?: string) => {
+  switch (system) {
+    case 'Google Drive':
+      return 'GOOGLE_DRIVE'
+    case 'GCP':
+      return 'GCP'
+    case 'OneDrive':
+    case 'One Drive':
+      return 'ONE_DRIVE'
+    case 'Included storage':
+    case 'Default Storage':
+    case 'Available Storage':
+    default:
+      return 'EZOFIS'
+  }
+}
+
+const applyFolderStorageSettings = (
+  folderPayload: any,
+  storageSettings: {
+    connectorId?: string
+    system?: string
+  },
+) => {
+  const storageProviderCode = getStorageProviderCode(storageSettings.system)
+  const isEzofis = storageProviderCode === 'EZOFIS'
+
+  return {
+    ...folderPayload,
+    storageDrive: isEzofis ? null : storageSettings.connectorId || null,
+    storageProviderCode,
+  }
+}
+
 const downloadFile = (file: File) => {
   const url = URL.createObjectURL(file)
   const a = document.createElement('a')
@@ -438,6 +517,7 @@ const addCustomFieldsToPayloads = (
 const StepFour = () => {
   const emailSettings = setupStore((state) => state.emailSettings)
   const erpSettings = setupStore((state) => state.erpSettings)
+  const storageSettings = setupStore((state) => state.storageSettings)
   const setStep = setupStore((state) => state.setStep)
   const closeSetup = setupStore((state) => state.closeSetup)
   const isApSetUpCompleted = setupStore((state) => state.isApSetUpCompleted)
@@ -462,7 +542,7 @@ const StepFour = () => {
     try {
       // 1.5 Inject any new custom fields mapped by the user
       const {
-        folderPayload: processedFolderPayload,
+        folderPayload: folderPayloadWithCustomFields,
         formPayload,
         masterFormPayload,
       } = addCustomFieldsToPayloads(
@@ -473,6 +553,11 @@ const StepFour = () => {
         erpSettings.lineItemMapping || {},
         erpSettings.fieldDataTypes || {},
         erpSettings.lineItemFieldDataTypes || {},
+      )
+
+      const processedFolderPayload = applyFolderStorageSettings(
+        folderPayloadWithCustomFields,
+        storageSettings,
       )
 
       // 1. Create Folder
@@ -612,14 +697,18 @@ const StepFour = () => {
       const session = authUserStore.getState().session
       const userId = session?.id || ''
 
-      const workflowPayload = applyMailInitiateConnector(
-        replacePlaceholders(apSetupPayloads.workflowPayload, {
-          folderId,
-          formId,
-          masterFormId,
-          userId,
-        }),
-        emailSettings,
+      const workflowPayload = applyApAgentSettings(
+        applyMailInitiateConnector(
+          replacePlaceholders(apSetupPayloads.workflowPayload, {
+            folderId,
+            formId,
+            masterFormId,
+            userId,
+          }),
+          emailSettings,
+        ),
+        erpSettings,
+        masterFormId,
       )
       const workflowRes = await workflowApi.createWorkflow(workflowPayload)
       if (workflowRes.error) {

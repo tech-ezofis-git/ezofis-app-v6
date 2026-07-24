@@ -148,11 +148,7 @@ const StepThree = () => {
         storageSettings.system !== 'Included storage' && (
           <AnimateSlideUp delay={0.4}>
             <Alert
-              text={
-                storageSettings.account
-                  ? `Connected as ${storageSettings.account}`
-                  : `Your ${storageSettings.system} account has been connected successfully.`
-              }
+              text={`Your ${storageSettings.system} account is connected. Invoice documents will be saved here during processing.`}
               variant='green'
             />
           </AnimateSlideUp>

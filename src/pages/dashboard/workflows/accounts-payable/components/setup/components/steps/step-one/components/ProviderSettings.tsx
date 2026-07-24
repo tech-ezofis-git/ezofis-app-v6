@@ -1,10 +1,4 @@
 import { useState } from 'react'
-// import { motion } from 'motion/react'
-// import CustomLogo from '@/assets/brands/email.svg'
-// import MsExchangeLogo from '@/assets/brands/exchange.svg'
-import GmailLogo from '@/assets/brands/gmail.svg'
-import OutlookLogo from '@/assets/brands/outlook.svg'
-// import Icon from '@/components/base/icon/Icon'
 import {
   AnimateBounce,
   AnimateFadeIn,
@@ -26,14 +20,12 @@ const directUploadItem = {
 }
 
 const emailProviders = [
-  { logo: GmailLogo, name: 'Gmail', value: 'gmail' },
-  { logo: OutlookLogo, name: 'Outlook', value: 'outlook' },
-  // {
-  //   logo: MsExchangeLogo,
-  //   name: 'Microsoft Exchange',
-  //   value: 'Microsoft Exchange',
-  // },
-  // { logo: CustomLogo, name: 'Custom (IMAP)', value: 'Custom' },
+  { icon: 'logos:google-gmail', name: 'Gmail', value: 'gmail' },
+  {
+    icon: 'vscode-icons:file-type-outlook',
+    name: 'Outlook',
+    value: 'outlook',
+  },
 ]
 
 const getProviderLabel = (value: string) => {
@@ -153,7 +145,7 @@ const ProviderSettings = () => {
                         'Connected'
                       : undefined
                   }
-                  logo={item.logo}
+                  icon={item.icon}
                   name={item.name}
                   value={item.value}
                   onClick={() =>
