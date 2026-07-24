@@ -799,7 +799,7 @@ function FieldsEditor({
           icon='lucide:plus'
           label='Add'
           size='sm'
-          variant='soft'
+          variant='subtle'
           onClick={addField}
         />
       </div>
@@ -1528,7 +1528,7 @@ export default function AiFolderBuilder({
               <Button
                 color='gray'
                 label='Regenerate'
-                variant='soft'
+                variant='subtle'
                 onClick={() => {
                   setPhase('fields')
                   pushAssistant(
@@ -1568,7 +1568,7 @@ export default function AiFolderBuilder({
             <Button
               color='gray'
               label='Back to review'
-              variant='soft'
+              variant='subtle'
               onClick={goToReview}
             />
           </div>
@@ -1647,7 +1647,7 @@ export default function AiFolderBuilder({
             icon='lucide:pencil'
             label='Edit'
             size='sm'
-            variant='soft'
+            variant='subtle'
             onClick={() => editFromReview(1)}
           />
         </div>
@@ -1666,7 +1666,7 @@ export default function AiFolderBuilder({
             icon='lucide:pencil'
             label='Edit'
             size='sm'
-            variant='soft'
+            variant='subtle'
             onClick={() => editFromReview(2)}
           />
         </div>
@@ -1730,7 +1730,7 @@ export default function AiFolderBuilder({
             icon='lucide:pencil'
             label='Edit'
             size='sm'
-            variant='soft'
+            variant='subtle'
             onClick={() => editFromReview(3)}
           />
         </div>
@@ -1749,7 +1749,7 @@ export default function AiFolderBuilder({
             icon='lucide:pencil'
             label='Edit'
             size='sm'
-            variant='soft'
+            variant='subtle'
             onClick={() => editFromReview(4)}
           />
         </div>
@@ -1770,7 +1770,7 @@ export default function AiFolderBuilder({
             icon='lucide:pencil'
             label='Edit'
             size='sm'
-            variant='soft'
+            variant='subtle'
             onClick={() => editFromReview(5)}
           />
         </div>

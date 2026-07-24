@@ -30,6 +30,15 @@ export const axiosV6 = axios.create({
 })
 
 // Helper type to extend Axios config with metadata for timing and crypto bypass
+declare module 'axios' {
+  export interface AxiosRequestConfig {
+    metadata?: { startTime: Date }
+    skipDecryption?: boolean
+    skipEncryption?: boolean
+    skipCancellation?: boolean
+  }
+}
+
 interface CustomConfig extends InternalAxiosRequestConfig {
   metadata?: { startTime: Date }
   skipDecryption?: boolean
