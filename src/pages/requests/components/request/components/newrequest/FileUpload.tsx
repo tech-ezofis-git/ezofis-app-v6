@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import workflowsApiV6 from '@/api/v6/workflows'
-import { useTheme } from '@/hooks/useTheme'
+import useTheme from '@/hooks/useTheme'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
 import sample1 from '@/assets/Sample Invoices/inv-1.pdf'
 import sample1Img from '@/assets/Sample Invoices/inv-1.png'
