@@ -5,6 +5,7 @@ import { getUserListQueryOptions } from '@/api/userQueries'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
+import AiBrandIcon from '@/components/common/AiBrandIcon'
 import InputCheckbox from '@/components/base/inputs/InputCheckbox'
 import OverlayHeaderWrapper from '@/components/base/overlay/OverlayHeaderWrapper'
 import showToast from '@/components/base/toast/showToast'
@@ -686,7 +687,7 @@ const Header: React.FC<HeaderProps> = ({
                   !isProcessing && setShowAIInsights(!showAIInsights)
                 }
               >
-                <Icon className='size-4' name='tabler:sparkles' />
+                <AiBrandIcon className='size-[16px]' />
                 <span>AI Insights</span>
                 {agentData?.score !== undefined && (
                   <span
@@ -714,9 +715,8 @@ const Header: React.FC<HeaderProps> = ({
                         <div className='flex flex-col'>
                           <div className='mb-3 flex items-center justify-between gap-3 border-b border-[var(--gray-2)] pb-2.5'>
                             <div className='flex items-center gap-2'>
-                              <Icon
-                                className='h-5 w-5 text-[var(--primary-9)]'
-                                name='tabler:sparkles'
+                              <AiBrandIcon
+                                className='size-[20px] text-[var(--primary-9)]'
                               />
                               <span className='text-[14px] font-semibold text-[var(--gray-13)]'>
                                 Invoice Decision Details

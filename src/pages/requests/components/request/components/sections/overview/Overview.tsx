@@ -19,7 +19,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ApiPlaygroundContext } from '@/components/playground/ApiPlayground'
 import fileApi from '@/api/file/file'
 import BarLoader from '@/components/base/BarLoader'
-import AiSparkleIcon from '@/components/base/icon/AiSparkleIcon'
+import AiBrandIcon from '@/components/common/AiBrandIcon'
 import Icon from '@/components/base/icon/Icon'
 import InputDate from '@/components/base/inputs/InputDate'
 import InputSelect from '@/components/base/inputs/InputSelect'
@@ -1146,7 +1146,7 @@ const FormCard = ({
                 }}
               >
                 <div className='flex items-center gap-1.5 text-[10px] font-semibold text-[var(--primary-11)]'>
-                  <AiSparkleIcon className='shrink-0' size={14} />
+                  <AiBrandIcon className='size-[14px] shrink-0' />
                   <span>AI suggestion</span>
                   <span className='font-normal text-[var(--primary-9)]/70'>
                     · from PO Master
@@ -4352,9 +4352,9 @@ const Overview = (props: any) => {
                             <>
                               {/* Related Documents Gated Section */}
                               {relatedDocsState.status === 'not_run' && (
-                                <div className='mb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg border border-[var(--gray-3)] bg-white px-3 py-2 shadow-sm border-l-4 border-l-[var(--primary-9)] animate-in fade-in slide-in-from-bottom-2 duration-500 fill-mode-both'>
+                                <div className='mb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg border border-[var(--gray-3)] bg-[var(--surface-primary)] px-3 py-2 shadow-sm border-l-4 border-l-[var(--primary-9)] animate-in fade-in slide-in-from-bottom-2 duration-500 fill-mode-both'>
                                   <div className='flex items-center gap-2 text-xs text-[var(--gray-12)]'>
-                                    <AiSparkleIcon className='shrink-0' size={16} />
+                                    <AiBrandIcon className='size-[16px] shrink-0' />
                                     <span><strong className='font-semibold text-[var(--gray-13)]'>AI suggestion</strong> — Check for related purchase orders or invoices for this supplier.</span>
                                   </div>
                                   <button
@@ -4367,22 +4367,20 @@ const Overview = (props: any) => {
                                 </div>
                               )}
                               {relatedDocsState.status === 'pending' && (
-                                <div className='mb-3 flex items-center justify-between rounded-lg border border-[var(--gray-3)] bg-white px-3 py-2 shadow-sm border-l-4 border-l-[var(--primary-9)] opacity-70 animate-in fade-in duration-300'>
+                                <div className='mb-3 flex items-center justify-between rounded-lg border border-[var(--gray-3)] bg-[var(--surface-primary)] px-3 py-2 shadow-sm border-l-4 border-l-[var(--primary-9)] opacity-70 animate-in fade-in duration-300'>
                                   <div className='flex items-center gap-2 text-xs text-[var(--gray-12)]'>
-                                    <AiSparkleIcon
-                                      className='shrink-0 animate-pulse'
-                                      size={16}
+                                    <AiBrandIcon
+                                      className='size-[16px] shrink-0 animate-pulse'
                                     />
                                     <span><strong className='font-semibold text-[var(--gray-13)]'>AI is searching</strong> — Checking for related purchase orders or invoices...</span>
                                   </div>
                                 </div>
                               )}
                               {relatedDocsState.status === 'complete' && (
-                                <div className='mb-3 rounded-xl border border-[var(--gray-3)] bg-white p-3.5 shadow-sm border-l-4 border-l-[var(--primary-9)] animate-in fade-in zoom-in-95 duration-500 fill-mode-both'>
+                                <div className='mb-3 rounded-xl border border-[var(--gray-3)] bg-[var(--surface-primary)] p-3.5 shadow-sm border-l-4 border-l-[var(--primary-9)] animate-in fade-in zoom-in-95 duration-500 fill-mode-both'>
                                   <div className='mb-2.5 flex items-start gap-2 text-xs text-[var(--gray-12)]'>
-                                    <AiSparkleIcon
-                                      className='mt-0.5 shrink-0'
-                                      size={16}
+                                    <AiBrandIcon
+                                      className='size-[16px] mt-0.5 shrink-0'
                                     />
                                     <div className='min-w-0'>
                                       <div>
@@ -4410,7 +4408,7 @@ const Overview = (props: any) => {
                                         confidence: rawChip.confidence || (idx === 0 ? 92 : idx === 1 ? 88 : 74),
                                       };
                                       return (
-                                        <div className='flex items-center rounded-xl border border-[var(--gray-3)] bg-white py-1 pl-2.5 pr-1 text-xs transition-colors hover:border-[var(--gray-4)] shadow-sm' key={chip.id}>
+                                        <div className='flex items-center rounded-xl border border-[var(--gray-3)] bg-[var(--surface-primary)] py-1 pl-2.5 pr-1 text-xs transition-colors hover:border-[var(--gray-4)] shadow-sm' key={chip.id}>
                                           <div className='flex items-center gap-1.5 border-r border-[var(--gray-3)] pr-2'>
                                             <div className='flex h-5 w-5 shrink-0 items-center justify-center'>
                                               <Icon name='vscode-icons:file-type-pdf2' className='h-4 w-4' />

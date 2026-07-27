@@ -1,5 +1,5 @@
-import { Sparkles } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
+import AiBrandIcon from '@/components/common/AiBrandIcon'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import IconButton from '@/components/base/button/IconButton'
@@ -211,10 +211,9 @@ const GlobalSearch = () => {
                 initial={{ opacity: 0 }}
                 key='idle'
               >
-                <Sparkles
-                  className='text-primary-8'
-                  size={22}
-                  strokeWidth={2}
+                <AiBrandIcon
+                  alt='Search AI'
+                  className='size-[22px] opacity-80'
                 />
                 <p className='text-sm font-medium text-gray-12'>
                   Start typing to search
@@ -247,7 +246,10 @@ const GlobalSearch = () => {
                     repeat: Infinity,
                   }}
                 >
-                  <Sparkles size={24} strokeWidth={2} />
+                  <AiBrandIcon
+                    alt='Searching AI'
+                    className='size-[24px]'
+                  />
                 </motion.div>
                 <p className='text-xs font-medium text-gray-11'>Searching…</p>
                 <div className='h-1 w-44 overflow-hidden rounded-full bg-primary-3'>
