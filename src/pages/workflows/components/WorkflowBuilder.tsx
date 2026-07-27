@@ -12,6 +12,7 @@ import {
   ReactFlowProvider,
   useEdgesState,
   useNodesState,
+  useReactFlow,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { useCallback, useEffect, useState } from 'react'
@@ -170,12 +171,18 @@ const WorkflowBuilderCanvas = ({ workflowId }: { workflowId: string }) => {
     }
   }, [data, loadLegacyWorkflow, isNew])
 
+  const { fitView } = useReactFlow()
+
   useEffect(() => {
     if (loadedNodes && loadedEdges) {
       setNodes(loadedNodes)
       setEdges(loadedEdges)
+      // Wait for nodes to render before fitting the viewport
+      requestAnimationFrame(() => {
+        fitView({ duration: 300, padding: 0.2 })
+      })
     }
-  }, [loadedNodes, loadedEdges, setNodes, setEdges])
+  }, [loadedNodes, loadedEdges, setNodes, setEdges, fitView])
 
   useEffect(() => {
     setNodes((nds) =>
@@ -332,6 +339,8 @@ const WorkflowBuilderCanvas = ({ workflowId }: { workflowId: string }) => {
             nodes={nodes}
             nodeTypes={nodeTypes}
             panOnScroll={true}
+            fitView
+            fitViewOptions={{ padding: 0.2 }}
             proOptions={{ hideAttribution: true }}
             zoomOnScroll={false}
             defaultEdgeOptions={{

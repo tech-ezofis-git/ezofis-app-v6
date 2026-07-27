@@ -449,7 +449,7 @@ export default function CustomFilter({
                     key={group.id}
                     type='button'
                     className={cn(
-                      'flex w-full cursor-pointer items-center justify-between rounded-md px-2.5 py-1.5 text-left text-12 font-normal text-text-primary transition-all',
+                      'flex w-full cursor-pointer items-center justify-between rounded-md px-2.5 py-1.5 text-left text-12 transition-all',
                       isActive
                         ? 'bg-primary-3 text-primary-9 dark:bg-primary-9 dark:text-white'
                         : 'hover:bg-gray-2 dark:hover:bg-gray-10',

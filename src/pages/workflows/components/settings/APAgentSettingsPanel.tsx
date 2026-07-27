@@ -73,12 +73,28 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
   const [openValidation, setOpenValidation] = useState(false)
   const [openScoring, setOpenScoring] = useState(false)
 
-  // Formatting helper for initial master values
+  // Resolve saved master ids/objects against loaded master form options (by name)
   const getMasterOption = (val: any) => {
-    if (!val) return null
-    // If it's already an option object, return it. If it's an ID, we'll try to find it in masterForms (though masterForms might be loading)
-    if (typeof val === 'object' && val.id) return val
-    return masterForms.find((m) => m.id === val) || null
+    if (val === null || val === undefined || val === '' || val === 0) return null
+
+    const rawId = typeof val === 'object' ? val.id : val
+    if (rawId === null || rawId === undefined || rawId === '') return null
+
+    const matched = masterForms.find(
+      (m) =>
+        String(m.id) === String(rawId) ||
+        String((m as any).uid ?? '') === String(rawId),
+    )
+    if (matched) return matched
+
+    // Keep a real display name if we already have one; otherwise fall back temporarily
+    if (typeof val === 'object') {
+      const hasRealName =
+        val.name && String(val.name).trim() !== '' && String(val.name) !== String(val.id)
+      return hasRealName ? val : { id: rawId, name: String(rawId) }
+    }
+
+    return { id: rawId, name: String(rawId) }
   }
 
   const [invoiceType, setInvoiceType] = useState(
@@ -279,20 +295,18 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
     // Add other syncs as needed...
   }, [nodeData])
 
-  // Special sync for masterForms once they load
+  // Special sync for masterForms once they load — resolve IDs to named options
   useEffect(() => {
-    if (masterForms.length > 0) {
-      if (!poMaster && nodeData.poMaster)
-        setPoMaster(getMasterOption(nodeData.poMaster))
-      if (!invoiceMaster && nodeData.invoiceMaster)
-        setInvoiceMaster(getMasterOption(nodeData.invoiceMaster))
-      if (!vendorSource && nodeData.vendorSource)
-        setVendorSource(getMasterOption(nodeData.vendorSource))
-      if (!glSource && nodeData.glSource)
-        setGlSource(getMasterOption(nodeData.glSource))
-      if (!matterSource && nodeData.matterSource)
-        setMatterSource(getMasterOption(nodeData.matterSource))
-    }
+    if (masterForms.length === 0) return
+
+    if (nodeData.poMaster) setPoMaster(getMasterOption(nodeData.poMaster))
+    if (nodeData.invoiceMaster)
+      setInvoiceMaster(getMasterOption(nodeData.invoiceMaster))
+    if (nodeData.vendorSource)
+      setVendorSource(getMasterOption(nodeData.vendorSource))
+    if (nodeData.glSource) setGlSource(getMasterOption(nodeData.glSource))
+    if (nodeData.matterSource)
+      setMatterSource(getMasterOption(nodeData.matterSource))
   }, [
     masterForms,
     nodeData.poMaster,

@@ -31,12 +31,12 @@ const ComboboxOptions = ({
   const hasOptions = options.length > 0
 
   const isSelected = (id: string | number) =>
-    value.some((item) => item.id === id)
+    value.some((item) => String(item.id) === String(id))
 
   const handleClick = (option: Option) => {
     if (option.disabled) return
 
-    const exists = value.some((v) => v.id === option.id)
+    const exists = value.some((v) => String(v.id) === String(option.id))
 
     if (variant === 'single') {
       onChange(exists ? [] : [option])
@@ -45,7 +45,9 @@ const ComboboxOptions = ({
 
     if (variant === 'multiple') {
       onChange(
-        exists ? value.filter((v) => v.id !== option.id) : [...value, option],
+        exists
+          ? value.filter((v) => String(v.id) !== String(option.id))
+          : [...value, option],
       )
     }
   }

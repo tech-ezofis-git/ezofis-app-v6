@@ -72,7 +72,8 @@ export const getGroupList = async (criteria = '', value = '') => {
       throw new Error('invalid status code')
     }
 
-    _response.payload = typeof data === 'string' ? JSON.parse(data) : data
+    const rawData = typeof data === 'string' ? JSON.parse(data) : data
+    _response.payload = extractArrayData(rawData)
   } catch (e: any) {
     console.error(e)
     _response.error = 'error fetching groups'

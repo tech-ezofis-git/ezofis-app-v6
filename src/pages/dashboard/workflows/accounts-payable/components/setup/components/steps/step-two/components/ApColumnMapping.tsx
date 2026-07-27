@@ -439,7 +439,7 @@ export default function ApColumnMapping({
                             <Icon
                               name={FIELD_KIND_ICONS[selectedFieldKind!].icon}
                               className={cn(
-                                'size-3.5 shrink-0',
+                                'size-2.5 shrink-0',
                                 FIELD_KIND_ICONS[selectedFieldKind!].className,
                               )}
                             />
@@ -459,7 +459,7 @@ export default function ApColumnMapping({
                         {/* Datatype picker icon inside the field on the right side */}
                         {hasMapping && (
                           <Tooltip
-                            content={`Datatype: ${activeDataTypeObj.name}`}
+                            content={`${activeDataTypeObj.name}`}
                             position='top'
                           >
                             <button
@@ -479,7 +479,7 @@ export default function ApColumnMapping({
                               }}
                             >
                               <Icon
-                                className='size-3.5 shrink-0'
+                                className='size-3 shrink-0'
                                 name={activeDataTypeObj.icon}
                               />
                             </button>

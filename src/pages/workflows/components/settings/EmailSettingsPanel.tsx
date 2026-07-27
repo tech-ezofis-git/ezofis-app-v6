@@ -37,7 +37,7 @@ export default function EmailSettingsPanel({
   const nodeData = (currentNode?.data || {}) as any
 
   const [openBasic, setOpenBasic] = useState(true)
-  const [openTrigger, setOpenTrigger] = useState(false)
+  const [openTrigger, setOpenTrigger] = useState(true)
 
   // Connection States
   const [isConnectionOpen, setIsConnectionOpen] = useState(false)
@@ -85,14 +85,13 @@ export default function EmailSettingsPanel({
     // 3. Add API connections
     if (apiConnections && Array.isArray(apiConnections)) {
       apiConnections.forEach((item: any) => {
-        const val = String(item.id)
-        if (!seenValues.has(val)) {
-          options.push({
-            label: item.name,
-            value: val,
-          })
-          seenValues.add(val)
-        }
+        const val = String(item.id ?? '')
+        if (!val || seenValues.has(val)) return
+        options.push({
+          label: item.name || item.externalAccountEmail || val,
+          value: val,
+        })
+        seenValues.add(val)
       })
     }
 

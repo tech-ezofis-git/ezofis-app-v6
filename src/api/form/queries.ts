@@ -91,8 +91,10 @@ export const getMasterFormsQueryOptions = () => {
       const forms = extractData(data)
 
       return forms.map((f: any) => ({
-        id: f.uid || f.id || String(Math.random()),
+        // Prefer numeric/form id — this is what workflow apAgent.formId stores
+        id: f.id ?? f.uid ?? String(Math.random()),
         name: f.name || f.label || 'Untitled Form',
+        uid: f.uid,
       }))
     },
   })

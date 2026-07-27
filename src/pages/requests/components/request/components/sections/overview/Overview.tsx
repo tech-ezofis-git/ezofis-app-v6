@@ -927,14 +927,26 @@ const DetailReportView = ({
   )
 }
 
+const normalizeComparable = (val: unknown) =>
+  String(val ?? '')
+    .toLowerCase()
+    .trim()
+
+const hasComparableValue = (val: unknown) => {
+  if (val === null || val === undefined) return false
+  const normalized = String(val).trim()
+  return normalized !== '' && normalized !== '-'
+}
+
 const FormCard = ({
   highlight = false,
-  icon: Icon,
+  icon: FieldIcon,
+  invoiceValue,
   isLoading = false,
   label,
   options = [],
-  score,
   poValue,
+  score,
   type = 'text',
   value,
   onChange,
@@ -947,9 +959,26 @@ const FormCard = ({
     setLocalValue(value)
   }, [value])
 
-  const isPerfectMatch = String(value).toLowerCase().trim() === String(poValue).toLowerCase().trim()
-  const effectiveScore = (score !== undefined && score !== null && Number(score) < 100 && isPerfectMatch) ? 100 : score
-  const showHint = poValue && !isPerfectMatch && Number(effectiveScore) !== 100
+  const isUsingPo =
+    hasComparableValue(poValue) &&
+    normalizeComparable(value) === normalizeComparable(poValue)
+  const canSwitchSources =
+    hasComparableValue(poValue) &&
+    hasComparableValue(invoiceValue) &&
+    normalizeComparable(poValue) !== normalizeComparable(invoiceValue)
+  const isPerfectMatch = isUsingPo
+  const effectiveScore =
+    score !== undefined &&
+    score !== null &&
+    Number(score) < 100 &&
+    isPerfectMatch
+      ? 100
+      : score
+
+  const applySourceValue = (nextValue: unknown) => {
+    setLocalValue(nextValue)
+    onChange?.(nextValue)
+  }
 
   const handleBlur = () => {
     setIsEditing(false)
@@ -982,9 +1011,9 @@ const FormCard = ({
     const selectedOption =
       typeof localValue === 'string' && localValue !== '-'
         ? options.find(
-          (opt: any) =>
-            String(opt.id).toLowerCase() === localValue.toLowerCase(),
-        ) || (localValue ? { id: localValue, name: localValue } : null)
+            (opt: any) =>
+              String(opt.id).toLowerCase() === localValue.toLowerCase(),
+          ) || (localValue ? { id: localValue, name: localValue } : null)
         : null
 
     inputElement = (
@@ -1039,7 +1068,7 @@ const FormCard = ({
             highlight && 'bg-[var(--green-9)]/10 text-[var(--green-9)]',
           )}
         >
-          <Icon className='h-3.5 w-3.5' />
+          <FieldIcon className='h-3.5 w-3.5' />
         </div>
         <div className='min-w-0 flex-1'>
           <div className='mb-0.5 flex items-center justify-between gap-2'>
@@ -1086,7 +1115,7 @@ const FormCard = ({
           highlight && 'bg-[var(--green-9)]/10 text-[var(--green-9)]',
         )}
       >
-        <Icon className='h-3.5 w-3.5' />
+        <FieldIcon className='h-3.5 w-3.5' />
       </div>
       <div className='min-w-0 flex-1'>
         <div className='mb-0.5 flex items-center justify-between gap-2'>
@@ -1120,44 +1149,47 @@ const FormCard = ({
                   value === null ||
                   value === undefined ||
                   value === '') &&
-                'font-medium text-[var(--gray-9)]',
+                  'font-medium text-[var(--gray-9)]',
               )}
             >
-              {value === null || value === undefined || value === '' ? '-' : value}
+              {value === null || value === undefined || value === ''
+                ? '-'
+                : value}
             </p>
-            {showHint && (
+            {canSwitchSources && (
               <div
                 role='button'
                 tabIndex={0}
-                title={`Apply PO Master value: ${poValue}`}
+                title={
+                  isUsingPo
+                    ? `Switch to Invoice: ${invoiceValue}`
+                    : `Switch to PO: ${poValue}`
+                }
                 className='group/suggest flex w-full max-w-full cursor-pointer flex-col gap-0.5 rounded-md border border-[var(--primary-4)] bg-[var(--primary-2)] px-2 py-1.5 text-left transition-colors hover:border-[var(--primary-6)] hover:bg-[var(--primary-3)]'
                 onClick={(e) => {
                   e.stopPropagation()
-                  setLocalValue(poValue)
-                  onChange?.(poValue)
+                  applySourceValue(isUsingPo ? invoiceValue : poValue)
                 }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault()
                     e.stopPropagation()
-                    setLocalValue(poValue)
-                    onChange?.(poValue)
+                    applySourceValue(isUsingPo ? invoiceValue : poValue)
                   }
                 }}
               >
                 <div className='flex items-center gap-1.5 text-[10px] font-semibold text-[var(--primary-11)]'>
                   <AiSparkleIcon className='shrink-0' size={14} />
-                  <span>AI suggestion</span>
                   <span className='font-normal text-[var(--primary-9)]/70'>
-                    · from PO Master
+                    {isUsingPo ? 'from Invoice' : 'from PO Master'}
                   </span>
                 </div>
                 <div className='flex min-w-0 items-center justify-between gap-2 pl-4'>
                   <span className='truncate text-[12px] font-semibold text-[var(--gray-13)]'>
-                    {poValue}
+                    {isUsingPo ? invoiceValue : poValue}
                   </span>
                   <span className='shrink-0 text-[10px] font-semibold text-[var(--primary-9)] opacity-80 group-hover/suggest:opacity-100'>
-                    Use
+                    Switch
                   </span>
                 </div>
               </div>
@@ -1517,6 +1549,47 @@ const Overview = (props: any) => {
     for (const field of matchingFields) {
       if (field?.Field && normalizeName(field.Field) === cleanK) {
         return field['PO Value']
+      }
+    }
+    return undefined
+  }
+
+  const getFieldInvoiceValue = (key: string) => {
+    const normalizeName = (name: string) => {
+      const normalized = name.toLowerCase().trim()
+      if (
+        normalized === 'vendor name' ||
+        normalized === 'supplier name' ||
+        normalized === 'supplier' ||
+        normalized === 'vendor'
+      ) {
+        return 'supplier name'
+      }
+      if (
+        normalized === 'total due' ||
+        normalized === 'invoice amount' ||
+        normalized === 'invoice value' ||
+        normalized === 'amount' ||
+        normalized === 'total amount'
+      ) {
+        return 'total due'
+      }
+      if (
+        normalized === 'invoice number' ||
+        normalized === 'invoice no' ||
+        normalized === 'invoice no.'
+      ) {
+        return 'invoice number'
+      }
+      return normalized
+    }
+
+    const cleanK = normalizeName(key)
+    const matchingFields =
+      agentData?.debug?.['Side-by-side Field Matching'] || []
+    for (const field of matchingFields) {
+      if (field?.Field && normalizeName(field.Field) === cleanK) {
+        return field['Invoice Value']
       }
     }
     return undefined
@@ -4210,17 +4283,26 @@ const Overview = (props: any) => {
                                 return (
                                   <FormCard
                                     icon={getFieldIcon(key)}
+                                    invoiceValue={
+                                      getFieldInvoiceValue(key) ?? displayValue
+                                    }
                                     key={key}
                                     label={key}
                                     options={getOptions(key)}
-                                    score={getFieldScore(key)}
                                     poValue={getFieldPoValue(key)}
+                                    score={getFieldScore(key)}
                                     type={fieldType}
                                     value={displayValue}
-                                    highlight={
-                                      key.toLowerCase().includes('total') ||
-                                      key.toLowerCase().includes('due')
-                                    }
+                                    highlight={(() => {
+                                      const normalized = key.toLowerCase()
+                                      if (normalized.includes('due date'))
+                                        return false
+                                      return (
+                                        normalized.includes('total') ||
+                                        normalized === 'due' ||
+                                        normalized.includes('total due')
+                                      )
+                                    })()}
                                     isLoading={
                                       isCurrentlyProcessing &&
                                       (displayValue === null ||

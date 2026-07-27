@@ -18,12 +18,12 @@ interface FilterMenuProps {
   onClear: () => void
 }
 
-/** Shared option-row typography for filter dropdown lists (text-12 / normal). */
+/** Shared option-row typography for filter dropdown lists (text-12). */
 const FILTER_OPTION_ROW =
-  'group flex w-full max-w-full min-w-0 cursor-pointer items-start gap-2.5 rounded px-2.5 py-1.5 text-left text-12 font-normal transition-colors hover:bg-gray-2'
+  'group flex w-full max-w-full min-w-0 cursor-pointer items-start gap-2.5 rounded px-2.5 py-1.5 text-left text-12 transition-colors hover:bg-gray-2'
 const FILTER_OPTION_ROW_SELECTED = 'bg-primary-3/30 text-primary-9'
 const FILTER_OPTION_LABEL =
-  'block min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-12 font-normal group-hover:whitespace-normal group-hover:break-words'
+  'block min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-12 group-hover:whitespace-normal group-hover:break-words'
 const FILTER_MENU_ACTION =
   'cursor-pointer text-12 font-normal whitespace-nowrap transition-colors'
 const FILTER_MENU_ACTION_ENABLED =

@@ -13,6 +13,12 @@ export interface ConnectorPayload {
   mode: string
 }
 
+/** Compares connector codes ignoring case and separators (ONE_DRIVE === onedrive) */
+const normalizeConnectorCode = (value: unknown) =>
+  String(value ?? '')
+    .toUpperCase()
+    .replace(/[\s_-]+/g, '')
+
 export const getConnection = async (payload: ConnectorPayload) => {
   const _response = {
     error: '',
@@ -51,19 +57,35 @@ export const getConnection = async (payload: ConnectorPayload) => {
     const allConnectors = typeof data === 'string' ? JSON.parse(data) : data
     const list = extractData(allConnectors)
 
+    const normalized = list.map((item: any) => ({
+      ...item,
+      id: item.id ?? item.Id ?? item.connectorId ?? item.value,
+      name:
+        item.name ??
+        item.Name ??
+        item.connectorName ??
+        item.externalAccountEmail ??
+        '',
+    }))
+
     // Apply client-side filtering based on payload criteria
     const connectorType = payload.filterBy?.[0]?.filters?.find(
       (f) => f.criteria === 'connectorType',
     )?.value
+    const expectedCode = normalizeConnectorCode(connectorType)
 
-    _response.payload = connectorType
-      ? list.filter(
-          (item: any) =>
-            String(
-              item.connectorType || item.ConnectorType || '',
-            ).toUpperCase() === String(connectorType).toUpperCase(),
+    _response.payload = expectedCode
+      ? normalized.filter((item: any) =>
+          [
+            item.providerCode,
+            item.ProviderCode,
+            item.connectorType,
+            item.ConnectorType,
+            item.provider,
+            item.type,
+          ].some((code) => normalizeConnectorCode(code) === expectedCode),
         )
-      : list
+      : normalized
   } catch (e: any) {
     console.error(e)
     _response.error = 'error fetching connection'

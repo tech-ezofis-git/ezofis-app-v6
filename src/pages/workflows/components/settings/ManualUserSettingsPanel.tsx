@@ -48,10 +48,13 @@ export default function ManualUserSettingsPanel({
   const groupOptions: Option[] = useMemo(() => {
     const groups = groupData as any[]
     if (!groups || !Array.isArray(groups)) return []
-    return groups.map((g: any) => ({
-      id: String(g.id || g.value),
-      name: String(g.groupName || g.name || g.value || 'Unknown Group'),
-    }))
+    return groups.map((g: any) => {
+      const id = g.groupId ?? g.id ?? g.value
+      return {
+        id: String(id),
+        name: String(g.groupName || g.name || g.value || `Group ${id}`),
+      }
+    })
   }, [groupData])
 
   // Find matching node in the live nodes array to ensure reactivity
@@ -60,20 +63,31 @@ export default function ManualUserSettingsPanel({
     : null
   const nodeData = (currentNode?.data || {}) as any
 
-  const [isUserEnabled, setIsUserEnabled] = useState(
-    nodeData.isUserEnabled ?? true,
-  )
-  const [selectedUsers, setSelectedUsers] = useState<Option[]>(
-    nodeData.selectedUsers || [],
-  )
-  const [isGroupEnabled, setIsGroupEnabled] = useState(
-    nodeData.isGroupEnabled ?? true,
-  )
-  const [selectedGroups, setSelectedGroups] = useState<Option[]>(
-    nodeData.selectedGroups || [],
-  )
+  const initialSelectedUsers: Option[] = Array.isArray(nodeData.selectedUsers)
+    ? nodeData.selectedUsers
+    : []
+  const initialSelectedGroups: Option[] = Array.isArray(nodeData.selectedGroups)
+    ? nodeData.selectedGroups
+    : []
 
-  const [openBasic, setOpenBasic] = useState(false)
+  const [isUserEnabled, setIsUserEnabled] = useState(
+    nodeData.isUserEnabled ??
+      (Array.isArray(nodeData.selectedUsers)
+        ? initialSelectedUsers.length > 0
+        : true),
+  )
+  const [selectedUsers, setSelectedUsers] =
+    useState<Option[]>(initialSelectedUsers)
+  const [isGroupEnabled, setIsGroupEnabled] = useState(
+    nodeData.isGroupEnabled ??
+      (Array.isArray(nodeData.selectedGroups)
+        ? initialSelectedGroups.length > 0
+        : true),
+  )
+  const [selectedGroups, setSelectedGroups] =
+    useState<Option[]>(initialSelectedGroups)
+
+  const [openBasic, setOpenBasic] = useState(true)
 
   const updateNodeData = (key: string, value: any) => {
     if (currentNode) {

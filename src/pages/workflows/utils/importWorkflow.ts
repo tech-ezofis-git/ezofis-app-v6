@@ -176,52 +176,72 @@ export const importWorkflow = (
     let fromDomainNameEnabled = false
     let fromDomainName: { id: string; name: string } | null = null
 
-    // Override Start Node if it's an Email initiated connector
-    if (
+    const initiateByList: string[] = Array.isArray(block.settings?.initiateBy)
+      ? block.settings.initiateBy.map((mode: unknown) =>
+          String(mode).toUpperCase(),
+        )
+      : []
+    const isEmailStart =
       block.type === 'START' &&
-      block.settings?.initiateMode === 'AUTOMATIC' &&
-      block.settings?.initiateBy?.includes('EMAIL')
-    ) {
-      const mailSettings = block.settings?.mailInitiate
-      if (mailSettings?.connectorType) {
-        // e.g., 'gmail'
-        toolType = mailSettings.connectorType.toLowerCase()
+      (initiateByList.includes('EMAIL') ||
+        Boolean(block.settings?.mailInitiate))
+    const isManualStart =
+      block.type === 'START' &&
+      !isEmailStart &&
+      (initiateByList.includes('USER') ||
+        block.settings?.initiateMode === 'MANUAL' ||
+        initiateByList.length === 0)
+
+    // Override Start Node for email-initiated workflows
+    if (isEmailStart) {
+      const mailSettings = block.settings?.mailInitiate || {}
+      const connectorType = String(
+        mailSettings.connectorType || 'gmail',
+      ).toLowerCase()
+      toolType = connectorType.includes('outlook') ? 'outlook' : 'gmail'
+      if (
+        mailSettings.connectorId !== undefined &&
+        mailSettings.connectorId !== null &&
+        mailSettings.connectorId !== ''
+      ) {
         connectorId = mailSettings.connectorId
+      }
 
-        if (mailSettings.conditions) {
-          hasAttachmentEnabled = mailSettings.conditions.hasAttachment ?? false
+      if (mailSettings.conditions) {
+        hasAttachmentEnabled = mailSettings.conditions.hasAttachment ?? false
 
-          const subjects = mailSettings.conditions.mailSubject
-          if (Array.isArray(subjects) && subjects.length > 0) {
-            mailSubjectEnabled = true
-            mailSubjectToMonitor = subjects.join(', ')
-          }
+        const subjects = mailSettings.conditions.mailSubject
+        if (Array.isArray(subjects) && subjects.length > 0) {
+          mailSubjectEnabled = true
+          mailSubjectToMonitor = subjects.join(', ')
+        }
 
-          const contents = mailSettings.conditions.mailContent
-          if (Array.isArray(contents) && contents.length > 0) {
-            mailContentEnabled = true
-            mailContentToMonitor = contents.join(', ')
-          }
+        const contents = mailSettings.conditions.mailContent
+        if (Array.isArray(contents) && contents.length > 0) {
+          mailContentEnabled = true
+          mailContentToMonitor = contents.join(', ')
+        }
 
-          const addrs = mailSettings.conditions.fromAddress
-          if (Array.isArray(addrs) && addrs.length > 0) {
-            fromMailAddressEnabled = true
-            fromMailAddresses = addrs.map((addr: string) => ({
-              id: addr,
-              name: String(addr),
-            }))
-          }
+        const addrs = mailSettings.conditions.fromAddress
+        if (Array.isArray(addrs) && addrs.length > 0) {
+          fromMailAddressEnabled = true
+          fromMailAddresses = addrs.map((addr: string) => ({
+            id: addr,
+            name: String(addr),
+          }))
+        }
 
-          const domains = mailSettings.conditions.fromDomain
-          if (Array.isArray(domains) && domains.length > 0) {
-            fromDomainNameEnabled = true
-            fromDomainName = {
-              id: domains[0],
-              name: String(domains[0]),
-            }
+        const domains = mailSettings.conditions.fromDomain
+        if (Array.isArray(domains) && domains.length > 0) {
+          fromDomainNameEnabled = true
+          fromDomainName = {
+            id: domains[0],
+            name: String(domains[0]),
           }
         }
       }
+    } else if (isManualStart) {
+      toolType = 'manual user'
     }
 
     if (connectorId === undefined) {
@@ -242,6 +262,85 @@ export const importWorkflow = (
 
     const defaults = getNodeDefaults(toolType)
 
+    // Map AP Agent nested settings into flat UI fields used by APAgentSettingsPanel
+    const apAgent = block.settings?.apAgent
+    let apAgentUi: Record<string, unknown> = {}
+    if (apAgent && (toolType === 'ap agent' || block.type === 'AP_AGENT')) {
+      const invoiceTypeMap: Record<string, string> = {
+        NON_PO: 'Non-PO',
+        NON_PO_INVOICE: 'Non-PO',
+        PO_INVOICE: 'PO Invoices',
+      }
+      const matchingTypeMap: Record<string, string> = {
+        '2_WAY_MATCH': '2-Way Match',
+        '3_WAY_MATCH': '3-Way Match',
+      }
+      const features: string[] = Array.isArray(apAgent.features)
+        ? apAgent.features
+        : []
+
+      const toMasterOption = (id: unknown) => {
+        if (id === null || id === undefined || id === '' || id === 0) return null
+        return { id, name: String(id) }
+      }
+
+      apAgentUi = {
+        backOrderDetection: features.includes('BACKORDER_DETECT'),
+        duplicateDetection: features.includes('DUPLICATE_DETECT'),
+        glSource: toMasterOption(apAgent.syncGLAccount),
+        invoiceMaster:
+          apAgent.invoiceType === 'NON_PO' ||
+          apAgent.invoiceType === 'NON_PO_INVOICE'
+            ? toMasterOption(apAgent.formId)
+            : undefined,
+        invoiceType:
+          invoiceTypeMap[apAgent.invoiceType] ||
+          apAgent.invoiceType ||
+          'PO Invoices',
+        matterSource: toMasterOption(apAgent.syncMatterInfo),
+        poMaster:
+          !apAgent.invoiceType ||
+          apAgent.invoiceType === 'PO_INVOICE' ||
+          apAgent.invoiceType === 'PO'
+            ? toMasterOption(apAgent.formId)
+            : undefined,
+        poMatching:
+          matchingTypeMap[apAgent.matchingType] ||
+          apAgent.matchingType ||
+          '2-Way Match',
+        syncGL: !!apAgent.syncGLAccountRequired,
+        syncMatter: !!apAgent.syncMatterInfoRequired,
+        thresholds: {
+          approved: apAgent.decisionApprove ?? 90,
+          partial: apAgent.decisionPartial ?? 60,
+        },
+        vendorMustExist: apAgent.vendorValidationRequired ?? true,
+        vendorSource: toMasterOption(apAgent.vendorMasterId),
+        weights: Array.isArray(apAgent.fieldScore)
+          ? apAgent.fieldScore.map((field: any) => ({
+              fieldId: field.fieldId,
+              icon: field.icon,
+              label: field.label,
+              rowId: field.id || field.rowId,
+              value: field.value ?? 0,
+            }))
+          : undefined,
+      }
+    }
+
+    const providerLabels: Record<string, string> = {
+      gmail: 'Gmail',
+      outlook: 'Outlook',
+    }
+    let nodeLabel: string
+    if (isEmailStart) {
+      nodeLabel = providerLabels[toolType] || 'Gmail'
+    } else if (isManualStart) {
+      nodeLabel = block.settings?.label || 'Manual User'
+    } else {
+      nodeLabel = block.settings?.label || providerLabels[toolType] || 'Node'
+    }
+
     return {
       data: {
         // Map condition-specific settings for legacy import
@@ -255,35 +354,72 @@ export const importWorkflow = (
         hasAttachmentEnabled,
         icon: defaults.icon,
         iconColor: defaults.iconColor,
-        label:
-          block.settings?.label ||
-          (toolType === 'gmail'
-            ? 'Gmail'
-            : toolType === 'outlook'
-              ? 'Outlook'
-              : 'Node'),
+        initiateBy: block.settings?.initiateBy,
+        initiateMode: block.settings?.initiateMode,
+        label: nodeLabel,
         mailContentEnabled,
         mailContentToMonitor,
         mailSubjectEnabled,
         mailSubjectToMonitor,
         masterConditions: block.settings?.masterConditions,
+        isGroupEnabled: Array.isArray(block.settings?.groups)
+          ? block.settings.groups.length > 0
+          : undefined,
+        isUserEnabled: Array.isArray(block.settings?.users)
+          ? block.settings.users.length > 0
+          : undefined,
         selectedGroups: Array.isArray(block.settings?.groups)
-          ? block.settings.groups.map((g: string) => ({
-              id: g,
-              name: `Group ${g}`,
-            }))
+          ? block.settings.groups
+              .map((g: any) => {
+                if (g == null || g === '') return null
+                if (typeof g === 'object') {
+                  const id = g.groupId ?? g.id ?? g.value
+                  if (id == null || id === '') return null
+                  return {
+                    id: String(id),
+                    name: String(
+                      g.groupName || g.name || g.value || `Group ${id}`,
+                    ),
+                  }
+                }
+                return {
+                  id: String(g),
+                  name: `Group ${g}`,
+                }
+              })
+              .filter(Boolean)
           : undefined,
         selectedUsers: Array.isArray(block.settings?.users)
-          ? block.settings.users.map((u: string) => ({
-              id: u,
-              name: `User ${u}`,
-            }))
+          ? block.settings.users
+              .map((u: any) => {
+                if (u == null || u === '') return null
+                if (typeof u === 'object') {
+                  const id = u.id ?? u.userId ?? u.value
+                  if (id == null || id === '') return null
+                  return {
+                    id: String(id),
+                    name: String(
+                      u.name ||
+                        u.loginName ||
+                        u.email ||
+                        u.value ||
+                        `User ${id}`,
+                    ),
+                  }
+                }
+                return {
+                  id: String(u),
+                  name: `User ${u}`,
+                }
+              })
+              .filter(Boolean)
           : undefined,
         standardCondition: block.settings?.standardCondition ?? true,
         subLabel: defaults.subLabel,
         toolType: toolType,
         type: nodeType,
         warning: false,
+        ...apAgentUi,
         // specifically map the legacy block properties we might need for rendering
         // but avoid polluting the new structure with unmapped settings
       },

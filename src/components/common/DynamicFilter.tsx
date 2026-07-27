@@ -740,7 +740,7 @@ export default function DynamicFilter({
                     ) : (
                       filteredAddableFields.map((field) => (
                         <button
-                          className='flex w-full items-center rounded-md px-2.5 py-1.5 text-left text-12 font-normal transition-colors hover:bg-gray-2'
+                          className='flex w-full items-center rounded-md px-2.5 py-1.5 text-left text-12 transition-colors hover:bg-gray-2'
                           key={field.id}
                           type='button'
                           onClick={() => {

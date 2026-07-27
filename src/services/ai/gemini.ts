@@ -7,7 +7,17 @@ if (!API_KEY) {
   console.warn('VITE_GEMINI_API_KEY is not set in environment variables.')
 }
 
-const ai = new GoogleGenAI({ apiKey: API_KEY || '' })
+let aiClient: GoogleGenAI | null = null
+
+const getAiClient = () => {
+  if (!API_KEY) {
+    throw new Error('Gemini API Key is missing')
+  }
+  if (!aiClient) {
+    aiClient = new GoogleGenAI({ apiKey: API_KEY })
+  }
+  return aiClient
+}
 
 const FREE_FOLDER_MODELS = [
   'gemini-2.5-flash-lite',
@@ -25,7 +35,7 @@ export const generateFormFields = async (
   }
 
   try {
-    const response = await ai.models.generateContent({
+    const response = await getAiClient().models.generateContent({
       config: {
         responseMimeType: 'application/json',
         responseSchema: {
@@ -497,7 +507,7 @@ Return a practical folder setup for this use case.
 
   for (const model of FREE_FOLDER_MODELS) {
     try {
-      const response = await ai.models.generateContent({
+      const response = await getAiClient().models.generateContent({
         config: {
           responseMimeType: 'application/json',
           responseSchema: {

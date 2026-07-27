@@ -497,13 +497,18 @@ function PropertiesPanel({
     )
   }
 
-  // Render Email settings panel
-  if (
+  // Render Email settings panel (email-initiated start / gmail / outlook)
+  const initiateBy = Array.isArray(node.data.initiateBy)
+    ? node.data.initiateBy.map((mode) => String(mode).toUpperCase())
+    : []
+  const isEmailNode =
     toolType.includes('gmail') ||
     toolType.includes('outlook') ||
     (node.data.icon as string)?.includes('gmail') ||
-    (node.data.icon as string)?.includes('outlook')
-  ) {
+    (node.data.icon as string)?.includes('outlook') ||
+    (node.data.type === 'trigger' && initiateBy.includes('EMAIL'))
+
+  if (isEmailNode) {
     return (
       <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-white shadow-xl transition-all'>
         {NodeHeader}
@@ -514,6 +519,37 @@ function PropertiesPanel({
             }
           >
             <EmailNodeSettings node={node} />
+          </Suspense>
+        </div>
+        {CommonFooter}
+      </div>
+    )
+  }
+
+  // Render start node settings for manual (user/group) initiation
+  const isStartNode =
+    node.data.type === 'trigger' && !edges.some((e) => e.target === node.id)
+  const isManualInitiatedStart =
+    isStartNode &&
+    (toolType === 'manual user' ||
+      toolType === 'form submission' ||
+      initiateBy.includes('USER') ||
+      String(node.data.initiateMode || '').toUpperCase() === 'MANUAL' ||
+      toolType === 'initiator' ||
+      toolType === 'trigger' ||
+      toolType === 'start')
+
+  if (isManualInitiatedStart) {
+    return (
+      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-white shadow-xl transition-all'>
+        {NodeHeader}
+        <div className='flex-1 overflow-hidden'>
+          <Suspense
+            fallback={
+              <div className='p-6 text-gray-10'>Loading settings...</div>
+            }
+          >
+            <ManualUserNodeSettings node={node} />
           </Suspense>
         </div>
         {CommonFooter}
