@@ -4386,10 +4386,10 @@ const Overview = (props: any) => {
                                     />
                                     <div className='min-w-0'>
                                       <div>
-                                        <strong className='font-semibold text-[var(--gray-13)]'>AI suggestion</strong>
+                                        {/* <strong className='font-semibold text-[var(--gray-13)]'>AI suggestion</strong> */}
                                         <span className='text-[var(--gray-11)]'>
                                           {' '}
-                                          — Related purchase orders or invoices for this supplier.
+                                           Related purchase orders or invoices for this supplier.
                                         </span>
                                       </div>
                                       <div className='mt-0.5 text-[var(--gray-12)]'>
