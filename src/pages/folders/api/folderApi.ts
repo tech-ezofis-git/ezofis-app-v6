@@ -23,6 +23,7 @@ import {
   type RepositoryFieldDto,
 } from '../../../api/v6/folder/folder'
 import { splitFilterValues } from '../utils/multiFilterValues'
+import { FOLDER_FILES_SECTION_MAX_FOLDERS } from '../utils/folderExplorerUtils'
 
 export interface DynamicRepositoryColumn {
   key: string
@@ -573,15 +574,58 @@ const toFolderItem = (args: {
   }
 }
 
+const repositoryByIdCache = new Map<string, RepositoryDto>()
+const repositoryByIdInflight = new Map<string, Promise<RepositoryDto>>()
+
+const fetchRepositoryById = async (
+  repositoryId: string,
+  options?: { force?: boolean },
+): Promise<RepositoryDto> => {
+  const force = Boolean(options?.force)
+
+  if (force) {
+    invalidateRepositoryByIdCache(repositoryId)
+  } else {
+    const cached = repositoryByIdCache.get(repositoryId)
+    if (cached) return cached
+
+    const inflight = repositoryByIdInflight.get(repositoryId)
+    if (inflight) return inflight
+  }
+
+  const request = (async () => {
+    const result = await authApiV6.getRepositoryById(repositoryId)
+    throwIfCanceled(result)
+    if (result.error) throw new Error(String(result.error))
+    const repository = result.data as RepositoryDto
+    repositoryByIdCache.set(repositoryId, repository)
+    return repository
+  })().finally(() => {
+    repositoryByIdInflight.delete(repositoryId)
+  })
+
+  repositoryByIdInflight.set(repositoryId, request)
+
+  return request
+}
+
+const invalidateRepositoryByIdCache = (repositoryId?: string) => {
+  if (!repositoryId) {
+    repositoryByIdCache.clear()
+    repositoryByIdInflight.clear()
+    return
+  }
+  repositoryByIdCache.delete(repositoryId)
+  repositoryByIdInflight.delete(repositoryId)
+}
+
 const getRepositoryFields = async (
   repositoryId: string,
   fallback?: RepositoryDto,
 ) => {
   if (fallback?.fields?.length) return fallback.fields
-  const result = await authApiV6.getRepositoryById(repositoryId)
-  throwIfCanceled(result)
-  if (result.error) throw new Error(String(result.error))
-  return (result.data as RepositoryDto)?.fields ?? []
+  const repository = await fetchRepositoryById(repositoryId)
+  return repository.fields ?? []
 }
 
 const buildBreadcrumbs = (payload: FolderNodePayload): BreadcrumbItem[] => {
@@ -972,23 +1016,8 @@ export const folderApi = {
       }
     }
 
-    let repository: RepositoryDto | undefined
-    if (decoded.kind === 'repository') {
-      const repositoryResult = await authApiV6.getRepositoryById(
-        decoded.repositoryId,
-      )
-      throwIfCanceled(repositoryResult)
-      if (repositoryResult.error) {
-        throw new Error(String(repositoryResult.error))
-      }
-      repository = repositoryResult.data as RepositoryDto
-    }
-    const fields = await getRepositoryFields(
-      decoded.kind === 'repository'
-        ? decoded.repositoryId
-        : decoded.repositoryId,
-      repository,
-    )
+    const repository = await fetchRepositoryById(decoded.repositoryId)
+    const fields = await getRepositoryFields(decoded.repositoryId, repository)
     const fieldIconMap = buildFieldIconMap(fields)
     const structure =
       decoded.kind === 'repository' ||
@@ -1133,7 +1162,8 @@ export const folderApi = {
 
       if (
         includeFiles &&
-        (decoded.kind === 'browse' || decoded.kind === 'browsePath')
+        (decoded.kind === 'browse' || decoded.kind === 'browsePath') &&
+        folders.length < FOLDER_FILES_SECTION_MAX_FOLDERS
       ) {
         const fileResult = await fetchRepositoryFiles(
           fileItemFilters,
@@ -1171,11 +1201,15 @@ export const folderApi = {
     return []
   },
 
-  async getRepositoryFullData(repositoryId: string): Promise<RepositoryDto> {
-    const result = await authApiV6.getRepositoryById(repositoryId)
-    throwIfCanceled(result)
-    if (result.error) throw new Error(String(result.error))
-    return result.data as RepositoryDto
+  async getRepositoryFullData(
+    repositoryId: string,
+    options?: { force?: boolean },
+  ): Promise<RepositoryDto> {
+    return fetchRepositoryById(repositoryId, options)
+  },
+
+  invalidateRepositoryCache(repositoryId?: string) {
+    invalidateRepositoryByIdCache(repositoryId)
   },
   async getShareData(): Promise<ShareData> {
     return {

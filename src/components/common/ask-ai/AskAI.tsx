@@ -997,12 +997,6 @@ const ChatMessage = ({
   const paragraphs = msg.text.split('\n').filter(Boolean)
   const showExtras = Boolean(msg.revealExtras)
   const richBlocks = blocks.filter((b) => b.type !== 'paragraph')
-  const ctaLabel =
-    msg.ctaMode === 'apply'
-      ? 'Click here to apply the filter'
-      : msg.ctaMode === 'navigate'
-        ? 'Click here to go to that page'
-        : null
 
   return (
     <motion.div
@@ -1035,21 +1029,15 @@ const ChatMessage = ({
           {showExtras && richBlocks.length > 0 && (
             <StaggeredCards
               items={richBlocks.map((block, index) => (
-                <AnswerBlock block={block} key={`${block.type}-${index}`} />
+                <AnswerBlock
+                  block={block}
+                  ctaMode={msg.ctaMode}
+                  key={`${block.type}-${index}`}
+                  onActionClick={onActionClick}
+                />
               ))}
               onProgress={onTypingProgress}
             />
-          )}
-
-          {showExtras && ctaLabel && (
-            <button
-              className='mt-1 mb-1 inline-flex items-center gap-1.5 text-[13px] font-semibold text-[var(--purple)] underline-offset-2 hover:underline'
-              type='button'
-              onClick={onActionClick}
-            >
-              <UiIcon className='size-3.5' name='external' />
-              {ctaLabel}
-            </button>
           )}
         </div>
       </div>
@@ -1057,35 +1045,96 @@ const ChatMessage = ({
   )
 }
 
-const AnswerBlock = ({ block }: { block: TextBlock }) => {
+const AnswerBlock = ({
+  block,
+  ctaMode,
+  onActionClick,
+}: {
+  block: TextBlock
+  ctaMode?: AskAiCtaMode | null
+  onActionClick?: () => void
+}) => {
   if (block.type === 'paragraph') {
     return <p className='mb-2.5'>{block.text}</p>
   }
 
   if (block.type === 'bullets') {
-    return (
-      <div className='mb-2.5 overflow-hidden rounded-[14px] border border-[var(--border)]'>
-        {block.title && (
-          <div className='border-b border-[var(--border)] bg-[var(--bg2)] px-3 py-2 text-[10.5px] font-medium tracking-[.4px] text-[var(--text2)] uppercase'>
-            {block.title}
+    const isClickable = Boolean(onActionClick && ctaMode)
+    const isApply = ctaMode === 'apply'
+    const actionLabel = isApply ? 'Apply filter' : 'Open the page'
+
+    const content = (
+      <>
+        <div className='flex items-center justify-between gap-2 border-b border-[var(--border)] bg-[var(--bg2)] px-3 py-2'>
+          <div className='flex min-w-0 items-center gap-1.5 text-[10.5px] font-medium tracking-[.4px] text-[var(--text2)] uppercase'>
+            <Filter className='size-3.5 shrink-0' strokeWidth={2} />
+            <span className='truncate'>Filters Applied</span>
           </div>
-        )}
-        <div className='flex flex-col gap-2 px-3 py-2.5'>
+          {isClickable ? (
+            isApply ? (
+              <Filter
+                className='size-3.5 shrink-0 text-[var(--purple)]'
+                strokeWidth={2}
+              />
+            ) : (
+              <ExternalLink
+                className='size-3.5 shrink-0 text-[var(--purple)] transition group-hover:translate-x-0.5'
+                strokeWidth={2}
+              />
+            )
+          ) : null}
+        </div>
+
+        <div className='flex flex-wrap gap-1.5 px-3 py-2.5'>
           {block.items.map((item) => (
-            <div
-              className='flex items-start gap-2 text-[12.5px]'
+            <span
+              className='inline-flex max-w-full items-center gap-1 rounded-full border border-[var(--primary-4)] bg-[var(--primary-2)] px-2.5 py-1 text-[12px] text-[var(--text1)]'
               key={`${item.label}-${item.value}`}
             >
-              <span className='mt-1.5 size-1.5 shrink-0 rounded-full bg-[var(--primary-9)]' />
-              <div className='min-w-0 flex-1'>
-                <span className='font-medium text-[var(--text2)]'>
-                  {item.label}:
-                </span>{' '}
-                <span className='text-[var(--text1)]'>{item.value}</span>
-              </div>
-            </div>
+              <span className='font-medium text-[var(--text2)]'>
+                {item.label}
+              </span>
+              <span className='text-[var(--text3)]'>:</span>
+              <span className='min-w-0 truncate font-semibold text-[var(--spark1)]'>
+                {item.value}
+              </span>
+            </span>
           ))}
         </div>
+
+        {isClickable ? (
+          <div className='flex items-center justify-between gap-2 border-t border-[var(--primary-4)] bg-[var(--primary-2)] px-3 py-2.5'>
+            <div className='text-[12.5px] font-semibold text-[var(--purple)] underline-offset-2 group-hover:underline'>
+              {actionLabel}
+            </div>
+            {isApply ? (
+              <Filter className='size-4 shrink-0 text-[var(--purple)]' strokeWidth={2} />
+            ) : (
+              <ExternalLink
+                className='size-4 shrink-0 text-[var(--purple)]'
+                strokeWidth={2}
+              />
+            )}
+          </div>
+        ) : null}
+      </>
+    )
+
+    if (isClickable) {
+      return (
+        <button
+          className='group mb-2.5 w-full overflow-hidden rounded-[14px] border border-[var(--border)] bg-[var(--bg)] text-left transition hover:border-[var(--primary-7)] hover:shadow-[0_6px_18px_rgba(124,58,237,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary-7)]'
+          type='button'
+          onClick={onActionClick}
+        >
+          {content}
+        </button>
+      )
+    }
+
+    return (
+      <div className='mb-2.5 overflow-hidden rounded-[14px] border border-[var(--border)]'>
+        {content}
       </div>
     )
   }

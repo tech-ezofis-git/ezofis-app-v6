@@ -76,6 +76,7 @@ export function useFolderExplorer() {
   const requestSeqRef = useRef(0)
   const folderLoadLockRef = useRef(false)
   const lastRequestedFolderPageRef = useRef<Record<string, number>>({})
+  const loadedRepositoryIdRef = useRef<string | null>(null)
   const pageSizeRef = useRef(pageSize)
   const fileFiltersRef = useRef(fileFilters)
   const folderFiltersRef = useRef(folderFilters)
@@ -176,18 +177,31 @@ export function useFolderExplorer() {
     [activeFolder],
   )
 
-  const loadSelectedRepository = async (folderId: string) => {
+  const loadSelectedRepository = async (
+    folderId: string,
+    options?: { force?: boolean },
+  ) => {
     const decoded = decodeRepositoryNodeId(folderId)
 
     if (!decoded || decoded.kind === 'static') {
+      loadedRepositoryIdRef.current = null
       setSelectedRepository(null)
       return null
     }
 
     const repositoryId = decoded.repositoryId
 
+    // Only hit /repositories/{id} when the repository id changes
+    // (or when an explicit refresh is requested).
+    if (!options?.force && loadedRepositoryIdRef.current === repositoryId) {
+      return null
+    }
+
     try {
-      const repository = await folderApi.getRepositoryFullData(repositoryId)
+      const repository = await folderApi.getRepositoryFullData(repositoryId, {
+        force: options?.force,
+      })
+      loadedRepositoryIdRef.current = repositoryId
       setSelectedRepository(repository as RepositoryDetail)
       return repository
     } catch (exception: any) {
@@ -198,6 +212,7 @@ export function useFolderExplorer() {
 
       if (isCanceled) return null
 
+      loadedRepositoryIdRef.current = null
       setSelectedRepository(null)
       setError(exception?.message || 'Unable to load repository details')
       return null
@@ -359,8 +374,7 @@ export function useFolderExplorer() {
     )
 
     try {
-      const response = await folderApi.getFolderContent(folderId, {
-        includeFiles: false,
+      const response = await folderApi.getFolderChildren(folderId, {
         page: 1,
         pageSize: DEFAULT_FOLDER_PAGE_SIZE,
       })
@@ -780,7 +794,7 @@ export function useFolderExplorer() {
       folderLoadLockRef.current = false
       lastRequestedFolderPageRef.current[activeFolder] = 1
 
-      await loadSelectedRepository(activeFolder)
+      await loadSelectedRepository(activeFolder, { force: true })
 
       await loadFolderContent({
         appendFolders: false,
