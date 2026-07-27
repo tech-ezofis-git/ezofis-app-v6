@@ -1,6 +1,8 @@
 import { useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import workflowsApiV6 from '@/api/v6/workflows'
+import useTheme from '@/hooks/useTheme'
+import AiBrandIcon from '@/components/common/AiBrandIcon'
 import sample1 from '@/assets/Sample Invoices/inv-1.pdf'
 import sample1Img from '@/assets/Sample Invoices/inv-1.png'
 import sample10 from '@/assets/Sample Invoices/inv-10.pdf'
@@ -950,10 +952,14 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
                   <div
                     className={`flex size-10 items-center justify-center rounded-lg shadow-sm ${item.color} transition-transform duration-300 group-hover:scale-105`}
                   >
-                    <Icon
-                      className='size-5 transition-transform duration-300 group-hover:rotate-6'
-                      name={item.icon}
-                    />
+                    {item.icon === 'tabler:sparkles' ? (
+                      <AiBrandIcon className='size-5 transition-transform duration-300 group-hover:rotate-6' />
+                    ) : (
+                      <Icon
+                        className='size-5 transition-transform duration-300 group-hover:rotate-6'
+                        name={item.icon}
+                      />
+                    )}
                   </div>
                   <div className='min-w-0 flex-1'>
                     <h4 className='truncate text-13/4.5 font-semibold text-[var(--gray-13)] transition-colors group-hover:text-purple-7'>

@@ -25,7 +25,7 @@ const Notifications = () => {
       <PageEmptyState
         containerClassName='h-96 px-10'
         description="You're all caught up. New notifications will appear here."
-        fill={false}
+        fill={true}
         icon='lucide:bell-off'
         title='No notifications'
       />

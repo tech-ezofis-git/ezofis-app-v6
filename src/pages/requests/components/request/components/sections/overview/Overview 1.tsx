@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import Icon from '@/components/base/icon/Icon'
+import AiBrandIcon from '@/components/common/AiBrandIcon'
 import { AnimateSlideUp } from '@/components/common/animations'
 import FileSheet from '@/components/common/file-sheet/FileSheet'
 import { SkeletonCard } from '@/components/common/skeletons'
@@ -461,10 +462,7 @@ const Overview = ({
                         <div className='w-2 self-stretch rounded-full bg-[var(--primary-9)] opacity-30' />
                         <div className='flex min-w-0 flex-col gap-1'>
                           <div className='flex items-center gap-2'>
-                            <Icon
-                              className='size-3.5 text-[var(--primary-9)]'
-                              name='tabler:sparkles'
-                            />
+                              <AiBrandIcon className='size-5 shrink-0 animate-pulse' />
                             <span className='text-[11px] font-bold tracking-wider text-[var(--gray-10)] uppercase'>
                               Analysis
                             </span>

@@ -1,5 +1,5 @@
-import { Sparkles } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
+import AiBrandIcon from '@/components/common/AiBrandIcon'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import IconButton from '@/components/base/button/IconButton'
@@ -97,6 +97,21 @@ const GlobalSearch = () => {
       })
   }, [debouncedQuery, pageContext?.actionFrom, pageContext?.specificId])
 
+  const openAllResults = () => {
+    const searchText = query.trim() || debouncedQuery
+    if (!searchText) return
+
+    setPending({
+      fileSearch: searchText,
+      filters: {},
+      repositoryId: pageContext?.specificId || undefined,
+      repositoryLabel: 'Repository',
+      target: 'Repository',
+    })
+    void navigate({ to: '/folders' })
+    setOpened(false)
+  }
+
   const openHit = (hit: GlobalSearchHit) => {
     const repositoryId = String(hit.id?.repositoryId || '').trim()
     const itemId = String(hit.id?.itemId || '').trim()
@@ -127,6 +142,7 @@ const GlobalSearch = () => {
 
   const showIdle = !query.trim() && !loading
   const showResults = !loading && Boolean(debouncedQuery)
+  const searchLabel = query.trim() || debouncedQuery
 
   return (
     <Menu
@@ -156,14 +172,24 @@ const GlobalSearch = () => {
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => {
                 e.stopPropagation()
-                if (e.key === 'Escape') setOpened(false)
+                if (e.key === 'Escape') {
+                  setOpened(false)
+                  return
+                }
+                if (e.key === 'Enter' && searchLabel) {
+                  e.preventDefault()
+                  openAllResults()
+                }
               }}
             />
             <button
               aria-label='Search'
               className='grid size-7 shrink-0 place-items-center rounded-md text-gray-11 transition-colors hover:bg-gray-4 hover:text-gray-13'
               type='button'
-              onClick={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation()
+                if (searchLabel) openAllResults()
+              }}
             >
               <Icon name='lucide:search' />
             </button>
@@ -201,20 +227,19 @@ const GlobalSearch = () => {
           }
         `}</style>
 
-        <div className='max-h-[420px] min-h-[200px] overflow-y-auto'>
+        <div className='flex max-h-[420px] min-h-[200px] flex-col overflow-hidden'>
           <AnimatePresence mode='wait'>
             {showIdle && (
               <motion.div
                 animate={{ opacity: 1 }}
-                className='flex flex-col items-center justify-center gap-2 px-6 py-14 text-center'
+                className='flex flex-1 flex-col items-center justify-center gap-2 px-6 py-14 text-center'
                 exit={{ opacity: 0 }}
                 initial={{ opacity: 0 }}
                 key='idle'
               >
-                <Sparkles
-                  className='text-primary-8'
-                  size={22}
-                  strokeWidth={2}
+                <AiBrandIcon
+                  alt='Search AI'
+                  className='size-[22px] opacity-80'
                 />
                 <p className='text-sm font-medium text-gray-12'>
                   Start typing to search
@@ -247,7 +272,10 @@ const GlobalSearch = () => {
                     repeat: Infinity,
                   }}
                 >
-                  <Sparkles size={24} strokeWidth={2} />
+                  <AiBrandIcon
+                    alt='Searching AI'
+                    className='size-[24px]'
+                  />
                 </motion.div>
                 <p className='text-xs font-medium text-gray-11'>Searching…</p>
                 <div className='h-1 w-44 overflow-hidden rounded-full bg-primary-3'>
@@ -281,56 +309,91 @@ const GlobalSearch = () => {
             )}
 
             {showResults && !error && results.length > 0 && (
-              <motion.ul
+              <motion.div
                 animate={{ opacity: 1 }}
-                className='flex flex-col py-1'
+                className='flex min-h-0 flex-1 flex-col'
                 exit={{ opacity: 0 }}
                 initial={{ opacity: 0 }}
                 key='list'
               >
-                {results.map((hit, index) => {
-                  const title = getSearchHitTitle(hit)
-                  const date = getSearchHitDate(hit)
-                  const icon = getSearchHitIcon(hit.type)
-                  const key =
-                    hit.id?.itemId ||
-                    `${hit.type}-${title}-${date}-${index}`
+                <ul className='ez-scrollbar min-h-0 flex-1 overflow-y-auto divide-y divide-gray-3 px-1 py-1'>
+                  {results.map((hit, index) => {
+                    const title = getSearchHitTitle(hit)
+                    const date = getSearchHitDate(hit)
+                    const icon = getSearchHitIcon(hit.type)
+                    const isLatest = false
+                    const key =
+                      hit.id?.itemId ||
+                      `${hit.type}-${title}-${date}-${index}`
 
-                  return (
-                    <motion.li
-                      animate={{ opacity: 1, y: 0 }}
-                      initial={{ opacity: 0, y: 8 }}
-                      key={key}
-                      transition={{ delay: Math.min(index, 12) * 0.03, duration: 0.2 }}
-                    >
-                      <button
-                        className='flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-primary-2'
-                        type='button'
-                        onClick={() => openHit(hit)}
+                    return (
+                      <motion.li
+                        animate={{ opacity: 1, y: 0 }}
+                        initial={{ opacity: 0, y: 8 }}
+                        key={key}
+                        transition={{
+                          delay: Math.min(index, 12) * 0.03,
+                          duration: 0.2,
+                        }}
                       >
-                        <span className='min-w-0 flex-1'>
-                          <span className='block truncate text-[13.5px] leading-5 font-medium text-gray-13'>
-                            {title}
+                        <button
+                          className='flex w-full items-center gap-3 px-3 py-3 text-left transition-colors hover:bg-primary-2'
+                          type='button'
+                          onClick={() => openHit(hit)}
+                        >
+                          <span
+                            className={cn(
+                              'flex size-9 shrink-0 items-center justify-center rounded-[10px]',
+                              isLatest
+                                ? 'bg-primary-3 text-primary-10'
+                                : 'bg-gray-3 text-gray-11',
+                            )}
+                          >
+                            <Icon className='size-4' name={icon} />
                           </span>
-                          <span className='mt-1 flex items-center gap-1.5 text-[12px] text-gray-10'>
-                            <Icon
-                              className='size-3.5 shrink-0 text-primary-9'
-                              name={icon}
-                            />
-                            <span className='truncate'>
+
+                          <span className='min-w-0 flex-1'>
+                            <span className='block truncate text-[13.5px] leading-5 font-semibold text-gray-13'>
+                              {title}
+                            </span>
+                            <span className='mt-0.5 block truncate text-[12px] text-gray-10'>
                               {date || hit.type || 'Result'}
                             </span>
                           </span>
-                        </span>
-                        <Icon
-                          className='shrink-0 text-primary-7'
-                          name='lucide:chevron-right'
-                        />
-                      </button>
-                    </motion.li>
-                  )
-                })}
-              </motion.ul>
+
+                          {isLatest ? (
+                            <span className='shrink-0 rounded-full bg-primary-3 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-primary-10 lowercase'>
+                              latest
+                            </span>
+                          ) : null}
+
+                          <Icon
+                            className='size-4 shrink-0 text-gray-8'
+                            name='lucide:chevron-right'
+                          />
+                        </button>
+                      </motion.li>
+                    )
+                  })}
+                </ul>
+
+                <button
+                  className='flex w-full shrink-0 items-center gap-2.5 border-t border-gray-3 bg-surface-raised px-3.5 py-3 text-left transition-colors hover:bg-gray-2'
+                  type='button'
+                  onClick={openAllResults}
+                >
+                  <Icon
+                    className='size-4 shrink-0 text-gray-10'
+                    name='lucide:search'
+                  />
+                  <span className='min-w-0 flex-1 truncate text-[13px] text-gray-12'>
+                    All search results for “{searchLabel}”
+                  </span>
+                  <span className='shrink-0 text-[12px] text-gray-9'>
+                    Press ENTER
+                  </span>
+                </button>
+              </motion.div>
             )}
           </AnimatePresence>
         </div>

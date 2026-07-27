@@ -7,6 +7,7 @@ import IconButton from '@/components/base/button/IconButton'
 // import { generateDummySummary } from '@/pages/requests/utils/dummyData'
 // import { motion, AnimatePresence } from 'framer-motion'
 import Icon from '@/components/base/icon/Icon'
+import AiBrandIcon from '@/components/common/AiBrandIcon'
 import Menu from '@/components/base/menu/Menu'
 import MenuItem from '@/components/base/menu/MenuItem'
 import RequestStatusBadge from '@/components/common/RequestStatusBadge'
@@ -1493,9 +1494,8 @@ const getBaseColumns = (
         }
         return (
           <div className='flex min-w-0 items-center gap-1.5'>
-            <Icon
-              className='size-3.5 shrink-0 text-[var(--primary-9)]'
-              name='tabler:sparkles'
+            <AiBrandIcon
+              className='size-[14px] shrink-0 text-[var(--primary-9)]'
             />
             <HoverExpandableText
               className='text-[13px] font-medium text-[var(--gray-11)]'

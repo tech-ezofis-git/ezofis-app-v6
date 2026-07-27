@@ -274,14 +274,14 @@ export const ApiPlayground = ({
                   </div>
                   <div className='flex min-w-0 flex-col gap-0.5'>
                     <span className={TEXT_PRIMARY}>API Key</span>
-                    <span
+                    {/* <span
                       className={cn(
                         TEXT_STATUS,
                         'inline-flex w-fit items-center rounded border border-green-9 bg-white px-1.5 py-0.5 text-green-9',
                       )}
                     >
                       Setup completed
-                    </span>
+                    </span> */}
                   </div>
                 </div>
                 <button

@@ -47,8 +47,8 @@ export function createSettingsSetupBreadcrumbs(
   return {
     items: [
       { key: 'settings', label: SETTINGS_ROOT_LABEL },
-      { key: 'module', label: moduleLabel },
-      { label: setupLabel },
+      { key: 'folder', label: setupLabel },
+      { label: moduleLabel },
     ],
     onNavigate: (key) => {
       if (key === 'settings') {
@@ -57,7 +57,7 @@ export function createSettingsSetupBreadcrumbs(
         return
       }
 
-      if (key === 'module') onCancelSetup()
+      if (key === 'folder') onCancelSetup()
     },
   }
 }

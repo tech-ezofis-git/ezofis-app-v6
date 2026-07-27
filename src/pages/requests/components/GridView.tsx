@@ -12,6 +12,7 @@ import TableReload from '@/components/base/data-table/actions/TableReload'
 // import { generateDummySummary } from '@/pages/requests/utils/dummyData'
 // import SummaryBadge from '@/components/common/SummaryBadge'
 import Icon from '@/components/base/icon/Icon'
+import AiBrandIcon from '@/components/common/AiBrandIcon'
 import showToast from '@/components/base/toast/showToast'
 import useAskAIStore from '@/components/common/ask-ai/stores/useAskAIStore'
 // import RequestSummary from './RequestSummary'
@@ -1114,7 +1115,7 @@ const GridRowItem = memo(
             aiInsight &&
             isSidebarOpen && (
               <div className='mt-0.5 flex min-w-0 items-center gap-1.5 text-[12px] font-medium text-[var(--primary-9)]'>
-                <Icon className='size-3.5 shrink-0' name='tabler:sparkles' />
+                <AiBrandIcon className='size-3.5 shrink-0' />
                 <HoverExpandableText
                   className='text-[12px] font-medium text-[var(--primary-9)]'
                   expandStyle='inline'
@@ -1133,9 +1134,8 @@ const GridRowItem = memo(
           !isSidebarOpen && (
             <div className='flex min-w-0 flex-1 items-center justify-center px-4'>
               <div className='flex min-w-0 items-center gap-1.5'>
-                <Icon
+                <AiBrandIcon
                   className='size-3.5 shrink-0 text-[var(--primary-9)]'
-                  name='tabler:sparkles'
                 />
                 <HoverExpandableText
                   className='text-[13px] font-medium text-[var(--gray-11)]'

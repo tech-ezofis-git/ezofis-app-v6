@@ -1,32 +1,6 @@
 import type { TreeNode } from '../types/folderTypes'
 import { DynamicIcon } from './icons'
 
-const findParentId = (
-  nodes: TreeNode[],
-  childId: string,
-  parentId = '',
-): string => {
-  for (const node of nodes) {
-    if (node.id === childId) return parentId
-
-    const found = findParentId(node.children || [], childId, node.id)
-    if (found) return found
-  }
-
-  return ''
-}
-
-const hasNodeInChildren = (node: TreeNode, targetId: string): boolean => {
-  const children = node.children || []
-
-  for (const child of children) {
-    if (child.id === targetId) return true
-    if (hasNodeInChildren(child, targetId)) return true
-  }
-
-  return false
-}
-
 export function TreeSidebar({
   activeId,
   expandedIds,
@@ -50,7 +24,6 @@ export function TreeSidebar({
             key={node.id}
             level={0}
             node={node}
-            rootTree={tree}
             onSelect={onSelect}
             onToggle={onToggle}
           />
@@ -65,7 +38,6 @@ function TreeItem({
   expandedIds,
   level,
   node,
-  rootTree,
   onSelect,
   onToggle,
 }: {
@@ -73,7 +45,6 @@ function TreeItem({
   expandedIds: string[]
   level: number
   node: TreeNode
-  rootTree: TreeNode[]
   onSelect: (id: string) => void
   onToggle: (id: string) => void
 }) {
@@ -81,7 +52,6 @@ function TreeItem({
   const isActive = activeId === node.id
   const canExpand = Boolean(node.hasChildren || node.children?.length)
   const children = node.children || []
-  const activeInsideThisNode = hasNodeInChildren(node, activeId)
 
   const handleNodeClick = () => {
     onSelect(node.id)
@@ -89,26 +59,9 @@ function TreeItem({
 
   const handleChevronClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation()
-
     if (!canExpand) return
-
-    if (isExpanded) {
-      onToggle(node.id)
-
-      const parentId = findParentId(rootTree, node.id)
-
-      if (isActive && parentId) {
-        onSelect(parentId)
-      }
-
-      if (!isActive && activeInsideThisNode) {
-        onSelect(node.id)
-      }
-
-      return
-    }
-
-    onSelect(node.id)
+    // Expand/collapse loads tree children only — do not change the list area.
+    onToggle(node.id)
   }
 
   return (
@@ -162,7 +115,6 @@ function TreeItem({
               key={child.id}
               level={level + 1}
               node={child}
-              rootTree={rootTree}
               onSelect={onSelect}
               onToggle={onToggle}
             />

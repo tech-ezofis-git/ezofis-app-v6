@@ -149,3 +149,18 @@ export const Toast = ({ message, type, icon: Icon }) => (
   </div>
 )
 ```
+
+---
+
+## 6. Icons & Branding (AI Features)
+
+When building or updating UI related to AI features (e.g., AI Insights, AI Suggestions, Ask AI), **do not use standard sparkle icons** (like `tabler:sparkles`, `lucide:sparkles`, or `AiSparkleIcon`). 
+
+Instead, always use the dedicated theme-aware brand component:
+```tsx
+import AiBrandIcon from '@/components/common/AiBrandIcon'
+
+// Use it just like an icon primitive:
+<AiBrandIcon className='size-[16px] shrink-0' />
+```
+This ensures the brand icon perfectly adapts to Light and Dark modes.

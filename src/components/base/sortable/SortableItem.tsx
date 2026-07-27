@@ -9,6 +9,7 @@ interface Props {
   id: string
   className?: string
   handlerClassName?: string
+  handlerPosition?: 'before' | 'after'
   trailing?: ReactNode
 }
 
@@ -16,6 +17,7 @@ const SortableItem = ({
   children,
   className,
   handlerClassName,
+  handlerPosition = 'after',
   id,
   trailing,
 }: Props) => {
@@ -27,26 +29,31 @@ const SortableItem = ({
     transition,
   }
 
+  const handler = (
+    <div
+      className={cn(
+        'group flex size-8 shrink-0 cursor-grab items-center justify-center rounded outline-primary-8 transition-colors hover:bg-gray-4',
+        handlerClassName,
+      )}
+      {...attributes}
+      {...listeners}
+    >
+      <Icon
+        className='group-hover:text-gray text-gray-9 transition-colors'
+        name='lucide:grip-vertical'
+      />
+    </div>
+  )
+
   return (
     <div
       className={cn('flex items-center gap-1', className)}
       ref={setNodeRef}
       style={style}
     >
+      {handlerPosition === 'before' ? handler : null}
       {children}
-      <div
-        className={cn(
-          'group flex size-8 shrink-0 cursor-grab items-center justify-center rounded outline-primary-8 transition-colors hover:bg-gray-4',
-          handlerClassName,
-        )}
-        {...attributes}
-        {...listeners}
-      >
-        <Icon
-          className='group-hover:text-gray text-gray-9 transition-colors'
-          name='lucide:grip-vertical'
-        />
-      </div>
+      {handlerPosition === 'after' ? handler : null}
       {trailing}
     </div>
   )
