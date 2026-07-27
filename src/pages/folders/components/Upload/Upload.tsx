@@ -1,6 +1,8 @@
 import { ArrowUpFromLine, CheckCircle2, Copy, FileText } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { UploadFiles, uploadForOcr } from '@/api/v6/folder/folder'
+import Icon from '@/components/base/icon/Icon'
+import AiBrandIcon from '@/components/common/AiBrandIcon'
 import IconButton from '@/components/base/button/IconButton'
 import InputDate from '@/components/base/inputs/InputDate'
 import InputSelect from '@/components/base/inputs/InputSelect'
@@ -23,7 +25,7 @@ import {
   toTextValue,
 } from '../../hooks/useEditMetadataForm'
 import { Button } from '../Ui'
-import Icon from './../../../../components/base/icon/Icon'
+// import Icon from './../../../../components/base/icon/Icon'
 import {
   AnimateEntrancePop,
   AnimateFadeIn,
@@ -682,10 +684,10 @@ export default function Upload({
         value={toTextValue(value)}
         type={
           fieldType === 'decimal' ||
-          fieldType === 'number' ||
-          fieldType === 'int' ||
-          fieldType === 'integer' ||
-          fieldType === 'currency'
+            fieldType === 'number' ||
+            fieldType === 'int' ||
+            fieldType === 'integer' ||
+            fieldType === 'currency'
             ? 'number'
             : 'text'
         }
@@ -827,10 +829,14 @@ export default function Upload({
                     <div
                       className={`flex size-9 shrink-0 items-center justify-center rounded-lg 2xl:size-10 ${item.color} mt-1 mb-4 transition-transform duration-300 group-hover:scale-110`}
                     >
-                      <Icon
-                        className='size-5 transition-transform duration-300 group-hover:rotate-6'
-                        name={item.icon}
-                      />
+                      {item.icon === 'tabler:sparkles' ? (
+                        <AiBrandIcon className='size-5 transition-transform duration-300 group-hover:rotate-6' />
+                      ) : (
+                        <Icon
+                          className='size-5 transition-transform duration-300 group-hover:rotate-6'
+                          name={item.icon}
+                        />
+                      )}
                     </div>
                     <h4 className='text-sm font-medium tracking-tight text-[var(--gray-13)]'>
                       {item.title}
