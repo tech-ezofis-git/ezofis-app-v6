@@ -351,7 +351,7 @@ export default function FolderSecurityPolicyWizard({
         <SettingsSetupContent>
           {renderStepContent()}
 
-          <div className='mt-8 flex items-center justify-between border-t border-[var(--border-default)] pt-6'>
+          <div className='sticky bottom-0 z-20 mt-8 flex items-center justify-between border-t border-[var(--border-default)] bg-surface py-4'>
             <button
               className='inline-flex h-10 items-center rounded-[5px] border border-[var(--border-default)] bg-surface px-5 text-[15px] font-semibold text-[var(--gray-13)] transition hover:bg-[var(--gray-2)] disabled:cursor-not-allowed disabled:opacity-50'
               disabled={step === 0}

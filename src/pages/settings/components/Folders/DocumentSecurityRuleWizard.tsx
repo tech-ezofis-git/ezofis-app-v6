@@ -274,7 +274,7 @@ export default function DocumentSecurityRuleWizard({
                     </div>
                     <div className="flex items-center gap-3">
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-bold text-[var(--gray-10)] uppercase tracking-wider">MATCH</span>
+                        <span className="text-[10px] font-bold text-[var(--gray-10)]  tracking-wider">Match</span>
                         <div className="flex items-center bg-[var(--gray-3)] p-0.5 rounded-lg text-xs font-semibold">
                           <Tooltip content="Match ALL conditions (AND logic) - document must satisfy every condition" position="top">
                             <button
@@ -287,7 +287,7 @@ export default function DocumentSecurityRuleWizard({
                                   : 'text-[var(--gray-11)] hover:text-[var(--gray-12)]',
                               )}
                             >
-                              ALL
+                              All
                             </button>
                           </Tooltip>
 
@@ -302,7 +302,7 @@ export default function DocumentSecurityRuleWizard({
                                   : 'text-[var(--gray-11)] hover:text-[var(--gray-12)]',
                               )}
                             >
-                              ANY
+                              Any
                             </button>
                           </Tooltip>
                         </div>
@@ -640,7 +640,7 @@ export default function DocumentSecurityRuleWizard({
         <SettingsSetupContent>
           {renderStepContent()}
 
-          <div className='mt-8 flex items-center justify-between border-t border-[var(--border-default)] pt-6'>
+          <div className='sticky bottom-0 z-20 mt-8 flex items-center justify-between border-t border-[var(--border-default)] bg-surface py-4'>
             <button
               className='inline-flex h-10 items-center rounded-[5px] border border-[var(--border-default)] bg-surface px-5 text-[15px] font-semibold text-[var(--gray-13)] transition hover:bg-[var(--gray-2)] disabled:cursor-not-allowed disabled:opacity-50'
               disabled={step === 0}
