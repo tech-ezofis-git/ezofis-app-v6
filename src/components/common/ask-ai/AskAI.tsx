@@ -1,4 +1,4 @@
-﻿import {
+import {
   ArrowLeft,
   ArrowRight,
   BadgeHelp,
@@ -45,7 +45,7 @@ import {
   useState,
 } from 'react'
 import Tooltip from '@/components/base/Tooltip'
-import AiSparkleIcon from '@/components/base/icon/AiSparkleIcon'
+import AiBrandIcon from '../AiBrandIcon'
 import Icon from '@/components/base/icon/Icon'
 import {
   browseFilterByToUiFilters,
@@ -302,7 +302,7 @@ const uid = () =>
     ? crypto.randomUUID()
     : String(Date.now() + Math.random())
 
-const SparkIconLoading = ({ size = 18 }: { size?: number }) => (
+const SparkIconLoading = ({ className = 'size-[18px]' }: { className?: string }) => (
   <motion.div
     className='inline-flex text-[var(--primary-9)]'
     transition={{ duration: 1.6, ease: 'easeInOut', repeat: Infinity }}
@@ -312,7 +312,7 @@ const SparkIconLoading = ({ size = 18 }: { size?: number }) => (
       scale: [0.92, 1.12, 0.92],
     }}
   >
-    <AiSparkleIcon size={size} />
+    <AiBrandIcon className={className} />
   </motion.div>
 )
 
@@ -709,9 +709,9 @@ const AskAI = () => {
             ) : (
               <div className='relative grid size-8 shrink-0 place-items-center'>
                 {busy ? (
-                  <SparkIconLoading size={18} />
+                  <SparkIconLoading className='size-[18px]' />
                 ) : (
-                  <AiSparkleIcon size={18} />
+                  <AiBrandIcon className='size-[18px]' />
                 )}
               </div>
             )}
@@ -1106,13 +1106,11 @@ const AnswerBlock = ({ block }: { block: TextBlock }) => {
         {block.fields.map((field, index) => (
           <div
             key={`${field.label}-${index}`}
-            className={`border-b border-[var(--border)] px-3 py-2 ${
-              index % 2 === 0 ? 'border-r' : ''
-            } ${
-              block.fields.length % 2 === 1 && index === block.fields.length - 1
+            className={`border-b border-[var(--border)] px-3 py-2 ${index % 2 === 0 ? 'border-r' : ''
+              } ${block.fields.length % 2 === 1 && index === block.fields.length - 1
                 ? 'col-span-2 border-r-0'
                 : ''
-            }`}
+              }`}
           >
             <div className='mb-0.5 text-[10px] tracking-[.3px] text-[var(--text3)] uppercase'>
               {field.label}
