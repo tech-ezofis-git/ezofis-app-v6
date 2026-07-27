@@ -283,7 +283,7 @@ const GlobalSearch = () => {
             {showResults && !error && results.length > 0 && (
               <motion.ul
                 animate={{ opacity: 1 }}
-                className='flex flex-col py-1'
+                className='flex flex-col divide-y divide-gray-3 px-1 py-1'
                 exit={{ opacity: 0 }}
                 initial={{ opacity: 0 }}
                 key='list'
@@ -292,6 +292,7 @@ const GlobalSearch = () => {
                   const title = getSearchHitTitle(hit)
                   const date = getSearchHitDate(hit)
                   const icon = getSearchHitIcon(hit.type)
+                  const isLatest = false
                   const key =
                     hit.id?.itemId ||
                     `${hit.type}-${title}-${date}-${index}`
@@ -301,29 +302,44 @@ const GlobalSearch = () => {
                       animate={{ opacity: 1, y: 0 }}
                       initial={{ opacity: 0, y: 8 }}
                       key={key}
-                      transition={{ delay: Math.min(index, 12) * 0.03, duration: 0.2 }}
+                      transition={{
+                        delay: Math.min(index, 12) * 0.03,
+                        duration: 0.2,
+                      }}
                     >
                       <button
-                        className='flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-primary-2'
+                        className='flex w-full items-center gap-3 px-3 py-3 text-left transition-colors hover:bg-primary-2'
                         type='button'
                         onClick={() => openHit(hit)}
                       >
+                        <span
+                          className={cn(
+                            'flex size-9 shrink-0 items-center justify-center rounded-[10px]',
+                            isLatest
+                              ? 'bg-primary-3 text-primary-10'
+                              : 'bg-gray-3 text-gray-11',
+                          )}
+                        >
+                          <Icon className='size-4' name={icon} />
+                        </span>
+
                         <span className='min-w-0 flex-1'>
-                          <span className='block truncate text-[13.5px] leading-5 font-medium text-gray-13'>
+                          <span className='block truncate text-[13.5px] leading-5 font-semibold text-gray-13'>
                             {title}
                           </span>
-                          <span className='mt-1 flex items-center gap-1.5 text-[12px] text-gray-10'>
-                            <Icon
-                              className='size-3.5 shrink-0 text-primary-9'
-                              name={icon}
-                            />
-                            <span className='truncate'>
-                              {date || hit.type || 'Result'}
-                            </span>
+                          <span className='mt-0.5 block truncate text-[12px] text-gray-10'>
+                            {date || hit.type || 'Result'}
                           </span>
                         </span>
+
+                        {isLatest ? (
+                          <span className='shrink-0 rounded-full bg-primary-3 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-primary-10 lowercase'>
+                            latest
+                          </span>
+                        ) : null}
+
                         <Icon
-                          className='shrink-0 text-primary-7'
+                          className='size-4 shrink-0 text-gray-8'
                           name='lucide:chevron-right'
                         />
                       </button>

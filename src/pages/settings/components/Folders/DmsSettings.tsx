@@ -618,10 +618,10 @@ export default function DmsFolderConfiguration({
       const response = await getRepositorys()
 
       if (response.error) {
-        showToast({
-          message: 'Failed to load folders.',
-          variant: 'error',
-        })
+        // showToast({
+        //   message: 'Failed to load folders.',
+        //   variant: 'error',
+        // })
         setRepositories([])
         return
       }
