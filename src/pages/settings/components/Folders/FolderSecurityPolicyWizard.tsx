@@ -55,11 +55,11 @@ export default function FolderSecurityPolicyWizard({
   const [users, setUsers] = useState<V6UserListItem[]>([])
   // const [groups, setGroups] = useState<V6GroupItem[]>([]) // Hidden for now
   const [isLoading, setIsLoading] = useState(false)
-  
+
   const [selectedPrincipals, setSelectedPrincipals] = useState<Principal[]>([])
   const [permissions, setPermissions] = useState<Permission[]>(DEFAULT_PERMISSIONS)
   const [permissionSearch, setPermissionSearch] = useState('')
-  
+
   // const [searchQuery, setSearchQuery] = useState('')
   // const [filterType, setFilterType] = useState<{ id: string; name: string }>({ id: 'users', name: 'Users' })
 
@@ -69,11 +69,11 @@ export default function FolderSecurityPolicyWizard({
       const uRes = await getUsers()
       if (uRes.error) showToast({ message: uRes.error, variant: 'error' })
       else setUsers(uRes.data)
-      
+
       // const gRes = await getGroups()
       // if (gRes.error) showToast({ message: gRes.error, variant: 'error' })
       // else setGroups(gRes.data)
-      
+
       setIsLoading(false)
     }
     loadData()
@@ -155,7 +155,7 @@ export default function FolderSecurityPolicyWizard({
                 <span className="w-20 text-center font-bold">Access</span>
               </div>
             </div>
-            
+
             <div className="divide-y divide-[var(--border-default)] max-h-[380px] overflow-y-auto ez-scrollbar">
               {filteredPermissions.length === 0 ? (
                 <div className="p-6 text-center text-xs text-[var(--gray-10)]">No matching permissions found</div>
@@ -200,42 +200,83 @@ export default function FolderSecurityPolicyWizard({
 
     if (step === 2) {
       const enabledPermissions = permissions.filter(p => p.enabled)
+      const displayedPrincipals = selectedPrincipals.slice(0, 4)
+      const remainingPrincipalsCount = Math.max(0, selectedPrincipals.length - 4)
+
+      const targetUsersText = selectedPrincipals.length === 0
+        ? 'selected users'
+        : selectedPrincipals.length === 1
+          ? selectedPrincipals[0].name
+          : selectedPrincipals.length <= 3
+            ? selectedPrincipals.map(p => p.name).join(', ')
+            : `${selectedPrincipals[0].name}, ${selectedPrincipals[1].name} and ${selectedPrincipals.length - 2} others`
+
       return (
         <SettingsFormSection>
-          <div className="flex flex-col bg-[var(--surface)] rounded-[14px] border border-[var(--border-default)] shadow-sm overflow-hidden">
-            <div className="px-5 py-4 border-b border-[var(--border-default)]">
-              <h2 className="text-base font-semibold text-[var(--gray-12)]">Review Policy</h2>
-            </div>
-            
-            <div className="p-5">
-              <div className="bg-[var(--primary-2)] border border-[var(--primary-5)] rounded-xl p-5 space-y-4">
+          <div className="space-y-4">
+            {/* Compact Statistics Header Row */}
+            {/* <div className="flex flex-wrap items-center gap-2 pb-1">
+              <span className="inline-flex items-center gap-1.5 rounded-[10px] border border-[var(--border-default)] bg-surface px-3 py-1 text-xs font-medium text-[var(--gray-13)]">
+                <span className="text-[var(--gray-10)] font-normal">Users:</span> {selectedPrincipals.length}
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-[10px] border border-[var(--border-default)] bg-surface px-3 py-1 text-xs font-medium text-[var(--gray-13)]">
+                <span className="text-[var(--gray-10)] font-normal">Permissions:</span> {enabledPermissions.length}
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-[10px] border border-[var(--border-default)] bg-surface px-3 py-1 text-xs font-medium text-[var(--gray-13)]">
+                <span className="text-[var(--gray-10)] font-normal">Folder:</span> {folderName}
+              </span>
+            </div> */}
+
+            {/* Single Enterprise Security Summary Card */}
+            <div className="rounded-[14px] border border-[var(--border-default)] bg-surface overflow-hidden divide-y divide-[var(--border-default)]">
+              {/* Natural Language Security Statement */}
+              <div className="bg-[var(--primary-2)] px-5 py-3.5 flex items-start gap-3 border-b border-[var(--border-default)]">
+                <Shield className="text-[var(--primary-9)] mt-0.5 shrink-0" size={16} />
                 <div>
-                  <div className="flex items-center gap-2 text-[10px] font-bold text-[var(--primary-11)] mb-2 uppercase tracking-wider">
-                    <Users size={13} /> Assigned To ({selectedPrincipals.length})
+                  <div className="text-[10px] font-bold text-[var(--primary-11)] uppercase tracking-wider mb-0.5">
+                    Security Summary
                   </div>
-                  {selectedPrincipals.length === 0 ? (
-                    <span className="text-xs text-[var(--gray-10)]">No users selected</span>
-                  ) : (
-                    <div className="flex flex-wrap gap-1.5">
-                      {selectedPrincipals.map(p => (
-                        <div key={p.id} className="bg-[var(--surface)] border border-[var(--border-default)] text-[var(--gray-12)] px-2.5 py-1 rounded-full text-[11px] font-semibold flex items-center gap-1.5 shadow-sm">
-                          <UserRound size={11} className="text-[var(--primary-9)]" />
-                          {p.name}
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  <p className="text-xs font-medium text-[var(--gray-13)] leading-relaxed">
+                    {targetUsersText} will be granted {enabledPermissions.length} security permission{enabledPermissions.length > 1 ? 's' : ''} on the folder <strong className="text-[var(--gray-12)]">{folderName}</strong>.
+                  </p>
                 </div>
-                
-                <div className="border-t border-[var(--primary-4)] pt-3">
-                  <div className="flex items-center gap-2 text-[10px] font-bold text-[var(--primary-11)] mb-2 uppercase tracking-wider">
-                    <Shield size={13} /> Granted Permissions ({enabledPermissions.length})
+              </div>
+
+              {/* Card Body */}
+              <div className="p-5 space-y-5">
+                {/* Assigned To Row */}
+                <div>
+                  <div className="text-[11px] font-bold text-[var(--gray-10)] uppercase tracking-wider mb-2">
+                    Assigned To ({selectedPrincipals.length})
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {displayedPrincipals.map(p => (
+                      <span key={p.id} className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-default)] bg-surface px-3 py-1 text-xs font-medium text-[var(--gray-13)]">
+                        <UserRound size={12} className="text-[var(--primary-9)]" />
+                        {p.name}
+                      </span>
+                    ))}
+                    {remainingPrincipalsCount > 0 && (
+                      <span className="inline-flex items-center rounded-full border border-[var(--border-default)] bg-[var(--gray-2)] px-3 py-1 text-xs font-medium text-[var(--gray-11)]">
+                        +{remainingPrincipalsCount} more
+                      </span>
+                    )}
+                    {selectedPrincipals.length === 0 && (
+                      <span className="text-xs italic text-[var(--gray-10)]">No users selected</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Granted Permissions Row */}
+                <div className="border-t border-[var(--border-default)] pt-4">
+                  <div className="text-[11px] font-bold text-[var(--gray-10)] uppercase tracking-wider mb-2">
+                    Granted Permissions ({enabledPermissions.length})
                   </div>
                   <div className="flex flex-wrap gap-1.5">
                     {enabledPermissions.map(p => (
-                      <div key={p.id} className="bg-[var(--primary-3)] text-[var(--primary-11)] border border-[var(--primary-5)] px-2.5 py-1 rounded-full text-[11px] font-semibold shadow-sm">
+                      <span key={p.id} className="inline-flex items-center rounded-[6px] border border-[var(--primary-4)] bg-[var(--primary-3)] px-2.5 py-1 text-xs font-semibold text-[var(--primary-11)]">
                         {p.name}
-                      </div>
+                      </span>
                     ))}
                   </div>
                 </div>
@@ -309,10 +350,10 @@ export default function FolderSecurityPolicyWizard({
         </aside>
         <SettingsSetupContent>
           {renderStepContent()}
-          
-          <div className='mt-8 flex items-center justify-between border-t border-[var(--border-default)] pt-6 pb-6'>
+
+          <div className='mt-8 flex items-center justify-between border-t border-[var(--border-default)] pt-6'>
             <button
-              className='inline-flex h-10 items-center rounded-[5px] border border-[var(--border-default)] bg-[var(--surface)] px-5 text-[15px] font-semibold text-[var(--gray-13)] transition hover:bg-[var(--gray-2)] disabled:cursor-not-allowed disabled:opacity-50'
+              className='inline-flex h-10 items-center rounded-[5px] border border-[var(--border-default)] bg-surface px-5 text-[15px] font-semibold text-[var(--gray-13)] transition hover:bg-[var(--gray-2)] disabled:cursor-not-allowed disabled:opacity-50'
               disabled={step === 0}
               type='button'
               onClick={() => setStep((step - 1) as Step)}
@@ -327,7 +368,7 @@ export default function FolderSecurityPolicyWizard({
                   type='button'
                   onClick={savePolicy}
                 >
-                  Save Policy
+                  Save
                 </button>
               ) : (
                 <button
