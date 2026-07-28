@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import TableSearch from '@/components/base/data-table/actions/TableSearch'
 import DataTable from '@/components/base/data-table/DataTable'
 import useDataTable from '@/components/base/data-table/hooks/useDataTable'
@@ -16,12 +16,17 @@ import requestStore from '../stores/useRequestStore'
 // import TableColumns from '@/components/base/data-table/actions/TableColumns'
 // import TableRows from '@/components/base/data-table/actions/TableRows'
 // import type { RowSize } from '@/components/base/data-table/types'
+import workflowsApiV6, {
+  type V6FilterField,
+  type V6SearchFilterClause,
+} from '@/api/v6/workflows'
 import ExportButton from './buttons/ExportButton'
 import RefreshButton from './buttons/RefreshButton'
 import UploadPoButton from './buttons/UploadPoButton'
 import { useDynamicColumns } from './columns/useDynamicColumns'
 import GridView from './GridView'
 import { extractDueDate } from '@/pages/requests/utils/inboxItemDisplay'
+import { buildV6FilterClauses } from '../utils/requestFilterMapper'
 
 interface InboxListProps {
   data: TableGroup[]
@@ -37,6 +42,7 @@ interface InboxListProps {
   setPage: (p: number) => void
   setPageSize: (s: number) => void
   setViewMode: (mode: 'table' | 'grid') => void
+  onFilterClausesChange?: (clauses: V6SearchFilterClause[]) => void
   onGroupByChange?: (groups: string[]) => void
   onRefresh: () => void
   onRowClick: (item: any, tab: string) => void
@@ -322,7 +328,10 @@ const getAmountRangeOptions = (rows: any[]) => {
   else if (range > 50000) bucketCount = 5
 
   let bucketSize = range / bucketCount
-  const magnitude = Math.pow(10, Math.floor(Math.log10(Math.max(bucketSize, 1))))
+  const magnitude = Math.pow(
+    10,
+    Math.floor(Math.log10(Math.max(bucketSize, 1))),
+  )
   bucketSize = Math.ceil(bucketSize / magnitude) * magnitude
 
   const start = Math.floor(min / bucketSize) * bucketSize
@@ -494,7 +503,9 @@ const matchesDateFilterValue = (
     )
   }
   if (val === 'last_week') {
-    const startOfThisWeek = new Date(today.getTime() - today.getDay() * 86400000)
+    const startOfThisWeek = new Date(
+      today.getTime() - today.getDay() * 86400000,
+    )
     const startOfLastWeek = new Date(startOfThisWeek.getTime() - 7 * 86400000)
     const endOfLastWeek = new Date(startOfThisWeek.getTime() - 86400000)
     return (
@@ -522,13 +533,21 @@ const matchesDateFilterValue = (
     )
   }
   if (val === 'last_3_months') {
-    const start = new Date(now.getFullYear(), now.getMonth() - 3, today.getDate())
+    const start = new Date(
+      now.getFullYear(),
+      now.getMonth() - 3,
+      today.getDate(),
+    )
     return (
       rowDay.getTime() >= start.getTime() && rowDay.getTime() <= today.getTime()
     )
   }
   if (val === 'last_6_months') {
-    const start = new Date(now.getFullYear(), now.getMonth() - 6, today.getDate())
+    const start = new Date(
+      now.getFullYear(),
+      now.getMonth() - 6,
+      today.getDate(),
+    )
     return (
       rowDay.getTime() >= start.getTime() && rowDay.getTime() <= today.getTime()
     )
@@ -836,9 +855,7 @@ const filterRowsByQuickFilters = (
             const startOfLastWeek = new Date(
               startOfThisWeek.getTime() - 7 * 86400000,
             )
-            const endOfLastWeek = new Date(
-              startOfThisWeek.getTime() - 86400000,
-            )
+            const endOfLastWeek = new Date(startOfThisWeek.getTime() - 86400000)
             return (
               rowDay.getTime() >= startOfLastWeek.getTime() &&
               rowDay.getTime() <= endOfLastWeek.getTime()
@@ -1163,6 +1180,7 @@ const InboxList: React.FC<InboxListProps> = ({
   setPage,
   setPageSize,
   setViewMode,
+  onFilterClausesChange,
   onGroupByChange,
   onRefresh,
   onRowClick,
@@ -1171,6 +1189,20 @@ const InboxList: React.FC<InboxListProps> = ({
   const columns =
     useDynamicColumns(workflow, onRowClick, selectedItem, activeTab) || []
   // const [rowSize, setRowSize] = useState<RowSize>('default')
+
+  const [filterFields, setFilterFields] = useState<V6FilterField[]>([])
+
+  useEffect(() => {
+    if (workflow?.id) {
+      workflowsApiV6.getFilterFields(String(workflow.id)).then((res) => {
+        if (res.data?.fields) {
+          setFilterFields(res.data.fields)
+        }
+      })
+    } else {
+      setFilterFields([])
+    }
+  }, [workflow?.id])
 
   const initialVisibilityState = {
     createdAt: false,
@@ -1266,7 +1298,79 @@ const InboxList: React.FC<InboxListProps> = ({
     return map
   }, [activeQuickFilters])
 
+  React.useEffect(() => {
+    if (onFilterClausesChange) {
+      const clauses = buildV6FilterClauses(
+        activeFiltersMap,
+        filterFields,
+        activeQuickFilters,
+      )
+      onFilterClausesChange(clauses)
+    }
+  }, [
+    activeFiltersMap,
+    filterFields,
+    activeQuickFilters,
+    onFilterClausesChange,
+  ])
+
+  const [controlOptionsMap, setControlOptionsMap] = useState<
+    Record<string, { label: string; value: string }[]>
+  >({})
+
+  const handleFieldOpen = React.useCallback(
+    async (field: DynamicFilterField) => {
+      const workflowId = workflow?.id
+      if (!workflowId) return
+
+      const controlName = field.label || field.id
+      try {
+        const res = await workflowsApiV6.getControlValues(
+          String(workflowId),
+          controlName,
+        )
+        if (res.data?.values && Array.isArray(res.data.values)) {
+          const options = res.data.values.map((val: string) => ({
+            label: String(val),
+            value: String(val),
+          }))
+          setControlOptionsMap((prev) => ({
+            ...prev,
+            [field.id]: options,
+          }))
+        }
+      } catch (e) {
+        console.error('Failed to fetch control values for', controlName, e)
+      }
+    },
+    [workflow?.id],
+  )
+
   const optionalFilterFields = useMemo<DynamicFilterField[]>(() => {
+    if (filterFields && filterFields.length > 0) {
+      return filterFields.map((f) => {
+        const fieldId = f.sqlColumnName || f.name
+        const typeUpper = (f.dataType || '').toUpperCase()
+        let fieldType: 'date' | 'number' | 'category' = 'category'
+        if (typeUpper.includes('DATE') || typeUpper.includes('TIME')) {
+          fieldType = 'date'
+        } else if (
+          typeUpper.includes('NUMBER') ||
+          typeUpper.includes('INT') ||
+          typeUpper.includes('FLOAT')
+        ) {
+          fieldType = 'number'
+        }
+        return {
+          id: fieldId,
+          label: f.name,
+          options: controlOptionsMap[fieldId] || [],
+          type: fieldType,
+          valueGetter: (row) => getRowColumnValue(row, fieldId),
+        }
+      })
+    }
+
     const skipIds = new Set([
       'actions',
       'Supplier Name',
@@ -1306,7 +1410,7 @@ const InboxList: React.FC<InboxListProps> = ({
     }
 
     return fields
-  }, [columns])
+  }, [filterFields, columns])
 
   const handleFilterChange = (id: string, values: string | string[]) => {
     const store = requestStore.getState()
@@ -1634,12 +1738,15 @@ const InboxList: React.FC<InboxListProps> = ({
           dataset={flatRows}
           isLoading={isLoading || isRefetching}
           optionalFields={optionalFilterFields}
+          onFieldOpen={handleFieldOpen}
           searchPlaceholder='Search invoice, supplier, PO...'
           searchQuery={searchState?.value || ''}
           viewMode={viewMode}
           activeFilters={{
             ...Object.fromEntries(
-              Object.entries(activeFiltersMap).filter(([key]) => key !== 'amount'),
+              Object.entries(activeFiltersMap).filter(
+                ([key]) => key !== 'amount',
+              ),
             ),
             'due_date': activeFiltersMap.due_date || [],
             'status': activeFiltersMap.status || [],

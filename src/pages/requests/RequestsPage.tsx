@@ -4,6 +4,7 @@ import formApi from '@/api/form/form'
 import workflowsApiV6, {
   mapPublishedWorkflowListToOptions,
 } from '@/api/v6/workflows'
+import type { V6SearchFilterClause } from '@/api/v6/workflows'
 import PageEmptyState from '@/components/common/PageEmptyState'
 import ApiPlayground from '@/components/playground/ApiPlayground'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
@@ -44,6 +45,8 @@ const RequestsPage = () => {
   const [metaData, setMetaData] = useState<IRequestMeta>()
   const [selectedWorkflow, setSelectedWorkflow] =
     useState<WorkflowOption | null>(null)
+  const [filterClauses, setFilterClauses] = useState<V6SearchFilterClause[]>([])
+
   const {
     closeRequest,
     isClosed,
@@ -66,13 +69,20 @@ const RequestsPage = () => {
   const [groupBy, setGroupBy] = useState<string[]>([])
 
   // --- 2. DATA FETCHING ---
-  // Pass 'activeTab' to the hook so it knows which API to call
+  // Pass 'activeTab' and 'filterClauses' to the hook so it knows which API to call
   const {
     data: inboxResult,
     isFetching,
     isPending,
     refetch,
-  } = useInboxData(selectedWorkflow, page, pageSize, groupBy, activeTab)
+  } = useInboxData(
+    selectedWorkflow,
+    page,
+    pageSize,
+    groupBy,
+    activeTab,
+    filterClauses,
+  )
 
   const handleRowClick = (row: InboxItem, tab: string) => {
     // Only open if we have a valid workflow ID
@@ -359,6 +369,7 @@ const RequestsPage = () => {
                 setPage={setPage}
                 setPageSize={setPageSize}
                 setViewMode={setViewMode}
+                onFilterClausesChange={setFilterClauses}
                 onGroupByChange={setGroupBy}
                 onRefresh={refetch}
                 onRowClick={handleRowClick}

@@ -25,8 +25,7 @@ const VIEWPORT_GAP = 8
 /** Shared chip shell — same size for default and added filter columns */
 const FILTER_CHIP_SHELL =
   'inline-flex h-[30px] max-w-[280px] items-center gap-1 rounded-full border py-0 pl-3.5 text-12 font-normal transition-all'
-const FILTER_CHIP_ACTIVE =
-  'border-primary-9 bg-primary-3/50 text-primary-9'
+const FILTER_CHIP_ACTIVE = 'border-primary-9 bg-primary-3/50 text-primary-9'
 const FILTER_CHIP_INACTIVE =
   'border-border-default bg-surface text-text-secondary'
 const FILTER_CHIP_CLEAR_BTN =
@@ -62,6 +61,7 @@ export interface DynamicFilterProps {
   toolbarActions?: ToolbarAction[]
   viewMode?: 'grid' | 'table'
   onClearAll?: () => void
+  onFieldOpen?: (field: DynamicFilterField) => void
   onFilterChange: (id: string, values: string | string[]) => void
   onQuickFilterToggle?: (id: string) => void
   onSearchChange?: (val: string) => void
@@ -91,6 +91,7 @@ export default function DynamicFilter({
   toolbarActions,
   viewMode,
   onClearAll,
+  onFieldOpen,
   onFilterChange,
   onQuickFilterToggle,
   onSearchChange,
@@ -385,9 +386,7 @@ export default function DynamicFilter({
                   )}
                   <span className='truncate'>{chipLabel}</span>
                   {chipCount > 1 && (
-                    <span className={FILTER_CHIP_COUNT}>
-                      +{chipCount - 1}
-                    </span>
+                    <span className={FILTER_CHIP_COUNT}>+{chipCount - 1}</span>
                   )}
                   {qf.options ? (
                     <span className={FILTER_CHIP_TRAILING}>
@@ -478,9 +477,7 @@ export default function DynamicFilter({
                               activeQuickFilters?.filter((f) =>
                                 f.startsWith('amount:'),
                               ) || []
-                            oldValues.forEach((v) =>
-                              onQuickFilterToggle?.(v),
-                            )
+                            oldValues.forEach((v) => onQuickFilterToggle?.(v))
                             if (activeQuickFilters?.includes('highValue')) {
                               onQuickFilterToggle?.('highValue')
                             }
@@ -494,9 +491,8 @@ export default function DynamicFilter({
                           selectedValues={
                             qf.options
                               ?.map((opt) => opt.value)
-                              .filter((v) =>
-                                activeQuickFilters?.includes(v),
-                              ) || []
+                              .filter((v) => activeQuickFilters?.includes(v)) ||
+                            []
                           }
                           onChange={(newValues) => {
                             const optionValues =
@@ -593,7 +589,13 @@ export default function DynamicFilter({
                   ref={(el) => {
                     buttonRefs.current[field.id] = el
                   }}
-                  onClick={() => setActiveDropdown(isOpen ? null : field.id)}
+                  onClick={() => {
+                    const nextDropdown = isOpen ? null : field.id
+                    setActiveDropdown(nextDropdown)
+                    if (nextDropdown) {
+                      onFieldOpen?.(field)
+                    }
+                  }}
                 >
                   <span className='truncate'>{displayLabel}</span>
                   {!isAllActive && activeValues.length > 1 && (
@@ -749,6 +751,7 @@ export default function DynamicFilter({
                             )
                             setAddFilterSearch('')
                             setActiveDropdown(field.id)
+                            onFieldOpen?.(field)
                           }}
                         >
                           {field.label}
