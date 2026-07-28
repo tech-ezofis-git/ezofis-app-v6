@@ -1304,6 +1304,7 @@ const InboxList: React.FC<InboxListProps> = ({
         activeFiltersMap,
         filterFields,
         activeQuickFilters,
+        searchState?.value,
       )
       onFilterClausesChange(clauses)
     }
@@ -1311,6 +1312,7 @@ const InboxList: React.FC<InboxListProps> = ({
     activeFiltersMap,
     filterFields,
     activeQuickFilters,
+    searchState?.value,
     onFilterClausesChange,
   ])
 

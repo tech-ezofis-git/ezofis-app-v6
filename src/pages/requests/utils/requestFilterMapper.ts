@@ -56,80 +56,82 @@ export const convertDatePresetToFilterClause = (
   let startDate: Date
   let endDate: Date
 
-  switch (presetValue) {
-    case 'last_7_days':
-      startDate = new Date(today.getTime() - 7 * 86400000)
-      endDate = today
-      break
-    case 'next_7_days':
-    case 'days_2_to_7':
-      startDate = today
-      endDate = new Date(today.getTime() + 7 * 86400000)
-      break
-    case 'next_15_days':
-      startDate = today
-      endDate = new Date(today.getTime() + 15 * 86400000)
-      break
-    case 'next_30_days':
-    case 'days_8_to_30':
-      startDate = today
-      endDate = new Date(today.getTime() + 30 * 86400000)
-      break
-    case 'after_30_days':
-      startDate = new Date(today.getTime() + 30 * 86400000)
-      endDate = new Date(today.getTime() + 365 * 86400000)
-      break
-    case 'this_week': {
-      startDate = new Date(today.getTime() - today.getDay() * 86400000)
-      endDate = new Date(startDate.getTime() + 6 * 86400000)
-      break
+  if (
+    presetValue === 'next_1_month' ||
+    presetValue === 'next_month' ||
+    presetValue === '1_month'
+  ) {
+    startDate = today
+    endDate = new Date(now.getFullYear(), now.getMonth() + 1, today.getDate())
+  } else if (presetValue === 'last_1_month' || presetValue === 'last_month') {
+    startDate = new Date(now.getFullYear(), now.getMonth() - 1, today.getDate())
+    endDate = today
+  } else if (/^next_(\d+)_months?$/i.test(presetValue)) {
+    const num = Number(presetValue.match(/^next_(\d+)_months?$/i)?.[1] || 1)
+    startDate = today
+    endDate = new Date(now.getFullYear(), now.getMonth() + num, today.getDate())
+  } else if (/^last_(\d+)_months?$/i.test(presetValue)) {
+    const num = Number(presetValue.match(/^last_(\d+)_months?$/i)?.[1] || 1)
+    startDate = new Date(
+      now.getFullYear(),
+      now.getMonth() - num,
+      today.getDate(),
+    )
+    endDate = today
+  } else if (/^next_(\d+)_days?$/i.test(presetValue)) {
+    const num = Number(presetValue.match(/^next_(\d+)_days?$/i)?.[1] || 1)
+    startDate = today
+    endDate = new Date(today.getTime() + num * 86400000)
+  } else if (/^last_(\d+)_days?$/i.test(presetValue)) {
+    const num = Number(presetValue.match(/^last_(\d+)_days?$/i)?.[1] || 1)
+    startDate = new Date(today.getTime() - num * 86400000)
+    endDate = today
+  } else {
+    switch (presetValue) {
+      case 'days_2_to_7':
+        startDate = today
+        endDate = new Date(today.getTime() + 7 * 86400000)
+        break
+      case 'days_8_to_30':
+        startDate = today
+        endDate = new Date(today.getTime() + 30 * 86400000)
+        break
+      case 'after_30_days':
+        startDate = new Date(today.getTime() + 30 * 86400000)
+        endDate = new Date(today.getTime() + 365 * 86400000)
+        break
+      case 'this_week': {
+        startDate = new Date(today.getTime() - today.getDay() * 86400000)
+        endDate = new Date(startDate.getTime() + 6 * 86400000)
+        break
+      }
+      case 'last_week': {
+        const startOfThisWeek = new Date(
+          today.getTime() - today.getDay() * 86400000,
+        )
+        startDate = new Date(startOfThisWeek.getTime() - 7 * 86400000)
+        endDate = new Date(startOfThisWeek.getTime() - 86400000)
+        break
+      }
+      case 'this_month':
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1)
+        endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+        break
+      case 'next_month':
+        startDate = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+        endDate = new Date(now.getFullYear(), now.getMonth() + 2, 0)
+        break
+      case 'this_year':
+        startDate = new Date(now.getFullYear(), 0, 1)
+        endDate = new Date(now.getFullYear(), 11, 31)
+        break
+      case 'last_year':
+        startDate = new Date(now.getFullYear() - 1, 0, 1)
+        endDate = new Date(now.getFullYear() - 1, 11, 31)
+        break
+      default:
+        return null
     }
-    case 'last_week': {
-      const startOfThisWeek = new Date(
-        today.getTime() - today.getDay() * 86400000,
-      )
-      startDate = new Date(startOfThisWeek.getTime() - 7 * 86400000)
-      endDate = new Date(startOfThisWeek.getTime() - 86400000)
-      break
-    }
-    case 'this_month':
-      startDate = new Date(now.getFullYear(), now.getMonth(), 1)
-      endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-      break
-    case 'last_month':
-      startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-      endDate = new Date(now.getFullYear(), now.getMonth(), 0)
-      break
-    case 'next_month':
-      startDate = new Date(now.getFullYear(), now.getMonth() + 1, 1)
-      endDate = new Date(now.getFullYear(), now.getMonth() + 2, 0)
-      break
-    case 'last_3_months':
-      startDate = new Date(
-        now.getFullYear(),
-        now.getMonth() - 3,
-        today.getDate(),
-      )
-      endDate = today
-      break
-    case 'last_6_months':
-      startDate = new Date(
-        now.getFullYear(),
-        now.getMonth() - 6,
-        today.getDate(),
-      )
-      endDate = today
-      break
-    case 'this_year':
-      startDate = new Date(now.getFullYear(), 0, 1)
-      endDate = new Date(now.getFullYear(), 11, 31)
-      break
-    case 'last_year':
-      startDate = new Date(now.getFullYear() - 1, 0, 1)
-      endDate = new Date(now.getFullYear() - 1, 11, 31)
-      break
-    default:
-      return null
   }
 
   return {
@@ -148,6 +150,7 @@ export const buildV6FilterClauses = (
   activeFilters: Record<string, string | string[]>,
   filterFields: V6FilterField[],
   activeQuickFilters: string[] = [],
+  searchQuery?: string,
 ): V6SearchFilterClause[] => {
   const clausesMap = new Map<string, V6SearchFilterClause>()
 
@@ -318,6 +321,28 @@ export const buildV6FilterClauses = (
       })
     }
   })
+
+  // 3. Process search query (Invoice Number default)
+  if (searchQuery && searchQuery.trim() !== '') {
+    const invoiceNoField =
+      fieldByName.get('invoice no') ||
+      fieldByName.get('invoice number') ||
+      fieldByName.get('invoiceno') ||
+      fieldByName.get('invoice_no') ||
+      fieldByName.get('invoice_number') ||
+      fieldByName.get('request no') ||
+      fieldByName.get('requestno')
+
+    const invoiceCriteria =
+      invoiceNoField?.sqlColumnName || 'kvcYuknkDumkTenjvrVLj'
+
+    clausesMap.set(invoiceCriteria, {
+      condition: 'contains',
+      criteria: invoiceCriteria,
+      dataType: invoiceNoField?.dataType || 'SHORT_TEXT',
+      value: searchQuery.trim(),
+    })
+  }
 
   return Array.from(clausesMap.values())
 }
