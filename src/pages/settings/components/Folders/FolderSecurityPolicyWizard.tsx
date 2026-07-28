@@ -302,7 +302,8 @@ export default function FolderSecurityPolicyWizard({
     <div className='flex h-full min-h-0 flex-col bg-[var(--surface)]'>
       <SettingsSetupHeader
         moduleTitle='Folder Security'
-        progress={Math.round(((step + 1) / WIZARD_STEPS.length) * 100)}
+        showBackButton={false}
+        showProgress={false}
         stepDescription='Grant users or groups permission to perform actions inside this folder.'
         stepTitle='Folder Security Policy'
         setupTitle={folderName}
