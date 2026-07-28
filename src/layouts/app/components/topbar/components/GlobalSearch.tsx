@@ -390,7 +390,7 @@ const GlobalSearch = () => {
                     All search results for “{searchLabel}”
                   </span>
                   <span className='shrink-0 text-[12px] text-gray-9'>
-                    Press ENTER
+                    Press <span>ENTER</span>
                   </span>
                 </button>
               </motion.div>

@@ -764,7 +764,7 @@ export default function DmsFolderConfiguration({
     setStep(1)
     setShowWizard(true)
     showToast({
-      message: 'AI folder setup applied. Review and finish configuration.',
+      message: 'Folder setup applied. Review and finish configuration.',
       variant: 'success',
     })
   }
@@ -934,7 +934,7 @@ export default function DmsFolderConfiguration({
                     />
                     <MenuItem
                       icon='lucide:sparkles'
-                      label='AI builder'
+                      label='Guided builder'
                       onClick={openAiBuilder}
                     />
                   </Menu>

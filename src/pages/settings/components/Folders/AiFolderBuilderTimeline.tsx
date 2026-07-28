@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { type ReactNode } from 'react'
 import { motion } from 'motion/react'
 import Icon from '@/components/base/icon/Icon'
 import cn from '@/utils/cn'
@@ -7,9 +7,14 @@ export type TimelineStepStatus = 'active' | 'completed' | 'upcoming'
 
 export type TimelineConnectorState = 'hidden' | 'idle' | 'completed' | 'loading'
 
-const LOADER_BAR_PX = 52
-const LOADER_PX_PER_SEC = 48
+/** Matches card header band so the circle lines up with the title */
+const HEADER_ALIGN_PX = 56
+const CIRCLE_PX = 32
 const STEP_GAP_PX = 16
+
+/** Distance from header-band top to circle bottom / next circle top */
+const CIRCLE_TOP_INSET = (HEADER_ALIGN_PX - CIRCLE_PX) / 2
+const CIRCLE_BOTTOM = CIRCLE_TOP_INSET + CIRCLE_PX
 
 function trackColor(state: TimelineConnectorState) {
   if (state === 'completed') return 'bg-[var(--green-9)]'
@@ -43,85 +48,6 @@ function StepCircle({
   )
 }
 
-function ConnectorTrack({
-  state,
-  className,
-  extendGap,
-}: {
-  state: TimelineConnectorState
-  className?: string
-  extendGap?: boolean
-}) {
-  const trackRef = useRef<HTMLDivElement>(null)
-  const [height, setHeight] = useState(0)
-
-  useEffect(() => {
-    const node = trackRef.current
-    if (!node) return
-
-    const publish = () => {
-      const base = node.getBoundingClientRect().height
-      setHeight(extendGap ? base + STEP_GAP_PX : base)
-    }
-    publish()
-    const observer = new ResizeObserver(publish)
-    observer.observe(node)
-    return () => observer.disconnect()
-  }, [state, extendGap])
-
-  if (state === 'hidden') {
-    return null
-  }
-
-  const travel = Math.max(height, 0)
-  const duration = Math.max(height / LOADER_PX_PER_SEC, 1.2)
-
-  return (
-    <div
-      className={cn('relative min-h-0 w-[2px] flex-1', className)}
-      ref={trackRef}
-    >
-      <div
-        className={cn(
-          'absolute inset-x-0 top-0 overflow-hidden',
-          trackColor(state),
-        )}
-        style={{ bottom: extendGap ? -STEP_GAP_PX : 0 }}
-      >
-        {state === 'loading' && height > 0 ? (
-          <>
-            <motion.div
-              animate={{ top: [-LOADER_BAR_PX, travel] }}
-              className='absolute inset-x-0 rounded-full bg-primary-9'
-              initial={{ top: -LOADER_BAR_PX }}
-              style={{ height: LOADER_BAR_PX }}
-              transition={{
-                duration,
-                ease: 'linear',
-                repeat: Infinity,
-                repeatType: 'loop',
-              }}
-            />
-            <motion.div
-              animate={{ top: [-LOADER_BAR_PX, travel] }}
-              className='absolute inset-x-0 rounded-full bg-primary-7/70'
-              initial={{ top: -LOADER_BAR_PX }}
-              style={{ height: LOADER_BAR_PX }}
-              transition={{
-                delay: duration / 2,
-                duration,
-                ease: 'linear',
-                repeat: Infinity,
-                repeatType: 'loop',
-              }}
-            />
-          </>
-        ) : null}
-      </div>
-    </div>
-  )
-}
-
 export function BuilderTimelineStep({
   stepId,
   status,
@@ -129,8 +55,8 @@ export function BuilderTimelineStep({
   description,
   summary,
   children,
-  showTopConnector,
-  topConnectorState,
+  showTopConnector: _showTopConnector,
+  topConnectorState: _topConnectorState,
   bottomConnectorState,
 }: {
   stepId: number
@@ -149,35 +75,63 @@ export function BuilderTimelineStep({
   const hasBottomConnector = bottomConnectorState !== 'hidden'
 
   return (
-    <div>
-      <div className='flex gap-4'>
-        {/* Timeline — circle centered to card height */}
-        <div className='flex w-8 shrink-0 flex-col self-stretch overflow-visible'>
-          <div className='flex min-h-0 w-full flex-1 flex-col items-center'>
-            {showTopConnector ? (
-              <ConnectorTrack className='flex-1' state={topConnectorState} />
-            ) : (
-              <div className='min-h-0 w-[2px] flex-1' />
-            )}
-
-            <StepCircle status={status} stepId={stepId} />
-
-            {hasBottomConnector ? (
-              <ConnectorTrack
-                extendGap
-                className='flex-1'
-                state={bottomConnectorState}
-              />
-            ) : (
-              <div className='min-h-0 w-[2px] flex-1' />
-            )}
-          </div>
+    <div className='flex items-stretch gap-4'>
+      {/*
+        1  Heading
+        |
+        2  Heading
+        |
+        3  Heading
+      */}
+      <div
+        className='relative w-8 shrink-0 self-stretch overflow-visible'
+        style={{ paddingBottom: hasBottomConnector ? STEP_GAP_PX : 0 }}
+      >
+        <div
+          className='relative z-10 flex w-full items-center justify-center'
+          style={{ height: HEADER_ALIGN_PX }}
+        >
+          <StepCircle status={status} stepId={stepId} />
         </div>
 
+        {/* Line starts at this circle bottom and ends at next circle top */}
+        {hasBottomConnector ? (
+          <div
+            className={cn(
+              'absolute left-1/2 z-0 w-[2px] -translate-x-1/2 overflow-hidden',
+              trackColor(bottomConnectorState),
+            )}
+            style={{
+              // 1px overlap removes sub-pixel hairline gaps
+              top: CIRCLE_BOTTOM - 1,
+              bottom: -(CIRCLE_TOP_INSET + 1),
+            }}
+          >
+            {bottomConnectorState === 'loading' ? (
+              <motion.div
+                animate={{ top: ['-40%', '100%'] }}
+                className='absolute inset-x-0 h-10 rounded-full bg-primary-9'
+                initial={{ top: '-40%' }}
+                transition={{
+                  duration: 1.4,
+                  ease: 'linear',
+                  repeat: Infinity,
+                  repeatType: 'loop',
+                }}
+              />
+            ) : null}
+          </div>
+        ) : null}
+      </div>
+
+      <div
+        className='min-w-0 flex-1'
+        style={{ paddingBottom: hasBottomConnector ? STEP_GAP_PX : 0 }}
+      >
         <motion.section
           animate={{ opacity: 1, y: 0 }}
           className={cn(
-            'flex min-h-0 flex-1 flex-col overflow-hidden rounded-[16px] border bg-surface transition',
+            'flex min-h-0 flex-col overflow-hidden rounded-[16px] border bg-surface transition',
             isActive
               ? 'border-primary-9 shadow-[0_10px_28px_rgba(124,58,237,0.12)]'
               : isCompleted
@@ -185,19 +139,17 @@ export function BuilderTimelineStep({
                 : 'border-[var(--gray-3)] opacity-70',
           )}
           initial={{ opacity: 0, y: 14 }}
-          layout
           transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
         >
           <div
             className={cn(
-              'flex shrink-0 items-center px-5 py-4',
-              isActive || isCompleted
-                ? 'bg-primary-2'
-                : 'bg-[var(--gray-1)]',
+              'flex shrink-0 items-center px-5',
+              isActive || isCompleted ? 'bg-primary-2' : 'bg-[var(--gray-1)]',
               showBody ? 'border-b border-primary-4' : '',
             )}
+            style={{ minHeight: HEADER_ALIGN_PX }}
           >
-            <div className='min-w-0 flex-1'>
+            <div className='min-w-0 flex-1 py-3'>
               <h2 className='text-[15px] font-semibold text-[var(--gray-13)]'>
                 {title}
               </h2>
@@ -218,14 +170,6 @@ export function BuilderTimelineStep({
           ) : null}
         </motion.section>
       </div>
-
-      {/* Spacer between steps — line extends into this via extendGap */}
-      {hasBottomConnector ? (
-        <div className='flex gap-4'>
-          <div className='w-8 shrink-0' style={{ height: STEP_GAP_PX }} />
-          <div className='flex-1' style={{ height: STEP_GAP_PX }} />
-        </div>
-      ) : null}
     </div>
   )
 }
