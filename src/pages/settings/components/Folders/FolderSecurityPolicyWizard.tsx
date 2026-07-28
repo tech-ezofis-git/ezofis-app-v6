@@ -154,7 +154,7 @@ export default function FolderSecurityPolicyWizard({
             {/* Table Body (3 Columns: Title | Description | Access Toggle) */}
 
             {/* Table Body (3 Columns) */}
-            <div className="divide-y divide-[var(--border-default)] max-h-[calc(100vh-395px)] overflow-y-auto ez-scrollbar">
+            <div className="divide-y divide-[var(--border-default)] max-h-[calc(100vh-340px)] overflow-y-auto ez-scrollbar">
               {filteredPermissions.length === 0 ? (
                 <div className="p-6 text-center text-xs text-[var(--gray-10)]">No matching permissions found</div>
               ) : (

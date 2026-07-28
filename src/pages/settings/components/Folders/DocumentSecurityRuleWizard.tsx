@@ -199,7 +199,7 @@ export default function DocumentSecurityRuleWizard({
     if (step === 0) {
       return (
         <SettingsFormSection>
-          <div className="space-y-4">
+          <div className="space-y-4 max-h-[calc(100vh-340px)] overflow-y-auto ez-scrollbar pr-1">
             {/* First-Class Rule Action Choice */}
             <div className="rounded-[14px] border border-[var(--border-default)] bg-[var(--surface)] p-5 shadow-sm space-y-3">
               <label className="text-xs font-semibold text-[var(--gray-12)]  tracking-wider">
