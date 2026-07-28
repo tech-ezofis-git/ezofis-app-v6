@@ -50,9 +50,9 @@ const generateDummyEntries = (fields: Question[], count: number = 6) => {
     fields.length > 0
       ? fields
       : [
-          { id: 'f1', label: 'Initial Value', type: 'SHORT_TEXT' } as Question,
-          { id: 'f2', label: 'Status', type: 'SHORT_TEXT' } as Question,
-        ]
+        { id: 'f1', label: 'Initial Value', type: 'SHORT_TEXT' } as Question,
+        { id: 'f2', label: 'Status', type: 'SHORT_TEXT' } as Question,
+      ]
 
   return Array.from({ length: count }).map((_, idx) => {
     const entryId = `Entry #${idx + 1}`
@@ -311,18 +311,7 @@ const FormEntriesPage = () => {
     initialVisibilityState: {},
   })
 
-  // Initialize selected columns (all columns visible by default)
-  const [initialVisibilitySet, setInitialVisibilitySet] = useState(false)
-  useEffect(() => {
-    if (fields.length > 0 && !initialVisibilitySet) {
-      const visibility: Record<string, boolean> = {}
-      fields.forEach((field: Question) => {
-        visibility[field.id] = true
-      })
-      setVisibilityState(visibility)
-      setInitialVisibilitySet(true)
-    }
-  }, [fields, initialVisibilitySet, setVisibilityState])
+
 
   // Synchronize fetched entries from backend with component state
   useEffect(() => {
@@ -545,7 +534,8 @@ const FormEntriesPage = () => {
       {
         id: 'id',
         label: 'Entry #',
-        size: 120,
+        // minSize: 140,
+        size: 140,
         renderCell: (row: any) => (
           <span
             className='cursor-pointer font-bold text-[var(--primary-9)] hover:underline'
@@ -559,17 +549,30 @@ const FormEntriesPage = () => {
 
     // Render dynamic columns from fields
     fields.forEach((field: Question) => {
+      const fieldLabel = field.label || 'Untitled Field'
       const isStatusCol =
-        (field.label || '').toLowerCase().trim() === 'matched status'
-      const getFieldLabel = (key: string) => {
-        const f = fields.find((item: Question) => item.id === key)
-        return f?.label || key
-      }
+        fieldLabel.toLowerCase().trim() === 'matched status'
+
+      // Calculate max character length across header label and cell values
+      let maxCharLength = fieldLabel.length
+      paginatedEntries.forEach((row: any) => {
+        const val = row.values?.[field.id]
+        if (val !== undefined && val !== null) {
+          const valStr = String(val)
+          if (valStr.length > maxCharLength) {
+            maxCharLength = valStr.length
+          }
+        }
+      })
+
+      // Dynamic width calculation (min 180px, max 450px)
+      const dynamicSize = Math.min(Math.max(maxCharLength * 11 + 54, 180), 450)
 
       colList.push({
         id: field.id,
-        label: field.label || 'Untitled Field',
-        size: 180,
+        label: fieldLabel,
+        // minSize: dynamicSize,
+        size: dynamicSize,
         renderCell: (row: any) => {
           const val = row.values?.[field.id]
 
@@ -623,7 +626,7 @@ const FormEntriesPage = () => {
                   variant='ghost'
                   onClick={() =>
                     setActiveLineItems({
-                      colLabel: field.label || 'Line Items',
+                      colLabel: fieldLabel,
                       data: parsedData,
                       rowId: row.id,
                     })
@@ -637,7 +640,7 @@ const FormEntriesPage = () => {
           }
 
           return (
-            <span className='block max-w-[200px] truncate font-medium text-[var(--gray-12)]'>
+            <span className='font-medium text-[var(--gray-12)] whitespace-nowrap overflow-hidden text-ellipsis block'>
               {val !== undefined && val !== null ? String(val) : '-'}
             </span>
           )
@@ -744,7 +747,20 @@ const FormEntriesPage = () => {
     )
 
     return colList
-  }, [fields, tabValue, activeLineItems, usersData])
+  }, [fields, tabValue, activeLineItems, usersData, paginatedEntries])
+
+  // Initialize selected columns (all columns visible by default)
+  const [initialVisibilitySet, setInitialVisibilitySet] = useState(false)
+  useEffect(() => {
+    if (columns.length > 0 && !initialVisibilitySet) {
+      const visibility: Record<string, boolean> = {}
+      columns.forEach((col: Column) => {
+        visibility[col.id] = true
+      })
+      setVisibilityState(visibility)
+      setInitialVisibilitySet(true)
+    }
+  }, [columns, initialVisibilitySet, setVisibilityState])
 
   // Map flat paginated entries to DataTable format
   const formattedRows = useMemo(() => {
@@ -1050,7 +1066,7 @@ const FormEntriesPage = () => {
                             'Option A,Option B,Option C'
                           const delimiter =
                             field.settings?.specific?.separateOptionsUsing ===
-                            'COMMA'
+                              'COMMA'
                               ? ','
                               : '\n'
                           const opts = optString
@@ -1095,7 +1111,7 @@ const FormEntriesPage = () => {
                             'Option A,Option B,Option C'
                           const delimiter =
                             field.settings?.specific?.separateOptionsUsing ===
-                            'COMMA'
+                              'COMMA'
                               ? ','
                               : '\n'
                           const opts = optString
@@ -1155,7 +1171,7 @@ const FormEntriesPage = () => {
                             'Option A,Option B,Option C'
                           const delimiter =
                             field.settings?.specific?.separateOptionsUsing ===
-                            'COMMA'
+                              'COMMA'
                               ? ','
                               : '\n'
                           const opts = optString
@@ -1365,14 +1381,14 @@ const FormEntriesPage = () => {
             filters={[
               ...(nameFieldFilter
                 ? [
-                    {
-                      id: nameFieldFilter.id,
-                      label: nameFieldFilter.label || 'Name',
-                      options: nameFieldFilter.options || [],
-                      searchable: true,
-                      searchPlaceholder: 'Search name...',
-                    },
-                  ]
+                  {
+                    id: nameFieldFilter.id,
+                    label: nameFieldFilter.label || 'Name',
+                    options: nameFieldFilter.options || [],
+                    searchable: true,
+                    searchPlaceholder: 'Search name...',
+                  },
+                ]
                 : []),
               {
                 id: 'createdBy',
@@ -1401,7 +1417,7 @@ const FormEntriesPage = () => {
               setSearchState({ id: '', value: '' })
               setPage(1)
             }}
-            onSearchChange={() => {}}
+            onSearchChange={() => { }}
           />
           <div className='mt-2 min-h-0 flex-1 overflow-hidden'>
             <DataTable

@@ -1,10 +1,14 @@
 import IconButton from '@/components/base/button/IconButton'
 import Tooltip from '@/components/base/Tooltip'
 
-const MarkAll = () => {
+interface Props {
+  onClick?: () => void
+}
+
+const MarkAll = ({ onClick }: Props) => {
   return (
     <Tooltip content='Mark all as read' position='top'>
-      <IconButton color='gray' icon='lucide:check-check' variant='ghost' />
+      <IconButton color='gray' icon='lucide:check-check' variant='ghost' onClick={onClick} />
     </Tooltip>
   )
 }

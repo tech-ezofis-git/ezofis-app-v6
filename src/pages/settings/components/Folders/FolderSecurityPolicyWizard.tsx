@@ -141,32 +141,28 @@ export default function FolderSecurityPolicyWizard({
       return (
         <SettingsFormSection>
           <div className="rounded-[14px] border border-[var(--border-default)] bg-[var(--surface)] shadow-sm overflow-hidden">
-            <div className="px-6 py-3.5 bg-[var(--gray-2)] border-b border-[var(--border-default)] flex justify-between items-center text-xs font-semibold text-[var(--gray-11)]">
-              <span>Permission</span>
-              <div className="flex items-center gap-4">
-                <SettingsSearchInput
-                  placeholder="Search permissions..."
-                  value={permissionSearch}
-                  onChange={setPermissionSearch}
-                />
-                <button onClick={toggleAllPermissions} className="text-[var(--primary-9)] hover:text-[var(--primary-10)]">
-                  {enabledCount === permissions.length ? 'Deselect All' : 'Select All'}
-                </button>
-                <span className="w-20 text-center font-bold">Access</span>
-              </div>
+            {/* Table Toolbar Header */}
+            <div className="px-6 py-3.5 bg-[var(--gray-2)] border-b border-[var(--border-default)] flex justify-between items-center">
+              <span className="text-sm font-semibold text-[var(--gray-13)]">Permissions</span>
+              <SettingsSearchInput
+                placeholder="Search permissions..."
+                value={permissionSearch}
+                onChange={setPermissionSearch}
+              />
             </div>
 
-            <div className="divide-y divide-[var(--border-default)] max-h-[380px] overflow-y-auto ez-scrollbar">
+            {/* Table Body (3 Columns: Title | Description | Access Toggle) */}
+
+            {/* Table Body (3 Columns) */}
+            <div className="divide-y divide-[var(--border-default)] max-h-[calc(100vh-395px)] overflow-y-auto ez-scrollbar">
               {filteredPermissions.length === 0 ? (
                 <div className="p-6 text-center text-xs text-[var(--gray-10)]">No matching permissions found</div>
               ) : (
                 filteredPermissions.map(p => (
-                  <div key={p.id} className="px-6 py-3.5 flex items-center justify-between hover:bg-[var(--gray-1)] transition-colors">
-                    <div>
-                      <div className="text-sm font-semibold text-[var(--gray-13)]">{p.name}</div>
-                      <div className="text-xs text-[var(--gray-10)]">{p.description}</div>
-                    </div>
-                    <div className="w-20 flex justify-center items-center">
+                  <div key={p.id} className="px-6 py-3.5 grid grid-cols-[180px_1fr_90px] items-center gap-4 hover:bg-[var(--gray-1)] transition-colors">
+                    <div className="text-sm font-semibold text-[var(--gray-13)]">{p.name}</div>
+                    <div className="text-xs text-[var(--gray-10)] leading-normal">{p.description}</div>
+                    <div className="flex justify-center items-center">
                       {p.id === 'view' ? (
                         <div className="inline-flex bg-[var(--primary-3)] text-[var(--primary-11)] px-2.5 py-0.5 rounded-full text-[9px] font-bold tracking-wide uppercase align-middle">
                           Mandatory
@@ -192,6 +188,20 @@ export default function FolderSecurityPolicyWizard({
                   </div>
                 ))
               )}
+            </div>
+
+            {/* Table Footer with Select All */}
+            <div className="px-6 py-3 bg-[var(--gray-2)] border-t border-[var(--border-default)] flex items-center justify-between text-xs">
+              <span className="text-[var(--gray-10)] font-medium">
+                {enabledCount} of {permissions.length} permissions enabled
+              </span>
+              <button
+                type="button"
+                onClick={toggleAllPermissions}
+                className="text-[var(--primary-9)] font-semibold hover:text-[var(--primary-10)] transition"
+              >
+                {enabledCount === permissions.length ? 'Deselect All' : 'Select All'}
+              </button>
             </div>
           </div>
         </SettingsFormSection>
@@ -299,7 +309,7 @@ export default function FolderSecurityPolicyWizard({
         onBackToSettings={onClose}
         onCancelSetup={onClose}
       />
-      <div className='grid min-h-[calc(100vh-96px)] grid-cols-1 lg:grid-cols-[296px_1fr]'>
+      <div className='grid flex-1 min-h-0 grid-cols-1 lg:grid-cols-[296px_1fr]'>
         <aside className='border-r border-[var(--border-default)] bg-[var(--surface)] px-4 py-9'>
           <div className='space-y-5'>
             {WIZARD_STEPS.map((s, index) => {

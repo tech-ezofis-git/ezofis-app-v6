@@ -37,6 +37,7 @@ export default function transformColumns(
         label: column.label,
         showMenu: column.showMenu ?? true,
       },
+      minSize: column.minSize ?? column.size,
       size: column.size,
       cell: (info: CellContext<Row, unknown>) => renderCell(column, info),
     }

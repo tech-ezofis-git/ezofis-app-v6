@@ -592,7 +592,7 @@ export default function DocumentSecurityRuleWizard({
         onBackToSettings={onClose}
         onCancelSetup={onClose}
       />
-      <div className='grid min-h-[calc(100vh-96px)] grid-cols-1 lg:grid-cols-[296px_1fr]'>
+      <div className='grid flex-1 min-h-0 grid-cols-1 lg:grid-cols-[296px_1fr]'>
         <aside className='border-r border-[var(--border-default)] bg-[var(--surface)] px-4 py-9'>
           <div className='space-y-5'>
             {WIZARD_STEPS.map((s, index) => {

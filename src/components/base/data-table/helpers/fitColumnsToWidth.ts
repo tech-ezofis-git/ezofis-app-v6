@@ -58,9 +58,10 @@ export default function fitColumnsToWidth<TData>(
   let remainder = available - baseSize * flexColumns.length
 
   for (const column of flexColumns) {
+    const defaultSize = getDefaultColumnSize(column)
     const extra = remainder > 0 ? 1 : 0
     if (remainder > 0) remainder -= 1
-    sizing[column.id] = baseSize + extra
+    sizing[column.id] = Math.max(defaultSize, baseSize + extra)
   }
 
   return sizing

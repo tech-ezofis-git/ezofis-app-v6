@@ -4,9 +4,10 @@ import Tooltip from '@/components/base/Tooltip'
 
 interface Props {
   isNotificationsOpened?: boolean
+  unreadCount?: number
 }
 
-const NotificationsTrigger = ({ isNotificationsOpened = false }: Props) => {
+const NotificationsTrigger = ({ isNotificationsOpened = false, unreadCount = 0 }: Props) => {
   return (
     <Tooltip
       content='Notifications'
@@ -14,7 +15,7 @@ const NotificationsTrigger = ({ isNotificationsOpened = false }: Props) => {
       openDelay={500}
       position='bottom'
     >
-      <Indicator offset={9} animate>
+      <Indicator disabled={unreadCount === 0} offset={9} animate>
         <IconButton
           ariaLabel='notifications'
           color='gray'
