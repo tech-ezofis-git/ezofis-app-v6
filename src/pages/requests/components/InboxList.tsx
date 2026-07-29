@@ -1298,13 +1298,23 @@ const InboxList: React.FC<InboxListProps> = ({
     return map
   }, [activeQuickFilters])
 
+  const [debouncedSearchState, setDebouncedSearchState] =
+    React.useState(searchState)
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchState(searchState)
+    }, 2000)
+    return () => clearTimeout(timer)
+  }, [searchState])
+
   React.useEffect(() => {
     if (onFilterClausesChange) {
       const clauses = buildV6FilterClauses(
         activeFiltersMap,
         filterFields,
         activeQuickFilters,
-        searchState?.value,
+        debouncedSearchState,
       )
       onFilterClausesChange(clauses)
     }
@@ -1312,7 +1322,7 @@ const InboxList: React.FC<InboxListProps> = ({
     activeFiltersMap,
     filterFields,
     activeQuickFilters,
-    searchState?.value,
+    debouncedSearchState,
     onFilterClausesChange,
   ])
 
