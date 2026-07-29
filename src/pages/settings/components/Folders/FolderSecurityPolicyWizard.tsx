@@ -1,7 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Check, Shield, Search, UserRound, Users, X, Save } from 'lucide-react'
+import { Check, Shield, UserRound, Users, Unlock, AlertCircle } from 'lucide-react'
 import cn from '@/utils/cn'
 import { getUsers, getGroups, type V6UserListItem, type V6GroupItem } from '@/api/v6/user'
+import {
+  getFolderSecurity,
+  putFolderSecurity,
+  type FolderPermissionFlags,
+  type FolderSecurityPolicy,
+} from '@/api/v6/folder/security'
 import showToast from '@/components/base/toast/showToast'
 import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
 import SettingsSelectedChips from '../SettingsSelectedChips'
@@ -19,16 +25,16 @@ type Principal = {
 }
 
 type Permission = {
-  id: string
+  id: keyof FolderPermissionFlags
   name: string
   description: string
   enabled: boolean
 }
 
 const WIZARD_STEPS = [
-  { id: 0, title: 'Users', icon: Users },
+  { id: 0, title: 'Users & Groups', icon: Users },
   { id: 1, title: 'Permissions', icon: Shield },
-  { id: 2, title: 'Review', icon: Check },
+  { id: 2, title: 'Review & Save', icon: Check },
 ]
 
 const DEFAULT_PERMISSIONS: Permission[] = [
@@ -46,94 +52,289 @@ const DEFAULT_PERMISSIONS: Permission[] = [
 
 export default function FolderSecurityPolicyWizard({
   folderName,
+  repositoryId,
   onClose,
 }: {
   folderName: string
+  repositoryId: string
   onClose: () => void
 }) {
   const [step, setStep] = useState<Step>(0)
   const [users, setUsers] = useState<V6UserListItem[]>([])
-  // const [groups, setGroups] = useState<V6GroupItem[]>([]) // Hidden for now
+  const [groups, setGroups] = useState<V6GroupItem[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [isOpenRepo, setIsOpenRepo] = useState(false)
+  const [accessError, setAccessError] = useState<string | null>(null)
 
   const [selectedPrincipals, setSelectedPrincipals] = useState<Principal[]>([])
   const [permissions, setPermissions] = useState<Permission[]>(DEFAULT_PERMISSIONS)
   const [permissionSearch, setPermissionSearch] = useState('')
 
-  // const [searchQuery, setSearchQuery] = useState('')
-  // const [filterType, setFilterType] = useState<{ id: string; name: string }>({ id: 'users', name: 'Users' })
+  const loadData = useCallback(async () => {
+    setIsLoading(true)
+    setAccessError(null)
+
+    // Load users & groups
+    const [uRes, gRes] = await Promise.all([getUsers(), getGroups()])
+    const userList = uRes.data || []
+    const groupList = gRes.data || []
+    setUsers(userList)
+    setGroups(groupList)
+
+    // Load folder security policy
+    const secRes = await getFolderSecurity(repositoryId)
+    if (secRes.status === 401) {
+      showToast({ message: 'Authentication required. Please log in again.', variant: 'error' })
+      setAccessError('Authentication required')
+    } else if (secRes.status === 403) {
+      const msg = 'You do not have access to view or edit folder security policies.'
+      showToast({ message: msg, variant: 'error' })
+      setAccessError(msg)
+    } else if (secRes.status === 404) {
+      showToast({ message: 'Repository not found.', variant: 'error' })
+      setAccessError('Repository not found')
+    } else if (secRes.error) {
+      showToast({ message: secRes.error, variant: 'error' })
+    } else if (secRes.data) {
+      const policies = secRes.data.policies || []
+      if (policies.length === 0) {
+        setIsOpenRepo(true)
+        setSelectedPrincipals([])
+        setPermissions(DEFAULT_PERMISSIONS)
+      } else {
+        setIsOpenRepo(false)
+        const firstPolicy = policies[0]
+        const loadedPrincipals: Principal[] = []
+
+        // Map userIds
+        ;(firstPolicy.userIds || []).forEach((uId) => {
+          const matched = userList.find((u) => u.id === uId)
+          loadedPrincipals.push({
+            id: uId,
+            name: matched ? (matched.displayName || `${matched.firstName} ${matched.lastName}`.trim()) : uId,
+            type: 'USER',
+          })
+        })
+
+        // Map groupIds
+        ;(firstPolicy.groupIds || []).forEach((gId) => {
+          const matched = groupList.find((g) => (g.id || g.groupId) === gId)
+          loadedPrincipals.push({
+            id: gId,
+            name: matched ? String(matched.name || matched.description || gId) : gId,
+            type: 'GROUP',
+          })
+        })
+
+        setSelectedPrincipals(loadedPrincipals)
+
+        // Map permissions
+        if (firstPolicy.permissions) {
+          const pMap = firstPolicy.permissions
+          setPermissions(
+            DEFAULT_PERMISSIONS.map((p) => ({
+              ...p,
+              enabled: p.id === 'view' ? true : Boolean(pMap[p.id]),
+            })),
+          )
+        }
+      }
+    }
+
+    setIsLoading(false)
+  }, [repositoryId])
 
   useEffect(() => {
-    async function loadData() {
-      setIsLoading(true)
-      const uRes = await getUsers()
-      if (uRes.error) showToast({ message: uRes.error, variant: 'error' })
-      else setUsers(uRes.data)
+    void loadData()
+  }, [loadData])
 
-      // const gRes = await getGroups()
-      // if (gRes.error) showToast({ message: gRes.error, variant: 'error' })
-      // else setGroups(gRes.data)
+  const principalOptions = useMemo(() => {
+    const userOpts = users.map((u) => {
+      const uName = u.displayName || `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email || u.id
+      return {
+        id: String(u.id),
+        name: `User: ${uName}`,
+        rawName: uName,
+        type: 'USER' as const,
+      }
+    })
 
-      setIsLoading(false)
-    }
-    loadData()
-  }, [])
+    const groupOpts = groups.map((g) => {
+      const gId = String(g.id || g.groupId || '')
+      const gName = String(g.name || g.description || gId || 'Group')
+      return {
+        id: gId,
+        name: `Group: ${gName}`,
+        rawName: gName,
+        type: 'GROUP' as const,
+      }
+    })
 
-  const userOptions = useMemo(() => {
-    return users.map(u => ({
-      id: u.id,
-      name: u.displayName || `${u.firstName} ${u.lastName}`.trim(),
-    }))
-  }, [users])
+    return [...userOpts, ...groupOpts]
+  }, [users, groups])
 
-  const onSelectedUsersChange = (selectedOptions: any[]) => {
-    setSelectedPrincipals(selectedOptions.map(opt => ({
-      id: String(opt.id || opt.value),
-      name: String(opt.name || opt.label),
-      type: 'USER'
-    })))
+  const onSelectedPrincipalsChange = (selectedOptions: any[]) => {
+    const updated: Principal[] = selectedOptions.map((opt) => {
+      const optId = String(opt.id || opt.value || '')
+      const found = principalOptions.find((p) => p.id === optId)
+      return {
+        id: optId,
+        name: found ? found.rawName : String(opt.name || opt.label || optId),
+        type: found ? found.type : ('USER' as const),
+      }
+    })
+    setSelectedPrincipals(updated)
   }
 
-  const togglePermission = (id: string) => {
-    if (id === 'view') return // Mandatory
-    setPermissions(prev => prev.map(p => p.id === id ? { ...p, enabled: !p.enabled } : p))
+  const togglePermission = (id: keyof FolderPermissionFlags) => {
+    if (id === 'view') return // View is mandatory
+    setPermissions((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, enabled: !p.enabled } : p)),
+    )
   }
 
   const toggleAllPermissions = () => {
-    const togglablePermissions = permissions.filter(p => p.id !== 'view')
-    const allEnabled = togglablePermissions.every(p => p.enabled)
-    setPermissions(prev => prev.map(p => p.id === 'view' ? { ...p, enabled: true } : { ...p, enabled: !allEnabled }))
+    const togglablePermissions = permissions.filter((p) => p.id !== 'view')
+    const allEnabled = togglablePermissions.every((p) => p.enabled)
+    setPermissions((prev) =>
+      prev.map((p) => (p.id === 'view' ? { ...p, enabled: true } : { ...p, enabled: !allEnabled })),
+    )
   }
 
-  const savePolicy = () => {
-    showToast({ message: 'Security policy saved successfully', variant: 'success' })
+  const savePolicy = async () => {
+    if (selectedPrincipals.length === 0) {
+      showToast({ message: 'Select at least one user or group for this policy.', variant: 'error' })
+      setStep(0)
+      return
+    }
+
+    const userIds = selectedPrincipals.filter((p) => p.type === 'USER').map((p) => p.id)
+    const groupIds = selectedPrincipals.filter((p) => p.type === 'GROUP').map((p) => p.id)
+
+    const permissionFlags: FolderPermissionFlags = {
+      view: true,
+      upload: false,
+      download: false,
+      print: false,
+      delete: false,
+      editMetadata: false,
+      editDocument: false,
+      checkOut: false,
+      checkIn: false,
+      sendForSignature: false,
+    }
+
+    permissions.forEach((p) => {
+      permissionFlags[p.id] = p.enabled
+    })
+
+    const policyPayload: FolderSecurityPolicy = {
+      folderId: null,
+      groupIds,
+      permissions: permissionFlags,
+      userIds,
+    }
+
+    setIsSaving(true)
+    const res = await putFolderSecurity(repositoryId, {
+      folderId: null,
+      policies: [policyPayload],
+    })
+    setIsSaving(false)
+
+    if (res.status === 403) {
+      showToast({
+        message: 'You do not have access. Admin privileges are required to save security policies.',
+        variant: 'error',
+      })
+      return
+    }
+
+    if (res.status === 401) {
+      showToast({ message: 'Authentication required. Please log in again.', variant: 'error' })
+      return
+    }
+
+    if (res.error) {
+      showToast({ message: res.error, variant: 'error' })
+      return
+    }
+
+    showToast({ message: 'Folder security policy saved successfully.', variant: 'success' })
+    onClose()
+  }
+
+  const clearPolicyReopenRepo = async () => {
+    setIsSaving(true)
+    const res = await putFolderSecurity(repositoryId, {
+      folderId: null,
+      policies: [],
+    })
+    setIsSaving(false)
+
+    if (res.status === 403) {
+      showToast({
+        message: 'You do not have access. Admin privileges are required to clear security policies.',
+        variant: 'error',
+      })
+      return
+    }
+
+    if (res.error) {
+      showToast({ message: res.error, variant: 'error' })
+      return
+    }
+
+    showToast({ message: 'Repository restrictions cleared. Folder reopened to all users.', variant: 'success' })
     onClose()
   }
 
   const renderStepContent = () => {
+    if (accessError) {
+      return (
+        <SettingsFormSection>
+          <div className="rounded-[14px] border border-[var(--red-4)] bg-[var(--red-2)] p-6 text-center text-[var(--red-11)]">
+            <AlertCircle className="mx-auto mb-2 text-[var(--red-9)]" size={32} />
+            <h4 className="text-base font-bold">Access Restricted</h4>
+            <p className="mt-1 text-sm">{accessError}</p>
+          </div>
+        </SettingsFormSection>
+      )
+    }
+
     if (step === 0) {
       return (
         <SettingsFormSection>
+          {isOpenRepo ? (
+            <div className="mb-4 flex items-center gap-3 rounded-[12px] border border-[var(--primary-4)] bg-[var(--primary-2)] p-4 text-[var(--gray-13)]">
+              <Unlock className="shrink-0 text-[var(--primary-9)]" size={20} />
+              <div className="text-xs leading-relaxed">
+                <span className="font-bold">Repository is currently open:</span> No policy restrictions are active. All tenant users can access this folder. Select users/groups below to apply security policies.
+              </div>
+            </div>
+          ) : null}
+
           <InputSelectMultiple
             className='bg-[var(--surface)]'
-            label='Select Users *'
-            options={userOptions}
-            placeholder={isLoading ? 'Loading users...' : 'Select users...'}
-            value={selectedPrincipals.map(p => ({ id: p.id, name: p.name }))}
-            onChange={(value) => onSelectedUsersChange(value as any[])}
+            label='Select Users & Groups *'
+            options={principalOptions}
+            placeholder={isLoading ? 'Loading users & groups...' : 'Search and select users or groups...'}
+            value={selectedPrincipals.map((p) => ({ id: p.id, name: p.name }))}
+            onChange={(value) => onSelectedPrincipalsChange(value as any[])}
           />
           <SettingsSelectedChips
-            items={selectedPrincipals.map(p => ({ id: p.id, name: p.name }))}
-            onRemove={(id) => onSelectedUsersChange(selectedPrincipals.filter(p => p.id !== id))}
+            items={selectedPrincipals.map((p) => ({ id: p.id, name: p.name }))}
+            onRemove={(id) => onSelectedPrincipalsChange(selectedPrincipals.filter((p) => p.id !== id))}
           />
         </SettingsFormSection>
       )
     }
 
     if (step === 1) {
-      const enabledCount = permissions.filter(p => p.enabled).length
+      const enabledCount = permissions.filter((p) => p.enabled).length
       const filteredPermissions = permissions.filter(
-        p =>
+        (p) =>
           p.name.toLowerCase().includes(permissionSearch.toLowerCase()) ||
           p.description.toLowerCase().includes(permissionSearch.toLowerCase()),
       )
@@ -141,7 +342,6 @@ export default function FolderSecurityPolicyWizard({
       return (
         <SettingsFormSection>
           <div className="rounded-[14px] border border-[var(--border-default)] bg-[var(--surface)] shadow-sm overflow-hidden">
-            {/* Table Toolbar Header */}
             <div className="px-6 py-3.5 bg-[var(--gray-2)] border-b border-[var(--border-default)] flex justify-between items-center">
               <span className="text-sm font-semibold text-[var(--gray-13)]">Permissions</span>
               <SettingsSearchInput
@@ -151,14 +351,11 @@ export default function FolderSecurityPolicyWizard({
               />
             </div>
 
-            {/* Table Body (3 Columns: Title | Description | Access Toggle) */}
-
-            {/* Table Body (3 Columns) */}
             <div className="divide-y divide-[var(--border-default)] max-h-[calc(100vh-340px)] overflow-y-auto ez-scrollbar">
               {filteredPermissions.length === 0 ? (
                 <div className="p-6 text-center text-xs text-[var(--gray-10)]">No matching permissions found</div>
               ) : (
-                filteredPermissions.map(p => (
+                filteredPermissions.map((p) => (
                   <div key={p.id} className="px-6 py-3.5 grid grid-cols-[180px_1fr_90px] items-center gap-4 hover:bg-[var(--gray-1)] transition-colors">
                     <div className="text-sm font-semibold text-[var(--gray-13)]">{p.name}</div>
                     <div className="text-xs text-[var(--gray-10)] leading-normal">{p.description}</div>
@@ -190,7 +387,6 @@ export default function FolderSecurityPolicyWizard({
               )}
             </div>
 
-            {/* Table Footer with Select All */}
             <div className="px-6 py-3 bg-[var(--gray-2)] border-t border-[var(--border-default)] flex items-center justify-between text-xs">
               <span className="text-[var(--gray-10)] font-medium">
                 {enabledCount} of {permissions.length} permissions enabled
@@ -209,58 +405,41 @@ export default function FolderSecurityPolicyWizard({
     }
 
     if (step === 2) {
-      const enabledPermissions = permissions.filter(p => p.enabled)
+      const enabledPermissions = permissions.filter((p) => p.enabled)
       const displayedPrincipals = selectedPrincipals.slice(0, 4)
       const remainingPrincipalsCount = Math.max(0, selectedPrincipals.length - 4)
 
       const targetUsersText = selectedPrincipals.length === 0
-        ? 'selected users'
+        ? 'selected users/groups'
         : selectedPrincipals.length === 1
           ? selectedPrincipals[0].name
           : selectedPrincipals.length <= 3
-            ? selectedPrincipals.map(p => p.name).join(', ')
+            ? selectedPrincipals.map((p) => p.name).join(', ')
             : `${selectedPrincipals[0].name}, ${selectedPrincipals[1].name} and ${selectedPrincipals.length - 2} others`
 
       return (
         <SettingsFormSection>
           <div className="space-y-4">
-            {/* Compact Statistics Header Row */}
-            {/* <div className="flex flex-wrap items-center gap-2 pb-1">
-              <span className="inline-flex items-center gap-1.5 rounded-[10px] border border-[var(--border-default)] bg-surface px-3 py-1 text-xs font-medium text-[var(--gray-13)]">
-                <span className="text-[var(--gray-10)] font-normal">Users:</span> {selectedPrincipals.length}
-              </span>
-              <span className="inline-flex items-center gap-1.5 rounded-[10px] border border-[var(--border-default)] bg-surface px-3 py-1 text-xs font-medium text-[var(--gray-13)]">
-                <span className="text-[var(--gray-10)] font-normal">Permissions:</span> {enabledPermissions.length}
-              </span>
-              <span className="inline-flex items-center gap-1.5 rounded-[10px] border border-[var(--border-default)] bg-surface px-3 py-1 text-xs font-medium text-[var(--gray-13)]">
-                <span className="text-[var(--gray-10)] font-normal">Folder:</span> {folderName}
-              </span>
-            </div> */}
-
-            {/* Single Enterprise Security Summary Card */}
             <div className="rounded-[14px] border border-[var(--border-default)] bg-surface overflow-hidden divide-y divide-[var(--border-default)]">
-              {/* Natural Language Security Statement */}
               <div className="bg-[var(--primary-2)] px-5 py-3.5 flex items-start gap-3 border-b border-[var(--border-default)]">
                 <Shield className="text-[var(--primary-9)] mt-0.5 shrink-0" size={16} />
                 <div>
                   <div className="text-[10px] font-bold text-[var(--primary-11)] uppercase tracking-wider mb-0.5">
-                    Security Summary
+                    Security Policy Summary
                   </div>
                   <p className="text-xs font-medium text-[var(--gray-13)] leading-relaxed">
-                    {targetUsersText} will be granted {enabledPermissions.length} security permission{enabledPermissions.length > 1 ? 's' : ''} on the folder <strong className="text-[var(--gray-12)]">{folderName}</strong>.
+                    {targetUsersText} will be granted {enabledPermissions.length} security permission{enabledPermissions.length > 1 ? 's' : ''} on folder <strong className="text-[var(--gray-12)]">{folderName}</strong>.
                   </p>
                 </div>
               </div>
 
-              {/* Card Body */}
               <div className="p-5 space-y-5">
-                {/* Assigned To Row */}
                 <div>
                   <div className="text-[11px] font-bold text-[var(--gray-10)] uppercase tracking-wider mb-2">
-                    Assigned To ({selectedPrincipals.length})
+                    Assigned Users & Groups ({selectedPrincipals.length})
                   </div>
                   <div className="flex flex-wrap gap-1.5">
-                    {displayedPrincipals.map(p => (
+                    {displayedPrincipals.map((p) => (
                       <span key={p.id} className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-default)] bg-surface px-3 py-1 text-xs font-medium text-[var(--gray-13)]">
                         <UserRound size={12} className="text-[var(--primary-9)]" />
                         {p.name}
@@ -272,18 +451,17 @@ export default function FolderSecurityPolicyWizard({
                       </span>
                     )}
                     {selectedPrincipals.length === 0 && (
-                      <span className="text-xs italic text-[var(--gray-10)]">No users selected</span>
+                      <span className="text-xs italic text-[var(--gray-10)]">No users or groups selected</span>
                     )}
                   </div>
                 </div>
 
-                {/* Granted Permissions Row */}
                 <div className="border-t border-[var(--border-default)] pt-4">
                   <div className="text-[11px] font-bold text-[var(--gray-10)] uppercase tracking-wider mb-2">
                     Granted Permissions ({enabledPermissions.length})
                   </div>
                   <div className="flex flex-wrap gap-1.5">
-                    {enabledPermissions.map(p => (
+                    {enabledPermissions.map((p) => (
                       <span key={p.id} className="inline-flex items-center rounded-[6px] border border-[var(--primary-4)] bg-[var(--primary-3)] px-2.5 py-1 text-xs font-semibold text-[var(--primary-11)]">
                         {p.name}
                       </span>
@@ -291,6 +469,17 @@ export default function FolderSecurityPolicyWizard({
                   </div>
                 </div>
               </div>
+            </div>
+
+            <div className="pt-2 flex justify-end">
+              <button
+                type="button"
+                disabled={isSaving}
+                onClick={clearPolicyReopenRepo}
+                className="inline-flex items-center gap-2 text-xs font-semibold text-[var(--red-9)] hover:text-[var(--red-10)] transition"
+              >
+                <Unlock size={14} /> Clear Policy & Reopen Repository to All Users
+              </button>
             </div>
           </div>
         </SettingsFormSection>
@@ -365,7 +554,7 @@ export default function FolderSecurityPolicyWizard({
           <div className='sticky bottom-0 z-20 mt-8 flex items-center justify-between border-t border-[var(--border-default)] bg-surface py-4'>
             <button
               className='inline-flex h-10 items-center rounded-[5px] border border-[var(--border-default)] bg-surface px-5 text-[15px] font-semibold text-[var(--gray-13)] transition hover:bg-[var(--gray-2)] disabled:cursor-not-allowed disabled:opacity-50'
-              disabled={step === 0}
+              disabled={step === 0 || Boolean(accessError)}
               type='button'
               onClick={() => setStep((step - 1) as Step)}
             >
@@ -375,16 +564,19 @@ export default function FolderSecurityPolicyWizard({
             <div className='flex items-center gap-3'>
               {step === 2 ? (
                 <button
-                  className='h-10 rounded-[5px] bg-[var(--primary-9)] px-5 text-[15px] font-semibold text-white shadow-[var(--shadow-md)] transition hover:bg-[var(--primary-10)]'
+                  className='h-10 rounded-[5px] bg-[var(--primary-9)] px-5 text-[15px] font-semibold text-white shadow-[var(--shadow-md)] transition hover:bg-[var(--primary-10)] disabled:cursor-not-allowed disabled:opacity-50'
+                  disabled={isSaving || Boolean(accessError)}
                   type='button'
-                  onClick={savePolicy}
+                  onClick={() => {
+                    void savePolicy()
+                  }}
                 >
-                  Save
+                  {isSaving ? 'Saving...' : 'Save Policy'}
                 </button>
               ) : (
                 <button
                   className='h-10 rounded-[5px] bg-[var(--primary-9)] px-5 text-[15px] font-semibold text-white shadow-[var(--shadow-md)] transition hover:bg-[var(--primary-10)] disabled:cursor-not-allowed disabled:opacity-50'
-                  disabled={step === 0 && selectedPrincipals.length === 0}
+                  disabled={(step === 0 && selectedPrincipals.length === 0) || Boolean(accessError)}
                   type='button'
                   onClick={() => setStep((step + 1) as Step)}
                 >

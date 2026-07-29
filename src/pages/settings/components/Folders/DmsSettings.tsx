@@ -56,6 +56,7 @@ import SettingsSetupHeader from '../SettingsSetupHeader'
 import SettingsSortableDataTable from '../SettingsSortableDataTable'
 import useSettingsTableToolbar from '../useSettingsTableToolbar'
 import AiFolderBuilder from './AiFolderBuilder'
+import FolderSecurity from './FolderSecurity'
 import FolderStorageConnectorPanel, {
   type CloudStorageOption,
 } from './FolderStorageConnectorPanel'
@@ -562,6 +563,9 @@ const fieldColumnHelper = createColumnHelper<FieldDisplayRow>()
 export default function DmsFolderConfiguration({
   onBack,
 }: DmsFolderConfigurationProps) {
+  const [securityRepository, setSecurityRepository] = useState<RepositoryRow | null>(
+    null,
+  )
   const [showWizard, setShowWizard] = useState(false)
   const [showAiBuilder, setShowAiBuilder] = useState(false)
   const [step, setStep] = useState<WizardStep>(1)
@@ -605,10 +609,17 @@ export default function DmsFolderConfiguration({
   }, [repositories, activeFilters])
 
   const openEditRepository = useCallback((repository: RepositoryRow) => {
+    setSecurityRepository(null)
     setShowAiBuilder(false)
     setFolderName(repository.name)
     setShowWizard(true)
     setStep(1)
+  }, [])
+
+  const openSecurityRepository = useCallback((repository: RepositoryRow) => {
+    setShowWizard(false)
+    setShowAiBuilder(false)
+    setSecurityRepository(repository)
   }, [])
 
   const loadRepositories = useCallback(async () => {
@@ -872,7 +883,13 @@ export default function DmsFolderConfiguration({
 
   return (
     <div className='flex h-full min-h-0 flex-col bg-[var(--surface)]'>
-      {showAiBuilder ? (
+      {securityRepository ? (
+        <FolderSecurity
+          folderName={securityRepository.name}
+          repositoryId={securityRepository.id}
+          onBack={() => setSecurityRepository(null)}
+        />
+      ) : showAiBuilder ? (
         <AiFolderBuilder
           onBack={() => setShowAiBuilder(false)}
           onApply={handleAiBuilderApply}
@@ -1259,7 +1276,7 @@ function FieldsTable({
             field.level === next[index]?.level &&
             field.orderId === next[index]?.orderId &&
             field.includeInFolderStructure ===
-              next[index]?.includeInFolderStructure,
+            next[index]?.includeInFolderStructure,
         )
       return unchanged ? prev : next
     })
@@ -1287,11 +1304,11 @@ function FieldsTable({
         prev.map((field) =>
           field.id === id
             ? {
-                ...field,
-                iconKey: checked ? field.iconKey || 'folder' : undefined,
-                includeInFolderStructure: checked,
-                isMandatory: checked ? true : field.isMandatory,
-              }
+              ...field,
+              iconKey: checked ? field.iconKey || 'folder' : undefined,
+              includeInFolderStructure: checked,
+              isMandatory: checked ? true : field.isMandatory,
+            }
             : field,
         ),
       ),
@@ -1959,7 +1976,7 @@ function WizardContent({
     if (!response.error && Array.isArray(response.data)) {
       response.data.forEach(
         (repository: { fields?: Array<{ dataType?: string }> }) => {
-          ;(repository.fields || []).forEach((field) => {
+          ; (repository.fields || []).forEach((field) => {
             if (field.dataType) types.add(field.dataType)
           })
         },
