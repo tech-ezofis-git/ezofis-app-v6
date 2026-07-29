@@ -56,6 +56,7 @@ import SettingsSetupHeader from '../SettingsSetupHeader'
 import SettingsSortableDataTable from '../SettingsSortableDataTable'
 import useSettingsTableToolbar from '../useSettingsTableToolbar'
 import AiFolderBuilder from './AiFolderBuilder'
+import FolderSecurity from './FolderSecurity'
 import FolderStorageConnectorPanel, {
   type CloudStorageOption,
 } from './FolderStorageConnectorPanel'
@@ -562,6 +563,9 @@ const fieldColumnHelper = createColumnHelper<FieldDisplayRow>()
 export default function DmsFolderConfiguration({
   onBack,
 }: DmsFolderConfigurationProps) {
+  const [securityFolderName, setSecurityFolderName] = useState<string | null>(
+    null,
+  )
   const [showWizard, setShowWizard] = useState(false)
   const [showAiBuilder, setShowAiBuilder] = useState(false)
   const [step, setStep] = useState<WizardStep>(1)
@@ -605,10 +609,17 @@ export default function DmsFolderConfiguration({
   }, [repositories, activeFilters])
 
   const openEditRepository = useCallback((repository: RepositoryRow) => {
+    setSecurityFolderName(null)
     setShowAiBuilder(false)
     setFolderName(repository.name)
     setShowWizard(true)
     setStep(1)
+  }, [])
+
+  const openSecurityRepository = useCallback((repository: RepositoryRow) => {
+    setShowWizard(false)
+    setShowAiBuilder(false)
+    setSecurityFolderName(repository.name)
   }, [])
 
   const loadRepositories = useCallback(async () => {
@@ -856,6 +867,7 @@ export default function DmsFolderConfiguration({
     tableSearchOptions,
   } = useRepositoryTable(filteredRepositories, {
     onEditRepository: openEditRepository,
+    onSecurityRepository: openSecurityRepository,
   })
   const repositoryToolbar = useSettingsTableToolbar({
     isReLoading: isLoadingRepositories,
@@ -872,7 +884,12 @@ export default function DmsFolderConfiguration({
 
   return (
     <div className='flex h-full min-h-0 flex-col bg-[var(--surface)]'>
-      {showAiBuilder ? (
+      {securityFolderName ? (
+        <FolderSecurity
+          folderName={securityFolderName}
+          onBack={() => setSecurityFolderName(null)}
+        />
+      ) : showAiBuilder ? (
         <AiFolderBuilder
           onBack={() => setShowAiBuilder(false)}
           onApply={handleAiBuilderApply}
@@ -1732,8 +1749,10 @@ function useRepositoryTable(
   rows: RepositoryRow[],
   {
     onEditRepository,
+    onSecurityRepository,
   }: {
     onEditRepository: (repository: RepositoryRow) => void
+    onSecurityRepository: (repository: RepositoryRow) => void
   },
 ) {
   const columnHelper = createColumnHelper<RepositoryRow>()
@@ -1857,6 +1876,11 @@ function useRepositoryTable(
                   label='Edit'
                   onClick={() => onEditRepository(repository)}
                 />
+                <MenuItem
+                  icon='lucide:shield'
+                  label='Security'
+                  onClick={() => onSecurityRepository(repository)}
+                />
                 <MenuItem icon='lucide:settings' label='Settings' disabled />
               </Menu>
             </div>
@@ -1864,7 +1888,7 @@ function useRepositoryTable(
         },
       }),
     ],
-    [columnHelper, onEditRepository],
+    [columnHelper, onEditRepository, onSecurityRepository],
   )
 
   const table = useReactTable({
