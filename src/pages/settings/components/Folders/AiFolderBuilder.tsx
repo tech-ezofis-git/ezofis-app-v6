@@ -510,8 +510,6 @@ function FieldTypeInlineSelect({
         className='rounded px-1 py-0.5 text-left text-[12px] text-[var(--gray-10)] transition hover:bg-[var(--gray-3)] hover:text-[var(--gray-12)]'
         type='button'
         onClick={() => setShowSelect(true)}
-        onFocus={() => setShowSelect(true)}
-        onMouseEnter={() => setShowSelect(true)}
       >
         {formatDataTypeLabel(value)}
       </button>
@@ -519,13 +517,7 @@ function FieldTypeInlineSelect({
   }
 
   return (
-    <div
-      className='max-w-[180px]'
-      onMouseEnter={() => setShowSelect(true)}
-      onMouseLeave={() => {
-        if (!dropdownOpen) setShowSelect(false)
-      }}
-    >
+    <div className='max-w-[180px]'>
       <InputSelect
         autoOpen
         classNames={{ input: 'h-7 text-12' }}
@@ -549,13 +541,13 @@ function FieldTypeInlineSelect({
 function FieldsEditor({
   fields,
   onChange,
-  aiGenerated,
 }: {
   fields: EditableField[]
   onChange: (fields: EditableField[]) => void
-  aiGenerated?: boolean
 }) {
   const [newFieldName, setNewFieldName] = useState('')
+  const [newIsMandatory, setNewIsMandatory] = useState(false)
+  const [newIsFolder, setNewIsFolder] = useState(false)
 
   const folderFields = fields.filter((field) => field.includeInFolderStructure)
   const metadataFields = fields.filter(
@@ -590,16 +582,115 @@ function FieldsEditor({
         {
           dataType: 'SHORT_TEXT',
           fieldName: name,
-          iconKey: 'document',
+          iconKey: newIsFolder ? 'folder' : 'document',
           id: crypto.randomUUID(),
-          includeInFolderStructure: false,
-          isMandatory: false,
+          includeInFolderStructure: newIsFolder,
+          isMandatory: newIsFolder || newIsMandatory,
           aiGenerated: false,
         },
       ]),
     )
     setNewFieldName('')
+    setNewIsMandatory(false)
+    setNewIsFolder(false)
   }
+
+  const addFieldVisual = fieldVisual(newIsFolder)
+
+  const renderAddFieldRow = (key: string) => (
+    <div
+      className='flex w-full items-center rounded-[12px] border border-dashed border-[var(--gray-4)] bg-[var(--gray-1)] px-2.5 py-2'
+      key={key}
+    >
+      <span className='flex size-8 shrink-0' aria-hidden />
+
+      <button
+        aria-label={
+          newIsFolder ? 'Change to normal field' : 'Change to folder field'
+        }
+        className={cn(
+          'flex size-8 shrink-0 items-center justify-center rounded-[8px] transition hover:opacity-90',
+          addFieldVisual.bg,
+          addFieldVisual.color,
+        )}
+        title={
+          newIsFolder
+            ? 'Folder field — click for normal'
+            : 'Normal field — click for folder'
+        }
+        type='button'
+        onClick={() => {
+          setNewIsFolder((prev) => {
+            const next = !prev
+            if (next) setNewIsMandatory(true)
+            return next
+          })
+        }}
+      >
+        <Icon className='size-4' name={addFieldVisual.icon} />
+      </button>
+
+      <div className='flex min-w-0 flex-1 items-center px-1'>
+        <input
+          className='w-auto min-w-0 rounded-md border border-transparent bg-transparent px-1 py-0.5 text-[13px] font-semibold text-[var(--gray-13)] outline-none placeholder:font-medium placeholder:text-[var(--gray-8)] hover:border-[var(--gray-4)] focus:border-[var(--primary-6)] focus:bg-surface'
+          maxLength={20}
+          placeholder='Field name'
+          size={Math.max(newFieldName.length, 10)}
+          value={newFieldName}
+          onChange={(event) => setNewFieldName(event.target.value.slice(0, 20))}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
+              event.preventDefault()
+              addField()
+            }
+          }}
+        />
+        <div className='min-w-0 flex-1' />
+      </div>
+
+      <button
+        aria-label={
+          newIsMandatory || newIsFolder
+            ? 'Mark as optional'
+            : 'Mark as mandatory'
+        }
+        className={cn(
+          'flex size-8 shrink-0 items-center justify-center rounded text-[16px] font-semibold leading-none transition',
+          newIsFolder || newIsMandatory
+            ? 'text-[var(--red-10)]'
+            : 'text-[var(--gray-6)] hover:bg-[var(--red-3)] hover:text-[var(--red-9)]',
+        )}
+        disabled={newIsFolder}
+        title={
+          newIsFolder
+            ? 'Folder fields are mandatory'
+            : newIsMandatory
+              ? 'Mandatory — click to make optional'
+              : 'Optional — click to make mandatory'
+        }
+        type='button'
+        onClick={() => setNewIsMandatory((prev) => !prev)}
+      >
+        *
+      </button>
+
+      <button
+        aria-label='Add field'
+        className={cn(
+          'flex size-8 shrink-0 items-center justify-center rounded-[8px] transition',
+          newFieldName.trim()
+            ? 'bg-primary-10 text-white hover:opacity-90'
+            : 'bg-[var(--gray-3)] text-[var(--gray-8)]',
+        )}
+        disabled={!newFieldName.trim()}
+        title='Add field'
+        type='button'
+        onClick={addField}
+      >
+        <Icon className='size-4' name='lucide:plus' />
+      </button>
+    </div>
+  )
 
   const renderFieldRow = (
     field: EditableField,
@@ -667,11 +758,12 @@ function FieldsEditor({
             <Icon className='size-4' name={visual.icon} />
           </button>
 
-          <div className='min-w-0 shrink-0 space-y-0.5 px-1'>
-            <div className='flex items-center gap-1'>
+          <div className='min-w-0 flex-1 space-y-0.5 px-1'>
+            <div className='flex items-center gap-0.5'>
               <input
-                className='w-[20ch] max-w-[20ch] rounded-md border border-transparent bg-transparent px-1 py-0.5 text-[13px] font-semibold text-[var(--gray-13)] outline-none hover:border-[var(--gray-4)] focus:border-[var(--primary-6)] focus:bg-surface'
+                className='w-auto min-w-0 max-w-full rounded-md border border-transparent bg-transparent px-1 py-0.5 text-[13px] font-semibold text-[var(--gray-13)] outline-none hover:border-[var(--gray-4)] focus:border-[var(--primary-6)] focus:bg-surface'
                 maxLength={20}
+                size={Math.max(field.fieldName.length, 1)}
                 value={field.fieldName}
                 onChange={(event) =>
                   updateField(field.id, {
@@ -684,10 +776,10 @@ function FieldsEditor({
                   field.isMandatory ? 'Mark as optional' : 'Mark as mandatory'
                 }
                 className={cn(
-                  'flex size-5 shrink-0 items-center justify-center rounded text-[16px] font-semibold leading-none transition',
+                  'shrink-0 select-none text-[13px] font-semibold leading-none transition',
                   field.isMandatory
                     ? 'text-[var(--red-10)]'
-                    : 'text-[var(--gray-6)] hover:bg-[var(--red-3)] hover:text-[var(--red-9)]',
+                    : 'text-[var(--gray-6)] hover:text-[var(--red-9)]',
                 )}
                 title={
                   field.isMandatory
@@ -709,8 +801,6 @@ function FieldsEditor({
               onChange={(dataType) => updateField(field.id, { dataType })}
             />
           </div>
-
-          <div className='min-w-0 flex-1' />
         </SortableItem>
       </div>
     )
@@ -718,101 +808,26 @@ function FieldsEditor({
 
   return (
     <div className='space-y-3'>
-      <div className='flex flex-wrap items-center justify-between gap-2'>
-        <div className='flex items-center gap-2'>
-          <p className='text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--gray-9)]'>
-            Fields ({fields.length})
-          </p>
-          {aiGenerated ? <AiGeneratedBadge label='AI fields' /> : null}
-        </div>
-        <div className='flex min-w-0 items-center gap-2'>
-          <input
-            className='w-[20ch] max-w-[20ch] rounded-[10px] border border-[var(--gray-3)] bg-surface px-2.5 py-1.5 text-[12px] text-[var(--gray-13)] outline-none focus:border-[var(--primary-7)]'
-            maxLength={20}
-            placeholder='Add a field…'
-            value={newFieldName}
-            onChange={(event) => setNewFieldName(event.target.value.slice(0, 20))}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') {
-                event.preventDefault()
-                addField()
-              }
-            }}
-          />
-          <Button
-            color='primary'
-            disabled={!newFieldName.trim()}
-            icon='lucide:plus'
-            label='Add field'
-            size='sm'
-            onClick={addField}
-          />
-        </div>
-      </div>
+      {renderAddFieldRow('add-field-top')}
 
       <SortableContainer
         constrainToParent={false}
         items={fields.map((field) => field.id)}
         onItemsChange={handleReorder}
       >
-        <div className='space-y-3'>
-          {folderFields.length > 0 ? (
-            <div className='space-y-2'>
-              <p className='text-[11px] font-semibold text-[var(--gray-10)]'>
-                Folder structure
-              </p>
-              <div className='space-y-2'>
-                {folderFields.map((field, index) =>
-                  renderFieldRow(field, {
-                    depth: index,
-                    isLast: index === folderFields.length - 1,
-                    showTree: true,
-                  }),
-                )}
-              </div>
-            </div>
-          ) : null}
-
-          {metadataFields.length > 0 ? (
-            <div className='space-y-2'>
-              {folderFields.length > 0 ? (
-                <p className='text-[11px] font-semibold text-[var(--gray-10)]'>
-                  Metadata fields
-                </p>
-              ) : null}
-              <div className='space-y-2'>
-                {metadataFields.map((field) => renderFieldRow(field))}
-              </div>
-            </div>
-          ) : null}
+        <div className='space-y-2'>
+          {folderFields.map((field, index) =>
+            renderFieldRow(field, {
+              depth: index,
+              isLast: index === folderFields.length - 1,
+              showTree: true,
+            }),
+          )}
+          {metadataFields.map((field) => renderFieldRow(field))}
         </div>
       </SortableContainer>
 
-      <div className='flex justify-end'>
-        <div className='flex min-w-0 items-center gap-2'>
-          <input
-            className='w-[20ch] max-w-[20ch] rounded-[10px] border border-[var(--gray-3)] bg-surface px-2.5 py-1.5 text-[12px] text-[var(--gray-13)] outline-none focus:border-[var(--primary-7)]'
-            maxLength={20}
-            placeholder='Add a field…'
-            value={newFieldName}
-            onChange={(event) => setNewFieldName(event.target.value.slice(0, 20))}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') {
-                event.preventDefault()
-                addField()
-              }
-            }}
-          />
-          <Button
-            color='primary'
-            disabled={!newFieldName.trim()}
-            icon='lucide:plus'
-            label='Add field'
-            size='sm'
-            onClick={addField}
-          />
-        </div>
-      </div>
+      {renderAddFieldRow('add-field-bottom')}
     </div>
   )
 }
@@ -877,7 +892,6 @@ export default function AiFolderBuilder({
       done.add(3)
       done.add(4)
       done.add(5)
-      done.add(6)
     }
     return done
   }, [activeStep, draft, editableFields.length, phase])
@@ -1344,7 +1358,9 @@ export default function AiFolderBuilder({
     if (editingFromReview) {
       return stepId === activeStep ? 'active' : 'completed'
     }
-    if (phase === 'ready') return 'completed'
+    if (phase === 'ready') {
+      return stepId === 6 ? 'active' : 'completed'
+    }
     if (completedSteps.has(stepId) && activeStep !== stepId) return 'completed'
     if (activeStep === stepId) return 'active'
     return 'upcoming'
@@ -1474,7 +1490,6 @@ export default function AiFolderBuilder({
         {phase === 'fields_ready' && editableFields.length > 0 ? (
           <div className={iconGutter}>
             <FieldsEditor
-              aiGenerated={aiFieldsGenerated}
               fields={editableFields}
               onChange={setEditableFields}
             />
@@ -1881,20 +1896,13 @@ export default function AiFolderBuilder({
             const nextVisible = nextStep
               ? showAllFlow || nextStep.id <= unlockedStep
               : false
-            const nextStatus = nextStep ? stepStatus(nextStep.id) : undefined
 
             const isEditingThis =
               editingFromReview && item.id === activeStep
 
             let bottomConnectorState: TimelineConnectorState = 'hidden'
             if (nextVisible) {
-              if (
-                !showAllFlow &&
-                status === 'completed' &&
-                nextStatus === 'active'
-              ) {
-                bottomConnectorState = 'loading'
-              } else if (showAllFlow || completedSteps.has(item.id)) {
+              if (showAllFlow || completedSteps.has(item.id)) {
                 bottomConnectorState = 'completed'
               } else {
                 bottomConnectorState = 'idle'
@@ -1908,15 +1916,7 @@ export default function AiFolderBuilder({
 
             let topConnectorState: TimelineConnectorState = 'hidden'
             if (prevVisible) {
-              const isActiveTransition =
-                !showAllFlow &&
-                status === 'active' &&
-                Boolean(prevStep && completedSteps.has(prevStep.id))
-
-              if (isActiveTransition) {
-                // Continue loading up to the active circle so animation reaches the line end.
-                topConnectorState = 'loading'
-              } else if (
+              if (
                 showAllFlow ||
                 (prevStep && completedSteps.has(prevStep.id))
               ) {
@@ -1940,12 +1940,16 @@ export default function AiFolderBuilder({
                   status={status}
                   stepId={item.id}
                   summary={
-                    status === 'completed' ? stepSummaries[item.id] : undefined
+                    status === 'completed' ||
+                    (phase === 'ready' && item.id === 6)
+                      ? stepSummaries[item.id]
+                      : undefined
                   }
                   title={item.title}
                   topConnectorState={topConnectorState}
                 >
-                  {status === 'active' || isEditingThis
+                  {(status === 'active' || isEditingThis) &&
+                  !(phase === 'ready' && item.id === 6)
                     ? renderActiveStepBody(item.id)
                     : null}
                 </BuilderTimelineStep>

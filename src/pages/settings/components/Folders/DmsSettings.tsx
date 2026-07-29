@@ -57,6 +57,7 @@ import SettingsSortableDataTable from '../SettingsSortableDataTable'
 import useSettingsTableToolbar from '../useSettingsTableToolbar'
 import AiFolderBuilder from './AiFolderBuilder'
 import FolderSecurity from './FolderSecurity'
+import FolderSecurity from './FolderSecurity'
 import FolderStorageConnectorPanel, {
   type CloudStorageOption,
 } from './FolderStorageConnectorPanel'
@@ -564,6 +565,9 @@ const fieldColumnHelper = createColumnHelper<FieldDisplayRow>()
 export default function DmsFolderConfiguration({
   onBack,
 }: DmsFolderConfigurationProps) {
+  const [securityFolderName, setSecurityFolderName] = useState<string | null>(
+    null,
+  )
   const [securityRepository, setSecurityRepository] = useState<RepositoryRow | null>(
     null,
   )
@@ -872,6 +876,7 @@ export default function DmsFolderConfiguration({
     tableSearchOptions,
   } = useRepositoryTable(filteredRepositories, {
     onEditRepository: openEditRepository,
+    onSecurityRepository: openSecurityRepository,
     onSecurityRepository: openSecurityRepository,
   })
   const repositoryToolbar = useSettingsTableToolbar({
@@ -1766,8 +1771,10 @@ function useRepositoryTable(
   {
     onEditRepository,
     onSecurityRepository,
+    onSecurityRepository,
   }: {
     onEditRepository: (repository: RepositoryRow) => void
+    onSecurityRepository: (repository: RepositoryRow) => void
     onSecurityRepository: (repository: RepositoryRow) => void
   },
 ) {
@@ -1906,6 +1913,11 @@ function useRepositoryTable(
                   label='Security'
                   onClick={() => onSecurityRepository(repository)}
                 />
+                <MenuItem
+                  icon='lucide:shield'
+                  label='Security'
+                  onClick={() => onSecurityRepository(repository)}
+                />
                 <MenuItem icon='lucide:settings' label='Settings' disabled />
               </Menu>
             </div>
@@ -1913,6 +1925,7 @@ function useRepositoryTable(
         },
       }),
     ],
+    [columnHelper, onEditRepository, onSecurityRepository],
     [columnHelper, onEditRepository, onSecurityRepository],
   )
 

@@ -20,6 +20,7 @@ import Title from '@/components/base/Title'
 import showToast from '@/components/base/toast/showToast'
 import { AnimateSlideLeft } from '@/components/common/animations'
 import useSetupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
+import authUserStore from '@/stores/authUserStore'
 interface Props {
   onChangeView: () => void
 }
@@ -51,8 +52,19 @@ const SignInForm = ({ onChangeView }: Props) => {
   useEffect(() => {
     if (shareToken) {
       authApiV6.getSharePreview(shareToken).then((res) => {
-        if (res.data?.sourceTenantId) {
-          setShareTenantId(res.data.sourceTenantId)
+        if (res.data) {
+          if (res.data.sourceTenantId) {
+            setShareTenantId(res.data.sourceTenantId)
+          }
+          authUserStore.getState().setShareContext({
+            action: res.data.action,
+            permission: res.data.permission,
+            shareToken: res.data.shareToken || shareToken,
+            sourceItemId: res.data.sourceItemId,
+            sourceRepositoryId: res.data.sourceRepositoryId,
+            sourceTenantId: res.data.sourceTenantId,
+            workflowInstanceId: res.data.workflowInstanceId,
+          })
         }
       })
     }
@@ -128,7 +140,12 @@ const SignInForm = ({ onChangeView }: Props) => {
     }
 
     if (shareTenantId) {
-      navigate({ replace: true, to: '/folders' })
+      const shareCtx = authUserStore.getState().shareContext
+      if (shareCtx?.workflowInstanceId) {
+        navigate({ replace: true, to: '/requests' })
+      } else {
+        navigate({ replace: true, to: '/folders' })
+      }
       setLoading(false)
       return
     }

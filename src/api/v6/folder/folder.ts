@@ -424,12 +424,21 @@ export const getRepositoryItems = async (payload: RepositoryItemsQuery) => {
 export const getRepositoryItemWorkspace = async (payload: {
   itemId: string
   repositoryId: string
+  shareToken?: string
+  tenantId?: string
 }) => {
   const response: any = { data: null, error: '' }
 
   try {
+    const headers: Record<string, string> = {}
+    if (payload.tenantId) headers['X-Tenant-Id'] = payload.tenantId
+
     const { data, status } = await axiosV6({
+      headers: Object.keys(headers).length ? headers : undefined,
       method: 'GET',
+      params: payload.shareToken
+        ? { sharedtoken: payload.shareToken }
+        : undefined,
       url: `/repositories/${payload.repositoryId}/items/${payload.itemId}/workspace`,
     })
 
@@ -443,9 +452,154 @@ export const getRepositoryItemWorkspace = async (payload: {
   return response
 }
 
+export type RepositoryShareAction = 0 | 1
+
+export type RepositoryShareResult = {
+  action?: number
+  expiresAtUtc?: string
+  guestUserId?: string
+  isNew?: boolean
+  permission?: string
+  recipientEmail?: string
+  requiresPasswordSetup?: boolean
+  shareId?: string
+  shareToken?: string
+  shareUrl?: string
+  sourceItemId?: string
+  sourceRepositoryId?: string
+  sourceTenantId?: string
+}
+
+export type SharedWithMeItem = {
+  action?: number
+  expiresAtUtc?: string
+  fileName?: string
+  permission?: string
+  recipientEmail?: string
+  shareId?: string
+  shareToken?: string
+  sharedAtUtc?: string
+  sourceItemId?: string
+  sourceOrganizationName?: string
+  sourceRepositoryId?: string
+  sourceTenantId?: string
+}
+
+const getFolderTenantHeaders = (tenantId?: string) => {
+  const resolved =
+    tenantId ||
+    authUserStore.getState().session?.tenantId ||
+    authUserStore.getState().identity?.tenantId ||
+    ''
+  return resolved ? { 'X-Tenant-Id': resolved } : undefined
+}
+
+export const shareRepositoryItem = async (payload: {
+  action: RepositoryShareAction
+  email: string
+  itemId: string
+  message?: string
+  repositoryId: string
+  tenantId?: string
+}) => {
+  const response: { data: RepositoryShareResult | null; error: string } = {
+    data: null,
+    error: '',
+  }
+
+  try {
+    const { data, status } = await axiosV6({
+      data: JSON.stringify({
+        action: payload.action,
+        email: payload.email,
+        message: payload.message || '',
+      }),
+      headers: getFolderTenantHeaders(payload.tenantId),
+      method: 'POST',
+      url: `/repositories/${payload.repositoryId}/items/${payload.itemId}/share`,
+    })
+
+    if (status !== 200 && status !== 201) throw 'invalid status code'
+    response.data = (unwrap(data) || data) as RepositoryShareResult
+  } catch (e: any) {
+    console.error(e)
+    response.error =
+      e?.response?.data?.message ||
+      e?.response?.data ||
+      'error sharing repository item'
+  }
+
+  return response
+}
+
+export const getSharedWithMe = async (tenantId?: string) => {
+  const response: { data: SharedWithMeItem[] | null; error: string } = {
+    data: null,
+    error: '',
+  }
+
+  try {
+    const { data, status } = await axiosV6({
+      headers: getFolderTenantHeaders(tenantId),
+      method: 'GET',
+      url: `/repositories/shared-with-me`,
+    })
+
+    if (status !== 200) throw 'invalid status code'
+    const payload = unwrap(data) ?? data
+    response.data = Array.isArray(payload)
+      ? payload
+      : Array.isArray(payload?.items)
+        ? payload.items
+        : Array.isArray(payload?.data)
+          ? payload.data
+          : []
+  } catch (e: any) {
+    console.error(e)
+    response.error =
+      e?.response?.data?.message ||
+      e?.response?.data ||
+      'error fetching shared-with-me'
+  }
+
+  return response
+}
+
+export const revokeRepositoryShare = async (payload: {
+  shareId: string
+  tenantId?: string
+}) => {
+  const response: { data: boolean; error: string } = {
+    data: false,
+    error: '',
+  }
+
+  try {
+    const { status } = await axiosV6({
+      headers: getFolderTenantHeaders(payload.tenantId),
+      method: 'DELETE',
+      url: `/repositories/share/${payload.shareId}`,
+    })
+
+    if (status !== 200 && status !== 204) throw 'invalid status code'
+    response.data = true
+  } catch (e: any) {
+    console.error(e)
+    response.error =
+      e?.response?.data?.message ||
+      e?.response?.data ||
+      'error revoking share'
+  }
+
+  return response
+}
+
 // Keep the API object extensible for existing imports.
 ;(authApiV6 as any).getRepositoryItems = getRepositoryItems
 ;(authApiV6 as any).getRepositoryItemWorkspace = getRepositoryItemWorkspace
+;(authApiV6 as any).shareRepositoryItem = shareRepositoryItem
+;(authApiV6 as any).getSharedWithMe = getSharedWithMe
+;(authApiV6 as any).revokeRepositoryShare = revokeRepositoryShare
 
 export interface RepositoryItemCommentsDto {
   comments?: Array<Record<string, any>>

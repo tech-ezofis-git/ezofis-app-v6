@@ -18,9 +18,14 @@ import {
   getRepositoryItems,
   getRepositoryItemTimeline,
   getRepositoryItemWorkspace,
+  getSharedWithMe,
   type PagedDto,
   type RepositoryDto,
   type RepositoryFieldDto,
+  type RepositoryShareResult,
+  type SharedWithMeItem,
+  revokeRepositoryShare,
+  shareRepositoryItem,
 } from '../../../api/v6/folder/folder'
 import { splitFilterValues } from '../utils/multiFilterValues'
 import { FOLDER_FILES_SECTION_MAX_FOLDERS } from '../utils/folderExplorerUtils'
@@ -860,8 +865,17 @@ export const folderApi = {
     )
   },
 
-  async getDocumentDetail(repositoryId: string, itemId: string): Promise<any> {
-    const result = await getRepositoryItemWorkspace({ itemId, repositoryId })
+  async getDocumentDetail(
+    repositoryId: string,
+    itemId: string,
+    options?: { shareToken?: string; tenantId?: string },
+  ): Promise<any> {
+    const result = await getRepositoryItemWorkspace({
+      itemId,
+      repositoryId,
+      shareToken: options?.shareToken,
+      tenantId: options?.tenantId,
+    })
     if (result.error) throw new Error(String(result.error))
     return toWorkspaceDetail(result.data)
   },
@@ -1211,14 +1225,92 @@ export const folderApi = {
   invalidateRepositoryCache(repositoryId?: string) {
     invalidateRepositoryByIdCache(repositoryId)
   },
-  async getShareData(): Promise<ShareData> {
+  async getShareData(options?: {
+    itemId?: string
+    localShares?: ShareData['sharedWith']
+  }): Promise<ShareData> {
+    const itemId = String(options?.itemId || '').trim()
+    const localShares = options?.localShares || []
+
+    let remoteShares: ShareData['sharedWith'] = []
+    if (itemId) {
+      const result = await getSharedWithMe()
+      if (!result.error && Array.isArray(result.data)) {
+        remoteShares = result.data
+          .filter(
+            (share: SharedWithMeItem) =>
+              String(share.sourceItemId || '') === itemId,
+          )
+          .map((share: SharedWithMeItem) => {
+            const email = String(share.recipientEmail || '').trim()
+            const name = email.split('@')[0] || email || 'Guest'
+            const initials = name
+              .split(/[\s._-]+/)
+              .filter(Boolean)
+              .slice(0, 2)
+              .map((part) => part[0]?.toUpperCase() || '')
+              .join('') || '?'
+            const dateRaw = share.sharedAtUtc || share.expiresAtUtc
+            const date = dateRaw
+              ? new Date(dateRaw).toLocaleDateString()
+              : ''
+            return {
+              date,
+              email: email || 'Unknown',
+              initials,
+              name,
+              permission:
+                share.permission ||
+                (share.action === 1 ? 'Can Edit' : 'Can View'),
+              shareId: share.shareId,
+            }
+          })
+      }
+    }
+
+    const byEmail = new Map<string, ShareData['sharedWith'][number]>()
+    ;[...remoteShares, ...localShares].forEach((person) => {
+      const key = person.shareId || person.email.toLowerCase()
+      byEmail.set(key, person)
+    })
+
     return {
-      documentId: '',
+      documentId: itemId,
       invitePermissions: ['Can View', 'Can Edit'],
       link: '',
       permissions: [],
-      sharedWith: [],
+      sharedWith: Array.from(byEmail.values()),
     }
+  },
+
+  async inviteToShare(payload: {
+    email: string
+    itemId: string
+    message?: string
+    permission: string
+    repositoryId: string
+  }): Promise<RepositoryShareResult> {
+    const action = payload.permission === 'Can Edit' ? 1 : 0
+    const result = await shareRepositoryItem({
+      action,
+      email: payload.email.trim(),
+      itemId: payload.itemId,
+      message: payload.message,
+      repositoryId: payload.repositoryId,
+    })
+    if (result.error) throw new Error(String(result.error))
+    return result.data || {}
+  },
+
+  async revokeShare(shareId: string): Promise<void> {
+    const result = await revokeRepositoryShare({ shareId })
+    if (result.error) throw new Error(String(result.error))
+  },
+
+  async getSharedWithMeItems(): Promise<SharedWithMeItem[]> {
+    const result = await getSharedWithMe()
+    if (result.error) throw new Error(String(result.error))
+    return result.data || []
   },
 
   async getTree(): Promise<TreeNode[]> {

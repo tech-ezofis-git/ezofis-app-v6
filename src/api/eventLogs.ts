@@ -165,11 +165,11 @@ export const getEventLogs = async (
     const queryParams: Record<string, any> = {}
     if (params.page !== undefined) {
       queryParams.page = params.page
-      queryParams.Page = params.page
+      // queryParams.Page = params.page
     }
     if (params.pageSize !== undefined) {
       queryParams.pageSize = params.pageSize
-      queryParams.PageSize = params.pageSize
+      // queryParams.PageSize = params.pageSize
       queryParams.itemsPerPage = params.pageSize
     }
     if (params.category) queryParams.category = params.category

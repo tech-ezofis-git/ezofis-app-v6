@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { motion } from 'motion/react'
 import Icon from '@/components/base/icon/Icon'
 import cn from '@/utils/cn'
@@ -7,13 +7,12 @@ export type TimelineStepStatus = 'active' | 'completed' | 'upcoming'
 
 export type TimelineConnectorState = 'hidden' | 'idle' | 'completed' | 'loading'
 
-const LOADER_BAR_PX = 52
-const LOADER_PX_PER_SEC = 48
 const STEP_GAP_PX = 16
+/** Matches card header top padding so the stage sits on the header row */
+const HEADER_ALIGN_PX = 16
 
 function trackColor(state: TimelineConnectorState) {
-  if (state === 'completed') return 'bg-[var(--green-9)]'
-  if (state === 'loading') return 'bg-primary-4'
+  if (state === 'completed' || state === 'loading') return 'bg-[var(--green-4)]'
   return 'bg-[var(--gray-4)]'
 }
 
@@ -28,17 +27,29 @@ function StepCircle({
   const isCompleted = status === 'completed'
 
   return (
-    <span
-      className={cn(
-        'relative z-10 flex size-8 shrink-0 items-center justify-center rounded-full text-[12px] font-bold',
-        isCompleted
-          ? 'bg-[var(--green-3)] text-[var(--green-9)]'
-          : isActive
-            ? 'bg-primary-9 text-white'
-            : 'bg-[var(--gray-3)] text-[var(--gray-10)]',
-      )}
-    >
-      {isCompleted ? <Icon className='size-3.5' name='lucide:check' /> : stepId}
+    <span className='relative z-10 flex size-8 shrink-0 items-center justify-center'>
+      {isActive ? (
+        <span
+          aria-hidden
+          className='absolute inset-0 animate-ping rounded-full bg-primary-10 opacity-40'
+        />
+      ) : null}
+      <span
+        className={cn(
+          'relative flex size-8 items-center justify-center rounded-full text-[12px] font-bold',
+          isCompleted
+            ? 'bg-[var(--green-2)] text-[var(--green-10)]'
+            : isActive
+              ? 'bg-primary-10 text-white shadow-[0_0_0_4px_rgba(106,76,240,0.18)]'
+              : 'bg-[var(--gray-3)] text-[var(--gray-10)]',
+        )}
+      >
+        {isCompleted ? (
+          <Icon className='size-3.5 text-[var(--green-10)]' name='lucide:check' />
+        ) : (
+          stepId
+        )}
+      </span>
     </span>
   )
 }
@@ -47,77 +58,30 @@ function ConnectorTrack({
   state,
   className,
   extendGap,
+  fixedHeight,
 }: {
   state: TimelineConnectorState
   className?: string
   extendGap?: boolean
+  fixedHeight?: number
 }) {
-  const trackRef = useRef<HTMLDivElement>(null)
-  const [height, setHeight] = useState(0)
-
-  useEffect(() => {
-    const node = trackRef.current
-    if (!node) return
-
-    const publish = () => {
-      const base = node.getBoundingClientRect().height
-      setHeight(extendGap ? base + STEP_GAP_PX : base)
-    }
-    publish()
-    const observer = new ResizeObserver(publish)
-    observer.observe(node)
-    return () => observer.disconnect()
-  }, [state, extendGap])
-
   if (state === 'hidden') {
     return null
   }
 
-  const travel = Math.max(height, 0)
-  const duration = Math.max(height / LOADER_PX_PER_SEC, 1.2)
-
   return (
     <div
-      className={cn('relative min-h-0 w-[2px] flex-1', className)}
-      ref={trackRef}
+      className={cn(
+        'relative w-[2px] shrink-0',
+        fixedHeight == null && 'min-h-0 flex-1',
+        className,
+      )}
+      style={fixedHeight != null ? { height: fixedHeight } : undefined}
     >
       <div
-        className={cn(
-          'absolute inset-x-0 top-0 overflow-hidden',
-          trackColor(state),
-        )}
+        className={cn('absolute inset-x-0 top-0', trackColor(state))}
         style={{ bottom: extendGap ? -STEP_GAP_PX : 0 }}
-      >
-        {state === 'loading' && height > 0 ? (
-          <>
-            <motion.div
-              animate={{ top: [-LOADER_BAR_PX, travel] }}
-              className='absolute inset-x-0 rounded-full bg-primary-9'
-              initial={{ top: -LOADER_BAR_PX }}
-              style={{ height: LOADER_BAR_PX }}
-              transition={{
-                duration,
-                ease: 'linear',
-                repeat: Infinity,
-                repeatType: 'loop',
-              }}
-            />
-            <motion.div
-              animate={{ top: [-LOADER_BAR_PX, travel] }}
-              className='absolute inset-x-0 rounded-full bg-primary-7/70'
-              initial={{ top: -LOADER_BAR_PX }}
-              style={{ height: LOADER_BAR_PX }}
-              transition={{
-                delay: duration / 2,
-                duration,
-                ease: 'linear',
-                repeat: Infinity,
-                repeatType: 'loop',
-              }}
-            />
-          </>
-        ) : null}
-      </div>
+      />
     </div>
   )
 }
@@ -145,33 +109,34 @@ export function BuilderTimelineStep({
 }) {
   const isActive = status === 'active'
   const isCompleted = status === 'completed'
-  const showBody = Boolean((isCompleted && summary) || (isActive && children))
+  const showBody = Boolean(
+    ((isCompleted || isActive) && summary) || (isActive && children),
+  )
   const hasBottomConnector = bottomConnectorState !== 'hidden'
 
   return (
     <div>
       <div className='flex gap-4'>
-        {/* Timeline — circle centered to card height */}
-        <div className='flex w-8 shrink-0 flex-col self-stretch overflow-visible'>
-          <div className='flex min-h-0 w-full flex-1 flex-col items-center'>
-            {showTopConnector ? (
-              <ConnectorTrack className='flex-1' state={topConnectorState} />
-            ) : (
-              <div className='min-h-0 w-[2px] flex-1' />
-            )}
+        {/* Timeline — stage aligned to card header; line only between stages */}
+        <div className='flex w-8 shrink-0 flex-col items-center self-stretch overflow-visible'>
+          {showTopConnector ? (
+            <ConnectorTrack
+              fixedHeight={HEADER_ALIGN_PX}
+              state={topConnectorState}
+            />
+          ) : (
+            <div className='w-[2px] shrink-0' style={{ height: HEADER_ALIGN_PX }} />
+          )}
 
-            <StepCircle status={status} stepId={stepId} />
+          <StepCircle status={status} stepId={stepId} />
 
-            {hasBottomConnector ? (
-              <ConnectorTrack
-                extendGap
-                className='flex-1'
-                state={bottomConnectorState}
-              />
-            ) : (
-              <div className='min-h-0 w-[2px] flex-1' />
-            )}
-          </div>
+          {hasBottomConnector ? (
+            <ConnectorTrack
+              extendGap
+              className='flex-1'
+              state={bottomConnectorState}
+            />
+          ) : null}
         </div>
 
         <motion.section
@@ -201,7 +166,7 @@ export function BuilderTimelineStep({
               <h2 className='text-[15px] font-semibold text-[var(--gray-13)]'>
                 {title}
               </h2>
-              {!isCompleted && (
+              {!isCompleted && !summary && (
                 <p className='mt-0.5 text-[12px] text-[var(--gray-11)]'>
                   {description}
                 </p>
@@ -209,11 +174,11 @@ export function BuilderTimelineStep({
             </div>
           </div>
 
-          {isCompleted && summary ? (
+          {(isCompleted || isActive) && summary ? (
             <div className='px-5 py-4'>{summary}</div>
           ) : null}
 
-          {isActive ? (
+          {isActive && children ? (
             <div className='space-y-4 px-5 py-5'>{children}</div>
           ) : null}
         </motion.section>
