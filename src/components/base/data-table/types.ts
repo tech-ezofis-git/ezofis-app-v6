@@ -24,6 +24,7 @@ export interface Column {
   enableSorting?: boolean
   hideHeader?: boolean
   isDisplayColumn?: boolean
+  minSize?: number
   showMenu?: boolean
   size?: number
   renderCell?: (row: any, index?: number) => React.ReactNode

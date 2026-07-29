@@ -6,7 +6,9 @@ import SetupProgressBar from './SetupProgressBar'
 
 type SettingsSetupHeaderProps = {
   moduleTitle: string
-  progress: number
+  progress?: number
+  showBackButton?: boolean
+  showProgress?: boolean
   setupTitle: string
   stepDescription: string
   stepTitle: string
@@ -16,7 +18,9 @@ type SettingsSetupHeaderProps = {
 
 export default function SettingsSetupHeader({
   moduleTitle,
-  progress,
+  progress = 0,
+  showBackButton = true,
+  showProgress = true,
   stepDescription,
   stepTitle,
   setupTitle,
@@ -38,14 +42,16 @@ export default function SettingsSetupHeader({
     <header className='border-b border-[var(--border-default)] bg-surface px-4 py-3'>
       <div className='flex items-start justify-between gap-5'>
         <div className='flex min-w-0 items-start gap-3'>
-          <IconButton
-            ariaLabel='Back'
-            color='gray'
-            icon='lucide:arrow-left'
-            size='sm'
-            variant='ghost'
-            onClick={onCancelSetup}
-          />
+          {showBackButton ? (
+            <IconButton
+              ariaLabel='Back'
+              color='gray'
+              icon='lucide:arrow-left'
+              size='sm'
+              variant='ghost'
+              onClick={onCancelSetup}
+            />
+          ) : null}
 
           <div className='min-w-0'>
             <p className='text-15/6 font-semibold text-gray-13'>{stepTitle}</p>
@@ -53,7 +59,7 @@ export default function SettingsSetupHeader({
           </div>
         </div>
 
-        <SetupProgressBar progress={progress} />
+        {showProgress ? <SetupProgressBar progress={progress} /> : null}
       </div>
     </header>
   )

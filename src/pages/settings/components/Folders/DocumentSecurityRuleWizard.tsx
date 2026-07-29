@@ -585,7 +585,8 @@ export default function DocumentSecurityRuleWizard({
     <div className='flex h-full min-h-0 flex-col bg-[var(--surface)]'>
       <SettingsSetupHeader
         moduleTitle='Document Security'
-        progress={Math.round(((step + 1) / WIZARD_STEPS.length) * 100)}
+        showBackButton={false}
+        showProgress={false}
         stepDescription='Override folder permissions for specific documents that match metadata conditions.'
         stepTitle='Document Security Rule'
         setupTitle={folderName}

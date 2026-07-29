@@ -371,6 +371,7 @@ export const useInboxData = (
   pageSize: number,
   groupBy: string[],
   activeTab: string = 'Inbox',
+  filterClauses: any[] = [],
 ) => {
   return useQuery({
     enabled: !!selectedWorkflow?.id,
@@ -381,28 +382,32 @@ export const useInboxData = (
       pageSize,
       groupBy,
       activeTab,
+      filterClauses,
     ],
 
     queryFn: async () => {
-      const config: any = {
-        currentPage: page,
-        filterBy: [],
-        itemsPerPage: pageSize,
-        sortBy: { criteria: '', order: 'DESC' },
-      }
-
-      // Only add groupBy for Inbox to avoid API errors
-      if (activeTab === 'Inbox') {
-        config.groupBy =
-          groupBy.length > 0 ? groupBy : ['RXwLGHILLrreMmRqlk9mj']
-      }
-
       const workflowId = selectedWorkflow?.id
       if (!workflowId) {
         return { data: [], meta: { totalItems: 0 } }
       }
 
       try {
+        if (filterClauses && filterClauses.length > 0) {
+          const searchRes = await workflowsApiV6.searchTickets(
+            String(workflowId),
+            {
+              currentPage: page,
+              filterBy: filterClauses,
+              groupBy:
+                activeTab === 'Inbox' && groupBy.length > 0 ? groupBy[0] : '',
+              itemsPerPage: pageSize,
+              sortBy: { criteria: 'raisedAt', order: 'DESC' },
+            },
+          )
+          if (searchRes.error) throw new Error(searchRes.error)
+          return searchRes.data || { data: [], meta: { totalItems: 0 } }
+        }
+
         return await fetchInboxDataFn(
           activeTab,
           String(workflowId),

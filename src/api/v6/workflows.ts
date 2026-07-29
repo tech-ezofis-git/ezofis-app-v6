@@ -637,6 +637,130 @@ const addInstanceAttachment = async (
   return response
 }
 
+export interface V6FilterField {
+  name: string
+  sqlColumnName: string
+  dataType: string
+  supportedOperators: string[]
+}
+
+export interface V6FilterFieldsResponse {
+  workflowId: string
+  formId: string
+  fields: V6FilterField[]
+}
+
+export interface V6ControlValuesResponse {
+  status: string
+  wFormId: string
+  wFormControlName: string
+  jsonId: string
+  columnName: string
+  values: string[]
+}
+
+export interface V6SearchFilterClause {
+  criteria: string
+  condition: string
+  value?: any
+  values?: any[]
+  valueTo?: string
+  dataType?: string
+}
+
+export interface V6SearchSortBy {
+  criteria: string
+  order: string
+}
+
+export interface V6SearchPayload {
+  filterBy: V6SearchFilterClause[]
+  sortBy?: V6SearchSortBy
+  groupBy?: string
+  currentPage?: number
+  itemsPerPage?: number
+}
+
+export interface V6SearchResponse {
+  data: {
+    key: string
+    value: any[]
+  }[]
+  meta: {
+    currentPage: number
+    itemsPerPage: number
+    totalItems: number
+  }
+  tableExists?: boolean
+}
+
+const getFilterFields = async (workflowId: string) => {
+  const response: { data: V6FilterFieldsResponse | null; error: string } = {
+    data: null,
+    error: '',
+  }
+  try {
+    const { data, status } = await axiosV6({
+      headers: getTenantHeaders(),
+      method: 'GET',
+      url: `/workflows/${workflowId}/filter-fields`,
+    })
+    if (status !== 200) throw new Error('invalid status code')
+    response.data = data as V6FilterFieldsResponse
+  } catch (e: unknown) {
+    console.error(e)
+    const err = e as { message?: string; response?: { data?: string } }
+    response.error =
+      err?.response?.data || err?.message || 'error fetching filter fields'
+  }
+  return response
+}
+
+const getControlValues = async (workflowId: string, controlName: string) => {
+  const response: { data: V6ControlValuesResponse | null; error: string } = {
+    data: null,
+    error: '',
+  }
+  try {
+    const { data, status } = await axiosV6({
+      headers: getTenantHeaders(),
+      method: 'GET',
+      url: `/workflows/${workflowId}/control-values/${encodeURIComponent(controlName)}`,
+    })
+    if (status !== 200) throw new Error('invalid status code')
+    response.data = data as V6ControlValuesResponse
+  } catch (e: unknown) {
+    console.error(e)
+    const err = e as { message?: string; response?: { data?: string } }
+    response.error =
+      err?.response?.data || err?.message || 'error fetching control values'
+  }
+  return response
+}
+
+const searchTickets = async (workflowId: string, payload: V6SearchPayload) => {
+  const response: { data: V6SearchResponse | null; error: string } = {
+    data: null,
+    error: '',
+  }
+  try {
+    const { data, status } = await axiosV6({
+      data: payload,
+      headers: getTenantHeaders(),
+      method: 'POST',
+      url: `/workflows/${workflowId}/filter/search`,
+    })
+    if (status !== 200) throw new Error('invalid status code')
+    response.data = data as V6SearchResponse
+  } catch (e: unknown) {
+    console.error(e)
+    const err = e as { message?: string; response?: { data?: string } }
+    response.error =
+      err?.response?.data || err?.message || 'error searching tickets'
+  }
+  return response
+}
+
 export const shareFile = async (
   instanceId: string,
   payload: {
@@ -659,7 +783,10 @@ export const workflowsApiV6 = {
   addInstanceComment,
   createWorkflow,
   deleteWorkflow,
+  getControlValues,
+  getFilterFields,
   moveNext,
+  searchTickets,
   shareFile,
   startWorkflow,
   updateWorkflow,
