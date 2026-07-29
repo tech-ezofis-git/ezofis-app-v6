@@ -45,9 +45,47 @@ const DATA_TYPES = [
 ]
 
 const FIELD_KIND_ICONS = {
-  custom: { className: 'text-purple-11', icon: 'tabler:circle-plus' },
-  predefined: { className: 'text-gray-10', icon: 'tabler:template' },
+  custom: {
+    className: 'text-primary-9',
+    icon: 'tabler:circle-plus',
+    label: 'Custom field',
+  },
+  predefined: {
+    className: 'text-gray-10',
+    icon: 'tabler:template',
+    label: 'Master field',
+  },
 } as const
+
+/** Compact single-select option — matches filter dropdown radio style. */
+const OPTION_ITEM_CLASS =
+  'group flex h-8 w-full cursor-pointer items-center gap-2 rounded-md px-2 text-left text-13 font-normal transition-colors focus-visible:outline-0'
+
+const OPTION_ITEM_IDLE_CLASS =
+  'text-gray-12 hover:bg-gray-2 hover:text-gray-13 focus-visible:bg-gray-2'
+
+const OPTION_ITEM_SELECTED_CLASS = 'bg-primary-2 text-primary-9'
+
+const OPTION_LABEL_CLASS = 'truncate transition-colors'
+
+const MENU_LABEL_CLASS =
+  'mb-0.5 flex h-8 w-full items-center gap-1.5 rounded-md px-2 text-13 font-semibold text-gray-12 transition-colors hover:bg-gray-2'
+
+function CompactRadioIndicator({ checked }: { checked?: boolean }) {
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        'inline-flex size-3.5 shrink-0 items-center justify-center rounded-full border transition-colors',
+        checked
+          ? 'border-primary-9 bg-primary-9'
+          : 'border-gray-5 bg-transparent',
+      )}
+    >
+      {checked ? <span className='size-1 rounded-full bg-white' /> : null}
+    </span>
+  )
+}
 
 export default function ApColumnMapping({
   activeMappingTab,
@@ -293,14 +331,14 @@ export default function ApColumnMapping({
         {/* Header toolbar */}
         <div className='flex items-center justify-between border-b border-border-default pb-3'>
           <div>
-            <p className='text-[11px] text-gray-8'>
+            <p className='text-11 text-pretty text-gray-11'>
               Map Excel file headers (source) to EZOFIS database fields
               (destination).
             </p>
           </div>
           <Tooltip content='Reset to default suggestions' position='top'>
             <button
-              className='flex items-center gap-1 text-[11px] font-bold text-primary-9 transition-all hover:underline active:scale-95'
+              className='flex items-center gap-1.5 text-11 font-normal text-primary-9 transition-all hover:underline active:scale-95'
               type='button'
               onClick={handleReset}
             >
@@ -313,7 +351,7 @@ export default function ApColumnMapping({
         {/* Table layout */}
         <div className='flex flex-col gap-2'>
           {/* Table Column Headers */}
-          <div className='grid grid-cols-[1.2fr_1.2fr_1.6fr] gap-4 border-b border-border-default pb-2 text-[11px] font-semibold tracking-wider text-gray-10 select-none'>
+          <div className='grid grid-cols-[1.2fr_1.2fr_1.6fr] gap-4 border-b border-border-default pb-2 text-12 font-semibold text-gray-10 select-none'>
             <div className='flex items-center gap-1.5'>
               <Icon className='size-3.5' name='vscode-icons:file-type-excel' />
               <span>Excel Fields</span>
@@ -401,30 +439,27 @@ export default function ApColumnMapping({
                 >
                   {/* Column 1: Excel Field */}
                   <div className='flex min-w-0 items-center'>
-                    <span
-                      className='truncate text-[13px] font-semibold text-gray-12'
-                      title={excelCol}
-                    >
+                    <span className='truncate font-normal' title={excelCol}>
                       {excelCol}
                     </span>
                   </div>
 
                   {/* Column 2: Example value (excel 1st row value) */}
                   <div
-                    className='truncate pl-2 text-[12px] font-medium text-gray-8 hover:overflow-visible hover:break-words hover:whitespace-normal'
+                    className='truncate pl-2 text-11 font-normal text-gray-8 hover:overflow-visible hover:break-words hover:whitespace-normal'
                     title={previewVal}
                   >
                     {previewVal ? (
                       <span>{previewVal}</span>
                     ) : (
-                      <span className='text-gray-6 italic'>Empty</span>
+                      <span className='text-gray-7 italic'>Empty</span>
                     )}
                   </div>
 
                   {/* Column 3: EZOFIS Field Selector */}
                   <div className='relative min-w-0 pl-2'>
                     <div
-                      className='flex h-9 w-full cursor-pointer items-center justify-between rounded-lg border border-gray-3 bg-surface px-3 text-13 font-medium text-gray-12 transition-all duration-200 select-none hover:border-gray-4'
+                      className='flex h-8 w-full cursor-pointer items-center justify-between rounded-lg border border-gray-3 bg-surface px-3 font-normal transition-all duration-200 select-none hover:border-gray-4'
                       onClick={(e) => {
                         e.stopPropagation()
                         setActiveTypeDropdownRow(null)
@@ -436,26 +471,41 @@ export default function ApColumnMapping({
                       <div className='flex min-w-0 items-center gap-2'>
                         {hasMapping ? (
                           <>
-                            <Icon
-                              name={FIELD_KIND_ICONS[selectedFieldKind!].icon}
-                              className={cn(
-                                'size-2.5 shrink-0',
-                                FIELD_KIND_ICONS[selectedFieldKind!].className,
-                              )}
-                            />
-                            <span className='truncate text-13 font-medium text-gray-12'>
+                            <Tooltip
+                              content={
+                                FIELD_KIND_ICONS[selectedFieldKind!].label
+                              }
+                              position='top'
+                            >
+                              <span
+                                className='inline-flex shrink-0'
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <Icon
+                                  name={
+                                    FIELD_KIND_ICONS[selectedFieldKind!].icon
+                                  }
+                                  className={cn(
+                                    'size-2.5',
+                                    FIELD_KIND_ICONS[selectedFieldKind!]
+                                      .className,
+                                  )}
+                                />
+                              </span>
+                            </Tooltip>
+                            <span className='truncate font-normal'>
                               {mappedEzField}
                             </span>
                           </>
                         ) : (
-                          <span className='truncate text-13 font-normal text-gray-8'>
+                          <span className='truncate font-normal'>
                             Skip this field
                           </span>
                         )}
                       </div>
 
                       {/* Dropdown controls (Datatype icon picker + toggle arrow) */}
-                      <div className='flex shrink-0 items-center gap-2'>
+                      <div className='flex shrink-0 items-center gap-1.5'>
                         {/* Datatype picker icon inside the field on the right side */}
                         {hasMapping && (
                           <Tooltip
@@ -467,8 +517,8 @@ export default function ApColumnMapping({
                               className={cn(
                                 'flex size-5 items-center justify-center rounded-md border transition-colors hover:bg-gray-2',
                                 isTypeDropdownOpen
-                                  ? 'border-gray-4 bg-gray-2 text-gray-12'
-                                  : 'border-transparent text-gray-9 hover:text-gray-11',
+                                  ? 'border-gray-4 bg-gray-2'
+                                  : 'border-transparent',
                               )}
                               onClick={(e) => {
                                 e.stopPropagation()
@@ -479,7 +529,7 @@ export default function ApColumnMapping({
                               }}
                             >
                               <Icon
-                                className='size-3 shrink-0'
+                                className='size-2.5 shrink-0'
                                 name={activeDataTypeObj.icon}
                               />
                             </button>
@@ -488,7 +538,7 @@ export default function ApColumnMapping({
                         <Icon
                           name='tabler:chevron-down'
                           className={cn(
-                            'size-3.5 shrink-0 text-gray-9 transition-transform duration-200',
+                            'size-3.5 shrink-0 transition-transform duration-200',
                             isDropdownOpen && 'rotate-180',
                           )}
                         />
@@ -498,35 +548,46 @@ export default function ApColumnMapping({
                     {/* Datatype Dropdown Selection */}
                     {isTypeDropdownOpen && hasMapping && (
                       <div
-                        className='animate-in fade-in zoom-in-95 absolute top-11 right-0 z-50 w-48 rounded-xl border border-border-default bg-surface-primary py-1.5 shadow-xl duration-150'
+                        className='absolute top-10 right-0 z-50 w-52 rounded-lg border border-gray-3 bg-surface-raised p-1 pt-2 shadow-md'
                         ref={typeDropdownRef}
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <div className='mb-1 border-b border-border-default/60 px-2.5 pb-1 text-[10px] font-bold tracking-wider text-gray-9 uppercase select-none'>
-                          Choose Datatype
+                        <div className={cn(MENU_LABEL_CLASS, 'mb-1')}>
+                          Choose datatype
                         </div>
                         <div className='custom-scrollbar max-h-56 overflow-y-auto'>
-                          {DATA_TYPES.map((type) => (
-                            <button
-                              key={type.id}
-                              type='button'
-                              className={cn(
-                                'flex min-h-8 w-full items-center gap-2 px-3 py-1.5 text-left text-13 font-medium transition-colors hover:bg-gray-2',
-                                currentDataType === type.id
-                                  ? 'bg-gray-2 text-gray-13'
-                                  : 'text-gray-12 hover:text-gray-13',
-                              )}
-                              onClick={() =>
-                                handleSelectDataType(mappedEzField, type.id)
-                              }
-                            >
-                              <Icon
-                                className='size-3.5 shrink-0'
-                                name={type.icon}
-                              />
-                              <span className='truncate'>{type.name}</span>
-                            </button>
-                          ))}
+                          {DATA_TYPES.map((type) => {
+                            const isSelected = currentDataType === type.id
+                            return (
+                              <button
+                                key={type.id}
+                                type='button'
+                                className={cn(
+                                  OPTION_ITEM_CLASS,
+                                  isSelected
+                                    ? OPTION_ITEM_SELECTED_CLASS
+                                    : OPTION_ITEM_IDLE_CLASS,
+                                )}
+                                onClick={() =>
+                                  handleSelectDataType(mappedEzField, type.id)
+                                }
+                              >
+                                <CompactRadioIndicator checked={isSelected} />
+                                <Icon
+                                  className={cn(
+                                    'size-3.5 shrink-0 transition-colors',
+                                    isSelected
+                                      ? 'text-primary-9'
+                                      : 'text-gray-10 group-hover:text-gray-11',
+                                  )}
+                                  name={type.icon}
+                                />
+                                <span className={OPTION_LABEL_CLASS}>
+                                  {type.name}
+                                </span>
+                              </button>
+                            )
+                          })}
                         </div>
                       </div>
                     )}
@@ -534,14 +595,18 @@ export default function ApColumnMapping({
                     {/* Field Dropdown Selection */}
                     {isDropdownOpen && (
                       <div
-                        className='animate-in fade-in zoom-in-95 absolute top-11 right-0 left-2 z-40 min-w-[240px] rounded-xl border border-border-default bg-surface-primary p-2 shadow-xl duration-150'
+                        className='absolute top-10 right-0 left-2 z-40 min-w-[240px] rounded-lg border border-gray-3 bg-surface-raised p-1 pt-2 shadow-md'
                         ref={dropdownRef}
                         onClick={(e) => e.stopPropagation()}
                       >
                         {/* Search field */}
-                        <div className='mb-2 border-b border-border-default/60 px-2 pb-2'>
+                        <div className='relative mb-1 px-1 pb-1'>
+                          <Icon
+                            className='absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-gray-8'
+                            name='tabler:search'
+                          />
                           <input
-                            className='h-7 w-full border-none bg-transparent text-13 font-medium text-gray-12 placeholder:font-normal placeholder:text-gray-8 focus:outline-none'
+                            className='h-8 w-full rounded-md border-none bg-transparent py-1.5 pr-2 pl-9 text-13 font-normal text-gray-12 placeholder:text-gray-8 focus:outline-none'
                             placeholder='Search or enter custom name...'
                             type='text'
                             value={searchQuery}
@@ -554,23 +619,33 @@ export default function ApColumnMapping({
                         </div>
 
                         {/* Dropdown Options List */}
-                        <div className='custom-scrollbar max-h-52 space-y-0.5 overflow-y-auto'>
+                        <div className='custom-scrollbar max-h-52 overflow-y-auto'>
                           {/* Predefined fields */}
                           <button
-                            className='flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-[10px] font-bold tracking-wider text-gray-9 uppercase transition-colors hover:bg-gray-2'
+                            className={MENU_LABEL_CLASS}
                             type='button'
                             onClick={(e) => {
                               e.stopPropagation()
                               toggleSection(excelCol, 'predefined')
                             }}
                           >
-                            <span>
-                              Predefined fields ({filteredOptions.length})
+                            <Icon
+                              className={cn(
+                                'size-3.5 shrink-0',
+                                FIELD_KIND_ICONS.predefined.className,
+                              )}
+                              name={FIELD_KIND_ICONS.predefined.icon}
+                            />
+                            <span className='min-w-0 flex-1 truncate text-left'>
+                              Master Fields
+                              <span className='ml-1 font-normal text-gray-9'>
+                                ({filteredOptions.length})
+                              </span>
                             </span>
                             <Icon
                               name='tabler:chevron-down'
                               className={cn(
-                                'size-3.5 text-gray-8 transition-transform duration-200',
+                                'size-3.5 shrink-0 text-gray-10 transition-transform duration-200',
                                 predefinedOpen && 'rotate-180',
                               )}
                             />
@@ -583,21 +658,26 @@ export default function ApColumnMapping({
                                   key={opt.key}
                                   type='button'
                                   className={cn(
-                                    'flex min-h-8 w-full cursor-pointer items-center justify-between gap-2 rounded-md px-2.5 py-1.5 text-left text-13 font-medium transition-colors',
+                                    OPTION_ITEM_CLASS,
                                     opt.isMappedToCurrent
-                                      ? 'bg-gray-2 text-gray-13'
-                                      : 'text-gray-12 hover:bg-gray-2 hover:text-gray-13',
+                                      ? OPTION_ITEM_SELECTED_CLASS
+                                      : OPTION_ITEM_IDLE_CLASS,
                                   )}
                                   onClick={() =>
                                     handleSelectField(excelCol, opt.key)
                                   }
                                 >
-                                  <span className='truncate'>{opt.key}</span>
+                                  <CompactRadioIndicator
+                                    checked={opt.isMappedToCurrent}
+                                  />
+                                  <span className={OPTION_LABEL_CLASS}>
+                                    {opt.key}
+                                  </span>
                                 </button>
                               ))
                             ) : (
-                              <div className='px-2.5 py-1.5 text-13 font-normal text-gray-8 select-none'>
-                                No matching predefined fields
+                              <div className='flex h-8 items-center px-2 text-13 font-normal text-gray-10 select-none'>
+                                No matching master fields
                               </div>
                             ))}
 
@@ -605,22 +685,32 @@ export default function ApColumnMapping({
                             showAddCustomField) && (
                             <>
                               <button
-                                className='mt-1 flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-[10px] font-bold tracking-wider text-gray-9 uppercase transition-colors hover:bg-gray-2'
+                                className={cn(MENU_LABEL_CLASS, 'mt-0.5')}
                                 type='button'
                                 onClick={(e) => {
                                   e.stopPropagation()
                                   toggleSection(excelCol, 'custom')
                                 }}
                               >
-                                <span>
-                                  Custom fields
-                                  {filteredCustomFields.length > 0 &&
-                                    ` (${filteredCustomFields.length})`}
+                                <Icon
+                                  className={cn(
+                                    'size-3.5 shrink-0',
+                                    FIELD_KIND_ICONS.custom.className,
+                                  )}
+                                  name={FIELD_KIND_ICONS.custom.icon}
+                                />
+                                <span className='min-w-0 flex-1 truncate text-left'>
+                                  Custom Fields
+                                  {filteredCustomFields.length > 0 && (
+                                    <span className='ml-1 font-normal text-gray-9'>
+                                      ({filteredCustomFields.length})
+                                    </span>
+                                  )}
                                 </span>
                                 <Icon
                                   name='tabler:chevron-down'
                                   className={cn(
-                                    'size-3.5 text-gray-8 transition-transform duration-200',
+                                    'size-3.5 shrink-0 text-gray-10 transition-transform duration-200',
                                     customOpen && 'rotate-180',
                                   )}
                                 />
@@ -640,39 +730,47 @@ export default function ApColumnMapping({
                                         key={customKey}
                                         type='button'
                                         className={cn(
-                                          'flex min-h-8 w-full cursor-pointer items-center justify-between gap-2 rounded-md px-2.5 py-1.5 text-left text-13 font-medium transition-colors',
+                                          OPTION_ITEM_CLASS,
                                           isMappedToCurrent
-                                            ? 'bg-gray-2 text-gray-13'
-                                            : 'text-gray-12 hover:bg-gray-2 hover:text-gray-13',
+                                            ? OPTION_ITEM_SELECTED_CLASS
+                                            : OPTION_ITEM_IDLE_CLASS,
                                         )}
                                         onClick={() =>
                                           handleSelectField(excelCol, customKey)
                                         }
                                       >
-                                        <span className='truncate'>
+                                        <CompactRadioIndicator
+                                          checked={isMappedToCurrent}
+                                        />
+                                        <span className={OPTION_LABEL_CLASS}>
                                           {customKey}
                                         </span>
                                       </button>
                                     )
                                   })}
                                   {showAddCustomField && (
-                                    <div className='mt-1.5 border-t border-border-default/60 pt-1.5'>
-                                      <button
-                                        className='w-full rounded-md border border-gray-4 bg-gray-2 px-2.5 py-1.5 text-left text-13 font-medium text-gray-12 transition-colors hover:bg-gray-3'
-                                        type='button'
-                                        onClick={() =>
-                                          handleCreateCustomField(
-                                            excelCol,
-                                            customFieldText,
-                                          )
-                                        }
-                                      >
-                                        <span className='truncate'>
-                                          Add custom field "
-                                          {customFieldText.trim()}"
-                                        </span>
-                                      </button>
-                                    </div>
+                                    <button
+                                      className={cn(
+                                        OPTION_ITEM_CLASS,
+                                        OPTION_ITEM_IDLE_CLASS,
+                                      )}
+                                      type='button'
+                                      onClick={() =>
+                                        handleCreateCustomField(
+                                          excelCol,
+                                          customFieldText,
+                                        )
+                                      }
+                                    >
+                                      <Icon
+                                        className='size-3.5 shrink-0 text-primary-9'
+                                        name='tabler:circle-plus'
+                                      />
+                                      <span className={OPTION_LABEL_CLASS}>
+                                        Add custom field "
+                                        {customFieldText.trim()}"
+                                      </span>
+                                    </button>
                                   )}
                                 </>
                               )}
@@ -681,21 +779,23 @@ export default function ApColumnMapping({
                         </div>
 
                         {/* Skip field */}
-                        <div className='mt-2 border-t border-border-default/60 px-2 pt-2'>
-                          <button
-                            className='flex min-h-8 w-full items-center gap-2 text-left text-13 font-medium text-red-11 transition-colors hover:text-red-12'
-                            type='button'
-                            onClick={() => handleSelectField(excelCol, null)}
-                          >
-                            <Icon
-                              className='size-3.5 shrink-0'
-                              name='tabler:circle-x'
-                            />
-                            <span>
-                              Skip this field{hasMapping ? ' (unmap)' : ''}
-                            </span>
-                          </button>
-                        </div>
+                        <div className='my-1.5 border-t border-gray-3' />
+                        <button
+                          className={cn(
+                            OPTION_ITEM_CLASS,
+                            'text-red-11 hover:bg-gray-2 hover:text-red-12',
+                          )}
+                          type='button'
+                          onClick={() => handleSelectField(excelCol, null)}
+                        >
+                          <Icon
+                            className='size-3.5 shrink-0'
+                            name='tabler:circle-x'
+                          />
+                          <span className={OPTION_LABEL_CLASS}>
+                            Skip this field{hasMapping ? ' (unmap)' : ''}
+                          </span>
+                        </button>
                       </div>
                     )}
                   </div>
@@ -706,12 +806,9 @@ export default function ApColumnMapping({
         </div>
 
         {/* Status footer */}
-        <div className='mt-2 flex flex-wrap items-center justify-end gap-3 border-t border-border-default pt-3 text-[11px] font-semibold text-gray-8 select-none'>
+        <div className='mt-2 flex flex-wrap items-center justify-end gap-3 border-t border-border-default pt-3 text-11 font-normal text-gray-11 select-none'>
           <span className='flex items-center gap-1.5'>
-            <Icon
-              className='size-3.5 text-green-11'
-              name='tabler:shield-check'
-            />
+            <Icon className='size-3.5 text-green-11' name='tabler:shield-check' />
             <span>Form datatypes automatically saved</span>
           </span>
         </div>

@@ -759,10 +759,10 @@ const ErpSystem = () => {
                   >
                     <div className='flex items-center justify-between'>
                       <div>
-                        <h4 className='text-sm font-semibold text-gray-12'>
+                        <h4 className='text-14 font-semibold text-gray-12'>
                           Mapping Fields
                         </h4>
-                        <p className='mt-0.5 text-11 text-gray-11'>
+                        <p className='mt-1 text-12 text-pretty text-gray-10'>
                           Map the columns from your uploaded file to the
                           platform schema.
                         </p>
@@ -776,7 +776,7 @@ const ErpSystem = () => {
                             className='size-4 text-blue-9'
                             name='tabler:info-circle'
                           />
-                          <span className='font-medium'>
+                          <span className='font-normal'>
                             Line item info: PO Number mapping not matched.
                             Please map the same PO Number column in both
                             sections.
@@ -792,7 +792,7 @@ const ErpSystem = () => {
                               className='size-4 text-blue-9'
                               name='tabler:info-circle'
                             />
-                            <span className='font-medium'>
+                            <span className='font-normal'>
                               Line item info: No line item data found in this
                               file.
                             </span>
@@ -804,7 +804,7 @@ const ErpSystem = () => {
                       <div className='mb-0 flex justify-start gap-4'>
                         <button
                           type='button'
-                          className={`flex cursor-pointer items-center gap-1.5 border-b-2 py-2 pr-2 pl-0 text-left text-13 font-semibold transition-all ${
+                          className={`flex cursor-pointer items-center gap-1.5 border-b-2 py-2 pr-2 pl-0 text-left text-13 font-normal transition-all ${
                             activeMappingTab === 'header'
                               ? 'border-primary-9 text-primary-9'
                               : 'border-transparent text-gray-11 hover:text-gray-13'
@@ -826,7 +826,7 @@ const ErpSystem = () => {
                           erpSettings.lineItemHeaders.length > 0 && (
                             <button
                               type='button'
-                              className={`flex cursor-pointer items-center gap-1.5 border-b-2 py-2 pr-2 pl-0 text-left text-13 font-semibold transition-all ${
+                              className={`flex cursor-pointer items-center gap-1.5 border-b-2 py-2 pr-2 pl-0 text-left text-13 font-normal transition-all ${
                                 activeMappingTab === 'lineItems'
                                   ? 'border-primary-9 text-primary-9'
                                   : 'border-transparent text-gray-11 hover:text-gray-13'
