@@ -1115,7 +1115,7 @@ const GridRowItem = memo(
             aiInsight &&
             isSidebarOpen && (
               <div className='mt-0.5 flex min-w-0 items-center gap-1.5 text-[12px] font-medium text-[var(--primary-9)]'>
-                <AiBrandIcon className='size-3.5 shrink-0' />
+                <AiBrandIcon className='size-3.5 shrink-0' variant='curved-purple' />
                 <HoverExpandableText
                   className='text-[12px] font-medium text-[var(--primary-9)]'
                   expandStyle='inline'
@@ -1136,6 +1136,7 @@ const GridRowItem = memo(
               <div className='flex min-w-0 items-center gap-1.5'>
                 <AiBrandIcon
                   className='size-3.5 shrink-0 text-[var(--primary-9)]'
+                  variant='curved-purple'
                 />
                 <HoverExpandableText
                   className='text-[13px] font-medium text-[var(--gray-11)]'

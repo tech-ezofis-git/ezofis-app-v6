@@ -462,7 +462,7 @@ const Overview = ({
                         <div className='w-2 self-stretch rounded-full bg-[var(--primary-9)] opacity-30' />
                         <div className='flex min-w-0 flex-col gap-1'>
                           <div className='flex items-center gap-2'>
-                              <AiBrandIcon className='size-5 shrink-0 animate-pulse' />
+                              <AiBrandIcon className='size-5 shrink-0 animate-pulse' variant='curved-purple' />
                             <span className='text-[11px] font-bold tracking-wider text-[var(--gray-10)] uppercase'>
                               Analysis
                             </span>

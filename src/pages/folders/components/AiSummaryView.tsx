@@ -134,7 +134,7 @@ export function AiSummaryView({ onBack }: { onBack: () => void }) {
 
             <Card className='animate-in fade-in slide-in-from-bottom-2 p-5 duration-500'>
               <h3 className='mb-4 flex items-center gap-2 text-[17px] font-semibold text-gray-13'>
-                <AiBrandIcon className='size-5 text-violet-9' />
+                <AiBrandIcon className='size-5' variant='curved-purple' />
                 Document Summary
               </h3>
               <TypewriterText text={data.summary} />
@@ -202,7 +202,7 @@ export function AiSummaryView({ onBack }: { onBack: () => void }) {
 
             <Card className='animate-in fade-in slide-in-from-bottom-2 p-5 duration-500'>
               <h3 className='mb-4 flex items-center gap-2 text-[17px] font-semibold text-gray-13'>
-                <AiBrandIcon className='size-5 text-orange-9' />
+                <AiBrandIcon className='size-5' variant='curved-purple' />
                 AI Recommendations
               </h3>
               <div className='space-y-3'>

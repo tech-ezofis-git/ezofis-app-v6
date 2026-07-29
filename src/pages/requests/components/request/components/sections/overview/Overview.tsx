@@ -1179,7 +1179,7 @@ const FormCard = ({
                 }}
               >
                 <div className='flex items-center gap-1.5 text-[10px] font-semibold text-[var(--primary-11)]'>
-                  <AiBrandIcon className='size-[14px] shrink-0' />
+                  <AiBrandIcon className='size-[14px] shrink-0' variant='curved-purple' />
                   <span>AI suggestion</span>
                   <span className='font-normal text-[var(--primary-9)]/70'>
                     {isUsingPo ? 'from Invoice' : 'from PO Master'}
@@ -4437,7 +4437,7 @@ const Overview = (props: any) => {
                               {relatedDocsState.status === 'not_run' && (
                                 <div className='mb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg border border-[var(--gray-3)] bg-[var(--surface-primary)] px-3 py-2 shadow-sm border-l-4 border-l-[var(--primary-9)] animate-in fade-in slide-in-from-bottom-2 duration-500 fill-mode-both'>
                                   <div className='flex items-center gap-2 text-xs text-[var(--gray-12)]'>
-                                    <AiBrandIcon className='size-[16px] shrink-0' />
+                                    <AiBrandIcon className='size-[16px] shrink-0' variant='curved-purple' />
                                     <span><strong className='font-semibold text-[var(--gray-13)]'>AI suggestion</strong> — Check for related purchase orders or invoices for this supplier.</span>
                                   </div>
                                   <button
@@ -4454,6 +4454,7 @@ const Overview = (props: any) => {
                                   <div className='flex items-center gap-2 text-xs text-[var(--gray-12)]'>
                                     <AiBrandIcon
                                       className='size-[16px] shrink-0 animate-pulse'
+                                      variant='curved-purple'
                                     />
                                     <span><strong className='font-semibold text-[var(--gray-13)]'>AI is searching</strong> — Checking for related purchase orders or invoices...</span>
                                   </div>
@@ -4464,6 +4465,7 @@ const Overview = (props: any) => {
                                   <div className='mb-2.5 flex items-start gap-2 text-xs text-[var(--gray-12)]'>
                                     <AiBrandIcon
                                       className='size-[16px] mt-0.5 shrink-0'
+                                      variant='curved-purple'
                                     />
                                     <div className='min-w-0'>
                                       <div>
