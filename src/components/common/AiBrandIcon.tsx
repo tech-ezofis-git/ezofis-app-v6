@@ -11,14 +11,6 @@ import purpleIcon from '@/assets/aibrandicon/Magic Outlin/EZOFIS_Sparkles_Purple
 import blueIcon from '@/assets/aibrandicon/Magic Outlin/EZOFIS_Sparkles_Blue.svg'
 import blackIcon from '@/assets/aibrandicon/Magic Outlin/EZOFIS_Sparkles_Black.svg'
 
-// Curved SVG variants from Magic_outputs_2 subfolder
-import curvedPurpleDarkIcon from '@/assets/aibrandicon/Magic_outputs_2/EZOFIS_Sparkles_Purple_Dark.svg'
-import curvedPurpleLightIcon from '@/assets/aibrandicon/Magic_outputs_2/EZOFIS_Sparkles_Purple_Light.svg'
-import curvedBlueDarkIcon from '@/assets/aibrandicon/Magic_outputs_2/EZOFIS_Sparkles_Blue_Dark.svg'
-import curvedBlueLightIcon from '@/assets/aibrandicon/Magic_outputs_2/EZOFIS_Sparkles_Blue_Light.svg'
-import curvedBlackDarkIcon from '@/assets/aibrandicon/Magic_outputs_2/EZOFIS_Sparkles_Black_Dark.svg'
-import curvedBlackLightIcon from '@/assets/aibrandicon/Magic_outputs_2/EZOFIS_Sparkles_Black_Light.svg'
-
 import useTheme from '@/hooks/useTheme'
 import cn from '@/utils/cn'
 
@@ -52,28 +44,15 @@ export default function AiBrandIcon({
   let iconSrc: string
   switch (variant) {
     case 'curved-purple':
-      iconSrc =
-        resolvedColorScheme === 'dark'
-          ? curvedPurpleLightIcon
-          : curvedPurpleDarkIcon
-      break
     case 'curved-purple-dark':
-      iconSrc = curvedPurpleDarkIcon
-      break
     case 'curved-purple-light':
-      iconSrc = curvedPurpleLightIcon
+      iconSrc = outlinePurpleIcon
       break
     case 'curved-blue':
-      iconSrc =
-        resolvedColorScheme === 'dark'
-          ? curvedBlueLightIcon
-          : curvedBlueDarkIcon
+      iconSrc = outlineBlueIcon
       break
     case 'curved-black':
-      iconSrc =
-        resolvedColorScheme === 'dark'
-          ? curvedBlackLightIcon
-          : curvedBlackDarkIcon
+      iconSrc = outlineBlackIcon
       break
     case 'outline-purple':
       iconSrc = outlinePurpleIcon
@@ -100,8 +79,9 @@ export default function AiBrandIcon({
   }
 
   return (
-    <svg
-      aria-label={alt}
+    <img
+      src={iconSrc}
+      alt={alt}
       className={cn('object-contain', className)}
     />
   )

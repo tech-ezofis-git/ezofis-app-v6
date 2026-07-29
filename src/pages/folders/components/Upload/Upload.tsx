@@ -830,7 +830,10 @@ export default function Upload({
                       className={`flex size-9 shrink-0 items-center justify-center rounded-lg 2xl:size-10 ${item.color} mt-1 mb-4 transition-transform duration-300 group-hover:scale-110`}
                     >
                       {item.icon === 'tabler:sparkles' ? (
-                        <AiBrandIcon className='size-5 transition-transform duration-300 group-hover:rotate-6' />
+                        <AiBrandIcon
+                          className='size-5 transition-transform duration-300 group-hover:rotate-6'
+                          variant='curved-purple'
+                        />
                       ) : (
                         <Icon
                           className='size-5 transition-transform duration-300 group-hover:rotate-6'
