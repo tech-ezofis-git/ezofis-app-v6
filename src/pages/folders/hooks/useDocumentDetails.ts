@@ -7,6 +7,7 @@ import {
   type TimelineEvent,
   type WorkspaceDocumentDetail,
 } from '../utils/documentDetailsUtils'
+import { resolveShareContext } from '../utils/shareContextStorage'
 
 export function useDocumentDetails(repositoryId: string, id: string) {
   const [data, setData] = useState<WorkspaceDocumentDetail | null>(null)
@@ -46,7 +47,24 @@ export function useDocumentDetails(repositoryId: string, id: string) {
       setTab('timeline')
 
       try {
-        const response = await folderApi.getDocumentDetail(repositoryId, id)
+        const shareCtx = resolveShareContext(
+          authUserStore.getState().shareContext,
+        )
+        const useShareToken =
+          shareCtx &&
+          String(shareCtx.sourceItemId) === String(id) &&
+          String(shareCtx.sourceRepositoryId) === String(repositoryId)
+
+        const response = await folderApi.getDocumentDetail(
+          repositoryId,
+          id,
+          useShareToken
+            ? {
+                shareToken: shareCtx.shareToken,
+                tenantId: shareCtx.sourceTenantId,
+              }
+            : undefined,
+        )
         if (mounted) setData(response as WorkspaceDocumentDetail)
       } catch (exception: any) {
         if (mounted)

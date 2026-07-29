@@ -50,6 +50,8 @@ const ShareSignInForm = ({ email, shareToken }: Props) => {
 
         // Save share context to global store
         authUserStore.getState().setShareContext({
+          action: preview.action,
+          permission: preview.permission,
           shareToken: preview.shareToken,
           sourceItemId: preview.sourceItemId,
           sourceRepositoryId: preview.sourceRepositoryId,
@@ -80,7 +82,11 @@ const ShareSignInForm = ({ email, shareToken }: Props) => {
           tenantId: shareCtx.sourceTenantId,
         })
       }
-      navigate({ replace: true, to: '/requests' })
+      if (shareCtx.workflowInstanceId) {
+        navigate({ replace: true, to: '/requests' })
+      } else {
+        navigate({ replace: true, to: '/folders' })
+      }
     } else {
       navigate({ replace: true, to: '/' })
     }

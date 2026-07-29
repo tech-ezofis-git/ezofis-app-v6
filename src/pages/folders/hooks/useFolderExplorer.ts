@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import authUserStore from '@/stores/authUserStore'
 import type { BreadcrumbItem } from '../components/Breadcrumbs'
 import type {
   AppView,
@@ -12,6 +13,7 @@ import type {
 import {
   decodeRepositoryNodeId,
   type DynamicRepositoryColumn,
+  encodeRepositoryNodeId,
   folderApi,
   foldersToTreeNodes,
   getFolderContextFilters,
@@ -34,6 +36,7 @@ import {
   syncTreeChildren,
   updateTreeNode,
 } from '../utils/folderExplorerUtils'
+import { resolveShareContext } from '../utils/shareContextStorage'
 
 export type UseFolderExplorerReturn = ReturnType<typeof useFolderExplorer>
 
@@ -397,6 +400,7 @@ export function useFolderExplorer() {
 
   useEffect(() => {
     let mounted = true
+    const openedShareRef = { current: false }
 
     const bootstrap = async () => {
       setLoading(true)
@@ -407,6 +411,51 @@ export function useFolderExplorer() {
         if (!mounted) return
 
         setTree(response)
+
+        const shareCtx = resolveShareContext(
+          authUserStore.getState().shareContext,
+        )
+        const shareRepoId = String(shareCtx?.sourceRepositoryId || '').trim()
+        const shareItemId = String(shareCtx?.sourceItemId || '').trim()
+        const isFileShare =
+          Boolean(shareCtx) &&
+          !shareCtx?.workflowInstanceId &&
+          Boolean(shareRepoId) &&
+          Boolean(shareItemId)
+
+        if (isFileShare && !openedShareRef.current) {
+          openedShareRef.current = true
+          if (shareCtx && !authUserStore.getState().shareContext) {
+            authUserStore.getState().setShareContext(shareCtx)
+          }
+
+          const sharedRepoNode =
+            response.find((node) => {
+              const decoded = decodeRepositoryNodeId(node.id)
+              return (
+                decoded?.kind === 'repository' &&
+                String(decoded.repositoryId) === shareRepoId
+              )
+            }) ||
+            ({
+              hasChildren: true,
+              iconKey: 'folder',
+              id: encodeRepositoryNodeId({
+                kind: 'repository',
+                label: 'Shared repository',
+                repositoryId: shareRepoId,
+              }),
+              isLoaded: false,
+              title: 'Shared repository',
+            } as TreeNode)
+
+          setActiveFolder(sharedRepoNode.id)
+          setExpandedIds([sharedRepoNode.id])
+          cursorByFolderRef.current[sharedRepoNode.id] = { 1: null }
+          setSelectedFile(shareItemId)
+          setAppView('details')
+          return
+        }
 
         const firstRepository =
           response.find((node) => !node.isStatic) || response[0]

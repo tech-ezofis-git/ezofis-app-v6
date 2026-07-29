@@ -270,7 +270,26 @@ export function FolderExplorer() {
   }
 
   if (appView === 'share') {
-    return <ShareView onBack={() => setAppView('details')} />
+    const selectedRow = getSelectedFileRow(selectedFile)
+    const shareFileName = String(
+      selectedRow?.fileName ||
+        selectedRow?.name ||
+        selectedRow?.FileName ||
+        selectedRow?.__name ||
+        '',
+    )
+    return (
+      <ShareView
+        fileName={shareFileName}
+        itemId={selectedFile}
+        repositoryId={String(
+          getRepositoryIdFromFolder(activeFolder) ||
+            selectedRepository?.id ||
+            '',
+        )}
+        onBack={() => setAppView('details')}
+      />
+    )
   }
 
   if (appView === 'workflow') {

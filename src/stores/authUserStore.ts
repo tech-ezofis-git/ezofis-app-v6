@@ -40,6 +40,8 @@ export type ShareContext = {
   sourceItemId: string
   sourceRepositoryId: string
   sourceTenantId: string
+  action?: number
+  permission?: string
   workflowInstanceId?: string
 }
 export type SignUpUserData = {
@@ -101,7 +103,16 @@ const authUserStore = create<Store>()((set) => {
     preferenceId: 0,
     profileMenus: [],
     session,
-    shareContext: null,
+    shareContext: (() => {
+      if (globalThis.window === undefined) return null
+      try {
+        const raw = sessionStorage.getItem('ezofis.repositoryShareContext')
+        if (!raw) return null
+        return JSON.parse(raw) as ShareContext
+      } catch {
+        return null
+      }
+    })(),
     signUpUserData: emptySignUp,
 
     user: {
@@ -157,6 +168,20 @@ const authUserStore = create<Store>()((set) => {
         shareContext: null,
         signUpUserData: emptySignUp,
       }))
+
+      if (globalThis.window !== undefined) {
+        try {
+          sessionStorage.removeItem('ezofis.repositoryShareContext')
+          sessionStorage.removeItem('shareToken')
+          sessionStorage.removeItem('tenantId')
+          sessionStorage.removeItem('repositoryId')
+          sessionStorage.removeItem('itemId')
+          sessionStorage.removeItem('shareAction')
+          sessionStorage.removeItem('sharePermission')
+        } catch {
+          // ignore
+        }
+      }
     },
 
     resetSignUpUserData: () =>
@@ -203,7 +228,39 @@ const authUserStore = create<Store>()((set) => {
       set(() => ({ session: nextSession }))
     },
 
-    setShareContext: (context) => set(() => ({ shareContext: context })),
+    setShareContext: (context) => {
+      if (globalThis.window !== undefined) {
+        try {
+          if (!context) {
+            sessionStorage.removeItem('ezofis.repositoryShareContext')
+            sessionStorage.removeItem('shareToken')
+            sessionStorage.removeItem('tenantId')
+            sessionStorage.removeItem('repositoryId')
+            sessionStorage.removeItem('itemId')
+            sessionStorage.removeItem('shareAction')
+            sessionStorage.removeItem('sharePermission')
+          } else {
+            sessionStorage.setItem(
+              'ezofis.repositoryShareContext',
+              JSON.stringify(context),
+            )
+            sessionStorage.setItem('shareToken', context.shareToken)
+            sessionStorage.setItem('tenantId', context.sourceTenantId)
+            sessionStorage.setItem('repositoryId', context.sourceRepositoryId)
+            sessionStorage.setItem('itemId', context.sourceItemId)
+            if (context.action != null) {
+              sessionStorage.setItem('shareAction', String(context.action))
+            }
+            if (context.permission) {
+              sessionStorage.setItem('sharePermission', context.permission)
+            }
+          }
+        } catch {
+          // ignore storage failures
+        }
+      }
+      set(() => ({ shareContext: context }))
+    },
 
     setSignUpUserData: (partial) =>
       set((state) => ({
