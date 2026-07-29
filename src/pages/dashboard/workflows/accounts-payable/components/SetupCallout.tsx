@@ -10,6 +10,12 @@ const SetupCallout = () => {
     (state) => state.isSetupCalloutDismissed,
   )
   const setIsSetupStarted = setupStore((state) => state.setIsSetupStarted)
+  const openSetup = setupStore((state) => state.openSetup)
+
+  const handleStartSetup = () => {
+    setIsSetupStarted(true)
+    openSetup()
+  }
 
   // Hide SetupCallout when setup is started (Steps will be shown instead)
   if (isSetupStarted) {
@@ -33,8 +39,8 @@ const SetupCallout = () => {
               </>
             </div>
             <div
-              className='ition-colors flex cursor-pointer items-center gap-1 text-primary-11 hover:text-primary-10'
-              onClick={() => setIsSetupStarted(true)}
+              className='flex cursor-pointer items-center gap-1 text-primary-11 transition-colors hover:text-primary-10'
+              onClick={handleStartSetup}
             >
               <div className='font-medium'>
                 <>Edit Configuration</>
@@ -49,7 +55,7 @@ const SetupCallout = () => {
             </div>
             <div
               className='flex cursor-pointer items-center gap-1 text-primary-11 transition-colors hover:text-primary-10'
-              onClick={() => setIsSetupStarted(true)}
+              onClick={handleStartSetup}
             >
               <div className='font-medium'>
                 <Trans>Get Started</Trans>

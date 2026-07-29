@@ -1,3 +1,4 @@
+import axios from 'axios'
 import { axiosV6 } from '../../axios'
 
 export interface FolderPermissionFlags {
@@ -53,6 +54,19 @@ export interface PutDocumentSecurityPayload {
   rules: DocumentSecurityRule[]
 }
 
+const memoryCache = new Map<string, { data: any; timestamp: number }>()
+const CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes TTL
+
+export function clearSecurityCache(repositoryId?: string) {
+  if (repositoryId) {
+    const cleanRepoId = sanitizeGuid(repositoryId)
+    memoryCache.delete(`folder_${cleanRepoId}`)
+    memoryCache.delete(`doc_${cleanRepoId}`)
+  } else {
+    memoryCache.clear()
+  }
+}
+
 const sanitizeGuid = (id: string): string => {
   if (!id) return ''
   return id.replace(/[{}]/g, '').trim()
@@ -63,21 +77,45 @@ export const sanitizeGuidArray = (ids: string[]): string[] => {
   return ids.map(sanitizeGuid).filter(Boolean)
 }
 
-export async function getFolderSecurity(repositoryId: string) {
+const isRequestCanceled = (err: any): boolean => {
+  return (
+    axios.isCancel(err) ||
+    err?.name === 'CanceledError' ||
+    err?.code === 'ERR_CANCELED' ||
+    String(err?.message || '').toLowerCase().includes('canceled')
+  )
+}
+
+export async function getFolderSecurity(repositoryId: string, useCache = true) {
+  const cleanRepoId = sanitizeGuid(repositoryId)
+  const cacheKey = `folder_${cleanRepoId}`
+
+  if (useCache && memoryCache.has(cacheKey)) {
+    const cached = memoryCache.get(cacheKey)!
+    if (Date.now() - cached.timestamp < CACHE_TTL_MS) {
+      return { data: cached.data as GetFolderSecurityResponse, error: null, isCanceled: false, isFromCache: true, status: 200 }
+    }
+  }
+
   try {
-    const cleanRepoId = sanitizeGuid(repositoryId)
     const { data, status } = await axiosV6.get<GetFolderSecurityResponse>(
       `/repositories/${cleanRepoId}/security/folder`,
     )
-    return { data, error: null, status }
+    if (data) {
+      memoryCache.set(cacheKey, { data, timestamp: Date.now() })
+    }
+    return { data, error: null, isCanceled: false, isFromCache: false, status }
   } catch (err: any) {
+    if (isRequestCanceled(err)) {
+      return { data: null, error: null, isCanceled: true, isFromCache: false, status: 0 }
+    }
     const status = err.response?.status
     const message =
       err.response?.data?.message ||
       err.response?.data?.title ||
       err.message ||
       'Failed to load folder security policies'
-    return { data: null, error: message, status }
+    return { data: null, error: message, isCanceled: false, isFromCache: false, status }
   }
 }
 
@@ -100,33 +138,52 @@ export async function putFolderSecurity(
       `/repositories/${cleanRepoId}/security/folder`,
       sanitizedPayload,
     )
-    return { data, error: null, status }
+    clearSecurityCache(repositoryId)
+    return { data, error: null, isCanceled: false, status }
   } catch (err: any) {
+    if (isRequestCanceled(err)) {
+      return { data: null, error: null, isCanceled: true, status: 0 }
+    }
     const status = err.response?.status
     const message =
       err.response?.data?.message ||
       err.response?.data?.title ||
       err.message ||
       'Failed to update folder security policies'
-    return { data: null, error: message, status }
+    return { data: null, error: message, isCanceled: false, status }
   }
 }
 
-export async function getDocumentSecurity(repositoryId: string) {
+export async function getDocumentSecurity(repositoryId: string, useCache = true) {
+  const cleanRepoId = sanitizeGuid(repositoryId)
+  const cacheKey = `doc_${cleanRepoId}`
+
+  if (useCache && memoryCache.has(cacheKey)) {
+    const cached = memoryCache.get(cacheKey)!
+    if (Date.now() - cached.timestamp < CACHE_TTL_MS) {
+      return { data: cached.data as GetDocumentSecurityResponse, error: null, isCanceled: false, isFromCache: true, status: 200 }
+    }
+  }
+
   try {
-    const cleanRepoId = sanitizeGuid(repositoryId)
     const { data, status } = await axiosV6.get<GetDocumentSecurityResponse>(
       `/repositories/${cleanRepoId}/security/documents`,
     )
-    return { data, error: null, status }
+    if (data) {
+      memoryCache.set(cacheKey, { data, timestamp: Date.now() })
+    }
+    return { data, error: null, isCanceled: false, isFromCache: false, status }
   } catch (err: any) {
+    if (isRequestCanceled(err)) {
+      return { data: null, error: null, isCanceled: true, isFromCache: false, status: 0 }
+    }
     const status = err.response?.status
     const message =
       err.response?.data?.message ||
       err.response?.data?.title ||
       err.message ||
       'Failed to load document security rules'
-    return { data: null, error: message, status }
+    return { data: null, error: message, isCanceled: false, isFromCache: false, status }
   }
 }
 
@@ -155,25 +212,44 @@ export async function putDocumentSecurity(
       `/repositories/${cleanRepoId}/security/documents`,
       sanitizedPayload,
     )
-    return { data, error: null, status }
+    clearSecurityCache(repositoryId)
+    return { data, error: null, isCanceled: false, status }
   } catch (err: any) {
+    if (isRequestCanceled(err)) {
+      return { data: null, error: null, isCanceled: true, status: 0 }
+    }
     const status = err.response?.status
     const message =
       err.response?.data?.message ||
       err.response?.data?.title ||
       err.message ||
       'Failed to update document security rules'
-    return { data: null, error: message, status }
+    return { data: null, error: message, isCanceled: false, status }
   }
 }
 
 export async function getFilterFields() {
+  const cacheKey = 'filter_fields'
+  if (memoryCache.has(cacheKey)) {
+    const cached = memoryCache.get(cacheKey)!
+    if (Date.now() - cached.timestamp < CACHE_TTL_MS) {
+      return { data: cached.data as string[], error: null, isCanceled: false, isFromCache: true, status: 200 }
+    }
+  }
+
   try {
     const { data, status } = await axiosV6.get<string[]>(
       '/items/filter-fields',
     )
-    return { data: Array.isArray(data) ? data : [], error: null, status }
+    const result = Array.isArray(data) ? data : []
+    if (result.length > 0) {
+      memoryCache.set(cacheKey, { data: result, timestamp: Date.now() })
+    }
+    return { data: result, error: null, isCanceled: false, isFromCache: false, status }
   } catch (err: any) {
-    return { data: [], error: err.message, status: err.response?.status }
+    if (isRequestCanceled(err)) {
+      return { data: [], error: null, isCanceled: true, isFromCache: false, status: 0 }
+    }
+    return { data: [], error: err.message, isCanceled: false, isFromCache: false, status: err.response?.status }
   }
 }

@@ -128,12 +128,9 @@ const useSetupStore = create<Store>()((set, get) => ({
   emailSettings: initialEmailSettings,
   erpSettings: initialErpSettings,
   isActivatingAutomation: false,
-  isApSetUpCompleted:
-    typeof window !== 'undefined'
-      ? localStorage.getItem('isApSetUpCompleted') === 'true'
-      : false,
+  isApSetUpCompleted: false,
   isSetupCalloutDismissed: false,
-  isSetupOpen: false,
+  isSetupOpen: true,
   isSetupStarted: true,
   restrictNavigationUntilApSetup:
     typeof window !== 'undefined'
