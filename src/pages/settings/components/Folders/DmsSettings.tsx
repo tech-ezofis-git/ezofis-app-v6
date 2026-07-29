@@ -57,7 +57,6 @@ import SettingsSortableDataTable from '../SettingsSortableDataTable'
 import useSettingsTableToolbar from '../useSettingsTableToolbar'
 import AiFolderBuilder from './AiFolderBuilder'
 import FolderSecurity from './FolderSecurity'
-import FolderSecurity from './FolderSecurity'
 import FolderStorageConnectorPanel, {
   type CloudStorageOption,
 } from './FolderStorageConnectorPanel'
@@ -877,7 +876,7 @@ export default function DmsFolderConfiguration({
   } = useRepositoryTable(filteredRepositories, {
     onEditRepository: openEditRepository,
     onSecurityRepository: openSecurityRepository,
-    onSecurityRepository: openSecurityRepository,
+    // onSecurityRepository: openSecurityRepository,
   })
   const repositoryToolbar = useSettingsTableToolbar({
     isReLoading: isLoadingRepositories,
@@ -1770,12 +1769,12 @@ function useRepositoryTable(
   rows: RepositoryRow[],
   {
     onEditRepository,
-    onSecurityRepository,
-    onSecurityRepository,
+    onSecurityRepository
+
   }: {
     onEditRepository: (repository: RepositoryRow) => void
     onSecurityRepository: (repository: RepositoryRow) => void
-    onSecurityRepository: (repository: RepositoryRow) => void
+
   },
 ) {
   const columnHelper = createColumnHelper<RepositoryRow>()
@@ -1926,7 +1925,7 @@ function useRepositoryTable(
       }),
     ],
     [columnHelper, onEditRepository, onSecurityRepository],
-    [columnHelper, onEditRepository, onSecurityRepository],
+
   )
 
   const table = useReactTable({
