@@ -131,6 +131,7 @@ export interface ShareData {
     initials: string
     name: string
     permission: string
+    shareId?: string
   }>
 }
 

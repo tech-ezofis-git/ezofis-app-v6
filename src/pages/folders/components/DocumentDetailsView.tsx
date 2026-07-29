@@ -5,6 +5,7 @@ import Tooltip from '@/components/base/Tooltip'
 import DocumentPreviewViewer from '@/components/common/document-preview/DocumentPreviewViewer'
 import authUserStore from '@/stores/authUserStore'
 import { folderApi } from '../api/folderApi'
+import { resolveShareContext } from '../utils/shareContextStorage'
 import { DynamicIcon } from './icons'
 import { Button, Card, PrimaryButton, StatusPill } from './Ui'
 
@@ -182,7 +183,24 @@ export function DocumentDetailsView({
       setTab('timeline')
 
       try {
-        const response = await folderApi.getDocumentDetail(repositoryId, id)
+        const shareCtx = resolveShareContext(
+          authUserStore.getState().shareContext,
+        )
+        const useShareToken =
+          shareCtx &&
+          String(shareCtx.sourceItemId) === String(id) &&
+          String(shareCtx.sourceRepositoryId) === String(repositoryId)
+
+        const response = await folderApi.getDocumentDetail(
+          repositoryId,
+          id,
+          useShareToken
+            ? {
+                shareToken: shareCtx.shareToken,
+                tenantId: shareCtx.sourceTenantId,
+              }
+            : undefined,
+        )
         if (mounted) setData(response as WorkspaceDocumentDetail)
       } catch (exception: any) {
         if (mounted)
