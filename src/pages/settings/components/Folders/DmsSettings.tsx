@@ -56,7 +56,6 @@ import SettingsSetupHeader from '../SettingsSetupHeader'
 import SettingsSortableDataTable from '../SettingsSortableDataTable'
 import useSettingsTableToolbar from '../useSettingsTableToolbar'
 import AiFolderBuilder from './AiFolderBuilder'
-import FolderSecurity from './FolderSecurity'
 import FolderStorageConnectorPanel, {
   type CloudStorageOption,
 } from './FolderStorageConnectorPanel'
@@ -565,10 +564,6 @@ export default function DmsFolderConfiguration({
 }: DmsFolderConfigurationProps) {
   const [showWizard, setShowWizard] = useState(false)
   const [showAiBuilder, setShowAiBuilder] = useState(false)
-  const [showSecurity, setShowSecurity] = useState(false)
-  const [securityFolder, setSecurityFolder] = useState<RepositoryRow | null>(
-    null,
-  )
   const [step, setStep] = useState<WizardStep>(1)
   const [fields, setFields] = useState<FieldRow[]>(defaultFields)
   const [storage, setStorage] = useState('EZOFIS Drive')
@@ -611,17 +606,9 @@ export default function DmsFolderConfiguration({
 
   const openEditRepository = useCallback((repository: RepositoryRow) => {
     setShowAiBuilder(false)
-    setShowSecurity(false)
     setFolderName(repository.name)
     setShowWizard(true)
     setStep(1)
-  }, [])
-
-  const openSecurity = useCallback((repository: RepositoryRow) => {
-    setShowAiBuilder(false)
-    setShowWizard(false)
-    setSecurityFolder(repository)
-    setShowSecurity(true)
   }, [])
 
   const loadRepositories = useCallback(async () => {
@@ -678,7 +665,6 @@ export default function DmsFolderConfiguration({
 
   const openManualBuilder = () => {
     setShowAiBuilder(false)
-    setShowSecurity(false)
     setFolderName('')
     setDescription('')
     setFields(defaultFields)
@@ -688,7 +674,6 @@ export default function DmsFolderConfiguration({
 
   const openAiBuilder = () => {
     setShowWizard(false)
-    setShowSecurity(false)
     setShowAiBuilder(true)
   }
 
@@ -764,7 +749,7 @@ export default function DmsFolderConfiguration({
     setStep(1)
     setShowWizard(true)
     showToast({
-      message: 'Folder setup applied. Review and finish configuration.',
+      message: 'AI folder setup applied. Review and finish configuration.',
       variant: 'success',
     })
   }
@@ -871,7 +856,6 @@ export default function DmsFolderConfiguration({
     tableSearchOptions,
   } = useRepositoryTable(filteredRepositories, {
     onEditRepository: openEditRepository,
-    onSecurityRepository: openSecurity,
   })
   const repositoryToolbar = useSettingsTableToolbar({
     isReLoading: isLoadingRepositories,
@@ -888,12 +872,7 @@ export default function DmsFolderConfiguration({
 
   return (
     <div className='flex h-full min-h-0 flex-col bg-[var(--surface)]'>
-      {showSecurity && securityFolder ? (
-        <FolderSecurity
-          folderName={securityFolder.name}
-          onBack={() => setShowSecurity(false)}
-        />
-      ) : showAiBuilder ? (
+      {showAiBuilder ? (
         <AiFolderBuilder
           onBack={() => setShowAiBuilder(false)}
           onApply={handleAiBuilderApply}
@@ -934,7 +913,7 @@ export default function DmsFolderConfiguration({
                     />
                     <MenuItem
                       icon='lucide:sparkles'
-                      label='Guided builder'
+                      label='AI builder'
                       onClick={openAiBuilder}
                     />
                   </Menu>
@@ -1753,10 +1732,8 @@ function useRepositoryTable(
   rows: RepositoryRow[],
   {
     onEditRepository,
-    onSecurityRepository,
   }: {
     onEditRepository: (repository: RepositoryRow) => void
-    onSecurityRepository: (repository: RepositoryRow) => void
   },
 ) {
   const columnHelper = createColumnHelper<RepositoryRow>()
@@ -1880,11 +1857,6 @@ function useRepositoryTable(
                   label='Edit'
                   onClick={() => onEditRepository(repository)}
                 />
-                <MenuItem
-                  icon='lucide:shield'
-                  label='Security'
-                  onClick={() => onSecurityRepository(repository)}
-                />
                 <MenuItem icon='lucide:settings' label='Settings' disabled />
               </Menu>
             </div>
@@ -1892,7 +1864,7 @@ function useRepositoryTable(
         },
       }),
     ],
-    [columnHelper, onEditRepository, onSecurityRepository],
+    [columnHelper, onEditRepository],
   )
 
   const table = useReactTable({
