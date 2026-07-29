@@ -240,6 +240,7 @@ const GlobalSearch = () => {
                 <AiBrandIcon
                   alt='Search AI'
                   className='size-[22px] opacity-80'
+                  variant='curved-purple'
                 />
                 <p className='text-sm font-medium text-gray-12'>
                   Start typing to search
@@ -275,6 +276,7 @@ const GlobalSearch = () => {
                   <AiBrandIcon
                     alt='Searching AI'
                     className='size-[24px]'
+                    variant='curved-purple'
                   />
                 </motion.div>
                 <p className='text-xs font-medium text-gray-11'>Searching…</p>

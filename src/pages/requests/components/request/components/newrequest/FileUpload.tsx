@@ -953,7 +953,7 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
                     className={`flex size-10 items-center justify-center rounded-lg shadow-sm ${item.color} transition-transform duration-300 group-hover:scale-105`}
                   >
                     {item.icon === 'tabler:sparkles' ? (
-                      <AiBrandIcon className='size-5 transition-transform duration-300 group-hover:rotate-6' />
+                      <AiBrandIcon className='size-5 transition-transform duration-300 group-hover:rotate-6' variant='curved-purple' />
                     ) : (
                       <Icon
                         className='size-5 transition-transform duration-300 group-hover:rotate-6'

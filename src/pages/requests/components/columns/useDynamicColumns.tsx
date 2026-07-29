@@ -1496,6 +1496,7 @@ const getBaseColumns = (
           <div className='flex min-w-0 items-center gap-1.5'>
             <AiBrandIcon
               className='size-[14px] shrink-0 text-[var(--primary-9)]'
+              variant='curved-purple'
             />
             <HoverExpandableText
               className='text-[13px] font-medium text-[var(--gray-11)]'
