@@ -5,6 +5,7 @@ import EmbedTopbar from './components/EmbedTopbar'
 interface EmbedLayoutProps {
   children: ReactNode
   showTopbar?: boolean
+  showActions?: boolean
   title?: string
   topbarActions?: ReactNode
   showAiBadge?: boolean
@@ -18,13 +19,15 @@ interface EmbedLayoutProps {
 const EmbedLayout = ({
   children,
   showTopbar,
+  showActions,
   title,
   topbarActions,
   showAiBadge,
   hideLogoText,
 }: EmbedLayoutProps) => {
-  const { hasTopbar } = useEmbedMode()
+  const { hasActions, hasTopbar } = useEmbedMode()
   const renderTopbar = showTopbar ?? hasTopbar
+  const renderActions = showActions ?? hasActions
 
   return (
     <div className='relative h-svh w-vw overflow-hidden bg-surface-secondary text-gray-13 antialiased'>
@@ -33,6 +36,7 @@ const EmbedLayout = ({
           <EmbedTopbar
             actions={topbarActions}
             hideLogoText={hideLogoText}
+            showActions={renderActions}
             showAiBadge={showAiBadge}
             title={title}
           />

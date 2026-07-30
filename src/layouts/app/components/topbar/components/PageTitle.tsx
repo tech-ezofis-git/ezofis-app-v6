@@ -47,23 +47,25 @@ const PageTitle = () => {
       : (current?.staticData?.pageTitle ?? 'Untitled')
   const pageTitle = rawPageTitle.replace(/\s*\(Embed\)$/i, '')
 
+  const routeId = current?.routeId as string | undefined
+
   const isSettingsRoute =
-    current?.routeId === '/_app/settings' ||
-    current?.routeId === '/embed/settings' ||
+    routeId === '/_app/settings' ||
+    routeId === '/embed/settings' ||
     pageTitle === 'Settings'
   const isFoldersRoute =
-    current?.routeId === '/_app/folders' ||
-    current?.routeId === '/embed/folders' ||
+    routeId === '/_app/folders' ||
+    routeId === '/embed/folders' ||
     pageTitle === 'Folders'
 
   const renderContent = () => {
     const isRequestsRoute =
-      current?.routeId === '/_app/requests' ||
-      current?.routeId === '/embed/requests' ||
+      routeId === '/_app/requests' ||
+      routeId === '/embed/requests' ||
       pageTitle === 'Requests'
     const isWorkflowsRoute =
-      current?.routeId === '/_app/workflows' ||
-      current?.routeId === '/embed/workflows' ||
+      routeId === '/_app/workflows' ||
+      routeId === '/embed/workflows' ||
       pageTitle === 'Workflows'
 
     if (isWorkflowsRoute && isBuilderOpen) {
