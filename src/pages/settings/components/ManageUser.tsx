@@ -26,6 +26,7 @@ import Pagination from '@/components/base/pagination/Pagination'
 import showToast from '@/components/base/toast/showToast'
 import SettingsWizardLayout from './SettingsWizardLayout'
 import CustomFilter from '@/components/common/CustomFilter'
+import cn from '@/utils/cn'
 import {
   matchesCategoryFilterValue,
 } from '@/utils/filterUtils'
@@ -159,7 +160,7 @@ const mfaMethods = ['Email OTP', 'Mobile OTP', 'Authenticator App']
 
 type LoginOption = {
   description: string
-  icon: React.ReactNode
+  icon: (isSelected: boolean) => React.ReactNode
   title: string
   value: LoginType
 }
@@ -167,15 +168,25 @@ type LoginOption = {
 const loginOptions: LoginOption[] = [
   {
     description: 'Email and password',
-    icon: <Key className='h-4 w-4 shrink-0 text-[var(--primary-9)]' />,
+    icon: (isSelected) => (
+      <Key
+        className={cn(
+          'h-4 w-4 shrink-0 transition-colors',
+          isSelected ? 'text-[var(--primary-9)]' : 'text-[var(--gray-9)]',
+        )}
+      />
+    ),
     title: 'Password',
     value: 'Password',
   },
   {
     description: 'Sign in with Google',
-    icon: (
+    icon: (isSelected) => (
       <svg
-        className='h-4 w-4 shrink-0 text-[var(--primary-9)]'
+        className={cn(
+          'h-4 w-4 shrink-0 transition-colors',
+          isSelected ? 'text-[var(--primary-9)]' : 'text-[var(--gray-9)]',
+        )}
         fill='currentColor'
         viewBox='0 0 24 24'
       >
@@ -187,9 +198,12 @@ const loginOptions: LoginOption[] = [
   },
   {
     description: 'Sign in with Microsoft',
-    icon: (
+    icon: (isSelected) => (
       <svg
-        className='h-4 w-4 shrink-0 text-[var(--primary-9)]'
+        className={cn(
+          'h-4 w-4 shrink-0 transition-colors',
+          isSelected ? 'text-[var(--primary-9)]' : 'text-[var(--gray-9)]',
+        )}
         fill='currentColor'
         viewBox='0 0 23 23'
       >
@@ -201,8 +215,15 @@ const loginOptions: LoginOption[] = [
   },
   {
     description: 'Sign in with AD',
-    icon: <Server className='h-4 w-4 shrink-0 text-[var(--primary-9)]' />,
-    title: 'Active directory',
+    icon: (isSelected) => (
+      <Server
+        className={cn(
+          'h-4 w-4 shrink-0 transition-colors',
+          isSelected ? 'text-[var(--primary-9)]' : 'text-[var(--gray-9)]',
+        )}
+      />
+    ),
+    title: 'Active Directory',
     value: 'Active Directory',
   },
 ]
@@ -432,9 +453,9 @@ export default function ManageUser({ onBack }: ManageUserProps) {
 
       const createdUser = response.data
         ? mapApiUserToSettingsUser(
-            response.data as Record<string, unknown>,
-            users.length,
-          )
+          response.data as Record<string, unknown>,
+          users.length,
+        )
         : null
       const listResponse = await getUsers()
 
@@ -495,10 +516,16 @@ export default function ManageUser({ onBack }: ManageUserProps) {
 
             return (
               <div className='min-w-0'>
-                <div className='truncate font-semibold text-[var(--gray-13)]'>
+                <div
+                  className='truncate font-semibold text-[var(--gray-13)] hover:whitespace-normal hover:break-words'
+                  title={`${user.firstName} ${user.lastName}`}
+                >
                   {user.firstName} {user.lastName}
                 </div>
-                <div className='truncate text-[var(--gray-10)]'>
+                <div
+                  className='truncate text-[var(--gray-10)] hover:whitespace-normal hover:break-words'
+                  title={user.email}
+                >
                   {user.email}
                 </div>
               </div>
@@ -676,9 +703,9 @@ export default function ManageUser({ onBack }: ManageUserProps) {
         })
         .filter(Boolean)
         .sort((a, b) => a!.label.localeCompare(b!.label)) as {
-        label: string
-        value: string
-      }[],
+          label: string
+          value: string
+        }[],
     [users],
   )
   const loginTypeOptions = useMemo(
@@ -1222,14 +1249,14 @@ function LoginDetails({
                   )}
                 </div>
 
-                {opt.icon}
+                {opt.icon(isSelected)}
 
                 <div className='min-w-0 flex-1'>
-                  <div className='truncate text-xs font-semibold text-[var(--gray-13)]'>
+                  <div
+                    className='truncate text-xs font-semibold text-[var(--gray-13)] hover:whitespace-normal hover:break-words'
+                    title={opt.title}
+                  >
                     {opt.title}
-                  </div>
-                  <div className='mt-0.5 truncate text-[11px] text-[var(--gray-10)]'>
-                    {opt.description}
                   </div>
                 </div>
               </button>
