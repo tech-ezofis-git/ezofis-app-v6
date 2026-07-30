@@ -2,7 +2,6 @@ import { useMsal } from '@azure/msal-react'
 import { useGoogleLogin } from '@react-oauth/google'
 import { useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
-import apiRouter from '@/api/apiRouter'
 import authApiV6 from '@/api/v6/auth'
 import Alert from '@/components/base/Alert'
 import Button from '@/components/base/button/Button'
@@ -15,6 +14,7 @@ import InputText from '@/components/base/inputs/InputText'
 import InputPassword from '@/components/base/inputs/password/InputPassword'
 import Title from '@/components/base/Title'
 import authUserStore from '@/stores/authUserStore'
+import { redirectAfterLogin } from '../utils/redirectAfterLogin'
 
 interface Props {
   email: string
@@ -66,30 +66,7 @@ const ShareSignInForm = ({ email, shareToken }: Props) => {
   }, [shareToken])
 
   const handleLoggedNavigation = async () => {
-    try {
-      await apiRouter.userSession()
-    } catch (err) {
-      console.error('Failed to load session details:', err)
-    }
-
-    // Switch tenant context using the share context
-    const shareCtx = authUserStore.getState().shareContext
-    if (shareCtx) {
-      const currentSession = authUserStore.getState().session
-      if (currentSession) {
-        authUserStore.getState().setSession({
-          ...currentSession,
-          tenantId: shareCtx.sourceTenantId,
-        })
-      }
-      if (shareCtx.workflowInstanceId) {
-        navigate({ replace: true, to: '/requests' })
-      } else {
-        navigate({ replace: true, to: '/folders' })
-      }
-    } else {
-      navigate({ replace: true, to: '/' })
-    }
+    await redirectAfterLogin({ navigate })
     setSubmitting(false)
   }
 

@@ -163,7 +163,8 @@ const WorkflowBuilderCanvas = ({ workflowId }: { workflowId: string }) => {
     const flowJsonStr = data?.workflowJson || data?.flowJson
     if (flowJsonStr && !isNew) {
       try {
-        const json = flowJsonStr
+        const json =
+          typeof flowJsonStr === 'string' ? JSON.parse(flowJsonStr) : flowJsonStr
         loadLegacyWorkflow(json)
       } catch (e) {
         console.error('Failed to parse workflow json', e)

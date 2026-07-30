@@ -18,7 +18,8 @@ const UserMenu = () => {
 
   const logout = () => {
     resetAuthState()
-    navigate({ replace: true, to: '/sign-in' })
+    // Hard redirect avoids SPA guard bounce (/sign-in → / → /sign-in) and feels instant
+    globalThis.location.replace('/sign-in')
   }
 
   return (

@@ -285,6 +285,7 @@ export const importWorkflow = (
       }
 
       apAgentUi = {
+        apAgent, // preserve nested payload for round-trip export
         backOrderDetection: features.includes('BACKORDER_DETECT'),
         duplicateDetection: features.includes('DUPLICATE_DETECT'),
         glSource: toMasterOption(apAgent.syncGLAccount),
@@ -314,14 +315,14 @@ export const importWorkflow = (
           approved: apAgent.decisionApprove ?? 90,
           partial: apAgent.decisionPartial ?? 60,
         },
-        vendorMustExist: apAgent.vendorValidationRequired ?? true,
+        vendorMustExist:
+          apAgent.vendorValidationRequired ?? !!apAgent.vendorMasterId,
         vendorSource: toMasterOption(apAgent.vendorMasterId),
         weights: Array.isArray(apAgent.fieldScore)
           ? apAgent.fieldScore.map((field: any) => ({
-              fieldId: field.fieldId,
-              icon: field.icon,
-              label: field.label,
-              rowId: field.id || field.rowId,
+              fieldId: field.id || field.fieldId || field.rowId,
+              label: field.label || field.name || '',
+              rowId: field.id || field.rowId || field.fieldId,
               value: field.value ?? 0,
             }))
           : undefined,
