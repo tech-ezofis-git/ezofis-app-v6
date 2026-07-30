@@ -633,7 +633,7 @@ export default function FolderSecurityPolicyWizard({
       {/* Main Grid */}
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-0 xl:grid-cols-[290px_1fr]">
         {/* Sidebar Stepper */}
-        <aside className="hidden h-full border-r border-[var(--border-default)] bg-surface-muted/30 pt-4 pr-3 pb-4 pl-4 xl:block">
+        <aside className="hidden h-full border-r border-[var(--border-default)] bg-gray-1/30 pt-4 pr-3 pb-4 pl-4 xl:block">
           <Stepper
             active={step}
             orientation="vertical"

@@ -232,22 +232,22 @@ export default function DocumentSecurityRuleWizard({
         ])
 
         const loadedPrincipals: Principal[] = []
-        ;(firstRule.userIds || []).forEach((uId: string) => {
-          const matched = userList.find((u) => u.id === uId)
-          loadedPrincipals.push({
-            id: uId,
-            name: matched ? (matched.displayName || `${matched.firstName} ${matched.lastName}`.trim()) : uId,
-            type: 'USER',
+          ; (firstRule.userIds || []).forEach((uId: string) => {
+            const matched = userList.find((u) => u.id === uId)
+            loadedPrincipals.push({
+              id: uId,
+              name: matched ? (matched.displayName || `${matched.firstName} ${matched.lastName}`.trim()) : uId,
+              type: 'USER',
+            })
           })
-        })
-        ;(firstRule.groupIds || []).forEach((gId: string) => {
-          const matched = groupList.find((g) => (g.id || g.groupId) === gId)
-          loadedPrincipals.push({
-            id: gId,
-            name: matched ? String(matched.name || matched.description || gId) : gId,
-            type: 'GROUP',
+          ; (firstRule.groupIds || []).forEach((gId: string) => {
+            const matched = groupList.find((g) => (g.id || g.groupId) === gId)
+            loadedPrincipals.push({
+              id: gId,
+              name: matched ? String(matched.name || matched.description || gId) : gId,
+              type: 'GROUP',
+            })
           })
-        })
         setSelectedPrincipals(loadedPrincipals)
       }
     },
@@ -540,9 +540,9 @@ export default function DocumentSecurityRuleWizard({
 
           {/* Rule Action Cards */}
           <div className="space-y-1.5">
-            <label className="text-[11px] font-semibold text-gray-11">
+            {/* <label className="text-[11px] font-semibold text-gray-11">
               Rule Action
-            </label>
+            </label> */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
               <button
                 type="button"
@@ -950,7 +950,7 @@ export default function DocumentSecurityRuleWizard({
       {/* Main Grid */}
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-0 xl:grid-cols-[290px_1fr]">
         {/* Sidebar Stepper */}
-        <aside className="hidden h-full border-r border-[var(--border-default)] bg-surface-muted/30 pt-4 pr-3 pb-4 pl-4 xl:block">
+        <aside className="hidden h-full border-r border-[var(--border-default)] bg-gray-1/30 pt-4 pr-3 pb-4 pl-4 xl:block">
           <Stepper
             active={step}
             orientation="vertical"
